@@ -78,6 +78,18 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   return { ...base, ...overrides }
 }
 
+/** A history GET that, like the real client, settles only when aborted. */
+function hangingGetMessages(
+  _threadId: string,
+  options: { signal?: AbortSignal } = {}
+): Promise<AgentMessages> {
+  return new Promise((_, reject) => {
+    options.signal?.addEventListener('abort', () =>
+      reject(options.signal?.reason)
+    )
+  })
+}
+
 function fakeEvents() {
   let listener: ((raw: unknown) => void) | undefined
   let statusListener: ((live: boolean) => void) | undefined
@@ -869,28 +881,44 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
   })
 
-  it('(g) onStatus(false) aborts the active turn; onStatus(true) is inert', async () => {
+  it('(g) a socket blip keeps the turn live and re-checks the server once on the way back up', async () => {
+    // PM-1199 / PM-1200. The server never learns the socket went away: it
+    // keeps running the turn and keeps the row `streaming`. Aborting locally
+    // on `false` therefore strands the user behind a 409 with a reply that
+    // looks finished. The turn must stay live across the blip; the only work
+    // on the way back up is one recovery job per live turn, which polls the
+    // persisted row (up to six GETs on the g17 schedule) to learn whether the
+    // turn ended while the socket was down. This case settles on the first
+    // GET, so it asserts exactly one.
     const rest = fakeRest()
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
     // Establish a live connection first: only a live->down transition is a
     // real disconnect. An initial `false` snapshot (no prior `true`) must
-    // not abort turns; see test (g2).
+    // not touch turns; see test (g2).
     status(true)
 
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
     expect(session.isStreaming.value).toBe(true)
-    const requestsBefore = vi.mocked(rest.postMessage).mock.calls.length
+    const postsBefore = vi.mocked(rest.postMessage).mock.calls.length
+    const getsBefore = vi.mocked(rest.getMessages).mock.calls.length
 
     status(false)
-    expect(session.isStreaming.value).toBe(false)
+    expect(session.isStreaming.value).toBe(true)
 
-    // Reconnection recovery is the CRDT follower's job now; the session
-    // makes no REST calls on a live transition.
     status(true)
-    expect(vi.mocked(rest.postMessage).mock.calls.length).toBe(requestsBefore)
+    await vi.waitFor(() =>
+      expect(vi.mocked(rest.getMessages).mock.calls.length).toBe(getsBefore + 1)
+    )
+    expect(vi.mocked(rest.getMessages).mock.calls.at(-1)?.[0]).toBe('th-1')
+    expect(vi.mocked(rest.postMessage).mock.calls.length).toBe(postsBefore)
+
+    // The fake server's history has no row for msg-1, so nothing can be
+    // reconciled from REST; the live socket still owns the turn.
+    emit(done('msg-1'))
+    expect(session.isStreaming.value).toBe(false)
   })
 
   it('(g2) an initial onStatus(false) snapshot does not abort a surviving turn', async () => {
@@ -911,24 +939,11 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.isStreaming.value).toBe(true)
   })
 
-  // PM-1199 / PM-1200. (g) above pins today's behaviour: a live->down->live
-  // socket blip settles the turn and the session does nothing on the way back
-  // up. The server never learned the socket went away, so it keeps running the
-  // turn and keeps broadcasting the same message_id. These two say what the
-  // user needs instead, and are the lowest level that proves it — the browser
-  // spec `agentTurnSurvivesSocketDrop.spec.ts` covers the same defect through
-  // the real socket and the rendered panel.
-  //
-  // `it.fails` accepts a throw from anywhere in the body, so the arrange these
-  // two share cannot guard itself. (g) and (g2) directly above are unmarked and
-  // drive exactly that arrange — start, sendMessage, emit, the isStreaming
-  // precondition — so a fixture or setup regression reddens there instead of
-  // being absorbed here. Keep them unmarked for as long as these two exist.
   // Backend invariant (cloud `newAssistantMessage` + the complete/fail writes):
   // an assistant row carries content only once it goes terminal, so a live turn
   // has nothing to re-hydrate from. Keep this row contentless — giving it text
-  // would let a repair that re-hydrates mid-turn satisfy these pins, when that
-  // repair blanks the reply on screen.
+  // would let a repair that re-hydrates mid-turn pass these, when that repair
+  // blanks the reply on screen.
   const streamingTurnRest = () =>
     fakeRest({
       getMessages: vi.fn(
@@ -943,7 +958,7 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     })
 
-  it.fails('(g3) KNOWN BUG: a reconnect leaves the turn running instead of settling it', async () => {
+  it('(g3) a reconnect leaves the turn running instead of settling it', async () => {
     const rest = streamingTurnRest()
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -957,16 +972,13 @@ describe('useAgentSession (v1 composition root)', () => {
     status(false)
     status(true)
 
-    // Generous on purpose, and matched in (g4). Under it.fails a waitFor that
-    // runs out its budget THROWS, and a throw is what marks the case green — so
-    // a tight budget here would quietly disarm the tripwire against any repair
-    // that debounces recovery after the socket flaps.
-    await vi.waitFor(() => expect(session.isStreaming.value).toBe(true), {
-      timeout: 2000
-    })
+    await vi.waitFor(() =>
+      expect(rest.getMessages).toHaveBeenCalledWith('th-1', expect.anything())
+    )
+    expect(session.isStreaming.value).toBe(true)
   })
 
-  it.fails('(g4) KNOWN BUG: deltas that arrive after a reconnect still reach the turn', async () => {
+  it('(g4) deltas that arrive after a reconnect still reach the turn', async () => {
     const rest = streamingTurnRest()
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
@@ -980,21 +992,594 @@ describe('useAgentSession (v1 composition root)', () => {
     status(true)
     emit(delta('msg-1', ' and the rest'))
 
-    // Retried, because a re-hydrate repair reaches the reply through an async
-    // getMessages. Joined rather than part-by-part: a re-attach that opens a
-    // fresh text part on reconnect still shows the user the whole reply, and
-    // must count as fixed.
-    await vi.waitFor(
-      () => {
-        const assistant = session.entries.value.at(-1)
-        assert(assistant !== undefined && 'parts' in assistant)
-        const replyText = assistant.parts
-          .flatMap((part) => (part.type === 'text' ? [part.text] : []))
-          .join('')
-        expect(replyText).toBe('partial and the rest')
-      },
-      { timeout: 2000 }
+    await vi.waitFor(() =>
+      expect(rest.getMessages).toHaveBeenCalledWith('th-1', expect.anything())
     )
+    const assistant = session.entries.value.at(-1)
+    assert(assistant !== undefined && 'parts' in assistant)
+    expect(assistant.parts).toEqual([
+      { type: 'text', text: 'partial and the rest', state: 'streaming' }
+    ])
+  })
+
+  it('(g5) a turn that ended during the drop is settled from its persisted row and its stale approval card is dropped', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          historyRow(2, 'assistant', 'msg-1', 'final answer', 'msg-1')
+        ]
+      )
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(thinking('msg-1', 'planning'))
+    emit(delta('msg-1', 'partial'))
+    emit(runApproval('msg-1'))
+
+    status(false)
+    status(true)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    const assistant = session.entries.value.at(-1)
+    assert(assistant?.role === 'assistant')
+    expect(assistant.parts.map((part) => part.type)).toEqual([
+      'thinking',
+      'text'
+    ])
+    expect(assistant.parts.at(-1)).toEqual({
+      type: 'text',
+      text: 'final answer',
+      state: 'done'
+    })
+    expect(session.notices.value).toEqual([])
+  })
+
+  it('(g6) a row still streaming on the first check is polled with backoff until it goes terminal', async () => {
+    vi.useFakeTimers()
+    try {
+      const getMessages = vi
+        .fn<() => Promise<AgentMessages>>()
+        .mockResolvedValueOnce([
+          historyRow(1, 'user', 'msg-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'msg-1', '', 'msg-1'),
+            content: {},
+            status: 'streaming'
+          }
+        ])
+        .mockResolvedValue([
+          historyRow(1, 'user', 'msg-1', 'go'),
+          historyRow(2, 'assistant', 'msg-1', 'late answer', 'msg-1')
+        ])
+      const rest = fakeRest({ getMessages })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(getMessages).toHaveBeenCalledTimes(1)
+      expect(session.isStreaming.value).toBe(true)
+
+      await vi.advanceTimersByTimeAsync(999)
+      expect(getMessages).toHaveBeenCalledTimes(1)
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(getMessages).toHaveBeenCalledTimes(2)
+      expect(session.isStreaming.value).toBe(false)
+
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(getMessages).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g7) a flapping socket starts one recovery job per turn, not one per reconnect', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = streamingTurnRest()
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      status(false)
+      status(true)
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(rest.getMessages).toHaveBeenCalledTimes(1)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g8) a recovery result landing after the session stopped touches nothing', async () => {
+    vi.useFakeTimers()
+    try {
+      const pendingHistory: Array<(rows: AgentMessages) => void> = []
+      const getMessages = vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            pendingHistory.push(resolve)
+          })
+      )
+      const rest = fakeRest({ getMessages })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(getMessages).toHaveBeenCalledTimes(1)
+
+      const successorEvents = fakeEvents()
+      const successor = useAgentSession({
+        rest,
+        events: successorEvents.source
+      })
+      session.stop()
+      successor.start()
+      await vi.advanceTimersByTimeAsync(0)
+      const [staleRecovery, remountHydrate] = pendingHistory
+      assert.exists(staleRecovery)
+      assert.exists(remountHydrate)
+
+      remountHydrate([])
+      await vi.advanceTimersByTimeAsync(0)
+      expect(successor.isStreaming.value).toBe(true)
+      successorEvents.emit(delta('msg-1', ' still going'))
+
+      staleRecovery([
+        historyRow(1, 'user', 'msg-1', 'go'),
+        historyRow(2, 'assistant', 'msg-1', 'stale', 'msg-1')
+      ])
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(successor.isStreaming.value).toBe(true)
+      const assistant = successor.entries.value.at(-1)
+      assert(assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'partial still going', state: 'streaming' }
+      ])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g9) every backgrounded turn is checked on reconnect, each against its own thread', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-2', message_id: 'msg-2' })
+    const rest = fakeRest({ postMessage })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('first')
+    emit(deltaIn('th-1', 'msg-1', 'one'))
+    session.newChat()
+    await session.sendMessage('second')
+    emit(deltaIn('th-2', 'msg-2', 'two'))
+    session.newChat()
+    const getsBefore = vi.mocked(rest.getMessages).mock.calls.length
+
+    status(false)
+    status(true)
+
+    await vi.waitFor(() =>
+      expect(
+        vi
+          .mocked(rest.getMessages)
+          .mock.calls.slice(getsBefore)
+          .map(([threadId]) => threadId)
+          .toSorted()
+      ).toEqual(['th-1', 'th-2'])
+    )
+  })
+
+  it('(g10) a failing history fetch surfaces one notice and leaves the turn live for the socket', async () => {
+    vi.useFakeTimers()
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(async (): Promise<AgentMessages> => {
+          throw new TypeError('Failed to fetch')
+        })
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(rest.getMessages).toHaveBeenCalledTimes(6)
+      expect(session.notices.value).toEqual([
+        { level: 'error', text: 'Failed to fetch' }
+      ])
+      expect(session.isStreaming.value).toBe(true)
+
+      emit(done('msg-1'))
+      expect(session.isStreaming.value).toBe(false)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g11) a thread that no longer exists on the server settles its turn without inventing text', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async (): Promise<AgentMessages> => {
+        throw new AgentApiError('gone', 404, undefined)
+      })
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+
+    status(false)
+    status(true)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    const assistant = session.entries.value.at(-1)
+    assert(assistant?.role === 'assistant')
+    expect(assistant.parts).toEqual([
+      { type: 'text', text: 'partial', state: 'done' }
+    ])
+    expect(session.notices.value).toEqual([])
+  })
+
+  it('(g15) a deleted current thread is forgotten so the next send starts a new one', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(async (): Promise<AgentMessages> => {
+        throw new AgentApiError('gone', 404, undefined)
+      })
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+    session.bindWorkflow('wf-1')
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBe('th-1')
+
+    status(false)
+    status(true)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    expect(session.threadId.value).toBeNull()
+    expect(session.boundWorkflowId.value).toBeNull()
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBeNull()
+
+    await session.sendMessage('again')
+    expect(vi.mocked(rest.postMessage).mock.calls.at(-1)?.[0]).toBe('new')
+  })
+
+  it('(g16) a deleted backgrounded thread settles its turn without touching the current thread', async () => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th-1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th-2', message_id: 'msg-2' })
+    const rest = fakeRest({
+      postMessage,
+      getMessages: vi.fn(async (threadId: string): Promise<AgentMessages> => {
+        if (threadId === 'th-1') throw new AgentApiError('gone', 404, undefined)
+        return []
+      })
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('first')
+    emit(deltaIn('th-1', 'msg-1', 'one'))
+    session.newChat()
+    await session.sendMessage('second')
+    emit(deltaIn('th-2', 'msg-2', 'two'))
+
+    status(false)
+    status(true)
+
+    await vi.waitFor(() =>
+      expect(
+        useAgentConversationStore()
+          .liveTurns()
+          .map((turn) => turn.threadId)
+      ).toEqual(['th-2'])
+    )
+    expect(session.threadId.value).toBe('th-2')
+    expect(localStorage.getItem('Comfy.Agent.ThreadId')).toBe('th-2')
+  })
+
+  it.for([
+    [0, 1],
+    [999, 1],
+    [1000, 2],
+    [2999, 2],
+    [3000, 3],
+    [6999, 3],
+    [7000, 4],
+    [14999, 4],
+    [15000, 5],
+    [30999, 5],
+    [31000, 6],
+    [100_000, 6]
+  ] as const)(
+    '(g17) %i ms after reconnect the still-streaming turn has been polled %i times',
+    async ([elapsedMs, polls]) => {
+      vi.useFakeTimers()
+      try {
+        const rest = streamingTurnRest()
+        const { source, emit, status } = fakeEvents()
+        const session = useAgentSession({ rest, events: source })
+        session.start()
+        status(true)
+
+        await session.sendMessage('go')
+        emit(delta('msg-1', 'partial'))
+
+        status(false)
+        status(true)
+        await vi.advanceTimersByTimeAsync(elapsedMs)
+
+        expect(rest.getMessages).toHaveBeenCalledTimes(polls)
+        expect(session.isStreaming.value).toBe(true)
+      } finally {
+        vi.useRealTimers()
+      }
+    }
+  )
+
+  it('(g18) a history fetch that never answers is abandoned at the recovery deadline', async () => {
+    vi.useFakeTimers()
+    try {
+      const getMessages = vi.fn(hangingGetMessages)
+      const rest = fakeRest({ getMessages })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(59_999)
+      expect(getMessages).toHaveBeenCalledTimes(1)
+      const signal = getMessages.mock.calls[0]?.[1]?.signal
+      assert.exists(signal)
+      expect(signal.aborted).toBe(false)
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(signal.aborted).toBe(true)
+      expect(session.isStreaming.value).toBe(true)
+      expect(reportError).not.toHaveBeenCalled()
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(getMessages).toHaveBeenCalledTimes(2)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g19) stopping the session cancels its in-flight history fetch', async () => {
+    vi.useFakeTimers()
+    try {
+      const getMessages = vi.fn(hangingGetMessages)
+      const rest = fakeRest({ getMessages })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      const signal = getMessages.mock.calls[0]?.[1]?.signal
+      assert.exists(signal)
+
+      session.stop()
+
+      expect(signal.aborted).toBe(true)
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(getMessages).toHaveBeenCalledTimes(1)
+      expect(session.notices.value).toEqual([])
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g20) finishing one recovery does not unmark a sibling turn whose ids concatenate identically', async () => {
+    vi.useFakeTimers()
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockResolvedValueOnce({ thread_id: 'th/1', message_id: 'msg-1' })
+      .mockResolvedValueOnce({ thread_id: 'th', message_id: '1/msg-1' })
+    const pendingHistory = new Map<string, (rows: AgentMessages) => void>()
+    const getMessages = vi.fn(
+      (threadId: string) =>
+        new Promise<AgentMessages>((resolve) => {
+          pendingHistory.set(threadId, resolve)
+        })
+    )
+    const rest = fakeRest({ postMessage, getMessages })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    try {
+      session.start()
+      status(true)
+
+      await session.sendMessage('first')
+      emit(deltaIn('th/1', 'msg-1', 'one'))
+      session.newChat()
+      await session.sendMessage('second')
+      emit(deltaIn('th', '1/msg-1', 'two'))
+      session.newChat()
+      getMessages.mockClear()
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      expect(getMessages.mock.calls.map(([id]) => id).toSorted()).toEqual([
+        'th',
+        'th/1'
+      ])
+
+      pendingHistory.get('th/1')?.([
+        { ...historyRow(1, 'user', 'msg-1', 'first'), thread_id: 'th/1' },
+        {
+          ...historyRow(2, 'assistant', 'msg-1', 'one done', 'msg-1'),
+          thread_id: 'th/1'
+        }
+      ])
+      await vi.advanceTimersByTimeAsync(0)
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+
+      expect(getMessages).toHaveBeenCalledTimes(2)
+    } finally {
+      session.stop()
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g21) a terminal event that beats the pending history fetch keeps the socket transcript', async () => {
+    vi.useFakeTimers()
+    try {
+      const pendingHistory: Array<(rows: AgentMessages) => void> = []
+      const getMessages = vi.fn(
+        () =>
+          new Promise<AgentMessages>((resolve) => {
+            pendingHistory.push(resolve)
+          })
+      )
+      const rest = fakeRest({ getMessages })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      status(false)
+      status(true)
+      await vi.advanceTimersByTimeAsync(0)
+      const [recovery] = pendingHistory
+      assert.exists(recovery)
+
+      emit(delta('msg-1', ' from socket'))
+      emit(done('msg-1'))
+      expect(session.isStreaming.value).toBe(false)
+
+      recovery([
+        historyRow(1, 'user', 'msg-1', 'go'),
+        historyRow(2, 'assistant', 'msg-1', 'rest wins', 'msg-1')
+      ])
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(getMessages).toHaveBeenCalledTimes(1)
+      const assistant = session.entries.value.at(-1)
+      assert(assistant?.role === 'assistant')
+      expect(assistant.parts).toEqual([
+        { type: 'text', text: 'partial from socket', state: 'done' }
+      ])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('(g22) a settlement failure after the fetch is reported, not floated as an unhandled rejection', async () => {
+    // `onStatus` floats the recovery job (`void reconcileTurn(turn)`), so a
+    // rethrow past the fetch has no rejection owner: it becomes a global
+    // `unhandledrejection` the session never sees and telemetry files as an
+    // uncaught error rather than an agent failure. `getMessages` already maps
+    // its own failures onto `TurnOutcome`, so the remaining sources are the
+    // settlement calls — here an unavailable `localStorage` implementation.
+    const storageFailure = new Error('localStorage is unavailable')
+    const removeItem = vi
+      .spyOn(localStorage, 'removeItem')
+      .mockImplementation((key: string) => {
+        if (key === 'Comfy.Agent.ThreadId') throw storageFailure
+      })
+    try {
+      const rest = fakeRest({
+        getMessages: vi.fn(async (): Promise<AgentMessages> => {
+          throw new AgentApiError('gone', 404, undefined)
+        })
+      })
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({ rest, events: source })
+      session.start()
+      status(true)
+
+      await session.sendMessage('go')
+      emit(delta('msg-1', 'partial'))
+
+      status(false)
+      status(true)
+
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(storageFailure, {
+          errorType: 'failure_recovering_agent_turn'
+        })
+      )
+      expect(removeItem).toHaveBeenCalledWith('Comfy.Agent.ThreadId')
+      // The job still cleans up after itself: the turn is settled and the
+      // deleted thread is forgotten in memory despite the storage failure.
+      expect(useAgentConversationStore().liveTurns()).toEqual([])
+      expect(session.threadId.value).toBe(null)
+    } finally {
+      removeItem.mockRestore()
+    }
   })
 
   it('(h) attachments pass through to the postMessage wire body', async () => {
@@ -1994,13 +2579,13 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
   })
 
-  it('(l8) socket death settles background turns instead of leaving zombies', async () => {
+  it('(l8) a background turn that finished during a socket drop is settled from REST on reconnect', async () => {
     const getMessages = vi.fn(
       async (threadId: string): Promise<AgentMessages> =>
         threadId === 'th-1'
           ? [
-              historyRow(1, 'user', 'turn-A', 'go'),
-              historyRow(2, 'assistant', 'turn-A', 'from server')
+              historyRow(1, 'user', 'msg-1', 'go'),
+              historyRow(2, 'assistant', 'msg-1', 'from server', 'msg-1')
             ]
           : []
     )
@@ -2008,16 +2593,20 @@ describe('useAgentSession (v1 composition root)', () => {
     const { source, emit, status } = fakeEvents()
     const session = useAgentSession({ rest, events: source })
     session.start()
-    // Establish a live connection first; only a live->down transition (an
-    // actual socket death) should settle background turns.
     status(true)
 
     await session.sendMessage('go')
     emit(delta('msg-1', 'partial'))
     await session.loadThread('th-2')
+    const getsBefore = getMessages.mock.calls.length
 
     status(false)
-    emit(delta('msg-1', ' never lands'))
+    status(true)
+    await vi.waitFor(() =>
+      expect(
+        getMessages.mock.calls.slice(getsBefore).map(([threadId]) => threadId)
+      ).toEqual(['th-1'])
+    )
 
     await session.loadThread('th-1')
     expect(session.isStreaming.value).toBe(false)
@@ -2026,11 +2615,10 @@ describe('useAgentSession (v1 composition root)', () => {
       'assistant'
     ])
     const assistant = session.entries.value.at(-1)
-    expect(assistant?.role).toBe('assistant')
-    if (assistant?.role === 'assistant')
-      expect(assistant.parts).toEqual([
-        { type: 'text', text: 'from server', state: 'done' }
-      ])
+    assert(assistant?.role === 'assistant')
+    expect(assistant.parts).toEqual([
+      { type: 'text', text: 'from server', state: 'done' }
+    ])
   })
 
   it('(l9) two backgrounded threads accumulate independently and resume live', async () => {

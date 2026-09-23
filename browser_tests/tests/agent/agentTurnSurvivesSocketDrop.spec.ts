@@ -15,12 +15,13 @@ import {
 // with no refresh and no tab close anywhere in the journey.
 //
 // The agent chat stream rides the shared ComfyUI websocket, so any transient
-// close dispatches `reconnecting`. `useAgentSession.onStatus(false)` answers it
-// with `abortActiveTurn()`, which settles the assistant message locally, while
-// `onStatus(true)` only sets a flag — nothing re-attaches. The server never saw
-// the socket go away, so its assistant row is still `streaming` and it keeps
-// answering posts with 409. These specs close one socket and hold the client to
-// the three things the user watched break.
+// close dispatches `reconnecting`. The server never sees the socket go away:
+// its assistant row stays `streaming`, it keeps broadcasting the same
+// message_id down the new socket, and it answers posts with 409 until the turn
+// really ends. These specs close one socket and hold the client to keeping the
+// turn live through the blip: frames on the new socket still render, Stop
+// stays in front of the user, and the next message goes out only once the turn
+// has actually finished.
 //
 // Deliberately not a refresh or a tab reopen: PM-1154 and PM-1043 cover those
 // triggers. Here the page is never reloaded — only the socket blips.
@@ -43,24 +44,10 @@ test.describe(
     }) => {
       const reconnected = await turnLock.dropSocket()
 
-      // The thread itself must survive the blip. A wipe here would be a
-      // different defect, and test.fail() below would swallow it. (The agent's
-      // narration is deliberately not asserted: settling the turn collapses it
-      // into the closed "Worked for ..." summary, which is the very thing the
-      // next test pins.)
       await expect(turnLock.userBubbles).toHaveText([PROMPT])
 
-      // The server never stopped running this turn, so it keeps broadcasting the
-      // same message_id down the new socket. Sending it stays above the marker
-      // with the rest of the arrange: `ws.send()` throws on a dead route, and
-      // below test.fail() that throw would read as the expected failure without
-      // the assertion ever running.
       turnLock.push(reconnected, POST_RECONNECT_EVENT)
 
-      // `agentConversationStore.ingest` drops every one of those frames:
-      // `transport` is null after the abort, and `dropBackgroundTurns()` emptied
-      // the map it would otherwise fall back to.
-      test.fail()
       await expect(turnLock.panel.getByText(POST_RECONNECT_TEXT)).toBeVisible()
     })
 
@@ -72,12 +59,6 @@ test.describe(
 
       await turnLock.dropSocket()
 
-      // `abortActiveTurn()` calls `transport.settle()`, which flips
-      // `message.streaming` to false. AgentMessage.vue swaps ActivityTrace for
-      // WorkSummary on exactly that flag, so the live rows collapse into the
-      // "Worked for ..." button the user saw, the Working... row disappears and
-      // Stop reverts to Send — while the server still owns the turn.
-      test.fail()
       await expect(turnLock.stopButton).toBeVisible()
       await expect(turnLock.workSummary).toHaveCount(0)
       await expect(turnLock.workingRow).toBeVisible()
@@ -100,37 +81,42 @@ test.describe(
     test('does not reject the next message after the socket reconnects', async ({
       turnLock
     }) => {
-      await turnLock.dropSocket()
+      const reconnected =
+        await test.step('drop the socket while the turn is live', async () => {
+          const ws = await turnLock.dropSocket()
 
-      // Preconditions stay above the marker so a broken composer or a lost
-      // prompt reads as a real failure rather than the expected one. Send
-      // visibility is deliberately not asserted here: Send replacing Stop is
-      // itself part of the defect.
-      await expect(turnLock.composer).toBeVisible()
-      await expect(turnLock.userBubbles).toHaveText([PROMPT])
+          await expect(turnLock.composer).toBeVisible()
+          await expect(turnLock.userBubbles).toHaveText([PROMPT])
+          await expect(turnLock.stopButton).toBeVisible()
+          return ws
+        })
 
-      // The abandoned turn puts Send back in front of the user, so the nudge
-      // reaches a thread the server still has locked and comes back 409
-      // TURN_IN_PROGRESS.
-      //
-      // The nudge stays ABOVE test.fail(): body-level test.fail() only sets the
-      // expected status when it executes, so a throw up here is still an
-      // unexpected failure. Once the client re-attaches there is no Send
-      // button, and this click reports that by name in seconds instead of
-      // running out the file timeout four times over under CI retries.
-      await turnLock.composer.fill('are you still there?')
-      await turnLock.sendButton.click({ timeout: 10_000 })
-      // Inequality, so a future client-side retry cannot fail this line in
-      // place of the alert assertion below.
-      await expect.poll(() => turnLock.postAttempts()).toBeGreaterThanOrEqual(2)
+      await test.step('finish the turn on the new socket', async () => {
+        turnLock.finishTurn(reconnected)
 
-      test.fail()
-      await expect(
-        turnLock.panel
-          .getByRole('alert')
-          .filter({ hasText: TURN_IN_PROGRESS_MESSAGE })
-      ).toHaveCount(0)
-      expect(turnLock.rejectedPosts()).toBe(0)
+        await expect(turnLock.workSummary).toBeVisible()
+        await expect(turnLock.sendButton).toBeVisible()
+      })
+
+      await test.step('send the next message', async () => {
+        await turnLock.composer.fill('are you still there?')
+        await turnLock.sendButton.click()
+        // Inequality, so a future client-side retry cannot fail this line in
+        // place of the alert assertion below.
+        await expect
+          .poll(() => turnLock.postAttempts())
+          .toBeGreaterThanOrEqual(2)
+      })
+
+      await test.step('the server did not answer 409', async () => {
+        await expect(turnLock.stopButton).toBeVisible()
+        await expect(
+          turnLock.panel
+            .getByRole('alert')
+            .filter({ hasText: TURN_IN_PROGRESS_MESSAGE })
+        ).toHaveCount(0)
+        expect(turnLock.rejectedPosts()).toBe(0)
+      })
     })
 
     // Keeps the `workSummary` locator honest. Every other use of it above is a

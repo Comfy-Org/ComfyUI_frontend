@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import type { AgentMessages } from '../../schemas/agentApiSchema'
 import { toTurnId } from '../../schemas/agentApiSchema'
@@ -110,6 +110,26 @@ describe('normalizeAgentTranscript', () => {
     expect(transcript.userTexts.get(toTurnId('turn-a'))).toBe('Prompt')
     expect(transcript.assistantTurnIds).toEqual(new Set())
     expect(transcript.rowIds).toEqual(new Set(['row-1', 'row-2']))
+  })
+
+  it('keeps a streaming assistant row pending even without a run approval ask', () => {
+    const streamingRow = {
+      ...row(2, 'assistant', 'turn-a', 'Partial reply', 'assistant-row'),
+      status: 'streaming' as const
+    }
+
+    const transcript = normalizeAgentTranscript([
+      row(1, 'user', 'turn-a', 'Prompt', 'user-row'),
+      streamingRow
+    ])
+
+    assert.exists(transcript.pending)
+    expect(transcript.pending.messageId).toBe('assistant-row')
+    expect(transcript.pending.message).toBe(transcript.messages[0])
+    expect(transcript.messages[0]).toMatchObject({
+      streaming: true,
+      parts: [{ type: 'text', text: 'Partial reply', state: 'done' }]
+    })
   })
 
   it('concatenates assistant rows in sequence order within a turn', () => {
