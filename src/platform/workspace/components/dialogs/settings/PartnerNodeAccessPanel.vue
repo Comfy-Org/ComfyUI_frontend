@@ -608,7 +608,7 @@ function requestAccessModeToggle() {
 }
 
 function openEnterprisePage() {
-  window.open('https://www.comfy.org/enterprise', '_blank')
+  window.open('https://comfy.org/cloud/enterprise/', '_blank')
 }
 
 function confirmEnterpriseUpsell() {

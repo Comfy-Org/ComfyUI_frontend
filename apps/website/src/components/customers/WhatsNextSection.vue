@@ -8,12 +8,16 @@ const {
   title,
   image,
   href,
-  locale = 'en'
+  locale = 'en',
+  ctaLabel
 } = defineProps<{
   title: string
   image: string
   href: string
   locale?: Locale
+  /** CTA label under the title; defaults to the written-story "VIEW ARTICLE"
+   * wording so existing callers are unaffected. */
+  ctaLabel?: string
 }>()
 </script>
 
@@ -30,7 +34,9 @@ const {
         <img
           :src="image"
           :alt="title"
-          class="w-full rounded-4xl object-cover"
+          loading="lazy"
+          decoding="async"
+          class="aspect-video w-full rounded-4xl object-cover"
         />
       </a>
 
@@ -41,14 +47,17 @@ const {
 
         <a :href="href" class="flex items-center gap-3">
           <span
-            class="bg-primary-comfy-yellow flex size-10 items-center justify-center rounded-full text-primary-comfy-ink"
+            class="flex size-10 items-center justify-center rounded-full bg-primary-comfy-yellow text-primary-comfy-ink"
           >
             <span class="text-lg font-bold">›</span>
           </span>
           <span
-            class="ppformula-text-center text-sm font-semibold tracking-wider text-primary-comfy-canvas uppercase"
+            class="ppformula-text-center inline-block text-sm font-semibold tracking-wider text-primary-comfy-canvas uppercase"
           >
-            {{ t('customers.story.viewArticle' as TranslationKey, locale) }}
+            {{
+              ctaLabel ??
+              t('customers.story.viewArticle' as TranslationKey, locale)
+            }}
           </span>
         </a>
       </div>

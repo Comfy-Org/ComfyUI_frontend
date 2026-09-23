@@ -3,6 +3,7 @@
     <Dialog
       v-model:visible="visible"
       modal
+      :close-on-escape="!filterVisible"
       :dismissable-mask="dismissable"
       :pt="{
         root: {
@@ -44,6 +45,7 @@
         </div>
         <NodeSearchBox
           v-else
+          v-model:filter-visible="filterVisible"
           :filters="nodeFilters"
           @add-filter="addFilter"
           @remove-filter="removeFilter"
@@ -93,6 +95,7 @@ const { trackFeatureUsed } = useSurveyFeatureTracking('node-search')
 const { visible, newSearchBoxEnabled, useSearchBoxV2 } =
   storeToRefs(searchBoxStore)
 const dismissable = ref(true)
+const filterVisible = ref(false)
 const hoveredNodeDef = ref<ComfyNodeDefImpl | null>(null)
 const { width: windowWidth } = useWindowSize()
 // Minimum viewport width for the preview panel to fit beside the dialog
@@ -122,6 +125,7 @@ function removeFilter(filter: FuseFilterWithValue<ComfyNodeDefImpl, string>) {
 }
 function clearFilters() {
   nodeFilters.value = []
+  filterVisible.value = false
   hoveredNodeDef.value = null
 }
 function closeDialog() {
@@ -238,11 +242,16 @@ function showContextMenu(e: CanvasPointerEvent) {
     canvas.canvas,
     'connect-new-default-node',
     (createEvent) => {
-      if (!(createEvent instanceof CustomEvent))
-        throw new Error('Invalid event')
+      if (!(createEvent instanceof CustomEvent)) {
+        console.error('Invalid event')
+        return
+      }
 
       const node: unknown = createEvent.detail?.node
-      if (!(node instanceof LGraphNode)) throw new Error('Invalid node')
+      if (!(node instanceof LGraphNode)) {
+        console.error('Invalid node')
+        return
+      }
 
       disconnectOnReset = false
       createEvent.preventDefault()

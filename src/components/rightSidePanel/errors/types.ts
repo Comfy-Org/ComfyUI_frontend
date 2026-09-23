@@ -14,10 +14,13 @@ export interface ErrorCardData {
   id: string
   title: string
   nodeId?: NodeExecutionId
+  rawNodeId?: string
   nodeTitle?: string
   graphNodeId?: string
   errors: ErrorItem[]
 }
+
+export type ErrorGroupSeverity = 'error' | 'missing'
 
 interface ErrorGroupBase extends Omit<ResolvedErrorMessage, 'displayTitle'> {
   /** Stable structural key used for rendering, collapse state, and cache identity. */
@@ -26,6 +29,9 @@ interface ErrorGroupBase extends Omit<ResolvedErrorMessage, 'displayTitle'> {
   displayTitle: string
   count: number
   priority: number
+  severity: ErrorGroupSeverity
+  /** Derived per render: a diagnostic from the last failed run was absorbed into this group. */
+  blockedLastRun: boolean
 }
 
 export type ErrorGroup =

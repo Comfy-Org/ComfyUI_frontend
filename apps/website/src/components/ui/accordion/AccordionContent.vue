@@ -1,5 +1,4 @@
 <script setup lang="ts">
-/* eslint-disable vue/no-unused-properties -- props forwarded via v-bind */
 import type { AccordionContentProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'

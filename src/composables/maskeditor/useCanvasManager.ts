@@ -76,7 +76,7 @@ export function useCanvasManager() {
       canvasBackground.style.backgroundColor = 'rgba(0,0,0,1)'
     } else if (store.maskBlendMode === MaskBlendMode.White) {
       canvasBackground.style.backgroundColor = 'rgba(255,255,255,1)'
-    } else if (store.maskBlendMode === MaskBlendMode.Negative) {
+    } else {
       canvasBackground.style.backgroundColor = 'rgba(255,255,255,1)'
     }
   }

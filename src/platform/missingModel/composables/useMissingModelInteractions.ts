@@ -21,7 +21,7 @@ export function getNodeDisplayLabel(
   nodeId: string | number,
   fallback: string
 ): string {
-  const graph = app.rootGraph
+  const graph = app.rootGraphOrUndefined
   if (!graph) return fallback
   const node = getNodeByExecutionId(graph, String(nodeId))
   return resolveNodeDisplayName(node, {
@@ -54,7 +54,7 @@ export function useMissingModelInteractions() {
     const value = store.selectedLibraryModel[key]
     if (!value) return
 
-    const graph = app.rootGraph
+    const graph = app.rootGraphOrUndefined
     if (!graph) return
 
     if (directory) {
