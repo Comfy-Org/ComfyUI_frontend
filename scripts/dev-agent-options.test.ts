@@ -112,9 +112,29 @@ describe('parseOptions', () => {
       message: 'must leave room for the Temporal UI port'
     },
     { args: ['--cloud-repo'], message: '--cloud-repo requires a value' },
+    {
+      args: ['--cloud-repo', '--record'],
+      message: '--cloud-repo requires a value'
+    },
+    {
+      args: ['--frontend-port', '6208', '--frontend-port', '6209'],
+      message: 'Repeated option: --frontend-port'
+    },
+    { args: ['--', 'operand'], message: 'Unexpected argument: operand' },
     { args: ['--unknown'], message: 'Unknown option: --unknown' }
   ])('rejects an invalid launcher contract: $message', ({ args, message }) => {
     expect(() => parseOptions(args)).toThrow(message)
+  })
+
+  it('accepts an option terminator with no operands', () => {
+    expect(parseOptions(['--']).help).toBe(false)
+  })
+
+  it('returns help without validating or consuming later options', () => {
+    expect(parseOptions(['--help', '--record'])).toMatchObject({
+      help: true,
+      record: false
+    })
   })
 })
 

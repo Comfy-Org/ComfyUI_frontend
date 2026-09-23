@@ -62,6 +62,10 @@ interface Context {
   seenImages: Set<string>
 }
 
+interface HtmlToTwinOptions {
+  canonical?: string
+}
+
 function collapse(text: string): string {
   return text.replace(/\s+/g, ' ')
 }
@@ -273,7 +277,11 @@ function meta(document: Document, name: string): string {
 }
 
 /** Extract the page's main content as markdown, with absolute links. */
-export function htmlToTwin(html: string, fallbackCanonical: string): TwinPage {
+export function htmlToTwin(
+  html: string,
+  fallbackCanonical: string,
+  options: HtmlToTwinOptions = {}
+): TwinPage {
   const window = new Window({
     settings: {
       disableJavaScriptEvaluation: true,
@@ -284,6 +292,7 @@ export function htmlToTwin(html: string, fallbackCanonical: string): TwinPage {
   try {
     const document = new window.DOMParser().parseFromString(html, 'text/html')
     const canonical =
+      options.canonical ??
       document.querySelector('link[rel="canonical"]')?.getAttribute('href') ??
       fallbackCanonical
     const ctx: Context = { base: canonical, seenImages: new Set() }

@@ -138,13 +138,28 @@ describe('keybindingService - dialog gate', () => {
   })
 
   it.for([
-    { attribute: 'aria-hidden', value: 'true' },
-    { attribute: 'hidden', value: '' }
+    {
+      hiddenBy: 'aria-hidden attribute',
+      hide: (element: HTMLElement) =>
+        element.setAttribute('aria-hidden', 'true')
+    },
+    {
+      hiddenBy: 'hidden attribute',
+      hide: (element: HTMLElement) => element.setAttribute('hidden', '')
+    },
+    {
+      hiddenBy: 'CSS',
+      hide: (element: HTMLElement) => (element.style.display = 'none')
+    },
+    {
+      hiddenBy: 'CSS visibility',
+      hide: (element: HTMLElement) => (element.style.visibility = 'hidden')
+    }
   ])(
-    'executes Ctrl+S while an ARIA modal is inside a $attribute ancestor',
-    async ({ attribute, value }) => {
+    'executes Ctrl+S while an ARIA modal is inside an ancestor hidden by $hiddenBy',
+    async ({ hide }) => {
       const wrapper = document.createElement('div')
-      wrapper.setAttribute(attribute, value)
+      hide(wrapper)
       const dialog = document.createElement('div')
       dialog.setAttribute('role', 'dialog')
       dialog.setAttribute('aria-modal', 'true')

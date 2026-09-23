@@ -15,8 +15,22 @@ import type { FirebaseOptions } from 'firebase/app'
 import type { WorkshopCloudEnv } from './workshop-cloud-env'
 import { resolveWorkshopCloudEnv } from './workshop-cloud-env'
 
+function runtimeCloudEnv(env: unknown): string | undefined {
+  if (
+    env &&
+    typeof env === 'object' &&
+    'PUBLIC_WORKSHOP_CLOUD_ENV' in env &&
+    typeof env.PUBLIC_WORKSHOP_CLOUD_ENV === 'string'
+  )
+    return env.PUBLIC_WORKSHOP_CLOUD_ENV
+  return undefined
+}
+
 const WORKSHOP_CLOUD_ENV: WorkshopCloudEnv = resolveWorkshopCloudEnv(
-  import.meta.env.PUBLIC_WORKSHOP_CLOUD_ENV
+  runtimeCloudEnv(import.meta.env) ??
+    (typeof process === 'undefined'
+      ? undefined
+      : process.env.PUBLIC_WORKSHOP_CLOUD_ENV)
 )
 
 const ROUTER_BASE_URLS: Record<WorkshopCloudEnv, string> = {
@@ -33,6 +47,11 @@ const CLOUD_BASE_URLS: Record<WorkshopCloudEnv, string> = {
 
 export const WORKSHOP_ROUTER_BASE_URL = ROUTER_BASE_URLS[WORKSHOP_CLOUD_ENV]
 export const WORKSHOP_CLOUD_BASE_URL = CLOUD_BASE_URLS[WORKSHOP_CLOUD_ENV]
+
+export const WORKSHOP_CREDITS_URL = new URL(
+  '/?settings=plan-credits',
+  WORKSHOP_CLOUD_BASE_URL
+).href
 
 // Public web-app configs, same values the platform app ships in
 // src/config/firebase.ts. Staging and test both validate tokens from the dev

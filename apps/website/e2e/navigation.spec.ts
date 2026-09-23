@@ -1,6 +1,27 @@
+import type { Locator } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import { test } from './fixtures/blockExternalMedia'
+import { test } from './fixtures/workshopVisibility'
+
+function settleAnimations(root: Locator) {
+  return root.evaluate((el) =>
+    Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished))
+  )
+}
+
+async function badgePlacement(row: Locator, label: string) {
+  const labelBox = await row.getByText(label, { exact: true }).boundingBox()
+  const badgeBox = await row.locator('[data-slot="badge"]').boundingBox()
+  if (!labelBox || !badgeBox)
+    throw new Error(`"${label}" row is missing its label or NEW badge`)
+  return {
+    gap: badgeBox.x - (labelBox.x + labelBox.width),
+    centerOffset:
+      badgeBox.y + badgeBox.height / 2 - (labelBox.y + labelBox.height / 2),
+    width: badgeBox.width,
+    height: badgeBox.height
+  }
+}
 
 const minimaxLabel = 'MiniMax H3'
 const minimaxLabelZh = 'MiniMax H3'
@@ -8,6 +29,7 @@ const minimaxRoute = '/minimax-h3'
 const minimaxRouteZh = '/zh-CN/minimax-h3'
 
 const TOP_LEVEL_LABELS = [
+  'Models',
   'Products',
   'Pricing',
   'Community',
@@ -36,10 +58,18 @@ test.describe('Desktop navigation @smoke', () => {
     }
   })
 
-  test('NEW badge shows on Products and Community only', async ({ page }) => {
+  test('NEW badge shows on Workshop, Products and Community only', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 1600, height: 900 })
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
 
+    await expect(
+      desktopLinks
+        .getByRole('link', { name: 'Models' })
+        .getByText('NEW', { exact: true })
+    ).toBeVisible()
     for (const label of ['Products', 'Community']) {
       await expect(
         desktopLinks
@@ -137,16 +167,23 @@ test.describe('Mobile menu @mobile', () => {
     const menu = page.getByRole('dialog')
     await expect(menu).toBeVisible()
 
-    for (const label of ['Products', 'Pricing', 'Community']) {
+    for (const label of ['Models', 'Products', 'Pricing', 'Community']) {
       await expect(menu.getByText(label, { exact: true }).first()).toBeVisible()
     }
   })
 
-  test('NEW badge shows on Products and Community only', async ({ page }) => {
+  test('NEW badge shows on Workshop, Products and Community only', async ({
+    page
+  }) => {
     await page.getByRole('button', { name: 'Toggle menu' }).click()
 
     const menu = page.getByRole('dialog')
 
+    await expect(
+      menu.getByRole('link', { name: 'Models' }).getByText('NEW', {
+        exact: true
+      })
+    ).toBeVisible()
     for (const label of ['Products', 'Community']) {
       await expect(
         menu.getByRole('button', { name: label }).getByText('NEW', {
@@ -176,6 +213,31 @@ test.describe('Mobile menu @mobile', () => {
 
     await menu.getByRole('button', { name: /BACK/i }).click()
     await expect(menu.getByRole('button', { name: 'Products' })).toBeVisible()
+  })
+
+  test('NEW badge sits beside the label the same way on top-level and drill-down rows', async ({
+    page
+  }) => {
+    await page.getByRole('button', { name: 'Toggle menu' }).click()
+
+    const menu = page.getByRole('dialog')
+    await settleAnimations(menu)
+    const products = menu.getByRole('button', { name: 'Products' })
+    const topLevel = await badgePlacement(products, 'Products')
+
+    await products.click()
+    const agent = menu.getByRole('link', { name: 'Comfy Agent' })
+    await expect(agent).toBeVisible()
+    await settleAnimations(menu)
+    const drillDown = await badgePlacement(agent, 'Comfy Agent')
+
+    expect(topLevel.gap).toBeGreaterThan(0)
+    expect(Math.abs(topLevel.gap - drillDown.gap)).toBeLessThanOrEqual(1)
+    expect(
+      Math.abs(topLevel.centerOffset - drillDown.centerOffset)
+    ).toBeLessThanOrEqual(1)
+    expect(Math.abs(topLevel.width - drillDown.width)).toBeLessThanOrEqual(1)
+    expect(Math.abs(topLevel.height - drillDown.height)).toBeLessThanOrEqual(1)
   })
 })
 

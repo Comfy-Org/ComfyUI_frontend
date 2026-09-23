@@ -10,6 +10,9 @@ import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useTelemetry } from '@/platform/telemetry'
+
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
 import type {
@@ -24,20 +27,12 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 const mockData = vi.hoisted(() => ({
-  isLoggedIn: false,
   setShowConflictRedDot: (_value: boolean) => {}
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => {
-    return {
-      isLoggedIn: computed(() => mockData.isLoggedIn)
-    }
-  }
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false,
@@ -80,13 +75,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-const mockTrackUiButtonClicked = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackUiButtonClicked: mockTrackUiButtonClicked
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 type WrapperOptions = {
   pinia?: Pinia
@@ -194,7 +183,6 @@ function createComfyActionbarStub(actionbarTarget: HTMLElement) {
 
 describe('TopMenuSection', () => {
   beforeEach(() => {
-    mockData.isLoggedIn = false
     mockData.setShowConflictRedDot(false)
   })
 
@@ -209,11 +197,8 @@ describe('TopMenuSection', () => {
     }
 
     describe('when user is logged in', () => {
-      beforeEach(() => {
-        mockData.isLoggedIn = true
-      })
-
       it('should display CurrentUserButton and not display LoginButton', () => {
+        useCurrentUser().isLoggedIn = computed(() => true)
         const { container } = createLegacyTabBarWrapper()
         expect(
           container.querySelector('current-user-button-stub')
@@ -223,10 +208,6 @@ describe('TopMenuSection', () => {
     })
 
     describe('when user is not logged in', () => {
-      beforeEach(() => {
-        mockData.isLoggedIn = false
-      })
-
       it('should display LoginButton and not display CurrentUserButton', () => {
         const { container } = createLegacyTabBarWrapper()
         expect(container.querySelector('login-button-stub')).not.toBeNull()
@@ -284,7 +265,7 @@ describe('TopMenuSection', () => {
       screen.getByRole('button', { name: 'Toggle properties panel' })
     )
 
-    expect(mockTrackUiButtonClicked).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackUiButtonClicked).toHaveBeenCalledWith({
       button_id: 'right_side_panel_opened',
       element_group: 'top_menu'
     })
@@ -405,6 +386,20 @@ describe('TopMenuSection', () => {
       ).toBeNull()
     })
 
+    it('does not render inline progress summary while action bars are hidden', async () => {
+      const pinia = getActivePinia()!
+      configureSettings(pinia, true)
+      useAgentNodeSelectionStore(pinia).isActionBarsHidden = true
+
+      const { container } = createWrapper({ pinia })
+
+      await nextTick()
+
+      expect(
+        container.querySelector('queue-inline-progress-summary-stub')
+      ).toBeNull()
+    })
+
     it('teleports inline progress summary when actionbar is floating', async () => {
       localStorage.setItem('Comfy.MenuPosition.Docked', 'false')
       const actionbarTarget = document.createElement('div')
@@ -459,6 +454,48 @@ describe('TopMenuSection', () => {
         container.querySelector('queue-notification-banner-host-stub')
       ).not.toBeNull()
     })
+
+    it.for([
+      { isActionBarsHidden: false, rendered: true },
+      { isActionBarsHidden: true, rendered: false }
+    ])(
+      'renders the queue progress overlay: $rendered when action bars hidden is $isActionBarsHidden',
+      async ({ isActionBarsHidden, rendered }) => {
+        const pinia = getActivePinia()!
+        configureSettings(pinia, false)
+        useAgentNodeSelectionStore(pinia).isActionBarsHidden =
+          isActionBarsHidden
+
+        const { container } = createWrapper({ pinia })
+        await nextTick()
+
+        expect(
+          container.querySelector('queue-progress-overlay-stub') !== null
+        ).toBe(rendered)
+      }
+    )
+
+    it.for([
+      { isActionBarsHidden: false, hidden: false },
+      { isActionBarsHidden: true, hidden: true }
+    ])(
+      'keeps the queue notification banner host mounted and hidden=$hidden when action bars hidden is $isActionBarsHidden',
+      async ({ isActionBarsHidden, hidden }) => {
+        const pinia = getActivePinia()!
+        configureSettings(pinia, false)
+        useAgentNodeSelectionStore(pinia).isActionBarsHidden =
+          isActionBarsHidden
+
+        const { container } = createWrapper({ pinia })
+        await nextTick()
+
+        const host = container.querySelector(
+          'queue-notification-banner-host-stub'
+        )
+        if (!host) throw new Error('banner host is not mounted')
+        expect(host.classList.contains('hidden')).toBe(hidden)
+      }
+    )
 
     it('renders queue notification banners when QPO V2 is disabled', async () => {
       const pinia = getActivePinia()!

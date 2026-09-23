@@ -1,23 +1,69 @@
 <script setup lang="ts">
-import { defineAsyncComponent } from 'vue'
+import {
+  computed,
+  defineAsyncComponent,
+  onBeforeUnmount,
+  onMounted,
+  ref,
+  watch
+} from 'vue'
+import { useMounted } from '@vueuse/core'
 
 import type { Locale } from '../../../i18n/translations.ts'
 import { t } from '../../../i18n/translations.ts'
 import { externalLinks, getRoutes } from '../../../config/routes.ts'
-import { useWorkshopAuthFlag } from '../../../scripts/posthog.ts'
+import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits.ts'
+import {
+  useWorkshopAuthFlag,
+  useWorkshopEnabled
+} from '../../../scripts/posthog.ts'
 import GitHubStarBadge from '../GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
+import LogoContextMenu from './LogoContextMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 
-const { locale = 'en', githubStars = '' } = defineProps<{
+const {
+  locale = 'en',
+  githubStars = '',
+  workshopInBuild = false
+} = defineProps<{
   locale?: Locale
   githubStars?: string
+  workshopInBuild?: boolean
 }>()
 const routes = getRoutes(locale)
 const workshopAuthEnabled = useWorkshopAuthFlag()
+const workshopEnabled = useWorkshopEnabled()
+const mounted = useMounted()
+const showWorkshop = computed(
+  () => mounted.value && workshopInBuild && workshopEnabled.value
+)
+const showAccount = computed(
+  () => showWorkshop.value && workshopAuthEnabled.value
+)
 const HeaderAccount = defineAsyncComponent(
   () => import('../../workshop/HeaderAccount.vue')
+)
+const BuyCreditsDialog = defineAsyncComponent(
+  () => import('../../workshop/BuyCreditsDialog.vue')
+)
+const buyingCredits = ref(false)
+const buyCreditsDialogMounted = ref(false)
+let stopBuyCreditsRequests: (() => void) | undefined
+
+onMounted(() => {
+  stopBuyCreditsRequests = subscribeToWorkshopBuyCredits(() => {
+    if (showAccount.value) buyingCredits.value = true
+  })
+})
+onBeforeUnmount(() => stopBuyCreditsRequests?.())
+watch(
+  showAccount,
+  (enabled) => {
+    if (enabled) buyCreditsDialogMounted.value = true
+  },
+  { immediate: true }
 )
 
 const ctaButtons = [
@@ -43,41 +89,49 @@ const ctaButtons = [
     class="sticky top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
     aria-label="Main navigation"
   >
-    <a
-      :href="routes.home"
-      class="inline-grid h-10 shrink-0 grid-cols-1 grid-rows-1 transition-[width]"
-      aria-label="Comfy home"
-    >
-      <img
-        src="/icons/logomark.svg"
-        alt="Comfy"
-        class="col-span-full row-span-full h-8"
-      />
-      <div
-        class="relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width] xl:w-36"
+    <LogoContextMenu :locale>
+      <a
+        :href="routes.home"
+        class="inline-grid h-10 shrink-0 grid-cols-1 grid-rows-1 transition-[width]"
+        aria-label="Comfy home"
       >
         <img
-          src="/icons/logo.svg"
+          src="/icons/logomark.svg"
           alt="Comfy"
-          class="absolute top-0 left-0 h-10 w-36 max-w-none object-contain object-left"
+          class="col-span-full row-span-full h-8"
         />
-      </div>
-    </a>
+        <div
+          class="relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width] 2xl:w-36"
+        >
+          <img
+            src="/icons/logo.svg"
+            alt="Comfy"
+            class="absolute top-0 left-0 h-10 w-36 max-w-none object-contain object-left"
+          />
+        </div>
+      </a>
+    </LogoContextMenu>
 
     <!-- Desktop nav links -->
-    <HeaderMainDesktop :locale class="hidden lg:block" />
+    <HeaderMainDesktop
+      :locale
+      :workshop-in-build="showWorkshop"
+      :class="showWorkshop ? 'hidden xl:block' : 'hidden lg:block'"
+    />
     <div
       data-testid="mobile-nav-cta"
-      class="flex shrink-0 items-center gap-2 lg:hidden"
+      class="flex shrink-0 items-center gap-2"
+      :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
     >
-      <HeaderAccount v-if="workshopAuthEnabled" :locale="locale" />
-      <HeaderMainMobile :locale />
+      <HeaderAccount v-if="showAccount" :locale="locale" />
+      <HeaderMainMobile :locale :workshop-in-build="showWorkshop" />
     </div>
 
     <!-- Desktop CTA buttons -->
     <div
       data-testid="desktop-nav-cta"
-      class="hidden shrink-0 items-center gap-2 lg:flex"
+      class="hidden shrink-0 items-center gap-2"
+      :class="showWorkshop ? 'xl:flex' : 'lg:flex'"
     >
       <!-- Get Yoland to sign a contract of permission before killing this -->
       <GitHubStarBadge v-if="githubStars" :stars="githubStars" />
@@ -90,11 +144,16 @@ const ctaButtons = [
         :aria-label="cta.ariaLabel"
       >
         <span>
-          <span class="hidden 2xl:inline-block">{{ cta.full }}</span>
-          <span class="2xl:hidden">{{ cta.short }}</span>
+          <span class="hidden min-[1800px]:inline-block">{{ cta.full }}</span>
+          <span class="min-[1800px]:hidden">{{ cta.short }}</span>
         </span>
       </Button>
-      <HeaderAccount v-if="workshopAuthEnabled" :locale="locale" />
+      <HeaderAccount v-if="showAccount" :locale="locale" />
     </div>
   </nav>
+  <BuyCreditsDialog
+    v-if="buyCreditsDialogMounted"
+    v-model:open="buyingCredits"
+    :locale
+  />
 </template>

@@ -56,14 +56,19 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     _nodes: [],
     nodes: [],
     subgraphs: new Map(),
-    getNodeById: vi.fn()
+    getNodeById: vi.fn(),
+    get rootGraph() {
+      return mockRoot
+    }
   }
 
   return {
     app: {
       graph: mockRoot,
       rootGraph: mockRoot,
-      canvas: mockCanvas
+      rootGraphOrUndefined: mockRoot,
+      canvas: mockCanvas,
+      canvasOrUndefined: mockCanvas
     }
   }
 })
@@ -117,6 +122,7 @@ async function flushHashWatcher() {
 
 describe('useSubgraphNavigationStore - navigateToHash validation', () => {
   beforeEach(() => {
+    useCanvasStore().canvas = app.canvas
     vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
     app.rootGraph.id = ids.root
     app.rootGraph.subgraphs.clear()

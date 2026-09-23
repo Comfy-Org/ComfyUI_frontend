@@ -3,12 +3,15 @@ import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
 
+import { getAssetContentId } from './assetUrlUtil'
+
 interface AssetRecord {
   id: string
   name: string
   hash?: string | null
   preview_url?: string
   preview_id?: string | null
+  user_metadata?: Record<string, unknown>
 }
 
 /**
@@ -31,7 +34,7 @@ async function fetchAssets(
 export function resolvePreviewUrl(asset: AssetRecord): string {
   if (asset.preview_url) return api.apiURL(asset.preview_url)
 
-  const contentId = asset.preview_id ?? asset.id
+  const contentId = asset.preview_id ?? getAssetContentId(asset)
   return api.apiURL(`/assets/${contentId}/content`)
 }
 

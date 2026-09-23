@@ -14,6 +14,8 @@ export function selectedNodeKey(node: SelectedNode): string {
 }
 
 export interface UseCanvasSelectionOptions {
+  staged?: Ref<SelectedNode[]>
+  retainWhenNotLive?: boolean
   selection: MaybeRefOrGetter<SelectedNode[]>
   isLive: MaybeRefOrGetter<boolean>
   enabled?: MaybeRefOrGetter<boolean>
@@ -21,6 +23,7 @@ export interface UseCanvasSelectionOptions {
   isPaused?: MaybeRefOrGetter<boolean>
   scope?: MaybeRefOrGetter<string | null>
   dismissedSignature?: Ref<string | null>
+  retainStagedNode?: (node: SelectedNode) => boolean
 }
 
 function signature(scope: string | null, nodes: SelectedNode[]): string {
@@ -28,13 +31,26 @@ function signature(scope: string | null, nodes: SelectedNode[]): string {
 }
 
 export function useCanvasSelection(options: UseCanvasSelectionOptions) {
-  const staged = ref<SelectedNode[]>([])
+  const staged = options.staged ?? ref<SelectedNode[]>([])
   const consumedSig = ref<string | null>(null)
   const stagedSig = ref<string | null>(null)
   const dismissedSig = options.dismissedSignature ?? ref<string | null>(null)
   let lastLiveSig: string | null = null
 
   let stopSelectionWatch: WatchStopHandle | undefined
+
+  function retainOffSelectionNodes(nodes: SelectedNode[]): SelectedNode[] {
+    if (!options.retainStagedNode) return nodes
+    const selectedKeys = new Set(nodes.map(selectedNodeKey))
+    return [
+      ...staged.value.filter(
+        (node) =>
+          options.retainStagedNode?.(node) &&
+          !selectedKeys.has(selectedNodeKey(node))
+      ),
+      ...nodes
+    ]
+  }
 
   watch(
     () => toValue(options.enabled ?? true),
@@ -61,6 +77,7 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
         ([isLive, isTracking, isPaused, scope, nodes]) => {
           if (isPaused) return
           if (!isLive) {
+            if (options.retainWhenNotLive) return
             staged.value = []
             consumedSig.value = null
             stagedSig.value = null
@@ -68,7 +85,8 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
             return
           }
           if (!isTracking) return
-          if (nodes.length === 0) {
+          const projectedNodes = retainOffSelectionNodes(nodes)
+          if (projectedNodes.length === 0) {
             staged.value = []
             consumedSig.value = null
             stagedSig.value = null
@@ -76,14 +94,14 @@ export function useCanvasSelection(options: UseCanvasSelectionOptions) {
             lastLiveSig = null
             return
           }
-          const sig = signature(scope, nodes)
+          const sig = signature(scope, projectedNodes)
           lastLiveSig = sig
           if (sig !== dismissedSig.value) dismissedSig.value = null
           if (sig === dismissedSig.value) return
           if (sig === consumedSig.value || sig === stagedSig.value) return
           consumedSig.value = null
           stagedSig.value = sig
-          staged.value = [...nodes]
+          staged.value = projectedNodes
         },
         { immediate: true, deep: true, flush: 'sync' }
       )

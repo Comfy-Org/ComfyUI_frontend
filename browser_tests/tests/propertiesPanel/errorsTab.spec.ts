@@ -5,12 +5,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 
 test.describe('Errors tab - common', { tag: '@ui' }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting(
-      'Comfy.RightSidePanel.ShowErrorsTab',
-      true
-    )
-  })
+  test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
 
   test.describe('Tab visibility', () => {
     test('Should show Errors tab when errors exist', async ({ comfyPage }) => {
@@ -39,11 +34,6 @@ test.describe('Errors tab - common', { tag: '@ui' }, () => {
   })
 
   test.describe('Search and filter', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-      await comfyPage.setup()
-    })
-
     test('Should keep execution errors matching the search query', async ({
       comfyPage
     }) => {

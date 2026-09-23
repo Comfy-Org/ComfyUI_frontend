@@ -15,7 +15,7 @@ async function decompressZlib(
   let totalLength = 0
 
   try {
-    while (true) {
+    for (;;) {
       const { done, value } = await reader.read()
       if (done) break
       chunks.push(value)

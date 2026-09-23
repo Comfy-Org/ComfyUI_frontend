@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getRoutes, localizeHref } from './routes'
+import { apiKeysLink, externalLinks, getRoutes, localizeHref } from './routes'
 
 describe('localizeHref', () => {
   it('prefixes an internal path for a non-default locale', () => {
@@ -9,6 +9,12 @@ describe('localizeHref', () => {
 
   it('leaves the default locale unprefixed', () => {
     expect(localizeHref('/mcp', 'en')).toBe('/mcp')
+    expect(localizeHref('/models/seedance-2/', 'zh-CN')).toBe(
+      '/models/seedance-2/'
+    )
+    expect(localizeHref('/models/sign-in?return=%2Fmodels', 'ja')).toBe(
+      '/models/sign-in?return=%2Fmodels'
+    )
   })
 
   it('passes external URLs through unchanged', () => {
@@ -31,6 +37,20 @@ describe('localizeHref', () => {
   })
 })
 
+describe('getRoutes workshop', () => {
+  it('keeps the workshop routes locale-invariant', () => {
+    for (const locale of ['en', 'zh-CN', 'ja'] as const) {
+      expect(getRoutes(locale).workshop).toBe('/models')
+      expect(getRoutes(locale).workshopSignIn).toBe('/login/')
+    }
+  })
+
+  it('still localizes the rest of the Japanese routes', () => {
+    expect(getRoutes('ja').home).toBe('/ja/')
+    expect(getRoutes('ja').cloud).toBe('/cloud')
+  })
+})
+
 describe('getRoutes models', () => {
   it('serves the models catalog at its canonical path for zh-CN', () => {
     expect(getRoutes('zh-CN').models).toBe('/p/supported-models')
@@ -48,5 +68,32 @@ describe('getRoutes minimaxLicenseProfessionalRequest', () => {
     expect(getRoutes('zh-CN').minimaxLicenseProfessionalRequest).toBe(
       '/minimax/license/professional-request'
     )
+  })
+})
+
+describe('apiKeysLink', () => {
+  it.for([
+    {
+      from: { onboarding: 'router' } as const,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=router'
+    },
+    {
+      from: {
+        onboarding: 'models',
+        model: 'byteplus--seedream-5-pro--generate-images'
+      } as const,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=models&model=byteplus--seedream-5-pro--generate-images'
+    },
+    {
+      from: { onboarding: 'models', model: undefined } as const,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=models'
+    },
+    {
+      from: { onboarding: 'comfy_api' } as const,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=comfy_api'
+    }
+  ])('names the onboarding product and model: $href', ({ from, href }) => {
+    expect(apiKeysLink(from)).toBe(href)
+    expect(apiKeysLink(from).startsWith(externalLinks.apiKeys)).toBe(true)
   })
 })

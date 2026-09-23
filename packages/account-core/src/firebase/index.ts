@@ -1,0 +1,208 @@
+/**
+ * The package-owned identity entry. Hosts either pass Firebase configuration
+ * — including the persistence choice — for an app the package initializes,
+ * or hand over the `Auth` they already hold, and get back the identity
+ * surface the session core binds to plus the sign-in actions.
+ *
+ * Popup, never `signInWithRedirect`: the redirect flow is broken under
+ * Safari's ITP for cross-origin helper domains, which is why the cloud app
+ * is popup-only too. Provider scopes and the `select_account` prompt are the
+ * cloud app's.
+ *
+ * This entry is the one place the package touches the Firebase SDK;
+ * importGuard.test.ts holds `./core` to that boundary.
+ */
+import type { FirebaseOptions } from 'firebase/app'
+import { getApps, initializeApp } from 'firebase/app'
+import type { Auth, Dependencies, User, UserCredential } from 'firebase/auth'
+import {
+  GithubAuthProvider,
+  GoogleAuthProvider,
+  browserPopupRedirectResolver,
+  createUserWithEmailAndPassword,
+  getAuth,
+  initializeAuth,
+  onAuthStateChanged,
+  onIdTokenChanged,
+  sendPasswordResetEmail,
+  signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  updatePassword
+} from 'firebase/auth'
+
+import type { AccountIdentity } from '../core/identity.js'
+import { brandIdentity } from '../core/identity.js'
+import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
+
+export interface FirebaseIdentityAppConfig {
+  readonly options: FirebaseOptions | (() => FirebaseOptions)
+  /** Named app: never contend with a default app another script creates. */
+  readonly appName?: string
+  /** One persistence or an ordered hierarchy, handed to `initializeAuth` as is; Firebase's default when omitted. */
+  readonly persistence?: Dependencies['persistence']
+  /** A host-owned `Auth` and package-owned app options are exclusive. */
+  readonly auth?: never
+}
+
+/**
+ * A host that already holds an `Auth` binds the entry to it: no second app,
+ * no second persistence store.
+ */
+export interface FirebaseIdentityAuthConfig {
+  readonly auth: Auth
+  readonly options?: never
+  readonly appName?: never
+  readonly persistence?: never
+}
+
+export type FirebaseIdentityConfig =
+  | FirebaseIdentityAppConfig
+  | FirebaseIdentityAuthConfig
+
+export interface FirebaseIdentity extends AccountIdentity<User> {
+  /**
+   * Fires with the restored user (or null) once Firebase settles, then on
+   * every change. This is the identity the session core binds to.
+   */
+  onUserChanged: (callback: (user: User | null) => void) => () => void
+  /** Fires on every ID token change, refreshes included. */
+  onTokenChanged: (callback: (user: User | null) => void) => () => void
+  /** Resolves the app and `Auth` now; a no-op once resolved. */
+  initialize: () => void
+  /** Null until `initialize()` or a subscribing/sign-in call has resolved `Auth`. */
+  currentUser: () => User | null
+  signInWithGoogle: () => Promise<UserCredential>
+  signInWithGitHub: () => Promise<UserCredential>
+  signInWithEmail: (email: string, password: string) => Promise<UserCredential>
+  createUserWithEmail: (
+    email: string,
+    password: string
+  ) => Promise<UserCredential>
+  sendPasswordReset: (email: string) => Promise<void>
+  /** For the signed-in user; rejects when nobody is signed in. */
+  updatePassword: (newPassword: string) => Promise<void>
+  signOut: () => Promise<void>
+}
+
+function googleProvider(): GoogleAuthProvider {
+  const provider = new GoogleAuthProvider()
+  provider.addScope('email')
+  provider.setCustomParameters({ prompt: 'select_account' })
+  return provider
+}
+
+function githubProvider(): GithubAuthProvider {
+  const provider = new GithubAuthProvider()
+  provider.addScope('user:email')
+  provider.setCustomParameters({ prompt: 'select_account' })
+  return provider
+}
+
+/**
+ * An unknown email must look exactly like a sent reset, which is how Firebase
+ * itself answers with email enumeration protection on; a distinct failure
+ * here would be an account enumeration oracle.
+ */
+function resolveUnknownEmailAsSent(error: unknown): void {
+  if (isFirebaseAuthErrorLike(error) && error.code === 'auth/user-not-found') {
+    return
+  }
+  throw error
+}
+
+interface AuthResolver {
+  resolve: () => Auth
+  peek: () => Auth | undefined
+}
+
+/**
+ * A pre-existing app under this name must be the same Firebase project, or
+ * `Auth` binds to another project's session. Deliberately a "same project"
+ * check on the fields that pick a session, not the SDK's byte-identical
+ * compare: `appId` is Installations/Analytics, so omitting it from a partial
+ * same-project config still binds rather than failing boot.
+ */
+function assertSameProject(
+  existing: FirebaseOptions,
+  requested: FirebaseOptions,
+  appName: string
+): void {
+  const mismatch = (['projectId', 'apiKey', 'authDomain'] as const)
+    .filter((key) => existing[key] !== requested[key])
+    .join(', ')
+  if (mismatch) {
+    throw new Error(
+      `Firebase app "${appName}" already exists for a different project (${mismatch})`
+    )
+  }
+}
+
+/**
+ * Host persistence goes through `initializeAuth`, whether this entry creates
+ * the named app or another script already did: Firebase allows one Auth per
+ * app, so an Auth another module initialized with different dependencies
+ * fails with `auth/already-initialized` instead of silently winning. Unlike
+ * `getAuth`, `initializeAuth` wires no popup resolver of its own, and popup
+ * sign-in throws `auth/argument-error` without one.
+ */
+function authResolver(config: FirebaseIdentityConfig): AuthResolver {
+  if (config.auth) {
+    const { auth } = config
+    return { resolve: () => auth, peek: () => auth }
+  }
+  const appName = config.appName ?? 'comfy-account'
+  let resolved: Auth | undefined
+  const resolve = (): Auth => {
+    if (resolved) return resolved
+    // Resolve options before the lookup so the host's config thunk (its
+    // unloaded-remote-config guard) always runs, even when reusing an app.
+    const options =
+      typeof config.options === 'function' ? config.options() : config.options
+    const existing = getApps().find((app) => app.name === appName)
+    if (existing) assertSameProject(existing.options, options, appName)
+    const app = existing ?? initializeApp(options, appName)
+    resolved = config.persistence
+      ? initializeAuth(app, {
+          persistence: config.persistence,
+          popupRedirectResolver: browserPopupRedirectResolver
+        })
+      : getAuth(app)
+    return resolved
+  }
+  return { resolve, peek: () => resolved }
+}
+
+export function createFirebaseIdentity(
+  config: FirebaseIdentityConfig
+): FirebaseIdentity {
+  const { resolve: auth, peek } = authResolver(config)
+
+  return {
+    ...brandIdentity<User>({
+      onUserChanged: (callback) => onAuthStateChanged(auth(), callback)
+    }),
+    onTokenChanged: (callback) => onIdTokenChanged(auth(), callback),
+    initialize: () => {
+      auth()
+    },
+    currentUser: () => peek()?.currentUser ?? null,
+    signInWithGoogle: () => signInWithPopup(auth(), googleProvider()),
+    signInWithGitHub: () => signInWithPopup(auth(), githubProvider()),
+    signInWithEmail: (email, password) =>
+      signInWithEmailAndPassword(auth(), email, password),
+    createUserWithEmail: (email, password) =>
+      createUserWithEmailAndPassword(auth(), email, password),
+    sendPasswordReset: (email) =>
+      sendPasswordResetEmail(auth(), email).catch(resolveUnknownEmailAsSent),
+    updatePassword: (newPassword) => {
+      const user = auth().currentUser
+      return user
+        ? updatePassword(user, newPassword)
+        : Promise.reject(
+            new Error('No signed-in user to update the password for')
+          )
+    },
+    signOut: () => signOut(auth())
+  }
+}

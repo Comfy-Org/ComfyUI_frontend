@@ -9,14 +9,14 @@ import {
 describe('isWorkshopInBuild', () => {
   it.for([
     {
-      name: 'production excludes Workshop',
+      name: 'production includes Workshop',
       vercelEnv: 'production',
-      expected: false
+      expected: true
     },
     {
-      name: 'preview excludes Workshop',
+      name: 'preview includes Workshop',
       vercelEnv: 'preview',
-      expected: false
+      expected: true
     },
     { name: 'an unset environment includes Workshop', expected: true },
     {
@@ -55,6 +55,10 @@ describe('isWorkshopRoute', () => {
   it('claims the Workshop tree and nothing else', () => {
     expect(isWorkshopRoute('/workshop')).toBe(true)
     expect(isWorkshopRoute('/workshop/models/[slug]')).toBe(true)
+    expect(isWorkshopRoute('/models/demo/')).toBe(true)
+    expect(isWorkshopRoute('/models/showcase/')).toBe(true)
+    expect(isWorkshopRoute('/models')).toBe(false)
+    expect(isWorkshopRoute('/models/')).toBe(false)
 
     expect(isWorkshopRoute('/')).toBe(false)
     expect(isWorkshopRoute('/pricing')).toBe(false)
@@ -76,6 +80,7 @@ describe('assertWorkshopCloudEnvForBuild', () => {
     {
       name: 'a preview without Workshop ignores the family',
       vercelEnv: 'preview',
+      inBuild: '0',
       family: 'prod'
     },
     {

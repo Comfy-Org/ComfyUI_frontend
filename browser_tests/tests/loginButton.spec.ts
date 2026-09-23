@@ -5,11 +5,6 @@ import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Login Button', { tag: ['@ui'] }, () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-    await comfyPage.setup()
-  })
-
   test.describe('Visibility', () => {
     test('button is visible', async ({ comfyPage }) => {
       await expect(

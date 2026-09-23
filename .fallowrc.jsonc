@@ -1,15 +1,22 @@
 {
-  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/v2.104.0/schema.json",
+  "$schema": "https://raw.githubusercontent.com/fallow-rs/fallow/v3.24.1/schema.json",
 
   // Entry points fallow cannot infer. These files are roots (run by package.json
-  // scripts / CI / tool CLIs / Storybook), not imported from the app graph.
+  // scripts / CI / tool CLIs / Storybook or loaded by Vitest convention), not
+  // imported from the app graph.
   "entry": [
     "src/main.ts",
+    "src/**/__mocks__/**/*.ts",
     "index.html",
     "scripts/**/*.{js,ts}",
     "apps/website/src/scripts/**/*.ts",
+    // Astro injects these routes when WORKSHOP_IN_BUILD is enabled.
+    "apps/website/src/routes/models/*.{astro,ts}",
     "**/.storybook/{main,preview}.ts",
-    "packages/ingest-types/openapi-ts.config.ts"
+    "packages/ingest-types/openapi-ts.config.ts",
+    // Playwright loads these by path string from playwright.config.ts, so the
+    // reference is not in the import graph.
+    "browser_tests/global{Setup,Teardown}.ts"
   ],
 
   "ignorePatterns": [
@@ -29,7 +36,9 @@
     // Loaded by config, not imported: oxlint jsPlugin (.oxlintrc.json) and
     // stylelint customSyntax (.stylelintrc.json) respectively.
     "eslint-plugin-playwright",
-    "postcss-html"
+    "postcss-html",
+    // Executed by models-snippets.test.ts inside the generated Node examples.
+    "mime-types"
   ],
 
   "ignoreUnresolvedImports": [
