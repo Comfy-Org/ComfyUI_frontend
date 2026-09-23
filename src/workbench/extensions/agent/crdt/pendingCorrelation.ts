@@ -3,6 +3,15 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import type { PendingOpTracker } from './pendingOpTracker'
 
 /**
+ * An already-current forced reconcile that deferred (missing/busy session)
+ * is retried this often, up to {@link ALREADY_CURRENT_RETRY_MAX_ATTEMPTS}
+ * times, independent of any doc frame — a quiet channel sends nothing else
+ * to piggyback the retry on.
+ */
+export const ALREADY_CURRENT_RETRY_INTERVAL_MS = 2_000
+const ALREADY_CURRENT_RETRY_MAX_ATTEMPTS = 5
+
+/**
  * ADR-CRDT-RECONCILE-0035 (a): the single owner of the pending-op ledger's
  * LINEAGE — which workflow's doc history its entries belong to — and of the
  * CATCH-UP BARRIER that settles them against doc state. Split out of
@@ -49,13 +58,6 @@ export interface PendingCorrelationDeps {
    * every batch as addressed to a doc it can no longer vouch for.
    */
   abortSender(): void
-  /**
-   * A forced reconcile just deferred (missing/busy session): nothing else in
-   * this module is scheduled to try again, so the caller is told exactly
-   * once per NEW deferral and owns arming a bounded, lifecycle-owned retry
-   * (a quiet channel sends no further frame to piggyback on).
-   */
-  onRetryPending?(): void
 }
 
 /** The subscribe ack {@link PendingCorrelation.resolveIfAlreadyCurrent} classifies. */
@@ -79,7 +81,13 @@ export interface PendingCorrelation {
    * is nothing to defer to reactivation.
    */
   resetIfTracked(workflowId: unknown): void
-  /** Drops every parked entry and the projected-seq watermark together. */
+  /**
+   * Drops every parked entry and the projected-seq watermark together, and
+   * cancels the already-current retry timer if one is outstanding — the
+   * whole catch-up transition ends together, so a timer left running past a
+   * lineage break or scope teardown could fire {@link retryAlreadyCurrent}
+   * against a `pendingRetry` a later `adopt`/lineage has no relation to.
+   */
   reset(): void
   /**
    * Watermark and settlement for an applied frame; the caller owns both the
@@ -127,14 +135,29 @@ export interface PendingCorrelation {
    */
   resolveIfAlreadyCurrent(ack: ReactivationAck, resume: () => void): void
   /**
+   * Snapshots the current watermark as the immutable baseline
+   * {@link resolveIfAlreadyCurrent} compares a REACTIVATION ack against.
+   * Called exactly when a tab-away hold begins (before the resubscribe that
+   * will eventually produce that ack), because nothing else in this module
+   * observes a live doc frame between then and the ack — the hold's own
+   * unsubscribe stops the bridge from forwarding one — so this is the last
+   * moment the watermark is known to reflect what was projected before the
+   * away period, rather than whatever a same-lineage frame that outran the
+   * ack bumped it to since.
+   */
+  beginReactivation(): void
+  /**
    * Re-attempts a forced reconcile that {@link resolveIfAlreadyCurrent}
    * deferred because {@link PendingCorrelationDeps.reconcileFromDoc}
    * returned false (a missing/busy session, or an uncommitted batch) — a
    * no-op otherwise. Called opportunistically on every applied frame and by
-   * the caller's own bounded retry timer, so a parked entry is never
-   * stranded on a single failed attempt. Returns true once nothing is left
-   * to retry (there was nothing pending, or this call just resolved it), so
-   * a bounded retry loop can stop early instead of running out its budget.
+   * this module's own bounded, internally-owned retry timer (armed the
+   * instant a NEW deferral happens — see {@link ALREADY_CURRENT_RETRY_INTERVAL_MS}/
+   * {@link ALREADY_CURRENT_RETRY_MAX_ATTEMPTS} — and cancelled by
+   * {@link reset}), so a parked entry is never stranded on a single failed
+   * attempt. Returns true once nothing is left to retry (there was nothing
+   * pending, or this call just resolved it), so the internal retry loop can
+   * stop early instead of running out its budget.
    */
   retryAlreadyCurrent(): boolean
 }
@@ -151,10 +174,48 @@ export function createPendingCorrelation(
   // Set when `reconcileFromDoc` returns false, so `retryAlreadyCurrent` can
   // pick the same attempt back up instead of leaving the entry stranded.
   let pendingRetry: { workflowId: string; ackSeq: number } | null = null
+  // The watermark at the instant a tab-away hold began, frozen for the
+  // DURATION of that hold: `onProjected` can still advance the live
+  // watermark before the resume's own ack arrives (a replacement-lineage
+  // `doc_update` can reach this composable ahead of its `doc_subscribed`),
+  // and comparing THAT reactivation ack against the live value would let
+  // such a stray update forge an already-current match. `undefined` means no
+  // hold is outstanding; only a reactivation ack ever reads it, and it is
+  // cleared the instant one does.
+  let reactivationBaseline: number | null | undefined
+  // The internally-owned already-current retry timer and its attempt count —
+  // the whole catch-up transition's lifecycle (lineage, consumed generation,
+  // pendingRetry, AND this timer) now lives under one owner; see `reset`'s
+  // doc comment for why it must be cancelled there too.
+  let retryTimer: ReturnType<typeof setTimeout> | null = null
+  let retryAttempts = 0
+
+  function clearRetryTimer(): void {
+    if (retryTimer !== null) {
+      clearTimeout(retryTimer)
+      retryTimer = null
+    }
+    retryAttempts = 0
+  }
+
+  function scheduleRetry(): void {
+    clearRetryTimer()
+    const attempt = (): void => {
+      retryAttempts += 1
+      const resolved = retryAlreadyCurrent()
+      retryTimer =
+        resolved || retryAttempts >= ALREADY_CURRENT_RETRY_MAX_ATTEMPTS
+          ? null
+          : setTimeout(attempt, ALREADY_CURRENT_RETRY_INTERVAL_MS)
+    }
+    retryTimer = setTimeout(attempt, ALREADY_CURRENT_RETRY_INTERVAL_MS)
+  }
 
   function reset(): void {
     deps.setWatermark(null)
     pendingRetry = null
+    reactivationBaseline = undefined
+    clearRetryTimer()
     pendingOps.reset()
   }
 
@@ -174,13 +235,20 @@ export function createPendingCorrelation(
       if (!committed) {
         const isNewDeferral = pendingRetry === null
         pendingRetry = { workflowId, ackSeq }
-        if (isNewDeferral) deps.onRetryPending?.()
+        if (isNewDeferral) scheduleRetry()
         return false
       }
     }
     pendingRetry = null
     pendingOps.resolveDeliveryUnknown(deps.effectPresent)
     return true
+  }
+
+  /** See {@link PendingCorrelation.retryAlreadyCurrent}. */
+  function retryAlreadyCurrent(): boolean {
+    if (!pendingRetry) return true
+    const { workflowId, ackSeq } = pendingRetry
+    return tryResolveAlreadyCurrent(workflowId, ackSeq)
   }
 
   /**
@@ -220,7 +288,10 @@ export function createPendingCorrelation(
       deps.setWatermark(update.seq)
       if (update.opIds) pendingOps.onDocEffect(update.opIds)
       pendingOps.onAuthoritativeState(update.seq)
-      this.retryAlreadyCurrent()
+      retryAlreadyCurrent()
+    },
+    beginReactivation() {
+      reactivationBaseline = deps.getWatermark()
     },
     resolveIfAlreadyCurrent(ack, resume) {
       const { workflowId, seq: ackSeq, generation, isReactivation } = ack
@@ -235,7 +306,17 @@ export function createPendingCorrelation(
         }
         consumedGeneration = generation
       }
-      if (ackSeq === deps.getWatermark()) {
+      // A reactivation ack is checked against the baseline frozen at
+      // `beginReactivation`, never the live watermark: see that method's and
+      // `reactivationBaseline`'s doc comments for the pre-ack race this
+      // guards against. Consumed once — a later, non-reactivation ack always
+      // reads the live watermark.
+      const watermark =
+        isReactivation && reactivationBaseline !== undefined
+          ? reactivationBaseline
+          : deps.getWatermark()
+      if (isReactivation) reactivationBaseline = undefined
+      if (ackSeq === watermark) {
         resume()
         tryResolveAlreadyCurrent(workflowId, ackSeq)
         return
@@ -246,10 +327,6 @@ export function createPendingCorrelation(
       }
       resume()
     },
-    retryAlreadyCurrent() {
-      if (!pendingRetry) return true
-      const { workflowId, ackSeq } = pendingRetry
-      return tryResolveAlreadyCurrent(workflowId, ackSeq)
-    }
+    retryAlreadyCurrent
   }
 }

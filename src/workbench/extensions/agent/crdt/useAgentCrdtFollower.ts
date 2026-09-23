@@ -50,19 +50,15 @@ import {
   createPendingRevertNodeRegistry,
   createRevertNotifier
 } from './pendingOpRevert'
-import { createPendingCorrelation } from './pendingCorrelation'
+import { ALREADY_CURRENT_RETRY_INTERVAL_MS,createPendingCorrelation } from './pendingCorrelation'
 import { createPendingOpTracker } from './pendingOpTracker'
 
-export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
-
-/**
- * An already-current forced reconcile that deferred (missing/busy session)
- * is retried this often, up to {@link ALREADY_CURRENT_RETRY_MAX_ATTEMPTS}
- * times, independent of any doc frame — a quiet channel sends nothing else
- * to piggyback the retry on.
- */
-export const ALREADY_CURRENT_RETRY_INTERVAL_MS = 2_000
-const ALREADY_CURRENT_RETRY_MAX_ATTEMPTS = 5
+export {
+  ALREADY_CURRENT_RETRY_INTERVAL_MS,
+  apiTransport,
+  STALE_AFTER_MS,
+  SUBSCRIBE_CATCHUP_GRACE_MS
+}
 
 /**
  * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
@@ -290,7 +286,7 @@ function connectEffectPresent(
   const tuple = readLinkTuple(doc, String(op.link_id))
   const link = tuple && validateLinkEndpoints(tuple)
   if (!link) return false
-  return connectEndpointsMatch(link, op) && String(link.type) === op.link_type
+  return connectEndpointsMatch(link, op) && link.type === op.link_type
 }
 
 export function useAgentCrdtFollower(
@@ -418,13 +414,12 @@ function startAgentCrdtFollower(
       life: 5000
     })
   })
-  // Construction order matters, and is now acyclic (s3-opt-6 review): the
-  // watermark and tracker exist before anything that reads them, the
-  // projection exists before `pendingCorrelation` (which needs its
-  // `reconcileFromDoc` as a plain, non-null function — no forward reference,
-  // no `projectionRef`), and `pendingCorrelation` closes over `sender`
-  // (needed for its reactivation-invalidation seam) rather than the other
-  // way around.
+  // Construction order is acyclic: the watermark and tracker exist before
+  // anything that reads them, the projection exists before
+  // `pendingCorrelation` (which needs its `reconcileFromDoc` as a plain,
+  // non-null function — no forward reference, no `projectionRef`), and
+  // `pendingCorrelation` closes over `sender` (needed for its
+  // reactivation-invalidation seam).
   let projectedSeq: number | null = null
   const pendingOps = createPendingOpTracker({
     // Applied seq only, never the ack fallback: between doc_subscribed(seq=N)
@@ -436,10 +431,6 @@ function startAgentCrdtFollower(
       recordDevEvent('pending_ops', event)
     }
   })
-  // Doc node ids whose human delete the host has applied but whose effect
-  // frame has not yet removed them from the doc. Kept pending for the
-  // reconcile so the result-to-effect window cannot resurrect them.
-  const confirmedDeletes = new Set<string>()
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
@@ -472,31 +463,10 @@ function startAgentCrdtFollower(
     },
     onBatchTransmitted: (ops) => pendingOps.onBatchTransmitted(ops),
     onBatchSettled: (outcome) => {
-      if (outcome.state === 'acknowledged') {
-        const applied = new Set(outcome.result.applied)
-        for (const op of outcome.ops) {
-          if (op.op === 'delete_node' && applied.has(op.op_id))
-            confirmedDeletes.add(String(op.node_id))
-        }
-      }
       recordDevEvent('human_ops_settled', outcome)
       pendingOps.onBatchSettled(outcome)
     }
   })
-  const pendingHumanDeletes = (workflowId: string): ReadonlySet<string> => {
-    const docNodeIds = currentDocNodeIds()
-    for (const id of confirmedDeletes) {
-      if (!docNodeIds.has(id)) confirmedDeletes.delete(id)
-    }
-    const pending = new Set(confirmedDeletes)
-    for (const batch of sender.pendingOps()) {
-      if (batch.workflowId !== workflowId) continue
-      for (const op of batch.ops) {
-        if (op.op === 'delete_node') pending.add(String(op.node_id))
-      }
-    }
-    return pending
-  }
   const projection = new AgentCrdtProjection<ClassifiedDocUpdate>(
     graphMutations,
     getGraph,
@@ -508,7 +478,30 @@ function startAgentCrdtFollower(
     // indexed lookup, not a scan/clone of every pending entry.
     pendingOps.pendingAddType,
     {
-      pendingDeletes: pendingHumanDeletes,
+      // The pending-op tracker is the single source of PENDING DELETE IDS —
+      // a `delete_node` still queued, in flight, or `applied`-but-not-yet-
+      // reflected in the doc (KEEP-ALIVE #9) — replacing the two independent
+      // reconstructions (`confirmedDeletes` plus a `sender.pendingOps()`
+      // scan) this used to be. The live doc-presence filter on top is a
+      // computed READ, not a second source: it stops suppressing an id the
+      // instant the doc itself no longer has it, which the ledger's own
+      // effect-clearing already does whenever the settling frame's `opIds`
+      // names the op, and this is the same guarantee for the rarer case
+      // where it doesn't. `workflowId` is compared against `boundWorkflowId`
+      // rather than threaded into the tracker itself: this composable only
+      // ever binds the tracker to ONE lineage at a time (reset on every
+      // lineage change), so a mismatched `workflowId` here can only mean a
+      // stale/foreign caller, never a second concurrently-tracked workflow.
+      pendingDeletes: (workflowId) => {
+        if (awaitingReactivationContinuity || workflowId !== boundWorkflowId)
+          return new Set<string>()
+        const docNodeIds = currentDocNodeIds()
+        const pending = new Set<string>()
+        for (const id of pendingOps.pendingDeleteNodeIds()) {
+          if (docNodeIds.has(id)) pending.add(id)
+        }
+        return pending
+      },
       // A pending human `add_node`/`connect` — queued through
       // delivery-unknown — that a reactivation's full reconcile must not
       // delete/drop just because the doc does not have it yet.
@@ -535,38 +528,12 @@ function startAgentCrdtFollower(
     }
   )
   // ADR-CRDT-RECONCILE-0035 (a): owns the pending-op ledger's lineage and its
-  // catch-up settlement — see `pendingCorrelation.ts`. Distinct from
-  // `boundWorkflowId` below, which the `!active` watch branch nulls on every
-  // tab deactivation: the ledger must NOT reset there, only on a lineage
-  // break (doc_reset, follower_replaced, or a bind to a workflow other than
-  // this one), which `pendingCorrelation` tracks independently of activity.
-  // Bounded, lifecycle-owned retry for a forced reconcile
-  // `resolveIfAlreadyCurrent` deferred: a quiet channel sends no further
-  // frame for `onProjected`'s opportunistic retry to piggyback on, so this
-  // timer is the only thing that ever tries again.
-  let alreadyCurrentRetryTimer: ReturnType<typeof setTimeout> | null = null
-  const clearAlreadyCurrentRetryTimer = (): void => {
-    if (alreadyCurrentRetryTimer !== null) {
-      clearTimeout(alreadyCurrentRetryTimer)
-      alreadyCurrentRetryTimer = null
-    }
-  }
-  const scheduleAlreadyCurrentRetry = (): void => {
-    clearAlreadyCurrentRetryTimer()
-    let attempts = 0
-    const attempt = (): void => {
-      attempts += 1
-      const resolved = pendingCorrelation.retryAlreadyCurrent()
-      alreadyCurrentRetryTimer =
-        resolved || attempts >= ALREADY_CURRENT_RETRY_MAX_ATTEMPTS
-          ? null
-          : setTimeout(attempt, ALREADY_CURRENT_RETRY_INTERVAL_MS)
-    }
-    alreadyCurrentRetryTimer = setTimeout(
-      attempt,
-      ALREADY_CURRENT_RETRY_INTERVAL_MS
-    )
-  }
+  // catch-up settlement, INCLUDING the already-current retry timer — see
+  // `pendingCorrelation.ts`. Distinct from `boundWorkflowId` below, which the
+  // `!active` watch branch nulls on every tab deactivation: the ledger must
+  // NOT reset there, only on a lineage break (doc_reset, follower_replaced,
+  // or a bind to a workflow other than this one), which `pendingCorrelation`
+  // tracks independently of activity.
   const pendingCorrelation = createPendingCorrelation({
     pendingOps,
     getWatermark: () => projectedSeq,
@@ -575,8 +542,7 @@ function startAgentCrdtFollower(
     },
     reconcileFromDoc: (id, seq) => projection.reconcileFromDoc(id, seq),
     effectPresent: (op) => docEffectPresent(op),
-    abortSender: () => sender.abortAll(),
-    onRetryPending: scheduleAlreadyCurrentRetry
+    abortSender: () => sender.abortAll()
   })
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
@@ -746,7 +712,6 @@ function startAgentCrdtFollower(
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
     pendingLiveNodeIds.clear()
-    confirmedDeletes.clear()
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -778,7 +743,6 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      confirmedDeletes.clear()
       projection.clearForReset(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
@@ -967,6 +931,9 @@ function startAgentCrdtFollower(
   const holdOpsForInactiveTab = (workflowId: string): void => {
     heldForWorkflowId = workflowId
     awaitingReactivationContinuity = true
+    // Freeze the pre-hold watermark now, before the eventual resubscribe: see
+    // `pendingCorrelation.ts`'s `beginReactivation` doc comment.
+    pendingCorrelation.beginReactivation()
     sender.suspend()
     bridge.unsubscribe()
   }
@@ -1099,7 +1066,6 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_gap', onGap),
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
-      () => clearAlreadyCurrentRetryTimer(),
       // abortAll() before detach(): a plain detach() drops queued, open and
       // in-flight batches without settling them, so their ledger entries
       // would outlive this scope in a non-terminal state with no outcome to

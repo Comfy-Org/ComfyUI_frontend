@@ -1791,7 +1791,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('F2: an already-current ack keeps a parked entry until the forced reconcile commits, then repairs the live graph before settling it, retried by its own timer on a quiet channel', async () => {
-    const { recordDevEvent } = await import('./devPanelLog')
     const fakeGraph = fromPartial<MaterializableGraph>({
       rootGraph: { subgraphs: new Map() },
       _nodes_by_id: {},
@@ -1863,6 +1862,61 @@ describe('useAgentCrdtFollower', () => {
     await vi.advanceTimersByTimeAsync(ALREADY_CURRENT_RETRY_INTERVAL_MS)
 
     expect(order).toEqual(['materialized', 'cleared'])
+    unmount()
+  })
+
+  it('P2: a lineage reset cancels the already-current retry timer instead of leaving it to fire later', async () => {
+    // `PendingCorrelation` owns this timer end to end: `reset()` (called on
+    // every lineage break, and at scope teardown) must cancel it, not just
+    // make its callback a no-op — a callback that survives could still call
+    // back into a reconcile for a lineage this correlation no longer tracks.
+    const fakeGraph = fromPartial<MaterializableGraph>({
+      rootGraph: { subgraphs: new Map() },
+      _nodes_by_id: {},
+      setDirtyCanvas: vi.fn()
+    })
+    const { unmount, enqueue } = mountFollower('wf-1', true, () => fakeGraph)
+
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('5', new Y.Map([['type', 'Test']]))
+    bridge().follower.doc = doc
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2 })
+
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: 5,
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+      }
+    ])
+    await Promise.resolve()
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+
+    // The forced reconcile defers, arming the retry timer. Spy on the raw
+    // timer functions (still the fake-timer globals under `vi.useFakeTimers`)
+    // to capture the EXACT handle this arms, so cancellation can be proven
+    // precisely instead of via a global timer count shared with unrelated
+    // subsystems (e.g. the lifecycle's own stale probe).
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout')
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
+    adapterState.reconcileFromDoc.mockReturnValue(false)
+    dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 2 })
+    expect(adapterState.reconcileFromDoc).toHaveBeenCalledTimes(1)
+    const retryTimerHandle = setTimeoutSpy.mock.results.at(-1)?.value
+    expect(retryTimerHandle).toBeDefined()
+
+    // A lineage break resets the correlation. A callback merely turned into
+    // a no-op (pendingRetry cleared, timer left running) would still pass a
+    // "reconcileFromDoc not called again" check, since the no-op'd attempt
+    // reports itself resolved and the chain stops after one wasted tick —
+    // so this asserts the specific timer handle is cancelled, not just that
+    // its eventual callback becomes harmless.
+    dispatchFrame('doc_reset', { workflowId: 'wf-1', seq: 9, actor: 'agent:x' })
+
+    expect(clearTimeoutSpy).toHaveBeenCalledWith(retryTimerHandle)
     unmount()
   })
 
@@ -2198,7 +2252,8 @@ describe('useAgentCrdtFollower', () => {
 
     function mountWriter(
       initial: string,
-      isTargetActive: Ref<boolean> = ref(true)
+      isTargetActive: Ref<boolean> = ref(true),
+      getGraph: () => MaterializableGraph | null = () => null
     ): {
       unmount: () => void
       workflowId: Ref<string | null>
@@ -2214,7 +2269,8 @@ describe('useAgentCrdtFollower', () => {
             workflowId,
             graphMutations,
             () => null,
-            isTargetActive
+            isTargetActive,
+            getGraph
           )
           enqueue = enqueueHumanOperations
           return () => null
@@ -2258,12 +2314,6 @@ describe('useAgentCrdtFollower', () => {
         skipped: []
       })
     }
-
-    beforeEach(async () => {
-      vi.useFakeTimers()
-      clientState.sendOps.mockClear()
-      vi.mocked(recordDevEvent).mockClear()
-    })
 
     it('holds the queued batch when the bound workflow tab goes inactive instead of settling it undeliverable', async () => {
       const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
@@ -2414,9 +2464,62 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
+    it('P1: a replacement-lineage doc_update racing the reactivation ack does not pass continuity', async () => {
+      // DrJKL's repro (review 5284988677): project seq 1, reactivate, receive
+      // a REPLACEMENT-lineage doc_update(seq=9) before its own ack, then
+      // doc_subscribed(seq=9) — the live watermark now reads 9 too, but that
+      // is the stray update's doing, not proof this ack's lineage matches
+      // what was projected before the tab went away.
+      const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+
+      enqueue([deleteNode('1')])
+      await Promise.resolve()
+      enqueue([deleteNode('2')])
+      isTargetActive.value = false
+      await nextTick()
+      ackSent(0)
+
+      isTargetActive.value = true
+      await nextTick()
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+
+      // A live frame can outrun its own ack (the bridge's own documented
+      // race): the replacement lineage's catch-up lands first.
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+      adapterState.reconcileFromDoc.mockClear()
+      dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 9 })
+
+      // Must invalidate — never accept the stray update's watermark as this
+      // ack's continuity proof, and never resend the held batch into it.
+      expect(adapterState.reconcileFromDoc).not.toHaveBeenCalled()
+      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+      expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      unmount()
+    })
+
     it('P1: reverts a transmitted add that its own abort settlement just re-parked during invalidation', async () => {
-      const { unmount, isTargetActive, enqueue, pendingAddType } =
-        mountWriter('wf-1')
+      // A lookup returning empty also passes if an incorrect implementation
+      // merely calls `pendingOps.reset()` after the abort — that would emit
+      // no `reverted` event and leave the optimistic node on the canvas. This
+      // test proves the user-facing rollback itself: the event fires and the
+      // node is actually removed, not only that the tracker forgot it.
+      const nodeId = toNodeId(5)
+      const nodesById: Partial<Record<NodeId, object>> = { [nodeId]: {} }
+      const remove = vi.fn((node: object) => {
+        if (nodesById[nodeId] === node) delete nodesById[nodeId]
+      })
+      const graph = fromPartial<MaterializableGraph>({
+        rootGraph: { subgraphs: new Map() },
+        setDirtyCanvas: vi.fn(),
+        _nodes_by_id: nodesById,
+        remove
+      })
+      const { unmount, isTargetActive, enqueue, pendingAddType } = mountWriter(
+        'wf-1',
+        undefined,
+        () => graph
+      )
       enqueue([
         {
           op: 'add_node',
@@ -2427,6 +2530,8 @@ describe('useAgentCrdtFollower', () => {
         }
       ])
       await Promise.resolve()
+      const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id as string
+      expect(opId).toBeDefined()
       // Transmitted, still unacknowledged: `abortAll()` will settle it
       // `unconfirmed` (parked as delivery_unknown), not `undeliverable`.
       expect(clientState.sendOps).toHaveBeenCalledTimes(1)
@@ -2444,8 +2549,15 @@ describe('useAgentCrdtFollower', () => {
 
       // The abort settles the still-in-flight add as delivery_unknown from
       // underneath the invalidation sweep; it must still be reverted, not
-      // survive as a stale-lineage parked entry.
+      // survive as a stale-lineage parked entry — and the tracker forgetting
+      // it is verified below, but only as a consequence of the real rollback.
       expect(pendingAddType()?.('5')).toBeUndefined()
+      expect(recordDevEvent).toHaveBeenCalledWith(
+        'pending_ops',
+        expect.objectContaining({ type: 'reverted', opIds: [opId] })
+      )
+      expect(remove).toHaveBeenCalledTimes(1)
+      expect(nodesById[nodeId]).toBeUndefined()
       unmount()
     })
 
