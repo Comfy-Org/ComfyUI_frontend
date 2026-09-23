@@ -4,22 +4,22 @@ import { watch } from 'vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
-import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
-import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
-import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExtensionService } from '@/services/extensionService'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import {
   notifyMintPortsAfterGraphConfigure,
   notifyMintPortsBeforeGraphLoad
 } from '@/workbench/extensions/agent/crdt/mintPortWiring'
+import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
+import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
 

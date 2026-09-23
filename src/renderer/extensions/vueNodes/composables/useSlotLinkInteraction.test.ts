@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import { setRevealedLinks } from '@/lib/litegraph/src/canvas/linkRevealState'
+import { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import {
   isRerouteVisibleForLinkDrag,
   resolvePointerTarget

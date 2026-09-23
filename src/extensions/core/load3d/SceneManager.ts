@@ -4,12 +4,12 @@ import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 
 import type { RendererView } from '@/renderer/three/RendererView'
 
-import Load3dUtils from './Load3dUtils'
 import type {
   BackgroundRenderModeType,
   EventManagerInterface,
   SceneManagerInterface
 } from './interfaces'
+import Load3dUtils from './Load3dUtils'
 
 export class SceneManager implements SceneManagerInterface {
   scene!: THREE.Scene

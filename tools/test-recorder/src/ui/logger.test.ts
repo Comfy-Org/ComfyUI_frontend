@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
 import { alert, box, displayWidth, fail, info, pass, warn } from './logger'
 
 describe('displayWidth', () => {

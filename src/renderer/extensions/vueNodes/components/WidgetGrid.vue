@@ -77,6 +77,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { TooltipOptions } from 'primevue'
 import { computed, useTemplateRef, watch } from 'vue'
 
@@ -87,7 +88,6 @@ import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composable
 import type { WidgetGridItem } from '@/renderer/extensions/vueNodes/types/widgetGrid'
 import { shouldExpand } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import type { NodeId } from '@/types/nodeId'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 

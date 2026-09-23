@@ -1,8 +1,8 @@
-import { expect } from '@playwright/test'
-
 import type { Asset } from '@comfyorg/ingest-types'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { AssetsHelper, createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
+import { expect } from '@playwright/test'
+
 import type { JobDetail } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 /**

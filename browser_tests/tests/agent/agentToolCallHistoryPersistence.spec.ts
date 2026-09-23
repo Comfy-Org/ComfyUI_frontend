@@ -1,11 +1,9 @@
-import { expect } from '@playwright/test'
-
 import type { AgentMessage } from '@comfyorg/ingest-types'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 // FE-1305: a completed turn's tool calls (the work-summary trace shown live,
 // via ToolPart in agent_tool_call WebSocket events) used to vanish on

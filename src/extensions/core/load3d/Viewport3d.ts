@@ -6,15 +6,13 @@ import { normalize } from '@/utils/mathUtil'
 import type { CameraManager } from './CameraManager'
 import type { ControlsManager } from './ControlsManager'
 import type { EventManager } from './EventManager'
-import type { LightingManager } from './LightingManager'
-import type { SceneManager } from './SceneManager'
-import type { ViewHelperManager } from './ViewHelperManager'
 import type {
   CameraState,
   EventCallback,
   Load3DOptions,
   SceneOverlay
 } from './interfaces'
+import type { LightingManager } from './LightingManager'
 import { attachContextMenuGuard } from './load3dContextMenuGuard'
 import type { RenderLoopHandle } from './load3dRenderLoop'
 import { startRenderLoop } from './load3dRenderLoop'
@@ -29,6 +27,8 @@ import {
   computeLetterboxedViewport,
   isLoad3dActive
 } from './load3dViewport'
+import type { SceneManager } from './SceneManager'
+import type { ViewHelperManager } from './ViewHelperManager'
 
 const LETTERBOX_CLEAR_COLOR = 0x0a0a0a
 const LETTERBOX_DIM_OPACITY = 0.5

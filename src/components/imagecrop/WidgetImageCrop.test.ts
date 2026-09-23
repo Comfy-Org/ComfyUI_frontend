@@ -1,13 +1,13 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
+import type { Ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { Bounds } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import type { Ref } from 'vue'
 
 const cropHolder = vi.hoisted(() => ({
   state: null as Record<string, unknown> | null

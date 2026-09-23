@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
-import { createI18n } from 'vue-i18n'
 import { h } from 'vue'
+import { createI18n } from 'vue-i18n'
 
 import BaseModalLayout from './BaseModalLayout.vue'
 

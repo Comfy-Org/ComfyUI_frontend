@@ -5,12 +5,12 @@ import { RendererView } from '@/renderer/three/RendererView'
 import { CameraManager } from './CameraManager'
 import { ControlsManager } from './ControlsManager'
 import { EventManager } from './EventManager'
+import type { Load3DOptions } from './interfaces'
 import { LightingManager } from './LightingManager'
 import { SceneManager } from './SceneManager'
 import { ViewHelperManager } from './ViewHelperManager'
 import { Viewport3d } from './Viewport3d'
 import type { Viewport3dDeps } from './Viewport3d'
-import type { Load3DOptions } from './interfaces'
 
 function buildViewport3dDeps(container: HTMLElement): Viewport3dDeps {
   const view = new RendererView(container)

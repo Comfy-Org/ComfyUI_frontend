@@ -1,12 +1,8 @@
-import type { UUID } from '@/utils/uuid'
 import type { LinkPresentation } from '@/types/linkPresentation'
-
-import type { LGraphConfig, LGraphExtra, SubgraphId } from '../LGraph'
-import type { IGraphGroupFlags } from '../LGraphGroup'
-import type { NodeProperty } from '@/types/nodeState'
 import type { SerializedNodeId } from '@/types/nodeId'
-import type { SerialisedLLinkArray } from '../LLink'
-import type { FloatingRerouteSlot } from '../Reroute'
+import type { NodeProperty } from '@/types/nodeState'
+import type { UUID } from '@/utils/uuid'
+
 import type {
   Dictionary,
   INodeFlags,
@@ -17,7 +13,11 @@ import type {
   Point,
   Size
 } from '../interfaces'
+import type { LGraphConfig, LGraphExtra, SubgraphId } from '../LGraph'
+import type { IGraphGroupFlags } from '../LGraphGroup'
 import type { LiteGraph } from '../litegraph'
+import type { SerialisedLLinkArray } from '../LLink'
+import type { FloatingRerouteSlot } from '../Reroute'
 import type { RenderShape } from './globalEnums'
 import type { TWidgetValue } from './widgets'
 

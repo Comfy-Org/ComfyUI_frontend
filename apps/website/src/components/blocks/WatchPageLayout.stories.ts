@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import WatchAuthorCard from './WatchAuthorCard.vue'
-import WatchRelatedStrip from './WatchRelatedStrip.vue'
 import WatchPageLayout from './WatchPageLayout.vue'
 import WatchRecommendedCard from './WatchRecommendedCard.vue'
+import WatchRelatedStrip from './WatchRelatedStrip.vue'
 
 const poster =
   'https://media.comfy.org/website/learning/cleanplate_walkthrough_v03_thumbnail.jpg'

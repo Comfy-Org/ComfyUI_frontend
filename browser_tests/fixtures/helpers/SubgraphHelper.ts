@@ -1,3 +1,11 @@
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
+import { TestIds } from '@e2e/fixtures/selectors'
+import type { Position, Size } from '@e2e/fixtures/types'
+import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
+import { getAllHostPromotedWidgets } from '@e2e/fixtures/utils/promotedWidgets'
+import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 import { expect } from '@playwright/test'
 import type { ConsoleMessage, Locator, Page } from '@playwright/test'
 
@@ -8,15 +16,6 @@ import type {
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { parseNodeId, toNodeId } from '@/types/nodeId'
-
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { SubgraphEditor } from '@e2e/fixtures/components/SubgraphEditor'
-import { TestIds } from '@e2e/fixtures/selectors'
-import type { Position, Size } from '@e2e/fixtures/types'
-import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
-import { SubgraphSlotReference } from '@e2e/fixtures/utils/litegraphUtils'
-import { getAllHostPromotedWidgets } from '@e2e/fixtures/utils/promotedWidgets'
-import type { PromotedWidgetEntry } from '@e2e/fixtures/utils/promotedWidgets'
 
 interface SubgraphDefinitionRow {
   name: string

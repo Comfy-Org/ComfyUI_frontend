@@ -1,8 +1,8 @@
 import type { NodeTexture } from '../compositor'
 import { generateId } from '../id'
 import { defaultMode } from '../mode'
-import type { NodeKind } from '../nodeKind'
 import type { RasterData, Rect, Transform, Vec2 } from '../node'
+import type { NodeKind } from '../nodeKind'
 
 function defaultTransform(w: number, h: number): Transform {
   return { x: 0, y: 0, w, h, rotation: 0 }

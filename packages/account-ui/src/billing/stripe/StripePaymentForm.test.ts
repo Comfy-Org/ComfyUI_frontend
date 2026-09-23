@@ -3,11 +3,11 @@ import { cleanup, render, screen, waitFor } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { h } from 'vue'
 
+import StripePaymentForm from './StripePaymentForm.vue'
 import type {
   StripePaymentCopy,
   StripePaymentPhase
 } from './stripePaymentPhase'
-import StripePaymentForm from './StripePaymentForm.vue'
 
 const stripeMocks = vi.hoisted(() => {
   const mount = vi.fn()

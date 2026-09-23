@@ -1,24 +1,21 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useAuthStore } from '@/stores/authStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import type { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import {
   remoteConfigErrorStatus,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
-
+import type { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 import {
   stubAccountIdentityPort,
   stubFirebaseAuthHarness

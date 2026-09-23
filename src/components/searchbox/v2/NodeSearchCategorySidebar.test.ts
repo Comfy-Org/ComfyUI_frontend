@@ -1,12 +1,12 @@
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 
-import NodeSearchCategorySidebar from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
 import {
   createMockNodeDef,
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
+import NodeSearchCategorySidebar from '@/components/searchbox/v2/NodeSearchCategorySidebar.vue'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 type SidebarProps = Partial<{

@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 
 const { userName } = defineProps<{ userName?: string }>()

@@ -9,6 +9,7 @@ import type {
   AssistantMessage,
   MessagePart
 } from '../../../services/agent/agentMessageParts'
+
 import '../../../agentPanel.css'
 
 import AgentMessage from './AgentMessage.vue'

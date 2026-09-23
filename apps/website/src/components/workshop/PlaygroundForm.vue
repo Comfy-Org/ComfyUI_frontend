@@ -2,15 +2,15 @@
 import { ChevronDown } from '@lucide/vue'
 import { computed, ref, watch } from 'vue'
 
+import { useFrameRatioMismatch } from '../../composables/useFrameRatioMismatch'
+import type { FrameRatioRule } from '../../config/workshop-model-restrictions'
+import { frameSource } from '../../config/workshop-model-restrictions'
 import type {
   FieldErrors,
   FieldSchema,
   FormValues
 } from '../../config/workshop-playground'
 import { groupPlaygroundFields } from '../../config/workshop-playground'
-import { useFrameRatioMismatch } from '../../composables/useFrameRatioMismatch'
-import type { FrameRatioRule } from '../../config/workshop-model-restrictions'
-import { frameSource } from '../../config/workshop-model-restrictions'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import FrameRatioNotice from './FrameRatioNotice.vue'

@@ -1,10 +1,10 @@
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as THREE from 'three'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createLoad3d } from './createLoad3d'
 import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
 import type { ModelAdapter, ModelAdapterCapabilities } from './ModelAdapter'
-import { createLoad3d } from './createLoad3d'
 
 const { rendererCtor } = vi.hoisted(() => ({
   rendererCtor: vi.fn()

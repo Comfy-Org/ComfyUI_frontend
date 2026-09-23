@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest'
-
 import { readFileSync, readdirSync } from 'node:fs'
 import { join } from 'node:path'
 
@@ -9,6 +7,8 @@ import {
   zRecordedWsEvent
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { RECORDED_EXPECTATIONS } from '@e2e/fixtures/data/agent/agentConversationExpectations'
+import { describe, expect, it } from 'vitest'
+
 import { zAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const recorded = {

@@ -1,50 +1,49 @@
-import { computed, reactive, ref, toValue, watch } from 'vue'
-import type { MaybeRefOrGetter } from 'vue'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
+import { computed, reactive, ref, toValue, watch } from 'vue'
+import type { MaybeRefOrGetter } from 'vue'
 
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { app } from '@/scripts/app'
-import { isCloud } from '@/platform/distribution/types'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-
+import { isCloud } from '@/platform/distribution/types'
 import {
-  getNodeByExecutionId,
-  getExecutionIdByNode
-} from '@/utils/graphTraversalUtil'
-import { createCancelToken } from '@/utils/createCancelToken'
-import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { isLGraphNode } from '@/utils/litegraphUtil'
-import type { MissingNodeType } from '@/types/comfy'
-import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
-import { shouldRenderExecutionItemList } from './executionItemList'
-import { someNodeTypeInSelection } from './selectionEmphasis'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
-import type { MissingModelGroup } from '@/platform/missingModel/types'
+  resolveMissingErrorMessage,
+  resolveRunErrorMessage
+} from '@/platform/errorCatalog/errorMessageResolver'
 import type { ResolvedCatalogErrorMessage } from '@/platform/errorCatalog/types'
+import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
+import { groupCandidatesByMediaType } from '@/platform/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import type { MissingMediaGroup } from '@/platform/missingMedia/types'
 import {
   countMissingModels,
   groupMissingModelCandidates
 } from '@/platform/missingModel/missingModelGrouping'
-import { groupCandidatesByMediaType } from '@/platform/missingMedia/missingMediaScan'
-import { countMissingMediaReferences } from '@/platform/missingMedia/missingMediaGrouping'
-import {
-  resolveMissingErrorMessage,
-  resolveRunErrorMessage
-} from '@/platform/errorCatalog/errorMessageResolver'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { MissingModelGroup } from '@/platform/missingModel/types'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
+import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { MissingNodeType } from '@/types/comfy'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   compareExecutionId,
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
+import { createCancelToken } from '@/utils/createCancelToken'
+import {
+  getNodeByExecutionId,
+  getExecutionIdByNode
+} from '@/utils/graphTraversalUtil'
+import { isLGraphNode } from '@/utils/litegraphUtil'
+import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
 
+import { shouldRenderExecutionItemList } from './executionItemList'
 import type { MissingResourceAbsorption } from './missingResourceAbsorption'
+import { someNodeTypeInSelection } from './selectionEmphasis'
+import type { ErrorCardData, ErrorGroup, ErrorItem } from './types'
 import { useErrorClassification } from './useErrorClassification'
 
 const PROMPT_CARD_ID = '__prompt__'

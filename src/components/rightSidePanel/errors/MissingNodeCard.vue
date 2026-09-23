@@ -95,21 +95,22 @@
 </template>
 
 <script setup lang="ts">
+import { compare, valid } from 'semver'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { compare, valid } from 'semver'
-import Button from '@/components/ui/button/Button.vue'
+
 import DotSpinner from '@/components/common/DotSpinner.vue'
-import { useApplyChanges } from '@/workbench/extensions/manager/composables/useApplyChanges'
-import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
-import { isCloud } from '@/platform/distribution/types'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
-import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import MissingPackGroupRow from '@/components/rightSidePanel/errors/MissingPackGroupRow.vue'
 import { someNodeTypeInSelection } from '@/components/rightSidePanel/errors/selectionEmphasis'
+import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
+import Button from '@/components/ui/button/Button.vue'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { isCloud } from '@/platform/distribution/types'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
+import { useApplyChanges } from '@/workbench/extensions/manager/composables/useApplyChanges'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 const { showInfoButton, missingPackGroups } = defineProps<{
   showInfoButton: boolean

@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { DropdownMenuItem, DropdownMenuSeparator } from 'reka-ui'
 import type { Component } from 'vue'
 
 import OverlayIcon from '@/components/common/OverlayIcon.vue'
 import type { WorkflowMenuItem } from '@/types/workflowMenuItem'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   items,

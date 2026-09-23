@@ -1,8 +1,8 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import MediaAssetFilterButton from '@/platform/assets/components/MediaAssetFilterButton.vue'

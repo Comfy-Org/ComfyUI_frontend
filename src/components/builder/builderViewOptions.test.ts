@@ -1,7 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
-
 import { app } from '@/scripts/app'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 

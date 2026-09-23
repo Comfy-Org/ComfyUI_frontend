@@ -41,6 +41,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onErrorCaptured, ref, useTemplateRef, watch } from 'vue'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
@@ -59,7 +60,6 @@ import type { GraphScope } from '@/types/graphScopeId'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { NodeState } from '@/types/nodeState'
 import { locatorIdFromState } from '@/utils/graphTraversalUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import InputSlot from './InputSlot.vue'
 import OutputSlot from './OutputSlot.vue'

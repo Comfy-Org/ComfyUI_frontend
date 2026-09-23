@@ -2,6 +2,7 @@ import { spawnSync } from 'node:child_process'
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
+
 import { expect, it } from 'vitest'
 
 const SCRIPT = path.join(import.meta.dirname, 'custom-nodes-summary.py')

@@ -1,8 +1,8 @@
-import { AudioPreview, getWav } from '@e2e/fixtures/components/AudioPreview'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { AudioPreview, getWav } from '@e2e/fixtures/components/AudioPreview'
 
 test('@vue-nodes Audio Widget', async ({ comfyPage, comfyFiles }) => {
   const loadAudioNode = comfyPage.vueNodes.getNodeByTitle('Load Audio')

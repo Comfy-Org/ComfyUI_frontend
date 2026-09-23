@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { AGENT_WS_EVENT_TYPES } from '../../schemas/agentApiSchema'
-
 import type { AgentEventHost } from './agentEventSource'
 import { createAgentEventSource } from './agentEventSource'
 

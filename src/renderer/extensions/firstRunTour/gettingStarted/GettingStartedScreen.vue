@@ -120,12 +120,11 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { take, uniqBy } from 'es-toolkit'
 import { FocusScope } from 'reka-ui'
 import { computed, nextTick, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import Tab from '@/components/tab/Tab.vue'
 import TabList from '@/components/tab/TabList.vue'
@@ -135,10 +134,10 @@ import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { useDialogStore } from '@/stores/dialogStore'
 
-import GettingStartedCard from './GettingStartedCard.vue'
-import GettingStartedTemplateCard from './GettingStartedTemplateCard.vue'
 import { useFirstRunTourController } from '../tour/useFirstRunTourController'
 import { useFirstRunEntry } from './firstRunEntry'
+import GettingStartedCard from './GettingStartedCard.vue'
+import GettingStartedTemplateCard from './GettingStartedTemplateCard.vue'
 import type { TutorialCard } from './tutorialCards'
 import {
   CURATED_TEMPLATE_IDS,

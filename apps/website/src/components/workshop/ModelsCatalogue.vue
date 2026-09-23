@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { ChevronRight } from '@lucide/vue'
-import { ref, watch } from 'vue'
 import { useMounted } from '@vueuse/core'
+import { ref, watch } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { captureWorkshopEvent, useWorkshopEnabled } from '../../scripts/posthog'
 import WorkshopHero from './WorkshopHero.vue'
 import WorkshopModelsGrid from './WorkshopModelsGrid.vue'
-import { captureWorkshopEvent, useWorkshopEnabled } from '../../scripts/posthog'
 
 const { models, locale = 'en' } = defineProps<{
   models: readonly WorkshopModel[]

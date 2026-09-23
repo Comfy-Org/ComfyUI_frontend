@@ -1,5 +1,4 @@
 import type { components } from '@comfyorg/registry-types'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
 type ReleaseResponse =

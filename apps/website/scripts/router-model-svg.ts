@@ -1,6 +1,7 @@
+import { readFile } from 'node:fs/promises'
+
 import { chromium } from '@playwright/test'
 import type { Browser } from '@playwright/test'
-import { readFile } from 'node:fs/promises'
 import { ModuleKind, ScriptTarget, transpileModule } from 'typescript'
 
 import type { WorkshopSvgRasterizer } from '../src/config/workshop-svg-output'

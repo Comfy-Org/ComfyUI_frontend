@@ -1,9 +1,10 @@
 import { readFileSync } from 'node:fs'
+
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import { test } from './fixtures/modelsAccount'
 import { workshopModelAvailabilitySchema } from '../src/config/workshop-model-availability-schema'
+import { test } from './fixtures/modelsAccount'
 
 const availability = workshopModelAvailabilitySchema.parse(
   JSON.parse(

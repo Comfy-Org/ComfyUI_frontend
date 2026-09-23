@@ -1,5 +1,6 @@
 import { createSharedComposable } from '@vueuse/core'
 import { unref } from 'vue'
+
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 interface Point {

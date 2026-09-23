@@ -1,11 +1,10 @@
 import { readFileSync } from 'fs'
 
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { dismissErrorOverlay } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { expect } from '@playwright/test'
 
 import { toNodeId } from '@/types/nodeId'
 

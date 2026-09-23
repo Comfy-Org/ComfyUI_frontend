@@ -5,16 +5,17 @@ import { computed, ref, useId, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useAgentTargetNavigation } from '../../../composables/agent/useAgentTargetNavigation'
-import { useAgentPanelStore } from '../../../stores/agent/agentPanelStore'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
-import { reportError } from '@/platform/telemetry/reportError'
-import { useAgentWorkflowTabBindingStore } from '../../../stores/agent/agentWorkflowTabBindingStore'
+
+import { useAgentTargetNavigation } from '../../../composables/agent/useAgentTargetNavigation'
 import { AgentTargetNavigationError } from '../../../services/agent/targetAwareAgentNavigation'
+import { useAgentPanelStore } from '../../../stores/agent/agentPanelStore'
+import { useAgentWorkflowTabBindingStore } from '../../../stores/agent/agentWorkflowTabBindingStore'
 
 const { workflowId, locatorId, name } = defineProps<{
   workflowId: string

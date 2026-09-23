@@ -1,3 +1,6 @@
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
+import { LayoutSource } from '@/renderer/core/layout/types'
 /**
  * Node Z-Index Management Composable
  *
@@ -5,9 +8,6 @@
  * Integrates with the layout system to ensure proper visual ordering.
  */
 import type { NodeId } from '@/types/nodeId'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
-import { LayoutSource } from '@/renderer/core/layout/types'
 
 export function useNodeZIndex() {
   const layoutMutations = useLayoutMutations(LayoutSource.Vue)

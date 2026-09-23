@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-
 import type {
   Asset,
   GetModelFoldersResponse,
@@ -10,6 +8,7 @@ import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { STABLE_CHECKPOINT } from '@e2e/fixtures/data/assetFixtures'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expect } from '@playwright/test'
 
 import type {
   AssetMetadata,

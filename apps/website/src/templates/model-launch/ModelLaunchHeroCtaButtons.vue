@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import type { BrandButtonVariants } from '../../components/common/brandButton.variants'
-import type { Locale } from '../../i18n/translations'
-import type { ModelLaunchHero } from './types'
-
 import BrandButton from '../../components/common/BrandButton.vue'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import type { ModelLaunchHero } from './types'
 
 const {
   primaryCta,

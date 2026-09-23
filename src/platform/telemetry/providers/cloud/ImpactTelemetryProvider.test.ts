@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
-import { fromPartial } from '@total-typescript/shoehorn'
 
+import { fromPartial } from '@total-typescript/shoehorn'
 import type { User } from 'firebase/auth'
 import { getActivePinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -22,8 +22,9 @@ beforeEach(() => {
   stubFirebaseAuthHarness()
 })
 
-import { ImpactTelemetryProvider } from './ImpactTelemetryProvider'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+
+import { ImpactTelemetryProvider } from './ImpactTelemetryProvider'
 
 const IMPACT_SCRIPT_URL =
   'https://utt.impactcdn.com/A6951770-3747-434a-9ac7-4e582e67d91f1.js'

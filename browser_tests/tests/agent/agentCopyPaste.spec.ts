@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-
 import {
   AGENT_COPY_PASTE_SCENARIO,
   agentCopyPasteTest as test
 } from '@e2e/fixtures/AgentCopyPasteDriver'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Copy and paste beside the agent panel',

@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import DistributionsScene from '../product/enterprise/DistributionsScene.vue'
-
 import HeroProduct01 from './HeroProduct01.vue'
 
 const meta: Meta<typeof HeroProduct01> = {

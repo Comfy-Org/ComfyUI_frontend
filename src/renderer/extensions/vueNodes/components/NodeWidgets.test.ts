@@ -1,20 +1,20 @@
-import { getActivePinia } from 'pinia'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
-import type { NodeState } from '@/types/nodeState'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
+import type { ProcessedWidget } from '@/renderer/extensions/vueNodes/composables/useProcessedWidgets'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeState } from '@/types/nodeState'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 

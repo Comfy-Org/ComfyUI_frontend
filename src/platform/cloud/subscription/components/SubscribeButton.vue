@@ -11,13 +11,13 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { onBeforeUnmount, ref, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   size = 'lg',

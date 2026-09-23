@@ -1,9 +1,9 @@
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
+import type { OwningGraphId } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
-import type { OwningGraphId } from '@/types/graphScopeId'
 
 export interface LinkTopology {
   readonly id: LinkId

@@ -1,12 +1,12 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
+import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import type { GraphMutations } from './graphMutations'
-import { render } from '@testing-library/vue'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import type { GraphMutations } from './graphMutations'
 import type { GraphOperation } from './graphOperations'
 
 const bridgeState = vi.hoisted(() => {

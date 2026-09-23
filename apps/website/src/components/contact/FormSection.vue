@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 
-import type { Locale, TranslationKey } from '../../i18n/translations'
-
 import { useHeroAnimation } from '../../composables/useHeroAnimation'
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import HubspotFormEmbed from '../common/HubspotFormEmbed.vue'
 import SectionLabel from '../common/SectionLabel.vue'

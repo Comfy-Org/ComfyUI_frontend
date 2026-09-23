@@ -1,13 +1,11 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
-
-import type { GridPack } from '../../data/cloudNodes'
-import type { Locale } from '../../i18n/translations'
+import { ref } from 'vue'
 
 import { useFilteredPacks } from '../../composables/useFilteredPacks'
 import type { PackSortMode } from '../../composables/useFilteredPacks'
+import type { GridPack } from '../../data/cloudNodes'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import SectionLabel from '../common/SectionLabel.vue'
 import PackCard from './PackCard.vue'

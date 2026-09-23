@@ -1,11 +1,9 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ChevronDown, ListFilter } from '@lucide/vue'
-import { computed, ref, useTemplateRef, watchEffect } from 'vue'
-
 import { onClickOutside, useMediaQuery, useWindowSize } from '@vueuse/core'
 import { FocusScope } from 'reka-ui'
-
-import { cn } from '@comfyorg/tailwind-utils'
+import { computed, ref, useTemplateRef, watchEffect } from 'vue'
 
 import { useVisualViewport } from '../../composables/useVisualViewport'
 import type { UseCase } from '../../config/models-catalogue'

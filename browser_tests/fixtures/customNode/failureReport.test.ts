@@ -1,5 +1,5 @@
-import { describe, expect, it } from 'vitest'
 import { failureSummary } from '@e2e/fixtures/customNode/failureReport'
+import { describe, expect, it } from 'vitest'
 
 describe('failureSummary', () => {
   it('keeps an empty failure label concise', () => {

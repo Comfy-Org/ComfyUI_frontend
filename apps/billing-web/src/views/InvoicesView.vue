@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useBillingClient } from '@comfyorg/account-ui/billing'
 /**
  * Invoices live with the payment provider, the same way the cloud app's
  * "Invoice History" opens the portal rather than listing them itself. The
@@ -6,8 +7,6 @@
  */
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { useBillingClient } from '@comfyorg/account-ui/billing'
 
 import HostedSurface from '@/components/HostedSurface.vue'
 import { useHostedCopy } from '@/composables/useHostedCopy'

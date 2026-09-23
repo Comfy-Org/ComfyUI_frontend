@@ -5,6 +5,7 @@
   "semi": false,
   "trailingComma": "none",
   "printWidth": 80,
+  "sortImports": true,
   "ignorePatterns": [
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "public/materialdesignicons.min.css",

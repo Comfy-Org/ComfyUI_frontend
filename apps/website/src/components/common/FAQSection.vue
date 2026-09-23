@@ -3,7 +3,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { computed, reactive } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
-
 import { t } from '../../i18n/translations'
 import SafeRichText from './SafeRichTextContent'
 

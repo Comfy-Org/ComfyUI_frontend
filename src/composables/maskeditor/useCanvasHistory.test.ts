@@ -1,8 +1,9 @@
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
+
 import { useCanvasHistory } from '@/composables/maskeditor/useCanvasHistory'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
 let mockRefs: ReturnType<typeof useMaskEditorStore>
 

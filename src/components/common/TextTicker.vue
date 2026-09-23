@@ -10,10 +10,9 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useElementHover, useElementSize, useRafFn } from '@vueuse/core'
 import { ref, watch } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { speed = 70 } = defineProps<{
   /** Scroll speed in pixels per second */

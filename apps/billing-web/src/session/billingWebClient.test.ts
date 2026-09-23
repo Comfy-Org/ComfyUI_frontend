@@ -1,7 +1,7 @@
 import type { BillingSession } from '@comfyorg/account-core/billing'
+import type { SessionSnapshot } from '@comfyorg/account-core/session'
 import type { BillingClient } from '@comfyorg/account-ui/billing'
 import { disposeBillingClient } from '@comfyorg/account-ui/billing'
-import type { SessionSnapshot } from '@comfyorg/account-core/session'
 
 import { createBillingWebClient } from '@/session/billingWebClient'
 

@@ -1,3 +1,9 @@
+import {
+  comfyExpect as expect,
+  comfyPageFixture as test
+} from '@e2e/fixtures/ComfyPage'
+import { installCustomNodeBlankStartup } from '@e2e/fixtures/utils/customNodeSuite'
+
 import type {
   ActivePathPointer,
   DraftIndexV2,
@@ -5,11 +11,6 @@ import type {
   OpenPathsPointer
 } from '@/platform/workflow/persistence/base/draftTypes'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
-import {
-  comfyExpect as expect,
-  comfyPageFixture as test
-} from '@e2e/fixtures/ComfyPage'
-import { installCustomNodeBlankStartup } from '@e2e/fixtures/utils/customNodeSuite'
 
 test('preseeds a restorable blank workflow before first boot', async ({
   page

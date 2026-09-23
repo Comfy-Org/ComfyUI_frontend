@@ -1,17 +1,16 @@
 import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
 
 import type { Keybinding } from '@/platform/keybindings/types'
-import { useTelemetry } from '@/platform/telemetry'
-import type { NodeBadgeMode } from '@/types/nodeSource'
-import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
-
 import {
   getSettingInfo,
   useSettingStore
 } from '@/platform/settings/settingStore'
 import type { SettingParams, Settings } from '@/platform/settings/types'
+import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import type { NodeBadgeMode } from '@/types/nodeSource'
+import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
 vi.mock(import('@/platform/telemetry'))
 

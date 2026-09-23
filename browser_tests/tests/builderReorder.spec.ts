@@ -2,8 +2,8 @@ import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import type { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
 import {
   saveCloseAndReopenInBuilder,
   setupBuilder

@@ -10,14 +10,13 @@ import type { ComponentPublicInstance } from 'vue'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useDismissOnCanvasGesture } from '@/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture'
-
 import type {
   FilterOption,
   OwnershipFilterOption,
   OwnershipOption
 } from '@/platform/assets/types/filterTypes'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDismissOnCanvasGesture } from '@/renderer/extensions/vueNodes/widgets/composables/useDismissOnCanvasGesture'
 
 import FormDropdownInput from './FormDropdownInput.vue'
 import FormDropdownMenu from './FormDropdownMenu.vue'

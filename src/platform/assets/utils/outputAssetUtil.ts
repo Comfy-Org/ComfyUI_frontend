@@ -1,8 +1,8 @@
 import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import { isCloud } from '@/platform/distribution/types'
 import type { JobOutputAsset } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 import {
   getJobAssets,
   getJobDetail,

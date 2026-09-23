@@ -2,7 +2,6 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import { useShortcutsTab } from '@/composables/bottomPanelTabs/useShortcutsTab'
-
 import { isDesktop } from '@/platform/distribution/types'
 import { useCommandStore } from '@/stores/commandStore'
 import type { ComfyExtension } from '@/types/comfy'

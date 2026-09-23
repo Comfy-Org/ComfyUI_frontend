@@ -1,13 +1,12 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import type { Slots } from 'vue'
 import { h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import PendingInvitesList from './PendingInvitesList.vue'
-
 import type { WorkspacePendingInvite } from '../../../stores/teamWorkspaceStore'
+import PendingInvitesList from './PendingInvitesList.vue'
 
 const mockMenuClose = vi.hoisted(() => vi.fn())
 

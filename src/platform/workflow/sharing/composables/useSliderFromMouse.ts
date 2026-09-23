@@ -1,6 +1,5 @@
-import type { Ref } from 'vue'
-
 import { useMouseInElement } from '@vueuse/core'
+import type { Ref } from 'vue'
 import { ref, watch } from 'vue'
 
 export function useSliderFromMouse(target: Ref<HTMLElement | null>) {

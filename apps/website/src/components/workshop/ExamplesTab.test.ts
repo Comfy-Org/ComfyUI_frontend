@@ -1,5 +1,5 @@
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { expect, it } from 'vitest'
 
 import ExamplesTab from './ExamplesTab.vue'

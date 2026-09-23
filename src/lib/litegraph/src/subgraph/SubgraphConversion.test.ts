@@ -8,6 +8,10 @@ import {
   vi
 } from 'vitest'
 
+import {
+  createTestNode,
+  createTestWidgetNode
+} from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
 import {
   LGraphGroup,
@@ -19,10 +23,6 @@ import type {
   Positionable,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import {
-  createTestNode,
-  createTestWidgetNode
-} from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import type { reportError } from '@/platform/telemetry/reportError'
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'

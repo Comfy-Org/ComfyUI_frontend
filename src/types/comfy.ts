@@ -3,18 +3,18 @@ import type {
   Positionable
 } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { Keybinding } from '@/platform/keybindings/types'
 import type { NodeReplacement } from '@/platform/nodeReplacement/types'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { SettingParams } from '@/platform/settings/types'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { Keybinding } from '@/platform/keybindings/types'
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from '@/scripts/app'
 import type { CustomComfyWidgetConstructor } from '@/scripts/widgets'
 import type { ComfyCommand } from '@/stores/commandStore'
-import type { NodeLocatorId } from '@/types/nodeIdentification'
 import type { AuthUserInfo } from '@/types/authTypes'
 import type { BottomPanelExtension } from '@/types/extensionTypes'
+import type { NodeLocatorId } from '@/types/nodeIdentification'
 
 type Widgets = Record<string, CustomComfyWidgetConstructor>
 

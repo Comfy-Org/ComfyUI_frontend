@@ -1,10 +1,9 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import type {
   ScheduledPlanChange,
   SubscriptionTier
 } from '@comfyorg/ingest-types'
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
@@ -17,6 +16,7 @@ import type {
   Plan
 } from '@/platform/workspace/api/workspaceApi'
 import UnifiedPricingTable from '@/platform/workspace/components/UnifiedPricingTable.vue'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
 function apiPlan(
   tier: Plan['tier'],

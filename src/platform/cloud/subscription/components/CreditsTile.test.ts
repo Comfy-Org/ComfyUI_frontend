@@ -1,7 +1,5 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -9,6 +7,8 @@ import { createI18n } from 'vue-i18n'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
 import type { TeamCreditStopSummary } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useDialogService } from '@/services/dialogService'
 
 type Balance = Pick<
   BalanceInfo,

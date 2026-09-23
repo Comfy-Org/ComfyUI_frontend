@@ -37,8 +37,9 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -48,7 +49,6 @@ import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const appModeStore = useAppModeStore()

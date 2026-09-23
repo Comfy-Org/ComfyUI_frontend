@@ -11,6 +11,8 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
+import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
+import type { IColorWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import {
   hexToInt,
@@ -18,10 +20,6 @@ import {
   isColorFormat,
   toHexFromFormat
 } from '@/utils/colorUtil'
-
-import type { IColorWidgetOptions } from '@/lib/litegraph/src/types/widgets'
-
-import ColorPicker from '@/components/ui/color-picker/ColorPicker.vue'
 
 import WidgetLayoutField from './layout/WidgetLayoutField.vue'
 

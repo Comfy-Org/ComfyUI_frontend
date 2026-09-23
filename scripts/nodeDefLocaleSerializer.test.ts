@@ -1,5 +1,5 @@
-import { createI18n } from 'vue-i18n'
 import { describe, expect, it } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import { transformNodeDefV1ToV2 } from '@/schemas/nodeDef/migration'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'

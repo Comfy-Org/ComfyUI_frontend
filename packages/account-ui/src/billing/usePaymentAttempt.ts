@@ -1,14 +1,3 @@
-/**
- * What the top-up and checkout experiences share: the operation being
- * followed, the eight-state projection over it, the step the host reports,
- * and the two continuation effects — handing a hosted page to the host's
- * navigation and driving an embedded challenge through the host's port.
- * Which presentation an operation runs on is the lifecycle's decision; this
- * only acts on the one it was given.
- */
-import { computed, ref, shallowReadonly, watch } from 'vue'
-import type { Ref } from 'vue'
-
 import type {
   BillingOperationKind,
   BillingOperationState,
@@ -21,6 +10,16 @@ import {
   isTerminal,
   projectPaymentStep
 } from '@comfyorg/account-core/billing'
+/**
+ * What the top-up and checkout experiences share: the operation being
+ * followed, the eight-state projection over it, the step the host reports,
+ * and the two continuation effects — handing a hosted page to the host's
+ * navigation and driving an embedded challenge through the host's port.
+ * Which presentation an operation runs on is the lifecycle's decision; this
+ * only acts on the one it was given.
+ */
+import { computed, ref, shallowReadonly, watch } from 'vue'
+import type { Ref } from 'vue'
 
 import type { BillingClient } from './billingClient'
 import { useBillingOperation } from './useBillingOperation'

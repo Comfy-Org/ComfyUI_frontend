@@ -7,6 +7,11 @@
  */
 import { expect } from 'vitest'
 
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type {
   ExportedSubgraph,
   ExportedSubgraphInstance,
@@ -14,19 +19,14 @@ import type {
   UUID
 } from '@/lib/litegraph/src/litegraph'
 import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
-import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
-import type { SerializedNodeId } from '@/types/nodeId'
-import { toNodeId } from '@/types/nodeId'
-import {
   LGraph,
   LGraphNode,
   LiteGraph,
   SubgraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import type { SerializedNodeId } from '@/types/nodeId'
+import { toNodeId } from '@/types/nodeId'
 
 import { subgraphComplexPromotion1 } from './subgraphComplexPromotion1'
 

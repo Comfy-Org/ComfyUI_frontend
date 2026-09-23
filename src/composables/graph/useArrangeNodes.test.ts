@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import { computeArrangement } from '@/composables/graph/useArrangeNodes'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { toNodeId } from '@/types/nodeId'

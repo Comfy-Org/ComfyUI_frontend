@@ -1,5 +1,4 @@
 import type { Modality, WorkshopModel } from '../config/models-catalogue'
-import type { RunFailure, RunOutput } from '../config/workshop-run'
 import type {
   FieldErrorCode,
   FieldErrors,
@@ -9,6 +8,7 @@ import type {
   WorkshopFailureStage,
   WorkshopRouterError
 } from '../config/workshop-router-errors'
+import type { RunFailure, RunOutput } from '../config/workshop-run'
 import type { WorkshopExceptionAnalytics } from './workshop-exception'
 import { workshopExceptionAnalytics } from './workshop-exception'
 

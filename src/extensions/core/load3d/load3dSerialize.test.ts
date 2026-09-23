@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, toRaw, watch } from 'vue'
 
+import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
-import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 function makeNode(props: Record<string, unknown> = {}): LGraphNode {

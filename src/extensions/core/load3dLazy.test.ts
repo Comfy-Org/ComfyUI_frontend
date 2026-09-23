@@ -4,9 +4,9 @@ import type { MockInstance } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { ComfyExtension } from '@/types/comfy'
 import type { useExtensionService } from '@/services/extensionService'
 import { useExtensionStore } from '@/stores/extensionStore'
+import type { ComfyExtension } from '@/types/comfy'
 
 const { registerExtensionMock } = vi.hoisted(() => ({
   registerExtensionMock: vi.fn()

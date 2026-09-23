@@ -1,5 +1,5 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import type { RumErrorEvent } from '@datadog/browser-rum'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { setAssertReporter } from '@/base/assert'

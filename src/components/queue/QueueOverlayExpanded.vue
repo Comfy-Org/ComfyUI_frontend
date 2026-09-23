@@ -52,10 +52,10 @@ import { useJobMenu } from '@/composables/queue/useJobMenu'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 
-import QueueOverlayHeader from './QueueOverlayHeader.vue'
-import JobContextMenu from './job/JobContextMenu.vue'
 import JobAssetsList from './job/JobAssetsList.vue'
+import JobContextMenu from './job/JobContextMenu.vue'
 import JobFiltersBar from './job/JobFiltersBar.vue'
+import QueueOverlayHeader from './QueueOverlayHeader.vue'
 
 defineProps<{
   headerTitle: string

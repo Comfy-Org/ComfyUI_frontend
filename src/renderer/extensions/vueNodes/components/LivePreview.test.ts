@@ -1,5 +1,5 @@
-import { getActivePinia } from 'pinia'
 import { fireEvent, render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'

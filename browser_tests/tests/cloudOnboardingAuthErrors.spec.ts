@@ -1,9 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { operations } from '@/types/comfyRegistryTypes'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   CLOUD_SELF_EMAIL,
@@ -13,6 +7,11 @@ import {
   mockCloudBoot,
   preselectCloudUser
 } from '@e2e/fixtures/utils/cloudBootMocks'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { operations } from '@/types/comfyRegistryTypes'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 type CreateCustomerResponse =

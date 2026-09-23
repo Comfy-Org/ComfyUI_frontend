@@ -1,4 +1,3 @@
-import { expect, it } from 'vitest'
 import {
   connectivityExpectations,
   pairEndpointOwnershipIssues,
@@ -7,6 +6,7 @@ import {
   pairExpectationNodeTypes
 } from '@e2e/fixtures/customNode/connectivityExpectations'
 import { loadAllManifestPackNames } from '@e2e/fixtures/customNode/manifest'
+import { expect, it } from 'vitest'
 
 it('connectivity pair expectations are attributable and disjoint', () => {
   const manifestPacks = new Set(

@@ -1,9 +1,9 @@
-import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
-
 import { DefaultGraphPositions } from '@e2e/fixtures/constants/defaultGraphPositions'
 import type { Position } from '@e2e/fixtures/types'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
+
 import type { Point } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'

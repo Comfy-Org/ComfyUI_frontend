@@ -1,6 +1,6 @@
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, ref, watch } from 'vue'
 import type { EffectScope, Ref } from 'vue'
-import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useRetryableMediaSrc } from './useRetryableMediaSrc'
 

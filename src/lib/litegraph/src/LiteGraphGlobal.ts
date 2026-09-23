@@ -1,14 +1,9 @@
+import { createUuidv4 } from '@/utils/uuid'
+
+import { InputIndicators } from './canvas/InputIndicators'
 import { ContextMenu } from './ContextMenu'
 import { CurveEditor } from './CurveEditor'
 import { DragAndScale } from './DragAndScale'
-import { LGraph } from './LGraph'
-import { LGraphCanvas } from './LGraphCanvas'
-import { LGraphGroup } from './LGraphGroup'
-import { LGraphNode } from './LGraphNode'
-import type { NodeProperty } from './LGraphNode'
-import { LLink } from './LLink'
-import { Reroute } from './Reroute'
-import { InputIndicators } from './canvas/InputIndicators'
 import { LabelPosition, SlotDirection, SlotShape, SlotType } from './draw'
 import { Rectangle } from './infrastructure/Rectangle'
 import type {
@@ -18,7 +13,14 @@ import type {
   Rect,
   WhenNullish
 } from './interfaces'
+import { LGraph } from './LGraph'
+import { LGraphCanvas } from './LGraphCanvas'
+import { LGraphGroup } from './LGraphGroup'
+import { LGraphNode } from './LGraphNode'
+import type { NodeProperty } from './LGraphNode'
+import { LLink } from './LLink'
 import { distance, isInsideRectangle, overlapBounding } from './measure'
+import { Reroute } from './Reroute'
 import { SubgraphIONodeBase } from './subgraph/SubgraphIONodeBase'
 import { SubgraphSlot } from './subgraph/SubgraphSlotBase'
 import {
@@ -29,7 +31,6 @@ import {
   RenderShape,
   TitleMode
 } from './types/globalEnums'
-import { createUuidv4 } from '@/utils/uuid'
 
 export interface SlotTypeDefaultNodeOpts {
   node?: string

@@ -1,11 +1,12 @@
-import { computed } from 'vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 /**
  * Dialog migration regression net: when callers in `dialogService` open a
  * Reka-migrated dialog, the dialog stack item must carry `renderer: 'reka'`.
  * Catches accidental reverts of the Reka renderer flip.
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
+
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 
 vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key

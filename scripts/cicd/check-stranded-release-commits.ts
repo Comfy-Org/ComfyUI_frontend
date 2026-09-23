@@ -14,6 +14,7 @@
  */
 import { execFileSync } from 'child_process'
 import { appendFileSync } from 'fs'
+
 import { isMainModule } from '../isMainModule'
 
 export interface Commit {

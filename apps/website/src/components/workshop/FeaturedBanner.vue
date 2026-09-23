@@ -8,16 +8,17 @@ import {
 } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
-import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import Button from '@/components/ui/button/Button.vue'
+
 import { usePreviewVideo } from '../../composables/usePreviewVideo'
+import { prefersReducedMotion } from '../../composables/useReducedMotion'
+import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { bannerName } from '../../lib/workshop/banner-name'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
 import { taskLabelFor } from '../../lib/workshop/task-label'
 import Badge from '../ui/badge/Badge.vue'
-import Button from '@/components/ui/button/Button.vue'
 
 const AUTOPLAY_MS = 7000
 const CAPABILITY_LIMIT = 3

@@ -38,6 +38,8 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -52,8 +54,6 @@ import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import type { LightConfig } from '@/extensions/core/load3d/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { cn } from '@comfyorg/tailwind-utils'
-import { PopoverTrigger } from 'reka-ui'
 
 const { compact = false, isOriginalMaterial = false } = defineProps<{
   compact?: boolean

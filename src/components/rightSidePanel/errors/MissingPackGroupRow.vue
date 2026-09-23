@@ -225,22 +225,23 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { cn } from '@comfyorg/tailwind-utils'
 
-import { selectionEmphasisClass } from './selectionEmphasis'
-import Button from '@/components/ui/button/Button.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
 import LocateNodeButton from '@/components/rightSidePanel/errors/LocateNodeButton.vue'
+import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
+import Button from '@/components/ui/button/Button.vue'
+import type { MissingNodeType } from '@/types/comfy'
 import { useMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
-import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
+import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
-import type { MissingNodeType } from '@/types/comfy'
-import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
+
+import { selectionEmphasisClass } from './selectionEmphasis'
 
 const { group, showInfoButton, highlighted } = defineProps<{
   group: MissingPackGroup

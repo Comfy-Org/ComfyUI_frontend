@@ -1,8 +1,8 @@
-import type { FieldSchema } from './workshop-playground'
 import type {
   RouterParameterMapping,
   RouterParameterName
 } from './router-parameters'
+import type { FieldSchema } from './workshop-playground'
 import { WorkshopRouterError } from './workshop-router-errors'
 
 type Scalar = string | number | boolean

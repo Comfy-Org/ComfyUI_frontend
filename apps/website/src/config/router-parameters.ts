@@ -1,3 +1,6 @@
+import type { WorkshopModelDetail } from './models-catalogue'
+import type { RouterMedia } from './router-media'
+import { routerMediaValue } from './router-media'
 import type { Dimensions } from './router-parameter-options'
 import {
   closestNumber,
@@ -5,10 +8,7 @@ import {
   dimensions,
   numericValue
 } from './router-parameter-options'
-import type { RouterMedia } from './router-media'
-import { routerMediaValue } from './router-media'
 import type { WorkshopContract } from './workshop-contract'
-import type { WorkshopModelDetail } from './models-catalogue'
 import type { FieldSchema, FieldValue, FormValues } from './workshop-playground'
 import { urlUploadField, validateForm } from './workshop-playground'
 import { WorkshopRouterError } from './workshop-router-errors'

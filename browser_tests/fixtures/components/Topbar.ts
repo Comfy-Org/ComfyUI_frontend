@@ -1,8 +1,7 @@
-import type { Locator, Page } from '@playwright/test'
-
-import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import type { WorkspaceStore } from '@e2e/types/globals'
+import type { Locator, Page } from '@playwright/test'
 
 export class Topbar {
   private readonly menuLocator: Locator

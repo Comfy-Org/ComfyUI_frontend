@@ -1,38 +1,39 @@
-import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
-import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
-import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
-import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
-import type { MissingModelCandidate, MissingModelViewModel } from './types'
-import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
 import {
   inputForWidget,
   promotedInputWidgets
 } from '@/core/graph/subgraph/promotedInputWidget'
-import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import {
   buildPromotedWidgetExecutionSources,
   resolveActivePromotedWidgetConsumers
 } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
-import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { resolvePromotedWidgetSource } from '@/core/graph/subgraph/resolvePromotedWidgetSource'
+import { getComboWidgetInventory } from '@/core/graph/widgets/comboWidgetInventory'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type {
   IAssetWidget,
   IBaseWidget,
   IComboWidget
 } from '@/lib/litegraph/src/types/widgets'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { getAssetFilename } from '@/platform/assets/utils/assetMetadataUtils'
+import type { FlattenableWorkflowGraph } from '@/platform/workflow/core/utils/workflowFlattening'
+import { flattenWorkflowNodes } from '@/platform/workflow/core/utils/workflowFlattening'
+import type { ModelFile } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { getParentExecutionIds } from '@/types/nodeIdentification'
 import {
   collectAllNodes,
   getExecutionIdByNode,
   isExecutionPathActive
 } from '@/utils/graphTraversalUtil'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
-import { getParentExecutionIds } from '@/types/nodeIdentification'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { getSelectedModelsMetadata } from '@/workbench/utils/modelMetadataUtil'
+
+import type { MissingModelCandidate, MissingModelViewModel } from './types'
 
 export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
   models?: ModelFile[]

@@ -1,8 +1,8 @@
-import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
 import { isDesktop } from '@/platform/distribution/types'
 import { useElectronDownloadStore } from '@/stores/electronDownloadStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { ComfyDesktop2Bridge } from '@/types'
+import { downloadUrlToHfRepoUrl, isCivitaiModelUrl } from '@/utils/formatUtil'
 
 const ALLOWED_SOURCES = [
   'https://civitai.com/',

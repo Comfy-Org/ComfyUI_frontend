@@ -1,21 +1,22 @@
-import { toGroupId } from '@/types/groupId'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
+import type { Point, Rect } from '@/lib/litegraph/src/interfaces'
 import type { LGraph, LGraphExtra } from '@/lib/litegraph/src/LGraph'
 import { LGraphGroup } from '@/lib/litegraph/src/litegraph'
-import type { Point, Rect } from '@/lib/litegraph/src/interfaces'
 import { attachGroupLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { RENDER_SCALE_FACTOR } from '@/renderer/core/layout/transform/graphRenderTransform'
+import { toGroupId } from '@/types/groupId'
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: undefined }
 }))
 
-import { ensureCorrectLayoutScale } from './ensureCorrectLayoutScale'
-import { toRerouteId } from '@/types'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import { toRerouteId } from '@/types'
+
+import { ensureCorrectLayoutScale } from './ensureCorrectLayoutScale'
 
 function createNode(id: string, x: number, y: number, w: number, h: number) {
   return {

@@ -1,12 +1,13 @@
 import { mkdtemp, readFile, mkdir, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
 import { writeMarkdownTwins } from '../integrations/markdown-twins'
-import { writeSectionIndexes } from './section-index'
 import { htmlToTwin, renderTwin } from './markdown-twin'
 import { markdownTwinPath } from './markdown-twin-path'
+import { writeSectionIndexes } from './section-index'
 
 const PAGE = `<!doctype html>
 <html lang="en">

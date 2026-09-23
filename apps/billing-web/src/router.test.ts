@@ -1,8 +1,7 @@
+import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { render, screen } from '@testing-library/vue'
 import { createMemoryHistory } from 'vue-router'
 import type { Router } from 'vue-router'
-
-import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 
 import App from '@/App.vue'
 import { safeReturnTo } from '@/auth/returnTo'

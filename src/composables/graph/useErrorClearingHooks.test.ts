@@ -21,18 +21,18 @@ import {
 } from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import * as missingModelScan from '@/platform/missingModel/missingModelScan'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
 
 function stubAppRootGraph(graph: LGraph | undefined) {
   vi.spyOn(app, 'rootGraphOrUndefined', 'get').mockReturnValue(graph)

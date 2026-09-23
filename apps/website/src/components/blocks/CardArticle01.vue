@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import Badge from '../ui/badge/Badge.vue'
-
 import { resolveRel } from '../../utils/cta'
 import CardArrow from '../common/CardArrow.vue'
+import Badge from '../ui/badge/Badge.vue'
 import ButtonPill from '../ui/button-pill/ButtonPill.vue'
 import Card from '../ui/card/Card.vue'
 import CardContent from '../ui/card/CardContent.vue'

@@ -1,23 +1,23 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useResizeObserver } from '@vueuse/core'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createApp, defineComponent, nextTick, ref, computed } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 import WidgetImageCrop from '@/components/imagecrop/WidgetImageCrop.vue'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { resolveNode } from '@/utils/litegraphUtil'
 import {
   createMockLGraphNode,
   createMockSubgraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 import { imageCropLoadingAfterUrlChange, useImageCrop } from './useImageCrop'
 

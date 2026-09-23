@@ -1,12 +1,12 @@
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
-import type { CoachStep } from '../../composables/agent/useOnboarding'
 
+import type { CoachStep } from '../../composables/agent/useOnboarding'
 import OnboardingCoach from './OnboardingCoach.vue'
 
 const KEY = 'coach-test'

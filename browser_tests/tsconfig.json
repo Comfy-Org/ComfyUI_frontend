@@ -7,7 +7,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "resolveJsonModule": true,
-    "types": ["vite/client"]
+    "types": ["@webgpu/types", "vite/client"]
   },
   "include": [
     "**/*.ts",

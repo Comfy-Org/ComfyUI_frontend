@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import type { Pack } from './cloudNodes'
-
 import { toGridPack } from './cloudNodes'
 
 describe('toGridPack', () => {

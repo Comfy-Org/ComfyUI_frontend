@@ -1,14 +1,13 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { Search, X } from '@lucide/vue'
 import { useMounted } from '@vueuse/core'
-import { computed, ref, useTemplateRef } from 'vue'
 import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
+import { computed, ref, useTemplateRef } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
+import { useVisualViewport } from '../../composables/useVisualViewport'
 import type { WorkshopModel } from '../../config/models-catalogue'
 import { filterWorkshopModels } from '../../config/models-catalogue'
-import { useVisualViewport } from '../../composables/useVisualViewport'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopSearchPanel from './WorkshopSearchPanel.vue'

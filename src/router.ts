@@ -8,19 +8,18 @@ import {
 import type { RouteLocationNormalized } from 'vue-router'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
+import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/desktopLoginRedemption'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
+import { PRESERVED_QUERY_DEFINITIONS } from '@/platform/navigation/preservedQueryDefinitions'
+import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
+import { unmatchedRouteRedirect } from '@/platform/navigation/unmatchedRoute'
 import { useTelemetry } from '@/platform/telemetry'
+import { preserveLoggedOutShareAuthAttribution } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
 import { useDialogService } from '@/services/dialogService'
 import { useAuthStore } from '@/stores/authStore'
 import { useUserStore } from '@/stores/userStore'
 import LayoutDefault from '@/views/layouts/LayoutDefault.vue'
-
-import { captureOAuthRequestId } from '@/platform/cloud/oauth/oauthState'
-import { installDesktopLoginRedemption } from '@/platform/cloud/onboarding/desktopLoginRedemption'
-import { PRESERVED_QUERY_DEFINITIONS } from '@/platform/navigation/preservedQueryDefinitions'
-import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
-import { unmatchedRouteRedirect } from '@/platform/navigation/unmatchedRoute'
-import { preserveLoggedOutShareAuthAttribution } from '@/platform/workflow/sharing/utils/shareAuthAttribution'
 
 const cloudOnboardingRoutes = isCloud
   ? (await import('./platform/cloud/onboarding/onboardingCloudRoutes'))

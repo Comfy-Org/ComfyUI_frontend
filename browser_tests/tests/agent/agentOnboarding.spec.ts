@@ -1,12 +1,11 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
-
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
   test('walks all four accessible cards and persists completion', async ({

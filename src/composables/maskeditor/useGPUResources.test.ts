@@ -1,8 +1,9 @@
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
+
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 vi.mock<unknown>(import('typegpu'), () => ({
   tgpu: {

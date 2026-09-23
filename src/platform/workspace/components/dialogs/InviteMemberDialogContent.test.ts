@@ -1,19 +1,17 @@
-import { computed, ref } from 'vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTelemetry } from '@/platform/telemetry'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { buildInviteLink } from '@/platform/workspace/utils/inviteLinks'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import InviteMemberDialogContent from './InviteMemberDialogContent.vue'
-
-import { buildInviteLink } from '@/platform/workspace/utils/inviteLinks'
-
-import type { WorkspacePendingInvite } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const mockToastAdd = vi.hoisted(() => vi.fn())
 const mockMaxSeats = ref<number | null>(73)

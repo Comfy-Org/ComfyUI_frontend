@@ -1,7 +1,3 @@
-import type { Component } from 'vue'
-import type { RouterHistory, RouteRecordRaw } from 'vue-router'
-import { createRouter, createWebHistory } from 'vue-router'
-
 import type { SessionSnapshot } from '@comfyorg/account-core/session'
 import type { BillingIntent } from '@comfyorg/billing-contract'
 import {
@@ -9,6 +5,9 @@ import {
   billingIntentPath,
   parseBillingEntry
 } from '@comfyorg/billing-contract'
+import type { Component } from 'vue'
+import type { RouterHistory, RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 
 import { recordBillingEntry } from '@/entry/billingEntry'
 import { billingWebSessionPhase } from '@/session/billingWebSession'

@@ -1,8 +1,8 @@
 import { computed } from 'vue'
 
+import { i18n } from '@/i18n'
 import { isDesktop } from '@/platform/distribution/types'
 import { electronAPI } from '@/utils/envUtil'
-import { i18n } from '@/i18n'
 
 /**
  * Composable for building docs.comfy.org URLs with automatic locale and platform detection

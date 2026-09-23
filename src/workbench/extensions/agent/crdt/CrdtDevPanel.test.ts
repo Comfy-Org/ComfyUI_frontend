@@ -26,9 +26,9 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
-import CrdtDevPanel from './CrdtDevPanel.vue'
 import { setCrdtDebugEnabled } from './crdtDebugGate'
 import * as crdtDebugReport from './crdtDebugReport'
+import CrdtDevPanel from './CrdtDevPanel.vue'
 import { clearDevEvents, recordDevEvent } from './devPanelLog'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 

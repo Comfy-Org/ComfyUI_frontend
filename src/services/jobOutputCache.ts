@@ -8,19 +8,19 @@
 
 import QuickLRU from '@alloc/quick-lru'
 
+import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
+import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type {
   JobDetail,
   JobOutputAsset
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import type { TaskItemImpl } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/utils/resultItem'
-import { findResultIndexByUrl } from '@/utils/resultItemUrl'
-import { filterPreviewableResults } from '@/utils/resultItem'
 import { parseTaskOutput } from '@/stores/resultItemParsing'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { filterPreviewableResults } from '@/utils/resultItem'
+import { findResultIndexByUrl } from '@/utils/resultItemUrl'
 
 const MAX_TASK_CACHE_SIZE = 50
 const MAX_JOB_DETAIL_CACHE_SIZE = 50

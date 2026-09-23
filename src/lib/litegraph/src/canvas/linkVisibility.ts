@@ -1,9 +1,9 @@
 import { st, t } from '@/i18n'
-import type { IContextMenuValue } from '../interfaces'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { LinkId } from '@/types/linkId'
 
+import type { IContextMenuValue } from '../interfaces'
 import type { CanvasPointerEvent } from '../types/events'
 
 interface LinkMutationHost {

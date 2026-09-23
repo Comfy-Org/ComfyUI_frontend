@@ -1,10 +1,10 @@
+import type { FetchedAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import {
   findOutputAsset,
   isAssetPreviewSupported
 } from '@/platform/assets/utils/assetPreviewUtil'
 import { api } from '@/scripts/api'
 
-import type { FetchedAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import type { ReplyAsset } from './replyAssets'
 
 async function displayFilename(asset: ReplyAsset): Promise<string> {

@@ -1,5 +1,5 @@
-import { slotId } from '@/types/slotId'
 import type { NodeId } from '@/types/nodeId'
+import { slotId } from '@/types/slotId'
 import type { SlotId, SlotIndex } from '@/types/slotId'
 
 export function getSlotKey(

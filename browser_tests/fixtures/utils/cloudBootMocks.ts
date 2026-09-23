@@ -1,12 +1,11 @@
-import type { Page } from '@playwright/test'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import type { Page } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 interface CloudBootOptions {
   /** Remote-config payload for `/api/features` (enables the flags under test). */

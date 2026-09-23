@@ -1,6 +1,3 @@
-import { expect, mergeTests } from '@playwright/test'
-import type { Locator, Page, WebSocketRoute } from '@playwright/test'
-
 import type {
   AgentCancelAccepted,
   AgentError,
@@ -8,16 +5,17 @@ import type {
   AgentTurnAccepted
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { expect, mergeTests } from '@playwright/test'
+import type { Locator, Page, WebSocketRoute } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const THREAD_ID = 'b9d0a2a1-0f2c-4f1a-9a5e-6b0f4f2c1d77'
 const TURN_ID = '2dd4f367-3399-4cb4-8127-547f531c289a'

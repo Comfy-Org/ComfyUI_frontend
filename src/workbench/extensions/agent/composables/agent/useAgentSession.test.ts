@@ -6,8 +6,8 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import type {
   AgentAnswerAccepted,
@@ -29,10 +29,9 @@ import type {
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
-
-import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
+import type { SelectedNode } from './useCanvasSelection'
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()

@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { TagsInputItemTextProps } from 'reka-ui'
 import { TagsInputItemText, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className, ...restProps } = defineProps<
   TagsInputItemTextProps & { class?: HTMLAttributes['class'] }

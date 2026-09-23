@@ -1,10 +1,9 @@
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import type { PromptFailureResponse } from '@/platform/remote/comfyui/types'
-
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 
 // Regression for #12840: a free-tier paywall on queue (`POST /prompt` 402 with
 // `{ error: { type: 'PAYMENT_REQUIRED', message: 'Subscription required to

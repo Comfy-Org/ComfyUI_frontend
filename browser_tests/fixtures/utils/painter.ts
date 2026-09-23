@@ -1,5 +1,5 @@
-import type { Locator, Page } from '@playwright/test'
 import type { TestGraphAccess } from '@e2e/types/globals'
+import type { Locator, Page } from '@playwright/test'
 
 export async function drawStroke(
   page: Page,

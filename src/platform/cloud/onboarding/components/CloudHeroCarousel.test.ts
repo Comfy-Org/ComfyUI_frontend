@@ -1,5 +1,5 @@
-import { cleanup, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { cleanup, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 

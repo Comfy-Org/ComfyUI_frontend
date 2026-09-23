@@ -1,6 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
 import type {
   Asset,
   AssetCreated,
@@ -14,6 +11,7 @@ import {
   cleanupFakeModel,
   loadWorkflowAndOpenErrorsTab
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import {
   NESTED_PROMOTED_MISSING_MODEL_WORKFLOW,
   expectNoMissingModelUi,
@@ -22,11 +20,12 @@ import {
   selectSectionAssetPromotedModel,
   selectVueAssetPromotedModel
 } from '@e2e/fixtures/utils/promotedMissingModel'
-import { TestIds } from '@e2e/fixtures/selectors'
-import { toNodeId } from '@/types/nodeId'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import type { AssetMetadata } from '@/platform/assets/schemas/assetSchema'
+import { toNodeId } from '@/types/nodeId'
 
 const WORKFLOW = 'missing/nested_subgraph_installed_model'
 const IMPORT_SECTIONS_WORKFLOW = 'missing/cloud_missing_model_import_sections'

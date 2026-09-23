@@ -121,6 +121,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, useTemplateRef } from 'vue'
 
 import WidgetBoundingBox from '@/components/boundingbox/WidgetBoundingBox.vue'
@@ -138,7 +139,6 @@ import {
 import type { Bounds } from '@/renderer/core/layout/types'
 import type { NodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { widget, nodeId } = defineProps<{
   widget: SimplifiedWidget

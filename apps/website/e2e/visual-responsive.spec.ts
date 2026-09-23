@@ -1,10 +1,9 @@
 import type { Page } from '@playwright/test'
-
 import { expect } from '@playwright/test'
 
-import { test } from './fixtures/workshopVisibility'
 import { waitForIsland } from './fixtures/islands'
 import { waitForPpFormulaLight } from './fixtures/visualFonts'
+import { test } from './fixtures/workshopVisibility'
 import { VIEWPORTS } from './viewports'
 
 test.describe.configure({ timeout: 60_000 })

@@ -1,8 +1,3 @@
-import { WORKSHOP_LOCAL_DEV, WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
-import { posthog } from 'posthog-js'
-import { readonly, ref } from 'vue'
-import type { Ref } from 'vue'
-
 import type { SessionRefreshOutcome } from '@comfyorg/account-core/session'
 import {
   AUTH_TELEMETRY_EVENT,
@@ -12,12 +7,17 @@ import type {
   AuthCompletedMetadata,
   AuthErrorMetadata
 } from '@comfyorg/account-core/telemetry'
-import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
 import { normalizeTurnstileMode } from '@comfyorg/account-core/turnstile'
 import type { TurnstileMode } from '@comfyorg/account-core/turnstile'
+import { createPostHogBeforeSend } from '@comfyorg/shared-frontend-utils/piiUtil'
+import { WORKSHOP_LOCAL_DEV, WORKSHOP_DEPLOY_ENV } from 'astro:env/client'
+import { posthog } from 'posthog-js'
+import { readonly, ref } from 'vue'
+import type { Ref } from 'vue'
 
 import type { Platform } from '@/composables/useDownloadUrl'
 import type { ConnectionId, McpClientId } from '@/config/mcpClients'
+
 import type { WorkshopAnalyticsEvent } from './workshop-analytics'
 import { captureWorkshopHealth } from './workshop-datadog'
 

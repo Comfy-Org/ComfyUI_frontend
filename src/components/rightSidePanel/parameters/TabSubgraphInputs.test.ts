@@ -5,11 +5,11 @@ import { createI18n } from 'vue-i18n'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'

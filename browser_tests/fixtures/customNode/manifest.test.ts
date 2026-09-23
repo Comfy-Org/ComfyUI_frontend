@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest'
 import type { CoreManifestEntry } from '@e2e/fixtures/customNode/manifest'
 import {
   assertCloudManifestShape,
@@ -10,6 +9,7 @@ import {
   servesFrontendAssetsForPack,
   shardOf
 } from '@e2e/fixtures/customNode/manifest'
+import { describe, expect, it } from 'vitest'
 
 function validEntry(): CoreManifestEntry {
   return {

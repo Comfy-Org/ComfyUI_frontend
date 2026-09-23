@@ -1,5 +1,4 @@
 import type { Pack } from '../data/cloudNodes'
-
 import { fetchCloudNodesForBuild } from './cloudNodes'
 import { reportCloudNodesOutcome } from './cloudNodes.ci'
 

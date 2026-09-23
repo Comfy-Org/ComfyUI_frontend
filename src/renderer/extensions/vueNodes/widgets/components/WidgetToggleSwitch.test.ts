@@ -1,15 +1,15 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
 
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
-import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
 import { createMockWidget } from './widgetTestUtils'
+import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
 
 const i18n = createI18n({
   legacy: false,

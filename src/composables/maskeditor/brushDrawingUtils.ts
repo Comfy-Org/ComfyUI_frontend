@@ -1,8 +1,8 @@
 import QuickLRU from '@alloc/quick-lru'
 
-import { hexToRgb, parseToRgb } from '@/utils/colorUtil'
 import { BrushShape } from '@/extensions/core/maskeditor/types'
 import type { Point } from '@/extensions/core/maskeditor/types'
+import { hexToRgb, parseToRgb } from '@/utils/colorUtil'
 
 export type DirtyRect = {
   minX: number

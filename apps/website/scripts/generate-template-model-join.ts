@@ -13,13 +13,13 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
+import type { WorkshopModel } from '../src/config/models-catalogue'
 import {
   authoredRouterModelSlugAliases,
   authoredWorkshopModels
 } from '../src/config/workshop-browse-content'
-import type { WorkshopModel } from '../src/config/models-catalogue'
-import { hubTemplatesSchema } from '../src/lib/hub/types'
 import { modelNamedBy, partnerModelFor } from '../src/lib/hub/template-use-case'
+import { hubTemplatesSchema } from '../src/lib/hub/types'
 import { API_PROVIDER_MAP } from './generate-models'
 import { isDirectExecution } from './script-entry-point'
 

@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
-
 import type { BillingPlansData } from '@comfyorg/account-core/billing'
 import { usePlans, usePreviewSubscribe } from '@comfyorg/account-ui/billing'
 import { billingIntentPath } from '@comfyorg/billing-contract'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 
 import PlanCard from '@/components/PlanCard.vue'
 import SubscriptionActions from '@/components/SubscriptionActions.vue'

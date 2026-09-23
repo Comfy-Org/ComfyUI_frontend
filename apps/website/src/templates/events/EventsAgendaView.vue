@@ -2,9 +2,8 @@
 import { computed } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
-import type { DirectoryRow } from '../../utils/eventsDirectory'
-
 import { t } from '../../i18n/translations'
+import type { DirectoryRow } from '../../utils/eventsDirectory'
 import { groupRowsByMonth, monthLabel } from '../../utils/eventsDirectory'
 import EventsDirectoryRow from './EventsDirectoryRow.vue'
 

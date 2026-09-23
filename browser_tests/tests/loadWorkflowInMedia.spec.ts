@@ -1,11 +1,10 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   routeObjectInfoFromSetupApi,
   setComboInputOptions
 } from '@e2e/fixtures/utils/objectInfo'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expect } from '@playwright/test'
 
 test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })
 

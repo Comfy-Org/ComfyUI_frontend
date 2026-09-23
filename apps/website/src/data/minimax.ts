@@ -1,9 +1,8 @@
+import { externalLinks } from '../config/routes'
 import type {
   ModelLaunchMedia,
   ModelLaunchPage
 } from '../templates/model-launch/types'
-
-import { externalLinks } from '../config/routes'
 
 // MiniMax H3 renders, encoded to the site's web video profile and served from
 // media.comfy.org. Each poster is the clip's own first frame, so it registers

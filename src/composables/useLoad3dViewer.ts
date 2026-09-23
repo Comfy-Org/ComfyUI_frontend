@@ -1,14 +1,7 @@
-import { ref, toRaw, watch } from 'vue'
 import QuickLRU from '@alloc/quick-lru'
+import { ref, toRaw, watch } from 'vue'
 
-import type Load3d from '@/extensions/core/load3d/Load3d'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
-import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
-import {
-  isAssetPreviewSupported,
-  persistThumbnail
-} from '@/platform/assets/utils/assetPreviewUtil'
 import type {
   AnimationItem,
   BackgroundRenderModeType,
@@ -22,8 +15,15 @@ import type {
   SceneConfig,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
+import type Load3d from '@/extensions/core/load3d/Load3d'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import {
+  isAssetPreviewSupported,
+  persistThumbnail
+} from '@/platform/assets/utils/assetPreviewUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useLoad3dService } from '@/services/load3dService'

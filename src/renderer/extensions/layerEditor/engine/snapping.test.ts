@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import { applySnap, buildSnapTargets, nearestTarget } from './snapping'
 
 const OPTS = { thrX: 0.02, thrY: 0.02, minWH: 0.02 }

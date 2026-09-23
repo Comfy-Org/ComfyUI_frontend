@@ -1,5 +1,5 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { onBeforeSignInLeave } from '../../config/workshop-return'

@@ -1,20 +1,20 @@
-import type { AstroIntegration } from 'astro'
-import { envField } from 'astro/config'
 // Both imported statically. A dynamic `import()` inside the hook throws
 // "Vite module runner has been closed" — by `astro:build:done` the runner that
 // resolves module specifiers is gone, so anything not already loaded fails.
 import { existsSync } from 'node:fs'
 import { readdir, rm } from 'node:fs/promises'
-import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 
-import { workshopClientBoundary } from './workshop-client-boundary'
+import type { AstroIntegration } from 'astro'
+import { envField } from 'astro/config'
 
 import {
   assertWorkshopCloudEnvForBuild,
   isWorkshopInBuild,
   isLegacyWorkshopRoute
 } from '../config/workshop-release'
+import { workshopClientBoundary } from './workshop-client-boundary'
 
 export function modelsBuildRoutes(enabled: boolean) {
   const entry = (name: string) =>

@@ -1,9 +1,9 @@
-import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
-
-import type { operations } from '@/types/comfyRegistryTypes'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+
+import type { operations } from '@/types/comfyRegistryTypes'
 
 const LOCAL_AUTH_BOOT_TIMEOUT = 45_000
 type CreateCustomerResponse =

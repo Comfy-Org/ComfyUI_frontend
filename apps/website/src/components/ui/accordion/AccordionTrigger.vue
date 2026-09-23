@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import type { AccordionTriggerProps } from 'reka-ui'
-import type { HTMLAttributes } from 'vue'
-import { Minus } from '@lucide/vue'
 import { cn } from '@comfyorg/tailwind-utils'
+import { Minus } from '@lucide/vue'
 import { reactiveOmit } from '@vueuse/core'
+import type { AccordionTriggerProps } from 'reka-ui'
 import { AccordionHeader, AccordionTrigger } from 'reka-ui'
+import type { HTMLAttributes } from 'vue'
 
 const props = defineProps<
   AccordionTriggerProps & { class?: HTMLAttributes['class'] }

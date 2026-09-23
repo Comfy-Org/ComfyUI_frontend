@@ -1,5 +1,3 @@
-import type { ComfyApp } from '@/scripts/app'
-import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -10,6 +8,8 @@ import {
   persistThumbnail,
   resolvePreviewUrl
 } from '@/platform/assets/utils/assetPreviewUtil'
+import type { ComfyApp } from '@/scripts/app'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 const mockFetchApi = vi.hoisted(() => vi.fn())
 const mockApiURL = vi.hoisted(() =>

@@ -36,11 +36,11 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import type { NavItemData } from '@/types/navTypes'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import NavIcon from './NavIcon.vue'
 

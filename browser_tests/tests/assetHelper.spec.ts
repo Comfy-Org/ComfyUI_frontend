@@ -1,7 +1,11 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import {
+  STABLE_CHECKPOINT,
+  STABLE_LORA,
+  STABLE_INPUT_IMAGE,
+  STABLE_OUTPUT
+} from '@e2e/fixtures/data/assetFixtures'
 import {
   createAssetHelper,
   withModels,
@@ -11,12 +15,7 @@ import {
   withPagination,
   withUploadResponse
 } from '@e2e/fixtures/helpers/AssetHelper'
-import {
-  STABLE_CHECKPOINT,
-  STABLE_LORA,
-  STABLE_INPUT_IMAGE,
-  STABLE_OUTPUT
-} from '@e2e/fixtures/data/assetFixtures'
+import { expect, mergeTests } from '@playwright/test'
 
 const test = mergeTests(comfyPageFixture, assetApiFixture)
 

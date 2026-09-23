@@ -1,7 +1,5 @@
 import { useStorage } from '@vueuse/core'
-
-import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
-
+import { computed, ref } from 'vue'
 /**
  * Remote configuration service
  *
@@ -14,7 +12,7 @@ import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
  * This module is tree-shaken in OSS builds.
  */
 
-import { computed, ref } from 'vue'
+import type { ServerFeatureFlag } from '@/composables/useFeatureFlags'
 
 import type { RemoteConfig } from './types'
 

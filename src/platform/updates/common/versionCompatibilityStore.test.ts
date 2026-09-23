@@ -2,9 +2,9 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { until, useStorage } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 
 vi.mock<unknown>(import('@/config'), () => ({
   default: {

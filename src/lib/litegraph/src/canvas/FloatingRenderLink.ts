@@ -1,8 +1,3 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import type { LLink } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -16,9 +11,14 @@ import type {
   Point,
   SlotIndex
 } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 import type { RenderLink } from './RenderLink'
 

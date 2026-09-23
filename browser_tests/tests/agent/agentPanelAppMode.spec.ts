@@ -1,9 +1,8 @@
+import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
+import type { WorkspaceStore } from '@e2e/types/globals'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { WorkspaceStore } from '@e2e/types/globals'
-
-import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'

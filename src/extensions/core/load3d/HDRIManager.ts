@@ -4,8 +4,8 @@ import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader'
 
 import type { RendererViewState } from '@/renderer/three/sharedWebGLRenderer'
 
-import Load3dUtils from './Load3dUtils'
 import type { EventManagerInterface } from './interfaces'
+import Load3dUtils from './Load3dUtils'
 
 export class HDRIManager {
   private scene: THREE.Scene

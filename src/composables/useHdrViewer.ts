@@ -8,15 +8,15 @@ import {
   detectGamutFromChromaticities,
   gamutToSrgbMatrix
 } from '@/renderer/hdr/colorGamut'
-import {
-  HDR_VIEWER_FRAGMENT_SHADER,
-  HDR_VIEWER_VERTEX_SHADER
-} from '@/renderer/hdr/hdrViewerShader'
 import type { ChannelHistograms, ImageStats } from '@/renderer/hdr/hdrStats'
 import {
   computeChannelHistograms,
   computeImageStats
 } from '@/renderer/hdr/hdrStats'
+import {
+  HDR_VIEWER_FRAGMENT_SHADER,
+  HDR_VIEWER_VERTEX_SHADER
+} from '@/renderer/hdr/hdrViewerShader'
 import { WebGLViewport } from '@/renderer/three/WebGLViewport'
 import { getImageFilenameFromUrl } from '@/utils/hdrFormatUtil'
 

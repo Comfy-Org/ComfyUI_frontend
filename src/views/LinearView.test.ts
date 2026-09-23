@@ -3,10 +3,10 @@ import type { DetachedWindowAPI } from 'happy-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { SidebarTabExtension } from '@/types/extensionTypes'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 import LinearView from './LinearView.vue'

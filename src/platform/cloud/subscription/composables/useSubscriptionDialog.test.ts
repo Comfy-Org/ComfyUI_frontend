@@ -1,28 +1,27 @@
-import { useDialogStore } from '@/stores/dialogStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { BillingOperationRecordView } from '@/platform/workspace/billing/sdk/operationRecordView'
-import { fakeBillingSdk } from '@/platform/workspace/billing/sdk/billingSdkTestUtils'
-import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
-import { useTelemetry } from '@/platform/telemetry'
-
-import { useBillingRouting } from '@/composables/billing/useBillingRouting'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { SubscriptionInfo } from '@/composables/billing/types'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useTelemetry } from '@/platform/telemetry'
 import type {
   BillingSubscriptionStatus,
   TeamCreditStops,
   TeamCreditStopSummary
 } from '@/platform/workspace/api/workspaceApi'
+import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
+import { fakeBillingSdk } from '@/platform/workspace/billing/sdk/billingSdkTestUtils'
+import type { BillingOperationRecordView } from '@/platform/workspace/billing/sdk/operationRecordView'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   getPendingSubscriptionCheckout,
   savePendingSubscriptionCheckout
 } from '@/platform/workspace/utils/pendingSubscriptionCheckout'
+import { useAuthStore } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import { useSubscriptionDialog } from './useSubscriptionDialog'
 

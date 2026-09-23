@@ -1,9 +1,9 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn(),
@@ -24,17 +24,18 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
 
+import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 import {
   collectAllNodes,
   getExecutionIdByNode
 } from '@/utils/graphTraversalUtil'
-import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
-import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
+
 import { rescanAndSurfaceMissingNodes } from './missingNodeScan'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
 
 function mockNode(
   id: number,

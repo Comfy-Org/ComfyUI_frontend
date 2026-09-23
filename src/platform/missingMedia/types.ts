@@ -1,5 +1,5 @@
-import type { SerializedNodeId } from '@/types/nodeId'
 import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 export type MediaType = 'image' | 'video' | 'audio'
 

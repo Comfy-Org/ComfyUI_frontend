@@ -1,6 +1,7 @@
-import { useDialogService } from '@/services/dialogService'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useDialogService } from '@/services/dialogService'
 
 import { useCreateWorkspaceUrlLoader } from './useCreateWorkspaceUrlLoader'
 

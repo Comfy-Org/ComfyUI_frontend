@@ -1,7 +1,7 @@
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
-import type { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 import ManagerDialog from '@/workbench/extensions/manager/components/manager/ManagerDialog.vue'
+import type { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
 
 const DIALOG_KEY = 'global-manager'
 

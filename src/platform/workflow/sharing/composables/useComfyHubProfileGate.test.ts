@@ -1,5 +1,5 @@
-import { computed, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'

@@ -1,5 +1,11 @@
-import type { Page, WebSocketRoute } from '@playwright/test'
 import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
+import type { HostDoc, HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
+import type {
+  ParsedWireBatch,
+  WireOpEnvelope
+} from '@e2e/fixtures/agentWireFrame'
+import type { Page, WebSocketRoute } from '@playwright/test'
 
 import {
   DOC_PROTOCOL_VERSION,
@@ -7,13 +13,6 @@ import {
 } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import type { HostDoc, HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
-import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
-import type {
-  ParsedWireBatch,
-  WireOpEnvelope
-} from '@e2e/fixtures/agentWireFrame'
 
 const SUBSCRIBE_TIMEOUT = 15_000
 

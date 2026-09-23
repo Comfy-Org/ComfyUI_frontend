@@ -1,12 +1,12 @@
-import { getActivePinia } from 'pinia'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-
+import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import FormDropdown from './FormDropdown.vue'
 import { DROPDOWN_PANEL_CLASS } from './shared'

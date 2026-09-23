@@ -1,6 +1,7 @@
+import { describe, expect, it } from 'vitest'
+
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { shapeVariantClass } from '@/renderer/extensions/vueNodes/utils/nodeStyleUtils'
-import { describe, expect, it } from 'vitest'
 
 describe('shapeVariantClass', () => {
   const variants = {

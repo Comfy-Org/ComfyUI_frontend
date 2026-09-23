@@ -1,21 +1,23 @@
 <script setup lang="ts">
-import BreadthumbIcon from '@/components/icons/BreadthumbIcon.vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, onUnmounted, ref, watch } from 'vue'
-import { getMainNavigation } from '../../../data/mainNavigation'
-import { getRoutes } from '../../../config/routes.ts'
-import { lockScroll, unlockScroll } from '../../../composables/scrollLock'
-import type { Locale } from '../../../i18n/translations.ts'
-import { t } from '../../../i18n/translations.ts'
-import NavLinkContent from './NavLinkContent.vue'
+
+import BreadthumbIcon from '@/components/icons/BreadthumbIcon.vue'
+import Button from '@/components/ui/button/Button.vue'
 import Sheet from '@/components/ui/sheet/Sheet.vue'
 import SheetContent from '@/components/ui/sheet/SheetContent.vue'
 import SheetDescription from '@/components/ui/sheet/SheetDescription.vue'
 import SheetHeader from '@/components/ui/sheet/SheetHeader.vue'
 import SheetTitle from '@/components/ui/sheet/SheetTitle.vue'
 import SheetTrigger from '@/components/ui/sheet/SheetTrigger.vue'
-import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@comfyorg/tailwind-utils'
+
+import { lockScroll, unlockScroll } from '../../../composables/scrollLock'
+import { getRoutes } from '../../../config/routes.ts'
+import { getMainNavigation } from '../../../data/mainNavigation'
+import type { Locale } from '../../../i18n/translations.ts'
+import { t } from '../../../i18n/translations.ts'
+import NavLinkContent from './NavLinkContent.vue'
 
 const { locale = 'en', workshopInBuild = false } = defineProps<{
   locale?: Locale

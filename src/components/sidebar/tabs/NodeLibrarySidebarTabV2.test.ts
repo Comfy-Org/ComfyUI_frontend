@@ -1,7 +1,7 @@
-import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { useLocalStorage } from '@vueuse/core'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'

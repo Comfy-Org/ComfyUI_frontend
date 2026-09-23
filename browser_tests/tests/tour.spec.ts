@@ -1,7 +1,6 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { onboardingFixture } from '@e2e/fixtures/tourFixture'
+import { expect, mergeTests } from '@playwright/test'
 
 import {
   COACH_IDS,

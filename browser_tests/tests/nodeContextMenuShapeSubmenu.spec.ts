@@ -1,8 +1,7 @@
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { openMoreOptionsMenu } from '@e2e/fixtures/utils/selectionToolboxMoreOptions'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Node context menu shape submenu (FE-570)',

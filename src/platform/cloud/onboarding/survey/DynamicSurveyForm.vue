@@ -94,8 +94,8 @@
 </template>
 
 <script setup lang="ts">
-import { useElementSize } from '@vueuse/core'
 import { toTypedSchema } from '@vee-validate/zod'
+import { useElementSize } from '@vueuse/core'
 import { useForm } from 'vee-validate'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'

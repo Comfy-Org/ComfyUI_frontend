@@ -1,10 +1,9 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { NodeState } from '@/types/nodeState'
 import { LGraphBadge, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { usePartitionedBadges } from '@/renderer/extensions/vueNodes/composables/usePartitionedBadges'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
@@ -12,6 +11,7 @@ import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { NodeBadgeMode } from '@/types/nodeSource'
+import type { NodeState } from '@/types/nodeState'
 
 const NODE_ID = toNodeId(5)
 

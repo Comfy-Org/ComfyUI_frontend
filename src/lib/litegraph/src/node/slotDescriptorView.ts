@@ -1,8 +1,8 @@
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { toClass } from '@/lib/litegraph/src/utils/type'

@@ -1,4 +1,5 @@
 import { parseTags } from '../cli/flags'
+import { toSlug } from '../cli/slug'
 import {
   customDistribution,
   normalizeBackendUrl,
@@ -9,7 +10,6 @@ import { parseFeatureFlagSpecs } from '../featureFlags'
 import { TAG_REGISTRY } from '../tags'
 import { useCaseById } from '../useCases'
 import type { UseCase } from '../useCases'
-import { toSlug } from '../cli/slug'
 
 export interface RecordPrefill {
   distribution?: Distribution

@@ -1,15 +1,14 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { listRecordedConversations } from '@e2e/fixtures/data/agent/agentConversation'
-import { toNodeId } from '@/types/nodeId'
-
 import {
   BYTEDANCE_REFERENCE_NODE_TYPE,
   byteDanceReferenceNodeDef
 } from '@e2e/fixtures/data/byteDanceReferenceNodeDef'
 import { referenceGraphOps } from '@e2e/fixtures/data/minimaxAutogrowReload'
 import { wireAndReopen } from '@e2e/fixtures/utils/minimaxAutogrowReload'
+import { expect } from '@playwright/test'
+
+import { toNodeId } from '@/types/nodeId'
 
 // A recording whose second turn wires two nodes; the first turn only adds.
 const WIRING_CASE = 'agent-rec-two-turn-dependent-edit'

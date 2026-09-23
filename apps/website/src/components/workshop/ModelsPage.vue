@@ -7,7 +7,6 @@ import {
   fetchModelsPage
 } from '../../config/models-page-data'
 import { t } from '../../i18n/translations'
-
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
 

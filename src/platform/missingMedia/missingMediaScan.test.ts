@@ -14,7 +14,12 @@ import {
 import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+
 import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
+import {
+  countMissingMediaReferences,
+  getMissingMediaReferences
+} from './missingMediaGrouping'
 import {
   isMissingMediaCandidateScopeActive,
   scanAllMediaCandidates,
@@ -23,10 +28,6 @@ import {
   groupCandidatesByName,
   groupCandidatesByMediaType
 } from './missingMediaScan'
-import {
-  countMissingMediaReferences,
-  getMissingMediaReferences
-} from './missingMediaGrouping'
 import type { MissingMediaCandidate } from './types'
 
 vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {

@@ -1,6 +1,6 @@
 import { checkGhAvailable } from '../pr/gh'
-import { detectPlatform } from './platform'
 import { pass, warn, info } from '../ui/logger'
+import { detectPlatform } from './platform'
 import type { CheckResult } from './types'
 
 export async function checkGh(): Promise<CheckResult> {

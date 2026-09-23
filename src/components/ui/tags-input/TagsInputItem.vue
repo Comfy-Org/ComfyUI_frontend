@@ -1,9 +1,9 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { TagsInputItemProps } from 'reka-ui'
 import { TagsInputItem, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
 import { tagVariants } from '@/components/chip/tag.variants'
 
 const { class: className, ...restProps } = defineProps<

@@ -2,6 +2,7 @@ import type {
   ComfyDesktop2TelemetryBridge,
   ComfyDesktop2TelemetryValue
 } from '@comfyorg/comfyui-desktop-bridge-types'
+
 import type {
   AddCreditsClickMetadata,
   AgentEntryButtonClickedMetadata,

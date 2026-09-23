@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { ChevronRight } from '@lucide/vue'
-
 import type { HTMLAttributes } from 'vue'
 
 const { hover = 'self', class: className } = defineProps<{

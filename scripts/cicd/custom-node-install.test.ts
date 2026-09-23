@@ -7,6 +7,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+
 import { afterEach, describe, expect, it } from 'vitest'
 
 import * as customNodeInstaller from './custom-node-install'

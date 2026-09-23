@@ -1,3 +1,5 @@
+import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 /**
  * Composable-owned behavior only (plan 3.5's subscribe-robustness probes):
  * the bridge/client mechanics have their own suites
@@ -11,10 +13,6 @@ import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 import * as Y from 'yjs'
 
-import { render } from '@testing-library/vue'
-import { fromPartial } from '@total-typescript/shoehorn'
-
-import type { GraphMutations } from './graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
 import type { NodeId } from '@/types/nodeId'
@@ -23,6 +21,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import type { DocFrameTransport } from './docFrameClient'
+import type { GraphMutations } from './graphMutations'
 import type { GraphOperation } from './graphOperations'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
 

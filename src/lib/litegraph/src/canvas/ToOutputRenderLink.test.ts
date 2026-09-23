@@ -1,11 +1,11 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import {
   LinkDirection,
   ToOutputRenderLink
 } from '@/lib/litegraph/src/litegraph'
-import type { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LinkConnectorEventMap } from '@/lib/litegraph/src/infrastructure/LinkConnectorEventMap'
 import {
   createMockLGraphNode,
   createMockLinkNetwork,

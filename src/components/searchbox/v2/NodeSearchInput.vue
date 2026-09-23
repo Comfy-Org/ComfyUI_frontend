@@ -52,14 +52,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
 import {
   TagsInputInput,
   TagsInputItem,
   TagsInputItemDelete,
   TagsInputRoot
 } from 'reka-ui'
+import { computed, onMounted, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'

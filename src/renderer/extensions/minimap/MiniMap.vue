@@ -84,13 +84,13 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { breakpointsTailwind, useBreakpoints } from '@vueuse/core'
 import { onMounted, onUnmounted, ref, useTemplateRef } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useMinimap } from '@/renderer/extensions/minimap/composables/useMinimap'
 import { useCommandStore } from '@/stores/commandStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import MiniMapPanel from './MiniMapPanel.vue'
 

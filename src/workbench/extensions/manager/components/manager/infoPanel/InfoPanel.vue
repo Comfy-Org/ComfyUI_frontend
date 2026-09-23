@@ -116,6 +116,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { whenever } from '@vueuse/core'
 import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -123,9 +124,6 @@ import { useI18n } from 'vue-i18n'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import ModelInfoField from '@/platform/assets/components/modelInfo/ModelInfoField.vue'
 import type { components } from '@/types/comfyRegistryTypes'
-import { cn } from '@comfyorg/tailwind-utils'
-import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'
-import PackVersionBadge from '@/workbench/extensions/manager/components/manager/PackVersionBadge.vue'
 import PackEnableToggle from '@/workbench/extensions/manager/components/manager/button/PackEnableToggle.vue'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import PackTryUpdateButton from '@/workbench/extensions/manager/components/manager/button/PackTryUpdateButton.vue'
@@ -134,6 +132,8 @@ import PackUpdateButton from '@/workbench/extensions/manager/components/manager/
 import DescriptionTabPanel from '@/workbench/extensions/manager/components/manager/infoPanel/tabs/DescriptionTabPanel.vue'
 import NodesTabPanel from '@/workbench/extensions/manager/components/manager/infoPanel/tabs/NodesTabPanel.vue'
 import WarningTabPanel from '@/workbench/extensions/manager/components/manager/infoPanel/tabs/WarningTabPanel.vue'
+import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'
+import PackVersionBadge from '@/workbench/extensions/manager/components/manager/PackVersionBadge.vue'
 import { usePackUpdateStatus } from '@/workbench/extensions/manager/composables/nodePack/usePackUpdateStatus'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 import { useImportFailedDetection } from '@/workbench/extensions/manager/composables/useImportFailedDetection'

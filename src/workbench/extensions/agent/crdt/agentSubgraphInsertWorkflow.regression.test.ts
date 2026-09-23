@@ -31,8 +31,6 @@ import type {
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { createGraphMutations } from './graphMutations'
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import {
   LGraph,
   LGraphNode,
@@ -48,10 +46,12 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
+import { createGraphMutations } from './graphMutations'
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()

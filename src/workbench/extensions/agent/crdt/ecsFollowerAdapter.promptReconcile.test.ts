@@ -1,7 +1,7 @@
 import { mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import * as Y from 'yjs'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import * as Y from 'yjs'
 
 import { assert } from '@/base/assert'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -12,9 +12,9 @@ import type { GraphScope } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { createGraphMutations } from './graphMutations'
 
 /**

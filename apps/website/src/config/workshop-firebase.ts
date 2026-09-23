@@ -1,3 +1,9 @@
+import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
+import {
+  CUSTOMER_PROVISIONING_PATH,
+  customerProvisioningRequest,
+  signUpWithProvisioning
+} from '@comfyorg/account-core/provisioning'
 /**
  * The Workshop's Firebase surface: the package-owned identity entry bound
  * to the env-selected project, plus sign-in and customer provisioning as
@@ -7,13 +13,6 @@
  */
 import type { User, UserCredential } from 'firebase/auth'
 import { getAdditionalUserInfo } from 'firebase/auth'
-
-import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
-import {
-  CUSTOMER_PROVISIONING_PATH,
-  customerProvisioningRequest,
-  signUpWithProvisioning
-} from '@comfyorg/account-core/provisioning'
 
 import { captureSignupRollbackFailure } from '../scripts/posthog'
 import {

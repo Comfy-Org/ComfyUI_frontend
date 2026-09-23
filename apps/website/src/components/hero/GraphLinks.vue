@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useElementVisibility, useRafFn } from '@vueuse/core'
-
 import { computed, onMounted, ref, useId, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'

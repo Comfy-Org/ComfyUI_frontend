@@ -7,11 +7,11 @@ import type {
   AgentPaywallPresentation
 } from '../../../services/agent/agentPaywallPresentation'
 import ActivityTrace from './ActivityTrace.vue'
+import type { AgentMessageGroup } from './agentMessageGroup'
 import AgentPaywallCard from './AgentPaywallCard.vue'
 import MarkdownStream from './MarkdownStream.vue'
 import RunApprovalCard from './RunApprovalCard.vue'
 import TabLinkCard from './TabLinkCard.vue'
-import type { AgentMessageGroup } from './agentMessageGroup'
 import WorkSummary from './WorkSummary.vue'
 
 const { group } = defineProps<{

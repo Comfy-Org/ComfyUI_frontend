@@ -7,8 +7,8 @@ import type {
   AgentPanelCloseSource,
   AgentPanelOpenedMetadata
 } from '@/platform/telemetry/types'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
 const PANEL_MIN_WIDTH = 420
 const PANEL_MAX_WIDTH = 960

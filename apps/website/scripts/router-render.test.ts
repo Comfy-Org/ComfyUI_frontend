@@ -1,9 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { loadWorkshopExampleFile } from '../src/config/workshop-example-file-loader'
-import { runWorkshopRouter } from '../src/config/workshop-router-queue'
-import { WorkshopRouterError } from '../src/config/workshop-router-errors'
 import { getAuthoredRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
+import { WorkshopRouterError } from '../src/config/workshop-router-errors'
+import { runWorkshopRouter } from '../src/config/workshop-router-queue'
 import {
   createRouterRenderHelpers,
   prepareRouterRender as preparePublishedRouterRender,

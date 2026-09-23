@@ -1,49 +1,49 @@
 import { toRaw } from 'vue'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
+import { useAppMode } from '@/composables/useAppMode'
 import { t } from '@/i18n'
 import type { Point, SerialisableGraph } from '@/lib/litegraph/src/litegraph'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import {
   normalizePendingWarnings,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
-import { workflowToClipboardItems } from '@/platform/workflow/core/utils/workflowToClipboardItems'
 import {
   areWorkflowIdsEquivalent,
   ensureWorkflowId,
   getLegacyWorkflowId
 } from '@/platform/workflow/core/utils/workflowId'
-import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
+import { workflowToClipboardItems } from '@/platform/workflow/core/utils/workflowToClipboardItems'
 import {
   ComfyWorkflow,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { useTelemetry } from '@/platform/telemetry'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useWorkflowThumbnail } from '@/renderer/core/thumbnail/useWorkflowThumbnail'
 import { app } from '@/scripts/app'
 import { blankGraph, defaultGraph } from '@/scripts/defaultGraph'
 import { useDialogService } from '@/services/dialogService'
-import { useAppMode } from '@/composables/useAppMode'
-import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { reportError } from '@/platform/telemetry/reportError'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { AppMode } from '@/utils/appMode'
 import {
   appendJsonExt,
   appendWorkflowJsonExt,
   generateUUID
 } from '@/utils/formatUtil'
-import type { AppMode } from '@/utils/appMode'
 import type { UUID } from '@/utils/uuid'
 import { ensureNonZeroUuid, zeroUuid } from '@/utils/uuid'
 

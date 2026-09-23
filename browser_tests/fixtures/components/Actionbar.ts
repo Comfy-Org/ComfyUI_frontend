@@ -1,9 +1,9 @@
+import { TestIds } from '@e2e/fixtures/selectors'
+import type { WorkspaceStore } from '@e2e/types/globals'
 import type { Locator, Page, Request } from '@playwright/test'
 import { errors, expect } from '@playwright/test'
 
 import type { AutoQueueMode } from '@/stores/queueSettingsStore'
-import { TestIds } from '@e2e/fixtures/selectors'
-import type { WorkspaceStore } from '@e2e/types/globals'
 
 /** Only the card's 1px border may sit below the run progress bar. */
 const FLUSH_TOLERANCE_PX = 2

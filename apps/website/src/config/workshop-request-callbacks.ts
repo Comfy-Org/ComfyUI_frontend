@@ -5,8 +5,8 @@ import type {
   EncodedWorkshopFile,
   WorkshopRequestInputs
 } from './workshop-creator-request'
-import { WorkshopRouterError } from './workshop-router-errors'
 import { prepareWorkshopDialogue } from './workshop-dialogue'
+import { WorkshopRouterError } from './workshop-router-errors'
 
 type CallbackRequest = Extract<
   WorkshopCreatorForm['request'],

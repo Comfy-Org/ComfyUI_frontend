@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { ActivityPart } from './agentMessageParts'
 import { foldActivity } from './agentActivityRows'
+import type { ActivityPart } from './agentMessageParts'
 
 function tool(name: string, ok?: boolean, durationMs?: number): ActivityPart {
   return {

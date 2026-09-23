@@ -1,9 +1,7 @@
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { PublishDialog } from '@e2e/fixtures/components/PublishDialog'
-
 import { publishFixture as test } from '@e2e/fixtures/helpers/PublishApiHelper'
+import { expect } from '@playwright/test'
 
 const PUBLISH_FEATURE_FLAGS = {
   comfyhub_upload_enabled: true,

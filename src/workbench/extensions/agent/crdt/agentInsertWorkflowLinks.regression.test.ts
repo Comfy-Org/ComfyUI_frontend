@@ -17,8 +17,8 @@ import * as Y from 'yjs'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { graphScopeOf } from '@/types/graphScopeId'
 
-import { AgentCrdtProjection } from './agentCrdtProjection'
 import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
+import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
 import { createGraphMutations } from './graphMutations'
 

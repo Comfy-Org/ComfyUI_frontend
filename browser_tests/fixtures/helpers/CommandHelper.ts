@@ -1,7 +1,7 @@
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import type { Page } from '@playwright/test'
 
 import type { KeyCombo } from '@/platform/keybindings/types'
-import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 export class CommandHelper {
   constructor(private readonly page: Page) {}

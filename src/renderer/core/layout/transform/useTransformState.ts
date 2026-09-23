@@ -1,3 +1,4 @@
+import { createSharedComposable } from '@vueuse/core'
 /**
  * Composable for managing transform state synchronized with LiteGraph canvas
  *
@@ -52,7 +53,6 @@
 import { computed, reactive, readonly } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { createSharedComposable } from '@vueuse/core'
 
 interface Point {
   x: number

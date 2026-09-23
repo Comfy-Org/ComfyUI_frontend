@@ -6,9 +6,9 @@ import type {
   FBOHandle,
   NodeTexture
 } from '../compositor'
+import type { Document } from '../document'
 import { DefaultContentStore } from '../impl/contentStore'
 import { defaultMode } from '../mode'
-import type { Document } from '../document'
 import type { GroupData, Rect, SceneNode, Transform } from '../node'
 import type { NodeKind } from '../nodeKind'
 import { registerNodeKind } from '../nodeKind'

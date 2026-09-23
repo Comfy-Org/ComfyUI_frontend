@@ -2,16 +2,16 @@ import type { UploadImageResponse } from '@comfyorg/ingest-types'
 
 import { writeImageWidgetValue } from '@/composables/maskeditor/imageWidgetAdapter'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type {
   EditorOutputData,
   EditorOutputLayer,
   ImageRef
 } from '@/stores/maskEditorDataStore'
-import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { encodeRgbaAsPng } from '@/utils/pngEncodeUtil'
 import { isResultItemType } from '@/utils/typeGuardUtil'
 

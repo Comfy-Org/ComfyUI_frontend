@@ -1,6 +1,8 @@
+import { describe, expect, it, beforeEach } from 'vitest'
+
+import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type {
   IBaseWidget,
   IWidgetOptions
@@ -9,7 +11,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { toGroupId } from '@/types/groupId'
 import { toNodeId } from '@/types/nodeId'
 import { deriveWidgetVisibility } from '@/types/widgetVisibility'
-import { describe, expect, it, beforeEach } from 'vitest'
+
 import {
   computedSectionDataList,
   flatAndCategorizeSelectedItems,

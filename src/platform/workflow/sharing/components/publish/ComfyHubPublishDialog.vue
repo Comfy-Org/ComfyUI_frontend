@@ -87,25 +87,25 @@ import {
 } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
+import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import ComfyHubPublishNav from '@/platform/workflow/sharing/components/publish/ComfyHubPublishNav.vue'
 import ComfyHubPublishWizardContent from '@/platform/workflow/sharing/components/publish/ComfyHubPublishWizardContent.vue'
+import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import { useComfyHubPublishSubmission } from '@/platform/workflow/sharing/composables/useComfyHubPublishSubmission'
 import {
   cachePublishPrefill,
   getCachedPrefill,
   useComfyHubPublishWizard
 } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
-import { useComfyHubProfileGate } from '@/platform/workflow/sharing/composables/useComfyHubProfileGate'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import { OnCloseKey } from '@/types/widgetTypes'
 import { getErrorMessage } from '@/utils/errorUtil'
 import { appendJsonExt } from '@/utils/formatUtil'
-import { OnCloseKey } from '@/types/widgetTypes'
 
 const { onClose } = defineProps<{
   onClose: () => void

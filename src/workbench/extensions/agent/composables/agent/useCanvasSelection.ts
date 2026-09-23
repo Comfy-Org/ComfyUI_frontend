@@ -1,6 +1,6 @@
 import { getCurrentScope, onScopeDispose, ref, toValue, watch } from 'vue'
-
 import type { MaybeRefOrGetter, Ref, WatchStopHandle } from 'vue'
+
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 
 export interface SelectedNode {

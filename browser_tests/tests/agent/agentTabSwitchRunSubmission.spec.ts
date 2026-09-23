@@ -1,7 +1,7 @@
-import { expect } from '@playwright/test'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { expect } from '@playwright/test'
+
 import type { ComfyApiWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 // Same recording agentTabSwitchCatchUp.spec.ts uses for its canvas-only

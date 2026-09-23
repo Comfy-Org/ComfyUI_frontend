@@ -1,7 +1,8 @@
-import type { AstroIntegration } from 'astro'
 import { access, mkdir, readFile, writeFile } from 'node:fs/promises'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
+import type { AstroIntegration } from 'astro'
 
 import { isExcludedFromSitemap } from '../config/indexing'
 import { htmlToTwin, renderTwin } from '../lib/markdown-twin'

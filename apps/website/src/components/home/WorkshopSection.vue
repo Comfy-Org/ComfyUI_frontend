@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import WorkshopGate from '../workshop/WorkshopGate.vue'
 import { ArrowRight } from '@lucide/vue'
 
 import type { WorkshopBrowseModel } from '../../config/workshop'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import WorkshopGate from '../workshop/WorkshopGate.vue'
 
 const { models, locale = 'en' } = defineProps<{
   models: readonly WorkshopBrowseModel[]

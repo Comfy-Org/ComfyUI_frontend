@@ -1,16 +1,16 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { markRaw } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { markRaw } from 'vue'
 
 import { CORE_KEYBINDINGS } from '@/platform/keybindings/defaults'
 import {
   clearEscapeOverrides,
   registerEscapeOverride
 } from '@/platform/keybindings/escapeOverride'
-import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LayerEditorSession } from '@/renderer/extensions/layerEditor/composables/useLayerEditorSession'
 import { toNodeId } from '@/types/nodeId'
 
 import { loadCompositorSession } from './compositorSession'

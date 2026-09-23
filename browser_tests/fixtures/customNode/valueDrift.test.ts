@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest'
 import {
   declaredInputNamesForTypes,
   initializationSignalsForTypes,
@@ -13,6 +12,7 @@ import {
   staleValueDriftIndices,
   staleValueDriftKeys
 } from '@e2e/fixtures/customNode/valueDrift'
+import { describe, expect, it } from 'vitest'
 
 describe('declaredInputNamesForTypes', () => {
   it('includes backend inputs and excludes frontend-only widgets', () => {

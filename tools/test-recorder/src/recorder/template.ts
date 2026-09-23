@@ -8,8 +8,9 @@ import {
 } from 'node:fs'
 import { homedir } from 'node:os'
 import { join, dirname } from 'node:path'
-import { formatInitialFeatureFlags } from '../featureFlags'
+
 import type { Distribution } from '../devserver/distributions'
+import { formatInitialFeatureFlags } from '../featureFlags'
 
 export type RecordingTarget = 'local' | 'cloud'
 

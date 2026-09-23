@@ -14,9 +14,9 @@ import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 type NonEmptyIds = readonly [number, ...number[]]
 

@@ -1,8 +1,8 @@
 import { expect, it, vi } from 'vitest'
 
 import { captureWorkshopEvent } from './posthog'
-import { captureWorkshopHealth } from './workshop-datadog'
 import type { WorkshopAnalyticsEvent } from './workshop-analytics'
+import { captureWorkshopHealth } from './workshop-datadog'
 
 vi.mock(import('./workshop-datadog'), () => ({
   captureWorkshopHealth: vi.fn()

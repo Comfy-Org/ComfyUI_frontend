@@ -1,11 +1,10 @@
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import type { Psd } from 'ag-psd'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { Psd } from 'ag-psd'
-
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { Document } from '@/renderer/extensions/layerEditor/engine/document'
 import { registerBuiltinKinds } from '@/renderer/extensions/layerEditor/engine/kinds'
 import { defaultMode } from '@/renderer/extensions/layerEditor/engine/mode'

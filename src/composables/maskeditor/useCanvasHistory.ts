@@ -1,4 +1,5 @@
 import { ref, computed } from 'vue'
+
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 // Define the state interface for better readability

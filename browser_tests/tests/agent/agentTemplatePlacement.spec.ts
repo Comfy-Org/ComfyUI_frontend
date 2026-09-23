@@ -1,23 +1,22 @@
+import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import {
+  agentTest as test,
+  bootAgentApp
+} from '@e2e/fixtures/agentPanelFixture'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 import type { Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import type {
   AgentCancelAccepted,
   AgentMessages,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import {
-  agentTest as test,
-  bootAgentApp
-} from '@e2e/fixtures/agentPanelFixture'
-import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
-import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 // Agent template placement (ADR-CRDT-PLACEMENT-0035): when the in-app Comfy
 // Agent inserts a workflow template onto a canvas that already has a node on

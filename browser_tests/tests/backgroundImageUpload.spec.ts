@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expect } from '@playwright/test'
 
 test.use({
   initialSettings: {

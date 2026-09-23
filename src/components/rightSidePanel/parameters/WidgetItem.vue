@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, customRef, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -13,13 +14,13 @@ import {
   shouldExpand
 } from '@/renderer/extensions/vueNodes/widgets/registry/widgetRegistry'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import { useFavoritedWidgetsStore } from '@/stores/workspace/favoritedWidgetsStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { getControlWidget } from '@/types/simplifiedWidget'
 import type {
   SimplifiedWidget,
@@ -27,7 +28,6 @@ import type {
 } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 import { renameWidget } from '@/utils/widgetUtil'
 import type { WidgetValue } from '@/utils/widgetUtil'
 

@@ -1,7 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { cleanup, render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { nextTick } from 'vue'
 
 import type { HeroSlide } from '../../config/hero-slides'

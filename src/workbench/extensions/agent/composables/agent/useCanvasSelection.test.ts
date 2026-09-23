@@ -1,8 +1,8 @@
-import { effectScope, ref } from 'vue'
 import { describe, expect, it } from 'vitest'
+import { effectScope, ref } from 'vue'
 
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import type { SelectedNode } from './useCanvasSelection'
 import { useCanvasSelection } from './useCanvasSelection'

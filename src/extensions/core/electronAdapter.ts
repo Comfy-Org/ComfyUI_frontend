@@ -3,12 +3,12 @@ import log from 'loglevel'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { PYTHON_MIRROR } from '@/constants/uvMirrors'
 import { t } from '@/i18n'
+import { isDesktop } from '@/platform/distribution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { checkMirrorReachable } from '@/utils/electronMirrorCheck'
-import { isDesktop } from '@/platform/distribution/types'
 import { electronAPI as getElectronAPI } from '@/utils/envUtil'
 
 void (async () => {

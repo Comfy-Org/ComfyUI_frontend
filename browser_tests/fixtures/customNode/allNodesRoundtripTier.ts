@@ -19,6 +19,7 @@ import {
   packLedgerFor
 } from '@e2e/fixtures/customNode/packLedger'
 import { eligibleNodeTypesForTier } from '@e2e/fixtures/customNode/tierNodeExclusions'
+import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 import {
   CANVAS_PREVIEW_IMAGE_PATH_PATTERN,
   declaredInputNamesForTypes,
@@ -37,7 +38,6 @@ import {
   staleValueDriftIndices,
   staleValueDriftKeys
 } from '@e2e/fixtures/customNode/valueDrift'
-import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import labelsJson from '../data/workshop-thumbnail-labels.json'
 import routerIndex from '../content/workshop-router-index.json'
+import labelsJson from '../data/workshop-thumbnail-labels.json'
 import type { WorkshopModel } from './models-catalogue'
 import { authoredWorkshopModels } from './workshop-browse-content'
 import { labelSharedThumbnails } from './workshop-thumbnail-labels'

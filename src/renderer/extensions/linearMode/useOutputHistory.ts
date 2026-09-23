@@ -9,13 +9,13 @@ import { flattenNodeOutput } from '@/renderer/extensions/linearMode/flattenNodeO
 import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import { api } from '@/scripts/api'
 import { getJobDetail } from '@/services/jobOutputCache'
-import { WrappedList } from '@/utils/pagedList'
-import type { PagedList } from '@/utils/pagedList'
-import { useAssetsStore } from '@/stores/assetsStore'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { WrappedList } from '@/utils/pagedList'
+import type { PagedList } from '@/utils/pagedList'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 export function useOutputHistory(): {

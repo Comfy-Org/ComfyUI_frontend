@@ -8,9 +8,9 @@ import { useLitegraphService } from '@/services/litegraphService'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
-import { nodeDef, savedNode, singleImageNode } from './__fixtures__/inputOrder'
 import { crdtTest } from './__fixtures__/crdtSession'
 import type { CreateCrdtSession } from './__fixtures__/crdtSession'
+import { nodeDef, savedNode, singleImageNode } from './__fixtures__/inputOrder'
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: undefined, isGraphReady: false, configuringGraph: false },

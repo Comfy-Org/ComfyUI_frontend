@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Subgraph unpack with unconnected input slots',

@@ -1,6 +1,3 @@
-import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
-import { useDomWidgetStore } from '@/stores/domWidgetStore'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -8,9 +5,12 @@ import type {
   ISerialisedNode,
   SerialisableGraph
 } from '@/lib/litegraph/src/types/serialisation'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { app } from '@/scripts/app'
+import { useDomWidgetStore } from '@/stores/domWidgetStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'

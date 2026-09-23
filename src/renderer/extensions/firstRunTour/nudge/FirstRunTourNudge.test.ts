@@ -1,13 +1,12 @@
-import { useDialogStore } from '@/stores/dialogStore'
-import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
-
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useTelemetry } from '@/platform/telemetry'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import FirstRunTourNudge from './FirstRunTourNudge.vue'
 

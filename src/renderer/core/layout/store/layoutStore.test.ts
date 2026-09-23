@@ -1,13 +1,5 @@
-import { toGroupId } from '@/types/groupId'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
-import { createUuidv4 } from '@/utils/uuid'
-import type { UUID } from '@/utils/uuid'
 
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -17,6 +9,13 @@ import type {
   LayoutOperation,
   NodeLayout
 } from '@/renderer/core/layout/types'
+import { toGroupId } from '@/types/groupId'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
+import { createUuidv4 } from '@/utils/uuid'
+import type { UUID } from '@/utils/uuid'
 
 const mockReportError = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/telemetry/reportError'), () => ({

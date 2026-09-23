@@ -1,19 +1,19 @@
-import type { InjectionKey, MaybeRefOrGetter } from 'vue'
-import { computed, toValue } from 'vue'
 import Fuse from 'fuse.js'
 import type { IFuseOptions } from 'fuse.js'
+import type { InjectionKey, MaybeRefOrGetter } from 'vue'
+import { computed, toValue } from 'vue'
 
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { NodeId } from '@/types/nodeId'
 import {
   deriveWidgetVisibility,
   isWidgetVisibleOnSurface
 } from '@/types/widgetVisibility'
 import { isLGraphGroup, isLGraphNode } from '@/utils/litegraphUtil'
-import { useSettingStore } from '@/platform/settings/settingStore'
 
 export const GetNodeParentGroupKey: InjectionKey<
   (node: LGraphNode) => LGraphGroup | null

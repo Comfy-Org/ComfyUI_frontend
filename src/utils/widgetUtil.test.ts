@@ -1,13 +1,13 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
-import { getWidgetDefaultValue, renameWidget } from '@/utils/widgetUtil'
-import type { WidgetId } from '@/types/widgetId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetId } from '@/types/widgetId'
+import { getWidgetDefaultValue, renameWidget } from '@/utils/widgetUtil'
 
 describe('getWidgetDefaultValue', () => {
   it('returns undefined for undefined spec', () => {

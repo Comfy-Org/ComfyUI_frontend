@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
+import type { HTMLAttributes } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 

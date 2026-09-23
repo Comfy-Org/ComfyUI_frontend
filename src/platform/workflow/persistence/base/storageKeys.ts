@@ -1,5 +1,5 @@
-import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 import { isCloud } from '@/platform/distribution/types'
+import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 import { hashPath } from './hashUtil'
 

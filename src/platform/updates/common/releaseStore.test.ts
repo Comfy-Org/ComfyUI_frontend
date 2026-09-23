@@ -7,10 +7,10 @@ import type { Ref } from 'vue'
 
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
-import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useReleaseStore } from '@/platform/updates/common/releaseStore'
+import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useReleaseService } from '@/platform/updates/common/releaseService'
+import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 
 // Mock the dependencies

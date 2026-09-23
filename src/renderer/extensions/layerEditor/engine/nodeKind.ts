@@ -1,7 +1,7 @@
-import type { NodeBase, Rect, Transform, Vec2 } from './node'
 import type { Compositor, NodeTexture } from './compositor'
 import type { ContentStore } from './content'
 import type { Command } from './history'
+import type { NodeBase, Rect, Transform, Vec2 } from './node'
 
 export interface RenderNodeCtx {
   compositor: Compositor

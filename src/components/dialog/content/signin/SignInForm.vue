@@ -76,6 +76,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { FormSubmitEvent } from '@primevue/forms'
 import { Form } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
@@ -92,7 +93,6 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const authStore = useAuthStore()
 const authActions = useAuthActions()

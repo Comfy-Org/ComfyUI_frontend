@@ -1,9 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { CurvePoint } from './types'
-
 import CurveEditor from './CurveEditor.vue'
+import type { CurvePoint } from './types'
 
 function renderEditor(points: CurvePoint[], extraProps = {}) {
   const { container } = render(CurveEditor, {

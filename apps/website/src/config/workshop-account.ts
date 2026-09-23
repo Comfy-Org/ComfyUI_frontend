@@ -1,3 +1,10 @@
+import type { LazyIdentity } from '@comfyorg/account-core/lazyIdentity'
+import { createLazyIdentity } from '@comfyorg/account-core/lazyIdentity'
+import type { SessionClient } from '@comfyorg/account-core/session'
+import {
+  createSessionClient,
+  isPermanentSessionError
+} from '@comfyorg/account-core/session'
 /**
  * The Workshop's account-layer wiring: one session client from
  * @comfyorg/account-core, bound to the env-selected Cloud origin, and the
@@ -7,14 +14,6 @@
  * by uid).
  */
 import type { User } from 'firebase/auth'
-
-import type { LazyIdentity } from '@comfyorg/account-core/lazyIdentity'
-import { createLazyIdentity } from '@comfyorg/account-core/lazyIdentity'
-import type { SessionClient } from '@comfyorg/account-core/session'
-import {
-  createSessionClient,
-  isPermanentSessionError
-} from '@comfyorg/account-core/session'
 
 import {
   captureAuthRefreshFailed,

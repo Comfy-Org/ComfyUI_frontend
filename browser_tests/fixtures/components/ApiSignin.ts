@@ -1,7 +1,6 @@
-import type { Page } from '@playwright/test'
-
 import { BaseDialog } from '@e2e/fixtures/components/BaseDialog'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Page } from '@playwright/test'
 
 export class ApiSignin extends BaseDialog {
   constructor(page: Page) {

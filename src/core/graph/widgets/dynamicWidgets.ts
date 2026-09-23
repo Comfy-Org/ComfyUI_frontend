@@ -6,30 +6,30 @@ import type { ISlotType, INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LLink } from '@/lib/litegraph/src/LLink'
+import {
+  captureInputLayout,
+  replaceNodeInputs
+} from '@/lib/litegraph/src/node/slotLinks'
+import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
 import { commonType } from '@/lib/litegraph/src/utils/type'
 import {
   getWidgetIds,
   resolveNodeRootGraphId
 } from '@/lib/litegraph/src/utils/widget'
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
-import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ComboInputSpec, InputSpec } from '@/schemas/nodeDefSchema'
 import {
   zAutogrowOptions,
   zDynamicComboInputSpec,
   zMatchTypeOptions
 } from '@/schemas/nodeDefSchema'
-import { useLitegraphService } from '@/services/litegraphService'
 import { app } from '@/scripts/app'
 import type { ComfyApp } from '@/scripts/app'
-import {
-  captureInputLayout,
-  replaceNodeInputs
-} from '@/lib/litegraph/src/node/slotLinks'
-import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
+import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 

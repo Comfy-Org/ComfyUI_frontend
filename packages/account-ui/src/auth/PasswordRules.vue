@@ -22,6 +22,8 @@
 </template>
 
 <script setup lang="ts">
+import type { PasswordRule } from '@comfyorg/account-core/signInSchemas'
+import { passwordRuleChecks } from '@comfyorg/account-core/signInSchemas'
 /**
  * The password rule list both hosts show while a new password is typed:
  * every rule, the unmet ones marked. Unstyled: copy is host-translated and
@@ -29,9 +31,6 @@
  * focused) stays with the host.
  */
 import { computed } from 'vue'
-
-import type { PasswordRule } from '@comfyorg/account-core/signInSchemas'
-import { passwordRuleChecks } from '@comfyorg/account-core/signInSchemas'
 
 export type PasswordRulesCopy = Readonly<
   Record<PasswordRule | 'requirements', string>

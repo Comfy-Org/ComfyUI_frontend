@@ -1,3 +1,4 @@
+import { useDocumentVisibility } from '@vueuse/core'
 /**
  * Generic Vue Element Tracking System
  *
@@ -10,17 +11,15 @@
  */
 import { getCurrentInstance, onMounted, onUnmounted, watch } from 'vue'
 
-import { useDocumentVisibility } from '@vueuse/core'
-
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Bounds, NodeId, Size } from '@/renderer/core/layout/types'
-import { toNodeId } from '@/types/nodeId'
 import { isSizeEqual } from '@/renderer/core/layout/utils/geometry'
 import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
+import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 
 /**

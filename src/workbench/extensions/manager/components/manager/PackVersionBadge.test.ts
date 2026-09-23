@@ -1,8 +1,8 @@
+import userEvent from '@testing-library/user-event'
 /* eslint-disable testing-library/no-node-access */
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

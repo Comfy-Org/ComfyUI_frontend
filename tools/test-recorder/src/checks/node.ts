@@ -1,7 +1,8 @@
 import { execSync } from 'node:child_process'
+
+import { fail, info, pass, warn } from '../ui/logger'
 import { describeRange, readEngines, readNvmrc, satisfies } from './engines'
 import { detectPlatform } from './platform'
-import { fail, info, pass, warn } from '../ui/logger'
 import type { CheckResult } from './types'
 
 function installSteps(target: string): string[] {

@@ -1,13 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
-import type { FeatureSurveyConfig } from './useSurveyEligibility'
-
 import {
   FEATURE_SURVEYS,
   getEnabledSurveys,
   getFloatingSurveys,
   getSurveyConfig
 } from './surveyRegistry'
+import type { FeatureSurveyConfig } from './useSurveyEligibility'
 
 const TEST_FEATURE_ID = '__test-feature__'
 const TEST_CONFIG: FeatureSurveyConfig = {

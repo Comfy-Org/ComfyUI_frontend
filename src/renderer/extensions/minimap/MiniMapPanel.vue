@@ -83,11 +83,11 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import Checkbox from 'primevue/checkbox'
 import type { CSSProperties, Ref } from 'vue'
 
 import type { MinimapSettingsKey } from '@/renderer/extensions/minimap/types'
-import { cn } from '@comfyorg/tailwind-utils'
 
 defineProps<{
   panelStyles: CSSProperties

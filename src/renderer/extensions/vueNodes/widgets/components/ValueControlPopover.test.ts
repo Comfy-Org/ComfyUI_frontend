@@ -1,11 +1,11 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ControlOptions } from '@/types/simplifiedWidget'
 
 import ValueControlPopover from './ValueControlPopover.vue'

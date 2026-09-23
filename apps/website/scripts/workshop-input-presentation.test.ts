@@ -1,9 +1,7 @@
 import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
-import packedContracts from '../src/content/workshop-router-contracts.json'
-import rawPresentation from '../src/data/workshop-input-presentation.json'
-import rawSnapshots from '../src/data/workshop-router-openapi.snapshot.json'
+import { prepareModelRouterRender } from '../src/config/router-render'
 import {
   formForContract,
   workshopContractRecordSchema,
@@ -11,6 +9,7 @@ import {
 } from '../src/config/workshop-contract'
 import { fieldsForDefinition } from '../src/config/workshop-form-definition'
 import { validateWorkshopInput } from '../src/config/workshop-json-schema'
+import { initialWorkshopPageState } from '../src/config/workshop-page-state'
 import {
   defaultValues,
   schemaForModel
@@ -18,13 +17,14 @@ import {
 import type { FormValues } from '../src/config/workshop-playground'
 import { prepareWorkshopRouterInput } from '../src/config/workshop-request'
 import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
-import { initialWorkshopPageState } from '../src/config/workshop-page-state'
-import { prepareModelRouterRender } from '../src/config/router-render'
 import {
   parseRouterOpenApiSnapshot,
   routerInputSchema,
   resolveSchemaReference
 } from '../src/config/workshop-router-openapi'
+import packedContracts from '../src/content/workshop-router-contracts.json'
+import rawPresentation from '../src/data/workshop-input-presentation.json'
+import rawSnapshots from '../src/data/workshop-router-openapi.snapshot.json'
 import { curateWorkshopInputs } from './workshop-input-presentation'
 
 const object = z.record(z.string(), z.json())

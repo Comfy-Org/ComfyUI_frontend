@@ -1,6 +1,6 @@
-import { useAuthStore } from '@/stores/authStore'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useAuthStore } from '@/stores/authStore'
 
 import type {
   BillingOpStatusResponse,
@@ -45,8 +45,9 @@ beforeEach(() => {
   stubFirebaseAuthHarness()
 })
 
-import { workspaceApi } from './workspaceApi'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+
+import { workspaceApi } from './workspaceApi'
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
 

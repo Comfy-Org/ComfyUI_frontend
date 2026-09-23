@@ -1,8 +1,8 @@
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { computed, ref } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 
 import type { WorkspaceWithRole } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockShouldUseWorkspaceBilling = ref(true)

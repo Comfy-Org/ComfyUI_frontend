@@ -1,8 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ComfyExtension } from '@/types/comfy'
 import type { useExtensionService } from '@/services/extensionService'
+import type { ComfyExtension } from '@/types/comfy'
 
 const { state } = vi.hoisted(() => ({
   state: {

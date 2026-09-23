@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { useSlots } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
+import { useSlots } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'

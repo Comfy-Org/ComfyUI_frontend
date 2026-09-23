@@ -1,8 +1,8 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { markRaw } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { markRaw } from 'vue'
 
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'

@@ -435,6 +435,14 @@ import { I18nT, useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import CreditSlider from '@/components/ui/credit-slider/CreditSlider.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
+import {
+  DEFAULT_TEAM_PLAN_STOP_INDEX,
+  TEAM_PLAN_CREDIT_STOPS,
+  getStopDiscountedMonthlyUsd,
+  mapApiTeamCreditStops
+} from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
+import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import {
   TIER_PRICING,
   amountForBillingCycle,
@@ -446,14 +454,6 @@ import type {
   TierKey,
   TierPricing
 } from '@/platform/cloud/subscription/constants/tierPricing'
-import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
-import {
-  DEFAULT_TEAM_PLAN_STOP_INDEX,
-  TEAM_PLAN_CREDIT_STOPS,
-  getStopDiscountedMonthlyUsd,
-  mapApiTeamCreditStops
-} from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
-import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import type { BillingCycle } from '@/platform/cloud/subscription/utils/subscriptionTierRank'
 import { isCloud } from '@/platform/distribution/types'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'

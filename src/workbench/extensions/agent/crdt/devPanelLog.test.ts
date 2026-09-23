@@ -4,13 +4,13 @@ import { watch } from 'vue'
 const { reportError } = vi.hoisted(() => ({ reportError: vi.fn() }))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({ reportError }))
 
+import { setCrdtDebugEnabled } from './crdtDebugGate'
 import {
   clearDevEvents,
   devEvents,
   recordDevEvent,
   stringifyDevEvents
 } from './devPanelLog'
-import { setCrdtDebugEnabled } from './crdtDebugGate'
 
 describe('devPanelLog', () => {
   beforeEach(() => {

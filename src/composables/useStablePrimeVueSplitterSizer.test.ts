@@ -1,8 +1,7 @@
-import type { SplitterResizeEndEvent } from 'primevue/splitter'
 import { useStorage } from '@vueuse/core'
-
-import { nextTick, ref } from 'vue'
+import type { SplitterResizeEndEvent } from 'primevue/splitter'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, ref } from 'vue'
 
 import { useStablePrimeVueSplitterSizer } from './useStablePrimeVueSplitterSizer'
 

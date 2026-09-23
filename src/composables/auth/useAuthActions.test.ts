@@ -1,18 +1,17 @@
-import { useDialogService } from '@/services/dialogService'
-import { useAuthStore } from '@/stores/authStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
 import type { UserCredential } from 'firebase/auth'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { useTelemetry } from '@/platform/telemetry'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import enLocale from '@/locales/en/main.json'
+import { useTelemetry } from '@/platform/telemetry'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { useDialogService } from '@/services/dialogService'
+import { useAuthStore } from '@/stores/authStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })

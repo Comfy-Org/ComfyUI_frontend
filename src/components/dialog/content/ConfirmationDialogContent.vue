@@ -117,8 +117,8 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ConfirmationDialogType } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 

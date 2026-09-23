@@ -1,10 +1,10 @@
 import { createRequire } from 'node:module'
 
+import type { noDuplicateIngestType as NoDuplicateIngestType } from './comfyIngestTypes'
 import type {
   noComfyPageSetupCall as NoComfyPageSetupCall,
   preferInitialSettings as PreferInitialSettings
 } from './comfyPageSetup'
-import type { noDuplicateIngestType as NoDuplicateIngestType } from './comfyIngestTypes'
 import type { useGlobalPinia as UseGlobalPinia } from './globalPinia'
 import type {
   noDeprecatedApiSchema as NoDeprecatedApiSchema,

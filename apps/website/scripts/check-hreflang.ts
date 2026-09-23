@@ -1,3 +1,7 @@
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { join, relative, sep } from 'node:path'
+
+import { auditBuiltSite, sitemapChunkNames } from '../src/utils/hreflangAudit'
 /**
  * Crawls the built site and fails on a broken language cluster.
  *
@@ -9,11 +13,6 @@
  * they can be tested against fixtures rather than a full build.
  */
 import type { Alternate } from '../src/utils/hreflangRoutes'
-
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
-import { join, relative, sep } from 'node:path'
-
-import { auditBuiltSite, sitemapChunkNames } from '../src/utils/hreflangAudit'
 
 const DIST = join(process.cwd(), 'dist')
 const ORIGIN = 'https://comfy.org'

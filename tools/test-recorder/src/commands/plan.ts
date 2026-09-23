@@ -1,9 +1,11 @@
 import { join } from 'node:path'
+
 import pc from 'picocolors'
-import { findProjectRoot, listWorkflows } from '../recorder/runner'
+
 import { toSlug } from '../cli/slug'
-import { fail, info, header } from '../ui/logger'
+import { findProjectRoot, listWorkflows } from '../recorder/runner'
 import { filterKnownTags, unknownTagWarningLines } from '../tags'
+import { fail, info, header } from '../ui/logger'
 
 const SEED_FILE = 'browser_tests/tests/interaction.spec.ts'
 

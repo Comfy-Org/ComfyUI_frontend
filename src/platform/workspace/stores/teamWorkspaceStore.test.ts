@@ -1,10 +1,10 @@
-import { computed } from 'vue'
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
 

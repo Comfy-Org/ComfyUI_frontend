@@ -1,10 +1,9 @@
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { expect } from '@playwright/test'
 
 import { SUBGRAPH_OUTPUT_ID } from '@/lib/litegraph/src/constants'
 import { toNodeId } from '@/types/nodeId'
-
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 
 test.describe('Subgraph Operations', { tag: ['@slow', '@subgraph'] }, () => {
   test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Disabled' } })

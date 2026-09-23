@@ -1,10 +1,9 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useClipboard, watchDebounced } from '@vueuse/core'
 import { default as DOMPurify } from 'dompurify'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Button from '@/components/ui/button/Button.vue'

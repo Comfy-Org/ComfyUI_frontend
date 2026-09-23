@@ -1,13 +1,6 @@
 import type { WorkshopContract } from './workshop-contract'
-import { validateWorkshopInput } from './workshop-json-schema'
 import { valuesAtPointer } from './workshop-json-pointer'
-import {
-  WorkshopRouterError,
-  workshopResponseDetails
-} from './workshop-router-errors'
-import type { RunOutput } from './workshop-run'
-import type { WorkshopSvgRasterizer } from './workshop-svg-output'
-import { svgOutputs } from './workshop-svg-output'
+import { validateWorkshopInput } from './workshop-json-schema'
 import {
   discoverOutputMimes,
   inlineOutput,
@@ -16,6 +9,13 @@ import {
   outputKind,
   outputMimeForUrl
 } from './workshop-output-media'
+import {
+  WorkshopRouterError,
+  workshopResponseDetails
+} from './workshop-router-errors'
+import type { RunOutput } from './workshop-run'
+import type { WorkshopSvgRasterizer } from './workshop-svg-output'
+import { svgOutputs } from './workshop-svg-output'
 
 const MAX_RESPONSE_BYTES = 128 * 1024 * 1024
 

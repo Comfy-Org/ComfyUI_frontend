@@ -1,9 +1,9 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
 
 describe('keybindingService - registerUserKeybindings', () => {

@@ -63,6 +63,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { FormSubmitEvent } from '@primevue/forms'
 import { Form, FormField } from '@primevue/forms'
 import { zodResolver } from '@primevue/forms/resolvers/zod'
@@ -72,10 +73,8 @@ import { computed, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import Button from '@/components/ui/button/Button.vue'
 import type { ButtonVariants } from '@/components/ui/button/button.variants'
+import Button from '@/components/ui/button/Button.vue'
 import { useTurnstile, useTurnstileGate } from '@/composables/auth/useTurnstile'
 import { signUpSchema } from '@/schemas/signInSchema'
 import type { SignUpData } from '@/schemas/signInSchema'

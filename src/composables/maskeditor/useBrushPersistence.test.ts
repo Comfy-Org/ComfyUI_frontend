@@ -8,6 +8,7 @@ vi.mock(import('@/scripts/utils'), () => ({
 }))
 
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
+
 import { useBrushPersistence } from './useBrushPersistence'
 
 const STORAGE_KEY = 'maskeditor_brush_settings'

@@ -1,12 +1,12 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import type { ClassValue } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 
 import { getSlotColor, MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import type { SlotId } from '@/types/slotId'
-import { cn } from '@comfyorg/tailwind-utils'
-import type { ClassValue } from '@comfyorg/tailwind-utils'
 
 const props = defineProps<{
   slotData?: INodeSlot

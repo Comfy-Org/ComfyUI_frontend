@@ -1,29 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
+  flushProxyWidgetMigration,
+  normalizeLegacyProxyWidgetEntry,
+  readHostQuarantine
+} from '@/core/graph/subgraph/migration/proxyWidgetMigration'
+import {
   LGraph,
   LGraphNode,
   LiteGraph,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import {
   createTestSubgraph,
   createTestSubgraphNode,
   resetSubgraphFixtureState
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-
-import {
-  flushProxyWidgetMigration,
-  normalizeLegacyProxyWidgetEntry,
-  readHostQuarantine
-} from '@/core/graph/subgraph/migration/proxyWidgetMigration'
+import type { TWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })

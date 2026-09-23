@@ -35,10 +35,9 @@
 </template>
 
 <script setup lang="ts">
+import type { EditKeybindingDialogState } from '@/composables/useEditKeybindingDialog'
 import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { KeyComboImpl } from '@/platform/keybindings/keyCombo'
-
-import type { EditKeybindingDialogState } from '@/composables/useEditKeybindingDialog'
 
 const { dialogState, onUpdateCombo, existingKeybindingOnCombo } = defineProps<{
   dialogState: EditKeybindingDialogState

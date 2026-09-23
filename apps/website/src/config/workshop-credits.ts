@@ -1,3 +1,4 @@
+import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 /**
  * The credits balance behind the header chip.
  *
@@ -11,8 +12,6 @@
  * which also picks up a balance changed in another tab.
  */
 import { computed, effectScope, ref, watch } from 'vue'
-
-import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import { workshopBalanceReader } from './workshop-account'
 import type { BalanceState as ReadState } from './workshop-balance'

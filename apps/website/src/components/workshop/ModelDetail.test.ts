@@ -1,3 +1,7 @@
+import type {
+  AccountCredential,
+  SessionResult
+} from '@comfyorg/account-core/session'
 // @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen, within } from '@testing-library/vue'
@@ -13,37 +17,32 @@ import {
 } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 
-import type {
-  AccountCredential,
-  SessionResult
-} from '@comfyorg/account-core/session'
-
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
-import type { Locale } from '../../i18n/translations'
 import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { runWorkshopRouter } from '../../config/workshop-router-queue'
-import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { workshopContract } from '../../config/workshop-contract-catalog'
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import {
   refreshWorkshopCredits,
   useWorkshopCredits
 } from '../../config/workshop-credits'
-import { useWorkshopSession } from '../../config/workshop-session-state'
 import * as draftStorage from '../../config/workshop-draft-storage'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import { WorkshopRouterError } from '../../config/workshop-router-errors'
+import { runWorkshopRouter } from '../../config/workshop-router-queue'
 import {
   cancelWorkshopRun,
   workshopRunInFlight
 } from '../../config/workshop-run-state'
+import { useWorkshopSession } from '../../config/workshop-session-state'
+import type { Locale } from '../../i18n/translations'
 import {
   captureWorkshopEvent,
   useWorkshopAuthFlag,
   useWorkshopEnabled,
   useWorkshopEnabledSettled
 } from '../../scripts/posthog'
+import { workshopHealthLog } from '../../scripts/workshop-health'
 import ModelDetail from './ModelDetail.vue'
 import WorkshopGate from './WorkshopGate.vue'
-import { workshopHealthLog } from '../../scripts/workshop-health'
 
 vi.mock(import('../../config/workshop-session-state'))
 vi.mock(import('../../scripts/posthog'))

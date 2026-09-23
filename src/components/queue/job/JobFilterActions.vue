@@ -116,9 +116,9 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
-import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Popover from '@/components/ui/Popover.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import { jobSortModes } from '@/composables/queue/useJobList'
 import type { JobSortMode } from '@/composables/queue/useJobList'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'

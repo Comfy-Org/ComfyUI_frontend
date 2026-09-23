@@ -1,7 +1,6 @@
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
-
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Workflow tabs', () => {
   // These Agent-adjacent path-identity cases are staged behind the stacked

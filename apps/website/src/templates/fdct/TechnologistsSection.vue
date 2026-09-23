@@ -1,10 +1,9 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-
 import type { CardWorkflowItem } from '../../components/blocks/CardWorkflow01.vue'
 import TeamGrid01 from '../../components/blocks/TeamGrid01.vue'
 import type { FdctTechnologist } from '../../data/fdct'
 import { projects, technologists } from '../../data/fdct'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

@@ -123,7 +123,6 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useEventListener } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
@@ -133,14 +132,16 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
+import Button from '@/components/ui/button/Button.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useDialogStore } from '@/stores/dialogStore'
+
 import BuilderOpensAsPopover from './BuilderOpensAsPopover.vue'
 import { setWorkflowDefaultView } from './builderViewOptions'
 import ConnectOutputPopover from './ConnectOutputPopover.vue'

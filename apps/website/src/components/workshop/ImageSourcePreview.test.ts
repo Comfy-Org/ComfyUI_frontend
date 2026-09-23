@@ -1,5 +1,6 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
 import { resolveObjectURL } from 'node:buffer'
+
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createSSRApp, h } from 'vue'
 import { renderToString } from 'vue/server-renderer'

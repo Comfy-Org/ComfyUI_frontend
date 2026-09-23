@@ -1,7 +1,7 @@
 import { render } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
 
 import { useGroupMenuOptions } from '@/composables/graph/useGroupMenuOptions'
 import { LGraphCanvas, LGraphGroup } from '@/lib/litegraph/src/litegraph'

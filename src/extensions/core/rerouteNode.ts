@@ -1,10 +1,10 @@
+import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphCanvas,
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import type { ISlotType } from '@/lib/litegraph/src/interfaces'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
 
 import { app } from '../../scripts/app'

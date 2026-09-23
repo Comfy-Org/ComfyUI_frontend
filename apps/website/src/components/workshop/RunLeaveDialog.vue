@@ -1,11 +1,11 @@
 <script setup lang="ts">
+import type { Locale, TranslationKey } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import Button from '../ui/button/Button.vue'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogDescription from '../ui/dialog/DialogDescription.vue'
 import DialogTitle from '../ui/dialog/DialogTitle.vue'
-import type { Locale, TranslationKey } from '../../i18n/translations'
-import { t } from '../../i18n/translations'
 
 // The same run, and the same two choices, whichever way out of it the reader
 // took: off the page, or off the workspace that is paying for it.

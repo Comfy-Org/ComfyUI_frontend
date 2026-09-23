@@ -1,6 +1,6 @@
+import { tgpu } from 'typegpu'
 /// <reference types="@webgpu/types" />
 import { onUnmounted, ref, watch } from 'vue'
-import { tgpu } from 'typegpu'
 
 import { BrushShape } from '@/extensions/core/maskeditor/types'
 import type { Point } from '@/extensions/core/maskeditor/types'

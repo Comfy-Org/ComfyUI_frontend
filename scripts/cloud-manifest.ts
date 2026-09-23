@@ -2,9 +2,8 @@ import { readFileSync, writeFileSync } from 'node:fs'
 import { posix, win32 } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { parse } from 'yaml'
-
 import { zComfyNodeDef } from '@comfyorg/object-info-parser'
+import { parse } from 'yaml'
 
 import type {
   CloudManifest,

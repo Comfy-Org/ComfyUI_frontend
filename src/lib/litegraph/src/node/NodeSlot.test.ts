@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, toRaw, watch } from 'vue'
 
+import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
   INodeOutputSlot
@@ -10,7 +11,6 @@ import {
   inputAsSerialisable,
   outputAsSerialisable
 } from '@/lib/litegraph/src/litegraph'
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 
 const boundingRect: ReadOnlyRect = [0, 0, 10, 10]

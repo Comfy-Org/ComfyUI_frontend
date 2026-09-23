@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
+import { expect } from '@playwright/test'
 
 test.describe('Sign In dialog', { tag: '@ui' }, () => {
   let dialog: SignInDialog

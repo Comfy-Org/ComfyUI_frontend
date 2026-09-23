@@ -1,12 +1,12 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 
-import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import { isForeignExecutionNoise } from '@e2e/fixtures/customNode/consoleErrorLedger'
+import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
   customNodeSuiteSettings,
   drainBackendToIdle,
@@ -14,9 +14,10 @@ import {
   submittedPromptCount,
   trackSubmittedPrompts
 } from '@e2e/fixtures/utils/customNodeSuite'
-import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { expectNoVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 // Core-only, model-free workflow: the bundled default template references
 // model files a scoped test backend does not have, which rightly trips the

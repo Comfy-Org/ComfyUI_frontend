@@ -1,14 +1,9 @@
-import { expect } from '@playwright/test'
-import type { Page, Request } from '@playwright/test'
 import type {
   BillingBalanceResponse,
   BillingOpStatusResponse,
   CreateTopupResponse,
   SavedPaymentMethod
 } from '@comfyorg/ingest-types'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-
 import { cloudAppFixture as test } from '@e2e/fixtures/cloudAppFixture'
 import { TopUpCreditsDialog } from '@e2e/fixtures/components/TopUpCreditsDialog'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
@@ -16,6 +11,10 @@ import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 /**
  * Buying credits across the billing SDK rail — FE-2475.

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
+import type { GeneratedField } from './models-catalogue'
 import {
   MAX_UPLOAD_BYTES,
   defaultValues,
@@ -12,7 +13,6 @@ import {
   urlUploadField,
   validateForm
 } from './workshop-playground'
-import type { GeneratedField } from './models-catalogue'
 
 const generatedFields: GeneratedField[] = [
   {

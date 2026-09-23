@@ -3,9 +3,9 @@ import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { breakpointsTailwind, useBreakpoints, useMounted } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import { HERO_SLIDES, PROVIDER_ICON } from '../../config/hero-slides'
 import { useProgressBarPainter } from '../../composables/useProgressBarPainter'
 import { useVideoCarousel, wrapIndex } from '../../composables/useVideoCarousel'
+import { HERO_SLIDES, PROVIDER_ICON } from '../../config/hero-slides'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 

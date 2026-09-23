@@ -72,6 +72,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
 import type { CSSProperties } from 'vue'
@@ -89,7 +90,6 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
 import type { RenderedTreeExplorerNode } from '@/types/treeExplorerTypes'
 import { BLUEPRINT_TYPE_PREFIX, isBlueprintType } from '@/utils/blueprintUtils'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 

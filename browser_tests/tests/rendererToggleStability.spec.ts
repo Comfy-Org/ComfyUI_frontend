@@ -4,6 +4,7 @@ import {
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position } from '@e2e/fixtures/types'
+
 import type { NodeId } from '@/types/nodeId'
 
 type NodeSnapshot = { id: NodeId } & Position

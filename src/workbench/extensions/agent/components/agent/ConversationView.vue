@@ -1,22 +1,20 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useIntersectionObserver } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
-import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
-import type { TurnId } from '../../schemas/agentApiSchema'
-import type { PromptSnapshot } from '../../types/workflowReference'
 
+import type { TurnId } from '../../schemas/agentApiSchema'
+import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
+import type { PromptSnapshot } from '../../types/workflowReference'
 import AgentMessage from './message/AgentMessage.vue'
 import UserMessage from './message/UserMessage.vue'
 

@@ -1,5 +1,6 @@
 // @vitest-environment node
 import { access } from 'node:fs/promises'
+
 import { describe, expect, it, vi } from 'vitest'
 
 import { parseOptions } from './dev-agent-options'

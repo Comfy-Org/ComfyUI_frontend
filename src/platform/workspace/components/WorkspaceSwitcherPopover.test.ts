@@ -1,5 +1,5 @@
-import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 

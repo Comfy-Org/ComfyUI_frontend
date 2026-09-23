@@ -1,13 +1,13 @@
 import type { WorkshopContract } from './workshop-contract'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
+import { validateWorkshopInput } from './workshop-json-schema'
 import { serializeRouterInput } from './workshop-request'
 import { parseRouterResponse, releaseRouterOutputs } from './workshop-response'
-import type { RunFailure, RunOutput } from './workshop-run'
 import {
   WorkshopRouterError,
   workshopResponseDetails
 } from './workshop-router-errors'
-import { validateWorkshopInput } from './workshop-json-schema'
+import type { RunFailure, RunOutput } from './workshop-run'
 import type { WorkshopSvgRasterizer } from './workshop-svg-output'
 
 const RUN_TIMEOUT_MS = 660_000

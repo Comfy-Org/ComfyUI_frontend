@@ -1,8 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
-
-import type { Member } from '@/platform/workspace/api/workspaceApi'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import {
   CREATOR,
@@ -13,6 +8,10 @@ import {
 } from '@e2e/fixtures/data/cloudWorkspace'
 import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMockHelper'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
+
+import type { Member } from '@/platform/workspace/api/workspaceApi'
 
 // Drives a raw `page` (not the `comfyPage` fixture) so the cloud app boots
 // against fully mocked endpoints; `comfyPage` would try to reach the OSS

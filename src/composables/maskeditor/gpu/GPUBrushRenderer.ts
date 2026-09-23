@@ -1,5 +1,5 @@
 import * as d from 'typegpu/data'
-import { StrokePoint } from './gpuSchema'
+
 import {
   brushFragment,
   brushVertex,
@@ -7,6 +7,7 @@ import {
   compositeShader,
   readbackShader
 } from './brushShaders'
+import { StrokePoint } from './gpuSchema'
 
 // ... (rest of the file)
 

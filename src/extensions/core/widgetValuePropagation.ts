@@ -1,6 +1,6 @@
 import type { Point } from '@/lib/litegraph/src/interfaces'
-import type { LLink } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import { app } from '@/scripts/app'
 import { useLinkStore } from '@/stores/linkStore'

@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
+import { expect } from '@playwright/test'
 
 // Regression guard for the crash reproduced in isolation by
 // comfyWorkflow.test.ts and, one call frame higher, by

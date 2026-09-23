@@ -1,3 +1,5 @@
+import fs from 'node:fs'
+
 /**
  * Matrix runner — executed once per pack in an isolated vitest file.
  * Loads the pack's real JS, then runs the user-operation battery and drives
@@ -6,10 +8,8 @@
  */
 import { createTestingPinia } from '@pinia/testing'
 import { setActivePinia } from 'pinia'
-import fs from 'node:fs'
 import { vi } from 'vitest'
 
-import defaultWorkflow from '../../browser_tests/assets/default.json'
 import type {
   LGraph,
   LGraphCanvas,
@@ -20,6 +20,8 @@ import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
+
+import defaultWorkflow from '../../browser_tests/assets/default.json'
 
 const S = (v: unknown) => JSON.stringify(v)
 const errMsg = (e: unknown) =>

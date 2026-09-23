@@ -1,10 +1,9 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { ToggleGroupRootEmits, ToggleGroupRootProps } from 'reka-ui'
 import { ToggleGroupRoot, useForwardPropsEmits } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { provide, toRef } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ToggleGroupVariants } from './toggleGroup.variants'
 import {

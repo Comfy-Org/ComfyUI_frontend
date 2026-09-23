@@ -1,11 +1,10 @@
-import { describe, expect, it, vi } from 'vitest'
-
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-
 import {
   planInteractionProbes,
   runInteractionProbeChunk
 } from '@e2e/fixtures/customNode/interactionProbe'
+import { describe, expect, it, vi } from 'vitest'
+
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 describe('planInteractionProbes', () => {
   it('plans the first and last model-free inputs for one pack', () => {

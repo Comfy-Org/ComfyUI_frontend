@@ -1,5 +1,6 @@
 import { execSync, spawnSync } from 'node:child_process'
 import { isAbsolute, relative } from 'node:path'
+
 import { pass, fail, warn, info } from '../ui/logger'
 
 const DEFAULT_BASE_BRANCH = 'main'

@@ -1,11 +1,10 @@
-import type { Page } from '@playwright/test'
-
-import type { TaskResponse } from '@/platform/tasks/services/taskService'
-
 import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
+import type { Page } from '@playwright/test'
+
+import type { TaskResponse } from '@/platform/tasks/services/taskService'
 
 /**
  * REGRESSION COVERAGE PM-1302 / PM-1309 (frontend half):

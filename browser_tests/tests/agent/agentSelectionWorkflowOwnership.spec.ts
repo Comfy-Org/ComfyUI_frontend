@@ -1,15 +1,14 @@
-import { expect } from '@playwright/test'
 import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
-
-import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import {
   inlineReferencesTest as test,
   referenceNode,
   referenceWorkflow
 } from '@e2e/fixtures/agentInlineReferencesFixture'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 test.use({
   connectWebSocketToServer: false,

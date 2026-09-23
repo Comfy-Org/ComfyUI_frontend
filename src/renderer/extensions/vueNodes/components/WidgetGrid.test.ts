@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { defineComponent, markRaw } from 'vue'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, markRaw } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

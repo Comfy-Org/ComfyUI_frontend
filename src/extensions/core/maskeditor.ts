@@ -1,11 +1,11 @@
 import _ from 'es-toolkit/compat'
-import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
-import { app, ComfyApp } from '@/scripts/app'
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useCanvasTransform } from '@/composables/maskeditor/useCanvasTransform'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { app, ComfyApp } from '@/scripts/app'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 function openMaskEditor(node: LGraphNode): void {
   if (!node.imgs?.length && node.previewMediaType !== 'image') {

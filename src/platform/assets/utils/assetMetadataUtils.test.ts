@@ -1,5 +1,4 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -7,7 +6,6 @@ import {
   MISSING_TAG,
   MODELS_TAG
 } from '@/platform/assets/services/assetService'
-import type * as DistributionTypes from '@/platform/distribution/types'
 import {
   buildModelTypeTagUpdate,
   getAssetAdditionalTags,
@@ -35,6 +33,7 @@ import {
   stripModelTypePrefix,
   toModelTypeTag
 } from '@/platform/assets/utils/assetMetadataUtils'
+import type * as DistributionTypes from '@/platform/distribution/types'
 
 const mockDistribution = vi.hoisted(
   (): { isCloud: typeof DistributionTypes.isCloud } => ({ isCloud: true })

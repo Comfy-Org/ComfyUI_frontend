@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as defaultTest } from '@e2e/fixtures/ComfyPage'
 import { createMockRelease } from '@e2e/fixtures/helpers/HelpCenterHelper'
 import { releaseNotificationFixture as test } from '@e2e/fixtures/releaseNotificationFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expect } from '@playwright/test'
 
 test.describe('Release Notifications', () => {
   test.describe('Release information', () => {

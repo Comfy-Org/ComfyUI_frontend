@@ -1,13 +1,13 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import {
   LGraph,
   LGraphCanvas,
   LGraphGroup,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 

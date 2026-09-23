@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
-
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

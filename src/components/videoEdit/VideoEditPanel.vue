@@ -250,11 +250,11 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener } from '@vueuse/core'
+import { clamp } from 'es-toolkit'
 import { computed, ref, toRef, useId, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { clamp } from 'es-toolkit'
 
 import WidgetBoundingBox from '@/components/boundingbox/WidgetBoundingBox.vue'
 import Loader from '@/components/loader/Loader.vue'
@@ -277,7 +277,6 @@ import type { Bounds } from '@/renderer/core/layout/types'
 import WidgetInputNumberInput from '@/renderer/extensions/vueNodes/widgets/components/WidgetInputNumberInput.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { frameToTime, timeToFrame } from '@/utils/videoFrameUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   features,

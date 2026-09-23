@@ -1,5 +1,5 @@
-import type { FieldSchema, FieldValue, FormValues } from './workshop-playground'
 import { readWorkshopVideoDuration } from './workshop-media-metadata'
+import type { FieldSchema, FieldValue, FormValues } from './workshop-playground'
 import { WorkshopRouterError } from './workshop-router-errors'
 
 function videoSource(value: FieldValue): File | string | undefined {

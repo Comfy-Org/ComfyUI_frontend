@@ -81,6 +81,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { MenuItem } from 'primevue/menuitem'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -89,7 +90,6 @@ import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import UserAvatar from '@/components/common/UserAvatar.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { WorkspaceMember } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   member,

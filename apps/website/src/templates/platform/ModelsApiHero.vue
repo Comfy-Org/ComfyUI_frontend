@@ -3,8 +3,8 @@ import HeroSplit01 from '../../components/blocks/HeroSplit01.vue'
 import { apiKeysLink, externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import CodeTabs from './CodeTabs.vue'
 import { modelsApiCodeTabs } from './codeSamples'
+import CodeTabs from './CodeTabs.vue'
 import { platformCtas } from './ctas'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

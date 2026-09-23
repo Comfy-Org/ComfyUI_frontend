@@ -1,11 +1,11 @@
 import { spawn } from 'node:child_process'
 
-import type { Distribution } from './distributions'
 import {
   differentCheckoutInstructions,
   probeDevServer
 } from '../checks/devServer'
 import { devServerPort, devServerUrl } from '../checks/devServerUrl'
+import type { Distribution } from './distributions'
 
 export interface ManagedDevServer {
   url: string

@@ -357,24 +357,23 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
+import type { MenuItem } from 'primevue/menuitem'
+import ToggleSwitch from 'primevue/toggleswitch'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import type { MenuItem } from 'primevue/menuitem'
-import ToggleSwitch from 'primevue/toggleswitch'
-
-import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
+import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
-import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { getProviderIcon, getProviderName } from '@/utils/categoryUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const governanceStore = usePartnerNodeGovernanceStore()
 const { governedWorkspaceId, isSaving, policy, providers, status } =

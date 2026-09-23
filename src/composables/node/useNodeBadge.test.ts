@@ -1,15 +1,15 @@
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref, toRef } from 'vue'
 import type { Ref } from 'vue'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useExtensionStore } from '@/stores/extensionStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { fromPartial } from '@total-typescript/shoehorn'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { NodeBadgeMode } from '@/types/nodeSource'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { useExtensionStore } from '@/stores/extensionStore'
+import { NodeBadgeMode } from '@/types/nodeSource'
 
 const mocks = vi.hoisted(() => ({
   installNodeBadges: vi.fn()

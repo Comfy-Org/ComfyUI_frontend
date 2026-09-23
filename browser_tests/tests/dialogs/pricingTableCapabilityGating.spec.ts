@@ -1,6 +1,4 @@
-import type { Page } from '@playwright/test'
 import type { BillingCapabilities } from '@comfyorg/ingest-types'
-
 import {
   cloudAppExpect,
   cloudAppFixture as test
@@ -8,6 +6,7 @@ import {
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import type { Page } from '@playwright/test'
 
 /**
  * The pricing table's plan CTAs are gated on the server capability set alone

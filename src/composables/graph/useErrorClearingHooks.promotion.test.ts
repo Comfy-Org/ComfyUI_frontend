@@ -2,7 +2,6 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import { ChangeTracker } from '@/scripts/changeTracker'
 import {
   demoteWidget,
   promoteValueWidgetViaSubgraphInput
@@ -19,8 +18,9 @@ import {
 } from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { app } from '@/scripts/app'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 describe('link ownership error surface', () => {
   beforeEach(() => {

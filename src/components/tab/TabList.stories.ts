@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
+import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import Tab from './Tab.vue'
 import TabList from './TabList.vue'
-import type { ComponentExposed } from 'vue-component-type-helpers'
 
 interface GenericMeta<C> extends Omit<Meta<C>, 'component'> {
   component: ComponentExposed<C>

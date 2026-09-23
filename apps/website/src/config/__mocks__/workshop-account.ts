@@ -1,7 +1,6 @@
-import { vi } from 'vitest'
-
 import { createTestIdentity } from '@comfyorg/account-core/testing'
 import type { User } from 'firebase/auth'
+import { vi } from 'vitest'
 
 import type * as realAccount from '../workshop-account'
 

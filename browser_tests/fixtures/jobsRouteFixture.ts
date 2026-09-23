@@ -1,11 +1,11 @@
-import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
-import type { Page } from '@playwright/test'
-import type { z } from 'zod'
 import {
   zHistoryManageRequest,
   zQueueManageRequest,
   zQueueManageResponse
 } from '@comfyorg/ingest-types/zod'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
+import type { Page } from '@playwright/test'
+import type { z } from 'zod'
 
 import type {
   JobDetail,

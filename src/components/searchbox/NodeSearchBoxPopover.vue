@@ -62,6 +62,7 @@ import { storeToRefs } from 'pinia'
 import Dialog from 'primevue/dialog'
 import { computed, ref, toRaw, watch, watchEffect } from 'vue'
 
+import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { LiteGraphCanvasEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -78,10 +79,8 @@ import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 
-import NodePreviewCard from '@/components/node/NodePreviewCard.vue'
-
-import NodeSearchContent from './v2/NodeSearchContent.vue'
 import NodeSearchBox from './NodeSearchBox.vue'
+import NodeSearchContent from './v2/NodeSearchContent.vue'
 
 let triggerEvent: CanvasPointerEvent | null = null
 let listenerController: AbortController | null = null

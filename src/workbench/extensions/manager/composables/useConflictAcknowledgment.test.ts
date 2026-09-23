@@ -1,5 +1,5 @@
-import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
 
 import { useConflictAcknowledgment } from '@/workbench/extensions/manager/composables/useConflictAcknowledgment'
 import { useConflictDetectionStore } from '@/workbench/extensions/manager/stores/conflictDetectionStore'

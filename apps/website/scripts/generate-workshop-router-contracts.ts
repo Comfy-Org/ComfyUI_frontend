@@ -1,5 +1,6 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+
 import { z } from 'astro/zod'
 
 import {
@@ -12,16 +13,16 @@ import {
   validateWorkshopInput,
   validatorFor
 } from '../src/config/workshop-json-schema'
+import { workshopRouterIndexSchema } from '../src/config/workshop-router-index'
 import {
   parseRouterOpenApiSnapshot,
   routerInputSchema
 } from '../src/config/workshop-router-openapi'
-import { workshopRouterIndexSchema } from '../src/config/workshop-router-index'
-import { curateWorkshopInputs } from './workshop-input-presentation'
-import { creatorFormFor, creatorVariantsFor } from './workshop-creator-forms'
 import availabilityOverrides from '../src/data/workshop-router-availability.json'
-import { isDirectExecution } from './script-entry-point'
 import { adaptRouterModel } from './router-model-adapters'
+import { isDirectExecution } from './script-entry-point'
+import { creatorFormFor, creatorVariantsFor } from './workshop-creator-forms'
+import { curateWorkshopInputs } from './workshop-input-presentation'
 
 const jsonSchema = z.record(z.string(), z.json())
 const packedRecordsSchema = z.array(z.unknown())

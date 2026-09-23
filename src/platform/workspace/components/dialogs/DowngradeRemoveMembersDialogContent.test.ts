@@ -1,8 +1,9 @@
-import { useDialogStore } from '@/stores/dialogStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { useDialogStore } from '@/stores/dialogStore'
 
 import DowngradeRemoveMembersDialogContent from './DowngradeRemoveMembersDialogContent.vue'
 

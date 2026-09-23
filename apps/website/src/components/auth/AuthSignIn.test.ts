@@ -1,10 +1,3 @@
-import { render, screen, waitFor } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, readonly, ref } from 'vue'
-
-import type { User, UserCredential } from 'firebase/auth'
-
 import type {
   AccountCredential,
   SessionResult
@@ -13,12 +6,17 @@ import type {
   TurnstileApi,
   TurnstileRenderOptions
 } from '@comfyorg/account-core/turnstileScript'
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import type { User, UserCredential } from 'firebase/auth'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, readonly, ref } from 'vue'
 
-import { removeAllToasts, useAuthToasts } from '../../config/auth-toast-state'
 import {
   testCredential,
   testFirebaseUser
 } from '../../config/__fixtures__/workshopSessionFakes'
+import { removeAllToasts, useAuthToasts } from '../../config/auth-toast-state'
 import {
   isNewWorkshopUser,
   isWorkshopProvisioningError,

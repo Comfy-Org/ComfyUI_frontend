@@ -1,9 +1,9 @@
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveModelNodeFromAsset } from '@/platform/assets/utils/resolveModelNodeFromAsset'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 const mockGetNodeProvider = vi.hoisted(() => vi.fn())
 

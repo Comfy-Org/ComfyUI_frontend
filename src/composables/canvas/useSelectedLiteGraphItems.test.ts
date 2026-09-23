@@ -1,8 +1,9 @@
-import { markRaw } from 'vue'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { markRaw } from 'vue'
 
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { Positionable } from '@/lib/litegraph/src/litegraph'
 import {
   LGraphEventMode,
@@ -12,7 +13,6 @@ import {
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
-import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 
 const mockApp = vi.hoisted(() => ({
   canvas: {

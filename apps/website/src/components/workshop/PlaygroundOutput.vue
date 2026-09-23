@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   Download,
   ExternalLink,
@@ -8,15 +9,13 @@ import {
   Maximize2,
   X
 } from '@lucide/vue'
-import { computed, ref, useTemplateRef, watch } from 'vue'
 import { DialogContent, DialogPortal, DialogRoot, DialogTitle } from 'reka-ui'
-
-import { cn } from '@comfyorg/tailwind-utils'
+import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import VideoPlayer from '../common/VideoPlayer.vue'
-import OutputTransport from './OutputTransport.vue'
+
 import type { Modality } from '../../config/models-catalogue'
+import { downloadOutput } from '../../config/workshop-output-download'
 import type {
   RunFailure,
   RunOutput,
@@ -24,10 +23,11 @@ import type {
   RunState
 } from '../../config/workshop-run'
 import { formatElapsed, isExpired } from '../../config/workshop-run'
-import { downloadOutput } from '../../config/workshop-output-download'
-import { outputLabels } from '../../lib/workshop/output-labels'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { outputLabels } from '../../lib/workshop/output-labels'
+import VideoPlayer from '../common/VideoPlayer.vue'
+import OutputTransport from './OutputTransport.vue'
 
 const {
   state,

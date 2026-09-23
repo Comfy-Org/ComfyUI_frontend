@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref } from 'vue'
 
-import Button from '@/components/ui/button/Button.vue'
 import Tag from '@/components/chip/Tag.vue'
+import Button from '@/components/ui/button/Button.vue'
+
 import CardBottom from './CardBottom.vue'
 import CardContainer from './CardContainer.vue'
 import CardDescription from './CardDescription.vue'

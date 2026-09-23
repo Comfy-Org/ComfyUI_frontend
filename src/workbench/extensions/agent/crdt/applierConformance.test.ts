@@ -1,3 +1,18 @@
+import type {
+  Op,
+  SetWidgetOp,
+  WidgetCatalog,
+  WireOp,
+  WorkflowJSON
+} from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  compareStampKeys,
+  hasAppliedOp,
+  mint,
+  readGraph,
+  stampKey
+} from '@comfyorg/comfy-multi-player'
 /**
  * Conformance vectors against the PINNED package (plan 3.5): every assumption
  * the write leg builds on, asserted against the applier the doc host actually
@@ -12,23 +27,6 @@
  * id-keyed record with NAME-KEYED widgets.
  */
 import { describe, expect, it } from 'vitest'
-
-import type {
-  Op,
-  SetWidgetOp,
-  WidgetCatalog,
-  WireOp,
-  WorkflowJSON
-} from '@comfyorg/comfy-multi-player'
-
-import {
-  applyOps,
-  compareStampKeys,
-  hasAppliedOp,
-  mint,
-  readGraph,
-  stampKey
-} from '@comfyorg/comfy-multi-player'
 
 import type { GraphOperation } from './graphOperations'
 import { mintOpId, mintWireOps } from './opEnvelope'

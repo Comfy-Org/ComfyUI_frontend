@@ -1,8 +1,8 @@
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { WidgetSelectDropdownFixture } from '@e2e/fixtures/components/WidgetSelectDropdown'
 import { setPromotedHostWidgetValue } from '@e2e/fixtures/utils/promotedWidgets'
+import { expect } from '@playwright/test'
+
 import type { NodeId } from '@/types/nodeId'
 
 export async function selectVuePromotedMediaByTitle(

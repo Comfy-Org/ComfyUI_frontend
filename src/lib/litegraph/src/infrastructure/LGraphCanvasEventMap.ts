@@ -1,12 +1,12 @@
+import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphButton } from '@/lib/litegraph/src/LGraphButton'
 import type { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { SerializedNodeId } from '@/types/nodeId'
-import type { ConnectingLink } from '@/lib/litegraph/src/interfaces'
 import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 export interface LGraphCanvasEventMap {
   /** The active graph has changed. */

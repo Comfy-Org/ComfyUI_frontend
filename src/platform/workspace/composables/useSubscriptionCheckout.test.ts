@@ -1,26 +1,11 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { render } from '@testing-library/vue'
 import type { Mock } from 'vitest'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
-
-import type { BillingOperationRecordView } from '@/platform/workspace/billing/sdk/operationRecordView'
-import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
-import type { SubscriptionRailOutcome } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
-import { billingOperation } from './billingOperationTestUtils'
-import type { BillingOperation } from './billingOperationTestUtils'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
-import { useAuthStore } from '@/stores/authStore'
-
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
-
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
-import {
-  clearCheckoutJourney,
-  resolveCheckoutJourney
-} from '@/platform/workspace/utils/checkoutJourney'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingStatus,
@@ -28,13 +13,25 @@ import type {
   Plan,
   PreviewSubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
+import type { BillingOperationRecordView } from '@/platform/workspace/billing/sdk/operationRecordView'
+import type { SubscriptionRailOutcome } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import {
+  clearCheckoutJourney,
+  resolveCheckoutJourney
+} from '@/platform/workspace/utils/checkoutJourney'
+import { useAuthStore } from '@/stores/authStore'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
+import { billingOperation } from './billingOperationTestUtils'
+import type { BillingOperation } from './billingOperationTestUtils'
 import {
   findPlanSlug,
   useSubscriptionCheckout
 } from './useSubscriptionCheckout'
-import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
 

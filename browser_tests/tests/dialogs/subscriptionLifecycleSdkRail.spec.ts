@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Page, Request } from '@playwright/test'
 import type {
   BillingBalanceResponse,
   BillingOpStatusResponse,
@@ -8,9 +6,6 @@ import type {
   Plan,
   ResubscribeResponse
 } from '@comfyorg/ingest-types'
-
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
@@ -21,6 +16,10 @@ import {
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
+import type { Page, Request } from '@playwright/test'
+
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 
 /**
  * Resubscribe and the payment portal across the billing SDK rail — FE-2477.

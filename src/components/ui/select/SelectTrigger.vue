@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { SelectTriggerProps } from 'reka-ui'
 import { SelectIcon, SelectTrigger } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   class: className,

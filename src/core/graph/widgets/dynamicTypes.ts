@@ -1,7 +1,7 @@
 import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { zAutogrowOptions, zMatchTypeOptions } from '@/schemas/nodeDefSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
-import type { InputSpec as InputSpecV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 
 const dynamicTypeResolvers: Record<
   string,

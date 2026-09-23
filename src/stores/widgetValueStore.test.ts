@@ -1,12 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { UUID } from '@/utils/uuid'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 import type { WidgetState } from '@/types/widgetState'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
+import type { UUID } from '@/utils/uuid'
 
 import { useWidgetValueStore } from './widgetValueStore'
 

@@ -76,6 +76,8 @@ import { useEventListener } from '@vueuse/core'
 import { useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
+import Button from '@/components/ui/button/Button.vue'
 import Dialog from '@/components/ui/dialog/Dialog.vue'
 import DialogClose from '@/components/ui/dialog/DialogClose.vue'
 import DialogContent from '@/components/ui/dialog/DialogContent.vue'
@@ -83,8 +85,6 @@ import DialogDescription from '@/components/ui/dialog/DialogDescription.vue'
 import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
-import Button from '@/components/ui/button/Button.vue'
-import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 
 const { title, message, image, primaryLabel, skipLabel, waitingForTarget } =
   defineProps<{

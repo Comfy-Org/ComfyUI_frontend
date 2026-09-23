@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-
-import CardWorkflowGallery01 from '../../components/blocks/CardWorkflowGallery01.vue'
 import type { CardWorkflowItem } from '../../components/blocks/CardWorkflow01.vue'
+import CardWorkflowGallery01 from '../../components/blocks/CardWorkflowGallery01.vue'
 import { featuredProjects } from '../../data/fdct'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

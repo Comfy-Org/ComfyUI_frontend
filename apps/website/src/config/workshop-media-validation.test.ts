@@ -1,8 +1,8 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import type { FieldSchema, FieldValue } from './workshop-playground'
 import { readWorkshopVideoDuration } from './workshop-media-metadata'
 import { validateWorkshopMediaInputs } from './workshop-media-validation'
+import type { FieldSchema, FieldValue } from './workshop-playground'
 
 vi.mock(import('./workshop-media-metadata'))
 

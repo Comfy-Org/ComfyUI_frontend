@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
+
 import ModelStatus from './ModelStatus.vue'
 
 describe('ModelStatus', () => {

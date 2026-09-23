@@ -1,3 +1,4 @@
+import type { CatalogParams } from './catalogI18n'
 import {
   ACCESS_REQUIRED_CATALOG_ID,
   CONTENT_BLOCKED_CATALOG_ID,
@@ -25,7 +26,6 @@ import {
   UNEXPECTED_SERVICE_ERROR_CATALOG_ID,
   WORKSPACE_INSUFFICIENT_CREDITS_CATALOG_ID
 } from './catalogIds'
-import type { CatalogParams } from './catalogI18n'
 
 // Runtime errors can share generic exception labels, so targeted cataloging
 // relies on narrow stable messages. Keep these matches exact or prefix-based.

@@ -1,13 +1,12 @@
-import { expect } from '@playwright/test'
-
-import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
-import { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
-import { AGENT_VIDEO_ASSET } from '@e2e/fixtures/data/assetFixtures'
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
+import { AGENT_VIDEO_ASSET } from '@e2e/fixtures/data/assetFixtures'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expect } from '@playwright/test'
 
 // The composer's "drag in asset from asset panel" path had no browser coverage
 // at all, in either view mode: the drag source was proved by asserting the

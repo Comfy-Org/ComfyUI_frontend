@@ -1,14 +1,13 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-
 import {
   cloudAppExpect,
   cloudAppFixture as test,
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 /**
  * getSurveyCompletedStatus fails safe: a transient 401 on `/` must not bounce a

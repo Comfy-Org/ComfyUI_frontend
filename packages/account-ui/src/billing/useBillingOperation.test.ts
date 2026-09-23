@@ -1,9 +1,8 @@
+import type { BillingOperationState } from '@comfyorg/account-core/billing'
+import { TOPUP_ROUTE, operationRoute } from '@comfyorg/account-core/billing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 import type { Ref } from 'vue'
-
-import type { BillingOperationState } from '@comfyorg/account-core/billing'
-import { TOPUP_ROUTE, operationRoute } from '@comfyorg/account-core/billing'
 
 import {
   NOW,

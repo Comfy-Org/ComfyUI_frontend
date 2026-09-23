@@ -1,5 +1,5 @@
-import { groupBy } from 'es-toolkit/compat'
 import { createSharedComposable } from '@vueuse/core'
+import { groupBy } from 'es-toolkit/compat'
 import { computed, watch } from 'vue'
 
 import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'

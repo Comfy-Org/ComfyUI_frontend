@@ -1,19 +1,10 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, resolve } from 'node:path'
 
-import type { Page } from '@playwright/test'
-
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { CuratedOutputHashes } from '@e2e/fixtures/customNode/outputHashes'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import {
-  customNodeSuiteSettings,
-  drainBackendToIdle,
-  trackSubmittedPrompts
-} from '@e2e/fixtures/utils/customNodeSuite'
 import { LocalDesktopTarget } from '@e2e/fixtures/customNode/ComfyTarget'
 import {
   customExtensionStartupErrors,
@@ -33,6 +24,7 @@ import {
   staleAutogrowApplicabilityIssues
 } from '@e2e/fixtures/customNode/manifest'
 import { missingExpectedNodes } from '@e2e/fixtures/customNode/objectInfoValidator'
+import type { CuratedOutputHashes } from '@e2e/fixtures/customNode/outputHashes'
 import {
   compareOutputHashes,
   hashSinkPayloads,
@@ -43,10 +35,18 @@ import {
   startupConsoleErrors
 } from '@e2e/fixtures/utils/consoleErrorCollector'
 import {
+  customNodeSuiteSettings,
+  drainBackendToIdle,
+  trackSubmittedPrompts
+} from '@e2e/fixtures/utils/customNodeSuite'
+import {
   errorSurfaces,
   expectNoVisibleErrors
 } from '@e2e/fixtures/utils/errorSurfaces'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import type { Page } from '@playwright/test'
+
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 const target = new LocalDesktopTarget()
 const OBJECT_INFO_SANITY_FLOOR = 50

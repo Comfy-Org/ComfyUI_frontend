@@ -2,9 +2,9 @@ import { createHash } from 'node:crypto'
 import { readFile, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 
+import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
 import { expect, test as base } from '@playwright/test'
 import type { Page, TestInfo } from '@playwright/test'
-import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
 import { z } from 'zod'
 
 import { validateArtifact } from '../scripts/router-model-artifacts'

@@ -1,24 +1,24 @@
-import catalogJson from '../content/workshop-models.json'
 import displayJson from '../content/workshop-display.json'
-import indexJson from '../content/workshop-router-index.json'
-import aliasesJson from '../content/workshop-router-aliases.json'
-import displayNames from '../data/workshop-router-display-names.json'
-import useCaseOverrides from '../data/workshop-use-case-overrides.json'
 import { workshopDisplayEntriesSchema } from '../content/workshop-display.schema'
+import catalogJson from '../content/workshop-models.json'
 import { workshopModelSchema } from '../content/workshop-models.schema'
 import type { WorkshopModelEntry } from '../content/workshop-models.schema'
+import aliasesJson from '../content/workshop-router-aliases.json'
+import indexJson from '../content/workshop-router-index.json'
+import displayNames from '../data/workshop-router-display-names.json'
+import useCaseOverrides from '../data/workshop-use-case-overrides.json'
+import { modelSummary } from '../lib/workshop/model-summary'
 import type { Modality, UseCase, WorkshopModel } from './models-catalogue'
 import { USE_CASES } from './models-catalogue'
-import { workshopRouterIndexSchema } from './workshop-router-index'
-import { workshopRouterAliasesSchema } from './workshop-router-identity'
-import { labelSharedThumbnails } from './workshop-thumbnail-labels'
 import { workshopContentInputs } from './workshop-content-inputs'
-import { modelSummary } from '../lib/workshop/model-summary'
-import { modelOrderRank } from './workshop-model-order'
 import {
   isWorkshopModelDisabled,
   workshopModelAvailability
 } from './workshop-model-availability'
+import { modelOrderRank } from './workshop-model-order'
+import { workshopRouterAliasesSchema } from './workshop-router-identity'
+import { workshopRouterIndexSchema } from './workshop-router-index'
+import { labelSharedThumbnails } from './workshop-thumbnail-labels'
 
 const routerIndex = workshopRouterIndexSchema.parse(indexJson)
 const legacyCatalog = (catalogJson as unknown[]).map((entry) =>

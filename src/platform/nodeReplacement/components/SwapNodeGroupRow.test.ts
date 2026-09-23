@@ -1,13 +1,14 @@
-import { getActivePinia } from 'pinia'
-import { fromAny } from '@total-typescript/shoehorn'
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
+import { fromAny } from '@total-typescript/shoehorn'
+import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import type { MissingNodeType } from '@/types/comfy'
+
 import SwapNodeGroupRow from './SwapNodeGroupRow.vue'
 
 const i18n = createI18n({

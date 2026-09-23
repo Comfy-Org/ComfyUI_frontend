@@ -1,8 +1,10 @@
-import type { OverridedMixpanel } from 'mixpanel-browser'
 import { omit } from 'es-toolkit'
+import type { OverridedMixpanel } from 'mixpanel-browser'
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import { reportError } from '@/platform/telemetry/reportError'
 import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 
@@ -41,8 +43,6 @@ import type {
   WorkflowSavedMetadata,
   WorkspaceInviteMetadata
 } from '../../types'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import {
   CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
   OnboardingTourEvents,

@@ -1,5 +1,5 @@
-import type { App } from 'vue'
 import { browserApiErrorsIntegration, init as sentryInit } from '@sentry/vue'
+import type { App } from 'vue'
 
 import { sentryThirdPartyErrorFilter } from './thirdPartyErrorNoise'
 

@@ -1,6 +1,5 @@
 import { detectPassCount } from '@/renderer/glsl/glslUtils'
 import { acquireSharedGL } from '@/renderer/glsl/sharedGLContext'
-
 import type { SharedGLHandle } from '@/renderer/glsl/sharedGLContext'
 
 const VERTEX_SHADER_SOURCE = `#version 300 es

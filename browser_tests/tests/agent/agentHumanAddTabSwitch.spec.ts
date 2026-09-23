@@ -1,8 +1,7 @@
-import { expect } from '@playwright/test'
 import type { ApplyOutcome } from '@comfyorg/comfy-multi-player'
-
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import type { AgentConversationHarness } from '@e2e/fixtures/agentConversationFixture'
+import { expect } from '@playwright/test'
 
 // A text-only turn: the follower subscribes to the recorded workflow's doc
 // and the agent changes nothing, so every node on the canvas afterwards is

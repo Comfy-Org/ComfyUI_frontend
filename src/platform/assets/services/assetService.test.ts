@@ -1,6 +1,3 @@
-import type { ComfyApp } from '@/scripts/app'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
@@ -13,6 +10,9 @@ import {
   assetService
 } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
 

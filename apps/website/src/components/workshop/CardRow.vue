@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { useMutationObserver, useResizeObserver } from '@vueuse/core'
 import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'

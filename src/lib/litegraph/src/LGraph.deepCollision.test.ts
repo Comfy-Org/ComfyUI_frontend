@@ -1,6 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { parseProxyWidgets } from '@/core/schemas/promotionSchema'
+import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ExportedSubgraph,
   ISerialisedGroup,
@@ -10,12 +16,6 @@ import type {
   SerialisableLLink,
   SerialisableReroute
 } from '@/lib/litegraph/src/types/serialisation'
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { Subgraph } from '@/lib/litegraph/src/litegraph'
 import { toNodeId } from '@/types/nodeId'
 
 import { registerTestSubgraphNodeTypes } from './subgraph/__fixtures__/subgraphHelpers'

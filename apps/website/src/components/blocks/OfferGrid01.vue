@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-
 import type { AnchorHTMLAttributes, HTMLAttributes } from 'vue'
 
 import { resolveRel } from '../../utils/cta'

@@ -1,5 +1,6 @@
 import { execSync } from 'node:child_process'
 import { existsSync } from 'node:fs'
+
 import { pass, fail, warn, info } from '../ui/logger'
 import type { CheckResult } from './types'
 

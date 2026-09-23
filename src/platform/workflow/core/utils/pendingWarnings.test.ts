@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 
-import type { PendingWarnings } from '@/platform/workflow/management/stores/comfyWorkflow'
 import {
   dedupeMissingNodeTypes,
   normalizePendingWarnings,
@@ -9,6 +8,7 @@ import {
   removePendingMissingNodeTypesByType,
   updatePendingWarnings
 } from '@/platform/workflow/core/utils/pendingWarnings'
+import type { PendingWarnings } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 describe('pendingWarnings utils', () => {
   it('normalizes missing or empty warning collections to null', () => {

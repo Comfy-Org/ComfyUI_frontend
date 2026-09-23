@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { reactiveOmit } from '@vueuse/core'
 import type { SliderRootEmits, SliderRootProps } from 'reka-ui'
 import {
@@ -10,8 +11,6 @@ import {
 } from 'reka-ui'
 import { ref } from 'vue'
 import type { HTMLAttributes } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 const props = defineProps<
   SliderRootProps & {

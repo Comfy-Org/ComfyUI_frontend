@@ -1,7 +1,9 @@
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
+
 import { i18n } from '@/i18n'
+
 import type { TurnId } from '../../../schemas/agentApiSchema'
 import { createAgentEventTransport } from '../../../services/agent/agentEventTransport'
 import type {
@@ -9,7 +11,6 @@ import type {
   RunApprovalPart
 } from '../../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../../services/agent/agentMessageParts'
-
 import AgentMessage from './AgentMessage.vue'
 
 function thinkingMessage(thinkingText?: string): AssistantMessage {

@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { SignInDialog } from '@e2e/fixtures/components/SignInDialog'
 import { localSignedOutFixture as test } from '@e2e/fixtures/localSignedOutFixture'
+import { expect } from '@playwright/test'
 
 /**
  * Sign-up submission stays blocked while a password rule is unmet, end to end

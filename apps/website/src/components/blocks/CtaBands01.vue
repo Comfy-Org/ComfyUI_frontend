@@ -2,9 +2,9 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import type { AnchorHTMLAttributes, HTMLAttributes } from 'vue'
 
+import { resolveRel } from '../../utils/cta'
 import GlassCard from '../common/GlassCard.vue'
 import Button from '../ui/button/Button.vue'
-import { resolveRel } from '../../utils/cta'
 
 type Cta = {
   label: string

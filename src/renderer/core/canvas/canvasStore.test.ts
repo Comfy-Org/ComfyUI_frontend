@@ -1,5 +1,4 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { nextTick } from 'vue'
 import {
   assert,
   beforeEach,
@@ -9,12 +8,13 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
+import { nextTick } from 'vue'
 
 import { LGraphGroup } from '@/lib/litegraph/src/LGraphGroup'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@/types/graphScopeId'

@@ -1,6 +1,6 @@
+import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import Listbox from 'primevue/listbox'
 import Select from 'primevue/select'
@@ -11,9 +11,9 @@ import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import VerifiedIcon from '@/components/icons/VerifiedIcon.vue'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { api } from '@/scripts/api'
 import type { components } from '@/types/comfyRegistryTypes'
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 import { ImportFailedKey } from '@/workbench/extensions/manager/types/importFailedTypes'
 

@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { localizeHref } from '../../config/routes'
 import type { LearningTutorial } from '../../data/learningTutorials'
-import type { Locale } from '../../i18n/translations'
-
 import {
   categoryChapters,
   categoryLabelKeys,
@@ -11,15 +9,16 @@ import {
   tutorialDescription,
   tutorialPath
 } from '../../data/learningTutorials'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WatchAuthorCard from '../blocks/WatchAuthorCard.vue'
-import WatchRelatedStrip from '../blocks/WatchRelatedStrip.vue'
 import WatchPageLayout from '../blocks/WatchPageLayout.vue'
 import WatchRecommendedCard from '../blocks/WatchRecommendedCard.vue'
-import Button from '../ui/button/Button.vue'
+import WatchRelatedStrip from '../blocks/WatchRelatedStrip.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
-import LearningVideoEmbed from './LearningVideoEmbed.vue'
 import Badge from '../ui/badge/Badge.vue'
+import Button from '../ui/button/Button.vue'
+import LearningVideoEmbed from './LearningVideoEmbed.vue'
 
 const { tutorial, locale = 'en' } = defineProps<{
   tutorial: LearningTutorial

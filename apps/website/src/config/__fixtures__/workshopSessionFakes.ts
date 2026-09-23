@@ -1,12 +1,10 @@
+import type { AccountUser } from '@comfyorg/account-core/session'
+import type { User, UserCredential } from 'firebase/auth'
 /**
  * The user and token-exchange fakes the workshop session suites share. A
  * suite keeps the transitions it drives; only the exchange contract lives here.
  */
 import { vi } from 'vitest'
-
-import type { User, UserCredential } from 'firebase/auth'
-
-import type { AccountUser } from '@comfyorg/account-core/session'
 
 export function testFirebaseUser(overrides: Partial<User> = {}): User {
   return {

@@ -1,3 +1,5 @@
+import { routerMediaValue } from './router-media'
+import { workshopExampleFile } from './workshop-example-file'
 import type {
   FieldSchema,
   FieldValue,
@@ -5,8 +7,6 @@ import type {
   FormValues
 } from './workshop-playground'
 import { urlUploadField, validateForm } from './workshop-playground'
-import { workshopExampleFile } from './workshop-example-file'
-import { routerMediaValue } from './router-media'
 
 const MAX_DRAFT_BYTES = 100 * 1024 * 1024
 

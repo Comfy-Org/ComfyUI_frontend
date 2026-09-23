@@ -1,8 +1,7 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
 import { useTemplateRef } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className } = defineProps<{
   class?: HTMLAttributes['class']

@@ -1,12 +1,12 @@
 import { z } from 'astro/zod'
 
-import rawPresentation from '../src/data/workshop-input-presentation.json'
-import type { WorkshopModelEntry } from '../src/content/workshop-models.schema'
 import { deriveWorkshopFields } from '../src/config/workshop-fields'
 import { workshopInputDefinitionSchema } from '../src/config/workshop-input-definition'
 import type { WorkshopInputDefinition } from '../src/config/workshop-input-definition'
 import { validateWorkshopInput } from '../src/config/workshop-json-schema'
 import { resolveSchemaReference } from '../src/config/workshop-router-openapi'
+import type { WorkshopModelEntry } from '../src/content/workshop-models.schema'
+import rawPresentation from '../src/data/workshop-input-presentation.json'
 
 const jsonObject = z.record(z.string(), z.json())
 const scalar = z.union([z.string(), z.number(), z.boolean()])

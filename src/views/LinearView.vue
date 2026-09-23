@@ -2,24 +2,16 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { breakpointsTailwind, unrefElement, useBreakpoints } from '@vueuse/core'
 import type { MaybeElement } from '@vueuse/core'
+import { storeToRefs } from 'pinia'
 import Splitter from 'primevue/splitter'
 import SplitterPanel from 'primevue/splitterpanel'
-import { storeToRefs } from 'pinia'
 import { computed, useTemplateRef } from 'vue'
 
-import AppBuilder from '@/components/builder/AppBuilder.vue'
 import AppModeToolbar from '@/components/appMode/AppModeToolbar.vue'
+import AppBuilder from '@/components/builder/AppBuilder.vue'
 import ExtensionSlot from '@/components/common/ExtensionSlot.vue'
 import SideToolbar from '@/components/sidebar/SideToolbar.vue'
 import WorkflowTabs from '@/components/topbar/WorkflowTabs.vue'
-import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
-import { vCoachmark } from '@/platform/onboarding/vCoachmark'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
-import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
-import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
-import MobileDisplay from '@/renderer/extensions/linearMode/MobileDisplay.vue'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAppMode } from '@/composables/useAppMode'
 import { useStablePrimeVueSplitterSizer } from '@/composables/useStablePrimeVueSplitterSizer'
 import {
@@ -28,7 +20,15 @@ import {
   SIDEBAR_MIN_SIZE,
   SIDE_PANEL_SIZE
 } from '@/constants/splitterConstants'
+import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { vCoachmark } from '@/platform/onboarding/vCoachmark'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
+import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
+import LinearProgressBar from '@/renderer/extensions/linearMode/LinearProgressBar.vue'
+import MobileDisplay from '@/renderer/extensions/linearMode/MobileDisplay.vue'
 import { useAppModeStore } from '@/stores/appModeStore'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 
 const settingStore = useSettingStore()

@@ -1,12 +1,13 @@
+import path from 'path'
+
+import { TestIds } from '@e2e/fixtures/selectors'
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
-import path from 'path'
 
 import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
-import { TestIds } from '@e2e/fixtures/selectors'
 
 export class ComfyTemplates {
   readonly content: Locator

@@ -5,9 +5,9 @@ import { defineStore } from 'pinia'
 import type { DialogPassThroughOptions } from 'primevue/dialog'
 import { markRaw, ref } from 'vue'
 import type { Component, HTMLAttributes, Ref } from 'vue'
+import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 import type { DialogContentSize } from '@/components/ui/dialog/dialog.variants'
-import type { ComponentAttrs } from 'vue-component-type-helpers'
 
 type DialogPosition =
   | 'center'

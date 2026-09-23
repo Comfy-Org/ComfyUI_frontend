@@ -1,6 +1,5 @@
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
-
 import type { User } from 'firebase/auth'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import {
   captureAuthRefreshFailed,

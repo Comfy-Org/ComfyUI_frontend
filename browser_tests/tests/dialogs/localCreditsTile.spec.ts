@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
-import { localAuthFixture as test } from '@e2e/fixtures/localAuthFixture'
 import {
   createBalance,
   createSubscriptionStatus
 } from '@e2e/fixtures/data/subscriptionFixtures'
+import { localAuthFixture as test } from '@e2e/fixtures/localAuthFixture'
+import { expect } from '@playwright/test'
 
 test.describe('Local credits tile', () => {
   test('hides the Cloud monthly progress bar for an active subscription', async ({

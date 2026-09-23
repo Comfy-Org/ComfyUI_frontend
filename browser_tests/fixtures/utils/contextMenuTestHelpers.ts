@@ -1,7 +1,6 @@
-import type { Locator } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Locator } from '@playwright/test'
 
 export async function openContextMenu(
   comfyPage: ComfyPage,

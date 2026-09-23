@@ -61,18 +61,18 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import Popover from 'primevue/popover'
 import Skeleton from 'primevue/skeleton'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
 import UserAvatar from '@/components/common/UserAvatar.vue'
-import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { isCloud } from '@/platform/distribution/types'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 

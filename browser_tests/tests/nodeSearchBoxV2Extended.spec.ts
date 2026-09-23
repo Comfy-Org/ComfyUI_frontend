@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+
 import { RootCategory } from '@/components/searchbox/v2/rootCategories'
 
 test.describe('Node search box V2 extended', { tag: '@node' }, () => {

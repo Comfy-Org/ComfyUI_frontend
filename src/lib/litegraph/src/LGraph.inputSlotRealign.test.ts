@@ -5,17 +5,17 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   normalizeConfiguredTopology,
   realignInputLinkSlots
 } from '@/lib/litegraph/src/linkDeduplication'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import type {
   ExportedSubgraph,
   ISerialisedNode,
   SerialisableGraph
 } from '@/lib/litegraph/src/types/serialisation'
-import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'

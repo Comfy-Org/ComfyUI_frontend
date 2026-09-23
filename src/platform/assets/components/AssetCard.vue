@@ -129,15 +129,16 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, toValue, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useImageQuiet } from '@/composables/useImageQuiet'
 import IconGroup from '@/components/button/IconGroup.vue'
 import MoreButton from '@/components/button/MoreButton.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
+import { useImageQuiet } from '@/composables/useImageQuiet'
 import AssetBadgeGroup from '@/platform/assets/components/AssetBadgeGroup.vue'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { assetService } from '@/platform/assets/services/assetService'
@@ -145,7 +146,6 @@ import { getAssetCardTitle } from '@/platform/assets/utils/assetMetadataUtils'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { asset, interactive, focused } = defineProps<{
   asset: AssetDisplayItem

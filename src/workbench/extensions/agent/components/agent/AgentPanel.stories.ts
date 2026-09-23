@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import { toTurnId } from '../../schemas/agentApiSchema'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
+
 import '../../agentPanel.css'
 
 import AgentPanel from './AgentPanel.vue'

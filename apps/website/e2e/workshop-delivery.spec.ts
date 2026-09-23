@@ -3,8 +3,8 @@ import { gunzipSync } from 'node:zlib'
 import { expect } from '@playwright/test'
 import { z } from 'zod'
 
-import availability from '../src/data/workshop-model-availability.json' with { type: 'json' }
 import { workshopModelAvailabilitySchema } from '../src/config/workshop-model-availability-schema'
+import availability from '../src/data/workshop-model-availability.json' with { type: 'json' }
 import { test } from './fixtures/modelsAccount'
 
 test.use({
@@ -30,7 +30,7 @@ test(
     }
     const captured: z.infer<typeof eventSchema>[] = []
     await context.route(
-      (url) => url.hostname === 't.comfy.org' && /\/e\/$/.test(url.pathname),
+      (url) => url.hostname === 't.comfy.org' && url.pathname.endsWith('/e/'),
       async (route) => {
         const body = route.request().postDataBuffer()
         if (!body) throw new Error('Missing analytics request body')

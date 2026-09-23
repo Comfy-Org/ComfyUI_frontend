@@ -1,11 +1,12 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import ComfyHubPublishWizardContent from './ComfyHubPublishWizardContent.vue'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
+
+import ComfyHubPublishWizardContent from './ComfyHubPublishWizardContent.vue'
 
 const mockCheckProfile = vi.hoisted(() => vi.fn())
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())

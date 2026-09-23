@@ -346,6 +346,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -370,7 +371,6 @@ import type {
   PreviewSubscribeResponse,
   SavedPaymentMethod
 } from '@/platform/workspace/api/workspaceApi'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import SubscriptionTermsNote from './SubscriptionTermsNote.vue'
 import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'

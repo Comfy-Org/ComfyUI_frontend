@@ -1,11 +1,11 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 
-import type Load3d from './Load3d'
 import { createExportMenuItems } from './exportMenuHelper'
+import type Load3d from './Load3d'
 
 const { contextMenuMock } = vi.hoisted(() => ({
   contextMenuMock: vi.fn()

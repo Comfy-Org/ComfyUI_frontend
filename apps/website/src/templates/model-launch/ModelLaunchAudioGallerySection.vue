@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import type { Locale } from '../../i18n/translations'
-import type { ModelLaunchAudioGallery } from './types'
-
 import ModelLaunchAudioSampleCard from './ModelLaunchAudioSampleCard.vue'
+import type { ModelLaunchAudioGallery } from './types'
 
 const { locale = 'en', audioGallery } = defineProps<{
   audioGallery: ModelLaunchAudioGallery

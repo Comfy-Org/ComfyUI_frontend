@@ -1,11 +1,10 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
-import TagRemoveButton from './TagRemoveButton.vue'
 import { tagVariants } from './tag.variants'
 import type { TagVariants } from './tag.variants'
+import TagRemoveButton from './TagRemoveButton.vue'
 
 const {
   label,

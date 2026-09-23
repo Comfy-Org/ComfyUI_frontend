@@ -3,14 +3,7 @@ import { computed, ref, shallowReactive } from 'vue'
 import type { ComputedRef } from 'vue'
 import * as Y from 'yjs'
 
-import { toGroupId } from '@/types/groupId'
-import { toNodeId } from '@/types/nodeId'
-import type { GroupId } from '@/types/groupId'
 import { reportError } from '@/platform/telemetry/reportError'
-import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
-import { toRerouteId } from '@/types/rerouteId'
-import type { UUID } from '@/utils/uuid'
-
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type {
@@ -40,7 +33,6 @@ import type {
   SlotOffset,
   SlotOffsetMode
 } from '@/renderer/core/layout/types'
-import type { SlotDirection, SlotIndex } from '@/types/slotId'
 import {
   isBoundsEqual,
   isPointEqual
@@ -62,7 +54,14 @@ import type {
   NodeLayoutMap,
   StoredRect
 } from '@/renderer/core/layout/utils/mappers'
+import { removeNodeTitleHeight } from '@/renderer/core/layout/utils/nodeSizeUtil'
 import { SpatialIndexManager } from '@/renderer/core/spatial/SpatialIndex'
+import { toGroupId } from '@/types/groupId'
+import type { GroupId } from '@/types/groupId'
+import { toNodeId } from '@/types/nodeId'
+import { toRerouteId } from '@/types/rerouteId'
+import type { SlotDirection, SlotIndex } from '@/types/slotId'
+import type { UUID } from '@/utils/uuid'
 
 /** Top-level map keys touched by a batch of deep Yjs events. */
 function collectEventKeys(

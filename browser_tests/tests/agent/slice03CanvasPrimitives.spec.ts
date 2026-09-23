@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import { expect } from '@playwright/test'
 
 // These cases are intentionally staged behind fixme until the stacked canvas
 // slice lands on main: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16186

@@ -1,12 +1,12 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import {
   inlineReferencesTest as test,
   referenceNode,
   referenceWorkflow
 } from '@e2e/fixtures/agentInlineReferencesFixture'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.use({
   connectWebSocketToServer: false,

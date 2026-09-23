@@ -1,7 +1,3 @@
-import type { WebSocketRoute } from '@playwright/test'
-import { mergeTests } from '@playwright/test'
-import type { z } from 'zod'
-
 import {
   comfyExpect as expect,
   comfyPageFixture
@@ -9,6 +5,10 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import type { WebSocketRoute } from '@playwright/test'
+import { mergeTests } from '@playwright/test'
+import type { z } from 'zod'
+
 import type {
   RawJobListItem,
   zJobsListResponse

@@ -1,13 +1,12 @@
-import { expect } from '@playwright/test'
 import type { AgentThreadListResponse } from '@comfyorg/ingest-types'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SHOW_HISTORY_LABEL = enMessages.agent.showChatHistory

@@ -1,13 +1,12 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
-
 import type { SavedPaymentMethod } from '@comfyorg/account-core/billing'
 import {
   usePaymentMethods,
   useBillingClient
 } from '@comfyorg/account-ui/billing'
+import { computed, ref } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 
 import { useHostedCopy } from '@/composables/useHostedCopy'
 

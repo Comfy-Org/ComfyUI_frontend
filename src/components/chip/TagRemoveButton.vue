@@ -1,8 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { cn } from '@comfyorg/tailwind-utils'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { tagRemoveButtonVariants } from './tag.variants'

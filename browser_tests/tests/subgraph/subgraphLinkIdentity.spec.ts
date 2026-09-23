@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { expect } from '@playwright/test'
 
 test.describe('Subgraph link topology identity', { tag: ['@subgraph'] }, () => {
   test('normalizes link IDs across definitions and preserves reroute chains', async ({

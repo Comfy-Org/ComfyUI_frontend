@@ -1,9 +1,8 @@
 import { isCloud } from '@/platform/distribution/types'
-import { useDialogService } from '@/services/dialogService'
-import { useDialogStore } from '@/stores/dialogStore'
-
 import SettingDialog from '@/platform/settings/components/SettingDialog.vue'
 import type { SettingPanelType } from '@/platform/settings/types'
+import { useDialogService } from '@/services/dialogService'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_KEY = 'global-settings'
 

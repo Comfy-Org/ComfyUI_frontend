@@ -1,8 +1,8 @@
 import { useKeyModifier } from '@vueuse/core'
 import { computed, ref } from 'vue'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetOutputCount,
   getTotalAssetOutputCount

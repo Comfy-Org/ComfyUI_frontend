@@ -1,12 +1,12 @@
 import { IMAGE_WIDGET } from '@/composables/maskeditor/imageWidgetAdapter'
 import { getNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
-import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
-import type { ImageRef, ImageLayer } from '@/stores/maskEditorDataStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
+import type { ImageRef, ImageLayer } from '@/stores/maskEditorDataStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { parseImageWidgetValue } from '@/utils/imageUtil'
 
 export function extractWidgetStringValue(value: unknown): string | undefined {

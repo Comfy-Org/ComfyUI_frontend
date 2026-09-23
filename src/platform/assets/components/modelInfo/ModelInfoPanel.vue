@@ -217,14 +217,13 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useDebounceFn } from '@vueuse/core'
 import { computed, ref, useId, useTemplateRef, watch } from 'vue'
 import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import EditableText from '@/components/common/EditableText.vue'
-import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import PropertiesAccordionItem from '@/components/rightSidePanel/layout/PropertiesAccordionItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Select from '@/components/ui/select/Select.vue'
@@ -237,9 +236,10 @@ import TagsInputInput from '@/components/ui/tags-input/TagsInputInput.vue'
 import TagsInputItem from '@/components/ui/tags-input/TagsInputItem.vue'
 import TagsInputItemDelete from '@/components/ui/tags-input/TagsInputItemDelete.vue'
 import TagsInputItemText from '@/components/ui/tags-input/TagsInputItemText.vue'
+import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetDisplayItem } from '@/platform/assets/composables/useAssetBrowser'
 import { useModelTypes } from '@/platform/assets/composables/useModelTypes'
-import { isCloud } from '@/platform/distribution/types'
 import type { AssetUserMetadata } from '@/platform/assets/schemas/assetSchema'
 import {
   getAssetAdditionalTags,
@@ -254,8 +254,8 @@ import {
   getSourceName,
   resolveModelTypeTagUpdate
 } from '@/platform/assets/utils/assetMetadataUtils'
+import { isCloud } from '@/platform/distribution/types'
 import { useAssetsStore } from '@/stores/assetsStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import ModelInfoField from './ModelInfoField.vue'
 

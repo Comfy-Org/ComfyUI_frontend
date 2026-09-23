@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
+import Button from '@/components/ui/button/Button.vue'
 import { useViewErrorsInGraph } from '@/composables/useViewErrorsInGraph'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 

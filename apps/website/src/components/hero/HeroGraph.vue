@@ -1,19 +1,18 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-
 import { reactive, ref } from 'vue'
 
+import { externalLinks } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { externalLinks } from '../../config/routes'
 import BrandButton from '../common/BrandButton.vue'
 import AngleNode from './AngleNode.vue'
 import ColorNode from './ColorNode.vue'
+import type { ElementKey } from './graphLayout'
+import { DRAG_MARGIN, ELEMENT_KEYS, FLOW } from './graphLayout'
 import GraphLinks from './GraphLinks.vue'
 import HeroHeadline from './HeroHeadline.vue'
 import HeroImageCard from './HeroImageCard.vue'
-import type { ElementKey } from './graphLayout'
-import { DRAG_MARGIN, ELEMENT_KEYS, FLOW } from './graphLayout'
 import { useHeroPipeline } from './useHeroPipeline'
 import { useIdleAutoplay } from './useIdleAutoplay'
 

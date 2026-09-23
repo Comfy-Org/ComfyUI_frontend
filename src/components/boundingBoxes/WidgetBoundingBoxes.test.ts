@@ -1,13 +1,14 @@
+import userEvent from '@testing-library/user-event'
 /* eslint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
 import { fireEvent, render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import WidgetBoundingBoxes from './WidgetBoundingBoxes.vue'
 import boundingBoxes from '@/locales/en/main.json'
 import type { BoundingBox } from '@/types/boundingBoxes'
 import { toNodeId } from '@/types/nodeId'
+
+import WidgetBoundingBoxes from './WidgetBoundingBoxes.vue'
 
 const { appState } = vi.hoisted(() => {
   const appState: { node: unknown } = { node: null }

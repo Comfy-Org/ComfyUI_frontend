@@ -1,11 +1,10 @@
-import { ref, shallowReadonly } from 'vue'
-import type { Ref } from 'vue'
-
 import type {
   BillingEntry,
   BillingEntryErrorCode,
   BillingEntryResult
 } from '@comfyorg/billing-contract'
+import { ref, shallowReadonly } from 'vue'
+import type { Ref } from 'vue'
 
 /**
  * The request a product made, for the lifetime of this tab. A module ref

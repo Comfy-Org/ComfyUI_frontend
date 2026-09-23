@@ -1,7 +1,6 @@
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
-
-import { render, screen } from '@testing-library/vue'
 
 import Spinner from '@/components/ui/spinner/Spinner.vue'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }

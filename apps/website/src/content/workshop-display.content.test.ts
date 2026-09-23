@@ -1,16 +1,17 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+
 import { describe, expect, it } from 'vitest'
 
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../config/workshop-router-content'
-import { workshopContract } from '../config/workshop-contract-catalog'
-import { schemaForModel } from '../config/workshop-playground'
 import {
   authoredWorkshopModels,
   routerAliasById,
   routerContentById
 } from '../config/workshop-browse-content'
+import { workshopContract } from '../config/workshop-contract-catalog'
 import { fieldsForDefinition } from '../config/workshop-form-definition'
+import { schemaForModel } from '../config/workshop-playground'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../config/workshop-router-content'
 import {
   WORKSHOP_USE_CASES,
   workshopDisplayEntriesSchema

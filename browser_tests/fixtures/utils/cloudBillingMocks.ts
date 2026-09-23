@@ -1,11 +1,10 @@
-import type { Page } from '@playwright/test'
 import type {
   BillingCapabilitiesResponse,
   BillingStatusResponse
 } from '@comfyorg/ingest-types'
-
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import type { Page } from '@playwright/test'
 
 interface MockBillingOptions {
   workspaceId?: string

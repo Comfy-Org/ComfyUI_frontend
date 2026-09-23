@@ -3,9 +3,9 @@ import {
   getWorkshopModel,
   workshopModels
 } from '../../config/workshop-browse-content'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
-import { relatedModels } from '../../config/workshop-related'
 import { estimateWorkshopNodePrice } from '../../config/workshop-node-pricing'
+import { relatedModels } from '../../config/workshop-related'
+import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'

@@ -12,6 +12,7 @@ import {
   getInputNames
 } from '@e2e/fixtures/utils/nodeInputLinks'
 import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
+
 import { toNodeId } from '@/types/nodeId'
 
 const REFERENCE_NODE_ID = '26'

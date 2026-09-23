@@ -1,6 +1,5 @@
-import { config as dotenvConfig } from 'dotenv'
-
 import { backupPath } from '@e2e/utils/backupUtils'
+import { config as dotenvConfig } from 'dotenv'
 
 dotenvConfig()
 

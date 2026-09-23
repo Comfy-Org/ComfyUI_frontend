@@ -1,13 +1,13 @@
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import ChangeMemberRoleDialogContent from './ChangeMemberRoleDialogContent.vue'
-
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useDialogStore } from '@/stores/dialogStore'
+
+import ChangeMemberRoleDialogContent from './ChangeMemberRoleDialogContent.vue'
 
 const { mockToastAdd } = vi.hoisted(() => ({ mockToastAdd: vi.fn() }))
 

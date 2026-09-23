@@ -1,7 +1,7 @@
-import { expect } from '@playwright/test'
-
 import { autogrowTest as test } from '@e2e/fixtures/agentAutogrowSpareInputFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { expect } from '@playwright/test'
+
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 /**

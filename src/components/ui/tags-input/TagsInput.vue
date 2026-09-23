@@ -1,4 +1,5 @@
 <script setup lang="ts" generic="T extends AcceptableInputValue = string">
+import { cn } from '@comfyorg/tailwind-utils'
 import { onClickOutside, useCurrentElement } from '@vueuse/core'
 import type {
   AcceptableInputValue,
@@ -8,8 +9,6 @@ import type {
 import { TagsInputRoot, useForwardPropsEmits } from 'reka-ui'
 import { computed, nextTick, provide, ref } from 'vue'
 import type { HTMLAttributes } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { tagsInputFocusKey, tagsInputIsEditingKey } from './tagsInputContext'
 import type { FocusCallback } from './tagsInputContext'

@@ -3,11 +3,10 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { pathToFileURL } from 'node:url'
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { sanitizeUserContent } from '@comfyorg/object-info-parser'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { NodesSnapshot } from '../data/cloudNodes'
-
 import type { RegistryPackWithNodes } from './cloudNodes.registry'
 
 const fetchRegistryPacksWithNodesMock = vi.hoisted(() =>

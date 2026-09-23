@@ -3,11 +3,11 @@ import { useNodeFileInput } from '@/composables/node/useNodeFileInput'
 import { useNodePaste } from '@/composables/node/useNodePaste'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
-import { useAssetsStore } from '@/stores/assetsStore'
 import { api } from '@/scripts/api'
+import { useAssetsStore } from '@/stores/assetsStore'
 
 const UPLOAD_TIMEOUT_MS = 120_000
 

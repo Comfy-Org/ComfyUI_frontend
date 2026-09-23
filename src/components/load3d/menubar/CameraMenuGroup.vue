@@ -63,6 +63,8 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -76,8 +78,6 @@ import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import type { CameraConfig } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
-import { PopoverTrigger } from 'reka-ui'
 
 const { compact = false } = defineProps<{
   compact?: boolean

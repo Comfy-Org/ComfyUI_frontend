@@ -3,7 +3,6 @@ import { computed, toValue } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { UUID } from '@/utils/uuid'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
   getPreviewExposureHostLocator,
@@ -15,6 +14,7 @@ import {
   createNodeLocatorId
 } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
+import type { UUID } from '@/utils/uuid'
 
 interface PromotedPreview {
   sourceNodeId: NodeId

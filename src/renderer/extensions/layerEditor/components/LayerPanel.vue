@@ -116,6 +116,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, watch } from 'vue'
 import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -131,7 +132,6 @@ import type {
   RasterData,
   SceneNode
 } from '@/renderer/extensions/layerEditor/engine/node'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { session } = defineProps<{ session: LayerEditorSession }>()
 

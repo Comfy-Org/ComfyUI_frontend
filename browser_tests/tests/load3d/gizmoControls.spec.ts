@@ -1,7 +1,7 @@
+import { load3dTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
 import { expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import { load3dTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
 import { toNodeId } from '@/types/nodeId'
 
 const getGizmoConfig = (page: Page) =>

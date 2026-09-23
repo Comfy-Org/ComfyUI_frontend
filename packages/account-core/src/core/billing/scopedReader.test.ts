@@ -7,6 +7,14 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SessionSnapshot } from '../session.js'
+import {
+  authenticated,
+  credential,
+  fakeTransport,
+  httpOk,
+  httpStatus
+} from './__fixtures__/billingTestFixtures.js'
+import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
 import type {
   BillingHttpResponse,
   BillingResult,
@@ -20,14 +28,6 @@ import { createBillingEventsReader } from './events.js'
 import { createPaymentMethodsReader } from './paymentMethods.js'
 import { createPlansReader } from './plans.js'
 import { createBillingStatusReader } from './status.js'
-import {
-  authenticated,
-  credential,
-  fakeTransport,
-  httpOk,
-  httpStatus
-} from './__fixtures__/billingTestFixtures.js'
-import type { SessionFake } from './__fixtures__/billingTestFixtures.js'
 
 const SIGNED_OUT: SessionSnapshot = {
   phase: 'signed-out',

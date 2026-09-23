@@ -1,7 +1,7 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { nextTick } from 'vue'
 import { describe, expect, it } from 'vitest'
+import { nextTick } from 'vue'
 
 import type { WorkshopBrowseModel } from '../../config/workshop'
 import WorkshopCatalog from './WorkshopCatalog.vue'

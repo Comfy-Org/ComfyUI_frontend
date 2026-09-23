@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
-
+import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import type { Point, Positionable } from '@/lib/litegraph/src/interfaces'
 import type {
   LGraph,
@@ -13,7 +13,6 @@ import type {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { resolveSelectable } from '@/renderer/core/canvas/litegraph/selectionAdapter'
-import { promoteRecommendedWidgets } from '@/core/graph/subgraph/promotionUtils'
 import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'

@@ -7,7 +7,6 @@ import {
   MaskBlendMode,
   Tools
 } from '@/extensions/core/maskeditor/types'
-
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 const mockHistory = vi.hoisted(() => ({

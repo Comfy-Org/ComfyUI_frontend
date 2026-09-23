@@ -130,13 +130,12 @@
 </template>
 
 <script setup lang="ts">
-import { computed, nextTick, ref } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed, nextTick, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { TeamPlanSelection } from '@/platform/cloud/subscription/constants/teamPlanCreditStops'
 import { getTierCredits } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'

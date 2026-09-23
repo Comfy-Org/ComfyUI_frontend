@@ -1,10 +1,9 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
-
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 

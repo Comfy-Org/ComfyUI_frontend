@@ -1,10 +1,10 @@
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Position, Size } from '@e2e/fixtures/types'
+import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { expect } from '@playwright/test'
 
 import type { SerialisableLLink } from '@/lib/litegraph/src/types/serialisation'
 import type { NodeId } from '@/types/nodeId'
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import type { Position, Size } from '@e2e/fixtures/types'
-import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 
 export const getMiddlePoint = (pos1: Position, pos2: Position) => {
   return {

@@ -1,8 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { INodeInputSlot } from '@/lib/litegraph/src/litegraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { INodeInputSlot } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyApp } from '@/scripts/app'
 import { useLinkStore } from '@/stores/linkStore'

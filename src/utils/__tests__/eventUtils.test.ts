@@ -1,5 +1,6 @@
-import { extractFilesFromDragEvent, getDroppedAsset } from '@/utils/eventUtils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { extractFilesFromDragEvent, getDroppedAsset } from '@/utils/eventUtils'
 
 describe('eventUtils', () => {
   describe('extractFilesFromDragEvent', () => {

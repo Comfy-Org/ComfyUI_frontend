@@ -1,10 +1,9 @@
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 
-import type { AshbyJobPosting } from './ashby.schema'
-import type { Department, Role, RolesSnapshot } from '../data/roles'
-
 import bundledSnapshot from '../data/ashby-roles.snapshot.json' with { type: 'json' }
+import type { Department, Role, RolesSnapshot } from '../data/roles'
+import type { AshbyJobPosting } from './ashby.schema'
 import {
   AshbyJobBoardResponseSchema,
   AshbyJobPostingSchema

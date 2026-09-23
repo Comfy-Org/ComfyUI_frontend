@@ -1,19 +1,15 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { CalendarDays, ChevronDown, LayoutGrid, Map, Search } from '@lucide/vue'
 import { computed, reactive, ref, watch } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import type { MapPinMarker } from '../../components/blocks/MapPins01.vue'
-import type { ComfyEvent } from '../../data/events'
-import type { Locale } from '../../i18n/translations'
-import type { EventsDirectoryView } from '../../utils/eventsDirectory'
-
 import MapPins01 from '../../components/blocks/MapPins01.vue'
-import EventsAgendaView from './EventsAgendaView.vue'
-import EventsCardsView from './EventsCardsView.vue'
+import type { ComfyEvent } from '../../data/events'
 import { directoryEvents, eventsDerivedAt } from '../../data/events'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import type { EventsDirectoryView } from '../../utils/eventsDirectory'
 import {
   DIRECTORY_FILTER_ALL,
   EVENT_CATEGORIES,
@@ -22,6 +18,8 @@ import {
   directoryRows,
   filterDirectoryEvents
 } from '../../utils/eventsDirectory'
+import EventsAgendaView from './EventsAgendaView.vue'
+import EventsCardsView from './EventsCardsView.vue'
 import EventsDirectoryList from './EventsDirectoryList.vue'
 
 const {

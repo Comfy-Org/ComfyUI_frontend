@@ -1,41 +1,19 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useAuthStore } from '@/stores/authStore'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
-import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import type { CurveData } from '@/components/curve/types'
-import type { useExtensionService } from '@/services/extensionService'
-import { t } from '@/i18n'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
-import type {
-  ComfyApiWorkflow,
-  ComfyWorkflowJSON
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  ComfyWorkflow,
-  useWorkflowStore
-} from '@/platform/workflow/management/stores/workflowStore'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
-import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
-import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
-import type { NodeReplacement } from '@/platform/nodeReplacement/types'
-import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
-import type { NodeError } from '@/platform/remote/comfyui/types'
-import { ComfyApp, app as singletonApp } from './app'
-import { createNode } from '@/utils/litegraphUtil'
+import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -44,41 +22,64 @@ import {
   pasteVideoNode,
   pasteVideoNodes
 } from '@/composables/usePaste'
+import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
-import { runMissingModelPipeline } from '@/platform/missingModel/missingModelPipeline'
-import * as missingMediaPipeline from '@/platform/missingMedia/missingMediaPipeline'
-import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
-import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import { createMissingMediaCandidate } from '@/platform/missingMedia/__fixtures__/promotedMedia'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { installErrorClearingHooks } from '@/composables/graph/useErrorClearingHooks'
-import { setTelemetryRegistry } from '@/platform/telemetry'
-import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
-import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
-import { isCloud } from '@/platform/distribution/types'
-
-import { PromptExecutionError, api } from '@/scripts/api'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useDialogStore } from '@/stores/dialogStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
+import { t } from '@/i18n'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import {
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { extractFilesFromDragEvent } from '@/utils/eventUtils'
+import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { isCloud } from '@/platform/distribution/types'
+import { createMissingMediaCandidate } from '@/platform/missingMedia/__fixtures__/promotedMedia'
+import * as missingMediaPipeline from '@/platform/missingMedia/missingMediaPipeline'
+import * as missingMediaScan from '@/platform/missingMedia/missingMediaScan'
+import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { runMissingModelPipeline } from '@/platform/missingModel/missingModelPipeline'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacementStore'
+import type { NodeReplacement } from '@/platform/nodeReplacement/types'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
+import type { NodeError } from '@/platform/remote/comfyui/types'
+import { setTelemetryRegistry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import { TelemetryRegistry } from '@/platform/telemetry/TelemetryRegistry'
+import * as executionContextUtils from '@/platform/telemetry/utils/getExecutionContext'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import {
+  ComfyWorkflow,
+  useWorkflowStore
+} from '@/platform/workflow/management/stores/workflowStore'
+import type { useWorkflowValidation } from '@/platform/workflow/validation/composables/useWorkflowValidation'
+import type {
+  ComfyApiWorkflow,
+  ComfyWorkflowJSON
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { PromptExecutionError, api } from '@/scripts/api'
+import { getWorkflowDataFromFile } from '@/scripts/metadata/parser'
+import type { useExtensionService } from '@/services/extensionService'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { createMockChangeTracker } from '@/utils/__tests__/litegraphTestUtils'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import { extractFilesFromDragEvent } from '@/utils/eventUtils'
+import { createNode } from '@/utils/litegraphUtil'
 import { zeroUuid } from '@/utils/uuid'
+
+import { ComfyApp, app as singletonApp } from './app'
 import type { importA1111 } from './pnginfo'
 
 type WorkflowService = ReturnType<typeof useWorkflowService>

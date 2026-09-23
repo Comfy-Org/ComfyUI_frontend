@@ -1,8 +1,7 @@
+import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 // Classifies which nodes can execute with no hand-authored fixture; the
 // rest are recorded with the reason, never silently dropped.
 import { chunk } from 'es-toolkit'
-
-import type { RawNodeDef } from '@e2e/fixtures/customNode/typePairing'
 
 type AutoRunClass =
   // Widgets cover every required input and a terminus exists.

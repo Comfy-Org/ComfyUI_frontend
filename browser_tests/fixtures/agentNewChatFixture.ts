@@ -1,15 +1,14 @@
-import type { Page, Response, Route } from '@playwright/test'
 import type {
   AgentPostMessageRequest,
   AgentThreadListResponse
 } from '@comfyorg/ingest-types'
 import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
+import { agentConversationTest } from '@e2e/fixtures/agentConversationFixture'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import type { Page, Response, Route } from '@playwright/test'
 
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { zAgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import { agentConversationTest } from '@e2e/fixtures/agentConversationFixture'
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const NEW_CHAT_THREAD_ID = '4b8e2c6a-1d3f-4e57-9a80-2c7d5e9f1b33'
 const NEW_CHAT_TURN_ID = '9f1d3b5c-7a2e-4c68-8d41-6e0a2b4c8d55'

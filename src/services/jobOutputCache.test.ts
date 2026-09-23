@@ -3,12 +3,12 @@ import { describe, expect, it, vi } from 'vitest'
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
-import { api } from '@/scripts/api'
 import type {
   JobDetail,
   JobListItem
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { api } from '@/scripts/api'
 import {
   findActiveIndex,
   getJobAssets,

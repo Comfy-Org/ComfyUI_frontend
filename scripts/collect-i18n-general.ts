@@ -3,11 +3,12 @@ import * as fs from 'fs'
 // Import Vite define shim to make __DISTRIBUTION__ and other define variables available
 import './vite-define-shim'
 
-import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import {
   formatCamelCase,
   normalizeI18nKey
 } from '@comfyorg/shared-frontend-utils/formatUtil'
+
+import { comfyPageFixture as test } from '../browser_tests/fixtures/ComfyPage'
 import { CORE_MENU_COMMANDS } from '../src/constants/coreMenuCommands'
 import { SERVER_CONFIG_ITEMS } from '../src/constants/serverConfig'
 

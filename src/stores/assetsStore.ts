@@ -18,15 +18,15 @@ import {
   mapTaskOutputToAssetItem,
   unflattenOutputAssets
 } from '@/platform/assets/composables/media/assetMappers'
+import {
+  useAssetsQuery,
+  invalidateAll
+} from '@/platform/assets/composables/useAssetsQuery'
 import type {
   AssetItem,
   AssetResponse,
   TagsOperationResult
 } from '@/platform/assets/schemas/assetSchema'
-import {
-  useAssetsQuery,
-  invalidateAll
-} from '@/platform/assets/composables/useAssetsQuery'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { AssetPaginationOptions } from '@/platform/assets/services/assetService'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
@@ -34,9 +34,9 @@ import { api } from '@/scripts/api'
 import { WrappedList } from '@/utils/pagedList'
 import type { PagedList } from '@/utils/pagedList'
 
-import { TaskItemImpl } from './queueStore'
 import { useAssetDownloadStore } from './assetDownloadStore'
 import { useModelToNodeStore } from './modelToNodeStore'
+import { TaskItemImpl } from './queueStore'
 
 /**
  * Fetch input files from the internal API (OSS version)

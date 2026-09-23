@@ -1,7 +1,3 @@
-import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
-import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import { SlotShape } from '@/lib/litegraph/src/draw'
 import { ConstrainedSize } from '@/lib/litegraph/src/infrastructure/ConstrainedSize'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -14,8 +10,12 @@ import type {
   ReadOnlyRect,
   Size
 } from '@/lib/litegraph/src/interfaces'
+import { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LLink, LinkId } from '@/lib/litegraph/src/LLink'
 import { SlotBase } from '@/lib/litegraph/src/node/SlotBase'
+import type { RerouteId } from '@/lib/litegraph/src/Reroute'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type {
   Serialisable,

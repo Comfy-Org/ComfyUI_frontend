@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { downloadFile } from '@/base/common/downloadUtil'
-import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Popover from '@/components/ui/Popover.vue'
 import { useAppMode } from '@/composables/useAppMode'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
@@ -12,16 +13,15 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { extractWorkflowFromAsset } from '@/platform/workflow/utils/workflowExtractionUtil'
 import ImagePreview from '@/renderer/extensions/linearMode/ImagePreview.vue'
 import LatentPreview from '@/renderer/extensions/linearMode/LatentPreview.vue'
-import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
 import LinearArrange from '@/renderer/extensions/linearMode/LinearArrange.vue'
+import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
+import LinearWelcome from '@/renderer/extensions/linearMode/LinearWelcome.vue'
 import MediaOutputPreview from '@/renderer/extensions/linearMode/MediaOutputPreview.vue'
 import OutputHistory from '@/renderer/extensions/linearMode/OutputHistory.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
-import type { OutputSelection } from '@/renderer/extensions/linearMode/linearModeTypes'
 import { app } from '@/scripts/app'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 const mediaActions = useMediaAssetActions()

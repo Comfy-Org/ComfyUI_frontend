@@ -1,6 +1,7 @@
 // TODO: Fix these tests after migration
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import {
   LinkConnector,
   MovingOutputLink,
@@ -8,7 +9,6 @@ import {
   LGraphNode,
   LLink
 } from '@/lib/litegraph/src/litegraph'
-import { ToInputFromIoNodeLink } from '@/lib/litegraph/src/canvas/ToInputFromIoNodeLink'
 import type {
   CanvasPointerEvent,
   NodeInputSlot
@@ -16,12 +16,12 @@ import type {
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
-
-import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
 import {
   createMockCanvasPointerEvent,
   createMockNodeInputSlot
 } from '@/utils/__tests__/litegraphTestUtils'
+
+import { createTestSubgraph } from '../subgraph/__fixtures__/subgraphHelpers'
 
 type MockPointerEvent = CanvasPointerEvent
 type MockRenderLink = ToOutputRenderLink

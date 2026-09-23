@@ -1,6 +1,5 @@
-import { useCommandStore } from '@/stores/commandStore'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -10,6 +9,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import enMessages from '@/locales/en/main.json'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import PricingTableWorkspace from '@/platform/workspace/components/PricingTableWorkspace.vue'
+import { useCommandStore } from '@/stores/commandStore'
 
 const state = vi.hoisted(() => ({ plans: [] as Plan[] }))
 

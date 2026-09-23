@@ -2,18 +2,10 @@ import * as THREE from 'three'
 import { clone as cloneSkinned } from 'three/examples/jsm/utils/SkeletonUtils.js'
 
 import type { AnimationManager } from './AnimationManager'
-import type { GizmoManager } from './GizmoManager'
-import type { HDRIManager } from './HDRIManager'
-import type { LoaderManager } from './LoaderManager'
-import { ModelExporter } from './ModelExporter'
-import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
-import type { AdapterRef, ModelAdapterCapabilities } from './ModelAdapter'
-import type { RecordingManager } from './RecordingManager'
-import type { SceneModelManager } from './SceneModelManager'
-import { Viewport3d } from './Viewport3d'
-import type { Viewport3dDeps } from './Viewport3d'
 import { computeCameraFromMatrices } from './cameraFromMatrices'
 import { DIRECT_EXPORT_FORMATS } from './constants'
+import type { GizmoManager } from './GizmoManager'
+import type { HDRIManager } from './HDRIManager'
 import type {
   CaptureResult,
   GizmoMode,
@@ -24,6 +16,14 @@ import type {
   UpDirection
 } from './interfaces'
 import { computeLetterboxedViewport, isLoad3dActive } from './load3dViewport'
+import type { LoaderManager } from './LoaderManager'
+import { DEFAULT_MODEL_CAPABILITIES } from './ModelAdapter'
+import type { AdapterRef, ModelAdapterCapabilities } from './ModelAdapter'
+import { ModelExporter } from './ModelExporter'
+import type { RecordingManager } from './RecordingManager'
+import type { SceneModelManager } from './SceneModelManager'
+import { Viewport3d } from './Viewport3d'
+import type { Viewport3dDeps } from './Viewport3d'
 
 export type Load3dDeps = Viewport3dDeps & {
   hdriManager: HDRIManager

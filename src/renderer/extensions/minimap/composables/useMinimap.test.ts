@@ -1,16 +1,16 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Mock } from 'vitest'
 import * as VueUse from '@vueuse/core'
+import type { Mock } from 'vitest'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, shallowRef } from 'vue'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { toLinkId } from '@/types/linkId'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import {
   createMockCanvas2DContext,

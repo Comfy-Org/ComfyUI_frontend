@@ -1,7 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { SliderRootEmits, SliderRootProps } from 'reka-ui'
-import type { HTMLAttributes } from 'vue'
-import { computed } from 'vue'
 import {
   SliderRange,
   SliderRoot,
@@ -9,7 +8,8 @@ import {
   SliderTrack,
   useForwardPropsEmits
 } from 'reka-ui'
-import { cn } from '@comfyorg/tailwind-utils'
+import type { HTMLAttributes } from 'vue'
+import { computed } from 'vue'
 
 const {
   class: className,

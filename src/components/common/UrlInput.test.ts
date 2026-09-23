@@ -1,14 +1,14 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
 import InputText from 'primevue/inputtext'
 import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 
 import UrlInput from './UrlInput.vue'
-import type { ComponentProps } from 'vue-component-type-helpers'
 
 describe('UrlInput', () => {
   function renderComponent(

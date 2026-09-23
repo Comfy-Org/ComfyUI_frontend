@@ -1,15 +1,4 @@
 <script setup lang="ts">
-/**
- * The hosted checkout: the server's quote on the left, the shared Stripe form
- * on the right, and `commands.subscribe` in between. Every payment state
- * after the card is submitted comes from the lifecycle's projection, so this
- * page renders what the SDK says and never keeps a payment state of its own.
- * A hosted continuation redirects this tab and comes back on `/v1/result`.
- */
-import { computed, onMounted, ref, watch } from 'vue'
-import { useI18n } from 'vue-i18n'
-import { useRoute, useRouter } from 'vue-router'
-
 import type {
   SubscribeInput,
   SubscriptionPreview
@@ -26,6 +15,16 @@ import {
   buildBillingEntryUrl,
   buildReturnUrl
 } from '@comfyorg/billing-contract'
+/**
+ * The hosted checkout: the server's quote on the left, the shared Stripe form
+ * on the right, and `commands.subscribe` in between. Every payment state
+ * after the card is submitted comes from the lifecycle's projection, so this
+ * page renders what the SDK says and never keeps a payment state of its own.
+ * A hosted continuation redirects this tab and comes back on `/v1/result`.
+ */
+import { computed, onMounted, ref, watch } from 'vue'
+import { useI18n } from 'vue-i18n'
+import { useRoute, useRouter } from 'vue-router'
 
 import CheckoutSubmit from '@/components/CheckoutSubmit.vue'
 import EmbeddedCheckout from '@/components/EmbeddedCheckout.vue'

@@ -1,5 +1,6 @@
 import { default as DOMPurify } from 'dompurify'
 
+import type { ContextMenuDivElement } from '@/lib/litegraph/src/interfaces'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   IContextMenuValue,
@@ -9,7 +10,6 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 
 import type { MenuOption, SubMenuOption } from './useMoreOptionsMenu'
-import type { ContextMenuDivElement } from '@/lib/litegraph/src/interfaces'
 
 /**
  * Hard blacklist - items that should NEVER be included

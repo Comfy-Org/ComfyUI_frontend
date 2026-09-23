@@ -1,18 +1,18 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { LGraph, Subgraph } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import {
   ComfyWorkflow,
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { zComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { api } from '@/scripts/api'
 import { app as comfyApp } from '@/scripts/app'
 import { defaultGraph, defaultGraphJSON } from '@/scripts/defaultGraph'
@@ -20,14 +20,14 @@ import { useExecutionStore } from '@/stores/executionStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { isValidUuid } from '@/utils/formatUtil'
-import { syncEntities } from '@/utils/syncUtil'
-import { isSubgraph } from '@/utils/typeGuardUtil'
 import {
   createMockCanvas,
   createMockChangeTracker,
   createMockLGraphNode
 } from '@/utils/__tests__/litegraphTestUtils'
+import { isValidUuid } from '@/utils/formatUtil'
+import { syncEntities } from '@/utils/syncUtil'
+import { isSubgraph } from '@/utils/typeGuardUtil'
 
 // Add mock for api at the top of the file
 vi.mock<unknown>(import('@/scripts/api'), () => ({

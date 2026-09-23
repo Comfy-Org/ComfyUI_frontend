@@ -2,6 +2,7 @@ import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+
 import { toNodeId } from '@/types/nodeId'
 
 test.describe('Vue Widget Reactivity', { tag: '@vue-nodes' }, () => {

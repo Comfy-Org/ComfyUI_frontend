@@ -1,5 +1,3 @@
-import type { Route } from '@playwright/test'
-
 import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 import { assetRequestIncludesTag } from '@e2e/fixtures/assetApiFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
@@ -11,6 +9,7 @@ import { JobsRouteMocker } from '@e2e/fixtures/jobsRouteFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { routeObjectInfoFromSetupApi } from '@e2e/fixtures/utils/objectInfo'
+import type { Route } from '@playwright/test'
 
 const ASSETS_ROUTE_PATTERN = /\/api\/assets(?:\?.*)?$/
 

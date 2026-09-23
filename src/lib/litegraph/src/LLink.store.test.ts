@@ -8,7 +8,6 @@ import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
-import { NodeSlotType } from './types/globalEnums'
 
 import {
   registerLinkTopology,
@@ -19,6 +18,7 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from './subgraph/__fixtures__/subgraphHelpers'
+import { NodeSlotType } from './types/globalEnums'
 
 describe('LLink ↔ linkStore integration', () => {
   it('preserves the id and reactive state of a registered link', () => {

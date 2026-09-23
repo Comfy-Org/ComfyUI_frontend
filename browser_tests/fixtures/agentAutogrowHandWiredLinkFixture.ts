@@ -1,21 +1,20 @@
-import type { Page } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { toNodeId } from '@/types/nodeId'
-
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import {
   agentTest as test,
   bootAgentApp,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
-import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import type { Page } from '@playwright/test'
+import { expect } from '@playwright/test'
+
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import { toNodeId } from '@/types/nodeId'
 
 /**
  * A hand-wired link on an autogrow node's spare slot survives a later agent

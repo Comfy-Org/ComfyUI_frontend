@@ -13,7 +13,6 @@ import {
   Tooltip
 } from 'chart.js'
 import { onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
-
 import type { Ref } from 'vue'
 
 Chart.register(

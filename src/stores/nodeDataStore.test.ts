@@ -12,8 +12,8 @@ import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
-import type { NodeState } from '@/types/nodeState'
 import { toNodeId } from '@/types/nodeId'
+import type { NodeState } from '@/types/nodeState'
 import {
   createMockNodeInputSlot,
   createMockNodeOutputSlot,

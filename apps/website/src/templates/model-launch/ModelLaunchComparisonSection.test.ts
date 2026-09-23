@@ -1,10 +1,9 @@
 import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
-import type { ModelLaunchComparison } from './types'
-
 import { minimaxLicenseComparison } from '../../data/minimaxLicense'
 import ModelLaunchComparisonSection from './ModelLaunchComparisonSection.vue'
+import type { ModelLaunchComparison } from './types'
 
 const comparison: ModelLaunchComparison = {
   headingKey: 'minimaxLicense.comparison.heading',

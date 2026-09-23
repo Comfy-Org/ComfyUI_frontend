@@ -1,14 +1,14 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
-import { useWorkshopCredits } from '../../config/workshop-credits'
-import { useWorkshopSession } from '../../config/workshop-session-state'
-import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import { reportWorkshopRun } from '../../config/workshop-run-state'
-import { useWorkshopAuthFlag } from '../../scripts/posthog'
 import { testFirebaseUser } from '../../config/__fixtures__/workshopSessionFakes'
+import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
+import { useWorkshopCredits } from '../../config/workshop-credits'
+import { reportWorkshopRun } from '../../config/workshop-run-state'
+import { useWorkshopSession } from '../../config/workshop-session-state'
+import { useWorkshopAuthFlag } from '../../scripts/posthog'
 import HeaderAccount from './HeaderAccount.vue'
 
 vi.mock(import('../../scripts/posthog'))

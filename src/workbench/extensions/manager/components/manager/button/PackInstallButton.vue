@@ -24,11 +24,11 @@ import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import DotSpinner from '@/components/common/DotSpinner.vue'
-import Button from '@/components/ui/button/Button.vue'
 import type { ButtonVariants } from '@/components/ui/button/button.variants'
+import Button from '@/components/ui/button/Button.vue'
 import type { components } from '@/types/comfyRegistryTypes'
-import type { ConflictDetail } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 import { usePackInstall } from '@/workbench/extensions/manager/composables/nodePack/usePackInstall'
+import type { ConflictDetail } from '@/workbench/extensions/manager/types/conflictDetectionTypes'
 
 type NodePack = components['schemas']['Node']
 

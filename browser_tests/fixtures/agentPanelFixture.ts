@@ -1,5 +1,3 @@
-import type { Page, Route } from '@playwright/test'
-
 import type {
   AgentRunMode,
   AgentThreadListResponse,
@@ -7,17 +5,17 @@ import type {
   ListAssetsResponse,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import type { Page, Route } from '@playwright/test'
+
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 

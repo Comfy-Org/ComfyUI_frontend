@@ -1,8 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-
 import { useResizeObserver } from '@vueuse/core'
-
 import { onMounted, shallowRef, useId, useTemplateRef } from 'vue'
 import type { HTMLAttributes } from 'vue'
 

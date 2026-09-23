@@ -1,8 +1,4 @@
 import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
-import {
   afterEach,
   beforeEach,
   describe,
@@ -16,9 +12,10 @@ import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxy
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
 import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import {
-  createTestRootGraph,
-  enableSubgraphNodeCreation
-} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import { remapClipboardSubgraphNodeIds } from '@/lib/litegraph/src/LGraphCanvas'
 import {
   LGraph,
   LGraphCanvas,
@@ -27,18 +24,21 @@ import {
   SubgraphNode,
   createUuidv4
 } from '@/lib/litegraph/src/litegraph'
-import { remapClipboardSubgraphNodeIds } from '@/lib/litegraph/src/LGraphCanvas'
-import { toNodeId } from '@/types/nodeId'
+import {
+  createTestRootGraph,
+  enableSubgraphNodeCreation
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type {
   ClipboardItems,
   ExportedSubgraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
-import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { useRerouteStore } from '@/stores/rerouteStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useRerouteStore } from '@/stores/rerouteStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 

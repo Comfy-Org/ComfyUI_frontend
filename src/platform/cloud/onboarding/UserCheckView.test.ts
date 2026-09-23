@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+
 import UserCheckView from './UserCheckView.vue'
 
 vi.mock<unknown>(import('vue-router'), () => ({

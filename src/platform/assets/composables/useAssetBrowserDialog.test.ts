@@ -1,10 +1,9 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-
 import { describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
-import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import type AssetBrowserModal from '@/platform/assets/components/AssetBrowserModal.vue'
+import { useAssetBrowserDialog } from '@/platform/assets/composables/useAssetBrowserDialog'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useDialogStore } from '@/stores/dialogStore'
 

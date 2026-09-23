@@ -1,5 +1,3 @@
-import type { Locator } from '@playwright/test'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
@@ -7,6 +5,7 @@ import {
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { Position } from '@e2e/fixtures/types'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+import type { Locator } from '@playwright/test'
 
 test.describe('Vue Node Moving', { tag: '@vue-nodes' }, () => {
   const getHeaderPos = async (

@@ -1,18 +1,10 @@
-import type { MaybeRef } from 'vue'
-
 import { toRef, useDebounceFn } from '@vueuse/core'
 import { getActivePinia } from 'pinia'
+import type { MaybeRef } from 'vue'
 import { ref, toRaw, watch } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
-import type Load3d from '@/extensions/core/load3d/Load3d'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
-import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
-import {
-  isAssetPreviewSupported,
-  persistThumbnail
-} from '@/platform/assets/utils/assetPreviewUtil'
 import type {
   AnimationItem,
   CameraConfig,
@@ -29,9 +21,16 @@ import type {
   SceneConfig,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
+import type Load3d from '@/extensions/core/load3d/Load3d'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  isAssetPreviewSupported,
+  persistThumbnail
+} from '@/platform/assets/utils/assetPreviewUtil'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

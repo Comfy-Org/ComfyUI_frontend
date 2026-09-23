@@ -72,6 +72,7 @@ import { useI18n } from 'vue-i18n'
 
 import Badge from '@/components/ui/badge/Badge.vue'
 import { useWorkflowActionsMenu } from '@/composables/useWorkflowActionsMenu'
+import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import {
   ComfyWorkflow,
@@ -81,7 +82,6 @@ import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-import { isMissingWarningVisible } from '@/platform/settings/missingWarningVisibility'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { ensureWorkflowSuffix, getWorkflowSuffix } from '@/utils/formatUtil'
 import { graphHasMissingNodes } from '@/workbench/extensions/manager/utils/graphHasMissingNodes'

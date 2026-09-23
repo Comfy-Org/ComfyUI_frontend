@@ -64,8 +64,9 @@
 </template>
 
 <script setup lang="ts">
-import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import Button from '@/components/ui/button/Button.vue'
 
 const {
   icon,

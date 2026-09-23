@@ -10,8 +10,8 @@ import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import { CANVAS_IMAGE_PREVIEW_WIDGET } from './canvasImagePreviewTypes'
 import { usePromotedPreviews } from './usePromotedPreviews'

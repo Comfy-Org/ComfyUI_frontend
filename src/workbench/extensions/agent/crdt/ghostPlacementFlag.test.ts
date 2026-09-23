@@ -1,8 +1,8 @@
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNodeDataStore } from '@/stores/nodeDataStore'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import type { SemanticPlacementPort } from './graphMutations'

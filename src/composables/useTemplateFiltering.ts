@@ -1,4 +1,5 @@
 import { watchDebounced } from '@vueuse/core'
+import { debounce } from 'es-toolkit/compat'
 import { computed, ref, watch } from 'vue'
 import type { Ref } from 'vue'
 
@@ -13,7 +14,6 @@ import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { useTemplateRankingStore } from '@/stores/templateRankingStore'
-import { debounce } from 'es-toolkit/compat'
 
 type TemplateBrowseSort =
   | 'default'

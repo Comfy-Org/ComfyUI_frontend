@@ -18,6 +18,7 @@ vi.mock('@clack/prompts', () => ({
 }))
 
 import { confirm } from '@clack/prompts'
+
 import { checkGhAvailable, createPr, switchBranch } from './gh'
 
 function setTTY(value: boolean | undefined) {

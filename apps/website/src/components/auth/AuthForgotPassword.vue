@@ -16,13 +16,13 @@ import { requestedReturnPath } from '../../config/workshop-return'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { captureAuthFailed, useWorkshopAuthFlag } from '../../scripts/posthog'
-import AuthSpinnerIcon from './AuthSpinnerIcon.vue'
 import {
   AUTH_BRAND_SOLID_BUTTON_CLASS,
   AUTH_FIELD_CLASS,
   AUTH_LINK_BUTTON_CLASS,
   AUTH_MESSAGE_SUCCESS_CLASS
 } from './authClasses'
+import AuthSpinnerIcon from './AuthSpinnerIcon.vue'
 
 const { locale = 'en' } = defineProps<{
   locale?: Locale

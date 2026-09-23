@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Locator, Page, Request } from '@playwright/test'
 import type {
   BillingBalanceResponse,
   BillingEventsResponse,
@@ -8,7 +6,6 @@ import type {
   Plan,
   SavedPaymentMethod
 } from '@comfyorg/ingest-types'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
@@ -19,6 +16,8 @@ import {
   mockWorkspaceTokenMint,
   workspace
 } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
+import type { Locator, Page, Request } from '@playwright/test'
 
 /**
  * The six billing reads across the SDK reader rail — FE-2476.

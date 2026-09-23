@@ -1,15 +1,14 @@
+import userEvent from '@testing-library/user-event'
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
 /* eslint-disable testing-library/prefer-user-event */
 import { render, screen, fireEvent } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
-
 import { downloadFile } from '@/base/common/downloadUtil'
+import { useTelemetry } from '@/platform/telemetry'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
 
 // Mock downloadFile to avoid DOM errors

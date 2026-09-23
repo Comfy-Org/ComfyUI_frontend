@@ -1,9 +1,9 @@
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { toNodeId } from '@/types/nodeId'
 
 import { useImageLoader } from '@/composables/maskeditor/useImageLoader'
+import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { toNodeId } from '@/types/nodeId'
 
 const mockCanvasManager = {
   invalidateCanvas: vi.fn().mockResolvedValue(undefined),

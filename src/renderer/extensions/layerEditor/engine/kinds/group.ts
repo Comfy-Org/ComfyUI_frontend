@@ -1,8 +1,8 @@
+import { generateId } from '../id'
 import { defaultMode } from '../mode'
+import type { GroupData, Rect, Transform } from '../node'
 import type { NodeKind } from '../nodeKind'
 import { getNodeKind } from '../nodeKind'
-import type { GroupData, Rect, Transform } from '../node'
-import { generateId } from '../id'
 
 function fullTransform(): Transform {
   return { x: 0, y: 0, w: 0, h: 0, rotation: 0 }

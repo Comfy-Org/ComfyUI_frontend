@@ -1,6 +1,6 @@
+import { Rectangle } from './infrastructure/Rectangle'
 import { LGraphBadge } from './LGraphBadge'
 import type { LGraphBadgeOptions } from './LGraphBadge'
-import { Rectangle } from './infrastructure/Rectangle'
 import { cachedMeasureText } from './utils/textMeasureCache'
 
 export interface LGraphButtonOptions extends LGraphBadgeOptions {

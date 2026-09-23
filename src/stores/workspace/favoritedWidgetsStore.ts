@@ -2,16 +2,16 @@ import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
 import { st } from '@/i18n'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { app } from '@/scripts/app'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { app } from '@/scripts/app'
+import { parseNodeId } from '@/types/nodeId'
 import { isNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
-import { parseNodeId } from '@/types/nodeId'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 
 /**
  * Unique identifier for a favorited widget.

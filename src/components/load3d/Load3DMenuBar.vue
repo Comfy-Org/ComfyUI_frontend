@@ -186,11 +186,13 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useElementSize } from '@vueuse/core'
 import { PopoverTrigger } from 'reka-ui'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
 import AnimationMenuStrip from '@/components/load3d/menubar/AnimationMenuStrip.vue'
 import CameraMenuGroup from '@/components/load3d/menubar/CameraMenuGroup.vue'
 import GizmoMenuGroup from '@/components/load3d/menubar/GizmoMenuGroup.vue'
@@ -207,11 +209,9 @@ import ModelMenuGroup from '@/components/load3d/menubar/ModelMenuGroup.vue'
 import RecordMenuControl from '@/components/load3d/menubar/RecordMenuControl.vue'
 import SceneMenuGroup from '@/components/load3d/menubar/SceneMenuGroup.vue'
 import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExclusivity'
-import ViewerControls from '@/components/load3d/controls/ViewerControls.vue'
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import { getExportFormatOptions } from '@/extensions/core/load3d/constants'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   AnimationItem,
   CameraConfig,
@@ -221,7 +221,7 @@ import type {
   ModelConfig,
   SceneConfig
 } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 const {
   animations = [],

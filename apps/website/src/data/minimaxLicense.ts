@@ -2,7 +2,6 @@ import type {
   ModelLaunchComparison,
   ModelLaunchPage
 } from '../templates/model-launch/types'
-
 import { minimaxLinks } from './minimax'
 
 // The license-page hero loop and its phone still (dark H3 renders), served from

@@ -1,10 +1,10 @@
-import type { NodeValidationError, ResolvedCatalogErrorMessage } from './types'
-
 import {
-  IMAGE_NOT_LOADED_CATALOG_ID,
-  MISSING_CONNECTION_CATALOG_ID,
-  UNKNOWN_VALIDATION_ERROR_CATALOG_ID
-} from './catalogIds'
+  INPUT_LEVEL_VALIDATION_ERROR_TYPES,
+  NODE_LEVEL_VALIDATION_ERROR_TYPES,
+  getInputConfigBounds,
+  isImageNotLoadedValidationError
+} from '@/utils/executionErrorUtil'
+
 import {
   normalizeNodeName,
   translateCatalogMessage,
@@ -12,11 +12,11 @@ import {
 } from './catalogI18n'
 import type { CatalogParams, ErrorResolveContext } from './catalogI18n'
 import {
-  INPUT_LEVEL_VALIDATION_ERROR_TYPES,
-  NODE_LEVEL_VALIDATION_ERROR_TYPES,
-  getInputConfigBounds,
-  isImageNotLoadedValidationError
-} from '@/utils/executionErrorUtil'
+  IMAGE_NOT_LOADED_CATALOG_ID,
+  MISSING_CONNECTION_CATALOG_ID,
+  UNKNOWN_VALIDATION_ERROR_CATALOG_ID
+} from './catalogIds'
+import type { NodeValidationError, ResolvedCatalogErrorMessage } from './types'
 
 const REQUIRED_INPUT_MISSING_TYPE = 'required_input_missing'
 

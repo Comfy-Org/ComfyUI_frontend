@@ -1,6 +1,5 @@
-import { expect } from '@playwright/test'
-
 import { desktopFixture as test } from '@e2e/fixtures/desktopFixture'
+import { expect } from '@playwright/test'
 
 test(
   'desktop window drag region spans the tab bar',

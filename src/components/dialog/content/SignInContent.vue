@@ -166,23 +166,22 @@
 </template>
 
 <script setup lang="ts">
+import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
+import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
-import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
 import Button from '@/components/ui/button/Button.vue'
 import Message from '@/components/ui/message/Message.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
+import { isCloud } from '@/platform/distribution/types'
 import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import type { SignInData, SignUpData } from '@/schemas/signInSchema'
-import { isCloud } from '@/platform/distribution/types'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'

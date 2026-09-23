@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useCommandStore } from '@/stores/commandStore'
 import { api } from '@/scripts/api'
+import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import {
   ManagerUIState,

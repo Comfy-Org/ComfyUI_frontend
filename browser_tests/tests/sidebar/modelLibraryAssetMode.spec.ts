@@ -1,5 +1,3 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import type { Asset } from '@comfyorg/ingest-types'
 import {
   assetApiFixture,
@@ -22,6 +20,8 @@ import {
 import { withModels } from '@e2e/fixtures/helpers/AssetHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { dispatchApiCustomEvent } from '@e2e/fixtures/utils/dispatchApiEvent'
+import { expect, mergeTests } from '@playwright/test'
+
 import { ASSETS_SEED_FAST_COMPLETE_EVENT } from '@/platform/assets/constants/assetEvents'
 import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
 

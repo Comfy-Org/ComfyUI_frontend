@@ -9,8 +9,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
-import TabLinkCard from './TabLinkCard.vue'
 import { AgentTargetNavigationError } from '../../../services/agent/targetAwareAgentNavigation'
+import TabLinkCard from './TabLinkCard.vue'
 
 vi.hoisted(() => {
   vi.stubGlobal(

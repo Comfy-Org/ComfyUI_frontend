@@ -1,10 +1,9 @@
-import { expect } from '@playwright/test'
-
 import {
   PERSONAL_WORKSPACE_NAME,
   TEAM_WORKSPACE_NAME
 } from '@e2e/fixtures/data/workspaceSwitcher'
 import { workspaceSwitcherTest as test } from '@e2e/fixtures/workspaceSwitcherFixture'
+import { expect } from '@playwright/test'
 
 test.describe('Local workspace switcher', { tag: '@auth' }, () => {
   test.describe.configure({ timeout: 60_000 })

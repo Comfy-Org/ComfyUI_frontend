@@ -1,16 +1,15 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { marked } from 'marked'
 import { computed, defineAsyncComponent, ref } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import { api } from '@/scripts/api'
-import type { AugmentedResultItem } from '@/utils/resultItem'
 import {
   renderMarkdownToHtml,
   resolveMarkdownUrl
 } from '@/utils/markdownRendererUtil'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import {

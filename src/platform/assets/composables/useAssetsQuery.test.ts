@@ -1,5 +1,5 @@
-import { effectScope, toValue } from 'vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import { effectScope, toValue } from 'vue'
 
 import { useAssetsQuery } from '@/platform/assets/composables/useAssetsQuery'
 import type {

@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useI18n } from 'vue-i18n'
-
 import type { BillingReturn } from '@comfyorg/billing-contract'
 import { buildReturnUrl } from '@comfyorg/billing-contract'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useHostedCopy } from '@/composables/useHostedCopy'
 import { BILLING_WEB_ENV } from '@/config/env'

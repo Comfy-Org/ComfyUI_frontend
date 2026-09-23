@@ -1,16 +1,16 @@
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, shallowRef } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useGLSLPreview } from '@/renderer/glsl/useGLSLPreview'
+import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { widgetId } from '@/types/widgetId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { widgetId } from '@/types/widgetId'
 
 const mockRendererFactory = vi.hoisted(() => {
   const init = vi.fn(() => true)

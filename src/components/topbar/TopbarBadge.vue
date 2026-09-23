@@ -101,11 +101,11 @@
   </div>
 </template>
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import Popover from 'primevue/popover'
 import { computed, ref } from 'vue'
 
 import type { TopbarBadge } from '@/types/comfy'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   badge,

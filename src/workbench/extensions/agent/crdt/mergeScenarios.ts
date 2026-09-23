@@ -29,9 +29,9 @@ import type {
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
+import type { GraphOperation } from './graphOperations'
 import type { MergeTraceEntry, MergeVerdict } from './mergeTrace'
 import { opNodeId, traceEntry } from './mergeTrace'
-import type { GraphOperation } from './graphOperations'
 import { mintWireOps } from './opEnvelope'
 
 export interface MergeScenario {

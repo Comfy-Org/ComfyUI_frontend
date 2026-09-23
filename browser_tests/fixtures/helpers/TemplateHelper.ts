@@ -1,3 +1,8 @@
+import {
+  makeTemplate,
+  mockTemplateIndex
+} from '@e2e/fixtures/data/templateFixtures'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { expect } from '@playwright/test'
 import type { Page, Route } from '@playwright/test'
 
@@ -5,11 +10,6 @@ import type {
   TemplateInfo,
   WorkflowTemplates
 } from '@/platform/workflow/templates/types/template'
-import {
-  makeTemplate,
-  mockTemplateIndex
-} from '@e2e/fixtures/data/templateFixtures'
-import { TestIds } from '@e2e/fixtures/selectors'
 
 const ROUTE_PATTERN_WORKFLOW_TEMPLATES = /\/api\/workflow_templates(?:\?.*)?$/
 const ROUTE_PATTERN_TEMPLATE_INDEX = /\/templates\/index\.json(?:\?.*)?$/

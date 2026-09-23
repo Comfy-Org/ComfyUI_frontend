@@ -1,6 +1,5 @@
-import { describe, expect, it } from 'vitest'
-
 import type { SearchResult } from 'minisearch'
+import { describe, expect, it } from 'vitest'
 
 import {
   createTemplateSearchIndex,

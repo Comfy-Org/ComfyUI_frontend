@@ -1,7 +1,6 @@
-import type { InjectionKey, Ref } from 'vue'
-
 import type { VariantProps } from 'cva'
 import { cva } from 'cva'
+import type { InjectionKey, Ref } from 'vue'
 
 export const toggleGroupVariantKey: InjectionKey<
   Ref<ToggleGroupItemVariants['variant']>

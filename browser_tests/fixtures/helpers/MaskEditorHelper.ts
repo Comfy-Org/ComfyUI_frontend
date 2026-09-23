@@ -1,8 +1,7 @@
-import type { Locator } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Locator } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 const MASK_CANVAS_INDEX = 2
 const RGB_CANVAS_INDEX = 1

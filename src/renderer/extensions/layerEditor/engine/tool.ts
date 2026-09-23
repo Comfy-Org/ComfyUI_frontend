@@ -1,9 +1,9 @@
-import type { History } from './history'
-import type { Document } from './document'
-import type { Rect, Vec2 } from './node'
 import type { Compositor } from './compositor'
 import type { ContentStore } from './content'
+import type { Document } from './document'
 import type { GrayMask, SelectionOp } from './editor/selectionMath'
+import type { History } from './history'
+import type { Rect, Vec2 } from './node'
 
 export interface ToolControl {
   active: boolean

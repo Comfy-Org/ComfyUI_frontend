@@ -5,8 +5,9 @@
  * Includes workspaceId for validation to prevent cross-workspace contamination.
  */
 
+import { api } from '@/scripts/api'
+
 import type { ActivePathPointer, OpenPathsPointer } from '../base/draftTypes'
-import { getWorkspaceId } from '../base/storageKeys'
 import {
   clearActivePath,
   readActivePath,
@@ -14,7 +15,7 @@ import {
   writeActivePath,
   writeOpenPaths
 } from '../base/storageIO'
-import { api } from '@/scripts/api'
+import { getWorkspaceId } from '../base/storageKeys'
 
 /**
  * Gets the current client ID for browser tab identification.

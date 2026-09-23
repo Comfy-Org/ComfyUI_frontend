@@ -1,13 +1,13 @@
 import { trim } from 'es-toolkit'
 import { computed, toValue } from 'vue'
 
-import type { NodeState } from '@/types/nodeState'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import type { NodeBadgeProps } from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { nodeBadges } from '@/systems/badgeSystem'
 import { NodeBadgeMode } from '@/types/nodeSource'
+import type { NodeState } from '@/types/nodeState'
 import { resolveNode } from '@/utils/litegraphUtil'
 
 const COMFY_CLOUD_PYTHON_MODULE = 'comfy_api_nodes.nodes_comfy_cloud'

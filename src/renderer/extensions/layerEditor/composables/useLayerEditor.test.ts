@@ -1,9 +1,9 @@
-import { useDialogStore } from '@/stores/dialogStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDialogStore } from '@/stores/dialogStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 import { useLayerEditor } from './useLayerEditor'
 

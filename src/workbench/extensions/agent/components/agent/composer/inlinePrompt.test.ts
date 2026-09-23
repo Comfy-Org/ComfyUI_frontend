@@ -7,7 +7,6 @@ import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import type { ComposerPrompt } from '../../../types/composerPrompt'
 import { parseWorkflowReferences } from '../../../utils/workflowReferenceText'
-
 import {
   inlinePromptSchema,
   promptDocument,

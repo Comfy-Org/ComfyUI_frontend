@@ -1,7 +1,6 @@
 import { shallowReactive } from 'vue'
 
 import { MAX_MULTITYPE_SLICES } from '@/constants/slotColors'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LabelPosition, SlotShape, SlotType } from '@/lib/litegraph/src/draw'
 import type {
   CanvasColour,
@@ -13,6 +12,7 @@ import type {
   OptionalProps,
   Point
 } from '@/lib/litegraph/src/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LiteGraph, Rectangle } from '@/lib/litegraph/src/litegraph'
 import { getCentre } from '@/lib/litegraph/src/measure'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'

@@ -6,6 +6,7 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+
 import {
   getAssetDetectionNames,
   resolveMissingMediaAssetSources

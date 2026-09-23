@@ -65,10 +65,9 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { usePreferredReducedMotion, useEventListener } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watchEffect } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   baseSrc,

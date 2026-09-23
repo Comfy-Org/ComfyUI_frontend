@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick } from 'vue'
 
@@ -9,8 +9,8 @@ import type {
   WidgetValue
 } from '@/types/simplifiedWidget'
 
-import WidgetWithControl from './WidgetWithControl.vue'
 import { createMockWidget } from './widgetTestUtils'
+import WidgetWithControl from './WidgetWithControl.vue'
 
 const ValueControlButtonStub = defineComponent({
   name: 'ValueControlButton',

@@ -1,17 +1,19 @@
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 import type { EffectScope } from 'vue'
+
 import type {
   LGraphCanvas,
   LGraph,
   LGraphGroup,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
+import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createNode } from '@/utils/litegraphUtil'
+
 import {
   cloneDataTransfer,
   pasteAudioNode,

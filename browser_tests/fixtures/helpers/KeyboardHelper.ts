@@ -1,6 +1,5 @@
-import type { Locator, Page } from '@playwright/test'
-
 import { nextFrame } from '@e2e/fixtures/utils/timing'
+import type { Locator, Page } from '@playwright/test'
 
 export class KeyboardHelper {
   constructor(

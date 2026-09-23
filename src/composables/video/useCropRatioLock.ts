@@ -1,7 +1,6 @@
+import { clamp } from 'es-toolkit'
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
-
-import { clamp } from 'es-toolkit'
 
 import { ASPECT_RATIOS } from '@/composables/useImageCrop'
 import { MIN_CROP_SIZE } from '@/composables/video/useCropBoxEditor'

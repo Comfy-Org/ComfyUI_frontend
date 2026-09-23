@@ -1,6 +1,6 @@
-import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'

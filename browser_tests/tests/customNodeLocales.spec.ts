@@ -1,10 +1,9 @@
 import type { GetI18nResponse } from '@comfyorg/ingest-types'
-import type { Page } from '@playwright/test'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import type { Page } from '@playwright/test'
 
 const NODE_TYPE = 'DevToolsNodeWithStringInput'
 const LOCALIZED_ZH = '本地化字符串输入 (ZH)'

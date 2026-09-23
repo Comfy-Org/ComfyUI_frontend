@@ -60,15 +60,15 @@
 </template>
 
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
 import { watchDebounced } from '@vueuse/core'
 import { ComboboxAnchor, ComboboxInput, ComboboxRoot } from 'reka-ui'
+import type { HTMLAttributes } from 'vue'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+
 import type { SearchInputVariants } from './searchInput.variants'
 import {
   searchInputSizeConfig,

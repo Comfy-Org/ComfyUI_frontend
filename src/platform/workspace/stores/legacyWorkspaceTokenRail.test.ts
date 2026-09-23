@@ -1,5 +1,5 @@
-import { ref, shallowRef } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref, shallowRef } from 'vue'
 
 import type { LegacyWorkspaceTokenRailDeps } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
 import { createLegacyWorkspaceTokenRail } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'

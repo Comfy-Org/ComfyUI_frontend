@@ -1,11 +1,10 @@
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 test.use({ connectWebSocketToServer: false })
 

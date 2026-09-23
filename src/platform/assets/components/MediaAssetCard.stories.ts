@@ -1,6 +1,5 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import MediaLightbox from '@/components/sidebar/tabs/queue/MediaLightbox.vue'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'

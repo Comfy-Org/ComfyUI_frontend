@@ -1,8 +1,10 @@
 import { readFileSync, readdirSync } from 'node:fs'
 import { dirname, join, sep } from 'node:path'
 import { fileURLToPath } from 'node:url'
+
 import { describe, expect, it } from 'vitest'
 
+import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
 import {
   findRedirectedLinks,
   internalLinks,
@@ -12,7 +14,6 @@ import {
 } from '../lib/llms-txt'
 import { isNoindexPathname } from './indexing'
 import { getRoutes } from './routes'
-import { modelsBuildRoutes } from '../integrations/workshop-release-gate'
 
 const websiteRoot = join(dirname(fileURLToPath(import.meta.url)), '..', '..')
 const llmsTxt = readFileSync(join(websiteRoot, 'public', 'llms.txt'), 'utf8')

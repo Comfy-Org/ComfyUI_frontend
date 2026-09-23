@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { reactive, shallowRef, toRaw } from 'vue'
 
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type {
   GraphScope,
   OwningGraphId,
@@ -10,7 +11,6 @@ import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
 import { isFloatingTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
 
 export type EndpointPatch = Partial<
   Pick<

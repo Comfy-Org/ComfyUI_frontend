@@ -1,6 +1,7 @@
-﻿import { BufferSource } from 'mediabunny'
-import { readFileSync } from 'node:fs'
+﻿import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
+
+import { BufferSource } from 'mediabunny'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {

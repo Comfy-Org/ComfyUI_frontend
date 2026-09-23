@@ -58,12 +58,12 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useId } from 'vue'
 import { useI18n } from 'vue-i18n'
-import { cn } from '@comfyorg/tailwind-utils'
 
-import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 import type { ErrorGroupSeverity } from '@/components/rightSidePanel/errors/types'
+import TransitionCollapse from '@/components/rightSidePanel/layout/TransitionCollapse.vue'
 
 const {
   title,

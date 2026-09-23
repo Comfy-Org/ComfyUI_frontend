@@ -1,6 +1,6 @@
 import { render } from '@testing-library/vue'
-import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { useQueuePolling } from '@/platform/remote/comfyui/useQueuePolling'
 import { useQueueStore } from '@/stores/queueStore'

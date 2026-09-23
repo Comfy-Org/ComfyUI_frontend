@@ -1,9 +1,8 @@
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { loadWorkflowAndOpenErrorsTab } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { expect } from '@playwright/test'
 
 function getMediaRow(comfyPage: ComfyPage) {
   return comfyPage.page.getByTestId(TestIds.dialogs.missingMediaRow)

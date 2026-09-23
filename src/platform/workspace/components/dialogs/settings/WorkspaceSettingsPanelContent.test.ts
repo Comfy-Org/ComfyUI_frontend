@@ -1,7 +1,8 @@
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, onMounted, onUnmounted, ref } from 'vue'
+
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspaceSettingsPanelContent from './WorkspaceSettingsPanelContent.vue'
 

@@ -1,3 +1,4 @@
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { extractLayerState } from '@/renderer/extensions/compositor/composables/compositorLayerState'
 import { setCompositorWidgetValue } from '@/renderer/extensions/compositor/composables/compositorWidgets'
 import {
@@ -5,7 +6,6 @@ import {
   setCompositorPreviewOverride
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
 import type { SceneNode } from '@/renderer/extensions/layerEditor/engine/node'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 export interface CompositorLayerStateSession {
   canvasSize: { value: { w: number; h: number } }

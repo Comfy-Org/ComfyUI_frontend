@@ -1,12 +1,12 @@
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { fromPartial } from '@total-typescript/shoehorn'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyHubPublishFormData } from '@/platform/workflow/sharing/types/comfyHubTypes'
 
 const mockToastAdd = vi.hoisted(() => vi.fn())

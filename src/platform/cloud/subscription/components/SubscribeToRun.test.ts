@@ -1,10 +1,10 @@
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import SubscribeToRun from './SubscribeToRun.vue'

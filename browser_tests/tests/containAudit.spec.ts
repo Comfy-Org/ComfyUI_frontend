@@ -1,8 +1,6 @@
-import { expect } from '@playwright/test'
-
-import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { PerfMeasurement } from '@e2e/fixtures/helpers/PerformanceHelper'
+import { expect } from '@playwright/test'
 
 interface ContainCandidate {
   selector: string

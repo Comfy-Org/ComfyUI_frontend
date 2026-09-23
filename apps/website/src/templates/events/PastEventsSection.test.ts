@@ -4,7 +4,6 @@ import { describe, expect, it } from 'vitest'
 import { nextTick } from 'vue'
 
 import type { ComfyEvent } from '../../data/events'
-
 import PastEventsSection from './PastEventsSection.vue'
 
 // Five past fixtures — one more than PAST_EVENTS_PAGE_SIZE, so the gallery has to

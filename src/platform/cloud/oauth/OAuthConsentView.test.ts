@@ -1,14 +1,14 @@
-import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
 import {
   OAuthApiError,
   submitOAuthConsentDecision
 } from '@/platform/cloud/oauth/oauthApi'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
+import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
 
 vi.mock(import('@/platform/cloud/oauth/oauthApi'), { spy: true })
 const mockSubmitOAuthConsentDecision = vi.mocked(submitOAuthConsentDecision)

@@ -1,5 +1,6 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import path from 'path'
+
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { comfyAPIPlugin, isLegacyFile } from './comfyAPIPlugin'

@@ -1,8 +1,5 @@
-import type { ComfyEvent, EventCategory, EventOrganizer } from '../data/events'
-import type { Locale, LocalizedText } from '../i18n/translations'
-import type { CalendarEvent } from './calendar'
-
 import { localizeHref } from '../config/routes'
+import type { ComfyEvent, EventCategory, EventOrganizer } from '../data/events'
 import {
   eventPath,
   eventStatus,
@@ -10,7 +7,9 @@ import {
   toCalendarEvent,
   youtubeWatchHref
 } from '../data/events'
+import type { Locale, LocalizedText } from '../i18n/translations'
 import { t } from '../i18n/translations'
+import type { CalendarEvent } from './calendar'
 
 /** Sentinel for the "no filter" option in the type and organizer selects. */
 export const DIRECTORY_FILTER_ALL = 'all'

@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
-import { assetPath } from '@e2e/fixtures/utils/paths'
 import { load3dViewerTest as test } from '@e2e/fixtures/helpers/Load3DFixtures'
+import { assetPath } from '@e2e/fixtures/utils/paths'
+import { expect } from '@playwright/test'
 
 test.describe('Load3D Viewer', { tag: '@vue-nodes' }, () => {
   test.beforeEach(async ({ comfyPage, load3d }) => {

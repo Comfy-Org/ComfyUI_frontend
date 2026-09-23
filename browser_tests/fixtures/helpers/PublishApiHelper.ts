@@ -1,5 +1,3 @@
-import type { Page, Route } from '@playwright/test'
-
 import type {
   AssetInfo,
   HubAssetUploadUrlResponse,
@@ -9,9 +7,9 @@ import type {
   PostAssetsFromWorkflowResponse,
   WorkflowPublishInfo
 } from '@comfyorg/ingest-types'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { PublishDialog } from '@e2e/fixtures/components/PublishDialog'
+import type { Page, Route } from '@playwright/test'
 
 const DEFAULT_PROFILE: HubProfile = {
   username: 'testuser',

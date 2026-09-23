@@ -1,6 +1,6 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'

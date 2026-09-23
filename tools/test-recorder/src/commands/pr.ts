@@ -1,8 +1,10 @@
 import { existsSync } from 'node:fs'
 import { basename, isAbsolute, join, relative } from 'node:path'
+
 import pc from 'picocolors'
-import { findProjectRoot } from '../recorder/runner'
+
 import { openPr } from '../pr/openPr'
+import { findProjectRoot } from '../recorder/runner'
 import { header } from '../ui/logger'
 
 /** Opens a PR for an already-generated spec. */

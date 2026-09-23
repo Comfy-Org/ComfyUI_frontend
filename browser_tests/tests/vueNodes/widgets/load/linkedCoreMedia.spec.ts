@@ -1,9 +1,9 @@
-import { AudioPreview, getWav } from '@e2e/fixtures/components/AudioPreview'
-import { VideoPreview } from '@e2e/fixtures/components/VideoPreview'
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
+import { AudioPreview, getWav } from '@e2e/fixtures/components/AudioPreview'
+import { VideoPreview } from '@e2e/fixtures/components/VideoPreview'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
 

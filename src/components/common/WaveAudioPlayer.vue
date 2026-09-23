@@ -173,13 +173,13 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
 import { useRetryableMediaSrc } from '@/composables/media/useRetryableMediaSrc'
 import { useWaveAudioPlayer } from '@/composables/useWaveAudioPlayer'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   src,

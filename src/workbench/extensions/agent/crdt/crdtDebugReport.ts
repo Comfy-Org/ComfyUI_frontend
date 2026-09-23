@@ -27,7 +27,6 @@ import type {
   AssistantMessage,
   ToolPart
 } from '../services/agent/agentMessageParts'
-
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { DevEvent } from './devPanelLog'
 import { devEventReplacer } from './devPanelLog'

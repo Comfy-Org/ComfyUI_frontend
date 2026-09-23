@@ -1,6 +1,3 @@
-import { expect, mergeTests } from '@playwright/test'
-import type { Locator } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
@@ -10,6 +7,8 @@ import {
 } from '@e2e/fixtures/utils/promotedWidgets'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { expect, mergeTests } from '@playwright/test'
+import type { Locator } from '@playwright/test'
 const wstest = mergeTests(test, webSocketFixture)
 
 test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {

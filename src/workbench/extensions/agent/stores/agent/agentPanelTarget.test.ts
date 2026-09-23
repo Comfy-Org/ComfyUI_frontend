@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+
 import { useAgentPanelStore } from './agentPanelStore'
 
 vi.mock(import('@/platform/telemetry'), () => ({

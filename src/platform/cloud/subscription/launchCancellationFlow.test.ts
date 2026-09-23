@@ -1,7 +1,4 @@
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { useTelemetry } from '@/platform/telemetry'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
@@ -9,7 +6,9 @@ import type {
   ChurnkeyShowOptions
 } from '@/platform/cloud/churnkey/churnkeyClient'
 import type { ChurnkeySessionResults } from '@/platform/cloud/churnkey/types'
+import { useTelemetry } from '@/platform/telemetry'
 import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 const mocks = vi.hoisted(() => ({
   billingType: { value: 'workspace' },

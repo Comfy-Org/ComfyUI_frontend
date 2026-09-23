@@ -12,7 +12,6 @@ import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { useExtensionStore } from '@/stores/extensionStore'
-
 import type { ComfyExtension } from '@/types/comfy'
 
 import { isLoad3dNode, isThreeJsNode } from './load3d/nodeTypes'

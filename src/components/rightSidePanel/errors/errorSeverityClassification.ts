@@ -1,11 +1,11 @@
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
-import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
-import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
 import {
   classifyValidationErrorAbsorption,
   isMissingNodePromptErrorAbsorbed

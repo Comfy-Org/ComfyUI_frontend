@@ -1,13 +1,12 @@
 import { describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
-import { toNodeId } from '@/types/nodeId'
-
 import {
   layoutToYNode,
   yNodeToLayout
 } from '@/renderer/core/layout/utils/mappers'
 import type { NodeLayoutMap } from '@/renderer/core/layout/utils/mappers'
+import { toNodeId } from '@/types/nodeId'
 
 describe('mappers', () => {
   it('yNodeToLayout reads from Yjs-attached map', () => {

@@ -1,25 +1,24 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 /* eslint-disable testing-library/no-container */
 /* eslint-disable testing-library/no-node-access */
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
-import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
 import type { MenuItem } from 'primevue/menuitem'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, onMounted, ref } from 'vue'
 import type { Component } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useTelemetry } from '@/platform/telemetry'
-
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type {
   JobListItem,
   JobStatus
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useCommandStore } from '@/stores/commandStore'

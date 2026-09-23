@@ -31,18 +31,17 @@
 <script setup lang="ts">
 import { computed, watch } from 'vue'
 
-import {
-  singleValueExtractor,
-  useUpstreamValue
-} from '@/composables/useUpstreamValue'
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'
 import SelectTrigger from '@/components/ui/select/SelectTrigger.vue'
 import SelectValue from '@/components/ui/select/SelectValue.vue'
+import {
+  singleValueExtractor,
+  useUpstreamValue
+} from '@/composables/useUpstreamValue'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 
 import CurveEditor from './CurveEditor.vue'
 import { isCurveData } from './curveUtils'

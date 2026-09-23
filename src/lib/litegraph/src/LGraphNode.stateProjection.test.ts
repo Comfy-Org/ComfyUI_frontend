@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'vitest'
 
+import { useNodeDataStore } from '@/stores/nodeDataStore'
+
 import { LGraph, LGraphNode } from './litegraph'
 import { TitleMode } from './types/globalEnums'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
 
 describe('execution order projection', () => {
   test('writes attached node order to the canonical store', () => {

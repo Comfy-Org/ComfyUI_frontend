@@ -1,5 +1,5 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import {
   createSharedComposable,

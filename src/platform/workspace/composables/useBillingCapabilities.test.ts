@@ -1,17 +1,16 @@
-import { useAuthStore } from '@/stores/authStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import axios, { AxiosError, AxiosHeaders } from 'axios'
-
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
 
 import { attachCapabilityRevisionInterceptor } from '@/platform/workspace/api/capabilityRevision'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAuthStore } from '@/stores/authStore'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import { useBillingCapabilities } from './useBillingCapabilities'
-import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
 

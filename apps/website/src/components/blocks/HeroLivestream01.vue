@@ -1,10 +1,10 @@
 <script setup lang="ts">
+import { useNow } from '@vueuse/core'
 import type { AnchorHTMLAttributes } from 'vue'
 import { computed, onMounted, ref } from 'vue'
-import { useNow } from '@vueuse/core'
 
-import Button from '../ui/button/Button.vue'
 import { resolveRel } from '../../utils/cta'
+import Button from '../ui/button/Button.vue'
 
 type Cta = {
   label: string

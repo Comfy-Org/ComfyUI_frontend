@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { Loader2 } from '@lucide/vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
+import { Loader2 } from '@lucide/vue'
 
 const { label, minh = true } = defineProps<{
   label: string

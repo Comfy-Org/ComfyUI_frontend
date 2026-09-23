@@ -1,6 +1,6 @@
+import { formatInitialFeatureFlags } from '../featureFlags'
 import { transformRules, structuralTransforms } from './rules'
 import { scrubSecrets } from './scrub'
-import { formatInitialFeatureFlags } from '../featureFlags'
 
 interface TransformResult {
   code: string

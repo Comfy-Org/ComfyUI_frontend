@@ -1,13 +1,13 @@
-import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
+import * as THREE from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { Load3dDeps } from '@/extensions/core/load3d/Load3d'
-import Load3d from '@/extensions/core/load3d/Load3d'
 import type {
   CameraState,
   GizmoMode
 } from '@/extensions/core/load3d/interfaces'
+import type { Load3dDeps } from '@/extensions/core/load3d/Load3d'
+import Load3d from '@/extensions/core/load3d/Load3d'
 import type { PointerNdcSource } from '@/extensions/core/load3d/load3dViewport'
 
 const {

@@ -290,6 +290,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useToast } from 'primevue/usetoast'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -298,14 +299,14 @@ import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
 import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useExternalLink } from '@/composables/useExternalLink'
-import { useTelemetry } from '@/platform/telemetry'
 import { usePendingTopup } from '@/composables/billing/usePendingTopup'
+import { useExternalLink } from '@/composables/useExternalLink'
 import { isCloud } from '@/platform/distribution/types'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { CheckoutJourneyPhaseEvent } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
-import { reportError } from '@/platform/telemetry/reportError'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -324,7 +325,6 @@ import type { CheckoutJourneyRecord } from '@/platform/workspace/utils/checkoutJ
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { isInsufficientCredits = false } = defineProps<{
   isInsufficientCredits?: boolean

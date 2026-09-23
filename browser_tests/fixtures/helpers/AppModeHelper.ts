@@ -1,8 +1,4 @@
-import type { Locator, Page } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
-
 import { OutputHistoryComponent } from '@e2e/fixtures/components/OutputHistory'
 import { WorkflowActionsDropdown } from '@e2e/fixtures/components/WorkflowActionsDropdown'
 import { AppModeWidgetHelper } from '@e2e/fixtures/helpers/AppModeWidgetHelper'
@@ -11,6 +7,8 @@ import { BuilderSaveAsHelper } from '@e2e/fixtures/helpers/BuilderSaveAsHelper'
 import { BuilderSelectHelper } from '@e2e/fixtures/helpers/BuilderSelectHelper'
 import { BuilderStepsHelper } from '@e2e/fixtures/helpers/BuilderStepsHelper'
 import { MobileAppHelper } from '@e2e/fixtures/helpers/MobileAppHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
+import type { Locator, Page } from '@playwright/test'
 
 export class AppModeHelper {
   readonly footer: BuilderFooterHelper

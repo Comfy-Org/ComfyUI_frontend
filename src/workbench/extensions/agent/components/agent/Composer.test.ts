@@ -1,11 +1,5 @@
-import type {
-  WorkflowReference,
-  WorkflowReferenceMetadata,
-  WorkflowReferenceOption
-} from '../../types/workflowReference'
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
-import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { DirectiveBinding } from 'vue'
@@ -15,7 +9,14 @@ import { i18n } from '@/i18n'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
+
+import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
+import type {
+  WorkflowReference,
+  WorkflowReferenceMetadata,
+  WorkflowReferenceOption
+} from '../../types/workflowReference'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 

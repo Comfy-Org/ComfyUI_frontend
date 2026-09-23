@@ -1,6 +1,6 @@
-import type { NodeReplacementResponse } from './types'
-
 import { api } from '@/scripts/api'
+
+import type { NodeReplacementResponse } from './types'
 
 export async function fetchNodeReplacements(): Promise<NodeReplacementResponse> {
   const response = await api.fetchApi('/node_replacements')

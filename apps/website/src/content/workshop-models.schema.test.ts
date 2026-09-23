@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import { workshopModelSchema } from './workshop-models.schema'
 
 const model = {

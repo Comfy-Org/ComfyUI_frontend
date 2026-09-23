@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import ProductHeroBadge from '../../components/common/ProductHeroBadge.vue'
 import { brandButtonVariants } from '../../components/common/brandButton.variants'
+import ProductHeroBadge from '../../components/common/ProductHeroBadge.vue'
 import Badge from '../../components/ui/badge/Badge.vue'
 import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import BuilderVisual from './BuilderVisual.vue'
-import CodeTabs from './CodeTabs.vue'
 import { modelsApiCodeTabs } from './codeSamples'
+import CodeTabs from './CodeTabs.vue'
 import ServerlessIsometricStudy from './ServerlessIsometricStudy.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

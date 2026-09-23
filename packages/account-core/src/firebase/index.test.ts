@@ -1,6 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type { Auth, User, UserCredential } from 'firebase/auth'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { FirebaseIdentityConfig } from './index.js'
 

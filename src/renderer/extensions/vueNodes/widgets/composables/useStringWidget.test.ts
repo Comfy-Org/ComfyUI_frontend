@@ -1,12 +1,12 @@
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { toNodeId } from '@/types/nodeId'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { DOMWidget } from '@/scripts/domWidget'
-import { useStringWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useStringWidget'
-import { createMockDOMWidgetNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
 
 const { canvasMock } = vi.hoisted(() => ({
   canvasMock: {

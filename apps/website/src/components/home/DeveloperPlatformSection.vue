@@ -1,7 +1,7 @@
 <script setup lang="ts">
+import { getRoutes } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { getRoutes } from '../../config/routes'
 import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

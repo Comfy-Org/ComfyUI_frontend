@@ -1,11 +1,10 @@
+import { resolveExecutionErrorMessage } from './executionErrorResolver'
+import { resolvePromptErrorMessage } from './promptErrorResolver'
 import type {
   ResolvedCatalogErrorMessage,
   ResolvedErrorMessage,
   RunErrorMessageSource
 } from './types'
-
-import { resolveExecutionErrorMessage } from './executionErrorResolver'
-import { resolvePromptErrorMessage } from './promptErrorResolver'
 import { resolveNodeValidationErrorMessage } from './validationErrorResolver'
 
 // Public facade for error catalog resolution. Source-specific resolver modules

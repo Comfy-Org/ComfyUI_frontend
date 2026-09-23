@@ -9,12 +9,12 @@ import {
   withPendingCheckoutAttemptId
 } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 import { isCloud } from '@/platform/distribution/types'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   CheckoutAttributionMetadata,
   PaymentIntentSource
 } from '@/platform/telemetry/types'
-import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 

@@ -33,7 +33,6 @@ import { computed, nextTick, ref } from 'vue'
 
 import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Textarea from '@/components/ui/textarea/Textarea.vue'
-
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 

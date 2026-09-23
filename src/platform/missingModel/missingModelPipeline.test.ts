@@ -1,32 +1,33 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import type { ComfyApp } from '@/scripts/app'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useMissingModelStore } from './missingModelStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
+import { t } from '@/i18n'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LGraphEventMode } from '@/lib/litegraph/src/litegraph'
-import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import type {
-  ComfyWorkflowJSON,
-  ModelFile
-} from '@/platform/workflow/validation/schemas/workflowSchema'
-import {
-  refreshMissingModelPipeline,
-  runMissingModelPipeline
-} from '@/platform/missingModel/missingModelPipeline'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
-import { t } from '@/i18n'
-import { reportError } from '@/platform/telemetry/reportError'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
+  refreshMissingModelPipeline,
+  runMissingModelPipeline
+} from '@/platform/missingModel/missingModelPipeline'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type {
+  ComfyWorkflowJSON,
+  ModelFile
+} from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyApp } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
+import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+
+import { useMissingModelStore } from './missingModelStore'
 
 vi.mock(import('@/platform/telemetry/reportError'))
 

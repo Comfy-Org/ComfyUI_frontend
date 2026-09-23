@@ -1,6 +1,3 @@
-import { describe, expect, it } from 'vitest'
-
-import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
 import {
   evaluateNodeDefPricing,
   formatCreditsListValue,
@@ -8,6 +5,9 @@ import {
   formatCreditsValue,
   formatPricingResult
 } from '@comfyorg/shared-frontend-utils/nodePricing'
+import { describe, expect, it } from 'vitest'
+
+import { CREDITS_PER_USD, formatCredits } from '@/base/credits/comfyCredits'
 import { useNodePricing } from '@/composables/node/useNodePricing'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'

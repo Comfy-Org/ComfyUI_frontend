@@ -1,8 +1,6 @@
 // @vitest-environment node
 import { readFileSync } from 'node:fs'
 
-import { describe, expect, it } from 'vitest'
-
 import { zSeedFixture } from '@e2e/../scripts/agentConversationAssemble'
 import type { AgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import {
@@ -10,6 +8,8 @@ import {
   loadAgentConversation
 } from '@e2e/fixtures/data/agent/agentConversation'
 import { agentConversationCapabilityMatrix } from '@e2e/fixtures/data/agent/agentConversationCapabilityMatrix'
+import { describe, expect, it } from 'vitest'
+
 import { classifyAssetUrl } from '@/workbench/extensions/agent/utils/replyAssets'
 
 const supported = agentConversationCapabilityMatrix.filter(

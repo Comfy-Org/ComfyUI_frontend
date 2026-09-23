@@ -2,6 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+
 import { matchPromotedInput } from './matchPromotedInput'
 
 type MockInput = {

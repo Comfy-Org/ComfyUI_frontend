@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { toNodeId } from '@/types/nodeId'
+
 import type { WidgetId } from './widgetId'
 import {
   ensureUniqueWidgetNames,
@@ -7,7 +9,6 @@ import {
   parseWidgetId,
   widgetId
 } from './widgetId'
-import { toNodeId } from '@/types/nodeId'
 
 describe('ensureUniqueWidgetNames', () => {
   it('renames duplicates without colliding with literal suffixes', () => {

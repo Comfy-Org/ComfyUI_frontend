@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useSettingStore } from '@/platform/settings/settingStore'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'

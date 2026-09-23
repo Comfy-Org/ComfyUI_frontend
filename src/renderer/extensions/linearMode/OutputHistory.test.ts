@@ -1,23 +1,22 @@
-import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useAppModeStore } from '@/stores/appModeStore'
-import { useQueueStore } from '@/stores/queueStore'
-import { fromPartial } from '@total-typescript/shoehorn'
-
+import userEvent from '@testing-library/user-event'
 import type { RenderResult } from '@testing-library/vue'
 import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ComputedRef } from 'vue'
 import { computed, nextTick, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   InProgressItem,
   OutputSelection
 } from '@/renderer/extensions/linearMode/linearModeTypes'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { useQueueStore } from '@/stores/queueStore'
 import type { PagedList } from '@/utils/pagedList'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 import OutputHistory from './OutputHistory.vue'
 

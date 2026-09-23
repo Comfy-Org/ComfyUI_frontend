@@ -123,22 +123,22 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { isCloud } from '@/platform/distribution/types'
-import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
-import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import type {
   SubscriptionTier,
   WorkspaceRole,
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import { useWorkspaceSwitch } from '@/platform/workspace/composables/useWorkspaceSwitch'
+import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 interface AvailableWorkspace {
   id: string

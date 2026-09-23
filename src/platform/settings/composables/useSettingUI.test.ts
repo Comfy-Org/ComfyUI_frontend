@@ -1,16 +1,15 @@
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
-import { fromPartial } from '@total-typescript/shoehorn'
-
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 
 import { useSettingUI as useSettingUIComposable } from './useSettingUI'
 

@@ -1,6 +1,6 @@
 import type { Model } from './models'
-import type { WorkshopFormDefinition } from './workshop-form-definition'
 import type { WorkshopContract } from './workshop-contract'
+import type { WorkshopFormDefinition } from './workshop-form-definition'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
 import { OTHER_FORMAT_USE_CASES } from './workshop-sections'
 

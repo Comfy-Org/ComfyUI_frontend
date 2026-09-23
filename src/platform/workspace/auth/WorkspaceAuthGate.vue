@@ -72,15 +72,15 @@ import Button from '@/components/ui/button/Button.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
+import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import {
   remoteConfigErrorStatus,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
-import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 

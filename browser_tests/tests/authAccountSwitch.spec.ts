@@ -1,10 +1,3 @@
-import { expect } from '@playwright/test'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
-
-import type { Page } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { AssetsSidebarTab } from '@e2e/fixtures/components/SidebarTab'
 import {
@@ -17,6 +10,11 @@ import { CloudWorkspaceMockHelper } from '@e2e/fixtures/helpers/CloudWorkspaceMo
 import { TestIds } from '@e2e/fixtures/selectors'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { member } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/workspaceAuthStore'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL ?? 'http://localhost:8188'
 

@@ -1,34 +1,34 @@
+import { useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { ref, computed, watch } from 'vue'
-import { useEventListener } from '@vueuse/core'
 
 import { useEmptyWorkflowDialog } from '@/components/builder/useEmptyWorkflowDialog'
 import { useAppMode } from '@/composables/useAppMode'
+import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type {
   InputWidgetConfig,
   LinearData,
   LinearInput
 } from '@/platform/workflow/management/stores/comfyWorkflow'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
-import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
-import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import {
-  getWidgetIdForNode,
-  resolveNode,
-  resolveNodeWidget
-} from '@/utils/litegraphUtil'
+import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { isWidgetId, parseWidgetId } from '@/types/widgetId'
 import type { ViewMode } from '@/utils/appMode'
+import {
+  getWidgetIdForNode,
+  resolveNode,
+  resolveNodeWidget
+} from '@/utils/litegraphUtil'
 
 function findWidgetByEntityId(
   rootGraph: LGraph,

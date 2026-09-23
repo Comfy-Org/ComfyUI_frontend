@@ -12,12 +12,12 @@ vi.mock<unknown>(import('@/lib/litegraph/src/litegraph'), () => ({
   LiteGraph: mockLiteGraph
 }))
 
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { LayoutSource } from '@/renderer/core/layout/types'

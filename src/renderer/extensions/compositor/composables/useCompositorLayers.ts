@@ -1,8 +1,8 @@
 import { reactive } from 'vue'
 
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { CompositorBBox } from '@/renderer/extensions/compositor/composables/compositorLayerState'
 import type { ImageFileRef } from '@/renderer/extensions/compositor/composables/compositorPaths'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { isSubgraph } from '@/utils/typeGuardUtil'

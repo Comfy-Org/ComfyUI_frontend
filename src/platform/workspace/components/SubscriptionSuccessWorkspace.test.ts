@@ -1,11 +1,12 @@
-import { computed, ref } from 'vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
+
 import SubscriptionSuccessWorkspace from './SubscriptionSuccessWorkspace.vue'
 
 const mockInviteSubmit = vi.hoisted(() => vi.fn())

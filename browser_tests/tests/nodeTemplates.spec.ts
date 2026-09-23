@@ -1,9 +1,8 @@
 import fs from 'node:fs'
 
+import { nodeTemplatesFixture as test } from '@e2e/fixtures/nodeTemplatesFixture'
 import type { TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
-
-import { nodeTemplatesFixture as test } from '@e2e/fixtures/nodeTemplatesFixture'
 
 type NodeMode = 'vue' | 'litegraph'
 

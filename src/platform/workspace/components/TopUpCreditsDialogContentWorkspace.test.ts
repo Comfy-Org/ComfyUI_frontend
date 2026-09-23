@@ -1,3 +1,16 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen, waitFor } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, nextTick, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useTelemetry } from '@/platform/telemetry'
+import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
+import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
+import type { BillingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
@@ -7,25 +20,10 @@ import {
 } from '@/platform/workspace/utils/checkoutJourney'
 import { useAuthStore } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { render, screen, waitFor } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, nextTick, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
-
-import { useTelemetry } from '@/platform/telemetry'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
-import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
-import type { CreateTopupResponse } from '@/platform/workspace/api/workspaceApi'
-import { billingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
-import type { BillingOperation } from '@/platform/workspace/composables/billingOperationTestUtils'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 import TopUpCreditsDialogContentWorkspace from './TopUpCreditsDialogContentWorkspace.vue'
-import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const mockReportError = vi.hoisted(() => vi.fn())
 

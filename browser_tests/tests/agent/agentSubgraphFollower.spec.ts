@@ -1,8 +1,3 @@
-import { expect, mergeTests } from '@playwright/test'
-
-import { webSocketFixture } from '@e2e/fixtures/ws'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
-
 import {
   agentTest,
   bootAgentApp,
@@ -21,6 +16,9 @@ import {
   agentSubgraphNodeDefs,
   agentSubgraphFrames
 } from '@e2e/fixtures/data/agentSubgraphFollower'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { webSocketFixture } from '@e2e/fixtures/ws'
+import { expect, mergeTests } from '@playwright/test'
 
 const test = mergeTests(agentTest, webSocketFixture)
 

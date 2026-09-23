@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import WorkshopGate from '../workshop/WorkshopGate.vue'
 import { ref } from 'vue'
 
 import { catalogSearch } from '../../config/models-catalogue'
@@ -9,6 +8,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import Button from '../ui/button/Button.vue'
 import StaticFrame from '../workshop/StaticFrame.vue'
+import WorkshopGate from '../workshop/WorkshopGate.vue'
 
 const { locale = 'en', providers } = defineProps<{
   locale?: Locale

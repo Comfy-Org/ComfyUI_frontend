@@ -1,9 +1,9 @@
-import { describe, expect, it } from 'vitest'
 import {
   batchAutoRunnable,
   classifyAutoRunnable,
   planAutoRuns
 } from '@e2e/fixtures/customNode/autoRun'
+import { describe, expect, it } from 'vitest'
 
 const SYNTH = new Set([
   'IMAGE',

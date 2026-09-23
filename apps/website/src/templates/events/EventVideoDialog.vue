@@ -11,9 +11,8 @@ import AddToCalendarButton from '../../components/blocks/AddToCalendarButton.vue
 import { lockScroll, unlockScroll } from '../../composables/scrollLock'
 import { localizeHref } from '../../config/routes'
 import type { Locale } from '../../i18n/translations'
-import type { CalendarEvent } from '../../utils/calendar'
-
 import { t } from '../../i18n/translations'
+import type { CalendarEvent } from '../../utils/calendar'
 import { isUrlUnderPath, previousEntryUrl } from '../../utils/previousEntry'
 
 const {

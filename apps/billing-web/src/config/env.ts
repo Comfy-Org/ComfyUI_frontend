@@ -1,3 +1,4 @@
+import type { BillingEnvironment } from '@comfyorg/billing-contract'
 /**
  * Which backend family this origin talks to, and the Firebase project whose
  * tokens that family accepts. One switch selects both, because a token minted
@@ -12,8 +13,6 @@
  * unavailable instead of throwing on its first import.
  */
 import type { FirebaseOptions } from 'firebase/app'
-
-import type { BillingEnvironment } from '@comfyorg/billing-contract'
 
 const BILLING_WEB_ENVS = ['production', 'staging', 'test'] as const
 

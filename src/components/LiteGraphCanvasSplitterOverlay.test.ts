@@ -1,7 +1,8 @@
-import { getActivePinia } from 'pinia'
-import { render, screen } from '@testing-library/vue'
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
+
+import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -9,8 +10,8 @@ import { createI18n } from 'vue-i18n'
 import LiteGraphCanvasSplitterOverlay from '@/components/LiteGraphCanvasSplitterOverlay.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
-import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 vi.mock(import('firebase/auth'))
 
 /**

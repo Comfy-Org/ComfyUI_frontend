@@ -18,8 +18,8 @@ vi.mock<unknown>(import('@/composables/useRangeEditor'), () => ({
   })
 }))
 
-import type { ComponentProps } from 'vue-component-type-helpers'
 import { fireEvent, render, screen } from '@testing-library/vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import VideoFilmstripTrim from './VideoFilmstripTrim.vue'

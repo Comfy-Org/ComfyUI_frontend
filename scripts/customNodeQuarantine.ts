@@ -15,8 +15,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { promisify } from 'node:util'
 
-import type { QuarantinedPack } from '../browser_tests/fixtures/customNode/manifest'
 import { connectivityExpectations } from '../browser_tests/fixtures/customNode/connectivityExpectations'
+import { consoleErrorExclusionsForPacks } from '../browser_tests/fixtures/customNode/consoleErrorLedger'
+import type { QuarantinedPack } from '../browser_tests/fixtures/customNode/manifest'
 import {
   customNodesManifest,
   FRONTEND_ASSET_EXCLUSIONS,
@@ -27,7 +28,6 @@ import {
   packIdentity,
   staleLocalExpectations
 } from '../browser_tests/fixtures/customNode/manifest'
-import { consoleErrorExclusionsForPacks } from '../browser_tests/fixtures/customNode/consoleErrorLedger'
 import {
   CUSTOM_NODE_TIER_NODE_EXCLUSIONS,
   tierNodeExclusionProblems

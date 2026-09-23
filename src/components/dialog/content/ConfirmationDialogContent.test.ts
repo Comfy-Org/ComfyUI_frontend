@@ -1,10 +1,11 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import { useDialogStore } from '@/stores/dialogStore'
+
 import ConfirmationDialogContent from './ConfirmationDialogContent.vue'
 
 type Props = ComponentProps<typeof ConfirmationDialogContent>

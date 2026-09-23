@@ -1,10 +1,9 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { NavigationMenuRootEmits, NavigationMenuRootProps } from 'reka-ui'
 import { NavigationMenuRoot, useForwardPropsEmits } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import NavigationMenuViewport from './NavigationMenuViewport.vue'
 

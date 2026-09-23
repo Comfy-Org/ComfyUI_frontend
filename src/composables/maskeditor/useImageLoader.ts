@@ -1,7 +1,8 @@
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
-import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { createSharedComposable } from '@vueuse/core'
+
 import { useCanvasManager } from '@/composables/maskeditor/useCanvasManager'
+import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 function useImageLoaderInternal() {
   const store = useMaskEditorStore()

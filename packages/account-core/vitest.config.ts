@@ -1,4 +1,5 @@
 import { fileURLToPath } from 'node:url'
+
 import { defineConfig } from 'vitest/config'
 
 const TEST_SYSTEM_TIME = Date.parse('2024-06-15T12:00:00Z')

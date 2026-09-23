@@ -1,5 +1,5 @@
-import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { markRaw, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -18,8 +18,8 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useRightSidePanelStore } from '@/stores/workspace/rightSidePanelStore'
-import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { toNodeId } from '@/types/nodeId'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { getExecutionIdByNode } from '@/utils/graphTraversalUtil'
 
 const mockApp = vi.hoisted(() => ({

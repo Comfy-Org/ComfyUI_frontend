@@ -1,5 +1,4 @@
 import { clamp } from 'es-toolkit'
-
 import type { Vector3Like } from 'three'
 
 const RAD2DEG = 180 / Math.PI

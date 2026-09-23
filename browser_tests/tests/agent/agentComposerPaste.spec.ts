@@ -1,14 +1,13 @@
-import { expect } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-
 import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { expect } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 
 // Minimal node used only to prove the clipboard leak; the bug is not
 // specific to any node type.

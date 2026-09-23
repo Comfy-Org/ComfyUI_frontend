@@ -1,35 +1,35 @@
 <script setup lang="ts">
-import type { Node } from '@tiptap/pm/model'
-import { DOMParser, Fragment, Slice } from '@tiptap/pm/model'
+import { cn } from '@comfyorg/tailwind-utils'
 import { baseKeymap } from '@tiptap/pm/commands'
 import { closeHistory, history, redo, undo } from '@tiptap/pm/history'
 import { keymap } from '@tiptap/pm/keymap'
+import type { Node } from '@tiptap/pm/model'
+import { DOMParser, Fragment, Slice } from '@tiptap/pm/model'
 import { EditorState, TextSelection } from '@tiptap/pm/state'
 import { Decoration, DecorationSet, EditorView } from '@tiptap/pm/view'
-import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 import { default as DOMPurify } from 'dompurify'
+import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buttonVariants } from '@/components/ui/button/button.variants'
 import {
   tagRemoveButtonVariants,
   tagVariants
 } from '@/components/chip/tag.variants'
-import { cn } from '@comfyorg/tailwind-utils'
+import { buttonVariants } from '@/components/ui/button/button.variants'
 
+import { selectedNodeKey } from '../../../composables/agent/useCanvasSelection'
 import type { ComposerPrompt } from '../../../types/composerPrompt'
 import {
   composerReferenceKey,
   composerReferenceName
 } from '../../../types/composerPrompt'
-import { sameComposerReferenceOrder } from '../../../utils/composerPrompt'
+import type { PromptEditor } from '../../../types/promptEditor'
+import type { WorkflowReferenceMetadata } from '../../../types/workflowReference'
 import {
   assetReferenceText,
   nodeReferenceText
 } from '../../../utils/agentMessageText'
-import { selectedNodeKey } from '../../../composables/agent/useCanvasSelection'
-import type { PromptEditor } from '../../../types/promptEditor'
-import type { WorkflowReferenceMetadata } from '../../../types/workflowReference'
+import { sameComposerReferenceOrder } from '../../../utils/composerPrompt'
 import {
   inlinePromptSchema,
   promptDocument,

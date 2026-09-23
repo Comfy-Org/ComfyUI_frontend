@@ -100,8 +100,6 @@
 </template>
 
 <script setup lang="ts" generic="T">
-import type { HTMLAttributes, StyleValue } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
 import {
   ComboboxAnchor,
@@ -111,11 +109,13 @@ import {
   ComboboxPortal,
   ComboboxRoot
 } from 'reka-ui'
+import type { HTMLAttributes, StyleValue } from 'vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
+
 import type { SearchInputVariants } from './searchInput.variants'
 import {
   searchInputSizeConfig,

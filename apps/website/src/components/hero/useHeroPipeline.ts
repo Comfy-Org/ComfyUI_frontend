@@ -1,7 +1,7 @@
 import { computed, reactive, ref } from 'vue'
 
-import { DEFAULT_POSE } from './cameraVocabulary'
 import { resolveAsset } from './assetResolver'
+import { DEFAULT_POSE } from './cameraVocabulary'
 
 /** Shared state for one hero pipeline instance: camera pose in, resolved
  * render + colour grade out. Desktop and mobile each own an instance. */

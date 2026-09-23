@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetItemSchema } from '@/platform/assets/schemas/assetSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import {
@@ -8,7 +9,6 @@ import {
   getAssetFilename,
   getAssetNodeCategoryCandidates
 } from '@/platform/assets/utils/assetMetadataUtils'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
 

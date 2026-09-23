@@ -42,8 +42,8 @@ import { useToast } from 'primevue/usetoast'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogStore } from '@/stores/dialogStore'
 

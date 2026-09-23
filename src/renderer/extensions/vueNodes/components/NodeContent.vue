@@ -33,9 +33,9 @@
 <script setup lang="ts">
 import { computed, onErrorCaptured, ref } from 'vue'
 
-import type { NodeState } from '@/types/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
+import type { NodeState } from '@/types/nodeState'
 
 import VideoPreview from '../VideoPreview.vue'
 import AudioPreview from './AudioPreview.vue'

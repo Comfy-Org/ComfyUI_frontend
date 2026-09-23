@@ -1,9 +1,10 @@
 import { describe, expect, test, vi } from 'vitest'
 import { computed, effect, nextTick, stop, watch } from 'vue'
 
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+
 import { LGraph, LGraphNode } from './litegraph'
 import type { IBaseWidget } from './types/widgets'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 describe('_setConcreteSlots', () => {
   test('per-frame calls do not invalidate slot-array subscribers', async () => {

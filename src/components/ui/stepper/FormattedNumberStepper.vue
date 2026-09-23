@@ -49,9 +49,8 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, useId, watch } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
+import { computed, ref, useId, watch } from 'vue'
 
 const {
   min = 0,

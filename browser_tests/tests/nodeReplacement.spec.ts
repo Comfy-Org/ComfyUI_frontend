@@ -12,6 +12,7 @@ import {
   setupNodeReplacement
 } from '@e2e/fixtures/helpers/NodeReplacementHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
+
 import { toNodeId } from '@/types/nodeId'
 
 const renderModes = [

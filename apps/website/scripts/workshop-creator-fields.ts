@@ -5,8 +5,8 @@ import type {
   WorkshopCreatorFile,
   WorkshopCreatorForm
 } from '../src/config/workshop-creator-form'
-import type { WorkshopInputDefinition } from '../src/config/workshop-input-definition'
 import { deriveWorkshopFields } from '../src/config/workshop-fields'
+import type { WorkshopInputDefinition } from '../src/config/workshop-input-definition'
 import { resolveSchemaReference } from '../src/config/workshop-router-openapi'
 import { curateWorkshopInputs } from './workshop-input-presentation'
 

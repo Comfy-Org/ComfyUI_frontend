@@ -1,15 +1,13 @@
 import { PREFIX, SEPARATOR } from '@/constants/groupNodeConstants'
 import { t } from '@/i18n'
 import type { ISlotType } from '@/lib/litegraph/src/interfaces'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type {
   LGraphNodeConstructor,
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { outputLinks } from '@/lib/litegraph/src/node/slotLinks'
-import type { SerializedNodeId } from '@/types/nodeId'
-import { parseNodeId } from '@/types/nodeId'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type {
   ComfyNode,
   ComfyWorkflowJSON
@@ -18,6 +16,8 @@ import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetStore } from '@/stores/widgetStore'
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
+import type { SerializedNodeId } from '@/types/nodeId'
+import { parseNodeId } from '@/types/nodeId'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
 
 import { app } from '../../scripts/app'

@@ -1,11 +1,13 @@
 import { readFileSync } from 'node:fs'
 import { relative } from 'node:path'
+
 import { confirm, isCancel } from '@clack/prompts'
 import pc from 'picocolors'
+
+import { box, info, warn } from '../ui/logger'
 import { copyToClipboard } from './clipboard'
 import { checkGhAvailable, createPr, switchBranch } from './gh'
 import { printManualInstructions } from './manual'
-import { box, info, warn } from '../ui/logger'
 
 interface OpenPrOptions {
   testFilePath: string

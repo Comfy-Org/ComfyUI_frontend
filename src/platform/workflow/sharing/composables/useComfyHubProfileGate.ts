@@ -2,9 +2,9 @@ import { ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import { useComfyHubService } from '@/platform/workflow/sharing/services/comfyHubService'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
-import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
 
 // TODO: Migrate to a Pinia store for proper singleton state management
 // User-scoped, session-cached profile state (module-level singleton)

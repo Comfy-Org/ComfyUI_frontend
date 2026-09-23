@@ -1,10 +1,12 @@
 import { BakeRasterCommand, snapshotRaster } from '../commands/bakeContent'
+import { SetSelectionCommand, snapshotSelection } from '../commands/selection'
 import { AddNodeCommand, ReorderCommand } from '../commands/structure'
 import type { Compositor, CompositeInput } from '../compositor'
 import type { ContentStore } from '../content'
 import type { DocGuide, Document } from '../document'
 import { findNode } from '../document'
 import { History } from '../history'
+import { generateId } from '../id'
 import { DefaultContentStore } from '../impl/contentStore'
 import { defaultMode, resolveMode } from '../mode'
 import type {
@@ -40,10 +42,7 @@ import {
   insideBox
 } from '../tools/transformMath'
 import { isTransformTool } from '../tools/transformTool'
-import { SetSelectionCommand, snapshotSelection } from '../commands/selection'
-import { generateId } from '../id'
-
-import { fullSelectionCanvas } from './selectionOps'
+import { OverlayList } from './overlayList'
 import type { GrayMask, SelectionOp } from './selectionMath'
 import {
   combineMasks,
@@ -53,7 +52,7 @@ import {
   maskFromCanvas,
   maskToCanvas
 } from './selectionMath'
-import { OverlayList } from './overlayList'
+import { fullSelectionCanvas } from './selectionOps'
 
 interface FloatingItem {
   contentId: string

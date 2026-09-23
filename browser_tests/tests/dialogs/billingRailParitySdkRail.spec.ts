@@ -1,5 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Locator, Page, Request } from '@playwright/test'
 import type {
   BillingBalanceResponse,
   BillingOpStatusResponse,
@@ -12,9 +10,6 @@ import type {
   ResubscribeResponse,
   SavedPaymentMethod
 } from '@comfyorg/ingest-types'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-
 import {
   cloudAppExpect,
   cloudAppFixture as test,
@@ -28,6 +23,10 @@ import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { APP_URL, setupCloudApp } from '@e2e/fixtures/utils/cloudAppSetup'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { member, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { expect } from '@playwright/test'
+import type { Locator, Page, Request } from '@playwright/test'
+
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 /**
  * The SDK rails held against the legacy flow they replace: each row either

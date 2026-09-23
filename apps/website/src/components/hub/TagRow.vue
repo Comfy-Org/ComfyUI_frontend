@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver } from '@vueuse/core'
 import {
   HoverCardContent,
@@ -7,8 +8,6 @@ import {
   HoverCardTrigger
 } from 'reka-ui'
 import { computed, nextTick, ref, watch } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { hubTagUrl } from '../../lib/hub/routes'
 import { tagDisplayName } from '../../lib/hub/tag-aliases'

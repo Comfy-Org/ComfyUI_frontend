@@ -70,6 +70,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useAsyncState } from '@vueuse/core'
 import { computed, onUnmounted, ref, toRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -80,10 +81,9 @@ import Button from '@/components/ui/button/Button.vue'
 import ModelInfoField from '@/platform/assets/components/modelInfo/ModelInfoField.vue'
 import { useComfyRegistryStore } from '@/stores/comfyRegistryStore'
 import type { components } from '@/types/comfyRegistryTypes'
-import { cn } from '@comfyorg/tailwind-utils'
-import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'
 import PackInstallButton from '@/workbench/extensions/manager/components/manager/button/PackInstallButton.vue'
 import PackUninstallButton from '@/workbench/extensions/manager/components/manager/button/PackUninstallButton.vue'
+import PackStatusMessage from '@/workbench/extensions/manager/components/manager/PackStatusMessage.vue'
 import { usePacksSelection } from '@/workbench/extensions/manager/composables/nodePack/usePacksSelection'
 import { usePacksStatus } from '@/workbench/extensions/manager/composables/nodePack/usePacksStatus'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'

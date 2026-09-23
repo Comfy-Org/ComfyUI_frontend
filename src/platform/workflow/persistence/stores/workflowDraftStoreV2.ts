@@ -11,8 +11,6 @@ import { ref } from 'vue'
 import { reportError } from '@/platform/telemetry/reportError'
 import { app as comfyApp } from '@/scripts/app'
 
-import type { DraftIndexV2 } from '../base/draftTypes'
-import { MAX_DRAFTS } from '../base/draftTypes'
 import {
   createEmptyIndex,
   getEntryByPath,
@@ -23,8 +21,9 @@ import {
   touchOrder,
   upsertEntry
 } from '../base/draftCacheV2'
+import type { DraftIndexV2 } from '../base/draftTypes'
+import { MAX_DRAFTS } from '../base/draftTypes'
 import { hashPath } from '../base/hashUtil'
-import { getWorkspaceId } from '../base/storageKeys'
 import {
   deleteOrphanPayloads,
   deletePayload,
@@ -37,6 +36,7 @@ import {
   writeIndex,
   writePayload
 } from '../base/storageIO'
+import { getWorkspaceId } from '../base/storageKeys'
 
 interface DraftMeta {
   name: string

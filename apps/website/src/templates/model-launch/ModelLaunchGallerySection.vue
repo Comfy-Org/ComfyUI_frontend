@@ -4,13 +4,12 @@ import { ChevronRight } from '@lucide/vue'
 import { useIntersectionObserver } from '@vueuse/core'
 import { ref, useTemplateRef } from 'vue'
 
-import type { Locale } from '../../i18n/translations'
-import type { ModelLaunchGallery } from './types'
-
 import Badge from '../../components/ui/badge/Badge.vue'
 import CopyTextButton from '../../components/ui/copy-text-button/CopyTextButton.vue'
 import IconButton from '../../components/ui/icon-button/IconButton.vue'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import type { ModelLaunchGallery } from './types'
 
 const { locale = 'en', gallery } = defineProps<{
   gallery: ModelLaunchGallery

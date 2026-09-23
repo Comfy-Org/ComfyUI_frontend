@@ -1,11 +1,10 @@
-import type { Page } from '@playwright/test'
-
 import {
   comfyPageFixture as test,
   comfyExpect as expect
 } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import { cleanupFakeModel } from '@e2e/fixtures/helpers/ErrorsTabHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
+import type { Page } from '@playwright/test'
 
 test.describe('Error overlay', { tag: '@ui' }, () => {
   test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })

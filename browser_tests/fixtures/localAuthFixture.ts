@@ -1,6 +1,3 @@
-import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
-
-import type { operations } from '@/types/comfyRegistryTypes'
 import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   EMPTY_BILLING_BALANCE,
@@ -10,7 +7,10 @@ import {
   createSubscriptionHelper,
   withUnsubscribed
 } from '@e2e/fixtures/helpers/SubscriptionHelper'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+
+import type { operations } from '@/types/comfyRegistryTypes'
 
 const LOCAL_AUTH_BOOT_TIMEOUT = 45_000
 type CreateCustomerResponse =

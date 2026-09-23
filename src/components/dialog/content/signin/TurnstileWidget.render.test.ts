@@ -1,8 +1,7 @@
-import { render, screen } from '@testing-library/vue'
-import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
-
 import { loadTurnstile } from '@comfyorg/account-core/turnstileScript'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
+import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'

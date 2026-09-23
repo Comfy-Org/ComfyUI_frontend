@@ -1,7 +1,7 @@
-import { setTelemetryRegistry } from './index'
 import { isHostTelemetryEnabled } from './hostTelemetryEnabled'
-import { TelemetryRegistry } from './TelemetryRegistry'
+import { setTelemetryRegistry } from './index'
 import { HostTelemetrySink } from './providers/host/HostTelemetrySink'
+import { TelemetryRegistry } from './TelemetryRegistry'
 
 export function initHostTelemetry(): void {
   if (!isHostTelemetryEnabled()) return

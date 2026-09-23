@@ -1,10 +1,9 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { NavigationMenuLinkEmits, NavigationMenuLinkProps } from 'reka-ui'
 import { NavigationMenuLink, useForwardPropsEmits } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { computed } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className, ...restProps } = defineProps<
   NavigationMenuLinkProps & { class?: HTMLAttributes['class'] }

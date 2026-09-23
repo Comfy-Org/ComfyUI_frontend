@@ -187,31 +187,31 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { vAutoAnimate } from '@formkit/auto-animate/vue'
 import { useAsyncState } from '@vueuse/core'
 import { useToast } from 'primevue/usetoast'
 import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import ComfyHubPublishIntroPanel from '@/platform/workflow/sharing/components/profile/ComfyHubPublishIntroPanel.vue'
-import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
-import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useTelemetry } from '@/platform/telemetry'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import ComfyHubPublishIntroPanel from '@/platform/workflow/sharing/components/profile/ComfyHubPublishIntroPanel.vue'
+import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
+import ShareUrlCopyField from '@/platform/workflow/sharing/components/ShareUrlCopyField.vue'
 import { useComfyHubPublishDialog } from '@/platform/workflow/sharing/composables/useComfyHubPublishDialog'
+import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
+import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
 import type {
   WorkflowPublishResult,
   WorkflowPublishStatus
 } from '@/platform/workflow/sharing/types/shareTypes'
-import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
-import { useShareFlowContext } from '@/platform/workflow/sharing/composables/useShareFlowContext'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useTelemetry } from '@/platform/telemetry'
 import { appendJsonExt } from '@/utils/formatUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { onClose } = defineProps<{
   onClose: () => void

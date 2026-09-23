@@ -1,7 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, shallowRef, effectScope } from 'vue'
 import type { EffectScope } from 'vue'
-import { useSettingStore } from '@/platform/settings/settingStore'
 
 import {
   getLoad3dOutputCache,
@@ -12,15 +11,16 @@ import {
   setLoad3dOutputCache,
   useLoad3d as useLoad3dImpl
 } from '@/composables/useLoad3d'
+import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import type { Size } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IWidget } from '@/lib/litegraph/src/types/widgets'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { api } from '@/scripts/api'
 import {
   createMockCanvasPointerEvent,

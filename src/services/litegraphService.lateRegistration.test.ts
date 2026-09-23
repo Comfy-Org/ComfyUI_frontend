@@ -1,10 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisedNode,
   SerialisableGraph
 } from '@/lib/litegraph/src/types/serialisation'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { LayoutOperation } from '@/renderer/core/layout/types'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'

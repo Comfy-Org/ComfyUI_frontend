@@ -1,10 +1,10 @@
-import type { Locator } from '@playwright/test'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Locator } from '@playwright/test'
+
 import { toNodeId } from '@/types/nodeId'
 
 type CropValue = { x: number; y: number; width: number; height: number } | null

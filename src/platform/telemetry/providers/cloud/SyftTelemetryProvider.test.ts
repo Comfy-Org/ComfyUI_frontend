@@ -1,5 +1,5 @@
-import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import type { useCurrentUser as realUseCurrentUser } from '@/composables/auth/useCurrentUser'
 

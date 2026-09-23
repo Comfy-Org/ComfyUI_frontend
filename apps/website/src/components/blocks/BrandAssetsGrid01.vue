@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import SafeRichText from '@/components/common/SafeRichTextContent'
+
 import Button from '../ui/button/Button.vue'
 
 type Asset = {

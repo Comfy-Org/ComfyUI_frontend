@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { PrimitiveProps } from 'reka-ui'
 import { Primitive, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 interface Props extends PrimitiveProps {
   class?: HTMLAttributes['class']

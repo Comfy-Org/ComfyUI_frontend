@@ -1,7 +1,8 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
-import { api } from '@/scripts/api'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
+
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { api } from '@/scripts/api'
 
 const mockLocalStorage = vi.hoisted(() => ({
   getItem: vi.fn(),

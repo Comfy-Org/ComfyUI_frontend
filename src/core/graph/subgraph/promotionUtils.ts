@@ -1,19 +1,19 @@
-import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import { addBreadcrumb } from '@sentry/vue'
-import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
-import { t } from '@/i18n'
-import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
-import type { LinkId } from '@/types/linkId'
-import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
-import { nextUniqueName } from '@/lib/litegraph/src/strings'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import cloneDeep from 'es-toolkit/compat/cloneDeep'
+
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
   supportsVirtualCanvasImagePreview
 } from '@/composables/node/canvasImagePreviewTypes'
+import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import { t } from '@/i18n'
+import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { nextUniqueName } from '@/lib/litegraph/src/strings'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
+import { reorderSubgraphInputs } from '@/lib/litegraph/src/subgraph/subgraphUtils'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import {
@@ -21,11 +21,12 @@ import {
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { LinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
 type RuntimeWidget = Omit<IBaseWidget, 'options'> &

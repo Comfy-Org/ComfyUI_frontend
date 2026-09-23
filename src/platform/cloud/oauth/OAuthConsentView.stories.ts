@@ -1,7 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
-import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
+import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
 
 const baseChallenge: OAuthConsentChallenge = {
   oauth_request_id: '550e8400-e29b-41d4-a716-446655440000',

@@ -1,9 +1,8 @@
+import { externalLinks } from '../config/routes'
 import type {
   ModelLaunchMedia,
   ModelLaunchPage
 } from '../templates/model-launch/types'
-
-import { externalLinks } from '../config/routes'
 
 // Gemini Omni 1.1 Flash renders, encoded to the site's web video profile and
 // served from media.comfy.org. Each poster is cut from its clip's own opening

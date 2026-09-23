@@ -1,7 +1,6 @@
-import { expect } from '@playwright/test'
-
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { expect } from '@playwright/test'
 
 test.describe('Workflow Tab Thumbnails', { tag: '@workflow' }, () => {
   async function getTab(comfyPage: ComfyPage, index: number) {

@@ -13,32 +13,31 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
+import type {
+  AgentPaywallAction,
+  AgentPaywallPresentation
+} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 
+import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
+import type { ComposerAttachment } from '../../composables/agent/useComposer'
+import type { TurnId } from '../../schemas/agentApiSchema'
+import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
+import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { ActiveTab } from '../../types/activeTab'
 import type {
   WorkflowReference,
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '../../types/workflowReference'
-import type { TurnId } from '../../schemas/agentApiSchema'
-import type { ComposerAttachment } from '../../composables/agent/useComposer'
-import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
-import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
-import type {
-  AgentPaywallAction,
-  AgentPaywallPresentation
-} from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
-import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
-import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
-
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
 import Composer from './Composer.vue'
+import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
 import ConversationView from './ConversationView.vue'
 import EmptyState from './EmptyState.vue'
 import PanelHeader from './PanelHeader.vue'
 import RunNoticeBanner from './RunNoticeBanner.vue'
-import WorkflowSelectorChip from './composer/WorkflowSelectorChip.vue'
 
 const {
   entries,

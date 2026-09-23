@@ -1,5 +1,5 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, watch } from 'vue'
 

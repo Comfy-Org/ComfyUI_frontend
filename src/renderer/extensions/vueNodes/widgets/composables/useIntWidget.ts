@@ -4,11 +4,11 @@ import type {
   INumericWidget
 } from '@/lib/litegraph/src/types/widgets'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { isIntInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { addValueControlWidget } from '@/scripts/widgets'
-import { transformInputSpecV2ToV1 } from '@/schemas/nodeDef/migration'
 
 function onValueChange(this: INumericWidget, v: number) {
   // For integers, always round to the nearest step

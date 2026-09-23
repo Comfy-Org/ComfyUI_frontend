@@ -51,8 +51,8 @@ import Popover from 'primevue/popover'
 import { nextTick, ref } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
-import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
+import { useDismissableOverlay } from '@/composables/useDismissableOverlay'
 
 defineProps<{ entries: MenuEntry[] }>()
 

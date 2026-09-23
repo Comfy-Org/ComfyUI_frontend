@@ -1,13 +1,13 @@
-import { cleanup, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { cleanup, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-import NodeSearchFilterBar from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import {
   createMockNodeDef,
   testI18n
 } from '@/components/searchbox/v2/__test__/testUtils'
+import NodeSearchFilterBar from '@/components/searchbox/v2/NodeSearchFilterBar.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 

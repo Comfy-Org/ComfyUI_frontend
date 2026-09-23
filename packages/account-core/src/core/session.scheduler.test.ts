@@ -1,13 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  AccountCredential,
-  AccountIdentity,
-  CrossTabRefreshPort,
-  ScheduledRefreshReport,
-  SessionClientOptions,
-  SessionSnapshot
-} from './session.js'
 import {
   EXCHANGE_URL,
   NINETY_MINUTES_MS,
@@ -16,8 +8,16 @@ import {
   mintResponse,
   testUser
 } from './__fixtures__/sessionFakes.js'
-import { createSessionClient } from './session.js'
 import { DEFAULT_BUFFER_MS } from './refreshScheduler.js'
+import type {
+  AccountCredential,
+  AccountIdentity,
+  CrossTabRefreshPort,
+  ScheduledRefreshReport,
+  SessionClientOptions,
+  SessionSnapshot
+} from './session.js'
+import { createSessionClient } from './session.js'
 
 function makeClient(
   overrides: Partial<SessionClientOptions> = {},

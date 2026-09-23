@@ -1,6 +1,5 @@
-import type { ModelLaunchPage } from '../templates/model-launch/types'
-
 import { externalLinks } from '../config/routes'
+import type { ModelLaunchPage } from '../templates/model-launch/types'
 
 // The full structured caption + lyrics behind each track. The card clamps this
 // to five lines on screen; the copy button hands over the whole thing. It is a

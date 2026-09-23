@@ -1,7 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import AgentConsentCard from '@/workbench/extensions/agent/components/agent/AgentConsentCard.vue'
 
 const MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'

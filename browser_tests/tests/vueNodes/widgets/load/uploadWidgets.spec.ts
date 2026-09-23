@@ -1,5 +1,4 @@
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test

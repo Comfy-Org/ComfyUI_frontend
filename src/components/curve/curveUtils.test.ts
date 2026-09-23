@@ -1,12 +1,11 @@
 import { describe, expect, it } from 'vitest'
 
-import type { CurvePoint } from './types'
-
 import {
   createLinearInterpolator,
   createMonotoneInterpolator,
   curvesToLUT
 } from './curveUtils'
+import type { CurvePoint } from './types'
 
 describe('createMonotoneInterpolator', () => {
   it('returns 0 for empty points', () => {

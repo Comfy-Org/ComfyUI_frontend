@@ -1,29 +1,28 @@
-import { getActivePinia } from 'pinia'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import type { RenderOptions } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { toNodeId } from '@/types/nodeId'
 import { defineComponent, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { NodeState } from '@/types/nodeState'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeId as VueNodeId } from '@/renderer/core/layout/types'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { toNodeId } from '@/types/nodeId'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
+import type { NodeState } from '@/types/nodeState'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
 import {
   createMockNodeInputSlot,

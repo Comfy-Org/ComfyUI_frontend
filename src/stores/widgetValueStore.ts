@@ -1,16 +1,17 @@
 import { defineStore } from 'pinia'
 import { reactive, ref } from 'vue'
 
-import type { UUID } from '@/utils/uuid'
+import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import {
   isWidgetId,
   parseWidgetId,
   widgetId as createWidgetId
 } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
-import type { WidgetValue } from '@/types/simplifiedWidget'
 import type { WidgetState, WidgetStateInit } from '@/types/widgetState'
 import {
   applyLegacyHiddenWrite,
@@ -19,8 +20,7 @@ import {
   setWidgetHiddenInPanel
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
+import type { UUID } from '@/utils/uuid'
 
 export interface WidgetRenderState {
   hasLayoutSize?: boolean

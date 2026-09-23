@@ -12,13 +12,13 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
+import { crdtTest } from './__fixtures__/crdtSession'
+import type { CreateCrdtSession } from './__fixtures__/crdtSession'
 import {
   nodeDef,
   savedNode,
   singleReferenceNode
 } from './__fixtures__/multiAutogrowInputOrder'
-import { crdtTest } from './__fixtures__/crdtSession'
-import type { CreateCrdtSession } from './__fixtures__/crdtSession'
 
 vi.mock(import('@/scripts/app'), () =>
   fromPartial<typeof AppModule>({

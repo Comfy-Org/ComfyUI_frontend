@@ -163,6 +163,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, toRef, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -170,7 +171,6 @@ import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useRangeEditor } from '@/composables/useRangeEditor'
 import { useTimelineScrub } from '@/composables/video/useTimelineScrub'
 import type { RangeValue } from '@/lib/litegraph/src/types/widgets'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const HANDLE_WIDTH_PX = 16
 const TRACK_CONTENT_SPAN = `(100% - ${HANDLE_WIDTH_PX * 2}px)`

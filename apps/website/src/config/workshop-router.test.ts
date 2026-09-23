@@ -1,20 +1,20 @@
+import { z } from 'astro/zod'
 import { describe, expect, it, vi } from 'vitest'
 
-import { runSynchronousWorkshopRouter } from './workshop-router'
-import { prepareWorkshopRouterInput } from './workshop-request'
-import { WorkshopRouterError } from './workshop-router-errors'
-import { workshopContract } from './workshop-contract-catalog'
+import contracts from '../content/workshop-router-contracts.json'
+import bindings from '../data/workshop-router-bindings.json'
 import { workshopContractSchema } from './workshop-contract'
-import { z } from 'astro/zod'
-import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
+import { workshopContract } from './workshop-contract-catalog'
+import { validateWorkshopInput } from './workshop-json-schema'
 import {
   defaultValues,
   schemaForModel,
   validateForm
 } from './workshop-playground'
-import contracts from '../content/workshop-router-contracts.json'
-import bindings from '../data/workshop-router-bindings.json'
-import { validateWorkshopInput } from './workshop-json-schema'
+import { prepareWorkshopRouterInput } from './workshop-request'
+import { runSynchronousWorkshopRouter } from './workshop-router'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
+import { WorkshopRouterError } from './workshop-router-errors'
 
 function contractFor(id: string) {
   const contract = workshopContract(id)

@@ -1,9 +1,7 @@
-import type { Locator, Page, Route } from '@playwright/test'
-
 import type { components } from '@comfyorg/registry-types'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
+import type { Locator, Page, Route } from '@playwright/test'
 
 type ReleaseNote = components['schemas']['ReleaseNote']
 

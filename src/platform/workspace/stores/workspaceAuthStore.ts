@@ -1,39 +1,38 @@
-import type { User } from 'firebase/auth'
-import { defineStore } from 'pinia'
-import { computed, ref, shallowRef, watch } from 'vue'
-
 import type {
   ScheduledRefreshReport,
   SessionErrorCode
 } from '@comfyorg/account-core/session'
-import { createWebCrossTabRefreshPort } from '@comfyorg/account-core/web'
 import {
   SESSION_ERROR_CODES,
   createSessionClient,
   isPermanentSessionError
 } from '@comfyorg/account-core/session'
+import { createWebCrossTabRefreshPort } from '@comfyorg/account-core/web'
+import type { User } from 'firebase/auth'
+import { defineStore } from 'pinia'
+import { computed, ref, shallowRef, watch } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
-import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { isCloud } from '@/platform/distribution/types'
 import { useTelemetry } from '@/platform/telemetry'
 import type { UnifiedAuthRefreshOutcome } from '@/platform/telemetry/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { prepareWorkflowWorkspaceTransition } from '@/platform/workflow/persistence/base/storageIO'
+import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { createLegacyWorkspaceTokenRail } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
+import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { WorkspaceAuthError } from '@/platform/workspace/stores/workspaceAuthError'
 import {
   MAX_SCHEDULED_REFRESH_RETRIES,
   TOKEN_REFRESH_BUFFER_MS,
   WORKSPACE_STORAGE_KEYS
 } from '@/platform/workspace/workspaceConstants'
-import { createLegacyWorkspaceTokenRail } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
-import type { WorkspaceTokenResponse } from '@/platform/workspace/stores/legacyWorkspaceTokenRail'
-import { WorkspaceAuthError } from '@/platform/workspace/stores/workspaceAuthError'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import { useAuthStore } from '@/stores/authStore'
 import type { WorkspaceIdentity } from '@/platform/workspace/workspaceTypes'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { isCloud } from '@/platform/distribution/types'
-import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
+import { useAuthStore } from '@/stores/authStore'
 
 export { WorkspaceAuthError }
 // The e2e fixtures import this type from the store path.

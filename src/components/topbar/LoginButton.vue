@@ -36,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import Popover from 'primevue/popover'
 import type { HTMLAttributes } from 'vue'
 import { ref } from 'vue'
@@ -44,7 +45,6 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useExternalLink } from '@/composables/useExternalLink'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: className } = defineProps<{
   class?: HTMLAttributes['class']

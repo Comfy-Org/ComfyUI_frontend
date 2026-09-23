@@ -1,6 +1,3 @@
-import { mergeTests } from '@playwright/test'
-import type { Locator, Page, Request } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import {
   comfyExpect as expect,
@@ -13,6 +10,9 @@ import {
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { mergeTests } from '@playwright/test'
+import type { Locator, Page, Request } from '@playwright/test'
+
 import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture, jobsRouteFixture)

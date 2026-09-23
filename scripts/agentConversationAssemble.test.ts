@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import type { z } from 'zod'
 
+import { HostDoc } from '../browser_tests/fixtures/agentConversationHostDoc'
+import { OP_ENVELOPE_KEYS } from '../browser_tests/fixtures/data/agent/agentConversation'
+import type { GraphOperation } from '../src/workbench/extensions/agent/crdt/graphOperations'
 import type {
   AssembleInput,
   NormalizedRows,
@@ -10,9 +13,6 @@ import type {
   SeedFixture
 } from './agentConversationAssemble'
 import { assembleConversation, zRowsDump } from './agentConversationAssemble'
-import { HostDoc } from '../browser_tests/fixtures/agentConversationHostDoc'
-import type { GraphOperation } from '../src/workbench/extensions/agent/crdt/graphOperations'
-import { OP_ENVELOPE_KEYS } from '../browser_tests/fixtures/data/agent/agentConversation'
 
 const THREAD = 'thread-1'
 const MESSAGE = 'message-1'

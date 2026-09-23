@@ -1,10 +1,10 @@
 import { z } from 'astro/zod'
 
-import type { WorkshopContract } from './workshop-contract'
 import type { WorkshopExampleValues } from './models-catalogue'
+import type { WorkshopContract } from './workshop-contract'
 import { formForContract } from './workshop-contract'
-import { schemaForModel, validateForm } from './workshop-playground'
 import { workshopExampleFiles } from './workshop-example-file'
+import { schemaForModel, validateForm } from './workshop-playground'
 
 const mediaSchema = z.array(z.object({ role: z.string(), value: z.string() }))
 const scalar = z.union([z.string(), z.number(), z.boolean()])

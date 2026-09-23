@@ -1,5 +1,6 @@
-import vue from '@vitejs/plugin-vue'
 import { fileURLToPath } from 'node:url'
+
+import vue from '@vitejs/plugin-vue'
 import { defineConfig } from 'vitest/config'
 
 // Dates render through Intl; a fixed zone keeps a formatted date the same

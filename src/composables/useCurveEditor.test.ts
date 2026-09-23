@@ -3,8 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 import type { Ref } from 'vue'
 
-import { useCurveEditor } from '@/composables/useCurveEditor'
 import type { CurveInterpolation, CurvePoint } from '@/components/curve/types'
+import { useCurveEditor } from '@/composables/useCurveEditor'
 
 const mockCreateInterpolator = vi.hoisted(() =>
   vi.fn((points: CurvePoint[]) => {

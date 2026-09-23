@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   DropdownMenuContent,
   DropdownMenuItem,
@@ -23,29 +24,27 @@ import {
 import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import Tag from '@/components/chip/Tag.vue'
+import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
 
-import InlinePromptEditor from './composer/InlinePromptEditor.vue'
-import { composerPromptForSend } from '../../utils/composerPrompt'
 import { useAgentMentionPicker } from '../../composables/agent/useAgentMentionPicker'
-import { useWorkflowReferencePicker } from '../../composables/agent/useWorkflowReferencePicker'
-import type { ComposerAttachment } from '../../composables/agent/useComposer'
-import { useComposer } from '../../composables/agent/useComposer'
 import type { SelectedNode } from '../../composables/agent/useCanvasSelection'
 import { selectedNodeKey } from '../../composables/agent/useCanvasSelection'
+import type { ComposerAttachment } from '../../composables/agent/useComposer'
+import { useComposer } from '../../composables/agent/useComposer'
+import { useWorkflowReferencePicker } from '../../composables/agent/useWorkflowReferencePicker'
 import type {
   PromptSnapshot,
   WorkflowReference,
   WorkflowReferenceMetadata,
   WorkflowReferenceOption
 } from '../../types/workflowReference'
-import { cn } from '@comfyorg/tailwind-utils'
-
+import { composerPromptForSend } from '../../utils/composerPrompt'
 import AttachmentChip from './composer/AttachmentChip.vue'
+import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import RunModePopover from './composer/RunModePopover.vue'
 
 const {

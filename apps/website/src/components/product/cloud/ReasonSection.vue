@@ -1,9 +1,7 @@
 <script setup lang="ts">
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
-
 import type { Reason } from '../shared/ReasonSection.vue'
-
 import ReasonSection from '../shared/ReasonSection.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

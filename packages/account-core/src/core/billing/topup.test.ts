@@ -3,13 +3,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SessionClient, SessionSnapshot } from '../session.js'
 import type { AccountCredential } from '../sessionContracts.js'
 import { createBalanceWatch } from './balanceWatch.js'
-import { sessionBillingScopeSource } from './billingScope.js'
 import type {
   BillingHttpResponse,
   BillingRequest,
   BillingResult,
   BillingTransport
 } from './billingContracts.js'
+import { sessionBillingScopeSource } from './billingScope.js'
 import { createCapabilitiesReader } from './capabilities.js'
 import { driveEmbeddedChallenge } from './challengeDriver.js'
 import { createCreditsReader } from './credits.js'

@@ -1,3 +1,5 @@
+import { toRaw } from 'vue'
+
 import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
@@ -7,21 +9,18 @@ import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
+import type { EndpointPatch } from '@/stores/linkStore'
 import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
-import { zeroUuid } from '@/utils/uuid'
 import { toLinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
-import { toRerouteId } from '@/types/rerouteId'
-
-import type { EndpointPatch } from '@/stores/linkStore'
 import type { LinkId } from '@/types/linkId'
 import type { LinkTopology } from '@/types/linkTopology'
-import type { RerouteId } from '@/types/rerouteId'
-import type { LGraph } from './LGraph'
-import type { LGraphNode } from './LGraphNode'
+import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
-import type { Reroute } from './Reroute'
+import { toRerouteId } from '@/types/rerouteId'
+import type { RerouteId } from '@/types/rerouteId'
+import { zeroUuid } from '@/utils/uuid'
+
 import type {
   CanvasColour,
   INodeInputSlot,
@@ -32,8 +31,10 @@ import type {
   Point,
   ReadonlyLinkNetwork
 } from './interfaces'
+import type { LGraph } from './LGraph'
+import type { LGraphNode } from './LGraphNode'
+import type { Reroute } from './Reroute'
 import type { Serialisable, SerialisableLLink } from './types/serialisation'
-import { toRaw } from 'vue'
 
 export type { LinkId } from '@/types/linkId'
 export type SerialisedLLinkArray = [

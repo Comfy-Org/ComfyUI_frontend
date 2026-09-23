@@ -5,9 +5,9 @@ import {
   FakeIntersectionObserver,
   stubIntersectionObserver
 } from '../../test/fakeIntersectionObserver'
+import AngleNode from './AngleNode.vue'
 import type * as CameraWidgetModule from './camera/CameraWidget'
 import type { CameraWidgetOptions } from './camera/types'
-import AngleNode from './AngleNode.vue'
 
 const widgets = vi.hoisted(() => ({
   instances: [] as {

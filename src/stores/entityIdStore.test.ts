@@ -1,5 +1,5 @@
-import { computed } from 'vue'
 import { describe, expect, it } from 'vitest'
+import { computed } from 'vue'
 
 import { createLGraphState, mintNodeId } from '@/lib/litegraph/src/idAllocation'
 import type { UUID } from '@/utils/uuid'

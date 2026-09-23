@@ -1,4 +1,3 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
@@ -7,13 +6,14 @@ import { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
 import { createBoundaryLinkedSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { MissingNodeType } from '@/types/comfy'
+import { toNodeId } from '@/types/nodeId'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
-import { toNodeId } from '@/types/nodeId'
 import {
   nodeError,
   runtimeError,
@@ -28,8 +28,8 @@ import {
 } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
-import { useErrorGroups } from './useErrorGroups'
 import { createUnnormalisableModelErrorFixture } from './__tests__/absorptionFixtures'
+import { useErrorGroups } from './useErrorGroups'
 import { useHasBlockingError } from './useHasBlockingError'
 
 vi.mock(import('@/services/comfyRegistryService'), () => ({

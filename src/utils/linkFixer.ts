@@ -25,18 +25,18 @@
  * SOFTWARE.
  */
 import type { INodeOutputSlot } from '@/lib/litegraph/src/interfaces'
+import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
+import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
 import { NodeInputSlot } from '@/lib/litegraph/src/node/NodeInputSlot'
 import { NodeOutputSlot } from '@/lib/litegraph/src/node/NodeOutputSlot'
 import { outputLinkIds } from '@/lib/litegraph/src/node/slotLinks'
-import { toLinkId } from '@/types/linkId'
-import { parseNodeId } from '@/types/nodeId'
-import type { SerializedNodeId } from '@/types/nodeId'
-import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
-import type { LGraph, LGraphNode, LLink } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisedGraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import { toLinkId } from '@/types/linkId'
+import { parseNodeId } from '@/types/nodeId'
+import type { SerializedNodeId } from '@/types/nodeId'
 
 type FixableSerialisedGraph = Omit<ISerialisedGraph, 'links'> & {
   links: (SerialisedLLinkArray | null)[]

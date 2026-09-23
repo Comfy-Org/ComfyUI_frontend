@@ -1,10 +1,9 @@
-import { useAppModeStore } from '@/stores/appModeStore'
-import { useSettingStore } from '@/platform/settings/settingStore'
 import type { DetachedWindowAPI } from 'happy-dom'
 import { assert, afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import type {
   OnboardingTourStepStage,
@@ -12,6 +11,7 @@ import type {
 } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import type { AppMode } from '@/utils/appMode'
 

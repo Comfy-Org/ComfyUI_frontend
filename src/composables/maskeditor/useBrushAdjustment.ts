@@ -2,6 +2,7 @@ import { ref } from 'vue'
 
 import type { Point } from '@/extensions/core/maskeditor/types'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
+
 import { useCoordinateTransform } from './useCoordinateTransform'
 
 export function useBrushAdjustment(initialSettings?: {

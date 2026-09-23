@@ -63,15 +63,14 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-
+import { cn } from '@comfyorg/tailwind-utils'
 import { vAutoAnimate } from '@formkit/auto-animate/vue'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { ComfyHubPublishStep } from '@/platform/workflow/sharing/composables/useComfyHubPublishWizard'
-import { cn } from '@comfyorg/tailwind-utils'
-import { useI18n } from 'vue-i18n'
 
 type ComfyHubPrimaryStep = Exclude<ComfyHubPublishStep, 'profileCreation'>
 

@@ -1,17 +1,18 @@
-import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { markRaw } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
-import { api } from '@/scripts/api'
-import { app } from '@/scripts/app'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { decodePng } from '@/utils/__fixtures__/decodePng'
+
 import { useMaskEditorSaver } from './useMaskEditorSaver'
 
 let mockDataStore: ReturnType<typeof useMaskEditorDataStore>

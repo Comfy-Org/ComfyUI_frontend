@@ -18,7 +18,6 @@ import type { NodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-import type { MaterializableGraph } from './agentNodeMaterializer'
 import {
   AgentCrdtDocLifecycle,
   STALE_AFTER_MS,
@@ -26,9 +25,10 @@ import {
 } from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
-import { recordDevEvent } from './devPanelLog'
+import type { MaterializableGraph } from './agentNodeMaterializer'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
+import { recordDevEvent } from './devPanelLog'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'

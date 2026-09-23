@@ -1,16 +1,16 @@
-import { useExecutionStore } from '@/stores/executionStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useAppModeStore } from '@/stores/appModeStore'
-import { useJobPreviewStore } from '@/stores/jobPreviewStore'
-import { toNodeId } from '@/types/nodeId'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import type { Ref } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
-import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useJobPreviewStore } from '@/stores/jobPreviewStore'
+import { toNodeId } from '@/types/nodeId'
 
 const { apiTarget } = vi.hoisted(() => ({
   apiTarget: new EventTarget()

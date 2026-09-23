@@ -2,9 +2,8 @@ import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { defineComponent, h } from 'vue'
-import { createI18n } from 'vue-i18n'
-
 import type { ComponentProps } from 'vue-component-type-helpers'
+import { createI18n } from 'vue-i18n'
 
 import VideoEditPanel from './VideoEditPanel.vue'
 

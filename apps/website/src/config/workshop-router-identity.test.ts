@@ -1,26 +1,26 @@
 import { describe, expect, it } from 'vitest'
 
-import rawAudit from '../data/workshop-router-identity-audit.json'
-import availability from '../data/workshop-router-availability.json'
-import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
-import catalog from '../content/workshop-models.json'
 import display from '../content/workshop-display.json'
+import catalog from '../content/workshop-models.json'
 import packedAliases from '../content/workshop-router-aliases.json'
+import availability from '../data/workshop-router-availability.json'
+import rawAudit from '../data/workshop-router-identity-audit.json'
+import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
 import { filterWorkshopModels, countByModality } from './models-catalogue'
 import type { WorkshopModelDetail } from './models-catalogue'
 import {
   workshopModels,
   routerWorkshopModelPaths
 } from './workshop-browse-content'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
-import { workshopContract } from './workshop-contract-catalog'
 import { workshopContentInputs } from './workshop-content-inputs'
+import { workshopContract } from './workshop-contract-catalog'
 import { isWorkshopModelDisabled } from './workshop-model-availability'
 import {
   defaultValues,
   schemaForModel,
   validateForm
 } from './workshop-playground'
+import { getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   workshopIdentityAuditSchema,
   workshopRouterAliasesSchema

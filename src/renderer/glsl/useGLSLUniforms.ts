@@ -1,21 +1,20 @@
 import { computed } from 'vue'
-
 import type { ComputedRef } from 'vue'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
-import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
-import type { UUID } from '@/utils/uuid'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { isCurveData } from '@/components/curve/curveUtils'
 import type { CurveData } from '@/components/curve/types'
 import { createPromotedHostWidgetIdLookup } from '@/core/graph/subgraph/promotionUtils'
+import { SUBGRAPH_INPUT_ID } from '@/lib/litegraph/src/constants'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { GLSLRendererConfig } from '@/renderer/glsl/useGLSLRenderer'
-import { hexToInt } from '@/utils/colorUtil'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/types/nodeId'
 import type { WidgetId } from '@/types/widgetId'
 import { widgetId } from '@/types/widgetId'
+import { hexToInt } from '@/utils/colorUtil'
+import type { UUID } from '@/utils/uuid'
 
 interface AutogrowGroup {
   max: number

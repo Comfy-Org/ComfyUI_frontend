@@ -1,6 +1,7 @@
 import { assert, describe, expect, it, vi } from 'vitest'
 
-import { getAuthoredRouterWorkshopModelDetail } from './workshop-router-content'
+import { formForContract } from './workshop-contract'
+import { workshopContract } from './workshop-contract-catalog'
 import { initialWorkshopPageState } from './workshop-page-state'
 import {
   defaultValues,
@@ -9,8 +10,7 @@ import {
 } from './workshop-playground'
 import type { FormValues } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
-import { workshopContract } from './workshop-contract-catalog'
-import { formForContract } from './workshop-contract'
+import { getAuthoredRouterWorkshopModelDetail } from './workshop-router-content'
 
 const image = { name: 'image.png', size: 1, type: 'image/png' }
 

@@ -1,17 +1,16 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, useTemplateRef } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
+import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import HubTypeBadge from '../hub/HubTypeBadge.vue'
 import { getLogoPath } from '../../lib/hub/model-logos'
 import { taskLabelFor } from '../../lib/workshop/task-label'
+import HubTypeBadge from '../hub/HubTypeBadge.vue'
 import TagRow from '../hub/TagRow.vue'
 import ModelSupport from './ModelSupport.vue'
-import { usePreviewVideo } from '../../composables/usePreviewVideo'
 
 const {
   model,

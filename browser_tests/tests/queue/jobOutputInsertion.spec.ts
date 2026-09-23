@@ -1,11 +1,10 @@
-import { expect } from '@playwright/test'
-
 import { assetRequestIncludesTag } from '@e2e/fixtures/assetApiFixture'
 import { jobOutputInsertionCases } from '@e2e/fixtures/data/jobOutputInsertion'
 import { expectNoErrorUiAfterVerification } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { jobOutputInsertionTest as test } from '@e2e/fixtures/jobOutputInsertionFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { expect } from '@playwright/test'
 
 test.describe(
   'Job output insertion',

@@ -1,5 +1,3 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import type { ListAssetsResponse } from '@comfyorg/ingest-types'
 import {
   assetApiFixture,
@@ -7,6 +5,7 @@ import {
 } from '@e2e/fixtures/assetApiFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { withOutputAssets } from '@e2e/fixtures/helpers/AssetHelper'
+import { expect, mergeTests } from '@playwright/test'
 
 /**
  * The page size `useAssetsQuery` pins. Asserted as a literal rather than

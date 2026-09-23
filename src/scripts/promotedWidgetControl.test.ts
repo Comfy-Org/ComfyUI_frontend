@@ -2,11 +2,11 @@ import { describe, expect, it } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'

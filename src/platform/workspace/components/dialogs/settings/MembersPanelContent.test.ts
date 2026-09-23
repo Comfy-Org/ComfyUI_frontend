@@ -1,16 +1,15 @@
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Slots } from 'vue'
 import { computed, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import MembersPanelContent from './MembersPanelContent.vue'
-
 import type {
   WorkspacePendingInvite,
   WorkspaceMember
 } from '../../../stores/teamWorkspaceStore'
+import MembersPanelContent from './MembersPanelContent.vue'
 
 const mockHandleResendInvite = vi.fn()
 const mockHandleRevokeInvite = vi.fn()

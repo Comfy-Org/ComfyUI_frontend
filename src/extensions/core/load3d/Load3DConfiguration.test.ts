@@ -2,12 +2,6 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 
-import type Load3d from '@/extensions/core/load3d/Load3d'
-import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
-import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import type { ComfyApi } from '@/scripts/api'
-import type { ComfyApp } from '@/scripts/app'
-import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import type {
   CameraConfig,
   GizmoConfig,
@@ -16,16 +10,22 @@ import type {
   SceneConfig,
   StoredModelConfig
 } from '@/extensions/core/load3d/interfaces'
+import type Load3d from '@/extensions/core/load3d/Load3d'
+import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
+import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import type { Dictionary } from '@/lib/litegraph/src/interfaces'
+import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type {
   IBaseWidget,
   INumericWidget
 } from '@/lib/litegraph/src/types/widgets'
-import type { Dictionary } from '@/lib/litegraph/src/interfaces'
-import type { NodeProperty } from '@/lib/litegraph/src/LGraphNode'
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { Settings } from '@/platform/settings/types'
+import type { ComfyApi } from '@/scripts/api'
+import type { ComfyApp } from '@/scripts/app'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 
 vi.mock(import('@/scripts/api'), () => ({
   api: fromPartial<ComfyApi>({

@@ -1,14 +1,14 @@
 import { z } from 'astro/zod'
 
 import type { WorkshopCreatorForm } from './workshop-creator-form'
+import { loadWorkshopExampleFile } from './workshop-example-file-loader'
+import { workshopFileBase64 } from './workshop-file-encoding'
+import { encodedWorkshopFileBytes, MAX_REQUEST_BYTES } from './workshop-limits'
 import type { FormValues } from './workshop-playground'
 import { MAX_UPLOAD_BYTES } from './workshop-playground'
-import { workshopFileBase64 } from './workshop-file-encoding'
-import { WorkshopRouterError } from './workshop-router-errors'
-import { renderWorkshopRequestTemplate } from './workshop-request-template'
 import { prepareWorkshopRequestCallback } from './workshop-request-callbacks'
-import { loadWorkshopExampleFile } from './workshop-example-file-loader'
-import { encodedWorkshopFileBytes, MAX_REQUEST_BYTES } from './workshop-limits'
+import { renderWorkshopRequestTemplate } from './workshop-request-template'
+import { WorkshopRouterError } from './workshop-router-errors'
 
 export interface EncodedWorkshopFile {
   readonly data: string

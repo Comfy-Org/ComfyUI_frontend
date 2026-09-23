@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import { Coins as CreditsIcon } from '@lucide/vue'
 import { computed } from 'vue'
 
-import { Coins as CreditsIcon } from '@lucide/vue'
-
+import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 const {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   useEventListener,
   useInfiniteScroll,
@@ -17,19 +18,18 @@ import {
 } from 'vue'
 
 import { CanvasPointer } from '@/lib/litegraph/src/CanvasPointer'
-import OutputHistoryActiveQueueItem from '@/renderer/extensions/linearMode/OutputHistoryActiveQueueItem.vue'
-import OutputHistoryItem from '@/renderer/extensions/linearMode/OutputHistoryItem.vue'
-import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   OutputSelection,
   SelectionValue
 } from '@/renderer/extensions/linearMode/linearModeTypes'
+import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
+import OutputHistoryActiveQueueItem from '@/renderer/extensions/linearMode/OutputHistoryActiveQueueItem.vue'
+import OutputHistoryItem from '@/renderer/extensions/linearMode/OutputHistoryItem.vue'
 import OutputPreviewItem from '@/renderer/extensions/linearMode/OutputPreviewItem.vue'
 import { useOutputHistory } from '@/renderer/extensions/linearMode/useOutputHistory'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAppModeStore } from '@/stores/appModeStore'
 import { useQueueStore } from '@/stores/queueStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { outputs, allOutputs, selectFirstHistory, mayBeActiveWorkflowPending } =
   useOutputHistory()

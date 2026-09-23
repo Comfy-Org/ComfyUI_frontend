@@ -1,10 +1,9 @@
-import type { Locator } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
 import { mockViewFiles } from '@e2e/fixtures/utils/viewFileMocks'
+import type { Locator } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 class LayerEditorHelper {
   public readonly dialog: Locator

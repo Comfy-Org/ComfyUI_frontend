@@ -1,13 +1,12 @@
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useSubscribeToRunPromptPresence } from '@/platform/cloud/subscription/composables/useSubscribeCtaPresence'
+import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { render, screen } from '@testing-library/vue'
-
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useSubscribeToRunPromptPresence } from '@/platform/cloud/subscription/composables/useSubscribeCtaPresence'
 
 import TopbarSubscribeButton from './TopbarSubscribeButton.vue'
 

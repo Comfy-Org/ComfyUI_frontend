@@ -1,9 +1,8 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import type { DialogDescriptionProps } from 'reka-ui'
 import { DialogDescription } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { class: customClass = '', ...delegated } = defineProps<
   DialogDescriptionProps & { class?: HTMLAttributes['class'] }

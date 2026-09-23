@@ -1,7 +1,7 @@
 import { every, filter, head, isEmpty, isEqual, map } from 'es-toolkit/compat'
 
+import { t } from '@/i18n'
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
-import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import {
   LGraphCanvas,
   LGraphGroup,
@@ -19,14 +19,14 @@ import type {
   IComboWidget,
   WidgetCallbackOptions
 } from '@/lib/litegraph/src/types/widgets'
-import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeZIndex } from '@/renderer/extensions/vueNodes/composables/useNodeZIndex'
+import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
-import { t } from '@/i18n'
-import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID, parseNodeId } from '@/types/nodeId'
+import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import type { WidgetId } from '@/types/widgetId'
 import { ensureUniqueWidgetNames, widgetId } from '@/types/widgetId'
 

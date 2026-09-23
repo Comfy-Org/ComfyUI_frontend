@@ -1,11 +1,10 @@
-import { getActivePinia } from 'pinia'
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createI18n } from 'vue-i18n'
-
 import type { ComponentProps } from 'vue-component-type-helpers'
+import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'

@@ -1,8 +1,8 @@
-import type { Locator } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import { fitToViewInstant } from '@e2e/fixtures/utils/fitToView'
+import type { Locator } from '@playwright/test'
+
 import type { NodeId } from '@/types/nodeId'
 
 /** Minimum height gain (px) a reflow must produce to count as a grow. */

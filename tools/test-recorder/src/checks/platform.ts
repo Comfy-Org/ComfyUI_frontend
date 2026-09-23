@@ -1,4 +1,5 @@
 import os from 'node:os'
+
 import { pass } from '../ui/logger'
 import type { CheckResult } from './types'
 

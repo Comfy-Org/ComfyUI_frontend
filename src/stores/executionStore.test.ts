@@ -1,23 +1,23 @@
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useAppMode } from '@/composables/useAppMode'
-import { useTelemetry } from '@/platform/telemetry'
-import { app } from '@/scripts/app'
-import { api } from '@/scripts/api'
-import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
+import { useTelemetry } from '@/platform/telemetry'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { MAX_PROGRESS_JOBS, useExecutionStore } from '@/stores/executionStore'
 import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@/types/nodeIdentification'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
-import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
-import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
 
 const { mockRemoveTextPreview, mockShowTextPreview } = await vi.hoisted(
   async () => {
@@ -34,8 +34,8 @@ const defaultWorkflowExecutionIntent = {
 
 vi.mock(import('@/composables/useAppMode'))
 
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { toNodeId } from '@/types/nodeId'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true

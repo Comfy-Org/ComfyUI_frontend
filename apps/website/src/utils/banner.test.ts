@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import type { EvaluableBanner } from './banner'
-
 import {
   createBannerVersion,
   evaluateBannerVisibility,

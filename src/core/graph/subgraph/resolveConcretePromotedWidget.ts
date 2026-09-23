@@ -4,13 +4,13 @@ import type {
 } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { resolveSubgraphInputTarget } from '@/core/graph/subgraph/resolveSubgraphInputTarget'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
+import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
 
 import { hasPromotedWidgetTarget } from './hasPromotedWidgetTarget'
 

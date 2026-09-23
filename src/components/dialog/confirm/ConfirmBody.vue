@@ -11,10 +11,9 @@
   </div>
 </template>
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { promptText, preserveNewlines = false } = defineProps<{
   promptText?: MaybeRefOrGetter<string>

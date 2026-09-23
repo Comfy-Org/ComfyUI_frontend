@@ -1,14 +1,13 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
-
 import { nextTick, ref } from 'vue'
 
-import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
-import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { NodeLayout } from '@/renderer/core/layout/types'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
+import { useNodePointerInteractions } from '@/renderer/extensions/vueNodes/composables/useNodePointerInteractions'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 
 const forwardEventToCanvasMock = vi.fn()

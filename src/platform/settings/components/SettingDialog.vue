@@ -86,8 +86,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue'
 
-import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
+import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'
 import NavTitle from '@/components/widget/nav/NavTitle.vue'
@@ -96,13 +96,13 @@ import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMess
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
 import { useSettingUI } from '@/platform/settings/composables/useSettingUI'
-import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import type { SettingTreeNode } from '@/platform/settings/settingStore'
 import type {
   ISettingGroup,
   SettingPanelType,
   SettingParams
 } from '@/platform/settings/types'
+import { useSearchQueryTracking } from '@/platform/telemetry/searchQuery/useSearchQueryTracking'
 import { OnCloseKey } from '@/types/widgetTypes'
 import { flattenTree } from '@/utils/treeUtil'
 

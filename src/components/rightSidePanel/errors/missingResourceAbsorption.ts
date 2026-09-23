@@ -1,16 +1,15 @@
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import type { NodeExecutionId } from '@/types/nodeIdentification'
-import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { getLiftedErrorSource } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import type { LiftedErrorExtraInfo } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import type { PromptError } from '@/platform/remote/comfyui/types'
+import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   isImageNotLoadedValidationError,
   isMissingNodePromptError
 } from '@/utils/executionErrorUtil'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
-
-import type { PromptError } from '@/platform/remote/comfyui/types'
 
 export type MissingResourceAbsorption = 'missing_model' | 'missing_media'
 

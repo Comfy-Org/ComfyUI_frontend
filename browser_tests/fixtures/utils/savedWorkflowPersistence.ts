@@ -1,9 +1,8 @@
+import type { WorkflowListResponse } from '@comfyorg/ingest-types'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import type { Page } from '@playwright/test'
 
-import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-
-import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 /**
  * Captures every workflow save under `**\/api/userdata/*`, replays the exact

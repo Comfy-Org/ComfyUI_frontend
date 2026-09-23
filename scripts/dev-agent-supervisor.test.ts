@@ -1,9 +1,10 @@
+import type { ChildProcess } from 'node:child_process'
 // @vitest-environment node
 import { EventEmitter } from 'node:events'
-import type { ChildProcess } from 'node:child_process'
 import { rm } from 'node:fs/promises'
 import { createServer } from 'node:net'
 import type { AddressInfo } from 'node:net'
+
 import { describe, expect, it, vi } from 'vitest'
 
 import { assertFree, supervise, waitForStartup } from './dev-agent-supervisor'

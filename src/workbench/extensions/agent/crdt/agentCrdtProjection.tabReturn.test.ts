@@ -13,8 +13,8 @@ import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
 
-import { AgentCrdtProjection } from './agentCrdtProjection'
 import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
+import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
 import { createGraphMutations } from './graphMutations'
 

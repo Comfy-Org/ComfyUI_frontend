@@ -1,7 +1,7 @@
 import type { UploadImageResponse } from '@comfyorg/ingest-types'
+import { useElementSize } from '@vueuse/core'
 import type { Ref } from 'vue'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useElementSize } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import {
@@ -10,7 +10,6 @@ import {
 } from '@/composables/maskeditor/brushUtils'
 import { StrokeProcessor } from '@/composables/maskeditor/StrokeProcessor'
 import { setNodeWidgetValue } from '@/core/graph/widgets/nodeWidgetValues'
-import { hexToRgb } from '@/utils/colorUtil'
 import type { Point } from '@/extensions/core/maskeditor/types'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -20,6 +19,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { NodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
+import { hexToRgb } from '@/utils/colorUtil'
 
 type PainterTool = 'brush' | 'eraser'
 

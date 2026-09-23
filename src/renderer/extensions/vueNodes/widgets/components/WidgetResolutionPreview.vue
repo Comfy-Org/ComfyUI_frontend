@@ -22,6 +22,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -32,7 +33,6 @@ import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 import { useWidgetHeight } from '@/types/widgetTypes'
 import { resolveNode } from '@/utils/litegraphUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { WidgetInputBaseClass } from './layout'
 

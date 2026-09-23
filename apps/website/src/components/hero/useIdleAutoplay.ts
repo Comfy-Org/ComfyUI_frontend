@@ -1,13 +1,12 @@
 import { useElementVisibility, useRafFn } from '@vueuse/core'
-
 import type { Ref } from 'vue'
 import { computed, onScopeDispose, ref, watch } from 'vue'
 
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
-import type { AutoplayState } from './idleAutoplay'
-import { advanceAutoplay, isAutoplayDone, startAutoplay } from './idleAutoplay'
 import type { CameraPose } from './cameraVocabulary'
 import { clampAzimuth, clampElevation, clampZoom } from './cameraVocabulary'
+import type { AutoplayState } from './idleAutoplay'
+import { advanceAutoplay, isAutoplayDone, startAutoplay } from './idleAutoplay'
 
 /** How long the hero must sit untouched before the one-shot demo starts. */
 const START_DELAY = 1500

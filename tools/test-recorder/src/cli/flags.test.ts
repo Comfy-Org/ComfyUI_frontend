@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+
 import { parseFlags, parseTags } from './flags'
 
 describe('parseFlags', () => {

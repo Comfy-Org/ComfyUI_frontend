@@ -1,5 +1,5 @@
-import { effectScope, nextTick, ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope, nextTick, ref } from 'vue'
 
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'

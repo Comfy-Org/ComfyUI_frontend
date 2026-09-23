@@ -1,10 +1,10 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { computed, ref } from 'vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 
 import { usePricingTableUrlLoader } from './usePricingTableUrlLoader'
 

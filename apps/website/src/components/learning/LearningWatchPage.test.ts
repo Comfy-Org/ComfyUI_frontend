@@ -2,9 +2,8 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 
 import type { LearningTutorial } from '../../data/learningTutorials'
-import type { Locale } from '../../i18n/translations'
-
 import { filterByCategory } from '../../data/learningTutorials'
+import type { Locale } from '../../i18n/translations'
 import LearningWatchPage from './LearningWatchPage.vue'
 
 const youtubeTutorial = filterByCategory('basics').find(

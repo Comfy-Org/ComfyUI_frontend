@@ -1,8 +1,7 @@
 <script setup lang="ts">
+import { useNodesByCategory } from '../../composables/useNodesByCategory'
 import type { PackNode } from '../../data/cloudNodes'
 import type { Locale } from '../../i18n/translations'
-
-import { useNodesByCategory } from '../../composables/useNodesByCategory'
 import { t } from '../../i18n/translations'
 
 const { locale = 'en', nodes } = defineProps<{

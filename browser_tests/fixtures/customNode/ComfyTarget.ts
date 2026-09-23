@@ -1,5 +1,3 @@
-import type { Page } from '@playwright/test'
-
 import type { ObjectInfo } from '@e2e/fixtures/customNode/objectInfoValidator'
 import type { RawPromptEvent } from '@e2e/fixtures/customNode/promptEventScope'
 import {
@@ -15,6 +13,7 @@ import {
 import type { RunResult } from '@e2e/fixtures/customNode/runResult'
 import { classifyRun } from '@e2e/fixtures/customNode/runResult'
 import { onPromptIdResponse } from '@e2e/fixtures/utils/customNodeSuite'
+import type { Page } from '@playwright/test'
 
 export { isServerSideFault } from '@e2e/fixtures/customNode/promptSubmission'
 

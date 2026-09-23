@@ -3,31 +3,31 @@ import { describe, expect, it } from 'vitest'
 import { liftNodeErrorsToBoundary } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import {
   createBoundaryLinkedSubgraph,
   createTestRootGraph,
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
-import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import { scanAllModelCandidates } from '@/platform/missingModel/missingModelScan'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import {
   createMissingMediaCandidate,
   createPromotedMediaRuntime,
   seedMediaNodeDefs
 } from '@/platform/missingMedia/__fixtures__/promotedMedia'
 import { scanAllMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
+import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { scanAllModelCandidates } from '@/platform/missingModel/missingModelScan'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { toNodeId } from '@/types/nodeId'
+import { createNodeExecutionId } from '@/types/nodeIdentification'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
+import type { NodeValidationError } from '@/utils/executionErrorUtil'
 import {
   getExecutionIdByNode,
   isCandidateScopeActive
 } from '@/utils/graphTraversalUtil'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { createNodeExecutionId } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
-import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
-import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
 import { classifyPanelErrors } from './errorSeverityClassification'
 import { classifyValidationErrorAbsorption } from './missingResourceAbsorption'

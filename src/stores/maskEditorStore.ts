@@ -1,8 +1,9 @@
-import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
 import { clamp } from 'es-toolkit/compat'
+import { defineStore } from 'pinia'
 import type { TgpuRoot } from 'typegpu'
+import { computed, ref, watch } from 'vue'
 
+import { useCanvasHistory } from '@/composables/maskeditor/useCanvasHistory'
 import {
   BrushShape,
   ColorComparisonMethod,
@@ -15,7 +16,6 @@ import type {
   Offset,
   Point
 } from '@/extensions/core/maskeditor/types'
-import { useCanvasHistory } from '@/composables/maskeditor/useCanvasHistory'
 
 export const useMaskEditorStore = defineStore('maskEditor', () => {
   const brushSettings = ref<Brush>({

@@ -1,6 +1,5 @@
-import { describe, expect, it, vi } from 'vitest'
-
 import type { HostedTopupCheckoutResult } from '@comfyorg/account-core/billing'
+import { describe, expect, it, vi } from 'vitest'
 
 import { workshopTopupCommand } from '../../config/workshop-billing-sdk'
 import { readBillingSdkTopupEnabled } from '../../config/workshop-features'

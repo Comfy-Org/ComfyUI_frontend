@@ -1,9 +1,8 @@
-import type { Response } from '@playwright/test'
-import { expect } from '@playwright/test'
-
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import type { Response } from '@playwright/test'
+import { expect } from '@playwright/test'
 
 /** Dismiss the error overlay (the floating dialog with the dismiss button). */
 export async function dismissErrorOverlay(comfyPage: ComfyPage): Promise<void> {

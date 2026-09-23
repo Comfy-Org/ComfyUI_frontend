@@ -5,9 +5,6 @@ import type { GroupId } from '@/types/groupId'
 import { toGroupId } from '@/types/groupId'
 import { hexToRgb, luminance, readableTextColor } from '@/utils/colorUtil'
 
-import type { LGraph } from './LGraph'
-import { LGraphCanvas } from './LGraphCanvas'
-import { LGraphNode } from './LGraphNode'
 import { strokeShape } from './draw'
 import { createMutationView } from './infrastructure/createMutationView'
 import type {
@@ -20,6 +17,9 @@ import type {
   Rect,
   Size
 } from './interfaces'
+import type { LGraph } from './LGraph'
+import { LGraphCanvas } from './LGraphCanvas'
+import { LGraphNode } from './LGraphNode'
 import { LiteGraph, Rectangle } from './litegraph'
 import {
   containsCentre,

@@ -1,4 +1,3 @@
-import { useExecutionStore } from '@/stores/executionStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -9,11 +8,12 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
+import { useExecutionStore } from '@/stores/executionStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
-import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 import {
   createMockLGraph,
   createMockLGraphNode

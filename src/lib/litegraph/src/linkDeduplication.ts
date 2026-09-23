@@ -1,13 +1,16 @@
+import cloneDeep from 'es-toolkit/compat/cloneDeep'
+
 import { useTelemetry } from '@/platform/telemetry'
 import { useLinkStore } from '@/stores/linkStore'
-import { graphScopeOf } from '@/types/graphScopeId'
 import type { EndpointUpdate } from '@/stores/linkStore'
+import { graphScopeOf } from '@/types/graphScopeId'
 import { parseLinkId, toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
-import cloneDeep from 'es-toolkit/compat/cloneDeep'
+
 import type { LGraph } from './LGraph'
 import type { LinkId, LLink, SerialisedLLinkArray } from './LLink'
+import { NodeSlotType } from './types/globalEnums'
 import type {
   ExportedSubgraph,
   ISerialisedGraph,
@@ -15,7 +18,6 @@ import type {
   SerialisableGraph,
   SerialisableLLink
 } from './types/serialisation'
-import { NodeSlotType } from './types/globalEnums'
 
 type ConfiguredGraph = (ISerialisedGraph | SerialisableGraph) &
   Partial<Pick<ExportedSubgraph, 'inputs' | 'outputs' | 'reroutes'>>

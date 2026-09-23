@@ -1,3 +1,9 @@
+import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
+import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import {
+  STABLE_CHECKPOINT,
+  STABLE_INPUT_IMAGE
+} from '@e2e/fixtures/data/assetFixtures'
 /**
  * FE-230: Deleting an asset must clear the Load Image node preview, widget
  * value, and mark the workflow dirty.
@@ -12,13 +18,6 @@
  */
 import type { Page, Route } from '@playwright/test'
 import { expect } from '@playwright/test'
-
-import type { Asset, ListAssetsResponse } from '@comfyorg/ingest-types'
-import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
-import {
-  STABLE_CHECKPOINT,
-  STABLE_INPUT_IMAGE
-} from '@e2e/fixtures/data/assetFixtures'
 
 // The asset name must match the dropped file so that the deletion flow's
 // widget-value matching (name + `name [input]`) actually targets the same

@@ -4,12 +4,12 @@ import type {
   BillingStatusResponse as IngestBillingStatusResponse
 } from '@comfyorg/ingest-types'
 
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   Member,
   Plan,
   WorkspaceWithRole
 } from '@/platform/workspace/api/workspaceApi'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 export const CLOUD_REMOTE_CONFIG: RemoteConfig = {}
 

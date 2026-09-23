@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { Locale, TranslationKey } from '../../i18n/translations'
 import { Clock } from '@lucide/vue'
 
-import { t } from '../../i18n/translations'
 import SafeRichText from '@/components/common/SafeRichTextContent'
+
+import type { Locale, TranslationKey } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import CheckIcon from '../icons/CheckIcon.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()

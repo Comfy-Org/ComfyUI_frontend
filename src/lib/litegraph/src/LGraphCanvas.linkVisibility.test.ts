@@ -2,19 +2,19 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { i18n, loadLocale } from '@/i18n'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   drawHiddenLinkBadges,
   layoutHiddenLinkBadges
 } from '@/lib/litegraph/src/canvas/linkBadges'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
-import { toLinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas,

@@ -1,5 +1,3 @@
-import { mergeTests } from '@playwright/test'
-
 import {
   comfyPageFixture as test,
   comfyExpect as expect
@@ -10,8 +8,9 @@ import {
 } from '@e2e/fixtures/helpers/ErrorsTabHelper'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
-import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { PropertiesPanelHelper } from '@e2e/tests/propertiesPanel/PropertiesPanelHelper'
+import { mergeTests } from '@playwright/test'
 
 const webSocketTest = mergeTests(test, webSocketFixture)
 

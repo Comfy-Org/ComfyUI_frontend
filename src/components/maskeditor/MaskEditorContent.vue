@@ -70,6 +70,7 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 
+import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import { useImageLoader } from '@/composables/maskeditor/useImageLoader'
 import { useKeyboard } from '@/composables/maskeditor/useKeyboard'
 import { useMaskEditorLoader } from '@/composables/maskeditor/useMaskEditorLoader'
@@ -79,8 +80,6 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
-
-import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 
 import BrushCursor from './BrushCursor.vue'
 import PointerZone from './PointerZone.vue'

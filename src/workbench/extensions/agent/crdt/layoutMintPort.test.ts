@@ -1,6 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import type { RootGraphId } from '@/types/graphScopeId'

@@ -1,9 +1,8 @@
+import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { describe, expect, it } from 'vitest'
 
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
-
-import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 
 describe('HostDoc.applyWire', () => {
   it('acknowledges a duplicate operation as skipped without broadcasting an update', () => {

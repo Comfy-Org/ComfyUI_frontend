@@ -1,10 +1,10 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { getActivePinia } from 'pinia'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { defineComponent, nextTick } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useIntersectionObserver } from '@vueuse/core'
+import { getActivePinia } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent, nextTick } from 'vue'
 
 const intersectionCallbacks = vi.hoisted(
   () => [] as ((entries: { isIntersecting: boolean }[]) => void)[]
@@ -21,12 +21,12 @@ vi.mocked(useIntersectionObserver).mockImplementation((_target, callback) => {
 })
 
 import { i18n } from '@/i18n'
+
 import type { TurnId } from '../../schemas/agentApiSchema'
 import { zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
-
 import ConversationView from './ConversationView.vue'
 
 const T = 'msg-1' as TurnId

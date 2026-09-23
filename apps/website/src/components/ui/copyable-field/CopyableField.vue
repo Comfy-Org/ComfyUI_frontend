@@ -2,7 +2,6 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { Check, Copy } from '@lucide/vue'
 import { useClipboard } from '@vueuse/core'
-
 import { computed } from 'vue'
 
 // Interactive: the copy button is inert until its host island is hydrated.

@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-
 import { externalLinks, getRoutes } from '../../config/routes'
+import type { Locale } from '../../i18n/translations'
 import PricingFreeBanner from './PricingFreeBanner.vue'
 import PricingSection from './PricingSection.vue'
 

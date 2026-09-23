@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   Check,
   Clock,
@@ -10,10 +11,8 @@ import {
 } from '@lucide/vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Button from '@/components/ui/button/Button.vue'
-import { externalLinks } from '../../config/routes'
+
 import {
   MAX_TOP_UP_USD,
   MIN_TOP_UP_USD,
@@ -21,6 +20,7 @@ import {
   clampTopUp,
   usdToCredits
 } from '../../config/credits'
+import { externalLinks } from '../../config/routes'
 import {
   clearTopUpWatch,
   refreshWorkshopCredits,
@@ -32,16 +32,16 @@ import { WORKSHOP_CREDITS_URL } from '../../config/workshop-env'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import type { TopUpCheckoutSession } from '../../lib/workshop/buy-credits'
+import { TopUpCheckoutError } from '../../lib/workshop/buy-credits'
+import { createWorkshopTopUpCheckout } from '../../lib/workshop/buy-credits-sdk'
+import { subscribeToTopUpReturns } from '../../lib/workshop/topup-return'
 import { captureWorkshopEvent } from '../../scripts/posthog'
 import type { WorkshopCheckoutFailureStage } from '../../scripts/workshop-analytics'
 import {
   workshopCheckoutErrorCode,
   workshopHttpStatus
 } from '../../scripts/workshop-analytics'
-import type { TopUpCheckoutSession } from '../../lib/workshop/buy-credits'
-import { TopUpCheckoutError } from '../../lib/workshop/buy-credits'
-import { createWorkshopTopUpCheckout } from '../../lib/workshop/buy-credits-sdk'
-import { subscribeToTopUpReturns } from '../../lib/workshop/topup-return'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogDescription from '../ui/dialog/DialogDescription.vue'

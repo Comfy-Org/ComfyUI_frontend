@@ -1,16 +1,15 @@
-import { effectScope } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { effectScope } from 'vue'
 
 import {
   clearRootLinkReveals,
   isLinkRevealed
 } from '@/lib/litegraph/src/canvas/linkRevealState'
-import { toLinkId } from '@/types/linkId'
-import { toNodeId } from '@/types/nodeId'
-
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
 
 import { useSlotLinkReveal } from './useSlotLinkReveal'
 

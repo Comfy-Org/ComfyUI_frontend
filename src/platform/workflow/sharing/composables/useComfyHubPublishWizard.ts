@@ -2,12 +2,12 @@ import { useStepper } from '@vueuse/core'
 import { v4 as uuidv4 } from 'uuid'
 import { computed, ref } from 'vue'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ComfyHubPublishFormData,
   ExampleImage
 } from '@/platform/workflow/sharing/types/comfyHubTypes'
 import type { PublishPrefill } from '@/platform/workflow/sharing/types/shareTypes'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { normalizeTags } from '@/platform/workflow/sharing/utils/normalizeTags'
 
 const PUBLISH_STEPS = [

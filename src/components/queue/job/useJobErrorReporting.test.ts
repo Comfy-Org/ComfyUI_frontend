@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import type { ComputedRef } from 'vue'
 
-import type { TaskItemImpl } from '@/stores/queueStore'
 import type { JobErrorDialogService } from '@/components/queue/job/useJobErrorReporting'
 import { useJobErrorReporting } from '@/components/queue/job/useJobErrorReporting'
 import type { ExecutionError } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { TaskItemImpl } from '@/stores/queueStore'
 
 const createTaskWithError = (
   jobId: string,

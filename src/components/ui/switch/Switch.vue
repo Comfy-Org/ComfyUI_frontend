@@ -1,8 +1,7 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { SwitchRoot, SwitchThumb } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   class: customClass = '',

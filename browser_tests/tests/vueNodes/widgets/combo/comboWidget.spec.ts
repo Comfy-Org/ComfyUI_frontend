@@ -1,12 +1,11 @@
-import type { Locator } from '@playwright/test'
-
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
-import { TestIds } from '@e2e/fixtures/selectors'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { intersection } from '@e2e/fixtures/utils/boundsUtils'
+import type { Locator } from '@playwright/test'
 
 test.describe('Vue Combo Widget', { tag: ['@vue-nodes', '@widget'] }, () => {
   async function openSamplerDropdown(comfyPage: ComfyPage) {

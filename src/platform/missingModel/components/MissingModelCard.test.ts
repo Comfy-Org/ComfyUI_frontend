@@ -1,18 +1,18 @@
-import { getActivePinia } from 'pinia'
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { downloadModel } from '@/platform/missingModel/missingModelDownload'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type {
   MissingModelGroup,
   MissingModelViewModel
 } from '@/platform/missingModel/types'
-import { downloadModel } from '@/platform/missingModel/missingModelDownload'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 
 const mockDownloadModel = vi.mocked(downloadModel)
 

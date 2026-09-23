@@ -1,6 +1,3 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,11 +5,14 @@ import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   BillingStatus,
   WorkspaceType
 } from '@/platform/workspace/api/workspaceApi'
 import BillingStatusBanner from '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useDialogService } from '@/services/dialogService'
 
 interface Subscription {
   hasFunds: boolean

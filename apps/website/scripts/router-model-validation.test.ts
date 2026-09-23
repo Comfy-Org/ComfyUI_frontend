@@ -1,19 +1,19 @@
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { selectRouterModels } from './router-model-selection'
-import { invalidRouterModelInputs } from './router-model-validation-cases'
-import { getAuthoredRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
-import {
-  initialWorkshopPageState,
-  workshopExampleState
-} from '../src/config/workshop-page-state'
 import {
   resolveModelRouterRender,
   router_render
 } from '../src/config/router-render'
-import { validateWorkshopMediaInputs } from '../src/config/workshop-media-validation'
 import { readWorkshopVideoDuration } from '../src/config/workshop-media-metadata'
+import { validateWorkshopMediaInputs } from '../src/config/workshop-media-validation'
+import {
+  initialWorkshopPageState,
+  workshopExampleState
+} from '../src/config/workshop-page-state'
+import { getAuthoredRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
 import type { WorkshopUrlEncoder } from '../src/config/workshop-url-input'
+import { selectRouterModels } from './router-model-selection'
+import { invalidRouterModelInputs } from './router-model-validation-cases'
 
 vi.mock(import('../src/config/workshop-media-metadata'))
 

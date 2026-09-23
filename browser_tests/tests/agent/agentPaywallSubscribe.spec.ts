@@ -1,16 +1,14 @@
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
 import { collectConsoleErrors } from '@e2e/fixtures/utils/consoleErrorCollector'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { agentTest } from '@e2e/tests/agent/agentPanelMocks'
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 // Regression e2e coverage for the fix in dialogService.showSubscriptionRequiredDialog:
 // clicking the agent panel paywall's "Subscribe" action must always open the

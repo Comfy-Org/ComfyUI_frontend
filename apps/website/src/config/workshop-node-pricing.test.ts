@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 
+import pricing from '../data/workshop-node-pricing.json'
 import { estimateWorkshopNodePrice } from './workshop-node-pricing'
 import { workshopNodePricingSchema } from './workshop-node-pricing.schema'
-import pricing from '../data/workshop-node-pricing.json'
 
 describe('node-based Models price estimates', () => {
   it.for([

@@ -1,15 +1,13 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-
-import type { Pack } from '../../data/cloudNodes'
-import type { Locale } from '../../i18n/translations'
-
 import {
   formatLocalizedMediumDate,
   formatLocalizedNumber
 } from '@comfyorg/shared-frontend-utils/formatUtil'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { useNodesByCategory } from '../../composables/useNodesByCategory'
+import type { Pack } from '../../data/cloudNodes'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import PackBanner from './PackBanner.vue'
 

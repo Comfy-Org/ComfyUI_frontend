@@ -1,8 +1,6 @@
-import type * as Litegraph from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import * as VueUse from '@vueuse/core'
+import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest'
 import {
   computed,
   effectScope,
@@ -12,6 +10,8 @@ import {
   shallowRef
 } from 'vue'
 
+import type * as Litegraph from '@/lib/litegraph/src/litegraph'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toNodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 

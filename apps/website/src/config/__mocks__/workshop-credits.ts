@@ -1,7 +1,6 @@
+import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 import { onTestFinished, vi } from 'vitest'
 import { computed } from 'vue'
-
-import { centsToCredits } from '@comfyorg/shared-frontend-utils/creditsUtil'
 
 import type * as realCredits from '../workshop-credits'
 

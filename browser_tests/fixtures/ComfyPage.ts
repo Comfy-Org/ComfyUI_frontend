@@ -1,42 +1,6 @@
-import type { APIRequestContext, Locator, Page } from '@playwright/test'
-import { config as dotenvConfig } from 'dotenv'
-import MCR from 'monocart-coverage-reports'
-
 import { COVERAGE_OUTPUT_DIR } from '@e2e/coverageConfig'
-import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
-import {
-  ENTRY_PATHS,
-  TOUR_SEEN_SETTING
-} from '@/platform/onboarding/onboardingTours'
-import { NodeBadgeMode } from '@/types/nodeSource'
-import {
-  EMPTY_BILLING_BALANCE,
-  EMPTY_BILLING_PLANS,
-  LEGACY_PERSONAL_BILLING_STATUS
-} from '@e2e/fixtures/data/cloudWorkspace'
-import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
-import {
-  UNSUBSCRIBED,
-  ZERO_BALANCE
-} from '@e2e/fixtures/data/subscriptionFixtures'
-import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
-import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
 import { ComfyMouse } from '@e2e/fixtures/ComfyMouse'
-import { TestIds } from '@e2e/fixtures/selectors'
-import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
-import {
-  installCustomNodeBlankStartup,
-  runWithCollectedCleanup
-} from '@e2e/fixtures/utils/customNodeSuite'
-import {
-  collectConsoleErrors,
-  recordStartupConsoleErrors
-} from '@e2e/fixtures/utils/consoleErrorCollector'
-import { trackVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
-import { assetPath } from '@e2e/fixtures/utils/paths'
-import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
-import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
-import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { ComfyActionbar } from '@e2e/fixtures/components/Actionbar'
 import { BottomPanel } from '@e2e/fixtures/components/BottomPanel'
 import { ComfyNodeSearchBox } from '@e2e/fixtures/components/ComfyNodeSearchBox'
 import { ComfyNodeSearchBoxV2 } from '@e2e/fixtures/components/ComfyNodeSearchBoxV2'
@@ -45,8 +9,6 @@ import { ContextMenu } from '@e2e/fixtures/components/ContextMenu'
 import { MediaLightbox } from '@e2e/fixtures/components/MediaLightbox'
 import { QueuePanel } from '@e2e/fixtures/components/QueuePanel'
 import { SettingDialog } from '@e2e/fixtures/components/SettingDialog'
-import { TemplatesDialog } from '@e2e/fixtures/components/TemplatesDialog'
-import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import {
   AssetsSidebarTab,
   ModelLibrarySidebarTab,
@@ -55,7 +17,20 @@ import {
   SidebarTab,
   WorkflowsSidebarTab
 } from '@e2e/fixtures/components/SidebarTab'
+import { ComfyTemplates } from '@e2e/fixtures/components/Templates'
+import { TemplatesDialog } from '@e2e/fixtures/components/TemplatesDialog'
+import { TitleEditor } from '@e2e/fixtures/components/TitleEditor'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
+import { createBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import {
+  EMPTY_BILLING_BALANCE,
+  EMPTY_BILLING_PLANS,
+  LEGACY_PERSONAL_BILLING_STATUS
+} from '@e2e/fixtures/data/cloudWorkspace'
+import {
+  UNSUBSCRIBED,
+  ZERO_BALANCE
+} from '@e2e/fixtures/data/subscriptionFixtures'
 import { AppModeHelper } from '@e2e/fixtures/helpers/AppModeHelper'
 import { AssetsHelper } from '@e2e/fixtures/helpers/AssetsHelper'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
@@ -72,7 +47,32 @@ import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { SubgraphHelper } from '@e2e/fixtures/helpers/SubgraphHelper'
 import { ToastHelper } from '@e2e/fixtures/helpers/ToastHelper'
 import { WorkflowHelper } from '@e2e/fixtures/helpers/WorkflowHelper'
+import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
+import { TestIds } from '@e2e/fixtures/selectors'
+import {
+  collectConsoleErrors,
+  recordStartupConsoleErrors
+} from '@e2e/fixtures/utils/consoleErrorCollector'
+import { comfyExpect } from '@e2e/fixtures/utils/customMatchers'
+import {
+  installCustomNodeBlankStartup,
+  runWithCollectedCleanup
+} from '@e2e/fixtures/utils/customNodeSuite'
+import { trackVisibleErrors } from '@e2e/fixtures/utils/errorSurfaces'
+import { assetPath } from '@e2e/fixtures/utils/paths'
+import { nextFrame, sleep } from '@e2e/fixtures/utils/timing'
+import { mockWorkspace, workspace } from '@e2e/fixtures/utils/workspaceMocks'
+import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import type { WorkspaceStore } from '@e2e/types/globals'
+import type { APIRequestContext, Locator, Page } from '@playwright/test'
+import { config as dotenvConfig } from 'dotenv'
+import MCR from 'monocart-coverage-reports'
+
+import {
+  ENTRY_PATHS,
+  TOUR_SEEN_SETTING
+} from '@/platform/onboarding/onboardingTours'
+import { NodeBadgeMode } from '@/types/nodeSource'
 
 dotenvConfig()
 

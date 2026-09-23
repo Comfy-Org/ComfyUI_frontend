@@ -1,12 +1,12 @@
 import type { ContextMenu } from './ContextMenu'
-import type { LGraphNode } from './LGraphNode'
-import { LiteGraphGlobal } from './LiteGraphGlobal'
 import type {
   ConnectingLink,
   IContextMenuOptions,
   Point,
   Size
 } from './interfaces'
+import type { LGraphNode } from './LGraphNode'
+import { LiteGraphGlobal } from './LiteGraphGlobal'
 import { registerLiteGraphInstance } from './litegraphInstance'
 import { loadPolyfills } from './polyfills'
 import type { CanvasEventDetail } from './types/events'

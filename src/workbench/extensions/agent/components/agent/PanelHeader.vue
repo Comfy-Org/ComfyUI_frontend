@@ -1,12 +1,10 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
-
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Button from '@/components/ui/button/Button.vue'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 const { isMaximized = false } = defineProps<{
   isMaximized?: boolean

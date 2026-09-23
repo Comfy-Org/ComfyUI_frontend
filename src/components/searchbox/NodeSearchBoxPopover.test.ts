@@ -1,5 +1,5 @@
-import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick } from 'vue'

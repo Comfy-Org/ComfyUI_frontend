@@ -1,7 +1,7 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { defineComponent, ref } from 'vue'
+import { render, screen } from '@testing-library/vue'
 import { expect, it } from 'vitest'
+import { defineComponent, ref } from 'vue'
 
 import { useTablist } from './useTablist'
 

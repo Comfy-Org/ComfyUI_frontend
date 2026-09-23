@@ -53,7 +53,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
 import {
   PopoverAnchor,
   PopoverContent,
@@ -61,10 +61,10 @@ import {
   PopoverRoot,
   PopoverTrigger
 } from 'reka-ui'
+import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import Button from '@/components/ui/button/Button.vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
+import Button from '@/components/ui/button/Button.vue'
 
 import ViewTypeRadioGroup from './ViewTypeRadioGroup.vue'
 

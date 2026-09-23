@@ -6,8 +6,8 @@ import { createI18n } from 'vue-i18n'
 import enMessages from '@/locales/en/main.json'
 import type { OnboardingSurvey } from '@/platform/remoteConfig/types'
 
-import DynamicSurveyForm from './DynamicSurveyForm.vue'
 import { defaultOnboardingSurvey } from './defaultSurveySchema'
+import DynamicSurveyForm from './DynamicSurveyForm.vue'
 
 const renderForm = (survey: OnboardingSurvey) =>
   render(DynamicSurveyForm, {

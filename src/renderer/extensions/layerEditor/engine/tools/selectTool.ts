@@ -1,16 +1,16 @@
 import { SetTransformCommand } from '../commands/setTransform'
 import { filterTopmost, findNode } from '../document'
+import {
+  PICK_OPACITY_THRESHOLD,
+  layerOpacityAt,
+  pickLayerAt
+} from '../editor/pickOps'
 import { CommandGroup, Dirty } from '../history'
 import type { Command } from '../history'
 import type { SceneNode, Transform, Vec2 } from '../node'
 import { getNodeKind } from '../nodeKind'
 import { defaultControl } from '../tool'
 import type { Overlay, Tool, ToolContext, ToolControl, ToolDef } from '../tool'
-import {
-  PICK_OPACITY_THRESHOLD,
-  layerOpacityAt,
-  pickLayerAt
-} from '../editor/pickOps'
 import { addTransformBox } from './overlayBox'
 import { applyMove } from './transformMath'
 

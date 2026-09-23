@@ -66,8 +66,8 @@
 </template>
 
 <script lang="ts">
-import type { FuseFilter } from '@/utils/fuseUtil'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import type { FuseFilter } from '@/utils/fuseUtil'
 
 export interface FilterChip {
   key: string
@@ -77,6 +77,7 @@ export interface FilterChip {
 </script>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -86,7 +87,6 @@ import type { RootCategoryId } from '@/components/searchbox/v2/rootCategories'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import type { FuseFilterWithValue } from '@/utils/fuseUtil'
 import { getLinkTypeColor } from '@/utils/litegraphUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const {
   filters = [],

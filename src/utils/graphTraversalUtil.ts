@@ -1,3 +1,4 @@
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import type {
   LGraph,
   LGraphNode,
@@ -5,6 +6,8 @@ import type {
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { parseNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
@@ -12,11 +15,8 @@ import {
   getParentExecutionIds,
   parseNodeLocatorId
 } from '@/types/nodeIdentification'
-import { parseNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import type { UUID } from '@/utils/uuid'
-import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
 

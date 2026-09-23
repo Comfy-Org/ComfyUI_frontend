@@ -1,9 +1,8 @@
+import { externalLinks } from '../config/routes'
 import type {
   ModelLaunchMedia,
   ModelLaunchPage
 } from '../templates/model-launch/types'
-
-import { externalLinks } from '../config/routes'
 
 // Wan Animate 2 ships a single workflow template, so every CTA resolves to it.
 const WAN_ANIMATE_2_WORKFLOW =

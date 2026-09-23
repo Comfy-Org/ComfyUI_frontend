@@ -1,12 +1,12 @@
 <script setup lang="ts">
-import { computed } from 'vue'
 import { useMounted } from '@vueuse/core'
+import { computed } from 'vue'
 
-import { useWorkshopEnabled } from '../../scripts/posthog'
 import { getRoutes } from '../../config/routes'
 import { modelReleaseSlides } from '../../data/modelRelease'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { useWorkshopEnabled } from '../../scripts/posthog'
 import FeaturedCarousel02 from '../blocks/FeaturedCarousel02.vue'
 import type { FeaturedSplitSlide } from '../blocks/FeaturedCarousel02.vue'
 

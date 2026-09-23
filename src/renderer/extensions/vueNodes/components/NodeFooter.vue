@@ -202,12 +202,13 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
+
 import Button from '@/components/ui/button/Button.vue'
 import { RenderShape } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 

@@ -3,12 +3,12 @@ import { ref } from 'vue'
 
 import { DragAndScale } from '@/lib/litegraph/src/DragAndScale'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   clearCoachmarks,
   targetMounted
 } from '@/platform/onboarding/coachmarkRegistry'
 import { FIRST_RUN_COACH_IDS } from '@/platform/onboarding/onboardingTours'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toNodeId } from '@/types/nodeId'
 
 import { TOUR_ROLE_PINS } from '../roles/tourRolePins'

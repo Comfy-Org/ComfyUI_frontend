@@ -1,13 +1,12 @@
-import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
+import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
-
 import { resolveRunErrorMessage } from '@/platform/errorCatalog/errorMessageResolver'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCommandStore } from '@/stores/commandStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { toNodeId } from '@/types/nodeId'

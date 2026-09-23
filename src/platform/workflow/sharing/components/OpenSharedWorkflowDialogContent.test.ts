@@ -1,7 +1,7 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
 import { fromPartial } from '@total-typescript/shoehorn'
-import { render, screen } from '@testing-library/vue'
-import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 

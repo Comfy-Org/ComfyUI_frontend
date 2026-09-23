@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import RadioButton from 'primevue/radiobutton'
-import Button from '@/components/ui/button/Button.vue'
 import { computed } from 'vue'
 
+import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ControlOptions } from '@/types/simplifiedWidget'
 

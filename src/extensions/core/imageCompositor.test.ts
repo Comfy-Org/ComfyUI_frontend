@@ -1,6 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import {
   clearCompositorLayers,
   getCompositorBBoxes,
@@ -8,11 +10,9 @@ import {
   getCompositorInputsFingerprint,
   getCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComfyApp } from '@/scripts/app'
-import type { ComfyExtension } from '@/types/comfy'
 import type { useExtensionService } from '@/services/extensionService'
+import type { ComfyExtension } from '@/types/comfy'
 import { toNodeId } from '@/types/nodeId'
 
 import './imageCompositor'

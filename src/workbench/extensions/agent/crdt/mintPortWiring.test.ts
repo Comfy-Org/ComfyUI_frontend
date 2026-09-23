@@ -4,25 +4,24 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { GraphScope } from '@/types/graphScopeId'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
-import type { LinkTopology } from '@/types/linkTopology'
-
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { GraphScope } from '@/types/graphScopeId'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
+import type { LinkTopology } from '@/types/linkTopology'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
 import type { GraphOperation } from './graphOperations'
 import type { LayoutChangeView } from './layoutMintPort'
-import { mintWireOps } from './opEnvelope'
 import {
   attachMintPortWiring,
   runMintPortsIntentionalClear
 } from './mintPortWiring'
 import type { MintPortWiring, MintableGraph } from './mintPortWiring'
+import { mintWireOps } from './opEnvelope'
 
 const ROOT_ID = 'root-uuid'
 

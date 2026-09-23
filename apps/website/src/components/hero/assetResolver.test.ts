@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import type { DistanceLabel, ElevationLabel } from './cameraVocabulary'
 import { ANGLE_ASSETS, resolveAsset } from './assetResolver'
+import type { DistanceLabel, ElevationLabel } from './cameraVocabulary'
 
 const ELEVATION_FOR: Partial<Record<ElevationLabel, number>> = {
   'eye-level shot': 0,

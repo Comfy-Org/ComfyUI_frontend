@@ -1,14 +1,11 @@
 import { afterEach, beforeEach, describe, expect, vi } from 'vitest'
 
+import type { Rect } from '@/lib/litegraph/src/interfaces'
 import type {
   INodeInputSlot,
   Point,
   ISerialisedNode
 } from '@/lib/litegraph/src/litegraph'
-import type { Rect } from '@/lib/litegraph/src/interfaces'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
 import {
   LGraphCanvas,
   LGraphNode,
@@ -18,14 +15,17 @@ import {
   NodeInputSlot,
   NodeOutputSlot
 } from '@/lib/litegraph/src/litegraph'
-
-import { test } from './__fixtures__/testExtensions'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import { BaseWidget } from '@/lib/litegraph/src/widgets/BaseWidget'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { toLinkId } from '@/types/linkId'
+import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import {
   createMockCanvasRenderingContext2D,
   createMockLGraphNodeWithArrayBoundingRect
 } from '@/utils/__tests__/litegraphTestUtils'
-import { toLinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
+
+import { test } from './__fixtures__/testExtensions'
 
 interface NodeConstructorWithSlotOffset {
   slot_start_y?: number

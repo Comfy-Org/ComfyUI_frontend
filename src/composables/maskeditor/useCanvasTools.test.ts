@@ -1,12 +1,11 @@
-import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useCanvasTools } from '@/composables/maskeditor/useCanvasTools'
 import {
   ColorComparisonMethod,
   MaskBlendMode
 } from '@/extensions/core/maskeditor/types'
-
-import { useCanvasTools } from '@/composables/maskeditor/useCanvasTools'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
 let mockCanvasHistory: ReturnType<typeof useMaskEditorStore>['canvasHistory']
 

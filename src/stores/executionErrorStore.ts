@@ -1,10 +1,9 @@
+import { whenever } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, toRaw, watch } from 'vue'
-import { whenever } from '@vueuse/core'
 
 import { classifyValidationErrorAbsorption } from '@/components/rightSidePanel/errors/missingResourceAbsorption'
 import type { MissingResourceAbsorption } from '@/components/rightSidePanel/errors/missingResourceAbsorption'
-
 import { useNodeErrorFlagSync } from '@/composables/graph/useNodeErrorFlagSync'
 import {
   getLiftedErrorSource,
@@ -12,30 +11,24 @@ import {
   resolveLiftChain
 } from '@/core/graph/subgraph/liftNodeErrorsToBoundary'
 import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
-import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import type { MissingMediaCandidate } from '@/platform/missingMedia/types'
+import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useDialogService } from '@/services/dialogService'
-import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
-import type { NodeError, PromptError } from '@/platform/remote/comfyui/types'
 import {
   getAncestorExecutionIds,
   tryNormalizeNodeExecutionId
 } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
-import {
-  executionIdToNodeLocatorId,
-  getExecutionIdByNode,
-  getNodeByExecutionId
-} from '@/utils/graphTraversalUtil'
-import type { UUID } from '@/utils/uuid'
-import { zeroUuid } from '@/utils/uuid'
 import {
   SIMPLE_ERROR_TYPES,
   errorsForSlot,
@@ -45,7 +38,13 @@ import {
   isValueStillOutOfRange
 } from '@/utils/executionErrorUtil'
 import type { NodeValidationError } from '@/utils/executionErrorUtil'
-import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import {
+  executionIdToNodeLocatorId,
+  getExecutionIdByNode,
+  getNodeByExecutionId
+} from '@/utils/graphTraversalUtil'
+import type { UUID } from '@/utils/uuid'
+import { zeroUuid } from '@/utils/uuid'
 
 interface SlotNodeErrorClearTarget {
   executionId: NodeExecutionId

@@ -1,11 +1,11 @@
-import { useSettingStore } from '@/platform/settings/settingStore'
 import { render } from '@testing-library/vue'
-import { defineComponent } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { defineComponent } from 'vue'
 
-import SettingItem from '@/platform/settings/components/SettingItem.vue'
-import type { SettingParams } from '@/platform/settings/types'
 import { i18n } from '@/i18n'
+import SettingItem from '@/platform/settings/components/SettingItem.vue'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { SettingParams } from '@/platform/settings/types'
 
 const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))

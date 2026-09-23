@@ -5,6 +5,16 @@ import {
   setTrackedNodeState
 } from '@/core/graph/nodeShell/nodeShellState'
 import {
+  SUBGRAPH_INPUT_ID,
+  SUBGRAPH_OUTPUT_ID
+} from '@/lib/litegraph/src/constants'
+import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
+import {
+  commonType,
+  isNodeBindable,
+  toClass
+} from '@/lib/litegraph/src/utils/type'
+import {
   calculateInputSlotPosFromSlot,
   getSlotPosition
 } from '@/renderer/core/canvas/litegraph/slotCalculations'
@@ -23,9 +33,8 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
 import type { GraphScope } from '@/types/graphScopeId'
-import { mintLinkId } from './idAllocation'
+import { toLinkId } from '@/types/linkId'
 import { UNASSIGNED_NODE_ID, toNodeId, serializeNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeProperty, NodeState } from '@/types/nodeState'
@@ -37,51 +46,17 @@ import {
 import { adjustColor } from '@/utils/colorUtil'
 import type { ColorAdjustOptions } from '@/utils/colorUtil'
 import { zeroUuid } from '@/utils/uuid'
-import {
-  commonType,
-  isNodeBindable,
-  toClass
-} from '@/lib/litegraph/src/utils/type'
 
-import {
-  SUBGRAPH_INPUT_ID,
-  SUBGRAPH_OUTPUT_ID
-} from '@/lib/litegraph/src/constants'
-import { cachedMeasureText } from '@/lib/litegraph/src/utils/textMeasureCache'
+import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { DragAndScale } from './DragAndScale'
-import type { LGraph } from './LGraph'
-import { LGraphBadge } from './LGraphBadge'
-import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
-import { LGraphButton } from './LGraphButton'
-import type { LGraphButtonOptions } from './LGraphButton'
-import { LGraphCanvas } from './LGraphCanvas'
-import { LLink, replaceLinkTopology, slotFloatingLinks } from './LLink'
-import {
-  inputHasLink,
-  inputLink,
-  inputLinkId,
-  captureInputLayout,
-  finalizeInputLinkRemoval,
-  replaceNodeInputs,
-  outputHasLinks,
-  outputLinks
-} from './node/slotLinks'
-import {
-  createInputSlotView,
-  createOutputSlotView,
-  resolveInputSlotView
-} from './node/slotDescriptorView'
-import { initializeWidgetsView } from './node/widgetsView'
+import type { IDrawBoundingOptions } from './draw'
 import {
   extensionConfigureView,
   hydrateExtensionPayload,
   NODE_CANONICAL_FIELDS,
   runExtensionSerializeHook
 } from './extensionPersistence'
-import { anchorRerouteChain } from './Reroute'
-import type { Reroute, RerouteId } from './Reroute'
-import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
-import type { IDrawBoundingOptions } from './draw'
+import { mintLinkId } from './idAllocation'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -108,8 +83,14 @@ import type {
   Size,
   SlotIndex
 } from './interfaces'
+import type { LGraph } from './LGraph'
+import { LGraphBadge } from './LGraphBadge'
+import { LGraphButton } from './LGraphButton'
+import type { LGraphButtonOptions } from './LGraphButton'
+import { LGraphCanvas } from './LGraphCanvas'
 import { LiteGraph, Subgraph } from './litegraph'
 import type { LGraphNodeConstructor, SubgraphNode } from './litegraph'
+import { LLink, replaceLinkTopology, slotFloatingLinks } from './LLink'
 import {
   createBounds,
   isInRect,
@@ -120,13 +101,31 @@ import {
 import { NodeInputSlot } from './node/NodeInputSlot'
 import { NodeOutputSlot } from './node/NodeOutputSlot'
 import {
+  createInputSlotView,
+  createOutputSlotView,
+  resolveInputSlotView
+} from './node/slotDescriptorView'
+import {
+  inputHasLink,
+  inputLink,
+  inputLinkId,
+  captureInputLayout,
+  finalizeInputLinkRemoval,
+  replaceNodeInputs,
+  outputHasLinks,
+  outputLinks
+} from './node/slotLinks'
+import {
   inputAsSerialisable,
   isWidgetInputSlot,
   outputAsSerialisable
 } from './node/slotUtils'
+import { initializeWidgetsView } from './node/widgetsView'
+import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
+import { anchorRerouteChain } from './Reroute'
+import type { Reroute, RerouteId } from './Reroute'
 import type { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import type { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
-import type { NodeLike } from './types/NodeLike'
 import type { CanvasPointerEvent } from './types/events'
 import {
   LGraphEventMode,
@@ -134,6 +133,7 @@ import {
   RenderShape,
   TitleMode
 } from './types/globalEnums'
+import type { NodeLike } from './types/NodeLike'
 import type { ISerialisedNode, SubgraphIO } from './types/serialisation'
 import type {
   IBaseWidget,

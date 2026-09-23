@@ -6,11 +6,11 @@ import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { toNodeId } from '@/types/nodeId'
 import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@/types/nodeIdentification'
-import { toNodeId } from '@/types/nodeId'
 import * as litegraphUtil from '@/utils/litegraphUtil'
 
 const mockResolveNode = vi.fn()

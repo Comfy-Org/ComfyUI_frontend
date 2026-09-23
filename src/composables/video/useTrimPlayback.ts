@@ -1,7 +1,6 @@
+import { clamp } from 'es-toolkit'
 import { ref, watch } from 'vue'
 import type { Ref } from 'vue'
-
-import { clamp } from 'es-toolkit'
 
 const SEEK_EVENT_TIMEOUT_MS = 5000
 

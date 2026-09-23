@@ -210,9 +210,9 @@ import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { usePartnerNodesRunGate } from '@/composables/billing/usePartnerNodesRunGate'
 import { usePartnerNodesInGraph } from '@/composables/node/usePartnerNodesInGraph'
-import { useDialogService } from '@/services/dialogService'
-import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { usePartnerNodesEducationStore } from '@/platform/workflow/templates/stores/partnerNodesEducationStore'
+import { useDialogService } from '@/services/dialogService'
 
 interface ComparisonRow {
   key: string

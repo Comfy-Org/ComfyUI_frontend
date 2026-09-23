@@ -2,15 +2,13 @@ import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { t } from '@/i18n'
-
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { ComfyApp } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
-
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 
 import type { GroupNodeLink, GroupNodeWorkflowData } from './groupNode'

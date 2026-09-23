@@ -1,7 +1,6 @@
-import type { Locator } from '@playwright/test'
-
 import { comfyExpect as expect } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import type { Locator } from '@playwright/test'
 
 /**
  * Opens the selection toolbox "More Options" menu and returns the menu

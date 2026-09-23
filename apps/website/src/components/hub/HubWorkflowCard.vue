@@ -1,13 +1,12 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ChevronRight } from '@lucide/vue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
+import type { Locale } from '../../i18n/translations'
 import { resolveTemplateLogos } from '../../lib/hub/model-logos'
 import { hubCreatorUrl } from '../../lib/hub/routes'
 import type { HubTemplate } from '../../lib/hub/types'
-import type { Locale } from '../../i18n/translations'
 import HubTypeBadge from './HubTypeBadge.vue'
 import TagRow from './TagRow.vue'
 

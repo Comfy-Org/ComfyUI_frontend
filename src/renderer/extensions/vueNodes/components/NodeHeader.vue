@@ -72,19 +72,19 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onErrorCaptured, ref } from 'vue'
 
 import EditableText from '@/components/common/EditableText.vue'
 import CreditBadge from '@/components/node/CreditBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
-import type { NodeState } from '@/types/nodeState'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { st } from '@/i18n'
 import { LGraphEventMode, RenderShape } from '@/lib/litegraph/src/litegraph'
 import NodeBadge from '@/renderer/extensions/vueNodes/components/NodeBadge.vue'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
+import type { NodeState } from '@/types/nodeState'
 import { resolveNodeDisplayName } from '@/utils/nodeTitleUtil'
-import { cn } from '@comfyorg/tailwind-utils'
 
 import type { NodeBadgeProps } from './NodeBadge.vue'
 

@@ -92,8 +92,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Popover from '@/components/ui/Popover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Popover from '@/components/ui/Popover.vue'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { isCloud } from '@/platform/distribution/types'

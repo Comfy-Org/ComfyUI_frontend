@@ -1,13 +1,6 @@
-// `useNodeOutputStore` (and the app bootstrap it pulls in) must finish
-// loading before `useImageUploadWidget` is first imported below: that module
-// also depends on the app bootstrap, and letting it be the one to trigger
-// that load creates a real circular import where `scripts/widgets.ts` calls
-// `useImageUploadWidget()` before this module has finished exporting it.
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createGraphMutations } from './graphMutations'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -19,17 +12,24 @@ import { LayoutSource } from '@/renderer/core/layout/types'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
+// `useNodeOutputStore` (and the app bootstrap it pulls in) must finish
+// loading before `useImageUploadWidget` is first imported below: that module
+// also depends on the app bootstrap, and letting it be the one to trigger
+// that load creates a real circular import where `scripts/widgets.ts` calls
+// `useImageUploadWidget()` before this module has finished exporting it.
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { GraphScope } from '@/types/graphScopeId'
 import {
   graphScopeOf,
   toOwningGraphId,
   toRootGraphId
 } from '@/types/graphScopeId'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 
 import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { reconcileAgentAdapters } from './agentNodeMaterializer'
+import { createGraphMutations } from './graphMutations'
 import { applyLiveWidgetValue } from './liveWidgetProjection'
 
 const mocks = vi.hoisted(() => ({ showPreview: vi.fn() }))

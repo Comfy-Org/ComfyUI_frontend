@@ -1,30 +1,29 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { FirebaseError } from 'firebase/app'
 import type { Auth, User, UserCredential } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useTelemetry } from '@/platform/telemetry'
-
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 import {
   capturePreservedQuery,
   clearPreservedQuery
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import {
   cachedLegacyBillingMigrationEnabled,
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
-import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { useDialogService } from '@/services/dialogService'
+import { useTelemetry } from '@/platform/telemetry'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
+import { useDialogService } from '@/services/dialogService'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { AuthStoreError, useAuthStore } from '@/stores/authStore'
 import type { IdentityObserver } from '@/utils/__tests__/stubAccountIdentityPort'
 import { replayIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'

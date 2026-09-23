@@ -2,8 +2,8 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
-import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useOutputStacks } from '@/platform/assets/composables/useOutputStacks'
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 
 const mocks = vi.hoisted(() => ({

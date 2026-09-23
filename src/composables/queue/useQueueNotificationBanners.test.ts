@@ -1,4 +1,5 @@
 import { render } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -6,7 +7,6 @@ import { useQueueNotificationBanners } from '@/composables/queue/useQueueNotific
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
 import type { TaskItemImpl } from '@/stores/queueStore'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 const mockApi = vi.hoisted(() => new EventTarget())
 

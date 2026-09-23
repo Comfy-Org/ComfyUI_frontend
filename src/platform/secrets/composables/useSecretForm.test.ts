@@ -1,7 +1,7 @@
 import { render } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
-import { describe, expect, it, vi } from 'vitest'
 
 import type {
   SecretMetadata,

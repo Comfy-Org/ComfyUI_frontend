@@ -1,11 +1,10 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { ZIndex } from '@primeuix/utils/zindex'
 import { HoverCardContent, HoverCardPortal, useForwardProps } from 'reka-ui'
 import type { HoverCardContentProps } from 'reka-ui'
 import { computed, inject } from 'vue'
 import type { HTMLAttributes } from 'vue'
-
-import { cn } from '@comfyorg/tailwind-utils'
 
 import { hoverCardOpenKey } from './hoverCardContext'
 

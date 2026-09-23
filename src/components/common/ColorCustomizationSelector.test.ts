@@ -1,5 +1,5 @@
-import { render } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import SelectButton from 'primevue/selectbutton'
 import { beforeEach, describe, expect, it, vi } from 'vitest'

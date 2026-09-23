@@ -1,7 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { useAuthStore } from '@/stores/authStore'
-import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
 
 import { useCurrentUser } from './useCurrentUser'
 

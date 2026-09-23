@@ -1,17 +1,17 @@
+import type { LogsEvent } from '@datadog/browser-logs'
 import { describe, expect, it } from 'vitest'
 
+import { WorkshopRouterError } from '../config/workshop-router-errors'
 import type {
   WorkshopAnalyticsEvent,
   WorkshopRunAnalytics
 } from './workshop-analytics'
-import { workshopHealthLog } from './workshop-health'
+import { workshopFailureAnalytics } from './workshop-analytics'
 import {
   redactWorkshopLog,
   workshopDatadogEnvironment
 } from './workshop-datadog'
-import type { LogsEvent } from '@datadog/browser-logs'
-import { WorkshopRouterError } from '../config/workshop-router-errors'
-import { workshopFailureAnalytics } from './workshop-analytics'
+import { workshopHealthLog } from './workshop-health'
 
 const run: WorkshopRunAnalytics = {
   model_slug: 'vertexai--gemini-nano-banana-2--generate-images',

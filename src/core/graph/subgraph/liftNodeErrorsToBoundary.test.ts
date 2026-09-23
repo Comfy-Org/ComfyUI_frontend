@@ -1,7 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
 import { promoteValueWidgetViaSubgraphInput } from '@/core/graph/subgraph/promotionUtils'
-import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   createBoundaryLinkedSubgraph,
@@ -10,6 +9,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { toNodeId } from '@/types/nodeId'
+import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import { liftNodeErrorsToBoundary } from './liftNodeErrorsToBoundary'
 

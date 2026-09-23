@@ -1,15 +1,15 @@
 <script setup lang="ts">
-import type { HTMLAttributes } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
+import type { HTMLAttributes } from 'vue'
 
-import type { CardWorkflowItem } from './CardWorkflow01.vue'
-import CardWorkflow01 from './CardWorkflow01.vue'
 import Badge from '../ui/badge/Badge.vue'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
 import DialogDescription from '../ui/dialog/DialogDescription.vue'
 import DialogTitle from '../ui/dialog/DialogTitle.vue'
 import DialogTrigger from '../ui/dialog/DialogTrigger.vue'
+import type { CardWorkflowItem } from './CardWorkflow01.vue'
+import CardWorkflow01 from './CardWorkflow01.vue'
 
 const {
   name,

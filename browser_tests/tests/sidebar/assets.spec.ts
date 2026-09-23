@@ -1,17 +1,17 @@
-import { expect, mergeTests } from '@playwright/test'
-
 import type { Asset } from '@comfyorg/ingest-types'
 import { assetApiFixture } from '@e2e/fixtures/assetApiFixture'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
+import {
+  withOutputAssets,
+  withPagination
+} from '@e2e/fixtures/helpers/AssetHelper'
 import {
   AssetsHelper,
   createMockJob,
   createMockJobs
 } from '@e2e/fixtures/helpers/AssetsHelper'
-import {
-  withOutputAssets,
-  withPagination
-} from '@e2e/fixtures/helpers/AssetHelper'
+import { expect, mergeTests } from '@playwright/test'
+
 import type {
   JobDetail,
   RawJobListItem

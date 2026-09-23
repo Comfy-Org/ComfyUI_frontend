@@ -1,5 +1,3 @@
-import { useAssetsStore } from '@/stores/assetsStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -22,7 +20,9 @@ import {
   MODEL_FILE_EXTENSIONS
 } from '@/platform/missingModel/missingModelScan'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'

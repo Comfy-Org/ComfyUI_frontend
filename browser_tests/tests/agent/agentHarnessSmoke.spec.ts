@@ -1,9 +1,8 @@
+import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
-
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 /**
  * BE-11470 C1.4 smoke: one real turn through /api/agent against the local

@@ -37,12 +37,12 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { refAutoReset } from '@vueuse/core'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
 import { copyTextSilently } from '@/platform/workspace/utils/inviteLinks'
-import { cn } from '@comfyorg/tailwind-utils'
 
 export interface InviteLinkRow {
   id: string

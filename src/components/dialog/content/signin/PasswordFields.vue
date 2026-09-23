@@ -63,14 +63,13 @@
 </template>
 
 <script setup lang="ts">
+import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
 import { FormField } from '@primevue/forms'
 import { useFocusWithin } from '@vueuse/core'
 import Password from 'primevue/password'
 import { computed, ref, useTemplateRef } from 'vue'
 import type { ComponentPublicInstance, HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
-
-import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
 
 const { fieldClass = 'h-10' } = defineProps<{
   fieldClass?: HTMLAttributes['class']

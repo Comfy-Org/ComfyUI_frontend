@@ -1,11 +1,10 @@
-import type { ResolvedCatalogErrorMessage } from './types'
-
 import {
   normalizeNodeName,
   translateCatalogMessage,
   translateOptionalCatalogMessage
 } from './catalogI18n'
 import type { CatalogParams, ErrorResolveContext } from './catalogI18n'
+import type { ResolvedCatalogErrorMessage } from './types'
 
 // Builds resolved display fields while callers keep the raw API message/details
 // on the ErrorItem.

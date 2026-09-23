@@ -1,18 +1,18 @@
-import { getActivePinia } from 'pinia'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { fromPartial } from '@total-typescript/shoehorn'
-
 import { render, screen } from '@testing-library/vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { FormDropdownItem } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+
 import { createMockWidget } from './widgetTestUtils'
 
 const mockCheckState = vi.hoisted(() => vi.fn())

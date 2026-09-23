@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+
 import { expect } from '@playwright/test'
 
 import { workshopModelAvailabilitySchema } from '../src/config/workshop-model-availability-schema'

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import type { ZodTypeAny } from 'zod'
 
 import {
   AGENT_WS_EVENT_TYPES,
@@ -11,7 +12,6 @@ import {
   zAgentTurnAccepted,
   zAgentWsEvent
 } from './agentApiSchema'
-import type { ZodTypeAny } from 'zod'
 
 const fixtureText = import.meta.glob('./__fixtures__/agent/*.jsonl', {
   query: '?raw',

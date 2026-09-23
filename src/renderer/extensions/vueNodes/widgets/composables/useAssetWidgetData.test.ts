@@ -1,12 +1,11 @@
-import { useAssetsStore } from '@/stores/assetsStore'
-import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { fromPartial } from '@total-typescript/shoehorn'
-
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
+import { useAssetsStore } from '@/stores/assetsStore'
+import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true

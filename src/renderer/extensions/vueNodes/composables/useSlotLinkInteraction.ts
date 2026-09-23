@@ -2,41 +2,41 @@ import { tryOnScopeDispose, useEventListener } from '@vueuse/core'
 import type { Fn } from '@vueuse/core'
 
 import { useSharedCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
-import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
-import type { LGraph } from '@/lib/litegraph/src/LGraph'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
-import type { Reroute } from '@/lib/litegraph/src/Reroute'
+import { isLinkRevealed } from '@/lib/litegraph/src/canvas/linkRevealState'
 import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type {
   INodeInputSlot,
   INodeOutputSlot
 } from '@/lib/litegraph/src/interfaces'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LLink, slotFloatingLinks } from '@/lib/litegraph/src/LLink'
+import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
+import type { Reroute } from '@/lib/litegraph/src/Reroute'
 import { LinkDirection } from '@/lib/litegraph/src/types/globalEnums'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import {
   clearCanvasPointerHistory,
   toCanvasPointerEvent
 } from '@/renderer/core/canvas/interaction/canvasPointerEvent'
 import { createLinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
 import type { LinkConnectorAdapter } from '@/renderer/core/canvas/links/linkConnectorAdapter'
-import { getGraphSlotLayout } from '@/renderer/core/canvas/litegraph/slotCalculations'
 import {
   resolveNodeSurfaceSlotCandidate,
   resolveSlotTargetCandidate
 } from '@/renderer/core/canvas/links/linkDropOrchestrator'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { isLinkRevealed } from '@/lib/litegraph/src/canvas/linkRevealState'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
+import { getGraphSlotLayout } from '@/renderer/core/canvas/litegraph/slotCalculations'
+import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
-import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'

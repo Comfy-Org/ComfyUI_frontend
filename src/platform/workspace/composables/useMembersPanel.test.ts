@@ -1,5 +1,3 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
-import { useDialogService } from '@/services/dialogService'
 import { getActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -9,11 +7,13 @@ import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import type {
   WorkspacePendingInvite,
   WorkspaceMember
 } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useDialogService } from '@/services/dialogService'
 
 import {
   filterBySearch,

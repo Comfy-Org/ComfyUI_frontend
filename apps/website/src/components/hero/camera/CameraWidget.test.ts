@@ -1,8 +1,8 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { PerspectiveCamera, Vector3 } from 'three'
 import type { Camera, Scene, WebGLRenderer as WebGLRendererType } from 'three'
 import { WebGLRenderer } from 'three/src/renderers/WebGLRenderer.js'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { CameraWidget } from './CameraWidget'
 import type { CameraState } from './types'

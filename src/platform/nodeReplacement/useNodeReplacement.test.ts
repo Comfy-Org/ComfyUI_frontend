@@ -1,17 +1,17 @@
 import { fromPartial, fromAny } from '@total-typescript/shoehorn'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
-import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import {
   canTransferReplacementOwnership,
   transferReplacementOwnership
 } from '@/core/graph/nodeShell/nodeShellState'
+import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -21,6 +21,7 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { UUID } from '@/utils/uuid'
+
 import type { NodeReplacement } from './types'
 
 vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
@@ -55,9 +56,10 @@ vi.mock<unknown>(import('@/i18n'), () => ({
     params ? `${key}:${JSON.stringify(params)}` : key
 }))
 
-import { app } from '@/scripts/app'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import { app } from '@/scripts/app'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
+
 import { useNodeReplacement } from './useNodeReplacement'
 
 beforeEach(() => {

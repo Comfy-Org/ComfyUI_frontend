@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import type { PrimitiveProps } from 'reka-ui'
-import type { HTMLAttributes } from 'vue'
-import type { IconButtonVariants } from '.'
-import { Primitive } from 'reka-ui'
 import { cn } from '@comfyorg/tailwind-utils'
+import type { PrimitiveProps } from 'reka-ui'
+import { Primitive } from 'reka-ui'
+import type { HTMLAttributes } from 'vue'
+
+import type { IconButtonVariants } from '.'
 import { iconButtonVariants } from '.'
 
 interface Props extends PrimitiveProps {

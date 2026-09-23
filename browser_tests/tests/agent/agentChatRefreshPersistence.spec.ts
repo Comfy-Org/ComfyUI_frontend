@@ -1,7 +1,7 @@
+import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 
 // PM-679: the transcript must survive a browser refresh with its content and
 // order intact. `promptHistory` mocks `/api/agent/threads*` statefully (POST

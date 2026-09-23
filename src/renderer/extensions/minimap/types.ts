@@ -2,9 +2,8 @@
  * Minimap-specific type definitions
  */
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
-import type { NodeId } from '@/types/nodeId'
-
 import type { ResolvedMinimapNodeDecoration } from '@/platform/canvas/minimapDecorationRegistry'
+import type { NodeId } from '@/types/nodeId'
 
 /**
  * Minimal interface for what the minimap needs from the canvas

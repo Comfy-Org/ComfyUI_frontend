@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
-import type { ComponentExposed } from 'vue-component-type-helpers'
 import { ref } from 'vue'
+import type { ComponentExposed } from 'vue-component-type-helpers'
 
 import TagsInput from './TagsInput.vue'
 import TagsInputInput from './TagsInputInput.vue'

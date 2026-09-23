@@ -160,6 +160,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -168,9 +169,8 @@ import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import type { NodeId } from '@/types/nodeId'
-import { resolveNode } from '@/utils/litegraphUtil'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
-import { cn } from '@comfyorg/tailwind-utils'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 export interface GalleryImage {
   itemImageSrc?: string

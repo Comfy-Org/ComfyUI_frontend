@@ -1,16 +1,4 @@
-import { expect, mergeTests } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
-
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import { TOUR_ROLE_PINS } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
-import type { SupportedTemplateId } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
-
 import type { PromptResponse } from '@comfyorg/ingest-types'
-
-import type { AssetResponse } from '@/platform/assets/schemas/assetSchema'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
-import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { onboardingFixture } from '@e2e/fixtures/tourFixture'
@@ -19,6 +7,15 @@ import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import { expect, mergeTests } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { AssetResponse } from '@/platform/assets/schemas/assetSchema'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
+import { TOUR_ROLE_PINS } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
+import type { SupportedTemplateId } from '@/renderer/extensions/firstRunTour/roles/tourRolePins'
 
 const test = mergeTests(comfyPageFixture, onboardingFixture)
 const wstest = mergeTests(test, webSocketFixture)

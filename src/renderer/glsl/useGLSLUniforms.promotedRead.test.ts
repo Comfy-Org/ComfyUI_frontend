@@ -1,5 +1,5 @@
-import { computed } from 'vue'
 import { describe, expect, it } from 'vitest'
+import { computed } from 'vue'
 
 import type { CurveData } from '@/components/curve/types'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'

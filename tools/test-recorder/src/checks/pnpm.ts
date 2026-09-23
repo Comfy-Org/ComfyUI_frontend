@@ -1,6 +1,7 @@
 import { execSync } from 'node:child_process'
-import { readEngines, satisfies } from './engines'
+
 import { fail, info, pass, warn } from '../ui/logger'
+import { readEngines, satisfies } from './engines'
 import type { CheckResult } from './types'
 
 const enableSteps = [

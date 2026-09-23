@@ -1,6 +1,3 @@
-import type { Page } from '@playwright/test'
-import { expect, mergeTests } from '@playwright/test'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import {
@@ -9,6 +6,8 @@ import {
 } from '@e2e/fixtures/jobsRouteFixture'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { webSocketFixture } from '@e2e/fixtures/ws'
+import type { Page } from '@playwright/test'
+import { expect, mergeTests } from '@playwright/test'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture, jobsRouteFixture)
 

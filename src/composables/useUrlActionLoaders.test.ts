@@ -1,5 +1,4 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { createMemoryHistory, createRouter, useRouter } from 'vue-router'
 
 import { useUrlActionLoaders } from './useUrlActionLoaders'

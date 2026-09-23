@@ -1,12 +1,12 @@
 import { z } from 'astro/zod'
 import { describe, expect, it } from 'vitest'
 
-import rawSnapshots from '../src/data/workshop-router-openapi.snapshot.json'
 import { deriveWorkshopFields } from '../src/config/workshop-fields'
 import {
   parseRouterOpenApiSnapshot,
   routerInputSchema
 } from '../src/config/workshop-router-openapi'
+import rawSnapshots from '../src/data/workshop-router-openapi.snapshot.json'
 import { creatorFormFor, creatorVariantsFor } from './workshop-creator-forms'
 import { curateWorkshopInputs } from './workshop-input-presentation'
 

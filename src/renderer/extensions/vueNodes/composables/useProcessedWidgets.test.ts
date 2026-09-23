@@ -18,14 +18,14 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
-import {
-  createNodeExecutionId,
-  createNodeLocatorId
-} from '@/types/nodeIdentification'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import {
+  createNodeExecutionId,
+  createNodeLocatorId
+} from '@/types/nodeIdentification'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
 

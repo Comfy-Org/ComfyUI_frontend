@@ -1,10 +1,11 @@
 import { computed, watch } from 'vue'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+
 import { t } from '@/i18n'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
-import { toTitleCase } from '@/utils/textCaseUtil'
 import type { TopbarBadge } from '@/types/comfy'
+import { toTitleCase } from '@/utils/textCaseUtil'
 
 const badges = computed<TopbarBadge[]>(() => {
   const result: TopbarBadge[] = []

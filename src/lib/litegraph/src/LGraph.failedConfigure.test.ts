@@ -1,10 +1,10 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
+import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type {
   ISerialisedNode,
   SerialisableGraph
 } from '@/lib/litegraph/src/types/serialisation'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
@@ -17,6 +17,7 @@ import type { GroupId } from '@/types/groupId'
 import type { NodeId } from '@/types/nodeId'
 import type { RerouteId } from '@/types/rerouteId'
 import { widgetId } from '@/types/widgetId'
+
 import { createTestSubgraphData } from './subgraph/__fixtures__/subgraphHelpers'
 
 /**

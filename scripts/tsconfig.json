@@ -8,7 +8,7 @@
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "resolveJsonModule": true,
-    "types": ["node", "vitest/globals", "vite/client"]
+    "types": ["@webgpu/types", "node", "vitest/globals", "vite/client"]
   },
   "include": ["**/*.ts", "../src/types/**/*.d.ts", "../global.d.ts"]
 }

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import type {
   ExportedSubgraphInstance,
   LGraph,
@@ -12,7 +13,6 @@ import {
   LGraphNode as LGraphNodeClass,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'

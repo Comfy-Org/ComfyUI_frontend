@@ -1,8 +1,9 @@
-import { useAppModeStore } from '@/stores/appModeStore'
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
+
+import { useAppModeStore } from '@/stores/appModeStore'
 
 import LinearWelcome from './LinearWelcome.vue'
 

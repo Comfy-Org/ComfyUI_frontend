@@ -1,9 +1,9 @@
 import { test as base, expect } from '@playwright/test'
 import type { Page } from '@playwright/test'
 
-import { E2E_USER } from './env'
 import type { MockCloud } from './cloud'
 import { installMockCloud } from './cloud'
+import { E2E_USER } from './env'
 
 /** The entry URL a product would mint for one intent, on the `test` family. */
 export function entryPath(

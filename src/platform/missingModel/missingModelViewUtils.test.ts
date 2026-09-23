@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import type {
-  MissingModelGroup,
-  MissingModelViewModel
-} from '@/platform/missingModel/types'
 import {
   getDownloadableModels,
   toDownloadableModel
 } from '@/platform/missingModel/missingModelViewUtils'
+import type {
+  MissingModelGroup,
+  MissingModelViewModel
+} from '@/platform/missingModel/types'
 
 function makeViewModel(
   name: string,

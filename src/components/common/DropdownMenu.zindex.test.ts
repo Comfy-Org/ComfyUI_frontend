@@ -1,6 +1,6 @@
 import { ZIndex } from '@primeuix/utils/zindex'
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import type { MenuItem } from 'primevue/menuitem'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'

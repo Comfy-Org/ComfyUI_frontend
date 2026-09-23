@@ -1,11 +1,12 @@
 vi.mock(import('firebase/auth'))
 import type { GlobalSetting } from '@comfyorg/ingest-types'
-import { useAuthStore } from '@/stores/authStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useAuthStore } from '@/stores/authStore'
+
 import { useAgentConsentStore } from './agentConsentStore'
 
 const accountApi = vi.hoisted(() => ({

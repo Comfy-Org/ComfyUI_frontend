@@ -1,4 +1,3 @@
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { toRaw } from 'vue'
 
@@ -9,19 +8,20 @@ import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { GraphScope } from '@/types/graphScopeId'
 import {
   graphScopeOf,
   toOwningGraphId,
   toRootGraphId
 } from '@/types/graphScopeId'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import type {
   GraphMutationBatch,
   SemanticLiveNodeQueryPort,

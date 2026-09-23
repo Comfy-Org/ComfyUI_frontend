@@ -1,7 +1,8 @@
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it } from 'vitest'
+
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 
 const { cachePublishPrefill, getCachedPrefill, useComfyHubPublishWizard } =
   await import('./useComfyHubPublishWizard')

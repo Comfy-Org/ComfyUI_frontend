@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import type { Component } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
+import type { Component } from 'vue'
 
 import type { BadgeVariants } from '.'
 import { badgeVariants } from '.'

@@ -1,14 +1,13 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { useTelemetry } from '@/platform/telemetry'
-
 import InfoButton from '@/components/graph/selectionToolbox/InfoButton.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { useTelemetry } from '@/platform/telemetry'
 
 const { openNodeInfoMock } = vi.hoisted(() => ({
   openNodeInfoMock: vi.fn()

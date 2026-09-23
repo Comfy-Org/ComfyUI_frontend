@@ -1,11 +1,12 @@
 import fs from 'fs'
 import path from 'path'
+
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ComfyApi } from './api'
 
+import type { ComfyApi } from './api'
 import { api } from './api'
 import { getFromAvifFile } from './metadata/avif'
 import { getFromFlacFile } from './metadata/flac'

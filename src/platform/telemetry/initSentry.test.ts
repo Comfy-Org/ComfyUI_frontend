@@ -2,8 +2,8 @@ import type {
   browserApiErrorsIntegration as sentryBrowserApiErrorsIntegration,
   init as sentryInitContract
 } from '@sentry/vue'
-import { createApp } from 'vue'
 import { expect, it, vi } from 'vitest'
+import { createApp } from 'vue'
 
 const { sentryInit, browserApiErrorsIntegration } = vi.hoisted(() => ({
   sentryInit: vi.fn<typeof sentryInitContract>(),

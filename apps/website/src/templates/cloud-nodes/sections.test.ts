@@ -6,10 +6,10 @@ import ClosingCtaSection from './ClosingCtaSection.vue'
 import FAQSection from './FAQSection.vue'
 import HeroSection from './HeroSection.vue'
 import HowItWorksSection from './HowItWorksSection.vue'
+import { cloudNodeModelCards } from './modelCards'
 import ModelsSection from './ModelsSection.vue'
 import SetupSection from './SetupSection.vue'
 import WhySection from './WhySection.vue'
-import { cloudNodeModelCards } from './modelCards'
 
 const props = { locale: 'en' as const }
 

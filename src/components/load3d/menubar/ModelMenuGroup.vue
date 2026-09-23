@@ -74,6 +74,8 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+import { PopoverTrigger } from 'reka-ui'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -91,8 +93,6 @@ import type {
   ModelConfig,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
-import { cn } from '@comfyorg/tailwind-utils'
-import { PopoverTrigger } from 'reka-ui'
 
 const {
   compact = false,

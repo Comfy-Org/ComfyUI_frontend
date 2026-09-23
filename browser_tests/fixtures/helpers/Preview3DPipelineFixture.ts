@@ -1,9 +1,3 @@
-import { expect } from '@playwright/test'
-import type { Locator, Page } from '@playwright/test'
-
-import { toNodeId } from '@/types/nodeId'
-import type { NodeId } from '@/types/nodeId'
-
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { assetPath } from '@e2e/fixtures/utils/paths'
@@ -14,6 +8,11 @@ import {
   preview3dRestoreCameraStatesMatch
 } from '@e2e/fixtures/utils/preview3dCameraState'
 import { Load3DHelper } from '@e2e/tests/load3d/Load3DHelper'
+import { expect } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
+
+import { toNodeId } from '@/types/nodeId'
+import type { NodeId } from '@/types/nodeId'
 
 async function orbitDragFromCanvasCenter(
   page: Page,

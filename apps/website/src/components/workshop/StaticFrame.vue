@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { useTemplateRef, watch } from 'vue'
-
 import type { HTMLAttributes } from 'vue'
 
 // Paints the first frame of an image, so animated thumbnails stay still.

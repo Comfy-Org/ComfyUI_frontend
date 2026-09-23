@@ -1,11 +1,11 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { storeToRefs } from 'pinia'
-import type { Ref } from 'vue'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { storeToRefs } from 'pinia'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Ref } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import { useBillingRouting } from './useBillingRouting'
 

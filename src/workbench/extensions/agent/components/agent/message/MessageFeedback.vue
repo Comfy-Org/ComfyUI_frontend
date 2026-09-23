@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { useClipboard } from '@vueuse/core'
 import {
   DropdownMenuContent,
@@ -10,13 +11,13 @@ import {
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-import { resolveReplyAssetDownload } from '../../../utils/resolveReplyAssetDownload'
+
 import type { ReplyAsset } from '../../../utils/replyAssets'
+import { resolveReplyAssetDownload } from '../../../utils/resolveReplyAssetDownload'
 
 const { markdown, assets = [] } = defineProps<{
   markdown: string

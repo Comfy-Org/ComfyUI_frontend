@@ -1,10 +1,10 @@
 import { ZIndex } from '@primeuix/utils/zindex'
-import { render, screen } from '@testing-library/vue'
-import type { ComponentProps } from 'vue-component-type-helpers'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { FocusScope } from 'reka-ui'
 import { afterEach, describe, expect, it } from 'vitest'
 import { nextTick, ref } from 'vue'
+import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
 import MultiSelect from './MultiSelect.vue'

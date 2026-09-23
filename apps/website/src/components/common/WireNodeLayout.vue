@@ -1,12 +1,10 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-
-import type { Ref } from 'vue'
-
 import { cn } from '@comfyorg/tailwind-utils'
 import { useResizeObserver, useTemplateRefsList } from '@vueuse/core'
+import type { Ref } from 'vue'
 import { computed, onMounted, ref, useSlots } from 'vue'
 
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 
 type TranslationKey = Parameters<typeof t>[0]

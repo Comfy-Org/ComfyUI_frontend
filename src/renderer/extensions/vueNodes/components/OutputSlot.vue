@@ -31,6 +31,7 @@
 </template>
 
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
 import { computed, onErrorCaptured, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -42,7 +43,6 @@ import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
 import { useNodeTooltips } from '@/renderer/extensions/vueNodes/composables/useNodeTooltips'
 import { useSlotLinkInteraction } from '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'
 import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
-import { cn } from '@comfyorg/tailwind-utils'
 import type { NodeId } from '@/types/nodeId'
 
 import SlotConnectionDot from './SlotConnectionDot.vue'

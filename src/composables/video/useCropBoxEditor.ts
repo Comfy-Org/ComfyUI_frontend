@@ -1,7 +1,6 @@
+import { clamp } from 'es-toolkit'
 import { onScopeDispose } from 'vue'
 import type { Ref } from 'vue'
-
-import { clamp } from 'es-toolkit'
 
 import type { Bounds } from '@/renderer/core/layout/types'
 

@@ -4,12 +4,12 @@ import { effectScope, nextTick, ref } from 'vue'
 import type { LGraphNode, LGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { useMissingNodes as useSharedMissingNodes } from '@/workbench/extensions/manager/composables/nodePack/useMissingNodes'
 import { useWorkflowPacks } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import type { WorkflowPack } from '@/workbench/extensions/manager/composables/nodePack/useWorkflowPacks'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
-import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 
 function useMissingNodes() {
   const scope = effectScope()

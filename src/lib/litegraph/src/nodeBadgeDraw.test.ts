@@ -1,8 +1,8 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { BadgeData, CoreBadgeData } from '@/types/badgeData'
 
-import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import {
   badgeDrawObjects,
   badgeRows,

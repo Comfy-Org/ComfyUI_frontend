@@ -1,15 +1,15 @@
+import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account-core/customerRecovery'
+import {
+  signUpWithProvisioning,
+  socialSignInWithProvisioning
+} from '@comfyorg/account-core/provisioning'
 import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes, getAdditionalUserInfo } from 'firebase/auth'
 import type { User, UserCredential } from 'firebase/auth'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import { fetchWithCustomerRecovery as fetchHealingMissingCustomer } from '@comfyorg/account-core/customerRecovery'
-import {
-  signUpWithProvisioning,
-  socialSignInWithProvisioning
-} from '@comfyorg/account-core/provisioning'
-
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
@@ -20,18 +20,17 @@ import {
   getPreservedQueryParam
 } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
+import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { invalidateRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
-import { reportError } from '@/platform/telemetry/reportError'
 import { useTelemetry } from '@/platform/telemetry'
-import { api } from '@/scripts/api'
-import { useDialogService } from '@/services/dialogService'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { api } from '@/scripts/api'
+import { useDialogService } from '@/services/dialogService'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import type { AuthHeader } from '@/types/authTypes'
 import type { operations } from '@/types/comfyRegistryTypes'
-import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 type CreditPurchaseResponse =
   operations['InitiateCreditPurchase']['responses']['201']['content']['application/json']

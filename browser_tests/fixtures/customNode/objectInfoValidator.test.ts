@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest'
 import type { ObjectInfo } from '@e2e/fixtures/customNode/objectInfoValidator'
 import { missingExpectedNodes } from '@e2e/fixtures/customNode/objectInfoValidator'
+import { describe, expect, it } from 'vitest'
 
 const objectInfo: ObjectInfo = {
   KSampler: { input: { required: { model: {}, seed: {} } } }

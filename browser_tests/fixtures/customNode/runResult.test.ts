@@ -1,9 +1,8 @@
-import { describe, expect, it } from 'vitest'
-
 import {
   classifyRun,
   describeRunOutcome
 } from '@e2e/fixtures/customNode/runResult'
+import { describe, expect, it } from 'vitest'
 
 describe('classifyRun', () => {
   it('PASS when every expected node appears in the executing stream', () => {

@@ -6,6 +6,8 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import { toNodeId } from '@/types/nodeId'
 import {
   collectAllNodes,
   collectFromNodes,
@@ -37,8 +39,6 @@ import {
   isMissingCandidateActive,
   findSubgraphNodePathById
 } from '@/utils/graphTraversalUtil'
-import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
-import { toNodeId } from '@/types/nodeId'
 
 import { createMockLGraphNode } from './__tests__/litegraphTestUtils'
 

@@ -1,14 +1,10 @@
-import { render, screen } from '@testing-library/vue'
+import type { HostedTopupCheckoutResult } from '@comfyorg/account-core/billing'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 
-import type { HostedTopupCheckoutResult } from '@comfyorg/account-core/billing'
-
-import {
-  WORKSHOP_CLOUD_BASE_URL,
-  WORKSHOP_CREDITS_URL
-} from '../../config/workshop-env'
+import { workshopTopupCommand } from '../../config/workshop-billing-sdk'
 import {
   clearTopUpWatch,
   refreshWorkshopCredits,
@@ -16,7 +12,10 @@ import {
   useWorkshopCredits,
   watchForTopUp
 } from '../../config/workshop-credits'
-import { workshopTopupCommand } from '../../config/workshop-billing-sdk'
+import {
+  WORKSHOP_CLOUD_BASE_URL,
+  WORKSHOP_CREDITS_URL
+} from '../../config/workshop-env'
 import { readBillingSdkTopupEnabled } from '../../config/workshop-features'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { captureWorkshopEvent } from '../../scripts/posthog'
