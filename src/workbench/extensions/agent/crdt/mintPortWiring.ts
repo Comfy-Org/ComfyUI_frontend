@@ -97,31 +97,21 @@ export interface MintPortWiring {
   detach(): void
 }
 
-/**
- * A pasted node's title comes straight from JSON-parsed clipboard data, so
- * nothing bounds it before it reaches the wire. Truncate rather than drop
- * the mint entirely - the rename itself is still real even when its text is
- * pathological.
- */
-const MAX_MINTED_TITLE_LENGTH = 1000
-
 /** `LGraphEventMode`'s finite members; NaN/Infinity/fractions/out-of-range never mint. */
-const MINTABLE_NODE_MODES = new Set<number>([
-  LGraphEventMode.ALWAYS,
-  LGraphEventMode.ON_EVENT,
-  LGraphEventMode.NEVER,
-  LGraphEventMode.ON_TRIGGER,
-  LGraphEventMode.BYPASS
-])
+const MINTABLE_NODE_MODES = new Set<number>(
+  Object.values(LGraphEventMode).filter(
+    (value): value is LGraphEventMode => typeof value === 'number'
+  )
+)
 
 type NodeFieldMintCandidate =
   | { field: 'title'; value: string }
   | { field: 'mode'; value: number }
 
-/** Bounds a pasted node's title to `MAX_MINTED_TITLE_LENGTH` (see its own doc). */
+/** `set_node_field`'s `title` validator only requires a string; no length bound to mirror. */
 function resolveTitleMint(newValue: unknown): NodeFieldMintCandidate | null {
   if (typeof newValue !== 'string') return null
-  return { field: 'title', value: newValue.slice(0, MAX_MINTED_TITLE_LENGTH) }
+  return { field: 'title', value: newValue }
 }
 
 /** Narrows to `LGraphEventMode`'s finite members (see `MINTABLE_NODE_MODES`). */
@@ -371,10 +361,12 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
 
   function handlePropertyChanged(event: PropertyChangedEvent): void {
     const { property, nodeId, oldValue, newValue } = event.detail
-    // `LGraphNode.configure` falls back to re-assigning the constructor's
-    // default title/mode even when nothing actually changed, and
-    // `useNodeReplacement`/`SubgraphBreadcrumb` reassign both on an
-    // already-attached node as routine upkeep, not a human edit.
+    // `setTrackedNodeState` already early-returns before dispatching when
+    // `oldValue === value`, so this guard is unreachable for callers that go
+    // through the tracked setter. It defends against `litegraphService.ts`,
+    // `LGraphCanvas.ts`, and `useNodeErrorFlagSync.ts`, which build a
+    // `node:property:changed` detail directly and could hand it any
+    // `oldValue`/`newValue` pair.
     if (oldValue === newValue) return
 
     const field = resolveMintableField(property, newValue)
@@ -388,6 +380,11 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   function tryAttachGraphEvents(): void {
     const graph = deps.getGraph()
     if (!graph || attachedGraphEvents === graph.events) return
+    // This re-attach branch is unreachable in production: `app.rootGraphInternal`
+    // is assigned once in `app.ts` setup and never replaced, so `graph.events`
+    // is one stable target for the app's lifetime. The real guard against
+    // minting into the outgoing document is `firedByBoundRootGraph()`, which
+    // compares graph ids (those move per tab even though the instance doesn't).
     if (attachedGraphEvents) {
       attachedGraphEvents.removeEventListener(
         'node:property:changed',

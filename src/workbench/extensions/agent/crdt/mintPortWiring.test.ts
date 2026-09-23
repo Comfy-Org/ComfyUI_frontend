@@ -341,7 +341,7 @@ describe('attachMintPortWiring', () => {
     expect(minted).toEqual([])
   })
 
-  it('caps a minted title at the defensive length bound', async () => {
+  it('mints a long title in full, uncapped (no length bound in the op contract)', async () => {
     const longTitle = 'x'.repeat(2000)
     dispatchPropertyChanged({
       nodeId: toNodeId(7),
@@ -356,7 +356,7 @@ describe('attachMintPortWiring', () => {
         op: 'set_node_field',
         node_id: toNodeId(7),
         field: 'title',
-        value: 'x'.repeat(1000)
+        value: longTitle
       }
     ])
   })
