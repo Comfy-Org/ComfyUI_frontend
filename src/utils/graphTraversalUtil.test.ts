@@ -1058,7 +1058,7 @@ describe('graphTraversalUtil', () => {
         expect(execId).toBe('123:999')
       })
 
-      it('regression: resolves the full execution ID for a subgraph-interior node whose id carries a colon (insert_workflow subgraph-interior remap)', () => {
+      it('keeps a colon-bearing subgraph-interior id opaque', () => {
         const rawId = 'insert:abc123:root:node:5'
         const targetNode = createMockNode(rawId)
         const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
@@ -1078,7 +1078,7 @@ describe('graphTraversalUtil', () => {
           graphId: subgraphUuid
         })
 
-        expect(execId).toBe(`123:${rawId}`)
+        expect(execId).toBe(rawId)
       })
     })
 
@@ -1112,14 +1112,7 @@ describe('graphTraversalUtil', () => {
         expect(locatorId).toBe(rawId)
       })
 
-      it('regression: keeps a colon-bearing id whole when the node really is subgraph-owned (insert_workflow subgraph-interior remap)', () => {
-        // comfy-multi-player's insert_workflow remaps a subgraph
-        // DEFINITION's interior nodes to the same colon-bearing shape as a
-        // root-level node -- PM-1580's sibling case one nesting level down.
-        // Vue's widget-rendering path (`computeProcessedWidgets`, via
-        // `executionIdFromState`/`getHostNode`) treated a null locator id
-        // here as "nothing to render", so this null previously meant every
-        // widget on the node vanished once its subgraph was entered.
+      it('keeps a colon-bearing id whole when the node is subgraph-owned', () => {
         const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
         const rawId = 'insert:abc123:root:node:5'
         const locatorId = locatorIdFromState(
@@ -1165,7 +1158,7 @@ describe('graphTraversalUtil', () => {
         expect(found).toBeNull()
       })
 
-      it('regression: finds a subgraph-interior node whose id carries a colon (insert_workflow subgraph-interior remap)', () => {
+      it('finds a subgraph-interior node whose id carries a colon', () => {
         const targetUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
         const rawId = 'insert:abc123:root:node:5'
         const targetNode = createMockNode(rawId)
@@ -1180,6 +1173,20 @@ describe('graphTraversalUtil', () => {
         const found = getNodeByLocatorId(graph, locatorId)
 
         expect(found).toBe(targetNode)
+      })
+
+      it('prefers an exact root ID over an ambiguous subgraph locator', () => {
+        const targetUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+        const rootNode = createMockNode(`${targetUuid}:node:5`)
+        const subgraph = createMockSubgraph(targetUuid, [
+          createMockNode('node:5')
+        ])
+        const graph = createMockGraph([
+          rootNode,
+          createMockNode('456', { isSubgraph: true, subgraph })
+        ])
+
+        expect(getNodeByLocatorId(graph, String(rootNode.id))).toBe(rootNode)
       })
 
       it('should return null when subgraph UUID not found', () => {

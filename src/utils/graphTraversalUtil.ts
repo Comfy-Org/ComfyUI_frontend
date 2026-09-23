@@ -42,13 +42,8 @@ export function subgraphIdFromState(
 }
 
 /**
- * The locator id for a node described by its shell state.
- *
- * A root-owned node has no ancestor path to encode, so its raw id can be
- * kept whole even when it contains a colon that isn't a subgraph-scope
- * prefix (comfy-multi-player's insert_workflow remapped ids, PM-1580) — see
- * `createLeafNodeLocatorId`. A node that IS meant to live inside a subgraph
- * still goes through the strict, delimiter-aware path.
+ * The locator ID for a node described by its shell state. Colon-bearing local
+ * IDs remain whole within either graph scope.
  */
 export function locatorIdFromState(
   state: Pick<NodeState, 'id' | 'graphId'>,
@@ -74,17 +69,7 @@ function createExecutionIdFromPath(
   const parentNodeIds = parseNodeIdPath(parentPath.split(':'))
   if (!parentNodeIds) return null
 
-  const strict = createNodeExecutionId([...parentNodeIds, nodeId])
-  if (strict) return strict
-
-  // The ancestor segments are real subgraph-instance ids and never carry
-  // colons; only the final segment -- the target node itself -- can be an
-  // insert_workflow-derived id with colons unrelated to path encoding
-  // (PM-1580's sibling case for a node owned by an inserted subgraph
-  // definition). Keep it whole rather than rejecting the whole path.
-  const bareLeaf = parseNodeId(nodeId)
-  if (!bareLeaf) return null
-  return [...parentNodeIds, bareLeaf].join(':') as unknown as NodeExecutionId
+  return createNodeExecutionId([...parentNodeIds, nodeId])
 }
 
 /**
@@ -635,13 +620,8 @@ export function executionIdFromState(
   const localNodeId = parseNodeId(state.id)
   if (!localNodeId) return null
 
-  // This fallback is always just "the local id" -- there is no ancestor
-  // path to encode without a resolved live node below -- so it can be kept
-  // whole even when it contains a colon that isn't a subgraph-scope prefix
-  // (comfy-multi-player's insert_workflow remapped ids, PM-1580, which
-  // remaps a subgraph DEFINITION's interior nodes the same way as root
-  // nodes) regardless of whether this node is root- or subgraph-owned.
   const fallback = createLeafNodeExecutionId(localNodeId)
+  if (localNodeId.includes(':')) return fallback
 
   const locatorId = locatorIdFromState(state, rootGraph.id)
   const node = locatorId && getNodeByLocatorId(rootGraph, locatorId)
@@ -663,10 +643,10 @@ export function getNodeByLocatorId(
   rootGraph: LGraph,
   locatorId: string
 ): LGraphNode | null {
-  // parseLeafNodeLocatorId tolerates a local id that itself contains a
-  // colon unrelated to subgraph-scope encoding (comfy-multi-player's
-  // insert_workflow remapped ids, PM-1580 and its subgraph-interior
-  // sibling), at any nesting depth.
+  const rootNodeId = parseNodeId(locatorId)
+  const rootNode = rootNodeId && rootGraph.getNodeById(rootNodeId)
+  if (rootNode) return rootNode
+
   const parsedIds = parseLeafNodeLocatorId(locatorId)
   if (!parsedIds) return null
 

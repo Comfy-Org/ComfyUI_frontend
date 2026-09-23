@@ -115,20 +115,8 @@ export function createNodeLocatorId(
 }
 
 /**
- * Create a `NodeLocatorId` from components, tolerating a colon inside the
- * local id, whether or not it is scoped to a subgraph.
- *
- * `createNodeLocatorId` rejects a colon in `localNodeId` because colon is
- * the delimiter between the subgraph UUID and the local id. That is the
- * right contract for an ordinary id, but it is too strict for a raw id that
- * itself contains colons for reasons that have nothing to do with
- * locator-id encoding: comfy-multi-player's `insert_workflow` remaps EVERY
- * node it inserts to such an id (e.g. `insert:<opId>:root:node:<originalId>`
- * at the root, PM-1580, or the same shape one level down for a node owned
- * by an inserted subgraph DEFINITION). There is no other id to disambiguate
- * a leaf id from, so nothing is lost by keeping it whole rather than
- * rejecting it outright -- see {@link parseLeafNodeLocatorId} for the
- * matching decode.
+ * Create a locator while preserving an `insert_workflow` node's colon-bearing
+ * local ID in either graph scope.
  */
 export function createLeafNodeLocatorId(
   subgraphUuid: string | null,
@@ -145,15 +133,8 @@ export function createLeafNodeLocatorId(
 }
 
 /**
- * Parse a `NodeLocatorId` produced by {@link createLeafNodeLocatorId},
- * tolerating a colon-bearing local id at any nesting depth.
- *
- * A pure widening of {@link parseNodeLocatorId}: anything the strict parser
- * already accepts parses identically here. It only takes over when the
- * strict, delimiter-aware split fails, by splitting on the FIRST colon
- * alone -- when that prefix is UUID-shaped, everything after it is the
- * local id, however many colons it itself carries; otherwise the whole
- * string is a root-owned local id.
+ * Parse a locator whose local ID may contain colons. A UUID-shaped first
+ * segment denotes subgraph scope; otherwise the complete value is a root ID.
  */
 export function parseLeafNodeLocatorId(
   id: string

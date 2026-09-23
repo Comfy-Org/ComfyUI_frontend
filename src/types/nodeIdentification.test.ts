@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -157,14 +157,11 @@ describe('nodeIdentification', () => {
       })
 
       it('keeps a colon-bearing id whole when it really is subgraph-nested (insert_workflow subgraph-interior remap)', () => {
-        // comfy-multi-player's insert_workflow remaps a subgraph
-        // DEFINITION's interior nodes to the same colon-bearing shape as a
-        // root-level node -- there is equally no other id to disambiguate
-        // it from, so this is PM-1580's sibling case one nesting level down.
         const rawId = 'insert:abc123:root:node:5'
         const result = createLeafNodeLocatorId(validUuid, rawId)
+        assert(result)
         expect(result).toBe(`${validUuid}:${rawId}`)
-        expect(parseLeafNodeLocatorId(result!)).toEqual({
+        expect(parseLeafNodeLocatorId(result)).toEqual({
           subgraphUuid: validUuid,
           localNodeId: rawId
         })
