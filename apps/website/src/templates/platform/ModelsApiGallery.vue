@@ -24,6 +24,9 @@ const activeMedia = (card: ModelsGalleryCard): GalleryMedia =>
   card.media[rotationIndex.value % card.media.length]
 
 const isVideo = (media: GalleryMedia) => media.src.endsWith('.webm')
+
+const hrefFor = (card: ModelsGalleryCard): string | undefined =>
+  card.modelId ? modelGalleryHref(card.modelId, card.useCase) : undefined
 </script>
 
 <template>
@@ -36,7 +39,7 @@ const isVideo = (media: GalleryMedia) => media.src.endsWith('.webm')
         :is="card.modelId ? 'a' : 'div'"
         v-for="card in cards"
         :key="card.titleKey"
-        :href="card.modelId ? modelGalleryHref(card.modelId) : undefined"
+        :href="hrefFor(card)"
         :class="
           cn(
             'relative block aspect-square overflow-hidden rounded-3xl bg-black/40',

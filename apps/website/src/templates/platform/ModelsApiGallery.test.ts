@@ -34,14 +34,27 @@ describe('ModelsApiGallery', () => {
     expect(seedanceClip()).not.toBe(firstClip)
   })
 
-  it('links a card with a model id to its Models page', () => {
+  it('links a card with a model id to its canonical Models page, not a redirecting short slug', () => {
     render(ModelsApiGallery, { props: { locale: 'en' } })
 
     expect(
       screen.getByRole('link', {
         name: new RegExp(t('cloud.aiModels.card.seedance25', 'en'))
       })
-    ).toHaveAttribute('href', '/models/byteplus--dreamina-seedance-2-5-260628/')
+    ).toHaveAttribute(
+      'href',
+      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
+    )
+  })
+
+  it('links a model id shared by several use cases to the specific page the card names', () => {
+    render(ModelsApiGallery, { props: { locale: 'en' } })
+
+    expect(
+      screen.getByRole('link', {
+        name: new RegExp(t('cloud.aiModels.card.geminiOmniFlash', 'en'))
+      })
+    ).toHaveAttribute('href', '/models/gemini--omni-1.1-flash--animate-images/')
   })
 
   it('renders a card without a model id as a plain, non-linked div', () => {
