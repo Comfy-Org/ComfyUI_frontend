@@ -39,7 +39,6 @@ const {
   answeringAskIds?: ReadonlySet<string>
   paywallPresentation?: AgentPaywallPresentation
 }>()
-const { t } = useI18n()
 
 const emit = defineEmits<{
   feedback: [vote: 'up' | 'down' | null]
