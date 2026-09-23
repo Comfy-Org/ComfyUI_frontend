@@ -67,6 +67,7 @@ test(
       const threadId = new URL(route.request().url()).pathname
         .split('/')
         .at(-2)!
+      promptHistory.historyRequestThreadIds.push(threadId)
       const turnId = 'e2e-tool-call-turn'
       const messages: AgentMessage[] = [
         {
@@ -139,6 +140,7 @@ test(
     ])
     const restoredThreadId = promptHistory.historyRequestThreadIds.at(-1)
     expect(restoredThreadId).toBeTruthy()
+    const historyRequestCount = promptHistory.historyRequestThreadIds.length
 
     await reopenedPanel
       .getByRole('button', { name: enMessages.agent.newChat })
@@ -153,6 +155,9 @@ test(
     await reopenedPanel
       .getByRole('button', { name: 'Inline reference round trip', exact: true })
       .click()
+    await expect
+      .poll(() => promptHistory.historyRequestThreadIds.length)
+      .toBeGreaterThan(historyRequestCount)
     await expect
       .poll(() => promptHistory.historyRequestThreadIds.at(-1))
       .toBe(restoredThreadId)
