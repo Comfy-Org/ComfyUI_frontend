@@ -28,6 +28,10 @@ writeFileSync(
   `export { useExampleStore } from './store'`
 )
 writeFileSync(
+  path.join(directory, 'src/namespaceBarrel.ts'),
+  `export * as stores from './store'`
+)
+writeFileSync(
   path.join(directory, 'src/layoutStore.ts'),
   `export const layoutStore = new Map()`
 )
@@ -47,6 +51,22 @@ export function formatName() { return 'name' }`
 writeFileSync(
   path.join(directory, 'src/mixedExports.ts'),
   `export { type Store, defineStore } from 'pinia'`
+)
+const cachedStore = path.join(directory, 'src/cachedStore.ts')
+writeFileSync(
+  cachedStore,
+  `import { defineStore } from 'pinia'
+export const useCachedStore = defineStore('cached', () => ({}))`
+)
+writeFileSync(
+  path.join(directory, 'src/cachedBarrel.ts'),
+  `export * from './cachedStore'`
+)
+const deletedStore = path.join(directory, 'src/deletedStore.ts')
+writeFileSync(
+  deletedStore,
+  `import { defineStore } from 'pinia'
+export const useDeletedStore = defineStore('deleted', () => ({}))`
 )
 afterAll(() => rmSync(directory, { recursive: true, force: true }))
 
@@ -120,6 +140,7 @@ vi.spyOn(stores, 'helper')`
     ),
     invalid(`vi.doMock('./namespaceStore', () => ({}))`, /Do not mock Pinia/),
     invalid(`vi.mock('./barrel', () => ({}))`, /Do not mock Pinia/),
+    invalid(`vi.mock('./namespaceBarrel', () => ({}))`, /Do not mock Pinia/),
     invalid(`vi.mock('./mixedExports', () => ({}))`, /Do not mock Pinia/),
     invalid(
       `import { vi as testDouble } from 'vitest'
@@ -153,6 +174,29 @@ vi.spyOn(pinia, 'defineStore')`,
       /Do not mock Pinia/
     )
   ]
+})
+
+describe.sequential('module cache freshness', () => {
+  ruleTester.run('warms module caches', useGlobalPinia, {
+    valid: [],
+    invalid: [
+      invalid(`vi.mock('./cachedBarrel')`, /Do not mock Pinia/),
+      invalid(`vi.mock('./deletedStore')`, /Do not mock Pinia/)
+    ]
+  })
+
+  it('changes resolved modules', () => {
+    writeFileSync(cachedStore, `export function helper() {}`)
+    rmSync(deletedStore)
+  })
+
+  ruleTester.run('refreshes module caches', useGlobalPinia, {
+    valid: [
+      { filename, code: `vi.mock('./cachedBarrel')` },
+      { filename, code: `vi.mock('./deletedStore')` }
+    ],
+    invalid: []
+  })
 })
 
 it('enforces the rule through both repository lint configurations', () => {
