@@ -117,6 +117,10 @@ vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
   }
 }))
 
+// `SYSTEM_MINT_ACTOR` is deliberately NOT re-declared here: the composable
+// imports it from `./mintActor`, a module this file never mocks, so every
+// assertion below exercises the real constant instead of a copy that could
+// silently drift from it.
 vi.mock<unknown>(import('./docFrameClient'), () => ({
   DocFrameClient: class {
     destroy = clientState.destroy
@@ -124,8 +128,7 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
     constructor(transport: DocFrameTransport) {
       clientState.transport = transport
     }
-  },
-  SYSTEM_MINT_ACTOR: 'system:mint'
+  }
 }))
 
 vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
@@ -712,11 +715,11 @@ describe('useAgentCrdtFollower', () => {
 
     dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
     expect(status().updatesApplied).toBe(0)
-    expect(adapterState.clearForReset).toHaveBeenLastCalledWith('wf-1', {
-      source: 'agent-remote',
-      actor: 'agent-lineage',
-      opId: 'follower-replaced:wf-1'
-    })
+    // The doc_reset just above already made and executed the one sweep
+    // decision for this exact lineage break; this follower_replaced only
+    // rebinds to the replacement doc and must not clear a second time from a
+    // separately (and less precisely) derived decision.
+    expect(adapterState.clearForReset).toHaveBeenCalledTimes(1)
     expect(adapterState.bind).toHaveBeenCalledTimes(2)
     expect(adapterState.bind).toHaveBeenLastCalledWith(
       'wf-1',
@@ -725,7 +728,22 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('a doc_reset minted for the very first time (actor system:mint) does not clear the live graph, since nothing was tracked by the CRDT doc yet', () => {
+  it('a follower_replaced with no preceding doc_reset (a deliberate workflow switch) always clears', () => {
+    const { unmount } = mountFollower('wf-1')
+    expect(adapterState.bind).toHaveBeenCalledTimes(1)
+
+    dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
+
+    expect(adapterState.clearForReset).toHaveBeenCalledWith('wf-1', {
+      source: 'agent-remote',
+      actor: 'agent-lineage',
+      opId: 'follower-replaced:wf-1'
+    })
+    expect(adapterState.bind).toHaveBeenCalledTimes(2)
+    unmount()
+  })
+
+  it('a doc_reset minted for the very first time (actor system:mint, seq 1) does not clear the live graph, since nothing was tracked by the CRDT doc yet', () => {
     adapterState.hasNodes.mockReturnValueOnce(false)
     const { unmount } = mountFollower('wf-1')
 
@@ -755,6 +773,24 @@ describe('useAgentCrdtFollower', () => {
       source: 'agent-remote',
       actor: 'system:mint',
       opId: 'doc-reset:2'
+    })
+    unmount()
+  })
+
+  it('a system:mint doc_reset at a non-1 seq still clears even when the doc has zero nodes, since seq alone no longer proves a true first mint', () => {
+    adapterState.hasNodes.mockReturnValueOnce(false)
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_reset', {
+      workflowId: 'wf-1',
+      actor: 'system:mint',
+      seq: 7
+    })
+
+    expect(adapterState.clearForReset).toHaveBeenCalledWith('wf-1', {
+      source: 'agent-remote',
+      actor: 'system:mint',
+      opId: 'doc-reset:7'
     })
     unmount()
   })

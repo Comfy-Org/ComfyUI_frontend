@@ -105,16 +105,56 @@ const EMPTY_CATALOG: WidgetCatalog = { types: {} }
 /**
  * Parses a raw `/ws` message down to its `doc_subscribe` payload for
  * `WORKFLOW_ID`, or `null` for any other frame. Extracted to keep the mock's
- * `onMessage` handler to the post-parse decision.
+ * `onMessage` handler to the post-parse decision. A parse failure here must
+ * not throw inside the mock's message handler -- that would silently kill
+ * the subscribe ack and degrade the test into a vacuous pass instead of a
+ * clear failure.
  */
 function parseDocSubscribeForWorkflow(raw: Buffer | string): boolean {
-  const frame: unknown = JSON.parse(raw.toString())
+  let frame: unknown
+  try {
+    frame = JSON.parse(raw.toString())
+  } catch {
+    return false
+  }
   if (typeof frame !== 'object' || frame === null) return false
   const { type, data } = frame as { type?: unknown; data?: unknown }
   if (type !== 'doc_subscribe' || typeof data !== 'object' || data === null)
     return false
   const { workflow_id } = data as { workflow_id?: unknown }
   return workflow_id === WORKFLOW_ID
+}
+
+/**
+ * Counts `doc_subscribe` frames the mock has seen for `WORKFLOW_ID` and lets
+ * callers await a specific count instead of a timing proxy (socket open,
+ * a screenshot). The first subscribe is the turn's own follower binding; the
+ * second is `LayoutFollowerBridge`'s unconditional resubscribe after the
+ * mint reset below replaces the doc -- a deterministic signal that the reset
+ * has actually been processed (skip decision made, doc dropped, resubscribe
+ * sent) before assertions run.
+ */
+function createSubscribeTracker(): {
+  recordSubscribe: () => void
+  waitForCount: (target: number) => Promise<void>
+} {
+  let count = 0
+  const waiters: { target: number; resolve: () => void }[] = []
+  return {
+    recordSubscribe: () => {
+      count++
+      for (let i = waiters.length - 1; i >= 0; i--) {
+        if (count >= waiters[i].target) {
+          waiters[i].resolve()
+          waiters.splice(i, 1)
+        }
+      }
+    },
+    waitForCount: (target) => {
+      if (count >= target) return Promise.resolve()
+      return new Promise((resolve) => waiters.push({ target, resolve }))
+    }
+  }
 }
 
 test.describe(
@@ -132,6 +172,7 @@ test.describe(
       const vueNodes = new VueNodeHelpers(page)
 
       let socket: WebSocketRoute | null = null
+      const subscribeTracker = createSubscribeTracker()
       const send = (frame: AgentWsEvent | HostFrame): void => {
         if (
           (frame.type.startsWith('doc_') || frame.type === 'awareness') &&
@@ -146,6 +187,7 @@ test.describe(
         socket = ws
         ws.onMessage((raw) => {
           if (!parseDocSubscribeForWorkflow(raw)) return
+          subscribeTracker.recordSubscribe()
           send(host.subscribed())
         })
       })
@@ -184,7 +226,13 @@ test.describe(
 
       // The turn's acceptance ack binds this workflow and subscribes the
       // CRDT follower -- an "early follower" relative to the mint below.
-      await expect.poll(() => socket !== null).toBe(true)
+      // Waiting for the subscribe frame itself (rather than just the socket
+      // opening) is what guarantees the reset sent further down actually
+      // lands on a follower that is subscribed to WORKFLOW_ID: sending it
+      // any earlier would be dropped by
+      // `LayoutFollowerBridge.onDocReset`'s `sentWorkflowId` check and the
+      // test would pass whether or not the fix under test works.
+      await subscribeTracker.waitForCount(1)
 
       // Baseline: subscribing to a workflow whose CRDT doc has never been
       // minted delivers nothing to catch up on, and correctly leaves the
@@ -220,6 +268,16 @@ test.describe(
         type: 'doc_reset',
         data: { v: 1, workflow_id: WORKFLOW_ID, seq: 1, actor: 'system:mint' }
       })
+
+      // Deterministic post-reset signal: `LayoutFollowerBridge.onDocReset`
+      // unconditionally drops the old doc and resubscribes once it has
+      // dispatched `doc_reset` (which is where the skip decision under test
+      // is made) -- regardless of whether that decision skipped the sweep.
+      // Waiting for this second subscribe therefore proves the reset has
+      // been fully processed before the assertions below run, instead of
+      // relying on `page.screenshot()`'s incidental timing or the
+      // already-visible pre-reset DOM state.
+      await subscribeTracker.waitForCount(2)
 
       // Visual proof of the (non-)flicker: the canvas should look identical
       // before and after the mint reset.

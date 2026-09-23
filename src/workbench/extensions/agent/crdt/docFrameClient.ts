@@ -2,13 +2,9 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
+import { SYSTEM_MINT_ACTOR } from './mintActor'
+
 export const DOC_PROTOCOL_VERSION = 1
-/**
- * Backend actor for `ensureDoc`'s lazy, first-ever doc creation (cloud
- * `crdt.go`) — a `doc_reset`/`follower_replaced` frame carrying it has no
- * prior CRDT-tracked content to lose.
- */
-export const SYSTEM_MINT_ACTOR = 'system:mint'
 /** Keep this encoded-field cap aligned with cloud's `MaxDocFrameB64Len`. */
 const MAX_DOC_UPDATE_B64_LENGTH = 8 << 20
 const MAX_WORKFLOW_ID_LENGTH = 128

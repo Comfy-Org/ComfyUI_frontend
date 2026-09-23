@@ -29,11 +29,12 @@ import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
-import { DocFrameClient, SYSTEM_MINT_ACTOR } from './docFrameClient'
+import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import { SYSTEM_MINT_ACTOR } from './mintActor'
 import { createOpCoalescer } from './opCoalescer'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
@@ -484,18 +485,40 @@ function startAgentCrdtFollower(
     actor: actor ?? 'agent-reset',
     opId: `doc-reset:${seq ?? 'unknown'}`
   })
+  // A doc_reset is always followed synchronously by `follower_replaced` for
+  // the same lineage break (LayoutFollowerBridge.onDocReset dispatches
+  // `doc_reset`, THEN drops the old FollowerDoc, THEN dispatches
+  // `follower_replaced`). The one sweep decision below is made here, while
+  // `bridge.follower` still holds the pre-drop doc that `hasNodes` reads —
+  // by the time `follower_replaced` fires that doc is already gone, replaced
+  // by an empty one, so re-deriving a decision there would always see zero
+  // nodes. `onFollowerReplaced` reuses this decision instead of making its
+  // own from the bare actor string, which is also the one field
+  // `LayoutFollowerBridge.subscribe`'s OWN `follower_replaced` dispatch (a
+  // deliberate workflow switch, not a reset) never carries.
+  let pendingResetSweepDecision: { workflowId: string; skip: boolean } | null =
+    null
   // Skip-check lives here so a benign first-mint reset (no prior projection
   // state to lose) doesn't clear the canvas out from under the user. A mint
   // actor alone is not enough: the backend also mints mid-turn on a lineage
   // break for a workflow the follower already has content for, and that
   // reset must still sweep — so the skip additionally requires the
-  // projection to currently hold zero nodes for this workflow.
+  // projection to currently hold zero nodes for this workflow, corroborated
+  // by the server's own seq (the lazy-mint broadcast is pinned at seq 1 by
+  // the backend's `TestLazyMintBroadcastsDocResetToEarlyFollowers`) so a
+  // mid-turn re-mint that happens to arrive while the doc is momentarily
+  // empty still doesn't qualify.
   const sweepProjectionUnlessMintActor = (
     workflowId: string,
     actor: string | undefined,
     seq: number | undefined
   ): void => {
-    if (actor === SYSTEM_MINT_ACTOR && !projection.hasNodes(workflowId)) return
+    const skip =
+      actor === SYSTEM_MINT_ACTOR &&
+      !projection.hasNodes(workflowId) &&
+      seq === 1
+    pendingResetSweepDecision = { workflowId, skip }
+    if (skip) return
     projection.clearForReset(workflowId, buildDocResetContext(actor, seq))
   }
   const onDocReset: EventListener = (event) => {
@@ -521,10 +544,7 @@ function startAgentCrdtFollower(
     // new doc — otherwise it keeps observing the destroyed one and goes deaf
     // when the socket recovers and updates land in the replacement.
     if (!(event instanceof CustomEvent)) return
-    const detail = event.detail as {
-      workflowId?: unknown
-      actor?: unknown
-    } | null
+    const detail = event.detail as { workflowId?: unknown } | null
     const workflowId = detail?.workflowId
     if (
       isTargetActive.value &&
@@ -533,7 +553,10 @@ function startAgentCrdtFollower(
     ) {
       updatesApplied.value = 0
       confirmedDeletes.clear()
-      if (detail?.actor !== SYSTEM_MINT_ACTOR) {
+      const handledByDocReset =
+        pendingResetSweepDecision?.workflowId === workflowId
+      if (handledByDocReset) pendingResetSweepDecision = null
+      else {
         projection.clearForReset(workflowId, {
           source: 'agent-remote',
           actor: 'agent-lineage',
