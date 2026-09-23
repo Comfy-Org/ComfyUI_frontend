@@ -91,7 +91,7 @@ copies it anywhere.
    existing reader of `selectOnly`, including `isSelectOnly()` in
    `litegraphUtil.ts`, sees the mode without a pin or a projection.
 
-3. **Three chokepoints read the mode; nothing else does.**
+3. **Three primary integration boundaries read the mode.**
 
    - **Canvas pointer and key dispatch.** `_processPrimaryButton` classifies
      the press once: while select-only it runs
@@ -122,19 +122,35 @@ copies it anywhere.
    - **The DOM layers above the canvas.** `GraphCanvas.vue` renders the Vue
      node layer (`TransformPane`) and `DomWidgets.vue` renders the classic
      DOM widget layer with `:inert="agentNodeSelectionStore.isActive"`. An
-     inert subtree receives no pointer events and cannot hold focus, so
-     while picking every press, wheel and key lands on the canvas, which
-     classifies it as above, and no widget, header button, resize handle,
-     slot or media preview needs a binding of its own. The Vue node pointer
-     interactions therefore no longer read the store either.
+     inert subtree is not a pointer target and its descendants cannot take
+     or keep focus, so while picking every press and wheel reaches the
+     canvas underneath, which classifies it as above, and no widget, header
+     button, resize handle, slot or media preview needs a pointer binding of
+     its own. `inert` promises nothing about where keyboard events go;
+     keyboard safety comes from `processKey`, `commandStore.execute` and the
+     document-level guards below, with no focused widget left to receive
+     the keys. The Vue node pointer interactions therefore no longer read
+     the store either.
 
-   The document-level input listeners that bypass the canvas (`usePaste.ts`,
-   the `ChangeTracker` keydown listener, the `drop` listener in `app.ts` and
-   `useCanvasDrop.ts`) are each the single entry point for their input class
-   and guard with `isSelectOnly(canvas)`, which now reads the injected mode.
-   The `ChangeTracker` listener snapshots the mode at keypress before
-   deferring to the animation frame, so `undoRedo` decides with the value the
-   user pressed under.
+   **Document-level guards outside the three boundaries.** Input that
+   bypasses the canvas and the command store is guarded at its own entry
+   point with `isSelectOnly(canvas)` (`litegraphUtil.ts`), which reads
+   `canvas.selectOnly` and so the injected mode:
+
+   - the `paste` listener in `usePaste.ts`;
+   - the `ChangeTracker` `keydown` listener, which snapshots the mode at
+     keypress before deferring to the animation frame, so `undoRedo` decides
+     with the value the user pressed under;
+   - the `drop` listener in `app.ts` (file drops) and the `onDrop` handler in
+     `useCanvasDrop.ts` (tree-explorer and model drops);
+   - `useSelectionOperations.deleteSelection`, reached from the selection
+     menu options rather than through a command;
+   - `litegraphUtil.createNode`, the node-creating step of the paste and
+     file-drop paths.
+
+   These are the `isSelectOnly()` call sites outside the boundaries. A new
+   edit path that reaches the graph without passing a boundary has to join
+   this list.
 
 4. **Chrome reads the store.** Action bars, sidebar, splitter panels,
    selection toolbox, toasts, banner, the queue and error overlays in
@@ -239,8 +255,9 @@ copies it anywhere.
 
 ### Positive
 
-- One fact, one reader, three reads. No canvas property is pinned, no flag
-  is copied into a second store, and no owner set has to be released.
+- One fact, one reader, three primary boundaries and a short, closed list
+  of document-level guards. No canvas property is pinned, no flag is copied
+  into a second store, and no owner set has to be released.
 - Widgets (Vue, DOM, canvas-drawn), titles, collapse, resize, link drags,
   slot disconnects, context menus, paste, undo and the mutation commands are
   blocked while picking in both renderers; click-to-select, space-bar pan,
@@ -254,9 +271,9 @@ copies it anywhere.
 ### Negative
 
 - A new mutating core command declares `mutatesGraph` and nothing checks
-  that it does; the document-level paste, drop and history listeners keep
-  their `isSelectOnly()` guard, so a new document-level edit path must still
-  opt in.
+  that it does; the document-level guards under decision 3 are
+  hand-maintained call sites, so a new edit path that bypasses the three
+  boundaries must still opt in.
 - The Vue node layer receives no pointer events while picking, so nodes
   show no hover feedback and Vue-side selection code does not run; the
   canvas selects through `processSelect()` with select-only semantics, which
