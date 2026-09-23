@@ -33,11 +33,11 @@ function thinkingMessage(thinkingText?: string): AssistantMessage {
   }
 }
 
-function paywallMessage(): AssistantMessage {
+function paywallMessage(message?: string): AssistantMessage {
   return {
     id: 'msg-paywall' as TurnId,
     role: 'assistant',
-    parts: [{ type: 'paywall' }],
+    parts: [{ type: 'paywall', message }],
     streaming: false,
     thinking: false
   }
@@ -46,7 +46,10 @@ function paywallMessage(): AssistantMessage {
 describe('AgentMessage paywall reply', () => {
   it('renders the usage-limit card as an inline assistant reply', () => {
     render(AgentMessage, {
-      props: { message: paywallMessage() },
+      props: {
+        message: paywallMessage(),
+        paywallPresentation: { kind: 'subscribed', showUpgrade: true }
+      },
       global: { plugins: [i18n] }
     })
 
@@ -64,11 +67,34 @@ describe('AgentMessage paywall reply', () => {
     ).toBeInTheDocument()
   })
 
+  it('renders the server denial reason from the part through to the card', () => {
+    const serverMessage =
+      'Your workspace spent its September credits on 2026-09-18; billing owner must top up.'
+    render(AgentMessage, {
+      props: {
+        message: paywallMessage(serverMessage),
+        paywallPresentation: { kind: 'subscribed', showUpgrade: true }
+      },
+      global: { plugins: [i18n] }
+    })
+
+    const card = screen.getByRole('alert')
+    expect(within(card).getByText(serverMessage)).toBeInTheDocument()
+    expect(
+      screen.queryByText(
+        'This workspace has spent its monthly credits and its top-up balance. Add credits to keep the agent running.'
+      )
+    ).not.toBeInTheDocument()
+  })
+
   it('exposes distinct actions for adding credits and upgrading', async () => {
     const user = userEvent.setup()
     const onPaywallAction = vi.fn()
     render(AgentMessage, {
-      props: { message: paywallMessage() },
+      props: {
+        message: paywallMessage(),
+        paywallPresentation: { kind: 'subscribed', showUpgrade: true }
+      },
       attrs: { onPaywallAction },
       global: { plugins: [i18n] }
     })

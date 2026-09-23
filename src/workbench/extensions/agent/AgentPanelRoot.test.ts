@@ -257,12 +257,13 @@ vi.mock(
 )
 
 const paywallWorkspace = vi.hoisted(() => ({
-  role: 'owner' as 'owner' | 'member'
+  role: 'owner' as 'owner' | 'member' | undefined
 }))
 const paywallCapabilities = vi.hoisted(() => ({
   canTopUp: true,
   canSubscribeSelfServe: true,
-  isReady: true
+  isReady: true,
+  hasResolvedCapabilities: true
 }))
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null
@@ -278,7 +279,7 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'), {
 })
 
 import type { AgentMessages, TurnId } from './schemas/agentApiSchema'
-import { zAgentWsEvent } from './schemas/agentApiSchema'
+import { toTurnId, zAgentWsEvent } from './schemas/agentApiSchema'
 import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
@@ -345,7 +346,10 @@ beforeEach(() => {
       canSubscribeSelfServe: computed(
         () => paywallCapabilities.canSubscribeSelfServe
       ),
-      isReady: computed(() => paywallCapabilities.isReady)
+      isReady: computed(() => paywallCapabilities.isReady),
+      hasResolvedCapabilities: computed(
+        () => paywallCapabilities.hasResolvedCapabilities
+      )
     })
   )
   workflowStore = useWorkflowStore()
@@ -381,9 +385,19 @@ beforeEach(() => {
   focusNodeInstance.mockReset()
   socketSend.mockReset()
   paywallWorkspace.role = 'owner'
+  vi.spyOn(
+    useTeamWorkspaceStore(),
+    'activeWorkspace',
+    'get'
+  ).mockImplementation(() =>
+    paywallWorkspace.role === undefined
+      ? null
+      : fromPartial({ role: paywallWorkspace.role })
+  )
   paywallCapabilities.canTopUp = true
   paywallCapabilities.canSubscribeSelfServe = true
   paywallCapabilities.isReady = true
+  paywallCapabilities.hasResolvedCapabilities = true
   paywallBilling.tier = 'STANDARD'
   paywallHasFunds.value = false
 })
@@ -713,7 +727,7 @@ describe('AgentPanelRoot paywall actions', () => {
   it('routes the subscribed owner actions through account preconditions', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -723,12 +737,35 @@ describe('AgentPanelRoot paywall actions', () => {
     await userEvent.click(
       await screen.findByRole('button', { name: 'Upgrade plan' })
     )
-    await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
+    expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
+      'subscription'
+    )
 
+    await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
     expect(openAccountPrecondition.mock.calls).toEqual([
       ['subscription'],
       ['credits']
     ])
+  })
+
+  it('routes Subscribe through the subscription precondition', async () => {
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().messages.push({
+      id: toTurnId('msg-paywall'),
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    )
+
+    expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
+      'subscription'
+    )
   })
 
   it('dismisses the paywall after billing confirms funds are available', async () => {
@@ -752,9 +789,11 @@ describe('AgentPanelRoot paywall actions', () => {
 
   it('hides purchase actions from a Team member without billing permissions', async () => {
     paywallWorkspace.role = 'member'
+    paywallCapabilities.canTopUp = false
+    paywallCapabilities.canSubscribeSelfServe = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -778,7 +817,7 @@ describe('AgentPanelRoot paywall actions', () => {
       paywallBilling.tier = tier
       render(AgentPanelRoot, { global: { plugins: [i18n] } })
       useAgentConversationStore().messages.push({
-        id: 'msg-paywall' as TurnId,
+        id: toTurnId('msg-paywall'),
         role: 'assistant',
         parts: [{ type: 'paywall' }],
         streaming: false,
@@ -798,7 +837,7 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallCapabilities.canSubscribeSelfServe = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -817,7 +856,7 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallCapabilities.canTopUp = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -837,7 +876,7 @@ describe('AgentPanelRoot paywall actions', () => {
     paywallCapabilities.canSubscribeSelfServe = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
+      id: toTurnId('msg-paywall'),
       role: 'assistant',
       parts: [{ type: 'paywall' }],
       streaming: false,
@@ -857,29 +896,32 @@ describe('AgentPanelRoot paywall actions', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('does not interpret the pending false pair as sales-managed', async () => {
-    paywallCapabilities.canTopUp = false
-    paywallCapabilities.canSubscribeSelfServe = false
-    paywallCapabilities.isReady = false
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    useAgentConversationStore().messages.push({
-      id: 'msg-paywall' as TurnId,
-      role: 'assistant',
-      parts: [{ type: 'paywall' }],
-      streaming: false,
-      thinking: false
-    })
+  it.for(['pending', 'denied', 'unresolved-role'] as const)(
+    'withholds purchase actions for %s without inventing a sales-managed plan',
+    async (state) => {
+      paywallCapabilities.canTopUp = false
+      paywallCapabilities.canSubscribeSelfServe = false
+      paywallCapabilities.isReady = state !== 'pending'
+      paywallCapabilities.hasResolvedCapabilities = state === 'unresolved-role'
+      if (state === 'unresolved-role') paywallWorkspace.role = undefined
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      useAgentConversationStore().messages.push({
+        id: toTurnId('msg-paywall'),
+        role: 'assistant',
+        parts: [{ type: 'paywall' }],
+        streaming: false,
+        thinking: false
+      })
 
-    expect(
-      await screen.findByRole('button', { name: 'Add credits' })
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Upgrade plan' })
-    ).toBeInTheDocument()
-    expect(
-      screen.queryByText(/billed through your Comfy account team/i)
-    ).not.toBeInTheDocument()
-  })
+      expect(await screen.findByText('Out of credits')).toBeInTheDocument()
+      expect(
+        screen.queryByRole('button', { name: /add credits|upgrade|subscribe/i })
+      ).not.toBeInTheDocument()
+      expect(
+        screen.queryByText(/billed through your Comfy account team/i)
+      ).not.toBeInTheDocument()
+    }
+  )
 })
 
 describe('AgentPanelRoot session notices', () => {
@@ -1198,6 +1240,40 @@ describe('AgentPanelRoot attach flow', () => {
     expect(screen.getByRole('button', { name: 'cat.png' })).toBeInTheDocument()
   })
 
+  it('uses the submitted filename when the upload response omits a name', async () => {
+    const messageBodies: unknown[] = []
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.endsWith('/api/upload/image')) {
+          return json(200, { subfolder: '', type: 'input' })
+        }
+        messageBodies.push(JSON.parse(String(init?.body)))
+        return json(202, { thread_id: 'th-1', message_id: 'm-1' })
+      })
+    )
+
+    renderWithSelectedTarget()
+
+    await openAddMenu()
+    await userEvent.click(
+      await screen.findByRole('menuitem', {
+        name: i18n.global.t('agent.attachFiles')
+      })
+    )
+    await userEvent.upload(
+      screen.getByTestId<HTMLInputElement>('agent-file-input'),
+      new File(['x'], 'cat.png', { type: 'image/png' })
+    )
+
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('describe it')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(messageBodies).toHaveLength(1)
+    expect(messageBodies[0]).toMatchObject({ attachments: ['cat.png'] })
+  })
+
   it('uploads a picked video above 20MB when the server permits it', async () => {
     getServerFeature.mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
@@ -1295,13 +1371,13 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useToastStore().messagesToAdd).toContainEqual(
       expect.objectContaining({
         severity: 'warn',
-        detail: 'movie.mp4 is larger than 24MB'
+        detail: 'movie.mp4 is larger than 24 MB'
       })
     )
     expect(screen.queryByText('movie.mp4')).not.toBeInTheDocument()
   })
 
-  it('keeps the image limit at 20MB when the server permits more', async () => {
+  it('uses a larger server limit for non-video attachments', async () => {
     getServerFeature.mockReturnValue(100 * 1024 * 1024)
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
@@ -1309,15 +1385,13 @@ describe('AgentPanelRoot attach flow', () => {
 
     const image = fileOfSize('huge.png', MAX_ATTACHMENT_BYTES + 1, 'image/png')
     dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [image] })
-    await nextTick()
 
-    expect(uploaded).toEqual([])
-    expect(useToastStore().messagesToAdd).toContainEqual(
-      expect.objectContaining({
-        severity: 'warn',
-        detail: 'huge.png is larger than 20MB'
-      })
-    )
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByText(
+        'huge.png'
+      )
+    ).toBeInTheDocument()
+    await vi.waitFor(() => expect(uploaded).toEqual(['huge.png']))
   })
 
   it('uploads a dropped video above 20MB when the server permits it', async () => {
@@ -1409,13 +1483,142 @@ describe('AgentPanelRoot attach flow', () => {
     await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
   })
 
-  it('keeps the 20MB limit for an oversize audio file', async () => {
-    getServerFeature.mockReturnValue(100 * 1024 * 1024)
+  it('refreshes the input asset library once for a dropped batch', async () => {
+    // Overlapping refreshes coalesce into the in-flight query without a
+    // trailing run, so an asset committing mid-refresh would be dropped.
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      files: [
+        new File(['x'], 'a.png', { type: 'image/png' }),
+        new File(['x'], 'b.png', { type: 'image/png' }),
+        new File(['x'], 'c.png', { type: 'image/png' })
+      ]
+    })
+
+    await vi.waitFor(() => expect(uploaded).toHaveLength(3))
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalled())
+    expect(refresh).toHaveBeenCalledOnce()
+  })
+
+  it('chains input asset refreshes across overlapping batches', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    let releaseFirstRefresh: () => void = () => {}
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockImplementationOnce(
+        () =>
+          new Promise<undefined>((resolve) => {
+            releaseFirstRefresh = () => resolve(undefined)
+          })
+      )
+      .mockResolvedValue(undefined)
+
+    const textbox = screen.getByRole('textbox')
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'a.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'b.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(uploaded).toEqual(['a.png', 'b.png']))
+    await expect(
+      vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2), {
+        timeout: 250,
+        interval: 10
+      })
+    ).rejects.toThrow()
+
+    releaseFirstRefresh()
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
+  })
+
+  it('keeps refreshing later batches after a refresh fails', async () => {
+    const uploaded = stubUploadFetch()
+    renderWithSelectedTarget()
+    await nextTick()
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockRejectedValueOnce(new Error('asset fetch failed'))
+      .mockResolvedValue(undefined)
+
+    const textbox = screen.getByRole('textbox')
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'a.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+
+    dispatchDrag(textbox, 'drop', {
+      files: [new File(['x'], 'b.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(uploaded).toEqual(['a.png', 'b.png']))
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledTimes(2))
+  })
+
+  it('lets a removed upload finish without reattaching until Undo', async () => {
+    const signals: AbortSignal[] = []
+    let finishUpload: (response: Response) => void = () => {}
+    const upload = new Promise<Response>((resolve) => {
+      finishUpload = resolve
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+        if (!String(input).includes('/upload/'))
+          return json(200, agentThreadList())
+        if (init?.signal) signals.push(init.signal)
+        return upload
+      })
+    )
+    renderWithSelectedTarget()
+    await nextTick()
+    const refresh = vi
+      .spyOn(useAssetsStore().inputAssets, 'loadNew')
+      .mockResolvedValue(undefined)
+
+    dispatchDrag(screen.getByRole('textbox'), 'drop', {
+      files: [new File(['x'], 'cat.png', { type: 'image/png' })]
+    })
+    await vi.waitFor(() => expect(signals).toHaveLength(1))
+    const composer = useAgentComposerStore()
+    const prompt = composer.prompt
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: i18n.global.t('agent.remove') })
+    )
+
+    expect(signals[0].aborted).toBe(false)
+    finishUpload(
+      json(200, { name: 'uploaded-cat.png', subfolder: '', type: 'input' })
+    )
+    await vi.waitFor(() => expect(refresh).toHaveBeenCalledOnce())
+    expect(composer.attachments).toEqual([])
+    composer.applyEditorPrompt(prompt)
+    expect(composer.attachments).toEqual([
+      expect.objectContaining({
+        name: 'cat.png',
+        ref: 'uploaded-cat.png',
+        uploading: false
+      })
+    ])
+  })
+
+  it('uses the server limit for audio rejection copy', async () => {
+    getServerFeature.mockReturnValue(24 * 1024 * 1024)
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
 
-    const song = fileOfSize('big.mp3', MAX_ATTACHMENT_BYTES + 1, 'audio/mpeg')
+    const song = fileOfSize('big.mp3', 25 * 1024 * 1024, 'audio/mpeg')
     dispatchDrag(screen.getByRole('textbox'), 'drop', { files: [song] })
     await nextTick()
 
@@ -1423,7 +1626,7 @@ describe('AgentPanelRoot attach flow', () => {
     expect(useToastStore().messagesToAdd).toContainEqual(
       expect.objectContaining({
         severity: 'warn',
-        detail: 'big.mp3 is larger than 20MB'
+        detail: 'big.mp3 is larger than 24 MB'
       })
     )
   })
@@ -1679,6 +1882,49 @@ describe('AgentPanelRoot attach flow', () => {
     )
   })
 
+  it('does not warn after closing the panel during a deferred asset fetch', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>((input) => {
+        const url = String(input)
+        if (url.includes('/api/view')) return new Promise(() => {})
+        if (url.includes('/assets'))
+          return Promise.resolve(
+            json(200, { assets: [], total: 0, has_more: false })
+          )
+        if (url.includes('/workflows'))
+          return Promise.resolve(
+            json(200, { data: [], total: 0, has_more: false })
+          )
+        return Promise.resolve(json(200, agentThreadList()))
+      })
+    )
+    const { unmount } = renderWithSelectedTarget()
+    await nextTick()
+    const toast = useToastStore()
+    vi.useFakeTimers()
+    try {
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename: 'gen.png', type: 'input' })
+            : 'http://localhost/api/view?filename=gen.png'
+      })
+      await nextTick()
+      expect(
+        screen.getByLabelText(i18n.global.t('agent.uploading'))
+      ).toBeInTheDocument()
+
+      unmount()
+      await vi.advanceTimersByTimeAsync(60_000)
+
+      expect(toast.messagesToAdd).toEqual([])
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('attaches dropped assets and leaves other files to the graph loader', async () => {
     // The graph loader only opens a dropped workflow while the drop is
     // unclaimed, so the panel must not claim files it cannot attach.
@@ -1873,7 +2119,7 @@ describe('AgentPanelRoot attach flow', () => {
     revoke.mockRestore()
   })
 
-  it('keeps a dismissed preview available for Undo until the editor unmounts', async () => {
+  it('keeps a dismissed durable preview available for Undo until the editor unmounts', async () => {
     const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
     vi.stubGlobal(
       'fetch',
@@ -1902,17 +2148,28 @@ describe('AgentPanelRoot attach flow', () => {
       screen.getByTestId<HTMLInputElement>('agent-file-input'),
       file
     )
-    expect(
-      within(await screen.findByTestId('composer-asset-section')).getByText(
-        'cat.png'
-      )
-    ).toBeInTheDocument()
+    const assetSection = await screen.findByTestId('composer-asset-section')
+    expect(within(assetSection).getByText('cat.png')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(
+        within(assetSection).getByRole('img', { name: 'cat.png' })
+      ).toHaveAttribute('src', '/api/view?filename=uploaded_cat.png&type=input')
+    )
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:mock-url')
 
     await userEvent.click(
       screen.getByRole('button', { name: i18n.global.t('agent.remove') })
     )
     expect(screen.queryByText('cat.png')).not.toBeInTheDocument()
-    expect(revoke).not.toHaveBeenCalled()
+    screen.getByRole('textbox').focus()
+    await userEvent.keyboard('{Control>}z{/Control}')
+    expect(
+      within(await screen.findByTestId('composer-asset-section')).getByRole(
+        'img',
+        { name: 'cat.png' }
+      )
+    ).toHaveAttribute('src', '/api/view?filename=uploaded_cat.png&type=input')
+    expect(revoke).toHaveBeenCalledExactlyOnceWith('blob:mock-url')
     view.unmount()
     expect(revoke).toHaveBeenCalledTimes(1)
     revoke.mockRestore()
@@ -4564,9 +4821,16 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
 
-    await renderAndSend('first message')
+    await startVueNodeSelection()
+    await sendFromComposer('first message')
 
-    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-cloud-current' })
+    expect(bodies[0]).toMatchObject({
+      workflow_id: 'wf-cloud-current',
+      selection: {
+        node_ids: ['9', '12'],
+        workflow_id: 'wf-cloud-current'
+      }
+    })
   })
 
   it('does not resolve two same-named open saved tabs to one cloud id', async () => {
@@ -5202,7 +5466,11 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(bodies[0]).toMatchObject({
         content: '@[Node: KSampler #12] Keep this draft',
         workflow_id: 'wf-cloud-current',
-        selection: { node_ids: ['12'] },
+        // The chip was staged while `wf-cloud-current` was viewed, and the
+        // user then navigated to `wf-reference` before sending. Ownership must
+        // follow the workflow the node came from, not the one on screen at
+        // send time, so this asserts the owner rather than only `node_ids`.
+        selection: { node_ids: ['12'], workflow_id: 'wf-cloud-current' },
         workflow_references: []
       })
     }
@@ -6524,7 +6792,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('edit the selected workflow')
     expect(bodies[0]).toMatchObject({
       workflow_id: 'wf-42',
-      selection: { node_ids: ['12'] }
+      selection: { node_ids: ['12'], workflow_id: 'wf-42' }
     })
   })
 
@@ -6862,7 +7130,7 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('resolves picker nodes from the viewed subgraph, not the root graph', async () => {
-    makeTab()
+    makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')
     appMock.canvas = {
       graph: {
@@ -6885,7 +7153,9 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(await screen.findByText('KSampler'))
     await sendFromComposer('explain this')
 
-    expect(bodies[0]).toMatchObject({ selection: { node_ids: ['12'] } })
+    expect(bodies[0]).toMatchObject({
+      selection: { node_ids: ['12'], workflow_id: 'wf-42' }
+    })
   })
 
   it('never subscribes to the retired draft_patch frame', async () => {
