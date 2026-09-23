@@ -8,7 +8,7 @@ import {
 } from '@/platform/workspace/utils/checkoutJourney'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogStore } from '@/stores/dialogStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -918,11 +918,11 @@ describe('billingOperationStore', () => {
         started_at: new Date().toISOString()
       })
       const error = new Error('telemetry failed')
-      vi.mocked(useTelemetry()?.trackBillingEvent).mockImplementationOnce(
-        () => {
-          throw error
-        }
-      )
+      const telemetry = useTelemetry()
+      assert.exists(telemetry)
+      vi.mocked(telemetry.trackBillingEvent).mockImplementationOnce(() => {
+        throw error
+      })
 
       const store = useBillingOperationStore()
       const terminal = store.startOperation('op-1', 'subscription')
