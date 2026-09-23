@@ -5,6 +5,7 @@ import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type {
@@ -35,7 +36,10 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
 }))
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
-  useCopyToClipboard: () => ({ copyToClipboard: copyMock })
+  useCopyToClipboard: () => ({
+    copied: ref(false),
+    copyToClipboard: copyMock
+  })
 }))
 
 vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({

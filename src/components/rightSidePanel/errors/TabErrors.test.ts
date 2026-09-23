@@ -5,7 +5,7 @@ import { render, screen, within } from '@testing-library/vue'
 import { fromAny } from '@total-typescript/shoehorn'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import RightSidePanel from '@/components/rightSidePanel/RightSidePanel.vue'
@@ -63,6 +63,7 @@ vi.mock(import('@/utils/graphTraversalUtil'), () => ({
 
 vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: vi.fn(() => ({
+    copied: ref(false),
     copyToClipboard: vi.fn()
   }))
 }))
@@ -414,7 +415,10 @@ describe('TabErrors.vue', () => {
     const { useCopyToClipboard } =
       await import('@/composables/useCopyToClipboard')
     const mockCopy = vi.fn()
-    vi.mocked(useCopyToClipboard).mockReturnValue({ copyToClipboard: mockCopy })
+    vi.mocked(useCopyToClipboard).mockReturnValue({
+      copied: ref(false),
+      copyToClipboard: mockCopy
+    })
 
     const { user } = renderComponent((pinia) => {
       useExecutionErrorStore(pinia).recordExecutionError({
