@@ -178,50 +178,79 @@ function collectTouchedNodes(
   rootOwner: OwningGraphId
 ): TouchedNodesByOwner {
   const nodesByOwner: TouchedNodesByOwner = new Map()
-
-  const touchNode = (owningGraphId: OwningGraphId, nodeId: NodeId) => {
-    const nodes = nodesByOwner.get(owningGraphId)
-    if (nodes === 'all') return
-    if (nodes) nodes.add(nodeId)
-    else nodesByOwner.set(owningGraphId, new Set([nodeId]))
-  }
-  const touchOwner = (owningGraphId: OwningGraphId) =>
-    nodesByOwner.set(owningGraphId, 'all')
-  const touchKeys = (
-    event: Y.YEvent<Y.AbstractType<unknown>>,
-    touch: (key: string) => void
-  ) => {
-    for (const [key, change] of event.changes.keys) {
-      if (change.action !== 'delete') touch(key)
-    }
-  }
+  const touch = createNodeToucher(nodesByOwner)
 
   for (const event of events) {
     const path = event.path.map(String)
     if (event.currentTarget === rootNodes) {
-      if (path.length === 0)
-        touchKeys(event, (key) => touchNode(rootOwner, key as NodeId))
-      else touchNode(rootOwner, path[0] as NodeId)
-      continue
+      collectRootNodeEvent(event, path, rootOwner, touch)
+    } else {
+      collectDefinitionEvent(event, path, touch)
     }
-    // Anything else is the `definitions` root: definitions.<owner>.nodes.<id>
-    if (path.length === 0) {
-      touchKeys(event, (key) => touchOwner(toOwningGraphId(key)))
-      continue
-    }
-    const owningGraphId = toOwningGraphId(path[0])
-    if (path.length === 1) {
-      touchKeys(event, (key) => {
-        if (key === 'nodes') touchOwner(owningGraphId)
-      })
-      continue
-    }
-    if (path[1] !== 'nodes') continue
-    if (path.length === 2)
-      touchKeys(event, (key) => touchNode(owningGraphId, key as NodeId))
-    else touchNode(owningGraphId, path[2] as NodeId)
   }
   return nodesByOwner
+}
+
+interface NodeToucher {
+  node: (owningGraphId: OwningGraphId, nodeId: NodeId) => void
+  owner: (owningGraphId: OwningGraphId) => void
+  /** Applies `visit` to every key the event added or updated (not deleted). */
+  keys: (
+    event: Y.YEvent<Y.AbstractType<unknown>>,
+    visit: (key: string) => void
+  ) => void
+}
+
+function createNodeToucher(nodesByOwner: TouchedNodesByOwner): NodeToucher {
+  return {
+    node: (owningGraphId, nodeId) => {
+      const nodes = nodesByOwner.get(owningGraphId)
+      if (nodes === 'all') return
+      if (nodes) nodes.add(nodeId)
+      else nodesByOwner.set(owningGraphId, new Set([nodeId]))
+    },
+    owner: (owningGraphId) => nodesByOwner.set(owningGraphId, 'all'),
+    keys: (event, visit) => {
+      for (const [key, change] of event.changes.keys) {
+        if (change.action !== 'delete') visit(key)
+      }
+    }
+  }
+}
+
+/** Root-graph event: path is `<nodeId>...` relative to the root `nodes` map. */
+function collectRootNodeEvent(
+  event: Y.YEvent<Y.AbstractType<unknown>>,
+  path: readonly string[],
+  rootOwner: OwningGraphId,
+  touch: NodeToucher
+) {
+  if (path.length === 0)
+    touch.keys(event, (key) => touch.node(rootOwner, key as NodeId))
+  else touch.node(rootOwner, path[0] as NodeId)
+}
+
+/** `definitions` root event: path is `<owner>.nodes.<nodeId>...`. */
+function collectDefinitionEvent(
+  event: Y.YEvent<Y.AbstractType<unknown>>,
+  path: readonly string[],
+  touch: NodeToucher
+) {
+  if (path.length === 0) {
+    touch.keys(event, (key) => touch.owner(toOwningGraphId(key)))
+    return
+  }
+  const owningGraphId = toOwningGraphId(path[0])
+  if (path.length === 1) {
+    touch.keys(event, (key) => {
+      if (key === 'nodes') touch.owner(owningGraphId)
+    })
+    return
+  }
+  if (path[1] !== 'nodes') return
+  if (path.length === 2)
+    touch.keys(event, (key) => touch.node(owningGraphId, key as NodeId))
+  else touch.node(owningGraphId, path[2] as NodeId)
 }
 
 /** Reads the current widget values of every touched node from the document. */
