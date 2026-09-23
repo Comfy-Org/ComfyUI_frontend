@@ -2,12 +2,12 @@ import { expect } from '@playwright/test'
 
 import type {
   AgentMessage,
-  AgentThreadListResponse
+  AgentThreadListResponse,
+  WorkflowListResponse
 } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
-import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import {
   agentTest as test,
@@ -38,29 +38,42 @@ test(
       [BINDING_KEY, THREAD_KEY, TARGET_ID, PORTRAIT_PATH, THREAD_ID] as const
     )
 
-    const cloudWorkflows: CloudWorkflowEntry[] = [
-      { id: TARGET_ID, name: 'image_z_image_turbo' },
-      {
-        id: 'a81718a4-02ae-41e6-ae85-000000000002',
-        name: 'image_z_image_turbo'
-      },
-      {
-        id: 'a81718a4-02ae-41e6-ae85-000000000003',
-        name: 'Portrait'
+    const cloudWorkflows: WorkflowListResponse = {
+      data: [
+        {
+          id: TARGET_ID,
+          name: 'image_z_image_turbo',
+          created_at: '2026-09-19T00:00:00Z',
+          created_by: 'test-user',
+          latest_version: 1,
+          updated_at: '2026-09-19T00:00:00Z'
+        },
+        {
+          id: 'a81718a4-02ae-41e6-ae85-000000000002',
+          name: 'image_z_image_turbo',
+          created_at: '2026-09-19T00:00:00Z',
+          created_by: 'test-user',
+          latest_version: 1,
+          updated_at: '2026-09-19T00:00:00Z'
+        },
+        {
+          id: 'a81718a4-02ae-41e6-ae85-000000000003',
+          name: 'Portrait',
+          created_at: '2026-09-19T00:00:00Z',
+          created_by: 'test-user',
+          latest_version: 1,
+          updated_at: '2026-09-19T00:00:00Z'
+        }
+      ],
+      pagination: {
+        has_more: false,
+        limit: 100,
+        offset: 0,
+        total: 3
       }
-    ]
+    }
     await page.route('**/api/workflows**', (route) =>
-      route.fulfill(
-        jsonRoute({
-          data: cloudWorkflows,
-          pagination: {
-            has_more: false,
-            limit: 100,
-            offset: 0,
-            total: cloudWorkflows.length
-          }
-        })
-      )
+      route.fulfill(jsonRoute(cloudWorkflows))
     )
 
     await bootAgentApp(page, agentFlagEnabled)
