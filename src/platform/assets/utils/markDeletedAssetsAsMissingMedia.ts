@@ -51,7 +51,9 @@ export function markDeletedAssetsAsMissingMedia(
       node.mode === LGraphEventMode.BYPASS
     )
       continue
-    for (const candidate of scanNodeMediaCandidates(rootGraph, node, isCloud)) {
+    for (const candidate of scanNodeMediaCandidates(rootGraph, node, isCloud, {
+      includeTemp: true
+    })) {
       if (!deletedValues.has(candidate.name)) continue
       candidates.push({ ...candidate, isMissing: true })
     }

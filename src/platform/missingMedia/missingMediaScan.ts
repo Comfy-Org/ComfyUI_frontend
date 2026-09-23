@@ -110,7 +110,8 @@ function resolveMediaMissingState(
 export function scanNodeMediaCandidates(
   rootGraph: LGraph,
   node: LGraphNode,
-  isCloud: boolean
+  isCloud: boolean,
+  { includeTemp = false }: { includeTemp?: boolean } = {}
 ): MissingMediaCandidate[] {
   if (!node.widgets?.length) return []
 
@@ -133,6 +134,7 @@ export function scanNodeMediaCandidates(
     const value = widget.value
     if (typeof value !== 'string' || !value.trim()) continue
     if (
+      !includeTemp &&
       getAnnotatedMediaPathTypeForDetection(value, {
         allowCompactSuffix: isCloud
       }) === 'temp'
