@@ -17,6 +17,7 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 import type { ReleaseNote } from '../common/releaseService'
@@ -64,15 +65,14 @@ vi.mock(import('@/utils/markdownRendererUtil'), () => ({
   renderMarkdownToHtml: vi.fn((content: string) => `<div>${content}</div>`)
 }))
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: vi.fn(() => ({
-    toastErrorHandler: toastErrorHandlerMock
-  }))
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 // Mock release store
 
 beforeEach(() => {
+  Object.assign(useErrorHandling(), {
+    toastErrorHandler: toastErrorHandlerMock
+  })
   vi.mocked(useCommandStore().execute).mockImplementation(commandExecuteMock)
 })
 

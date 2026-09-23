@@ -1,6 +1,10 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockedFunction } from 'vitest'
+import type { LocationQuery, Router } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
+import { useSettingsDialog } from './useSettingsDialog'
 import { useSettingsUrlLoader } from './useSettingsUrlLoader'
 
 const preservedQueryMocks = vi.hoisted(() => ({
@@ -14,40 +18,21 @@ vi.mock(
   () => preservedQueryMocks
 )
 
-const mockRouteQuery = vi.hoisted(() => ({
-  value: {} as Record<string, string>
-}))
-const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
+vi.mock(import('vue-router'))
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
-vi.mock<unknown>(import('vue-router'), () => ({
-  useRoute: () => ({
-    query: mockRouteQuery.value
-  }),
-  useRouter: () => ({
-    replace: mockRouterReplace
-  })
-}))
-
-const mockShowSettings = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(
-  import('@/platform/settings/composables/useSettingsDialog'),
-  () => ({
-    useSettingsDialog: () => ({
-      show: mockShowSettings
-    })
-  })
-)
+let mockRouteQuery: LocationQuery
+let mockRouterReplace: MockedFunction<Router['replace']>
+const mockShowSettings = vi.mocked(useSettingsDialog().show)
 
 describe('useSettingsUrlLoader', () => {
   beforeEach(() => {
-    mockRouteQuery.value = {}
+    mockRouteQuery = useRoute().query
+    mockRouterReplace = vi.mocked(useRouter().replace)
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
   it('does nothing when no settings param present', async () => {
-    mockRouteQuery.value = {}
-
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
 
@@ -56,7 +41,7 @@ describe('useSettingsUrlLoader', () => {
   })
 
   it('opens the Plans & Credits panel and strips the param', async () => {
-    mockRouteQuery.value = { settings: 'plan-credits' }
+    mockRouteQuery.settings = 'plan-credits'
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
@@ -69,7 +54,7 @@ describe('useSettingsUrlLoader', () => {
   })
 
   it('preserves unrelated params when stripping', async () => {
-    mockRouteQuery.value = { settings: 'plan-credits', other: 'param' }
+    Object.assign(mockRouteQuery, { settings: 'plan-credits', other: 'param' })
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
@@ -80,7 +65,7 @@ describe('useSettingsUrlLoader', () => {
   })
 
   it('strips but does not open for an unrecognized panel value', async () => {
-    mockRouteQuery.value = { settings: 'garbage' }
+    mockRouteQuery.settings = 'garbage'
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
@@ -93,7 +78,7 @@ describe('useSettingsUrlLoader', () => {
   })
 
   it('strips but does not open for an empty param', async () => {
-    mockRouteQuery.value = { settings: '' }
+    mockRouteQuery.settings = ''
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
@@ -103,7 +88,7 @@ describe('useSettingsUrlLoader', () => {
   })
 
   it('strips but does not open for a non-string param', async () => {
-    mockRouteQuery.value = { settings: fromAny<string, unknown>(['array']) }
+    mockRouteQuery.settings = fromAny<string, unknown>(['array'])
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
@@ -113,7 +98,6 @@ describe('useSettingsUrlLoader', () => {
   })
 
   it('restores preserved query and opens the panel', async () => {
-    mockRouteQuery.value = {}
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
       settings: 'plan-credits'
     })

@@ -1,6 +1,6 @@
-import type { ComfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -48,24 +48,14 @@ vi.mock(import('@/scripts/utils'), () => ({
   uploadFile: mockUploadFile
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    confirm: mockConfirm,
-    prompt: mockPrompt,
-    showSmallLayoutDialog: mockShowSmallLayoutDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
+Object.assign(useDialogService(), {
+  confirm: mockConfirm,
+  prompt: mockPrompt,
+  showSmallLayoutDialog: mockShowSmallLayoutDialog
+})
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandling: <T extends (...args: unknown[]) => unknown>(fn: T) =>
-      fn,
-    wrapWithErrorHandlingAsync: <T extends (...args: unknown[]) => unknown>(
-      fn: T
-    ) => fn,
-    toastErrorHandler: vi.fn()
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   useKeybindingService: () => ({
@@ -73,9 +63,7 @@ vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   })
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 beforeEach(() => {
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => undefined)
@@ -798,7 +786,4 @@ describe('useKeybindingPresetService', () => {
   })
 })
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))
