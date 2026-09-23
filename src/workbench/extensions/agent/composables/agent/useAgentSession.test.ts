@@ -2575,7 +2575,7 @@ describe('useAgentSession (v1 composition root)', () => {
     })
     session.start()
     session.bindWorkflow('wf-dead')
-    abandon = () => void session.newChat()
+    abandon = () => session.newChat()
 
     expect(await session.sendMessage('run it')).toBe(false)
 
