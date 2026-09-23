@@ -688,6 +688,18 @@ describe('usePaste', () => {
 
   it.for([
     {
+      clipboard: 'node metadata HTML',
+      collaborator: '_deserializeItems',
+      createClipboard: () => {
+        const dataTransfer = new DataTransfer()
+        dataTransfer.setData(
+          'text/html',
+          `<div data-metadata="${btoa(JSON.stringify({ nodes: [] }))}"></div>`
+        )
+        return dataTransfer
+      }
+    },
+    {
       clipboard: 'unrecognised node JSON',
       collaborator: 'pasteFromClipboard',
       createClipboard: () => {
@@ -725,6 +737,7 @@ describe('usePaste', () => {
       })
 
       const collaborators = {
+        _deserializeItems: mockCanvas._deserializeItems,
         pasteFromClipboard: mockCanvas.pasteFromClipboard,
         loadGraphData: app.loadGraphData,
         createNode
