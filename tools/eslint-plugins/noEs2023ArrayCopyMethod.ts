@@ -8,37 +8,25 @@ const es2023ArrayCopyMethods = new Set([
   'with'
 ])
 
-function getIdentifierName(
+type Property = TSESTree.MemberExpression['property']
+
+function getLiteralName(property: Property): string | undefined {
+  if (property.type !== 'Literal' || typeof property.value !== 'string') return
+  return property.value
+}
+
+function getTemplateName(property: Property): string | undefined {
+  if (property.type !== 'TemplateLiteral' || property.expressions.length) return
+  return property.quasis[0].value.cooked ?? undefined
+}
+
+function getStaticMethodName(
   member: TSESTree.MemberExpression
 ): string | undefined {
-  if (member.computed) return
-  if (member.property.type !== 'Identifier') return
-  return member.property.name
-}
-
-function getLiteralName(member: TSESTree.MemberExpression): string | undefined {
-  if (!member.computed) return
-  if (member.property.type !== 'Literal') return
-  return typeof member.property.value === 'string'
-    ? member.property.value
-    : undefined
-}
-
-function getTemplateName(
-  member: TSESTree.MemberExpression
-): string | undefined {
-  if (!member.computed) return
-  if (member.property.type !== 'TemplateLiteral') return
-  if (member.property.expressions.length !== 0) return
-  return member.property.quasis[0].value.cooked ?? undefined
-}
-
-function getStaticMethodName(member: TSESTree.MemberExpression) {
-  return (
-    getIdentifierName(member) ??
-    getLiteralName(member) ??
-    getTemplateName(member)
-  )
+  const { property } = member
+  if (!member.computed)
+    return property.type === 'Identifier' ? property.name : undefined
+  return getLiteralName(property) ?? getTemplateName(property)
 }
 
 function isArrayCopyMethod(methodName: string | undefined): boolean {
