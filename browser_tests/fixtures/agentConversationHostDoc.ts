@@ -104,12 +104,20 @@ export class HostDoc {
     this.doc.getMap('meta').delete('schema_version')
   }
 
-  // Test-only: restores meta.schema_version after a corrupted catch-up frame
-  // has already been encoded and sent (Y.encodeStateAsUpdate above copies the
-  // bytes at call time), so the host's own later apply()/graph() calls stop
-  // tripping the same read gate the browser under test is still latched on.
-  repairSchemaVersion(): void {
+  // Test-only: restores meta.schema_version and returns the frame carrying
+  // just that repair, mirroring apply()'s before/after delta shape so the
+  // caller can transmit the repair as its own frame -- separately from, and
+  // before, whatever mutation comes next -- instead of folding it silently
+  // into a later apply()'s delta.
+  repairSchemaVersion(): HostFrame {
+    const before = Y.encodeStateVector(this.doc)
     this.doc.getMap('meta').set('schema_version', SCHEMA_VERSION)
+    this.seq += 1
+    return this.updateFrame(
+      Y.encodeStateAsUpdate(this.doc, before),
+      HOST_ACTOR,
+      []
+    )
   }
 
   subscribed(): HostFrame {

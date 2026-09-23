@@ -24,22 +24,32 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
  * Repro: the in-app agent reports a turn as done, but the canvas ends up with
  * zero nodes.
  *
- * Root cause: the CRDT follower's read-time schema gate (`assertReadableSchema`,
- * KA-11) fails closed when a doc's `meta.schema_version` is unreadable (here:
- * missing on the catch-up frame). `LayoutFollowerBridge` then latches that
- * read gate for the ENTIRE document lineage — not just the one bad frame —
- * so every later same-lineage update is silently dropped too, with no
- * `doc_reset` ever following an ordinary tool call. The agent's own turn
- * still completes and reports success over the (unrelated) chat channel,
- * because nothing in that latch tells the backend the browser stopped
- * projecting. Net effect: "agent says done" + "canvas has zero nodes".
+ * IF a doc's `meta.schema_version` ever becomes unreadable, the CRDT
+ * follower's read-time schema gate (`assertReadableSchema`, KA-11) fails
+ * closed, and `LayoutFollowerBridge` latches that read gate for the ENTIRE
+ * document lineage — not just the one bad frame — so every later
+ * same-lineage update is silently dropped too, with no `doc_reset` ever
+ * following an ordinary tool call. The agent's own turn still completes and
+ * reports success over the (unrelated) chat channel, because nothing in that
+ * latch tells the backend the browser stopped projecting. Net effect: "agent
+ * says done" + "canvas has zero nodes".
+ *
+ * The trigger is unproven: tracing every doc-creation path in the `cloud`
+ * repo, all of them go through the shared package's `mint()`, which
+ * unconditionally sets `meta.schema_version` — there is no known code path
+ * that mints a doc without one. Candidates for how it could still happen are
+ * a legacy row, a stale `dochost` deploy, or a wire defect. This repro
+ * simulates the missing version with the test-only `corruptSchemaVersion()`
+ * helper below; it does not reproduce a proven real-world trigger.
  *
  * This spec drives the real agent panel against a fake doc host (`HostDoc`,
- * the same one `agentConversationFixture`/PM-1260's sibling repro use):
- * the first catch-up frame is corrupted to omit `meta.schema_version`, the
- * agent then reports a successful `add_node` tool call, and the host applies
- * that op to its own authoritative document — but the node never reaches the
- * live canvas the user is looking at.
+ * the same one `agentConversationFixture`/PM-1260's sibling repro use): the
+ * first catch-up frame is corrupted to omit `meta.schema_version`, a
+ * schema-version repair and an `add_node` tool call are then sent as their
+ * own later frames on the same lineage, and the host applies that op to its
+ * own authoritative document — but the node never reaches the live canvas
+ * the user is looking at, because the latch drops the repair and the op
+ * alike.
  */
 
 const WORKFLOW_ID = 'a3f6a3d2-7e3b-4b8a-9c1e-6e2a1c9f0a12'
@@ -133,12 +143,18 @@ test.describe(
             typeof state_vector_b64 !== 'string'
           )
             return
-          // The exact PM-1343-shaped defect: the catch-up frame's merged doc
-          // has no readable meta.schema_version at all.
+          // Simulates the unproven trigger this repro exercises (see file
+          // header): the catch-up frame's merged doc has no readable
+          // meta.schema_version at all.
           host.corruptSchemaVersion()
           send(host.subscribed())
           send(host.catchUp(state_vector_b64))
-          host.repairSchemaVersion()
+          // Sent as its own later-seq frame -- not folded silently into a
+          // later apply()'s delta -- so a fix that stops the latch from
+          // outliving the one bad frame is actually exercised: this repair
+          // alone must be enough for the gate to pass again before the
+          // add_node frame below arrives.
+          send(host.repairSchemaVersion())
         })
       })
 
@@ -235,28 +251,31 @@ test.describe(
         }
       })
 
-      // The op lands on the host's own authoritative document ...
-      host.apply([
-        {
-          op: 'add_node',
-          pos: [0, 0],
-          node: {
-            id: ADDED_NODE_ID,
+      // The op lands on the host's own authoritative document, and is sent to
+      // the browser the same way agentConversationFixture's replay does.
+      send(
+        host.apply([
+          {
+            op: 'add_node',
             pos: [0, 0],
-            mode: 0,
-            size: [200, 100],
-            type: 'MarkdownNote',
-            flags: {},
-            order: 0,
-            inputs: [],
-            outputs: [],
-            properties: {},
-            widgets_values: [NODE_TEXT]
-          },
-          node_id: ADDED_NODE_ID,
-          class_type: 'MarkdownNote'
-        }
-      ])
+            node: {
+              id: ADDED_NODE_ID,
+              pos: [0, 0],
+              mode: 0,
+              size: [200, 100],
+              type: 'MarkdownNote',
+              flags: {},
+              order: 0,
+              inputs: [],
+              outputs: [],
+              properties: {},
+              widgets_values: [NODE_TEXT]
+            },
+            node_id: ADDED_NODE_ID,
+            class_type: 'MarkdownNote'
+          }
+        ])
+      )
       expect(Object.keys(host.graph().nodes)).toContain(String(ADDED_NODE_ID))
 
       send({
@@ -298,8 +317,15 @@ test.describe(
       })
 
       // The known defect: the agent said it added the note, and the op is on
-      // the host's own record (asserted above) -- but the schema-gate latch
-      // means the canvas the user is looking at never gets it.
+      // the host's own record (asserted above) -- both it and the earlier
+      // schema-version repair were sent as their own frames -- but the
+      // schema-gate latch outlives the one bad catch-up frame, so the canvas
+      // the user is looking at never gets either. Once a fix stops the latch
+      // from outliving that one frame (or stops it from tripping on an
+      // unreadable version at all), the repair frame clears the gate before
+      // add_node arrives and this assertion starts passing -- which is what
+      // `test.fail()` is for: keep CI green while the defect exists, and flip
+      // it red the day a fix lands, as the prompt to delete this call.
       test.fail()
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
     })
