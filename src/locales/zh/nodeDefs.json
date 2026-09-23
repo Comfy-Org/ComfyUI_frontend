@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "从文本中第一个有效的 JSON 对象提取键的值，包括 Markdown 代码块。",
     "display_name": "从JSON提取字符串",
     "inputs": {
       "json_string": {
