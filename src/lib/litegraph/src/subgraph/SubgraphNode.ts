@@ -736,11 +736,11 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const before: [INodeInputSlot, IBaseWidget, unknown][] = []
         for (const hostInput of this.inputs) {
           if (!hostInput._subgraphSlot) continue
-          const linkId = hostInput._subgraphSlot.linkIds.at(0)
-          if (linkId === undefined) continue
-          const resolved = this.subgraph.getLink(linkId)?.resolve(this.subgraph)
-          if (!resolved?.inputNode || !resolved.input) continue
-          const interior = resolved.inputNode.getWidgetFromSlot(resolved.input)
+          const interior = resolveSubgraphInputLink(
+            this,
+            hostInput.name,
+            ({ getTargetWidget }) => getTargetWidget()
+          )
           if (interior) before.push([hostInput, interior, interior.value])
         }
         // Interior callbacks are plain functions using widget `this` (the INT
