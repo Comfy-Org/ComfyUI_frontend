@@ -4,6 +4,7 @@ import { nextTick, ref } from 'vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { useWaveAudioPlayer } from './useWaveAudioPlayer'
+import { api } from '@/scripts/api'
 
 vi.mock(import('@vueuse/core'), { spy: true })
 
@@ -11,6 +12,8 @@ const mockFetchApi = vi.fn()
 const originalAudioContext = globalThis.AudioContext
 
 beforeEach(() => {
+  vi.mocked(api.apiURL).mockImplementation((route) => `/api${route}`)
+  vi.mocked(api.fetchApi).mockImplementation(mockFetchApi)
   vi.mocked(useMediaControls).mockImplementation(() =>
     fromAny({
       playing: ref(false),
@@ -25,12 +28,7 @@ afterEach(() => {
   mockFetchApi.mockReset()
 })
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (route: string) => '/api' + route,
-    fetchApi: (...args: unknown[]) => mockFetchApi(...args)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('useWaveAudioPlayer', () => {
   it('initializes with default bar count', () => {

@@ -7,6 +7,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useMaskEditorLoader } from './useMaskEditorLoader'
 
 let mockDataStore: ReturnType<typeof useMaskEditorDataStore>
@@ -19,21 +20,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fetchApi: vi.fn(),
-    apiURL: vi.fn((route: string) => `http://localhost:8188/api${route}`)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    nodeOutputs: {},
-    nodePreviewImages: {},
-    getPreviewFormatParam: vi.fn(() => ''),
-    getRandParam: vi.fn(() => '')
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 // Mock Image constructor so the loader's image fetches resolve without a
 // network. Records every requested URL; URLs matching failUrlPattern reject
@@ -87,6 +76,11 @@ function requestedLayerUrls(layerFilename: string): string[] {
 
 describe('useMaskEditorLoader', () => {
   beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation(
+      (route) => `http://localhost:8188/api${route}`
+    )
+    vi.mocked(app.getPreviewFormatParam).mockReturnValue('')
+    vi.mocked(app.getRandParam).mockReturnValue('')
     mockDataStore = useMaskEditorDataStore()
     requestedUrls.length = 0
     failUrlPattern = null

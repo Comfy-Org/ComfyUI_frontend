@@ -101,12 +101,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('firebase/auth'))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: vi.fn(() => ({}))
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock(import('@/services/dialogService'))
 

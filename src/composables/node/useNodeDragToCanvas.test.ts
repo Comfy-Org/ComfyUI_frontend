@@ -6,6 +6,7 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { useLitegraphService } from '@/services/litegraphService'
 
 const {
   mockAddNodeOnGraph,
@@ -31,13 +32,9 @@ const {
   }
 })
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: vi.fn(() => ({
-    addNodeOnGraph: mockAddNodeOnGraph
-  }))
-}))
+vi.mock(import('@/services/litegraphService'))
 
-vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
+vi.mock(import('@/i18n'))
 
 describe('useNodeDragToCanvas', () => {
   const mockNodeDef = {
@@ -46,6 +43,9 @@ describe('useNodeDragToCanvas', () => {
   } as ComfyNodeDefImpl
 
   beforeEach(() => {
+    vi.mocked(useLitegraphService().addNodeOnGraph).mockImplementation(
+      mockAddNodeOnGraph
+    )
     useCanvasStore().canvas = fromPartial<LGraphCanvas>(mockCanvas)
   })
 

@@ -1,33 +1,19 @@
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { useNodeAnimatedImage } from '@/composables/node/useNodeAnimatedImage'
 import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
+import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 
-const { canvasInteractionsMock } = vi.hoisted(() => ({
-  canvasInteractionsMock: {
-    handleWheel: vi.fn(),
-    handlePointerDown: vi.fn(),
-    handlePointerMove: vi.fn(),
-    handlePointerUp: vi.fn(),
-    forwardEventToCanvas: vi.fn()
-  }
-}))
+vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
+vi.mock(import('@/scripts/app'))
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/useCanvasInteractions'),
-
-  () => ({
-    useCanvasInteractions: () => canvasInteractionsMock
-  })
-)
-// `@/scripts/app` has a heavy import graph (pinia stores, LGraphCanvas, etc.)
-// that we cannot pull in here, so we stub only the constant we need.
-vi.mock(
-  import('@/scripts/app'),
-  () => ({ ANIM_PREVIEW_WIDGET: '$$comfy_animation_preview' }) as const
-)
+let canvasInteractionsMock: ReturnType<typeof useCanvasInteractions>
 
 describe('useNodeAnimatedImage', () => {
+  beforeEach(() => {
+    canvasInteractionsMock = useCanvasInteractions()
+  })
+
   function setup() {
     vi.clearAllMocks()
     const node = createMockMediaNode({ imgs: [document.createElement('img')] })

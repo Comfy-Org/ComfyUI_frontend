@@ -11,18 +11,11 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@/renderer/core/layout/types'
+import { app } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 
-const mockApp = vi.hoisted(() => ({
-  canvas: {
-    selected_nodes: null as Record<string, LGraphNode> | null
-  }
-}))
-
-// canvasStore transitively imports the app singleton; stub it so the real
-// ComfyApp module never loads during these unit tests.
-vi.mock<unknown>(import('@/scripts/app'), () => ({ app: mockApp }))
+vi.mock(import('@/scripts/app'))
 
 // Real LGraphNode instances so the production isLGraphNode (instanceof) guard runs
 // unmodified — the node accessors filter selectedItems with the real predicate.
@@ -89,7 +82,6 @@ describe('useSelectedLiteGraphItems', () => {
 
   beforeEach(() => {
     canvasStore = useCanvasStore()
-    mockApp.canvas.selected_nodes = null
 
     // markRaw so the spied getter's return is not reactive-wrapped by the Pinia
     // store proxy — production reads a shallowRef, so nodes stay raw references.
@@ -375,7 +367,7 @@ describe('useSelectedLiteGraphItems', () => {
 
       mockCanvas.selectedItems = new Set([selected])
       // A different node lives only in the legacy dict; it must be ignored.
-      mockApp.canvas.selected_nodes = { '0': legacyOnly }
+      app.canvas.selected_nodes = { '0': legacyOnly }
 
       const selectedNodes = getSelectedNodes()
       expect(selectedNodes).toHaveLength(1)

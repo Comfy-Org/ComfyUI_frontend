@@ -17,6 +17,7 @@ import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/co
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
 import { toNodeId } from '@/types/nodeId'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 const i18n = createI18n({
   legacy: false,
@@ -30,13 +31,6 @@ let mockBookmarkStore: ReturnType<typeof useWorkflowBookmarkStore>
 
 let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 
-const mockWorkflowService = vi.hoisted(() => ({
-  openWorkflow: vi.fn(),
-  duplicateWorkflow: vi.fn(),
-  saveWorkflowAs: vi.fn(),
-  deleteWorkflow: vi.fn()
-}))
-
 let mockCommandStore: ReturnType<typeof useCommandStore>
 
 let mockSubgraphStore: ReturnType<typeof useSubgraphStore>
@@ -45,12 +39,9 @@ let mockMenuItemStore: ReturnType<typeof useMenuItemStore>
 
 let mockAppModeStore: ReturnType<typeof useAppModeStore>
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: vi.fn(() => mockWorkflowService)
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
+
+const mockWorkflowService = useWorkflowService()
 
 vi.mock(import('@/composables/useFeatureFlags'))
 function useWorkflowActionsMenu(

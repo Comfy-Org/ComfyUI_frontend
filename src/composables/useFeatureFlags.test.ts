@@ -32,11 +32,7 @@ const telemetry = vi.hoisted(() => ({
 const mockTrackFeatureFlagEvaluation = telemetry.trackFeatureFlagEvaluation
 
 // Mock the API module
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getServerFeature: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/utils/sessionFeatureFlagOverride'), () => ({
   getSessionOverride: vi.fn()

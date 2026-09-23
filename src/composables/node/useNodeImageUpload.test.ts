@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
-import type { api } from '@/scripts/api'
+import { api } from '@/scripts/api'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { Mock } from 'vitest'
@@ -33,18 +33,9 @@ vi.mock(import('@/composables/node/useNodePaste'), () => ({
   useNodePaste: vi.fn()
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fetchApi: mockFetchApi,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    getServerFeature: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 function createMockNode(): LGraphNode {
   return fromAny<LGraphNode, unknown>({
@@ -77,6 +68,7 @@ describe('useNodeImageUpload', () => {
   let onUploadError: () => void
 
   beforeEach(() => {
+    vi.mocked(api.fetchApi).mockImplementation(mockFetchApi)
     mockInvalidateInputs = vi
       .spyOn(useAssetsStore().inputAssets, 'invalidate')
       .mockResolvedValue(undefined)

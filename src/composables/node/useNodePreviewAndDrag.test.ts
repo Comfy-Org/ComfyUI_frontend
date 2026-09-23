@@ -1,21 +1,25 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { ref } from 'vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodePreviewAndDrag } from './useNodePreviewAndDrag'
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 
-const mockStartDrag = vi.fn()
-const mockHandleNativeDrop = vi.fn()
+vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
-vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
-  useNodeDragToCanvas: () => ({
-    startDrag: mockStartDrag,
-    handleNativeDrop: mockHandleNativeDrop
-  })
-}))
+let mockStartDrag: ReturnType<typeof useNodeDragToCanvas>['startDrag']
+let mockHandleNativeDrop: ReturnType<
+  typeof useNodeDragToCanvas
+>['handleNativeDrop']
 
 describe('useNodePreviewAndDrag', () => {
+  beforeEach(() => {
+    const nodeDragToCanvas = useNodeDragToCanvas()
+    mockStartDrag = nodeDragToCanvas.startDrag
+    mockHandleNativeDrop = nodeDragToCanvas.handleNativeDrop
+  })
+
   const mockNodeDef = {
     name: 'TestNode',
     display_name: 'Test Node'

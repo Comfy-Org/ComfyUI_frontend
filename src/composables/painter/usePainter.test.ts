@@ -8,6 +8,7 @@ import { createI18n } from 'vue-i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -27,22 +28,11 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: vi.fn((path: string) => `http://localhost:8188${path}`),
-    fetchApi: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 const fixture = vi.hoisted((): { node: LGraphNode | null } => ({ node: null }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    nodeOutputs: {},
-    nodePreviewImages: {},
-    canvas: { graph: { getNodeById: () => fixture.node } }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 const i18n = createI18n({
   legacy: false,
@@ -125,6 +115,12 @@ function mountPainter(
 
 describe('usePainter', () => {
   beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation(
+      (path) => `http://localhost:8188${path}`
+    )
+    const graph = app.canvas.graph
+    if (!(graph instanceof LGraph)) throw new Error('Expected a root graph')
+    vi.spyOn(graph, 'getNodeById').mockImplementation(() => fixture.node)
     vi.mocked(useElementSize).mockImplementation(() => ({
       width: ref(512),
       height: ref(512),

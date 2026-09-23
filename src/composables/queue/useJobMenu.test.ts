@@ -12,6 +12,7 @@ import type { Ref } from 'vue'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import type { MenuEntry } from '@/composables/queue/useJobMenu'
 import { useMediaAssetActions } from '@/platform/assets/composables/useMediaAssetActions'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
@@ -50,15 +51,9 @@ vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 let settingStoreMock: ReturnType<typeof useSettingStore>
 
-const workflowServiceMock = {
-  openWorkflow: vi.fn()
-}
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => workflowServiceMock
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
+
+const workflowServiceMock = vi.mocked(useWorkflowService(), true)
 
 let workflowStoreMock: ReturnType<typeof useWorkflowStore>
 

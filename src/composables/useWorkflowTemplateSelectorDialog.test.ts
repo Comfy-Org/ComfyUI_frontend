@@ -1,15 +1,12 @@
 import { useDialogService } from '@/services/dialogService'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDialogStore } from '@/stores/dialogStore'
+import { useTelemetry } from '@/platform/telemetry'
 
 let mockDialogStore: ReturnType<typeof useDialogStore>
 
 const mockNewUserService = vi.hoisted(() => ({
   isNewUser: vi.fn()
-}))
-
-const mockTelemetry = vi.hoisted(() => ({
-  trackTemplateLibraryOpened: vi.fn()
 }))
 
 vi.mock(import('@/services/dialogService'))
@@ -18,9 +15,10 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => mockNewUserService
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => mockTelemetry
-}))
+vi.mock(import('@/platform/telemetry'))
+
+const mockTelemetry = useTelemetry()
+if (!mockTelemetry) throw new Error('Expected telemetry mock')
 
 vi.mock<unknown>(
   import('@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'),

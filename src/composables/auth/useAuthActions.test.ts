@@ -7,6 +7,7 @@ import { AuthErrorCodes } from 'firebase/auth'
 import type { UserCredential } from 'firebase/auth'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -14,6 +15,8 @@ import { useAuthActions } from '@/composables/auth/useAuthActions'
 import enLocale from '@/locales/en/main.json'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 
 vi.mock(import('firebase/auth'), { spy: true })
 
@@ -24,10 +27,6 @@ let mockAuthStore: ReturnType<typeof useAuthStore>
 let mockToastStore: ReturnType<typeof useToastStore>
 
 let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
-
-const mockWorkflowService = vi.hoisted(() => ({
-  saveWorkflow: vi.fn(async () => true)
-}))
 
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 
@@ -83,24 +82,13 @@ vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
   prepareWorkflowLogoutTransition: mockPrepareWorkflowLogoutTransition
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: vi.fn(() => mockWorkflowService)
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
+
+const mockWorkflowService = vi.mocked(useWorkflowService(), true)
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: vi.fn(() => ({
-    canAccessSubscriptionFeatures: {
-      value: mockBillingState.canAccessSubscriptionFeatures
-    },
-    isFreeTier: { value: true },
-    type: { value: 'free' }
-  }))
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
@@ -126,6 +114,12 @@ function makeWorkflow(path: string): ModifiedWorkflow {
 }
 
 beforeEach(() => {
+  const billingContext = useBillingContext()
+  vi.mocked(useBillingContext).mockReturnValue(billingContext)
+  billingContext.canAccessSubscriptionFeatures = computed(
+    () => mockBillingState.canAccessSubscriptionFeatures
+  )
+  billingContext.isFreeTier = computed(() => true)
   stubFirebaseAuthHarness()
   mockAuthStore = useAuthStore()
   mockToastStore = useToastStore()

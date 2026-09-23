@@ -1,33 +1,29 @@
-import { describe, expect, it, vi } from 'vitest'
+import type { MockedFunction } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { useLegacyBilling } from './useLegacyBilling'
 
 vi.mock(import('firebase/auth'))
 
-const mockSubscribe = vi.fn()
-const mockSubscribeDirect = vi.fn()
+vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscription'),
-  () => ({
-    useSubscription: () => ({
-      canAccessSubscriptionFeatures: { value: false },
-      subscriptionTier: { value: null },
-      subscriptionDuration: { value: null },
-      subscriptionStatus: { value: null },
-      isCancelled: { value: false },
-      fetchStatus: vi.fn(),
-      manageSubscription: vi.fn(),
-      subscribe: mockSubscribe,
-      subscribeDirect: mockSubscribeDirect,
-      showSubscriptionDialog: vi.fn()
-    })
-  })
-)
+let mockSubscribe: MockedFunction<
+  ReturnType<typeof useSubscription>['subscribe']
+>
+let mockSubscribeDirect: MockedFunction<
+  ReturnType<typeof useSubscription>['subscribeDirect']
+>
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
 describe('useLegacyBilling', () => {
+  beforeEach(() => {
+    const subscription = useSubscription()
+    mockSubscribe = vi.mocked(subscription.subscribe)
+    mockSubscribeDirect = vi.mocked(subscription.subscribeDirect)
+  })
+
   describe('resubscribe', () => {
     it('performs the checkout via the unwrapped subscribeDirect', async () => {
       mockSubscribeDirect.mockResolvedValue(undefined)

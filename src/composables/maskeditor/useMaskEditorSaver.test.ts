@@ -71,22 +71,9 @@ function createMockCanvas(seed?: Uint8ClampedArray): HTMLCanvasElement {
 
 let mockEditorStore: ReturnType<typeof useMaskEditorStore>
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fetchApi: vi.fn(),
-    apiURL: vi.fn((route: string) => `http://localhost:8188${route}`)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    canvas: { setDirty: vi.fn() },
-    nodeOutputs: {} as Record<string, unknown>,
-    nodePreviewImages: {} as Record<string, string[]>,
-    getPreviewFormatParam: vi.fn(() => ''),
-    getRandParam: vi.fn(() => '')
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: false }))
 
@@ -99,6 +86,11 @@ describe('useMaskEditorSaver', () => {
   const originalCreateElement = document.createElement.bind(document)
 
   beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation(
+      (route) => `http://localhost:8188${route}`
+    )
+    vi.mocked(app.getPreviewFormatParam).mockReturnValue('')
+    vi.mocked(app.getRandParam).mockReturnValue('')
     mockDataStore = useMaskEditorDataStore()
     mockEditorStore = useMaskEditorStore()
     app.nodeOutputs = {}

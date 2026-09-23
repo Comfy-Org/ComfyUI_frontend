@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { useSelectionOperations } from '@/composables/graph/useSelectionOperations'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
 
 /**
@@ -9,21 +10,14 @@ import { app } from '@/scripts/app'
  * site rather than inside litegraph, so that vendored library stays untouched;
  * the trade-off is that a new editing path has to opt in.
  */
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { canvas: undefined as unknown }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/services/dialogService'))
 
 function stubCanvas(selectOnly: boolean) {
-  const deleteSelected = vi.fn()
-  const canvas = {
-    selectOnly,
-    selectedItems: new Set([{ id: 1 }]),
-    deleteSelected,
-    setDirty: vi.fn()
-  }
-  ;(app as unknown as { canvas: unknown }).canvas = canvas
+  app.canvas.selectOnly = selectOnly
+  app.canvas.selectedItems = new Set([new LGraphNode('Selected')])
+  const deleteSelected = vi.mocked(app.canvas.deleteSelected)
   return { deleteSelected }
 }
 
