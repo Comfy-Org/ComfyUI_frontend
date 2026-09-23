@@ -1,5 +1,3 @@
-import type { TranslationKey } from '../i18n/translations'
-
 /**
  * The launch catalogue as the Phase 2 spec sets it: five categories, six
  * workflows each, in the order a visitor is meant to meet them. It is a named
@@ -17,7 +15,6 @@ interface LaunchWorkflow {
 
 export interface LaunchCategory {
   readonly key: string
-  readonly labelKey: TranslationKey
   /** The one the category opens on. */
   readonly highlight: string
   readonly workflows: readonly LaunchWorkflow[]
@@ -26,7 +23,6 @@ export interface LaunchCategory {
 export const LAUNCH_CATEGORIES: readonly LaunchCategory[] = [
   {
     key: 'videos',
-    labelKey: 'workshop.launch.videos',
     highlight: 'video_ltx2_3_i2v',
     workflows: [
       { template: 'video_ltx2_3_i2v', outcome: 'Turn an image into a video' },
@@ -55,7 +51,6 @@ export const LAUNCH_CATEGORIES: readonly LaunchCategory[] = [
   },
   {
     key: 'characters',
-    labelKey: 'workshop.launch.characters',
     highlight: 'video_wan_animate2',
     workflows: [
       { template: 'video_wan_animate2', outcome: 'Copy movement from a video' },
@@ -80,7 +75,6 @@ export const LAUNCH_CATEGORIES: readonly LaunchCategory[] = [
   },
   {
     key: 'product',
-    labelKey: 'workshop.launch.product',
     highlight: 'image_qwen_image_edit_2511',
     workflows: [
       { template: 'image_qwen_image_edit_2511', outcome: 'Change a material' },
@@ -105,7 +99,6 @@ export const LAUNCH_CATEGORIES: readonly LaunchCategory[] = [
   },
   {
     key: 'upscale',
-    labelKey: 'workshop.launch.upscale',
     highlight: 'utility_seedvr2_image_upscale',
     workflows: [
       {
@@ -136,7 +129,6 @@ export const LAUNCH_CATEGORIES: readonly LaunchCategory[] = [
   },
   {
     key: 'cleanup',
-    labelKey: 'workshop.launch.cleanup',
     highlight: 'flux_fill_inpaint_example',
     workflows: [
       {

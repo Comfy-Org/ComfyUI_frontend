@@ -1,5 +1,5 @@
 import { USE_CASES } from '../../config/models-catalogue'
-import { LAUNCH_CATEGORIES } from '../../config/workshop-launch'
+import { LAUNCH_CATEGORY_NAMES } from '../../config/launch-categories'
 import type { TranslationKey } from '../../i18n/translations'
 import { useCaseLabelKey } from '../workshop/use-case-label'
 import type { TypeFilter } from './browse-entry'
@@ -15,9 +15,7 @@ const MODEL_SHELVES: readonly CatalogueShelf[] = USE_CASES.map((useCase) => ({
   labelKey: useCaseLabelKey[useCase]
 }))
 
-const WORKFLOW_SHELVES: readonly CatalogueShelf[] = LAUNCH_CATEGORIES.map(
-  (category) => ({ key: category.key, labelKey: category.labelKey })
-)
+const WORKFLOW_SHELVES: readonly CatalogueShelf[] = LAUNCH_CATEGORY_NAMES
 
 /**
  * The two halves are read through different axes. A model answers "what can I
