@@ -25,10 +25,14 @@ const [
   ask,
   askResolved
 ] = zAgentWsEvent.options
+// The live schema refines cross-field correlation after parsing its object.
+// Recordings omit only replay-minted ids, so project from that inner object;
+// replayed frames still pass through the live schema before transport ingest.
+const recordedToolCall = toolCall.shape.data.innerType().omit(mintedIds)
 
 export const zRecordedWsEvent = z.discriminatedUnion('type', [
   thinking.extend({ data: thinking.shape.data.omit(mintedIds) }),
-  toolCall.extend({ data: toolCall.shape.data.omit(mintedIds) }),
+  toolCall.extend({ data: recordedToolCall }),
   messageDelta.extend({ data: messageDelta.shape.data.omit(mintedIds) }),
   messageDone.extend({ data: messageDone.shape.data.omit(mintedIds) }),
   activeTab.extend({ data: activeTab.shape.data.omit(mintedIds) }),
