@@ -16,7 +16,7 @@ import type {
 } from '@/auth/signInState'
 import { signInTransition } from '@/auth/signInState'
 import en from '@/locales/en/main.json' with { type: 'json' }
-import { billingWebIdentity } from '@/config/firebase'
+import { resolveBillingWebIdentity } from '@/config/firebase'
 import { boundWorkspaceId } from '@/entry/workspaceBinding'
 import {
   billingWebSessionClient,
@@ -28,6 +28,14 @@ const AUTH_ERROR_COPY: AuthErrorCopy = en.auth.errors
 export function useSignInController(onSignedIn: () => void) {
   const { user, failure } = useBillingWebSession()
   const state = ref<SignInState>({ step: 'idle' })
+  // Resolved asynchronously so it can't block first paint. A failed fetch no
+  // longer sticks in account-core's cache, so calling this again (from
+  // `retryAvailability`) genuinely re-fetches instead of replaying `undefined`.
+  const identity = ref<FirebaseIdentity>()
+  async function loadIdentity(): Promise<void> {
+    identity.value = await resolveBillingWebIdentity()
+  }
+  void loadIdentity()
 
   const busy = computed(
     () => state.value.step === 'pending' || state.value.step === 'minting'
@@ -86,11 +94,11 @@ export function useSignInController(onSignedIn: () => void) {
     provider: SignInProvider,
     authenticate: (identity: FirebaseIdentity) => Promise<UserCredential>
   ): Promise<void> {
-    if (!billingWebIdentity || busy.value) return
+    if (!identity.value || busy.value) return
     dispatch({ type: 'signInStarted', provider })
     let credential: UserCredential
     try {
-      credential = await authenticate(billingWebIdentity)
+      credential = await authenticate(identity.value)
     } catch (error) {
       dispatch({ type: 'signInFailed', error })
       return
@@ -121,6 +129,11 @@ export function useSignInController(onSignedIn: () => void) {
     await mint()
   }
 
+  /** For the "sign-in unavailable" notice: re-fetches instead of leaving the page dead. */
+  async function retryAvailability(): Promise<void> {
+    await loadIdentity()
+  }
+
   watch(
     user,
     (restored) => {
@@ -144,9 +157,10 @@ export function useSignInController(onSignedIn: () => void) {
     errorMessage,
     /** The mint's own refusal, e.g. naming a workspace this account is not in. */
     sessionFailureCode: computed(() => failure.value?.code),
-    available: billingWebIdentity !== undefined,
+    available: computed(() => identity.value !== undefined),
     signInWith,
     submitEmail,
-    retryMint
+    retryMint,
+    retryAvailability
   }
 }
