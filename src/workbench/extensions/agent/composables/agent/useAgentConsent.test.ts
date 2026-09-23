@@ -13,6 +13,7 @@ import { setImmediate } from 'node:timers/promises'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useDialogStore } from '@/stores/dialogStore'
 import { i18n } from '@/i18n'
+import { api } from '@/scripts/api'
 
 import { useAgentConsent } from './useAgentConsent'
 
@@ -26,8 +27,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-const fetchApi = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+vi.mock(import('@/scripts/api'))
+const fetchApi = vi.mocked(api.fetchApi)
 
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
