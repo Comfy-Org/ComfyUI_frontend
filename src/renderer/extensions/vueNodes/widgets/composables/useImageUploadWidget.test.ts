@@ -157,6 +157,21 @@ describe('useImageUploadWidget', () => {
     )
   })
 
+  it('loads the new preview when the file combo changes', () => {
+    const { fileComboWidget, node } = createUploadNode()
+    construct(node)
+    fileComboWidget.value = 'beach.jpg'
+
+    fileComboWidget.callback?.('beach.jpg')
+
+    expect(useNodeOutputStore().setNodeOutputs).toHaveBeenCalledWith(
+      node,
+      'beach.jpg',
+      { isAnimated: false }
+    )
+    expect(mocks.showPreview).toHaveBeenCalledWith({ block: false })
+  })
+
   it('does not preview a combo whose value is still unset', () => {
     const { fileComboWidget, node } = createUploadNode()
     Object.assign(fileComboWidget, { value: undefined })

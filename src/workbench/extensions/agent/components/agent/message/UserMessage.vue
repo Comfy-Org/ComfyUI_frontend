@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import Button from '@/components/ui/button/Button.vue'
+import Tag from '@/components/chip/Tag.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
@@ -156,14 +157,17 @@ const splitAttachments = computed(() => {
 <template>
   <div class="group flex flex-col items-end gap-2 pl-16" @copy="copySelection">
     <div v-if="tags.length" class="flex flex-wrap justify-end gap-1">
-      <span
+      <Tag
         v-for="(tag, index) in tags"
         :key="`${tag}:${index}`"
-        class="inline-flex items-center gap-1 rounded-xl bg-secondary-background px-1.5 py-0.5 text-xs text-muted-foreground"
+        :label="tag"
+        shape="rounded"
+        class="max-w-48"
       >
-        <span class="icon-[lucide--at-sign] size-3 shrink-0" />
-        <span class="max-w-40 truncate">{{ tag }}</span>
-      </span>
+        <template #icon>
+          <span class="icon-[lucide--at-sign] size-3 shrink-0" />
+        </template>
+      </Tag>
     </div>
     <div v-if="splitAttachments.grid.length" class="w-full">
       <ReplyAssetGroup :assets="splitAttachments.grid" />
@@ -195,7 +199,7 @@ const splitAttachments = computed(() => {
       v-if="hasMessageContent"
       ref="bubble"
       data-testid="user-message-bubble"
-      class="w-fit max-w-full rounded-lg border border-component-node-border bg-secondary-background px-2.5 py-1.5 text-sm/5 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
+      class="w-fit max-w-full rounded-lg border border-component-node-border bg-secondary-background px-2.5 py-1.5 text-sm/7 font-normal wrap-break-word whitespace-pre-wrap text-muted-foreground"
     >
       <UserMessageContent
         :text

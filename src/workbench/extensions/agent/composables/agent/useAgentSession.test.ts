@@ -1,4 +1,7 @@
-import type { AgentAdmissionError } from '@comfyorg/ingest-types'
+import type {
+  AgentAdmissionError,
+  UploadImageResponse
+} from '@comfyorg/ingest-types'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -13,8 +16,7 @@ import type {
   AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
-  TurnId,
-  UploadImageResult
+  TurnId
 } from '../../schemas/agentApiSchema'
 import {
   zAgentAdmissionError,
@@ -66,7 +68,7 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
       async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
     ),
     uploadImage: vi.fn(
-      async (): Promise<UploadImageResult> => ({
+      async (): Promise<UploadImageResponse> => ({
         name: 'n',
         subfolder: '',
         type: 'input'
@@ -638,7 +640,7 @@ describe('useAgentSession (v1 composition root)', () => {
       workflow: {
         current: () => undefined,
         adopted: () => {},
-        draft: () => ({ content: { nodes: [] }, version: 1 })
+        draft: () => ({ content: { nodes: [] } })
       }
     })
     session.start()
@@ -1038,6 +1040,27 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(body.selection).toEqual({ node_ids: ['5', '6'] })
   })
 
+  it('(h2b) identifies the workflow that owns the selected nodes', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    const tags: SelectedNode[] = [{ id: '5', title: 'KSampler' }]
+    session.start()
+
+    await session.sendMessage(
+      'explain',
+      undefined,
+      tags,
+      undefined,
+      () => 'wf-selected'
+    )
+
+    const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+    expect(body.selection).toEqual({
+      node_ids: ['5'],
+      workflow_id: 'wf-selected'
+    })
+  })
+
   it('(h3) sends workflow references separately and keeps them in the local turn', async () => {
     const rest = fakeRest()
     const session = useAgentSession({ rest, events: fakeEvents().source })
@@ -1166,6 +1189,82 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('what is on my canvas')
 
     expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty('draft')
+  })
+
+  // PM-1429/PM-1430: an unbound target (a tab with no cloud id yet) must be
+  // flagged as such - and carry its draft, since the server mints a
+  // workflow for it and an empty mint would drop whatever is already on
+  // the tab's canvas. This must hold even once the thread already exists
+  // (started elsewhere, or an earlier turn already exists), not only on the
+  // very first "new" turn - canSendDraft's own threadId==='new' clause would
+  // otherwise drop the draft here.
+  it('(h9) an unbound target on an existing thread is flagged unbound and keeps its draft', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-9',
+      message_id: 'msg-1',
+      workflow_id: 'wf-fresh'
+    }))
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const conversation = useAgentConversationStore()
+    const draftSnapshot = {
+      content: { nodes: [{ id: 1, type: 'TextInput' }], links: [] }
+    }
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        adopted: vi.fn(),
+        draft: () => draftSnapshot
+      }
+    })
+    session.start()
+    conversation.setThreadId('th-9')
+
+    await session.sendMessage('add a text input node')
+
+    const body = postMessage.mock.calls[0][1]
+    expect(body).not.toHaveProperty('workflowId')
+    expect(body.currentTabUnbound).toBe(true)
+    expect(body.draft).toEqual(draftSnapshot)
+  })
+
+  // Once a workflow has been bound this session (turn 1's ack), a still-
+  // unbound tab must NOT keep re-minting: the second turn falls back to
+  // today's pre-existing behaviour (no signal at all) rather than asking
+  // the server to mint yet another empty workflow every turn.
+  it('(h10) a second turn on a still-unbound tab does not re-flag it as unbound', async () => {
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockResolvedValueOnce({
+        thread_id: 'th-9',
+        message_id: 'msg-1',
+        workflow_id: 'wf-fresh'
+      })
+      .mockResolvedValueOnce({
+        thread_id: 'th-9',
+        message_id: 'msg-2',
+        workflow_id: 'wf-fresh'
+      })
+    const rest = fakeRest({ postMessage })
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest,
+      events: source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/scratch.json' }),
+        adopted: vi.fn(),
+        draft: () => ({ content: { nodes: [], links: [] } })
+      }
+    })
+    session.start()
+
+    await session.sendMessage('add a text input node')
+    await session.sendMessage('and a load image node')
+
+    expect(postMessage.mock.calls[0][1].currentTabUnbound).toBe(true)
+    expect(postMessage.mock.calls[1][1]).not.toHaveProperty('currentTabUnbound')
   })
 
   it.for(['new-chat', 'history'])(
@@ -1486,6 +1585,121 @@ describe('useAgentSession (v1 composition root)', () => {
 
     await session.loadThread('th-2')
     expect(session.boundWorkflowId.value).toBeNull()
+  })
+
+  // FE-2501: the tab -> workflow binding is persisted, so a workflow the
+  // backend refuses to serve poisons its tab for good - every later turn from
+  // that tab re-posts the same dead id, and a reload re-affirms the binding
+  // from the thread's own workflow pointer. Only the workflow-scoped refusal
+  // releases the binding; the thread-scoped one names a different resource.
+  it.for([
+    { refusal: 'workflow not found or access denied', released: true },
+    { refusal: 'thread not found or access denied', released: false }
+  ])('(k2) 403 $refusal releases the binding: $released', async (scenario) => {
+    const tabPath = 'workflows/portrait.json'
+    useAgentWorkflowTabBindingStore().bind('wf-dead', tabPath)
+    const postMessage = vi
+      .fn<AgentRestClient['postMessage']>()
+      .mockRejectedValue(
+        new AgentApiError(scenario.refusal, 403, { error: scenario.refusal })
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ id: 'wf-dead', tabPath }),
+        adopted: vi.fn()
+      }
+    })
+    session.start()
+    session.bindWorkflow('wf-dead')
+
+    expect(await session.sendMessage('run it')).toBe(false)
+
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-dead')).toBe(
+      scenario.released ? undefined : tabPath
+    )
+    expect(session.boundWorkflowId.value).toBe(
+      scenario.released ? null : 'wf-dead'
+    )
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [
+        {
+          type: 'notice',
+          level: 'error',
+          text: `Message failed to send: ${scenario.refusal}`
+        }
+      ]
+    })
+  })
+
+  // The refusal names a workflow, so the release must be keyed by that id.
+  // `agent_active_tab`, reference navigation and commitWorkflowTarget all
+  // rebind the same tab path mid-flight without bumping the send generation,
+  // and a path-keyed release would delete whichever binding won that race.
+  it('(k3) a late refusal does not disturb a binding the tab was rebound to', async () => {
+    const tabPath = 'workflows/portrait.json'
+    const bindings = useAgentWorkflowTabBindingStore()
+    bindings.bind('wf-dead', tabPath)
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => {
+      bindings.bind('wf-live', tabPath)
+      throw new AgentApiError('workflow not found or access denied', 403, {
+        error: 'workflow not found or access denied'
+      })
+    })
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ id: 'wf-dead', tabPath }),
+        adopted: vi.fn()
+      }
+    })
+    session.start()
+    session.bindWorkflow('wf-dead')
+
+    expect(await session.sendMessage('run it')).toBe(false)
+
+    expect(bindings.tabPathFor('wf-dead')).toBeUndefined()
+    expect(bindings.tabPathFor('wf-live')).toBe(tabPath)
+    expect(bindings.workflowIdFor(tabPath)).toBe('wf-live')
+  })
+
+  // The binding store is page-global and persisted, so it outlives the send
+  // generation. A refusal that lands after newChat()/loadThread() has moved on
+  // must still release, or the dead id survives exactly as before the fix.
+  it('(k4) releases the binding even when the send generation moved on', async () => {
+    const tabPath = 'workflows/portrait.json'
+    const bindings = useAgentWorkflowTabBindingStore()
+    bindings.bind('wf-dead', tabPath)
+    const disowned = vi.fn()
+    let abandon: () => void = () => {}
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => {
+      abandon()
+      throw new AgentApiError('workflow not found or access denied', 403, {
+        error: 'workflow not found or access denied'
+      })
+    })
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ id: 'wf-dead', tabPath }),
+        adopted: vi.fn(),
+        disowned
+      }
+    })
+    session.start()
+    session.bindWorkflow('wf-dead')
+    abandon = () => session.newChat()
+
+    expect(await session.sendMessage('run it')).toBe(false)
+
+    expect(bindings.tabPathFor('wf-dead')).toBeUndefined()
+    // The resolver prefers its name-derived cloud index over the binding
+    // store, so the refused id has to leave that index too.
+    expect(disowned).toHaveBeenCalledWith('wf-dead')
   })
 
   it('(k) a failed POST records the user text plus a settled error reply and returns false', async () => {

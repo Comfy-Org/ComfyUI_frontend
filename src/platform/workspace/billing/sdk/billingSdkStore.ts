@@ -21,7 +21,7 @@ import {
   validateActionUrl
 } from '@comfyorg/account-core/billing'
 import { loadStripe } from '@stripe/stripe-js/pure'
-import { useEventListener } from '@vueuse/core'
+import { until, useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
@@ -260,6 +260,9 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   function onSubscriptionChanged(state: BillingOperationState) {
     if (state.phase !== 'pending') {
       offeredActions.delete(state.id)
+      if (resumedOperations.delete(state.id)) {
+        void settleResumedSubscription(state)
+      }
       return
     }
     void driveRequiredChallenge(state)
@@ -316,6 +319,36 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       toastStore.add({
         severity: 'error',
         summary: t('billingOperation.topupFailed'),
+        detail: declineDetail(state.declineReason),
+        life: 7000
+      })
+    }
+  }
+
+  // A subscribe this tab reattached to after a reload has no checkout left to
+  // report it, so it settles the way the poller settled it. Only a subscribe
+  // is ever reattached: the status names a pending subscription or top-up.
+  async function settleResumedSubscription(state: BillingOperationState) {
+    if (state.phase === 'succeeded') {
+      await refreshAfterSubscriptionChange()
+      toastStore.add({
+        severity: 'success',
+        summary: t('billingOperation.subscriptionSuccess'),
+        life: 5000
+      })
+      return
+    }
+    if (state.phase === 'timed_out') {
+      toastStore.add({
+        severity: 'error',
+        summary: t('billingOperation.subscriptionTimeout')
+      })
+      return
+    }
+    if (state.phase === 'failed') {
+      toastStore.add({
+        severity: 'error',
+        summary: t('billingOperation.subscriptionFailed'),
         detail: declineDetail(state.declineReason),
         life: 7000
       })
@@ -424,6 +457,26 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     void sdk.lifecycle.recover()
   }
 
+  /**
+   * Adopt the operation the server reports pending and resolve once it settles,
+   * for the caller that has something to decide on the outcome.
+   * `lifecycle.recover()` resolves at adoption, not at settlement, and it
+   * adopts whatever the server names — so an id other than the one asked for
+   * means the pointer this caller held is stale.
+   */
+  async function recoverPendingOperation(
+    opId: string
+  ): Promise<BillingOperationRecordView | undefined> {
+    const adopted = await sdk.lifecycle.recover()
+    if (adopted.status === 'error' || adopted.value?.id !== opId) {
+      return undefined
+    }
+    const record = computed(() => getOperation(opId))
+    return until(record).toMatch(
+      (view) => view === undefined || view.status !== 'pending'
+    )
+  }
+
   // The readers the commands above already refresh after a success, exposed
   // so the panels read the state the rail settled rather than a second read
   // through the workspace client.
@@ -506,6 +559,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     isSettingUp,
     subscriptionActionOperation,
     getOperation,
+    recoverPendingOperation,
     createTopup,
     subscribe,
     previewSubscribe,

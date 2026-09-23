@@ -2,6 +2,8 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Tag from '@/components/chip/Tag.vue'
+
 import type { WorkflowReference } from '../../../types/workflowReference'
 import { workflowReferenceParts } from '../../../utils/workflowReferenceParts'
 
@@ -42,10 +44,11 @@ function openReference(reference: WorkflowReference): void {
 
 <template>
   <template v-for="(part, index) in promptParts" :key="index">
-    <span
+    <Tag
       v-if="part.type === 'workflow'"
-      role="button"
-      tabindex="0"
+      interactive
+      :label="part.reference.name"
+      class="max-w-64 align-middle"
       :aria-label="referenceLabel(part.reference)"
       data-testid="workflow-reference-chip"
       data-comfy-workflow="1"
@@ -54,17 +57,12 @@ function openReference(reference: WorkflowReference): void {
       :aria-disabled="part.reference.unavailable"
       :aria-description="unavailableReason(part.reference)"
       :title="unavailableReason(part.reference)"
-      class="inline cursor-pointer rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 ring-inset focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
       @click="openReference(part.reference)"
-      @keydown.enter.prevent="openReference(part.reference)"
-      @keydown.space.prevent
-      @keyup.space.prevent="openReference(part.reference)"
     >
-      <span
-        class="mr-1 icon-[comfy--workflow] inline-block size-3 align-middle"
-      />
-      <span>{{ part.reference.name }}</span>
-    </span>
+      <template #icon>
+        <span class="icon-[comfy--workflow] size-3 shrink-0" />
+      </template>
+    </Tag>
     <template v-else>{{ part.text }}</template>
   </template>
 </template>

@@ -3,6 +3,7 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { CanvasHelper } from '@e2e/fixtures/helpers/CanvasHelper'
+import { TestIds } from '@e2e/fixtures/selectors'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 // Five wired nodes, one renamed, whose recorded turn sets widget values on
@@ -14,7 +15,7 @@ const EMPTY_CANVAS_SPOT = { x: 1050, y: 1075 }
 
 test.describe(
   'Agent workflow tab switch',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: EDITED_CASE })
 
@@ -55,6 +56,7 @@ test.describe(
         await topbar.newWorkflowButton.click()
         await expect(tabs).toHaveCount(2)
         await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
+        await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
         await expect(panel).toBeVisible()
       })
 
@@ -128,7 +130,7 @@ const TAB_B = {
 
 test.describe(
   'Agent workflow tab switch between two workflows',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: WIRING_CASE })
 
@@ -225,6 +227,87 @@ test.describe(
         await returnToTabA()
         await expectTabA(tabAViewport)
       })
+    })
+  }
+)
+
+test.describe(
+  'Agent tab-return remote apply acceptance',
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
+  () => {
+    test.use({ conversationCase: EDITED_CASE })
+
+    test('keeps a canvas rename after switching away and back', async ({
+      agentConversation,
+      page
+    }) => {
+      test.setTimeout(90_000)
+      const customTitle = 'My Custom Sampler'
+      const topbar = new Topbar(page)
+      await agentConversation.runTurns()
+      const sampler =
+        await agentConversation.vueNodes.getFixtureByTitle('KSampler')
+      await sampler.setTitle(customTitle)
+      await expect(sampler.title).toHaveText(customTitle)
+
+      const subscribeCount = agentConversation.subscribeCount()
+      await expect(topbar.getTab(1)).toHaveCount(0)
+      await topbar.newWorkflowButton.click()
+      await expect(topbar.getTab(1)).toHaveCount(1)
+      await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
+      await topbar.getTab(0).click()
+      await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+      await expect
+        .poll(() => agentConversation.subscribeCount())
+        .toBe(subscribeCount + 1)
+
+      test.fail()
+      await expect(sampler.title).toHaveText(customTitle)
+    })
+
+    test('keeps a node color after switching away and back', async ({
+      agentConversation,
+      page
+    }) => {
+      test.setTimeout(90_000)
+      const nodeId = '3'
+      const nodes = agentConversation.vueNodes
+      const wrapper = nodes.getNodeInnerWrapper(nodeId)
+      const topbar = new Topbar(page)
+      await agentConversation.runTurns()
+      await nodes.selectNode(nodeId)
+      const originalBackground = await wrapper.evaluate(
+        (element) => getComputedStyle(element).backgroundColor
+      )
+      await page
+        .getByTestId(TestIds.selectionToolbox.colorPickerButton)
+        .dispatchEvent('click')
+      await page
+        .getByTestId(TestIds.selectionToolbox.colorRed)
+        .dispatchEvent('click')
+      await expect
+        .poll(() =>
+          wrapper.evaluate(
+            (element) => getComputedStyle(element).backgroundColor
+          )
+        )
+        .not.toBe(originalBackground)
+      const background = await wrapper.evaluate(
+        (element) => getComputedStyle(element).backgroundColor
+      )
+
+      const subscribeCount = agentConversation.subscribeCount()
+      await expect(topbar.getTab(1)).toHaveCount(0)
+      await topbar.newWorkflowButton.click()
+      await expect(topbar.getTab(1)).toHaveCount(1)
+      await expect(topbar.getTab(1)).toHaveClass(/p-togglebutton-checked/)
+      await topbar.getTab(0).click()
+      await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+      await expect
+        .poll(() => agentConversation.subscribeCount())
+        .toBe(subscribeCount + 1)
+
+      await expect(wrapper).toHaveCSS('background-color', background)
     })
   }
 )

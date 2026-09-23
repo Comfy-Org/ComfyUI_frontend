@@ -15,12 +15,15 @@ const {
   field,
   describedBy,
   invalid = false,
+  attention = false,
   disabled = false,
   locale = 'en'
 } = defineProps<{
   field: Extract<FieldSchema, { kind: 'file' }>
   describedBy?: string
   invalid?: boolean
+  /** Marks the chosen file a warning is about, without rejecting it. */
+  attention?: boolean
   disabled?: boolean
   locale?: Locale
 }>()
@@ -187,6 +190,7 @@ function remove(index: number) {
         v-for="(file, index) in selectedFiles"
         :key="index"
         :file
+        :attention
         :disabled
         :locale
         @replace="replace(index)"

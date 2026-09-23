@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "空白 Cosmos 潛在空間視訊",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "空白 Hunyuan 影像潛在空間",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "EmptyHunyuanLatentVideo",
+    "display_name": "空白 Hunyuan Video 1.0 潛在空間",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "空白 HunyuanVideo 1.5 Latent",
+    "display_name": "空白 Hunyuan Video 1.5 潛在空間",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "EmptyLTXVLatentVideo",
+    "display_name": "空白 LTXV 潛在空間視訊",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "空白 Hunyuan 3D v2 潛在空間",
     "inputs": {
       "batch_size": {
         "name": "批次大小",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "空白 Trellis2 潛在空間結構",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -8072,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "Hunyuan Video 1.5 使用模型放大潛在空間",
     "inputs": {
       "crop": {
         "name": "crop"
@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "從文字中第一個有效的 JSON 物件擷取鍵的值，包括 Markdown 程式碼區塊。",
     "display_name": "從 JSON 擷取字串",
     "inputs": {
       "json_string": {
@@ -10514,7 +10515,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV 空 latent 音訊",
+    "display_name": "空白 LTXV 潛在空間音訊",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -13234,6 +13235,10 @@
       "ultra_mode": {
         "name": "超高模式",
         "tooltip": "執行額外的細化處理，以取得更高保真度的幾何形狀與更精細的表面細節。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "超高精細處理的解析度：2k 以 2048³ 執行，4k 以 4096³ 執行，提供最細緻的表面細節。4k 需要 meshy-7.1 或更新版本。僅在啟用 ultra_mode 時使用。"
       }
     },
     "outputs": {
@@ -13300,6 +13305,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "以 2048³ 執行額外的精修處理，以獲得保真度更高的幾何結構與更細緻的表面細節。"
       }
     },
     "outputs": {
@@ -13441,6 +13450,10 @@
       "ultra_mode": {
         "name": "超高模式",
         "tooltip": "執行額外的細化處理，以取得更高保真度的幾何形狀與更精細的表面細節。"
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "超高精細處理的解析度：2k 以 2048³ 執行，4k 以 4096³ 執行，提供最細緻的表面細節。4k 需要 meshy-7.1 或更新版本。僅在啟用 ultra_mode 時使用。"
       }
     },
     "outputs": {
@@ -14199,6 +14212,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "僅限 MoGe-3：對預測深度進行稀疏體積細化。增加處理次數可銳化細節與邊緣，成本約呈線性增加。0 會停用細化。MoGe-1 / MoGe-2 會忽略此設定。"
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = 最快，9 = 最細緻。"
@@ -14229,6 +14246,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "僅限 MoGe-3：對預測深度進行稀疏體積細化。增加處理次數可銳化細節與邊緣，成本約呈線性增加。0 會停用細化。MoGe-1 / MoGe-2 會忽略此設定。"
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17422,7 +17443,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Pixal3D 條件化",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -18391,6 +18412,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "決定節點是否重新執行的種子值；實際結果無論種子如何都不具決定性。"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "可設定 KV 快取裝置與量化方式。預設模型使用 auto 選項。記憶體不足時，量化可能加快編輯工作流程。",
+    "display_name": "Qwen Image 2.1 快取",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto 會先使用可用的 VRAM，接著使用 RAM。cpu (RAM) 會在運算期間預先擷取，速度損失極小。off 會在每個步驟重新計算前綴，雖較慢，但可用來排除快取造成的影響。"
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "儲存精度。default 為無損。int8 將快取減半，精度約為 bf16；int4 將其降為四分之一，但每步誤差約增加一倍。"
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -22751,7 +22794,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade 空白潛在影像",
+    "display_name": "空白 Stable Cascade 潛在空間影像",
     "inputs": {
       "batch_size": {
         "name": "批次大小"
@@ -22794,7 +22837,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade 階段 C VAE 編碼",
+    "display_name": "Stable Cascade C 階段 VAE 編碼",
     "inputs": {
       "compression": {
         "name": "壓縮"
@@ -23756,8 +23799,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "文字編碼 Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "文字編碼器可見的參考影像，並會以 VAE 潛在表示形式拼接至序列中。"
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "參考影像會在保留長寬比的情況下，調整為約 resolution x resolution 像素，且尺寸為 32 的倍數。0 會保留每張參考影像的原始尺寸，並將其調整為 32 的倍數。"
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "以第一張參考影像的尺寸建立空白潛在空間資料，以便與採樣相符，因為任何其他尺寸都會使編輯結果偏移。"
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "文字編碼 Qwen Image Edit",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23779,7 +23861,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "文字編碼 Qwen Image Edit Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23855,6 +23937,10 @@
       "max_length": {
         "name": "最大長度"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "使用檢查點的多詞元預測頭進行推測式解碼。沒有 MTP 權重時無效。auto 會調整草稿深度；2-5 會固定該深度。採樣輸出仍維持正確分布，但在相同 seed 下會與非 MTP 輸出不同。"
+      },
       "prompt": {
         "name": "提示詞"
       },
@@ -23916,6 +24002,10 @@
       },
       "max_length": {
         "name": "最大長度"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "使用檢查點的多詞元預測頭進行推測式解碼。若無 MTP 權重則無效果。auto 會自動調整草稿深度；2-5 則將其固定。取樣輸出仍維持正確分布，但相同種子下會與非 MTP 輸出不同。"
       },
       "prompt": {
         "name": "提示詞"
@@ -24432,7 +24522,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Trellis2 條件",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24454,7 +24544,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Trellis2 形狀階段",
     "inputs": {
       "negative": {
         "name": "負向"
@@ -24482,7 +24572,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Trellis2 紋理階段",
     "inputs": {
       "negative": {
         "name": "負向"
@@ -26162,7 +26252,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAE 解碼 Hunyuan3D",
+    "display_name": "Hunyuan 3D VAE 解碼",
     "inputs": {
       "num_chunks": {
         "name": "分塊數量"
@@ -26470,7 +26560,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Trellis2 VAE 解碼形狀",
     "inputs": {
       "samples": {
         "name": "樣本"
@@ -26491,7 +26581,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Trellis2 VAE 解碼結構",
     "inputs": {
       "resolution": {
         "name": "解析度"
@@ -26511,7 +26601,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Trellis2 VAE 解碼紋理",
     "inputs": {
       "samples": {
         "name": "樣本"
@@ -29466,6 +29556,10 @@
       "abc": {
         "name": "abc",
         "tooltip": "連接 ABC 產生器或提供編輯過的樂譜。留空即可自動使用關閉模式。"
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "用於風格與歌詞的自迴歸引導。1.0 會停用 CFG，與 ABC 工作流程一致。使用 1.01 可符合原始關閉模式的引導。"
       },
       "clip": {
         "name": "clip"

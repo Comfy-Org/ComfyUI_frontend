@@ -13,6 +13,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useBillingSdkStore } from './billingSdkStore'
 import {
   fakeBillingSdk,
+  failedOperation,
   failedTopup,
   pendingTopup,
   pendingSubscription,
@@ -515,6 +516,73 @@ describe('useBillingSdkStore subscription commands', () => {
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
   })
 
+  function reattachedSubscribe() {
+    options.onTelemetry({
+      name: 'billing.operation.started',
+      billing_op_id: 'op-1',
+      operation_type: 'subscription',
+      presentation: 'hosted',
+      resumed: true
+    })
+  }
+
+  it('finishes a reattached subscribe the way the poller did', async () => {
+    useBillingSdkStore()
+
+    reattachedSubscribe()
+    harness.publish(settledOperation('succeeded', 'subscription'))
+
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toContainEqual(
+        expect.objectContaining({
+          severity: 'success',
+          summary: 'Subscription updated successfully'
+        })
+      )
+    )
+    expect(mockReconcileSubscription).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
+  })
+
+  it('reports the failure of a reattached subscribe', () => {
+    useBillingSdkStore()
+
+    reattachedSubscribe()
+    harness.publish(failedOperation('subscription'))
+
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        summary: 'Subscription update failed'
+      })
+    )
+  })
+
+  it('reports a reattached subscribe that timed out, without reconciling', () => {
+    useBillingSdkStore()
+
+    reattachedSubscribe()
+    harness.publish(settledOperation('timed_out', 'subscription'))
+
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        summary: 'Subscription verification timed out'
+      })
+    )
+    expect(mockReconcileSubscription).not.toHaveBeenCalled()
+  })
+
+  it('leaves a subscribe it issued to the checkout that issued it', async () => {
+    useBillingSdkStore()
+
+    harness.publish(settledOperation('succeeded', 'subscription'))
+    await nextTick()
+
+    expect(mockReconcileSubscription).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toEqual([])
+  })
+
   it('hands back the quote without refreshing anything', async () => {
     vi.mocked(harness.sdk.commands.previewSubscribe).mockResolvedValue({
       status: 'ok',
@@ -679,6 +747,44 @@ describe('useBillingSdkStore operation projections', () => {
 
   beforeEach(() => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'ws-1' })
+  })
+
+  describe('recoverPendingOperation', () => {
+    it('resolves with the operation once the lifecycle settles it', async () => {
+      const store = useBillingSdkStore()
+      vi.mocked(harness.sdk.lifecycle.recover).mockImplementation(async () => {
+        harness.publish(pendingSubscription())
+        return { status: 'ok', value: pendingSubscription() }
+      })
+
+      const settling = store.recoverPendingOperation('op-1')
+      harness.publish(settledTopup('succeeded'))
+
+      await expect(settling).resolves.toMatchObject({
+        opId: 'op-1',
+        status: 'succeeded'
+      })
+    })
+
+    it('adopts nothing when the server names a different operation', async () => {
+      const store = useBillingSdkStore()
+
+      await expect(
+        store.recoverPendingOperation('op-elsewhere')
+      ).resolves.toBeUndefined()
+    })
+
+    it('adopts nothing when the recovery read fails', async () => {
+      const store = useBillingSdkStore()
+      vi.mocked(harness.sdk.lifecycle.recover).mockResolvedValue({
+        status: 'error',
+        code: 'REQUEST_FAILED'
+      })
+
+      await expect(
+        store.recoverPendingOperation('op-1')
+      ).resolves.toBeUndefined()
+    })
   })
 
   it('reports a pending operation, and stops once it settles', () => {

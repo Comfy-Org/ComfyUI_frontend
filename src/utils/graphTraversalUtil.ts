@@ -866,7 +866,7 @@ export function collectFromNodes<T = LGraphNode, C = void>(
   const {
     collector = (node: LGraphNode) => node as T,
     contextBuilder = () => undefined as C,
-    initialContext = undefined,
+    initialContext,
     expandSubgraphs = true
   } = options || {}
   const results: T[] = []
@@ -957,4 +957,26 @@ function findPartialExecutionPathToGraph(
     if (subpath !== undefined) return node.id + ':' + subpath
   }
   return undefined
+}
+
+export function resolveInputSourceNode(
+  node: LGraphNode,
+  slot: number
+): LGraphNode | undefined {
+  let upstream = node.getInputNode(slot)
+  let link = node.getInputLink(slot)
+  const visited = new Set<LGraphNode>()
+
+  while (upstream?.isSubgraphNode()) {
+    if (!link || visited.has(upstream)) return undefined
+    visited.add(upstream)
+
+    const resolved = upstream.resolveSubgraphOutputLink(link.origin_slot)
+    if (!resolved) return undefined
+
+    upstream = resolved.outputNode ?? null
+    link = resolved.link
+  }
+
+  return upstream ?? undefined
 }

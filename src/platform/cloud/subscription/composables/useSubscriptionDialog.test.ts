@@ -1,5 +1,8 @@
 import { useDialogStore } from '@/stores/dialogStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import type { BillingOperationRecordView } from '@/platform/workspace/billing/sdk/operationRecordView'
+import { fakeBillingSdk } from '@/platform/workspace/billing/sdk/billingSdkTestUtils'
+import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -8,8 +11,10 @@ import { computed } from 'vue'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useDialogService } from '@/services/dialogService'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
   BillingSubscriptionStatus,
@@ -23,19 +28,18 @@ import {
 
 import { useSubscriptionDialog } from './useSubscriptionDialog'
 
-const mockCloseDialog = vi.fn()
 const mockShowLayoutDialog = vi.fn()
 const mockShowTeamWorkspacesDialog = vi.fn()
 
 const mockIsFreeTier = vi.hoisted(() => ({ value: false }))
-const mockTier = vi.hoisted(() => ({ value: 'FREE' as string | null }))
+const mockTier = vi.hoisted<{ value: SubscriptionInfo['tier'] }>(() => ({
+  value: 'FREE'
+}))
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockIsLegacyTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockCurrentPlanSlug = vi.hoisted(() => ({ value: null as string | null }))
 const mockStartOperation = vi.hoisted(() => vi.fn())
-const mockFetchPlans = vi.hoisted(() => vi.fn())
-const mockFetchStatus = vi.hoisted(() => vi.fn())
 const mockTeamCreditStops = vi.hoisted(() => ({
   value: null as TeamCreditStops | null
 }))
@@ -49,41 +53,46 @@ const mockSubscriptionStatus = vi.hoisted(() => ({
   value: null as BillingSubscriptionStatus | null
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    showLayoutDialog: mockShowLayoutDialog,
-    showTeamWorkspacesDialog: mockShowTeamWorkspacesDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/composables/billing/useBillingRouting'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
+// The store is real; only the composition root it builds is faked, so the
+// testing Pinia still owns the store and its actions.
+const mockCreateBillingSdk = vi.hoisted(() => vi.fn())
+vi.mock(import('@/platform/workspace/billing/sdk/createBillingSdk'), () => ({
+  createBillingSdk: mockCreateBillingSdk
+}))
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    isFreeTier: mockIsFreeTier,
-    isLegacyTeamPlan: mockIsLegacyTeamPlan,
-    isTeamPlan: mockIsTeamPlan,
-    currentPlanSlug: mockCurrentPlanSlug,
-    tier: mockTier,
-    fetchPlans: mockFetchPlans,
-    fetchStatus: mockFetchStatus,
-    teamCreditStops: mockTeamCreditStops,
-    currentTeamCreditStop: mockCurrentTeamCreditStop,
-    subscription: mockSubscription,
-    subscriptionStatus: mockSubscriptionStatus
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
+
+/** A settled operation as the SDK store projects it for a recovery caller. */
+function recoveredOperation(
+  status: BillingOperationRecordView['status']
+): BillingOperationRecordView {
+  return {
+    opId: 'op-parked',
+    kind: 'subscription',
+    workspaceId: 'workspace-1',
+    status,
+    actionUrl: null,
+    phase: null,
+    authenticationState: null,
+    isAuthenticating: false,
+    canRetryAuthentication: false,
+    errorMessage: null
+  }
+}
 
 function expectRekaPricingDialogProps(
   dialogComponentProps: Record<string, unknown>
@@ -98,12 +107,44 @@ function expectRekaPricingDialogProps(
 }
 
 beforeEach(() => {
+  vi.mocked(useDialogService().showLayoutDialog).mockImplementation(
+    mockShowLayoutDialog
+  )
+  vi.mocked(useDialogService().showTeamWorkspacesDialog).mockImplementation(
+    mockShowTeamWorkspacesDialog
+  )
+  const billing = useBillingContext()
+  billing.isFreeTier = computed(() => mockIsFreeTier.value)
+  billing.isLegacyTeamPlan = computed(() => mockIsLegacyTeamPlan.value)
+  billing.isTeamPlan = computed(() => mockIsTeamPlan.value)
+  billing.currentPlanSlug = computed(() => mockCurrentPlanSlug.value)
+  billing.tier = computed(() => mockTier.value)
+  billing.teamCreditStops = computed(() => mockTeamCreditStops.value)
+  billing.currentTeamCreditStop = computed(
+    () => mockCurrentTeamCreditStop.value
+  )
+  billing.subscription = computed(() =>
+    mockSubscription.value
+      ? {
+          isActive: true,
+          tier: null,
+          planSlug: null,
+          scheduledChange: null,
+          renewalDate: null,
+          endDate: null,
+          isCancelled: false,
+          hasFunds: true,
+          ...mockSubscription.value
+        }
+      : null
+  )
+  billing.subscriptionStatus = computed(() => mockSubscriptionStatus.value)
+  vi.mocked(useBillingContext).mockReturnValue(billing)
   Object.assign(useAuthStore(), { userId: 'user-1' })
-  vi.mocked(useDialogStore().closeDialog).mockImplementation(mockCloseDialog)
-
   vi.mocked(useBillingOperationStore().startOperation).mockImplementation(
     mockStartOperation
   )
+  mockCreateBillingSdk.mockReturnValue(fakeBillingSdk().sdk)
 })
 
 describe('useSubscriptionDialog', () => {
@@ -118,8 +159,6 @@ describe('useSubscriptionDialog', () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
     Object.assign(useAuthStore(), { userId: 'user-1' })
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
-    mockFetchPlans.mockResolvedValue(undefined)
-    mockFetchStatus.mockResolvedValue(undefined)
     mockTeamCreditStops.value = null
     mockCurrentTeamCreditStop.value = null
     mockSubscription.value = null
@@ -555,7 +594,7 @@ describe('useSubscriptionDialog', () => {
 
       startTeamWorkspaceUpgradeFlow()
 
-      expect(mockCloseDialog).toHaveBeenCalledWith({
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'subscription-required'
       })
       expect(mockShowTeamWorkspacesDialog).toHaveBeenCalledWith(
@@ -695,6 +734,93 @@ describe('useSubscriptionDialog', () => {
       ).toBeNull()
     })
 
+    // One behaviour, two entry points: a pending checkout is adopted by
+    // whichever rail owns the operation. Half-railed recovery is the ambiguity
+    // FE-2484 and FE-2483 exist together to remove.
+    it.for([
+      { rail: 'SDK', railEnabled: true },
+      { rail: 'legacy', railEnabled: false }
+    ])(
+      'resumes a parked checkout on the $rail rail and reopens it on failure',
+      async ({ railEnabled }) => {
+        const recoverPendingOperationSpy = vi.mocked(
+          useBillingSdkStore().recoverPendingOperation
+        )
+        vi.mocked(useFeatureFlags().flags).billingSdkSubscriptionRailEnabled =
+          railEnabled
+        useBillingRouting().type = computed(() => 'workspace')
+        useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+        useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
+        mockStartOperation.mockResolvedValueOnce({ status: 'failed' })
+        recoverPendingOperationSpy.mockResolvedValueOnce(
+          recoveredOperation('failed')
+        )
+        savePendingSubscriptionCheckout({
+          operationId: 'op-parked',
+          workspaceId: 'workspace-1',
+          ownerUid: 'user-1',
+          selection: {
+            planMode: 'personal',
+            tierKey: 'creator',
+            billingCycle: 'monthly'
+          },
+          attemptedAt: Date.now()
+        })
+
+        const { resumePendingPricingFlow } = useSubscriptionDialog()
+        await resumePendingPricingFlow()
+
+        expect(recoverPendingOperationSpy).toHaveBeenCalledTimes(
+          railEnabled ? 1 : 0
+        )
+        expect(mockStartOperation).toHaveBeenCalledTimes(railEnabled ? 0 : 1)
+        if (railEnabled) {
+          expect(recoverPendingOperationSpy).toHaveBeenCalledWith('op-parked')
+        }
+        // Whichever rail adopted it, the host pointer still restores the
+        // tier/cycle the pricing dialog reopens on.
+        expect(mockShowLayoutDialog).toHaveBeenCalledWith(
+          expect.objectContaining({
+            props: expect.objectContaining({
+              initialCheckout: {
+                planMode: 'personal',
+                tierKey: 'creator',
+                billingCycle: 'monthly'
+              }
+            })
+          })
+        )
+      }
+    )
+
+    it('drops a stale pointer the SDK rail finds nothing to adopt for', async () => {
+      const recoverPendingOperationSpy = vi.mocked(
+        useBillingSdkStore().recoverPendingOperation
+      )
+      vi.mocked(useFeatureFlags().flags).billingSdkSubscriptionRailEnabled =
+        true
+      recoverPendingOperationSpy.mockResolvedValueOnce(undefined)
+      savePendingSubscriptionCheckout({
+        operationId: 'op-stale',
+        workspaceId: 'workspace-1',
+        ownerUid: 'user-1',
+        selection: {
+          planMode: 'personal',
+          tierKey: 'creator',
+          billingCycle: 'monthly'
+        },
+        attemptedAt: Date.now()
+      })
+
+      const { resumePendingPricingFlow } = useSubscriptionDialog()
+      await resumePendingPricingFlow()
+
+      expect(
+        sessionStorage.getItem('comfy:pending-subscription-checkout')
+      ).toBeNull()
+      expect(mockShowLayoutDialog).not.toHaveBeenCalled()
+    })
+
     it('completes a succeeded redirect silently', async () => {
       useBillingRouting().type = computed(() => 'workspace')
       useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
@@ -825,34 +951,38 @@ describe('useSubscriptionDialog', () => {
       useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
       useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       mockStartOperation.mockResolvedValueOnce({ status: 'failed' })
-      mockFetchPlans.mockImplementationOnce(async () => {
-        mockTeamCreditStops.value = {
-          default_stop_index: 0,
-          stops: [
-            {
-              id: 'team_700',
-              credits: 147_700,
-              monthly: {
-                list_price_cents: 70_000,
-                price_cents: 66_500
-              },
-              yearly: {
-                list_price_cents: 70_000,
-                price_cents: 63_000
+      vi.mocked(useBillingContext().fetchPlans).mockImplementationOnce(
+        async () => {
+          mockTeamCreditStops.value = {
+            default_stop_index: 0,
+            stops: [
+              {
+                id: 'team_700',
+                credits: 147_700,
+                monthly: {
+                  list_price_cents: 70_000,
+                  price_cents: 66_500
+                },
+                yearly: {
+                  list_price_cents: 70_000,
+                  price_cents: 63_000
+                }
               }
-            }
-          ]
+            ]
+          }
         }
-      })
-      mockFetchStatus.mockImplementationOnce(async () => {
-        mockCurrentTeamCreditStop.value = {
-          id: 'team_400',
-          stop_usd: 400,
-          credits_monthly: 84_400
+      )
+      vi.mocked(useBillingContext().fetchStatus).mockImplementationOnce(
+        async () => {
+          mockCurrentTeamCreditStop.value = {
+            id: 'team_400',
+            stop_usd: 400,
+            credits_monthly: 84_400
+          }
+          mockSubscription.value = { duration: 'MONTHLY' }
+          mockSubscriptionStatus.value = 'active'
         }
-        mockSubscription.value = { duration: 'MONTHLY' }
-        mockSubscriptionStatus.value = 'active'
-      })
+      )
       savePendingSubscriptionCheckout({
         operationId: 'op-team-change',
         workspaceId: 'workspace-1',

@@ -6,9 +6,7 @@ import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { api } from '@/scripts/api'
 import { getDevOverride } from '@/utils/devFeatureFlagOverride'
 
-vi.mock<unknown>(import('@/platform/remoteConfig/remoteConfig'), () => ({
-  remoteConfig: { value: {} }
-}))
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: { getServerFeature: vi.fn() }
 }))

@@ -13,6 +13,7 @@ import { setImmediate } from 'node:timers/promises'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useDialogStore } from '@/stores/dialogStore'
 import { i18n } from '@/i18n'
+import { api } from '@/scripts/api'
 
 import { useAgentConsent } from './useAgentConsent'
 
@@ -26,8 +27,8 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-const fetchApi = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+vi.mock(import('@/scripts/api'))
+const fetchApi = vi.mocked(api.fetchApi)
 
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
@@ -205,7 +206,7 @@ describe('useAgentConsent', () => {
   it('reports the card as shown only after its async component mounts', async () => {
     const onOpen = vi.fn()
     const onShown = vi.fn()
-    const request = useAgentConsent().withConsent(onOpen, onShown)
+    const request = useAgentConsent().withConsent(onOpen, { onShown })
     const dialog = await waitForConsentDialog()
 
     expect(onShown).not.toHaveBeenCalled()
@@ -249,8 +250,10 @@ describe('useAgentConsent', () => {
       ).mockImplementation(() => currentUser.value)
       const key = 'Comfy.AgentConsent.AutoShown.account-a.workspace-a'
       const onOpen = vi.fn()
-      const request = useAgentConsent().withConsent(onOpen, () => {
-        localStorage.setItem(key, 'true')
+      const request = useAgentConsent().withConsent(onOpen, {
+        onShown: () => {
+          localStorage.setItem(key, 'true')
+        }
       })
       const dialog = await waitForConsentDialog()
       currentUser.value = user
@@ -278,6 +281,26 @@ describe('useAgentConsent', () => {
       expect(onOpen).not.toHaveBeenCalled()
     }
   )
+
+  it('asks canShow only after the setting has loaded and keeps the card off when it says no', async () => {
+    const load = deferred<Response>()
+    fetchWithUnifiedRemint.mockReturnValueOnce(load.promise)
+    const onOpen = vi.fn()
+    const onShown = vi.fn()
+    const canShow = vi.fn(() => false)
+    const request = useAgentConsent().withConsent(onOpen, { onShown, canShow })
+
+    await setImmediate()
+    expect(canShow).not.toHaveBeenCalled()
+
+    load.resolve(settingResponse(false))
+    await request
+
+    expect(canShow).toHaveBeenCalledOnce()
+    expect(useDialogStore().dialogStack).toHaveLength(0)
+    expect(onShown).not.toHaveBeenCalled()
+    expect(onOpen).not.toHaveBeenCalled()
+  })
 
   it('keeps the card retryable and the panel closed when saving fails', async () => {
     fetchWithUnifiedRemint

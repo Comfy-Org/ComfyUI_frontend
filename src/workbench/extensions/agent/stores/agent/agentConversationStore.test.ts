@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
@@ -234,6 +234,199 @@ describe('useAgentConversationStore', () => {
       name: 'add_node',
       ok: true
     })
+  })
+
+  // PM-1575 regression: a tool call held back pending canvas catch-up must
+  // still receive notifyCanvasCaughtUp() after its turn settles.
+  // agent_message_done drops the active-turn transport out of the `transport`
+  // slot (clearActive()) the instant it lands, which used to leave the held
+  // part with no reachable transport for notifyCanvasCaughtUp() to forward
+  // to -- stranding it until its own STALE_AFTER_MS fallback fired, tens of
+  // seconds later than the canvas actually caught up.
+  it('still settles a canvas-sync-pending tool call after its turn has settled', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => true)
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(done('t1'))
+
+    // The turn is settled (message.streaming is false), but the tool part
+    // itself is held at 'streaming' -- the spinner -- pending canvas catch-up.
+    expect(store.messages[0].streaming).toBe(false)
+    expect(store.messages[0].parts[0]).toMatchObject({
+      type: 'tool',
+      state: 'streaming'
+    })
+
+    store.notifyCanvasCaughtUp()
+
+    expect(store.messages[0].parts[0]).toMatchObject({
+      type: 'tool',
+      state: 'done'
+    })
+  })
+
+  // PM-1575 regression (finding #1/#9, high): the normal ordering on a
+  // healthy doc host is the matching doc_update applying WHILE the tool is
+  // still running, with the success frame landing after -- so by the time
+  // the terminal frame arrives there is nothing left to wait on. Threads the
+  // outcome-count getter end to end (store -> transport), unlike the
+  // transport-level unit test for the same finding.
+  it('settles a held tool call immediately when the canvas catches up while it is still running', () => {
+    const store = useAgentConversationStore()
+    let outcomeCount = 0
+    store.setCanvasSyncGate(
+      () => true,
+      () => outcomeCount
+    )
+    store.startTurn(T1)
+
+    store.ingest(toolCall('t1', 'add_node', 'running'))
+    outcomeCount += 1
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+
+    expect(store.messages[0].parts[0]).toMatchObject({
+      type: 'tool',
+      state: 'done'
+    })
+  })
+
+  // PM-1575 regression (finding #3, medium): settleActiveTurn used to keep
+  // only a single "settled but still holding" transport reachable. A second
+  // turn settling within the same window while ALSO holding a part
+  // overwrote that slot, stranding the first turn's held part until its own
+  // STALE_AFTER_MS fallback.
+  it('keeps an earlier settled turn reachable after a second turn also settles with a held part', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => true)
+
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(done('t1'))
+
+    store.startTurn(T2)
+    store.ingest(toolCall('t2', 'add_node', 'success'))
+    store.ingest(done('t2'))
+
+    store.notifyCanvasCaughtUp()
+
+    expect(store.messages[0].parts[0]).toMatchObject({
+      type: 'tool',
+      state: 'done'
+    })
+    expect(store.messages[1].parts[0]).toMatchObject({
+      type: 'tool',
+      state: 'done'
+    })
+  })
+
+  // PM-1575 regression (finding #4, medium): abortActiveTurn() used to drop
+  // the transport out of every reachable slot without flushing what it was
+  // still holding, stranding the part at 'streaming' until its own 30s
+  // fallback even though nothing will ever call notifyCanvasCaughtUp() for
+  // a turn nobody is tracking anymore.
+  it('flushes a held tool-call part immediately when its turn is aborted', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => true)
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+
+    store.abortActiveTurn()
+
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
+  })
+
+  // PM-1575 regression (finding #4, medium): resumeBackgroundTurn()'s SECOND
+  // early return -- reached when a settled background turn's message is
+  // kept on screen but not reactivated as the live turn -- dropped the
+  // transport the same way as the paths above, leaving a held part
+  // reachable only via its own 30s STALE_AFTER_MS fallback instead of
+  // settling the moment it is clear nothing will ever resume it.
+  it('flushes a held tool-call part immediately when a settled background turn is resumed but not reactivated', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => true)
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.stashActiveTurn()
+    store.ingest(done('t1'))
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+
+    store.resumeBackgroundTurn()
+
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
+  })
+
+  // PM-1575 regression (finding #5, medium): nothing cancelled a held tool
+  // call's 30s timer when hydrate() discarded its transport. The orphaned
+  // timer could fire after hydrate() replaced the transcript with
+  // authoritative server content under the SAME turn id, overwriting it
+  // with the disposed transport's own stale snapshot.
+  it('does not let an orphaned canvas-sync timer overwrite hydrated content under the same turn id', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => true)
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(done('t1'))
+
+    store.hydrate([
+      historyRow(1, 'user', 't1', 'go'),
+      historyRow(2, 'assistant', 't1', 'authoritative reply')
+    ])
+
+    vi.advanceTimersByTime(30_000)
+
+    expect(partTexts(store)).toEqual(['authoritative reply'])
+  })
+
+  // PM-1575 regression (finding #7, medium): canvasSyncGate used to be
+  // captured BY VALUE at transport-creation time, so a later
+  // setCanvasSyncGate() call (e.g. AgentPanelRoot.vue re-registering after a
+  // remount) never reached a transport created before it.
+  it('routes a later setCanvasSyncGate() call to a transport created before it', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => false)
+    store.startTurn(T1)
+
+    store.setCanvasSyncGate(() => true)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+  })
+
+  // PM-1575 regression (finding #10, medium): the source watcher this
+  // guards -- AgentPanelRoot.vue's `watch(() => crdtStatus.value.outcomes
+  // .applied, ...)` -- treated ANY change to the counter as catch-up,
+  // including a decrease. `useAgentCrdtFollower` resets `outcomes.applied`
+  // to 0 when its follower is torn down (e.g. toggling the panel mid-turn)
+  // and a restarted follower counts from 0 again, so that watcher's own
+  // guard, reproduced here against the real store, is what stops a mere
+  // reset from incorrectly releasing every held tool call.
+  it('does not release a held tool call when the applied counter decreases, only when it increases', () => {
+    const store = useAgentConversationStore()
+    const applied = ref(5)
+    store.setCanvasSyncGate(
+      () => true,
+      () => applied.value
+    )
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+
+    watch(
+      applied,
+      (value, previous) => {
+        if (value > previous) store.notifyCanvasCaughtUp()
+      },
+      { flush: 'sync' }
+    )
+
+    applied.value = 0
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+
+    applied.value = 6
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
   })
 
   it('restores a pending run approval as the live turn and continues after it resolves', () => {
@@ -485,6 +678,74 @@ describe('useAgentConversationStore', () => {
     })
   })
 
+  it('hydrates a persisted user attachment preview on its original turn', () => {
+    const user = historyRow(1, 'user', 'turn-a', 'check this image')
+    user.content = {
+      text: 'check this image',
+      attachments: ['ComfyUI_00002_.png'],
+      attachment_refs: [
+        { name: 'ComfyUI_00002_.png', id: 'asset-1', kind: 'image' }
+      ]
+    }
+    const store = useAgentConversationStore()
+
+    store.hydrate([user, historyRow(2, 'assistant', 'turn-a', 'Looks good.')])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png' }]
+    })
+  })
+
+  it('hydrates persisted tool calls into the same parts array the live work-summary UI reads', () => {
+    const assistant = historyRow(2, 'assistant', 'turn-a', 'Done')
+    assistant.content = {
+      text: 'Done',
+      tool_calls: [{ id: 'call-1', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const store = useAgentConversationStore()
+
+    store.hydrate([historyRow(1, 'user', 'turn-a', 'Find a node'), assistant])
+
+    expect(store.messages[0].parts).toContainEqual({
+      type: 'tool',
+      callId: 'call-1',
+      name: 'search_nodes',
+      state: 'done',
+      ok: true
+    })
+  })
+
+  it('does not bleed a tool-call summary onto a different chat, and restores it when switching back', () => {
+    const store = useAgentConversationStore()
+    const threadAAssistant = historyRow(2, 'assistant', 'turn-a', 'Done A')
+    threadAAssistant.content = {
+      text: 'Done A',
+      tool_calls: [{ id: 'call-a', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const threadA = [
+      historyRow(1, 'user', 'turn-a', 'Find a node'),
+      threadAAssistant
+    ]
+    const threadB = [
+      historyRow(1, 'user', 'turn-b', 'Just chat'),
+      historyRow(2, 'assistant', 'turn-b', 'Done B')
+    ]
+    const hasToolPart = () =>
+      store.messages.some((message) =>
+        message.parts.some((part) => part.type === 'tool')
+      )
+
+    store.hydrate(threadA)
+    expect(hasToolPart()).toBe(true)
+
+    store.hydrate(threadB)
+    expect(hasToolPart()).toBe(false)
+
+    store.hydrate(threadA)
+    expect(hasToolPart()).toBe(true)
+  })
+
   it('keeps hydrated turn identity stable when persisted row ids change', () => {
     const store = useAgentConversationStore()
     const firstRows = [
@@ -541,5 +802,34 @@ describe('useAgentConversationStore', () => {
     expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
     expect(partTexts(store)).toEqual(['persisted reply'])
     expect(store.isStreaming).toBe(false)
+  })
+
+  it('resolves existing paywalls without resurrecting them after funds run out again', () => {
+    const store = useAgentConversationStore()
+    store.recordPaywall(T1, 'subscribe')
+
+    store.setPaywallsResolved(true)
+    store.setPaywallsResolved(false)
+
+    expect(store.messages[0].parts).toEqual([])
+    expect(store.entries[0]).toMatchObject({ role: 'user', text: 'subscribe' })
+
+    store.recordPaywall(T2, 'top up')
+    expect(store.messages[1].parts).toEqual([
+      { type: 'paywall', message: undefined }
+    ])
+  })
+
+  it('shows a later paywall after resolving an earlier one', () => {
+    const store = useAgentConversationStore()
+    store.recordPaywall(T1, 'subscribe')
+    store.setPaywallsResolved(true)
+
+    store.recordPaywall(T2, 'continue')
+
+    expect(store.messages[0].parts).toEqual([])
+    expect(store.messages[1].parts).toEqual([
+      { type: 'paywall', message: undefined }
+    ])
   })
 })
