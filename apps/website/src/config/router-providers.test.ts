@@ -118,8 +118,17 @@ describe('Router provider coverage', () => {
       ROUTER_SERVING_PROVIDERS.map((provider) => provider.name)
     )
     expect(docs.rows.every((row) => row.comfy === '✓')).toBe(true)
-    expect(docs.rows.map((row) => row.docsUrl).sort()).toEqual(
-      ROUTER_PROVIDER_COVERAGE.map((row) => row.docsUrl).sort()
+    const byDocsUrl = (a: { docsUrl: string }, b: { docsUrl: string }) =>
+      a.docsUrl.localeCompare(b.docsUrl)
+    expect(
+      docs.rows
+        .map((row) => ({ docsUrl: row.docsUrl, name: row.name }))
+        .sort(byDocsUrl)
+    ).toEqual(
+      ROUTER_PROVIDER_COVERAGE.map((row) => ({
+        docsUrl: row.docsUrl,
+        name: row.docsName ?? row.name
+      })).sort(byDocsUrl)
     )
   })
 

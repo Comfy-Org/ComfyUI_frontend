@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, reactive } from 'vue'
+import { computed, reactive, watch } from 'vue'
 
 import type { Locale, TranslationKey } from '../../i18n/translations'
 
@@ -44,7 +44,17 @@ const faqs = computed<readonly FaqItem[]>(
     }))
 )
 
-const expanded = reactive(faqs.value.map(() => false))
+const expanded = reactive<boolean[]>([])
+
+// Re-sync when the FAQ list changes (locale switch, replaced items) so a
+// question can't inherit another's open state by index.
+watch(
+  faqs,
+  (nextFaqs) => {
+    expanded.splice(0, expanded.length, ...nextFaqs.map(() => false))
+  },
+  { immediate: true }
+)
 
 function toggle(index: number) {
   expanded[index] = !expanded[index]
