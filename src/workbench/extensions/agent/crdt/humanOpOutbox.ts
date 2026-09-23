@@ -15,8 +15,9 @@
  *   already seen is refused for the same reason.
  * - The outbox never decides delivery: it records what was minted, applies
  *   the sender's terminal `BatchOutcome` per member, and exposes what is safe
- *   to replay. Wiring it to the sender (m7-s2) and driving replay (m7-s3) are
- *   separate slices; this module has no timers, no clocks, no IO of its own.
+ *   to replay. The sender seams that feed it live in `humanOpOutboxWiring`
+ *   (m7-s2); the follower drives replay (m7-s3). This module has no timers,
+ *   no clocks, no IO of its own.
  * - Per-target isolation: entries are keyed by the workflow they were minted
  *   against and are only ever replayed toward that workflow. A follower that
  *   moved to another doc never carries a parked op across (FC-5).
@@ -63,7 +64,7 @@ export interface OutboxStore {
   clear(key: string): void
 }
 
-interface SettleSummary {
+export interface SettleSummary {
   /** Members the host applied or already held; removed from the outbox. */
   readonly removed: number
   /** Members the host rejected; retained, never replayable. */
@@ -84,6 +85,14 @@ export interface HumanOpOutbox {
   settle(workflowId: string, outcome: BatchOutcome): SettleSummary
   /** Parked entries for one workflow, in mint order. Never another workflow's. */
   replayable(workflowId: string): readonly OutboxEntry[]
+  /**
+   * Hand one workflow's parked ops back for replay, in mint order, marking
+   * them `queued` again so the replay batch's `settle` rules on them like a
+   * first delivery. The ops are the originals, verbatim: the caller readmits
+   * them to the sender without minting (`OpSender.readmit`). Never another
+   * workflow's, never a rejected member.
+   */
+  requeue(workflowId: string): readonly Op[]
   /**
    * Forget every queued and parked entry for one workflow (doc reset,
    * `abortAll`). Rejected entries stay for diagnostics. Returns the count.
@@ -173,6 +182,16 @@ export function createHumanOpOutbox(deps: {
       return entries.filter(
         (entry) => entry.workflowId === workflowId && entry.state === 'parked'
       )
+    },
+    requeue(workflowId) {
+      const ops: Op[] = []
+      entries.forEach((entry, index) => {
+        if (entry.workflowId !== workflowId || entry.state !== 'parked') return
+        entries[index] = { ...entry, state: 'queued' }
+        ops.push(entry.op)
+      })
+      if (ops.length > 0) persist()
+      return ops
     },
     drop(workflowId) {
       const kept = entries.filter(
