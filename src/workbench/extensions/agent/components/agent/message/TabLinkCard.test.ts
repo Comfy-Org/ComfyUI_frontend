@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
@@ -24,7 +25,6 @@ vi.hoisted(() => {
 
 const mocks = vi.hoisted(() => ({
   api: new EventTarget(),
-  openWorkflow: vi.fn(),
   navigate: vi.fn(),
   reportError: vi.fn()
 }))
@@ -39,12 +39,8 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mocks.reportError
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({ openWorkflow: mocks.openWorkflow })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
+const workflowService = vi.mocked(useWorkflowService())
 
 const { useAgentWorkflowTabBindingStore } =
   await import('../../../stores/agent/agentWorkflowTabBindingStore')
@@ -70,7 +66,6 @@ function openTabs(...tabs: LoadedComfyWorkflow[]): void {
 describe('TabLinkCard', () => {
   beforeEach(() => {
     localStorage.clear()
-    mocks.openWorkflow.mockClear()
     mocks.navigate.mockClear()
     mocks.reportError.mockClear()
     openTabs()
@@ -91,7 +86,7 @@ describe('TabLinkCard', () => {
 
     await userEvent.click(link)
 
-    expect(mocks.openWorkflow).toHaveBeenCalledWith(tab)
+    expect(workflowService.openWorkflow).toHaveBeenCalledWith(tab)
   })
 
   it('falls back to the local tab name when no backend name is present', () => {
@@ -217,7 +212,7 @@ describe('TabLinkCard', () => {
     mount('wf-1', 'Portrait upscale')
 
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
-    expect(mocks.openWorkflow).not.toHaveBeenCalled()
+    expect(workflowService.openWorkflow).not.toHaveBeenCalled()
   })
 
   it('navigates an explicit node reference through its target workflow', async () => {
@@ -242,7 +237,7 @@ describe('TabLinkCard', () => {
       workflowId: 'wf-1',
       locatorId: 'root-a:42'
     })
-    expect(mocks.openWorkflow).not.toHaveBeenCalled()
+    expect(workflowService.openWorkflow).not.toHaveBeenCalled()
   })
 
   it('shows recovery feedback when a node target is no longer available', async () => {
