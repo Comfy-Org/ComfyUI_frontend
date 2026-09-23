@@ -12,6 +12,7 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -89,20 +90,19 @@ const options: {
 
 <template>
   <DropdownMenuRoot :open :modal="false" @update:open="onOpenChange">
-    <DropdownMenuTrigger
-      v-tooltip.top="buildTooltipConfig(triggerTooltip)"
-      :class="
-        cn(
-          'flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs text-muted-foreground transition-colors hover:bg-secondary-background-hover',
-          open && 'bg-secondary-background-hover text-base-foreground'
-        )
-      "
-    >
-      <span>{{ triggerLabel }}</span>
-      <span
-        data-testid="run-mode-chevron"
-        class="icon-[lucide--chevron-down] size-4"
-      />
+    <DropdownMenuTrigger as-child>
+      <Button
+        v-tooltip.top="buildTooltipConfig(triggerTooltip)"
+        variant="muted-textonly"
+        size="md"
+        :class="cn('gap-1', open && 'bg-secondary-background-hover')"
+      >
+        <span>{{ triggerLabel }}</span>
+        <span
+          data-testid="run-mode-chevron"
+          class="icon-[lucide--chevron-down] size-4"
+        />
+      </Button>
     </DropdownMenuTrigger>
     <DropdownMenuPortal>
       <DropdownMenuContent
@@ -110,7 +110,7 @@ const options: {
         align="end"
         :side-offset="8"
         :aria-describedby="descriptionId"
-        class="agent-scope z-1100 flex w-80 flex-col gap-2.5 rounded-[10px] border border-component-node-border bg-secondary-background p-2.5 shadow-lg outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+        class="agent-scope z-1100 flex w-80 flex-col gap-2.5 rounded-lg border border-border-default bg-secondary-background p-2.5 text-base-foreground shadow-lg outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
       >
         <div class="flex flex-col gap-0.5">
           <div
@@ -143,12 +143,14 @@ const options: {
             as-child
             @select.prevent
           >
-            <button
-              type="button"
+            <Button
+              :variant="
+                store.mode === option.mode ? 'tertiary' : 'muted-textonly'
+              "
+              size="unset"
               :class="
                 cn(
-                  'flex w-full cursor-pointer items-start gap-3 rounded-[10px] px-2.5 py-2 text-left whitespace-normal hover:bg-secondary-background-hover data-disabled:pointer-events-none',
-                  store.mode === option.mode && 'bg-charcoal-500',
+                  'w-full items-start gap-3 px-2.5 py-2 text-left whitespace-normal data-disabled:pointer-events-none',
                   savingMode !== null &&
                     savingMode !== option.mode &&
                     'opacity-50'
@@ -183,7 +185,7 @@ const options: {
                   )
                 "
               />
-            </button>
+            </Button>
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>
