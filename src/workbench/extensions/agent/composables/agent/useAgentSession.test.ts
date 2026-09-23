@@ -1550,6 +1550,11 @@ describe('useAgentSession (v1 composition root)', () => {
     )
     expect(selectionWorkflowId).not.toHaveBeenCalled()
     activePath = 'tab-b'
+    // Drain microtasks while the hold is still up: a resolver queued before
+    // prepare() settles fires here with `prepared` still false, instead of
+    // being masked by releasePrepare() flipping it synchronously.
+    await Promise.resolve()
+    expect(selectionWorkflowId).not.toHaveBeenCalled()
     releasePrepare()
     await sendPromise
 
