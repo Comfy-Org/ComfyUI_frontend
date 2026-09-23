@@ -403,6 +403,19 @@ run polling without another browser polling loop.
 
 ## Media admission and output delivery
 
+Cloud commit `b55e26bb50` adds the comfy-api upload service, GCS/IAM adapters,
+Ent schema and migration. Follow-up `05415b7597` wires opt-in grants and upload
+access to live Cloud caller/workspace revalidation, bounded HTTP parsing,
+private/no-store responses and managed cleanup. Cloud asset staging remains
+unimplemented. It uses a dedicated private bucket with default event-based holds;
+cleanup claims expiry before releasing a hold and deleting the pinned
+generation. Grants are capped at 15 minutes, base retention at 24 hours and
+run extensions at seven days from creation. Retained quota is serialized per
+caller/workspace (32 files / 250 MiB). Four concurrent finalizations stream to
+bounded temporary files; metadata inspection has separate process/output limits.
+Publication must apply lower per-definition limits and the total run input
+budget. These local proofs do not replace real storage/CORS acceptance.
+
 Reuse `POST /customers/storage` and direct signed PUT. Add an opt-in workflow
 upload contract, backward compatible with existing Router clients, that records
 caller, workspace, opaque upload identity, allowed type/size, canonical object,
@@ -493,8 +506,10 @@ and a continuation cursor; clients load selected outputs through the status link
 and refresh grants only when visible. Numeric APP scalars explicitly use double
 precision, with a generated-client regression for the largest safe integer.
 
-This contract is not served. A code-generation overlay removes draft paths and
-their response roots before generating routes and the embedded API document.
+Run/runtime contracts are not served. The upload grant/access integration is
+available only with explicit backend storage configuration; new grants also
+require `WORKSHOP_UPLOADS_ENABLED`. A code-generation overlay removes the
+remaining draft paths and their response roots before generating routes and the embedded API document.
 Operation-ID exclusion alone retains empty path metadata in the current
 generator. Contract tests cover actual generated route absence; runtime wiring,
 internal Cloud contracts and boundary proofs remain separate implementation work.

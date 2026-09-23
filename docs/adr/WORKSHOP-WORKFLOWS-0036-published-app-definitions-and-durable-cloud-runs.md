@@ -72,6 +72,27 @@ generate URL-only responses and refresh links at read time. Keep execution,
 observation, cancellation intent and per-file delivery state distinct, with
 conditional monotonic writes and fenced recovery leases.
 
+Use a dedicated private input bucket with default event-based object holds.
+The existing generic storage table and bucket lifecycle cannot establish
+ownership or protect inputs while queued. Claim expired upload records before
+releasing holds; extend retention before dispatch. A grant pins exact upload
+bytes and create-only semantics, and finalization records the generation and
+digest after bounded inspection. This adds cleanup responsibility and requires
+bucket/IAM configuration before rollout. Never infer physical retention from a
+database timestamp alone.
+
+Use a request-scoped IAM signing adapter: the storage SDK's default signer
+detaches cancellation, and its V4 expiry can be earlier than the requested time.
+Decode the signed URL's actual expiry for the client instead of reporting a
+locally estimated TTL.
+
+Revalidate the caller's current workspace and credential authority through Cloud
+on public storage operations. Local principal identity must agree; ownership
+does not elevate a restricted JWT or OAuth grant. Keep verified provenance
+separate from membership role so later background capabilities preserve the
+authority actually presented. Disabling upload admission leaves finalization,
+access refresh and cleanup operational.
+
 Share default resolution, upload preparation and output presentation between
 browser and CLI. Give the website one scoped controller for run identity and
 observation. Navigation/account changes detach; only explicit Cancel requests
