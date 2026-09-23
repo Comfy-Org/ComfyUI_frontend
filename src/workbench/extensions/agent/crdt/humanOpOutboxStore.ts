@@ -62,16 +62,24 @@ function safeSessionStorage(): Storage | null {
   }
 }
 
+function isNonEmptyString(value: unknown): value is string {
+  return typeof value === 'string' && value.length > 0
+}
+
+function hasOpId(value: unknown): boolean {
+  if (typeof value !== 'object' || value === null) return false
+  return isNonEmptyString((value as Record<string, unknown>).op_id)
+}
+
 function isEntry(value: unknown): value is OutboxEntry {
   if (typeof value !== 'object' || value === null) return false
   const entry = value as Record<string, unknown>
-  if (typeof entry.workflowId !== 'string' || entry.workflowId.length === 0)
-    return false
-  if (typeof entry.state !== 'string' || !ENTRY_STATES.has(entry.state))
-    return false
-  if (typeof entry.op !== 'object' || entry.op === null) return false
-  const op = entry.op as Record<string, unknown>
-  return typeof op.op_id === 'string' && op.op_id.length > 0
+  return (
+    isNonEmptyString(entry.workflowId) &&
+    typeof entry.state === 'string' &&
+    ENTRY_STATES.has(entry.state) &&
+    hasOpId(entry.op)
+  )
 }
 
 function parseRecord(raw: string): PersistedOutboxRecord | null {

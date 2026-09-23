@@ -92,7 +92,7 @@ describe('createSessionOutboxStore', () => {
     expect(storage.getItem(KEY)).toBeNull()
   })
 
-  it.each([
+  const malformedRecords: Array<[label: string, raw: string]> = [
     ['not json', '{not json'],
     ['a bare array (pre-envelope shape)', JSON.stringify([entry('a')])],
     ['a missing savedAt', JSON.stringify({ entries: [entry('a')] })],
@@ -117,14 +117,18 @@ describe('createSessionOutboxStore', () => {
         entries: [{ ...entry('a'), workflowId: '' }]
       })
     ]
-  ])('treats %s as absent and clears it', (_label, raw) => {
-    const storage = fakeStorage()
-    storage.setItem(KEY, raw)
-    const store = storeOn(storage, { now: 0 })
+  ]
 
-    expect(store.load(KEY)).toBeNull()
-    expect(storage.getItem(KEY)).toBeNull()
-  })
+  for (const [label, raw] of malformedRecords) {
+    it(`treats ${label} as absent and clears it`, () => {
+      const storage = fakeStorage()
+      storage.setItem(KEY, raw)
+      const store = storeOn(storage, { now: 0 })
+
+      expect(store.load(KEY)).toBeNull()
+      expect(storage.getItem(KEY)).toBeNull()
+    })
+  }
 
   it('degrades to nothing-persisted when storage is missing or throws', () => {
     const missing = storeOn(null, { now: 0 })
@@ -133,7 +137,9 @@ describe('createSessionOutboxStore', () => {
     expect(() => missing.clear(KEY)).not.toThrow()
 
     const hostile: Storage = {
-      ...fakeStorage(),
+      length: 0,
+      key: () => null,
+      clear: () => {},
       getItem: () => {
         throw new Error('SecurityError')
       },
