@@ -14,6 +14,8 @@ interface QueryOptions {
   onError?: (reason: string, error?: unknown) => void
 }
 
+class AssetRequestError extends Error {}
+
 const BASE_PARAMS: AssetQuery = {
   sort: 'created_at',
   tags_none: ['missing']
@@ -22,10 +24,9 @@ const BASE_PARAMS: AssetQuery = {
 function toSearchParams(query: AssetQuery): URLSearchParams {
   const search = new URLSearchParams()
   for (const [key, value] of Object.entries(query)) {
-    if (value === undefined) continue
     search.set(
       key,
-      Array.isArray(value) ? value.toSorted().join(',') : String(value)
+      Array.isArray(value) ? [...value].sort().join(',') : String(value)
     )
   }
   search.sort()
@@ -48,14 +49,18 @@ export function createAssetList(
   const items = ref<AssetItem[]>([])
 
   const request = async (after: string | undefined, signal: AbortSignal) => {
-    const query: AssetQuery = { ...BASE_PARAMS, ...params, after }
+    const query: AssetQuery = {
+      ...BASE_PARAMS,
+      ...params,
+      ...(after === undefined ? {} : { after })
+    }
     const response = await api.fetchApi(`/assets?${toSearchParams(query)}`, {
       signal: options.signal
         ? AbortSignal.any([signal, options.signal])
         : signal
     })
     if (!response.ok)
-      throw new Error(`Asset request failed: ${response.status}`)
+      throw new AssetRequestError(`Asset request failed: ${response.status}`)
 
     const parsed = assetResponseSchema.safeParse(await response.json())
     if (!parsed.success) throw fromZodError(parsed.error)
