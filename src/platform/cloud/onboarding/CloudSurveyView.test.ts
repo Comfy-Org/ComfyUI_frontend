@@ -155,6 +155,25 @@ describe('CloudSurveyView', () => {
     expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
   })
 
+  it('reports a missing account instead of silently ignoring submission', async () => {
+    Object.assign(useAuthStore(), { userId: undefined })
+    await renderView()
+    await waitFor(() =>
+      expect(mocks.getSurveyCompletedStatus).toHaveBeenCalledOnce()
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Submit survey' }))
+
+    expect(mocks.submitSurvey).not.toHaveBeenCalled()
+    expect(mocks.reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'error_submitting_onboarding_survey'
+    })
+    expect(useToastStore().add).toHaveBeenCalledWith(
+      expect.objectContaining({ severity: 'error' })
+    )
+    expect(screen.getByRole('button', { name: 'Submit survey' })).toBeEnabled()
+  })
+
   it('restores a consumed replay when navigation fails', async () => {
     const error = new Error('navigation failed')
     mocks.isSurveyReplayRequested.mockReturnValue(true)

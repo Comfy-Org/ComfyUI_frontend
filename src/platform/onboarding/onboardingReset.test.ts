@@ -70,8 +70,21 @@ describe('resetOnboardingState', () => {
 
     await expect(resetOnboardingState()).resolves.toEqual({
       status: 'failed',
-      cause: expect.stringContaining('Failed to clear seen onboarding tours')
+      cause: 'Failed to clear seen onboarding tours: 401'
     })
+  })
+
+  it('reports a missing cloud account without touching replay storage', async () => {
+    Object.assign(useAuthStore(), { userId: undefined })
+
+    await expect(resetOnboardingState()).resolves.toEqual({
+      status: 'failed',
+      cause:
+        'No signed-in account, so the onboarding replay cannot be requested'
+    })
+
+    expect(storeSetting).not.toHaveBeenCalled()
+    expect(sessionStorage.getItem('Comfy.OnboardingReplay')).toBeNull()
   })
 
   it('requests no replay when the write is rejected, so a failed reset stays inert', async () => {
@@ -87,6 +100,7 @@ describe('resetOnboardingState', () => {
 
   it('clears the coachmark tours off cloud, where they are the whole of onboarding', async () => {
     mocks.isCloud = false
+    Object.assign(useAuthStore(), { userId: undefined })
 
     await resetOnboardingState()
 

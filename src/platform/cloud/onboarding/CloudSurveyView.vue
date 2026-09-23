@@ -77,20 +77,15 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
   const replayOwner = useAuthStore().userId
   const replaying = isSurveyReplayRequested(replayOwner)
   if (replayOwner === undefined) {
+    reportSurveySubmissionFailure(
+      new Error('No signed-in account while submitting the survey')
+    )
     isSubmitting.value = false
     return
   }
   const result = await submitSurvey(payload, replayOwner)
   if (result.status === 'failed') {
-    reportError(result.cause, {
-      errorType: 'error_submitting_onboarding_survey'
-    })
-    useToastStore().add({
-      severity: 'error',
-      summary: t('cloudOnboarding.survey.submitFailed'),
-      detail: t('cloudOnboarding.survey.submitFailedDetail'),
-      life: 5000
-    })
+    reportSurveySubmissionFailure(result.cause)
     isSubmitting.value = false
     return
   }
@@ -114,5 +109,17 @@ const onSubmitSurvey = async (payload: Record<string, unknown>) => {
   } finally {
     isSubmitting.value = false
   }
+}
+
+function reportSurveySubmissionFailure(cause: unknown) {
+  reportError(cause, {
+    errorType: 'error_submitting_onboarding_survey'
+  })
+  useToastStore().add({
+    severity: 'error',
+    summary: t('cloudOnboarding.survey.submitFailed'),
+    detail: t('cloudOnboarding.survey.submitFailedDetail'),
+    life: 5000
+  })
 }
 </script>

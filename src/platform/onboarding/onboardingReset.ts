@@ -1,3 +1,4 @@
+import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { api } from '@/scripts/api'
 import { useAuthStore } from '@/stores/authStore'
@@ -14,6 +15,13 @@ export type OnboardingResetResult =
 
 export async function resetOnboardingState(): Promise<OnboardingResetResult> {
   const ownerId = useAuthStore().userId
+  if (isCloud && ownerId === undefined) {
+    return {
+      status: 'failed',
+      cause:
+        'No signed-in account, so the onboarding replay cannot be requested'
+    }
+  }
   if (!requestOnboardingReplay(ownerId)) {
     return {
       status: 'failed',
@@ -34,7 +42,8 @@ export async function resetOnboardingState(): Promise<OnboardingResetResult> {
     clearOnboardingReplay(ownerId)
     return {
       status: 'failed',
-      cause: `Failed to clear seen onboarding tours: ${response.statusText}`
+      cause:
+        `Failed to clear seen onboarding tours: ${response.status} ${response.statusText}`.trim()
     }
   }
 

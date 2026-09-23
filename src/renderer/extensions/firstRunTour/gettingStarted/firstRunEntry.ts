@@ -110,10 +110,8 @@ export const useFirstRunEntry = createSharedComposable(() => {
     sharedStatus?: SharedWorkflowUrlLoadStatus
   ) {
     try {
-      if (outcome !== 'url-intent' || !isFirstRunCandidate()) return
-      const shareLoaded =
-        sharedStatus === 'loaded' || sharedStatus === 'loaded-without-assets'
-      if (templateId === undefined && !shareLoaded) return
+      if (!isTourableUrlWorkflow(outcome, templateId, sharedStatus)) return
+      const shareLoaded = isSharedWorkflowLoaded(sharedStatus)
       const ownerId = authStore.userId
       const started = await useFirstRunTourController().beginTour(
         shareLoaded ? undefined : templateId
@@ -130,6 +128,21 @@ export const useFirstRunEntry = createSharedComposable(() => {
     } finally {
       startupDecided.value = true
     }
+  }
+
+  function isTourableUrlWorkflow(
+    outcome: StartupOutcome | undefined,
+    templateId?: string,
+    sharedStatus?: SharedWorkflowUrlLoadStatus
+  ): boolean {
+    if (outcome !== 'url-intent' || !isFirstRunCandidate()) return false
+    return templateId !== undefined || isSharedWorkflowLoaded(sharedStatus)
+  }
+
+  function isSharedWorkflowLoaded(
+    status: SharedWorkflowUrlLoadStatus | undefined
+  ): boolean {
+    return status === 'loaded' || status === 'loaded-without-assets'
   }
 
   let startupDecision: Promise<boolean> | undefined
