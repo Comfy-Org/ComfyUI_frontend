@@ -1,16 +1,19 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
+import {
+  deleteSkillPack as deleteSkillPackApi,
+  listSkillPacks
+} from '@/platform/skills/api/skillsApi'
 import SkillPacksPanel from '@/platform/skills/components/SkillPacksPanel.vue'
+import { useSkillPacksStore } from '@/platform/skills/stores/skillPacksStore'
 import type { SkillPack } from '@/platform/skills/types'
+import { useDialogStore } from '@/stores/dialogStore'
 
 const DIALOG_HANDLE = { key: 'confirm-delete-skill-pack' }
-const mockDeleteSkillPack = vi.fn().mockResolvedValue(undefined)
-const mockFetchSkillPacks = vi.fn().mockResolvedValue(undefined)
 const mockCloseDialog = vi.fn()
 
 const mockPack: SkillPack = {
@@ -23,18 +26,17 @@ const mockPack: SkillPack = {
   updated_at: '2026-08-22T00:00:00Z'
 }
 
-vi.mock('@/platform/skills/composables/useSkillPacks', () => ({
-  useSkillPacks: () => ({
-    packs: ref<SkillPack[]>([mockPack]),
-    loading: ref(false),
-    operatingPackName: ref(null),
-    fetchSkillPacks: mockFetchSkillPacks,
-    deleteSkillPack: mockDeleteSkillPack
-  })
-}))
-
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ closeDialog: mockCloseDialog })
+vi.mock(import('@/platform/skills/api/skillsApi'), () => ({
+  listSkillPacks: vi.fn(),
+  deleteSkillPack: vi.fn(),
+  SkillPacksApiError: class SkillPacksApiError extends Error {
+    constructor(
+      message: string,
+      public readonly status: number
+    ) {
+      super(message)
+    }
+  }
 }))
 
 vi.mock('@/components/dialog/confirm/confirmDialog')
@@ -105,6 +107,10 @@ function renderPanel() {
 
 describe('SkillPacksPanel', () => {
   beforeEach(() => {
+    useSkillPacksStore().packs = [mockPack]
+    vi.mocked(listSkillPacks).mockResolvedValue([mockPack])
+    vi.mocked(deleteSkillPackApi).mockResolvedValue(undefined)
+    vi.mocked(useDialogStore().closeDialog).mockImplementation(mockCloseDialog)
     mockShowConfirmDialog.mockReturnValue(
       DIALOG_HANDLE as ReturnType<typeof showConfirmDialog>
     )
@@ -129,6 +135,7 @@ describe('SkillPacksPanel', () => {
     await capturedOptions().footerProps.onConfirm()
 
     expect(mockCloseDialog).toHaveBeenCalledExactlyOnceWith(DIALOG_HANDLE)
-    expect(mockDeleteSkillPack).toHaveBeenCalledWith(mockPack)
+    expect(deleteSkillPackApi).toHaveBeenCalledWith(mockPack.name)
+    expect(useSkillPacksStore().packs).toEqual([])
   })
 })

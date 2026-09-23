@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { listSkillPacks, SkillPacksApiError } from '../api/skillsApi'
@@ -50,7 +48,6 @@ function makePack(overrides: Partial<SkillPack> = {}): SkillPack {
 
 describe('skillPacksStore', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     vi.mocked(listSkillPacks).mockReset()
     vi.mocked(listSkillPacks).mockResolvedValue([])
     mocks.isFeatureEnabled.mockReset()

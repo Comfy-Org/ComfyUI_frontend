@@ -1,4 +1,3 @@
-import { createPinia, setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render } from '@testing-library/vue'
 import { defineComponent, nextTick, ref } from 'vue'
@@ -92,7 +91,6 @@ function mountForm(pack?: SkillPack) {
 
 describe('useSkillPackForm', () => {
   beforeEach(() => {
-    setActivePinia(createPinia())
     vi.mocked(publishSkillPack).mockReset()
     vi.mocked(listSkillPacks).mockReset()
     vi.mocked(reportError).mockReset()
