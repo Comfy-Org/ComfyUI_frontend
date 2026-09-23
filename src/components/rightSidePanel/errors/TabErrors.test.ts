@@ -16,11 +16,11 @@ import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 import type { MissingModelCandidate } from '@/platform/missingModel/types'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import type { useComfyRegistryService } from '@/services/comfyRegistryService'
 import type { MissingNodeType } from '@/types/comfy'
 import { toNodeId } from '@/types/nodeId'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { nodeError, validationError } from '@/utils/__tests__/nodeErrorHelpers'
 
 import TabErrors from './TabErrors.vue'
@@ -52,10 +52,10 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
   }
 })
 
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   collectAllNodes: vi.fn(() => []),
   getNodeByExecutionId: vi.fn(),
-  getActiveGraphNodeIds: vi.fn(() => new Set()),
+  getActiveGraphNodeIds: vi.fn(() => new Set<string>()),
   getRootParentNode: vi.fn(() => null),
   forEachNode: vi.fn(),
   mapAllNodes: vi.fn(() => [])
@@ -121,6 +121,7 @@ describe('TabErrors.vue', () => {
               '{nodes} nodes — {count} item | {nodes} nodes — {count} items',
             nodesAffected: '{count} node affected | {count} nodes affected',
             errorsSummary: '{count} error | {count} errors',
+            blockedLastRun: 'Blocked last run',
             severityErrorLabel: 'Blocking errors',
             severitySetupLabel: 'Setup required',
             expand: 'Expand',
@@ -154,16 +155,7 @@ describe('TabErrors.vue', () => {
     seed?.(pinia)
     render(TabErrors, {
       global: {
-        plugins: [PrimeVue, i18n, pinia],
-        stubs: {
-          AsyncSearchInput: {
-            template:
-              '<input @input="$emit(\'update:modelValue\', $event.target.value)" />'
-          },
-          Button: {
-            template: '<button v-bind="$attrs"><slot /></button>'
-          }
-        }
+        plugins: [PrimeVue, i18n, pinia]
       }
     })
     return { user }
@@ -609,6 +601,99 @@ describe('TabErrors.vue', () => {
     ).toBeInTheDocument()
   })
 
+  it('keeps an absorbed missing model card amber and labels the failed run', () => {
+    const missingModel = {
+      nodeId: '1',
+      nodeType: 'CheckpointLoaderSimple',
+      widgetName: 'ckpt_name',
+      name: 'local-only.safetensors',
+      directory: 'checkpoints',
+      isMissing: true,
+      isAssetSupported: true
+    } satisfies MissingModelCandidate
+
+    renderComponent((pinia) => {
+      useMissingModelStore(pinia).setMissingModels([missingModel])
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [
+            validationError('value_not_in_list', 'ckpt_name', {
+              received_value: 'local-only.safetensors'
+            })
+          ],
+          'CheckpointLoaderSimple'
+        )
+      })
+    })
+
+    const missingSection = screen.getByTestId('error-group-missing-model')
+    const marker = within(missingSection).getByTestId(
+      'blocked-last-run-indicator'
+    )
+    expect(marker).toHaveTextContent('Blocked last run')
+    expect(
+      within(missingSection).getByTestId('error-section-count-badge')
+    ).toHaveAttribute('data-severity', 'missing')
+    expect(
+      screen.queryByTestId('error-group-execution')
+    ).not.toBeInTheDocument()
+  })
+
+  it('keeps absorbed missing-node markers visible when sections collapse', async () => {
+    const { user } = renderComponent((pinia) => {
+      useMissingNodesErrorStore(pinia).setMissingNodeTypes([
+        {
+          type: 'OldNode',
+          nodeId: '1',
+          isReplaceable: true,
+          replacement: {
+            old_node_id: 'OldNode',
+            new_node_id: 'NewNode',
+            old_widget_ids: null,
+            input_mapping: null,
+            output_mapping: null
+          }
+        },
+        {
+          type: 'MissingNode',
+          nodeId: '2',
+          cnrId: 'missing-pack',
+          isReplaceable: false
+        }
+      ])
+      useExecutionErrorStore(pinia).recordPromptError({
+        type: 'missing_node_type',
+        message: 'Node types are unavailable',
+        details: ''
+      })
+    })
+
+    const hero = screen.getByTestId('errors-summary-hero')
+    expect(within(hero).getByText('2')).toBeInTheDocument()
+    expect(within(hero).getByText('Setup required')).toBeInTheDocument()
+    expect(
+      screen.queryByTestId('errors-summary-filters')
+    ).not.toBeInTheDocument()
+    expect(screen.queryByText('Missing node type')).not.toBeInTheDocument()
+
+    for (const section of [
+      screen.getByTestId('error-group-swap-nodes'),
+      screen.getByTestId('error-group-missing-node')
+    ]) {
+      const marker = within(section).getByTestId('blocked-last-run-indicator')
+      expect(marker).toHaveTextContent('Blocked last run')
+      await user.click(
+        within(section).getByRole('button', { name: 'Collapse' })
+      )
+      expect(
+        within(section).getByRole('button', { name: 'Expand' })
+      ).toHaveAttribute('aria-expanded', 'false')
+      expect(
+        within(section).getByTestId('blocked-last-run-indicator')
+      ).toHaveTextContent('Blocked last run')
+    }
+  })
+
   it('renders missing media display message below the section title', () => {
     const missingMedia = {
       nodeId: '3',
@@ -1035,10 +1120,8 @@ describe('TabErrors.vue', () => {
       })
     )
 
-    let canvasStore!: ReturnType<typeof useCanvasStore>
     let executionErrorStore!: ReturnType<typeof useExecutionErrorStore>
     renderComponent((pinia) => {
-      canvasStore = useCanvasStore(pinia)
       executionErrorStore = useExecutionErrorStore(pinia)
       executionErrorStore.recordNodeErrors({
         '1': nodeError(
@@ -1083,7 +1166,7 @@ describe('TabErrors.vue', () => {
 
     const missingMediaNode = new LGraphNode('LoadImage')
     missingMediaNode.id = toNodeId(3)
-    canvasStore.selectedItems = [missingMediaNode]
+    setCanvasSelection([missingMediaNode])
     await nextTick()
 
     expect(errorChip).toHaveAttribute('aria-pressed', 'false')
@@ -1099,10 +1182,8 @@ describe('TabErrors.vue', () => {
       })
     )
 
-    let canvasStore!: ReturnType<typeof useCanvasStore>
     let executionErrorStore!: ReturnType<typeof useExecutionErrorStore>
     renderComponent((pinia) => {
-      canvasStore = useCanvasStore(pinia)
       executionErrorStore = useExecutionErrorStore(pinia)
       executionErrorStore.recordNodeErrors({
         '1': nodeError(
@@ -1132,7 +1213,7 @@ describe('TabErrors.vue', () => {
 
     const missingMediaNode = new LGraphNode('LoadImage')
     missingMediaNode.id = toNodeId(3)
-    canvasStore.selectedItems = [missingMediaNode]
+    setCanvasSelection([missingMediaNode])
     await nextTick()
 
     const user = userEvent.setup()
@@ -1389,5 +1470,47 @@ describe('TabErrors.vue', () => {
 
     const icon = screen.getByTestId('panel-tab-icon')
     expect(icon).toHaveAccessibleName('Blocking errors')
+  })
+
+  it('uses error severity for a runtime error with an unnormalisable node id', () => {
+    renderRightSidePanel((pinia) => {
+      useExecutionErrorStore(pinia).recordExecutionError({
+        prompt_id: 'abc',
+        node_id: 'not::a-node',
+        node_type: 'KSampler',
+        executed: [],
+        exception_message: 'Execution failed',
+        exception_type: 'RuntimeError',
+        traceback: [],
+        timestamp: Date.now()
+      })
+    })
+
+    const icon = screen.getByTestId('panel-tab-icon')
+    expect(icon).toHaveAccessibleName('Blocking errors')
+  })
+
+  it('uses setup severity when the same node error is absorbed', () => {
+    renderRightSidePanel((pinia) => {
+      useMissingModelStore(pinia).setMissingModels([
+        {
+          nodeId: '1',
+          nodeType: 'CheckpointLoaderSimple',
+          widgetName: 'ckpt_name',
+          name: 'missing.safetensors',
+          isMissing: true,
+          isAssetSupported: false
+        }
+      ])
+      useExecutionErrorStore(pinia).recordNodeErrors({
+        '1': nodeError(
+          [validationError('value_not_in_list', 'ckpt_name')],
+          'CheckpointLoaderSimple'
+        )
+      })
+    })
+
+    const icon = screen.getByTestId('panel-tab-icon')
+    expect(icon).toHaveAccessibleName('Setup required')
   })
 })

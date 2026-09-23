@@ -363,6 +363,40 @@ const events: readonly ComfyEvent[] = [
     }
   },
   {
+    id: 'nyc-creative-ai-september-forum',
+    category: 'meetup',
+    organizer: 'community',
+    coords: { lat: 40.7128, lng: -74.006 },
+    title: {
+      en: 'ZeroSpace: NYC Creative AI September Forum',
+      'zh-CN': 'ZeroSpace：NYC Creative AI 九月论坛'
+    },
+    description: {
+      en: 'The September NYC Creative AI forum runs at ZeroSpace, presented by Flora, Daydream, and ZeroSpace.',
+      'zh-CN':
+        '九月的 NYC Creative AI 论坛将在 ZeroSpace 举行，由 Flora、Daydream 与 ZeroSpace 共同呈现。'
+    },
+    location: { en: 'New York, NY', 'zh-CN': '美国纽约' },
+    dateLabel: {
+      en: 'September 22, 2026 · 6-9 PM ET',
+      'zh-CN': '2026年9月22日 · 下午6点至9点（ET）'
+    },
+    startDateTime: '2026-09-22T18:00:00-04:00',
+    endDateTime: '2026-09-22T21:00:00-04:00',
+    link: {
+      href: {
+        en: 'https://luma.com/of64wqdr',
+        'zh-CN': 'https://luma.com/of64wqdr'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'Register', 'zh-CN': '报名' },
+    media: eventImage('nyc-creative-ai-september-forum.png', {
+      en: 'ZeroSpace: NYC Creative AI September Forum',
+      'zh-CN': 'ZeroSpace：NYC Creative AI 九月论坛'
+    })
+  },
+  {
     id: 'la-august-meetup',
     category: 'meetup',
     organizer: 'community',

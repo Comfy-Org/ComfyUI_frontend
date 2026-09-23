@@ -15,25 +15,43 @@ export function formatQuoteMoney(
   }).format(cents / 100)
 }
 
+interface QuoteMoney {
+  cents: number
+  currency: string | undefined
+}
+
 function resolveQuoteMoney(
   exactCents: number | undefined,
   exactCurrency: string | undefined,
   legacyCents: number
-): { cents: number; currency: string | undefined } {
+): QuoteMoney {
   return exactCents === undefined
     ? { cents: legacyCents, currency: LEGACY_QUOTE_CURRENCY }
     : { cents: exactCents, currency: exactCurrency }
+}
+
+function resolveAmountDueToday(preview: PreviewSubscribeResponse): QuoteMoney {
+  return resolveQuoteMoney(
+    preview.amount_due_cents,
+    preview.currency,
+    preview.cost_today_cents
+  )
+}
+
+export function amountDueTodayChanged(
+  installed: PreviewSubscribeResponse,
+  refreshed: PreviewSubscribeResponse
+): boolean {
+  const before = resolveAmountDueToday(installed)
+  const after = resolveAmountDueToday(refreshed)
+  return before.cents !== after.cents || before.currency !== after.currency
 }
 
 export function formatAmountDueToday(
   preview: PreviewSubscribeResponse,
   locale: string
 ): string {
-  const { cents, currency } = resolveQuoteMoney(
-    preview.amount_due_cents,
-    preview.currency,
-    preview.cost_today_cents
-  )
+  const { cents, currency } = resolveAmountDueToday(preview)
   return formatQuoteMoney(cents, currency, locale)
 }
 

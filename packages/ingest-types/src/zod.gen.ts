@@ -588,6 +588,14 @@ export const zDocOpsResultFrame = z.object({
 
 export const zDocResetData = z.object({
   actor: z.string().max(256).optional(),
+  lineage_seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
   seq: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -610,6 +618,15 @@ export const zDocResetFrame = z.object({
 
 export const zDocUpdateData = z.object({
   actor: z.string().max(256).optional(),
+  lineage_seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  op_ids: z.array(z.string().min(1).max(128)).max(256).optional(),
   seq: z.coerce
     .bigint()
     .min(BigInt('-9223372036854775808'), {
@@ -1599,7 +1616,7 @@ export const zJobAssetsResponse = z.object({
 })
 
 /**
- * Request body for minting an input-image or input-audio upload grant.
+ * Request body for minting an input-image, input-audio or input-video upload grant.
  */
 export const zInputUploadUrlRequest = z.object({
   content_type: z.string().max(64)
@@ -2186,6 +2203,23 @@ export const zCreateTopupRequest = z.object({
 })
 
 /**
+ * A hosted Stripe Checkout session for a credit top-up.
+ */
+export const zCreateTopupCheckoutResponse = z.object({
+  checkout_url: z.string().url(),
+  session_id: z.string().optional()
+})
+
+/**
+ * Request body for creating a hosted credit top-up checkout session.
+ */
+export const zCreateTopupCheckoutRequest = z.object({
+  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(1600000)),
+  idempotency_key: z.string().optional(),
+  return_url: z.string().url()
+})
+
+/**
  * Response after creating a session cookie
  */
 export const zCreateSessionResponse = z.object({
@@ -2657,30 +2691,30 @@ export const zAgentRunMode = z.object({
  * A user turn posted to the agent.
  */
 export const zAgentPostMessageRequest = z.object({
-  content: z.string(),
-  workflow_id: z.string().optional(),
-  selection: z.record(z.unknown()).optional(),
   attachments: z.array(z.string()).optional(),
+  content: z.string(),
+  current_tab: z.string().optional(),
+  current_tab_unbound: z.boolean().optional(),
   draft: z
     .object({
-      content: z.record(z.unknown()).optional(),
-      version: z.number().int().nullish()
+      content: z.record(z.unknown()).optional()
     })
     .optional(),
   open_tabs: z
     .array(
       z.object({
-        workflow_id: z.string(),
-        name: z.string().optional()
+        name: z.string().optional(),
+        workflow_id: z.string()
       })
     )
     .optional(),
-  current_tab: z.string().optional(),
+  selection: z.record(z.unknown()).optional(),
+  workflow_id: z.string().optional(),
   workflow_references: z
     .array(
       z.object({
-        workflow_id: z.string(),
-        name: z.string().optional()
+        name: z.string().optional(),
+        workflow_id: z.string()
       })
     )
     .optional()
@@ -3387,6 +3421,13 @@ export const zCreateTopupBody = zCreateTopupRequest
  */
 export const zCreateTopupResponse2 = zCreateTopupResponse
 
+export const zCreateTopupCheckoutBody = zCreateTopupCheckoutRequest
+
+/**
+ * Checkout session created
+ */
+export const zCreateTopupCheckoutResponse2 = zCreateTopupCheckoutResponse
+
 export const zGetBillingUsageTimeSeriesQuery = z.object({
   group_by: z
     .enum(['model', 'endpoint', 'product'])
@@ -3449,6 +3490,7 @@ export const zGetFeaturesResponse = z.object({
     })
     .optional(),
   max_upload_size: z.number().int().optional(),
+  stripe_publishable_key: z.string().optional(),
   supports_preview_metadata: z.boolean().optional()
 })
 

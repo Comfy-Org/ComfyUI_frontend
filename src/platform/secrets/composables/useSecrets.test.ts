@@ -4,7 +4,7 @@ import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { SecretMetadata } from '../types'
+import type { SecretErrorCode, SecretMetadata } from '../types'
 import { useSecrets as useSecretsComposable } from './useSecrets'
 
 const mockAdd = vi.fn()
@@ -13,7 +13,7 @@ const mockListSecrets = vi.fn()
 const mockListSecretProviders = vi.fn()
 const mockDeleteSecret = vi.fn()
 
-vi.mock<unknown>(import('../api/secretsApi'), () => ({
+vi.mock(import('../api/secretsApi'), () => ({
   listSecrets: () => mockListSecrets(),
   listSecretProviders: () => mockListSecretProviders(),
   deleteSecret: (id: string) => mockDeleteSecret(id),
@@ -21,7 +21,7 @@ vi.mock<unknown>(import('../api/secretsApi'), () => ({
     constructor(
       message: string,
       public readonly status?: number,
-      public readonly code?: string
+      public readonly code?: SecretErrorCode
     ) {
       super(message)
       this.name = 'SecretsApiError'

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
@@ -32,8 +33,7 @@ const {
   captureExpandedKeys,
   getExpandedKeys,
   mockStartDrag,
-  mockToggleNodeOnEvent,
-  featureFlagState
+  mockToggleNodeOnEvent
 } = vi.hoisted(() => {
   let capturedRoot: TreeExplorerNode | null = null
   let capturedExpandedKeys: Record<string, boolean> = {}
@@ -50,8 +50,7 @@ const {
     },
     getExpandedKeys: () => capturedExpandedKeys,
     mockStartDrag: vi.fn(),
-    mockToggleNodeOnEvent: vi.fn(),
-    featureFlagState: { assetsEnabled: false }
+    mockToggleNodeOnEvent: vi.fn()
   }
 })
 
@@ -68,16 +67,7 @@ const mockModel = fromPartial<ComfyModelDef>({
   searchable: 'checkpoints/model.safetensors'
 })
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get assetsEnabled() {
-        return featureFlagState.assetsEnabled
-      }
-    }
-  })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 const mockExpandNode = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({
@@ -105,45 +95,6 @@ vi.mock<unknown>(import('@/components/common/TreeExplorer.vue'), async () => {
     }
   }
 })
-
-vi.mock<unknown>(
-  import('@/components/ui/search-input/SearchInput.vue'),
-  () => ({
-    default: {
-      name: 'SearchInput',
-      template:
-        '<input data-testid="search-input" @input="onInput" />' +
-        '<input data-testid="search-input-raw" @input="onRawInput" />',
-      props: ['modelValue', 'placeholder'],
-      emits: ['update:modelValue', 'search'],
-      setup(
-        _props: unknown,
-        {
-          emit,
-          expose
-        }: {
-          emit: (event: 'update:modelValue' | 'search', value: string) => void
-          expose: (exposed: Record<string, unknown>) => void
-        }
-      ) {
-        expose({ focus: vi.fn() })
-        return {
-          onInput: (event: Event) => {
-            const value = (event.target as HTMLInputElement).value
-            emit('update:modelValue', value)
-            emit('search', value)
-          },
-          // A keystroke the real SearchInput has not yet debounced into a
-          // `search` emit: only the model value updates.
-          onRawInput: (event: Event) => {
-            const value = (event.target as HTMLInputElement).value
-            emit('update:modelValue', value)
-          }
-        }
-      }
-    }
-  })
-)
 
 vi.mock<unknown>(import('./SidebarTopArea.vue'), () => ({
   default: { name: 'SidebarTopArea', template: '<div><slot /></div>' }
@@ -175,7 +126,6 @@ describe('ModelLibrarySidebarTab', () => {
   beforeEach(() => {
     resetRoot()
     useAssetDownloadStore().lastCompletedDownload = null
-    featureFlagState.assetsEnabled = false
     useSettingStore().settingValues['Comfy.ModelLibrary.AutoLoadAll'] = false
     Object.assign(useModelStore(), { models: [mockModel] })
   })
@@ -192,7 +142,7 @@ describe('ModelLibrarySidebarTab', () => {
 
   it('renders search input', () => {
     renderComponent()
-    expect(screen.getByTestId('search-input')).toBeInTheDocument()
+    expect(screen.getByRole('combobox')).toBeInTheDocument()
   })
 
   it('starts a ghost drag carrying the widget value to fill on placement', async () => {
@@ -271,8 +221,8 @@ describe('ModelLibrarySidebarTab', () => {
       renderComponent()
       await nextTick()
 
-      await user.type(screen.getByTestId('search-input'), 'model')
-      await nextTick()
+      await user.type(screen.getByRole('combobox'), 'model')
+      await vi.advanceTimersByTimeAsync(300)
 
       expect(vi.mocked(useModelStore().loadModels)).toHaveBeenCalled()
       const leafLabels = () => {
@@ -303,14 +253,15 @@ describe('ModelLibrarySidebarTab', () => {
     })
 
     it('leaves the tree untouched until the debounced search event fires', async () => {
-      const user = userEvent.setup()
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
       renderComponent()
       await nextTick()
 
       // Raw keystrokes update the input model only; a non-matching query
       // would empty the tree if it drove the derivation directly.
-      await user.type(screen.getByTestId('search-input-raw'), 'zzz')
-      await nextTick()
+      await user.type(screen.getByRole('combobox'), 'zzz')
+      await vi.advanceTimersByTimeAsync(299)
 
       const leafLabels = () => {
         const { children: folders = [] } = getRoot()
@@ -320,8 +271,7 @@ describe('ModelLibrarySidebarTab', () => {
       }
       expect(leafLabels()).toEqual(['model'])
 
-      await user.type(screen.getByTestId('search-input'), 'zzz')
-      await nextTick()
+      await vi.advanceTimersByTimeAsync(1)
 
       expect(leafLabels()).toEqual([])
     })
@@ -348,8 +298,8 @@ describe('ModelLibrarySidebarTab', () => {
         ]
       })
 
-      await user.type(screen.getByTestId('search-input'), 'bulk')
-      await nextTick()
+      await user.type(screen.getByRole('combobox'), 'bulk')
+      await vi.advanceTimersByTimeAsync(300)
 
       const { children: folders = [] } = getRoot()
       const leafCount = folders.flatMap(
@@ -366,8 +316,8 @@ describe('ModelLibrarySidebarTab', () => {
       renderComponent()
       await nextTick()
 
-      await user.type(screen.getByTestId('search-input'), 'model')
-      await nextTick()
+      await user.type(screen.getByRole('combobox'), 'model')
+      await vi.advanceTimersByTimeAsync(300)
       await nextTick()
       // The query's initial result folders auto-expand.
       expect(getExpandedKeys()['root/checkpoints']).toBe(true)
@@ -403,8 +353,8 @@ describe('ModelLibrarySidebarTab', () => {
 
       // No prefix of the query matches the existing model, so the result
       // tree stays empty and no folder has auto-expanded yet.
-      await user.type(screen.getByTestId('search-input'), 'zzz')
-      await nextTick()
+      await user.type(screen.getByRole('combobox'), 'zzz')
+      await vi.advanceTimersByTimeAsync(300)
       await nextTick()
       expect(getExpandedKeys()['root/checkpoints']).toBeUndefined()
 
@@ -434,7 +384,7 @@ describe('ModelLibrarySidebarTab', () => {
   describe('asset mode', () => {
     it('surfaces an error toast when the eager load fails on mount', async () => {
       const error = vi.spyOn(console, 'error').mockImplementation(() => {})
-      featureFlagState.assetsEnabled = true
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
       vi.mocked(useModelStore().loadModels).mockRejectedValueOnce(
         new Error('walk failed')
       )
@@ -453,7 +403,7 @@ describe('ModelLibrarySidebarTab', () => {
     })
 
     it('hides the load-all button and eager-loads models on mount', async () => {
-      featureFlagState.assetsEnabled = true
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = true
       renderComponent()
       await nextTick()
 

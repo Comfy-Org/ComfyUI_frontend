@@ -21,7 +21,7 @@ type WorkflowResolverDeps = {
   >
   bindings: Pick<
     ReturnType<typeof useAgentWorkflowTabBindingStore>,
-    'workflowIdFor' | 'tabPathFor' | 'matchesWorkflow'
+    'workflowIdFor' | 'tabPathFor' | 'matchesWorkflow' | 'unbind'
   >
   listCloudWorkflows: AgentRestClient['listCloudWorkflows']
 }
@@ -62,6 +62,16 @@ export function useAgentWorkflowResolver({
     }
   }
 
+  /**
+   * Drops a workflow the server has refused. `cloudIdFor` reads this index
+   * ahead of the binding store, and `refreshCloudWorkflowIds` both swallows
+   * its errors and races a timeout, so a stale entry would keep handing the
+   * refused id back to the next turn however often the binding is released.
+   */
+  function forgetCloudWorkflowId(workflowId: string): void {
+    cloudIndex.value = cloudIndex.value.filter(({ id }) => id !== workflowId)
+  }
+
   function cloudWorkflowName(workflow: ComfyWorkflow): string {
     return workflow.suffix === 'app.json'
       ? `${workflow.filename}.app`
@@ -92,13 +102,38 @@ export function useAgentWorkflowResolver({
       : undefined
   }
 
+  function indexedNameFor(workflowId: string): string | undefined {
+    for (const [name, id] of cloudIdsByName.value) {
+      if (id === workflowId) return name
+    }
+    return undefined
+  }
+
+  /**
+   * A persisted binding is stale when the cloud index says `workflowId` is
+   * a different saved workflow than the tab it points at, and the tab's own
+   * name resolves to another cloud id. Applying mutations through such a
+   * binding would write one workflow's edits into another workflow's graph.
+   */
+  function bindingIsStale(workflowId: string, bound: ComfyWorkflow): boolean {
+    if (bound.isTemporary) return false
+    const indexedName = indexedNameFor(workflowId)
+    const boundName = cloudWorkflowName(bound)
+    if (indexedName === undefined || indexedName === boundName) return false
+    const boundId = cloudIdsByName.value.get(boundName)
+    return boundId !== undefined && boundId !== workflowId
+  }
+
   function resolveWorkflow(
     workflowId: string,
     nameCandidates: ComfyWorkflow[]
   ): ComfyWorkflow | null {
     const path = bindings.tabPathFor(workflowId)
     const bound = path === undefined ? null : workflows.getWorkflowByPath(path)
-    if (bound && bindings.matchesWorkflow(workflowId, bound)) return bound
+    if (bound && bindings.matchesWorkflow(workflowId, bound)) {
+      if (!bindingIsStale(workflowId, bound)) return bound
+      bindings.unbind(bound.path)
+    }
     for (const [name, id] of cloudIdsByName.value) {
       if (id !== workflowId) continue
       const matches = savedMatches(name, nameCandidates)
@@ -144,8 +179,8 @@ export function useAgentWorkflowResolver({
         return true
       })
       return [
-        ...open.toSorted((a, b) => a.name.localeCompare(b.name)),
-        ...saved.toSorted((a, b) => a.name.localeCompare(b.name))
+        ...[...open].sort((a, b) => a.name.localeCompare(b.name)),
+        ...[...saved].sort((a, b) => a.name.localeCompare(b.name))
       ]
     }
   )
@@ -178,6 +213,7 @@ export function useAgentWorkflowResolver({
 
   return {
     refreshCloudWorkflowIds,
+    forgetCloudWorkflowId,
     cloudIdFor,
     cloudWorkflowName,
     boundOrOpenWorkflowFor,

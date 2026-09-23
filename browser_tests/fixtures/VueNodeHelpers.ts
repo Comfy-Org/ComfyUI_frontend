@@ -3,6 +3,7 @@
  */
 import type { Locator, Page } from '@playwright/test'
 
+import { SettingsHelper } from '@e2e/fixtures/helpers/SettingsHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
@@ -212,6 +213,14 @@ export class VueNodeHelpers {
   async getFixtureByTitle(title: string | RegExp): Promise<VueNodeFixture> {
     const nodeId = await this.getNodeIdByTitle(title)
     return new VueNodeFixture(this.getNodeLocator(nodeId))
+  }
+
+  async setEnabled(enabled: boolean): Promise<void> {
+    const settings = new SettingsHelper(this.page)
+    if ((await settings.getSetting('Comfy.VueNodes.Enabled')) !== enabled) {
+      await settings.setSetting('Comfy.VueNodes.Enabled', enabled)
+    }
+    await this.waitForNodes()
   }
 
   /**

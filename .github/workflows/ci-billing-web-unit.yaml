@@ -1,0 +1,84 @@
+# Description: Unit tests + coverage reporting for the billing web app
+# (apps/billing-web). The root unit workflow's path filter excludes apps/**.
+name: 'CI: Billing Web Unit'
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      app-billing-web-changes: ${{ steps.changes.outputs.app-billing-web-changes }}
+      packages-changes: ${{ steps.changes.outputs.packages-changes }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
+  billing-web-unit:
+    needs: changes
+    if: ${{ needs.changes.outputs.app-billing-web-changes == 'true' || needs.changes.outputs.packages-changes == 'true' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+
+      - name: Run billing web unit tests with coverage
+        run: pnpm --filter @comfyorg/billing-web test:coverage
+
+      - name: Upload billing web coverage to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
+        with:
+          working-directory: ./apps/billing-web
+          files: ./coverage/lcov.info
+          disable_search: true
+          flags: billing-web-unit
+          # Re-root LCOV paths to prevent collisions with root-app coverage.
+          network_prefix: apps/billing-web/
+          token: ${{ secrets.CODECOV_TOKEN }}
+          # Forks have no token, so upload failures cannot block contributors.
+          fail_ci_if_error: ${{ github.event.pull_request.head.repo.fork != true }}
+
+  # Stable branch-protection context when tests are skipped.
+  billing-web-unit-gate:
+    needs: [changes, billing-web-unit]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify billing web unit tests passed or were not required
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          UNIT_RESULT: ${{ needs.billing-web-unit.result }}
+          BILLING_WEB_CHANGED: ${{ needs.changes.outputs.app-billing-web-changes }}
+          PACKAGES_CHANGED: ${{ needs.changes.outputs.packages-changes }}
+        run: |
+          if [ "$UNIT_RESULT" = "success" ]; then
+            echo "Billing web unit tests passed."
+            exit 0
+          fi
+          # Pass skipped tests only after successful filtering found no relevant changes.
+          if [ "$UNIT_RESULT" = "skipped" ] &&
+             [ "$CHANGES_RESULT" = "success" ] &&
+             [ "$BILLING_WEB_CHANGED" != "true" ] &&
+             [ "$PACKAGES_CHANGED" != "true" ]; then
+            echo "No billing web or package changes; billing web unit tests not required."
+            exit 0
+          fi
+          echo "::error title=Billing web unit tests::changes=$CHANGES_RESULT unit=$UNIT_RESULT billing-web=$BILLING_WEB_CHANGED packages=$PACKAGES_CHANGED"
+          exit 1
