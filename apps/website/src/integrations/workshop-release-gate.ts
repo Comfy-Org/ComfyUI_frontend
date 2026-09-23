@@ -19,11 +19,10 @@ import {
 export function modelsBuildRoutes(enabled: boolean) {
   const entry = (name: string) =>
     fileURLToPath(new URL(`../routes/models/${name}`, import.meta.url))
+  const catalogue = entry(enabled ? 'index.astro' : 'showcase.astro')
   return [
-    {
-      pattern: '/models',
-      entrypoint: entry(enabled ? 'index.astro' : 'showcase.astro')
-    },
+    { pattern: '/models', entrypoint: catalogue },
+    { pattern: '/zh-CN/models', entrypoint: catalogue },
     ...(enabled
       ? [
           { pattern: '/models/[slug]', entrypoint: entry('[slug].astro') },

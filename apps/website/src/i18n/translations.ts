@@ -22,6 +22,16 @@ const translations = {
     en: 'Browse and run the latest AI image, video and audio models on Comfy.',
     'zh-CN': '在 Comfy 上浏览并运行最新的 AI 图像、视频和音频模型。'
   },
+  'modelsShowcase.meta.title': { en: 'Models - Comfy', 'zh-CN': '模型 - Comfy' },
+  'modelsShowcase.meta.description': {
+    en: "Run the world's leading AI models in ComfyUI. Browse every supported model with community workflow templates ready to run.",
+    'zh-CN':
+      '在 ComfyUI 中运行世界领先的 AI 模型。浏览所有支持的模型及社区工作流模板。'
+  },
+  'modelsShowcase.hero.videoLabel': {
+    en: 'Grok Imagine output created with ComfyUI',
+    'zh-CN': '使用 ComfyUI 创建的 Grok Imagine 作品'
+  },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
   'workshop.hero.heading': {
     en: 'What will you make next?',

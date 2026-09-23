@@ -3,14 +3,24 @@ import ModelsHeroSection from './ModelsHeroSection.vue'
 import ModelCreationsSection from './ModelCreationsSection.vue'
 import AIModelsSection from '../product/shared/AIModelsSection.vue'
 import ProductShowcaseSection from '../home/ProductShowcaseSection.vue'
+import { getRoutes } from '../../config/routes'
+import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
+
+interface Props {
+  locale?: Locale
+}
+
+const { locale = 'en' } = Astro.props
 ---
 
 <ModelsHeroSection
+  locale={locale}
   modelName="Grok Imagine"
-  ctaHref="/p/supported-models/grok-imagine"
+  ctaHref={`${getRoutes(locale).models}/grok-imagine`}
   videoSrc="https://media.comfy.org/website/models/video_ComfdyUI_00001_.mp4"
-  videoAriaLabel="Grok Imagine output created with ComfyUI"
+  videoAriaLabel={t('modelsShowcase.hero.videoLabel', locale)}
 />
-<ModelCreationsSection client:load />
-<AIModelsSection client:load />
-<ProductShowcaseSection client:load />
+<ModelCreationsSection client:load locale={locale} />
+<AIModelsSection client:load locale={locale} />
+<ProductShowcaseSection client:load locale={locale} />

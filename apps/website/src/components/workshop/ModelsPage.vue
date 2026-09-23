@@ -7,15 +7,17 @@ import {
   fetchModelsPage
 } from '../../config/models-page-data'
 import { t } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
 
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
 
-const { slug } = defineProps<{
+const { slug, locale = 'en' } = defineProps<{
   slug?: string
+  locale?: Locale
 }>()
 
-const loadingLabel = t('workshop.load.pending', 'en')
+const loadingLabel = t('workshop.load.pending', locale)
 
 const Loading: FunctionalComponent = () =>
   h(WorkshopLoading, { label: loadingLabel, 'data-testid': 'models-loading' })
@@ -30,7 +32,7 @@ const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
       'data-testid': 'models-load-error'
     },
     [
-      h('p', { class: 'text-lg' }, t('workshop.load.failed', 'en')),
+      h('p', { class: 'text-lg' }, t('workshop.load.failed', locale)),
       h(
         'button',
         {
@@ -42,7 +44,7 @@ const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
             Content.value = createContent()
           }
         },
-        t('workshop.error.retry', 'en')
+        t('workshop.error.retry', locale)
       )
     ]
   )
@@ -69,7 +71,7 @@ function createContent() {
             class:
               'max-w-10xl mx-auto px-6 pt-8 pb-16 max-sm:pt-5 max-sm:pb-10 lg:px-8 lg:pt-12 lg:pb-24'
           },
-          [h(ModelsCatalogue, { models })]
+          [h(ModelsCatalogue, { models, locale })]
         )
     },
     loadingComponent: Loading,

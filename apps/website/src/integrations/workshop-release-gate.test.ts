@@ -109,15 +109,15 @@ describe('Workshop release output', () => {
   })
 
   it('registers the original marketing entry when disabled and only approved Models routes when enabled', () => {
+    const showcase = expect.stringContaining('/routes/models/showcase.astro')
     expect(modelsBuildRoutes(false)).toEqual([
-      {
-        pattern: '/models',
-        entrypoint: expect.stringContaining('/routes/models/showcase.astro')
-      }
+      { pattern: '/models', entrypoint: showcase },
+      { pattern: '/zh-CN/models', entrypoint: showcase }
     ])
     const enabled = modelsBuildRoutes(true)
     expect(enabled.map((route) => route.pattern)).toEqual([
       '/models',
+      '/zh-CN/models',
       '/models/[slug]',
       '/models/showcase',
       '/checkout-opening',
@@ -128,6 +128,7 @@ describe('Workshop release output', () => {
       '/models/catalogue.json'
     ])
     expect(enabled[0].entrypoint).toContain('/routes/models/index.astro')
+    expect(enabled[1].entrypoint).toBe(enabled[0].entrypoint)
     for (const route of enabled) expect(existsSync(route.entrypoint)).toBe(true)
   })
 

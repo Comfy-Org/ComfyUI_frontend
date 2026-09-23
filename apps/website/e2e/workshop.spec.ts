@@ -1,5 +1,6 @@
 import { expect } from '@playwright/test'
 
+import { t } from '../src/i18n/translations'
 import { MODEL_PATH, test } from './fixtures/modelsAccount'
 
 test.describe('Retired prototype routes', () => {
@@ -241,6 +242,15 @@ test.describe('Models catalog', () => {
       .click()
     await expect(sections).toBeVisible()
     await expect(page.getByTestId('workshop-hero')).toBeVisible()
+  })
+
+  test('serves the same catalogue in Chinese under /zh-CN', async ({ page }) => {
+    await page.goto('/zh-CN/models/')
+    await expect(page.locator('html')).toHaveAttribute('lang', 'zh-CN')
+    await expect(page.getByTestId('workshop-sections')).toBeVisible()
+    await expect(page.getByTestId('browse-all')).toHaveText(
+      t('workshop.sections.browseAll', 'zh-CN')
+    )
   })
 
   test('the rows listing opens the whole catalogue', async ({ page }) => {

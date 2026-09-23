@@ -5,6 +5,7 @@ import type { Ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 import { workshopModels } from '../../config/workshop-browse-content'
+import { t } from '../../i18n/translations'
 import './ModelPage.vue'
 import './ModelsCatalogue.vue'
 import { prepareModelPage } from '../../routes/models/model-page'
@@ -86,5 +87,17 @@ describe('Models page entry', () => {
     enabled.value = false
     await nextTick()
     expect(screen.getByRole('heading', { name: 'Public Models' })).toBeTruthy()
+  })
+
+  it('renders the catalogue in the page locale', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(Response.json(workshopModels))
+    )
+    enabled.value = true
+    render(ModelsPage, { props: { locale: 'zh-CN' } })
+    expect(
+      (await screen.findByTestId('browse-all')).textContent?.trim()
+    ).toBe(t('workshop.sections.browseAll', 'zh-CN'))
   })
 })

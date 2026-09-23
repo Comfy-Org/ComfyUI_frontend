@@ -2,16 +2,24 @@
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ModelsPage from '../../components/workshop/ModelsPage.vue'
 import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
+import { t } from '../../i18n/translations'
+import { pageContext } from '../../utils/jsonLd'
+
+const { locale } = pageContext(
+  Astro.site,
+  Astro.url.pathname,
+  Astro.currentLocale
+)
 ---
 
 <BaseLayout
-  title="Models - Comfy"
-  description="Run the world's leading AI models in ComfyUI. Browse every supported model with community workflow templates ready to run."
+  title={t('modelsShowcase.meta.title', locale)}
+  description={t('modelsShowcase.meta.description', locale)}
 >
-  <ModelsPage client:load>
-    <ModelsShowcase slot="fallback" />
+  <ModelsPage client:load locale={locale}>
+    <ModelsShowcase slot="fallback" locale={locale} />
   </ModelsPage>
   <noscript>
-    <ModelsShowcase />
+    <ModelsShowcase locale={locale} />
   </noscript>
 </BaseLayout>
