@@ -380,9 +380,7 @@ describe('nodeDataStore membership projected from the semantic document', () => 
 
     expect(docKeys(sub)).toEqual([])
     expect(store.getGraphNodesFor(rootA, sub)).toEqual([])
-    expect(store.getGraphNodesFor(rootA, rootA).map((n) => n.id)).toEqual([
-      '1'
-    ])
+    expect(store.getGraphNodesFor(rootA, rootA).map((n) => n.id)).toEqual(['1'])
     expect(docKeys(rootA)).toEqual(['1'])
   })
 
