@@ -534,22 +534,45 @@ describe('AgentPanel extension flag gate', () => {
       }
     )
 
-    it('stays quiet about an undecided boot once the user has accepted', async () => {
-      mocks.flagEnabled = true
-      Object.assign(consentStore, { accepted: false, isChecking: false })
-      let decide = (_: boolean) => {}
-      startupDecision = new Promise<boolean>((resolve) => {
-        decide = resolve
-      })
+    it.for([
+      {
+        name: 'the user accepted',
+        change: () => {
+          Object.assign(consentStore, { accepted: true })
+        }
+      },
+      {
+        name: 'the panel was switched off',
+        change: () => {
+          mocks.flagEnabled = false
+          mocks.flagListener?.()
+        }
+      },
+      {
+        name: 'consent is being checked again',
+        change: () => {
+          Object.assign(consentStore, { isChecking: true })
+        }
+      }
+    ])(
+      'stays quiet about an undecided boot when $name meanwhile',
+      async ({ change }) => {
+        mocks.flagEnabled = true
+        Object.assign(consentStore, { accepted: false, isChecking: false })
+        let decide = (_: boolean) => {}
+        startupDecision = new Promise<boolean>((resolve) => {
+          decide = resolve
+        })
 
-      await loadEntryAndSetup()
-      await flush()
-      Object.assign(consentStore, { accepted: true })
-      decide(false)
-      await flush()
+        await loadEntryAndSetup()
+        await flush()
+        change()
+        decide(false)
+        await flush()
 
-      expect(await notOffered()).not.toHaveBeenCalled()
-    })
+        expect(await notOffered()).not.toHaveBeenCalled()
+      }
+    )
 
     it('reports an in-flight tour against the workspace the offer was made for', async () => {
       mocks.flagEnabled = true
