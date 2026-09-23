@@ -1418,6 +1418,29 @@ describe('useMediaAssetActions', () => {
 
       unmount()
     })
+
+    it('deletes OSS output history without calling the asset endpoint', async () => {
+      mockIsCloud.value = false
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'job-1' })
+      vi.mocked(api.deleteItem).mockResolvedValue(undefined)
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({
+        id: 'asset-1',
+        name: 'output.png',
+        tags: ['output'],
+        user_metadata: { jobId: 'job-1' }
+      })
+
+      await expect(actions.deleteAssets(asset)).resolves.toBe(true)
+
+      expect(api.deleteItem).toHaveBeenCalledWith('history', 'job-1')
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
+    })
   })
 
   describe('deleteAssets - cancellation', () => {
