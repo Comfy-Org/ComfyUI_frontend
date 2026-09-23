@@ -174,6 +174,17 @@ describe('native Router output handling', () => {
     }
   )
 
+  it('does not treat error-envelope text as generated output', async () => {
+    await expect(
+      parseRouterResponse(
+        contract,
+        Response.json({
+          error: { code: 'content_filter', text: 'Request rejected' }
+        })
+      )
+    ).rejects.toMatchObject({ reason: 'policy', stage: 'response' })
+  })
+
   it.for([
     {
       name: 'a partially moderated Gemini candidate',

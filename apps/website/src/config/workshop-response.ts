@@ -52,13 +52,29 @@ interface OutputContext {
 type JsonOutput = Extract<WorkshopContract['output'], { format: 'json' }>
 type OutputSelector = JsonOutput['selectors'][number]
 
-function hasTextOutput(value: unknown, key = '', depth = 0): boolean {
+const FAILURE_ENVELOPE_KEYS = new Set(['detail', 'error', 'failure'])
+
+function hasTextOutput(
+  value: unknown,
+  key = '',
+  depth = 0,
+  insideFailure = false
+): boolean {
   if (depth > 64) return false
   if (typeof value === 'string')
-    return (key === 'text' || key === 'output_text') && value.trim().length > 0
+    return (
+      !insideFailure &&
+      (key === 'text' || key === 'output_text') &&
+      value.trim().length > 0
+    )
   if (value === null || typeof value !== 'object') return false
   return Object.entries(value).some(([childKey, child]) =>
-    hasTextOutput(child, childKey, depth + 1)
+    hasTextOutput(
+      child,
+      childKey,
+      depth + 1,
+      insideFailure || FAILURE_ENVELOPE_KEYS.has(childKey.toLowerCase())
+    )
   )
 }
 
