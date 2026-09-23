@@ -58,7 +58,7 @@ export interface PaywallPart {
 
 export type ActivityPart = ThinkingPart | ToolPart
 
-type MessagePart =
+export type MessagePart =
   | TextPart
   | ThinkingPart
   | ToolPart

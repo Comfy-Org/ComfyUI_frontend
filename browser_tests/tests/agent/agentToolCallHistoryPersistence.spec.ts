@@ -27,7 +27,7 @@ test(
   async ({ page, promptHistory, workflowSelection }) => {
     await page
       .getByRole('button', {
-        name: enMessages.agent.askComfyAgent,
+        name: enMessages.agent.entryButton,
         exact: true
       })
       .click()
@@ -128,7 +128,7 @@ test(
     await expect(reopenedPanel).toBeVisible({ timeout: 30_000 })
 
     const summary = reopenedPanel.getByRole('button', {
-      name: 'Ran 2 tool calls for 0.6 seconds',
+      name: enMessages.agent.worked,
       exact: true
     })
     await expect(summary).toBeVisible({ timeout: 10_000 })
@@ -139,8 +139,8 @@ test(
     await expect(reopenedPanel.getByText('Search nodes')).toBeVisible()
     await expect(reopenedPanel.getByText('Add node')).toBeVisible()
     await expect(reopenedPanel.getByRole('listitem')).toHaveText([
-      /^Search nodes\s*0\.4s$/,
-      /^Add node\s*0\.2s$/
+      'Search nodes',
+      'Add node'
     ])
     const restoredThreadId = historyRequestThreadIds.at(-1)
     expect(restoredThreadId).toBeTruthy()
@@ -173,8 +173,8 @@ test(
     await expect(reopenedPanel.getByText('Search nodes')).toBeVisible()
     await expect(reopenedPanel.getByText('Add node')).toBeVisible()
     await expect(reopenedPanel.getByRole('listitem')).toHaveText([
-      /^Search nodes\s*0\.4s$/,
-      /^Add node\s*0\.2s$/
+      'Search nodes',
+      'Add node'
     ])
   }
 )

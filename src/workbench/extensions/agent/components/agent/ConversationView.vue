@@ -3,7 +3,8 @@ import { useIntersectionObserver } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
+import Button from '@/components/ui/button/Button.vue'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -112,8 +113,8 @@ watch(
             <AgentMessage
               v-else
               :message="entry"
-              :answering-ask-ids="answeringAskIds"
-              :paywall-presentation="paywallPresentation"
+              :answering-ask-ids
+              :paywall-presentation
               @feedback="emit('feedback', entry.id, $event)"
               @answer-ask="
                 (askId: string, selection: 'run' | 'cancel') =>
@@ -131,15 +132,17 @@ watch(
       </div>
     </div>
 
-    <button
+    <Button
       v-if="!atBottom"
-      v-tooltip.top="buildAgentTooltipConfig(t('agent.latest'))"
+      v-tooltip.top="buildTooltipConfig(t('agent.latest'))"
       type="button"
+      variant="secondary"
+      size="icon"
       :aria-label="t('agent.latest')"
-      class="text-secondary-foreground absolute bottom-2 left-1/2 flex size-8 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-secondary-background shadow-md ring-1 ring-muted-foreground transition-colors hover:bg-secondary-background-hover"
+      class="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full shadow-md ring-1 ring-muted-foreground"
       @click="scrollToLatest"
     >
       <span class="icon-[lucide--chevron-down] size-4" />
-    </button>
+    </Button>
   </div>
 </template>

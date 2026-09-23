@@ -11,7 +11,10 @@ import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/
 
 const CONSENT_DIALOG_KEY = 'agent-consent'
 const DOCS_URL = 'https://docs.comfy.org/agent-tools/in-app-agent'
-const CONSENT_VIDEO_SRC = 'https://media.comfy.org/website/mcp/launch-film.mp4'
+const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
+const CONSENT_VIDEO_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-1280.webm`
+const CONSENT_VIDEO_SRC_MP4 = `${CONSENT_MEDIA_BASE}/agent-consent-1280.mp4`
+const CONSENT_POSTER_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-poster.jpg`
 
 const AgentConsentCard = defineAsyncComponent(
   () =>
@@ -102,6 +105,8 @@ export function useAgentConsent() {
           titleId: CONSENT_DIALOG_KEY,
           paragraphs: [t('agent.consent.body1'), t('agent.consent.body2')],
           videoSrc: CONSENT_VIDEO_SRC,
+          videoSrcMp4: CONSENT_VIDEO_SRC_MP4,
+          posterSrc: CONSENT_POSTER_SRC,
           docsUrl: DOCS_URL,
           accepting: false,
           error: '',
@@ -118,10 +123,9 @@ export function useAgentConsent() {
           closeOnEscape: true,
           modal: true,
           headless: true,
-          size: 'xl',
           overlayClass: 'bg-black/55',
           contentClass:
-            'w-[min(1040px,calc(100vw-2rem))] border-none bg-transparent shadow-none sm:max-w-[1040px]',
+            'w-[min(640px,calc(100vw-2rem))] border-none bg-transparent shadow-none sm:max-w-[640px]',
           onClose: () => {
             if (settled) return
             settled = true

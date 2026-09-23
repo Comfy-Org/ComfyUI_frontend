@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import frMessages from '@/locales/fr/main.json' with { type: 'json' }
 
 import { agentConsentTest as test } from '@e2e/fixtures/agentConsentFixture'
 
@@ -19,7 +20,8 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
   }) => {
     const page = comfyPage.page
     const openButton = page.getByRole('button', {
-      name: enMessages.agent.askComfyAgent
+      name: enMessages.agent.entryButton,
+      exact: true
     })
     const dialog = page.getByRole('dialog', {
       name: enMessages.agent.consent.title
@@ -81,15 +83,16 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       await expect(panel).toBeVisible()
     })
 
-    await test.step('Saved consent reopens Agent without another prompt', async () => {
-      await expect(openButton).toHaveCount(0)
-      await panel
-        .getByRole('button', { name: enMessages.agent.close, exact: true })
-        .click()
+    await test.step('Agent button closes and reopens the panel without another consent prompt', async () => {
+      await expect(openButton).toBeVisible()
+      await expect(openButton).toHaveAttribute('aria-pressed', 'true')
+      await openButton.click()
       await expect(panel).toHaveCount(0)
+      await expect(openButton).toHaveAttribute('aria-pressed', 'false')
       await openButton.click()
       await expect(dialog).toHaveCount(0)
       await expect(panel).toBeVisible()
+      await expect(openButton).toHaveAttribute('aria-pressed', 'true')
     })
 
     await test.step('Saved consent survives reload', async () => {
@@ -119,7 +122,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
 
       await test.step('Explicit acceptance makes the panel visible', async () => {
         await page
-          .getByRole('button', { name: enMessages.agent.askComfyAgent })
+          .getByRole('button', {
+            name: enMessages.agent.entryButton,
+            exact: true
+          })
           .click()
         await expect(dialog).toBeVisible()
         await expect(panel).toHaveCount(0)
@@ -150,7 +156,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
       await test.step('A failed save leaves the panel closed and allows retry', async () => {
         agentConsentSave.status = 500
         await page
-          .getByRole('button', { name: enMessages.agent.askComfyAgent })
+          .getByRole('button', {
+            name: enMessages.agent.entryButton,
+            exact: true
+          })
           .click()
         await accept.click()
 
@@ -182,7 +191,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
 
     await test.step('Consent keeps its dark surface and readable heading', async () => {
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       await expect(page.getByTestId('agent-consent-card')).toHaveCSS(
         'background-color',
@@ -200,7 +212,7 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
   test.describe('in a narrow viewport', () => {
     test.use({ viewport: { width: 430, height: 900 } })
 
-    test('uses square media and aligns keyboard order with action order', async ({
+    test('uses widescreen media and aligns keyboard order with action order', async ({
       comfyPage
     }) => {
       const page = comfyPage.page
@@ -218,16 +230,19 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
         name: enMessages.agent.consent.reject
       })
 
-      await test.step('Narrow layout keeps media square and actions in visual order', async () => {
+      await test.step('Narrow layout keeps media widescreen and actions in visual order', async () => {
         await page
-          .getByRole('button', { name: enMessages.agent.askComfyAgent })
+          .getByRole('button', {
+            name: enMessages.agent.entryButton,
+            exact: true
+          })
           .click()
         await expect
           .poll(async () => {
             const box = await video.boundingBox()
-            return box ? Math.abs(box.width - box.height) : undefined
+            return box ? Math.abs(box.width / box.height - 16 / 9) : undefined
           })
-          .toBeLessThanOrEqual(1)
+          .toBeLessThanOrEqual(0.01)
         await expect
           .poll(async () => {
             const [acceptBox, rejectBox] = await Promise.all([
@@ -250,6 +265,117 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     })
   })
 
+  test.describe('when WebM cannot load', () => {
+    test.beforeEach(async ({ comfyPage }) => {
+      await comfyPage.page.route(
+        'https://media.comfy.org/website/comfy-agent/*.webm',
+        (route) => route.fulfill({ status: 404, body: '' })
+      )
+    })
+
+    test('plays the MP4 fallback', async ({ comfyPage }) => {
+      const page = comfyPage.page
+      await page
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
+        .click()
+
+      const video = page.getByTestId('agent-consent-video')
+      await expect(video).toHaveJSProperty(
+        'currentSrc',
+        'https://media.comfy.org/website/comfy-agent/agent-consent-1280.mp4'
+      )
+      await expect
+        .poll(() =>
+          video.evaluate((element: HTMLVideoElement) => element.currentTime)
+        )
+        .toBeGreaterThan(0)
+    })
+
+    test.describe('and MP4 cannot load', () => {
+      test.beforeEach(async ({ comfyPage }) => {
+        await comfyPage.page.route(
+          'https://media.comfy.org/website/comfy-agent/*.mp4',
+          (route) => route.fulfill({ status: 404, body: '' })
+        )
+      })
+
+      test('shows the unavailable message and keeps consent actions usable', async ({
+        comfyPage
+      }) => {
+        const page = comfyPage.page
+        await page
+          .getByRole('button', {
+            name: enMessages.agent.entryButton,
+            exact: true
+          })
+          .click()
+
+        const dialog = page.getByRole('dialog', {
+          name: enMessages.agent.consent.title
+        })
+        await expect(
+          dialog.getByText(enMessages.agent.consent.videoPlaceholder)
+        ).toBeVisible()
+        await expect(dialog.getByTestId('agent-consent-video')).toHaveCount(0)
+        await expect(
+          dialog.getByRole('button', { name: enMessages.agent.consent.accept })
+        ).toBeEnabled()
+        await dialog
+          .getByRole('button', { name: enMessages.agent.consent.reject })
+          .click()
+        await expect(dialog).toHaveCount(0)
+      })
+    })
+  })
+
+  for (const width of [608, 672]) {
+    test.describe(`with long translations at viewport width ${width}`, () => {
+      test.use({ viewport: { width, height: 900 } })
+
+      test('keeps the docs link and actions fully visible and in keyboard order', async ({
+        comfyPage
+      }) => {
+        const page = comfyPage.page
+        await comfyPage.settings.setSetting('Comfy.Locale', 'fr')
+        await page
+          .getByRole('button', {
+            name: enMessages.agent.entryButton,
+            exact: true
+          })
+          .click()
+
+        const dialog = page.getByRole('dialog', {
+          name: frMessages.agent.consent.title
+        })
+        const docs = dialog.getByRole('link', {
+          name: frMessages.agent.consent.readDocs
+        })
+        const accept = dialog.getByRole('button', {
+          name: frMessages.agent.consent.accept
+        })
+        const reject = dialog.getByRole('button', {
+          name: frMessages.agent.consent.reject
+        })
+        await expect(dialog.getByRole('button')).toHaveText([
+          frMessages.agent.consent.reject,
+          frMessages.agent.consent.accept
+        ])
+        await expect(docs).toBeInViewport({ ratio: 1 })
+        await expect(reject).toBeInViewport({ ratio: 1 })
+        await expect(accept).toBeInViewport({ ratio: 1 })
+
+        await docs.focus()
+        await page.keyboard.press('Tab')
+        await expect(reject).toBeFocused()
+        await page.keyboard.press('Tab')
+        await expect(accept).toBeFocused()
+      })
+    })
+  }
+
   test('keeps actions reachable in a short wide window', async ({
     comfyPage
   }) => {
@@ -267,7 +393,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     await test.step('Short wide layout keeps both actions reachable', async () => {
       await page.setViewportSize({ width: 1280, height: 480 })
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       await accept.scrollIntoViewIfNeeded()
       await expect(accept).toBeInViewport({ ratio: 1 })
@@ -297,7 +426,10 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
     await test.step('Short narrow layout lets the user reach the heading', async () => {
       await page.setViewportSize({ width: 430, height: 600 })
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       await heading.scrollIntoViewIfNeeded()
       await expect(heading).toBeInViewport({ ratio: 1 })
@@ -316,7 +448,7 @@ test.describe('Manual agent consent gate', { tag: ['@cloud', '@ui'] }, () => {
   }) => {
     const page = comfyPage.page
     await page
-      .getByRole('button', { name: enMessages.agent.askComfyAgent })
+      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
       .click()
     const dialog = page.getByRole('dialog', {
       name: enMessages.agent.consent.title
