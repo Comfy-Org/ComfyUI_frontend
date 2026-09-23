@@ -284,8 +284,7 @@ describe('useSessionCookie', () => {
     await useSessionCookie().deleteSession()
 
     const [reported, options] = mockReportError.mock.calls[0]
-    expect(reported).toBeInstanceOf(Error)
-    expect((reported as Error).message).toBe('Session cookie deletion failed')
+    expect(reported).toEqual(new Error('Session cookie deletion failed'))
     expect(JSON.stringify(options)).not.toContain('user-a@x.test')
   })
 
