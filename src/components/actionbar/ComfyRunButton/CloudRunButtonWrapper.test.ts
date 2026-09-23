@@ -23,9 +23,6 @@ const mockIsFreeTier = ref(true)
 const mockIsInitialized = ref(true)
 const mockBillingStatus = ref<BillingStatus | null>('paid')
 const mockSubscriptionTier = ref<string | null>(null)
-const state = vi.hoisted(() => ({
-  canManageSubscription: true
-}))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
@@ -74,6 +71,14 @@ vi.mock<unknown>(
 
 function renderWrapper() {
   return render(CloudRunButtonWrapper)
+}
+
+function setCanManageSubscription(value: boolean) {
+  const permissions = useWorkspaceUI().permissions.value
+  vi.mocked(useWorkspaceUI()).permissions = computed(() => ({
+    ...permissions,
+    canManageSubscription: value
+  }))
 }
 
 function subscription(tier: string | null): SubscriptionInfo | null {
@@ -127,17 +132,12 @@ describe('CloudRunButtonWrapper', () => {
       subscription(mockSubscriptionTier.value)
     )
     vi.mocked(useBillingContext).mockReturnValue(billing)
-    const permissions = useWorkspaceUI().permissions.value
-    vi.mocked(useWorkspaceUI()).permissions = computed(() => ({
-      ...permissions,
-      canManageSubscription: state.canManageSubscription
-    }))
+    setCanManageSubscription(true)
     mockCanRunWorkflows.value = true
     mockIsInitialized.value = true
     mockBillingStatus.value = 'paid'
     mockSubscriptionTier.value = null
     vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
-    state.canManageSubscription = true
     mockIsFreeTier.value = true
   })
 
@@ -541,7 +541,7 @@ describe('CloudRunButtonWrapper', () => {
   it('opens member-safe recovery copy without a payment action', async () => {
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'paused'
-    state.canManageSubscription = false
+    setCanManageSubscription(false)
     renderWrapper()
 
     expect(screen.getByTestId('queue-button')).toHaveTextContent('Run')
@@ -579,7 +579,7 @@ describe('CloudRunButtonWrapper', () => {
   it('keeps Run locked with owner guidance for a payment-failed member', async () => {
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'payment_failed'
-    state.canManageSubscription = false
+    setCanManageSubscription(false)
     renderWrapper()
 
     expect(screen.getByTestId('queue-button')).toHaveTextContent('Run')
