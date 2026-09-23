@@ -97,7 +97,7 @@
     "@comfyorg/account-core": "workspace:*",
     "@comfyorg/account-ui": "workspace:*",
     "@comfyorg/billing-contract": "workspace:*",
-    "@comfyorg/comfy-multi-player": "0.3.3",
+    "@comfyorg/comfy-multi-player": "catalog:",
     "@comfyorg/comfyui-desktop-bridge-types": "catalog:",
     "@comfyorg/comfyui-electron-types": "catalog:",
     "@comfyorg/design-system": "workspace:*",
