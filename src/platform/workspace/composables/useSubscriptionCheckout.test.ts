@@ -4096,7 +4096,7 @@ describe('useSubscriptionCheckout', () => {
       openSpy.mockRestore()
     })
 
-    it('offers payment recovery once the poll reports the checkout parked', async () => {
+    it('offers actionable recovery while the operation keeps polling', async () => {
       const checkout = await setupWithApprovedPreview()
       checkout.selectedTierKey.value = 'standard'
       checkout.selectedBillingCycle.value = 'yearly'
@@ -4118,23 +4118,6 @@ describe('useSubscriptionCheckout', () => {
         'subscription',
         expect.any(Object)
       )
-    })
-
-    it('releases the busy state so the recovery prompt can be acted on', async () => {
-      const checkout = await setupWithApprovedPreview()
-      checkout.selectedTierKey.value = 'standard'
-      checkout.selectedBillingCycle.value = 'yearly'
-      mockSubscribe.mockResolvedValueOnce({
-        status: 'pending_payment',
-        billing_op_id: 'op-parked'
-      })
-      vi.mocked(useBillingOperationStore().getOperation).mockReturnValue(
-        billingOperation({ phase: 'awaiting_payment_method' })
-      )
-
-      await checkout.handleAddCreditCard()
-
-      expect(checkout.parkedCheckoutRecovery.value).toBe(true)
       // The parents fold isPolling into the preview's isLoading, which locks
       // the prompt's own button and Back. A checkout waiting on the customer
       // must not read as busy, even though we keep polling it.
@@ -5137,26 +5120,6 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleResubscribe', () => {
-    it('fires a started event before resubscribe resolves', async () => {
-      const checkout = await setup('subscribe_to_run')
-      mockResubscribe.mockResolvedValueOnce({
-        billing_op_id: 'op-4',
-        status: 'active'
-      })
-      mockFetchStatus.mockResolvedValueOnce(undefined)
-      mockFetchBalance.mockResolvedValueOnce(undefined)
-
-      await checkout.handleResubscribe()
-
-      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
-        operation: 'resubscribe',
-        stage: 'started',
-        outcome: 'pending',
-        source: 'pricing_dialog',
-        payment_intent_source: 'subscribe_to_run'
-      })
-    })
-
     it('emits close on success', async () => {
       const checkout = await setup('subscribe_to_run')
       mockResubscribe.mockResolvedValueOnce({
@@ -5287,7 +5250,7 @@ describe('useSubscriptionCheckout', () => {
       expect(useTelemetry()?.trackResubscribeClicked).not.toHaveBeenCalled()
     })
 
-    it('emits started before the awaited resubscribe call resolves', async () => {
+    it('emits the started payload before invoking resubscribe', async () => {
       const callOrder: string[] = []
       mockResubscribe.mockImplementationOnce(async () => {
         callOrder.push('resubscribe')
@@ -5302,6 +5265,13 @@ describe('useSubscriptionCheckout', () => {
 
       await checkout.handleResubscribe()
 
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
+        operation: 'resubscribe',
+        stage: 'started',
+        outcome: 'pending',
+        source: 'pricing_dialog',
+        payment_intent_source: 'subscribe_to_run'
+      })
       expect(callOrder.indexOf('trackBillingEvent:started')).toBeLessThan(
         callOrder.indexOf('resubscribe')
       )
