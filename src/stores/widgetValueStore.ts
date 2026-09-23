@@ -400,7 +400,7 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     try {
       withLocalDirtyTrackingSuppressed(() => {
         for (const { owningGraphId, nodeId, name, value } of values) {
-          const graphId = owningGraphId as string as UUID
+          const graphId = owningGraphId as string
           const widgetId = createWidgetId(graphId, nodeId, name)
           const state = graphWidgets.value.get(graphId)?.get(widgetId)?.state
           if (!state || Object.is(state.value, value)) continue
