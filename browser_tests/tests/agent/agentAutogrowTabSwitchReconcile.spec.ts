@@ -385,7 +385,10 @@ test.describe(
 
       await test.step('open the agent panel and target the workflow', async () => {
         await page
-          .getByRole('button', { name: enMessages.agent.entryButton })
+          .getByRole('button', {
+            name: enMessages.agent.entryButton,
+            exact: true
+          })
           .click()
         await expect(panel).toBeVisible()
         await panel
@@ -496,7 +499,10 @@ test.describe(
         // local edit, and prove the replacement follower has rebound this doc.
         subscribedTo = null
         await page
-          .getByRole('button', { name: enMessages.agent.entryButton })
+          .getByRole('button', {
+            name: enMessages.agent.entryButton,
+            exact: true
+          })
           .click()
         await expect(panel).toBeVisible()
         await expect
