@@ -72,6 +72,15 @@ export function registerAgentPanelExtension(): void {
           .nodeIds(workflowPath)
           .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
           .filter(isLGraphNode)
+        if (nodes.length === 0) {
+          // Nothing was saved for this workflow (e.g. a brand-new, never-saved
+          // tab). Disarm the restore guard directly instead of arming it with
+          // an empty selection - otherwise it stays armed until the *next*
+          // unrelated selection change (such as manually adding a node), which
+          // then gets wrongly adopted as "the restored selection".
+          nodeSelectionStore.finishWorkflowLoad()
+          return
+        }
         nodeSelectionStore.restoreNodeIds(
           nodes.map((node) => workflowStore.nodeToNodeLocatorId(node))
         )
