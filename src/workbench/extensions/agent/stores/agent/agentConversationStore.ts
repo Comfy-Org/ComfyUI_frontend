@@ -309,7 +309,15 @@ export const useAgentConversationStore = defineStore(
         userTexts.value.set(entry.message.id, entry.userText)
       const index = kept.push(entry.message) - 1
       messages.value = kept
-      if (entry.settled) return
+      if (entry.settled) {
+        // PM-1575: this settled turn is kept on screen but not reactivated --
+        // its transport is discarded for good right after this, same as the
+        // hydrated-copy-dropped branch above, so flush anything it is still
+        // holding rather than leaving it unreachable until its own
+        // STALE_AFTER_MS fallback.
+        entry.transport.dispose()
+        return
+      }
       activeTurnId.value = entry.messageId
       activeIndex.value = index
       transport = entry.transport

@@ -337,6 +337,27 @@ describe('useAgentConversationStore', () => {
     expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
   })
 
+  // PM-1575 regression (finding #4, medium): resumeBackgroundTurn()'s SECOND
+  // early return -- reached when a settled background turn's message is
+  // kept on screen but not reactivated as the live turn -- dropped the
+  // transport the same way as the paths above, leaving a held part
+  // reachable only via its own 30s STALE_AFTER_MS fallback instead of
+  // settling the moment it is clear nothing will ever resume it.
+  it('flushes a held tool-call part immediately when a settled background turn is resumed but not reactivated', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => true)
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.stashActiveTurn()
+    store.ingest(done('t1'))
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+
+    store.resumeBackgroundTurn()
+
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
+  })
+
   // PM-1575 regression (finding #5, medium): nothing cancelled a held tool
   // call's 30s timer when hydrate() discarded its transport. The orphaned
   // timer could fire after hydrate() replaced the transcript with
