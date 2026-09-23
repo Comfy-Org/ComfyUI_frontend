@@ -628,17 +628,19 @@ describe('insert_workflow materializes subgraphs correctly', () => {
     const deliver = bindProjection('wf-nested-subgraph-instance', graph)
     expect(deliver(Y.encodeStateAsUpdate(hostDoc), [op.op_id])).toBe(true)
 
-    const [rootInstance] = findSubgraphInstances(graph)
-    expect(rootInstance).toBeDefined()
+    const rootInstances = findSubgraphInstances(graph)
+    expect(rootInstances).toHaveLength(1)
+    const [rootInstance] = rootInstances
 
-    const interiorInstance = rootInstance.subgraph.nodes.find(
+    const interiorInstances = rootInstance.subgraph.nodes.filter(
       (node): node is SubgraphNode => node instanceof SubgraphNode
     )
-    expect(interiorInstance).toBeDefined()
-    expect(interiorInstance!.has_errors).not.toBe(true)
-    expect(interiorInstance!.widgets.map((widget) => widget.name)).toEqual([
+    expect(interiorInstances).toHaveLength(1)
+    const [interiorInstance] = interiorInstances
+    expect(interiorInstance.has_errors).not.toBe(true)
+    expect(interiorInstance.widgets.map((widget) => widget.name)).toEqual([
       'value'
     ])
-    expect(interiorInstance!.widgets[0]?.value).toBe(42)
+    expect(interiorInstance.widgets[0]?.value).toBe(42)
   })
 })
