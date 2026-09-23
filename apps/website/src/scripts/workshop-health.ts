@@ -35,11 +35,11 @@ function isActionableInputIssue(failure: FailedRun): boolean {
 }
 
 function isExcludedFailure(failure: FailedRun): boolean {
-  return [
-    isAccountRefusal(failure),
-    isActionableInputIssue(failure),
+  return (
+    isAccountRefusal(failure) ||
+    isActionableInputIssue(failure) ||
     ['noCredits', 'policy', 'concurrency'].includes(failure.reason)
-  ].includes(true)
+  )
 }
 
 function health(event: WorkshopAnalyticsEvent): ServiceHealth {
@@ -53,6 +53,11 @@ function health(event: WorkshopAnalyticsEvent): ServiceHealth {
   return isExcludedFailure(event.properties) ? 'excluded' : 'failure'
 }
 
+function failedRunType(failure: FailedRun): string {
+  if (failure.reason === 'policy') return 'content_policy_violation'
+  return failure.router_error_type ?? failure.exception_name ?? failure.reason
+}
+
 function failureType(event: WorkshopAnalyticsEvent): string | undefined {
   if (event.name === 'run_validation_failed') return 'validation'
   if (event.name === 'delivery_finished') {
@@ -61,11 +66,7 @@ function failureType(event: WorkshopAnalyticsEvent): string | undefined {
   }
   if (event.name !== 'run_finished' || event.properties.status !== 'failed')
     return
-  return (
-    event.properties.router_error_type ??
-    event.properties.exception_name ??
-    event.properties.reason
-  )
+  return failedRunType(event.properties)
 }
 
 const HEALTH_FIELDS = new Set([

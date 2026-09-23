@@ -1,4 +1,5 @@
 import type { WorkshopContract } from './workshop-contract'
+import { workshopContentPolicyPayload } from './workshop-content-policy'
 import { validateWorkshopInput } from './workshop-json-schema'
 import { valuesAtPointer } from './workshop-json-pointer'
 import {
@@ -103,6 +104,8 @@ async function automaticOutputs(
   }
   try {
     visit(data, 0)
+    if (!outputs.length && workshopContentPolicyPayload(data))
+      throw new WorkshopRouterError('policy', null, {}, undefined, 'response')
     const discovered = await discoverOutputMimes(
       outputs.map(({ url }) => url),
       signal
@@ -411,6 +414,8 @@ async function selectedResponse(
             nsfw
           }))
         )
+    if (!outputs.length && workshopContentPolicyPayload(data))
+      throw new WorkshopRouterError('policy', null, {}, undefined, 'response')
     if (!outputs.length) throw new Error('Router returned no output')
     return outputs
   } catch (error) {

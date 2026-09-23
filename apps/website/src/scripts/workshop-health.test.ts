@@ -53,22 +53,38 @@ describe('Workshop health', () => {
     })
   })
   it.for([
-    { reason: 'response' as const, expected: 'failure' },
-    { reason: 'upload' as const, expected: 'failure' },
-    { reason: 'provider' as const, expected: 'failure' },
-    { reason: 'validation' as const, expected: 'failure' },
-    { reason: 'policy' as const, expected: 'excluded' },
-    { reason: 'noCredits' as const, expected: 'excluded' },
-    { reason: 'concurrency' as const, expected: 'excluded' }
+    { reason: 'response' as const, expected: 'failure', type: 'response' },
+    { reason: 'upload' as const, expected: 'failure', type: 'upload' },
+    { reason: 'provider' as const, expected: 'failure', type: 'provider' },
+    {
+      reason: 'validation' as const,
+      expected: 'failure',
+      type: 'validation'
+    },
+    {
+      reason: 'policy' as const,
+      expected: 'excluded',
+      type: 'content_policy_violation'
+    },
+    {
+      reason: 'noCredits' as const,
+      expected: 'excluded',
+      type: 'noCredits'
+    },
+    {
+      reason: 'concurrency' as const,
+      expected: 'excluded',
+      type: 'concurrency'
+    }
   ])(
     'classifies $reason separately for service paging',
-    ({ reason, expected }) => {
+    ({ reason, expected, type }) => {
       expect(
         workshopHealthLog({
           name: 'run_finished',
           properties: { ...run, status: 'failed', reason, duration_ms: 10 }
         })
-      ).toMatchObject({ service_health: expected, failure_type: reason })
+      ).toMatchObject({ service_health: expected, failure_type: type })
     }
   )
 
@@ -330,6 +346,25 @@ describe('Workshop health', () => {
         }
       })
     ).toMatchObject({ failure_type: 'provider_error' })
+  })
+
+  it('uses normalized policy attribution when Router mislabeled the refusal', () => {
+    expect(
+      workshopHealthLog({
+        name: 'run_finished',
+        properties: {
+          ...run,
+          status: 'failed',
+          reason: 'policy',
+          duration_ms: 10,
+          router_error_type: 'provider_error'
+        }
+      })
+    ).toMatchObject({
+      service_health: 'excluded',
+      failure_type: 'content_policy_violation',
+      router_error_type: 'provider_error'
+    })
   })
 
   it.for([

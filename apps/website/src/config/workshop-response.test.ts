@@ -150,6 +150,50 @@ describe('native Router output handling', () => {
     }
   })
 
+  it.for([
+    {
+      name: 'prompt block',
+      response: { promptFeedback: { blockReason: 'SAFETY' } }
+    },
+    {
+      name: 'candidate image safety finish',
+      response: { candidates: [{ finishReason: 'IMAGE_SAFETY' }] }
+    },
+    {
+      name: 'candidate prohibited-content finish',
+      response: {
+        candidates: [{ finishReason: 'IMAGE_PROHIBITED_CONTENT' }]
+      }
+    }
+  ])(
+    'reports a successful HTTP response with $name as policy',
+    async ({ response }) => {
+      await expect(
+        parseRouterResponse(contract, Response.json(response))
+      ).rejects.toMatchObject({ reason: 'policy', stage: 'response' })
+    }
+  )
+
+  it('keeps usable output from a partially moderated response', async () => {
+    const outputs = await parseRouterResponse(
+      contract,
+      Response.json({
+        results: [
+          { b64_json: png },
+          {
+            code: 'DataInspectionFailed',
+            message: 'Input data may contain inappropriate content.'
+          }
+        ]
+      })
+    )
+    try {
+      expect(outputs.map(({ kind }) => kind)).toEqual(['image', 'text'])
+    } finally {
+      releaseRouterOutputs(outputs)
+    }
+  })
+
   it('keeps declared text outputs visible beside media', async () => {
     const selected = workshopContractSchema.parse({
       ...contract,

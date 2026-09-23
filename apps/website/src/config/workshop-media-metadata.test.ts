@@ -1,33 +1,47 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { readWorkshopVideoDuration } from './workshop-media-metadata'
+import { readWorkshopVideoMetadata } from './workshop-media-metadata'
 
 function videoPlatform() {
   const video = document.createElement('video')
   vi.spyOn(document, 'createElement').mockReturnValue(video)
-  const duration = vi.spyOn(video, 'duration', 'get')
+  const duration = vi.spyOn(video, 'duration', 'get').mockReturnValue(10)
+  Object.defineProperty(video, 'videoWidth', {
+    configurable: true,
+    get: () => 0
+  })
+  Object.defineProperty(video, 'videoHeight', {
+    configurable: true,
+    get: () => 0
+  })
+  const width = vi.spyOn(video, 'videoWidth', 'get').mockReturnValue(1920)
+  const height = vi.spyOn(video, 'videoHeight', 'get').mockReturnValue(1080)
   const unload = vi.spyOn(video, 'load')
   const create = vi
     .spyOn(URL, 'createObjectURL')
     .mockReturnValue('blob:local-video')
   const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
-  return { video, duration, unload, create, revoke }
+  return { video, duration, width, height, unload, create, revoke }
 }
 
 describe('Workshop video metadata', () => {
-  it('reads a local video duration and releases its metadata reader', async () => {
+  it('reads local video metadata and releases its reader', async () => {
     const platform = videoPlatform()
     platform.duration.mockReturnValue(15.5)
     const file = new File(['video'], 'private-video.mp4', {
       type: 'video/mp4'
     })
-    const result = readWorkshopVideoDuration(file, new AbortController().signal)
+    const result = readWorkshopVideoMetadata(file, new AbortController().signal)
 
     expect(platform.video.preload).toBe('metadata')
     expect(platform.video.src).toBe('blob:local-video')
     platform.video.dispatchEvent(new Event('loadedmetadata'))
 
-    await expect(result).resolves.toBe(15.5)
+    await expect(result).resolves.toEqual({
+      durationSeconds: 15.5,
+      widthPixels: 1920,
+      heightPixels: 1080
+    })
     expect(platform.create).toHaveBeenCalledWith(file)
     expect(platform.revoke).toHaveBeenCalledWith('blob:local-video')
     expect(platform.video.hasAttribute('src')).toBe(false)
@@ -41,7 +55,7 @@ describe('Workshop video metadata', () => {
     const platform = videoPlatform()
     platform.duration.mockReturnValue(3.75)
     const source = 'https://media.example/private-video.mp4'
-    const result = readWorkshopVideoDuration(
+    const result = readWorkshopVideoMetadata(
       source,
       new AbortController().signal
     )
@@ -49,7 +63,11 @@ describe('Workshop video metadata', () => {
     expect(platform.video.src).toBe(source)
     platform.video.dispatchEvent(new Event('loadedmetadata'))
 
-    await expect(result).resolves.toBe(3.75)
+    await expect(result).resolves.toEqual({
+      durationSeconds: 3.75,
+      widthPixels: 1920,
+      heightPixels: 1080
+    })
     expect(platform.create).not.toHaveBeenCalled()
     expect(platform.revoke).not.toHaveBeenCalled()
     expect(platform.video.hasAttribute('src')).toBe(false)
@@ -60,7 +78,7 @@ describe('Workshop video metadata', () => {
     async (duration) => {
       const platform = videoPlatform()
       platform.duration.mockReturnValue(duration)
-      const result = readWorkshopVideoDuration(
+      const result = readWorkshopVideoMetadata(
         new File(['video'], 'private-video.mp4'),
         new AbortController().signal
       )
@@ -69,7 +87,7 @@ describe('Workshop video metadata', () => {
 
       await expect(result).rejects.toMatchObject({
         name: 'NotSupportedError',
-        message: 'Video duration could not be read'
+        message: 'Video metadata could not be read'
       })
       expect(platform.revoke).toHaveBeenCalledWith('blob:local-video')
       expect(platform.video.hasAttribute('src')).toBe(false)
@@ -77,9 +95,32 @@ describe('Workshop video metadata', () => {
     }
   )
 
+  it.for([
+    { measurement: 'width', width: 0, height: 1080 },
+    { measurement: 'height', width: 1920, height: 0 }
+  ])(
+    'rejects metadata with an unusable $measurement',
+    async ({ width, height }) => {
+      const platform = videoPlatform()
+      platform.width.mockReturnValue(width)
+      platform.height.mockReturnValue(height)
+      const result = readWorkshopVideoMetadata(
+        new File(['video'], 'private-video.mp4'),
+        new AbortController().signal
+      )
+
+      platform.video.dispatchEvent(new Event('loadedmetadata'))
+
+      await expect(result).rejects.toMatchObject({
+        name: 'NotSupportedError',
+        message: 'Video metadata could not be read'
+      })
+    }
+  )
+
   it('reports media errors without including private source details', async () => {
     const platform = videoPlatform()
-    const result = readWorkshopVideoDuration(
+    const result = readWorkshopVideoMetadata(
       'https://media.example/private-video.mp4?token=secret',
       new AbortController().signal
     )
@@ -88,7 +129,7 @@ describe('Workshop video metadata', () => {
 
     await expect(result).rejects.toMatchObject({
       name: 'NotSupportedError',
-      message: 'Video duration could not be read'
+      message: 'Video metadata could not be read'
     })
     expect(platform.video.hasAttribute('src')).toBe(false)
     expect(platform.video.onerror).toBeNull()
@@ -98,7 +139,7 @@ describe('Workshop video metadata', () => {
   it('stops waiting for stalled metadata and releases the file', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
     const platform = videoPlatform()
-    const result = readWorkshopVideoDuration(
+    const result = readWorkshopVideoMetadata(
       new File(['video'], 'private-video.mp4'),
       new AbortController().signal
     )
@@ -124,13 +165,13 @@ describe('Workshop video metadata', () => {
     })
 
     await expect(
-      readWorkshopVideoDuration(
+      readWorkshopVideoMetadata(
         new File(['video'], 'private-video.mp4'),
         new AbortController().signal
       )
     ).rejects.toMatchObject({
       name: 'NotSupportedError',
-      message: 'Video duration could not be read'
+      message: 'Video metadata could not be read'
     })
 
     expect(platform.revoke).toHaveBeenCalledWith('blob:local-video')
@@ -143,7 +184,7 @@ describe('Workshop video metadata', () => {
     const platform = videoPlatform()
     const controller = new AbortController()
     const file = new File(['video'], 'private-video.mp4')
-    const result = readWorkshopVideoDuration(file, controller.signal)
+    const result = readWorkshopVideoMetadata(file, controller.signal)
     const reason = new Error('Stop reading')
 
     controller.abort(reason)
@@ -155,7 +196,7 @@ describe('Workshop video metadata', () => {
     expect(platform.video.onerror).toBeNull()
     expect(vi.getTimerCount()).toBe(0)
     await expect(
-      readWorkshopVideoDuration(file, controller.signal)
+      readWorkshopVideoMetadata(file, controller.signal)
     ).rejects.toBe(reason)
     expect(platform.create).toHaveBeenCalledOnce()
   })
