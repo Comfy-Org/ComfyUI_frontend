@@ -845,6 +845,7 @@ function startAgentCrdtFollower(
       case 'disconnect':
       case 'define_subgraph':
       case 'insert_workflow':
+      case 'set_node_field':
         // No effect-presence check implemented for these kinds yet: `null`
         // leaves a parked entry parked rather than guessing.
         return null

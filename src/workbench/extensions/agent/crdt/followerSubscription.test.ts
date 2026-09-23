@@ -20,13 +20,16 @@
  *                   schema this build does not understand was projected anyway.
  */
 import { SCHEMA_VERSION, mint, nodesMap } from '@comfyorg/comfy-multi-player'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
 import type { DocFrameTransport, DocOp, DocUpdate } from './docFrameClient'
 import { DocFrameClient, encodeBase64 } from './docFrameClient'
+import { EcsFollowerAdapter } from './ecsFollowerAdapter'
+import { FollowerDoc } from './followerDoc'
+import type { GraphMutations } from './graphMutations'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
@@ -114,6 +117,68 @@ function wire() {
   })
   return { transport, client, bridge, projected, schemaErrors }
 }
+
+describe('follower commit boundary', () => {
+  it.fails('does not publish a frame rejected by graph projection', () => {
+    const { transport, client, bridge } = wire()
+    onTestFinished(() => {
+      bridge.destroy()
+      client.destroy()
+    })
+    const mutations = {
+      batch: vi.fn(() => false),
+      addNode: vi.fn(() => false),
+      setWidget: vi.fn(() => false),
+      connect: vi.fn(() => false),
+      deleteNode: vi.fn(() => false),
+      clearSemanticGraph: vi.fn(() => false),
+      getNodeType: vi.fn(() => undefined)
+    } satisfies GraphMutations
+    const adapter = new EcsFollowerAdapter(mutations)
+    onTestFinished(() => adapter.destroy())
+    const projectionResults: boolean[] = []
+    adapter.bind(WORKFLOW_ID, bridge.follower)
+    bridge.addEventListener('doc_update', (event) => {
+      if (event instanceof CustomEvent) {
+        projectionResults.push(adapter.applyFrame(event.detail as DocUpdate))
+      }
+    })
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    const initialVector = encodeBase64(bridge.follower.stateVector())
+
+    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
+
+    expect(projectionResults).toEqual([false])
+    expect({
+      sequence: bridge.lastSequence,
+      stateVector: encodeBase64(bridge.follower.stateVector())
+    }).toEqual({ sequence: 0, stateVector: initialVector })
+  })
+
+  it.fails('does not integrate Yjs structs when a truncated update throws', () => {
+    const host = new Y.Doc()
+    onTestFinished(() => host.destroy())
+    host.transact(() => {
+      host.getMap('nodes').set('1', { type: 'Source' })
+      host.getMap('nodes').set('2', { type: 'Sink' })
+      host.getMap('nodes').delete('2')
+    })
+    const follower = new FollowerDoc()
+    onTestFinished(() => follower.destroy())
+    const initialVector = encodeBase64(follower.stateVector())
+    const update = Y.encodeStateAsUpdate(host)
+
+    expect(() => follower.applyRemoteUpdate(update.slice(0, -1))).toThrow(
+      /Unexpected end/
+    )
+    expect({
+      nodeIds: [...nodesMap(follower.doc).keys()],
+      stateVector: encodeBase64(follower.stateVector()),
+      updatesApplied: follower.updatesApplied
+    }).toEqual({ nodeIds: [], stateVector: initialVector, updatesApplied: 0 })
+  })
+})
 
 describe('FE-SUBSCRIBE-1 — a subscribe raced against socket startup recovers', () => {
   it('retries the subscribe when the socket becomes usable, and then follows', () => {

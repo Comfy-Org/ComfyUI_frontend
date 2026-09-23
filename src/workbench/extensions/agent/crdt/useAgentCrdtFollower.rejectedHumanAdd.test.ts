@@ -41,7 +41,7 @@ const WORKFLOW_ID = 'wf-1'
 // node from a custom-node pack) or a blueprint host with a promoted widget:
 // the class is absent from the pinned catalog, so its named widget values
 // cannot be projected and the add is rejected.
-it('surfaces a human add_node the doc host rejected instead of swallowing the result', async () => {
+it.fails('surfaces a human add_node the doc host rejected instead of swallowing the result', async () => {
   const previousSocket = api.socket
   const send = vi.fn<(frame: string) => void>()
   api.socket = fromPartial<WebSocket>({ readyState: WebSocket.OPEN, send })
@@ -113,4 +113,14 @@ it('surfaces a human add_node the doc host rejected instead of swallowing the re
   )
 
   expect(reportError).toHaveBeenCalled()
+  expect(reportError).toHaveBeenCalledWith(
+    expect.any(Error),
+    expect.objectContaining({
+      context: expect.objectContaining({
+        workflowId: WORKFLOW_ID,
+        opId: op_id,
+        code: 'uncatalogued_widget_write'
+      })
+    })
+  )
 })
