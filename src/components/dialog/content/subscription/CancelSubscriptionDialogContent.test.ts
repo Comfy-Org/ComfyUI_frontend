@@ -49,10 +49,7 @@ function withStrictMillisecondParser<T>(run: () => T): T {
   }
 }
 
-const mockSubscription = ref<SubscriptionInfo | null>(null)
-
 const mockToastAdd = vi.hoisted(() => vi.fn())
-const mockTier = ref<SubscriptionInfo['tier']>('STANDARD')
 
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 
@@ -74,6 +71,10 @@ function subscription(
     hasFunds: true,
     ...overrides
   }
+}
+
+function setSubscription(value: SubscriptionInfo | null) {
+  useBillingContext().subscription = computed(() => value)
 }
 
 vi.mock(import('@/composables/billing/useBillingContext'))
@@ -118,8 +119,8 @@ function renderComponent(
 describe('CancelSubscriptionDialogContent', () => {
   beforeEach(() => {
     const billing = vi.mocked(useBillingContext())
-    billing.subscription = computed(() => mockSubscription.value)
-    billing.tier = computed(() => mockTier.value)
+    billing.subscription = computed(() => null)
+    billing.tier = computed(() => 'STANDARD')
     vi.mocked(useBillingContext).mockReturnValue(billing)
     useBillingRouting().shouldUseWorkspaceBilling = computed(
       () => mockShouldUseWorkspaceBilling.value
@@ -129,7 +130,6 @@ describe('CancelSubscriptionDialogContent', () => {
       ...permissions,
       canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value
     }))
-    mockTier.value = 'STANDARD'
     mockShouldUseWorkspaceBilling.value = false
     useBillingCapabilities().canCancel = computed(() => true)
     mockCanManageSubscriptionLifecycle.value = true
@@ -138,10 +138,12 @@ describe('CancelSubscriptionDialogContent', () => {
 
   describe('cancellation telemetry', () => {
     it('tracks flow_opened with tier and end date when the dialog mounts', () => {
-      mockSubscription.value = subscription({
-        duration: 'ANNUAL',
-        endDate: '2026-08-01T00:00:00.000Z'
-      })
+      setSubscription(
+        subscription({
+          duration: 'ANNUAL',
+          endDate: '2026-08-01T00:00:00.000Z'
+        })
+      )
 
       renderComponent()
 
@@ -156,7 +158,7 @@ describe('CancelSubscriptionDialogContent', () => {
     })
 
     it('does not repeat flow_opened when continuing a fallback flow', () => {
-      mockSubscription.value = null
+      setSubscription(null)
 
       renderComponent({ flowAlreadyOpened: true })
 
@@ -166,7 +168,7 @@ describe('CancelSubscriptionDialogContent', () => {
     })
 
     it('tracks confirmed before the cancel request and no abandoned on success', async () => {
-      mockSubscription.value = null
+      setSubscription(null)
       vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
         undefined
       )
@@ -192,7 +194,7 @@ describe('CancelSubscriptionDialogContent', () => {
     })
 
     it('tracks confirmed and failed with message-carrying rejection values', async () => {
-      mockSubscription.value = null
+      setSubscription(null)
       vi.mocked(useBillingContext().cancelSubscription).mockRejectedValueOnce({
         message: 'timed out'
       })
@@ -216,7 +218,7 @@ describe('CancelSubscriptionDialogContent', () => {
     })
 
     it('leaves workspace terminal failure telemetry to the billing poller', async () => {
-      mockSubscription.value = null
+      setSubscription(null)
       mockShouldUseWorkspaceBilling.value = true
       vi.mocked(useBillingContext().cancelSubscription).mockRejectedValueOnce({
         message: 'timed out'
@@ -238,7 +240,7 @@ describe('CancelSubscriptionDialogContent', () => {
     })
 
     it('tracks abandoned when the user keeps the subscription', async () => {
-      mockSubscription.value = null
+      setSubscription(null)
 
       const { unmount } = renderComponent()
       await userEvent.click(
@@ -259,7 +261,7 @@ describe('CancelSubscriptionDialogContent', () => {
     })
 
     it('tracks abandoned when the dialog is dismissed by the shell', () => {
-      mockSubscription.value = null
+      setSubscription(null)
 
       const { unmount } = renderComponent()
       vi.mocked(useTelemetry()?.trackSubscriptionCancellation)?.mockClear()
@@ -276,7 +278,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
   describe('cancel flow', () => {
     it('shows an error toast and keeps the dialog open when cancellation fails', async () => {
-      mockSubscription.value = null
+      setSubscription(null)
       vi.mocked(useBillingContext().cancelSubscription).mockRejectedValueOnce(
         new Error('Subscription cancellation timed out')
       )
@@ -298,7 +300,7 @@ describe('CancelSubscriptionDialogContent', () => {
     })
 
     it('closes the dialog and shows a success toast when cancellation succeeds', async () => {
-      mockSubscription.value = null
+      setSubscription(null)
       vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
         undefined
       )
@@ -323,7 +325,7 @@ describe('CancelSubscriptionDialogContent', () => {
       const canCancel = ref(true)
       useBillingCapabilities().canCancel = computed(() => canCancel.value)
 
-      mockSubscription.value = null
+      setSubscription(null)
       mockShouldUseWorkspaceBilling.value = true
 
       renderComponent()
@@ -341,7 +343,7 @@ describe('CancelSubscriptionDialogContent', () => {
     })
 
     it('cancels off Cloud on the workspace permission, ignoring the Cloud-only capability', async () => {
-      mockSubscription.value = null
+      setSubscription(null)
       mockShouldUseWorkspaceBilling.value = true
       mockDistributionTypes.isCloud = false
       useBillingCapabilities().canCancel = computed(() => false)
@@ -361,7 +363,7 @@ describe('CancelSubscriptionDialogContent', () => {
     })
 
     it('blocks cancelling off Cloud when the workspace permission is missing', async () => {
-      mockSubscription.value = null
+      setSubscription(null)
       mockShouldUseWorkspaceBilling.value = true
       mockDistributionTypes.isCloud = false
       mockCanManageSubscriptionLifecycle.value = false
@@ -378,7 +380,7 @@ describe('CancelSubscriptionDialogContent', () => {
     })
 
     it('does not track cancellation failure when status refresh fails after cancellation succeeds', async () => {
-      mockSubscription.value = null
+      setSubscription(null)
       vi.mocked(useBillingContext().cancelSubscription).mockResolvedValueOnce(
         undefined
       )
@@ -414,7 +416,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
   describe('formattedEndDate fallbacks', () => {
     it('uses the localized fallback when no cancel timestamp is available', () => {
-      mockSubscription.value = subscription()
+      setSubscription(subscription())
       renderComponent()
 
       expect(screen.getByText(/end of billing period/)).toBeInTheDocument()
@@ -422,7 +424,7 @@ describe('CancelSubscriptionDialogContent', () => {
     })
 
     it('uses the localized fallback when the timestamp is unparseable', () => {
-      mockSubscription.value = subscription({ endDate: 'not-a-real-date' })
+      setSubscription(subscription({ endDate: 'not-a-real-date' }))
       renderComponent({ cancelAt: 'also-not-a-date' })
 
       expect(screen.getByText(/end of billing period/)).toBeInTheDocument()
@@ -432,7 +434,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
   describe('strict ISO 8601 parsing on Safari/WebView-style runtimes', () => {
     it('renders cancelAt with 4-digit fractional seconds', () => {
-      mockSubscription.value = null
+      setSubscription(null)
 
       withStrictMillisecondParser(() => {
         renderComponent({ cancelAt: '2026-04-18T10:04:55.6513Z' })
@@ -443,7 +445,7 @@ describe('CancelSubscriptionDialogContent', () => {
     })
 
     it('renders cancelAt with 1-digit fractional seconds', () => {
-      mockSubscription.value = null
+      setSubscription(null)
 
       withStrictMillisecondParser(() => {
         renderComponent({ cancelAt: '2026-04-18T10:04:55.6Z' })
@@ -454,9 +456,11 @@ describe('CancelSubscriptionDialogContent', () => {
     })
 
     it('renders subscription.endDate with 4-digit fractional seconds when cancelAt is absent', () => {
-      mockSubscription.value = subscription({
-        endDate: '2026-04-18T10:04:55.6513Z'
-      })
+      setSubscription(
+        subscription({
+          endDate: '2026-04-18T10:04:55.6513Z'
+        })
+      )
 
       withStrictMillisecondParser(() => {
         renderComponent()
@@ -467,9 +471,11 @@ describe('CancelSubscriptionDialogContent', () => {
     })
 
     it('prefers cancelAt prop over subscription.endDate when both are set', () => {
-      mockSubscription.value = subscription({
-        endDate: '2030-01-01T00:00:00.000Z'
-      })
+      setSubscription(
+        subscription({
+          endDate: '2030-01-01T00:00:00.000Z'
+        })
+      )
 
       withStrictMillisecondParser(() => {
         renderComponent({ cancelAt: '2026-04-18T10:04:55.6513Z' })

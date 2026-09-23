@@ -50,7 +50,6 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => mockPendingTopup
 }))
 
-const mockShouldUseWorkspaceBilling = ref(false)
 vi.mock(import('@/composables/billing/useBillingRouting'))
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
@@ -100,6 +99,10 @@ async function flushMicrotasks() {
   await nextTick()
 }
 
+function setWorkspaceBilling(value: boolean) {
+  useBillingRouting().shouldUseWorkspaceBilling = computed(() => value)
+}
+
 function makeEventsResponse(
   events: BillingEventsResponse['events'],
   overrides: Record<string, unknown> = {}
@@ -138,9 +141,7 @@ describe('UsageLogsTable', () => {
   ])
 
   beforeEach(() => {
-    useBillingRouting().shouldUseWorkspaceBilling = computed(
-      () => mockShouldUseWorkspaceBilling.value
-    )
+    setWorkspaceBilling(false)
     mockCustomerEventsService.getMyEvents.mockResolvedValue(mockEventsResponse)
     vi.mocked(workspaceApi.getBillingEvents).mockResolvedValue(
       mockEventsResponse
@@ -150,7 +151,6 @@ describe('UsageLogsTable', () => {
       value: mockEventsResponse
     })
     mockBillingReadRail.enabled = false
-    mockShouldUseWorkspaceBilling.value = false
     mockCustomerEventsService.formatEventType.mockImplementation(
       (type: string) => {
         switch (type) {
@@ -227,7 +227,7 @@ describe('UsageLogsTable', () => {
     })
 
     it('loads activity on mount on the workspace billing rail', async () => {
-      mockShouldUseWorkspaceBilling.value = true
+      setWorkspaceBilling(true)
 
       await renderLoaded()
 
@@ -388,7 +388,7 @@ describe('UsageLogsTable', () => {
 
   describe('billing events source', () => {
     it('uses workspaceApi.getBillingEvents on the workspace billing flow', async () => {
-      mockShouldUseWorkspaceBilling.value = true
+      setWorkspaceBilling(true)
 
       await renderLoaded()
 
@@ -400,6 +400,10 @@ describe('UsageLogsTable', () => {
     })
 
     it('discards a stale legacy response when routing flips mid-fetch', async () => {
+      const workspaceBilling = ref(false)
+      useBillingRouting().shouldUseWorkspaceBilling = computed(
+        () => workspaceBilling.value
+      )
       let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
       mockCustomerEventsService.getMyEvents.mockReturnValue(
         new Promise((resolve) => {
@@ -419,7 +423,7 @@ describe('UsageLogsTable', () => {
 
       renderComponent()
 
-      mockShouldUseWorkspaceBilling.value = true
+      workspaceBilling.value = true
       await waitFor(() => {
         expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
       })
@@ -442,6 +446,10 @@ describe('UsageLogsTable', () => {
     })
 
     it('runs top-up completion telemetry for a superseded response', async () => {
+      const workspaceBilling = ref(false)
+      useBillingRouting().shouldUseWorkspaceBilling = computed(
+        () => workspaceBilling.value
+      )
       mockPendingTopup.isPendingTopupCompleted.mockReturnValue(true)
       let resolveLegacy!: (value: ReturnType<typeof makeEventsResponse>) => void
       mockCustomerEventsService.getMyEvents.mockReturnValue(
@@ -462,7 +470,7 @@ describe('UsageLogsTable', () => {
 
       renderComponent()
 
-      mockShouldUseWorkspaceBilling.value = true
+      workspaceBilling.value = true
       await waitFor(() => {
         expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
       })
@@ -521,7 +529,7 @@ describe('UsageLogsTable', () => {
     function onTheRail(
       result: unknown = { status: 'ok', value: railResponse }
     ) {
-      mockShouldUseWorkspaceBilling.value = true
+      setWorkspaceBilling(true)
       mockBillingReadRail.enabled = true
       mockBillingReadRail.readEvents.mockResolvedValue(result)
     }
@@ -534,7 +542,7 @@ describe('UsageLogsTable', () => {
     ] as const)(
       'serves the page from $serves with workspaceBilling=$workspaceBilling rail=$rail',
       async ({ workspaceBilling, rail, serves }) => {
-        mockShouldUseWorkspaceBilling.value = workspaceBilling
+        setWorkspaceBilling(workspaceBilling)
         mockBillingReadRail.enabled = rail
 
         await renderLoaded()

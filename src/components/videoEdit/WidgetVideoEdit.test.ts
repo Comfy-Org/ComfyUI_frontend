@@ -19,8 +19,6 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import WidgetVideoEdit from './WidgetVideoEdit.vue'
 
 const hostNode = { id: 'host' }
-const locatorNode = new LGraphNode('inner')
-locatorNode.id = toNodeId('inner')
 
 const mocks = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -188,6 +186,8 @@ describe('WidgetVideoEdit', () => {
   })
 
   it('resolves a promoted widget through its node locator id', () => {
+    const locatorNode = new LGraphNode('inner')
+    locatorNode.id = toNodeId('inner')
     vi.mocked(getNodeByLocatorId).mockReturnValue(locatorNode)
 
     renderWidget(createWidget({}, { nodeLocatorId: 'sub:42' }))
