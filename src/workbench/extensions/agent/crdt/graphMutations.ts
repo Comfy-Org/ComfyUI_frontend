@@ -16,7 +16,7 @@ import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import type { GraphScope } from '@/types/graphScopeId'
+import type { GraphScope, RootGraphId } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { LinkId } from '@/types/linkId'
 import { toLinkId } from '@/types/linkId'
@@ -160,6 +160,13 @@ interface GraphMutationBatch {
 }
 
 export interface GraphMutations {
+  /**
+   * Root graph whose semantic document receives merged host updates
+   * (CRDT-STORES-0036). `null` means the target is not bound to an open
+   * workflow and the frame must not land anywhere; when the method is absent
+   * the follower treats the workflow id as the root (test doubles only).
+   */
+  rootGraphId?(): RootGraphId | null
   batch(
     context: RemoteMutationContext,
     define: (batch: GraphMutationBatch) => void
@@ -1465,6 +1472,9 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   }
 
   const graphMutations: GraphMutations = {
+    rootGraphId() {
+      return deps.getScope()?.rootGraphId ?? null
+    },
     batch(context, define) {
       const scope = deps.getScope()
       if (!scope) return false
