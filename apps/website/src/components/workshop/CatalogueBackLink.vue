@@ -3,19 +3,20 @@ import { ChevronLeft } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
 
 import { getRoutes } from '../../config/routes'
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { lastShelf } from '../../lib/workshop/shelf-memory'
 import { shelfLabelKey } from '../../lib/workshop/shelf-label'
 
 const {
   catalogue,
-  fallbackKey = 'workshop.model.back',
+  fallback,
   locale = 'en'
 } = defineProps<{
   /** The listing this page belongs to. Defaults to the live catalogue. */
   catalogue?: string
-  fallbackKey?: TranslationKey
+  /** What to call that listing when no shelf is remembered. */
+  fallback?: string
   locale?: Locale
 }>()
 
@@ -46,7 +47,7 @@ onMounted(() => {
     {{
       category
         ? t('workshop.model.backTo', locale).replace('{category}', category)
-        : t(fallbackKey, locale)
+        : (fallback ?? t('workshop.model.back', locale))
     }}
   </a>
 </template>
