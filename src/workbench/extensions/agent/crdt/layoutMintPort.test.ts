@@ -449,6 +449,23 @@ describe('attachLayoutMintPort', () => {
       }
     )
 
+    it('refuses a createNode targeting a foreign graph (real cloud-frontend-staging Sentry data)', () => {
+      // Real UUIDs from a 2026-09-22 cloud-frontend-staging Sentry report, not synthetic test data.
+      const BOUND_ROOT = toRootGraphId('27ca8666-fa2b-4ef9-99bc-e005182fadc6')
+      const FOREIGN = toRootGraphId('84826d7d-1b25-4cfb-9d59-2747a4b09a19')
+      activeRootGraphId = BOUND_ROOT
+
+      deliver(rootScoped('createNode', FOREIGN))
+
+      expect(minted).toEqual([])
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_crdt_op_for_inactive_document'
+        })
+      )
+    })
+
     it('reports a repeated foreign-graph drop once per tick', () => {
       activeRootGraphId = ACTIVATED
 
