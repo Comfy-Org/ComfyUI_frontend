@@ -336,6 +336,30 @@ describe('OnboardingCoach', () => {
     }
   })
 
+  it('stays quiet when it unmounts before the grace period ends', async () => {
+    vi.useFakeTimers()
+    try {
+      const { unmount } = render(OnboardingCoach, {
+        props: {
+          steps: [{ ...STEPS[0], target: '#panel-closed' }],
+          storageKey: 'coach-unmounted-test'
+        },
+        global: { plugins: [i18n] }
+      })
+      await vi.advanceTimersByTimeAsync(5_000)
+      unmount()
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(reportError).not.toHaveBeenCalled()
+      expect(
+        useTelemetry()!.trackAgentOnboardingNotShown
+      ).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('waits for a late target without letting Escape complete an unseen tour', async () => {
     const storageKey = 'coach-late-target-test'
     const lateSteps = [{ ...STEPS[0], target: '#late-panel' }]
