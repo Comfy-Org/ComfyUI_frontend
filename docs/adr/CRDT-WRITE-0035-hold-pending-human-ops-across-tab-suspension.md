@@ -116,13 +116,21 @@ Distinguish a paused subscription from a lost one, and hold rather than drop.
     retained. The transport never carried the op, or the host explicitly
     rejected it, so there is no delete to protect from resurrection.
 - `follower_replaced` alone never clears a workflow's retained deletes -
-  only `doc_reset` does (whose handler runs first and always precedes
-  `follower_replaced` for a true lineage break). `follower_replaced` also
-  fires, with no preceding `doc_reset`, on an ordinary local switch to a
-  DIFFERENT workflow's lineage (`LayoutFollowerBridge.subscribe`); clearing
-  retention there would erase a destination workflow's already-confirmed
-  delete before its first post-switch reconcile can consult it, on nothing
-  more than the coincidence of revisiting a workflow that was active before.
+  among follower-replacement events, only `doc_reset` does (whose handler
+  runs first and always precedes `follower_replaced` for a true lineage
+  break). `follower_replaced` also fires, with no preceding `doc_reset`, on
+  an ordinary local switch to a DIFFERENT workflow's lineage
+  (`LayoutFollowerBridge.subscribe`); clearing retention there would erase a
+  destination workflow's already-confirmed delete before its first
+  post-switch reconcile can consult it, on nothing more than the coincidence
+  of revisiting a workflow that was active before.
+- Separately, a signed-in principal or active workspace teardown clears
+  EVERY workflow's retained deletes (`clearAll()`, reported to the shared
+  store by `AgentPanelRoot.vue` resolving a new scope) - a retention
+  confirmed under one principal or workspace must never leak into the next
+  one's session. This is independent of the follower-replacement events
+  above: it fires on an identity/workspace change alone, whether or not any
+  follower is replaced at the same time.
 
 Alternatives considered:
 

@@ -526,18 +526,124 @@ describe('AgentPanelRoot onboarding', () => {
     expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
   })
 
-  it('clears the shared pending-delete retention store when the active workspace changes', async () => {
-    const clearAll = vi.spyOn(sharedPendingDeleteRetentionStore, 'clearAll')
+  it('drops a retained delete once the active workspace actually changes', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await nextTick()
-    clearAll.mockClear()
+    sharedPendingDeleteRetentionStore.settleBatch([
+      {
+        workflowId: 'wf-scope-race',
+        nodeId: 'n1',
+        reason: 'confirmed-applied',
+        identity: 'item-a'
+      }
+    ])
+    try {
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-b'
+      })
+      await nextTick()
 
-    Object.assign(useTeamWorkspaceStore(), {
-      activeWorkspaceId: 'workspace-b'
-    })
+      expect(
+        sharedPendingDeleteRetentionStore.retainedNodeIds(
+          'wf-scope-race',
+          new Set(['n1']),
+          () => 'item-a',
+          true
+        )
+      ).toEqual(new Set())
+    } finally {
+      sharedPendingDeleteRetentionStore.clearWorkflow('wf-scope-race')
+    }
+  })
+
+  it('does not leak a confirmed retention across a dock close, workspace change, and reopen (already-resolved cross-scope remount)', async () => {
+    // Regression (P1): the scope-clearing watcher used to live on
+    // `AgentPanelRoot` itself, so it existed only while the panel was
+    // mounted. Closing the dock, changing the workspace, and reopening it
+    // meant the fresh mount's own watcher started from the ALREADY-
+    // resolved new scope and never observed a transition, so the previous
+    // workspace's retention was never cleared.
+    sharedPendingDeleteRetentionStore.settleBatch([
+      {
+        workflowId: 'wf-scope-race-2',
+        nodeId: 'n1',
+        reason: 'confirmed-applied',
+        identity: 'item-a'
+      }
+    ])
+    try {
+      const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await nextTick()
+      first.unmount()
+
+      Object.assign(useTeamWorkspaceStore(), {
+        activeWorkspaceId: 'workspace-b'
+      })
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await nextTick()
+
+      expect(
+        sharedPendingDeleteRetentionStore.retainedNodeIds(
+          'wf-scope-race-2',
+          new Set(['n1']),
+          () => 'item-a',
+          true
+        )
+      ).toEqual(new Set())
+    } finally {
+      sharedPendingDeleteRetentionStore.clearWorkflow('wf-scope-race-2')
+    }
+  })
+
+  it('keeps a valid retention across a remount whose own resolution passes through unresolved before landing back on the same scope (delayed same-scope resolution)', async () => {
+    // The other edge of the same race: a same-scope remount whose OWN
+    // resolution transitions null -> the original key is not an actual
+    // identity/workspace change, and must not clear valid retention just
+    // because that transition happened during this mount's lifetime.
+    const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await nextTick()
+    sharedPendingDeleteRetentionStore.settleBatch([
+      {
+        workflowId: 'wf-scope-race-3',
+        nodeId: 'n1',
+        reason: 'confirmed-applied',
+        identity: 'item-a'
+      }
+    ])
+    try {
+      first.unmount()
 
-    expect(clearAll).toHaveBeenCalled()
+      const userId = ref<string | undefined>(undefined)
+      useCurrentUser().resolvedUserInfo = computed(() =>
+        userId.value ? { id: userId.value } : null
+      )
+
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+      await nextTick()
+      expect(
+        sharedPendingDeleteRetentionStore.retainedNodeIds(
+          'wf-scope-race-3',
+          new Set(['n1']),
+          () => 'item-a',
+          true
+        )
+      ).toEqual(new Set(['n1']))
+
+      userId.value = 'account-a'
+      await nextTick()
+
+      expect(
+        sharedPendingDeleteRetentionStore.retainedNodeIds(
+          'wf-scope-race-3',
+          new Set(['n1']),
+          () => 'item-a',
+          true
+        )
+      ).toEqual(new Set(['n1']))
+    } finally {
+      sharedPendingDeleteRetentionStore.clearWorkflow('wf-scope-race-3')
+    }
   })
 
   it('walks through the four cards and leaves the composer usable after Done', async () => {

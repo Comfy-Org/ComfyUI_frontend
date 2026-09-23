@@ -131,6 +131,56 @@ describe('createOpSender', () => {
     ).toEqual(firstIds)
   })
 
+  it('captures admission metadata exactly once and never re-captures it on a transport-retry resend', () => {
+    // Regression: the existing retry test above configures no metadata
+    // callback at all, so an implementation that called `admissionMetadata`
+    // again on resend - overwriting the original admission-time capture -
+    // would still pass it. This falsifies that: the backing value changes
+    // after the first (failed) send attempt, so a second capture would be
+    // caught red-handed.
+    let value: string | null = 'first'
+    const admissionMetadata = vi.fn((op: Op) =>
+      op.op === 'delete_node' ? value : undefined
+    )
+    const localSettled: BatchOutcome[] = []
+    let localTransportUp = false
+    const localSender = createOpSender({
+      sendOps: (workflowId, tab, ops) => {
+        if (!localTransportUp) return false
+        sent.push({ workflowId, tab, ops })
+        return true
+      },
+      onOpsResult: (listener) => {
+        resultListener = listener
+        return () => {
+          resultListener = null
+        }
+      },
+      workflowId: () => boundWorkflow,
+      tab: TAB,
+      actor: () => ACTOR,
+      baseVersion: () => 41,
+      admissionMetadata,
+      onBatchSettled: (outcome) => localSettled.push(outcome)
+    })
+
+    localSender.enqueue([deleteNode('1')])
+    expect(admissionMetadata).toHaveBeenCalledTimes(1)
+
+    value = 'changed-after-admission'
+    localTransportUp = true
+    vi.advanceTimersByTime(500)
+
+    expect(admissionMetadata).toHaveBeenCalledTimes(1)
+    const opId = sent[sent.length - 1].ops[0].op_id
+    resultListener?.({ ok: true, applied: [opId], skipped: [] })
+
+    expect(localSettled).toHaveLength(1)
+    expect(localSettled[0].admissionMetadata).toEqual(
+      new Map([[opId, 'first']])
+    )
+  })
+
   it('never re-addresses a queued batch: an unbound mint-time workflow settles it undeliverable at once', () => {
     sender.enqueue([addNode(1)])
     sender.enqueue([addNode(2)])
@@ -326,23 +376,16 @@ describe('createOpSender', () => {
     expect(settled[0].state).toBe('acknowledged')
   })
 
-  it('splits an oversized enqueue into serialized wire batches', () => {
-    sender.enqueue(Array.from({ length: 300 }, (_, index) => addNode(index)))
-
-    expect(sent).toHaveLength(1)
-    expect(sent[0].ops).toHaveLength(256)
-    expect(sender.pending()).toBe(2)
-
-    ackInFlight()
-    expect(sent[1].ops).toHaveLength(44)
-  })
-
   it('carries each identity-bearing delete exactly into its own chunk when a batch splits at the wire cap', () => {
     // Regression: a chunking bug could copy the whole admission-time
     // metadata map into every chunk, or drop everything but the first
-    // chunk's share of it. Only `add_node` exercised the wire cap before
-    // this test; none of those carry metadata, so neither failure mode
-    // would have shown up.
+    // chunk's share of it - a permutation of the 256 identities among the
+    // 256 op ids would look identical to a key-set/value-set comparison, so
+    // this builds the expected `Map<op_id, identity>` from the sent
+    // operations themselves and compares exact entries. This also proves
+    // the split-and-serialize mechanics (a first chunk at the wire cap, a
+    // second sent only after the first is acknowledged) that a plain,
+    // metadata-free enqueue used to cover on its own.
     const identities = Array.from(
       { length: WIRE_MAX_OPS_PER_BATCH + 1 },
       (_, index) => `identity-${index}`
@@ -377,29 +420,33 @@ describe('createOpSender', () => {
 
     const firstBatch = sent[sent.length - 1]
     expect(firstBatch.ops).toHaveLength(WIRE_MAX_OPS_PER_BATCH)
-    const firstOpIds = firstBatch.ops.map((op) => op.op_id)
-    resultListener?.({ ok: true, applied: firstOpIds, skipped: [] })
+    // Build the expected `Map<op_id, identity>` from each chunk's own SENT
+    // operations, in the order the sender actually assigned identities to
+    // them - a permutation of the 256 identities among the 256 op ids would
+    // still pass a keys-match/values-match comparison, but not this one.
+    const expectedFirst = new Map(
+      firstBatch.ops.map((op, index) => [op.op_id, identities[index]])
+    )
+    resultListener?.({
+      ok: true,
+      applied: [...expectedFirst.keys()],
+      skipped: []
+    })
 
     const secondBatch = sent[sent.length - 1]
     expect(secondBatch.ops).toHaveLength(1)
-    const secondOpIds = secondBatch.ops.map((op) => op.op_id)
-    resultListener?.({ ok: true, applied: secondOpIds, skipped: [] })
+    const expectedSecond = new Map([
+      [secondBatch.ops[0].op_id, identities[WIRE_MAX_OPS_PER_BATCH]]
+    ])
+    resultListener?.({
+      ok: true,
+      applied: [...expectedSecond.keys()],
+      skipped: []
+    })
 
     expect(localSettled).toHaveLength(2)
-    // Each chunk's own outcome carries exactly its own ops' identities -
-    // none copied from the other chunk, none missing.
-    expect([...localSettled[0].admissionMetadata.keys()].sort()).toEqual(
-      [...firstOpIds].sort()
-    )
-    expect([...localSettled[1].admissionMetadata.keys()].sort()).toEqual(
-      [...secondOpIds].sort()
-    )
-    expect(new Set(localSettled[0].admissionMetadata.values())).toEqual(
-      new Set(identities.slice(0, WIRE_MAX_OPS_PER_BATCH))
-    )
-    expect(localSettled[1].admissionMetadata.get(secondOpIds[0])).toBe(
-      identities[WIRE_MAX_OPS_PER_BATCH]
-    )
+    expect(localSettled[0].admissionMetadata).toEqual(expectedFirst)
+    expect(localSettled[1].admissionMetadata).toEqual(expectedSecond)
   })
 
   it('ignores a result for other ops while a batch is in flight', () => {

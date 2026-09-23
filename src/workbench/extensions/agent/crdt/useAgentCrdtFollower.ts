@@ -413,7 +413,7 @@ function startAgentCrdtFollower(
     // own policy) knows a `delete_node`'s target identity is worth capturing
     // at all. See ADR CRDT-WRITE-0035.
     admissionMetadata: (op) =>
-      op.op === 'delete_node' ? boundNodeItemId(String(op.node_id)) : null,
+      op.op === 'delete_node' ? boundNodeItemId(String(op.node_id)) : undefined,
     onBatchSettled: (outcome) => {
       retentionStore.settleBatch(retentionCandidatesFromBatch(outcome))
       recordDevEvent('human_ops_settled', outcome)

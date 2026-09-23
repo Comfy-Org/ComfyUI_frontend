@@ -25,22 +25,31 @@ type RetainedIdentified =
   | { reason: 'confirmed-applied'; deletedItemId: string }
   | { reason: 'unknown'; expiresAt: number; deletedItemId: string }
 
-type RetainedUnidentified =
-  | { reason: 'confirmed-applied-unidentified'; expiresAt: number }
-  | { reason: 'unknown'; expiresAt: number }
+/**
+ * Both settle reasons bound an unidentified record the same way and release
+ * it by the same expiry check, so there is no `reason` field to carry - it
+ * would advertise a policy distinction between reasons that does not exist
+ * for this slot.
+ */
+interface RetainedUnidentified {
+  expiresAt: number
+}
 
 /**
  * A node id names at most one identified fact and one unidentified fact at
  * once: a settle either names a real identity (merging into `identified`,
  * see {@link insertRetainedDelete}) or names none (merging into
- * `unidentified`), and the two never interact. This record makes that
- * invariant the type itself, rather than an array a caller could put an
- * arbitrary number of entries into.
+ * `unidentified`), and the two never interact. A map entry backed by
+ * neither fact is not a real retention, so this union of the three
+ * genuinely non-empty shapes - rather than two independently nullable
+ * fields - makes the map incapable of ever holding one: nothing yet to
+ * retain is the ABSENCE of an entry (see `insertRetainedDelete`'s `null`
+ * seed for a node with no prior slot), never a stored empty value.
  */
-interface RetainedDeleteSlot {
-  identified: RetainedIdentified | null
-  unidentified: RetainedUnidentified | null
-}
+type RetainedDeleteSlot =
+  | { identified: RetainedIdentified; unidentified: null }
+  | { identified: null; unidentified: RetainedUnidentified }
+  | { identified: RetainedIdentified; unidentified: RetainedUnidentified }
 
 function identifiedExpiryOf(retained: RetainedIdentified): number | null {
   return retained.reason === 'confirmed-applied' ? null : retained.expiresAt
@@ -76,14 +85,8 @@ function buildIdentified(
       }
 }
 
-function buildUnidentified(reason: RetentionReason): RetainedUnidentified {
-  return {
-    reason:
-      reason === 'confirmed-applied'
-        ? 'confirmed-applied-unidentified'
-        : reason,
-    expiresAt: Date.now() + PENDING_DELETE_EXPIRY_MS
-  }
+function buildUnidentified(): RetainedUnidentified {
+  return { expiresAt: Date.now() + PENDING_DELETE_EXPIRY_MS }
 }
 
 function strongerUnidentified(
@@ -91,6 +94,26 @@ function strongerUnidentified(
   incoming: RetainedUnidentified
 ): RetainedUnidentified {
   return incoming.expiresAt >= existing.expiresAt ? incoming : existing
+}
+
+/** Pairs a just-settled `unidentified` with whatever `identified` the slot already had, as one of {@link RetainedDeleteSlot}'s two identified-agnostic shapes. */
+function withUnidentified(
+  identified: RetainedIdentified | null,
+  unidentified: RetainedUnidentified
+): RetainedDeleteSlot {
+  return identified === null
+    ? { identified: null, unidentified }
+    : { identified, unidentified }
+}
+
+/** Pairs a just-settled `identified` with whatever `unidentified` the slot already had, as one of {@link RetainedDeleteSlot}'s two unidentified-agnostic shapes. */
+function withIdentified(
+  identified: RetainedIdentified,
+  unidentified: RetainedUnidentified | null
+): RetainedDeleteSlot {
+  return unidentified === null
+    ? { identified, unidentified: null }
+    : { identified, unidentified }
 }
 
 /**
@@ -108,45 +131,57 @@ function strongerUnidentified(
  * order.
  */
 function insertRetainedDelete(
-  slot: RetainedDeleteSlot,
+  slot: RetainedDeleteSlot | null,
   reason: RetentionReason,
   deletedItemId: string | null
 ): RetainedDeleteSlot {
+  const existingIdentified = slot?.identified ?? null
+  const existingUnidentified = slot?.unidentified ?? null
+
   if (deletedItemId === null) {
-    const incoming = buildUnidentified(reason)
-    return {
-      identified: slot.identified,
-      unidentified:
-        slot.unidentified === null
-          ? incoming
-          : strongerUnidentified(slot.unidentified, incoming)
-    }
+    const incoming = buildUnidentified()
+    return withUnidentified(
+      existingIdentified,
+      existingUnidentified === null
+        ? incoming
+        : strongerUnidentified(existingUnidentified, incoming)
+    )
   }
   const incoming = buildIdentified(reason, deletedItemId)
   const identified =
-    slot.identified !== null && slot.identified.deletedItemId === deletedItemId
-      ? strongerIdentified(slot.identified, incoming)
+    existingIdentified !== null &&
+    existingIdentified.deletedItemId === deletedItemId
+      ? strongerIdentified(existingIdentified, incoming)
       : incoming
-  return { identified, unidentified: slot.unidentified }
+  return withIdentified(identified, existingUnidentified)
 }
 
 /**
  * `identified` is released by either a different real identity now
  * occupying the id, or its own expiry (a permanent `confirmed-applied` has
- * none).
+ * none). Expiry is independent of `authoritative` - a deadline that has
+ * passed has passed regardless of whether this read caught up. Supersession
+ * is not: a non-authoritative read's identity is not yet trustworthy either,
+ * so it must not be allowed to permanently prune a retention that a later,
+ * authoritative read might still need - exactly the absence case this same
+ * caller already gates in {@link pruneWorkflowDeletes}.
  */
 function pruneIdentified(
   identified: RetainedIdentified,
   currentId: string | null,
-  now: number
+  now: number,
+  authoritative: boolean
 ): RetainedIdentified | null {
   const expiresAt = identifiedExpiryOf(identified)
   const expired = expiresAt !== null && now >= expiresAt
   // A null current identity is an unreadable read (internal Yjs-shape
   // failure) or no live doc to read from - never proof a different item
-  // replaced this one. Only a real, differing identity supersedes.
+  // replaced this one. Only a real, differing identity supersedes, and only
+  // when this read is authoritative.
   const superseded =
-    currentId !== null && currentId !== identified.deletedItemId
+    authoritative &&
+    currentId !== null &&
+    currentId !== identified.deletedItemId
   return expired || superseded ? null : identified
 }
 
@@ -165,11 +200,13 @@ function pruneUnidentified(
  * the specific fact - `identified`, `unidentified`, or both - whose own
  * release condition is met, never a node id's whole slot on account of just
  * one (see {@link insertRetainedDelete}). Absence - the document no longer
- * containing the node at all - releases both, but only when `docNodeIds` is
- * itself `authoritative`: a transient read of a document that has not
- * caught up yet (e.g. a just-reminted, still-empty replacement; see ADR
- * CRDT-WRITE-0035) proves nothing, and must not drop a slot a later,
- * authoritative read would still need.
+ * containing the node at all - releases both, and a different real identity
+ * now occupying `identified`'s id releases just that fact; both are gated on
+ * `authoritative`, passed through to {@link pruneIdentified}. A transient
+ * read of a document that has not caught up yet (e.g. a just-reminted,
+ * still-empty replacement, or one that transiently exposes a different
+ * identity; see ADR CRDT-WRITE-0035) proves nothing, and must not drop a
+ * slot a later, authoritative read would still need.
  */
 function pruneWorkflowDeletes(
   deletes: Map<string, RetainedDeleteSlot>,
@@ -186,10 +223,26 @@ function pruneWorkflowDeletes(
     const identified =
       slot.identified === null
         ? null
-        : pruneIdentified(slot.identified, currentItemId(id), now)
+        : pruneIdentified(
+            slot.identified,
+            currentItemId(id),
+            now,
+            authoritative
+          )
     const unidentified = pruneUnidentified(slot.unidentified, now)
-    if (identified === null && unidentified === null) deletes.delete(id)
-    else deletes.set(id, { identified, unidentified })
+    // Checked independently, never by negating the other's condition: each
+    // branch below narrows only the field it actually reads, so the written
+    // literal for the other field is always the exclusion its own check
+    // proved, never a guess `RetainedDeleteSlot` would reject anyway.
+    if (identified !== null && unidentified !== null) {
+      deletes.set(id, { identified, unidentified })
+    } else if (identified !== null) {
+      deletes.set(id, { identified, unidentified: null })
+    } else if (unidentified !== null) {
+      deletes.set(id, { identified: null, unidentified })
+    } else {
+      deletes.delete(id)
+    }
   }
 }
 
@@ -220,12 +273,27 @@ export interface PendingDeleteRetentionStore {
    * enough to cover every legitimate case.
    */
   clearAll(): void
+  /**
+   * Reports the caller's current best-known principal/workspace scope key,
+   * or `null` while it has not resolved yet, and clears every retained
+   * delete exactly when the key names a real scope that differs from the
+   * last real scope this store has seen - never on account of `null`
+   * passing through in between. This store, not any one caller, owns that
+   * last-seen value, so calling it is idempotent and safe from every
+   * mount of every component that resolves the scope, at any point in its
+   * own lifecycle (including immediately on mount): a component that
+   * mounts to find the scope already resolved to a different principal
+   * than this store last saw still clears, even though nothing changed
+   * during that component's own lifetime, and a component whose own
+   * resolution briefly passes through `null` before landing back on the
+   * SAME scope never clears on account of that detour.
+   */
+  noteResolvedScope(key: string | null): void
 }
-
-const EMPTY_SLOT: RetainedDeleteSlot = { identified: null, unidentified: null }
 
 export function createPendingDeleteRetentionStore(): PendingDeleteRetentionStore {
   const confirmedDeletes = new Map<string, Map<string, RetainedDeleteSlot>>()
+  let lastResolvedScope: string | null = null
 
   return {
     settleBatch(candidates) {
@@ -238,7 +306,7 @@ export function createPendingDeleteRetentionStore(): PendingDeleteRetentionStore
         deletes.set(
           candidate.nodeId,
           insertRetainedDelete(
-            deletes.get(candidate.nodeId) ?? EMPTY_SLOT,
+            deletes.get(candidate.nodeId) ?? null,
             candidate.reason,
             candidate.identity
           )
@@ -260,6 +328,13 @@ export function createPendingDeleteRetentionStore(): PendingDeleteRetentionStore
     },
     clearAll() {
       confirmedDeletes.clear()
+    },
+    noteResolvedScope(key) {
+      if (key === null) return
+      if (lastResolvedScope !== null && key !== lastResolvedScope) {
+        this.clearAll()
+      }
+      lastResolvedScope = key
     }
   }
 }
@@ -267,14 +342,18 @@ export function createPendingDeleteRetentionStore(): PendingDeleteRetentionStore
 /**
  * The production owner: shared across every `useAgentCrdtFollower` call so
  * retention survives a follower being disposed and a new one mounted for the
- * same workflow (panel remount, product-gate toggle). It is not scoped to a
- * principal or workspace by construction - `AgentPanelRoot.vue` is what
- * spans every follower this ADR requires it to outlive, and it is also the
- * seam that knows when the signed-in identity or active workspace changes,
- * so it calls {@link PendingDeleteRetentionStore.clearAll} there rather than
- * this module guessing at a scope key of its own. Tests inject their own
- * instance via {@link createPendingDeleteRetentionStore} so state never
- * leaks between cases.
+ * same workflow (panel remount, product-gate toggle), and across an
+ * `AgentPanelRoot` unmount/remount too - it is a page-lifetime singleton,
+ * not scoped to any one component's own mount. `AgentPanelRoot.vue` is the
+ * seam that knows the signed-in identity and active workspace, so it
+ * reports every resolution of that scope through
+ * {@link PendingDeleteRetentionStore.noteResolvedScope}; this store is what
+ * remembers the last one and decides whether a given report is an actual
+ * principal/workspace change, since a component's own watcher comes and
+ * goes with its mount and cannot be trusted to have observed the real
+ * transition. Tests inject their own instance via
+ * {@link createPendingDeleteRetentionStore} so state never leaks between
+ * cases.
  */
 export const sharedPendingDeleteRetentionStore: PendingDeleteRetentionStore =
   createPendingDeleteRetentionStore()

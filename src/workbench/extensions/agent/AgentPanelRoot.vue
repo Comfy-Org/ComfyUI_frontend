@@ -273,17 +273,25 @@ watch(
   },
   { immediate: true }
 )
-// The shared retention store (ADR CRDT-WRITE-0035) is scoped to this panel's
-// own lifetime, not to a principal or workspace: it must not carry an
-// identified confirmed delete from one signed-in user or workspace into the
-// next one's session. `onboardingKey` already resolves to null-vs-a-real-
+// The shared retention store (ADR CRDT-WRITE-0035) is page-lifetime, not
+// scoped to this panel's own mount: it must not carry an identified
+// confirmed delete from one signed-in user or workspace into the next one's
+// session, even across a dock close/reopen that unmounts and remounts this
+// component in between. `onboardingKey` already resolves to null-vs-a-real
 // scope on exactly the identity/workspace change this store needs to react
-// to, so this reuses it rather than tracking a second copy of the same
-// scope key. No `immediate`: the store starts empty, so the very first
-// resolved key has nothing to clear.
-watch(onboardingKey, () => {
-  sharedPendingDeleteRetentionStore.clearAll()
-})
+// to, so this reuses it rather than tracking a second copy of the same scope
+// key. The store itself owns the last-seen scope and decides idempotently
+// whether a given resolution is an actual change (see
+// {@link PendingDeleteRetentionStore.noteResolvedScope}), so this reports
+// every resolution, `immediate` included, rather than only transitions this
+// one mount's watcher happens to observe.
+watch(
+  onboardingKey,
+  (key) => {
+    sharedPendingDeleteRetentionStore.noteResolvedScope(key)
+  },
+  { immediate: true }
+)
 const { activeTour } = storeToRefs(useOnboardingTourStore())
 const graphMutationsByWorkflow = new Map<
   string,

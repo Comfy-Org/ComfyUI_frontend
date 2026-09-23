@@ -60,9 +60,13 @@ export interface OpSenderDeps {
    * call this nor interprets what comes back - which ops carry metadata and
    * what it means (e.g. a `delete_node`'s target Yjs item identity) is the
    * caller's own domain policy, kept out of transport batching and retry.
-   * Omitted deps default to capturing nothing.
+   * Omitted deps default to capturing nothing. `undefined` and `null` are
+   * both valid, distinct results: `undefined` means this op carries no
+   * metadata at all (omitted from {@link BatchOutcome.admissionMetadata}),
+   * while `null` is itself a captured value (e.g. identity capture was
+   * attempted but inconclusive) and is present in the map like any other.
    */
-  admissionMetadata?(op: Op): string | null
+  admissionMetadata?(op: Op): string | null | undefined
   /**
    * Terminal per-batch report: 'acknowledged' carries the host's result;
    * 'unacknowledged' means one resend after silence also drew no result;
@@ -187,12 +191,18 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   let detached = false
   let suspended = false
 
-  /** `deps.admissionMetadata` for every op just minted, keyed by its own `op_id`; empty when the dep is omitted. */
+  /**
+   * `deps.admissionMetadata` for every op just minted, keyed by its own
+   * `op_id`; empty when the dep is omitted. An op whose capture returns
+   * `undefined` carries no metadata and is left out of the map entirely,
+   * distinct from a captured `null`.
+   */
   function captureAdmissionMetadata(ops: Op[]): Map<string, string | null> {
     const metadata = new Map<string, string | null>()
     if (!deps.admissionMetadata) return metadata
     for (const op of ops) {
-      metadata.set(op.op_id, deps.admissionMetadata(op) ?? null)
+      const captured = deps.admissionMetadata(op)
+      if (captured !== undefined) metadata.set(op.op_id, captured)
     }
     return metadata
   }

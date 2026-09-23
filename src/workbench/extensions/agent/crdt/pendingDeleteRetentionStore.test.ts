@@ -100,6 +100,43 @@ describe('createPendingDeleteRetentionStore', () => {
     vi.useRealTimers()
   })
 
+  it.for([['identified', 'A'] as const, ['unidentified', null] as const])(
+    'extends the deadline on a repeated bounded settlement rather than resetting or ignoring it (%s slot)',
+    ([, identity]) => {
+      // Regression: the boundary test above only exercises `pruneUnidentified`
+      // (a null identity), while an identified-but-unknown-identity record
+      // goes through `identifiedExpiryOf`/`pruneIdentified` instead - a
+      // separate code path. Neither is proven to EXTEND its own deadline on
+      // a repeated settlement, as opposed to resetting it to a fresh window
+      // from the later settle's own time (indistinguishable here, since both
+      // give the same result) or ignoring the update outright (which this
+      // does distinguish).
+      vi.useFakeTimers()
+      vi.setSystemTime(0)
+      const store = createPendingDeleteRetentionStore()
+
+      store.settleBatch([del('wf-1', '1', 'unknown', identity)])
+      vi.setSystemTime(1000)
+      store.settleBatch([del('wf-1', '1', 'unknown', identity)])
+
+      // Just past the FIRST settle's own (now-superseded) deadline: still
+      // retained, because the second settle extended it rather than being
+      // ignored.
+      vi.setSystemTime(30_000 + 1)
+      expect(
+        store.retainedNodeIds('wf-1', new Set(['1']), () => identity, true)
+      ).toEqual(new Set(['1']))
+
+      // Exactly at the SECOND, extended deadline: released.
+      vi.setSystemTime(1000 + 30_000)
+      expect(
+        store.retainedNodeIds('wf-1', new Set(['1']), () => identity, true)
+      ).toEqual(new Set())
+
+      vi.useRealTimers()
+    }
+  )
+
   it('a confirmed delete WITH a captured identity is never bounded by time, only by a different identity occupying the id', () => {
     vi.useFakeTimers()
     vi.setSystemTime(0)
@@ -322,9 +359,6 @@ describe('createPendingDeleteRetentionStore', () => {
     ])(
       'merges a permanent record and a bounded record naming the SAME identity into one permanent record, settled %s-then-%s',
       ([first, second]) => {
-        // Both name identity A, the same bucket, so they merge (see
-        // `mergeSameIdentityDelete`); the permanent one has no expiry and
-        // always wins the merge, regardless of settlement order.
         vi.useFakeTimers()
         vi.setSystemTime(0)
         const settle = {
@@ -377,6 +411,29 @@ describe('createPendingDeleteRetentionStore', () => {
       ).toEqual(new Set(['1']))
     })
 
+    it('does not let a non-authoritative read that exposes a different identity permanently prune a retained delete', () => {
+      // Regression (P1): the round-13 `authoritative` gate covered absence
+      // pruning above, but identity-supersession pruning below it was not
+      // gated the same way. A non-authoritative read that transiently
+      // exposes a different identity at the same node id used to prune the
+      // retention outright, so a later, authoritative read of the
+      // ORIGINAL (still-stale) identity could no longer suppress it.
+      const store = createPendingDeleteRetentionStore()
+      store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')])
+
+      // A non-authoritative read transiently shows a different identity, B.
+      expect(
+        store.retainedNodeIds('wf-1', new Set(['1']), () => 'B', false)
+      ).toEqual(new Set(['1']))
+
+      // A later, authoritative read still shows the original, stale
+      // identity A (the host has not applied the delete yet): retention
+      // must still hold.
+      expect(
+        store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
+      ).toEqual(new Set(['1']))
+    })
+
     it('still releases once an authoritative read shows the node truly gone', () => {
       const store = createPendingDeleteRetentionStore()
       store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')])
@@ -389,6 +446,117 @@ describe('createPendingDeleteRetentionStore', () => {
       expect(
         store.retainedNodeIds('wf-1', new Set(), () => null, true)
       ).toEqual(new Set())
+    })
+  })
+
+  describe('noteResolvedScope', () => {
+    // Regression (P1): `AgentPanelRoot.vue` used to own this comparison in
+    // a `watch()` that exists only while it is mounted, so it could clear
+    // the wrong thing (or nothing at all) depending on exactly what that
+    // one mount's watcher happened to observe. `noteResolvedScope` moves
+    // the comparison onto this page-lifetime store instead, so every case
+    // below is provable without a component at all.
+
+    it('has nothing to clear on the very first resolution', () => {
+      const store = createPendingDeleteRetentionStore()
+      store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')])
+
+      store.noteResolvedScope('account-a.workspace-a')
+
+      expect(
+        store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
+      ).toEqual(new Set(['1']))
+    })
+
+    it('does not clear while the scope is still unresolved (null)', () => {
+      const store = createPendingDeleteRetentionStore()
+      store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')])
+
+      store.noteResolvedScope(null)
+
+      expect(
+        store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
+      ).toEqual(new Set(['1']))
+    })
+
+    it('does not clear when a resolution passes through null before landing back on the SAME scope', () => {
+      // The other edge of the same race: a same-scope remount whose own
+      // resolution transitions null -> the original key is not an actual
+      // identity/workspace change, so it must not clear valid retention.
+      const store = createPendingDeleteRetentionStore()
+      store.noteResolvedScope('account-a.workspace-a')
+      store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')])
+
+      store.noteResolvedScope(null)
+      store.noteResolvedScope('account-a.workspace-a')
+
+      expect(
+        store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
+      ).toEqual(new Set(['1']))
+    })
+
+    it('clears once a genuinely different scope resolves, even with no observed transition in between', () => {
+      // The cross-scope-remount race: a fresh mount's own watcher never
+      // observes a transition when the scope has already resolved to the
+      // new principal/workspace by the time it mounts. Reporting the
+      // already-resolved key must still clear against what this
+      // page-lifetime store last saw, regardless of what any one mount
+      // witnessed.
+      const store = createPendingDeleteRetentionStore()
+      store.noteResolvedScope('account-a.workspace-a')
+      store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')])
+
+      store.noteResolvedScope('account-b.workspace-a')
+
+      expect(
+        store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
+      ).toEqual(new Set())
+    })
+
+    it.for([
+      ['UID change', 'account-b.workspace-a'] as const,
+      ['workspace change', 'account-a.workspace-b'] as const
+    ])('clears on a %s', ([, newScope]) => {
+      const store = createPendingDeleteRetentionStore()
+      store.noteResolvedScope('account-a.workspace-a')
+      store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')])
+
+      store.noteResolvedScope(newScope)
+
+      expect(
+        store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
+      ).toEqual(new Set())
+    })
+
+    it('does not clear on logout (scope going back to unresolved) by itself, only once a different scope actually resolves', () => {
+      const store = createPendingDeleteRetentionStore()
+      store.noteResolvedScope('account-a.workspace-a')
+      store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')])
+
+      // Logout: the scope becomes unresolved again.
+      store.noteResolvedScope(null)
+      expect(
+        store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
+      ).toEqual(new Set(['1']))
+
+      // A different account then signs in.
+      store.noteResolvedScope('account-b.workspace-a')
+      expect(
+        store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
+      ).toEqual(new Set())
+    })
+
+    it('is idempotent: reporting the same resolved scope again never clears', () => {
+      const store = createPendingDeleteRetentionStore()
+      store.noteResolvedScope('account-a.workspace-a')
+      store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')])
+
+      store.noteResolvedScope('account-a.workspace-a')
+      store.noteResolvedScope('account-a.workspace-a')
+
+      expect(
+        store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
+      ).toEqual(new Set(['1']))
     })
   })
 })

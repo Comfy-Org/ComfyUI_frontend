@@ -1496,8 +1496,8 @@ describe('useAgentCrdtFollower', () => {
       skipped: []
     })
 
-    // Bounded ('confirmed-applied-unidentified'), unlike the identified,
-    // unbounded case below: it expires instead of staying pending forever.
+    // Bounded, unlike the identified, unbounded case below: it expires
+    // instead of staying pending forever.
     expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
     vi.advanceTimersByTime(STALE_AFTER_MS)
     expect([...intent.pendingDeletes('wf-1')]).toEqual([])
@@ -1505,11 +1505,7 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('does not erase a retained delete when the current node-set read throws on an otherwise caught-up doc (P1 regression)', async () => {
-    // Regression: `currentDocNodeIds()` swallows a read failure into an
-    // empty Set, indistinguishable from a document that genuinely holds no
-    // nodes. Reading that empty Set as authoritative (docCaughtUp stays true
-    // here - this is not the follower-replaced window) let a transient
-    // unreadable snapshot permanently prune a still-needed retention.
+    // An unreadable node-set snapshot must not authorize pruning.
     const { enqueue, unmount } = mountWithHumanOps()
     const intent = requireIntent()
     const doc = new Y.Doc()
