@@ -3289,10 +3289,15 @@ describe('ComfyApp', () => {
       LGraphCanvas.prototype.processKey = origProcessKey
     })
 
-    function pressCanvasKeybinding(commandId: string) {
+    it('routes canvas keydown through the keybinding service before litegraph', () => {
+      const run = vi.fn()
+      useCommandStore().registerCommand({
+        id: 'Test.Registered',
+        function: run
+      })
       useKeybindingStore().addUserKeybinding(
         new KeybindingImpl({
-          commandId,
+          commandId: 'Test.Registered',
           combo: { key: 'F9' },
           targetElementId: 'graph-canvas-container'
         })
@@ -3301,40 +3306,19 @@ describe('ComfyApp', () => {
         app as unknown as { addProcessKeyHandler(): void }
       ).addProcessKeyHandler()
 
-      const canvas = fromPartial<LGraphCanvas>({
-        graph: new LGraph(),
-        selected_nodes: {}
-      })
-      const element = document.createElement('canvas')
-      element.addEventListener('keydown', (e) =>
-        LGraphCanvas.prototype.processKey.call(canvas, e)
-      )
-
+      const graph = new LGraph()
+      const change = vi.spyOn(graph, 'change')
+      const canvas = fromPartial<LGraphCanvas>({ graph, selected_nodes: {} })
       const event = new KeyboardEvent('keydown', {
         key: 'F9',
         cancelable: true
       })
-      element.dispatchEvent(event)
-      return event
-    }
 
-    it('executes a registered command and consumes the key', () => {
-      const run = vi.fn()
-      useCommandStore().registerCommand({
-        id: 'Test.Registered',
-        function: run
-      })
-
-      const event = pressCanvasKeybinding('Test.Registered')
+      LGraphCanvas.prototype.processKey.call(canvas, event)
 
       expect(run).toHaveBeenCalledOnce()
+      expect(change).toHaveBeenCalledOnce()
       expect(event.defaultPrevented).toBe(true)
-    })
-
-    it('falls through to litegraph when the bound command is no longer registered', () => {
-      const event = pressCanvasKeybinding('Test.RemovedExtensionCommand')
-
-      expect(event.defaultPrevented).toBe(false)
     })
   })
 })

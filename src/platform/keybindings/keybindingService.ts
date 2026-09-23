@@ -16,6 +16,25 @@ export function useKeybindingService() {
   const settingStore = useSettingStore()
   const dialogStore = useDialogStore()
 
+  function getExecutableKeybinding(keyCombo: KeyComboImpl) {
+    const keybinding = keybindingStore.getKeybinding(keyCombo)
+    return keybinding && commandStore.isRegistered(keybinding.commandId)
+      ? keybinding
+      : undefined
+  }
+
+  function executeCanvasKeybinding(event: KeyboardEvent): boolean {
+    if (event.type !== 'keydown' || event.repeat) return false
+
+    const keybinding = getExecutableKeybinding(KeyComboImpl.fromEvent(event))
+    if (keybinding?.targetElementId !== 'graph-canvas-container') return false
+
+    void commandStore.execute(keybinding.commandId)
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    return true
+  }
+
   async function keybindHandler(event: KeyboardEvent) {
     const keyCombo = KeyComboImpl.fromEvent(event)
     if (keyCombo.isModifier) {
@@ -42,7 +61,7 @@ export function useKeybindingService() {
       return
     }
 
-    const keybinding = keybindingStore.getKeybinding(keyCombo)
+    const keybinding = getExecutableKeybinding(keyCombo)
     if (keybinding) {
       const targetElementId =
         keybinding.targetElementId === 'graph-canvas'
@@ -151,6 +170,7 @@ export function useKeybindingService() {
   }
 
   return {
+    executeCanvasKeybinding,
     keybindHandler,
     registerCoreKeybindings,
     registerUserKeybindings,

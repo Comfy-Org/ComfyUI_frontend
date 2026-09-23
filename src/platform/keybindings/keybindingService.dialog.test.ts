@@ -2,6 +2,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { markRaw } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { registerCoreKeybindingCommands } from '@/platform/keybindings/__fixtures__/registerCoreKeybindingCommands'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useCommandStore } from '@/stores/commandStore'
 import type { DialogInstance } from '@/stores/dialogStore'
@@ -41,6 +42,7 @@ describe('keybindingService - dialog gate', () => {
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.length = 0
 
+    registerCoreKeybindingCommands()
     keybindingService = useKeybindingService()
     keybindingService.registerCoreKeybindings()
   })
