@@ -10724,6 +10724,10 @@ Enterprise`
     en: 'Open weights',
     'zh-CN': '开放权重'
   },
+  'workshop.v2.card.customNodes': {
+    en: 'Custom nodes',
+    'zh-CN': '自定义节点'
+  },
   'workshop.v2.workflow.graph': { en: 'The graph', 'zh-CN': '节点图' },
   'workshop.v2.workflow.about': {
     en: 'About this workflow',

@@ -88,7 +88,7 @@ const cardClass = 'peek-card shrink-0 snap-start'
         </template>
 
         <li v-for="entry in row.shown" :key="entry.key" :class="cardClass">
-          <CatalogueCard :view="entry.card" />
+          <CatalogueCard :view="entry.card" :locale />
         </li>
       </CardRow>
     </section>

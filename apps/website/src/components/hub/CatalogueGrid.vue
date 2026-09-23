@@ -54,6 +54,7 @@ const showingText = computed(() =>
       v-for="entry in visible"
       :key="entry.key"
       :view="entry.card"
+      :locale
       @click="rememberShelfOnClick($event, shelf, entry.card.href)"
     />
   </div>

@@ -2,11 +2,16 @@
 import { useTemplateRef } from 'vue'
 
 import { usePreviewVideo } from '../../composables/usePreviewVideo'
+import type { Locale } from '../../i18n/translations'
 import type { CardView } from '../../lib/hub/catalogue-card'
 import HubCardMark from './HubCardMark.vue'
+import HubCardReach from './HubCardReach.vue'
 import TagRow from './TagRow.vue'
 
-const { view } = defineProps<{ view: CardView }>()
+const { view, locale = 'en' } = defineProps<{
+  view: CardView
+  locale?: Locale
+}>()
 
 const video = useTemplateRef<HTMLVideoElement>('video')
 const previewSrc = usePreviewVideo(video, () =>
@@ -35,6 +40,8 @@ const previewSrc = usePreviewVideo(video, () =>
         :label="view.mark.label"
         :logo="view.mark.logo"
       />
+
+      <HubCardReach :reach="view.reach" :locale />
 
       <video
         v-if="view.media?.kind === 'video'"

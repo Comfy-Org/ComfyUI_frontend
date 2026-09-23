@@ -125,7 +125,7 @@ const browseAllLabel = computed(() =>
           :class="cardClass"
           @click="rememberShelfOnClick($event, 'all', entry.card.href)"
         >
-          <CatalogueCard :view="entry.card" />
+          <CatalogueCard :view="entry.card" :locale />
         </li>
       </CardRow>
     </section>
