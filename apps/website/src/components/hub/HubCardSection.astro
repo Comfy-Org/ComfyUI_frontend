@@ -23,7 +23,11 @@ const { heading, note, views, actionLabel, actionHref, testid } = Astro.props
   class="mt-24 border-t border-transparency-white-t8 pt-12"
   data-testid={testid}
 >
-  <div class="mb-6 flex items-baseline justify-between gap-4">
+  <!-- Side by side once there is room for both; stacked on a phone, where the
+    heading would otherwise be squeezed into a three-line column. -->
+  <div
+    class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4"
+  >
     <div class="flex flex-col gap-2">
       <h2 class="text-2xl font-bold text-primary-comfy-canvas">{heading}</h2>
       {note && <p class="max-w-xl text-sm text-content-muted">{note}</p>}

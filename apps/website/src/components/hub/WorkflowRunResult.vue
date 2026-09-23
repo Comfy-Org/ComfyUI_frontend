@@ -64,7 +64,10 @@ const showSample = computed(() => sample && state.phase === 'idle')
       {{ tHub('workshop.output.title', locale) }}
     </header>
 
-    <div class="flex min-h-80 flex-col gap-4 p-5">
+    <!-- The floor keeps this panel level with the form beside it. Stacked
+      under the form on a phone there is nothing to keep level, and the floor
+      is only an empty stretch under the result. -->
+    <div class="flex flex-col gap-4 p-5 lg:min-h-80">
       <WorkflowRunSteps v-if="reached >= 0" :steps :reached :locale />
 
       <p v-if="saying" class="text-sm text-content-muted">
