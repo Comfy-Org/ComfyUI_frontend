@@ -189,6 +189,40 @@ interface DatadogResponse {
   warning: string | null
 }
 
+async function datadogAttempt(
+  url: URL,
+  credentials: { apiKey: string; appKey: string }
+): Promise<DatadogResponse & { retryable: boolean }> {
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'application/json',
+        'DD-API-KEY': credentials.apiKey,
+        'DD-APPLICATION-KEY': credentials.appKey
+      },
+      signal: AbortSignal.timeout(15_000)
+    })
+    if (response.ok) {
+      return { payload: await response.json(), warning: null, retryable: false }
+    }
+    const retryable = response.status === 429 || response.status >= 500
+    if (retryable) await response.body?.cancel()
+    return {
+      payload: null,
+      warning: `Datadog On-Call responded ${response.status} ${response.statusText} — using the fallback.`,
+      retryable
+    }
+  } catch (error) {
+    return {
+      payload: null,
+      warning: `Datadog On-Call lookup failed (${String(error)}) — using the fallback.`,
+      retryable:
+        (error instanceof TypeError && error.message === 'fetch failed') ||
+        (error instanceof Error && error.name === 'TimeoutError')
+    }
+  }
+}
+
 // Every failure degrades to an empty payload plus a returned warning: PRs must
 // end up with the fallback owner, never unowned, and the caller owns logging.
 async function datadogGet(
@@ -225,41 +259,8 @@ async function datadogGet(
     if (attempt > 0) {
       await new Promise((resolve) => setTimeout(resolve, 1000 * attempt))
     }
-    try {
-      const response = await fetch(url, {
-        headers: {
-          Accept: 'application/json',
-          'DD-API-KEY': apiKey,
-          'DD-APPLICATION-KEY': appKey
-        },
-        signal: AbortSignal.timeout(15_000)
-      })
-      if (!response.ok) {
-        if (
-          attempt < 2 &&
-          (response.status === 429 || response.status >= 500)
-        ) {
-          await response.body?.cancel()
-          continue
-        }
-        return {
-          payload: null,
-          warning: `Datadog On-Call responded ${response.status} ${response.statusText} — using the fallback.`
-        }
-      }
-      return { payload: await response.json(), warning: null }
-    } catch (error) {
-      if (
-        attempt < 2 &&
-        ((error instanceof TypeError && error.message === 'fetch failed') ||
-          (error instanceof Error && error.name === 'TimeoutError'))
-      )
-        continue
-      return {
-        payload: null,
-        warning: `Datadog On-Call lookup failed (${String(error)}) — using the fallback.`
-      }
-    }
+    const result = await datadogAttempt(url, { apiKey, appKey })
+    if (!result.retryable || attempt === 2) return result
   }
 }
 

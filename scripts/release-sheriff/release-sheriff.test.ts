@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { PullRequestSummary } from './release-sheriff'
 import {
@@ -266,10 +266,6 @@ describe('fetchOnCallEmails', () => {
   })
 
   describe('transient failures', () => {
-    beforeEach(() => {
-      vi.useFakeTimers()
-    })
-
     it.for([
       { name: 'network error', failure: new TypeError('fetch failed') },
       {
