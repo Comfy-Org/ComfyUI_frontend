@@ -27,13 +27,13 @@ const slots = useSlots()
         'relative isolate -mx-6 -mt-8 overflow-hidden px-6 pt-8 max-sm:-mt-5 max-sm:pt-5 lg:-mx-8 lg:-mt-12 lg:px-8 lg:pt-12',
         slots.default
           ? 'mb-8 max-sm:mb-5'
-          : 'sm:short:pb-0 mb-6 pb-2 max-sm:mb-4 max-sm:pb-0'
+          : 'mb-6 pb-2 max-sm:mb-4 max-sm:pb-0 sm:short:pb-0'
       )
     "
     data-testid="workshop-hero"
   >
     <p
-      class="text-primary-comfy-yellow mb-5 text-sm font-medium tracking-widest uppercase max-sm:mb-2"
+      class="mb-5 text-sm font-medium tracking-widest text-primary-comfy-yellow uppercase max-sm:mb-2"
     >
       <SplitReveal :text="t('workshop.hero.eyebrow', locale)" />
     </p>
@@ -41,7 +41,7 @@ const slots = useSlots()
       <SplitReveal :text="t(headingKey, locale)" :delay="90" />
     </h1>
     <div
-      class="sm:short:mt-3 mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-4"
+      class="mt-4 flex flex-wrap items-center justify-between gap-x-6 gap-y-4 sm:short:mt-3"
     >
       <p v-if="subtitleKey" class="text-lg text-primary-comfy-canvas/70">
         <SplitReveal

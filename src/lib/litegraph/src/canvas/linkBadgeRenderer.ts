@@ -1,10 +1,11 @@
 import type { LGraph } from '../LGraph'
 import type { LLink } from '../LLink'
-import type { ReadOnlyRect } from '../interfaces'
+import type { LinkId } from '@/types/linkId'
+import type { LinkBadgeLayout } from './linkBadges'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { compareNodeIds } from '@/types/nodeId'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
-import { drawHiddenLinkBadges, queryLinkBadgeAtPoint } from './linkBadges'
+import { layoutHiddenLinkBadges, queryLinkBadgeAtPoint } from './linkBadges'
 import { getLinkEndpointPositions } from './linkGeometry'
 
 export function queryHiddenLinkBadgeAtPoint(
@@ -25,14 +26,13 @@ export function queryHiddenLinkBadgeAtPoint(
   }
 }
 
-export function drawGraphLinkBadges(
+export function layoutGraphLinkBadges(
   host: object,
   ctx: CanvasRenderingContext2D,
   graph: LGraph,
-  visibleArea: ReadOnlyRect,
   linkTypeColors: Readonly<Record<string | number, string>>,
   defaultLinkColor: string
-): void {
+): Map<LinkId, LinkBadgeLayout> {
   const scope = graphScopeOf(graph)
   const presentationStore = useLinkPresentationStore()
   const hiddenLinks: LLink[] = []
@@ -46,23 +46,27 @@ export function drawGraphLinkBadges(
       first.origin_slot - second.origin_slot ||
       first.id - second.id
   )
+  const layouts = new Map<LinkId, LinkBadgeLayout>()
   for (const link of hiddenLinks) {
     const endpoints = getLinkEndpointPositions(graph, link)
     const presentation = presentationStore.getPresentation(scope, link.id)
     if (!endpoints || !presentation) continue
 
     const [startPos, endPos] = endpoints
-    drawHiddenLinkBadges(
-      host,
-      ctx,
-      link,
-      presentation,
-      startPos,
-      endPos,
-      (typeof link.color === 'string' && link.color) ||
-        linkTypeColors[link.type] ||
-        defaultLinkColor,
-      visibleArea
+    layouts.set(
+      link.id,
+      layoutHiddenLinkBadges(
+        host,
+        ctx,
+        link,
+        presentation,
+        startPos,
+        endPos,
+        (typeof link.color === 'string' && link.color) ||
+          linkTypeColors[link.type] ||
+          defaultLinkColor
+      )
     )
   }
+  return layouts
 }

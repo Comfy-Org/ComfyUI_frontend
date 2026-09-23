@@ -32,7 +32,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
     <div class="mx-auto flex w-full max-w-6xl flex-col gap-8">
       <a
         :href="backHref"
-        class="text-primary-comfy-yellow hover:text-primary-comfy-yellow/85 w-fit text-sm font-semibold underline"
+        class="w-fit text-sm font-semibold text-primary-comfy-yellow underline hover:text-primary-comfy-yellow/85"
       >
         {{ t('cloudNodes.detail.back', locale) }}
       </a>
@@ -75,7 +75,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                   :href="pack.repoUrl"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="text-primary-comfy-yellow hover:text-primary-comfy-yellow/85 font-semibold underline"
+                  class="font-semibold text-primary-comfy-yellow underline hover:text-primary-comfy-yellow/85"
                 >
                   {{ pack.repoUrl }}
                 </a>
@@ -170,7 +170,7 @@ const { groupedNodes } = useNodesByCategory(() => pack.nodes)
                       v-if="node.experimental"
                       :class="
                         cn(
-                          'bg-primary-comfy-yellow/20 rounded-full px-2 py-0.5 text-xs font-semibold text-primary-comfy-canvas'
+                          'rounded-full bg-primary-comfy-yellow/20 px-2 py-0.5 text-xs font-semibold text-primary-comfy-canvas'
                         )
                       "
                     >

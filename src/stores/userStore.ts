@@ -2,7 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref, watchEffect } from 'vue'
 
 import { isCloud } from '@/platform/distribution/types'
-import type { User as UserConfig } from '@/schemas/apiSchema'
+import type { UserConfigResponse } from '@/platform/remote/comfyui/types'
 import { api } from '@/scripts/api'
 
 export interface User {
@@ -17,7 +17,7 @@ export const useUserStore = defineStore('user', () => {
   /**
    * The user config. null if not loaded.
    */
-  const userConfig = ref<UserConfig | null>(null)
+  const userConfig = ref<UserConfigResponse | null>(null)
   /**
    * The current user id. null if not logged in or in single user mode.
    */

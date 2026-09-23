@@ -6,7 +6,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 
 type CapturedImageUploadOptions = {
@@ -154,6 +155,21 @@ describe('useImageUploadWidget', () => {
         isAnimated: false
       }
     )
+  })
+
+  it('loads the new preview when the file combo changes', () => {
+    const { fileComboWidget, node } = createUploadNode()
+    construct(node)
+    fileComboWidget.value = 'beach.jpg'
+
+    fileComboWidget.callback?.('beach.jpg')
+
+    expect(useNodeOutputStore().setNodeOutputs).toHaveBeenCalledWith(
+      node,
+      'beach.jpg',
+      { isAnimated: false }
+    )
+    expect(mocks.showPreview).toHaveBeenCalledWith({ block: false })
   })
 
   it('does not preview a combo whose value is still unset', () => {

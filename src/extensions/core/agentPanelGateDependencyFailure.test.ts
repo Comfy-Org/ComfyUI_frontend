@@ -1,45 +1,50 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 vi.mock(import('firebase/auth'))
-vi.mock<unknown>(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ComfyApp } from '@/scripts/app'
+import type { ComfyExtension } from '@/types/comfy'
+import type { useExtensionService } from '@/services/extensionService'
 import { registerAgentPanelExtension } from './agentPanel'
 
-const registered = vi.hoisted(() => ({
-  setup: null as (() => Promise<void> | void) | null
-}))
+const registered = vi.hoisted<{
+  setup: ComfyExtension['setup'] | null
+}>(() => ({ setup: null }))
 
 const reportErrorMock = vi.hoisted(() => vi.fn())
 
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
 // The throwing factory rejects the gate's guarded dynamic import - the
 // dependency-chunk failure an ad blocker produces.
-vi.mock('@/workbench/extensions/agent/utils/postHogFlagSource', () => {
+vi.mock(import('@/workbench/extensions/agent/utils/postHogFlagSource'), () => {
   throw new Error('flag source chunk failed to load')
 })
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   getNodeByLocatorId: vi.fn()
 }))
 
-vi.mock('@/utils/litegraphUtil', () => ({
-  isLGraphNode: () => false
+vi.mock(import('@/utils/litegraphUtil'), () => ({
+  isLGraphNode: (_item: unknown): _item is LGraphNode => false
 }))
 
 vi.mock(
-  '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker',
+  import('@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'),
   () => ({ registerWorkflowTabActivityTracker: vi.fn() })
 )
 
-vi.mock('@/services/extensionService', () => ({
-  useExtensionService: () => ({
-    registerExtension: (extension: { setup?: () => Promise<void> | void }) => {
-      registered.setup = extension.setup ?? null
-    }
-  })
+vi.mock(import('@/services/extensionService'), () => ({
+  useExtensionService: () =>
+    fromPartial<ReturnType<typeof useExtensionService>>({
+      registerExtension: (extension: ComfyExtension) => {
+        registered.setup = extension.setup ?? null
+      }
+    })
 }))
 
 describe('the agent panel gate under a dependency-chunk failure', () => {
@@ -57,13 +62,22 @@ describe('the agent panel gate under a dependency-chunk failure', () => {
     // The gate promise is HANDED BACK to the extension service - a
     // rejection there would be owned by its per-extension catch, so this
     // await doubles as the no-unhandled-rejection pin.
-    await registered.setup?.()
+    await registered.setup?.(fromPartial<ComfyApp>({}))
 
     const store = useAgentPanelStore()
     expect(store.gateSettled).toBe(true)
     expect(store.enabled).toBe(false)
     expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
-      errorType: 'agent_flag_gate_load_failure'
+      errorType: 'agent_flag_gate_load_failure',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'agent',
+        operation: 'load',
+        outcome: 'failed',
+        feature_flag: 'agent_panel',
+        feature_flag_state: 'unknown',
+        project_context: 'application_bootstrap'
+      }
     })
     expect(consoleError).not.toHaveBeenCalled()
   })

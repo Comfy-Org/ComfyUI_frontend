@@ -1,3 +1,4 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import type {
   ScheduledPlanChange,
   SubscriptionTier
@@ -56,11 +57,7 @@ const mockSubscriptionStatus = ref<BillingSubscriptionStatus | null>(null)
 const mockCurrentPlanSlug = ref<string | null>(null)
 const mockCurrentTeamCreditStop = ref<MockTeamStop | null>(null)
 const mockIsTeamPlan = ref(false)
-const mockCanManageSubscription = ref(true)
-const mockCanDowngradeToPersonal = ref(true)
-const mockCanChangeSeats = ref(true)
-const mockRawCanReactivate = ref(true)
-const mockSnapshotAuthoritative = ref(true)
+
 const mockPermissions = ref({
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
@@ -83,18 +80,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canSubscribeSelfServe: computed(() => mockCanManageSubscription.value),
-      canReactivate: computed(() => mockRawCanReactivate.value),
-      canChangeSeats: computed(() => mockCanChangeSeats.value),
-      canDowngradeToPersonal: computed(() => mockCanDowngradeToPersonal.value),
-      snapshotAuthoritative: computed(() => mockSnapshotAuthoritative.value)
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
@@ -137,16 +123,17 @@ beforeEach(() => {
 
 describe('UnifiedPricingTable plan CTA labels', () => {
   beforeEach(() => {
-    mockCanChangeSeats.value = true
-    mockRawCanReactivate.value = true
-    mockSnapshotAuthoritative.value = true
+    useBillingCapabilities().canChangeSeats = computed(() => true)
+    useBillingCapabilities().canReactivate = computed(() => true)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
+
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
     mockCurrentTeamCreditStop.value = null
     mockIsTeamPlan.value = false
-    mockCanManageSubscription.value = true
-    mockCanDowngradeToPersonal.value = true
+
     mockPermissions.value = {
       canManageSubscription: true,
       canManageSubscriptionLifecycle: true,
@@ -250,7 +237,7 @@ describe('UnifiedPricingTable plan CTA labels', () => {
       stop_usd: 700
     }
     mockIsTeamPlan.value = true
-    mockCanDowngradeToPersonal.value = false
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
 
     renderComponent({ initialPlanMode: 'personal' })
 
@@ -276,11 +263,7 @@ describe('UnifiedPricingTable scheduled plan change', () => {
     mockCurrentPlanSlug.value = null
     mockCurrentTeamCreditStop.value = null
     mockIsTeamPlan.value = false
-    mockCanManageSubscription.value = false
-    mockCanDowngradeToPersonal.value = false
-    mockCanChangeSeats.value = false
-    mockRawCanReactivate.value = false
-    mockSnapshotAuthoritative.value = true
+
     mockPermissions.value = {
       canManageSubscription: true,
       canManageSubscriptionLifecycle: true,
@@ -400,16 +383,17 @@ describe('UnifiedPricingTable team plan CTA', () => {
   }
 
   beforeEach(() => {
-    mockCanChangeSeats.value = true
-    mockRawCanReactivate.value = true
-    mockSnapshotAuthoritative.value = true
+    useBillingCapabilities().canChangeSeats = computed(() => true)
+    useBillingCapabilities().canReactivate = computed(() => true)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
+
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
     mockCurrentTeamCreditStop.value = null
     mockIsTeamPlan.value = false
-    mockCanManageSubscription.value = true
-    mockCanDowngradeToPersonal.value = true
+
     mockPermissions.value = {
       canManageSubscription: true,
       canManageSubscriptionLifecycle: true,
@@ -497,10 +481,10 @@ describe('UnifiedPricingTable team plan CTA', () => {
       isCancelled: true
     }
     mockCurrentTeamCreditStop.value = TEAM_STOP
-    mockCanManageSubscription.value = false
-    mockCanChangeSeats.value = false
-    mockRawCanReactivate.value = false
-    mockCanDowngradeToPersonal.value = false
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
 
     renderComponent({ initialPlanMode: 'team' })
 
@@ -566,16 +550,15 @@ describe('UnifiedPricingTable outside Cloud', () => {
   }
 
   beforeEach(() => {
-    mockCanChangeSeats.value = true
-    mockRawCanReactivate.value = true
-    mockSnapshotAuthoritative.value = true
+    useBillingCapabilities().canChangeSeats = computed(() => true)
+    useBillingCapabilities().canReactivate = computed(() => true)
+
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
     mockCurrentTeamCreditStop.value = null
     mockIsTeamPlan.value = false
-    mockCanManageSubscription.value = false
-    mockCanDowngradeToPersonal.value = false
+
     mockPermissions.value = {
       canManageSubscription: true,
       canManageSubscriptionLifecycle: true,
@@ -752,8 +735,8 @@ describe('UnifiedPricingTable credit allotment copy', () => {
     mockCurrentPlanSlug.value = null
     mockCurrentTeamCreditStop.value = null
     mockIsTeamPlan.value = false
-    mockCanManageSubscription.value = true
-    mockCanDowngradeToPersonal.value = true
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
     mockDistributionTypes.isCloud = true
   })
 
@@ -816,16 +799,17 @@ describe('UnifiedPricingTable credit allotment copy', () => {
 // the server is in fact permitting a subscribe.
 describe('UnifiedPricingTable capability gating', () => {
   beforeEach(() => {
-    mockCanChangeSeats.value = true
-    mockRawCanReactivate.value = true
-    mockSnapshotAuthoritative.value = true
+    useBillingCapabilities().canChangeSeats = computed(() => true)
+    useBillingCapabilities().canReactivate = computed(() => true)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
+
     mockSubscription.value = null
     mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
     mockCurrentTeamCreditStop.value = null
     mockIsTeamPlan.value = false
-    mockCanManageSubscription.value = true
-    mockCanDowngradeToPersonal.value = true
+
     mockPermissions.value = {
       canManageSubscription: true,
       canManageSubscriptionLifecycle: true,
@@ -837,8 +821,8 @@ describe('UnifiedPricingTable capability gating', () => {
   it('keeps a paid plan actionable when only change-seats is withheld', async () => {
     const user = userEvent.setup()
     mockSubscription.value = { tier: 'PRO', duration: 'ANNUAL' }
-    mockCanChangeSeats.value = false
-    mockRawCanReactivate.value = false
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
 
     const { emitted } = renderComponent()
 
@@ -850,10 +834,10 @@ describe('UnifiedPricingTable capability gating', () => {
 
   it('keeps the CTA live while the capability snapshot is unresolved', () => {
     mockSubscription.value = { tier: 'FREE', duration: 'ANNUAL' }
-    mockSnapshotAuthoritative.value = false
-    mockCanManageSubscription.value = false
-    mockCanChangeSeats.value = false
-    mockRawCanReactivate.value = false
+    useBillingCapabilities().snapshotAuthoritative = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
 
     renderComponent()
 
@@ -863,11 +847,11 @@ describe('UnifiedPricingTable capability gating', () => {
   })
 
   it('keeps the team CTA live while the capability snapshot is unresolved', () => {
-    mockSnapshotAuthoritative.value = false
-    mockCanManageSubscription.value = false
-    mockCanChangeSeats.value = false
-    mockRawCanReactivate.value = false
-    mockCanDowngradeToPersonal.value = false
+    useBillingCapabilities().snapshotAuthoritative = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
 
     renderComponent({ initialPlanMode: 'team' })
 
@@ -879,10 +863,10 @@ describe('UnifiedPricingTable capability gating', () => {
   // can_downgrade_to_personal governs leaving a team plan for a personal one, so
   // it must not stand in for permission to buy the team plan.
   it('does not let the downgrade capability alone enable the team CTA', () => {
-    mockCanManageSubscription.value = false
-    mockCanChangeSeats.value = false
-    mockRawCanReactivate.value = false
-    mockCanDowngradeToPersonal.value = true
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
 
     renderComponent({ initialPlanMode: 'team' })
 
@@ -893,10 +877,10 @@ describe('UnifiedPricingTable capability gating', () => {
 
   it('blocks the CTA when a resolved snapshot permits no lifecycle write', () => {
     mockSubscription.value = { tier: 'FREE', duration: 'ANNUAL' }
-    mockCanManageSubscription.value = false
-    mockCanChangeSeats.value = false
-    mockRawCanReactivate.value = false
-    mockCanDowngradeToPersonal.value = false
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
 
     renderComponent()
 
@@ -908,9 +892,11 @@ describe('UnifiedPricingTable capability gating', () => {
 
 describe('UnifiedPricingTable plan-scope availability', () => {
   beforeEach(() => {
-    mockCanChangeSeats.value = true
-    mockRawCanReactivate.value = true
-    mockSnapshotAuthoritative.value = true
+    useBillingCapabilities().canChangeSeats = computed(() => true)
+    useBillingCapabilities().canReactivate = computed(() => true)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => true)
+
     mockSubscription.value = { tier: 'TEAM', duration: 'ANNUAL' }
     mockSubscriptionStatus.value = null
     mockCurrentPlanSlug.value = null
@@ -920,8 +906,7 @@ describe('UnifiedPricingTable plan-scope availability', () => {
       stop_usd: 700
     }
     mockIsTeamPlan.value = true
-    mockCanManageSubscription.value = true
-    mockCanDowngradeToPersonal.value = true
+
     mockPermissions.value = {
       canManageSubscription: true,
       canManageSubscriptionLifecycle: true,
@@ -931,11 +916,11 @@ describe('UnifiedPricingTable plan-scope availability', () => {
   })
 
   it('keeps personal plans reachable on a team plan while the snapshot is unresolved', () => {
-    mockSnapshotAuthoritative.value = false
-    mockCanDowngradeToPersonal.value = false
-    mockCanManageSubscription.value = false
-    mockCanChangeSeats.value = false
-    mockRawCanReactivate.value = false
+    useBillingCapabilities().snapshotAuthoritative = computed(() => false)
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
 
     renderComponent({ initialPlanMode: 'personal' })
 
@@ -945,9 +930,9 @@ describe('UnifiedPricingTable plan-scope availability', () => {
   })
 
   it('keeps personal cards actionable when only the downgrade is permitted', () => {
-    mockCanManageSubscription.value = false
-    mockCanChangeSeats.value = false
-    mockRawCanReactivate.value = false
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => false)
+    useBillingCapabilities().canChangeSeats = computed(() => false)
+    useBillingCapabilities().canReactivate = computed(() => false)
 
     renderComponent({ initialPlanMode: 'personal' })
 
@@ -957,7 +942,7 @@ describe('UnifiedPricingTable plan-scope availability', () => {
   })
 
   it('withholds personal plans when a resolved snapshot denies the downgrade', () => {
-    mockCanDowngradeToPersonal.value = false
+    useBillingCapabilities().canDowngradeToPersonal = computed(() => false)
 
     renderComponent({ initialPlanMode: 'personal' })
 

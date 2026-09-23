@@ -1,5 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscribeToRunPromptPresence } from '@/platform/cloud/subscription/composables/useSubscribeCtaPresence'
 import { getActivePinia } from 'pinia'
+import { describe, expect, it, vi } from 'vitest'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { render, screen } from '@testing-library/vue'
@@ -27,26 +30,16 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: vi.fn(() => ({
-    isFreeTier: { value: true }
-  }))
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscribeCtaPresence')
+)
 
-vi.mock(import('firebase/app'), () => ({
-  initializeApp: vi.fn(),
-  getApp: vi.fn()
-}))
-
-vi.mock<unknown>(import('firebase/auth'), () => ({
-  getAuth: vi.fn(),
-  setPersistence: vi.fn(),
-  browserLocalPersistence: {},
-  onAuthStateChanged: vi.fn(),
-  signOut: vi.fn()
-}))
-
-function renderComponent() {
+function renderComponent(promptMounted = computed(() => false)) {
+  const billing = useBillingContext()
+  billing.isFreeTier = computed(() => true)
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+  vi.mocked(useSubscribeToRunPromptPresence).mockReturnValue(promptMounted)
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -64,6 +57,19 @@ describe('TopbarSubscribeButton', () => {
   it('renders on cloud when isFreeTier is true', () => {
     mockIsCloud.value = true
     renderComponent()
+    expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
+  })
+
+  it('yields while a Run-slot subscribe prompt is mounted, and returns when it unmounts', async () => {
+    mockIsCloud.value = true
+    const promptMounted = ref(true)
+    renderComponent(computed(() => promptMounted.value))
+    expect(
+      screen.queryByTestId('topbar-subscribe-button')
+    ).not.toBeInTheDocument()
+
+    promptMounted.value = false
+    await nextTick()
     expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
   })
 

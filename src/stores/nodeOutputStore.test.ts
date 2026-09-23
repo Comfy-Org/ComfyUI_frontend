@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import {
@@ -903,6 +903,29 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(store.nodeOutputs['5']?.images).toHaveLength(1)
     expect(store.nodeOutputs['5']?.images?.[0]?.filename).toBe('test.png')
     expect(store.nodeOutputs['5']?.images?.[0]?.type).toBe('input')
+  })
+
+  it('previews an annotated widget value from its own directory', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5, comfyClass: 'LoadImage' })
+
+    store.setNodeOutputs(node, 'nested/preview.png [temp]', {
+      isAnimated: true
+    })
+
+    expect(store.nodeOutputs['5']?.images?.[0]).toMatchObject({
+      filename: 'preview.png [temp]',
+      subfolder: 'nested',
+      type: 'input'
+    })
+    const previewUrl = new URL(
+      store.getNodeImageUrls(node)?.[0] ?? '',
+      window.location.origin
+    )
+    expect(store.nodeOutputs['5']?.animated).toEqual([true])
+    expect(previewUrl.searchParams.get('filename')).toBe('preview.png')
+    expect(previewUrl.searchParams.get('subfolder')).toBe('nested')
+    expect(previewUrl.searchParams.get('type')).toBe('temp')
   })
 
   it('leaves node images unchanged for preview change detection', () => {

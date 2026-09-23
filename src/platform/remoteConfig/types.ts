@@ -2,7 +2,7 @@ import type { PostHogConfig } from 'posthog-js'
 
 import type { TelemetryEventName } from '@/platform/telemetry/types'
 
-export type { TurnstileMode } from '@comfyorg/account/turnstile'
+export type { TurnstileMode } from '@comfyorg/account-core/turnstile'
 
 /**
  * Server health alert configuration from the backend
@@ -127,7 +127,14 @@ export type RemoteConfig = {
   workflow_sharing_enabled?: boolean
   comfyhub_upload_enabled?: boolean
   comfyhub_profile_gate_enabled?: boolean
+  // Raw, unvalidated wire value ('stripe' | 'billing_web' by contract). Always
+  // funnel it through normalizeHostedBillingDestination before trusting it.
+  hosted_billing_destination?: string
   unified_cloud_auth?: boolean
+  // Wire key carries the server's own spelling; see ServerFeatureFlag.
+  embedded_checked_enabled?: boolean
+  billing_sdk_topup_enabled?: boolean
+  billing_sdk_subscription_enabled?: boolean
   billing_control_enabled?: boolean
   legacy_billing_migration_enabled?: boolean
   v1_payment_recovery?: boolean

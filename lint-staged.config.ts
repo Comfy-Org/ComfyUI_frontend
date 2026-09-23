@@ -1,5 +1,18 @@
 import path from 'node:path'
 
+// lint-staged calls this config once per concurrent chunk in one process.
+// Claim each fixed-scope command once so only its first matching chunk runs it.
+const claimed = new Set<string>()
+
+function repoWide(command: string) {
+  if (claimed.has(command)) {
+    return []
+  }
+
+  claimed.add(command)
+  return [command]
+}
+
 export default function lintStaged(stagedFiles: string[]) {
   const relativePaths = stagedFiles.map(toRelativePath)
 
@@ -18,8 +31,12 @@ export default function lintStaged(stagedFiles: string[]) {
   const styleFiles = relativePaths.filter((fileName) =>
     /\.(css|vue)$/.test(fileName)
   )
-  const typecheckFiles = formattableFiles.filter((fileName) =>
-    /\.(ts|tsx|vue|mts)$/.test(fileName)
+  const astroFiles = relativePaths.filter(
+    (fileName) =>
+      fileName.startsWith('apps/website/src/') && fileName.endsWith('.astro')
+  )
+  const typecheckFiles = relativePaths.filter((fileName) =>
+    /\.(astro|ts|tsx|vue|mts)$/.test(fileName)
   )
 
   return [
@@ -27,21 +44,32 @@ export default function lintStaged(stagedFiles: string[]) {
       formattableFiles,
       'pnpm exec oxfmt --write --no-error-on-unmatched-pattern'
     ),
-    ...lintCommands(codeFiles, styleFiles),
+    ...lintCommands(codeFiles, styleFiles, astroFiles),
+    ...commandsWithFiles(
+      astroFiles.map((fileName) => fileName.slice('apps/website/'.length)),
+      'pnpm --dir apps/website exec prettier --write'
+    ),
     ...typecheckCommands(typecheckFiles)
   ]
 }
 
-function lintCommands(codeFiles: string[], styleFiles: string[]) {
-  if (new Set([...codeFiles, ...styleFiles]).size > 10) {
-    return ['pnpm lint']
+function lintCommands(
+  codeFiles: string[],
+  styleFiles: string[],
+  astroFiles: string[]
+) {
+  if (new Set([...codeFiles, ...styleFiles, ...astroFiles]).size > 10) {
+    return repoWide('pnpm lint')
   }
 
   return [
     ...commandsWithFiles(styleFiles, 'pnpm exec stylelint --allow-empty-input'),
     ...commandsWithFiles(
       codeFiles,
-      'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix',
+      'pnpm exec oxlint --type-aware --no-error-on-unmatched-pattern --fix'
+    ),
+    ...commandsWithFiles(
+      [...codeFiles, ...astroFiles],
       'pnpm exec eslint --cache --fix --no-warn-ignored'
     )
   ]
@@ -53,12 +81,12 @@ function typecheckCommands(fileNames: string[]) {
   }
 
   return [
-    'pnpm typecheck',
+    ...repoWide('pnpm typecheck'),
     ...(fileNames.some((fileName) => fileName.startsWith('browser_tests/'))
-      ? ['pnpm typecheck:browser']
+      ? repoWide('pnpm typecheck:browser')
       : []),
     ...(fileNames.some((fileName) => fileName.startsWith('apps/website/'))
-      ? ['pnpm typecheck:website']
+      ? repoWide('pnpm typecheck:website')
       : [])
   ]
 }

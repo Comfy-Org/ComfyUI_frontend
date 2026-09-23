@@ -34,7 +34,10 @@ const { model, related } = Astro.props
   description={model.description}
 >
   <main class="mx-auto max-w-10xl px-6 py-12 lg:px-8 lg:py-16">
-    <nav aria-label="Breadcrumb" class="mb-8 text-sm text-primary-comfy-canvas/55">
+    <nav
+      aria-label="Breadcrumb"
+      class="mb-8 text-sm text-primary-comfy-canvas/55"
+    >
       <a href="/workshop/" class="hover:text-primary-comfy-yellow">
         {t('workshop.model.breadcrumb')}
       </a>
@@ -60,13 +63,11 @@ const { model, related } = Astro.props
         {model.description}
       </p>
       <ul class="mt-6 flex flex-wrap gap-2">
-        {
-          model.tags.slice(0, 8).map((tag) => (
-            <li class="rounded-full bg-primary-comfy-canvas/8 px-3 py-1 text-xs text-primary-comfy-canvas/65">
-              {tag}
-            </li>
-          ))
-        }
+        {model.tags.slice(0, 8).map((tag) => <li
+          class="rounded-full bg-primary-comfy-canvas/8 px-3 py-1 text-xs text-primary-comfy-canvas/65"
+        >
+          {tag}
+        </li>)}
       </ul>
     </div>
 
@@ -77,26 +78,25 @@ const { model, related } = Astro.props
         <h2 class="text-2xl font-semibold text-primary-comfy-canvas">
           {t('workshop.model.related')}
         </h2>
-        <a href="/workshop/" class="text-sm text-primary-comfy-yellow hover:underline">
+        <a
+          href="/workshop/"
+          class="text-sm text-primary-comfy-yellow hover:underline"
+        >
           {t('workshop.model.browseAll')}
         </a>
       </div>
       <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {
-          related.map((candidate) => (
-            <a
-              href={`/workshop/models/${candidate.slug}/`}
-              class="rounded-2xl border border-primary-comfy-canvas/10 bg-primary-comfy-canvas/5 p-5 transition-colors hover:border-primary-comfy-yellow/60"
-            >
-              <p class="text-xs tracking-wider text-primary-comfy-yellow uppercase">
-                {candidate.provider}
-              </p>
-              <h3 class="mt-2 font-medium text-primary-comfy-canvas">
-                {candidate.displayName}
-              </h3>
-            </a>
-          ))
-        }
+        {related.map((candidate) => <a
+          href={`/workshop/models/${candidate.slug}/`}
+          class="rounded-2xl border border-primary-comfy-canvas/10 bg-primary-comfy-canvas/5 p-5 transition-colors hover:border-primary-comfy-yellow/60"
+        >
+          <p class="text-xs tracking-wider text-primary-comfy-yellow uppercase">
+            {candidate.provider}
+          </p>
+          <h3 class="mt-2 font-medium text-primary-comfy-canvas">
+            {candidate.displayName}
+          </h3>
+        </a>)}
       </div>
     </section>
   </main>
