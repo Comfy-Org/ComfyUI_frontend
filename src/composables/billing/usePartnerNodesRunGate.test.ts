@@ -1,9 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { User } from 'firebase/auth'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, effectScope, nextTick, ref } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('firebase/auth'))
@@ -120,12 +123,50 @@ describe('usePartnerNodesRunGate', () => {
         level: 'warning',
         tags: expect.objectContaining({
           trigger: 'run-button',
-          isLoggedIn: false,
           partnerNodeCount: 1
         }),
         context: { partnerNodeTypes: ['Kling'] }
       })
     )
+  })
+
+  describe('tags the raw sessions so a wrongly blocked user is visible', () => {
+    afterEach(() => {
+      localStorage.clear()
+    })
+
+    it.for([
+      { held: 'no session', firebase: false, apiKey: false },
+      { held: 'a Firebase user', firebase: true, apiKey: false },
+      { held: 'a stored API key', firebase: false, apiKey: true }
+    ])('while holding $held', async ({ firebase, apiKey }) => {
+      useCurrentUser().isLoggedIn = computed(() => false)
+      if (firebase) {
+        vi.spyOn(firebaseIdentity, 'currentUser').mockReturnValue(
+          fromPartial<User>({ uid: 'u1' })
+        )
+      }
+      if (apiKey) {
+        localStorage.setItem('comfy_api_key', 'stored-key')
+        vi.spyOn(useAuthStore(), 'createCustomer').mockReturnValue(
+          new Promise(() => {})
+        )
+      }
+      state.hasPartnerNodes.value = true
+      state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
+      setup()
+      await nextTick()
+
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            hasFirebaseSession: firebase,
+            hasStoredApiKey: apiKey
+          })
+        })
+      )
+    })
   })
 
   it('reports nothing while the gate stays open', async () => {
