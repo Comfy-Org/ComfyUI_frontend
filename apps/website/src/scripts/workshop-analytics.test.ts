@@ -114,7 +114,12 @@ describe('Workshop failure analytics', () => {
     })
   })
 
-  it.for(['NotReadableError', 'NotFoundError', 'SecurityError'])(
+  it.for([
+    'NotReadableError',
+    'NotFoundError',
+    'NotSupportedError',
+    'SecurityError'
+  ])(
     'retains the browser exception type %s without its private message',
     (name) => {
       expect(
