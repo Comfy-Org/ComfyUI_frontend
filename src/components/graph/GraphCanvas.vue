@@ -301,6 +301,14 @@ function exitToLegacyRendering(graph: LGraph | null) {
 watch(
   [shouldRenderVueNodes, () => canvasStore.currentGraph],
   ([enabled, graph], previous) => {
+    if (previous && previous[0] !== enabled && graph) {
+      forEachNode(graph.rootGraph, (node) => {
+        for (const widget of node.widgets ?? []) {
+          widget.syncLiveDisabled?.()
+        }
+      })
+    }
+
     if (enabled) {
       layoutStore.clearViewGeometry()
     } else if (previous?.[0]) {

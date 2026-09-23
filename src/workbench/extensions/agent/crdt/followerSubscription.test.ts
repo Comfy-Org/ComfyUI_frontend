@@ -867,7 +867,7 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     error.mockRestore()
   })
 
-  it('keeps the read gate closed until an explicit reset replaces the doc', () => {
+  it('un-latches when a later same-lineage frame restores a readable schema_version', () => {
     const error = vi.spyOn(console, 'error').mockImplementation(() => {})
     const { transport, bridge, projected, schemaErrors } = wire()
     transport.open = true
@@ -889,13 +889,15 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
 
     transport.deliver('doc_update', docUpdateFrame(incompatibleUpdate))
 
-    const retainedError = bridge.lastSchemaError
-    expect(retainedError).toBeInstanceOf(FollowerSchemaError)
+    expect(bridge.lastSchemaError).toBeInstanceOf(FollowerSchemaError)
     expect(nodesMap(follower.doc).get('incompatible')?.get('type')).toBe(
       'SchemaV3Node'
     )
     expect(projected).toHaveLength(0)
 
+    // A later same-lineage frame repairs the version and adds a node. Merging
+    // it — rather than withholding it because the gate was latched — is what
+    // lets the repair actually reach the follower's doc.
     host.getMap('meta').set('schema_version', SCHEMA_VERSION)
     const compatibleNode = new Y.Map<unknown>()
     compatibleNode.set('type', 'SchemaV2Node')
@@ -910,42 +912,15 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     expect(nodesMap(follower.doc).get('incompatible')?.get('type')).toBe(
       'SchemaV3Node'
     )
-    expect(nodesMap(follower.doc).has('compatible')).toBe(false)
-    expect(follower.updatesApplied).toBe(1)
-    expect(bridge.lastSequence).toBe(1)
-    expect(projected).toHaveLength(0)
+    expect(nodesMap(follower.doc).has('compatible')).toBe(true)
+    expect(follower.updatesApplied).toBe(2)
+    expect(bridge.lastSequence).toBe(2)
+    expect(projected).toEqual([expect.objectContaining({ seq: 2 })])
     expect(schemaErrors).toEqual([
       { workflowId: WORKFLOW_ID, found: SCHEMA_VERSION + 1 }
     ])
-    expect(bridge.lastSchemaError).toBe(retainedError)
+    expect(bridge.lastSchemaError).toBeNull()
     expect(transport.framesOfType('doc_subscribe')).toHaveLength(1)
-
-    transport.deliver('doc_reset', {
-      v: 1,
-      workflow_id: WORKFLOW_ID,
-      seq: 2
-    })
-
-    expect(bridge.follower).not.toBe(follower)
-    expect(bridge.follower.updatesApplied).toBe(0)
-    expect(bridge.follower.doc.getMap('nodes').size).toBe(0)
-    expect(bridge.lastSchemaError).toBeNull()
-    const subscribes = transport.framesOfType('doc_subscribe') as {
-      data: { state_vector_b64: string }
-    }[]
-    expect(subscribes).toHaveLength(2)
-    expect(subscribes[1].data.state_vector_b64).toBe(
-      encodeBase64(Y.encodeStateVector(new Y.Doc()))
-    )
-
-    transport.deliver('doc_update', docUpdateFrame(hostDocUpdate()))
-
-    expect(bridge.follower.updatesApplied).toBe(1)
-    expect(projected).toEqual([expect.objectContaining({ seq: 1 })])
-    expect(schemaErrors).toEqual([
-      { workflowId: WORKFLOW_ID, found: SCHEMA_VERSION + 1 }
-    ])
-    expect(bridge.lastSchemaError).toBeNull()
     error.mockRestore()
   })
 
@@ -967,6 +942,43 @@ describe('FE-KA11-1 — the read-time schema gate fails closed', () => {
     expect(schemaErrors).toEqual([
       { workflowId: WORKFLOW_ID, found: undefined }
     ])
+    error.mockRestore()
+  })
+
+  it('un-latches an undefined schema_version once a later frame merges a defined one', () => {
+    const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { transport, bridge, projected, schemaErrors } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+
+    // No meta at all: the exact "unreadable" catch-up shape KA-11 refuses.
+    const host = new Y.Doc()
+    const unreadableNode = new Y.Map<unknown>()
+    unreadableNode.set('type', 'LoadImage')
+    host.getMap('nodes').set('unreadable-seed', unreadableNode)
+    const unreadableState = Y.encodeStateVector(host)
+    transport.deliver('doc_update', docUpdateFrame(Y.encodeStateAsUpdate(host)))
+
+    expect(bridge.lastSchemaError).toBeInstanceOf(FollowerSchemaError)
+    expect(projected).toHaveLength(0)
+
+    // A second, independently schema-valid frame for the SAME lineage merges
+    // and un-latches the gate: the earlier failure must not block a repair
+    // that arrives later on the same lineage.
+    host.getMap('meta').set('schema_version', SCHEMA_VERSION)
+    const laterNode = new Y.Map<unknown>()
+    laterNode.set('type', 'MarkdownNote')
+    nodesMap(host).set('added-after-latch', laterNode)
+    const laterUpdate = Y.encodeStateAsUpdate(host, unreadableState)
+    transport.deliver('doc_update', docUpdateFrame(laterUpdate, WORKFLOW_ID, 2))
+
+    expect(projected).toEqual([expect.objectContaining({ seq: 2 })])
+    expect(nodesMap(bridge.follower.doc).has('added-after-latch')).toBe(true)
+    expect(nodesMap(bridge.follower.doc).has('unreadable-seed')).toBe(true)
+    expect(schemaErrors).toEqual([
+      { workflowId: WORKFLOW_ID, found: undefined }
+    ])
+    expect(bridge.lastSchemaError).toBeNull()
     error.mockRestore()
   })
 

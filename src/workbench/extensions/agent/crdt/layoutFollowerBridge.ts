@@ -12,6 +12,16 @@ import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
 /**
+ * PM-1575: a `doc_update` whose `catchUp` distinguishes a subscribe's own
+ * one-time state-vector sync from a live update unrelated to any in-flight
+ * tool call. Consumers that need "did a LIVE update land" must read this
+ * flag rather than treat every dispatched `doc_update` as one.
+ */
+export interface ClassifiedDocUpdate extends DocUpdate {
+  catchUp: boolean
+}
+
+/**
  * Outbound frames are advisory: the follower's correctness never depends on one
  * arriving. A transport that cannot carry a frame reports `false`; one that
  * throws (the shape `apiTransport` had before this seam was fixed, and the shape
@@ -83,7 +93,12 @@ export class LayoutFollowerBridge extends EventTarget {
    * never on the first successful open.
    */
   private sentWorkflowId: string | null = null
-  /** Set once a merged doc failed the KA-11 read gate; never rendered after. */
+  /**
+   * The most recent KA-11 read-gate failure, while the merged doc is still
+   * unreadable. Cleared by a lineage break ({@link dropDocForNewLineage}) or
+   * by a later same-lineage frame that merges and leaves the doc readable
+   * again — see {@link onDocUpdate}.
+   */
   private schemaError: FollowerSchemaError | null = null
   /**
    * Highest doc seq APPLIED since the last subscribe left the transport;
@@ -250,11 +265,6 @@ export class LayoutFollowerBridge extends EventTarget {
     const update = event.detail as DocUpdate
     if (update.workflowId !== this.sentWorkflowId) return
 
-    // The first incompatible frame is already in the Y.Doc. Same-lineage
-    // updates cannot remove those CRDT bytes, so keep the read gate latched
-    // until an explicit doc_reset replaces the lineage.
-    if (this.schemaError !== null) return
-
     // A stale/duplicate frame cannot advance the replica. Ignoring it also
     // prevents a replayed Yjs frame from spuriously re-running ECS effects.
     // The one exception is the subscribe's own catch-up (seq == ackSeq) when
@@ -297,15 +307,26 @@ export class LayoutFollowerBridge extends EventTarget {
     if (this.lastSeq === null || update.seq > this.lastSeq)
       this.lastSeq = update.seq
     if (isCatchUp) this.catchUpPending = false
+
+    // Merge every same-lineage, in-order frame — even one arriving after a
+    // schema-gate failure. Yjs merge is monotonic and a Y.Map key is
+    // last-writer-wins, so a later frame CAN restore a readable
+    // `meta.schema_version` that an earlier one broke (e.g. a repair); never
+    // merging while latched would make that repair permanently unreachable.
     this.follower.applyRemoteUpdate(update.update)
 
-    // KA-11 read-time gate. The frame must merge before its schema can be
-    // checked, but nothing downstream may READ a doc whose declared schema
-    // this build was not written against. Failing closed here, before the
-    // frame is re-dispatched, is what keeps a v2 doc from being half-projected
-    // onto the canvas by a v1 reader.
+    // KA-11 read-time gate, re-checked on every merge rather than only the
+    // first: the frame must merge before its schema can be checked, but
+    // nothing downstream may READ a doc whose declared schema this build was
+    // not written against. Failing closed here, before the frame is
+    // re-dispatched, is what keeps a v2 doc from being half-projected onto
+    // the canvas by a v1 reader. Re-checking every time — instead of
+    // latching forever on the first failure — lets a later same-lineage
+    // frame that restores a readable version un-latch the gate and resume
+    // projecting.
     try {
       assertReadableSchema(this.follower.doc)
+      this.schemaError = null
     } catch (error) {
       if (!(error instanceof FollowerSchemaError)) throw error
       this.schemaError = error
@@ -317,7 +338,13 @@ export class LayoutFollowerBridge extends EventTarget {
       return
     }
 
-    this.dispatchEvent(new CustomEvent('doc_update', { detail: update }))
+    const classifiedUpdate: ClassifiedDocUpdate = {
+      ...update,
+      catchUp: isCatchUp
+    }
+    this.dispatchEvent(
+      new CustomEvent('doc_update', { detail: classifiedUpdate })
+    )
   }
 
   /**
