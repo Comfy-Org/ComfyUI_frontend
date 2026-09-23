@@ -37,6 +37,10 @@ type AgentMessageDeltaEvent = Extract<
   AgentChatEvent,
   { type: 'agent_message_delta' }
 >
+type AgentMessageDraftEvent = Extract<
+  AgentChatEvent,
+  { type: 'agent_message_draft' }
+>
 
 /**
  * PM-1575: tool names whose execution can plausibly land a CRDT `doc_update`
@@ -117,6 +121,9 @@ export function createAgentEventTransport(
   getCanvasSyncOutcomeCount: () => number = () => 0
 ): AgentEventTransport {
   let openText: TextPart | null = null
+  // The answer the model is still writing. Provisional: the round's first tool
+  // call shows it was narration, and the final answer supersedes it.
+  let draft: TextPart | null = null
   let openThinking: ThinkingPart | null = null
   let openThinkingStartedAt = 0
   // Seeded from any tool parts already on `message` (a hydrated pending row
@@ -337,6 +344,7 @@ export function createAgentEventTransport(
   /** Applies one `agent_message_delta` frame: appends its delta to the open
    * text part, opening one first if none is open. */
   function handleMessageDeltaEvent(data: AgentMessageDeltaEvent['data']): void {
+    dropDraft()
     closeOpenThinking()
     message.thinking = false
     message.thinkingText = undefined
@@ -355,6 +363,32 @@ export function createAgentEventTransport(
     message.parts.push(part)
     openText = part
     return part
+  }
+
+  function dropDraft(): void {
+    if (!draft) return
+    const stale = draft
+    message.parts = message.parts.filter((part) => part !== stale)
+    draft = null
+  }
+
+  /** Applies one `agent_message_draft` frame: the whole reply so far replaces
+   * the last draft, and an empty one withdraws it. */
+  function handleMessageDraftEvent(data: AgentMessageDraftEvent['data']): void {
+    if (data.text) showDraft(data.text)
+    else dropDraft()
+  }
+
+  function showDraft(text: string): void {
+    closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
+    if (!draft) {
+      closeOpenText()
+      draft = { type: 'text', text: '', state: 'streaming' }
+      message.parts.push(draft)
+    }
+    draft.text = text
   }
 
   function closeOpenThinking(): void {
@@ -392,6 +426,7 @@ export function createAgentEventTransport(
         handleThinkingEvent(event.data)
         return true
       case 'agent_tool_call':
+        dropDraft()
         closeOpenText()
         closeOpenThinking()
         message.thinking = false
@@ -408,6 +443,9 @@ export function createAgentEventTransport(
       case 'agent_message_delta':
         handleMessageDeltaEvent(event.data)
         return true
+      case 'agent_message_draft':
+        handleMessageDraftEvent(event.data)
+        return true
       case 'agent_message_done':
         settle()
         return false
@@ -422,6 +460,7 @@ export function createAgentEventTransport(
   function settle(): void {
     if (settled) return
     settled = true
+    dropDraft()
     closeOpenText()
     closeOpenThinking()
     message.thinking = false

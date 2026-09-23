@@ -667,6 +667,15 @@ describe('agentEventTransport reply drafts', () => {
     ])
   })
 
+  it('keeps the answer on screen through the reasoning frame that precedes it', () => {
+    const message = drive([
+      draft('Here is your'),
+      thinking('the render finished cleanly')
+    ])
+
+    expect(textParts(message).map((p) => p.text)).toEqual(['Here is your'])
+  })
+
   it("drops the draft at the round's first tool call", () => {
     const message = drive([draft('One moment'), toolCall('run', 'running')])
 

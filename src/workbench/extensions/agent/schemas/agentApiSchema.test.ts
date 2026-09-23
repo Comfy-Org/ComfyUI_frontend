@@ -225,6 +225,7 @@ describe('agentApiSchema contract subtleties', () => {
         'agent_ask_resolved',
         'agent_message_delta',
         'agent_message_done',
+        'agent_message_draft',
         'agent_thinking',
         'agent_tool_call'
       ].sort()
