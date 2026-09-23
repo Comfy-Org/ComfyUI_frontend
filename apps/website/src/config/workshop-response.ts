@@ -317,8 +317,11 @@ function assertTerminalSuccess(
   if (
     status.length !== 1 ||
     !success.values.some((value) => normalize(value) === normalize(status[0]))
-  )
+  ) {
+    if (workshopContentPolicyPayload(data))
+      throw new WorkshopRouterError('policy', null, {}, undefined, 'response')
     throw new Error('Router did not return terminal success')
+  }
 }
 
 function selectorMime(selector: OutputSelector, value: unknown): string {
