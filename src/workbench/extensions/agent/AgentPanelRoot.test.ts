@@ -205,7 +205,7 @@ const paywallCapabilities = vi.hoisted(() => ({
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null
 }))
-const paywallHasFunds = ref(false)
+const paywallHasFunds = ref<boolean | null>(false)
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -282,7 +282,9 @@ beforeEach(() => {
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
       subscription: computed(() =>
-        fromPartial({ hasFunds: paywallHasFunds.value })
+        paywallHasFunds.value === null
+          ? null
+          : fromPartial({ hasFunds: paywallHasFunds.value })
       ),
       tier: computed(() => paywallBilling.tier)
     })
@@ -676,7 +678,7 @@ describe('AgentPanelRoot paywall actions', () => {
     )
   })
 
-  it('hides a paywall that arrives after funds were already confirmed', async () => {
+  it('shows a fresh denial while the cached billing state still has funds', async () => {
     paywallCapabilities.canTopUp = false
     paywallHasFunds.value = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -687,35 +689,35 @@ describe('AgentPanelRoot paywall actions', () => {
       'render one more frame'
     )
 
-    await vi.waitFor(() =>
-      expect(screen.getAllByText('render one more frame')).not.toHaveLength(0)
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+  })
+
+  it('keeps a resolved paywall hidden while billing state is unknown', async () => {
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
     )
     expect(
-      screen.queryByRole('button', { name: 'Subscribe' })
-    ).not.toBeInTheDocument()
-  })
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
 
-  it('hides a paywall hydrated from history with no funds transition to observe', async () => {
-    paywallCapabilities.canTopUp = false
     paywallHasFunds.value = true
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Subscribe' })
+      ).not.toBeInTheDocument()
+    )
 
-    useAgentConversationStore().messages.push({
-      id: toTurnId('msg-paywall'),
-      role: 'assistant',
-      parts: [{ type: 'paywall' }],
-      streaming: false,
-      thinking: false
-    })
-
+    paywallHasFunds.value = null
     await nextTick()
-    expect(
-      screen.queryByRole('button', { name: 'Subscribe' })
-    ).not.toBeInTheDocument()
+    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
   })
 
-  it('shows the paywall again when funds run out after being restored', async () => {
+  it('shows only a new denial after funds run out again', async () => {
     paywallCapabilities.canTopUp = false
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     useAgentConversationStore().recordPaywall(
@@ -734,6 +736,13 @@ describe('AgentPanelRoot paywall actions', () => {
     )
 
     paywallHasFunds.value = false
+    await nextTick()
+    expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall-2'),
+      'try again'
+    )
     await vi.waitFor(() =>
       expect(
         screen.getByRole('button', { name: 'Subscribe' })

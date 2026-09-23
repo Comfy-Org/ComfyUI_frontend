@@ -804,18 +804,19 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
-  it('keeps every recorded paywall in the transcript for billing to derive over', () => {
+  it('resolves existing paywalls without resurrecting them', () => {
     const store = useAgentConversationStore()
     store.recordPaywall(T1, 'subscribe')
-    store.recordPaywall(T2, 'continue')
+    store.resolvePaywalls()
 
-    expect(store.messages.map((message) => message.parts)).toEqual([
-      [{ type: 'paywall', message: undefined }],
-      [{ type: 'paywall', message: undefined }]
+    expect(store.entries).toMatchObject([{ role: 'user', text: 'subscribe' }])
+    expect(store.messages[0].parts).toEqual([
+      { type: 'paywall', message: undefined }
     ])
+
+    store.recordPaywall(T2, 'continue')
     expect(store.entries.map((entry) => entry.role)).toEqual([
       'user',
-      'assistant',
       'user',
       'assistant'
     ])

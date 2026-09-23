@@ -101,7 +101,6 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
-import { hideResolvedPaywalls } from './services/agent/agentPaywallVisibility'
 import {
   DEFAULT_AGENT_PAYWALL_PRESENTATION,
   resolveAgentPaywallPresentation
@@ -136,6 +135,9 @@ const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
 const { subscription, tier: subscriptionTier } = useBillingContext()
 const conversationStore = useAgentConversationStore()
+watch(subscription, (currentSubscription) => {
+  if (currentSubscription?.hasFunds) conversationStore.resolvePaywalls()
+})
 const { canTopUp, canSubscribeSelfServe, hasResolvedCapabilities } =
   useBillingCapabilities()
 const paywallPresentation = computed(() => {
@@ -583,7 +585,7 @@ const {
   newChat,
   start,
   stop,
-  entries: recordedEntries,
+  entries,
   editableTurnId,
   isStreaming,
   status,
@@ -611,16 +613,6 @@ const {
     draft: targetWorkflowDraft
   }
 })
-
-// Paywall visibility is derived at read time rather than deleted from the
-// transcript on a funds transition, so a paywall that arrives late or hydrates
-// from history resolves on the same rule as one already on screen.
-const entries = computed(() =>
-  hideResolvedPaywalls(
-    recordedEntries.value,
-    subscription.value?.hasFunds === true
-  )
-)
 
 const isSending = computed(
   () => sessionIsSending.value || composerStore.submission?.phase === 'pending'

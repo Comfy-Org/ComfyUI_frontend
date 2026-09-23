@@ -47,6 +47,7 @@ export const useAgentConversationStore = defineStore(
     const userTags = ref(new Map<TurnId, string[]>())
     const userWorkflowReferences = ref(new Map<TurnId, WorkflowReference[]>())
     const latestWorkflowId = ref<string>()
+    const resolvedPaywallIds = ref(new Set<TurnId>())
     let transport: AgentEventTransport | null = null
     let liveMessage: AssistantMessage | null = null
     // PM-1575: whether a newly-created transport should hold a tool-call's
@@ -142,6 +143,16 @@ export const useAgentConversationStore = defineStore(
       message?: string
     ): void {
       recordSettledReply(turnId, text, [{ type: 'paywall', message }])
+    }
+
+    function resolvePaywalls(): void {
+      const resolved = new Set(resolvedPaywallIds.value)
+      for (const message of messages.value) {
+        if (message.parts.some((part) => part.type === 'paywall')) {
+          resolved.add(message.id)
+        }
+      }
+      resolvedPaywallIds.value = resolved
     }
 
     function startTurn(turnId: TurnId): void {
@@ -397,6 +408,7 @@ export const useAgentConversationStore = defineStore(
       userTags.value = new Map()
       userWorkflowReferences.value = new Map()
       latestWorkflowId.value = undefined
+      resolvedPaywallIds.value = new Set()
       dropAttachmentPreviews()
       threadId.value = null
       hydratedMessageIds = new Set()
@@ -409,6 +421,7 @@ export const useAgentConversationStore = defineStore(
       clearActive()
       const transcript = normalizeAgentTranscript(history)
       messages.value = transcript.messages
+      resolvedPaywallIds.value = new Set()
       userTexts.value = transcript.userTexts
       userTags.value = new Map()
       userWorkflowReferences.value = transcript.userWorkflowReferences
@@ -431,21 +444,29 @@ export const useAgentConversationStore = defineStore(
     }
 
     const entries = computed<ConversationEntry[]>(() =>
-      messages.value.flatMap((message) => {
+      messages.value.flatMap((recordedMessage) => {
+        const message = resolvedPaywallIds.value.has(recordedMessage.id)
+          ? {
+              ...recordedMessage,
+              parts: recordedMessage.parts.filter(
+                (part) => part.type !== 'paywall'
+              )
+            }
+          : recordedMessage
         const text = userTexts.value.get(message.id)
-        return text === undefined
-          ? [message]
-          : [
-              {
-                id: message.id,
-                role: 'user',
-                text,
-                attachments: userAttachments.value.get(message.id),
-                tags: userTags.value.get(message.id),
-                workflowReferences: userWorkflowReferences.value.get(message.id)
-              },
-              message
-            ]
+        const assistantEntries = message.parts.length === 0 ? [] : [message]
+        if (text === undefined) return assistantEntries
+        return [
+          {
+            id: message.id,
+            role: 'user',
+            text,
+            attachments: userAttachments.value.get(message.id),
+            tags: userTags.value.get(message.id),
+            workflowReferences: userWorkflowReferences.value.get(message.id)
+          },
+          ...assistantEntries
+        ]
       })
     )
 
@@ -471,6 +492,7 @@ export const useAgentConversationStore = defineStore(
       setThreadId,
       recordFailedSend,
       recordPaywall,
+      resolvePaywalls,
       startTurn,
       ingest,
       setCanvasSyncGate,
