@@ -217,12 +217,19 @@ describe('SubgraphConversion', () => {
       if (!interior) return
       subgraph.add(interior)
       LiteGraph.unregisterNodeType(nodeType)
-      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
 
       expectUnpackRejected(graph, subgraphNode)
-      expect(error).toHaveBeenCalledWith(
-        '[Reported error]: error_unpacking_subgraph_node_type',
-        expect.any(Error)
+      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+        expect.objectContaining({
+          message: `Cannot unpack: node type "${nodeType}" is not registered`
+        }),
+        {
+          errorType: 'error_unpacking_subgraph_node_type',
+          context: {
+            subgraphNodeId: subgraphNode.id,
+            nodeType
+          }
+        }
       )
     })
 

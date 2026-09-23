@@ -108,7 +108,6 @@ test.describe('Subgraph CRUD', { tag: ['@slow', '@subgraph'] }, () => {
 
         await comfyPage.command.executeCommand('Comfy.Graph.ConvertToSubgraph')
 
-        test.fail()
         await expect(comfyPage.toast.toastErrors).toContainText(
           'Cannot create subgraph'
         )
