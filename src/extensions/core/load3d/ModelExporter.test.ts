@@ -1,6 +1,6 @@
 import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
 import { t } from '@/i18n'
@@ -21,12 +21,6 @@ vi.mock(import('@/base/common/downloadUtil'), () => ({
 }))
 
 vi.mock(import('@/i18n'))
-
-beforeEach(() => {
-  vi.mocked(t).mockImplementation((key: unknown, vars?: unknown) =>
-    vars ? `${String(key)}:${JSON.stringify(vars)}` : String(key)
-  )
-})
 
 vi.mock(import('three/examples/jsm/exporters/GLTFExporter'), () => ({
   GLTFExporter: fromAny(
@@ -236,8 +230,11 @@ describe('ModelExporter', () => {
       await vi.runAllTimersAsync()
       expect(await settled).toMatchObject([rejectedWith('parse fail')])
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel:{"format":"GLB"}'
+        'toastMessages.failedToExportModel'
       )
+      expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
+        format: 'GLB'
+      })
     })
   })
 
@@ -284,8 +281,11 @@ describe('ModelExporter', () => {
       await vi.runAllTimersAsync()
       expect(await settled).toMatchObject([rejectedWith('obj fail')])
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel:{"format":"OBJ"}'
+        'toastMessages.failedToExportModel'
       )
+      expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
+        format: 'OBJ'
+      })
     })
   })
 
@@ -332,8 +332,11 @@ describe('ModelExporter', () => {
       await vi.runAllTimersAsync()
       expect(await settled).toMatchObject([rejectedWith('stl fail')])
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel:{"format":"STL"}'
+        'toastMessages.failedToExportModel'
       )
+      expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
+        format: 'STL'
+      })
     })
   })
 
@@ -408,8 +411,11 @@ describe('ModelExporter', () => {
       await vi.runAllTimersAsync()
       expect(await settled).toMatchObject([rejectedWith('fbx fail')])
       expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel:{"format":"FBX"}'
+        'toastMessages.failedToExportModel'
       )
+      expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
+        format: 'FBX'
+      })
     })
   })
 })
