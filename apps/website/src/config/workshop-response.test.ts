@@ -187,6 +187,13 @@ describe('native Router output handling', () => {
       }
     },
     {
+      name: 'an echoed prompt',
+      response: {
+        error: { code: 'content_filter' },
+        prompt: { text: 'Original prompt' }
+      }
+    },
+    {
       name: 'a diagnostic media URL',
       response: {
         error: {

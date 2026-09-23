@@ -58,6 +58,8 @@ const NON_OUTPUT_ENVELOPE_KEYS = new Set([
   'failure',
   'input',
   'inputs',
+  'prompt',
+  'prompts',
   'request',
   'requestbody'
 ])
