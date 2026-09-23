@@ -4,6 +4,7 @@ import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import {
   compareExecutionId,
+  createLeafNodeExecutionId,
   createNodeExecutionId,
   createNodeLocatorId,
   getAncestorExecutionIds,
@@ -239,6 +240,24 @@ describe('nodeIdentification', () => {
         expect(
           createNodeExecutionId([toNodeId(123), toNodeId('node:1')])
         ).toBeNull()
+      })
+    })
+
+    describe('createLeafNodeExecutionId', () => {
+      it('behaves like createNodeExecutionId for an ordinary, colon-free id', () => {
+        expect(createLeafNodeExecutionId(toNodeId(123))).toBe('123')
+      })
+
+      it('keeps a colon-bearing root-level id whole instead of rejecting it (PM-1580)', () => {
+        // comfy-multi-player's insert_workflow remaps every inserted node's
+        // id to a derived string with colons unrelated to subgraph scoping.
+        const rawId = toNodeId('insert:abc123:root:node:5')
+        expect(createNodeExecutionId([rawId])).toBeNull()
+        expect(createLeafNodeExecutionId(rawId)).toBe(rawId)
+      })
+
+      it('returns null for an empty id', () => {
+        expect(createLeafNodeExecutionId(toNodeId(''))).toBeNull()
       })
     })
   })

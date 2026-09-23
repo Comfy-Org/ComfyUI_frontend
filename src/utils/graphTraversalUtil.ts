@@ -7,6 +7,7 @@ import type {
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
+  createLeafNodeExecutionId,
   createNodeExecutionId,
   createNodeLocatorId,
   getParentExecutionIds,
@@ -612,14 +613,20 @@ export function executionIdFromState(
   const localNodeId = parseNodeId(state.id)
   if (!localNodeId) return null
 
+  // A root-owned node has no ancestor path to encode, so its raw id can be
+  // kept whole even when it contains a colon that isn't a subgraph-scope
+  // prefix (comfy-multi-player's insert_workflow remapped ids, PM-1580) —
+  // see `createLeafNodeExecutionId`. A node that IS meant to live inside a
+  // subgraph still goes through the strict, segment-splitting path.
+  const fallback = subgraphIdFromState(state, rootGraph.id)
+    ? createNodeExecutionId([localNodeId])
+    : createLeafNodeExecutionId(localNodeId)
+
   const locatorId = locatorIdFromState(state, rootGraph.id)
   const node = locatorId && getNodeByLocatorId(rootGraph, locatorId)
-  if (!node) return createNodeExecutionId([localNodeId])
+  if (!node) return fallback
 
-  return (
-    getExecutionIdByNode(rootGraph, node) ??
-    createNodeExecutionId([localNodeId])
-  )
+  return getExecutionIdByNode(rootGraph, node) ?? fallback
 }
 
 /**
@@ -866,7 +873,7 @@ export function collectFromNodes<T = LGraphNode, C = void>(
   const {
     collector = (node: LGraphNode) => node as T,
     contextBuilder = () => undefined as C,
-    initialContext = undefined,
+    initialContext,
     expandSubgraphs = true
   } = options || {}
   const results: T[] = []

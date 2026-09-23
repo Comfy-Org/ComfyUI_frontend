@@ -1,8 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Ref } from 'vue'
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import type { SubscriptionInfo } from '@/composables/billing/types'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
 
 import type {
@@ -36,7 +39,7 @@ const hoisted = vi.hoisted(() => {
     toolkit_node_names: ['LoadImage']
   }
   const refs = {
-    tier: null as unknown as Ref<string | null>,
+    tier: null as unknown as Ref<SubscriptionInfo['tier']>,
     remoteConfig: null as unknown as Ref<RemoteConfig>
   }
 
@@ -65,10 +68,7 @@ const hoisted = vi.hoisted(() => {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock(import('@/platform/remoteConfig/remoteConfig'), async () => {
-  hoisted.refs.remoteConfig = ref<RemoteConfig>({})
-  return { remoteConfig: hoisted.refs.remoteConfig }
-})
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 vi.mock<unknown>(import('posthog-js'), () => hoisted.mockPosthog)
 
@@ -76,13 +76,7 @@ vi.mock(import('@/platform/telemetry/utils/getExecutionContext'), () => ({
   getExecutionContext: () => hoisted.executionContext
 }))
 
-vi.mock<unknown>(
-  import('@/composables/billing/useBillingContext'),
-  async () => {
-    hoisted.refs.tier = ref<string | null>(null)
-    return { useBillingContext: () => ({ tier: hoisted.refs.tier }) }
-  }
-)
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 import { PostHogTelemetryProvider } from './PostHogTelemetryProvider'
 
@@ -98,10 +92,14 @@ function createProvider(
 
 describe('PostHogTelemetryProvider', () => {
   beforeEach(() => {
+    hoisted.refs.remoteConfig = remoteConfig
     hoisted.refs.remoteConfig.value = {}
     // Fresh tier ref per test: each provider registers an undisposed tier
     // watch, so a shared ref would leak watchers across tests.
-    hoisted.refs.tier = ref<string | null>(null)
+    hoisted.refs.tier = ref<SubscriptionInfo['tier']>(null)
+    const billing = useBillingContext()
+    billing.tier = computed(() => hoisted.refs.tier.value)
+    vi.mocked(useBillingContext).mockReturnValue(billing)
     window.__CONFIG__ = {
       posthog_project_token: 'phc_test_token'
     }
