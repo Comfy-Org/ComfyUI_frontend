@@ -48,6 +48,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
@@ -353,6 +354,27 @@ const workflowResolver = useAgentWorkflowResolver({
   bindings: bindingStore,
   listCloudWorkflows: () => rest.listCloudWorkflows()
 })
+
+async function recoverWorkflow(
+  workflowId: string,
+  workflowName?: string
+): Promise<ComfyWorkflow | null> {
+  const { content } = await rest.getDraft(workflowId)
+  const graph = await validateComfyWorkflow(content, (details) => {
+    reportError(new Error(details), {
+      surface: 'agent',
+      errorType: 'agent_draft_validation_failed',
+      tags: { workflow_id: workflowId }
+    })
+  })
+  return graph === null
+    ? null
+    : workflowStore.createNewTemporary(
+        agentTabFilename(workflowName) ?? 'Recovered Workflow.json',
+        graph
+      )
+}
+
 const {
   refreshCloudWorkflowIds,
   forgetCloudWorkflowId,
@@ -378,6 +400,7 @@ const {
   canSelectTarget: () => !isSending.value && status.value === 'idle',
   warnWorkflowUnavailable,
   warnRestoreFailed,
+  recoverWorkflow,
   onTargetBound: (workflowId, previousWorkflowId, source) =>
     reportWorkflowBound(workflowId, previousWorkflowId, source)
 })
@@ -1033,10 +1056,13 @@ async function onOpenApprovalWorkflow(
 }
 
 async function onNavigateToReferenceWorkflow(
-  workflowId: string
+  workflowId: string,
+  workflowName: string
 ): Promise<void> {
+  let recovered = false
+  let target: ComfyWorkflow | null = null
   try {
-    let target = openWorkflowFor(workflowId)
+    target = openWorkflowFor(workflowId)
     if (target === null) {
       await Promise.all([
         refreshCloudWorkflowIds(),
@@ -1044,12 +1070,19 @@ async function onNavigateToReferenceWorkflow(
       ])
       target = storedWorkflowFor(workflowId)
     }
+    if (target === null) {
+      target = await recoverWorkflow(workflowId, workflowName)
+      recovered = target !== null
+    }
     if (target === null || !(await workflowService.openWorkflow(target))) {
+      if (recovered && target !== null)
+        await workflowStore.closeWorkflow(target)
       warnWorkflowUnavailable()
       return
     }
     bindingStore.bind(workflowId, target.path)
   } catch {
+    if (recovered && target !== null) await workflowStore.closeWorkflow(target)
     warnWorkflowUnavailable()
   }
 }

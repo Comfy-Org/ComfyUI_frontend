@@ -2,6 +2,7 @@ import {
   zAgentAdmissionError,
   zAgentAnswerAccepted,
   zAgentCancelAccepted,
+  zAgentGetDraftResponse,
   zAgentError as zGeneratedAgentError,
   zAgentMessage as zGeneratedAgentMessage,
   zAgentRunMode as zGeneratedAgentRunMode,
@@ -13,6 +14,7 @@ import {
 import type {
   AgentAnswerAccepted,
   AgentCancelAccepted,
+  AgentGetDraftResponse,
   AgentRunMode as AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted as GeneratedAgentTurnAccepted
@@ -132,6 +134,9 @@ export const zAgentMessages = z.array(zAgentMessage)
 export type AgentMessages = z.infer<typeof zAgentMessages>
 
 export const zAgentThreads = zGeneratedAgentThreadListResponse.passthrough()
+
+export const zAgentDraft = zAgentGetDraftResponse
+export type AgentDraft = AgentGetDraftResponse
 
 export const zCloudWorkflowIndex = zWorkflowListResponse
   .pick({ pagination: true })
