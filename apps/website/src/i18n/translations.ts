@@ -2246,6 +2246,18 @@ Enterprise`
     en: '30 minute max workflow runtime',
     'zh-CN': '单个工作流最长运行 30 分钟'
   },
+  'pricing.feature.apiConcurrency1': {
+    en: 'Run up to 1 concurrent workflow via Cloud API',
+    'zh-CN': '通过 Cloud API 最多并发运行 1 个工作流'
+  },
+  'pricing.feature.apiConcurrency3': {
+    en: 'Run up to 3 concurrent workflows via Cloud API',
+    'zh-CN': '通过 Cloud API 最多并发运行 3 个工作流'
+  },
+  'pricing.feature.apiConcurrency5': {
+    en: 'Run up to 5 concurrent workflows via Cloud API',
+    'zh-CN': '通过 Cloud API 最多并发运行 5 个工作流'
+  },
   'pricing.feature.addCredits': {
     en: 'Add more credits anytime',
     'zh-CN': '可随时增加积分'
