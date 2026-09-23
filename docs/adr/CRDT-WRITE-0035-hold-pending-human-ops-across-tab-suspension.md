@@ -72,7 +72,7 @@ Distinguish a paused subscription from a lost one, and hold rather than drop.
   neither recognizes `delete_node` nor knows what the metadata means; only
   the retention coordinator's own callback does, reading a `delete_node`'s
   target identity (the Yjs `client:clock` occupying that node id) and
-  returning null for every other op. This keeps transport batching and retry
+  returning undefined for every other op. This keeps transport batching and retry
   independent of Yjs/delete policy: a future caller can carry its own
   opaque value through the same seam without opSender changing. A doc-diff-
   based capture (observing the id disappear from the document) cannot do

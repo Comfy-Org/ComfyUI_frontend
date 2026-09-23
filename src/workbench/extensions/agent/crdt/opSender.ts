@@ -217,7 +217,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function reportDetachSettleFailure(cause: unknown): void {
     reportError(cause, {
-      errorType: 'agent_op_sender_detach_settle_failed',
+      errorType: 'failure_settling_agent_op_sender_detach',
       tags: { feature_area: 'agent', operation: 'sync', outcome: 'degraded' }
     })
   }

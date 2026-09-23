@@ -276,17 +276,19 @@ export interface PendingDeleteRetentionStore {
   /**
    * Reports the caller's current best-known principal/workspace scope key,
    * or `null` while it has not resolved yet, and clears every retained
-   * delete exactly when the key names a real scope that differs from the
-   * last real scope this store has seen - never on account of `null`
-   * passing through in between. This store, not any one caller, owns that
-   * last-seen value, so calling it is idempotent and safe from every
+   * delete when either (a) the key names a real scope that differs from
+   * the last real scope this store has seen, or (b) a previously resolved
+   * real scope tears down to `null` - a signed-out principal or torn-down
+   * workspace, per the ADR's requirement that teardown clear everything
+   * retained under it. The very first report being `null` never clears:
+   * an initial unresolved mount has no prior principal to tear down and
+   * nothing yet retained under one. This store, not any one caller, owns
+   * the last-seen value, so calling it is idempotent and safe from every
    * mount of every component that resolves the scope, at any point in its
    * own lifecycle (including immediately on mount): a component that
    * mounts to find the scope already resolved to a different principal
    * than this store last saw still clears, even though nothing changed
-   * during that component's own lifetime, and a component whose own
-   * resolution briefly passes through `null` before landing back on the
-   * SAME scope never clears on account of that detour.
+   * during that component's own lifetime.
    */
   noteResolvedScope(key: string | null): void
 }
@@ -330,7 +332,6 @@ export function createPendingDeleteRetentionStore(): PendingDeleteRetentionStore
       confirmedDeletes.clear()
     },
     noteResolvedScope(key) {
-      if (key === null) return
       if (lastResolvedScope !== null && key !== lastResolvedScope) {
         this.clearAll()
       }

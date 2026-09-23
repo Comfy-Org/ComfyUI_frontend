@@ -520,6 +520,11 @@ describe('AgentPanelRoot onboarding', () => {
   const SCOPED_KEY = 'Comfy.AgentPanel.onboarded.account-a.workspace-a'
 
   beforeEach(() => {
+    // Reset the shared, page-lifetime retention store's own last-seen scope
+    // and retained deletes so a prior test's mount never leaks into this
+    // one's "already resolved" starting point.
+    sharedPendingDeleteRetentionStore.clearAll()
+    sharedPendingDeleteRetentionStore.noteResolvedScope(null)
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: 'workspace-a'
     })
@@ -581,6 +586,13 @@ describe('AgentPanelRoot onboarding', () => {
     // meant the fresh mount's own watcher started from the ALREADY-
     // resolved new scope and never observed a transition, so the previous
     // workspace's retention was never cleared.
+    //
+    // The first render below establishes that "already resolved" scope
+    // through a genuine mount, not by seeding the store ahead of any
+    // render, so the store's own last-seen scope reflects a real prior
+    // mount rather than leftover state from another test.
+    const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    await nextTick()
     sharedPendingDeleteRetentionStore.settleBatch([
       {
         workflowId: 'wf-scope-race-2',
@@ -590,8 +602,6 @@ describe('AgentPanelRoot onboarding', () => {
       }
     ])
     try {
-      const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
-      await nextTick()
       first.unmount()
 
       Object.assign(useTeamWorkspaceStore(), {
@@ -614,11 +624,10 @@ describe('AgentPanelRoot onboarding', () => {
     }
   })
 
-  it('keeps a valid retention across a remount whose own resolution passes through unresolved before landing back on the same scope (delayed same-scope resolution)', async () => {
-    // The other edge of the same race: a same-scope remount whose OWN
-    // resolution transitions null -> the original key is not an actual
-    // identity/workspace change, and must not clear valid retention just
-    // because that transition happened during this mount's lifetime.
+  it('clears a valid retention across a remount whose own resolution passes through unresolved before landing back on the same scope (delayed same-scope resolution)', async () => {
+    // A resolution transitioning to null tears down a previously resolved
+    // scope - a real logout, per the ADR - so it clears immediately even
+    // when the scope later resolves back to the SAME account/workspace.
     const first = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await nextTick()
     sharedPendingDeleteRetentionStore.settleBatch([
@@ -646,7 +655,7 @@ describe('AgentPanelRoot onboarding', () => {
           () => 'item-a',
           true
         )
-      ).toEqual(new Set(['n1']))
+      ).toEqual(new Set())
 
       userId.value = 'account-a'
       await nextTick()
@@ -658,7 +667,7 @@ describe('AgentPanelRoot onboarding', () => {
           () => 'item-a',
           true
         )
-      ).toEqual(new Set(['n1']))
+      ).toEqual(new Set())
     } finally {
       sharedPendingDeleteRetentionStore.clearWorkflow('wf-scope-race-3')
     }

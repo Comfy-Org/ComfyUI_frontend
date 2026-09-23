@@ -715,7 +715,7 @@ describe('createOpSender', () => {
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
-          errorType: 'agent_op_sender_detach_settle_failed'
+          errorType: 'failure_settling_agent_op_sender_detach'
         })
       )
       expect(unsubscribed).toBe(true)

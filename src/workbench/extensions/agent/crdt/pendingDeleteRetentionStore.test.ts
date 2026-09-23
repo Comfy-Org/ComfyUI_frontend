@@ -479,10 +479,10 @@ describe('createPendingDeleteRetentionStore', () => {
       ).toEqual(new Set(['1']))
     })
 
-    it('does not clear when a resolution passes through null before landing back on the SAME scope', () => {
-      // The other edge of the same race: a same-scope remount whose own
-      // resolution transitions null -> the original key is not an actual
-      // identity/workspace change, so it must not clear valid retention.
+    it('clears on a resolution passing through null even if it lands back on the SAME scope', () => {
+      // A previously resolved scope tearing down to null is a real
+      // logout/workspace teardown per the ADR, so it clears immediately -
+      // whether or not the same account then signs back in.
       const store = createPendingDeleteRetentionStore()
       store.noteResolvedScope('account-a.workspace-a')
       store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')])
@@ -492,7 +492,7 @@ describe('createPendingDeleteRetentionStore', () => {
 
       expect(
         store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
-      ).toEqual(new Set(['1']))
+      ).toEqual(new Set())
     })
 
     it('clears once a genuinely different scope resolves, even with no observed transition in between', () => {
@@ -528,22 +528,24 @@ describe('createPendingDeleteRetentionStore', () => {
       ).toEqual(new Set())
     })
 
-    it('does not clear on logout (scope going back to unresolved) by itself, only once a different scope actually resolves', () => {
+    it('clears immediately on logout (scope going back to unresolved), before any new scope resolves', () => {
       const store = createPendingDeleteRetentionStore()
       store.noteResolvedScope('account-a.workspace-a')
       store.settleBatch([del('wf-1', '1', 'confirmed-applied', 'A')])
 
-      // Logout: the scope becomes unresolved again.
+      // Logout: the scope becomes unresolved again - a real principal
+      // teardown, per the ADR, that must clear everything retained under it.
       store.noteResolvedScope(null)
       expect(
         store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
-      ).toEqual(new Set(['1']))
+      ).toEqual(new Set())
 
-      // A different account then signs in.
+      // A different account then signs in; there is nothing left to clear.
+      store.settleBatch([del('wf-1', '2', 'confirmed-applied', 'B')])
       store.noteResolvedScope('account-b.workspace-a')
       expect(
-        store.retainedNodeIds('wf-1', new Set(['1']), () => 'A', true)
-      ).toEqual(new Set())
+        store.retainedNodeIds('wf-1', new Set(['2']), () => 'B', true)
+      ).toEqual(new Set(['2']))
     })
 
     it('is idempotent: reporting the same resolved scope again never clears', () => {
