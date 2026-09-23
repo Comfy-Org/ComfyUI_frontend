@@ -819,4 +819,94 @@ describe('resolveStripePublishableKey', () => {
     expect(identity).toBeDefined()
     expect(key).toBe('pk_live_123')
   })
+
+  it('does not cache a failed features fetch across consumers: a later call on the same pair re-fetches and succeeds', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response('not json', { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            firebase_config: {
+              apiKey: 'api-key',
+              authDomain: 'cloud.firebaseapp.com',
+              projectId: 'cloud',
+              appId: '1:1:web:1'
+            }
+          }),
+          { status: 200 }
+        )
+      )
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveFirebaseIdentity, resolveStripePublishableKey } =
+      await import('./index.js')
+    const options = { cloudBaseUrl: 'https://cloud.example' }
+
+    const failedKey = await resolveStripePublishableKey(options)
+    expect(failedKey).toBeUndefined()
+    const identity = await resolveFirebaseIdentity({
+      ...options,
+      appName: 'evict-across-consumers'
+    })
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(identity).toBeDefined()
+  })
+
+  it('recovers the Stripe key the same way: a failed fetch, then a later resolution yields the server key', async () => {
+    const fetchImpl = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(new Response('not json', { status: 200 }))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ stripe_publishable_key: 'pk_live_123' }),
+          { status: 200 }
+        )
+      )
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveStripePublishableKey } = await import('./index.js')
+    const options = { cloudBaseUrl: 'https://cloud.example' }
+
+    const first = await resolveStripePublishableKey(options)
+    expect(first).toBeUndefined()
+    const second = await resolveStripePublishableKey(options)
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2)
+    expect(second).toBe('pk_live_123')
+  })
+
+  it('shares one in-flight fetch across concurrent callers on the same pair', async () => {
+    const response = deferred<Response>()
+    const fetchImpl = vi.fn<typeof fetch>(() => response.promise)
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveStripePublishableKey } = await import('./index.js')
+    const options = { cloudBaseUrl: 'https://cloud.example' }
+
+    const callA = resolveStripePublishableKey(options)
+    const callB = resolveStripePublishableKey(options)
+    response.resolve(
+      new Response(JSON.stringify({ stripe_publishable_key: 'pk_live_123' }), {
+        status: 200
+      })
+    )
+
+    const [a, b] = await Promise.all([callA, callB])
+    expect(fetchImpl).toHaveBeenCalledOnce()
+    expect(a).toBe('pk_live_123')
+    expect(b).toBe('pk_live_123')
+  })
+
+  it('keeps a successful features fetch cached: a later call does not re-fetch', async () => {
+    const fetchImpl = jsonFetch({ stripe_publishable_key: 'pk_live_123' })
+    vi.stubGlobal('fetch', fetchImpl)
+    const { resolveStripePublishableKey } = await import('./index.js')
+    const options = { cloudBaseUrl: 'https://cloud.example' }
+
+    const first = await resolveStripePublishableKey(options)
+    const second = await resolveStripePublishableKey(options)
+
+    expect(fetchImpl).toHaveBeenCalledOnce()
+    expect(first).toBe('pk_live_123')
+    expect(second).toBe('pk_live_123')
+  })
 })
