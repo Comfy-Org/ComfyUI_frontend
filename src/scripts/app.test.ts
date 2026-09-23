@@ -6,7 +6,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
@@ -15,8 +15,15 @@ import { addAutogrow } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpe
 import type { CurveData } from '@/components/curve/types'
 import type { useExtensionService } from '@/services/extensionService'
 import { t } from '@/i18n'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import { KeybindingImpl } from '@/platform/keybindings/keybinding'
+import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useCommandStore } from '@/stores/commandStore'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import type {
   ComfyApiWorkflow,
@@ -3273,5 +3280,61 @@ describe('ComfyApp', () => {
         ).toEqual(errorTypes)
       }
     )
+  })
+
+  describe('canvas keybindings', () => {
+    const origProcessKey = LGraphCanvas.prototype.processKey
+
+    afterEach(() => {
+      LGraphCanvas.prototype.processKey = origProcessKey
+    })
+
+    function pressCanvasKeybinding(commandId: string) {
+      useKeybindingStore().addUserKeybinding(
+        new KeybindingImpl({
+          commandId,
+          combo: { key: 'F9' },
+          targetElementId: 'graph-canvas-container'
+        })
+      )
+      ;(
+        app as unknown as { addProcessKeyHandler(): void }
+      ).addProcessKeyHandler()
+
+      const canvas = fromPartial<LGraphCanvas>({
+        graph: new LGraph(),
+        selected_nodes: {}
+      })
+      const element = document.createElement('canvas')
+      element.addEventListener('keydown', (e) =>
+        LGraphCanvas.prototype.processKey.call(canvas, e)
+      )
+
+      const event = new KeyboardEvent('keydown', {
+        key: 'F9',
+        cancelable: true
+      })
+      element.dispatchEvent(event)
+      return event
+    }
+
+    it('executes a registered command and consumes the key', () => {
+      const run = vi.fn()
+      useCommandStore().registerCommand({
+        id: 'Test.Registered',
+        function: run
+      })
+
+      const event = pressCanvasKeybinding('Test.Registered')
+
+      expect(run).toHaveBeenCalledOnce()
+      expect(event.defaultPrevented).toBe(true)
+    })
+
+    it('falls through to litegraph when the bound command is no longer registered', () => {
+      const event = pressCanvasKeybinding('Test.RemovedExtensionCommand')
+
+      expect(event.defaultPrevented).toBe(false)
+    })
   })
 })
