@@ -1,5 +1,4 @@
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { getActivePinia } from 'pinia'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
@@ -9,6 +8,7 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import { CURATED_TEMPLATE_IDS, FALLBACK_TEMPLATE_IDS } from './tutorialCards'
@@ -16,7 +16,8 @@ import { CURATED_TEMPLATE_IDS, FALLBACK_TEMPLATE_IDS } from './tutorialCards'
 const mocks = vi.hoisted(() => ({
   dismiss: vi.fn(),
   beginTour: vi.fn(),
-  loadTemplate: vi.fn(),
+  loadTemplate:
+    vi.fn<ReturnType<typeof useTemplateWorkflows>['loadWorkflowTemplate']>(),
 
   loadingTemplateId: { value: null as string | null }
 }))
@@ -76,7 +77,6 @@ async function renderScreen({
 }
 
 beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
   vi.mocked(useWorkflowTemplatesStore().getTemplateByName).mockImplementation(
     (name) =>
       useWorkflowTemplatesStore().enhancedTemplates.find(
@@ -91,7 +91,7 @@ describe('GettingStartedScreen', () => {
     Object.assign(useWorkflowTemplatesStore(), {
       enhancedTemplates: CURATED_TEMPLATE_IDS.map((name) => ({ name }))
     })
-    mocks.loadTemplate.mockResolvedValue(true)
+    mocks.loadTemplate.mockResolvedValue('loaded')
     vi.mocked(
       useWorkflowTemplatesStore().loadWorkflowTemplates
     ).mockResolvedValue(undefined)
@@ -286,21 +286,24 @@ describe('GettingStartedScreen', () => {
   })
 
   describe('failures', () => {
-    it('surfaces a failed template load and keeps the screen up to retry', async () => {
-      mocks.loadTemplate.mockResolvedValue(false)
-      await renderScreen()
+    it.for(['not-started', 'graph-failed'] as const)(
+      'surfaces a %s template load and keeps the screen up to retry',
+      async (result) => {
+        mocks.loadTemplate.mockResolvedValue(result)
+        await renderScreen()
 
-      await pickFirstTemplate()
+        await pickFirstTemplate()
 
-      await waitFor(() =>
-        expect(vi.mocked(useToastStore().add)).toHaveBeenCalled()
-      )
-      expect(
-        mocks.dismiss,
-        'A failed load must not dismiss the screen; the user would be left on a bare canvas'
-      ).not.toHaveBeenCalled()
-      expect(screen.getByText(enMessages.gettingStarted.retry)).toBeTruthy()
-    })
+        expect(
+          await screen.findByText(enMessages.gettingStarted.templateFailed)
+        ).toBeVisible()
+        expect(
+          mocks.dismiss,
+          'A failed load must not dismiss the screen; the user would be left on a bare canvas'
+        ).not.toHaveBeenCalled()
+        expect(screen.getByText(enMessages.gettingStarted.retry)).toBeTruthy()
+      }
+    )
 
     it('retries a catalog load that resolved without loading anything', async () => {
       useWorkflowTemplatesStore().isLoaded = false

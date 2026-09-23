@@ -216,7 +216,8 @@ describe('OnboardingCoach', () => {
     })
   })
 
-  it('does not mark the tour complete when its target is absent', async () => {
+  it('neither completes the tour nor signals the overlay while its target is absent', async () => {
+    const overlay = useOnboardingOverlayStore()
     render(OnboardingCoach, {
       props: { steps: STEPS, storageKey: KEY },
       global: { plugins: [i18n] }
@@ -225,6 +226,7 @@ describe('OnboardingCoach', () => {
     await nextTick()
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(localStorage.getItem(KEY)).toBe('false')
+    expect(overlay.active).toBe(false)
   })
 
   it('signals the onboarding overlay while running and clears it when dismissed', async () => {
@@ -270,5 +272,6 @@ describe('OnboardingCoach', () => {
       name: lateSteps[0].title
     })
     await waitFor(() => expect(dialog).toBeVisible())
+    expect(useOnboardingOverlayStore().active).toBe(true)
   })
 })

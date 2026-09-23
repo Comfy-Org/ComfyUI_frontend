@@ -1,3 +1,4 @@
+import type { PromptInfo } from '@comfyorg/ingest-types'
 import { z } from 'zod'
 import { zNodeId } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { resultItemType } from '@/schemas/resultItemTypeSchema'
@@ -30,9 +31,7 @@ export type NodeOutputWith<T extends Record<string, unknown>> =
 
 type NodeId = z.infer<typeof zNodeId>
 
-export interface StatusWsMessageStatus {
-  exec_info: { queue_remaining: number }
-}
+export type StatusWsMessageStatus = PromptInfo
 export interface StatusWsMessage {
   status?: StatusWsMessageStatus | null
   sid?: string | null

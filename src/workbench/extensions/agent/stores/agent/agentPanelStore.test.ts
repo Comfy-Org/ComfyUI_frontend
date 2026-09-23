@@ -1,13 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
-const telemetry = vi.hoisted(() => ({
-  trackAgentPanelOpened: vi.fn(),
-  trackAgentPanelClosed: vi.fn()
-}))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => telemetry
-}))
+import { useTelemetry } from '@/platform/telemetry'
+
+vi.mock(import('@/platform/telemetry'))
+const telemetryProvider = useTelemetry()
+assert.exists(telemetryProvider)
+const telemetry = vi.mocked(telemetryProvider)
 
 import { useAgentPanelStore } from './agentPanelStore'
 
