@@ -600,6 +600,34 @@ describe('PostHogTelemetryProvider', () => {
       }
     )
 
+    it.for([
+      {
+        event: TelemetryEvents.AGENT_CONSENT_NOT_OFFERED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentConsentNotOffered({ reason: 'tour_active' }),
+        properties: { reason: 'tour_active' }
+      },
+      {
+        event: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentOnboardingNotShown({
+            reason: 'target_missing',
+            step: 2
+          }),
+        properties: { reason: 'target_missing', step: 2 }
+      }
+    ])(
+      'captures $event with its reason',
+      async ({ event, track, properties }) => {
+        const provider = createProvider()
+        await vi.dynamicImportSettled()
+
+        track(provider)
+
+        expect(hoisted.mockCapture).toHaveBeenCalledWith(event, properties)
+      }
+    )
+
     it('captures resubscribe clicks with their source', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()

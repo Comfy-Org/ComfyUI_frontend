@@ -2,7 +2,9 @@ import { useStorage } from '@vueuse/core'
 import { computed, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { AgentOnboardingNotShownMetadata } from '@/platform/telemetry/types'
 
 export interface CoachStep {
   target: string
@@ -46,11 +48,43 @@ export function reportMissingCoachTarget(target: string, step: number): void {
   const key = `${target}:${step}`
   if (reportedMissingTargets.has(key)) return
   reportedMissingTargets.add(key)
+  useTelemetry()?.trackAgentOnboardingNotShown({
+    reason: 'target_missing',
+    step
+  })
   reportError(new Error('Agent coach target never mounted'), {
     errorType: 'failure_locating_agent_coach_target',
     level: 'warning',
     context: { target, step }
   })
+}
+
+export function hasSeenCoach(scopedKey: string): boolean {
+  try {
+    return localStorage.getItem(scopedKey) === 'true'
+  } catch {
+    return false
+  }
+}
+
+const shownScopes = new Set<string>()
+const reportedDeferrals = new Set<string>()
+/** A coach paused mid-way by App Mode or a tour was already shown, so it stays quiet. */
+export function trackCoachDeferral(
+  scope: string,
+  reason: Exclude<
+    AgentOnboardingNotShownMetadata['reason'],
+    'target_missing'
+  > | null
+): void {
+  if (reason === null) {
+    shownScopes.add(scope)
+    return
+  }
+  const key = `${scope}:${reason}`
+  if (shownScopes.has(scope) || reportedDeferrals.has(key)) return
+  reportedDeferrals.add(key)
+  useTelemetry()?.trackAgentOnboardingNotShown({ reason })
 }
 
 export function useOnboarding(
