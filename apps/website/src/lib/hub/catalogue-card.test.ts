@@ -96,6 +96,18 @@ describe('cardViewFor', () => {
     )
   })
 
+  // Most of the launch list runs on models this catalogue does not carry. The
+  // card still knows whose model it is, so it wears the maker's mark rather
+  // than the generic one the models beside it never show.
+  it('marks a workflow whose model the catalogue lacks from its name', () => {
+    const view = cardViewFor(
+      workflowEntry({ template: template({ models: ['Seedance 2.5'] }) })
+    )
+
+    expect(view.mark.label).toBe('Seedance 2.5')
+    expect(view.mark.logo).toContain('bytedance')
+  })
+
   it('marks a model with its provider', () => {
     expect(cardViewFor(modelEntry()).mark.label).toBe('BFL')
   })

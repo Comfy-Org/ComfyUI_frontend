@@ -23,6 +23,7 @@ const MODEL_TO_LOGO: Record<string, string> = {
   ByteDance: 'bytedance',
   Seedance: 'bytedance',
   Seedream: 'bytedance',
+  SeedVR: 'bytedance',
   Topaz: 'topaz',
   Minimax: 'minimax',
   MiniMax: 'minimax',

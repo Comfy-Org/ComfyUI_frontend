@@ -90,12 +90,16 @@ function workflowCard(
     // The registry names a row for its operation, so `Seedream 5.0 Lite
     // Text-to-Image` is the model plus a verb the card has already said. Most
     // of the launch list runs on models this catalogue does not carry, so the
-    // graph's own word for what it calls stands when nothing else does.
+    // graph's own word for what it calls stands when nothing else does — and
+    // the maker's mark is looked up from that word too, because a name the
+    // catalogue lacks is still a name the logos know.
     mark: {
       label: runsOn
         ? displayModelName(runsOn, [...models, runsOn])
         : (template.models[0] ?? ''),
-      logo: runsOn ? markFor(runsOn) : undefined
+      logo: runsOn
+        ? markFor(runsOn)
+        : (getLogoPath(template.models[0] ?? '') ?? undefined)
     },
     badges: usefulTags(template.tags),
     reach: workflowReach(template.name, false)
