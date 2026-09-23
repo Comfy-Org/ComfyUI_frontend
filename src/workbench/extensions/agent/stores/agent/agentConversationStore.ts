@@ -54,20 +54,30 @@ export const useAgentConversationStore = defineStore(
     // chat "done" state back until canvas catch-up is confirmed (see
     // agentEventTransport.ts). Defaults to never deferring, so a caller that
     // never registers a gate (e.g. a headless/non-canvas conversation) keeps
-    // the pre-fix, immediate-done behavior.
+    // the pre-fix, immediate-done behavior. Read indirectly (via a wrapping
+    // closure, never passed by value) everywhere it is handed to a
+    // transport, so a later setCanvasSyncGate() call reaches transports
+    // that already exist -- passing the variable itself would freeze each
+    // transport onto whichever function this variable held at its own
+    // creation time.
     let canvasSyncGate: () => boolean = () => false
-    // PM-1575: the active turn's transport when it settled (agent_message_done)
-    // while still holding a tool-call part back pending canvas catch-up.
-    // clearActive() drops the `transport` slot the moment the turn settles,
-    // same as it always has, so without this the settled transport becomes
-    // unreachable and notifyCanvasCaughtUp() below can never deliver the
-    // catch-up signal it is waiting for -- the part would then only ever
-    // settle via its own STALE_AFTER_MS fallback. A single slot is enough:
-    // it is only read by notifyCanvasCaughtUp, overwritten the next time a
-    // turn settles mid-pending, and a stale entry left over from a much
-    // earlier turn is just a no-op (its own pendingCanvasSync map is already
-    // empty by then).
-    let settledActiveTransport: AgentEventTransport | null = null
+    // PM-1575: mirrors canvasSyncGate above, for the monotonic doc-update
+    // outcome counter a transport compares its per-tool-call baseline
+    // against (agentEventTransport.ts's canvasSyncBaseline). Same
+    // read-indirectly rule applies.
+    let canvasSyncOutcomeCount: () => number = () => 0
+    // PM-1575: settled turns (agent_message_done already applied) whose
+    // transport is still holding at least one tool-call part back pending
+    // canvas catch-up. clearActive() drops the `transport` slot the moment a
+    // turn settles, same as it always has, so without this a settled
+    // transport becomes unreachable and notifyCanvasCaughtUp() below can
+    // never deliver the catch-up signal it is waiting for -- the part would
+    // then only ever settle via its own STALE_AFTER_MS fallback. A Set, not
+    // a single slot: a single slot lets turn B's settle overwrite turn A's
+    // entry while A is still holding a part, stranding A the same way. Each
+    // entry prunes itself out the first time notifyCanvasCaughtUp() finds it
+    // has nothing left pending.
+    const settledActiveTransports = new Set<AgentEventTransport>()
     const backgroundTurns = new Map<string, BackgroundTurn>()
     let hydratedMessageIds = new Set<string>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
@@ -77,7 +87,7 @@ export const useAgentConversationStore = defineStore(
       // PM-1575: looked up by id, not `activeIndex.value`. A turn's own
       // transport keeps emitting after settle -- notifyCanvasCaughtUp() can
       // still land on it while a tool-call part is held pending canvas
-      // catch-up (see settledActiveTransport below) -- and by then
+      // catch-up (see settledActiveTransports below) -- and by then
       // clearActive() has already reset activeIndex.value to -1, even though
       // the settled message is still sitting in `messages` at its own slot.
       const index = messages.value.findIndex((m) => m.id === message.id)
@@ -144,7 +154,8 @@ export const useAgentConversationStore = defineStore(
       transport = createAgentEventTransport(
         message,
         replaceActive,
-        canvasSyncGate
+        () => canvasSyncGate(),
+        () => canvasSyncOutcomeCount()
       )
     }
 
@@ -182,10 +193,13 @@ export const useAgentConversationStore = defineStore(
     // PM-1575: capture the transport before clearActive() drops the
     // `transport` slot, so notifyCanvasCaughtUp() can still reach it while a
     // tool-call part is held pending canvas catch-up (see
-    // settledActiveTransport above).
+    // settledActiveTransports above). Only kept around when it actually has
+    // something pending -- a settled transport with nothing held has no
+    // reason to stay reachable.
     function settleActiveTurn(activeTransport: AgentEventTransport): void {
       activeTransport.settle()
-      settledActiveTransport = activeTransport
+      if (activeTransport.hasPendingCanvasSync())
+        settledActiveTransports.add(activeTransport)
       clearActive()
     }
 
@@ -212,8 +226,12 @@ export const useAgentConversationStore = defineStore(
       entry.transport.ingest(event)
     }
 
-    function setCanvasSyncGate(gate: () => boolean): void {
+    function setCanvasSyncGate(
+      gate: () => boolean,
+      outcomeCount: () => number = () => 0
+    ): void {
       canvasSyncGate = gate
+      canvasSyncOutcomeCount = outcomeCount
     }
 
     /**
@@ -225,7 +243,11 @@ export const useAgentConversationStore = defineStore(
      */
     function notifyCanvasCaughtUp(): void {
       transport?.notifyCanvasCaughtUp()
-      settledActiveTransport?.notifyCanvasCaughtUp()
+      for (const settledTransport of settledActiveTransports) {
+        settledTransport.notifyCanvasCaughtUp()
+        if (!settledTransport.hasPendingCanvasSync())
+          settledActiveTransports.delete(settledTransport)
+      }
       for (const entry of backgroundTurns.values())
         entry.transport.notifyCanvasCaughtUp()
     }
@@ -233,6 +255,11 @@ export const useAgentConversationStore = defineStore(
     function abortActiveTurn(): void {
       if (!transport) return
       transport.settle()
+      // Not `settledActiveTransports`: an abort is not a natural completion
+      // whose held parts might still catch up, so flush them to `done` and
+      // cancel their timers now rather than leaving them reachable only by
+      // their own STALE_AFTER_MS fallback (or, worse, orphaned).
+      transport.dispose()
       clearActive()
     }
 
@@ -267,8 +294,14 @@ export const useAgentConversationStore = defineStore(
         entry.settled &&
         !poppedHydratedCopy &&
         hydratedMessageIds.has(entry.messageId)
-      )
+      ) {
+        // The persisted, authoritative copy is already on screen (kept, via
+        // the filter above) -- this entry's transport is now discarded for
+        // good, so flush anything it is still holding rather than leaving it
+        // unreachable until its own STALE_AFTER_MS fallback.
+        entry.transport.dispose()
         return
+      }
       if (
         entry.userText !== undefined &&
         !userTexts.value.has(entry.message.id)
@@ -304,13 +337,20 @@ export const useAgentConversationStore = defineStore(
       for (const [key, entry] of backgroundTurns) {
         if (entry.messageId !== turnId) continue
         entry.transport.settle()
+        // This turn is being dropped from the map here, unlike the
+        // agent_message_done path in ingestBackgroundTurnEvent -- nothing
+        // will keep it reachable afterwards, so flush its held parts now.
+        entry.transport.dispose()
         backgroundTurns.delete(key)
         return
       }
     }
 
     function dropBackgroundTurns(): void {
-      for (const entry of backgroundTurns.values()) entry.transport.settle()
+      for (const entry of backgroundTurns.values()) {
+        entry.transport.settle()
+        entry.transport.dispose()
+      }
       backgroundTurns.clear()
     }
 
@@ -319,6 +359,19 @@ export const useAgentConversationStore = defineStore(
       liveMessage = null
       activeIndex.value = -1
       activeTurnId.value = null
+    }
+
+    // PM-1575: reset() and hydrate() both discard the active transport (if
+    // any) and every settled-but-still-holding one outright, with no
+    // background-turn stash to keep them reachable through. Without
+    // disposing them first, an orphaned STALE_AFTER_MS timer can fire later
+    // and write a stale snapshot back over transcript content hydrate() has
+    // since replaced under the same turn id.
+    function disposeActiveAndSettledTransports(): void {
+      transport?.dispose()
+      for (const settledTransport of settledActiveTransports)
+        settledTransport.dispose()
+      settledActiveTransports.clear()
     }
 
     function dropAttachmentPreviews(): void {
@@ -331,6 +384,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function reset(): void {
+      disposeActiveAndSettledTransports()
       messages.value = []
       userTexts.value = new Map()
       userTags.value = new Map()
@@ -341,12 +395,11 @@ export const useAgentConversationStore = defineStore(
       hydratedMessageIds = new Set()
       hydratedAssistantTurnIds = new Set()
       clearActive()
-      settledActiveTransport = null
     }
 
     function hydrate(history: AgentMessages): void {
+      disposeActiveAndSettledTransports()
       clearActive()
-      settledActiveTransport = null
       const transcript = normalizeAgentTranscript(history)
       messages.value = transcript.messages
       userTexts.value = transcript.userTexts
@@ -364,7 +417,8 @@ export const useAgentConversationStore = defineStore(
         transport = createAgentEventTransport(
           transcript.pending.message,
           replaceActive,
-          canvasSyncGate
+          () => canvasSyncGate(),
+          () => canvasSyncOutcomeCount()
         )
       }
     }
