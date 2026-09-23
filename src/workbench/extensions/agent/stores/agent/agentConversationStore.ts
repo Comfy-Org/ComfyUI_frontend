@@ -445,7 +445,10 @@ export const useAgentConversationStore = defineStore(
 
     const entries = computed<ConversationEntry[]>(() =>
       messages.value.flatMap((recordedMessage) => {
-        const message = resolvedPaywallIds.value.has(recordedMessage.id)
+        const isPaywallResolved = resolvedPaywallIds.value.has(
+          recordedMessage.id
+        )
+        const message = isPaywallResolved
           ? {
               ...recordedMessage,
               parts: recordedMessage.parts.filter(
@@ -454,7 +457,8 @@ export const useAgentConversationStore = defineStore(
             }
           : recordedMessage
         const text = userTexts.value.get(message.id)
-        const assistantEntries = message.parts.length === 0 ? [] : [message]
+        const assistantEntries =
+          isPaywallResolved && message.parts.length === 0 ? [] : [message]
         if (text === undefined) return assistantEntries
         return [
           {
