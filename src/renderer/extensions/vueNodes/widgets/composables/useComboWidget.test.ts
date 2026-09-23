@@ -1,4 +1,3 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import axios from 'axios'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -17,6 +16,7 @@ import {
   scanNodeModelCandidates,
   verifyAssetSupportedCandidates
 } from '@/platform/missingModel/missingModelScan'
+import { t } from '@/i18n'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { addValueControlWidgets } from '@/scripts/widgets'
@@ -48,18 +48,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () =>
-    fromPartial({
-      flags: { assetsEnabled: false }
-    })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock(import('@/i18n'), () => ({
-  t: vi.fn((key: string) =>
-    key === 'widgets.selectModel' ? 'Select model' : key
-  )
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
@@ -129,6 +120,9 @@ function createMockInputSpec(overrides: Partial<InputSpec> = {}): InputSpec {
 }
 
 beforeEach(() => {
+  vi.mocked(t).mockImplementation((key) =>
+    key === 'widgets.selectModel' ? 'Select model' : String(key)
+  )
   vi.spyOn(useAssetsStore().inputAssets, 'loadMore').mockImplementation(
     async () => {
       useAssetsStore().inputAssets.hasMore = false

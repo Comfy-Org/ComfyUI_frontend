@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
@@ -54,13 +56,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
-  layoutStore: {
-    getNodeLayout: (_rootGraphId: string, nodeId: string) =>
-      testState.nodeLayouts.get(nodeId) ?? null,
-    batchUpdateNodeBounds: testState.batchUpdateNodeBounds
-  }
-}))
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/composables/useNodeSnap'),
@@ -78,17 +74,7 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(
-  import('@/renderer/core/layout/transform/useTransformState'),
-  () => ({
-    useTransformState: () => ({
-      screenToCanvas: ({ x, y }: { x: number; y: number }) => ({
-        x: x / (testState.mockDs.scale || 1) - testState.mockDs.offset[0],
-        y: y / (testState.mockDs.scale || 1) - testState.mockDs.offset[1]
-      })
-    })
-  })
-)
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 vi.mock(import('@vueuse/core'), { spy: true })
 vi.mocked(VueUse.createSharedComposable).mockImplementation(
@@ -108,6 +94,21 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
 }
 
 beforeEach(() => {
+  vi.mocked(layoutStore.getNodeLayout).mockImplementation(
+    (_rootGraphId, nodeId) => {
+      const layout = testState.nodeLayouts.get(nodeId)
+      return layout ? fromPartial<NodeLayout>(layout) : null
+    }
+  )
+  vi.mocked(layoutStore.batchUpdateNodeBounds).mockImplementation(
+    testState.batchUpdateNodeBounds
+  )
+  vi.mocked(useTransformState().screenToCanvas).mockImplementation(
+    ({ x, y }) => ({
+      x: x / (testState.mockDs.scale || 1) - testState.mockDs.offset[0],
+      y: y / (testState.mockDs.scale || 1) - testState.mockDs.offset[1]
+    })
+  )
   vi.mocked(VueUse.whenever).mockImplementation(() =>
     Object.assign(vi.fn(), {
       pause: vi.fn(),

@@ -6,23 +6,13 @@ import {
   createTestSubgraph,
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { api } from '@/scripts/api'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 
 import { useImageCompareImages } from './useImageCompareImages'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: { apiURL: (path: string) => `/api${path}` }
-}))
-
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: undefined,
-    getRandParam: () => '',
-    getPreviewFormatParam: () => '',
-    nodeOutputs: {},
-    nodePreviewImages: {}
-  }
-}))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
 
 function buildGraph() {
   const graph = new LGraph()
@@ -47,6 +37,7 @@ describe('useImageCompareImages', () => {
   let outputStore: ReturnType<typeof useNodeOutputStore>
 
   beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
     outputStore = useNodeOutputStore()
     outputStore.resetAllOutputsAndPreviews()
   })

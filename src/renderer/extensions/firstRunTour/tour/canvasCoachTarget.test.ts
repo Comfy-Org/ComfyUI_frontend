@@ -14,6 +14,9 @@ import {
 
 import { toNodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
+import type { NodeLayout } from '@/renderer/core/layout/types'
 
 import { canvasNodeTarget } from './canvasCoachTarget'
 
@@ -23,7 +26,7 @@ const state = vi.hoisted(() => ({
   camera: null as Record<string, number> | null,
 
   collapsed: new Set<string>(),
-  layout: null as { value: unknown } | null,
+  layout: null as ReturnType<typeof shallowRef<NodeLayout | null>> | null,
   layoutReads: vi.fn(),
   canvasOffset: { left: 0, top: 0 },
   releaseBounds: vi.fn()
@@ -43,32 +46,23 @@ function graph(id: string) {
 
 vi.mock(import('@vueuse/core'), { spy: true })
 
-vi.mock<unknown>(
-  import('@/renderer/core/layout/transform/useTransformState'),
-  () => {
-    state.camera = { x: 0, y: 0, z: 1 }
-    return { useTransformState: () => ({ camera: state.camera }) }
-  }
-)
-
-vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => {
-  state.layout = { value: null }
-  return {
-    layoutStore: {
-      getNodeLayoutRef: (graphId: unknown, nodeId: unknown) => {
-        state.layoutReads(graphId, nodeId)
-        return state.layout
-      }
-    }
-  }
-})
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 function placeNode(bounds = { x: 100, y: 200, width: 80, height: 40 }) {
-  state.layout!.value = { bounds }
+  if (!state.layout) throw new Error('Expected layout state to be initialized')
+  state.layout.value = fromPartial<NodeLayout>({ bounds })
 }
 
 beforeEach(() => {
   state.camera = reactive({ x: 0, y: 0, z: 1 })
-  state.layout = shallowRef<unknown>(null)
+  state.layout = shallowRef<NodeLayout | null>(null)
+  Object.assign(useTransformState(), { camera: state.camera })
+  vi.mocked(layoutStore.getNodeLayoutRef).mockImplementation(
+    (graphId, nodeId) => {
+      state.layoutReads(graphId, nodeId)
+      return computed(() => state.layout?.value ?? null)
+    }
+  )
   vi.mocked(VueUse.useElementBounding).mockImplementation(() => {
     onScopeDispose(state.releaseBounds)
     return {

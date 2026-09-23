@@ -33,11 +33,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    toastErrorHandler: vi.fn()
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock<unknown>(import('@/i18n'), () => ({
   st: vi.fn((key) => key),

@@ -6,26 +6,15 @@ import { createI18n } from 'vue-i18n'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import messages from '@/locales/en/main.json'
+import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import WidgetImageCompare from './WidgetImageCompare.vue'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: { apiURL: (path: string) => `/api${path}` }
-}))
-
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: undefined,
-    canvas: { graph: undefined },
-    getRandParam: () => '',
-    getPreviewFormatParam: () => '',
-    nodeOutputs: {},
-    nodePreviewImages: {}
-  }
-}))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
 
 const savedItems = (filenames: string[]) =>
   filenames.map((filename) => ({ filename, type: 'temp' as const }))
@@ -81,6 +70,7 @@ function renderWidget(compare: LGraphNode) {
 
 describe('WidgetImageCompare', () => {
   beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
     useNodeOutputStore().resetAllOutputsAndPreviews()
   })
 

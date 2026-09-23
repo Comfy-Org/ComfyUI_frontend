@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 
@@ -49,14 +50,7 @@ vi.mocked(VueUse.createSharedComposable).mockImplementation(
   sharedComposable.create
 )
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscription'),
-  () => ({
-    useSubscription: () => ({
-      isSubscriptionEnabled: () => mocks.subscriptionEnabled
-    })
-  })
-)
+vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
 vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => ({ isNewUser: () => mocks.isNewUser })
@@ -72,6 +66,9 @@ const { useFirstRunEntry } = await import('./firstRunEntry')
 type FirstRunEntry = ReturnType<typeof useFirstRunEntry>
 
 beforeEach(() => {
+  vi.mocked(useSubscription().isSubscriptionEnabled).mockImplementation(
+    () => mocks.subscriptionEnabled
+  )
   vi.mocked(VueUse.useBreakpoints).mockReturnValue(
     fromAny<ReturnType<typeof VueUse.useBreakpoints>, unknown>({
       greaterOrEqual: () => computed(() => mocks.isDesktopWidth)

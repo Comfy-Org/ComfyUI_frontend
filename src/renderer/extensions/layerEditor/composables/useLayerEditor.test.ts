@@ -7,9 +7,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 
 import { useLayerEditor } from './useLayerEditor'
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 beforeEach(() => {
   vi.mocked(useToastStore().add).mockImplementation(() => undefined)

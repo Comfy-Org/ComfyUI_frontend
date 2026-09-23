@@ -1,6 +1,6 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, effectScope } from 'vue'
+import { effectScope } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
@@ -19,14 +19,7 @@ const graphNode = createMockLGraphNode({
   flags: { pinned: false }
 })
 
-vi.mock<unknown>(
-  import('@/renderer/core/canvas/useCanvasInteractions'),
-  () => ({
-    useCanvasInteractions: vi.fn(() => ({
-      shouldHandleNodePointerEvents: computed(() => true) // Default to allowing pointer events
-    }))
-  })
-)
+vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
 
 vi.mock<unknown>(
   import('@/renderer/core/layout/operations/layoutMutations'),
