@@ -28,9 +28,7 @@ function isActionableInputIssue(failure: FailedRun): boolean {
   if (failure.reason === 'validation') return true
   return (
     failure.reason === 'client' &&
-    failure.field_error_codes.every((code) =>
-      ['fileUnreadable', 'videoUnreadable'].includes(code)
-    )
+    failure.field_error_codes.every((code) => code === 'fileUnreadable')
   )
 }
 
