@@ -4,9 +4,10 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
 test.describe('Sidebar splitter width independence', () => {
-  test.beforeEach(async ({ comfyPage }) => {
-    await comfyPage.settings.setSetting('Comfy.Sidebar.UnifiedWidth', true)
-    await comfyPage.settings.setSetting('Comfy.NodeLibrary.NewDesign', false)
+  test.use({
+    initialSettings: {
+      'Comfy.NodeLibrary.NewDesign': false
+    }
   })
 
   async function dismissToasts(comfyPage: ComfyPage) {

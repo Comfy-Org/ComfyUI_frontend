@@ -115,7 +115,7 @@ test.describe('App mode usage', () => {
     const initialImage = 'not-selected.png'
     await comfyPage.page.evaluate(
       ([nodeId, value]) => {
-        const node = window.app!.graph!.getNodeById(nodeId)
+        const node = window.app!.graph.getNodeById(nodeId)
         const widget = node?.widgets?.[0]
         if (!widget) throw new Error(`Image widget not found: ${nodeId}`)
 

@@ -1,7 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
 import type { IngestSubscriptionTier } from './tierPricing'
-import { hasActivePaidPlan, toTierKey } from './tierPricing'
+import {
+  hasActivePaidPlan,
+  isEnterprisePlanSlug,
+  isSalesManagedTier,
+  isUnknownTier,
+  toTierKey
+} from './tierPricing'
 
 describe('toTierKey', () => {
   it('maps every personal-catalog tier to its key', () => {
@@ -57,5 +63,43 @@ describe('hasActivePaidPlan', () => {
     expect(hasActivePaidPlan('FREE')).toBe(false)
     expect(hasActivePaidPlan(null)).toBe(false)
     expect(hasActivePaidPlan(undefined)).toBe(false)
+  })
+})
+
+describe('isEnterprisePlanSlug', () => {
+  it('matches enterprise slugs in either case', () => {
+    expect(isEnterprisePlanSlug('enterprise_monthly')).toBe(true)
+    expect(isEnterprisePlanSlug('ENTERPRISE_ANNUAL')).toBe(true)
+  })
+
+  it('rejects catalog slugs and absent values', () => {
+    expect(isEnterprisePlanSlug('team-monthly')).toBe(false)
+    expect(isEnterprisePlanSlug(null)).toBe(false)
+    expect(isEnterprisePlanSlug(undefined)).toBe(false)
+  })
+})
+
+describe('isUnknownTier', () => {
+  it('flags only tiers outside the catalog and the workspace-level set', () => {
+    expect(isUnknownTier('GALACTIC' as unknown as IngestSubscriptionTier)).toBe(
+      true
+    )
+    expect(isUnknownTier('PRO')).toBe(false)
+    expect(isUnknownTier('TEAM')).toBe(false)
+    expect(isUnknownTier('ENTERPRISE')).toBe(false)
+    expect(isUnknownTier(null)).toBe(false)
+    expect(isUnknownTier(undefined)).toBe(false)
+  })
+})
+
+describe('isSalesManagedTier', () => {
+  it('covers Enterprise and unrecognised tiers, nothing else', () => {
+    expect(isSalesManagedTier('ENTERPRISE')).toBe(true)
+    expect(
+      isSalesManagedTier('GALACTIC' as unknown as IngestSubscriptionTier)
+    ).toBe(true)
+    expect(isSalesManagedTier('PRO')).toBe(false)
+    expect(isSalesManagedTier('TEAM')).toBe(false)
+    expect(isSalesManagedTier(null)).toBe(false)
   })
 })

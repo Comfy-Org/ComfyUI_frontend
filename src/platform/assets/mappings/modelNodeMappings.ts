@@ -127,6 +127,8 @@ export const MODEL_NODE_MAPPINGS: ReadonlyArray<
 
   // ---- FILM frame interpolation (ComfyUI-Frame-Interpolation) ----
   ['film', 'FILM VFI', 'ckpt_name'],
+  ['atm', 'ATM VFI', 'ckpt_name'],
+  ['momo', 'MOMO VFI', 'ckpt_name'],
 
   // ---- Ultralytics YOLO detectors (ComfyUI-Impact-Pack) ----
   // Intentionally NOT mapped to the asset-picker. The cloud asset-ingestion

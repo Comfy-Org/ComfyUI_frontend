@@ -199,7 +199,7 @@ export function createWorld(): World {
     createEntity<K extends EntityKind>(kind: K): EntityKindMap[K]['id'] {
       const id = ++counters[kind]
       const store = storeForKind[kind]
-      store.set(id, {} as never)
+      store.set(id, {})
       return id as EntityKindMap[K]['id']
     },
 

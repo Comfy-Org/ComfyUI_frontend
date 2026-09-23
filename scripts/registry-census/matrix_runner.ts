@@ -18,6 +18,7 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import type { ComfyNodeDef, InputSpec } from '@/schemas/nodeDefSchema'
 import type { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 const S = (v: unknown) => JSON.stringify(v)
@@ -72,8 +73,8 @@ interface OpRecord {
   note: string
 }
 
-const COMBO = (o: string[]) => [o, {}]
-const DEFS: Record<string, unknown> = {
+const COMBO = (o: string[]): InputSpec => [o, {}]
+const DEFS: Record<string, Partial<ComfyNodeDef>> = {
   CheckpointLoaderSimple: {
     input: { required: { ckpt_name: COMBO(['v1-5-pruned.ckpt']) } },
     output: ['MODEL', 'CLIP', 'VAE'],
@@ -198,19 +199,19 @@ function signature(graph: LGraph, store: WidgetValueStore | undefined) {
         id: n.id,
         type: n.type,
         mode: n.mode,
-        collapsed: !!n.flags?.collapsed,
+        collapsed: !!n.flags.collapsed,
         widgets: n.widgets?.length ?? 0,
         wn: (n.widgets ?? []).map((w) => `${w.name}=${w.type}`).join(','),
         r,
         st,
-        in: (n.inputs ?? []).map((_, i: number) => {
+        in: n.inputs.map((_, i: number) => {
           try {
             return n.isInputConnected(i) ? 1 : 0
           } catch {
             return 'e'
           }
         }),
-        out: (n.outputs ?? []).map((_, i: number) => {
+        out: n.outputs.map((_, i: number) => {
           try {
             return n.isOutputConnected(i) ? 1 : 0
           } catch {
@@ -224,7 +225,7 @@ function signature(graph: LGraph, store: WidgetValueStore | undefined) {
 
 export async function runPack(
   pack: string,
-  loaders: Record<string, () => Promise<unknown>>,
+  loaders: Partial<Record<string, () => Promise<unknown>>>,
   entries: string[],
   safe: string
 ) {
@@ -282,9 +283,6 @@ export async function runPack(
   const regErrs: string[] = []
   for (const [name, d] of Object.entries(DEFS)) {
     try {
-      // Bound to the service's real signature: a node-def contract change
-      // breaks this cast in the same PR instead of silently measuring a
-      // shape the app no longer accepts.
       await svc.registerNodeDef(name, {
         name,
         display_name: name,
@@ -293,8 +291,8 @@ export async function runPack(
         description: '',
         output_is_list: [],
         output_node: name === 'SaveImage',
-        ...(d as object)
-      } as Parameters<typeof svc.registerNodeDef>[1])
+        ...d
+      })
     } catch (e) {
       regErrs.push(`${name}:${errMsg(e)}`)
     }
@@ -530,9 +528,9 @@ export async function runPack(
     'wConvert',
     () => {
       const k = byType('KSampler')
-      const w = k?.widgets?.find((x) => x.name === 'steps') as
-        | ConvertibleWidget
-        | undefined
+      const w: ConvertibleWidget | undefined = k?.widgets?.find(
+        (x) => x.name === 'steps'
+      )
       if (k && w) {
         w.origType = w.type
         w.origComputeSize = w.computeSize
@@ -559,6 +557,45 @@ export async function runPack(
     },
     false
   )
+  await op('wPushForeignClass', () => {
+    class ForeignWidget {
+      [symbol: symbol]: boolean
+      name = 'XFOREIGN'
+      type = 'X.FOREIGN'
+      value = 1
+      options = {}
+      y = 0
+
+      draw() {
+        return 'draw'
+      }
+
+      mouse() {
+        return true
+      }
+
+      computeSize() {
+        return [101, 21] as [number, number]
+      }
+    }
+
+    const k = byType('KSampler')
+    if (!k) return
+    const foreignWidget = new ForeignWidget()
+    const expectedWidget = new ForeignWidget()
+    const widgetMethods = ['draw', 'mouse', 'computeSize'] as const
+    k.addCustomWidget(foreignWidget)
+    mangled.add(`${k.id}:XFOREIGN`)
+
+    const widget = k.widgets?.find((item) => item.name === 'XFOREIGN')
+    const prototypeMethods = widgetMethods.filter(
+      (method) => widget?.[method] !== expectedWidget[method]
+    )
+    if (prototypeMethods.length)
+      throw new Error(
+        `foreign widget prototype methods lost: ${prototypeMethods.join(',')}`
+      )
+  })
   await op('addNode', () => {
     const n = LiteGraph.createNode('EmptyLatentImage')
     if (n) {
@@ -573,7 +610,7 @@ export async function runPack(
     if (extra) graph.remove(extra)
   })
   await op('addReroute', () => {
-    const link = [...graph.links.values()][0]
+    const link = [...graph.links.values()].at(0)
     if (link) graph.createReroute([500, 500], link)
   })
 
@@ -590,12 +627,12 @@ export async function runPack(
       n.pos = [1200, 100]
       graph.add(n)
       const parts = [
-        `in=${n.inputs?.length ?? 0}`,
-        `out=${n.outputs?.length ?? 0}`,
+        `in=${n.inputs.length}`,
+        `out=${n.outputs.length}`,
         `w=${n.widgets?.length ?? 0}`
       ]
       // try a wildcard-friendly connection into its first input
-      if (n.inputs?.length) {
+      if (n.inputs.length) {
         const ck = byType('CheckpointLoaderSimple')
         try {
           const r = ck?.connect(0, n, 0)
@@ -631,7 +668,7 @@ export async function runPack(
   })
   await op('graphToPrompt', async () => {
     const p = await app.graphToPrompt(graph)
-    row.prompt = S(p.output ?? {})
+    row.prompt = S(p.output)
   })
 
   row.ops = ops

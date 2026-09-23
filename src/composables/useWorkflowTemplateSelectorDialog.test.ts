@@ -1,12 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { useDialogService } from '@/services/dialogService'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { useDialogStore } from '@/stores/dialogStore'
 
-const mockDialogService = vi.hoisted(() => ({
-  showLayoutDialog: vi.fn()
-}))
-
-const mockDialogStore = vi.hoisted(() => ({
-  closeDialog: vi.fn()
-}))
+let mockDialogStore: ReturnType<typeof useDialogStore>
 
 const mockNewUserService = vi.hoisted(() => ({
   isNewUser: vi.fn()
@@ -16,24 +12,18 @@ const mockTelemetry = vi.hoisted(() => ({
   trackTemplateLibraryOpened: vi.fn()
 }))
 
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => mockDialogService
-}))
+vi.mock(import('@/services/dialogService'))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => mockDialogStore
-}))
-
-vi.mock('@/services/useNewUserService', () => ({
+vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => mockNewUserService
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () => mockTelemetry
 }))
 
-vi.mock(
-  '@/components/custom/widget/WorkflowTemplateSelectorDialog.vue',
+vi.mock<unknown>(
+  import('@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'),
   () => ({
     default: { name: 'MockWorkflowTemplateSelectorDialog' }
   })
@@ -42,6 +32,10 @@ vi.mock(
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
 describe('useWorkflowTemplateSelectorDialog', () => {
+  beforeEach(() => {
+    mockDialogStore = useDialogStore()
+  })
+
   describe('show', () => {
     it('defaults to "all" category for non-new users', () => {
       mockNewUserService.isNewUser.mockReturnValue(false)
@@ -49,7 +43,7 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       const dialog = useWorkflowTemplateSelectorDialog()
       dialog.show()
 
-      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
+      expect(useDialogService().showLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           props: expect.objectContaining({
             initialCategory: 'all'
@@ -64,7 +58,7 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       const dialog = useWorkflowTemplateSelectorDialog()
       dialog.show()
 
-      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
+      expect(useDialogService().showLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           props: expect.objectContaining({ initialCategory: 'popular' })
         })
@@ -77,7 +71,7 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       const dialog = useWorkflowTemplateSelectorDialog()
       dialog.show()
 
-      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
+      expect(useDialogService().showLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           props: expect.objectContaining({
             initialCategory: 'all'
@@ -92,7 +86,7 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       const dialog = useWorkflowTemplateSelectorDialog()
       dialog.show('command', { initialCategory: 'custom-category' })
 
-      expect(mockDialogService.showLayoutDialog).toHaveBeenCalledWith(
+      expect(useDialogService().showLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           props: expect.objectContaining({
             initialCategory: 'custom-category'
@@ -108,8 +102,11 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       const dialog = useWorkflowTemplateSelectorDialog()
       dialog.show('command', { afterClose })
 
-      const onClose =
-        mockDialogService.showLayoutDialog.mock.calls[0][0].props.onClose
+      const [options] = vi.mocked(useDialogService().showLayoutDialog).mock
+        .calls[0]
+      assert('onClose' in options.props)
+      const { onClose } = options.props
+      assert(typeof onClose === 'function')
       onClose()
 
       expect(mockDialogStore.closeDialog).toHaveBeenCalled()
@@ -122,8 +119,11 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       const dialog = useWorkflowTemplateSelectorDialog()
       dialog.show('command')
 
-      const onClose =
-        mockDialogService.showLayoutDialog.mock.calls[0][0].props.onClose
+      const [options] = vi.mocked(useDialogService().showLayoutDialog).mock
+        .calls[0]
+      assert('onClose' in options.props)
+      const { onClose } = options.props
+      assert(typeof onClose === 'function')
       expect(() => onClose()).not.toThrow()
     })
 

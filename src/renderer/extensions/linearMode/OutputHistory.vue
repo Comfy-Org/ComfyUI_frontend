@@ -56,7 +56,7 @@ const hasActiveContent = computed(
 )
 
 const visibleHistory = computed(() =>
-  outputs.media.value.filter((a) => allOutputs(a).length > 0)
+  toValue(outputs.items).filter((a) => allOutputs(a).length > 0)
 )
 
 const selectableItems = computed(() => {
@@ -71,7 +71,7 @@ const selectableItems = computed(() => {
       itemId: item.id
     })
   }
-  for (const asset of outputs.media.value) {
+  for (const asset of toValue(outputs.items)) {
     const outs = allOutputs(asset)
     for (let k = 0; k < outs.length; k++) {
       items.push({
@@ -137,9 +137,9 @@ function doEmit() {
     }
     return
   }
-  const asset = outputs.media.value.find((a) => a.id === sel.assetId)
+  const asset = toValue(outputs.items).find((a) => a.id === sel.assetId)
   const output = asset ? allOutputs(asset)[sel.key] : undefined
-  const isFirst = outputs.media.value[0]?.id === sel.assetId
+  const isFirst = toValue(outputs.items)[0]?.id === sel.assetId
   emit('updateSelection', {
     asset,
     output,
@@ -170,7 +170,7 @@ watch(
 
 // Keep history selection stable on media changes
 watch(
-  () => outputs.media.value,
+  () => toValue(outputs.items),
   (newAssets, oldAssets) => {
     if (
       newAssets.length === oldAssets.length ||
@@ -219,8 +219,8 @@ watch(
   }
 )
 
-useInfiniteScroll(outputsRef, outputs.loadMore, {
-  canLoadMore: () => outputs.hasMore.value
+useInfiniteScroll(outputsRef, () => outputs.loadMore(), {
+  canLoadMore: () => toValue(outputs.hasMore)
 })
 
 function navigateToAdjacent(direction: 1 | -1) {

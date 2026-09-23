@@ -1,7 +1,8 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
-    class="image-preview group relative flex size-full min-h-55 min-w-16 flex-col justify-center px-2"
+    class="image-preview group relative flex size-full min-w-16 flex-col justify-center px-2"
+    :style="{ minHeight: `${IMAGE_PREVIEW_CONTENT_MIN_HEIGHT}px` }"
     @keydown="handleKeyDown"
   >
     <!-- Grid View -->
@@ -214,6 +215,7 @@ import { downloadFile } from '@/base/common/downloadUtil'
 import Button from '@/components/ui/button/Button.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { openHdrViewer } from '@/services/hdrViewerService'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -222,6 +224,8 @@ import { isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
 import { cn } from '@comfyorg/tailwind-utils'
+
+import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from './imagePreviewLayout'
 
 interface ImagePreviewProps {
   /** Array of image URLs to display */
@@ -335,6 +339,7 @@ function handleImageError() {
   stopDelayedLoader()
   showLoader.value = false
   imageError.value = true
+  useTelemetry()?.trackImageLoadFailed({ source: 'node_image_preview' })
   actualDimensions.value = null
 }
 

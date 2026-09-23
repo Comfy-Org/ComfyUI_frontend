@@ -13,6 +13,8 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
+import { readOnRail } from '@/platform/workspace/composables/readOnRail'
+import { useBillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -57,6 +59,23 @@ interface ActiveCapabilityRequest {
   promise: Promise<void>
 }
 
+/**
+ * The read itself, on whichever rail the tab is on. A revalidation already
+ * knows the snapshot is stale — a mutation or the expiry timer said so — so it
+ * bypasses the SDK's cache; the first read for a scope takes what the SDK
+ * already holds, which is what the shared top-up flow read.
+ */
+function readCapabilitiesResponse(
+  signal: AbortSignal,
+  revalidating: boolean
+): Promise<BillingCapabilitiesResponse | undefined> {
+  const rail = useBillingReadRail()
+  if (rail === null) return workspaceApi.getBillingCapabilities(signal)
+  return readOnRail(() =>
+    rail.readCapabilities({ signal, forceRefresh: revalidating })
+  )
+}
+
 function useBillingCapabilitiesInternal() {
   const authStore = useAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
@@ -85,6 +104,7 @@ function useBillingCapabilitiesInternal() {
 
     return state.response.capabilities
   })
+  const hasResolvedCapabilities = computed(() => capabilities.value !== null)
   const readUnavailableForCurrentScope = computed(() => {
     const state = readState.value
     return (
@@ -126,6 +146,16 @@ function useBillingCapabilitiesInternal() {
     if (!isCloud) return true
     const state = readState.value
     if (state.status === 'idle' || state.status === 'pending') return false
+    return (
+      state.authUid === authStore.currentUser?.uid &&
+      state.workspaceId === workspaceStore.activeWorkspaceId
+    )
+  })
+
+  const snapshotAuthoritative = computed(() => {
+    if (!isCloud) return true
+    const state = readState.value
+    if (state.status !== 'resolved' && state.status !== 'denied') return false
     return (
       state.authUid === authStore.currentUser?.uid &&
       state.workspaceId === workspaceStore.activeWorkspaceId
@@ -279,14 +309,29 @@ function useBillingCapabilitiesInternal() {
     const promise = (async () => {
       let refetchAfterSettle = false
       try {
-        const response = await workspaceApi.getBillingCapabilities(
-          controller.signal
+        const response = await readCapabilitiesResponse(
+          controller.signal,
+          revalidating
         )
         if (
           requestId !== latestRequestId ||
           userId !== authStore.currentUser?.uid ||
           workspaceId !== workspaceStore.activeWorkspaceId
         ) {
+          return
+        }
+        // The SDK's scope moved on under the read while the stores' did not:
+        // a switch mid-flight. It retries on the outage timer, unreported,
+        // because the next read answers for whichever scope settles.
+        if (response === undefined) {
+          readFailures++
+          readState.value = priorSnapshot
+            ? {
+                ...priorSnapshot,
+                refreshAt: Date.now() + FALLBACK_REFRESH_DELAY_MS
+              }
+            : unavailableState(userId, workspaceId)
+          scheduleRefresh()
           return
         }
 
@@ -416,6 +461,8 @@ function useBillingCapabilitiesInternal() {
     canInviteMembers,
     canDowngradeToPersonal,
     isReady,
+    hasResolvedCapabilities,
+    snapshotAuthoritative,
     initialize,
     refresh
   }

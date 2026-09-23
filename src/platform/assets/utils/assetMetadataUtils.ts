@@ -157,7 +157,7 @@ export const MODEL_TYPE_TAG_PREFIX = 'model_type:'
  * @returns The model type string or null if not present
  */
 export function getAssetModelType(asset: AssetItem): string | null {
-  const typeTag = asset.tags?.find(
+  const typeTag = asset.tags.find(
     (tag) => tag && tag !== MODELS_TAG && !tag.startsWith(MODEL_TYPE_TAG_PREFIX)
   )
   return typeTag ?? null
@@ -191,7 +191,7 @@ function getModelTypeTagValues(asset: AssetItem): string[] {
  * re-type replaces and the value the edit dropdown / browser title reflect.
  */
 function getPrimaryModelType(asset: AssetItem): string | undefined {
-  return getModelTypeTagValues(asset).toSorted()[0]
+  return [...getModelTypeTagValues(asset)].sort()[0]
 }
 
 /**
@@ -396,7 +396,7 @@ export function getAssetNodeCategoryCandidates(
   const byDepthDesc = (a: string, b: string) => pathDepth(b) - pathDepth(a)
 
   const modelTypes = getModelTypeTagValues(asset)
-  if (modelTypes.length === 0) return bareTags.toSorted(byDepthDesc)
+  if (modelTypes.length === 0) return [...bareTags].sort(byDepthDesc)
 
   const isRelated = (tag: string) =>
     modelTypes.some((type) => tag === type || tag.startsWith(`${type}/`))
