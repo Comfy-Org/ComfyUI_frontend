@@ -160,8 +160,10 @@ vi.mock(import('./agentNodeMaterializer'), () => ({
   subgraphDefinitionReadState: materializerState.subgraphDefinitionReadState
 }))
 
-vi.mock(import('./agentSubgraphDefinitions'), async (importOriginal) => ({
-  ...(await importOriginal()),
+vi.mock(import('./agentSubgraphDefinitions'), () => ({
+  allSubgraphDefinitions: (definitions: readonly ExportedSubgraph[]) => [
+    ...definitions
+  ],
   readSubgraphDefinitionIds: definitionsState.readSubgraphDefinitionIds,
   readSubgraphDefinitions: definitionsState.readSubgraphDefinitions
 }))
@@ -978,7 +980,8 @@ describe('useAgentCrdtFollower', () => {
       // Definitions come from the doc the bridge currently follows, so a
       // doc_reset remint (which swaps the FollowerDoc) is read fresh.
       expect(definitionsState.readSubgraphDefinitions).toHaveBeenCalledWith(
-        bridge().follower.doc
+        bridge().follower.doc,
+        new Set()
       )
       unmount()
     })
@@ -1161,7 +1164,8 @@ describe('useAgentCrdtFollower', () => {
         definitionsState.readSubgraphDefinitionIds
       ).toHaveBeenLastCalledWith(replacementDoc)
       expect(definitionsState.readSubgraphDefinitions).toHaveBeenLastCalledWith(
-        replacementDoc
+        replacementDoc,
+        new Set()
       )
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
