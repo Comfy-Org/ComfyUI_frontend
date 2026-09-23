@@ -8,16 +8,11 @@ import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 
 vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
-let mockStartDrag: ReturnType<typeof useNodeDragToCanvas>['startDrag']
-let mockHandleNativeDrop: ReturnType<
-  typeof useNodeDragToCanvas
->['handleNativeDrop']
+let nodeDragToCanvas: ReturnType<typeof useNodeDragToCanvas>
 
 describe('useNodePreviewAndDrag', () => {
   beforeEach(() => {
-    const nodeDragToCanvas = useNodeDragToCanvas()
-    mockStartDrag = nodeDragToCanvas.startDrag
-    mockHandleNativeDrop = nodeDragToCanvas.handleNativeDrop
+    nodeDragToCanvas = vi.mocked(useNodeDragToCanvas())
   })
 
   const mockNodeDef = {
@@ -117,7 +112,7 @@ describe('useNodePreviewAndDrag', () => {
 
       expect(result.isDragging.value).toBe(true)
       expect(result.isHovered.value).toBe(false)
-      expect(mockStartDrag).toHaveBeenCalledWith(mockNodeDef, {
+      expect(nodeDragToCanvas.startDrag).toHaveBeenCalledWith(mockNodeDef, {
         mode: 'native'
       })
       expect(mockDataTransfer.effectAllowed).toBe('copy')
@@ -135,7 +130,7 @@ describe('useNodePreviewAndDrag', () => {
       result.handleDragStart(mockEvent)
 
       expect(result.isDragging.value).toBe(false)
-      expect(mockStartDrag).not.toHaveBeenCalled()
+      expect(nodeDragToCanvas.startDrag).not.toHaveBeenCalled()
     })
   })
 
@@ -154,7 +149,7 @@ describe('useNodePreviewAndDrag', () => {
       result.handleDragEnd(mockEvent)
 
       expect(result.isDragging.value).toBe(false)
-      expect(mockHandleNativeDrop).toHaveBeenCalledWith(100, 200)
+      expect(nodeDragToCanvas.handleNativeDrop).toHaveBeenCalledWith(100, 200)
     })
 
     it('should always call handleNativeDrop regardless of dropEffect', () => {
@@ -172,7 +167,7 @@ describe('useNodePreviewAndDrag', () => {
       result.handleDragEnd(mockEvent)
 
       expect(result.isDragging.value).toBe(false)
-      expect(mockHandleNativeDrop).toHaveBeenCalledWith(300, 400)
+      expect(nodeDragToCanvas.handleNativeDrop).toHaveBeenCalledWith(300, 400)
     })
   })
 })
