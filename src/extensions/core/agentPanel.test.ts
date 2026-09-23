@@ -512,12 +512,6 @@ describe('AgentPanel extension flag gate', () => {
         }
       },
       {
-        reason: 'workspace_switching',
-        arrange: () => {
-          Object.assign(workspaceStore, { isSwitching: true })
-        }
-      },
-      {
         reason: 'boot_undecided',
         arrange: () => {
           startupDecision = Promise.resolve(false)
@@ -554,6 +548,68 @@ describe('AgentPanel extension flag gate', () => {
       await vi.waitFor(() =>
         expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
       )
+      await flush()
+
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'tour_active'
+      })
+    })
+
+    it('stays quiet about an undecided boot once the user has accepted', async () => {
+      mocks.flagEnabled = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      let decide = (_: boolean) => {}
+      startupDecision = new Promise<boolean>((resolve) => {
+        decide = resolve
+      })
+
+      await loadEntryAndSetup()
+      await flush()
+      Object.assign(consentStore, { accepted: true })
+      decide(false)
+      await flush()
+
+      expect(await notOffered()).not.toHaveBeenCalled()
+    })
+
+    it('reports an in-flight tour against the workspace the offer was made for', async () => {
+      mocks.flagEnabled = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      localStorage.setItem(
+        'Comfy.AgentConsent.AutoShown.account-a.workspace-b',
+        'true'
+      )
+      vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+        async (_onAccept, hooks) => {
+          Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-b' })
+          activeTour.value = 'appMode'
+          await flush()
+          hooks?.canShow?.()
+        }
+      )
+
+      await loadEntryAndSetup()
+      await vi.waitFor(() =>
+        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+      )
+      await flush()
+
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'tour_active'
+      })
+    })
+
+    it('reports once telemetry is up when the first attempt found none', async () => {
+      mocks.flagEnabled = true
+      activeTour.value = 'appMode'
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+      vi.mocked(
+        (await import('@/platform/telemetry')).useTelemetry
+      ).mockReturnValueOnce(null)
+
+      await loadEntryAndSetup()
+      await flush()
+      mocks.flagListener?.()
       await flush()
 
       expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({

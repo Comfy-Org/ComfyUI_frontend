@@ -583,7 +583,6 @@ export type AgentConsentNotOfferedReason =
   | 'first_run_screen'
   | 'tour_active'
   | 'boot_undecided'
-  | 'workspace_switching'
   | 'storage_unavailable'
 export interface AgentConsentNotOfferedMetadata extends Record<
   string,

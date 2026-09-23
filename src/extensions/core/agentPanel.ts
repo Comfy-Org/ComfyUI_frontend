@@ -183,25 +183,33 @@ export function registerAgentPanelExtension(): void {
             : null
 
       const reportedWithheld = new Set<string>()
-      const withholdOffer = (reason: AgentConsentNotOfferedReason): void => {
-        const userId = resolvedUserInfo.value?.id
-        const workspaceId = workspaceStore.activeWorkspaceId
+      const withholdOffer = (
+        reason: AgentConsentNotOfferedReason,
+        userId = resolvedUserInfo.value?.id,
+        workspaceId = workspaceStore.activeWorkspaceId
+      ): void => {
         if (!userId || !workspaceId) return
         if (
           wasAutoShown(`${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`)
         )
           return
         const key = `${userId}.${workspaceId}:${reason}`
-        if (reportedWithheld.has(key)) return
+        const telemetry = useTelemetry()
+        if (!telemetry || reportedWithheld.has(key)) return
         reportedWithheld.add(key)
-        useTelemetry()?.trackAgentConsentNotOffered({ reason })
+        telemetry.trackAgentConsentNotOffered({ reason })
       }
+
+      const offerEligible = (): boolean =>
+        agentPanelStore.enabled &&
+        isLoggedIn.value &&
+        !consentStore.isChecking &&
+        !consentStore.accepted
 
       let autoShowInFlight = false
       const offerConsentUnprompted = (): void => {
         if (autoShowInFlight) return
-        if (!agentPanelStore.enabled || !isLoggedIn.value) return
-        if (consentStore.isChecking || consentStore.accepted) return
+        if (!offerEligible()) return
         // Must precede prepareAutoShow, which burns the one-shot key.
         const held = screenHolder()
         if (held) {
@@ -211,11 +219,7 @@ export function registerAgentPanelExtension(): void {
 
         const userId = resolvedUserInfo.value?.id
         const workspaceId = workspaceStore.activeWorkspaceId
-        if (!userId || !workspaceId) return
-        if (workspaceStore.isSwitching) {
-          withholdOffer('workspace_switching')
-          return
-        }
+        if (!userId || !workspaceId || workspaceStore.isSwitching) return
         const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
         const autoShow = prepareAutoShow(key)
         if (autoShow === 'storage_unavailable') withholdOffer(autoShow)
@@ -235,7 +239,7 @@ export function registerAgentPanelExtension(): void {
             },
             canShow: () => {
               const heldAtMount = screenHolder()
-              if (heldAtMount) withholdOffer(heldAtMount)
+              if (heldAtMount) withholdOffer(heldAtMount, userId, workspaceId)
               return heldAtMount === null
             }
           }
@@ -251,7 +255,7 @@ export function registerAgentPanelExtension(): void {
         whenStartupDecided()
           .then((decided) => {
             if (decided) offerConsentUnprompted()
-            else withholdOffer('boot_undecided')
+            else if (offerEligible()) withholdOffer('boot_undecided')
           })
           .catch((error: unknown) => {
             reportError(error, {
