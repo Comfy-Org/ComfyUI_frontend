@@ -599,6 +599,31 @@ describe('createWidgetUpdateHandler (via computeProcessedWidgets)', () => {
     expect(callback).toHaveBeenCalledWith(42, undefined, expect.any(LGraphNode))
   })
 
+  it('fires the live widget callback for a node id carrying a colon that is not a subgraph-scope prefix (insert_workflow remap, PM-1580)', () => {
+    // comfy-multi-player's insert_workflow remaps every inserted node's id
+    // to a derived string with colons unrelated to subgraph scoping
+    // (insert:<opId>:root:node:<originalId>). A colon-rejecting locator-id
+    // path resolves no host LGraphNode for such a node, so the stored
+    // widget value updates but the widget's own callback is silently
+    // skipped.
+    const nodeId = toNodeId('insert:abc123:root:node:5')
+    const callback = vi.fn()
+    const id = widgetId(GRAPH_ID, nodeId, 'seed')
+    const widget = createMockWidget({ name: 'seed', widgetId: id, callback })
+    registerWidgetState(id, { type: 'combo', value: 0 })
+    const { graph } = createGraphWithNode([widget], nodeId)
+
+    const [processed] = processWidgets({
+      widgetIds: [id],
+      nodeId,
+      rootGraph: graph
+    })
+    processed.updateHandler(42)
+
+    expect(useWidgetValueStore().getWidget(id)?.value).toBe(42)
+    expect(callback).toHaveBeenCalledWith(42, undefined, expect.any(LGraphNode))
+  })
+
   it('updates widgetState.value when store entry exists', () => {
     const id = widgetId(GRAPH_ID, NODE_ID, 'seed')
     registerWidgetState(id, { type: 'combo', value: 0 })
