@@ -1,3 +1,4 @@
+import { until } from '@vueuse/core'
 import { effectScope, toValue } from 'vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
@@ -61,12 +62,6 @@ async function createList(
   return list
 }
 
-function requestedLimits() {
-  return fetchApiMock.mock.calls.map(([url]) =>
-    new URL(url, 'http://localhost').searchParams.get('limit')
-  )
-}
-
 function requestedAfterCursors() {
   return fetchApiMock.mock.calls.slice(1).map(([url]) => {
     const requestUrl = new URL(url, 'http://localhost')
@@ -74,30 +69,51 @@ function requestedAfterCursors() {
   })
 }
 
-describe('useAssetsQuery page size', () => {
-  it('sends the pinned page size on the first fetch and on loadMore', async () => {
-    const list = await createList('page-size', ['newest'], {
-      hasMore: true,
-      nextCursor: 'page-2'
+describe('With simulated server latency', () => {
+  const store = Array.from({ length: 1000 }, (_, i) => `asset-${i}`)
+  const serverMs = (rows: number) => 200 + 2 * rows
+
+  beforeEach(() => {
+    vi.useFakeTimers()
+    fetchApiMock.mockImplementation(async (url) => {
+      const query = new URL(url, 'http://localhost').searchParams
+      const start = store.indexOf(query.get('after') ?? '') + 1
+      const page = store.slice(start, start + Number(query.get('limit') ?? 20))
+      await new Promise((resolve) => setTimeout(resolve, serverMs(page.length)))
+      const hasMore = start + page.length < store.length
+      return response(page, { hasMore, nextCursor: page.at(-1) })
     })
-    fetchApiMock.mockResolvedValueOnce(response(['older']))
-
-    await list.loadMore()
-    await vi.waitFor(() => expect(toValue(list.isLoading)).toBe(false))
-
-    expect(requestedLimits()).toEqual(['20', '20'])
   })
 
-  it('lets a caller override the pinned page size', async () => {
-    fetchApiMock.mockResolvedValueOnce(response(['only']))
-    const scope = effectScope()
-    const list = scope.run(() =>
-      useAssetsQuery({ name_contains: 'override', limit: 100 })
-    )!
-    onTestFinished(() => scope.stop())
-    await vi.waitFor(() => expect(toValue(list.isLoading)).toBe(false))
+  async function elapsedMs(run: () => Promise<unknown>) {
+    const start = Date.now()
+    const done = run().then(() => true)
+    for (let i = 0; i < 1000; i++) {
+      if (await Promise.race([done, false])) return Date.now() - start
+      await vi.advanceTimersToNextTimerAsync()
+    }
+    throw new Error('never settled')
+  }
 
-    expect(requestedLimits()).toEqual(['100'])
+  function list(key: string) {
+    const scope = effectScope()
+    onTestFinished(() => scope.stop())
+    return scope.run(() => useAssetsQuery({ name_contains: key }))!
+  }
+
+  it('loads a thousand assets within five seconds', async () => {
+    const ms = await elapsedMs(async () => {
+      const assets = list('bulk')
+      while (toValue(assets.hasMore)) await assets.loadMore()
+      expect(toValue(assets.items)).toHaveLength(store.length)
+    })
+    expect(ms).toBeLessThanOrEqual(5000)
+  })
+
+  it('polls for new assets within three hundred milliseconds', async () => {
+    const assets = list('poll')
+    await elapsedMs(() => until(() => toValue(assets.isLoading)).toBe(false))
+    expect(await elapsedMs(() => assets.loadNew())).toBeLessThanOrEqual(300)
   })
 })
 
