@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "buildCommand": "pnpm --filter @comfyorg/website build",
   "outputDirectory": "dist",
-  "installCommand": "pnpm install --frozen-lockfile",
+  "installCommand": "npm_config_include=dev pnpm install --frozen-lockfile",
   "framework": null,
   "github": {
     "enabled": false
