@@ -194,10 +194,9 @@ export function registerAgentPanelExtension(): void {
         )
           return
         const key = `${userId}.${workspaceId}:${reason}`
-        const telemetry = useTelemetry()
-        if (!telemetry || reportedWithheld.has(key)) return
+        if (reportedWithheld.has(key)) return
         reportedWithheld.add(key)
-        telemetry.trackAgentConsentNotOffered({ reason })
+        useTelemetry()?.trackAgentConsentNotOffered({ reason })
       }
 
       const offerEligible = (): boolean =>

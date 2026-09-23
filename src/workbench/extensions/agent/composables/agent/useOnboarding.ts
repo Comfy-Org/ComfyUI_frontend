@@ -82,10 +82,9 @@ export function trackCoachDeferral(
     return
   }
   const key = `${scope}:${reason}`
-  const telemetry = useTelemetry()
-  if (!telemetry || shownScopes.has(scope) || reportedDeferrals.has(key)) return
+  if (shownScopes.has(scope) || reportedDeferrals.has(key)) return
   reportedDeferrals.add(key)
-  telemetry.trackAgentOnboardingNotShown({ reason })
+  useTelemetry()?.trackAgentOnboardingNotShown({ reason })
 }
 
 export function useOnboarding(
