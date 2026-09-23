@@ -606,6 +606,29 @@ describe('createOpSender', () => {
     expect(telemetryState.reportError).toHaveBeenCalledTimes(2)
   })
 
+  it('a retry parked by suspension and resumed is the same send cycle: no second report', () => {
+    transportThrows = true
+    sender.enqueue([addNode(1)])
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+
+    sender.suspend()
+    vi.advanceTimersByTime(500)
+    sender.resume()
+
+    expect(sent).toHaveLength(0)
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+  })
+
+  it('the result-silence resend is a new send cycle: a transport that starts throwing then is reported', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent).toHaveLength(1)
+
+    transportThrows = true
+    vi.advanceTimersByTime(10_000)
+
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+  })
+
   describe('suspension', () => {
     function parkSecondBatch(): string {
       sender.enqueue([addNode(1)])

@@ -262,10 +262,30 @@ function reconcile(
     (orphan) =>
       graph._nodes_by_id[orphan.id] !== orphan || !recordIds.has(orphan.id)
   )
-  for (const orphan of detached) {
-    graph.remove(orphan, { preserveCanonicalState: true })
-  }
+  sweepOrphans(graph, detached)
   return materialized
+}
+
+/**
+ * `LGraph.remove()` runs extension `onRemoved()` hooks uncaught. One that
+ * throws must not leave the orphans behind it live: a later save would
+ * serialise, and write back, nodes the document no longer holds. Every
+ * orphan gets its removal attempted; the first failure surfaces afterwards
+ * so the caller still counts the pass as failed.
+ */
+function sweepOrphans(
+  graph: MaterializableGraph,
+  orphans: readonly LGraphNode[]
+): void {
+  let firstFailure: { error: unknown } | undefined
+  for (const orphan of orphans) {
+    try {
+      graph.remove(orphan, { preserveCanonicalState: true })
+    } catch (error) {
+      firstFailure ??= { error }
+    }
+  }
+  if (firstFailure) throw firstFailure.error
 }
 
 function materialize(

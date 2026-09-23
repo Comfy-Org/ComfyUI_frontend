@@ -704,6 +704,28 @@ describe('reconcileAgentAdapters', () => {
       expect(graph.serialize().nodes).toHaveLength(0)
     })
 
+    it('sweeps every orphan after a remote clear even when one onRemoved hook throws, then rethrows that failure', () => {
+      const graph = new LGraph()
+      const scope = seedAgentAddedNode(graph, 1)
+      seedAgentAddedNode(graph, 2)
+      seedAgentAddedNode(graph, 3)
+      expect(reconcileAgentAdapters(graph)).toHaveLength(3)
+      const failure = new Error('extension code blew up in onRemoved')
+      graph.getNodeById(toNodeId(1))!.onRemoved = () => {
+        throw failure
+      }
+      graph.getNodeById(toNodeId(2))!.onRemoved = () => {
+        throw new Error('a later hook, not the one to surface')
+      }
+
+      remoteMutations(scope).clearSemanticGraph(REMOTE)
+
+      // The first failure is the one surfaced; the sweep did not stop at it.
+      expect(() => reconcileAgentAdapters(graph)).toThrow(failure)
+      expect(graph.getNodeById(toNodeId(3))).toBeFalsy()
+      expect(graph.serialize().nodes.map((node) => node.id)).not.toContain(3)
+    })
+
     it('detaches nodes dropped by an authoritative snapshot', () => {
       const graph = new LGraph()
       const scope = seedAgentAddedNode(graph, 1)
