@@ -275,7 +275,6 @@ describe('useAgentCrdtFollower', () => {
     clientState.transport = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
     materializerState.subgraphDefinitionReadState
-      .mockReset()
       .mockImplementation((rootGraph, id) =>
         rootGraph.subgraphs.has(id) ? 'registered' : 'missing'
       )
