@@ -44,41 +44,44 @@ const sectionTitle =
 </script>
 
 <template>
-  <div class="grid gap-10 lg:grid-cols-12" data-testid="workflow-about">
-    <div class="flex flex-col gap-12 lg:col-span-8">
-      <section data-testid="workflow-graph-section">
-        <div class="mb-8">
-          <h2 :class="sectionTitle">
-            {{ tHub('workshop.v2.workflow.about', locale) }}
-          </h2>
-          <p class="mt-2 text-sm/relaxed text-content-muted">
-            {{ tHub('workshop.v2.workflow.graphNote', locale) }}
-          </p>
-        </div>
-        <WorkflowGraph :source="graphUrl" :samples :locale />
-      </section>
+  <div data-testid="workflow-about">
+    <!-- The heading spans both columns, so the graph and the column beside it
+      start on the same line rather than one hanging below the other. -->
+    <div class="mb-8">
+      <h2 :class="sectionTitle">
+        {{ tHub('workshop.v2.workflow.about', locale) }}
+      </h2>
+      <p class="mt-2 text-sm/relaxed text-content-muted">
+        {{ tHub('workshop.v2.workflow.graphNote', locale) }}
+      </p>
     </div>
 
-    <div class="lg:col-span-4">
-      <div class="flex flex-col gap-4 lg:sticky lg:top-28">
-        <WorkflowFacts
-          :models
-          :author
-          :usage
-          :produces
-          :reach
-          :open-weights="openWeights"
-          :added
-          :locale
-        />
-        <WorkflowActions
-          :cloud-url="cloudUrl"
-          :download-url="graphUrl"
-          :reach
-          :tutorial-url="tutorialUrl"
-          stacked
-          :locale
-        />
+    <div class="grid gap-10 lg:grid-cols-12">
+      <section class="lg:col-span-8" data-testid="workflow-graph-section">
+        <WorkflowGraph :source="graphUrl" :samples :locale />
+      </section>
+
+      <div class="lg:col-span-4">
+        <div class="flex flex-col gap-4 lg:sticky lg:top-28">
+          <WorkflowActions
+            :cloud-url="cloudUrl"
+            :download-url="graphUrl"
+            :reach
+            :tutorial-url="tutorialUrl"
+            stacked
+            :locale
+          />
+          <WorkflowFacts
+            :models
+            :author
+            :usage
+            :produces
+            :reach
+            :open-weights="openWeights"
+            :added
+            :locale
+          />
+        </div>
       </div>
     </div>
   </div>

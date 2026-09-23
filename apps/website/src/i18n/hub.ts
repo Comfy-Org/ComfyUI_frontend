@@ -68,6 +68,14 @@ const hub = {
     en: 'Back to the Hub',
     'zh-CN': '返回 Hub'
   },
+  'workshop.v2.workflow.moreInfo': {
+    en: '+ Info',
+    'zh-CN': '+ 详情'
+  },
+  'workshop.v2.workflow.lessInfo': {
+    en: 'Show less',
+    'zh-CN': '收起'
+  },
   'workshop.v2.workflow.runsOn': { en: 'Runs on', 'zh-CN': '运行于' },
   'workshop.v2.workflow.runsOnNote': {
     en: 'The models this workflow calls.',

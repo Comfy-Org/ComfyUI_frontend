@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ChevronRight } from '@lucide/vue'
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
@@ -81,6 +83,10 @@ const facts = computed<{ label: HubKey; value: string }[]>(() => {
   return rows
 })
 
+// A long value would wrap and break the column the labels line up in, so it
+// keeps to its line until the reader asks for the rest.
+const expanded = ref(false)
+
 const band = 'border-t border-transparency-white-t8 px-5 py-4 first:border-t-0'
 const bandHeading =
   'text-2xs font-bold tracking-wider text-primary-warm-gray uppercase'
@@ -140,11 +146,35 @@ const bandHeading =
           class="grid grid-cols-[7rem_1fr] gap-4"
         >
           <dt class="text-primary-warm-gray">{{ tHub(fact.label, locale) }}</dt>
-          <dd class="min-w-0 text-primary-comfy-canvas tabular-nums">
+          <dd
+            :class="
+              cn(
+                'min-w-0 text-primary-comfy-canvas tabular-nums',
+                !expanded && 'truncate'
+              )
+            "
+          >
             {{ fact.value }}
           </dd>
         </div>
       </dl>
+
+      <button
+        type="button"
+        class="mt-3 cursor-pointer rounded-lg text-xs font-medium text-primary-comfy-yellow transition-colors outline-none hover:underline focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+        :aria-expanded="expanded"
+        data-testid="workflow-facts-more"
+        @click="expanded = !expanded"
+      >
+        {{
+          tHub(
+            expanded
+              ? 'workshop.v2.workflow.lessInfo'
+              : 'workshop.v2.workflow.moreInfo',
+            locale
+          )
+        }}
+      </button>
     </section>
   </div>
 </template>
