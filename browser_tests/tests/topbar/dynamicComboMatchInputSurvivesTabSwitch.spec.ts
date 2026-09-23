@@ -27,8 +27,12 @@ test.describe(
       comfyPage
     }) => {
       // Three added nodes plus two real drag-connects exceed the project's
-      // default 15s budget.
-      test.setTimeout(30000)
+      // default 15s budget. The CI video-walkthrough job
+      // (playwright-video-new-tests) reruns new specs like this one with
+      // RECORD_VIDEO=true and SLOW_MO=250, which adds ~250ms per Playwright
+      // action on top of video-capture overhead, so this needs more than
+      // double the plain 30s bump.
+      test.setTimeout(60000)
       const { searchBoxV2, nodeOps, vueNodes, workflow } = comfyPage
 
       const getLinkOriginIds = async (resizeNodeId: string) => {
