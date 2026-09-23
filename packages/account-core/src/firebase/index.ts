@@ -224,6 +224,14 @@ export interface ResolveFirebaseIdentityOptions {
  * `resolveStripePublishableKey` on the same pair read the same fetch instead
  * of each starting their own. Never rejects, a failed fetch settles `{}`,
  * which each field reader treats as absent.
+ *
+ * Memoized while a fetch is in flight or has produced a document with either
+ * field present. A document with neither field is treated the same as a
+ * failed fetch and evicts, matching `identityResolutions` below: this cache
+ * cannot tell a transient failure (network error, timeout, malformed body)
+ * from a Cloud origin that genuinely has neither Firebase nor Stripe
+ * configured, and caching that ambiguity would silently defeat
+ * `identityResolutions`'s own eviction once a caller retries through it.
  */
 const featureResolutions = new Map<string, Promise<CloudFeatures>>()
 
@@ -235,6 +243,19 @@ function resolveCloudFeatures(
   let resolution = featureResolutions.get(key)
   if (!resolution) {
     resolution = fetchCloudFeatures(cloudBaseUrl, { timeoutMs })
+    // Evict on an unsuccessful settle so a transient failure does not wedge
+    // every reader of this pair for the module's lifetime. Callers already
+    // hold this promise directly, not a map lookup, so deleting it here
+    // never orphans one.
+    void resolution.then((features) => {
+      if (
+        !features.firebaseConfig &&
+        !features.stripePublishableKey &&
+        featureResolutions.get(key) === resolution
+      ) {
+        featureResolutions.delete(key)
+      }
+    })
     featureResolutions.set(key, resolution)
   }
   return resolution
