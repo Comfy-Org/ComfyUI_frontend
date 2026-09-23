@@ -74,7 +74,6 @@ vi.mock(
 )
 
 vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
-let managerState: ReturnType<typeof useManagerState>
 
 describe('useConflictDetection', () => {
   const mockComfyManagerService = {
@@ -158,8 +157,7 @@ describe('useConflictDetection', () => {
 
   beforeEach(() => {
     // Setup mocks
-    managerState = vi.mocked(useManagerState())
-    managerState.isNewManagerUI = computed(() => true)
+    vi.mocked(useManagerState()).isNewManagerUI = computed(() => true)
     vi.mocked(useComfyManagerService).mockReturnValue(mockComfyManagerService)
     vi.mocked(useComfyRegistryService).mockReturnValue(mockRegistryService)
     vi.mocked(useConflictAcknowledgment).mockReturnValue(mockAcknowledgment)

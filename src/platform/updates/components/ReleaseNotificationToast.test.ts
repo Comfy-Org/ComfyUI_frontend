@@ -56,12 +56,10 @@ vi.mock(import('@/utils/markdownRendererUtil'), () => ({
 }))
 
 vi.mock(import('@/composables/useErrorHandling'))
-let errorHandling: ReturnType<typeof useErrorHandling>
 
 // Mock release store
 
 beforeEach(() => {
-  errorHandling = vi.mocked(useErrorHandling())
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
 })
 
@@ -205,7 +203,9 @@ describe('ReleaseNotificationToast', () => {
       'Comfy-Desktop.CheckForUpdates'
     )
     expect(mockWindowOpen).not.toHaveBeenCalled()
-    expect(errorHandling.toastErrorHandler).not.toHaveBeenCalled()
+    expect(
+      vi.mocked(useErrorHandling()).toastErrorHandler
+    ).not.toHaveBeenCalled()
   })
 
   it('shows an error toast if the desktop updater flow fails on desktop', async () => {
@@ -231,7 +231,9 @@ describe('ReleaseNotificationToast', () => {
 
     await user.click(screen.getByRole('button', { name: /update/i }))
 
-    expect(errorHandling.toastErrorHandler).toHaveBeenCalledWith(error)
+    expect(
+      vi.mocked(useErrorHandling()).toastErrorHandler
+    ).toHaveBeenCalledWith(error)
     expect(mockWindowOpen).not.toHaveBeenCalled()
   })
 

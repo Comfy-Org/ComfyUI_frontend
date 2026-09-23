@@ -49,7 +49,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
-let workspaceUI: ReturnType<typeof useWorkspaceUI>
 
 interface MockSettingParams {
   id: string
@@ -122,7 +121,6 @@ describe('useSettingUI', () => {
   }
 
   beforeEach(() => {
-    workspaceUI = vi.mocked(useWorkspaceUI())
     Object.assign(env.state, {
       isCloud: false,
       isDesktop: false,
@@ -130,7 +128,9 @@ describe('useSettingUI', () => {
       partnerNodeGovernanceStatus: 'inactive',
       partnerNodeGovernanceProviders: []
     })
-    workspaceUI.workspaceRole = computed(() => env.state.workspaceRole)
+    vi.mocked(useWorkspaceUI()).workspaceRole = computed(
+      () => env.state.workspaceRole
+    )
 
     Object.assign(useSettingStore(), { settingsById: mockSettings })
   })
