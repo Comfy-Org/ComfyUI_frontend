@@ -64,9 +64,11 @@ vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
 const { useFirstRunEntry } = await import('./firstRunEntry')
 
 type FirstRunEntry = ReturnType<typeof useFirstRunEntry>
+let subscription: ReturnType<typeof useSubscription>
 
 beforeEach(() => {
-  vi.mocked(useSubscription().isSubscriptionEnabled).mockImplementation(
+  subscription = vi.mocked(useSubscription())
+  vi.mocked(subscription.isSubscriptionEnabled).mockImplementation(
     () => mocks.subscriptionEnabled
   )
   vi.mocked(VueUse.useBreakpoints).mockReturnValue(

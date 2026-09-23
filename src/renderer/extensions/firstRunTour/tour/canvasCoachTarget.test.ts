@@ -23,7 +23,7 @@ import { canvasNodeTarget } from './canvasCoachTarget'
 const TITLE_HEIGHT = 30
 
 const state = vi.hoisted(() => ({
-  camera: null as Record<string, number> | null,
+  camera: { x: 0, y: 0, z: 1 },
 
   collapsed: new Set<string>(),
   layout: null as ReturnType<typeof shallowRef<NodeLayout | null>> | null,
@@ -48,6 +48,9 @@ vi.mock(import('@vueuse/core'), { spy: true })
 
 vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
+
+let transformState: ReturnType<typeof useTransformState>
+
 function placeNode(bounds = { x: 100, y: 200, width: 80, height: 40 }) {
   if (!state.layout) throw new Error('Expected layout state to be initialized')
   state.layout.value = fromPartial<NodeLayout>({ bounds })
@@ -56,7 +59,8 @@ function placeNode(bounds = { x: 100, y: 200, width: 80, height: 40 }) {
 beforeEach(() => {
   state.camera = reactive({ x: 0, y: 0, z: 1 })
   state.layout = shallowRef<NodeLayout | null>(null)
-  Object.assign(useTransformState(), { camera: state.camera })
+  transformState = vi.mocked(useTransformState())
+  transformState.camera = state.camera
   vi.mocked(layoutStore.getNodeLayoutRef).mockImplementation(
     (graphId, nodeId) => {
       state.layoutReads(graphId, nodeId)
@@ -89,7 +93,7 @@ describe('canvasNodeTarget', () => {
     useCanvasStore().currentGraph = graph('root')
     state.collapsed.clear()
     state.canvasOffset = { left: 0, top: 0 }
-    if (state.camera) Object.assign(state.camera, { x: 0, y: 0, z: 1 })
+    Object.assign(state.camera, { x: 0, y: 0, z: 1 })
     if (state.layout) state.layout.value = null
     state.layoutReads.mockClear()
     state.releaseBounds.mockClear()
@@ -121,7 +125,7 @@ describe('canvasNodeTarget', () => {
   it('carries the node through pan and zoom', () => {
     useCanvasStore().currentGraph = graph('root')
     placeNode({ x: 100, y: 200, width: 80, height: 40 })
-    Object.assign(state.camera!, { x: 10, y: 20, z: 2 })
+    Object.assign(state.camera, { x: 10, y: 20, z: 2 })
     state.canvasOffset = { left: 5, top: 7 }
 
     expect(
@@ -208,7 +212,7 @@ describe('canvasNodeTarget', () => {
     const notify = vi.fn()
     scope.run(() => canvasNodeTarget(toNodeId(1)).onMove(notify))
 
-    state.camera!.x = 250
+    state.camera.x = 250
     await nextTick()
 
     expect(
@@ -224,7 +228,7 @@ describe('canvasNodeTarget', () => {
     const stop = scope.run(() => canvasNodeTarget(toNodeId(1)).onMove(notify))!
     stop()
 
-    state.camera!.x = 120
+    state.camera.x = 120
     placeNode({ x: 1, y: 2, width: 3, height: 4 })
     await nextTick()
     window.dispatchEvent(new Event('resize'))

@@ -24,7 +24,6 @@ const testState = vi.hoisted(() => {
       moveNode: vi.fn(),
       batchMoveNodes: vi.fn()
     },
-    batchUpdateNodeBounds: vi.fn(),
     nodeSnap: {
       shouldSnap: vi.fn(() => false),
       applySnapToPosition: vi.fn((pos: { x: number; y: number }) => pos)
@@ -85,6 +84,7 @@ const { useNodeDrag } =
   await import('@/renderer/extensions/vueNodes/layout/useNodeDrag')
 
 const node1 = toNodeId('1')
+let transformState: ReturnType<typeof useTransformState>
 
 function pointerEvent(clientX: number, clientY: number): PointerEvent {
   const target = document.createElement('div')
@@ -100,15 +100,11 @@ beforeEach(() => {
       return layout ? fromPartial<NodeLayout>(layout) : null
     }
   )
-  vi.mocked(layoutStore.batchUpdateNodeBounds).mockImplementation(
-    testState.batchUpdateNodeBounds
-  )
-  vi.mocked(useTransformState().screenToCanvas).mockImplementation(
-    ({ x, y }) => ({
-      x: x / (testState.mockDs.scale || 1) - testState.mockDs.offset[0],
-      y: y / (testState.mockDs.scale || 1) - testState.mockDs.offset[1]
-    })
-  )
+  transformState = vi.mocked(useTransformState())
+  vi.mocked(transformState.screenToCanvas).mockImplementation(({ x, y }) => ({
+    x: x / (testState.mockDs.scale || 1) - testState.mockDs.offset[0],
+    y: y / (testState.mockDs.scale || 1) - testState.mockDs.offset[1]
+  }))
   vi.mocked(VueUse.whenever).mockImplementation(() =>
     Object.assign(vi.fn(), {
       pause: vi.fn(),
@@ -249,8 +245,8 @@ describe('useNodeDrag', () => {
 
     expect(testState.cancelAnimationFrame).toHaveBeenCalledTimes(1)
     expect(testState.cancelAnimationFrame).toHaveBeenCalledWith(1)
-    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledTimes(1)
-    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith(
+    expect(layoutStore.batchUpdateNodeBounds).toHaveBeenCalledTimes(1)
+    expect(layoutStore.batchUpdateNodeBounds).toHaveBeenCalledWith(
       ROOT_GRAPH_ID,
       [
         {
