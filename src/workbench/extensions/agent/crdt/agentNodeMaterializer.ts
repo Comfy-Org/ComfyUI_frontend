@@ -99,10 +99,12 @@ const reportedDefinitionFailures = new WeakMap<LGraph, Set<string>>()
  * a failure whose telemetry is already deduplicated. Explicit callers that
  * supply a fresh body to `reconcileAgentAdapters` still retry registration.
  */
+export type SubgraphDefinitionReadState = 'registered' | 'failed' | 'missing'
+
 export function subgraphDefinitionReadState(
   rootGraph: LGraph,
   definitionId: string
-): 'registered' | 'failed' | 'missing' {
+): SubgraphDefinitionReadState {
   if (rootGraph.subgraphs.has(definitionId)) return 'registered'
   if (reportedDefinitionFailures.get(rootGraph)?.has(definitionId))
     return 'failed'

@@ -21,7 +21,10 @@ import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-import type { MaterializableGraph } from './agentNodeMaterializer'
+import type {
+  MaterializableGraph,
+  SubgraphDefinitionReadState
+} from './agentNodeMaterializer'
 import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
@@ -69,7 +72,12 @@ const adapterState = vi.hoisted(() => ({
 
 const materializerState = vi.hoisted(() => ({
   reconcileAgentAdapters: vi.fn(() => [] as NodeId[]),
-  subgraphDefinitionReadState: vi.fn(
+  subgraphDefinitionReadState: vi.fn<
+    (
+      rootGraph: MaterializableGraph['rootGraph'],
+      id: string
+    ) => SubgraphDefinitionReadState
+  >(
     (rootGraph: MaterializableGraph['rootGraph'], id: string) =>
       rootGraph.subgraphs.has(id) ? ('registered' as const) : ('missing' as const)
   )
