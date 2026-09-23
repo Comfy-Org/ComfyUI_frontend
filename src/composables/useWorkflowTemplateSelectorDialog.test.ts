@@ -1,4 +1,5 @@
 import { useDialogService } from '@/services/dialogService'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useDialogStore } from '@/stores/dialogStore'
 
@@ -80,16 +81,17 @@ describe('useWorkflowTemplateSelectorDialog', () => {
       )
     })
 
-    it('uses explicit initialCategory when provided', () => {
+    it('falls back from a stale explicit category to "popular"', () => {
       mockNewUserService.isNewUser.mockReturnValue(true)
+      useWorkflowTemplatesStore().isLoaded = true
 
       const dialog = useWorkflowTemplateSelectorDialog()
-      dialog.show('command', { initialCategory: 'custom-category' })
+      dialog.show('command', { initialCategory: 'removed-category' })
 
       expect(useDialogService().showLayoutDialog).toHaveBeenCalledWith(
         expect.objectContaining({
           props: expect.objectContaining({
-            initialCategory: 'custom-category'
+            initialCategory: 'popular'
           })
         })
       )

@@ -1,6 +1,7 @@
 import WorkflowTemplateSelectorDialog from '@/components/custom/widget/WorkflowTemplateSelectorDialog.vue'
 import { useTelemetry } from '@/platform/telemetry'
 import type { TemplateLibraryMetadata } from '@/platform/telemetry/types'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import { useDialogService } from '@/services/dialogService'
 import { useNewUserService } from '@/services/useNewUserService'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -12,6 +13,7 @@ export const useWorkflowTemplateSelectorDialog = () => {
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
   const newUserService = useNewUserService()
+  const workflowTemplatesStore = useWorkflowTemplatesStore()
 
   function hide() {
     dialogStore.closeDialog({ key: DIALOG_KEY })
@@ -23,9 +25,12 @@ export const useWorkflowTemplateSelectorDialog = () => {
   ) {
     useTelemetry()?.trackTemplateLibraryOpened({ source })
 
-    const initialCategory =
+    const requestedCategory =
       options?.initialCategory ??
       (newUserService.isNewUser() ? POPULAR_CATEGORY_ID : 'all')
+    const initialCategory = workflowTemplatesStore.isLoaded
+      ? workflowTemplatesStore.resolveCategoryId(requestedCategory)
+      : requestedCategory
 
     dialogService.showLayoutDialog({
       key: DIALOG_KEY,

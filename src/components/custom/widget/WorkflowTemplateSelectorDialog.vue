@@ -927,6 +927,9 @@ const { isLoading } = useAsyncState(
       loadTemplates(),
       workflowTemplatesStore.loadWorkflowTemplates()
     ])
+    selectedNavItem.value = workflowTemplatesStore.resolveCategoryId(
+      selectedNavItem.value ?? 'all'
+    )
     return true
   },
   false, // initial state

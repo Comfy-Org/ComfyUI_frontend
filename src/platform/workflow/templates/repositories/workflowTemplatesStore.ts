@@ -507,6 +507,14 @@ export const useWorkflowTemplatesStore = defineStore(
       return items
     })
 
+    function resolveCategoryId(categoryId: string) {
+      const categoryIds = navGroupedTemplates.value.flatMap((item) =>
+        'id' in item ? item.id : item.items.map(({ id }) => id)
+      )
+      if (categoryIds.includes(categoryId)) return categoryId
+      return categoryIds.includes('popular') ? 'popular' : 'all'
+    }
+
     async function fetchCoreTemplates() {
       const locale = i18n.global.locale.value
       const [coreResult, englishResult, logoIndexResult] = await Promise.all([
@@ -614,6 +622,7 @@ export const useWorkflowTemplatesStore = defineStore(
       navGroupedTemplates,
       enhancedTemplates,
       filterTemplatesByCategory,
+      resolveCategoryId,
       isLoaded,
       loadWorkflowTemplates,
       loadingTemplateId,

@@ -25,12 +25,15 @@ function deferred<T>() {
   return { promise, resolve, reject }
 }
 
-function renderPicker() {
+function renderPicker(initialCategory?: string) {
   const pinia = getActivePinia()
   assert.exists(pinia)
   const dialogStore = useDialogStore()
   const afterClose = vi.fn()
-  useWorkflowTemplateSelectorDialog().show('appbuilder', { afterClose })
+  useWorkflowTemplateSelectorDialog().show('appbuilder', {
+    afterClose,
+    initialCategory
+  })
   render(
     defineComponent({
       setup() {
@@ -79,6 +82,20 @@ beforeEach(() => {
 })
 
 describe('template picker close lifecycle', () => {
+  it('falls back after loading when the requested category was removed', async () => {
+    const store = useWorkflowTemplatesStore()
+    store.isLoaded = false
+    vi.mocked(store.loadWorkflowTemplates).mockImplementation(async () => {
+      store.isLoaded = true
+    })
+
+    renderPicker('removed-category')
+
+    expect(
+      await screen.findByRole('heading', { name: 'Popular' })
+    ).toBeVisible()
+  })
+
   it.for([
     {
       outcome: 'success',
