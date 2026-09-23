@@ -136,6 +136,36 @@ describe('rewriteAgentAssetHtml', () => {
     expect(out).not.toContain('localhost:8188')
   })
 
+  // srcset separates candidates by a comma AFTER the descriptors, not by every
+  // comma: a URL may carry commas of its own (a filename, a CDN transform).
+  it('keeps a comma inside a candidate URL as part of that URL', () => {
+    const out = rewriteAgentAssetHtml(
+      '<img srcset="http://127.0.0.1:8188/view?filename=a,b.png 1x, http://127.0.0.1:8188/view?filename=c.png 2x">'
+    )
+    expect(out).toContain(
+      `srcset="${window.location.origin}/view?filename=a,b.png 1x, ${window.location.origin}/view?filename=c.png 2x"`
+    )
+    expect(out).not.toContain('127.0.0.1')
+  })
+
+  it('resolves a candidate that follows leading whitespace', () => {
+    const out = rewriteAgentAssetHtml(
+      '<img srcset="\n   http://127.0.0.1:8188/view?filename=a.png 1x">'
+    )
+    expect(out).toContain(
+      `srcset="${window.location.origin}/view?filename=a.png 1x"`
+    )
+  })
+
+  it('ends a descriptor-less candidate at its trailing comma', () => {
+    const out = rewriteAgentAssetHtml(
+      '<img srcset="http://127.0.0.1:8188/view?filename=a.png, http://localhost:8188/view?filename=b.png">'
+    )
+    expect(out).toContain(
+      `srcset="${window.location.origin}/view?filename=a.png, ${window.location.origin}/view?filename=b.png"`
+    )
+  })
+
   it('leaves a srcset of remote candidates alone', () => {
     const html =
       '<img srcset="https://cdn.example.com/a.png 1x, https://cdn.example.com/a@2x.png 2x">'

@@ -61,14 +61,63 @@ export function resolveAgentAssetUrl(
   }
 }
 
+const SRCSET_SPACE = /[\t\n\f\r ]/
+
+interface SrcsetCandidate {
+  url: string
+  descriptor: string
+}
+
+/**
+ * Split a `srcset` into candidates the way the HTML parser does (WHATWG
+ * "parse a srcset attribute"), not on every comma: a URL runs until
+ * whitespace, so a comma inside it stays part of it; a URL that ends in a
+ * comma closes a descriptor-less candidate; otherwise the descriptors run
+ * until a comma outside parentheses. Leading whitespace and stray commas
+ * between candidates are skipped rather than read as an empty URL.
+ */
+function srcsetCandidates(value: string): SrcsetCandidate[] {
+  const candidates: SrcsetCandidate[] = []
+  let position = 0
+  while (position < value.length) {
+    while (
+      position < value.length &&
+      (SRCSET_SPACE.test(value[position]) || value[position] === ',')
+    )
+      position++
+    if (position >= value.length) break
+
+    const urlStart = position
+    while (position < value.length && !SRCSET_SPACE.test(value[position]))
+      position++
+    let url = value.slice(urlStart, position)
+    let descriptor = ''
+    if (url.endsWith(',')) {
+      url = url.replace(/,+$/, '')
+    } else {
+      const descriptorStart = position
+      let depth = 0
+      while (position < value.length) {
+        const c = value[position]
+        if (c === '(') depth++
+        else if (c === ')') depth = Math.max(0, depth - 1)
+        else if (c === ',' && depth === 0) break
+        position++
+      }
+      descriptor = value.slice(descriptorStart, position).trim()
+      position++
+    }
+    if (url) candidates.push({ url, descriptor })
+  }
+  return candidates
+}
+
 /** Resolve every candidate of a `srcset`, keeping each one's descriptor. */
 function resolveSrcset(value: string): string {
-  return value
-    .split(/\s*,\s*/)
-    .map((candidate) => {
-      const [href, ...descriptor] = candidate.split(/\s+/)
-      if (!href) return candidate
-      return [resolveAgentAssetUrl(href), ...descriptor].join(' ')
+  return srcsetCandidates(value)
+    .map(({ url, descriptor }) => {
+      const resolved = resolveAgentAssetUrl(url)
+      return descriptor ? `${resolved} ${descriptor}` : resolved
     })
     .join(', ')
 }
