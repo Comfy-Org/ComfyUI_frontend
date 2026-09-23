@@ -3,6 +3,7 @@ import { nextTick } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -61,6 +62,7 @@ beforeEach(() => {
   vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = false
   vi.mocked(useFeatureFlags().flags).hostedBillingDestination = 'stripe'
   vi.mocked(useBillingContext).mockReturnValue(useBillingContext())
+  remoteConfig.value = {}
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockImplementation((sdkOptions) => {
     options = sdkOptions
@@ -331,6 +333,62 @@ describe('useBillingSdkStore', () => {
       await expect(options.challengePort()).resolves.toBeUndefined()
     }
   )
+
+  it('prefers the server-configured publishable key over the build-time one', async () => {
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_build_time')
+    remoteConfig.value = { stripe_publishable_key: 'pk_server' }
+    mockLoadStripe.mockResolvedValue({})
+    useBillingSdkStore()
+
+    await options.challengePort()
+
+    expect(mockLoadStripe).toHaveBeenCalledWith('pk_server')
+  })
+
+  it('falls back to the build-time key when the server has none configured', async () => {
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_build_time')
+    remoteConfig.value = {}
+    mockLoadStripe.mockResolvedValue({})
+    useBillingSdkStore()
+
+    await options.challengePort()
+
+    expect(mockLoadStripe).toHaveBeenCalledWith('pk_build_time')
+  })
+
+  it.for(['', 42] as const)(
+    'treats a malformed server key (%j) as absent',
+    async (malformed) => {
+      vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_build_time')
+      remoteConfig.value = {
+        stripe_publishable_key: malformed as unknown as string
+      }
+      mockLoadStripe.mockResolvedValue({})
+      useBillingSdkStore()
+
+      await options.challengePort()
+
+      expect(mockLoadStripe).toHaveBeenCalledWith('pk_build_time')
+    }
+  )
+
+  it('reports checkout unavailable when neither source configures a key', () => {
+    vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', undefined)
+    remoteConfig.value = {}
+    useBillingSdkStore()
+
+    expect(options.embeddedCheckoutAvailable()).toBe(false)
+  })
+
+  it('reports checkout available on the server key alone, with no build-time key', () => {
+    vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = true
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', undefined)
+    remoteConfig.value = { stripe_publishable_key: 'pk_server' }
+    useBillingSdkStore()
+
+    expect(options.embeddedCheckoutAvailable()).toBe(true)
+  })
 
   it('polls every pending operation when the tab returns', () => {
     useBillingSdkStore()
