@@ -7,11 +7,7 @@ import { useGroupMenuOptions } from '@/composables/graph/useGroupMenuOptions'
 import { LGraphCanvas, LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
-// canvasStore transitively imports the app singleton; stub it so the real
-// ComfyApp module never loads during these unit tests.
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { canvas: { selected_nodes: null } }
-}))
+vi.mock(import('@/scripts/app'))
 
 const i18n = createI18n({
   legacy: false,
