@@ -18447,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Quanto raciocínio o modelo emprega antes de desenhar. Níveis mais altos melhoram os detalhes e consomem mais tokens. Usado apenas pelos modelos Arrow 2."
+      },
       "seed": {
         "name": "semente",
         "tooltip": "Semente para determinar se o nó deve ser executado novamente; os resultados reais são não determinísticos independentemente da semente."
@@ -18485,6 +18489,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Descrição em texto do SVG desejado."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Quanto raciocínio o modelo emprega antes de desenhar. Níveis mais altos melhoram os detalhes e consomem mais tokens. Usado apenas pelos modelos Arrow 2."
       },
       "reference_images": {
         "name": "imagens_de_referência",
@@ -19156,7 +19164,7 @@
       },
       "model": {
         "name": "modelo",
-        "tooltip": "O modelo a ser usado para geração. Os modelos recraftv4_styles são desenvolvidos para geração com estilo consistente e sempre exigem um style_id ou style_references."
+        "tooltip": "O modelo a ser usado para geração. Os modelos recraftv4_styles são desenvolvidos para geração com estilo consistente e sempre exigem um style_id ou style_references; recraftv4_1_flash é o modelo mais rápido e mais barato e não oferece suporte a estilos."
       },
       "model_size": {
         "name": "tamanho"
@@ -24049,6 +24057,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Substitui o prompt de sistema no modelo de chat do modelo. Ignorado quando o modelo padrão não é usado."
+      },
       "thinking": {
         "name": "pensando",
         "tooltip": "Operar no modo de pensamento se o modelo suportar."
@@ -24065,6 +24077,10 @@
     "outputs": {
       "0": {
         "name": "texto_gerado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "raciocínio",
         "tooltip": null
       }
     }
@@ -24115,6 +24131,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Substitui o prompt de sistema no modelo de chat do modelo. Ignorado quando o modelo padrão não é usado."
+      },
       "thinking": {
         "name": "pensando",
         "tooltip": "Operar no modo de pensamento se o modelo suportar."
@@ -24131,6 +24151,10 @@
     "outputs": {
       "0": {
         "name": "texto_gerado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "raciocínio",
         "tooltip": null
       }
     }

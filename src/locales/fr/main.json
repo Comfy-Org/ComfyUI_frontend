@@ -69,6 +69,7 @@
     "dismiss": "Fermer",
     "downloadAssets": "Télécharger les ressources",
     "dragAndDropAssets": "Glissez-déposez des ressources ici",
+    "editWhileWorking": "Vous pouvez continuer à modifier pendant qu’il travaille",
     "feedbackCaption": "Partager vos commentaires",
     "focusNode": "Afficher sur le canevas",
     "focusNodeLabel": "Afficher {node} sur le canevas",
@@ -102,6 +103,7 @@
       "selectNode": "Sélectionner un nœud"
     },
     "nodes": "Nœuds",
+    "nodesAdded": "L’agent a ajouté 1 nœud au graphe | L’agent a ajouté {count} nœuds au graphe",
     "notHelpful": "Pas utile",
     "openWorkflowTab": "Ouvrir {name}",
     "otherOpenWorkflows": "Autres flux de travail ouverts",
@@ -190,7 +192,9 @@
     "unavailableWorkflowReference": "{name} (indisponible)",
     "unsavedWorkflow": "Non enregistré",
     "untitledChat": "Sans titre",
+    "updatingGraph": "L’agent met à jour le graphe",
     "uploading": "Envoi en cours",
+    "viewAddedNodes": "Afficher le nœud | Afficher les nœuds",
     "worked": "Terminé",
     "workedForMinutes": "A travaillé pendant {minutes}m {seconds}s",
     "workedForSeconds": "A travaillé pendant {seconds} secondes",
@@ -3108,6 +3112,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "Nœuds mis en évidence : {count}",
+    "label": "Mini-carte",
     "nodeColors": "Couleurs des nœuds",
     "renderBypassState": "Afficher l'état de contournement",
     "renderErrorState": "Afficher l'état d'erreur",

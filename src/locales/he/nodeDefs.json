@@ -18447,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "מידת החשיבה שהמודל משקיע לפני השרטוט. רמות גבוהות יותר משפרות את הפירוט וצורכות יותר טוקנים. בשימוש רק בדגמי Arrow 2."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "seed לקביעת האם הצומת ירוץ מחדש; התוצאות בפועל אינן דטרמיניסטיות ללא קשר ל-seed."
@@ -18485,6 +18489,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "תיאור טקסטואלי של פלט ה-SVG הרצוי."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "מידת החשיבה שהמודל משקיע לפני השרטוט. רמות גבוהות יותר משפרות את הפירוט וצורכות יותר טוקנים. בשימוש רק בדגמי Arrow 2."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19156,7 +19164,7 @@
       },
       "model": {
         "name": "מודל",
-        "tooltip": "המודל לשימוש ביצירה. המודלים recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד דורשים style_id או style_references."
+        "tooltip": "המודל שישמש ליצירה. המודלים recraftv4_styles מיועדים ליצירה עקבית מבחינת סגנון ותמיד דורשים style_id או style_references; ‏recraftv4_1_flash הוא המודל המהיר והזול ביותר ואינו תומך כלל בסגנונות."
       },
       "model_size": {
         "name": "גודל"
@@ -24049,6 +24057,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "מחליף את הנחיית המערכת בתבנית הצ'אט של המודל. המערכת מתעלמת ממנו כאשר לא נעשה שימוש בתבנית ברירת המחדל."
+      },
       "thinking": {
         "name": "מצב_חשיבה",
         "tooltip": "הפעל במצב חשיבה אם המודל תומך בכך."
@@ -24065,6 +24077,10 @@
     "outputs": {
       "0": {
         "name": "טקסט_שנוצר",
+        "tooltip": null
+      },
+      "1": {
+        "name": "חשיבה",
         "tooltip": null
       }
     }
@@ -24115,6 +24131,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "מחליף את הנחיית המערכת בתבנית הצ'אט של המודל. המערכת מתעלמת ממנו כאשר לא נעשה שימוש בתבנית ברירת המחדל."
+      },
       "thinking": {
         "name": "מצב חשיבה",
         "tooltip": "הפעל במצב חשיבה אם המודל תומך בכך."
@@ -24131,6 +24151,10 @@
     "outputs": {
       "0": {
         "name": "טקסט שנוצר",
+        "tooltip": null
+      },
+      "1": {
+        "name": "חשיבה",
         "tooltip": null
       }
     }
