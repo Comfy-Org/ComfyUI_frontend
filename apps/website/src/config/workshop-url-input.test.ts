@@ -1,10 +1,14 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 
 import { workshopContract } from './workshop-contract-catalog'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { defaultValues, schemaForModel } from './workshop-playground'
 import type { FileValue, FormValues } from './workshop-playground'
 import { formForContract } from './workshop-contract'
+import {
+  WorkshopRouterError,
+  workshopResponseDetails
+} from './workshop-router-errors'
 
 function selected(
   bytes: string,
@@ -204,5 +208,130 @@ describe('URL and Base64 request inputs', () => {
       )
     ).rejects.toMatchObject({ name: 'AbortError' })
     expect(upload).toHaveBeenCalledTimes(1)
+  })
+
+  it.for(['NotReadableError', 'NotFoundError', 'SecurityError'])(
+    'identifies an unreadable URL input after a failed PUT: %s',
+    async (name) => {
+      const { contract, values, signal } = setup('wavespeed/seedvr2')
+      const image = selected('image')
+      assert.instanceOf(image.file, File)
+      const sample = new Blob(['i'])
+      const cause = new DOMException('Private file detail', name)
+      vi.spyOn(image.file, 'slice').mockReturnValue(sample)
+      vi.spyOn(sample, 'arrayBuffer').mockRejectedValue(cause)
+      const upload = vi
+        .fn()
+        .mockRejectedValue(
+          new WorkshopRouterError('upload', null, {}, undefined, 'upload_put')
+        )
+
+      await expect(
+        prepareWorkshopRouterInput(
+          contract,
+          { ...values, image },
+          signal,
+          undefined,
+          upload
+        )
+      ).rejects.toMatchObject({
+        reason: 'client',
+        stage: 'file_read',
+        fieldErrors: { image: 'fileUnreadable' },
+        cause
+      })
+    }
+  )
+
+  it('keeps a failed PUT classified as an upload error when the file is readable', async () => {
+    const { contract, values, signal } = setup('wavespeed/seedvr2')
+    const upload = vi
+      .fn()
+      .mockRejectedValue(
+        new WorkshopRouterError('upload', null, {}, undefined, 'upload_put')
+      )
+
+    await expect(
+      prepareWorkshopRouterInput(
+        contract,
+        { ...values, image: selected('image') },
+        signal,
+        undefined,
+        upload
+      )
+    ).rejects.toMatchObject({
+      reason: 'upload',
+      stage: 'upload_put',
+      fieldErrors: { image: 'uploadFailed' }
+    })
+  })
+
+  it.for([
+    { stage: 'upload_grant', response: undefined },
+    {
+      stage: 'upload_put',
+      response: workshopResponseDetails(new Response(null, { status: 403 }))
+    }
+  ] as const)(
+    'does not mask an explicit service failure at $stage with a file error',
+    async ({ stage, response }) => {
+      const { contract, values, signal } = setup('wavespeed/seedvr2')
+      const image = selected('image')
+      assert.instanceOf(image.file, File)
+      const sample = new Blob(['i'])
+      vi.spyOn(image.file, 'slice').mockReturnValue(sample)
+      vi.spyOn(sample, 'arrayBuffer').mockRejectedValue(
+        new DOMException('Gone', 'NotFoundError')
+      )
+      const upload = vi
+        .fn()
+        .mockRejectedValue(
+          new WorkshopRouterError('upload', 'request-id', {}, response, stage)
+        )
+
+      await expect(
+        prepareWorkshopRouterInput(
+          contract,
+          { ...values, image },
+          signal,
+          undefined,
+          upload
+        )
+      ).rejects.toMatchObject({
+        reason: 'upload',
+        requestId: 'request-id',
+        stage,
+        response,
+        fieldErrors: { image: 'uploadFailed' }
+      })
+    }
+  )
+
+  it('preserves cancellation while checking an unreadable upload', async () => {
+    const { contract, values } = setup('wavespeed/seedvr2')
+    const controller = new AbortController()
+    const image = selected('image')
+    assert.instanceOf(image.file, File)
+    const sample = new Blob(['i'])
+    vi.spyOn(image.file, 'slice').mockReturnValue(sample)
+    vi.spyOn(sample, 'arrayBuffer').mockImplementation(async () => {
+      controller.abort()
+      throw new DOMException('Gone', 'NotFoundError')
+    })
+    const upload = vi
+      .fn()
+      .mockRejectedValue(
+        new WorkshopRouterError('upload', null, {}, undefined, 'upload_put')
+      )
+
+    await expect(
+      prepareWorkshopRouterInput(
+        contract,
+        { ...values, image },
+        controller.signal,
+        undefined,
+        upload
+      )
+    ).rejects.toMatchObject({ name: 'AbortError' })
   })
 })

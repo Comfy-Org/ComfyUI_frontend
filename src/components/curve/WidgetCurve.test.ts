@@ -60,25 +60,6 @@ const CurveEditorStub = defineComponent({
   `
 })
 
-const SelectStub = defineComponent({
-  name: 'Select',
-  props: { modelValue: { type: String, default: '' } },
-  emits: ['update:modelValue'],
-  template: `
-    <div data-testid="interp-select" :data-value="modelValue">
-      <button
-        data-testid="select-linear"
-        @click="$emit('update:modelValue', 'linear')"
-      >linear</button>
-      <slot />
-    </div>
-  `
-})
-const Passthrough = defineComponent({
-  name: 'SelectPassthrough',
-  template: '<slot />'
-})
-
 function makeWidget(
   overrides: Partial<SimplifiedWidget<CurveData>> = {}
 ): SimplifiedWidget<CurveData> {
@@ -122,12 +103,7 @@ function renderWidget(
     global: {
       plugins: [i18n],
       stubs: {
-        CurveEditor: CurveEditorStub,
-        Select: SelectStub,
-        SelectContent: Passthrough,
-        SelectTrigger: Passthrough,
-        SelectValue: Passthrough,
-        SelectItem: Passthrough
+        CurveEditor: CurveEditorStub
       }
     }
   })
@@ -188,18 +164,19 @@ describe('WidgetCurve', () => {
   describe('Interpolation select', () => {
     it('shows the Select when not disabled', () => {
       renderWidget(makeWidget())
-      expect(screen.getByTestId('interp-select')).toBeInTheDocument()
+      expect(screen.getByRole('combobox')).toBeInTheDocument()
     })
 
     it('hides the Select when disabled', () => {
       renderWidget(makeWidget({ options: { disabled: true } }))
-      expect(screen.queryByTestId('interp-select')).toBeNull()
+      expect(screen.queryByRole('combobox')).toBeNull()
     })
 
     it('updates interpolation in v-model when Select emits a change', async () => {
       const { value } = renderWidget(makeWidget())
       const user = userEvent.setup()
-      await user.click(screen.getByTestId('select-linear'))
+      await user.click(screen.getByRole('combobox'))
+      await user.click(await screen.findByRole('option', { name: 'Linear' }))
       expect(value.value.interpolation).toBe('linear')
     })
 
@@ -214,7 +191,8 @@ describe('WidgetCurve', () => {
       }
       const { value } = renderWidget(makeWidget(), original)
       const user = userEvent.setup()
-      await user.click(screen.getByTestId('select-linear'))
+      await user.click(screen.getByRole('combobox'))
+      await user.click(await screen.findByRole('option', { name: 'Linear' }))
       expect(value.value.points).toEqual(original.points)
     })
   })

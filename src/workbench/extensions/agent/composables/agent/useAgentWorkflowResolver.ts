@@ -179,8 +179,8 @@ export function useAgentWorkflowResolver({
         return true
       })
       return [
-        ...open.toSorted((a, b) => a.name.localeCompare(b.name)),
-        ...saved.toSorted((a, b) => a.name.localeCompare(b.name))
+        ...[...open].sort((a, b) => a.name.localeCompare(b.name)),
+        ...[...saved].sort((a, b) => a.name.localeCompare(b.name))
       ]
     }
   )
