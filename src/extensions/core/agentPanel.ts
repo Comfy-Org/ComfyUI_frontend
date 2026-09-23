@@ -13,9 +13,11 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExtensionService } from '@/services/extensionService'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
+import { isModalOpen } from '@/utils/modalUtil'
 import {
   notifyMintPortsAfterGraphConfigure,
   notifyMintPortsBeforeGraphLoad
@@ -153,6 +155,7 @@ export function registerAgentPanelExtension(): void {
       const { withConsent } = useAgentConsent()
       const { firstRunTookScreen, whenStartupDecided } = useFirstRunEntry()
       const onboardingTourStore = useOnboardingTourStore()
+      const dialogStore = useDialogStore()
       registerWorkflowTabActivityTracker(enabled)
 
       watch(
@@ -163,8 +166,10 @@ export function registerAgentPanelExtension(): void {
         { immediate: true, flush: 'sync' }
       )
 
-      const onboardingHoldsScreen = (): boolean =>
-        firstRunTookScreen.value || onboardingTourStore.activeTour !== null
+      const screenIsHeld = (): boolean =>
+        firstRunTookScreen.value ||
+        onboardingTourStore.activeTour !== null ||
+        isModalOpen(dialogStore.dialogStack.length)
 
       let autoShowInFlight = false
       const offerConsentUnprompted = (): void => {
@@ -172,7 +177,7 @@ export function registerAgentPanelExtension(): void {
         if (!agentPanelStore.enabled || !isLoggedIn.value) return
         if (consentStore.isChecking || consentStore.accepted) return
         // Must precede prepareAutoShow, which burns the one-shot key.
-        if (onboardingHoldsScreen()) return
+        if (screenIsHeld()) return
 
         const userId = resolvedUserInfo.value?.id
         const workspaceId = workspaceStore.activeWorkspaceId
@@ -192,7 +197,7 @@ export function registerAgentPanelExtension(): void {
             onShown: () => {
               writeAutoShown(key, true)
             },
-            canShow: () => !onboardingHoldsScreen()
+            canShow: () => !screenIsHeld()
           }
         ).finally(() => {
           autoShowInFlight = false
@@ -233,9 +238,11 @@ export function registerAgentPanelExtension(): void {
         { immediate: true }
       )
       watch(
-        () => onboardingTourStore.activeTour,
-        (tour) => {
-          if (tour === null) loadConsentIfEligible()
+        () =>
+          onboardingTourStore.activeTour === null &&
+          dialogStore.dialogStack.length === 0,
+        (screenIsClear) => {
+          if (screenIsClear) loadConsentIfEligible()
         }
       )
       return setupFlagGate(loadConsentIfEligible)

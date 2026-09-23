@@ -574,3 +574,53 @@ test.describe(
     })
   }
 )
+
+test.describe(
+  'Automatic agent consent behind a desktop sign-in approval',
+  { tag: ['@cloud', '@ui'] },
+  () => {
+    test.use({
+      agentConsentAccepted: false,
+      initialUrl:
+        '/?desktop_login_code=dlc_e2eApprovalCodeFE2808abcdefghijklmnopqrstu'
+    })
+
+    test('waits for the approval before offering Agent', async ({
+      comfyPage,
+      agentPanel,
+      agentConsentReads
+    }) => {
+      const page = comfyPage.page
+      const approval = page.getByRole('dialog', {
+        name: enMessages.desktopLogin.confirmSummary
+      })
+      const consent = page.getByRole('dialog', {
+        name: enMessages.agent.consent.title
+      })
+      await page.route('**/api/auth/desktop-login-codes/redeem', (route) =>
+        route.fulfill({ status: 200, json: {} })
+      )
+
+      await test.step('The approval owns the screen and the offer waits behind it', async () => {
+        await expect(approval).toBeVisible()
+        await expect
+          .poll(() => agentConsentReads.length, {
+            message:
+              'the automatic offer runs once the consent read is in; the fixture already waited past the boot decision, so the absence below is the offer waiting, not a race',
+            timeout: 15_000
+          })
+          .toBeGreaterThan(0)
+        await expect(consent).toHaveCount(0)
+        await expect(agentPanel.root).toHaveCount(0)
+      })
+
+      await test.step('Approving clears the screen and the offer follows', async () => {
+        await approval
+          .getByRole('button', { name: enMessages.g.confirm })
+          .click()
+        await expect(approval).toHaveCount(0)
+        await expect(consent).toBeVisible()
+      })
+    })
+  }
+)

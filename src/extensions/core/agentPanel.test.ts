@@ -2,7 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 vi.mock(import('firebase/auth'))
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
-import { computed, effectScope, ref } from 'vue'
+import { computed, defineComponent, effectScope, ref } from 'vue'
 import type { EffectScope } from 'vue'
 let setupScope: EffectScope
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
@@ -21,6 +21,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyApp } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -142,11 +143,39 @@ async function loadEntryAndSetup(): Promise<void> {
   expect(mocks.flagListener).toBeTypeOf('function')
 }
 
+const DESKTOP_APPROVAL_KEY = 'global-desktop-login-confirm'
+const EmptyDialog = defineComponent(() => () => null)
+
+function openDialog(key = DESKTOP_APPROVAL_KEY): void {
+  useDialogStore().showDialog({ key, component: EmptyDialog })
+}
+
+function closeDialog(key = DESKTOP_APPROVAL_KEY): void {
+  useDialogStore().closeDialog({ key })
+}
+
+function openModalOutsideDialogStore(): void {
+  const modal = document.createElement('div')
+  modal.setAttribute('role', 'dialog')
+  modal.setAttribute('aria-modal', 'true')
+  document.body.appendChild(modal)
+}
+
 describe('AgentPanel extension flag gate', () => {
-  afterEach(() => setupScope.stop())
+  // The app's legacy ComfyDialogs mount hidden by the design-system stylesheet,
+  // which happy-dom does not load.
+  const legacyModalStyle = document.createElement('style')
+  legacyModalStyle.textContent = '.comfy-modal { display: none; }'
+
+  afterEach(() => {
+    setupScope.stop()
+    document.body.replaceChildren()
+    legacyModalStyle.remove()
+  })
 
   beforeEach(() => {
     vi.resetModules()
+    document.head.appendChild(legacyModalStyle)
     setupScope = effectScope()
     currentUser.value = { id: 'account-a' }
     consentStore = useAgentConsentStore()
@@ -320,6 +349,14 @@ describe('AgentPanel extension flag gate', () => {
         firstRunTookScreen.value = true
         activeTour.value = 'appMode'
       }
+    },
+    {
+      surface: 'the desktop sign-in approval is open',
+      arrange: () => openDialog()
+    },
+    {
+      surface: 'a modal outside the dialog store is open',
+      arrange: openModalOutsideDialogStore
     }
   ])(
     'withholds the automatic offer while $surface, leaving the auto-shown key untouched',
@@ -505,6 +542,95 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
+  })
+
+  it('offers in the same session once the dialog that held it closes', async () => {
+    mocks.flagEnabled = true
+    openDialog()
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    mocks.flagListener?.()
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
+  it('keeps waiting when a tour ends while a dialog is still open', async () => {
+    mocks.flagEnabled = true
+    activeTour.value = 'appMode'
+    openDialog()
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    mocks.flagListener?.()
+    await flush()
+    activeTour.value = null
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+  })
+
+  it('withholds a card whose dialog opened while the offer was in flight, then re-offers', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_onAccept, hooks) => {
+        openDialog()
+        await flush()
+        if (hooks?.canShow?.() === false) return
+        hooks?.onShown?.()
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    await flush()
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('false')
+    expect(agentStore.open).not.toHaveBeenCalled()
+
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledTimes(2)
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
+  it('does not offer again when the consent card itself closes', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
+      async (_onAccept, hooks) => {
+        hooks?.onShown?.()
+        openDialog('agent-consent')
+      }
+    )
+
+    await loadEntryAndSetup()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    await flush()
+    const loadsBeforeClose = vi.mocked(consentStore.load).mock.calls.length
+
+    closeDialog('agent-consent')
+    await vi.waitFor(() =>
+      expect(consentStore.load).toHaveBeenCalledTimes(loadsBeforeClose + 1)
+    )
+    await flush()
+
+    expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
   })
 
   it('stays silent when the account already accepted', async () => {
