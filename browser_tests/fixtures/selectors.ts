@@ -4,6 +4,9 @@
  */
 
 export const TestIds = {
+  app: {
+    loadingOverlay: 'app-loading-overlay'
+  },
   sidebar: {
     toolbar: 'side-toolbar',
     nodeLibrary: 'node-library-tree',
@@ -126,11 +129,16 @@ export const TestIds = {
   propertiesPanel: {
     root: 'properties-panel',
     errorsTab: 'panel-tab-errors',
-    selectionContextStrip: 'selection-context-strip'
+    tabIcon: 'panel-tab-icon',
+    selectionContextStrip: 'selection-context-strip',
+    errorsSummaryHero: 'errors-summary-hero',
+    errorsSummaryFilters: 'errors-summary-filters',
+    blockedLastRunIndicator: 'blocked-last-run-indicator'
   },
   assets: {
     browserModal: 'asset-browser-modal',
-    card: 'asset-card'
+    card: 'asset-card',
+    videoPreview: 'media-asset-video'
   },
   subgraphEditor: {
     hiddenSection: 'subgraph-editor-hidden-section',
@@ -179,7 +187,6 @@ export const TestIds = {
     decrement: 'decrement',
     increment: 'increment',
     valueControl: 'value-control',
-    domWidgetTextarea: 'dom-widget-textarea',
     subgraphEnterButton: 'subgraph-enter-button',
     selectDefaultSearchInput: 'widget-select-default-search-input',
     selectDefaultViewport: 'widget-select-default-viewport'

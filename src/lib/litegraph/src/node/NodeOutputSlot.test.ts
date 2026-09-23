@@ -1,6 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
 import { fromAny } from '@total-typescript/shoehorn'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -24,7 +22,6 @@ describe('NodeOutputSlot deprecated links getter', () => {
   const onWarning = vi.fn()
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     onWarning.mockClear()
     LiteGraph.onDeprecationWarning = [onWarning]
     LiteGraph.alwaysRepeatWarnings = true

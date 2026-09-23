@@ -4,10 +4,10 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { useServerLogs } from '@/composables/useServerLogs'
-import type { LogsWsMessage } from '@/schemas/apiSchema'
+import type { LogsWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     subscribeLogs: vi.fn(),
     addEventListener: vi.fn(),
@@ -15,9 +15,7 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@vueuse/core', () => ({
-  useEventListener: vi.fn().mockReturnValue(vi.fn())
-}))
+vi.mock(import('@vueuse/core'))
 
 describe('useServerLogs', () => {
   it('should initialize with empty logs array', () => {

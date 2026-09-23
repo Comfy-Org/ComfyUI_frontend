@@ -113,8 +113,8 @@ export function unflattenOutputAssets(
   const grouped = [...assetsByJob.entries()].map(([job_id, assets]) => {
     const ordered = [...assets].sort(byCreatedAtAsc)
     const representative =
-      ordered
-        .toSorted(byIsTemp)
+      [...ordered]
+        .sort(byIsTemp)
         .findLast((asset) =>
           isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
         ) ?? ordered.at(-1)!
@@ -126,6 +126,7 @@ export function unflattenOutputAssets(
         jobId: job_id,
         subfolder: '',
         ...representative.user_metadata,
+        assetId: representative.id,
         outputCount: ordered.length,
         allOutputs: ordered.map(flatAssetToResultItem)
       }

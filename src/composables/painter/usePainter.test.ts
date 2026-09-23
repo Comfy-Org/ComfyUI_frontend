@@ -1,5 +1,6 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
+import { useElementSize } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -13,39 +14,20 @@ import type { NodeId } from '@/types/nodeId'
 
 import { usePainter } from './usePainter'
 
-vi.mock('@vueuse/core', () => ({
-  useElementSize: vi.fn(() => ({
-    width: ref(512),
-    height: ref(512)
-  }))
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
 
-vi.mock('@/composables/maskeditor/StrokeProcessor', () => ({
+vi.mock<unknown>(import('@/composables/maskeditor/StrokeProcessor'), () => ({
   StrokeProcessor: vi.fn(() => ({
     addPoint: vi.fn(() => []),
     endStroke: vi.fn(() => [])
   }))
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => {
-  const store = { addAlert: vi.fn() }
-  return { useToastStore: () => store }
-})
-
-vi.mock('@/stores/nodeOutputStore', () => {
-  const store = {
-    getNodeImageUrls: vi.fn(() => undefined),
-    nodeOutputs: {},
-    nodePreviewImages: {}
-  }
-  return { useNodeOutputStore: () => store }
-})
-
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     apiURL: vi.fn((path: string) => `http://localhost:8188${path}`),
     fetchApi: vi.fn()
@@ -54,8 +36,12 @@ vi.mock('@/scripts/api', () => ({
 
 const fixture = vi.hoisted((): { node: LGraphNode | null } => ({ node: null }))
 
-vi.mock('@/scripts/app', () => ({
-  app: { canvas: { graph: { getNodeById: () => fixture.node } } }
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: {
+    nodeOutputs: {},
+    nodePreviewImages: {},
+    canvas: { graph: { getNodeById: () => fixture.node } }
+  }
 }))
 
 const i18n = createI18n({
@@ -139,6 +125,11 @@ function mountPainter(
 
 describe('usePainter', () => {
   beforeEach(() => {
+    vi.mocked(useElementSize).mockImplementation(() => ({
+      width: ref(512),
+      height: ref(512),
+      stop: vi.fn()
+    }))
     makePaintNode()
     mockIsInputConnected.mockReturnValue(false)
     mockGetInputNode.mockReturnValue(null)

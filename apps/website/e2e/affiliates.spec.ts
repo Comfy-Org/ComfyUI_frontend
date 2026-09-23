@@ -91,6 +91,9 @@ test.describe('Affiliates landing — desktop interactions', () => {
     page,
     context
   }) => {
+    await context.route(APPLY_URL, (route) =>
+      route.fulfill({ contentType: 'text/html', body: '' })
+    )
     const ctaSection = page.locator('section').filter({
       has: page.getByRole('heading', { level: 2, name: CTA_HEADING_TEXT })
     })
@@ -101,11 +104,7 @@ test.describe('Affiliates landing — desktop interactions', () => {
     await applyButton.click()
     const popup = await popupPromise
     await popup.waitForLoadState('domcontentloaded')
-    const popupUrl = popup.url()
-    expect(
-      popupUrl.includes('forms.gle/RS8L2ttcuGap4Q1v6') ||
-        popupUrl.includes('docs.google.com/forms')
-    ).toBe(true)
+    await expect(popup).toHaveURL(APPLY_URL)
     await popup.close()
   })
 

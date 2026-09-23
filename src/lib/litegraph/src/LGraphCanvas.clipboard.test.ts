@@ -2,8 +2,6 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import {
   afterEach,
   beforeEach,
@@ -16,7 +14,11 @@ import {
 
 import { flushProxyWidgetMigration } from '@/core/graph/subgraph/migration/proxyWidgetMigration'
 import { autoExposeKnownPreviewNodes } from '@/core/graph/subgraph/promotionUtils'
-import { enableSubgraphNodeCreation } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import { createTestNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import {
+  createTestRootGraph,
+  enableSubgraphNodeCreation
+} from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import {
   LGraph,
   LGraphCanvas,
@@ -33,19 +35,16 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { toRerouteId } from '@/types/rerouteId'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock('@/renderer/core/canvas/canvasStore', () => ({
-  useCanvasStore: () => ({})
-}))
-vi.mock('@/services/litegraphService', () => ({
+vi.mock<unknown>(import('@/services/litegraphService'), () => ({
   useLitegraphService: () => ({ updatePreviews: () => ({}) })
 }))
-
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
 
 function createSerialisedNode(
   id: number,
@@ -209,8 +208,91 @@ function createCanvas(graph: LGraph): LGraphCanvas {
   el.getBoundingClientRect = vi
     .fn()
     .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })
-  return new LGraphCanvas(el, graph, { skip_render: true })
+  return new LGraphCanvas(el, graph, { skip_render: true, skip_events: true })
 }
+
+describe('link presentation transfer across recreation flows', () => {
+  it.for([
+    {
+      name: 'valid',
+      presentation: { hidden: true, label: 'Copied' },
+      expected: { hidden: true, label: 'Copied' }
+    },
+    { name: 'absent', presentation: undefined, expected: undefined }
+  ])(
+    'preserves $name presentation through clipboard copy and paste',
+    ({ presentation, expected }) => {
+      const rootGraph = createTestRootGraph()
+      const origin = createTestNode(rootGraph, [], ['number'])
+      const target = createTestNode(rootGraph, ['number'])
+      const link = origin.connect(0, target, 0)
+      if (!link) throw new Error('Failed to connect clipboard test link')
+      if (presentation) {
+        useLinkPresentationStore().patch(
+          graphScopeOf(rootGraph),
+          link.id,
+          presentation
+        )
+      }
+      const canvas = createCanvas(rootGraph)
+
+      const results = canvas._deserializeItems(
+        canvas._serializeItems([origin, target]),
+        {}
+      )
+      if (!results) throw new Error('Paste produced no results')
+      const { links } = results
+
+      const pasted = [...links.values()][0]
+      expect(pasted).toBeDefined()
+      expect(pasted.id).not.toBe(link.id)
+      expect(
+        useLinkPresentationStore().getPresentation(
+          graphScopeOf(rootGraph),
+          pasted.id
+        )
+      ).toEqual(expected)
+    }
+  )
+
+  it.for([
+    { presentation: { hidden: 'false', label: 1 }, expected: undefined },
+    { presentation: { hidden: true, label: null }, expected: { hidden: true } },
+    { presentation: { hidden: 1, label: '' }, expected: { label: '' } }
+  ])(
+    'ignores invalid presentation fields in clipboard JSON %#',
+    ({ presentation, expected }) => {
+      const rootGraph = createTestRootGraph()
+      const origin = createTestNode(rootGraph, [], ['number'])
+      const target = createTestNode(rootGraph, ['number'])
+      const link = origin.connect(0, target, 0)
+      if (!link) throw new Error('Failed to connect clipboard test link')
+      const canvas = createCanvas(rootGraph)
+      const items = canvas._serializeItems([origin, target])
+      localStorage.setItem(
+        'litegrapheditor_clipboard',
+        JSON.stringify({
+          ...items,
+          links: items.links?.map((item) => ({ ...item, ...presentation }))
+        })
+      )
+      onTestFinished(() => localStorage.removeItem('litegrapheditor_clipboard'))
+
+      const results = canvas._pasteFromClipboard()
+      if (!results) throw new Error('Paste produced no results')
+      const pasted = [...results.links.values()][0]
+
+      expect(pasted).toBeDefined()
+      expect(pasted.id).not.toBe(link.id)
+      expect(
+        useLinkPresentationStore().getPresentation(
+          graphScopeOf(rootGraph),
+          pasted.id
+        )
+      ).toEqual(expected)
+    }
+  )
+})
 
 function registerClipboardNodeType(type: string): void {
   class ClipboardNode extends LGraphNode {
@@ -472,6 +554,29 @@ describe('_deserializeItems paste-time migration & auto-expose', () => {
   })
 })
 
+describe('copyToClipboard', () => {
+  it('stamps every copy with a new clipboard id, even for an equal payload', () => {
+    const rootGraph = createTestRootGraph()
+    const node = createTestNode(rootGraph, [], ['number'])
+    const canvas = createCanvas(rootGraph)
+    onTestFinished(() => {
+      localStorage.removeItem('litegrapheditor_clipboard')
+      localStorage.removeItem('litegrapheditor_clipboard_id')
+    })
+
+    const first = canvas.copyToClipboard([node])
+    const firstId = localStorage.getItem('litegrapheditor_clipboard_id')
+    const second = canvas.copyToClipboard([node])
+
+    expect(second).toBe(first)
+    expect(localStorage.getItem('litegrapheditor_clipboard')).toBe(second)
+    expect(firstId).toMatch(/^[0-9a-f-]{36}$/)
+    expect(localStorage.getItem('litegrapheditor_clipboard_id')).not.toBe(
+      firstId
+    )
+  })
+})
+
 describe('clipboard reroute id integrity', () => {
   const carrierType = 'test/reroute-carrier'
 
@@ -587,5 +692,46 @@ describe('clipboard reroute id integrity', () => {
     expect(
       store.getReroute(graphScopeOf(liveSubgraph), toRerouteId(1))
     ).toBeUndefined()
+  })
+})
+
+// A bulk-add path (paste, insert-workflow) calls `graph.add(node)`
+// before `node.configure(info)` sets the real position. `graph.add()`
+// synchronously fires `attachNodeLayout`, which snapshots `node._pos` into a
+// `createNode` layout operation right then — while it still holds
+// `LGraphNode`'s constructor default of `[10, 10]`, not the position the
+// paste is about to configure. Anything that mints wire ops off that layout
+// change feed (the agent CRDT layout-mint port) permanently records the
+// wrong position, even though the node visibly lands in the right place on
+// canvas once `configure()` runs.
+describe('paste-time createNode layout snapshot ordering', () => {
+  it('the createNode layout snapshot carries the pasted position, not the pre-configure default', () => {
+    const nodeType = 'test/pm1295-position-fingerprint'
+    registerClipboardNodeType(nodeType)
+
+    const rootGraph = new LGraph()
+    const canvas = createCanvas(rootGraph)
+    const source = LiteGraph.createNode(nodeType)!
+    source.pos = [500, 500]
+    rootGraph.add(source)
+
+    const applyOperation = vi.spyOn(layoutStore, 'applyOperation')
+
+    const result = canvas._deserializeItems(canvas._serializeItems([source]), {
+      position: [900, 900]
+    })
+    const pastedNode = [...(result?.nodes.values() ?? [])][0]
+    expect(pastedNode).toBeDefined()
+
+    const createNodeOp = applyOperation.mock.calls
+      .map(([op]) => op)
+      .find((op) => op.type === 'createNode' && op.nodeId === pastedNode.id)
+    if (createNodeOp?.type !== 'createNode')
+      throw new Error('expected a createNode layout operation')
+
+    expect(createNodeOp.layout.position).toEqual({
+      x: pastedNode.pos[0],
+      y: pastedNode.pos[1]
+    })
   })
 })

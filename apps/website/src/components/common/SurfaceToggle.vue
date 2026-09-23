@@ -55,7 +55,7 @@ const surfaceClass =
         :class="
           cn(
             surfaceClass,
-            'focus-visible:ring-primary-comfy-yellow/50 border-white/15 bg-white/4 transition-colors hover:bg-white/8 focus-visible:ring-2 focus-visible:outline-none'
+            'border-white/15 bg-white/4 transition-colors hover:bg-white/8 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow/50 focus-visible:outline-none'
           )
         "
       >

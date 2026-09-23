@@ -1,4 +1,4 @@
-import { createPinia, setActivePinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,18 +10,21 @@ import type {
   UploadModelDialogContext,
   UploadModelSuccess
 } from '@/platform/assets/composables/useUploadModelWizard'
+import {
+  downloadModel,
+  fetchModelMetadata,
+  openGatedRepoPage
+} from '@/platform/missingModel/missingModelDownload'
 import type { MissingModelViewModel } from '@/platform/missingModel/types'
-import type * as MissingModelDownload from '@/platform/missingModel/missingModelDownload'
-import type * as GraphTraversalUtil from '@/utils/graphTraversalUtil'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockIsDesktop = vi.hoisted(() => ({ value: false }))
 const mockShowUploadDialog = vi.hoisted(() => vi.fn())
 const mockCopyToClipboard = vi.hoisted(() => vi.fn())
-const mockDownloadModel = vi.hoisted(() => vi.fn())
-const mockFetchModelMetadata = vi.hoisted(() => vi.fn())
-const mockOpenGatedRepoPage = vi.hoisted(() => vi.fn())
+const mockDownloadModel = vi.mocked(downloadModel)
+const mockFetchModelMetadata = vi.mocked(fetchModelMetadata)
+const mockOpenGatedRepoPage = vi.mocked(openGatedRepoPage)
 const mockRootGraph = vi.hoisted<{
   value: Record<string, never> | null
 }>(() => ({ value: null }))
@@ -39,15 +42,18 @@ const mockUploadCallbacks = vi.hoisted(() => ({
     | undefined
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
     get rootGraph() {
+      return mockRootGraph.value
+    },
+    get rootGraphOrUndefined() {
       return mockRootGraph.value
     }
   }
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     addEventListener: vi.fn(
       (event: string, handler: (event: CustomEvent) => void) => {
@@ -60,18 +66,12 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/utils/graphTraversalUtil', async () => {
-  const actual = await vi.importActual<typeof GraphTraversalUtil>(
-    '@/utils/graphTraversalUtil'
-  )
-  return {
-    ...actual,
-    getActiveGraphNodeIds: vi.fn(() => new Set()),
-    getNodeByExecutionId: mockGetNodeByExecutionId
-  }
-})
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
+  getActiveGraphNodeIds: vi.fn(() => new Set()),
+  getNodeByExecutionId: mockGetNodeByExecutionId
+}))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   },
@@ -80,41 +80,36 @@ vi.mock('@/platform/distribution/types', () => ({
   }
 }))
 
-vi.mock('@/platform/assets/composables/useModelUpload', () => ({
-  useModelUpload: (
-    onUploadSuccess?: (
-      result: UploadModelSuccess
-    ) => Promise<unknown> | unknown,
-    uploadContext?: UploadModelDialogContext | UploadModelContextResolver
-  ) => {
-    mockUploadCallbacks.onUploadSuccess = onUploadSuccess
-    mockUploadContext.resolver =
-      typeof uploadContext === 'function' ? uploadContext : () => uploadContext
+vi.mock<unknown>(
+  import('@/platform/assets/composables/useModelUpload'),
+  () => ({
+    useModelUpload: (
+      onUploadSuccess?: (
+        result: UploadModelSuccess
+      ) => Promise<unknown> | unknown,
+      uploadContext?: UploadModelDialogContext | UploadModelContextResolver
+    ) => {
+      mockUploadCallbacks.onUploadSuccess = onUploadSuccess
+      mockUploadContext.resolver =
+        typeof uploadContext === 'function'
+          ? uploadContext
+          : () => uploadContext
 
-    return {
-      isUploadButtonEnabled: { value: true },
-      showUploadDialog: mockShowUploadDialog
+      return {
+        isUploadButtonEnabled: { value: true },
+        showUploadDialog: mockShowUploadDialog
+      }
     }
-  }
-}))
+  })
+)
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({
     copyToClipboard: mockCopyToClipboard
   })
 }))
 
-vi.mock('@/platform/missingModel/missingModelDownload', async () => {
-  const actual = await vi.importActual<typeof MissingModelDownload>(
-    '@/platform/missingModel/missingModelDownload'
-  )
-  return {
-    ...actual,
-    downloadModel: mockDownloadModel,
-    fetchModelMetadata: mockFetchModelMetadata,
-    openGatedRepoPage: mockOpenGatedRepoPage
-  }
-})
+vi.mock(import('@/platform/missingModel/missingModelDownload'), { spy: true })
 
 import MissingModelRow from './MissingModelRow.vue'
 
@@ -158,8 +153,7 @@ function renderRow(
   directory: string | null = 'checkpoints',
   canCloudImport = true
 ) {
-  const pinia = createPinia()
-  setActivePinia(pinia)
+  const pinia = getActivePinia()!
 
   render(MissingModelRow, {
     props: {
@@ -190,6 +184,7 @@ describe('MissingModelRow', () => {
     mockApiListeners.clear()
     mockUploadContext.resolver = undefined
     mockUploadCallbacks.onUploadSuccess = undefined
+    mockDownloadModel.mockResolvedValue(undefined)
     mockFetchModelMetadata.mockResolvedValue({
       fileSize: null,
       gatedRepoUrl: null

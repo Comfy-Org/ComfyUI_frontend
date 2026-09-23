@@ -38,7 +38,7 @@ const features = [
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-10 lg:py-14">
+  <section class="mx-auto max-w-9xl px-6 py-10 lg:py-14">
     <SectionHeader max-width="xl" heading-size="compact">
       {{ t('platform.builderEnterprise.heading', locale) }}
       <template #subtitle>
@@ -49,12 +49,12 @@ const features = [
     </SectionHeader>
 
     <div
-      class="bg-transparency-white-t4 mx-auto mt-8 max-w-5xl overflow-hidden rounded-4xl px-4 py-6 lg:px-8"
+      class="mx-auto mt-8 max-w-5xl overflow-hidden rounded-4xl bg-transparency-white-t4 px-4 py-6 lg:px-8"
     >
       <div class="scrollbar-none overflow-x-auto">
         <table class="w-full min-w-150 text-left text-sm">
           <thead
-            class="text-primary-comfy-yellow text-xs font-bold tracking-widest uppercase"
+            class="text-xs font-bold tracking-widest text-primary-comfy-yellow uppercase"
           >
             <tr>
               <th class="p-3">

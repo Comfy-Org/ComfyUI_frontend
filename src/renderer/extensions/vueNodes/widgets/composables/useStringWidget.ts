@@ -1,5 +1,5 @@
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { resolveNodeRootGraphId } from '@/lib/litegraph/src/litegraph'
+import { resolveNodeRootGraphId } from '@/lib/litegraph/src/utils/widget'
 import { defineDeprecatedProperty } from '@/lib/litegraph/src/utils/feedback'
 import {
   bindMultilineTextareaWidget,
@@ -8,6 +8,7 @@ import {
 import { isStringInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { app } from '@/scripts/app'
+import type { DOMWidgetOptions } from '@/scripts/domWidget'
 import type { ComfyWidgetConstructorV2 } from '@/scripts/widgets'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { widgetId } from '@/types/widgetId'
@@ -23,7 +24,11 @@ function addMultilineWidget(
     opts.placeholder || name
   )
 
-  const widget = node.addDOMWidget(name, 'customtext', inputEl, {
+  // Declared separately (rather than reading `widget.options` from the
+  // outer closure below) because `addDOMWidget` can invoke `setValue`
+  // synchronously, while restoring a saved value, before the `widget`
+  // binding it returns is initialized.
+  const widgetOptions: DOMWidgetOptions<string> = {
     getValue(): string {
       const graphId = resolveNodeRootGraphId(node, app.rootGraph.id)
       const widgetState = widgetStore.getWidget(
@@ -46,10 +51,12 @@ function addMultilineWidget(
       widgetStore.registerWidget(id, {
         type: 'customtext',
         value: v,
-        options: widget.options
+        options: widgetOptions
       })
     }
-  })
+  }
+
+  const widget = node.addDOMWidget(name, 'customtext', inputEl, widgetOptions)
 
   widget.element = inputEl
 

@@ -25,6 +25,7 @@ import type {
   MaterialMode,
   Model3DInfo,
   ModelConfig,
+  StoredModelConfig,
   SceneConfig,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
@@ -51,12 +52,17 @@ export type Load3dCachedOutput = {
 }
 
 const load3dSceneDirty = new WeakMap<LGraphNode, boolean>()
+const load3dSceneRevisions = new WeakMap<LGraphNode, number>()
 const load3dOutputCache = new WeakMap<LGraphNode, Load3dCachedOutput>()
 
 export const markLoad3dSceneDirty = (node: LGraphNode | null): void => {
   if (!node) return
+  load3dSceneRevisions.set(node, (load3dSceneRevisions.get(node) ?? 0) + 1)
   load3dSceneDirty.set(node, true)
 }
+
+export const getLoad3dSceneRevision = (node: LGraphNode): number =>
+  load3dSceneRevisions.get(node) ?? 0
 
 export const isLoad3dSceneDirty = (node: LGraphNode): boolean =>
   load3dSceneDirty.get(node) !== false
@@ -67,10 +73,13 @@ export const getLoad3dOutputCache = (
 
 export const setLoad3dOutputCache = (
   node: LGraphNode,
-  output: Load3dCachedOutput
-): void => {
+  output: Load3dCachedOutput,
+  sceneRevision: number = getLoad3dSceneRevision(node)
+): boolean => {
+  if (getLoad3dSceneRevision(node) !== sceneRevision) return false
   load3dOutputCache.set(node, output)
   load3dSceneDirty.set(node, false)
+  return true
 }
 const pendingCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
 const persistentReadyCallbacks = new Map<LGraphNode, Load3dReadyCallback[]>()
@@ -299,9 +308,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     }
 
     const savedModelConfig = node.properties['Model Config'] as
-      | (Omit<Partial<ModelConfig>, 'gizmo'> & {
-          gizmo?: Partial<GizmoConfig>
-        })
+      | StoredModelConfig
       | undefined
     if (savedModelConfig) {
       modelConfig.value = {
@@ -844,7 +851,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       )
 
       loadingMessage.value = t('load3d.loadingModel')
-      await load3d.loadModel(modelUrl)
+      const accepted = await load3d.loadModel(modelUrl)
+      if (!accepted) return
 
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
 
@@ -967,7 +975,11 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
       const modelWidget = node?.widgets?.find(
         (w) => w.name === 'model_file' || w.name === 'image'
       )
-      const value = modelWidget?.value
+      const widgetValue = modelWidget?.value
+      const value =
+        typeof widgetValue === 'string' && widgetValue.trim()
+          ? widgetValue
+          : node?.properties['Last Time Model File']
       if (typeof value !== 'string' || !value) return
 
       const filename = value.trim().replace(/\s*\[output\]$/, '')

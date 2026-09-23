@@ -18,6 +18,14 @@ async function checkTemplateFileExists(
 }
 
 test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
+  test.beforeEach(async ({ context }) => {
+    await context.route(
+      'https://comfyanonymous.github.io/ComfyUI_examples/',
+      (route) =>
+        route.fulfill({ contentType: 'text/html', body: '<!doctype html>' })
+    )
+  })
+
   test('should have a JSON workflow file for each template', async ({
     comfyPage
   }) => {
@@ -185,10 +193,6 @@ test.describe('Templates', { tag: ['@slow', '@workflow'] }, () => {
           body: 'Not Found'
         })
       }
-    )
-
-    await comfyPage.page.route('**/templates/index.json', (route) =>
-      route.continue()
     )
 
     await comfyPage.settings.setSetting('Comfy.Locale', locale)

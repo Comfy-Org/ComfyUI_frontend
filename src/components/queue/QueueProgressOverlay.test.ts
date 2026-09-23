@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -10,7 +10,7 @@ import type { JobStatus } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
@@ -43,10 +43,7 @@ function renderComponent(
   runningTasks: TaskItemImpl[],
   pendingTasks: TaskItemImpl[]
 ) {
-  const pinia = createTestingPinia({
-    createSpy: vi.fn,
-    stubActions: false
-  })
+  const pinia = getActivePinia()!
   const queueStore = useQueueStore(pinia)
   const sidebarTabStore = useSidebarTabStore(pinia)
   queueStore.runningTasks = runningTasks

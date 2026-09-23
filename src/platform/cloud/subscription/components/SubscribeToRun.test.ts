@@ -1,38 +1,39 @@
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+
 import SubscribeToRun from './SubscribeToRun.vue'
 
-const mockShowSubscriptionDialog = vi.fn()
 const mockCanManageSubscription = ref(true)
 const mockIsMdOrLarger = ref(true)
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    showSubscriptionDialog: mockShowSubscriptionDialog
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: computed(() => ({
-      canManageSubscription: mockCanManageSubscription.value
-    }))
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: computed(() => ({
+        canManageSubscription: mockCanManageSubscription.value
+      }))
+    })
   })
-}))
+)
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock('@/platform/telemetry', () => ({
+vi.mock(import('@/platform/telemetry'), () => ({
   useTelemetry: () => null
 }))
 
-vi.mock('@vueuse/core', () => ({
+vi.mock<unknown>(import('@vueuse/core'), () => ({
   breakpointsTailwind: { md: 768 },
   createSharedComposable: (composable: () => unknown) => composable,
   useBreakpoints: () => ({
@@ -60,6 +61,7 @@ const i18n = createI18n({
 })
 
 function renderButton() {
+  mockBillingContext()
   const user = userEvent.setup()
   const result = render(SubscribeToRun, {
     global: {
@@ -98,7 +100,7 @@ describe('SubscribeToRun', () => {
 
     await user.click(screen.getByTestId('subscribe-to-run-button'))
 
-    expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
   })
 
   it('routes members to the same role-aware dialog on click', async () => {
@@ -107,6 +109,6 @@ describe('SubscribeToRun', () => {
 
     await user.click(screen.getByTestId('subscribe-to-run-button'))
 
-    expect(mockShowSubscriptionDialog).toHaveBeenCalledOnce()
+    expect(useBillingContext().showSubscriptionDialog).toHaveBeenCalledOnce()
   })
 })

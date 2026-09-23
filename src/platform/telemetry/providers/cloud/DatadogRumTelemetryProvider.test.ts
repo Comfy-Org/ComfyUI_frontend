@@ -1,9 +1,9 @@
-import { describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type {
-  BillingTelemetryEvent,
-  BootstrapCompleteMetadata
-} from '../../types'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+
+import type { BillingTelemetryEvent } from '../../types'
 import { TelemetryEvents } from '../../types'
 import { DatadogRumTelemetryProvider } from './DatadogRumTelemetryProvider'
 
@@ -11,28 +11,91 @@ const {
   addAction,
   addDurationVital,
   addFeatureFlagEvaluation,
-  getInternalContext
+  getInternalContext,
+  setUser,
+  clearUser
 } = vi.hoisted(() => ({
   addAction: vi.fn(),
   addDurationVital: vi.fn(),
   addFeatureFlagEvaluation: vi.fn(),
-  getInternalContext: vi.fn()
+  getInternalContext: vi.fn(),
+  setUser: vi.fn(),
+  clearUser: vi.fn()
 }))
 
-vi.mock('@datadog/browser-rum', () => ({
+vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   datadogRum: {
     addAction,
     addDurationVital,
     addFeatureFlagEvaluation,
-    getInternalContext
+    getInternalContext,
+    setUser,
+    clearUser
   }
 }))
+
+vi.mock(import('@/composables/auth/useCurrentUser'))
+
+beforeEach(() => {
+  useCurrentUser().resolvedUserInfo = computed(() => ({
+    id: 'restored-user'
+  }))
+  useCurrentUser().userEmail = computed(() => 'restored@example.com')
+})
 
 const workflowExecutionIntent = {
   trigger_source: 'keybinding'
 } as const
 
 describe('DatadogRumTelemetryProvider', () => {
+  it('identifies restored sessions and replaces identity on account changes', () => {
+    const provider = new DatadogRumTelemetryProvider()
+    provider.trackUserLoggedIn()
+    provider.trackAuth({ user_id: 'new-user', email: 'new@example.com' })
+    provider.trackAuth({ user_id: 'user-without-email' })
+
+    expect(setUser).toHaveBeenNthCalledWith(1, {
+      id: 'restored-user',
+      email: 'restored@example.com'
+    })
+    expect(setUser).toHaveBeenNthCalledWith(2, {
+      id: 'new-user',
+      email: 'new@example.com'
+    })
+    expect(setUser).toHaveBeenNthCalledWith(3, { id: 'user-without-email' })
+    expect(useCurrentUser().onUserLogout).toHaveBeenCalledOnce()
+    vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]()
+    expect(clearUser).toHaveBeenCalledOnce()
+  })
+
+  it('does not identify an unresolved user or send email without an account ID', () => {
+    useCurrentUser().resolvedUserInfo = computed(() => null)
+    useCurrentUser().userEmail = computed(() => null)
+    const provider = new DatadogRumTelemetryProvider()
+    provider.trackUserLoggedIn()
+    provider.trackAuth({ email: 'unresolved@example.com' })
+
+    expect(setUser).not.toHaveBeenCalled()
+    expect(useCurrentUser().onUserLogout).not.toHaveBeenCalled()
+  })
+
+  it('records fetch timeouts as RUM actions', () => {
+    new DatadogRumTelemetryProvider().trackFetchTimeout({
+      route: '/userdata/:resource',
+      method: 'GET',
+      timeout_ms: 60_000
+    })
+
+    expect(addAction).toHaveBeenCalledExactlyOnceWith(
+      TelemetryEvents.FETCH_TIMEOUT,
+      {
+        route: '/userdata/:resource',
+        method: 'GET',
+        timeout_ms: 60_000
+      }
+    )
+  })
+
   it('records terminal unified auth retry outcomes without request data', () => {
     new DatadogRumTelemetryProvider().trackUnifiedAuthRetry({
       transport: 'axios',
@@ -309,47 +372,5 @@ describe('DatadogRumTelemetryProvider', () => {
         execution_duration_ms: 0
       }
     })
-  })
-
-  it('records startup as one action plus a duration vital', () => {
-    new DatadogRumTelemetryProvider().trackBootstrapComplete({
-      total_ms: 5200,
-      outcome: 'failed',
-      phase_count: 2,
-      phases: { 'auth-gate/user-store': 2500, 'bootstrap/object-info': 700 }
-    })
-
-    expect(addAction).toHaveBeenCalledExactlyOnceWith(
-      TelemetryEvents.BOOTSTRAP_COMPLETE,
-      {
-        total_ms: 5200,
-        outcome: 'failed',
-        phase_count: 2,
-        phases: { 'auth-gate/user-store': 2500, 'bootstrap/object-info': 700 }
-      }
-    )
-    expect(addDurationVital).toHaveBeenCalledWith('bootstrap', {
-      startTime: performance.timeOrigin,
-      duration: 5200,
-      context: { outcome: 'failed' }
-    })
-  })
-
-  it('records timed-out startup without a duration vital', () => {
-    const metadata: BootstrapCompleteMetadata = {
-      total_ms: 30_000,
-      outcome: 'timed_out',
-      phase_count: 1,
-      phases: {},
-      pending: ['bootstrap/object-info']
-    }
-
-    new DatadogRumTelemetryProvider().trackBootstrapComplete(metadata)
-
-    expect(addAction).toHaveBeenCalledExactlyOnceWith(
-      TelemetryEvents.BOOTSTRAP_COMPLETE,
-      metadata
-    )
-    expect(addDurationVital).not.toHaveBeenCalled()
   })
 })

@@ -11,7 +11,7 @@ const mockDistribution = vi.hoisted(() => ({
   isDesktop: false
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isNightly() {
     return mockDistribution.isNightly
   },
