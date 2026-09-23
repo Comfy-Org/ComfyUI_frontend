@@ -28,6 +28,10 @@ writeFileSync(
   `export { useExampleStore } from './store'`
 )
 writeFileSync(
+  path.join(directory, 'src/namespaceBarrel.ts'),
+  `export * as stores from './store'`
+)
+writeFileSync(
   path.join(directory, 'src/layoutStore.ts'),
   `export const layoutStore = new Map()`
 )
@@ -120,6 +124,7 @@ vi.spyOn(stores, 'helper')`
     ),
     invalid(`vi.doMock('./namespaceStore', () => ({}))`, /Do not mock Pinia/),
     invalid(`vi.mock('./barrel', () => ({}))`, /Do not mock Pinia/),
+    invalid(`vi.mock('./namespaceBarrel', () => ({}))`, /Do not mock Pinia/),
     invalid(`vi.mock('./mixedExports', () => ({}))`, /Do not mock Pinia/),
     invalid(
       `import { vi as testDouble } from 'vitest'

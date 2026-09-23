@@ -11,7 +11,7 @@ const PINIA_MODULES = new Set(['pinia', '@pinia/testing'])
 const PINIA_FACTORIES = new Set(['createPinia', 'createTestingPinia'])
 const VITEST_MOCK_METHODS = new Set(['mock', 'doMock', 'spyOn', 'mocked'])
 const MAY_EXPORT_STORE =
-  /\bdefineStore\b|^\s*export\s*(?:\*|\{[^}]*\})\s*from\b/m
+  /\bdefineStore\b|^\s*export\s*(?:\*(?:\s+as\s+\S+)?|\{[^}]*\})\s*from\b/m
 const compilerOptions: ts.CompilerOptions = {
   moduleResolution: ts.ModuleResolutionKind.Bundler,
   paths: { '@/*': [resolve(import.meta.dirname, '../../src/*')] }
