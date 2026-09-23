@@ -70,4 +70,9 @@ test.describe('hreflang alternates', () => {
       /<loc>https:\/\/comfy\.org\/affiliates\/<\/loc><xhtml:link/
     )
   })
+
+  test('excludes noindex routes from the sitemap', async ({ request }) => {
+    const sitemap = await (await request.get('/sitemap-0.xml')).text()
+    expect(sitemap).not.toContain('/platform/serverless-animation')
+  })
 })
