@@ -429,7 +429,7 @@ describe('WorkflowTabs agent entry button', () => {
     const actions = screen.getByTestId('integrated-tab-bar-actions')
     expect(actions).not.toHaveAttribute('data-agent-flags-settled')
     expect(
-      screen.getAllByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.getAllByRole('button', { name: enMessages.agent.entryButton })
     ).toHaveLength(1)
 
     api.serverFeatureFlagsSettled.value = true
@@ -437,7 +437,7 @@ describe('WorkflowTabs agent entry button', () => {
 
     expect(actions).toHaveAttribute('data-agent-flags-settled', 'true')
     expect(
-      screen.getAllByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.getAllByRole('button', { name: enMessages.agent.entryButton })
     ).toHaveLength(1)
 
     api.serverFeatureFlagsSettled.value = false
@@ -445,7 +445,7 @@ describe('WorkflowTabs agent entry button', () => {
 
     expect(actions).not.toHaveAttribute('data-agent-flags-settled')
     expect(
-      screen.getAllByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.getAllByRole('button', { name: enMessages.agent.entryButton })
     ).toHaveLength(1)
   })
 })

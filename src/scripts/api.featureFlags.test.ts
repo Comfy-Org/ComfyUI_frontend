@@ -125,7 +125,7 @@ describe('API Feature Flags', () => {
     })
 
     it('settles feature flags immediately when the server delivers an empty map', () => {
-      api.init()
+      void api.init()
 
       wsEventHandlers['message']({
         data: JSON.stringify({
@@ -177,7 +177,7 @@ describe('API Feature Flags', () => {
     })
 
     it('settles feature flags when the socket closes before opening', () => {
-      api.init()
+      void api.init()
 
       wsEventHandlers['error'](new Event('error'))
       wsEventHandlers['close'](new Event('close'))
@@ -187,7 +187,7 @@ describe('API Feature Flags', () => {
     })
 
     it('resets feature flag settlement for each replacement socket', async () => {
-      api.init()
+      void api.init()
 
       for (let attempt = 0; attempt < 3; attempt++) {
         wsEventHandlers['open'](new Event('open'))
