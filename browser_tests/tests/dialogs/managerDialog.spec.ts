@@ -209,8 +209,11 @@ const SIZING_HITS: Partial<AlgoliaNodePack>[] = SIZING_PACKS.map(
 
 function measureGridOverflow(panelElement: HTMLElement) {
   const panel = panelElement.getBoundingClientRect()
+  // `overflow: hidden` clips at the padding box, inside the panel's border.
+  const clipEdge =
+    panel.left + panelElement.clientLeft + panelElement.clientWidth
   const overflowPx = (element: Element) =>
-    Math.max(0, Math.round(element.getBoundingClientRect().right - panel.right))
+    Math.max(0, Math.round(element.getBoundingClientRect().right - clipEdge))
   const grid = panelElement.querySelector('#results-grid')
   const cards = Array.from(
     panelElement.querySelectorAll('[data-virtual-grid-item]')
@@ -713,6 +716,8 @@ test.describe('ManagerDialog', { tag: '@ui' }, () => {
 
       await comfyPage.page.setViewportSize({ width: 3000, height: 1440 })
       await comfyPage.page.waitForFunction(() => window.innerWidth === 3000)
+      // Relational, not the exact 2200px: this pins that the step applies at
+      // all, and retuning the cap is a design change, not a regression.
       await expect.poll(panelWidth).toBeGreaterThan(widthBelowBreakpoint)
     })
   })

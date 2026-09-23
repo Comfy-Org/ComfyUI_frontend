@@ -151,8 +151,9 @@ const SIZE_CLASSES = {
   md: 'h-[80vh] w-[90vw] max-w-[1400px]',
   lg: 'h-[80vh] w-[90vw] max-w-[1280px] aspect-[20/13] min-[1450px]:max-w-[1724px]',
   full: 'h-full w-full max-w-[1400px] 2xl:max-w-[1600px]',
-  // Unlike `full`, adds no cap of its own: the dialog panel owns the size and
-  // clips with `overflow: hidden`, so any cap here can only overflow it.
+  // Derives the box from the dialog panel. Any independently specified width
+  // — `90vw` above especially — does not track the panel and is clipped by its
+  // `overflow: hidden` whenever it resolves wider.
   panel: 'size-full'
 } as const
 
