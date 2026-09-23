@@ -65,3 +65,9 @@ export function failureAction(
   if (failure === 'signedOut') return 'signIn'
   return ['validation', 'policy', 'client'].includes(failure) ? 'none' : 'retry'
 }
+
+/**
+ * The ways out with something to press. Signing in is a link rather than a
+ * button and nothing at all is a real answer, so neither is one of these.
+ */
+export type RunWayOut = 'resume' | 'retry' | 'credits' | 'personal'

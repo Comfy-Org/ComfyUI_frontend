@@ -36,6 +36,18 @@ export type RunState =
       retrySafe: boolean
     }
 
+/**
+ * How a job that has stopped is told. Cancelled was the reader's own doing
+ * and is not a failure; one that came back failed is over rather than still
+ * out there, so it carries no job to go back to.
+ */
+function settledState(job: WorkflowJob): RunState {
+  if (job.status === 'cancelled') return { phase: 'cancelled' }
+  if (job.status === 'failed')
+    return { phase: 'error', reason: 'provider', retrySafe: true }
+  return { phase: 'finished', job }
+}
+
 /** Something this page stopped over, named the way a refusal from Cloud is. */
 class RunProblem extends Error {
   constructor(
@@ -143,6 +155,34 @@ export function useWorkflowRun(
     outputs.value.forEach((output) => URL.revokeObjectURL(output.url))
     outputs.value = []
   }
+  /** Everything the job made, fetched and held until this run is replaced. */
+  async function collect(id: string, signal: AbortSignal) {
+    const result = await client.outputs(id, signal)
+    for (const asset of result.assets) {
+      const blob = await client.outputFile(asset.id, signal)
+      signal.throwIfAborted()
+      outputs.value.push({
+        url: URL.createObjectURL(blob),
+        name: asset.name,
+        mime: asset.mime_type ?? blob.type
+      })
+    }
+  }
+
+  /** The wait between one look at the job and the next. */
+  const pause = (signal: AbortSignal) =>
+    new Promise<void>((resolve, reject) => {
+      const timer = setTimeout(() => {
+        signal.removeEventListener('abort', abort)
+        resolve()
+      }, 2500)
+      function abort() {
+        clearTimeout(timer)
+        reject(signal.reason)
+      }
+      signal.addEventListener('abort', abort, { once: true })
+    })
+
   async function poll(id: string, signal: AbortSignal) {
     while (!signal.aborted) {
       const job = await client.read(
@@ -152,47 +192,12 @@ export function useWorkflowRun(
       signal.throwIfAborted()
       state.value = { phase: 'tracking', job }
       if (workflowFinished(job)) {
-        // A job that was cancelled or failed is an outcome of its own. Only a
-        // completed one has anything to fetch.
-        if (job.status === 'cancelled') {
-          state.value = { phase: 'cancelled' }
-          void refreshWorkshopCredits({ force: true })
-          return
-        }
-        if (job.status === 'failed') {
-          // The run is over, so there is nothing to pick back up: what is
-          // left to offer is running it again.
-          state.value = { phase: 'error', reason: 'provider', retrySafe: true }
-          void refreshWorkshopCredits({ force: true })
-          return
-        }
-        if (job.status === 'completed') {
-          const result = await client.outputs(id, signal)
-          for (const asset of result.assets) {
-            const blob = await client.outputFile(asset.id, signal)
-            signal.throwIfAborted()
-            outputs.value.push({
-              url: URL.createObjectURL(blob),
-              name: asset.name,
-              mime: asset.mime_type ?? blob.type
-            })
-          }
-        }
-        state.value = { phase: 'finished', job }
+        if (job.status === 'completed') await collect(id, signal)
+        state.value = settledState(job)
         void refreshWorkshopCredits({ force: true })
         return
       }
-      await new Promise<void>((resolve, reject) => {
-        const timer = setTimeout(() => {
-          signal.removeEventListener('abort', abort)
-          resolve()
-        }, 2500)
-        function abort() {
-          clearTimeout(timer)
-          reject(signal.reason)
-        }
-        signal.addEventListener('abort', abort, { once: true })
-      })
+      await pause(signal)
     }
   }
   /** An answer that has to travel as a file, uploaded and named. */

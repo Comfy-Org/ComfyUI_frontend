@@ -6,6 +6,7 @@ import { useSignInHref } from '../../composables/useSignInHref'
 import { useWorkflowRun } from '../../composables/useWorkflowRun'
 import type { WorkflowGraph } from '../../config/workflow-execution'
 import type { WorkflowField } from '../../config/workflow-fields'
+import type { RunWayOut } from '../../lib/hub/run-failure'
 import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { useWorkshopCredits } from '../../config/workshop-credits'
 import { leaveForSignIn } from '../../config/workshop-return'
@@ -13,6 +14,7 @@ import type { Locale } from '../../i18n/translations'
 import { tHub } from '../../i18n/hub'
 import Button from '../ui/button/Button.vue'
 import WorkflowRunField from './WorkflowRunField.vue'
+import WorkflowRunGate from './WorkflowRunGate.vue'
 import WorkflowRunResult from './WorkflowRunResult.vue'
 
 // The workflow, run where it actually runs. Cloud takes the whole graph in the
@@ -79,6 +81,17 @@ const memberWorkspace = computed(() =>
  * Asking before the run rather than after it. A reader with nothing to spend
  * would otherwise upload their files, wait, and be told at the end.
  */
+/**
+ * The ways out the panel can offer, each wired to the thing that takes it.
+ * Trying again is simply running it again, with the same answers in place.
+ */
+const ways: Record<RunWayOut, () => void> = {
+  resume: () => void resume(),
+  retry: () => void run(),
+  credits: requestWorkshopBuyCredits,
+  personal: () => void switchToPersonal()
+}
+
 const broke = computed(
   () =>
     !!session.value &&
@@ -133,63 +146,15 @@ const broke = computed(
           {{ tHub('workshop.run.signIn', locale) }}
         </Button>
 
-        <!-- An empty wallet is said before the run, not after it, and it
-          names the workspace: topping up the wrong one is the mistake worth
-          making impossible. -->
-        <template v-else-if="broke">
-          <div class="flex flex-col gap-1 text-center" data-testid="run-gate">
-            <p class="text-sm font-bold text-content-secondary">
-              {{ tHub('workshop.error.creditsTitle', locale) }}
-            </p>
-            <p class="text-xs text-content-secondary">
-              {{
-                tHub(
-                  memberWorkspace === undefined
-                    ? 'workshop.error.noCreditsCloud'
-                    : 'workshop.error.memberNoCredits',
-                  locale
-                ).replace('{workspace}', () => session?.workspace.name ?? '')
-              }}
-            </p>
-          </div>
-
-          <Button
-            v-if="memberWorkspace === undefined"
-            size="lg"
-            class="w-full"
-            data-testid="workflow-run-credits"
-            @click="requestWorkshopBuyCredits"
-          >
-            {{ tHub('workshop.run.buyCredits', locale) }}
-          </Button>
-
-          <Button
-            v-else
-            variant="outline"
-            size="lg"
-            class="w-full"
-            :disabled="switching"
-            data-testid="workflow-run-personal"
-            @click="switchToPersonal"
-          >
-            {{
-              tHub(
-                switching
-                  ? 'workshop.run.preparingSession'
-                  : 'workshop.run.switchPersonal',
-                locale
-              )
-            }}
-          </Button>
-
-          <p
-            v-if="switchFailed"
-            class="text-xs text-primary-comfy-red"
-            role="alert"
-          >
-            {{ tHub('nav.workspaceSwitchError', locale) }}
-          </p>
-        </template>
+        <WorkflowRunGate
+          v-else-if="broke && session"
+          :workspace="session.workspace.name"
+          :member="memberWorkspace !== undefined"
+          :switching
+          :switch-failed="switchFailed"
+          :locale
+          @personal="switchToPersonal"
+        />
 
         <Button
           v-else
@@ -222,10 +187,7 @@ const broke = computed(
       :cold-start="coldStart"
       :member-workspace="memberWorkspace"
       :locale
-      @resume="resume"
-      @retry="run"
-      @credits="requestWorkshopBuyCredits"
-      @personal="switchToPersonal"
+      @press="ways[$event]()"
     />
   </section>
 </template>
