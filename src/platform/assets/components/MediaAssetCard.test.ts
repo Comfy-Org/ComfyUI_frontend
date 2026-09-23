@@ -215,9 +215,7 @@ describe('MediaAssetCard', () => {
       screen.getByRole('button', { name: 'mediaAsset.actions.download' })
     )
 
-    expect(
-      vi.mocked(useMediaAssetActions()).downloadAssets
-    ).toHaveBeenCalledWith([asset])
+    expect(useMediaAssetActions().downloadAssets).toHaveBeenCalledWith([asset])
     expect(emitted().select).toBeUndefined()
     expect(emitted()['toggle-selection']).toBeUndefined()
 

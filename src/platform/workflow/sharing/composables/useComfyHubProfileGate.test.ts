@@ -101,9 +101,7 @@ describe('useComfyHubProfileGate', () => {
 
       expect(gate.hasProfile.value).toBe(false)
       expect(gate.profile.value).toBe(null)
-      expect(
-        vi.mocked(useErrorHandling()).toastErrorHandler
-      ).toHaveBeenCalledOnce()
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledOnce()
     })
 
     it('sets isFetchingProfile during fetch', async () => {

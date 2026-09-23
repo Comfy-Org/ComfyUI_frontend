@@ -191,9 +191,7 @@ describe('ComfyHubPublishWizardContent', () => {
       await userEvent.click(screen.getByTestId('publish-btn'))
       await flushPromises()
 
-      expect(
-        vi.mocked(useErrorHandling()).toastErrorHandler
-      ).toHaveBeenCalledWith(error)
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(error)
       expect(onPublish).not.toHaveBeenCalled()
       expect(onRequireProfile).not.toHaveBeenCalled()
     })
@@ -237,9 +235,9 @@ describe('ComfyHubPublishWizardContent', () => {
       await flushPromises()
 
       expect(onPublish).toHaveBeenCalledOnce()
-      expect(
-        vi.mocked(useErrorHandling()).toastErrorHandler
-      ).toHaveBeenCalledWith(publishError)
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(
+        publishError
+      )
       expect(onGateClose).not.toHaveBeenCalled()
     })
 

@@ -270,9 +270,7 @@ describe('ComfyHubPublishDialog', () => {
     expect(mockSubmitToComfyHub).toHaveBeenCalledWith(
       expect.objectContaining({ name: 'Published title' })
     )
-    expect(
-      vi.mocked(useWorkflowService()).renameWorkflow
-    ).not.toHaveBeenCalled()
+    expect(useWorkflowService().renameWorkflow).not.toHaveBeenCalled()
   })
 
   it('does not close when publish submission fails', async () => {

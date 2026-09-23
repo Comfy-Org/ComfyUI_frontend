@@ -216,9 +216,7 @@ describe('MediaAssetContextMenu', () => {
       item: downloadItem
     })
 
-    expect(
-      vi.mocked(useMediaAssetActions()).downloadAssets
-    ).toHaveBeenCalledWith([asset])
+    expect(useMediaAssetActions().downloadAssets).toHaveBeenCalledWith([asset])
 
     unmount()
   })

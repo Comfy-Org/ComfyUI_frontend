@@ -417,9 +417,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.addMultipleToWorkflow(assets)
 
-      expect(
-        vi.mocked(useLitegraphService()).addNodeOnGraph
-      ).toHaveBeenCalledTimes(2)
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledTimes(2)
       expect(getAddedImageWidgetValues()).toEqual(['first.png', 'third.png'])
       expect(
         vi
