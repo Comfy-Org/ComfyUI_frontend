@@ -24,6 +24,8 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 describe('userStore', () => {
   beforeEach(() => {
     api.user = ''
+    localStorage.removeItem('Comfy.userId')
+    localStorage.removeItem('Comfy.userName')
     fetchApi.mockResolvedValue(new Response(null, { status: 404 }))
     document.querySelector('#user-stylesheet')?.remove()
   })
@@ -180,29 +182,36 @@ describe('userStore', () => {
     }
   )
 
-  it('ignores stylesheet responses for a previously selected user', async () => {
+  it('ignores stylesheet bodies for a previously selected user', async () => {
     getUserConfig.mockResolvedValue({
       users: { 'alice-id': 'Alice', 'bob-id': 'Bob' }
     })
-    const responses = new Map<string, (response: Response) => void>()
-    fetchApi.mockImplementation(
-      () =>
-        new Promise<Response>((resolve) => {
-          responses.set(api.user, resolve)
-        })
-    )
+    let resolveAliceBody: (stylesheet: string) => void = () => {}
+    let markAliceBodyStarted: () => void = () => {}
+    const aliceBodyStarted = new Promise<void>((resolve) => {
+      markAliceBodyStarted = resolve
+    })
+    fetchApi.mockImplementation(async () => {
+      if (api.user === 'alice-id') {
+        return {
+          ok: true,
+          text: () => {
+            markAliceBodyStarted()
+            return new Promise<string>((resolve) => {
+              resolveAliceBody = resolve
+            })
+          }
+        }
+      }
+      return new Response('body { color: blue; }', { status: 200 })
+    })
     const store = useUserStore()
     await store.initialize()
 
     const aliceLogin = store.login({ userId: 'alice-id', username: 'Alice' })
-    const bobLogin = store.login({ userId: 'bob-id', username: 'Bob' })
-    const resolveBob = responses.get('bob-id')
-    expect(resolveBob).toBeDefined()
-    resolveBob!(new Response('body { color: blue; }', { status: 200 }))
-    await bobLogin
-    const resolveAlice = responses.get('alice-id')
-    expect(resolveAlice).toBeDefined()
-    resolveAlice!(new Response('body { color: red; }', { status: 200 }))
+    await aliceBodyStarted
+    await store.login({ userId: 'bob-id', username: 'Bob' })
+    resolveAliceBody('body { color: red; }')
     await aliceLogin
 
     expect(document.querySelector('#user-stylesheet')?.textContent).toBe(
