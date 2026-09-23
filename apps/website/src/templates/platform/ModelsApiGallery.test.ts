@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 
 import { t } from '../../i18n/translations'
 import ModelsApiGallery from './ModelsApiGallery.vue'
+import type { ModelsGalleryCard } from './modelsGalleryCards'
 
 describe('ModelsApiGallery', () => {
   beforeEach(() => {
@@ -41,5 +42,26 @@ describe('ModelsApiGallery', () => {
         name: new RegExp(t('cloud.aiModels.card.seedance25', 'en'))
       })
     ).toHaveAttribute('href', '/models/byteplus--dreamina-seedance-2-5-260628/')
+  })
+
+  it('renders a card without a model id as a plain, non-linked div', () => {
+    const cards: ModelsGalleryCard[] = [
+      {
+        titleKey: 'cloud.aiModels.card.seedance25',
+        badgeIcon: '/icons/ai-models/bytedance.svg',
+        media: [{ src: 'https://media.comfy.org/website/test.webp' }]
+      }
+    ]
+
+    render(ModelsApiGallery, { props: { locale: 'en', cards } })
+
+    expect(
+      screen.queryByRole('link', {
+        name: new RegExp(t('cloud.aiModels.card.seedance25', 'en'))
+      })
+    ).not.toBeInTheDocument()
+    expect(
+      screen.getByText(t('cloud.aiModels.card.seedance25', 'en'))
+    ).toBeTruthy()
   })
 })
