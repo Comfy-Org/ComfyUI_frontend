@@ -96,6 +96,7 @@ let rafCallbackId = 0
 vi.mock('@vueuse/core', () => {
   return {
     useDocumentVisibility: vi.fn(() => ref('visible')),
+    usePreferredReducedMotion: vi.fn(() => ref('no-preference')),
     useRafFn: vi.fn((callback, options) => {
       const id = rafCallbackId++
       rafCallbacks[id] = callback
