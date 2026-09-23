@@ -1051,9 +1051,7 @@ describe('useWorkspaceBilling', () => {
       document.dispatchEvent(new Event('visibilitychange'))
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
       expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(useBillingCapabilities().refresh)).toHaveBeenCalledTimes(
-        1
-      )
+      expect(useBillingCapabilities().refresh).toHaveBeenCalledTimes(1)
 
       // One-shot: switching tabs later must not keep refetching.
       document.dispatchEvent(new Event('visibilitychange'))
@@ -1079,9 +1077,7 @@ describe('useWorkspaceBilling', () => {
       window.dispatchEvent(new Event('focus'))
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
       expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(useBillingCapabilities().refresh)).toHaveBeenCalledTimes(
-        1
-      )
+      expect(useBillingCapabilities().refresh).toHaveBeenCalledTimes(1)
 
       document.dispatchEvent(new Event('visibilitychange'))
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
@@ -1130,9 +1126,7 @@ describe('useWorkspaceBilling', () => {
       window.dispatchEvent(new Event('focus'))
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
       expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(useBillingCapabilities().refresh)).toHaveBeenCalledTimes(
-        1
-      )
+      expect(useBillingCapabilities().refresh).toHaveBeenCalledTimes(1)
     })
 
     it('removes pending return listeners when its scope is disposed', async () => {
@@ -1155,7 +1149,7 @@ describe('useWorkspaceBilling', () => {
       document.dispatchEvent(new Event('visibilitychange'))
 
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
-      expect(vi.mocked(useBillingCapabilities().refresh)).not.toHaveBeenCalled()
+      expect(useBillingCapabilities().refresh).not.toHaveBeenCalled()
     })
 
     it('does not watch for a return when the portal window is blocked', async () => {
@@ -1176,7 +1170,7 @@ describe('useWorkspaceBilling', () => {
       document.dispatchEvent(new Event('visibilitychange'))
 
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
-      expect(vi.mocked(useBillingCapabilities().refresh)).not.toHaveBeenCalled()
+      expect(useBillingCapabilities().refresh).not.toHaveBeenCalled()
     })
 
     it('does not watch for a return when no portal was opened', async () => {
@@ -1191,7 +1185,7 @@ describe('useWorkspaceBilling', () => {
 
       document.dispatchEvent(new Event('visibilitychange'))
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
-      expect(vi.mocked(useBillingCapabilities().refresh)).not.toHaveBeenCalled()
+      expect(useBillingCapabilities().refresh).not.toHaveBeenCalled()
     })
   })
 

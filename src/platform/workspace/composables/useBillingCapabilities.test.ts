@@ -268,7 +268,7 @@ describe('useBillingCapabilities', () => {
 
     await billingCapabilities.initialize(controller.signal)
 
-    expect(vi.mocked(workspaceApi.getBillingCapabilities)).toHaveBeenCalledWith(
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledWith(
       expect.any(AbortSignal)
     )
   })
@@ -355,9 +355,7 @@ describe('useBillingCapabilities', () => {
 
     await billingCapabilities.initialize()
 
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.canCancel.value).toBe(false)
@@ -388,9 +386,7 @@ describe('useBillingCapabilities', () => {
     resolveFirstRequest(capabilitiesResponse(true, 'workspace-1', true))
     await firstInitialization
 
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
   })
@@ -402,9 +398,7 @@ describe('useBillingCapabilities', () => {
 
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).not.toHaveBeenCalled()
+    expect(workspaceApi.getBillingCapabilities).not.toHaveBeenCalled()
   })
 
   it('preserves the local role gate for workspace members', async () => {
@@ -417,9 +411,7 @@ describe('useBillingCapabilities', () => {
 
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).not.toHaveBeenCalled()
+    expect(workspaceApi.getBillingCapabilities).not.toHaveBeenCalled()
   })
 
   it('does not enter pending state without an authenticated scope', async () => {
@@ -429,9 +421,7 @@ describe('useBillingCapabilities', () => {
 
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(false)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).not.toHaveBeenCalled()
+    expect(workspaceApi.getBillingCapabilities).not.toHaveBeenCalled()
   })
 
   it('accepts a canonical server user ID distinct from the Firebase UID', async () => {
@@ -462,9 +452,7 @@ describe('useBillingCapabilities', () => {
 
     await vi.advanceTimersByTimeAsync(30_000)
 
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
@@ -482,17 +470,13 @@ describe('useBillingCapabilities', () => {
 
     await billingCapabilities.initialize()
     await vi.advanceTimersByTimeAsync(120_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     visibility.mockReturnValue('visible')
     document.dispatchEvent(new Event('visibilitychange'))
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
@@ -518,14 +502,10 @@ describe('useBillingCapabilities', () => {
     document.dispatchEvent(new Event('visibilitychange'))
 
     await vi.advanceTimersByTimeAsync(19_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(2_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
   })
 
   it('retimes the refresh for the new workspace after a workspace switch', async () => {
@@ -552,19 +532,13 @@ describe('useBillingCapabilities', () => {
     await vi.waitFor(() =>
       expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
     )
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await vi.advanceTimersByTimeAsync(60_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await vi.advanceTimersByTimeAsync(65_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(3)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
@@ -583,16 +557,12 @@ describe('useBillingCapabilities', () => {
 
     await billingCapabilities.initialize()
     await vi.advanceTimersByTimeAsync(30_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     scope.stop()
     await vi.advanceTimersByTimeAsync(300_000)
 
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
   })
 
   it('refetches when a mutation reports a different capability revision', async () => {
@@ -609,9 +579,7 @@ describe('useBillingCapabilities', () => {
 
     await emitMutationRevision('5')
 
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
@@ -628,9 +596,7 @@ describe('useBillingCapabilities', () => {
 
     await emitMutationRevision('5', 402)
 
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
@@ -646,14 +612,10 @@ describe('useBillingCapabilities', () => {
     await billingCapabilities.initialize()
 
     await emitMutationRevision('4')
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await emitMutationRevision('6')
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
   })
 
   it('ignores a mutation whose response omits the revision header', async () => {
@@ -668,15 +630,11 @@ describe('useBillingCapabilities', () => {
     await billingCapabilities.initialize()
 
     await emitMutationRevision(undefined)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(false)
 
     await emitMutationRevision('6')
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
   })
 
   it('keeps the resolved snapshot readable while a background refresh is in flight', async () => {
@@ -698,9 +656,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(true)
 
     await vi.advanceTimersByTimeAsync(30_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
     expect(billingCapabilities.isReady.value).toBe(true)
@@ -728,9 +684,7 @@ describe('useBillingCapabilities', () => {
     await billingCapabilities.initialize()
     await vi.advanceTimersByTimeAsync(30_000)
 
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
     expect(billingCapabilities.isReady.value).toBe(true)
@@ -753,19 +707,13 @@ describe('useBillingCapabilities', () => {
 
     await billingCapabilities.initialize()
     await vi.advanceTimersByTimeAsync(30_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await vi.advanceTimersByTimeAsync(59_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await vi.advanceTimersByTimeAsync(2_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(3)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
     expect(billingCapabilities.canTopUp.value).toBe(false)
   })
 
@@ -794,19 +742,13 @@ describe('useBillingCapabilities', () => {
     )
 
     await billingCapabilities.initialize()
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(59_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(2_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
   })
 
   it('bounds the refresh interval when the client clock lags the server', async () => {
@@ -820,9 +762,7 @@ describe('useBillingCapabilities', () => {
 
     await vi.advanceTimersByTimeAsync(60 * 60 * 1000 + 1_000)
 
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
   })
 
   it('paces the refresh on a fixed interval when the snapshot expiry is unparseable', async () => {
@@ -833,19 +773,13 @@ describe('useBillingCapabilities', () => {
     )
 
     await billingCapabilities.initialize()
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(59_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(2_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
   })
 
   it('refetches a read that a mutation invalidated while it was in flight', async () => {
@@ -872,14 +806,10 @@ describe('useBillingCapabilities', () => {
 
     await billingCapabilities.initialize()
     await vi.advanceTimersByTimeAsync(30_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await emitMutationRevision('5')
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     // Serialized after the mutation stamped its header, so it carries a higher
     // revision than the mutation despite having read pre-mutation data.
@@ -891,15 +821,11 @@ describe('useBillingCapabilities', () => {
     )
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(3)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
     expect(billingCapabilities.canTopUp.value).toBe(true)
 
     await vi.advanceTimersByTimeAsync(600_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(3)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
   })
 
   it('refetches when a mutation invalidates the initial read', async () => {
@@ -917,9 +843,7 @@ describe('useBillingCapabilities', () => {
 
     const initialization = billingCapabilities.initialize()
     await emitMutationRevision('5')
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     resolveInitial(
       capabilitiesResponse(false, 'workspace-1', true, { revision: 7 })
@@ -927,9 +851,7 @@ describe('useBillingCapabilities', () => {
     await initialization
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
@@ -945,9 +867,7 @@ describe('useBillingCapabilities', () => {
     )
     await initialization
 
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
@@ -959,9 +879,7 @@ describe('useBillingCapabilities', () => {
 
     const initialization = billingCapabilities.initialize()
     await emitMutationRevision('5')
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     // Serialized after the mutation stamped its header, so it carries a higher
     // revision than the mutation despite having read pre-mutation data.
@@ -969,17 +887,13 @@ describe('useBillingCapabilities', () => {
       capabilitiesResponse(false, 'workspace-1', true, { revision: 7 })
     )
     await initialization
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await reads.release(
       capabilitiesResponse(true, 'workspace-1', true, { revision: 8 })
     )
 
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
   })
 
@@ -994,9 +908,7 @@ describe('useBillingCapabilities', () => {
 
     await vi.advanceTimersByTimeAsync(31_000)
 
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
   })
 
@@ -1007,39 +919,25 @@ describe('useBillingCapabilities', () => {
     )
 
     await billingCapabilities.initialize()
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(29_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(2_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await vi.advanceTimersByTimeAsync(58_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
 
     await vi.advanceTimersByTimeAsync(2_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(3)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
 
     await vi.advanceTimersByTimeAsync(118_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(3)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(3)
 
     await vi.advanceTimersByTimeAsync(2_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(4)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(4)
 
     expect(mockReportError).toHaveBeenCalledOnce()
   })
@@ -1060,9 +958,7 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.canTopUp.value).toBe(true)
 
     await vi.advanceTimersByTimeAsync(31_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.isReady.value).toBe(true)
 
@@ -1082,17 +978,13 @@ describe('useBillingCapabilities', () => {
 
     await billingCapabilities.initialize()
     await vi.advanceTimersByTimeAsync(600_000)
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     visibility.mockReturnValue('visible')
     document.dispatchEvent(new Event('visibilitychange'))
     await vi.advanceTimersByTimeAsync(0)
 
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledTimes(2)
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledTimes(2)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
   })
 
@@ -1102,15 +994,11 @@ describe('useBillingCapabilities', () => {
     )
 
     await billingCapabilities.initialize()
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
 
     await vi.advanceTimersByTimeAsync(600_000)
 
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).toHaveBeenCalledOnce()
+    expect(workspaceApi.getBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(false)
   })
 })
@@ -1146,9 +1034,7 @@ describe('useBillingCapabilities on the SDK rail', () => {
       signal: expect.any(AbortSignal),
       forceRefresh: false
     })
-    expect(
-      vi.mocked(workspaceApi.getBillingCapabilities)
-    ).not.toHaveBeenCalled()
+    expect(workspaceApi.getBillingCapabilities).not.toHaveBeenCalled()
   })
 
   it('bypasses the SDK cache when a mutation reports a new revision', async () => {

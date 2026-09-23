@@ -237,8 +237,8 @@ describe('useDowngradeToPersonal', () => {
         'subscription.downgrade.notAllowed'
       )
       expect(mockPreviewSubscribe).not.toHaveBeenCalled()
-      expect(vi.mocked(workspaceStore.removeMember)).not.toHaveBeenCalled()
-      expect(vi.mocked(useBillingContext().subscribe)).not.toHaveBeenCalled()
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
     })
 
     it('rejects a client-side owner when the server denies the downgrade', async () => {
@@ -251,8 +251,8 @@ describe('useDowngradeToPersonal', () => {
         'subscription.downgrade.notAllowed'
       )
       expect(mockPreviewSubscribe).not.toHaveBeenCalled()
-      expect(vi.mocked(workspaceStore.removeMember)).not.toHaveBeenCalled()
-      expect(vi.mocked(useBillingContext().subscribe)).not.toHaveBeenCalled()
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
     })
 
     it('stops before member removal when downgrade access is revoked during preview', async () => {
@@ -272,8 +272,8 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'subscription.downgrade.notAllowed'
       )
-      expect(vi.mocked(workspaceStore.removeMember)).not.toHaveBeenCalled()
-      expect(vi.mocked(useBillingContext().subscribe)).not.toHaveBeenCalled()
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
     })
 
     it('stops before submit when downgrade access is revoked during member removal', async () => {
@@ -292,8 +292,8 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'subscription.downgrade.notAllowed'
       )
-      expect(vi.mocked(workspaceStore.removeMember)).toHaveBeenCalledOnce()
-      expect(vi.mocked(useBillingContext().subscribe)).not.toHaveBeenCalled()
+      expect(workspaceStore.removeMember).toHaveBeenCalledOnce()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
     })
 
     it('removes every non-creator member then initiates the tier change', async () => {
@@ -302,13 +302,11 @@ describe('useDowngradeToPersonal', () => {
 
       await downgradeToPersonal('founder-monthly')
 
-      expect(vi.mocked(workspaceStore.removeMember)).toHaveBeenCalledTimes(2)
-      expect(vi.mocked(workspaceStore.removeMember)).toHaveBeenCalledWith('m1')
-      expect(vi.mocked(workspaceStore.removeMember)).toHaveBeenCalledWith('m2')
-      expect(vi.mocked(workspaceStore.removeMember)).not.toHaveBeenCalledWith(
-        'owner'
-      )
-      expect(vi.mocked(useBillingContext().subscribe)).toHaveBeenCalledWith(
+      expect(workspaceStore.removeMember).toHaveBeenCalledTimes(2)
+      expect(workspaceStore.removeMember).toHaveBeenCalledWith('m1')
+      expect(workspaceStore.removeMember).toHaveBeenCalledWith('m2')
+      expect(workspaceStore.removeMember).not.toHaveBeenCalledWith('owner')
+      expect(useBillingContext().subscribe).toHaveBeenCalledWith(
         'founder-monthly',
         {
           returnUrl: 'https://platform.test/payment/success',
@@ -330,8 +328,8 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'subscription.downgrade.reactivationConfirmationRequired'
       )
-      expect(vi.mocked(workspaceStore.removeMember)).not.toHaveBeenCalled()
-      expect(vi.mocked(useBillingContext().subscribe)).not.toHaveBeenCalled()
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
     })
 
     it('removes members and forwards confirmReactivation once explicitly confirmed with the matching charge', async () => {
@@ -346,8 +344,8 @@ describe('useDowngradeToPersonal', () => {
 
       await downgradeToPersonal('founder-monthly', true, 1500)
 
-      expect(vi.mocked(workspaceStore.removeMember)).toHaveBeenCalledWith('m1')
-      expect(vi.mocked(useBillingContext().subscribe)).toHaveBeenCalledWith(
+      expect(workspaceStore.removeMember).toHaveBeenCalledWith('m1')
+      expect(useBillingContext().subscribe).toHaveBeenCalledWith(
         'founder-monthly',
         {
           returnUrl: 'https://platform.test/payment/success',
@@ -373,8 +371,8 @@ describe('useDowngradeToPersonal', () => {
       await expect(
         downgradeToPersonal('founder-monthly', true, 1500)
       ).rejects.toThrow('subscription.downgrade.reactivationAmountChanged')
-      expect(vi.mocked(workspaceStore.removeMember)).not.toHaveBeenCalled()
-      expect(vi.mocked(useBillingContext().subscribe)).not.toHaveBeenCalled()
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
     })
 
     it('refuses to remove members when a status refresh discovers a cancellation the cached read missed', async () => {
@@ -397,9 +395,9 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'subscription.downgrade.reactivationConfirmationRequired'
       )
-      expect(vi.mocked(useBillingContext().fetchStatus)).toHaveBeenCalled()
-      expect(vi.mocked(workspaceStore.removeMember)).not.toHaveBeenCalled()
-      expect(vi.mocked(useBillingContext().subscribe)).not.toHaveBeenCalled()
+      expect(useBillingContext().fetchStatus).toHaveBeenCalled()
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
     })
 
     it('surfaces a hidden cancellation after member cleanup and forwards the quote timestamp', async () => {
@@ -421,14 +419,14 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         ReactivationConfirmationRequiredError
       )
-      expect(vi.mocked(useBillingContext().subscribe)).toHaveBeenCalledWith(
+      expect(useBillingContext().subscribe).toHaveBeenCalledWith(
         'founder-monthly',
         expect.objectContaining({
           confirmReactivation: false,
           prorationAt: '2026-07-30T00:00:00Z'
         })
       )
-      expect(vi.mocked(workspaceStore.removeMember)).toHaveBeenCalledWith('m1')
+      expect(workspaceStore.removeMember).toHaveBeenCalledWith('m1')
     })
 
     it('requires reactivation confirmation when subscription state has not loaded yet', async () => {
@@ -446,8 +444,8 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'subscription.downgrade.reactivationConfirmationRequired'
       )
-      expect(vi.mocked(workspaceStore.removeMember)).not.toHaveBeenCalled()
-      expect(vi.mocked(useBillingContext().subscribe)).not.toHaveBeenCalled()
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
     })
 
     it('does not require reactivation confirmation for a brand-new subscription even if cancelled', async () => {
@@ -462,8 +460,8 @@ describe('useDowngradeToPersonal', () => {
 
       await downgradeToPersonal('founder-monthly')
 
-      expect(vi.mocked(workspaceStore.removeMember)).toHaveBeenCalledWith('m1')
-      expect(vi.mocked(useBillingContext().subscribe)).toHaveBeenCalledWith(
+      expect(workspaceStore.removeMember).toHaveBeenCalledWith('m1')
+      expect(useBillingContext().subscribe).toHaveBeenCalledWith(
         'founder-monthly',
         {
           returnUrl: 'https://platform.test/payment/success',
@@ -488,8 +486,8 @@ describe('useDowngradeToPersonal', () => {
 
       await downgradeToPersonal('founder-monthly')
 
-      expect(vi.mocked(workspaceStore.removeMember)).toHaveBeenCalledWith('m1')
-      expect(vi.mocked(useBillingContext().subscribe)).toHaveBeenCalledWith(
+      expect(workspaceStore.removeMember).toHaveBeenCalledWith('m1')
+      expect(useBillingContext().subscribe).toHaveBeenCalledWith(
         'founder-monthly',
         {
           returnUrl: 'https://platform.test/payment/success',
@@ -507,8 +505,8 @@ describe('useDowngradeToPersonal', () => {
 
       await downgradeToPersonal('founder-monthly')
 
-      expect(vi.mocked(workspaceStore.removeMember)).not.toHaveBeenCalled()
-      expect(vi.mocked(useBillingContext().subscribe)).toHaveBeenCalled()
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).toHaveBeenCalled()
     })
 
     it('validates the transition before removing members, then subscribes', async () => {
@@ -606,8 +604,8 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'Outstanding balance'
       )
-      expect(vi.mocked(workspaceStore.removeMember)).not.toHaveBeenCalled()
-      expect(vi.mocked(useBillingContext().subscribe)).not.toHaveBeenCalled()
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
     })
 
     it('opens the payment-method page and polls when subscribe needs a payment method', async () => {
@@ -740,7 +738,7 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'subscription.downgrade.failedAfterMemberRemoval'
       )
-      expect(vi.mocked(workspaceStore.removeMember)).toHaveBeenCalledWith('m1')
+      expect(workspaceStore.removeMember).toHaveBeenCalledWith('m1')
     })
 
     it('surfaces which member failed and skips the plan change', async () => {
@@ -753,8 +751,8 @@ describe('useDowngradeToPersonal', () => {
       await expect(downgradeToPersonal('founder-monthly')).rejects.toThrow(
         'm2@example.com'
       )
-      expect(vi.mocked(workspaceStore.removeMember)).toHaveBeenCalledWith('m1')
-      expect(vi.mocked(useBillingContext().subscribe)).not.toHaveBeenCalled()
+      expect(workspaceStore.removeMember).toHaveBeenCalledWith('m1')
+      expect(useBillingContext().subscribe).not.toHaveBeenCalled()
     })
   })
 
@@ -902,7 +900,7 @@ describe('useDowngradeToPersonal', () => {
       const result = await previewDowngrade('founder-monthly')
 
       expect(result.requiresReactivationConfirmation).toBe(true)
-      expect(vi.mocked(workspaceStore.removeMember)).not.toHaveBeenCalled()
+      expect(workspaceStore.removeMember).not.toHaveBeenCalled()
     })
 
     it('reports no reactivation requirement when the subscription is known and not cancelled', async () => {
@@ -981,7 +979,7 @@ describe('useDowngradeToPersonal', () => {
 
       const result = await previewDowngrade('founder-monthly')
 
-      expect(vi.mocked(useBillingContext().fetchStatus)).toHaveBeenCalled()
+      expect(useBillingContext().fetchStatus).toHaveBeenCalled()
       expect(result.requiresReactivationConfirmation).toBe(true)
     })
   })
@@ -1012,7 +1010,7 @@ describe('useDowngradeToPersonal', () => {
       await expect(refreshMembers()).rejects.toThrow(
         'subscription.downgrade.notAllowed'
       )
-      expect(vi.mocked(workspaceStore.fetchMembers)).not.toHaveBeenCalled()
+      expect(workspaceStore.fetchMembers).not.toHaveBeenCalled()
     })
 
     it('rejects a promoted owner after refreshing the original-owner signal', async () => {
@@ -1023,7 +1021,7 @@ describe('useDowngradeToPersonal', () => {
       await expect(refreshMembers()).rejects.toThrow(
         'subscription.downgrade.notAllowed'
       )
-      expect(vi.mocked(workspaceStore.fetchMembers)).toHaveBeenCalledOnce()
+      expect(workspaceStore.fetchMembers).toHaveBeenCalledOnce()
     })
   })
 })

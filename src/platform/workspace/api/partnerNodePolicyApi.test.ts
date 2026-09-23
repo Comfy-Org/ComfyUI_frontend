@@ -35,7 +35,7 @@ describe('partnerNodePolicyApi', () => {
         nodeCategories: ['OpenAI', 'Sora']
       }
     ])
-    expect(vi.mocked(api.fetchApi)).toHaveBeenCalledWith('/providers', {
+    expect(api.fetchApi).toHaveBeenCalledWith('/providers', {
       cache: 'no-store'
     })
   })
@@ -52,12 +52,9 @@ describe('partnerNodePolicyApi', () => {
       enforcementEnabled: true,
       providers: [{ providerId: 'openai', enabled: false }]
     })
-    expect(vi.mocked(api.fetchApi)).toHaveBeenCalledWith(
-      '/workspace/provider-policy',
-      {
-        cache: 'no-store'
-      }
-    )
+    expect(api.fetchApi).toHaveBeenCalledWith('/workspace/provider-policy', {
+      cache: 'no-store'
+    })
   })
 
   it('maps 404 to an unconfigured policy', async () => {
@@ -85,17 +82,14 @@ describe('partnerNodePolicyApi', () => {
       enforcementEnabled: false,
       providers: [{ providerId: 'openai', enabled: true }]
     })
-    expect(vi.mocked(api.fetchApi)).toHaveBeenCalledWith(
-      '/workspace/provider-policy',
-      {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          enforcement_enabled: false,
-          providers: [{ provider_id: 'openai', enabled: true }]
-        })
-      }
-    )
+    expect(api.fetchApi).toHaveBeenCalledWith('/workspace/provider-policy', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        enforcement_enabled: false,
+        providers: [{ provider_id: 'openai', enabled: true }]
+      })
+    })
   })
 
   it('preserves response status codes for policy decisions', async () => {
