@@ -5,6 +5,7 @@ import axios, { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import {
@@ -13,6 +14,8 @@ import {
 } from '@/platform/auth/unified/remintRetry'
 
 vi.mock(import('@/platform/telemetry'))
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('firebase/auth'))
 
@@ -234,6 +237,58 @@ describe('fetchWithUnifiedRemint', () => {
     expect(result).toBe(unauthorized)
     expect(mockFetch).toHaveBeenCalledTimes(1)
     expect(useWorkspaceAuthStore().remintUnifiedOnce).toHaveBeenCalledTimes(1)
+  })
+
+  it('reports an unexpected re-mint throw as auth_unified_remint_unexpected and keeps the 401 fallback', async () => {
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const thrown = new TypeError('Failed to fetch dynamically imported module')
+    mockFetch.mockResolvedValueOnce(unauthorized)
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockRejectedValue(
+      thrown
+    )
+
+    const result = await fetchWithUnifiedRemint(
+      'https://cloud/x',
+      { headers: { Authorization: 'Bearer secret-token' as const } },
+      true
+    )
+
+    expect(result).toBe(unauthorized)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(thrown, {
+      errorType: 'auth_unified_remint_unexpected',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'auth',
+        operation: 'auth',
+        outcome: 'failed'
+      },
+      level: 'error'
+    })
+    expect(
+      JSON.stringify(vi.mocked(reportError).mock.calls[0][1])
+    ).not.toContain('secret-token')
+    expect(consoleWarn).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackUnifiedAuthRetry
+    ).toHaveBeenCalledExactlyOnceWith({
+      transport: 'fetch',
+      outcome: 'failed',
+      final_status: 401,
+      failure_reason: 'remint_failed'
+    })
+  })
+
+  it('does not report when the re-mint primitive returns null without throwing', async () => {
+    mockFetch.mockResolvedValueOnce(unauthorized)
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(null)
+
+    await fetchWithUnifiedRemint(
+      'https://cloud/x',
+      { headers: { Authorization: 'Bearer t' as const } },
+      true
+    )
+
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('surfaces the original 401 without re-minting when the body is a non-replayable stream', async () => {

@@ -21,6 +21,13 @@ export const workshopInputDefinitionSchema = z.object({
   imageSource: z.literal('url').optional(),
   maxUploadBytes: z.number().int().positive().optional(),
   maxVideoDurationSeconds: z.number().positive().optional(),
+  videoWidthPixels: z
+    .object({
+      minimum: z.number().int().positive(),
+      maximum: z.number().int().positive()
+    })
+    .refine(({ minimum, maximum }) => minimum <= maximum)
+    .optional(),
   formConstraint: z
     .object({
       schema: z.record(z.string(), z.json()),
