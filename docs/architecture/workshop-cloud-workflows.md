@@ -2,29 +2,34 @@
 
 Status: proposed architecture for FE-2736, reviewed against source on 2026-09-22.
 This document describes work to build; it does not claim deployment or staging
-acceptance. The decision record is
+acceptance. The page/catalog decision is
+[WORKSHOP-CATALOG-0037](../adr/WORKSHOP-CATALOG-0037-shared-pages-and-authored-execution-catalogs.md).
+The Cloud lifecycle proposal remains in
 [WORKSHOP-WORKFLOWS-0036](../adr/WORKSHOP-WORKFLOWS-0036-published-app-definitions-and-durable-cloud-runs.md).
 The [test strategy](../testing/workshop-cloud-workflows.md) defines the evidence
 required before enablement.
 
-Implementation checkpoint, 2026-09-23: the APP exporter and flat/nested contract
-fixtures are committed in the authoring worktree (`34e948eebf`, `ebf6cdf7f2`).
-Cloud's publication compiler and local review command are committed as
-`96961fe8b8`; image frame validation follows in `de129fc7fc`. These validate
-captured bindings and bounded scalar materialization. Live catalog/worker
-compatibility, media staging and definition publication storage remain pending.
-The compiler currently rejects dynamic recipes and supports only its reviewed
-core-node allowlist and image output rules. This is not a runnable-workflow
-release; the six-PR grouping, with at most three Cloud PRs, remains unchanged.
+Scope correction, 2026-09-23: workflow metadata is prepared offline by a person
+or agent and committed as JSONL. Existing Models INPUTS define the form; the
+workflow record supplies native input IDs/types and request/output mappings.
+Automatic APP extraction, exporter changes and serializer compatibility are out
+of scope. Earlier exporter commits (`34e948eebf`, `ebf6cdf7f2`) and the
+export-artifact compiler (`96961fe8b8`) are not release dependencies. Review the
+latter for reusable ordinary schema/input checks when replacing its contract.
+Cloud receipt and upload work remains applicable. Runtime integration, staging
+and rollout are incomplete. Removing the authoring PR leaves five planned PRs,
+including at most three Cloud PRs.
 
 ## Scope and authority
 
-Signed-in callers run reviewed, published Cloud workflows using the author's
-APP controls. Execution, input assets, generated assets, and normal Cloud
+Signed-in callers run reviewed, published Cloud workflows using the controls
+declared in the master Models page's INPUTS. Execution, input assets, generated assets, and normal Cloud
 billing belong to the caller's authorized workspace. A workflow author does not
 lend an account, a GPU deployment, or credentials to a caller.
 
-The controlling requirements are [FE-2736](https://linear.app/comfyorg/issue/FE-2736/implement-cloud-workflow-support-in-models-workshop-phase-1),
+The user's 2026-09-23 catalog and shared-page clarification supersedes the
+earlier interpretation that publication must extract editor APP selections.
+The remaining requirements are [FE-2736](https://linear.app/comfyorg/issue/FE-2736/implement-cloud-workflow-support-in-models-workshop-phase-1),
 [Workshop TDD §17](https://app.notion.com/p/3cf6d73d3650811aab66ccaf03c0252f), and
 the [workflow TDD](https://app.notion.com/p/3e26d73d3650818d9f0cf28fc9f506d4).
 The earlier model-only appendix is historical context: its cancellation/billing
@@ -50,8 +55,8 @@ These are source inspections, not observations of the deployed service.
 | The [live v2 specification](https://raw.githubusercontent.com/Comfy-Org/docs/main/openapi-v2.yaml) accepts an API graph; top-level `inputs` is reserved. Duplicate idempotency keys return 422 rather than replaying a receipt.                                                                                                              | APP mapping and browser retry identity belong in Workshop. Passing APP parameters directly to v2 will not implement this feature.                                                                                                                            |
 | Cloud [`PostJobs`](https://github.com/Comfy-Org/cloud/blob/b1e99a58db0c1c4fccab6bb75c9cbcad39d2ecc0/services/public-api/server/implementation/jobs.go) scopes Redis claims to credential bytes, retains uncertain claims for 24 hours, and fails open on claim-store failure. Cloud `Job` has no upstream-key uniqueness/lookup contract.    | Public v2 submission alone cannot guarantee one Cloud job across token renewal, lost responses, outages, and worker restarts. Add a durable Cloud receipt at job creation. The serverless gateway lookup cited in the TDD does not establish a Cloud lookup. |
 | [`ingestclient.SubmitPrompt`](https://github.com/Comfy-Org/cloud/blob/b1e99a58db0c1c4fccab6bb75c9cbcad39d2ecc0/services/public-api/ingestclient/client.go) forwards a credential as `X-API-Key`.                                                                                                                                             | Do not assume a browser Cloud JWT can be forwarded through this adapter, or retain that JWT for background retries.                                                                                                                                          |
-| [APP documentation](https://docs.comfy.org/interface/app-mode) describes selected controls and output nodes. [`LinearData`](../../src/platform/workflow/management/stores/comfyWorkflow.ts) stores selections and limited presentation settings, not a complete executable parameter schema.                                                 | Publication must produce the missing types, constraints, defaults, bindings, and output contracts.                                                                                                                                                           |
-| [`graphToPrompt`](../../src/utils/executionUtil.ts) resolves virtual nodes, custom serializers, links and nested execution IDs. [`ExecutableNodeDTO`](../../src/lib/litegraph/src/subgraph/ExecutableNodeDTO.ts) applies host input values to inner targets. APP pruning can silently remove unresolved selections.                          | Export provenance through the existing execution conversion. Reject unresolved publication instead of reusing tolerant editor pruning.                                                                                                                       |
+| Editor APP selections are not the Models page INPUTS contract.                                                                                                                                                                                                                                                                               | The publisher prepares native types and bindings offline; the existing master page owns the widgets.                                                                                                                                                         |
+| The existing exporter handles editor-specific nested/widget semantics.                                                                                                                                                                                                                                                                       | This feature consumes already prepared API graphs and explicit JSONL mappings; exporter behavior is outside its runtime boundary.                                                                                                                            |
 | [`CreateCustomerStorageResource`](https://github.com/Comfy-Org/cloud/blob/b1e99a58db0c1c4fccab6bb75c9cbcad39d2ecc0/services/comfy-api/services/comfy_api/comfy_api_svc.go) signs PUT for one hour and GET for 24 hours. Its response has two URLs; its `StorageFile` record does not establish completed, workspace-scoped, immutable media. | Extend this grant flow with durable ownership and finalization. URL validity is not object retention or upload completion.                                                                                                                                   |
 | Cloud [`DownloadPromptFiles`](https://github.com/Comfy-Org/cloud/blob/b1e99a58db0c1c4fccab6bb75c9cbcad39d2ecc0/services/inference/server/services/prompt/processor.go) stages loader inputs by authorized Cloud asset hash.                                                                                                                  | A storage URL is not a `LoadImage` filename. Register/stage validated media into caller-owned Cloud assets before materializing the executable graph.                                                                                                        |
 | The [v2 output documentation](https://docs.comfy.org/api-reference/v2/overview) distinguishes authenticated content URLs, signed asset URLs, and placeholder job expiry.                                                                                                                                                                     | Use stable asset identity and the actual grant's expiry. Never embed `Output.url` directly in a browser media element or promise retention from the job's 30-day placeholder.                                                                                |
@@ -74,8 +79,9 @@ deployed. Inspect their final contracts before choosing shared transport code.
 Preserve the public routes `/models/workflows/` and
 `/models/workflows/{slug}/`, and the approved layout and category ordering from
 the [launch specification](https://app.notion.com/p/3de6d73d365081d0b5bafdb9d9ffbf12).
-The catalog's 30 cards are a design/content set, not 30 certified executions.
-Only reviewed compatible definitions become runnable.
+The catalog's 30 cards are a design/content set. A page is exposed only when its
+master entry matches a reviewed execution record and the publication gates
+permit it. A workflow record alone cannot create a page.
 
 Read the template's own `WORKFLOWS_PROTOTYPE.md` and
 `WORKFLOW_API_COVERAGE.md` before porting it. Replace its direct canvas upload/
@@ -85,16 +91,14 @@ demo stays explicitly separate from caller-billed Cloud execution; simulated
 startup stages are not production telemetry. API-tab examples for this feature
 use the Workshop contract and share browser/CLI defaults.
 
-Its curated field list is not authoritative APP metadata. Two inspected
-examples establish required regression fixtures: `match-portrait-lighting`
-omits the authored `103.prompt` selection; `change-camera-angle` replaces the
-selected `camera_preview` custom control with hand-selected numeric fields.
-Other inspected candidates, including background removal and material change,
-have no `extra.linearData`. Publish an explicit reviewed authoring revision
-with APP selections for those candidates; do not infer that the prototype's
-fields are the author's selections. Custom controls need a reviewed adapter or
-browse-only status. The prototype's altered API graphs also need the same
-publication/provenance checks as every other definition.
+Prepare the selected templates' records offline. Reuse the existing Models
+INPUTS widgets for their curated forms, and explicitly declare their native
+bindings in the workflow JSONL. The prototype's field choices are useful
+curation references; differences from editor APP selections are not publication
+errors. Missing `extra.linearData` does not disqualify a workflow. A camera
+workflow can expose ordinary numeric controls when the prepared request accepts
+them. Verify the prepared request against the pinned graph and actual Cloud
+runtime; never run custom editor widgets to discover its interface.
 
 The graph tab currently depends on deprecated standalone `@comfyorg/litegraph`
 0.17.2. Resolve its maintained renderer strategy as a bounded frontend spike
@@ -106,12 +110,15 @@ Renderer selection is still open and does not block backend correctness work.
 
 ```mermaid
 flowchart LR
-  A[Authoring revision] --> E[Editor export and publication validation]
-  E --> P[Versioned public APP definition]
-  E --> D[Private execution definition]
-  P --> C[Browser and CLI render helper]
+  M[Existing master pages and INPUTS] --> P[Matched pages]
+  T[Existing Router endpoint catalog] --> P
+  A[Offline workflow preparation] --> D[Workflow JSONL catalog]
+  D --> P
+  P --> V[Shared page and schema validation]
+  V --> C[Common render boundary]
+  C --> T
   C -->|grant then direct PUT| S[Comfy object storage]
-  C -->|APP inputs and idempotency key| W[comfy-api Workshop service]
+  C -->|declared inputs and idempotency key| W[comfy-api Workshop service]
   D --> W
   W --> R[(Workshop runs and media identities)]
   R --> L[Managed recovery loop]
@@ -126,7 +133,7 @@ flowchart LR
 
 | Owner                           | Responsibility                                                                                                | Must not own                                                            |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
-| Editor/publication tooling      | Same-revision export, binding provenance, reviewed definition artifacts                                       | Browser-time generic graph conversion                                   |
+| Offline catalog author          | Reviewed JSONL records, explicit input/output mappings, pinned graph or deployment reference                  | Widget extraction during website build or page use                      |
 | comfy-api Workshop package      | Definition validation, caller admission, idempotency, durable intent, recovery, public result serialization   | GPU scheduling or a second billing ledger                               |
 | Ingest                          | Trusted actor revalidation, ordinary Cloud policy, atomic submission receipt/job creation, job-scoped control | Public APP forms or Workshop browser sessions                           |
 | Existing Cloud execution/assets | Execution truth, usage, immutable assets, output provenance and access policy                                 | Client UI state                                                         |
@@ -140,69 +147,93 @@ Use focused packages around definitions, admission/recovery, and the Cloud
 adapter. Do not grow the existing large service class or `ModelDetail.vue` into
 a feature-wide coordinator.
 
-## Publication is a compiler boundary
+## Existing pages and two execution catalogs
 
-One immutable bundle contains a public projection and a private execution
-definition. Record definition version, authoring revision/content digest,
-exporter version, graph digest, binding digest, and required runtime/node
-compatibility. A display title or widget position is never binding identity.
+Keep the existing master Models pages file and Router endpoint catalog. Add a
+single workflow JSONL file with Cloud and serverless/API records. Each master
+page owns its INPUTS widgets, names, text, examples and display settings. Its
+typed target identifies a Router model or a workflow record by stable ID.
+The workflow JSONL supplies native input IDs/types and all mappings needed to
+marshal those widget values into a valid request. It does not declare another
+widget list. Preserve the existing Router source and its current import format.
 
-The public projection supplies attribution, stable ID/slug, availability,
-`cloud-workflow` execution kind, `caller-workspace` billing, ordered fields,
-types, constraints, defaults/examples, standard-parameter mappings, and ordered
-output roles. The private definition supplies the API graph, exact named input
-targets, output bindings, approved conversions, model dependencies and cost
-bounds. No execution credential belongs in either file.
+Visible pages are the intersection of the master list and the corresponding
+execution catalog. Match the page's MODEL, CLOUD or SERVERLESS type and target
+ID, then apply publication gates. Unmatched master entries and execution records
+without master entries remain absent from listings, direct routes and page data.
+Do not infer identities from labels or create pages for every execution entry.
 
-Export from an isolated authoring snapshot using existing graph-to-prompt
-semantics. The exporter currently snapshots UI JSON before awaiting custom
-widget serializers; reading the live editor again later can mix revisions.
-Capture the document revision and host-scoped widget values together, serialize
-that snapshot, and fail if a serializer depends on uncaptured mutable state.
-Do not substitute a second JSON converter in the website or backend.
+One shared page implementation owns forms, schema-driven validation and output
+presentation. Reuse Models INPUTS and the existing validation functions for
+required values, types, ranges, choices and media constraints. Validation is
+provider-independent. Minor presentation/behavior variations use declared page
+and output types. Render adapters own request preparation, provider transport
+and normalized results/errors; the page does not contain separate provider form
+or validation paths. Browser and CLI use the same declared input contract.
 
-Extend export tracing at the points that resolve actual executable inputs.
-Represent each selected field as an APP identity plus **all** resolved
-`executionNodeId/inputName` targets and a reviewed conversion. A promoted
-control's representative widget supplies presentation/schema; it is not proof
-of the complete target set. Trace fan-out through nested host instances and
-detect overlapping/conflicting bindings. Preserve distinct host instances of
-the same subgraph. Keep behavior in utilities/systems, with no new graph entity
-methods or durable instance properties.
+## Offline workflow preparation
 
-Publication rejects missing or ambiguous selections, linked inputs incorrectly
-advertised as editable, nonserializing widgets, unrepresentable custom
-serializers, incompatible fan-out types, stale node definitions, and missing
-outputs. Mute/bypass/virtual-node expansion must agree with the exported graph.
-Legacy selections are accepted only when resolution is unique. Never silently
-publish a reduced form after editor pruning. Unsupported controls may remain
-browse-only, with an explicit reason.
+For each selected workflow, inspect its existing executable graph or deployed
+endpoint offline and write one complete JSONL record. Preparation may be manual
+or use an explicitly invoked offline tool when content changes. It is not part
+of the website build, browser, page rendering or run admission. No APP extraction,
+widget serializer, exporter provenance or generalized workflow compiler is a
+dependency of this feature. Future tooling may produce the same catalog format.
 
-Resolve output selections to execution IDs and explicit supported output keys,
-roles and cardinality. Preserve APP selection order and each output's file
-order. Nested display IDs and preview exposures must resolve to real producing
-nodes; a root-local numeric ID alone is insufficient. Zero editable inputs is
-valid; an executable definition still needs selected deliverable outputs.
+Use Router's request-schema conventions for actual input IDs, scalar/media
+types, defaults, required fields and constraints. Include the workflow/version,
+prepared graph or immutable graph reference, fixed native request fields,
+explicit input destinations, media handling, selected output IDs/keys/order and
+any required Cloud or serverless/deployment details. Credentials stay in server
+configuration. All input mappings refer to existing page INPUTS IDs. Multiple
+targets and flattened nested node IDs are written explicitly during preparation.
 
-The server revalidates every materialized input against both its published
-constraint and named graph target. Fixed/unexposed graph fields stay immutable.
-Validate resolution, duration, steps, batch count and relevant combinations,
-not just individual numeric maxima. File/model selectors must be approved
-choices available in the execution environment. Do not assume the author has
-made private models available to every caller.
+The runtime reads the record, validates values with the common schema layer and
+applies its declared request mappings. It never discovers missing mappings or
+evaluates custom conversion code from the workflow. Backend authorization,
+ownership, native request checks and execution limits still apply. Fixed graph
+fields remain immutable to callers. Ordinary checks of declared target existence
+and compatible value types are sufficient at this boundary; UI graph provenance
+and reconstruction of authoring semantics are out of scope.
 
-Cloud does not expose the serverless deployment-release pinning contract.
-Record compatibility explicitly and compare it with the deployed Cloud runtime
-manifest. Reject incompatible versions; do not claim that recording an image
-version pins a GPU to it. Retain graph/binding versions for recovery, and record
-the actual executing runtime when available. A queued job crossing a runtime
-rollout must still receive a compatibility check before execution.
+Review and test each prepared record before exposing its matching page. Confirm
+input/output fixtures and actual Cloud model/runtime availability. Pin graph
+content and definition versions together, retain definitions needed by existing
+runs, and reject stale or incompatible requests rather than substituting a new
+graph. Publishing a serverless record requires real deployment metadata; the
+prototype's simulated deployment is not an executable endpoint. Catalog support
+does not implement FE-2737 sponsored billing in this phase.
 
-Publish backend definitions first, then their public projection. A new version
-can be disabled without deleting versions used by existing runs. Unknown or
-retired versions return `409 definition_changed`; incompatible runtime/bindings
-return a distinct stable error. A stale page never executes against a silently
-substituted graph.
+### Initial prepared data
+
+The initial
+[workflow JSONL](../../apps/website/src/content/workshop-workflows.jsonl)
+contains three Cloud candidates prepared offline from the existing API graphs
+in #18325. The records are not yet consumed by pages or backend admission and
+have not passed live execution/billing acceptance. Adding matching master pages
+and connecting the render adapter remain implementation work.
+
+| Workflow ID                   | Page INPUTS IDs → native destinations                                     | Selected output |
+| ----------------------------- | ------------------------------------------------------------------------- | --------------- |
+| `workflows/remove-background` | `image` → `17.image`                                                      | `18.images`     |
+| `workflows/change-material`   | `image1` → `41.image`, `image2` → `83.image`, `prompt` → `170:151.prompt` | `9.images`      |
+| `workflows/product-mockup`    | `image1` → `42.image`, `image2` → `46.image`, `prompt` → `62:6.text`      | `9.images`      |
+
+Each line contains `id`, execution `type`, `definitionVersion`, source revision,
+`inputSchema`, `cloud.workflow`, `cloud.inputBindings` and ordered `outputs`.
+`inputSchema` uses the same JSON Schema conventions and common validator as
+Router. The explicit target list preserves native node IDs, including colons;
+those IDs require no runtime subgraph interpretation. `scalar` copies validated
+values; `cloud-asset` denotes the existing Cloud asset handoff for media. The
+adapter supplies the actual authorized asset reference after upload/staging.
+
+The graph supplies fixed native inputs. Declared prompt defaults preserve the
+prepared graph values; media inputs are required HTTPS references with no
+default to the template author's local files. Output selectors use native node
+IDs and keys. Names, help text, widget choices and layout belong to master
+INPUTS and are absent from this execution catalog. Keep these IDs when preparing
+the corresponding master page content. Serverless entries will carry verified
+deployment/request information when available; the simulated demo supplies none.
 
 ## Shared inputs and request identity
 
@@ -213,7 +244,7 @@ boundary rather than importing its Node client into an island.
 
 Default precedence is authored defaults/example values, supported standard
 overrides, then explicit `workflow_specific` overrides. An explicit form
-snapshot is an alternative to overrides. Unknown parameters/APP IDs fail;
+snapshot is an alternative to overrides. Unknown parameter/input IDs fail;
 known standard parameters without a binding follow Router's omission rule.
 Conversions such as size-to-width/height are versioned publication data, not
 name inference. Preserve `0`, `false` and intentional empty strings; distinguish
@@ -227,7 +258,7 @@ accounting that counts base64 inside JSON. The helper's local `File` or stream
 is not a wire input. Snippets derive from the same resolved form and contract;
 show stable IDs and upload steps, not a user's signed media URLs or credentials.
 
-At admission, canonicalize defaults and APP values by stable field identity.
+At admission, canonicalize defaults and declared input values by stable field identity.
 Reject duplicate JSON keys and unexpected nested objects. The request identity
 includes caller workspace, workflow/version and canonical media identities;
 exclude bearer bytes, signed query parameters, UI labels and object key order.
@@ -513,7 +544,7 @@ Admission returns a run summary containing its ID, state and status URL. Status
 and command observations wrap that summary as `run`, alongside `runtime`,
 ordered `outputs` and `retryOutputDeliveryUrl`. History returns compact summaries
 and a continuation cursor; clients load selected outputs through the status link
-and refresh grants only when visible. Numeric APP scalars explicitly use double
+and refresh grants only when visible. Numeric input scalars explicitly use double
 precision, with a generated-client regression for the largest safe integer.
 
 Run/runtime contracts are not served. The upload grant/access integration is
@@ -543,7 +574,7 @@ add phase-2 quota fields with fictional values.
 
 All personalized responses, including errors, use `Cache-Control: no-store`
 through the edge. Return stable error codes plus public run/support IDs;
-field errors use APP IDs and never repeat rejected values. Separate validation,
+field errors use page input IDs and never repeat rejected values. Separate validation,
 definition change, payment/entitlement, unknown admission and delivery errors.
 
 The website controller holds one discriminated state with scoped run data and
@@ -603,7 +634,7 @@ receipt retention. Keep fingerprints and closed keys sufficient to prevent
 later retries from creating new work. Rollback disables admission first; it
 does not remove receipt data, retained definitions or the recovery worker.
 
-Before rollout, select an approved pilot authoring revision, verify Cloud
+Before rollout, select an approved pilot catalog record and graph version, verify Cloud
 runtime/model compatibility, actual bucket lifecycle and effective media
 limits, establish staging caller/workspace access, and record actual caller
 billing. The [test strategy](../testing/workshop-cloud-workflows.md) requires a
