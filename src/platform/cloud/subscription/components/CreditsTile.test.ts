@@ -40,8 +40,7 @@ const state = vi.hoisted(() => ({
   getMyEvents: vi.fn(
     async (): Promise<CustomerEventsResult> => ({ events: [] })
   ),
-  customerEventsError: null as string | null,
-  toastErrorHandler: vi.fn()
+  customerEventsError: null as string | null
 }))
 
 vi.mock(import('@/composables/useErrorHandling'))
@@ -153,15 +152,6 @@ describe('CreditsTile', () => {
   beforeEach(() => {
     const billing = useBillingContext()
     vi.mocked(useBillingContext).mockReturnValue(billing)
-    useErrorHandling().wrapWithErrorHandlingAsync =
-      (action) =>
-      async (...args) => {
-        try {
-          return await action(...args)
-        } catch (error) {
-          state.toastErrorHandler(error)
-        }
-      }
     billing.balance = computed(() =>
       state.balance ? { currency: 'USD', ...state.balance } : null
     )
@@ -807,7 +797,7 @@ describe('CreditsTile', () => {
 
     renderTile()
     await waitFor(() =>
-      expect(state.toastErrorHandler).toHaveBeenCalledWith(
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(
         new Error('events unavailable')
       )
     )
@@ -827,7 +817,7 @@ describe('CreditsTile', () => {
     vi.mocked(useBillingContext().fetchBalance).mockRejectedValueOnce(failure)
     renderTile()
     await waitFor(() =>
-      expect(state.toastErrorHandler).toHaveBeenCalledWith(failure)
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(failure)
     )
   })
 })

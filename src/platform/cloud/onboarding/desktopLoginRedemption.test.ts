@@ -64,8 +64,6 @@ async function setup(
     { path: '/:pathMatch(.*)*', component: { template: '<div />' } }
   ]
 ) {
-  const { api } = await import('@/scripts/api')
-  vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
   const { installDesktopLoginRedemption } =
     await import('./desktopLoginRedemption')
   const { capturePreservedQuery, getPreservedQueryParam } =

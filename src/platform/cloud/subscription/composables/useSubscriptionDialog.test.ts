@@ -32,8 +32,8 @@ const mockShowLayoutDialog = vi.fn()
 const mockShowTeamWorkspacesDialog = vi.fn()
 
 const mockIsFreeTier = vi.hoisted(() => ({ value: false }))
-const mockTier = vi.hoisted(() => ({
-  value: 'FREE' as SubscriptionInfo['tier']
+const mockTier = vi.hoisted<{ value: SubscriptionInfo['tier'] }>(() => ({
+  value: 'FREE'
 }))
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockIsLegacyTeamPlan = vi.hoisted(() => ({ value: false }))
@@ -159,8 +159,6 @@ describe('useSubscriptionDialog', () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
     Object.assign(useAuthStore(), { userId: 'user-1' })
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
-    vi.mocked(useBillingContext().fetchPlans).mockResolvedValue(undefined)
-    vi.mocked(useBillingContext().fetchStatus).mockResolvedValue(undefined)
     mockTeamCreditStops.value = null
     mockCurrentTeamCreditStop.value = null
     mockSubscription.value = null

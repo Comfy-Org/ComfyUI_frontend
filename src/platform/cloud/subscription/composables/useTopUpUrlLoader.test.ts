@@ -1,7 +1,6 @@
 import { computed, ref } from 'vue'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useDialogService } from '@/services/dialogService'
-import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute, useRouter } from 'vue-router'
 import type { LocationQueryRaw } from 'vue-router'
@@ -37,7 +36,6 @@ function setRouteQuery(value: LocationQueryRaw) {
 
 describe('useTopUpUrlLoader', () => {
   beforeEach(() => {
-    setRouteQuery({})
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
@@ -175,7 +173,7 @@ describe('useTopUpUrlLoader', () => {
   })
 
   it('strips but does not open for a non-string param', async () => {
-    setRouteQuery({ topup: fromAny<string, unknown>(['array']) })
+    setRouteQuery({ topup: ['array'] })
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()

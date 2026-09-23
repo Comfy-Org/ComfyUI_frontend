@@ -2,7 +2,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { api } from '@/scripts/api'
 
 import {
   getComfyApiBaseUrl,
@@ -11,10 +10,6 @@ import {
 } from './comfyApi'
 
 vi.mock(import('@/scripts/api'))
-
-beforeEach(() => {
-  vi.mocked(api.apiURL).mockImplementation((route) => `/api${route}`)
-})
 
 interface BaseUrlCase {
   label: string

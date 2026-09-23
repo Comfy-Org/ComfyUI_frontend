@@ -1,7 +1,6 @@
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { computed, ref } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute, useRouter } from 'vue-router'
 import type { LocationQueryRaw } from 'vue-router'
@@ -80,15 +79,10 @@ describe('usePricingTableUrlLoader', () => {
     billing.teamCreditStops = computed(() => mockTeamCreditStops.value)
     vi.mocked(useBillingContext).mockReturnValue(billing)
 
-    setRouteQuery({})
     mockPermissions.value = { canManageSubscription: true }
     mockCanOpenPricingSurface.value = true
 
     mockTeamCreditStops.value = TEAM_CREDIT_STOPS
-    vi.mocked(billing.fetchPlans).mockResolvedValue(undefined)
-    vi.mocked(useSubscriptionDialog().showPricingTable).mockResolvedValue(
-      undefined
-    )
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
@@ -256,7 +250,7 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('strips but does not open for a non-string param', async () => {
-    setRouteQuery({ pricing: fromAny<string, unknown>(['array']) })
+    setRouteQuery({ pricing: ['array'] })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
@@ -453,7 +447,7 @@ describe('usePricingTableUrlLoader', () => {
     { pricing: 'team', stop: 'team_700', cycle: 'weekly' },
     { pricing: 'personal', stop: 'team_700', cycle: 'yearly' }
   ])('fails closed for an invalid Team selection: %o', async (query) => {
-    setRouteQuery(fromAny<Record<string, string>, unknown>(query))
+    setRouteQuery(query)
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
@@ -466,7 +460,7 @@ describe('usePricingTableUrlLoader', () => {
     { pricing: 'team', stop: ['team_700'], cycle: 'yearly' },
     { pricing: 'team', stop: 'team_700', cycle: ['yearly'] }
   ])('fails closed for array Team params: %o', async (query) => {
-    setRouteQuery(fromAny<Record<string, string>, unknown>(query))
+    setRouteQuery(query)
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()

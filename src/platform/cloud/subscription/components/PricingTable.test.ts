@@ -7,7 +7,6 @@ import { createI18n } from 'vue-i18n'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useTelemetry } from '@/platform/telemetry'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -139,10 +138,6 @@ function renderComponent() {
       onChooseTeamWorkspace: onChooseTeamWorkspace
     },
     global: {
-      // A test in this suite intentionally makes handleSubscribe reject to
-      // verify checkout-failure telemetry; without an app-level errorHandler,
-      // Vue's dev-mode default handler re-throws it as an unhandled rejection.
-      config: { errorHandler: () => {} },
       plugins: [i18n],
       components: {
         Button
@@ -174,16 +169,6 @@ function renderComponent() {
 const onChooseTeamWorkspace = vi.fn()
 
 beforeEach(() => {
-  useErrorHandling().wrapWithErrorHandlingAsync =
-    (action, errorHandler) =>
-    async (...args) => {
-      try {
-        return await action(...args)
-      } catch (error) {
-        errorHandler?.(error)
-        throw error
-      }
-    }
   const billing = useBillingContext()
   billing.canAccessSubscriptionFeatures = computed(
     () => mockCanAccessSubscriptionFeatures.value

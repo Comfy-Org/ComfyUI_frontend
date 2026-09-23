@@ -16,8 +16,6 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 async function loadUseSessionCookie() {
-  const { api } = await import('@/scripts/api')
-  vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
   return await import('@/platform/auth/session/useSessionCookie')
 }
 

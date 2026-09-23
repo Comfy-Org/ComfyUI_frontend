@@ -97,9 +97,6 @@ describe('launchCancellationFlow', () => {
     }
     mocks.activeWorkspaceId = 'workspace-1'
     mocks.billingRail = 'stripe'
-    vi.mocked(useBillingContext().cancelSubscription).mockResolvedValue(
-      undefined
-    )
   })
 
   it('uses the native dialog for legacy billing', async () => {
