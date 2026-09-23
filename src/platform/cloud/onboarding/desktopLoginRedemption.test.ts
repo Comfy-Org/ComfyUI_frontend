@@ -25,11 +25,7 @@ const mockStoreGetIdToken = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/i18n'))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (path: string) => `/api${path}`
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 const VALID_CODE = `dlc_${'A'.repeat(43)}`
 const SECOND_CODE = `dlc_${'B'.repeat(43)}`
@@ -71,6 +67,8 @@ async function setup(
     { path: '/:pathMatch(.*)*', component: { template: '<div />' } }
   ]
 ) {
+  const { api } = await import('@/scripts/api')
+  vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
   const { installDesktopLoginRedemption } =
     await import('./desktopLoginRedemption')
   const { capturePreservedQuery, getPreservedQueryParam } =

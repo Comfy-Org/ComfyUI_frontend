@@ -14,16 +14,18 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (path: string) => `/api${path}`
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 const mockReportError = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
+
+async function loadUseSessionCookie() {
+  const { api } = await import('@/scripts/api')
+  vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
+  return await import('@/platform/auth/session/useSessionCookie')
+}
 
 beforeEach(() => {
   vi.mocked(useAuthStore().getIdToken).mockImplementation(mockGetIdToken)
@@ -48,8 +50,7 @@ describe('useSessionCookie', () => {
     vi.mocked(globalThis.fetch).mockResolvedValue(
       new Response(null, { status: 204 })
     )
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
+    const { useSessionCookie } = await loadUseSessionCookie()
 
     await useSessionCookie().createSessionOrThrow()
 
@@ -65,8 +66,7 @@ describe('useSessionCookie', () => {
 
   it('createSessionOrThrow fails fast without a Firebase token', async () => {
     mockGetIdToken.mockResolvedValue(undefined)
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
+    const { useSessionCookie } = await loadUseSessionCookie()
 
     await expect(useSessionCookie().createSessionOrThrow()).rejects.toThrow(
       'No Firebase token available for session creation'
@@ -82,8 +82,7 @@ describe('useSessionCookie', () => {
         resolveFetch = resolve
       })
     )
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
+    const { useSessionCookie } = await loadUseSessionCookie()
 
     const { createSession } = useSessionCookie()
     const first = createSession()
@@ -99,8 +98,7 @@ describe('useSessionCookie', () => {
     vi.mocked(globalThis.fetch).mockResolvedValue(
       new Response(null, { status: 204 })
     )
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
+    const { useSessionCookie } = await loadUseSessionCookie()
 
     const { ensureSessionCookie } = useSessionCookie()
     await ensureSessionCookie()
@@ -117,8 +115,7 @@ describe('useSessionCookie', () => {
         headers: { 'Content-Type': 'application/json' }
       })
     )
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
+    const { useSessionCookie } = await loadUseSessionCookie()
 
     await expect(useSessionCookie().ensureSessionCookie()).rejects.toThrow(
       'session denied'
@@ -134,8 +131,7 @@ describe('useSessionCookie', () => {
         headers: { 'Content-Type': 'application/json' }
       })
     )
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
+    const { useSessionCookie } = await loadUseSessionCookie()
 
     await useSessionCookie().createSession()
 
@@ -158,8 +154,7 @@ describe('useSessionCookie', () => {
         })
       )
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
+    const { useSessionCookie } = await loadUseSessionCookie()
 
     const first = useSessionCookie().createSession()
     await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(1))
@@ -198,8 +193,7 @@ describe('useSessionCookie', () => {
         })
       )
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
+    const { useSessionCookie } = await loadUseSessionCookie()
 
     await useSessionCookie().ensureSessionCookie()
     useAuthStore().currentUser = fromPartial({ uid: 'user-b' })
@@ -227,8 +221,7 @@ describe('useSessionCookie', () => {
     vi.mocked(globalThis.fetch).mockResolvedValue(
       new Response(null, { status: 204 })
     )
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
+    const { useSessionCookie } = await loadUseSessionCookie()
 
     const bestEffort = useSessionCookie().createSession()
     const strict = useSessionCookie().createSessionOrThrow()
@@ -252,8 +245,7 @@ describe('useSessionCookie', () => {
         })
       )
       .mockResolvedValueOnce(new Response(null, { status: 204 }))
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
+    const { useSessionCookie } = await loadUseSessionCookie()
 
     const create = useSessionCookie().createSession()
     await vi.waitFor(() => expect(globalThis.fetch).toHaveBeenCalledTimes(1))
@@ -275,8 +267,7 @@ describe('useSessionCookie', () => {
         headers: { 'Content-Type': 'application/json' }
       })
     )
-    const { useSessionCookie } =
-      await import('@/platform/auth/session/useSessionCookie')
+    const { useSessionCookie } = await loadUseSessionCookie()
 
     await expect(useSessionCookie().createSessionOrThrow()).rejects.toThrow(
       'session denied'
