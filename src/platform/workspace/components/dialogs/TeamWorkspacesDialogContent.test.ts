@@ -100,7 +100,9 @@ function createTeamWorkspace({
     subscriptionPlan: null,
     subscriptionTier,
     members: [],
-    pendingInvites: []
+    pendingInvites: [],
+    membersLoaded: true,
+    pendingInvitesLoaded: true
   }
 }
 
