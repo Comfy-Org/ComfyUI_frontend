@@ -149,8 +149,7 @@ vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
 
 vi.mock(import('./agentNodeMaterializer'), () => ({
   reconcileAgentAdapters: materializerState.reconcileAgentAdapters,
-  needsSubgraphDefinitionBody:
-    materializerState.needsSubgraphDefinitionBody
+  needsSubgraphDefinitionBody: materializerState.needsSubgraphDefinitionBody
 }))
 
 vi.mock(import('./agentSubgraphDefinitions'), () => ({
@@ -1002,10 +1001,9 @@ describe('useAgentCrdtFollower', () => {
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
 
-      expect(materializerState.needsSubgraphDefinitionBody).toHaveBeenCalledWith(
-        fakeGraph.rootGraph,
-        fakeDefinitions[0].id
-      )
+      expect(
+        materializerState.needsSubgraphDefinitionBody
+      ).toHaveBeenCalledWith(fakeGraph.rootGraph, fakeDefinitions[0].id)
       expect(definitionsState.readSubgraphDefinitions).not.toHaveBeenCalled()
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,
