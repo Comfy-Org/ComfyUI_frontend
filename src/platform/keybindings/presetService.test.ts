@@ -1,6 +1,6 @@
-import type { ComfyApp } from '@/scripts/app'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -18,17 +18,6 @@ const mockApi = vi.hoisted(() => ({
 
 const mockDownloadBlob = vi.hoisted(() => vi.fn())
 const mockUploadFile = vi.hoisted(() => vi.fn())
-const mockConfirm = vi.hoisted(() => vi.fn(async () => true))
-const mockPrompt = vi.hoisted(() =>
-  vi.fn<() => Promise<string | null>>(async () => 'test-preset')
-)
-const mockShowSmallLayoutDialog = vi.hoisted(() =>
-  vi.fn((options: Record<string, unknown>) => {
-    const props = options.props as Record<string, unknown> | undefined
-    const onResult = props?.onResult as ((v: boolean) => void) | undefined
-    onResult?.(true)
-  })
-)
 const mockSettingSet = vi.hoisted(() =>
   vi.fn<ReturnType<typeof useSettingStore>['set']>(async () => undefined)
 )
@@ -49,26 +38,32 @@ vi.mock(import('@/scripts/utils'), () => ({
   uploadFile: mockUploadFile
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    confirm: mockConfirm,
-    prompt: mockPrompt,
-    showSmallLayoutDialog: mockShowSmallLayoutDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
+const dialogService = vi.mocked(useDialogService())
 
+function resolveSmallLayoutDialog(
+  options: Parameters<typeof dialogService.showSmallLayoutDialog>[0],
+  result: boolean
+) {
+  const props = options.props
+  if (props && 'onResult' in props && typeof props.onResult === 'function') {
+    props.onResult(result)
+  }
+  return useDialogStore().showDialog(options)
+}
+
+function closeSmallLayoutDialog(
+  options: Parameters<typeof dialogService.showSmallLayoutDialog>[0]
+) {
+  const props = options.dialogComponentProps
+  if (props && 'onClose' in props && typeof props.onClose === 'function') {
+    props.onClose()
+  }
+  return useDialogStore().showDialog(options)
+}
+
+vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@/platform/telemetry/reportError'))
-
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandling: <T extends (...args: unknown[]) => unknown>(fn: T) =>
-      fn,
-    wrapWithErrorHandlingAsync: <T extends (...args: unknown[]) => unknown>(
-      fn: T
-    ) => fn,
-    toastErrorHandler: vi.fn()
-  })
-}))
 
 vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   useKeybindingService: () => ({
@@ -76,11 +71,14 @@ vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
   })
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 beforeEach(() => {
+  dialogService.confirm.mockResolvedValue(true)
+  dialogService.prompt.mockResolvedValue('test-preset')
+  dialogService.showSmallLayoutDialog.mockImplementation((options) =>
+    resolveSmallLayoutDialog(options, true)
+  )
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => undefined)
   useDialogStore().dialogStack = []
 })
@@ -223,7 +221,7 @@ describe('useKeybindingPresetService', () => {
     })
 
     it('returns false without changing state when user cancels confirmation', async () => {
-      mockConfirm.mockResolvedValueOnce(false)
+      dialogService.confirm.mockResolvedValueOnce(false)
       store.currentPresetName = 'vim'
 
       const service = await getPresetService()
@@ -498,12 +496,8 @@ describe('useKeybindingPresetService', () => {
         })
       )
 
-      mockShowSmallLayoutDialog.mockImplementationOnce(
-        (options: Record<string, unknown>) => {
-          const props = options.props as Record<string, unknown> | undefined
-          const onResult = props?.onResult as ((v: boolean) => void) | undefined
-          onResult?.(false)
-        }
+      dialogService.showSmallLayoutDialog.mockImplementationOnce((options) =>
+        resolveSmallLayoutDialog(options, false)
       )
 
       const targetPreset: KeybindingPreset = {
@@ -569,16 +563,8 @@ describe('useKeybindingPresetService', () => {
         })
       )
 
-      mockShowSmallLayoutDialog.mockImplementationOnce(
-        (options: Record<string, unknown>) => {
-          const dialogComponentProps = options.dialogComponentProps as
-            | Record<string, unknown>
-            | undefined
-          const onClose = dialogComponentProps?.onClose as
-            | (() => void)
-            | undefined
-          onClose?.()
-        }
+      dialogService.showSmallLayoutDialog.mockImplementationOnce((options) =>
+        closeSmallLayoutDialog(options)
       )
 
       const service = await getPresetService()
@@ -603,7 +589,7 @@ describe('useKeybindingPresetService', () => {
       const service = await getPresetService()
       await service.switchPreset('vim')
 
-      expect(mockShowSmallLayoutDialog).not.toHaveBeenCalled()
+      expect(dialogService.showSmallLayoutDialog).not.toHaveBeenCalled()
       expect(store.currentPresetName).toBe('vim')
     })
 
@@ -633,7 +619,7 @@ describe('useKeybindingPresetService', () => {
       const service = await getPresetService()
       await service.switchPreset('vim')
 
-      expect(mockPrompt).toHaveBeenCalled()
+      expect(dialogService.prompt).toHaveBeenCalled()
       expect(store.currentPresetName).toBe('vim')
     })
 
@@ -646,7 +632,7 @@ describe('useKeybindingPresetService', () => {
       )
 
       // promptAndSaveNewPreset returns false (user cancels prompt)
-      mockPrompt.mockResolvedValueOnce(null)
+      dialogService.prompt.mockResolvedValueOnce(null)
 
       const service = await getPresetService()
       await service.switchPreset('vim')
@@ -670,12 +656,8 @@ describe('useKeybindingPresetService', () => {
       )
 
       // Dialog returns false (discard)
-      mockShowSmallLayoutDialog.mockImplementationOnce(
-        (options: Record<string, unknown>) => {
-          const props = options.props as Record<string, unknown> | undefined
-          const onResult = props?.onResult as ((v: boolean) => void) | undefined
-          onResult?.(false)
-        }
+      dialogService.showSmallLayoutDialog.mockImplementationOnce((options) =>
+        resolveSmallLayoutDialog(options, false)
       )
 
       const service = await getPresetService()
@@ -688,7 +670,7 @@ describe('useKeybindingPresetService', () => {
 
   describe('promptAndSaveNewPreset', () => {
     it('returns false when user cancels prompt', async () => {
-      mockPrompt.mockResolvedValueOnce(null)
+      dialogService.prompt.mockResolvedValueOnce(null)
 
       const service = await getPresetService()
       const result = await service.promptAndSaveNewPreset()
@@ -697,7 +679,7 @@ describe('useKeybindingPresetService', () => {
     })
 
     it('returns false when user enters empty name', async () => {
-      mockPrompt.mockResolvedValueOnce('   ')
+      dialogService.prompt.mockResolvedValueOnce('   ')
 
       const service = await getPresetService()
       const result = await service.promptAndSaveNewPreset()
@@ -730,7 +712,7 @@ describe('useKeybindingPresetService', () => {
       const result = await service.promptAndSaveNewPreset()
 
       expect(result).toBe(true)
-      expect(mockConfirm).toHaveBeenCalled()
+      expect(dialogService.confirm).toHaveBeenCalled()
       expect(mockApi.storeUserData).toHaveBeenCalledWith(
         'keybindings/test-preset.json',
         expect.any(String),
@@ -742,7 +724,7 @@ describe('useKeybindingPresetService', () => {
       mockApi.listUserDataFullInfo.mockResolvedValueOnce([
         { path: 'test-preset.json', size: 100, modified: 123 }
       ])
-      mockConfirm.mockResolvedValueOnce(false)
+      dialogService.confirm.mockResolvedValueOnce(false)
 
       const service = await getPresetService()
       const result = await service.promptAndSaveNewPreset()
@@ -834,7 +816,4 @@ describe('useKeybindingPresetService', () => {
   })
 })
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))
