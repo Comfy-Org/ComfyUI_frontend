@@ -52,6 +52,25 @@ interface OutputContext {
 type JsonOutput = Extract<WorkshopContract['output'], { format: 'json' }>
 type OutputSelector = JsonOutput['selectors'][number]
 
+function hasTextOutput(value: unknown, key = '', depth = 0): boolean {
+  if (depth > 64) return false
+  if (typeof value === 'string')
+    return (key === 'text' || key === 'output_text') && value.trim().length > 0
+  if (value === null || typeof value !== 'object') return false
+  return Object.entries(value).some(([childKey, child]) =>
+    hasTextOutput(child, childKey, depth + 1)
+  )
+}
+
+function assertAutomaticOutput(
+  data: unknown,
+  outputCount: number,
+  hasText: boolean
+): void {
+  if (!outputCount && !hasText && workshopContentPolicyPayload(data))
+    throw new WorkshopRouterError('policy', null, {}, undefined, 'response')
+}
+
 async function automaticOutputs(
   data: unknown,
   context: OutputContext
@@ -84,39 +103,27 @@ async function automaticOutputs(
     })
     seen.add(value)
   }
-  function visit(
-    value: unknown,
-    depth: number,
-    mimeHint?: string,
-    key = ''
-  ): boolean {
-    if (depth > 64 || outputs.length >= 256) return false
+  function visit(value: unknown, depth: number, mimeHint?: string) {
+    if (depth > 64 || outputs.length >= 256) return
     if (typeof value === 'string') {
       if (!seen.has(value)) collectString(value, mimeHint)
-      return (
-        (key === 'text' || key === 'output_text') && value.trim().length > 0
-      )
+      return
     }
-    if (value === null || typeof value !== 'object') return false
+    if (value === null || typeof value !== 'object') return
     const entries = Object.entries(value)
     const hint: unknown = entries.find(
       ([key]) => key === 'mimeType' || key === 'mime_type'
     )?.[1]
-    let hasTextOutput = false
     for (const [key, child] of entries)
-      hasTextOutput =
-        visit(
-          child,
-          depth + 1,
-          key === 'data' && typeof hint === 'string' ? hint : undefined,
-          key
-        ) || hasTextOutput
-    return hasTextOutput
+      visit(
+        child,
+        depth + 1,
+        key === 'data' && typeof hint === 'string' ? hint : undefined
+      )
   }
   try {
-    const hasTextOutput = visit(data, 0)
-    if (!outputs.length && !hasTextOutput && workshopContentPolicyPayload(data))
-      throw new WorkshopRouterError('policy', null, {}, undefined, 'response')
+    visit(data, 0)
+    assertAutomaticOutput(data, outputs.length, hasTextOutput(data))
     const discovered = await discoverOutputMimes(
       outputs.map(({ url }) => url),
       signal
@@ -228,6 +235,18 @@ function jsonResponse(
   if (schema && !validateWorkshopInput(data, schema))
     throw new Error('Invalid Router response')
   return data
+}
+
+function validatedJsonResponse(
+  bytes: Uint8Array,
+  contentType: string,
+  schema: JsonOutput['schema']
+): unknown {
+  const data = jsonResponse(bytes, contentType)
+  if (validateWorkshopInput(data, schema)) return data
+  if (workshopContentPolicyPayload(data))
+    throw new WorkshopRouterError('policy', null, {}, undefined, 'response')
+  throw new Error('Invalid Router response')
 }
 
 async function binaryOutputs(
@@ -413,12 +432,7 @@ async function selectedResponse(
   contentType: string,
   context: OutputContext
 ): Promise<RunOutput[]> {
-  const data = jsonResponse(bytes, contentType)
-  if (!validateWorkshopInput(data, output.schema)) {
-    if (workshopContentPolicyPayload(data))
-      throw new WorkshopRouterError('policy', null, {}, undefined, 'response')
-    throw new Error('Invalid Router response')
-  }
+  const data = validatedJsonResponse(bytes, contentType, output.schema)
   assertTerminalSuccess(data, output.success)
   const nsfw = output.nsfwPath
     ? valuesAtPointer(data, output.nsfwPath).some((value) => value === true)
@@ -433,14 +447,22 @@ async function selectedResponse(
             nsfw
           }))
         )
-    if (!outputs.length && workshopContentPolicyPayload(data))
-      throw new WorkshopRouterError('policy', null, {}, undefined, 'response')
-    if (!outputs.length) throw new Error('Router returned no output')
+    assertSelectedOutputs(data, outputs)
     return outputs
   } catch (error) {
     releaseRouterOutputs(outputs)
     throw error
   }
+}
+
+function assertSelectedOutputs(
+  data: unknown,
+  outputs: readonly RunOutput[]
+): void {
+  if (outputs.length) return
+  if (workshopContentPolicyPayload(data))
+    throw new WorkshopRouterError('policy', null, {}, undefined, 'response')
+  throw new Error('Router returned no output')
 }
 
 export async function parseRouterResponse(

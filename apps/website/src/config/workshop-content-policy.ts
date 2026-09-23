@@ -70,6 +70,11 @@ const MAX_POLICY_NODES = 2048
 const RUNWAY_POLICY_CODE =
   /^(?:input_preprocessing\.safety|safety\.(?:input|output))\.(?:audio|image|multimodal|text|video)$/
 
+interface PolicyNode {
+  readonly key: string
+  readonly value: unknown
+}
+
 function normalizedKey(key: string): string {
   return key.toLowerCase().replaceAll(/[^a-z]/g, '')
 }
@@ -109,31 +114,49 @@ function nestedPayload(value: string, key: string): unknown | undefined {
   }
 }
 
+function appendArrayNodes(
+  pending: PolicyNode[],
+  values: readonly unknown[],
+  key: string
+): void {
+  for (const value of values) {
+    if (pending.length >= MAX_POLICY_NODES) return
+    pending.push({ key, value })
+  }
+}
+
+function appendObjectNodes(pending: PolicyNode[], value: object): void {
+  for (const [key, child] of Object.entries(value)) {
+    if (pending.length >= MAX_POLICY_NODES) return
+    pending.push({ key, value: child })
+  }
+}
+
+function appendPolicyNodes(pending: PolicyNode[], current: PolicyNode): void {
+  if (typeof current.value === 'string') {
+    const nested = nestedPayload(current.value, current.key)
+    if (nested !== undefined && pending.length < MAX_POLICY_NODES)
+      pending.push({ key: '', value: nested })
+    return
+  }
+  if (current.value === null || typeof current.value !== 'object') return
+  if (Array.isArray(current.value)) {
+    appendArrayNodes(pending, current.value, current.key)
+    return
+  }
+  appendObjectNodes(pending, current.value)
+}
+
 export function workshopContentPolicyPayload(payload: unknown): boolean {
-  const pending: { readonly key: string; readonly value: unknown }[] = [
-    { key: '', value: payload }
-  ]
+  const pending: PolicyNode[] = [{ key: '', value: payload }]
   for (let index = 0; index < pending.length; index += 1) {
     const current = pending[index]
-    if (typeof current.value === 'string') {
-      if (stringSignalsPolicy(current.value, current.key)) return true
-      const nested = nestedPayload(current.value, current.key)
-      if (nested !== undefined && pending.length < MAX_POLICY_NODES)
-        pending.push({ key: '', value: nested })
-      continue
-    }
-    if (current.value === null || typeof current.value !== 'object') continue
-    if (Array.isArray(current.value)) {
-      for (const value of current.value) {
-        if (pending.length >= MAX_POLICY_NODES) break
-        pending.push({ key: current.key, value })
-      }
-      continue
-    }
-    for (const [key, value] of Object.entries(current.value)) {
-      if (pending.length >= MAX_POLICY_NODES) break
-      pending.push({ key, value })
-    }
+    if (
+      typeof current.value === 'string' &&
+      stringSignalsPolicy(current.value, current.key)
+    )
+      return true
+    appendPolicyNodes(pending, current)
   }
   return false
 }
