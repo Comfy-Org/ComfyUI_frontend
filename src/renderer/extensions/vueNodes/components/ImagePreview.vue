@@ -6,7 +6,6 @@
     :style="{ minHeight: `${IMAGE_PREVIEW_CONTENT_MIN_HEIGHT}px` }"
     @keydown="handleKeyDown"
     @pointerdown.stop
-    @pointerup.stop
     @click.capture="handleRepeatedClick"
     @dblclick.stop="handleGalleryDoubleClick"
   >

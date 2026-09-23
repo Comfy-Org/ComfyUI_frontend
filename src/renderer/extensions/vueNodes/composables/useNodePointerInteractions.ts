@@ -38,6 +38,7 @@ export function useNodePointerInteractions(
   }
 
   let hasDraggingStarted = false
+  let hasNodePointerSequenceStarted = false
 
   const dragGuard = useClickDragGuard(3)
 
@@ -52,6 +53,8 @@ export function useNodePointerInteractions(
       forwardEventToCanvas(event)
       return
     }
+
+    hasNodePointerSequenceStarted = true
 
     if (isPinned()) return
 
@@ -128,6 +131,8 @@ export function useNodePointerInteractions(
 
   function onPointerup(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event, isMiddleButtonEvent)) return
+    const shouldToggleSelection = hasNodePointerSequenceStarted
+    hasNodePointerSequenceStarted = false
     // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
     const canHandlePointer = shouldHandleNodePointerEvents.value
     if (!canHandlePointer) {
@@ -149,6 +154,7 @@ export function useNodePointerInteractions(
 
     // Skip selection handling for right-click (button 2) - context menu handles its own selection
     if (event.button === 2) return
+    if (!shouldToggleSelection) return
 
     const multiSelect =
       agentNodeSelectionStore.isActive || isMultiSelectKey(event)
@@ -157,6 +163,7 @@ export function useNodePointerInteractions(
   }
 
   function onPointercancel(event: PointerEvent) {
+    hasNodePointerSequenceStarted = false
     if (!layoutStore.isDraggingVueNodes.value) return
     safeDragEnd(event)
   }
