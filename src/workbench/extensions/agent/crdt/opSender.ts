@@ -17,6 +17,8 @@
  */
 import type { Op } from '@comfyorg/comfy-multi-player'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type { GraphOperation } from './graphOperations'
 import { chunkWireOps, mintWireOps } from './opEnvelope'
 
@@ -78,7 +80,11 @@ export interface OpSender {
   admit(operations: GraphOperation[]): void
   /** Seal the open admission group into wire batches and start delivery. */
   flush(): void
-  /** In-flight + queued batch count (observability; 0 = drained). */
+  /**
+   * Unsettled batch count for observability: in-flight, queued, and the open
+   * admission group as one until `flush()` seals it into wire-capped batches.
+   * 0 = drained.
+   */
   pending(): number
   /** Every unsettled batch, in-flight first, each addressed to its mint-time workflow. */
   pendingOps(): ReadonlyArray<{ workflowId: string; ops: Op[] }>
@@ -128,10 +134,34 @@ interface InFlight {
   workflowId: string
   ops: Op[]
   opIds: Set<string>
-  transmitted: boolean
+  /** Successful `sendOps` calls: each may still draw one result. */
+  sends: number
   resent: boolean
   parked: boolean
+  /**
+   * A throwing transport is reported once per send cycle (the initial
+   * attempt plus its retries), not once per retry: five identical reports
+   * 500 ms apart say nothing the first one did not.
+   */
+  throwReported: boolean
   timer: ReturnType<typeof setTimeout> | null
+}
+
+/** Every op id a result speaks for: applied, skipped, and the failed op when named. */
+function identifiedOpIds(result: OpsResultView): string[] {
+  const identified = [...result.applied, ...result.skipped]
+  if (result.failure?.op_id) identified.push(result.failure.op_id)
+  return identified
+}
+
+/** The in-flight batch this result may answer: none when it names another workflow. */
+function addressedBatch(
+  result: OpsResultView,
+  inFlight: InFlight | null
+): InFlight | null {
+  if (inFlight === null) return null
+  if (result.workflowId === undefined) return inFlight
+  return result.workflowId === inFlight.workflowId ? inFlight : null
 }
 
 export function createOpSender(deps: OpSenderDeps): OpSender {
@@ -148,6 +178,18 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   // swallowed own-result only costs the idempotent resend cycle, while a
   // mis-attributed settle poisons everything downstream of this seam.
   let staleAnonymousBudget = 0
+  const retiredOpIds = new Set<string>()
+
+  function retire(batch: InFlight): void {
+    staleAnonymousBudget += batch.sends
+    if (batch.sends > 0) for (const opId of batch.opIds) retiredOpIds.add(opId)
+  }
+
+  function drainStaleCredit(): void {
+    if (staleAnonymousBudget === 0) return
+    staleAnonymousBudget--
+    if (staleAnonymousBudget === 0) retiredOpIds.clear()
+  }
 
   function settle(outcome: BatchOutcome): void {
     if (inFlight?.timer) clearTimeout(inFlight.timer)
@@ -168,7 +210,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       settleUnbound(batch)
       return
     }
-    if (!deps.sendOps(batch.workflowId, deps.tab, batch.ops)) {
+    if (!trySend(batch)) {
       if (attempt < SEND_RETRY_LIMIT) {
         // Tracked in the same slot as the result timer (they never overlap:
         // the result timer is armed only after a successful send) so
@@ -182,15 +224,27 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       }
       return
     }
-    batch.transmitted = true
+    batch.sends++
     armResultTimeout(batch)
+  }
+
+  function trySend(batch: InFlight): boolean {
+    try {
+      return deps.sendOps(batch.workflowId, deps.tab, batch.ops)
+    } catch (error) {
+      if (!batch.throwReported) {
+        batch.throwReported = true
+        reportError(error, { errorType: 'agent_human_ops_send_failed' })
+      }
+      return false
+    }
   }
 
   function settleUnbound(batch: InFlight): void {
     if (inFlight !== batch) return
-    if (batch.transmitted) staleAnonymousBudget += batch.resent ? 2 : 1
+    retire(batch)
     settle({
-      state: batch.transmitted ? 'unconfirmed' : 'undeliverable',
+      state: batch.sends > 0 ? 'unconfirmed' : 'undeliverable',
       ops: batch.ops
     })
   }
@@ -200,13 +254,16 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     batch.timer = setTimeout(() => {
       if (inFlight !== batch) return
       if (batch.resent) {
-        staleAnonymousBudget += 2
+        retire(batch)
         settle({ state: 'unacknowledged', ops: batch.ops })
         return
       }
       // One silent-result resend of the SAME minted ops: idempotent at the
-      // applier through the op_id gate.
+      // applier through the op_id gate. A new send cycle, so a throwing
+      // transport earns a fresh report; a retry parked by suspension and
+      // resumed is the same cycle and does not.
       batch.resent = true
+      batch.throwReported = false
       transmit(batch, 0)
     }, RESULT_TIMEOUT_MS)
   }
@@ -219,9 +276,10 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       workflowId: queued.workflowId,
       ops: queued.ops,
       opIds: new Set(queued.ops.map((op) => op.op_id)),
-      transmitted: false,
+      sends: 0,
       resent: false,
       parked: false,
+      throwReported: false,
       timer: null
     }
     transmit(inFlight, 0)
@@ -255,37 +313,55 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     pump()
   }
 
+  /** A result names ops (applied, skipped, or the failed op): route it by those ids. */
+  function settleIdentified(
+    result: OpsResultView,
+    identified: string[],
+    addressed: InFlight | null
+  ): void {
+    if (addressed && identified.some((opId) => addressed.opIds.has(opId))) {
+      acknowledge(addressed, result)
+      return
+    }
+    // A retired batch's own answer consumes the credit reserved for it;
+    // ops this sender never minted are nobody's answer here.
+    if (identified.some((opId) => retiredOpIds.has(opId))) drainStaleCredit()
+  }
+
+  /**
+   * Anonymous failure (empty lists, no failure op_id): a late result with
+   * no batch waiting, one addressed to another workflow, or one a stale
+   * credit could explain drains that credit so it cannot swallow a future
+   * batch's own result. Only then is it the in-flight batch's.
+   */
+  function settleAnonymous(
+    result: OpsResultView,
+    addressed: InFlight | null
+  ): void {
+    if (!addressed || staleAnonymousBudget > 0) {
+      drainStaleCredit()
+      return
+    }
+    acknowledge(addressed, result)
+  }
+
+  /**
+   * One result answers one send. A batch sent more than once still has its
+   * other sends owed an answer: reserve their credits, else a late anonymous
+   * failure from one of them would settle the next batch.
+   */
+  function acknowledge(batch: InFlight, result: OpsResultView): void {
+    batch.sends--
+    retire(batch)
+    settle({ state: 'acknowledged', ops: batch.ops, result })
+  }
+
   const unsubscribe = deps.onOpsResult((result) => {
-    if (
-      !inFlight ||
-      (result.workflowId !== undefined &&
-        result.workflowId !== inFlight.workflowId)
-    ) {
-      // A late result with no batch waiting, or addressed to another workflow
-      // than the in-flight batch: drain a credit if one is outstanding so it
-      // cannot swallow a future batch's own result.
-      if (staleAnonymousBudget > 0) staleAnonymousBudget--
-      return
-    }
-    const identified = [...result.applied, ...result.skipped]
-    if (result.failure?.op_id) identified.push(result.failure.op_id)
-    if (identified.length > 0) {
-      if (!identified.some((opId) => inFlight!.opIds.has(opId))) {
-        // Names ops that are not in flight: a retired batch's own result, if
-        // a credit is outstanding for one.
-        if (staleAnonymousBudget > 0) staleAnonymousBudget--
-        return
-      }
-      settle({ state: 'acknowledged', ops: inFlight.ops, result })
-      return
-    }
-    // Anonymous failure (empty lists, no failure op_id): only attribute it
-    // to the in-flight batch once no stale credit could explain it.
-    if (staleAnonymousBudget > 0) {
-      staleAnonymousBudget--
-      return
-    }
-    settle({ state: 'acknowledged', ops: inFlight.ops, result })
+    if (inFlight === null && staleAnonymousBudget === 0) return
+    const identified = identifiedOpIds(result)
+    const addressed = addressedBatch(result, inFlight)
+    if (identified.length > 0) settleIdentified(result, identified, addressed)
+    else settleAnonymous(result, addressed)
   })
 
   return {

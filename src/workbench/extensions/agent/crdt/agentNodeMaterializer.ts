@@ -7,7 +7,14 @@ import {
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  inputHasLink,
+  inputLink,
+  outputHasLinks,
+  outputLinks
+} from '@/lib/litegraph/src/node/slotLinks'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
@@ -49,6 +56,8 @@ export type MaterializableGraph = Pick<
   | 'add'
   | 'remove'
   | 'setDirtyCanvas'
+  | 'floatingLinks'
+  | 'removeFloatingLink'
 >
 
 /**
@@ -262,10 +271,168 @@ function reconcile(
     (orphan) =>
       graph._nodes_by_id[orphan.id] !== orphan || !recordIds.has(orphan.id)
   )
-  for (const orphan of detached) {
-    graph.remove(orphan, { preserveCanonicalState: true })
-  }
+  sweepOrphans(graph, detached)
   return materialized
+}
+
+/**
+ * `LGraph.remove()` runs extension `onRemoved()` hooks uncaught, and it runs
+ * them *before* it splices the node out of `_nodes` / `_nodes_by_id`. A hook
+ * that throws must leave neither that orphan nor the ones behind it live: a
+ * later save would serialise, and write back, nodes the document no longer
+ * holds. Every orphan gets its removal attempted; one whose hook threw is
+ * retried with the hook suppressed so the rest of the removal path (store
+ * detachment, `node.graph = null`, container splice) still runs; if even that
+ * fails the node is hard-detached from the containers. The first failure
+ * surfaces afterwards so the caller still counts the pass as failed.
+ */
+function sweepOrphans(
+  graph: MaterializableGraph,
+  orphans: readonly LGraphNode[]
+): void {
+  let firstFailure: { error: unknown } | undefined
+  for (const orphan of orphans) {
+    try {
+      graph.remove(orphan, { preserveCanonicalState: true })
+    } catch (error) {
+      firstFailure ??= { error }
+      forceDetachOrphan(graph, orphan)
+    }
+  }
+  if (firstFailure) throw firstFailure.error
+}
+
+function forceDetachOrphan(
+  graph: MaterializableGraph,
+  orphan: LGraphNode
+): void {
+  if (!graph._nodes.includes(orphan)) return
+  try {
+    // Shadow the (prototype or instance) hook so the retry cannot throw from
+    // it again; the node is leaving the graph, so the hook has no further use.
+    orphan.onRemoved = undefined
+    graph.remove(orphan, { preserveCanonicalState: true })
+  } catch {
+    // Last resort: the node must not be reachable from the graph anymore.
+    // `removeNode` disconnects links only after `beforeChange()`, so a throw
+    // there leaves every link registered; take them down first so no
+    // topology keeps pointing at a node the containers no longer hold.
+    //
+    // Links are keyed by node id. When a same-id replacement already owns
+    // the slot, those links are the successor's now (`removeNode` skips the
+    // teardown for the same reason), so only an unowned id is cleaned up.
+    const successor = graph._nodes_by_id[orphan.id]
+    if (successor == null || successor === orphan) {
+      detachOrphanLinks(graph, orphan)
+    }
+    const pos = graph._nodes.indexOf(orphan)
+    if (pos !== -1) graph._nodes.splice(pos, 1)
+    if (graph._nodes_by_id[orphan.id] === orphan) {
+      delete graph._nodes_by_id[orphan.id]
+    }
+    orphan.graph = null
+  }
+}
+
+/**
+ * Mirror of the link teardown in `LGraph.removeNode`, for the orphan whose
+ * removal never reached it. Each slot is attempted on its own: one slot's
+ * failure must not leave the others (or the floating links) registered.
+ */
+function detachOrphanLinks(
+  graph: MaterializableGraph,
+  orphan: LGraphNode
+): void {
+  // The node's own graph is the link network the node-level disconnect
+  // helpers resolve against; it is still set at this point.
+  const network = orphan.graph
+  let forced = false
+  for (const slot of orphan.inputs.keys()) {
+    forced = detachOrphanInput(graph, orphan, slot, network) || forced
+  }
+  for (const slot of orphan.outputs.keys()) {
+    forced = detachOrphanOutput(graph, orphan, slot, network) || forced
+  }
+  if (forced && network) network.incrementVersion()
+  removeOrphanFloatingLinks(graph, orphan)
+}
+
+/** Polite disconnect first; whatever it leaves registered is forced off. */
+function detachOrphanInput(
+  graph: MaterializableGraph,
+  orphan: LGraphNode,
+  slot: number,
+  network: LGraph | null
+): boolean {
+  try {
+    if (inputHasLink(graph, orphan.id, slot)) {
+      orphan.disconnectInput(slot, true)
+    }
+  } catch {
+    // Already failing; the container splice below is what must not be lost.
+  }
+  if (!network) return false
+  const remaining = inputLink(network, orphan.id, slot)
+  return remaining ? forceDisconnect(network, [remaining], 'output') : false
+}
+
+/** Polite disconnect first; whatever it leaves registered is forced off. */
+function detachOrphanOutput(
+  graph: MaterializableGraph,
+  orphan: LGraphNode,
+  slot: number,
+  network: LGraph | null
+): boolean {
+  try {
+    if (outputHasLinks(graph, orphan.id, slot)) {
+      orphan.disconnectOutput(slot)
+    }
+  } catch {
+    // Same: keep going so every remaining link gets its own attempt.
+  }
+  if (!network) return false
+  return forceDisconnect(
+    network,
+    outputLinks(network, orphan.id, slot),
+    'input'
+  )
+}
+
+/**
+ * The node-level disconnect helpers fire `onConnectionsChange` per link and
+ * stop at the first throw (or bail on a missing far end), which can leave
+ * later links registered. Take those down link by link, without callbacks.
+ * Returns whether anything was removed.
+ */
+function forceDisconnect(
+  network: LGraph,
+  links: readonly LLink[],
+  keepReroutes: 'input' | 'output'
+): boolean {
+  let forced = false
+  for (const link of links) {
+    try {
+      link.disconnect(network, keepReroutes)
+      forced = true
+    } catch {
+      // Same: keep going so every remaining link gets its own attempt.
+    }
+  }
+  return forced
+}
+
+function removeOrphanFloatingLinks(
+  graph: MaterializableGraph,
+  orphan: LGraphNode
+): void {
+  for (const link of [...graph.floatingLinks.values()]) {
+    if (link.origin_id !== orphan.id && link.target_id !== orphan.id) continue
+    try {
+      graph.removeFloatingLink(link)
+    } catch {
+      // Same.
+    }
+  }
 }
 
 function materialize(

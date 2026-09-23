@@ -1,3 +1,4 @@
+import { expect } from '@playwright/test'
 import type { Page, Response, Route } from '@playwright/test'
 import type {
   AgentPostMessageRequest,
@@ -21,11 +22,47 @@ interface PostedTurn {
   body: AgentPostMessageRequest
 }
 
+interface AcceptedThread {
+  id: string
+  title: string
+  workflowId: string
+}
+
 function threadIdOf(url: string): string {
   const match = MESSAGES_PATH.exec(new URL(url).pathname)
   if (match === null)
     throw new Error(`Expected a thread messages URL, got ${url}`)
   return match[1]
+}
+
+function isTurnPost(response: Response): boolean {
+  return (
+    response.request().method() === 'POST' &&
+    MESSAGES_PATH.test(new URL(response.url()).pathname)
+  )
+}
+
+/**
+ * The thread a turn's ack describes, or the reason the ack cannot be trusted
+ * (not 2xx, or not a well-formed `AgentTurnAccepted` to a well-formed post).
+ */
+async function parseAck(response: Response): Promise<AcceptedThread | string> {
+  if (!response.ok()) return `${response.status()} ${response.url()}`
+  const accepted = zAgentTurnAccepted.safeParse(
+    await response.json().catch(() => undefined)
+  )
+  const posted = zAgentPostMessageRequest.safeParse(
+    response.request().postDataJSON()
+  )
+  if (!accepted.success) return `${response.url()}: ${accepted.error.message}`
+  if (!posted.success) return `${response.url()}: ${posted.error.message}`
+  // The ack names the workflow the turn ran against: the client's own when
+  // it posted one, else the one the server minted for a fresh chat.
+  return {
+    id: accepted.data.thread_id,
+    title: posted.data.content,
+    workflowId: accepted.data.workflow_id ?? posted.data.workflow_id ?? ''
+  }
 }
 
 /**
@@ -35,15 +72,24 @@ function threadIdOf(url: string): string {
  * after are acked the way the server does: the workflow the client named,
  * or a freshly minted one when it named none. Every acked thread is listed,
  * titled by its first prompt, so the history screen has a row to delete.
+ * An ack that is not a 2xx `AgentTurnAccepted` is recorded as a failure
+ * for the fixture to assert on instead of skewing the list.
  */
 class AgentNewChatServer {
   private readonly posted: PostedTurn[] = []
-  private readonly acceptedThreadIds: string[] = []
+  private readonly accepted: AcceptedThread[] = []
+  private readonly ackFailures: string[] = []
+  // `page.on('response')` does not await its listeners: an ack still being
+  // read when the test ends would be missed by `failedAcks()`, so the
+  // teardown settles these first.
+  private readonly recordings: Promise<void>[] = []
 
   constructor(private readonly page: Page) {}
 
   async install(): Promise<void> {
-    this.page.on('response', (response) => this.recordAccepted(response))
+    this.page.on('response', (response) => {
+      this.recordings.push(this.recordAccepted(response))
+    })
     await this.page.route('**/api/agent/threads', (route) =>
       route.fulfill(jsonRoute(this.threadList()))
     )
@@ -56,15 +102,16 @@ class AgentNewChatServer {
     return this.posted
   }
 
+  async failedAcks(): Promise<readonly string[]> {
+    await Promise.all(this.recordings)
+    return this.ackFailures
+  }
+
   private async recordAccepted(response: Response): Promise<void> {
-    const request = response.request()
-    if (
-      request.method() !== 'POST' ||
-      !MESSAGES_PATH.test(new URL(response.url()).pathname)
-    )
-      return
-    const accepted = zAgentTurnAccepted.parse(await response.json())
-    this.acceptedThreadIds.push(accepted.thread_id)
+    if (!isTurnPost(response)) return
+    const ack = await parseAck(response)
+    if (typeof ack === 'string') this.ackFailures.push(ack)
+    else this.accepted.push(ack)
   }
 
   private answerPost(route: Route): Promise<void> {
@@ -86,11 +133,11 @@ class AgentNewChatServer {
 
   private threadList(): AgentThreadListResponse {
     return {
-      threads: this.acceptedThreadIds.map((id, index) => ({
+      threads: this.accepted.map(({ id, title, workflowId }) => ({
         id,
-        title: this.posted[index]?.body.content ?? '',
-        preview: this.posted[index]?.body.content ?? '',
-        workflow_id: this.posted[index]?.body.workflow_id ?? '',
+        title,
+        preview: title,
+        workflow_id: workflowId,
         status: 'active',
         message_count: 2,
         created_at: '2026-09-18T10:00:00Z',
@@ -100,7 +147,7 @@ class AgentNewChatServer {
       pagination: {
         offset: 0,
         limit: 100,
-        total: this.acceptedThreadIds.length,
+        total: this.accepted.length,
         has_more: false
       }
     }
@@ -116,5 +163,6 @@ export const agentNewChatTest = agentConversationTest.extend<{
     const server = new AgentNewChatServer(page)
     await server.install()
     await use(server)
+    expect(await server.failedAcks()).toEqual([])
   }
 })

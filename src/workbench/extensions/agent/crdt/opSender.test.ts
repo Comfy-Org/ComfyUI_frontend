@@ -1,9 +1,19 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
+import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
+
 import type { GraphOperation } from './graphOperations'
 import { createOpSender } from './opSender'
 import type { BatchOutcome, OpsResultView } from './opSender'
+
+const telemetryState = vi.hoisted(() => ({
+  reportError: vi.fn<typeof reportErrorFn>()
+}))
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: telemetryState.reportError
+}))
 
 const WORKFLOW = 'wf-1'
 const TAB = 'tab-1'
@@ -24,6 +34,7 @@ describe('createOpSender', () => {
   let settled: BatchOutcome[]
   let resultListener: ((result: OpsResultView) => void) | null
   let transportUp: boolean
+  let transportThrows: boolean
   let boundWorkflow: string | null
   let sender: ReturnType<typeof createOpSender>
 
@@ -42,9 +53,11 @@ describe('createOpSender', () => {
     settled = []
     resultListener = null
     transportUp = true
+    transportThrows = false
     boundWorkflow = WORKFLOW
     sender = createOpSender({
       sendOps: (workflowId, tab, ops) => {
+        if (transportThrows) throw new Error('frame serialization failed')
         if (!transportUp) return false
         sent.push({ workflowId, tab, ops })
         return true
@@ -362,6 +375,86 @@ describe('createOpSender', () => {
     ])
   })
 
+  it('a resent batch acknowledged by one send reserves a credit so the other send cannot ack the successor anonymously', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    expect(sent).toHaveLength(2)
+
+    ackInFlight()
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(3)
+
+    // The resend's own answer arrives late as an anonymous failure.
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled).toHaveLength(1)
+    expect(sender.pending()).toBe(1)
+
+    ackInFlight()
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'acknowledged',
+      'acknowledged'
+    ])
+    expect(settled[1].ops.map((op) => op.op_id)).toEqual(
+      sent[2].ops.map((op) => op.op_id)
+    )
+  })
+
+  it('a resent batch acknowledged by one send whose other send answers identified drains the credit, leaving the successor its own anonymous result', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    const resentOpIds = sent[0].ops.map((op) => op.op_id)
+
+    ackInFlight()
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(3)
+
+    // The idempotent duplicate names the ops it skipped: it is the credit's answer.
+    resultListener?.({ ok: true, applied: [], skipped: resentOpIds })
+    expect(settled).toHaveLength(1)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'acknowledged',
+      'acknowledged'
+    ])
+    expect(sender.pending()).toBe(0)
+  })
+
+  it('a resent batch acknowledged anonymously by one send reserves a credit for the other send too', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    expect(sent).toHaveLength(2)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(3)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled).toHaveLength(1)
+
+    ackInFlight()
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'acknowledged',
+      'acknowledged'
+    ])
+  })
+
+  it('a batch acknowledged after a single send reserves no credit: the next anonymous result is the successor’s own', () => {
+    sender.enqueue([addNode(1)])
+    ackInFlight()
+    sender.enqueue([addNode(2)])
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'acknowledged',
+      'acknowledged'
+    ])
+  })
+
   it('a late anonymous failure from an unacknowledged batch never settles the next batch', () => {
     sender.enqueue([addNode(1)])
     vi.advanceTimersByTime(10_000)
@@ -521,6 +614,99 @@ describe('createOpSender', () => {
       'acknowledged'
     ])
     expect(sender.pending()).toBe(0)
+  })
+
+  it('an aborted batch whose resend never left the client reserves one late-result credit, not two', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = null
+    vi.advanceTimersByTime(10_000)
+    expect(sent).toHaveLength(1)
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unconfirmed'])
+
+    boundWorkflow = WORKFLOW
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(2)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'acknowledged'
+    ])
+  })
+
+  it('an identified result for ops the sender never minted leaves the aborted batch its late-result credit', () => {
+    sender.enqueue([addNode(1)])
+    sender.abortAll()
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(2)
+
+    resultListener?.({ ok: true, applied: ['ffff'.repeat(8)], skipped: [] })
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unconfirmed'])
+
+    ackInFlight()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'acknowledged'
+    ])
+  })
+
+  it('a transport that throws is reported and retried like a refused send, never a stalled queue', () => {
+    transportThrows = true
+
+    expect(() => sender.enqueue([addNode(1)])).not.toThrow()
+
+    expect(sent).toHaveLength(0)
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+    transportThrows = false
+    vi.advanceTimersByTime(500)
+    expect(sent).toHaveLength(1)
+
+    ackInFlight()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+  })
+
+  it('a transport that keeps throwing is reported once per send cycle, not once per retry', () => {
+    transportThrows = true
+
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+
+    expect(sent).toHaveLength(0)
+    expect(settled.map((outcome) => outcome.state)).toEqual(['undeliverable'])
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+
+    // A new batch is a new cycle: its own throw is worth its own report.
+    sender.enqueue([addNode(2)])
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(2)
+  })
+
+  it('a retry parked by suspension and resumed is the same send cycle: no second report', () => {
+    transportThrows = true
+    sender.enqueue([addNode(1)])
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+
+    sender.suspend()
+    vi.advanceTimersByTime(500)
+    sender.resume()
+
+    expect(sent).toHaveLength(0)
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
+  })
+
+  it('the result-silence resend is a new send cycle: a transport that starts throwing then is reported', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent).toHaveLength(1)
+
+    transportThrows = true
+    vi.advanceTimersByTime(10_000)
+
+    expect(telemetryState.reportError).toHaveBeenCalledTimes(1)
   })
 
   describe('suspension', () => {

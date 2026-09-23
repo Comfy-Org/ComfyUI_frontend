@@ -1551,6 +1551,37 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('a doc_reset whose reconcile throws still settles the sent human batch and resets follower state', async () => {
+    const { enqueue, status, unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: true })
+    expect(status().connected).toBe(true)
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    expect(clientState.sendOps).toHaveBeenCalledTimes(1)
+    const cause = new Error('onRemoved threw')
+    adapterState.clearForReset.mockImplementationOnce(() => {
+      throw cause
+    })
+
+    // The throw must not escape: it would skip `sender.abortAll()` (leaving the
+    // sent batch pending forever) and the follower bookkeeping below it.
+    expect(() =>
+      dispatchFrame('doc_reset', {
+        workflowId: 'wf-1',
+        seq: 9,
+        actor: 'agent:x'
+      })
+    ).not.toThrow()
+
+    expect(await settledHumanOpStates()).toEqual(['unconfirmed'])
+    expect(status().connected).toBe(false)
+    expect(status().lastFrameType).toBe('doc_reset')
+    expect(telemetryState.reportError).toHaveBeenCalledWith(cause, {
+      errorType: 'failure_clearing_agent_crdt_projection_on_reset'
+    })
+    unmount()
+  })
+
   it('unbinding settles queued human batches and sends nothing more', async () => {
     vi.useFakeTimers()
     const { enqueue, workflowId, unmount } = mountWithHumanOps()

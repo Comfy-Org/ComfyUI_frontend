@@ -173,6 +173,26 @@ export interface AgentCrdtFollowerEvents {
   onReset?: (workflowId: string) => void
 }
 
+interface ResetDetail {
+  workflowId?: string
+  actor?: string
+  seq?: number
+}
+
+function readResetDetail(event: Event): ResetDetail | undefined {
+  return event instanceof CustomEvent
+    ? (event.detail as ResetDetail)
+    : undefined
+}
+
+function resetContext(detail: ResetDetail): RemoteMutationContext {
+  return {
+    source: 'agent-remote',
+    actor: detail.actor ?? 'agent-reset',
+    opId: `doc-reset:${detail.seq ?? 'unknown'}`
+  }
+}
+
 // Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
 // logError, which re-throws in dev/test builds (this app registers no
 // app.config.errorHandler) and aborts the rest of unmountComponent - leaving
@@ -470,36 +490,37 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_ops_result', event.detail ?? null)
   }
-  const onDocReset: EventListener = (event) => {
-    const detail =
-      event instanceof CustomEvent
-        ? (event.detail as {
-            workflowId?: string
-            actor?: string
-            seq?: number
-          })
-        : undefined
-    incrementOutcome('reset')
-    if (!isCurrentWorkflow(detail?.workflowId)) return
-    const context: RemoteMutationContext = {
-      source: 'agent-remote',
-      actor: detail.actor ?? 'agent-reset',
-      opId: `doc-reset:${detail.seq ?? 'unknown'}`
-    }
-    projection.clearForReset(detail.workflowId, context)
-    sender.abortAll()
-    events.onReset?.(detail.workflowId)
+  /** Start the doc bookkeeping over: the next frame belongs to a new doc. */
+  function forgetDoc(frameType: string): void {
     connected.value = false
     updatesApplied.value = 0
-    lastFrameType.value = event.type
+    lastFrameType.value = frameType
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
     pendingLiveNodeIds.clear()
     confirmedDeletes.clear()
-    recordDevEvent(
-      'doc_reset',
-      event instanceof CustomEvent ? (event.detail ?? null) : null
-    )
+  }
+  const onDocReset: EventListener = (event) => {
+    const detail = readResetDetail(event)
+    incrementOutcome('reset')
+    if (!isCurrentWorkflow(detail?.workflowId)) return
+    // The reset's projection reconcile can throw out of an extension's
+    // `onRemoved()` hook. Nothing below may be skipped because of it: the
+    // sent human batches must settle, the follower must drop to
+    // disconnected, and the doc bookkeeping must start over - otherwise the
+    // next frame is judged against ids from the doc that no longer exists.
+    try {
+      projection.clearForReset(detail.workflowId, resetContext(detail))
+    } catch (error) {
+      reportError(error, {
+        errorType: 'failure_clearing_agent_crdt_projection_on_reset'
+      })
+    } finally {
+      sender.abortAll()
+    }
+    events.onReset?.(detail.workflowId)
+    forgetDoc(event.type)
+    recordDevEvent('doc_reset', detail)
   }
   const onFollowerReplaced: EventListener = (event) => {
     // Gate on this composable's own INTENT, not the bridge's send REALITY
