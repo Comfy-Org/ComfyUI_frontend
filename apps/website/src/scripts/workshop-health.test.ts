@@ -250,11 +250,27 @@ describe('Workshop health', () => {
       }
     },
     {
-      name: 'Router validation response',
+      name: 'validation with a request ID',
       failure: {
         reason: 'validation',
         request_id: 'router-request',
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoTooLong']
+      }
+    },
+    {
+      name: 'validation with an HTTP status',
+      failure: {
+        reason: 'validation',
         http_status: 422,
+        field_error_names: ['video_url'],
+        field_error_codes: ['videoTooLong']
+      }
+    },
+    {
+      name: 'validation with a Router error type',
+      failure: {
+        reason: 'validation',
         router_error_type: 'invalid_input',
         field_error_names: ['video_url'],
         field_error_codes: ['videoTooLong']
