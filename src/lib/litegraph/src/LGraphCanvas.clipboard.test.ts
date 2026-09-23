@@ -28,6 +28,7 @@ import {
   createUuidv4
 } from '@/lib/litegraph/src/litegraph'
 import { remapClipboardSubgraphNodeIds } from '@/lib/litegraph/src/LGraphCanvas'
+import { MAX_ID } from '@/lib/litegraph/src/idAllocation'
 import { toNodeId } from '@/types/nodeId'
 import type {
   ClipboardItems,
@@ -197,6 +198,63 @@ describe('remapClipboardSubgraphNodeIds', () => {
         sourcePreviewName: '$$canvas-image-preview'
       }
     ])
+  })
+
+  function createExhaustedRootGraph(): LGraph {
+    const rootGraph = new LGraph()
+    rootGraph.state.lastNodeId = MAX_ID
+
+    const existingNode = new LGraphNode('existing')
+    existingNode.id = toNodeId(1)
+    rootGraph.add(existingNode)
+    return rootGraph
+  }
+
+  function createCollidingClipboardItems(): ClipboardItems {
+    const pastedSubgraph: ExportedSubgraph = {
+      id: createUuidv4(),
+      version: 1,
+      revision: 0,
+      state: { lastNodeId: 0, lastLinkId: 0, lastGroupId: 0, lastRerouteId: 0 },
+      config: {},
+      name: 'Pasted Subgraph',
+      inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 10, 10] },
+      outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 10, 10] },
+      inputs: [],
+      outputs: [],
+      widgets: [],
+      nodes: [createSerialisedNode(1, 'test/node')],
+      links: [],
+      groups: []
+    }
+    return {
+      nodes: [],
+      groups: [],
+      reroutes: [],
+      links: [],
+      subgraphs: [pastedSubgraph]
+    }
+  }
+
+  it('throws instead of hanging when the node ID space is exhausted', () => {
+    const rootGraph = createExhaustedRootGraph()
+    const parsed = createCollidingClipboardItems()
+
+    expect(() => remapClipboardSubgraphNodeIds(parsed, rootGraph)).toThrow(
+      'Node ID space exhausted'
+    )
+  })
+
+  it('leaves the graph ID state untouched when remapping throws', () => {
+    const rootGraph = createExhaustedRootGraph()
+    const snapshotLastNodeId = rootGraph.state.lastNodeId
+    const snapshotFreeNodeIds = new Set(rootGraph.state.freeNodeIds)
+    const parsed = createCollidingClipboardItems()
+
+    expect(() => remapClipboardSubgraphNodeIds(parsed, rootGraph)).toThrow()
+
+    expect(rootGraph.state.lastNodeId).toBe(snapshotLastNodeId)
+    expect(rootGraph.state.freeNodeIds).toEqual(snapshotFreeNodeIds)
   })
 })
 

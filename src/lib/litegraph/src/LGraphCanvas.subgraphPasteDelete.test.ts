@@ -206,6 +206,18 @@ function terminalState(f: Fixture) {
   }
 }
 
+/** Recycled floating-link IDs are history-dependent; only their count is order-independent. */
+function withFloatingLinkCounts(state: ReturnType<typeof terminalState>) {
+  return {
+    ...state,
+    remainingFloatingLinks: state.remainingFloatingLinks.length,
+    remainingReroutes: state.remainingReroutes.map((reroute) => ({
+      linkIds: reroute.linkIds,
+      floatingLinkIds: reroute.floatingLinkIds.length
+    }))
+  }
+}
+
 describe('subgraph copy/paste then delete in both orders', () => {
   beforeEach(() => {
     LiteGraph.registerNodeType(INTERIOR_TYPE, InteriorNode)
@@ -359,7 +371,9 @@ describe('subgraph copy/paste then delete in both orders', () => {
     copyFirst.rootGraph.remove(copyFirst.copy)
     copyFirst.rootGraph.remove(copyFirst.original)
 
-    expect(terminalState(copyFirst)).toStrictEqual(terminalState(originalFirst))
+    expect(withFloatingLinkCounts(terminalState(copyFirst))).toStrictEqual(
+      withFloatingLinkCounts(terminalState(originalFirst))
+    )
 
     // That shared state is: both definitions released, both instances gone,
     // every real link gone — and the reroute survives on a *real* floating

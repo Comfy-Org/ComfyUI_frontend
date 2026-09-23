@@ -7,12 +7,20 @@ import type { NodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
 import type { RerouteId } from '@/types/rerouteId'
 
+/** Hard ceiling shared by every counter — a true safety cap, not a working limit. */
+export const MAX_ID = 100_000_000
+
 export interface LGraphState {
   /** Counter, not an id — brand at the point a group is constructed. */
   lastGroupId: number
   lastNodeId: number
   lastLinkId: LinkId
   lastRerouteId: RerouteId
+  /** IDs freed by a removed node/group/link/reroute, reused before minting past the counter. */
+  freeNodeIds: Set<number>
+  freeGroupIds: Set<number>
+  freeLinkIds: Set<number>
+  freeRerouteIds: Set<number>
 }
 
 export function createLGraphState(): LGraphState {
@@ -20,8 +28,59 @@ export function createLGraphState(): LGraphState {
     lastGroupId: 0,
     lastNodeId: 0,
     lastLinkId: toLinkId(0),
-    lastRerouteId: toRerouteId(0)
+    lastRerouteId: toRerouteId(0),
+    freeNodeIds: new Set(),
+    freeGroupIds: new Set(),
+    freeLinkIds: new Set(),
+    freeRerouteIds: new Set()
   }
+}
+
+/**
+ * A disposable copy of `state`, safe for an operation to mutate speculatively
+ * (minting, observing, recycling) and discard on failure via
+ * {@link commitLGraphState} only once it fully succeeds.
+ */
+export function cloneLGraphState(state: LGraphState): LGraphState {
+  return {
+    lastGroupId: state.lastGroupId,
+    lastNodeId: state.lastNodeId,
+    lastLinkId: state.lastLinkId,
+    lastRerouteId: state.lastRerouteId,
+    freeNodeIds: new Set(state.freeNodeIds),
+    freeGroupIds: new Set(state.freeGroupIds),
+    freeLinkIds: new Set(state.freeLinkIds),
+    freeRerouteIds: new Set(state.freeRerouteIds)
+  }
+}
+
+/** Copies every counter and free-id pool from `source` onto `target`, in place. */
+export function commitLGraphState(
+  target: LGraphState,
+  source: LGraphState
+): void {
+  target.lastGroupId = source.lastGroupId
+  target.lastNodeId = source.lastNodeId
+  target.lastLinkId = source.lastLinkId
+  target.lastRerouteId = source.lastRerouteId
+  target.freeNodeIds = source.freeNodeIds
+  target.freeGroupIds = source.freeGroupIds
+  target.freeLinkIds = source.freeLinkIds
+  target.freeRerouteIds = source.freeRerouteIds
+}
+
+/** The next value from `freeIds`, removed from the set, or `undefined` when empty. */
+function takeFreeId(freeIds: Set<number>): number | undefined {
+  const { done, value } = freeIds.values().next()
+  if (done) return undefined
+  freeIds.delete(value)
+  return value
+}
+
+/** Clamps a candidate counter value to the valid range, or `undefined` to reject it outright. */
+function sanitizeCounterCandidate(value: number): number | undefined {
+  if (!Number.isInteger(value) || value < 0) return undefined
+  return Math.min(value, MAX_ID)
 }
 
 /**
@@ -134,40 +193,89 @@ export function mintNodeId(
   state: LGraphState,
   mode: NodeIdMintMode = 'sequential'
 ): NodeId {
-  return mode === 'crdt-disjoint'
-    ? mintCrdtDisjointNodeId()
-    : toNodeId(++state.lastNodeId)
+  if (mode === 'crdt-disjoint') return mintCrdtDisjointNodeId()
+  const recycled = takeFreeId(state.freeNodeIds)
+  return toNodeId(recycled ?? ++state.lastNodeId)
 }
 
 export function mintGroupId(state: LGraphState): GroupId {
-  return toGroupId(++state.lastGroupId)
+  const recycled = takeFreeId(state.freeGroupIds)
+  return toGroupId(recycled ?? ++state.lastGroupId)
 }
 
 export function mintLinkId(state: LGraphState): LinkId {
+  const recycled = takeFreeId(state.freeLinkIds)
+  if (recycled !== undefined) return toLinkId(recycled)
   state.lastLinkId = toLinkId(Number(state.lastLinkId) + 1)
   return state.lastLinkId
 }
 
 export function mintRerouteId(state: LGraphState): RerouteId {
+  const recycled = takeFreeId(state.freeRerouteIds)
+  if (recycled !== undefined) return toRerouteId(recycled)
   state.lastRerouteId = toRerouteId(Number(state.lastRerouteId) + 1)
   return state.lastRerouteId
 }
 
+/**
+ * Returns `id` to `state`'s free-node pool so a later mint reuses it before
+ * advancing `lastNodeId`. Ignored for a nonnumeric legacy id and for one in
+ * the agent/CRDT reserved-bit range (see {@link AGENT_RESERVED_BIT}), which
+ * this counter never mints into.
+ */
+export function releaseNodeId(state: LGraphState, id: NodeId): void {
+  const numeric = safeIntegerValueOf(id)
+  if (numeric === undefined || numeric <= 0) return
+  if (BigInt(numeric) >= AGENT_RESERVED_BIT) return
+  state.freeNodeIds.add(numeric)
+}
+
+export function releaseGroupId(state: LGraphState, id: GroupId): void {
+  if (!Number.isInteger(id) || id <= 0) return
+  state.freeGroupIds.add(id)
+}
+
+export function releaseLinkId(state: LGraphState, id: LinkId): void {
+  const numeric = Number(id)
+  if (!Number.isInteger(numeric) || numeric <= 0) return
+  state.freeLinkIds.add(numeric)
+}
+
+export function releaseRerouteId(state: LGraphState, id: RerouteId): void {
+  const numeric = Number(id)
+  if (!Number.isInteger(numeric) || numeric <= 0) return
+  state.freeRerouteIds.add(numeric)
+}
+
 export function observeNodeId(state: LGraphState, id: NodeId): void {
   const numericId = Number(id)
-  if (Number.isInteger(numericId) && numericId > state.lastNodeId) {
-    state.lastNodeId = numericId
+  state.freeNodeIds.delete(numericId)
+  const sanitized = sanitizeCounterCandidate(numericId)
+  if (sanitized !== undefined && sanitized > state.lastNodeId) {
+    state.lastNodeId = sanitized
   }
 }
 
 export function observeGroupId(state: LGraphState, id: GroupId): void {
-  if (id > state.lastGroupId) state.lastGroupId = id
+  state.freeGroupIds.delete(id)
+  const sanitized = sanitizeCounterCandidate(id)
+  if (sanitized !== undefined && sanitized > state.lastGroupId) {
+    state.lastGroupId = sanitized
+  }
 }
 
 export function observeLinkId(state: LGraphState, id: LinkId): void {
-  if (id > state.lastLinkId) state.lastLinkId = id
+  state.freeLinkIds.delete(Number(id))
+  const sanitized = sanitizeCounterCandidate(Number(id))
+  if (sanitized !== undefined && sanitized > Number(state.lastLinkId)) {
+    state.lastLinkId = toLinkId(sanitized)
+  }
 }
 
 export function observeRerouteId(state: LGraphState, id: RerouteId): void {
-  if (id > state.lastRerouteId) state.lastRerouteId = id
+  state.freeRerouteIds.delete(Number(id))
+  const sanitized = sanitizeCounterCandidate(Number(id))
+  if (sanitized !== undefined && sanitized > Number(state.lastRerouteId)) {
+    state.lastRerouteId = toRerouteId(sanitized)
+  }
 }

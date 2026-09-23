@@ -2,6 +2,9 @@ import type { LGraph } from '../LGraph'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { toGroupId } from '@/types/groupId'
 import {
+  MAX_ID,
+  cloneLGraphState,
+  commitLGraphState,
   mintGroupId,
   mintLinkId,
   mintNodeId,
@@ -28,8 +31,6 @@ import type {
   ISerialisedNode,
   SerialisableLLink
 } from '../types/serialisation'
-
-const MAX_ID = 100_000_000
 
 interface DeduplicationResult<
   Subgraph extends { id: string; nodes?: { type: string }[] } =
@@ -64,15 +65,31 @@ export function normalizeSubgraphDefinitions(
     clonedSubgraphs[index] = normalizeConfiguredTopology(subgraph)
   }
 
+  // Mint/observe against a disposable copy of `state` so a throw partway
+  // through (e.g. ID space exhaustion) leaves the real allocator untouched.
+  const workingState = cloneLGraphState(state)
   deduplicateClonedSubgraphNodeIds(
     clonedSubgraphs,
     reservations.nodeIds,
-    state,
+    workingState,
     clonedRootNodes
   )
-  deduplicateSubgraphGroupIds(clonedSubgraphs, reservations.groupIds, state)
-  deduplicateSubgraphLinkIds(clonedSubgraphs, reservations.linkIds, state)
-  deduplicateSubgraphRerouteIds(clonedSubgraphs, reservations.rerouteIds, state)
+  deduplicateSubgraphGroupIds(
+    clonedSubgraphs,
+    reservations.groupIds,
+    workingState
+  )
+  deduplicateSubgraphLinkIds(
+    clonedSubgraphs,
+    reservations.linkIds,
+    workingState
+  )
+  deduplicateSubgraphRerouteIds(
+    clonedSubgraphs,
+    reservations.rerouteIds,
+    workingState
+  )
+  commitLGraphState(state, workingState)
 
   return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
 }
@@ -317,7 +334,7 @@ function numericSerializedNodeId(id: SerializedNodeId): number | null {
  * Finds the next unused ID by repeatedly calling `advance`.
  * Throws if the ID space is exhausted.
  */
-function findNextAvailableId(
+export function findNextAvailableId(
   usedIds: Set<number>,
   advance: () => number
 ): number {

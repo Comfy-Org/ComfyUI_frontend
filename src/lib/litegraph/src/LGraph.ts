@@ -53,7 +53,11 @@ import {
   observeGroupId,
   observeLinkId,
   observeNodeId,
-  observeRerouteId
+  observeRerouteId,
+  releaseGroupId,
+  releaseLinkId,
+  releaseNodeId,
+  releaseRerouteId
 } from './idAllocation'
 import type { LGraphState, NodeIdMintMode } from './idAllocation'
 import { isRootGraphDocBound } from './docBoundGraphs'
@@ -64,6 +68,7 @@ import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
 import { rekeyGraphId } from '@/stores/rekeyGraphId'
+import { toGroupId } from '@/types/groupId'
 import {
   UNASSIGNED_NODE_ID,
   compareNodeIds,
@@ -1470,6 +1475,7 @@ export class LGraph
       if (index != -1) {
         this._groups.splice(index, 1)
       }
+      releaseGroupId(this.state, node.id)
       detachGroupLayout(node)
       node.graph = undefined
       this.incrementVersion()
@@ -1544,7 +1550,10 @@ export class LGraph
 
     // callback
     node.onRemoved?.()
-    if (!successor) clearNodeOwnedStoreState(node)
+    if (!successor) {
+      clearNodeOwnedStoreState(node)
+      releaseNodeId(this.state, node.id)
+    }
 
     const order = node.order
     if (!successor) {
@@ -1873,6 +1882,7 @@ export class LGraph
   removeFloatingLink(link: LLink): void {
     if (this.floatingLinks.get(link.id) !== link) return
     unregisterLinkTopology(link)
+    releaseLinkId(this.state, link.id)
 
     const reroutes = LLink.getReroutes(this, link)
     for (const reroute of reroutes) {
@@ -1904,6 +1914,7 @@ export class LGraph
     unregisterLinkTopology(link)
     layoutStore.deleteLinkLayout(linkId)
     this.getNodeById(link.target_id)?.updateComputedDisabled()
+    releaseLinkId(this.state, linkId)
     return true
   }
 
@@ -1955,6 +1966,7 @@ export class LGraph
     this.reroutesInternal.delete(id)
     unregisterRerouteChain(reroute)
     detachRerouteLayout(reroute)
+    releaseRerouteId(this.state, id)
   }
 
   /**
@@ -3115,17 +3127,13 @@ export class LGraph
           const runtimeLastNodeId = runtimeOptional(lastNodeId)
           const runtimeLastRerouteId = runtimeOptional(lastRerouteId)
           if (runtimeLastGroupId != null)
-            state.lastGroupId = Math.max(state.lastGroupId, runtimeLastGroupId)
+            observeGroupId(state, toGroupId(runtimeLastGroupId))
           if (runtimeLastLinkId != null)
-            state.lastLinkId = toLinkId(
-              Math.max(state.lastLinkId, runtimeLastLinkId)
-            )
+            observeLinkId(state, toLinkId(runtimeLastLinkId))
           if (runtimeLastNodeId != null)
-            state.lastNodeId = Math.max(state.lastNodeId, runtimeLastNodeId)
+            observeNodeId(state, toNodeId(runtimeLastNodeId))
           if (runtimeLastRerouteId != null)
-            state.lastRerouteId = toRerouteId(
-              Math.max(state.lastRerouteId, runtimeLastRerouteId)
-            )
+            observeRerouteId(state, toRerouteId(runtimeLastRerouteId))
         }
 
         // Links

@@ -507,6 +507,7 @@ describe('link presentation transfer across recreation flows', () => {
     connector.moveInputLink(graph, oldTarget, oldTarget.inputs[0])
     connector.dropOnReroute(reroute, createMockCanvasPointerEvent(100, 100))
 
+    const retargetedIds = new Set<number>()
     for (const target of [first, second]) {
       const link = target.getInputLink(0)
       if (!link) throw new Error('Expected retargeted link')
@@ -515,8 +516,13 @@ describe('link presentation transfer across recreation flows', () => {
         hidden: true,
         label: 'Fan out'
       })
+      retargetedIds.add(Number(link.id))
     }
-    expect(store.getPresentation(scope, original.id)).toBeUndefined()
+    // `original.id` may now be a recycled ID reused by one of the
+    // retargeted links above, which legitimately carries the presentation.
+    if (!retargetedIds.has(Number(original.id))) {
+      expect(store.getPresentation(scope, original.id)).toBeUndefined()
+    }
   })
 
   it('preserves each ordinary reroute presentation when moving its source', () => {

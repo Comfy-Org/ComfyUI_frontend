@@ -43,13 +43,19 @@ import type { ContextMenu } from './ContextMenu'
 import { createCursorCache } from './cursorCache'
 import { DragAndScale } from './DragAndScale'
 import type { AnimationOptions } from './DragAndScale'
-import { mintNodeId, observeNodeId } from './idAllocation'
+import {
+  cloneLGraphState,
+  commitLGraphState,
+  mintNodeId,
+  observeNodeId
+} from './idAllocation'
 import type { LGraph, SubgraphId } from './LGraph'
 import { LGraphGroup } from './LGraphGroup'
 import type { SlotTypeDefaultNodeOpts } from './LiteGraphGlobal'
 import { LGraphNode } from './LGraphNode'
 import type { NodeProperty } from './LGraphNode'
 import { detachSerialisedLinks } from './linkDeduplication'
+import { findNextAvailableId } from './subgraph/subgraphDeduplication'
 import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
@@ -9122,21 +9128,22 @@ export function remapClipboardSubgraphNodeIds(
   parsed: ClipboardItems,
   rootGraph: LGraph
 ): void {
+  // Mint/observe against a disposable copy of the graph's ID state so a
+  // throw (e.g. ID space exhaustion) leaves the real allocator untouched.
+  const workingState = cloneLGraphState(rootGraph.state)
+
   const usedNodeIds = new Set<number>()
   forEachNode(rootGraph, (node) => {
     const numericId = Number(node.id)
     if (!Number.isInteger(numericId)) return
     usedNodeIds.add(numericId)
-    observeNodeId(rootGraph.state, toNodeId(numericId))
+    observeNodeId(workingState, toNodeId(numericId))
   })
 
-  function nextUniqueNodeId() {
-    let nextId = Number(mintNodeId(rootGraph.state))
-    while (usedNodeIds.has(nextId)) {
-      nextId = Number(mintNodeId(rootGraph.state))
-    }
-    usedNodeIds.add(nextId)
-    return nextId
+  function nextUniqueNodeId(): number {
+    return findNextAvailableId(usedNodeIds, () =>
+      Number(mintNodeId(workingState))
+    )
   }
 
   const subgraphNodeIdMap = new Map<
@@ -9153,13 +9160,14 @@ export function remapClipboardSubgraphNodeIds(
       if (usedNodeIds.has(nodeInfo.id)) {
         const oldId = nodeInfo.id
         const newId = nextUniqueNodeId()
+        usedNodeIds.add(newId)
         remappedIds.set(oldId, newId)
         nodeInfo.id = newId
         continue
       }
 
       usedNodeIds.add(nodeInfo.id)
-      observeNodeId(rootGraph.state, toNodeId(nodeInfo.id))
+      observeNodeId(workingState, toNodeId(nodeInfo.id))
     }
 
     if (remappedIds.size > 0) {
@@ -9179,4 +9187,6 @@ export function remapClipboardSubgraphNodeIds(
     remapProxyWidgets(nodeInfo, remappedIds)
     remapPreviewExposures(nodeInfo, remappedIds)
   }
+
+  commitLGraphState(rootGraph.state, workingState)
 }

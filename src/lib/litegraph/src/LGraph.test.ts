@@ -1824,6 +1824,85 @@ describe('Shared LGraphState', () => {
   })
 })
 
+describe('ID recycling on removal', () => {
+  it('reuses a removed node id for the next node minted', () => {
+    const graph = new LGraph()
+    const first = new DummyNode()
+    graph.add(first)
+    const removedId = first.id
+
+    graph.remove(first)
+
+    const second = new DummyNode()
+    graph.add(second)
+
+    expect(second.id).toBe(removedId)
+  })
+
+  it('reuses a removed group id for the next group minted', () => {
+    const graph = new LGraph()
+    const first = new LGraphGroup('first')
+    graph.add(first)
+    const removedId = first.id
+
+    graph.remove(first)
+
+    const second = new LGraphGroup('second')
+    graph.add(second)
+
+    expect(second.id).toBe(removedId)
+  })
+
+  it('reuses a removed link id for the next link minted', () => {
+    const graph = new LGraph()
+    const source = new LGraphNode('source')
+    const target = new LGraphNode('target')
+    source.addOutput('out', '*')
+    target.addInput('in', '*')
+    target.addInput('in2', '*')
+    graph.add(source)
+    graph.add(target)
+
+    const firstLink = source.connect(0, target, 0)!
+    const removedId = firstLink.id
+    graph.removeLink(firstLink.id)
+
+    const secondLink = source.connect(0, target, 1)!
+
+    expect(secondLink.id).toBe(removedId)
+  })
+
+  it('reuses a removed reroute id for the next reroute minted', () => {
+    const graph = new LGraph()
+    const first = graph.setReroute({ pos: [0, 0], linkIds: [] })!
+    const removedId = first.id
+
+    graph.removeReroute(first.id)
+
+    const second = graph.setReroute({ pos: [0, 0], linkIds: [] })!
+
+    expect(second.id).toBe(removedId)
+  })
+
+  it('does not recycle a node id kept alive by a successor', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    const originalId = node.id
+    const successor = new LGraphNode('test')
+    successor.id = node.id
+    graph._nodes.push(successor)
+    graph._nodes_by_id[node.id] = successor
+
+    graph.remove(node, { preserveCanonicalState: true })
+
+    const nextNode = new DummyNode()
+    graph.add(nextNode)
+
+    expect(nextNode.id).not.toBe(originalId)
+  })
+})
+
 describe('persisted duplicate links', () => {
   const onConnectionsChange =
     vi.fn<NonNullable<LGraphNode['onConnectionsChange']>>()
