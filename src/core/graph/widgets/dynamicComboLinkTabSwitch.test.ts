@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
+import { app } from '@/scripts/app'
 import { useLitegraphService } from '@/services/litegraphService'
 
 // https://github.com/Comfy-Org/ComfyUI_frontend/issues/18388
@@ -62,26 +63,67 @@ function findMatchInput(node: LGraphNode) {
   return node.inputs.findIndex((input) => input.name === 'resize_type.match')
 }
 
+/** Two distinct, separately-registered IMAGE producers so a crossed or
+ * misindexed link (matched by slot index alone) would be caught by comparing
+ * `origin_id`, not just presence of a link. */
+class TestMatchSourceNode extends LGraphNode {
+  static override title = 'Test Match Source'
+  constructor() {
+    super('Test Match Source')
+    this.addOutput('out', 'IMAGE')
+  }
+}
+
+class TestBaseImageSourceNode extends LGraphNode {
+  static override title = 'Test Base Image Source'
+  constructor() {
+    super('Test Base Image Source')
+    this.addOutput('out', 'IMAGE')
+  }
+}
+
+/** Forces `app.configuringGraph`, as `LGraph.prototype.configure` does for
+ * the duration of every real `configure()` call once `app.setup()` has
+ * installed its wrapper — never installed in this unit test's isolation.
+ * Several dynamic-input paths branch on this flag, so without it the test
+ * could exercise different code than a real tab switch does. */
+function withConfiguringGraph<T>(fn: () => T): T {
+  Object.defineProperty(app, 'configuringGraph', {
+    get: () => true,
+    configurable: true
+  })
+  try {
+    return fn()
+  } finally {
+    delete (app as unknown as Record<string, unknown>).configuringGraph
+  }
+}
+
 describe('DynamicCombo input link survives a workflow tab switch (#18388)', () => {
   test('a link into the "Match Size" option is retained after reconstruction + configure()', async () => {
     await useLitegraphService().registerNodeDef(nodeName, nodeDef)
+    LiteGraph.registerNodeType('source', TestMatchSourceNode)
+    LiteGraph.registerNodeType('baseImageSource', TestBaseImageSourceNode)
 
     const graph = new LGraph()
     const resizeNode = LiteGraph.createNode(nodeName)
     if (!resizeNode) throw new Error('failed to create node')
     graph.add(resizeNode)
 
-    const source = new LGraphNode('source')
-    source.addOutput('out', 'IMAGE')
+    const source = LiteGraph.createNode('source')
+    if (!source) throw new Error('failed to create source node')
     graph.add(source)
 
-    const baseImageSource = new LGraphNode('baseImageSource')
-    baseImageSource.addOutput('out', 'IMAGE')
+    const baseImageSource = LiteGraph.createNode('baseImageSource')
+    if (!baseImageSource)
+      throw new Error('failed to create base image source node')
     graph.add(baseImageSource)
     const baseInputIndex = resizeNode.inputs.findIndex(
       (input) => input.name === 'input'
     )
-    baseImageSource.connect(0, resizeNode, baseInputIndex)
+    expect(baseInputIndex).toBeGreaterThanOrEqual(0)
+    const baseLink = baseImageSource.connect(0, resizeNode, baseInputIndex)
+    if (!baseLink) throw new Error('failed to connect base input')
 
     const resizeTypeWidget = resizeNode.widgets?.find(
       (widget) => widget.name === 'resize_type'
@@ -99,10 +141,17 @@ describe('DynamicCombo input link survives a workflow tab switch (#18388)', () =
     // from its node definition (defaulting `resize_type` back to
     // "scale_dimensions") and then configures each one with the tab's saved
     // state, exactly what `app.loadGraphData` does via `graph.clear()` +
-    // `graph.configure()`.
+    // `graph.configure()`. Reverting the production fix does turn this test
+    // red again (verified manually), confirming it isn't just observing an
+    // intermediate state that `vi.useFakeTimers()` and the missing
+    // `app.setup()` hooks happen to leave stable.
     const serialized = graph.serialize()
     graph.clear()
-    graph.configure(serialized)
+    const configureError = withConfiguringGraph(() =>
+      graph.configure(serialized)
+    )
+    expect(configureError).not.toBe(true)
+    expect(graph.nodes.filter((n) => n.has_errors)).toEqual([])
 
     const reloadedNode = graph.nodes.find((n) => n.type === nodeName)
     if (!reloadedNode) throw new Error('reloaded node not found')
@@ -110,9 +159,23 @@ describe('DynamicCombo input link survives a workflow tab switch (#18388)', () =
       (input) => input.name === 'input'
     )
     expect(reloadedNode.isInputConnected(reloadedBaseIndex)).toBe(true)
+    expect(reloadedNode.getInputLink(reloadedBaseIndex)?.origin_id).toBe(
+      baseImageSource.id
+    )
 
     const reloadedMatchIndex = findMatchInput(reloadedNode)
     expect(reloadedMatchIndex).toBeGreaterThanOrEqual(0)
     expect(reloadedNode.isInputConnected(reloadedMatchIndex)).toBe(true)
+    expect(reloadedNode.getInputLink(reloadedMatchIndex)?.origin_id).toBe(
+      source.id
+    )
+
+    const reloadedResizeTypeWidget = reloadedNode.widgets?.find(
+      (widget) => widget.name === 'resize_type'
+    )
+    expect(reloadedResizeTypeWidget?.value).toBe('match_size')
+    expect(
+      reloadedNode.inputs.some((input) => input.name === 'resize_type.width')
+    ).toBe(false)
   })
 })
