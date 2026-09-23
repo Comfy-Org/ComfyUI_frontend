@@ -308,10 +308,7 @@ export const useAssetsStore = defineStore('assets', () => {
             tags_any: ['input'],
             include_public: false
           })
-          const flatAssets = useAssetsQuery({
-            tags_any: ['output', 'temp'],
-            include_public: false
-          })
+          const flatAssets = useAssetsQuery({ tags_any: ['output', 'temp'] })
           outputAssets.value = new WrappedList(
             flatAssets,
             unflattenOutputAssets

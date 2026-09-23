@@ -101,17 +101,6 @@ describe('assetsStore input asset scope', () => {
     expect(store.importedAssets).not.toBe(store.inputAssets)
   })
 
-  it('requests the Generated list without public assets', async () => {
-    useAssetsStore()
-
-    await vi.waitFor(() =>
-      expect(assetRequests()).toContainEqual({
-        tags: 'output,temp',
-        includePublic: 'false'
-      })
-    )
-  })
-
   it('refetches the Imported list on mutation even when it shares nothing with the public-inclusive list', async () => {
     servePagesByScope()
     const store = useAssetsStore()

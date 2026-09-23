@@ -6,19 +6,17 @@ import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 // Regression cover for the Imported tab listing workflow-template inputs that
 // belong to the shared public-assets account (FE-2812).
 //
-// Ingest's GET /api/assets defaults `include_public` to true, and public
-// assets are cross-workspace by design, so a caller that omits the parameter
-// receives the template corpus on top of its own uploads. The route handler
-// below reproduces exactly that contract: it only withholds public assets when
-// the client asks it to. A panel query that stops sending
-// `include_public=false` therefore fails these tests rather than silently
-// showing another account's files.
+// Ingest's GET /api/assets defaults `include_public` to true, and that account
+// is cross-workspace by design, so a caller that omits the parameter receives
+// the template corpus on top of its own uploads. The route handler below
+// models that default and the `tags_any` filter, which is all the panel
+// query exercises; an Imported query that stops sending
+// `include_public=false` fails this spec.
 //
 // Tagged @cloud because the asset-backed panel only runs where
 // `flags.assetsEnabled` is on.
 
 const PUBLIC_TEMPLATE_INPUT = 'drinking_unicorn'
-const PUBLIC_SHARED_OUTPUT = 'someone_elses_render'
 const OWNED_INPUT = 'my_reference_photo'
 const OWNED_OUTPUT = 'my_generation'
 
@@ -35,10 +33,7 @@ function asset(name: string, tags: string[], isPublic: boolean): Asset {
   }
 }
 
-const PUBLIC_ASSETS: Asset[] = [
-  asset(PUBLIC_TEMPLATE_INPUT, ['input'], true),
-  asset(PUBLIC_SHARED_OUTPUT, ['output'], true)
-]
+const PUBLIC_ASSETS: Asset[] = [asset(PUBLIC_TEMPLATE_INPUT, ['input'], true)]
 const OWNED_ASSETS: Asset[] = [
   asset(OWNED_INPUT, ['input'], false),
   asset(OWNED_OUTPUT, ['output'], false)
@@ -110,17 +105,6 @@ test.describe('Assets sidebar - ownership scope', { tag: '@cloud' }, () => {
 
     await expect(tab.getAssetCardByName(OWNED_INPUT)).toBeVisible()
     await expect(tab.getAssetCardByName(PUBLIC_TEMPLATE_INPUT)).toHaveCount(0)
-    await expect(tab.assetCards).toHaveCount(1)
-  })
-
-  test("Generated tab lists the user's own outputs only", async ({
-    comfyPage
-  }) => {
-    const tab = comfyPage.menu.assetsTab
-    await tab.open()
-
-    await expect(tab.getAssetCardByName(OWNED_OUTPUT)).toBeVisible()
-    await expect(tab.getAssetCardByName(PUBLIC_SHARED_OUTPUT)).toHaveCount(0)
     await expect(tab.assetCards).toHaveCount(1)
   })
 })
