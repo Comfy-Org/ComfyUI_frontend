@@ -22,7 +22,7 @@ test.describe.configure({ timeout: 120_000 })
 test.use({ connectWebSocketToServer: false })
 
 test(
-  'keeps a completed turn work summary after a browser refresh',
+  'keeps a completed turn work summary after reload and chat switching',
   { tag: ['@cloud', '@ui'] },
   async ({ page, promptHistory, workflowSelection }) => {
     await page
@@ -133,5 +133,34 @@ test(
     await summary.click()
     await expect(reopenedPanel.getByText('Search nodes')).toBeVisible()
     await expect(reopenedPanel.getByText('Add node')).toBeVisible()
+    await expect(reopenedPanel.getByRole('listitem')).toHaveText([
+      'Search nodes',
+      'Add node'
+    ])
+
+    await reopenedPanel
+      .getByRole('button', { name: enMessages.agent.newChat })
+      .click()
+    await expect(summary).toHaveCount(0)
+    await expect(reopenedPanel.getByTestId('user-message-bubble')).toHaveCount(
+      0
+    )
+    await reopenedPanel
+      .getByRole('button', { name: enMessages.agent.showChatHistory })
+      .click()
+    await reopenedPanel
+      .getByRole('button', { name: 'Inline reference round trip', exact: true })
+      .click()
+    await expect(summary).toHaveAttribute('aria-expanded', 'false')
+    await expect(reopenedPanel.getByTestId('user-message-bubble')).toHaveText(
+      'find a node for me'
+    )
+    await summary.click()
+    await expect(reopenedPanel.getByText('Search nodes')).toBeVisible()
+    await expect(reopenedPanel.getByText('Add node')).toBeVisible()
+    await expect(reopenedPanel.getByRole('listitem')).toHaveText([
+      'Search nodes',
+      'Add node'
+    ])
   }
 )
