@@ -150,17 +150,17 @@ jobs:
         env:
           TARGET_BRANCH: ${{ steps.resolve.outputs.target_branch }}
           TARGET_VERSION: ${{ steps.resolve.outputs.target_version }}
-          LATEST_TAG: ${{ steps.resolve.outputs.latest_patch_tag }}
+          LATEST_TAG: ${{ steps.resolve.outputs.latest_patch_tag != 'null' && steps.resolve.outputs.latest_patch_tag || '(none)' }}
         run: |
           set -euo pipefail
-          echo "::error title=Release already in flight::${TARGET_BRANCH} is at ${TARGET_VERSION} but its newest tag is ${LATEST_TAG}. Tag ${TARGET_VERSION} to finish that release; cutting another bump only burns a version."
+          echo "::error title=Release already in flight::${TARGET_BRANCH} is at ${TARGET_VERSION} but its newest tag is ${LATEST_TAG}. Run release-recover-tag.yaml on ${TARGET_BRANCH} to finish that release; cutting another bump only burns a version."
           {
             echo "## Release already in flight"
             echo
             echo "\`${TARGET_BRANCH}\` is at \`${TARGET_VERSION}\`, its newest tag is \`${LATEST_TAG}\`."
             echo "A bump landed without being released, so this run stops rather than stacking a second bump on it."
             echo
-            echo "Finish the in-flight release by tagging \`v${TARGET_VERSION}\`, then re-run this workflow."
+            echo "Finish the in-flight release by running \`release-recover-tag.yaml\` with \`branch=${TARGET_BRANCH}\`, then re-run this workflow."
             echo "Check the \`release-draft-create\` run on the merged bump PR for why the tag is missing."
           } >> "$GITHUB_STEP_SUMMARY"
           exit 1

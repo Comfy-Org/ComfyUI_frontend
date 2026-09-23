@@ -135,15 +135,9 @@ function compareSemver(a: string, b: string): number {
 }
 
 /**
- * Resolve the version this release should end at, and whether a bump for it
- * already landed on the branch without being tagged.
- *
- * The bump is applied by `pnpm version` against the branch's `package.json`,
- * not against the newest tag, so deriving the target from the tag alone gives a
- * version nothing will ever produce: core/1.48 sat at 1.48.8 with v1.48.7 as
- * its newest tag, this resolved 1.48.8, the bump PR came out 1.48.9, and the
- * job then waited out its budget on a tag that could not appear. A version
- * ahead of the newest tag means the release needs finishing, not restarting.
+ * Resolve the version this release should end at. The bump applies
+ * `pnpm version` to the branch's `package.json`, so a branch version ahead of
+ * the newest tag is a pending bump: it needs tagging, not another bump.
  */
 function resolveTargetVersion({
   targetMajor,
@@ -157,7 +151,11 @@ function resolveTargetVersion({
   latestPatchTag: string | null
   hasPendingCommits: boolean
   branchVersion: string | null
-}): { targetVersion: string; pendingBump: boolean } | null {
+}): {
+  targetVersion: string
+  pendingBump: boolean
+  needsRelease: boolean
+} | null {
   const taggedVersion = latestPatchTag?.replace(/^v/, '') ?? null
   const [branchMajor, branchMinor] = branchVersion?.split('.').map(Number) ?? []
 
@@ -168,7 +166,11 @@ function resolveTargetVersion({
     branchMinor === targetMinor &&
     (taggedVersion === null || compareSemver(branchVersion, taggedVersion) > 0)
   ) {
-    return { targetVersion: branchVersion, pendingBump: true }
+    return {
+      targetVersion: branchVersion,
+      pendingBump: true,
+      needsRelease: false
+    }
   }
 
   const targetVersion = computeTargetVersion(
@@ -177,7 +179,9 @@ function resolveTargetVersion({
     latestPatchTag,
     hasPendingCommits
   )
-  return targetVersion ? { targetVersion, pendingBump: false } : null
+  return targetVersion
+    ? { targetVersion, pendingBump: false, needsRelease: hasPendingCommits }
+    : null
 }
 
 /**
@@ -398,9 +402,7 @@ function resolveRelease(
     return null
   }
 
-  const { targetVersion, pendingBump } = resolved
-  // A pending bump needs its tag created, not a second bump on top of it.
-  const needsRelease = hasPendingCommits && !pendingBump
+  const { targetVersion, pendingBump, needsRelease } = resolved
 
   if (pendingBump) {
     console.error(

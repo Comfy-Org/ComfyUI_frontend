@@ -132,7 +132,11 @@ describe('resolveTargetVersion', () => {
         hasPendingCommits: true,
         branchVersion: '1.48.8'
       })
-    ).toEqual({ targetVersion: '1.48.8', pendingBump: true })
+    ).toEqual({
+      targetVersion: '1.48.8',
+      pendingBump: true,
+      needsRelease: false
+    })
   })
 
   it('bumps the patch when the branch is level with its tag', () => {
@@ -143,7 +147,11 @@ describe('resolveTargetVersion', () => {
         hasPendingCommits: true,
         branchVersion: '1.48.7'
       })
-    ).toEqual({ targetVersion: '1.48.8', pendingBump: false })
+    ).toEqual({
+      targetVersion: '1.48.8',
+      pendingBump: false,
+      needsRelease: true
+    })
   })
 
   it('keeps the tagged version when nothing is pending', () => {
@@ -154,7 +162,11 @@ describe('resolveTargetVersion', () => {
         hasPendingCommits: false,
         branchVersion: '1.48.7'
       })
-    ).toEqual({ targetVersion: '1.48.7', pendingBump: false })
+    ).toEqual({
+      targetVersion: '1.48.7',
+      pendingBump: false,
+      needsRelease: false
+    })
   })
 
   it('treats an untagged line with a bumped package.json as pending', () => {
@@ -165,7 +177,11 @@ describe('resolveTargetVersion', () => {
         hasPendingCommits: true,
         branchVersion: '1.48.0'
       })
-    ).toEqual({ targetVersion: '1.48.0', pendingBump: true })
+    ).toEqual({
+      targetVersion: '1.48.0',
+      pendingBump: true,
+      needsRelease: false
+    })
   })
 
   it('falls back to the tag when the branch version is unreadable', () => {
@@ -176,7 +192,11 @@ describe('resolveTargetVersion', () => {
         hasPendingCommits: true,
         branchVersion: null
       })
-    ).toEqual({ targetVersion: '1.48.8', pendingBump: false })
+    ).toEqual({
+      targetVersion: '1.48.8',
+      pendingBump: false,
+      needsRelease: true
+    })
   })
 
   it('ignores a branch version behind its newest tag', () => {
@@ -187,7 +207,11 @@ describe('resolveTargetVersion', () => {
         hasPendingCommits: true,
         branchVersion: '1.48.6'
       })
-    ).toEqual({ targetVersion: '1.48.8', pendingBump: false })
+    ).toEqual({
+      targetVersion: '1.48.8',
+      pendingBump: false,
+      needsRelease: true
+    })
   })
 
   it.for([{ branchVersion: '1.49.0' }, { branchVersion: '2.0.0' }])(
@@ -200,7 +224,11 @@ describe('resolveTargetVersion', () => {
           hasPendingCommits: true,
           branchVersion
         })
-      ).toEqual({ targetVersion: '1.48.8', pendingBump: false })
+      ).toEqual({
+        targetVersion: '1.48.8',
+        pendingBump: false,
+        needsRelease: true
+      })
     }
   )
 })
