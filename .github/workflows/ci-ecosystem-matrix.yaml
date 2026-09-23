@@ -127,7 +127,7 @@ jobs:
       # commits nor changed validation rules can restore an older cache.
       - name: Restore corpus cache
         id: restore
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .census
           key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json', 'scripts/registry-census/fetch_corpus.py', 'scripts/registry-census/validate_corpus.py') }}
@@ -275,7 +275,7 @@ jobs:
       # commits, and `corpus missing` further down is a much clearer failure
       # than a green verdict over the wrong packs.
       - name: Restore corpus cache
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: .census
           key: ${{ env.CORPUS_CACHE_PREFIX }}${{ hashFiles('scripts/registry-census/corpus.pins.json', 'scripts/registry-census/fetch_corpus.py', 'scripts/registry-census/validate_corpus.py') }}
@@ -431,7 +431,7 @@ jobs:
       # run's earlier attempt - metrics carry runId and the summarizer skips
       # the delta rather than compare a run against itself.
       - name: Restore baseline metrics
-        uses: actions/cache/restore@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: matrix-metrics
           key: matrix-metrics-${{ matrix.renderer }}-${{ github.run_id }}
