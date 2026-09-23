@@ -672,6 +672,18 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     return resolved.status === 'resolved' ? resolved.resolved : undefined
   }
 
+  // Same resolution rule as _resolveInputWidget, so callback snapshots and
+  // state sync track the widget the input is actually bound to.
+  private _resolveInteriorWidget(inputName: string): IBaseWidget | undefined {
+    return resolveSubgraphInputLink(
+      this,
+      inputName,
+      ({ inputNode, targetInput, getTargetWidget }) =>
+        getTargetWidget() ??
+        this._resolveNestedPromotedSource(inputNode, targetInput)?.widget
+    )
+  }
+
   private _setWidget(
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
@@ -736,11 +748,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
         const before: [INodeInputSlot, IBaseWidget, unknown][] = []
         for (const hostInput of this.inputs) {
           if (!hostInput._subgraphSlot) continue
-          const interior = resolveSubgraphInputLink(
-            this,
-            hostInput.name,
-            ({ getTargetWidget }) => getTargetWidget()
-          )
+          const interior = this._resolveInteriorWidget(hostInput.name)
           if (interior) before.push([hostInput, interior, interior.value])
         }
         // Interior callbacks are plain functions using widget `this` (the INT
@@ -877,11 +885,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const state = store.getWidget(input.widgetId)
       if (!state) continue
 
-      const interior = resolveSubgraphInputLink(
-        this,
-        input.name,
-        ({ getTargetWidget }) => getTargetWidget()
-      )
+      const interior = this._resolveInteriorWidget(input.name)
       if (!interior) continue
 
       if (

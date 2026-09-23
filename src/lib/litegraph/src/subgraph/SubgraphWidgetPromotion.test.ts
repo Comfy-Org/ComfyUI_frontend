@@ -784,6 +784,67 @@ describe('SubgraphWidgetPromotion', () => {
       expect(cloneNode.widgets).toHaveLength(promotedInputs(cloneNode).length)
       expect(promotedWidgetStateByName(cloneNode, 'text').value).toBe('')
     })
+
+    it('keeps the host store tracking the bound deepest widget for nested promotions', () => {
+      const rootGraph = createTestRootGraph()
+
+      const innerSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'seed', type: 'number' }]
+      })
+      const { node: leaf, widget: leafWidget } = createNodeWithWidget(
+        'Sampler',
+        'number',
+        7,
+        'number'
+      )
+      leafWidget.callback = function (this: BaseWidget, value: number) {
+        this.value = value + 100
+      }
+      innerSubgraph.add(leaf)
+      innerSubgraph.inputNode.slots[0].connect(leaf.inputs[0], leaf)
+
+      const outerSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'seed', type: 'number' }]
+      })
+      const innerHost = createTestSubgraphNode(innerSubgraph, {
+        parentGraph: outerSubgraph,
+        id: 11
+      })
+      outerSubgraph.add(innerHost)
+      innerHost._internalConfigureAfterSlots()
+
+      // Interior slot mid-demotion: un-promoted while the nested source
+      // stays connected, so the outer input resolves to the deepest widget.
+      const innerSlot = innerHost.inputs[0]
+      innerSlot.widget = undefined
+      innerSlot.widgetId = undefined
+      innerSlot._widget = undefined
+
+      outerSubgraph.inputNode.slots[0].connect(innerHost.inputs[0], innerHost)
+
+      const outerHost = createTestSubgraphNode(outerSubgraph, {
+        parentGraph: rootGraph,
+        id: 22
+      })
+      rootGraph.add(outerHost)
+
+      const outerSlot = outerHost.inputs[0]
+      expect(outerSlot.widgetId).toBeDefined()
+
+      outerSlot._widget?.callback?.(50)
+      expect(leafWidget.value).toBe(150)
+      expect(promotedWidgetStateByName(outerHost, 'seed').value).toBe(150)
+
+      leafWidget.label = 'interior label'
+      leafWidget.disabled = true
+      outerHost.syncPromotedWidgetState()
+
+      const outerState = promotedWidgetStateByName(outerHost, 'seed')
+      expect(outerState.label).toBe('interior label')
+      expect(outerState.disabled).toBe(true)
+    })
   })
 
   describe('Tooltip Promotion', () => {
