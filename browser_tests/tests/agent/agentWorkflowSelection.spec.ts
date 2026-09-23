@@ -16,7 +16,10 @@ test.describe(
       workflowSelection
     }, testInfo) => {
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       const panel = page.locator('#agent-panel-root')
       await panel
