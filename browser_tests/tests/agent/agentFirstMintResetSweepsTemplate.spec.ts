@@ -17,6 +17,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 /**
  * Regression coverage: opening a template workflow that has never had an
@@ -208,9 +209,24 @@ test.describe(
       })
 
       // Opening the template: the two nodes render from local graph data,
-      // with no CRDT doc ever having existed for this workflow.
+      // with no CRDT doc ever having existed for this workflow. Passing the
+      // boot-time active workflow as the 4th arg makes this load reuse that
+      // SAME tab -- omitting it (as app.loadGraphData(json, true, true)
+      // does) makes activateLoadedWorkflow's null-workflow branch mint a
+      // brand new "Unsaved Workflow (2)" tab instead, leaving two tabs open.
+      // agentPanel.selectWorkflow() below then targets the first, ORIGINAL,
+      // still-empty "Unsaved Workflow" tab by its exact name, switching the
+      // canvas away from the just-rendered template nodes before the CRDT
+      // follower is ever bound.
       await page.evaluate(async (json) => {
-        await window.app!.loadGraphData(json, true, true)
+        const activeWorkflow = (window.app!.extensionManager as WorkspaceStore)
+          .workflow.activeWorkflow
+        await window.app!.loadGraphData(
+          json,
+          true,
+          true,
+          activeWorkflow ?? undefined
+        )
       }, TEMPLATE_GRAPH)
       await expect(
         vueNodes.getNodeLocator(String(TEMPLATE_NODE_A_ID))
