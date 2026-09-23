@@ -115,11 +115,20 @@ function fetchRequestHeaders(
  * `shouldRetryOn401` is the caller's gate (see {@link shouldRemintCloudRequest}):
  * flag-OFF traffic returns after a single `fetch` and never enters the re-mint
  * path, so the legacy cascade stays untouched for instant rollback.
+ *
+ * `freshRetrySignal`, when supplied, is called only once the retry actually
+ * happens, and its return value replaces `init.signal` on the retry `fetch`.
+ * The re-mint round trip (`tryRemintToken`) can itself take a while, so
+ * reusing the original signal would hand the retry whatever is left of the
+ * caller's deadline instead of a full one; a caller that cares about that
+ * passes a callback that mints a fresh deadline. Omitting it keeps the
+ * original behavior (the retry reuses `init.signal` unchanged).
  */
 export async function fetchWithUnifiedRemint(
   input: RequestInfo | URL,
   init: RequestInit,
-  shouldRetryOn401: boolean
+  shouldRetryOn401: boolean,
+  freshRetrySignal?: () => AbortSignal | undefined
 ): Promise<Response> {
   const retryInput =
     shouldRetryOn401 && input instanceof Request && input.body !== null
@@ -153,8 +162,11 @@ export async function fetchWithUnifiedRemint(
 
   const headers = requestHeaders
   headers.set('Authorization', `Bearer ${token}`)
+  const retryInit = freshRetrySignal
+    ? { ...init, headers, signal: freshRetrySignal() }
+    : { ...init, headers }
   try {
-    const retryResponse = await fetch(retryInput, { ...init, headers })
+    const retryResponse = await fetch(retryInput, retryInit)
     trackRetryResponse('fetch', retryResponse.status)
     return retryResponse
   } catch (error) {

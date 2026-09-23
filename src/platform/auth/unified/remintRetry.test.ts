@@ -320,6 +320,47 @@ describe('fetchWithUnifiedRemint', () => {
     })
   })
 
+  it('uses the fresh signal from freshRetrySignal on the retry fetch, not the original init.signal', async () => {
+    mockFetch.mockResolvedValueOnce(unauthorized).mockResolvedValueOnce(ok)
+    vi.mocked(useWorkspaceAuthStore().remintUnifiedOnce).mockResolvedValue(
+      'tokenB'
+    )
+    const originalController = new AbortController()
+    const freshController = new AbortController()
+    const freshRetrySignal = vi.fn(() => freshController.signal)
+
+    const result = await fetchWithUnifiedRemint(
+      'https://cloud/x',
+      {
+        headers: { Authorization: 'Bearer tokenA' as const },
+        signal: originalController.signal
+      },
+      true,
+      freshRetrySignal
+    )
+
+    expect(result).toBe(ok)
+    expect(freshRetrySignal).toHaveBeenCalledTimes(1)
+    const retrySignal = mockFetch.mock.calls[1][1].signal
+    expect(retrySignal).toBe(freshController.signal)
+    expect(retrySignal).not.toBe(originalController.signal)
+  })
+
+  it('does not call freshRetrySignal when no retry happens', async () => {
+    mockFetch.mockResolvedValueOnce(unauthorized)
+    const freshRetrySignal = vi.fn()
+
+    const result = await fetchWithUnifiedRemint(
+      'https://cloud/x',
+      { headers: { Authorization: 'Bearer tokenA' as const } },
+      false,
+      freshRetrySignal
+    )
+
+    expect(result).toBe(unauthorized)
+    expect(freshRetrySignal).not.toHaveBeenCalled()
+  })
+
   it.for([
     {
       shape: 'object',
