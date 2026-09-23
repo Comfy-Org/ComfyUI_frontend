@@ -5,6 +5,7 @@ import HubPageHeader from '../../../components/hub/HubPageHeader.vue'
 import WorkflowAbout from '../../../components/hub/WorkflowAbout.vue'
 import WorkflowRun from '../../../components/hub/WorkflowRun.vue'
 import WorkflowRunForm from '../../../components/hub/WorkflowRunForm.vue'
+import WorkflowApiTab from '../../../components/hub/WorkflowApiTab.vue'
 import WorkflowTabs from '../../../components/hub/WorkflowTabs.vue'
 import { catalogSearch, useCaseFor } from '../../../config/models-catalogue'
 import { useCaseForTemplate } from '../../../lib/hub/template-use-case'
@@ -180,6 +181,15 @@ const sectionTitle =
               client:load
             />
           </div>}
+          <div slot="api">
+            <WorkflowApiTab
+              fields={runForm.fields}
+              graph={runForm.graph}
+              slug={template.name}
+              ownDeployment={reach === 'endpoint'}
+              client:load
+            />
+          </div>
           <div slot="details">
             <WorkflowAbout
               graphUrl={page.downloadUrl}

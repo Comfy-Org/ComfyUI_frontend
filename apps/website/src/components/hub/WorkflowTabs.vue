@@ -21,14 +21,15 @@ const { runs = true, locale = 'en' } = defineProps<{
   locale?: Locale
 }>()
 
-type Section = 'playground' | 'details'
+type Section = 'playground' | 'details' | 'api'
 
 const sections = computed<readonly Section[]>(() =>
-  runs ? ['playground', 'details'] : ['details']
+  runs ? ['playground', 'details', 'api'] : ['details', 'api']
 )
 const sectionLabel: Record<Section, TranslationKey> = {
   playground: 'workshop.v2.workflow.tabRun',
-  details: 'workshop.v2.workflow.tabAbout'
+  details: 'workshop.v2.workflow.tabAbout',
+  api: 'workshop.model.tabs.api'
 }
 
 const activeSection = ref<Section>(runs ? 'playground' : 'details')
@@ -82,13 +83,23 @@ const { onKeydown } = useTablist(() => sections.value, activeSection)
     </section>
 
     <section
-      v-else
+      v-else-if="activeSection === 'details'"
       id="panel-details"
       role="tabpanel"
       aria-labelledby="tab-details"
       data-testid="details-tab"
     >
       <slot name="details" />
+    </section>
+
+    <section
+      v-else
+      id="panel-api"
+      role="tabpanel"
+      aria-labelledby="tab-api"
+      data-testid="api-tab"
+    >
+      <slot name="api" />
     </section>
   </div>
 </template>

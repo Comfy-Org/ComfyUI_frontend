@@ -10,7 +10,8 @@ const mount = (runs: boolean) =>
     props: { runs },
     slots: {
       playground: () => h('p', 'the form'),
-      details: () => h('p', 'how it is built')
+      details: () => h('p', 'how it is built'),
+      api: () => h('p', 'call it yourself')
     }
   })
 
@@ -39,4 +40,15 @@ describe('WorkflowTabs', () => {
     expect(screen.getByTestId('tab-details')).toBeTruthy()
     expect(screen.getByText('how it is built')).toBeTruthy()
   })
+
+  // Calling it yourself is offered whether or not this page can run it, so
+  // the third tab is there in both cases.
+  it.for([{ runs: true }, { runs: false }])(
+    'always offers the API tab (runs: $runs)',
+    ({ runs }) => {
+      mount(runs)
+
+      expect(screen.getByTestId('tab-api')).toBeTruthy()
+    }
+  )
 })

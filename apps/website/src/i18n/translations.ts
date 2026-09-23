@@ -10728,6 +10728,55 @@ Enterprise`
     en: 'Custom nodes',
     'zh-CN': '自定义节点'
   },
+  'workshop.v2.api.title': {
+    en: 'Build with this workflow',
+    'zh-CN': '用这个工作流开发'
+  },
+  'workshop.v2.api.leadCloud': {
+    en: "Run the whole workflow through Comfy Cloud's API: upload your inputs, submit a job, and download the outputs.",
+    'zh-CN':
+      '通过 Comfy Cloud 的 API 运行整个工作流：上传输入、提交任务、下载输出。'
+  },
+  'workshop.v2.api.leadOwn': {
+    en: 'Run this workflow on a Comfy API deployment of your own, with its models and custom nodes.',
+    'zh-CN':
+      '在你自己的 Comfy API 部署上运行此工作流，连同它的模型和自定义节点。'
+  },
+  'workshop.v2.api.noteCloud': {
+    en: 'Needs a paid Cloud plan and available credits.',
+    'zh-CN': '需要付费的 Cloud 方案和可用额度。'
+  },
+  'workshop.v2.api.noteOwn': {
+    en: 'Deploy it first: set COMFY_BASE_URL to the address your deployment answers on.',
+    'zh-CN': '先完成部署：将 COMFY_BASE_URL 设为你的部署地址。'
+  },
+  'workshop.v2.api.deployDocs': {
+    en: 'Set up a Comfy API deployment',
+    'zh-CN': '配置 Comfy API 部署'
+  },
+  'workshop.v2.api.setup': {
+    en: 'Download {file}, put your input files beside your script, and set COMFY_API_KEY in the environment. The examples carry whatever the form holds now.',
+    'zh-CN':
+      '下载 {file}，把输入文件放在脚本旁边，并在环境中设置 COMFY_API_KEY。示例会带上表单当前的内容。'
+  },
+  'workshop.v2.api.localFiles': {
+    en: 'Local input files',
+    'zh-CN': '本地输入文件'
+  },
+  'workshop.v2.api.language': { en: 'Code language', 'zh-CN': '代码语言' },
+  'workshop.v2.api.copy': { en: 'Copy snippet', 'zh-CN': '复制代码' },
+  'workshop.v2.api.copied': { en: 'Copied', 'zh-CN': '已复制' },
+  'workshop.v2.api.curlNote': {
+    en: 'This submits once and reads the job. Poll the returned urls.self until it finishes, then fetch its outputs.',
+    'zh-CN':
+      '这段代码提交一次并读取任务。轮询返回的 urls.self 直到完成，再取回输出。'
+  },
+  'workshop.v2.api.downloadGraph': {
+    en: 'Download the API graph',
+    'zh-CN': '下载 API 节点图'
+  },
+  'workshop.v2.api.apiKey': { en: 'Get an API key', 'zh-CN': '获取 API 密钥' },
+  'workshop.v2.api.docs': { en: 'API documentation', 'zh-CN': 'API 文档' },
   'workshop.v2.workflow.graph': { en: 'The graph', 'zh-CN': '节点图' },
   'workshop.v2.workflow.about': {
     en: 'About this workflow',
