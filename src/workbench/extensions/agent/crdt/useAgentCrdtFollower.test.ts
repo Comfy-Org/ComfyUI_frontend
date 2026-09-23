@@ -1788,6 +1788,53 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('a parked set_node_field entry has no effect-presence check, so a same-lineage catch-up leaves it parked', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const workflowId = ref<string | null>('wf-1')
+    let enqueue!: ReturnType<
+      typeof useAgentCrdtFollower
+    >['enqueueHumanOperations']
+    const host = defineComponent({
+      setup() {
+        enqueue = useAgentCrdtFollower(
+          workflowId,
+          graphMutations
+        ).enqueueHumanOperations
+        return () => null
+      }
+    })
+    const { unmount } = render(host)
+
+    enqueue([
+      { op: 'set_node_field', node_id: 5, field: 'title', value: 'Renamed' }
+    ])
+    await Promise.resolve()
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+
+    // One silent send, one silent resend: the batch settles delivery-unknown.
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'delivery_unknown',
+      opIds: [opId]
+    })
+
+    // `docEffectPresent` has no check implemented for `set_node_field` (it
+    // returns null), so even a same-lineage catch-up cannot resolve it --
+    // it stays parked rather than being guessed at as cleared.
+    const doc = new Y.Doc()
+    doc.getMap('nodes').set('5', new Y.Map([['title', 'Renamed']]))
+    bridge().follower.doc = doc
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: true })
+
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'cleared' })
+    )
+    unmount()
+  })
+
   it('F2: an already-current ack keeps a parked entry until the forced reconcile commits, then repairs the live graph before settling it, retried by its own timer on a quiet channel', async () => {
     const fakeGraph = fromPartial<MaterializableGraph>({
       rootGraph: { subgraphs: new Map() },
