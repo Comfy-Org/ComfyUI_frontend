@@ -13,6 +13,7 @@ import type {
 import { isIncompatibleLinkType } from './graphMutations'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import { parseLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
@@ -204,6 +205,17 @@ function reportInvalidHostTarget(
   )
 }
 
+function resolveLinkId(raw: unknown): number | null {
+  return typeof raw === 'number' && raw >= 0 && Number.isSafeInteger(raw)
+    ? raw
+    : null
+}
+
+function resolveLinkMapKey(id: string): number | null {
+  const linkId = parseLinkId(id)
+  return linkId !== undefined && linkId >= 0 ? linkId : null
+}
+
 function readSemanticLink(
   doc: Y.Doc,
   id: string,
@@ -213,11 +225,13 @@ function readSemanticLink(
   const raw = linksMap(doc).get(id)
   const tuple = raw instanceof Y.Array ? raw.toArray() : raw
   if (!Array.isArray(tuple) || tuple.length < 5) return null
-  const linkId = Number(tuple[0] ?? id)
+  const linkId = resolveLinkId(tuple[0])
+  const mapLinkId = resolveLinkMapKey(id)
   const originSlot = Number(tuple[2])
   const targetSlot = Number(tuple[4])
   if (
-    !Number.isInteger(linkId) ||
+    linkId === null ||
+    mapLinkId !== linkId ||
     tuple[1] == null ||
     tuple[3] == null ||
     !Number.isInteger(originSlot) ||
@@ -496,9 +510,11 @@ export class EcsFollowerAdapter {
           : null
       ])
     )
-    const removedLinkIds = [...changedLinks].flatMap(([id, link]) =>
-      link && !isIncompatibleLinkType(link) ? [] : [Number(id)]
-    )
+    const removedLinkIds = [...changedLinks].flatMap(([id, link]) => {
+      if (link && !isIncompatibleLinkType(link)) return []
+      const linkId = resolveLinkMapKey(id)
+      return linkId === null ? [] : [linkId]
+    })
     const committed = session.mutations.batch(frameContext(update), (batch) => {
       // A SubgraphNode host that is already live must never be rebuilt from
       // its doc entry: `reconcileNode` (and delete + `addNode`) replaces the
