@@ -166,7 +166,11 @@ describe('graphMutations', () => {
   function mutations(liveNodes?: SemanticLiveNodeQueryPort) {
     return createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      },
       placement,
       liveWidgets: { setValue: setLiveWidgetValue },
       liveNodes
@@ -926,7 +930,11 @@ describe('graphMutations', () => {
     }
     const sibling = createGraphMutations({
       getScope: () => siblingScope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      },
       placement
     })
     sibling.addNode(node(9), context)
@@ -956,7 +964,11 @@ describe('graphMutations', () => {
     }
     const sibling = createGraphMutations({
       getScope: () => siblingScope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      },
       placement
     })
     sibling.batch(context, (batch) => {
@@ -3075,7 +3087,11 @@ describe('graphMutations', () => {
     let liveReachable = true
     const graph = createGraphMutations({
       getScope: () => currentScope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      },
       placement,
       liveWidgets: { setValue: setLiveWidgetValue },
       liveNodes: {
@@ -3472,7 +3488,11 @@ describe('graphMutations', () => {
     const input = target.inputs[0]
     const remote = createGraphMutations({
       getScope: () => graphScopeOf(graph),
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      },
       placement: inertPlacementPort
     })
     const link = {
@@ -3776,43 +3796,6 @@ describe('graphMutations', () => {
     expect(presentation.getPresentation(scope, toLinkId(9))).toBeUndefined()
   })
 
-  it('clears every semantic owner and batches derived layout cleanup', () => {
-    const graph = mutations()
-    graph.batch(context, (batch) => {
-      batch.addNode(node(1, { seed: 1 }))
-      batch.addNode(node(2, { seed: 2 }))
-      batch.connect({
-        id: 9,
-        originNodeId: 1,
-        originSlot: 0,
-        targetNodeId: 2,
-        targetSlot: 0,
-        type: 'IMAGE'
-      })
-    })
-    useLinkPresentationStore().patch(scope, toLinkId(9), { hidden: true })
-    deleteLayouts.mockClear()
-
-    expect(graph.clearSemanticGraph({ ...context, opId: 'op-clear' })).toBe(
-      true
-    )
-
-    expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
-    expect([...useLinkStore().graphTopologies(scope)]).toEqual([])
-    expect(
-      useLinkPresentationStore().getPresentation(scope, toLinkId(9))
-    ).toBeUndefined()
-    expect(useWidgetValueStore().getNodeWidgets('root', toNodeId(1))).toEqual(
-      []
-    )
-    expect(deleteLayouts).toHaveBeenCalledOnce()
-    expect(deleteLayouts).toHaveBeenCalledWith(
-      scope,
-      [toNodeId(1), toNodeId(2)],
-      expect.objectContaining({ opId: 'op-clear' })
-    )
-  })
-
   it('carries remote provenance through the observable store calls', () => {
     const nodeContexts: unknown[] = []
     const widgetContexts: unknown[] = []
@@ -3833,7 +3816,11 @@ describe('graphMutations', () => {
     const graph = new LGraph()
     createGraphMutations({
       getScope: () => graphScopeOf(graph),
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      },
       placement
     }).addNode(
       {

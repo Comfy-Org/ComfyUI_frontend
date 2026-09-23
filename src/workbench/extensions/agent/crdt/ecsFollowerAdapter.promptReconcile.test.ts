@@ -98,7 +98,11 @@ function addProgressText(node: LGraphNode) {
   })
 }
 
-const layout = { createNode: vi.fn(), deleteNodes: vi.fn() }
+const layout = {
+  createNode: vi.fn(),
+  deleteNodes: vi.fn(),
+  deleteGroups: vi.fn()
+}
 
 function remoteMutations(scope: GraphScope) {
   return createGraphMutations({

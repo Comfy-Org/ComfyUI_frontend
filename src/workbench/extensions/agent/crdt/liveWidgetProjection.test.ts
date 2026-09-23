@@ -77,7 +77,11 @@ describe('applyLiveWidgetValue', () => {
     graph.add(node)
     const mutations = createGraphMutations({
       getScope: () => rootScope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() },
+      layout: {
+        createNode: vi.fn(),
+        deleteNodes: vi.fn(),
+        deleteGroups: vi.fn()
+      },
       placement: inertPlacementPort,
       liveWidgets: {
         rebind: (scope, nodeId, name) =>

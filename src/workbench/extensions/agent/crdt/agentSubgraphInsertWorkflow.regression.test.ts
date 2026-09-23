@@ -157,7 +157,11 @@ describe('pasting a subgraph blueprint through insert_workflow', () => {
       createGraphMutations({
         placement: inertPlacementPort,
         getScope: () => graphScopeOf(graph),
-        layout: { createNode: () => {}, deleteNodes: () => {} }
+        layout: {
+          createNode: () => {},
+          deleteNodes: () => {},
+          deleteGroups: () => {}
+        }
       })
     )
     adapter.bind('workflow', follower)

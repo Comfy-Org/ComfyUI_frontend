@@ -331,6 +331,21 @@ const graphMutations = (workflowId: string) => {
             timestamp
           }))
         )
+      },
+      deleteGroups(scope, groupIds, context) {
+        if (groupIds.length === 0) return
+        const timestamp = Date.now()
+        layoutStore.applyOperations(
+          groupIds.map((groupId) => ({
+            type: 'deleteGroup',
+            graphId: scope.rootGraphId,
+            groupId,
+            source: LayoutSource.AgentRemote,
+            actor: context.actor,
+            opId: context.opId,
+            timestamp
+          }))
+        )
       }
     },
     placement: {

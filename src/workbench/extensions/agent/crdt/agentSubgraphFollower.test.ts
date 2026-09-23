@@ -174,7 +174,11 @@ function startFollower(options: FixtureOptions = {}) {
     createGraphMutations({
       placement: inertPlacementPort,
       getScope: () => (options.scope?.blocked ? null : graphScopeOf(graph)),
-      layout: { createNode: () => {}, deleteNodes: () => {} }
+      layout: {
+        createNode: () => {},
+        deleteNodes: () => {},
+        deleteGroups: () => {}
+      }
     })
   )
   adapter.bind('workflow', follower)

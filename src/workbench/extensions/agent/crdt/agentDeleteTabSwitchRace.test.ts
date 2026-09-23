@@ -92,7 +92,11 @@ function setupRaceUntilReturn() {
   const mutations = createGraphMutations({
     placement: inertPlacementPort,
     getScope: () => scope,
-    layout: { createNode: () => {}, deleteNodes: () => {} }
+    layout: {
+      createNode: () => {},
+      deleteNodes: () => {},
+      deleteGroups: () => {}
+    }
   })
 
   let boundWorkflow: string | null = WORKFLOW

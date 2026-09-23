@@ -159,7 +159,8 @@ function remoteMutations(scope: GraphScope) {
           timestamp: Date.now()
         })
       },
-      deleteNodes: vi.fn()
+      deleteNodes: vi.fn(),
+      deleteGroups: vi.fn()
     },
     placement: inertPlacementPort
   })

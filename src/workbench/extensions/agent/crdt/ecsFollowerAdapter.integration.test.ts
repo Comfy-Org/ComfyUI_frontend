@@ -4,17 +4,27 @@ import {
   mint,
   nodesMap
 } from '@comfyorg/comfy-multi-player'
-import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import type {
+  Op,
+  WidgetCatalog,
+  WorkflowJSON
+} from '@comfyorg/comfy-multi-player'
+import { afterEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from './graphMutations'
 import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import type { GraphMutations } from './graphMutations'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+// eslint-disable-next-line import-x/no-restricted-paths
+import { LayoutSource } from '@/renderer/core/layout/types'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toGroupId } from '@/types/groupId'
 import { toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
@@ -23,6 +33,7 @@ import { widgetId } from '@/types/widgetId'
 import type { DocUpdate } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
+import type { GraphOperation } from './graphOperations'
 
 const catalog: WidgetCatalog = {
   types: {
@@ -39,7 +50,12 @@ interface TestLayout {
   size: { width: number; height: number }
 }
 
-function op(id: string, baseVersion: number, payload: object) {
+/**
+ * Builds one stamped op. `payload` is the package's distributive operation
+ * type, so a malformed fixture fails at this call site rather than inside
+ * `applyOps`.
+ */
+function op(id: string, baseVersion: number, payload: GraphOperation): Op {
   return {
     op_id: id,
     actor: 'agent:test',
@@ -79,7 +95,11 @@ describe('EcsFollowerAdapter integration', () => {
       createGraphMutations({
         placement: inertPlacementPort,
         getScope: () => scope,
-        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+        layout: {
+          createNode: vi.fn(),
+          deleteNodes: vi.fn(),
+          deleteGroups: vi.fn()
+        }
       })
     )
     adapter.bind('wf', follower)
@@ -131,7 +151,11 @@ describe('EcsFollowerAdapter integration', () => {
     const mutations = createGraphMutations({
       placement: inertPlacementPort,
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      }
     })
     mutations.addNode(
       {
@@ -229,7 +253,11 @@ describe('EcsFollowerAdapter integration', () => {
     const mutations = createGraphMutations({
       placement: inertPlacementPort,
       getScope: () => scope,
-      layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
+      layout: {
+        createNode: vi.fn(),
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      }
     })
     const context = {
       source: 'agent-remote' as const,
@@ -324,7 +352,11 @@ describe('EcsFollowerAdapter integration', () => {
     const mutations = createGraphMutations({
       placement: inertPlacementPort,
       getScope: () => (scopeAvailable ? scope : null),
-      layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
+      layout: {
+        createNode: vi.fn(),
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      }
     })
     const context = {
       source: 'agent-remote' as const,
@@ -383,7 +415,11 @@ describe('EcsFollowerAdapter integration', () => {
     const mutations = createGraphMutations({
       placement: inertPlacementPort,
       getScope: () => scope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      layout: {
+        createNode: vi.fn(),
+        deleteNodes: vi.fn(),
+        deleteGroups: vi.fn()
+      }
     })
     const realBatch = mutations.batch.bind(mutations)
     const failure = new Error('projection failed')
@@ -440,7 +476,11 @@ describe('EcsFollowerAdapter integration', () => {
     const mutations = createGraphMutations({
       placement: inertPlacementPort,
       getScope: () => (scopeAvailable ? scope : null),
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      layout: {
+        createNode: vi.fn(),
+        deleteNodes: vi.fn(),
+        deleteGroups: vi.fn()
+      }
     })
 
     // The document is already invalid by the time this follower binds: an
@@ -500,7 +540,7 @@ describe('EcsFollowerAdapter integration', () => {
         pos: [500, 0],
         node: { id: 3, type: 'Sink', inputs: [], outputs: [] }
       })
-    ] as Parameters<typeof applyOps>[1]
+    ]
     const result = applyOps(host, ops, catalog)
     expect(result.outcomes[0]?.outcome).toBe('applied')
     const growUpdate = Y.encodeStateAsUpdate(host, before)
@@ -553,7 +593,11 @@ describe('EcsFollowerAdapter integration', () => {
     const mutations = createGraphMutations({
       placement: inertPlacementPort,
       getScope: () => activeScope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      layout: {
+        createNode: vi.fn(),
+        deleteNodes: vi.fn(),
+        deleteGroups: vi.fn()
+      }
     })
     const context = {
       source: 'agent-remote' as const,
@@ -591,7 +635,11 @@ describe('EcsFollowerAdapter integration', () => {
     const mutations = createGraphMutations({
       placement: inertPlacementPort,
       getScope: () => scope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      layout: {
+        createNode: vi.fn(),
+        deleteNodes: vi.fn(),
+        deleteGroups: vi.fn()
+      }
     })
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
@@ -625,7 +673,7 @@ describe('EcsFollowerAdapter integration', () => {
           pos: [300, 20],
           node: { id: 2, type: 'Sink', pos: [300, 20] }
         })
-      ] as Parameters<typeof applyOps>[1],
+      ],
       catalog
     )
     expect(result.outcomes.map(({ outcome }) => outcome)).toEqual([
@@ -663,21 +711,24 @@ describe('EcsFollowerAdapter integration', () => {
     const mutations = createGraphMutations({
       placement: inertPlacementPort,
       getScope: () => scope,
-      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      layout: {
+        createNode: vi.fn(),
+        deleteNodes: vi.fn(),
+        deleteGroups: vi.fn()
+      }
     })
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
 
     let seq = 0
     let first = true
-    const deliver = (operation: object, expectedOutcome = 'applied') => {
+    const deliver = (
+      operation: GraphOperation,
+      expectedOutcome = 'applied'
+    ) => {
       const before = Y.encodeStateVector(host)
       const operationId = `disconnect-${++seq}`
-      const result = applyOps(
-        host,
-        [op(operationId, seq, operation)] as Parameters<typeof applyOps>[1],
-        catalog
-      )
+      const result = applyOps(host, [op(operationId, seq, operation)], catalog)
       expect(result.outcomes[0]).toMatchObject({
         op_id: operationId,
         outcome: expectedOutcome
@@ -766,21 +817,21 @@ describe('EcsFollowerAdapter integration', () => {
     const mutations = createGraphMutations({
       placement: inertPlacementPort,
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts }
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      }
     })
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
 
     let seq = 0
     let first = true
-    const deliver = (operation: object) => {
+    const deliver = (operation: GraphOperation) => {
       const before = Y.encodeStateVector(host)
       const operationId = `op-${++seq}`
-      const result = applyOps(
-        host,
-        [op(operationId, seq, operation)] as Parameters<typeof applyOps>[1],
-        catalog
-      )
+      const result = applyOps(host, [op(operationId, seq, operation)], catalog)
       expect(result.outcomes).toEqual([
         { op_id: operationId, outcome: 'applied' }
       ])
@@ -970,7 +1021,11 @@ describe('EcsFollowerAdapter integration', () => {
     const deleteLayouts = vi.fn()
     const mutations = createGraphMutations({
       getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: deleteLayouts },
+      layout: {
+        createNode: createLayout,
+        deleteNodes: deleteLayouts,
+        deleteGroups: vi.fn()
+      },
       placement: inertPlacementPort
     })
     const adapter = new EcsFollowerAdapter(mutations)
@@ -1088,7 +1143,11 @@ describe('EcsFollowerAdapter integration', () => {
       const mutations = createGraphMutations({
         placement: inertPlacementPort,
         getScope: () => scope,
-        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+        layout: {
+          createNode: vi.fn(),
+          deleteNodes: vi.fn(),
+          deleteGroups: vi.fn()
+        }
       })
       const adapter = new EcsFollowerAdapter(mutations)
       adapter.bind('wf', follower)
@@ -1205,7 +1264,11 @@ describe('EcsFollowerAdapter integration', () => {
     const mutations = createGraphMutations({
       placement: inertPlacementPort,
       getScope: () => scope,
-      layout: { createNode, deleteNodes: vi.fn() }
+      layout: {
+        createNode,
+        deleteNodes: vi.fn(),
+        deleteGroups: vi.fn()
+      }
     })
     const adapter = new EcsFollowerAdapter(mutations)
     adapter.bind('wf', follower)
@@ -1229,7 +1292,7 @@ describe('EcsFollowerAdapter integration', () => {
             outputs: [{ name: 'out', type: 'IMAGE', links: [] }]
           }
         })
-      ] as Parameters<typeof applyOps>[1],
+      ],
       catalog
     )
     expect(result.outcomes).toEqual([{ op_id: 'op-1', outcome: 'applied' }])
@@ -1309,7 +1372,8 @@ describe('EcsFollowerAdapter integration', () => {
         removeMissing: () => undefined,
         removeLinks: () => undefined,
         deleteNode: () => undefined,
-        clearSemanticGraph: () => undefined
+        clearSemanticGraph: () => undefined,
+        deleteGroups: () => undefined
       }
       return {
         batch: (_context, define) => {
@@ -1322,8 +1386,7 @@ describe('EcsFollowerAdapter integration', () => {
         addNode: () => true,
         setWidget: () => true,
         connect: () => true,
-        deleteNode: () => true,
-        clearSemanticGraph: () => true
+        deleteNode: () => true
       }
     }
     const adapter = new EcsFollowerAdapter(createTargetMutations)
@@ -1389,14 +1452,16 @@ describe('EcsFollowerAdapter integration', () => {
       const mutations = createGraphMutations({
         placement: inertPlacementPort,
         getScope: () => scope,
-        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+        layout: {
+          createNode: vi.fn(),
+          deleteNodes: vi.fn(),
+          deleteGroups: vi.fn()
+        }
       })
       const adapter = new EcsFollowerAdapter(mutations)
       adapter.bind('wf', follower)
 
-      const ops = buildOps(
-        deliverAsSingleFrame ? 'combined' : 'singleton'
-      ) as Parameters<typeof applyOps>[1]
+      const ops = buildOps(deliverAsSingleFrame ? 'combined' : 'singleton')
 
       if (deliverAsSingleFrame) {
         const result = applyOps(host, ops, catalog)
@@ -1475,12 +1540,465 @@ describe('EcsFollowerAdapter integration', () => {
     expect(combined.targetLink).toEqual(toLinkId(9))
   })
 
+  describe('group-aware clear', () => {
+    // The pinned applier (0.2.1) empties `meta.groups` wholesale on `clear`,
+    // with no per-group target set and no stamp gate. The follower reacts to
+    // whatever `meta.groups` says AFTER a frame by diffing group ids against
+    // what it saw before, mirroring how it already diffs `nodesMap`/`linksMap`
+    // deep changes rather than trusting op names.
+
+    /** Disposed in LIFO order after each case by the hook below. */
+    const disposables: Array<() => void> = []
+    afterEach(() => {
+      while (disposables.length > 0) disposables.pop()?.()
+    })
+
+    /** A group graph every case in this describe starts from. */
+    const groupGraph = (id: number, title: string): WorkflowJSON => ({
+      nodes: [],
+      links: [],
+      groups: [{ id, title, bounding: [0, 0, 100, 100] }]
+    })
+
+    /**
+     * Mints `graph`, binds a fresh adapter to it and — unless `seedFrame` is
+     * false — delivers the mint as the first reconcile frame, asserting it
+     * commits so every case starts from a recorded baseline. `deliver` encodes
+     * a host's current state, hands it to the bound follower and returns
+     * `applyFrame`'s verdict; `rebind` is the tab going inactive and coming
+     * back against a brand new follower doc. Pass `adapter` to bind a second
+     * workflow onto the adapter a previous call created — one adapter serves
+     * every open tab. Disposal is registered here so a case contains only its
+     * own transition and expected values.
+     */
+    function bindTarget({
+      graph,
+      mutations,
+      workflowId = 'wf',
+      seedFrame = true,
+      adapter: sharedAdapter
+    }: {
+      graph: WorkflowJSON
+      mutations: GraphMutations
+      workflowId?: string
+      seedFrame?: boolean
+      adapter?: EcsFollowerAdapter
+    }) {
+      const host = mint(graph, catalog)
+      const adapter = sharedAdapter ?? new EcsFollowerAdapter(mutations)
+      let follower = new FollowerDoc()
+      let followerDisposed = false
+      let seq = 0
+      adapter.bind(workflowId, follower)
+      disposables.push(() => {
+        if (!sharedAdapter) adapter.destroy()
+        if (!followerDisposed) follower.destroy()
+        host.destroy()
+      })
+
+      const deliver = (opIds: readonly string[], source: Y.Doc = host) => {
+        const update = Y.encodeStateAsUpdate(source)
+        follower.applyRemoteUpdate(update)
+        seq += 1
+        return adapter.applyFrame({
+          workflowId,
+          seq,
+          update,
+          actor: 'agent:test',
+          opIds: [...opIds]
+        })
+      }
+
+      const unbind = () => {
+        adapter.unbind(workflowId)
+        follower.destroy()
+        followerDisposed = true
+      }
+
+      const rebind = () => {
+        if (!followerDisposed) unbind()
+        follower = new FollowerDoc()
+        followerDisposed = false
+        adapter.bind(workflowId, follower)
+      }
+
+      if (seedFrame) expect(deliver(['seed'])).toBe(true)
+      return { adapter, host, deliver, unbind, rebind }
+    }
+
+    /** Spies on the one layout call these cases are about. */
+    function groupSpyMutations(getScope: () => typeof scope | null) {
+      const deleteGroups = vi.fn()
+      const deleteNodes = vi.fn()
+      const mutations = createGraphMutations({
+        getScope,
+        placement: inertPlacementPort,
+        layout: { createNode: vi.fn(), deleteNodes, deleteGroups }
+      })
+      return { mutations, deleteGroups, deleteNodes }
+    }
+
+    it('deletes the group layout for a group removed from meta.groups by a clear', () => {
+      const { mutations, deleteGroups } = groupSpyMutations(() => scope)
+      const { host, deliver } = bindTarget({
+        graph: {
+          nodes: [
+            {
+              id: 1,
+              type: 'Source',
+              pos: [10, 20],
+              inputs: [],
+              outputs: [],
+              widgets_values: {}
+            }
+          ],
+          links: [],
+          groups: [{ id: 5, title: 'Stage 1', bounding: [0, 0, 100, 100] }]
+        },
+        mutations
+      })
+      expect(deleteGroups).not.toHaveBeenCalled()
+
+      applyOps(host, [op('clear-1', 2, { op: 'clear', removed_nodes: [1] })])
+      expect(deliver(['clear-1'])).toBe(true)
+
+      expect(deleteGroups).toHaveBeenCalledOnce()
+      expect(deleteGroups.mock.calls[0]?.[1]).toEqual([5])
+    })
+
+    it('does not call deleteGroups when meta.groups is unchanged', () => {
+      const { mutations, deleteGroups } = groupSpyMutations(() => scope)
+      const { host, deliver } = bindTarget({
+        graph: {
+          nodes: [
+            {
+              id: 1,
+              type: 'Source',
+              pos: [10, 20],
+              inputs: [],
+              outputs: [],
+              widgets_values: {}
+            },
+            {
+              id: 2,
+              type: 'Source',
+              pos: [40, 20],
+              inputs: [],
+              outputs: [],
+              widgets_values: {}
+            }
+          ],
+          links: [],
+          groups: [{ id: 5, title: 'Stage 1', bounding: [0, 0, 100, 100] }]
+        },
+        mutations
+      })
+
+      // Delete one node, leaving the other and the group intact — an
+      // ordinary partial delete_node must never touch groups.
+      applyOps(host, [
+        op('del-1', 2, { op: 'delete_node', node_id: 1, removed_links: [] })
+      ])
+      deliver(['del-1'])
+
+      expect(deleteGroups).not.toHaveBeenCalled()
+    })
+
+    it('deletes an empty group with no node delta (group-only clear)', () => {
+      const { mutations, deleteGroups } = groupSpyMutations(() => scope)
+      const { host, deliver } = bindTarget({
+        graph: groupGraph(7, 'Empty group'),
+        mutations
+      })
+
+      // clear with an empty removed_nodes target (no nodes existed) but the
+      // applier still blanks meta.groups: zero nodes does not mean an empty
+      // canvas.
+      applyOps(host, [op('clear-2', 2, { op: 'clear', removed_nodes: [] })])
+      expect(deliver(['clear-2'])).toBe(true)
+
+      expect(deleteGroups).toHaveBeenCalledOnce()
+      expect(deleteGroups.mock.calls[0]?.[1]).toEqual([7])
+    })
+
+    // A session rebound when its tab goes active again starts fresh, so a
+    // session-scoped baseline could never see a group the doc lost while the
+    // tab was inactive. The baseline is adapter-scoped for exactly that
+    // reason. It is NOT rebuilt from the groups the layout owner holds: local
+    // groups never reach the doc, so that set would authorise deleting them.
+    it('keeps the remote group baseline across a rebind', () => {
+      const { mutations, deleteGroups } = groupSpyMutations(() => scope)
+      const { host, deliver, rebind } = bindTarget({
+        graph: groupGraph(5, 'Stage 1'),
+        mutations
+      })
+      expect(deleteGroups).not.toHaveBeenCalled()
+
+      // Tab goes inactive, the doc loses the group, the tab comes back: a
+      // brand new session against a brand new follower doc.
+      applyOps(host, [op('clear-5', 2, { op: 'clear', removed_nodes: [] })])
+      rebind()
+
+      expect(deliver(['clear-5'])).toBe(true)
+      expect(deleteGroups).toHaveBeenCalledOnce()
+      expect(deleteGroups.mock.calls[0]?.[1]).toEqual([5])
+    })
+
+    // The baseline is keyed by workflow id, not adapter-wide: one adapter
+    // serves every open tab, so a set shared across workflows would let one
+    // workflow's rebind delete another's group layouts.
+    it('deletes only the rebound workflow group, leaving another workflow baseline intact', () => {
+      const { mutations, deleteGroups } = groupSpyMutations(() => scope)
+      const a = bindTarget({
+        graph: groupGraph(5, 'Stage A'),
+        mutations,
+        workflowId: 'wf-a'
+      })
+      const b = bindTarget({
+        graph: groupGraph(8, 'Stage B'),
+        mutations,
+        workflowId: 'wf-b',
+        adapter: a.adapter
+      })
+
+      // Only workflow A's doc drops its group. A shared set would carry 8 into
+      // A's diff and delete a group A's doc never named.
+      applyOps(a.host, [op('clear-a', 2, { op: 'clear', removed_nodes: [] })])
+      a.rebind()
+      expect(a.deliver(['clear-a'])).toBe(true)
+      expect(deleteGroups).toHaveBeenCalledOnce()
+      expect(deleteGroups.mock.calls[0]?.[1]).toEqual([5])
+
+      // B's own baseline survived A's delete, so B can still remove 8 when B's
+      // doc drops it. Reading the active workflow's set instead of keying by
+      // workflow would have consumed it above.
+      applyOps(b.host, [op('clear-b', 2, { op: 'clear', removed_nodes: [] })])
+      expect(b.deliver(['clear-b'])).toBe(true)
+      expect(deleteGroups).toHaveBeenCalledTimes(2)
+      expect(deleteGroups.mock.calls[1]?.[1]).toEqual([8])
+    })
+
+    // The blocker DrJKL reproduced against the real layout store: a group the
+    // user created locally is absent from `meta.groups`, because
+    // `layoutMintPort` mints no group op. Reconciling against "every group the
+    // owner holds" therefore deletes the user's own group. This asserts on the
+    // real `layoutStore`, so the failure is observable canvas state rather than
+    // a spy call. The port below is EQUIVALENT to, not the same object as, the
+    // one `AgentPanelRoot.vue` installs inline: it re-states that mapping here,
+    // so this test cannot detect the production port drifting away from it.
+    // Covering the production wiring needs a component-level test that mounts
+    // `AgentPanelRoot.vue`.
+    it('leaves a local-only group the doc never named alone', () => {
+      const mutations = createGraphMutations({
+        getScope: () => scope,
+        placement: inertPlacementPort,
+        layout: {
+          createNode: vi.fn(),
+          deleteNodes: vi.fn(),
+          deleteGroups(scope, groupIds, context) {
+            const timestamp = Date.now()
+            layoutStore.applyOperations(
+              groupIds.map((groupId) => ({
+                type: 'deleteGroup',
+                graphId: scope.rootGraphId,
+                groupId,
+                source: LayoutSource.AgentRemote,
+                actor: context.actor,
+                opId: context.opId,
+                timestamp
+              }))
+            )
+          }
+        }
+      })
+
+      // The user drew this group on the canvas; nothing minted it, so the doc
+      // has never carried its id.
+      const localGroupId = toGroupId(9)
+      layoutStore.applyOperation({
+        type: 'createGroup',
+        graphId: scope.rootGraphId,
+        groupId: localGroupId,
+        layout: {
+          id: localGroupId,
+          position: { x: 0, y: 0 },
+          size: { width: 120, height: 80 }
+        },
+        source: LayoutSource.Canvas,
+        actor: 'user',
+        opId: 'local-group',
+        timestamp: Date.now()
+      })
+
+      // The first frame of a fresh session is a reconcile frame — the one that
+      // used to hand the owner "every group not in the doc". `bindTarget`
+      // delivers and asserts it.
+      bindTarget({ graph: { nodes: [], links: [], groups: [] }, mutations })
+
+      expect(
+        layoutStore.getGroupLayout(scope.rootGraphId, localGroupId)
+      ).not.toBeNull()
+    })
+
+    it('retries a rejected group deletion on the next frame', () => {
+      let scopeAvailable = true
+      const { mutations, deleteGroups } = groupSpyMutations(() =>
+        scopeAvailable ? scope : null
+      )
+      const { host, deliver } = bindTarget({
+        graph: groupGraph(5, 'Stage 1'),
+        mutations
+      })
+
+      applyOps(host, [op('clear-3', 2, { op: 'clear', removed_nodes: [] })])
+
+      // Rejected: no scope. Nothing reaches the layout owner, and the
+      // baseline must not advance — otherwise the retry would diff against a
+      // snapshot this session never committed against and lose the deletion.
+      scopeAvailable = false
+      expect(deliver(['clear-3'])).toBe(false)
+      expect(deleteGroups).not.toHaveBeenCalled()
+
+      // The retry diffs against the un-advanced baseline, so group 5 is still
+      // seen to have left the doc and is still deleted.
+      scopeAvailable = true
+      expect(deliver(['clear-3'])).toBe(true)
+      expect(deleteGroups).toHaveBeenCalledOnce()
+      expect(deleteGroups.mock.calls[0]?.[1]).toEqual([5])
+    })
+
+    it('is idempotent when an already committed group deletion is delivered twice', () => {
+      const { mutations, deleteGroups } = groupSpyMutations(() => scope)
+      const { host, deliver } = bindTarget({
+        graph: groupGraph(5, 'Stage 1'),
+        mutations
+      })
+
+      applyOps(host, [op('clear-4', 2, { op: 'clear', removed_nodes: [] })])
+
+      expect(deliver(['clear-4'])).toBe(true)
+      expect(deleteGroups).toHaveBeenCalledOnce()
+
+      // Redelivery of the same frame: the baseline advanced on commit, so the
+      // diff is empty and no second delete reaches the layout owner.
+      expect(deliver(['clear-4'])).toBe(true)
+      expect(deleteGroups).toHaveBeenCalledOnce()
+    })
+
+    describe('lineage reset', () => {
+      const resetContext: RemoteMutationContext = {
+        source: 'agent-remote',
+        actor: 'agent:test',
+        opId: 'doc-reset'
+      }
+
+      it('deletes the observed groups in the same accepted batch as the semantic clear', () => {
+        const { mutations, deleteGroups, deleteNodes } = groupSpyMutations(
+          () => scope
+        )
+        const { adapter } = bindTarget({
+          graph: groupGraph(5, 'Stage 1'),
+          mutations
+        })
+
+        expect(adapter.clearForReset('wf', resetContext)).toBe(true)
+
+        // `clearSemanticGraph` reaches the layout owner as `deleteNodes`; the
+        // group layouts only go with it because the recorded ids ride the same
+        // batch. Without that leg they survive the reset and a save writes
+        // them back under the replacement lineage.
+        expect(deleteGroups).toHaveBeenCalledOnce()
+        expect(deleteGroups.mock.calls[0]?.[1]).toEqual([5])
+        expect(deleteNodes).toHaveBeenCalled()
+      })
+
+      // Falsifier for the test above: that one still passes against an
+      // implementation that clears semantic state in one transaction and
+      // deletes the groups in a second. Here the scope resolves for exactly
+      // one transaction after the seed, so a split implementation commits the
+      // clear and then has its group cleanup rejected — a partial clear that
+      // leaves the group layouts behind. One batch resolves scope once and
+      // lands both effects.
+      it('commits both reset effects when only one transaction can resolve a scope', () => {
+        let resetStarted = false
+        let resolutions = 0
+        const { mutations, deleteGroups, deleteNodes } = groupSpyMutations(
+          () => {
+            if (!resetStarted) return scope
+            resolutions += 1
+            return resolutions > 1 ? null : scope
+          }
+        )
+        const { adapter } = bindTarget({
+          graph: groupGraph(5, 'Stage 1'),
+          mutations
+        })
+
+        resetStarted = true
+        expect(adapter.clearForReset('wf', resetContext)).toBe(true)
+
+        expect(deleteNodes).toHaveBeenCalled()
+        expect(deleteGroups).toHaveBeenCalledOnce()
+        expect(deleteGroups.mock.calls[0]?.[1]).toEqual([5])
+      })
+
+      it('keeps the delete authorization when the reset batch is rejected', () => {
+        let scopeAvailable = true
+        const { mutations, deleteGroups } = groupSpyMutations(() =>
+          scopeAvailable ? scope : null
+        )
+        const { adapter } = bindTarget({
+          graph: groupGraph(5, 'Stage 1'),
+          mutations
+        })
+
+        scopeAvailable = false
+        expect(adapter.clearForReset('wf', resetContext)).toBe(false)
+        expect(deleteGroups).not.toHaveBeenCalled()
+
+        // The baseline advanced only on commit, so the retry still carries the
+        // authorization to remove the group the rejected batch left behind.
+        scopeAvailable = true
+        expect(adapter.clearForReset('wf', resetContext)).toBe(true)
+        expect(deleteGroups).toHaveBeenCalledOnce()
+        expect(deleteGroups.mock.calls[0]?.[1]).toEqual([5])
+      })
+
+      it('drops stale group authorization when the reset arrives with no bound target', () => {
+        const { mutations, deleteGroups } = groupSpyMutations(() => scope)
+        const { adapter, deliver, unbind, rebind } = bindTarget({
+          graph: groupGraph(5, 'Stage 1'),
+          mutations
+        })
+
+        // The tab went inactive before the reset landed, so there is no
+        // session to clear through.
+        unbind()
+        expect(adapter.clearForReset('wf', resetContext)).toBe(false)
+
+        // The replacement lineage carries no groups of its own. A surviving
+        // baseline of {5} would diff against an empty doc on the first frame
+        // and delete group 5 in a lineage that never named it — the same
+        // local-group blocker, reached through the reset path.
+        const replacement = mint({ nodes: [], links: [], groups: [] }, catalog)
+        disposables.push(() => replacement.destroy())
+        rebind()
+        expect(deliver(['seed'], replacement)).toBe(true)
+        expect(deleteGroups).not.toHaveBeenCalled()
+      })
+    })
+  })
+
   describe('local intent during a full reconcile', () => {
     function reconcileLinkedPair(pendingDeletes: ReadonlySet<string>) {
       const mutations = createGraphMutations({
         placement: inertPlacementPort,
         getScope: () => scope,
-        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+        layout: {
+          createNode: vi.fn(),
+          deleteNodes: vi.fn(),
+          deleteGroups: vi.fn()
+        }
       })
       const host = mint(
         {

@@ -48,7 +48,11 @@ const CATALOG: WidgetCatalog = {
   types: { TestSource: { widget_order: ['steps', 'seed'] } }
 }
 
-const layout = { createNode: vi.fn(), deleteNodes: vi.fn() }
+const layout = {
+  createNode: vi.fn(),
+  deleteNodes: vi.fn(),
+  deleteGroups: vi.fn()
+}
 
 function remoteMutations(scope: GraphScope) {
   return createGraphMutations({

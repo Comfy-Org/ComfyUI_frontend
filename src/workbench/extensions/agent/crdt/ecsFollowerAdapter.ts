@@ -1,7 +1,8 @@
 import {
   linksMap,
   nodesMap,
-  OPAQUE_WIDGETS_KEY
+  OPAQUE_WIDGETS_KEY,
+  readMeta
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
@@ -12,6 +13,8 @@ import type {
 } from './graphMutations'
 import { isIncompatibleLinkType } from './graphMutations'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { GroupId } from '@/types/groupId'
+import { toGroupId } from '@/types/groupId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 
@@ -280,6 +283,30 @@ function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
 }
 
 /**
+ * Group ids currently present in `meta.groups`. `meta.groups` carries no
+ * per-frame delta, so the follower diffs snapshots rather than replaying an
+ * op name — the same principle already used for nodesMap/linksMap.
+ */
+function readGroupIds(doc: Y.Doc): ReadonlySet<GroupId> {
+  const meta = readMeta(doc)
+  const groups = meta.groups
+  if (!Array.isArray(groups)) return new Set()
+  const ids = new Set<GroupId>()
+  for (const entry of groups) {
+    if (!isRecord(entry)) continue
+    const id = entry.id
+    if (typeof id === 'number' && Number.isInteger(id)) {
+      ids.add(toGroupId(id))
+    }
+  }
+  return ids
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
+/**
  * Drops any link whose declared origin/target types `connect` would refuse.
  * `GraphMutations.batch` validates a whole batch atomically (by design —
  * see the "validates the whole plan before committing any writes" tests in
@@ -366,6 +393,17 @@ interface TargetSession {
  */
 export class EcsFollowerAdapter {
   private readonly targets = new Map<string, TargetSession>()
+  /**
+   * Group ids this follower has actually seen in a bound doc's `meta.groups`,
+   * per workflow — the only groups it may delete. Local groups never reach the
+   * doc (`layoutMintPort` mints no group op), so a set built from what the
+   * layout owner currently holds would delete them; this set is built from the
+   * doc instead. It deliberately outlives `unbind`/`bind`, because a session
+   * rebound when its tab goes active again starts empty, and a group the doc
+   * lost while the tab was inactive would otherwise survive every later frame
+   * and be written back by the next save.
+   */
+  private readonly remoteGroupIds = new Map<string, ReadonlySet<GroupId>>()
 
   constructor(
     private readonly mutations: MutationsForTarget,
@@ -413,9 +451,28 @@ export class EcsFollowerAdapter {
   /** Explicit lineage reset only; reconnect/gap recovery never calls it. */
   clearForReset(workflowId: string, context: RemoteMutationContext): boolean {
     const session = this.targets.get(workflowId)
-    if (!session) return false
+    // A lineage break makes the old doc's group ids meaningless either way:
+    // the next lineage may reuse the same numeric id for a different group,
+    // and this set is only ever used to authorise a delete. With no bound
+    // target there is nothing to delete them through, so drop the
+    // authorisation rather than carry it into the replacement lineage.
+    if (!session) {
+      this.remoteGroupIds.delete(workflowId)
+      return false
+    }
     this.discardSessionPending(session)
-    return session.mutations.clearSemanticGraph(context)
+    // `clearSemanticGraph` clears nodes, links, and widgets; it does not touch
+    // groups. The recorded ids are this follower's only authority to delete
+    // them, so they go out in the same accepted batch, and the baseline is
+    // dropped only once that batch commits — a rejected clear leaves the
+    // authorisation intact for the next attempt.
+    const observedGroupIds = [...(this.remoteGroupIds.get(workflowId) ?? [])]
+    const committed = session.mutations.batch(context, (batch) => {
+      batch.clearSemanticGraph()
+      if (observedGroupIds.length > 0) batch.deleteGroups(observedGroupIds)
+    })
+    if (committed) this.remoteGroupIds.delete(workflowId)
+    return committed
   }
 
   discardPending(workflowId: string): void {
@@ -425,6 +482,7 @@ export class EcsFollowerAdapter {
 
   destroy(): void {
     for (const workflowId of [...this.targets.keys()]) this.unbind(workflowId)
+    this.remoteGroupIds.clear()
   }
 
   private createSession(
@@ -514,7 +572,12 @@ export class EcsFollowerAdapter {
     const removedLinkIds = [...changedLinks].flatMap(([id, link]) =>
       link && !isIncompatibleLinkType(link) ? [] : [Number(id)]
     )
+    const currentGroupIds = readGroupIds(session.follower.doc)
+    const removedGroupIds = [
+      ...(this.remoteGroupIds.get(session.workflowId) ?? [])
+    ].filter((id) => !currentGroupIds.has(id))
     const committed = session.mutations.batch(frameContext(update), (batch) => {
+      if (removedGroupIds.length > 0) batch.deleteGroups(removedGroupIds)
       // A SubgraphNode host that is already live must never be rebuilt from
       // its doc entry: `reconcileNode` (and delete + `addNode`) replaces the
       // host's input list in place, which drops the `widgetId` /
@@ -665,6 +728,10 @@ export class EcsFollowerAdapter {
     // frame so the dropped edits are re-read from the doc instead of falling
     // through to incremental handling that never revisits them.
     session.reconcileNextFrame = !committed
+    // Same reasoning, for the group baseline: a rejected batch must not
+    // advance it, or the retried frame would diff against a snapshot it never
+    // committed against and miss the group deletion entirely.
+    if (committed) this.remoteGroupIds.set(session.workflowId, currentGroupIds)
     return committed
   }
 

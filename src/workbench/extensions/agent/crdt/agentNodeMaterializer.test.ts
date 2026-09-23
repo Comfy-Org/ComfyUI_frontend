@@ -184,7 +184,8 @@ function remoteMutations(scope: GraphScope) {
             timestamp
           }))
         )
-      }
+      },
+      deleteGroups: () => undefined
     }
   })
 }
@@ -599,7 +600,9 @@ describe('reconcileAgentAdapters', () => {
       seedAgentAddedNode(graph, 2)
       expect(reconcileAgentAdapters(graph)).toHaveLength(2)
 
-      remoteMutations(scope).clearSemanticGraph(REMOTE)
+      remoteMutations(scope).batch(REMOTE, (batch) => {
+        batch.clearSemanticGraph()
+      })
 
       expect(reconcileAgentAdapters(graph)).toEqual([])
       expect(graph._nodes).toHaveLength(0)
