@@ -290,7 +290,7 @@ export class AssetHelper {
     if (asset) {
       const updated = {
         ...asset,
-        ...(body ?? {}),
+        ...body,
         updated_at: new Date().toISOString()
       }
       this.store.set(id, updated)

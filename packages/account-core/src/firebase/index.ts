@@ -34,6 +34,8 @@ import {
 import type { AccountIdentity } from '../core/identity.js'
 import { brandIdentity } from '../core/identity.js'
 import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
+import type { CloudFeatures } from './configSource.js'
+import { fetchCloudFeatures } from './configSource.js'
 
 export interface FirebaseIdentityAppConfig {
   readonly options: FirebaseOptions | (() => FirebaseOptions)
@@ -205,4 +207,134 @@ export function createFirebaseIdentity(
     },
     signOut: () => signOut(auth())
   }
+}
+
+export interface ResolveFirebaseIdentityOptions {
+  /** The Cloud origin whose `/api/features` names this app's Firebase project. */
+  readonly cloudBaseUrl: string
+  /** Named app: never contend with a default app another script creates. */
+  readonly appName: string
+  readonly persistence?: Dependencies['persistence']
+  readonly timeoutMs?: number
+}
+
+/**
+ * One `/api/features` fetch per `cloudBaseUrl`/`timeoutMs` pair, shared by
+ * every reader of the document: `resolveFirebaseIdentity` and
+ * `resolveStripePublishableKey` on the same pair read the same fetch instead
+ * of each starting their own. Never rejects, a failed fetch settles `{}`,
+ * which each field reader treats as absent.
+ *
+ * Memoized while a fetch is in flight or has produced a document with either
+ * field present. A document with neither field is treated the same as a
+ * failed fetch and evicts, matching `identityResolutions` below: this cache
+ * cannot tell a transient failure (network error, timeout, malformed body)
+ * from a Cloud origin that genuinely has neither Firebase nor Stripe
+ * configured, and caching that ambiguity would silently defeat
+ * `identityResolutions`'s own eviction once a caller retries through it.
+ */
+const featureResolutions = new Map<string, Promise<CloudFeatures>>()
+
+function resolveCloudFeatures(
+  cloudBaseUrl: string,
+  timeoutMs: number | undefined
+): Promise<CloudFeatures> {
+  const key = `${cloudBaseUrl} ${timeoutMs ?? ''}`
+  let resolution = featureResolutions.get(key)
+  if (!resolution) {
+    resolution = fetchCloudFeatures(cloudBaseUrl, { timeoutMs })
+    // Evict on an unsuccessful settle so a transient failure does not wedge
+    // every reader of this pair for the module's lifetime. Callers already
+    // hold this promise directly, not a map lookup, so deleting it here
+    // never orphans one.
+    void resolution.then((features) => {
+      if (
+        !features.firebaseConfig &&
+        !features.stripePublishableKey &&
+        featureResolutions.get(key) === resolution
+      ) {
+        featureResolutions.delete(key)
+      }
+    })
+    featureResolutions.set(key, resolution)
+  }
+  return resolution
+}
+
+/**
+ * The single entry a host needs to go from a Cloud origin to a ready
+ * identity: fetch `/api/features`, construct the app, and force `Auth` to
+ * resolve now rather than on whichever caller first touches the identity, so
+ * a config that fails the SDK's own checks (a bad key, a project mismatch on
+ * `appName`) surfaces here instead of downstream. Settles `undefined` on any
+ * failure along the way and never rejects, so a caller always gets either a
+ * ready identity or a definite absence.
+ *
+ * Memoized per `appName`/`cloudBaseUrl` pair while a fetch is in flight or
+ * has produced a ready identity, so every caller with the same pair shares
+ * one fetch and one identity, and two pairs (two hosts, or two Cloud origins
+ * in one process, as this package's own tests run) never share a result. An
+ * unsuccessful settle evicts its entry, so a later call re-fetches rather
+ * than replaying the same absence for the module's lifetime.
+ */
+const identityResolutions = new Map<
+  string,
+  Promise<FirebaseIdentity | undefined>
+>()
+
+export function resolveFirebaseIdentity(
+  options: ResolveFirebaseIdentityOptions
+): Promise<FirebaseIdentity | undefined> {
+  const { cloudBaseUrl, appName, persistence, timeoutMs } = options
+  const key = `${appName} ${cloudBaseUrl}`
+  let resolution = identityResolutions.get(key)
+  if (!resolution) {
+    resolution = resolveCloudFeatures(cloudBaseUrl, timeoutMs).then(
+      ({ firebaseConfig }) => {
+        if (!firebaseConfig) return undefined
+        try {
+          const identity = createFirebaseIdentity({
+            options: firebaseConfig,
+            appName,
+            persistence
+          })
+          identity.initialize()
+          return identity
+        } catch {
+          return undefined
+        }
+      }
+    )
+    // Evict on an unsuccessful settle so a transient failure does not wedge
+    // sign-in for the module's lifetime. Callers already hold this promise
+    // directly, not a map lookup, so deleting it here never orphans one.
+    void resolution.then((identity) => {
+      if (!identity && identityResolutions.get(key) === resolution) {
+        identityResolutions.delete(key)
+      }
+    })
+    identityResolutions.set(key, resolution)
+  }
+  return resolution
+}
+
+export interface ResolveStripePublishableKeyOptions {
+  /** The Cloud origin whose `/api/features` names this app's Stripe key. */
+  readonly cloudBaseUrl: string
+  readonly timeoutMs?: number
+}
+
+/**
+ * The Stripe publishable key from the same `/api/features` document
+ * `resolveFirebaseIdentity` reads. A host that calls both with the same
+ * `cloudBaseUrl`/`timeoutMs` pays for one fetch, not two, `resolveCloudFeatures`
+ * dedupes by that pair regardless of which field a caller asked for first.
+ * Settles `undefined` on any failure and never rejects.
+ */
+export function resolveStripePublishableKey(
+  options: ResolveStripePublishableKeyOptions
+): Promise<string | undefined> {
+  return resolveCloudFeatures(options.cloudBaseUrl, options.timeoutMs).then(
+    ({ stripePublishableKey }) => stripePublishableKey
+  )
 }

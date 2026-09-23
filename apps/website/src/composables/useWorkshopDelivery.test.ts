@@ -6,7 +6,7 @@ import type { RunOutput } from '../config/workshop-run'
 import { captureWorkshopEvent } from '../scripts/posthog'
 import { useWorkshopDelivery } from './useWorkshopDelivery'
 
-vi.mock(import('../scripts/posthog'), () => ({ captureWorkshopEvent: vi.fn() }))
+vi.mock(import('../scripts/posthog'))
 
 const analytics: WorkshopRunAnalytics = {
   model_slug: 'demo--image',
