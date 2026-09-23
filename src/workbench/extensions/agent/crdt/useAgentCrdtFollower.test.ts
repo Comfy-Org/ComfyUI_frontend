@@ -66,6 +66,7 @@ const adapterState = vi.hoisted(() => ({
   applyFrame: vi.fn(() => true),
   clearForReset: vi.fn(),
   discardPending: vi.fn(),
+  hasNodes: vi.fn(() => false),
   destroy: vi.fn()
 }))
 
@@ -143,6 +144,7 @@ vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
     applyFrame = adapterState.applyFrame
     clearForReset = adapterState.clearForReset
     discardPending = adapterState.discardPending
+    hasNodes = adapterState.hasNodes
     destroy = adapterState.destroy
   }
 }))
@@ -724,6 +726,7 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('a doc_reset minted for the very first time (actor system:mint) does not clear the live graph, since nothing was tracked by the CRDT doc yet', () => {
+    adapterState.hasNodes.mockReturnValueOnce(false)
     const { unmount } = mountFollower('wf-1')
 
     dispatchFrame('doc_reset', {
@@ -732,7 +735,27 @@ describe('useAgentCrdtFollower', () => {
       seq: 1
     })
 
+    expect(adapterState.hasNodes).toHaveBeenCalledWith('wf-1')
     expect(adapterState.clearForReset).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('a mid-turn system:mint doc_reset still clears the live graph when the projection already has nodes for the workflow', () => {
+    adapterState.hasNodes.mockReturnValueOnce(true)
+    const { unmount } = mountFollower('wf-1')
+
+    dispatchFrame('doc_reset', {
+      workflowId: 'wf-1',
+      actor: 'system:mint',
+      seq: 2
+    })
+
+    expect(adapterState.hasNodes).toHaveBeenCalledWith('wf-1')
+    expect(adapterState.clearForReset).toHaveBeenCalledWith('wf-1', {
+      source: 'agent-remote',
+      actor: 'system:mint',
+      opId: 'doc-reset:2'
+    })
     unmount()
   })
 

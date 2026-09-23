@@ -485,13 +485,17 @@ function startAgentCrdtFollower(
     opId: `doc-reset:${seq ?? 'unknown'}`
   })
   // Skip-check lives here so a benign first-mint reset (no prior projection
-  // state to lose) doesn't clear the canvas out from under the user.
+  // state to lose) doesn't clear the canvas out from under the user. A mint
+  // actor alone is not enough: the backend also mints mid-turn on a lineage
+  // break for a workflow the follower already has content for, and that
+  // reset must still sweep — so the skip additionally requires the
+  // projection to currently hold zero nodes for this workflow.
   const sweepProjectionUnlessMintActor = (
     workflowId: string,
     actor: string | undefined,
     seq: number | undefined
   ): void => {
-    if (actor === SYSTEM_MINT_ACTOR) return
+    if (actor === SYSTEM_MINT_ACTOR && !projection.hasNodes(workflowId)) return
     projection.clearForReset(workflowId, buildDocResetContext(actor, seq))
   }
   const onDocReset: EventListener = (event) => {

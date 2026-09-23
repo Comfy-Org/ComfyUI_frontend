@@ -418,6 +418,12 @@ export class EcsFollowerAdapter {
     return session.mutations.clearSemanticGraph(context)
   }
 
+  /** Whether the bound session's doc currently has any node entries. */
+  hasNodes(workflowId: string): boolean {
+    const session = this.targets.get(workflowId)
+    return session !== undefined && session.nodes.size > 0
+  }
+
   discardPending(workflowId: string): void {
     const session = this.targets.get(workflowId)
     if (session) this.discardSessionPending(session)
