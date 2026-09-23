@@ -8,6 +8,7 @@ import {
 import { useSettingStore } from '@/platform/settings/settingStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 /**
  * Watch for changes in the setting store and update the LiteGraph settings accordingly.
@@ -15,6 +16,22 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 export const useLitegraphSettings = () => {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
+  const agentNodeSelectionStore = useAgentNodeSelectionStore()
+
+  watch(
+    [
+      () => settingStore.get('Comfy.Graph.CanvasInfo'),
+      () => canvasStore.canvas,
+      () => agentNodeSelectionStore.isActive
+    ],
+    ([canvasInfoEnabled, canvas, picking]) => {
+      if (canvas) {
+        canvas.show_info = canvasInfoEnabled && !picking
+        canvas.draw(false, true)
+      }
+    },
+    { immediate: true }
+  )
 
   watchEffect(() => {
     const zoomSpeed = settingStore.get('Comfy.Graph.ZoomSpeed')

@@ -138,10 +138,6 @@ vi.mock(import('@/composables/useCanvasDrop'), () => ({
 vi.mock(import('@/platform/settings/composables/useLitegraphSettings'), () => ({
   useLitegraphSettings: vi.fn()
 }))
-vi.mock(
-  import('@/renderer/core/canvas/interaction/useCanvasPickingPolicySync'),
-  () => ({ useCanvasPickingPolicySync: vi.fn() })
-)
 vi.mock(import('@/composables/node/useNodeBadge'), () => ({
   useNodeBadge: vi.fn()
 }))

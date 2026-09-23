@@ -1,7 +1,7 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick, watch } from 'vue'
+import { watch } from 'vue'
 
 import DomWidgets from '@/components/graph/DomWidgets.vue'
 import { Rectangle } from '@/lib/litegraph/src/infrastructure/Rectangle'
@@ -55,11 +55,11 @@ function createWidget(id: string, node: LGraphNode, y = 12): TestWidget {
   })
 }
 
-function createCanvas(graph: LGraph, readOnly = false): LGraphCanvas {
+function createCanvas(graph: LGraph): LGraphCanvas {
   return fromPartial<LGraphCanvas>({
     graph,
     low_quality: false,
-    read_only: readOnly,
+    read_only: false,
     isNodeVisible: vi.fn(() => true),
     ds: { offset: [0, 0], scale: 1 },
     selected_nodes: {},
@@ -240,36 +240,17 @@ describe('DomWidgets positioning', () => {
   })
 })
 
-describe('DomWidgets readonly state', () => {
+describe('DomWidgets while picking nodes for the agent', () => {
   it.for([
-    { picking: false, readOnly: false, readonly: false, inert: false },
-    { picking: true, readOnly: false, readonly: true, inert: true },
-    { picking: false, readOnly: true, readonly: true, inert: false }
+    { picking: false, inert: false },
+    { picking: true, inert: true }
   ])(
-    'picking=$picking readOnly=$readOnly marks an editable canvas widget readonly=$readonly and the widget layer inert=$inert',
-    async ({ picking, readOnly, readonly, inert }) => {
+    'picking=$picking renders the widget layer inert=$inert',
+    ({ picking, inert }) => {
       useAgentNodeSelectionStore().isActive = picking
-      const canvasStore = useCanvasStore()
-      const domWidgetStore = useDomWidgetStore()
 
-      const graph = new LGraph()
-      const node = createNode(graph, 1, 'host', [100, 200])
-      const widget = createWidget('widget-readonly', node, 14)
-      domWidgetStore.registerWidget(widget)
+      render(DomWidgets, { global: { stubs: { DomWidget: true } } })
 
-      const canvas = createCanvas(graph, readOnly)
-      canvasStore.canvas = canvas
-      await nextTick()
-
-      render(DomWidgets, {
-        global: { stubs: { DomWidget: true } }
-      })
-
-      drawFrame(canvas)
-
-      const widgetState = domWidgetStore.widgetStates.get(widget.id)
-      if (!widgetState) throw new Error('Widget state not registered')
-      expect(widgetState.readonly).toBe(readonly)
       expect(screen.getByTestId('dom-widgets').hasAttribute('inert')).toBe(
         inert
       )

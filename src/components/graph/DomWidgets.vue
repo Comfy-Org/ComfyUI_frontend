@@ -1,6 +1,10 @@
 <template>
   <!-- Create a new stacking context for widgets to avoid z-index issues -->
-  <div class="isolate" data-testid="dom-widgets" :inert="!canFocusWidgets">
+  <div
+    class="isolate"
+    data-testid="dom-widgets"
+    :inert="agentNodeSelectionStore.isActive"
+  >
     <DomWidget
       v-for="widgetState in widgetStates"
       :key="widgetState.widget.id"
@@ -19,10 +23,11 @@ import { getDomWidgetZIndex } from '@/components/graph/widgets/domWidgetZIndex'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import { findFirstNode } from '@/lib/litegraph/src/utils/collections'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
+import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
 const domWidgetStore = useDomWidgetStore()
+const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
 const widgetStates = computed(() => [...domWidgetStore.widgetStates.values()])
 
@@ -117,13 +122,12 @@ const updateWidgets = () => {
       }
 
       widgetState.zIndex = getDomWidgetZIndex(posNode, currentGraph)
-      widgetState.readonly = !canEditNodes.value
+      widgetState.readonly = lgCanvas.read_only
     }
   }
 }
 
 const canvasStore = useCanvasStore()
-const { canEditNodes, canFocusWidgets } = useCanvasInteractions()
 whenever(
   () => canvasStore.canvas,
   (canvas) =>

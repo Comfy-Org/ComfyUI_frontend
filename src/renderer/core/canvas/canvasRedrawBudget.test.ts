@@ -10,7 +10,6 @@ import {
 import { useLitegraphSettings } from '@/platform/settings/composables/useLitegraphSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useCanvasPickingPolicySync } from '@/renderer/core/canvas/interaction/useCanvasPickingPolicySync'
 import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
 const PROGRESS_EVENTS = 100
@@ -111,10 +110,7 @@ describe('canvas redraw budget while progress events stream in', () => {
 
   it('draws the foreground once per progress event and never the background', async () => {
     const scope = effectScope()
-    scope.run(() => {
-      useLitegraphSettings()
-      useCanvasPickingPolicySync()
-    })
+    scope.run(() => useLitegraphSettings())
     await nextTick()
     await drawUntilNoLongerDirty(canvas)
 
@@ -138,10 +134,7 @@ describe('canvas redraw budget while progress events stream in', () => {
 
   it('does not treat slot positions written during rendering as a redraw trigger', async () => {
     const scope = effectScope()
-    scope.run(() => {
-      useLitegraphSettings()
-      useCanvasPickingPolicySync()
-    })
+    scope.run(() => useLitegraphSettings())
     await nextTick()
     await drawUntilNoLongerDirty(canvas)
 
@@ -162,10 +155,7 @@ describe('canvas redraw budget while progress events stream in', () => {
 
   it('redraws immediately when the CanvasInfo setting changes', async () => {
     const scope = effectScope()
-    scope.run(() => {
-      useLitegraphSettings()
-      useCanvasPickingPolicySync()
-    })
+    scope.run(() => useLitegraphSettings())
     await nextTick()
     await drawUntilNoLongerDirty(canvas)
 
