@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it, vi } from 'vitest'
 
 import type { PullRequestSummary } from './release-sheriff'
@@ -266,6 +267,40 @@ describe('fetchOnCallEmails', () => {
   })
 
   describe('transient failures', () => {
+    it('retries when the response body loses its connection', async () => {
+      const body = new ReadableStream<Uint8Array>({
+        pull(controller) {
+          controller.enqueue(new TextEncoder().encode('{"included":'))
+          controller.error(
+            new TypeError('terminated', { cause: { code: 'UND_ERR_SOCKET' } })
+          )
+        }
+      })
+      const fetchSpy = vi
+        .fn<typeof fetch>()
+        .mockResolvedValueOnce(new Response(body))
+        .mockResolvedValue(Response.json({ included: [] }))
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const result = fetchOnCallEmails(datadog, creds)
+      await vi.advanceTimersByTimeAsync(1000)
+
+      expect(await result).toEqual({ emails: [], warning: null })
+      expect(fetchSpy).toHaveBeenCalledTimes(2)
+    })
+
+    it('does not retry malformed JSON', async () => {
+      const fetchSpy = vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(new Response('{"included":'))
+      vi.stubGlobal('fetch', fetchSpy)
+
+      const result = await fetchOnCallEmails(datadog, creds)
+
+      expect(result.warning).toMatch(/lookup failed/)
+      expect(fetchSpy).toHaveBeenCalledTimes(1)
+    })
+
     it.for([
       { name: 'network error', failure: new TypeError('fetch failed') },
       {

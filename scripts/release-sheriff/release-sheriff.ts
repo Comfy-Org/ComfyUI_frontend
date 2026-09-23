@@ -189,6 +189,15 @@ interface DatadogResponse {
   warning: string | null
 }
 
+function isRetryableDatadogError(error: unknown): boolean {
+  if (error instanceof Error && error.name === 'TimeoutError') return true
+  if (!(error instanceof TypeError)) return false
+  return (
+    error.message === 'fetch failed' ||
+    (isRecord(error.cause) && error.cause.code === 'UND_ERR_SOCKET')
+  )
+}
+
 async function datadogAttempt(
   url: URL,
   credentials: { apiKey: string; appKey: string }
@@ -216,9 +225,7 @@ async function datadogAttempt(
     return {
       payload: null,
       warning: `Datadog On-Call lookup failed (${String(error)}) — using the fallback.`,
-      retryable:
-        (error instanceof TypeError && error.message === 'fetch failed') ||
-        (error instanceof Error && error.name === 'TimeoutError')
+      retryable: isRetryableDatadogError(error)
     }
   }
 }
