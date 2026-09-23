@@ -65,18 +65,12 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
  * interval) rather than claiming a specific backend root cause.
  *
  * The fix (client-side decoupling only -- the backend propagation delay
- * itself is out of scope): `createAgentEventTransport` now takes an optional
- * `shouldAwaitCanvasSync` gate. While it returns true, a tool call's `state`
- * is held at `'streaming'` when its frame reports done, instead of flipping
- * straight to `'done'`, until either `notifyCanvasCaughtUp()` is called or
- * `STALE_AFTER_MS` elapses (the same bound `agentCrdtDocLifecycle.ts`'s own
- * passive heartbeat uses). `AgentPanelRoot.vue` wires the gate to
- * `agentPanelStore.enabled` and calls `notifyCanvasCaughtUp()` whenever
- * `useAgentCrdtFollower`'s `outcomes.applied` counter increases for the bound
- * workflow -- mirroring, not reusing, PM-1355's own catch-up-confirmation
- * primitive, since that one lives inside `AgentCrdtDocLifecycle` and answers
- * "is THIS subscribe's own catch-up frame overdue", not "has some later
- * update since landed", which is the question this bug needed answered.
+ * itself is out of scope): a successful `agent_tool_call` can identify its
+ * mutations with `workflow_id` and `op_ids`. The transport holds that tool
+ * part at `'streaming'` until one applied update for the same workflow names
+ * every expected operation, or until the bounded stale timeout recovers from
+ * a missing update. This keeps unrelated and partial canvas updates from
+ * falsely settling the tool call.
  */
 
 const WORKFLOW_ID = 'c1d2e3f4-5a6b-4c7d-8e9f-0a1b2c3d4e5f'
@@ -300,16 +294,23 @@ async function driveThroughToolCallDone(
     }
   ])
   expect(Object.keys(host.graph().nodes)).toContain(String(ADDED_NODE_ID))
+  const opIds = update.data.op_ids
+  if (
+    !Array.isArray(opIds) ||
+    opIds.length === 0 ||
+    !opIds.every((opId): opId is string => typeof opId === 'string')
+  )
+    throw new Error('host update did not identify its applied operations')
 
   // The inverted ordering: the doc_update broadcast reaches this client
   // while the tool is still (from the chat frames' perspective) running --
-  // the healthy-doc-host case most reviewers flagged as the lost-wakeup risk
-  // for notifyCanvasCaughtUp()'s edge triggering.
+  // the healthy-doc-host ordering that verifies correlation also recognizes
+  // updates already applied before the terminal tool-call frame arrives.
   if (order === 'docUpdateBeforeToolCall') send(update)
 
-  // The tool-call-completion affordance: `agentEventTransport.ts`'s `ingest()`
-  // flips this tool part `done` the instant this frame is read, purely from
-  // `status`, with nothing checked on the CRDT doc side (see file header).
+  // The terminal tool-call frame carries the exact mutation identities from
+  // the delayed host update, allowing the transport to hold this row until
+  // that matching update reaches the follower.
   send({
     type: 'agent_tool_call',
     data: {
@@ -318,7 +319,9 @@ async function driveThroughToolCallDone(
       status: 'success',
       duration_ms: 90,
       thread_id: THREAD_ID,
-      message_id: MESSAGE_ID
+      message_id: MESSAGE_ID,
+      workflow_id: WORKFLOW_ID,
+      op_ids: opIds
     }
   })
   send({
