@@ -487,7 +487,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function restoreOutputs(
-    outputs: Record<string, ExecutedWsMessage['output']>
+    outputs: Partial<Record<string, ExecutedWsMessage['output']>>
   ) {
     replaceOutputsFromLegacy(outputs)
     app.nodeOutputs = snapshotOutputs()
