@@ -310,6 +310,7 @@ export function createAgentEventTransport(
    */
   function handleAskEvent(data: AgentAskEvent['data']): boolean {
     if (data.kind !== 'run_approval') return false
+    dropDraft()
     closeOpenText()
     closeOpenThinking()
     message.thinking = false
