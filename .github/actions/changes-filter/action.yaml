@@ -1,7 +1,8 @@
 # Outputs default to 'true' for non-pull_request events: granular path filtering
 # is a PR-only optimization. This avoids the silent skip footgun where a job
 # gated on e.g. `app-website-changes == 'true'` would never run on push.
-# `evaluate-candidate` is the one exception, and only for `should-run`.
+# `evaluate-candidate` is the one exception, and only for the `should-run*`
+# outputs.
 #
 # It compares a merge-group candidate's synthetic head with its parent, so the
 # verdict covers that candidate alone. Opt in only from a workflow whose
@@ -20,7 +21,7 @@
 # `should-run-unit`, `should-run-e2e`, and `should-run-source` narrow
 # `should-run` by the kind of test file a PR touches. Vitest owns `**/*.test.ts`
 # everywhere (playwright.config.ts ignores that suffix) plus `**/__mocks__/**`,
-# which only `vi.mock()` can reach, and Playwright owns
+# which no non-test source imports, and Playwright owns
 # `browser_tests/**/*.spec.ts` plus its snapshots, plans, and configs. Helper
 # and fixture files under `browser_tests/` stay relevant to every output: unit
 # tests import fixture data from there, and the ecosystem matrix imports
@@ -36,8 +37,8 @@ description: >
 inputs:
   evaluate-candidate:
     description: >
-      Also evaluate `should-run` for merge_group candidates, so it can be
-      false there. Left off, they keep the unconditional 'true'.
+      Also evaluate the `should-run*` outputs for merge_group candidates, so
+      they can be false there. Left off, they keep the unconditional 'true'.
     required: false
     default: 'false'
 
@@ -128,39 +129,23 @@ runs:
       with:
         predicate-quantifier: 'every'
         filters: |
-          relevant:
+          relevant: &relevant
             - '**'
             - '!apps/**'
             - '!docs/**'
             - '!.storybook/**'
             - '!**/*.md'
-          unit:
-            - '**'
-            - '!apps/**'
-            - '!docs/**'
-            - '!.storybook/**'
-            - '!**/*.md'
+          unit: &unit
+            - *relevant
             - '!browser_tests/**/*.spec.ts'
             - '!browser_tests/**/*-snapshots/**'
             - '!browser_tests/specs/**'
             - '!playwright*.config.ts'
           e2e:
-            - '**'
-            - '!apps/**'
-            - '!docs/**'
-            - '!.storybook/**'
-            - '!**/*.md'
+            - *relevant
             - '!**/*.test.ts'
             - '!**/__mocks__/**'
           source:
-            - '**'
-            - '!apps/**'
-            - '!docs/**'
-            - '!.storybook/**'
-            - '!**/*.md'
-            - '!browser_tests/**/*.spec.ts'
-            - '!browser_tests/**/*-snapshots/**'
-            - '!browser_tests/specs/**'
-            - '!playwright*.config.ts'
+            - *unit
             - '!**/*.test.ts'
             - '!**/__mocks__/**'
