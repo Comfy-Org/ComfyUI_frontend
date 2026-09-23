@@ -13,7 +13,7 @@ const { label, logo } = defineProps<{
 
 <template>
   <span
-    class="pointer-events-none absolute right-4 bottom-4 z-20 inline-flex h-7 min-w-7 items-center justify-center rounded-lg bg-black/45 px-1.5 text-2xs/4 font-semibold tracking-wide text-white backdrop-blur-md"
+    class="pointer-events-none absolute right-4 bottom-4 z-20 inline-flex h-7 max-w-[calc(100%-2rem)] min-w-7 items-center justify-center rounded-lg bg-black/45 px-1.5 text-2xs/4 font-semibold tracking-wide text-white backdrop-blur-md"
     :title="label"
     data-testid="hub-card-mark"
   >
@@ -29,7 +29,7 @@ const { label, logo } = defineProps<{
       class="grid grid-cols-closed items-center overflow-hidden group-focus-within:grid-cols-open group-hover:grid-cols-open motion-safe:transition-[grid-template-columns] motion-safe:duration-200 motion-safe:ease-out"
     >
       <span
-        class="flex min-w-0 items-center ps-1.5 leading-none whitespace-nowrap"
+        class="flex min-w-0 items-center truncate ps-1.5 leading-none whitespace-nowrap"
         >{{ label }}</span
       >
     </span>
