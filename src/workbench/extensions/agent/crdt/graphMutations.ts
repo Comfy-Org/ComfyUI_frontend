@@ -1251,6 +1251,7 @@ function createAutogrowMemory() {
 export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   const nodeStore = useNodeDataStore()
   const linkStore = useLinkStore()
+  const linkPresentationStore = useLinkPresentationStore()
   const widgetStore = useWidgetValueStore()
 
   const autogrowMemory = createAutogrowMemory()
@@ -1897,9 +1898,8 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   /**
    * `addNode`/`reconcileNode`/`replaceNode` share one upsert: a `replaceNode`
    * onto an existing node deletes it first: a `reconcileNode` onto an
-   * existing node patches fields and widgets in place (through
-   * `applyWidgetValues`'s local-edit guard); anything else registers the
-   * node fresh, from placeholder widgets.
+   * existing node patches fields and widgets in place; anything else
+   * registers the node fresh, from placeholder widgets.
    */
   function commitUpsertNode(
     scope: GraphScope,
@@ -1939,8 +1939,7 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         scope,
         mutation.node.state.id,
         mutation.node.widgets,
-        context,
-        true
+        context
       )
       return
     }

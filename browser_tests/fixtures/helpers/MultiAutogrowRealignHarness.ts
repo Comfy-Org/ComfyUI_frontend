@@ -6,7 +6,7 @@ import type {
   JobsListResponse
 } from '@comfyorg/ingest-types'
 import type { ModelFolderInfo } from '@/platform/assets/schemas/assetSchema'
-import type { PromptResponse } from '@/platform/remote/comfyui/types'
+import type { PromptResponse } from '@/schemas/apiSchema'
 import type {
   ComfyApiWorkflow,
   WorkflowJSON04
