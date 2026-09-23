@@ -69,9 +69,7 @@ describe('useBuilderSave', () => {
 
       await save()
 
-      expect(
-        vi.mocked(useWorkflowService().saveWorkflow)
-      ).not.toHaveBeenCalled()
+      expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
     })
 
     it('saves workflow directly without showing a dialog', async () => {
@@ -84,9 +82,7 @@ describe('useBuilderSave', () => {
 
       await save()
 
-      expect(
-        vi.mocked(useWorkflowService().saveWorkflow)
-      ).toHaveBeenCalledOnce()
+      expect(useWorkflowService().saveWorkflow).toHaveBeenCalledOnce()
       expect(showConfirmDialog).not.toHaveBeenCalled()
     })
 
@@ -122,9 +118,7 @@ describe('useBuilderSave', () => {
       expect(isSaving.value).toBe(true)
 
       await save()
-      expect(
-        vi.mocked(useWorkflowService().saveWorkflow)
-      ).toHaveBeenCalledOnce()
+      expect(useWorkflowService().saveWorkflow).toHaveBeenCalledOnce()
 
       resolveSave(true)
       await firstSave
@@ -193,12 +187,13 @@ describe('useBuilderSave', () => {
 
       await onSave('new-name', true)
 
-      expect(
-        vi.mocked(useWorkflowService().saveWorkflowAs)
-      ).toHaveBeenCalledWith(useWorkflowStore().activeWorkflow, {
-        filename: 'new-name',
-        isApp: true
-      })
+      expect(useWorkflowService().saveWorkflowAs).toHaveBeenCalledWith(
+        useWorkflowStore().activeWorkflow,
+        {
+          filename: 'new-name',
+          isApp: true
+        }
+      )
       expect(useTelemetry()?.trackDefaultViewSet).toHaveBeenCalledWith({
         default_view: 'app'
       })
@@ -210,12 +205,13 @@ describe('useBuilderSave', () => {
 
       await onSave('new-name', false)
 
-      expect(
-        vi.mocked(useWorkflowService().saveWorkflowAs)
-      ).toHaveBeenCalledWith(useWorkflowStore().activeWorkflow, {
-        filename: 'new-name',
-        isApp: false
-      })
+      expect(useWorkflowService().saveWorkflowAs).toHaveBeenCalledWith(
+        useWorkflowStore().activeWorkflow,
+        {
+          filename: 'new-name',
+          isApp: false
+        }
+      )
       expect(useTelemetry()?.trackDefaultViewSet).toHaveBeenCalledWith({
         default_view: 'graph'
       })
@@ -309,9 +305,7 @@ describe('useBuilderSave', () => {
       expect(firstSave).toBeInstanceOf(Promise)
 
       await onSave('other-name', true)
-      expect(
-        vi.mocked(useWorkflowService().saveWorkflowAs)
-      ).toHaveBeenCalledOnce()
+      expect(useWorkflowService().saveWorkflowAs).toHaveBeenCalledOnce()
 
       resolveSaveAs(true)
       await firstSave

@@ -114,7 +114,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     await clickBuyCredits()
 
     expect(useAuthActions().purchaseCreditsDirect).toHaveBeenCalledWith(50)
-    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).toHaveBeenCalled()
     expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
     expect(mockClearPendingTopup).not.toHaveBeenCalled()
   })
@@ -125,7 +125,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
     expect(mockClearPendingTopup).toHaveBeenCalled()
-    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).toHaveBeenCalled()
   })
 
   it('shows Plan & Credits when no billing rail is active', async () => {

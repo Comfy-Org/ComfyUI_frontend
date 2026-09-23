@@ -179,7 +179,7 @@ describe('CancelSubscriptionDialogContent', () => {
       )
 
       await waitFor(() =>
-        expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalled()
+        expect(useDialogStore().closeDialog).toHaveBeenCalled()
       )
       unmount()
       expect(
@@ -247,7 +247,7 @@ describe('CancelSubscriptionDialogContent', () => {
         screen.getByRole('button', { name: /keep subscription/i })
       )
 
-      expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'cancel-subscription'
       })
       unmount()
@@ -296,7 +296,7 @@ describe('CancelSubscriptionDialogContent', () => {
           })
         )
       )
-      expect(vi.mocked(useDialogStore().closeDialog)).not.toHaveBeenCalled()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
 
     it('closes the dialog and shows a success toast when cancellation succeeds', async () => {
@@ -311,7 +311,7 @@ describe('CancelSubscriptionDialogContent', () => {
       )
 
       await waitFor(() =>
-        expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
+        expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
           key: 'cancel-subscription'
         })
       )
@@ -339,7 +339,7 @@ describe('CancelSubscriptionDialogContent', () => {
         useTelemetry()?.trackSubscriptionCancellation
       ).not.toHaveBeenCalledWith('confirmed', expect.anything())
       expect(mockToastAdd).not.toHaveBeenCalled()
-      expect(vi.mocked(useDialogStore().closeDialog)).not.toHaveBeenCalled()
+      expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
 
     it('cancels off Cloud on the workspace permission, ignoring the Cloud-only capability', async () => {
@@ -398,7 +398,7 @@ describe('CancelSubscriptionDialogContent', () => {
           expect.objectContaining({ severity: 'success' })
         )
       )
-      expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'cancel-subscription'
       })
       expect(

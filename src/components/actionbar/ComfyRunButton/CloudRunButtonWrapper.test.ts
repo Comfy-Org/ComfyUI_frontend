@@ -408,7 +408,7 @@ describe('CloudRunButtonWrapper', () => {
     expect(dialogProps.status).toBe('paused')
 
     await dialogProps.onUpdatePayment()
-    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
+    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'subscription-paused'
     })
     expect(useBillingContext().manageSubscription).toHaveBeenCalledOnce()
@@ -439,7 +439,7 @@ describe('CloudRunButtonWrapper', () => {
     await dialogProps.onUpdatePayment()
 
     expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(error)
-    expect(vi.mocked(useDialogStore().closeDialog)).not.toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
   })
 
   it('refreshes billing once on focus after returning from the portal', async () => {
@@ -503,7 +503,7 @@ describe('CloudRunButtonWrapper', () => {
 
     resolvePortal()
     await firstRequest
-    expect(vi.mocked(useDialogStore().updateDialog)).toHaveBeenLastCalledWith({
+    expect(useDialogStore().updateDialog).toHaveBeenLastCalledWith({
       key: 'subscription-paused',
       contentProps: { isUpdatingPayment: false }
     })
@@ -530,9 +530,9 @@ describe('CloudRunButtonWrapper', () => {
 
     resolvePortal()
     await portalRequest
-    expect(vi.mocked(useDialogStore().closeDialog)).not.toHaveBeenCalled()
-    expect(vi.mocked(useDialogStore().updateDialog)).toHaveBeenCalledTimes(1)
-    expect(vi.mocked(useDialogStore().updateDialog)).toHaveBeenCalledWith({
+    expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
+    expect(useDialogStore().updateDialog).toHaveBeenCalledTimes(1)
+    expect(useDialogStore().updateDialog).toHaveBeenCalledWith({
       key: 'subscription-paused',
       contentProps: { isUpdatingPayment: true }
     })
@@ -551,7 +551,7 @@ describe('CloudRunButtonWrapper', () => {
     expect(dialogProps.canManage).toBe(false)
     expect(dialogProps.status).toBe('paused')
     dialogProps.onClose()
-    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
+    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'subscription-paused'
     })
     expect(useBillingContext().manageSubscription).not.toHaveBeenCalled()

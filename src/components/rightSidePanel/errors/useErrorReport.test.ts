@@ -195,9 +195,7 @@ describe('useErrorReport', () => {
     useErrorReport(card)
     await flushPromises()
 
-    expect(
-      vi.mocked(useSystemStatsStore().refetchSystemStats)
-    ).toHaveBeenCalledTimes(1)
+    expect(useSystemStatsStore().refetchSystemStats).toHaveBeenCalledTimes(1)
     expect(mocks.generateErrorReport).toHaveBeenCalledTimes(1)
   })
 
@@ -214,9 +212,7 @@ describe('useErrorReport', () => {
     useErrorReport(card)
     await flushPromises()
 
-    expect(
-      vi.mocked(useSystemStatsStore().refetchSystemStats)
-    ).toHaveBeenCalledTimes(1)
+    expect(useSystemStatsStore().refetchSystemStats).toHaveBeenCalledTimes(1)
     expect(mocks.getLogs).not.toHaveBeenCalled()
     expect(mocks.generateErrorReport).not.toHaveBeenCalled()
     expect(warnSpy).toHaveBeenCalled()

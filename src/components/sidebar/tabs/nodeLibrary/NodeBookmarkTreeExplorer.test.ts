@@ -161,7 +161,7 @@ describe('NodeBookmarkTreeExplorer', () => {
         })
       )
 
-      expect(vi.mocked(useNodeBookmarkStore().addBookmark)).toHaveBeenCalled()
+      expect(useNodeBookmarkStore().addBookmark).toHaveBeenCalled()
     })
 
     it('moves bookmark when a node is dragged onto a folder and is bookmarked', async () => {
@@ -176,10 +176,10 @@ describe('NodeBookmarkTreeExplorer', () => {
         })
       )
 
-      expect(
-        vi.mocked(useNodeBookmarkStore().toggleBookmark)
-      ).toHaveBeenCalledWith(mockLeafNodeDef)
-      expect(vi.mocked(useNodeBookmarkStore().addBookmark)).toHaveBeenCalled()
+      expect(useNodeBookmarkStore().toggleBookmark).toHaveBeenCalledWith(
+        mockLeafNodeDef
+      )
+      expect(useNodeBookmarkStore().addBookmark).toHaveBeenCalled()
     })
 
     it('is a no-op when the dragged node carries no data', async () => {
@@ -193,9 +193,7 @@ describe('NodeBookmarkTreeExplorer', () => {
         })
       )
 
-      expect(
-        vi.mocked(useNodeBookmarkStore().addBookmark)
-      ).not.toHaveBeenCalled()
+      expect(useNodeBookmarkStore().addBookmark).not.toHaveBeenCalled()
     })
   })
 
@@ -236,9 +234,9 @@ describe('NodeBookmarkTreeExplorer', () => {
         data: mockFolderNodeDef
       })
 
-      expect(
-        vi.mocked(useNodeBookmarkStore().deleteBookmarkFolder)
-      ).toHaveBeenCalledWith(mockFolderNodeDef)
+      expect(useNodeBookmarkStore().deleteBookmarkFolder).toHaveBeenCalledWith(
+        mockFolderNodeDef
+      )
     })
 
     it('is a no-op when node data is missing', async () => {
@@ -247,9 +245,7 @@ describe('NodeBookmarkTreeExplorer', () => {
 
       await folderNode?.handleDelete?.call({ ...folderNode, data: undefined })
 
-      expect(
-        vi.mocked(useNodeBookmarkStore().deleteBookmarkFolder)
-      ).not.toHaveBeenCalled()
+      expect(useNodeBookmarkStore().deleteBookmarkFolder).not.toHaveBeenCalled()
     })
   })
 })

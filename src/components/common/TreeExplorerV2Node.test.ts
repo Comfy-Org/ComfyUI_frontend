@@ -246,9 +246,7 @@ describe('TreeExplorerV2Node', () => {
       const deleteButton = screen.getByRole('button', { name: 'Delete' })
       await user.click(deleteButton)
 
-      expect(
-        vi.mocked(useSubgraphStore().deleteBlueprint)
-      ).toHaveBeenCalledWith(nodeName)
+      expect(useSubgraphStore().deleteBlueprint).toHaveBeenCalledWith(nodeName)
     })
   })
 
