@@ -33,8 +33,11 @@ const { t } = useI18n()
       >
         {{ part.target }}
       </code>
+      <!-- The reason is the model's own prose. i18n interpolation runs with
+           escapeParameter, which would render its quotes and angle brackets as
+           HTML entities, so it is rendered as its own text node. -->
       <p v-if="part.reason" class="m-0 wrap-break-word text-muted-foreground">
-        {{ t('agent.permissionAsk.reason', { reason: part.reason }) }}
+        {{ t('agent.permissionAsk.reasonLabel') }} {{ part.reason }}
       </p>
     </div>
 

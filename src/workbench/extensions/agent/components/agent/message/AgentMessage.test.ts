@@ -685,6 +685,26 @@ describe('AgentMessage permission ask', () => {
     thinking: false
   })
 
+  // i18n interpolation escapes parameters, so a reason carrying the model's
+  // own punctuation used to read `&quot;hello&quot;` on the card.
+  it("shows the model's punctuation in the reason literally", () => {
+    render(AgentMessage, {
+      props: {
+        message: permissionMessage({
+          reason:
+            'Create hello.txt containing the word "hello" & <nothing> else'
+        })
+      },
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      screen.getByText(
+        'Why: Create hello.txt containing the word "hello" & <nothing> else'
+      )
+    ).toBeInTheDocument()
+  })
+
   it('shows the folder, the reason, and emits deny and allow without a working spinner', async () => {
     const { emitted } = render(AgentMessage, {
       props: { message: permissionMessage() },
