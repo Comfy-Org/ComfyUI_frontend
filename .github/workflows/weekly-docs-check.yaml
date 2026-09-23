@@ -69,7 +69,7 @@ jobs:
 
             Focus on these key areas:
             - docs/**/*.md (all documentation files)
-            - CLAUDE.md (project guidelines)
+            - AGENTS.md (project guidelines)
             - README.md files throughout the repository
             - .claude/commands/*.md (Claude command documentation)
 
@@ -117,7 +117,7 @@ jobs:
 
           ### What was checked
           - All markdown documentation in `docs/`
-          - Project guidelines in `CLAUDE.md`
+          - Project guidelines in `AGENTS.md`
           - README files throughout the repository
           - Claude command documentation in `.claude/commands/`
 

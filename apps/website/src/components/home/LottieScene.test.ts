@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -6,11 +5,13 @@ import {
   setAllIntersecting,
   stubIntersectionObserver
 } from '../../test/fakeIntersectionObserver'
+import type * as LottieModule from 'lottie-web'
+
 import LottieScene from './LottieScene.vue'
 
 const motion = vi.hoisted(() => ({ reduced: false }))
 
-vi.mock('../../composables/useReducedMotion', () => ({
+vi.mock(import('../../composables/useReducedMotion'), () => ({
   prefersReducedMotion: () => motion.reduced
 }))
 
@@ -24,8 +25,24 @@ const lottie = vi.hoisted(() => {
   return { animation, loadAnimation: vi.fn(() => animation) }
 })
 
-vi.mock('lottie-web', () => ({
-  default: { loadAnimation: lottie.loadAnimation }
+// lottie-web types loadAnimation as returning a full AnimationItem, so the
+// partial stub is checked against the surface LottieScene actually calls.
+interface MockAnimation {
+  play: () => void
+  pause: () => void
+  goToAndStop: (value: number, isFrame?: boolean) => void
+  destroy: () => void
+}
+interface MockLottie {
+  loadAnimation: (...args: never[]) => MockAnimation
+}
+
+const lottieMock = {
+  loadAnimation: lottie.loadAnimation
+} satisfies MockLottie
+
+vi.mock(import('lottie-web'), () => ({
+  default: lottieMock as unknown as typeof LottieModule.default
 }))
 
 async function renderScene(props: { src: string; active?: boolean }) {

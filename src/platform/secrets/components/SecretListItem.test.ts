@@ -7,7 +7,7 @@ import { createI18n } from 'vue-i18n'
 import type { SecretMetadata } from '../types'
 import SecretListItem from './SecretListItem.vue'
 
-vi.mock('../providers', () => ({
+vi.mock(import('../providers'), () => ({
   getProviderLabel: (provider: string | undefined) => {
     if (provider === 'huggingface') return 'HuggingFace'
     if (provider === 'civitai') return 'Civitai'
@@ -60,13 +60,6 @@ function renderComponent(props: {
     props,
     global: {
       plugins: [i18n],
-      stubs: {
-        Button: {
-          template:
-            '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
-          props: ['disabled', 'variant', 'size', 'aria-label']
-        }
-      },
       directives: {
         tooltip: () => {}
       }

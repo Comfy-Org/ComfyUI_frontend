@@ -3,20 +3,25 @@ import { mapKeys } from 'es-toolkit'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
-import type { LGraphNode, SubgraphNode } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNode,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type {
   ExecutedWsMessage,
-  ResultItem,
-  ResultItemType
-} from '@/schemas/apiSchema'
+  ResultItem
+} from '@/platform/remote/comfyui/execution/types'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { clone } from '@/scripts/utils'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
+import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import { parseFilePath } from '@/utils/formatUtil'
 import { executionIdToNodeLocatorId } from '@/utils/graphTraversalUtil'
 import {
@@ -39,10 +44,12 @@ const createOutputs = (
 ): ExecutedWsMessage['output'] => {
   return {
     images: filenames.map((image) => ({ type, ...parseFilePath(image) })),
-    animated: filenames.map(
-      (image) =>
-        isAnimated && (image.endsWith('.webp') || image.endsWith('.png'))
-    )
+    animated: filenames.map((image) => {
+      const { filepath } = parseAnnotatedPath(image, type)
+      return (
+        isAnimated && (filepath.endsWith('.webp') || filepath.endsWith('.png'))
+      )
+    })
   }
 }
 
@@ -133,7 +140,13 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const previewParam = getPreviewParam(node, outputs)
 
     return outputs.images.map((image) => {
-      const params = new URLSearchParams(image)
+      const filename = image.filename ?? ''
+      const { filepath, rootFolder } = parseAnnotatedPath(filename, image.type)
+      const params = new URLSearchParams({
+        ...image,
+        filename: node.comfyClass === 'LoadImageOutput' ? filename : filepath,
+        type: rootFolder
+      })
       return api.apiURL(`/view?${params}${previewParam}${rand}`)
     })
   }
@@ -404,10 +417,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     app.nodePreviewImages = clone(nodePreviewImages.value)
   }
 
-  function revokeSubgraphPreviews(subgraphNode: SubgraphNode) {
-    const { graph } = subgraphNode
-    if (!graph) return
-
+  function revokeSubgraphPreviews(subgraphNode: SubgraphNode, graph: LGraph) {
     revokePreviewsByLocatorId(
       createNodeLocatorId(graph.isRootGraph ? null : graph.id, subgraphNode.id)
     )
@@ -477,7 +487,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
   }
 
   function restoreOutputs(
-    outputs: Record<string, ExecutedWsMessage['output']>
+    outputs: Partial<Record<string, ExecutedWsMessage['output']>>
   ) {
     replaceOutputsFromLegacy(outputs)
     app.nodeOutputs = snapshotOutputs()

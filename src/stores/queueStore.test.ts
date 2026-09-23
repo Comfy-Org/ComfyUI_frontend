@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { TaskOutput } from '@/schemas/apiSchema'
+import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
-import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
+import {
+  TaskItemImpl,
+  useQueuePendingTaskCountStore,
+  useQueueStore
+} from '@/stores/queueStore'
 import {
   isAudioResult,
   isImageResult,
@@ -62,7 +66,7 @@ type QueueResponse = { Running: JobListItem[]; Pending: JobListItem[] }
 type QueueResolver = (value: QueueResponse) => void
 
 // Mock API
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getQueue: vi.fn(),
     getHistory: vi.fn(),
@@ -73,6 +77,21 @@ vi.mock('@/scripts/api', () => ({
     removeEventListener: vi.fn()
   }
 }))
+
+describe('useQueuePendingTaskCountStore', () => {
+  it.for([
+    { name: 'null status', status: null },
+    { name: 'missing execution info', status: {} },
+    { name: 'missing queue count', status: { exec_info: {} } }
+  ])('preserves the count for $name', ({ status }) => {
+    const store = useQueuePendingTaskCountStore()
+    store.count = 3
+
+    store.update(new CustomEvent('status', { detail: status }))
+
+    expect(store.count).toBe(3)
+  })
+})
 
 describe('TaskItemImpl', () => {
   it('should exclude animated from flatOutputs', () => {

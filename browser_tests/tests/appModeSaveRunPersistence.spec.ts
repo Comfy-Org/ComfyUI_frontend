@@ -27,9 +27,12 @@ function imageOutput(filename: string) {
 }
 
 test.describe('App mode save keeps run history', { tag: '@ui' }, () => {
+  test.use({
+    initialSettings: { 'Comfy.AppBuilder.VueNodeSwitchDismissed': true }
+  })
+
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.appMode.enableLinearMode()
-    await comfyPage.appMode.suppressVueNodeSwitchPopup()
     await comfyPage.workflow.loadWorkflow('default')
     await comfyPage.appMode.enterAppModeWithInputs([[KSAMPLER_NODE, 'seed']])
     await expect(comfyPage.appMode.linearWidgets).toBeVisible()

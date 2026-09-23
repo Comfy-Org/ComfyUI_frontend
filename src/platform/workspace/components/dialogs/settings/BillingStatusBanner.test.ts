@@ -1,3 +1,6 @@
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useDialogService } from '@/services/dialogService'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -19,8 +22,6 @@ interface Subscription {
 }
 
 const state = vi.hoisted(() => ({
-  billingControlEnabled: true,
-  v1PaymentRecovery: true,
   canAccessSubscriptionFeatures: true,
   isTeamPlan: true,
   billingStatus: 'paid' as string | null,
@@ -34,38 +35,23 @@ const state = vi.hoisted(() => ({
   workspaceType: 'team' as WorkspaceType,
   canManageSubscription: true,
   canManageSubscriptionLifecycle: true,
-  canReactivate: true,
   canReactivatePlan: true,
   shouldUseWorkspaceBilling: true,
-  canTopUp: true,
-  canSubscribeSelfServe: false,
-  showTopUpCreditsDialog: vi.fn(),
   manageSubscription: vi.fn(),
   handleResubscribe: vi.fn()
 }))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
   useBillingRouting: () => ({
     shouldUseWorkspaceBilling: computed(() => state.shouldUseWorkspaceBilling)
   })
 }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get billingControlEnabled() {
-        return state.billingControlEnabled
-      },
-      get v1PaymentRecovery() {
-        return state.v1PaymentRecovery
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
+vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   useBillingContext: () => ({
     canAccessSubscriptionFeatures: computed(
       () => state.canAccessSubscriptionFeatures
@@ -83,37 +69,30 @@ vi.mock('@/composables/billing/useBillingContext', () => ({
   })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => ({
-  useWorkspaceUI: () => ({
-    permissions: computed(() => ({
-      canManageSubscription: state.canManageSubscription,
-      canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
-    })),
-    workspaceType: computed(() => state.workspaceType),
-    canReactivatePlan: computed(() => state.canReactivatePlan)
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => ({
+    useWorkspaceUI: () => ({
+      permissions: computed(() => ({
+        canManageSubscription: state.canManageSubscription,
+        canManageSubscriptionLifecycle: state.canManageSubscriptionLifecycle
+      })),
+      workspaceType: computed(() => state.workspaceType),
+      canReactivatePlan: computed(() => state.canReactivatePlan)
+    })
   })
-}))
+)
 
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    canTopUp: computed(() => state.canTopUp),
-    canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe),
-    canReactivate: computed(() => state.canReactivate)
-  })
-}))
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock('@/platform/workspace/composables/useResubscribe', () => ({
+vi.mock(import('@/platform/workspace/composables/useResubscribe'), () => ({
   useResubscribe: () => ({
     isResubscribing: computed(() => false),
     handleResubscribe: state.handleResubscribe
   })
 }))
 
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({
-    showTopUpCreditsDialog: state.showTopUpCreditsDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 const i18n = createI18n({
   legacy: false,
@@ -147,8 +126,8 @@ const i18n = createI18n({
           },
           ending: {
             title: 'Your team plan ends on {date}',
-            body: 'Members keep full access until then. Reactivate to keep your shared credits and seats.',
-            reactivate: 'Reactivate plan'
+            body: 'Members keep full access until then. Resume your subscription to keep your shared credits and seats.',
+            reactivate: 'Resume subscription'
           },
           planChange: {
             title: 'Your plan changes to {plan} on {date}',
@@ -171,15 +150,7 @@ const i18n = createI18n({
 })
 
 const globalOptions = {
-  plugins: [i18n],
-  stubs: {
-    Button: {
-      template:
-        '<button v-bind="$attrs" @click="$emit(\'click\')"><slot/></button>',
-      props: ['variant', 'size', 'loading'],
-      emits: ['click']
-    }
-  }
+  plugins: [i18n]
 }
 
 function renderBanner() {
@@ -222,8 +193,8 @@ function paymentFailedState() {
 
 describe('BillingStatusBanner', () => {
   beforeEach(() => {
-    state.billingControlEnabled = true
-    state.v1PaymentRecovery = true
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
+    vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
     state.canAccessSubscriptionFeatures = true
     state.isTeamPlan = true
     state.billingStatus = 'paid'
@@ -237,10 +208,9 @@ describe('BillingStatusBanner', () => {
     state.workspaceType = 'team'
     state.canManageSubscription = true
     state.canManageSubscriptionLifecycle = true
-    state.canReactivate = true
+    useBillingCapabilities().canReactivate = computed(() => true)
+    state.canReactivatePlan = true
     state.shouldUseWorkspaceBilling = true
-    state.canTopUp = true
-    state.canSubscribeSelfServe = false
   })
 
   it('renders nothing for a healthy funded team', () => {
@@ -249,7 +219,7 @@ describe('BillingStatusBanner', () => {
   })
 
   it('renders nothing when billing control is rolled back, even out of credits', () => {
-    state.billingControlEnabled = false
+    vi.mocked(useFeatureFlags().flags).billingControlEnabled = false
     state.subscription = {
       hasFunds: false,
       isCancelled: false,
@@ -271,13 +241,13 @@ describe('BillingStatusBanner', () => {
 
     expect(screen.getByRole('status')).toHaveTextContent('Out of credits')
     await userEvent.click(screen.getByRole('button', { name: 'Add credits' }))
-    expect(state.showTopUpCreditsDialog).toHaveBeenCalledTimes(1)
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledTimes(1)
   })
 
   it('offers an upgrade when self-serve subscription is available', () => {
     exhausted()
-    state.canTopUp = false
-    state.canSubscribeSelfServe = true
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
     renderBanner()
 
@@ -300,7 +270,7 @@ describe('BillingStatusBanner', () => {
       scheduledChange: null
     }
     state.canManageSubscription = false
-    state.canTopUp = false
+    useBillingCapabilities().canTopUp = computed(() => false)
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -352,7 +322,7 @@ describe('BillingStatusBanner', () => {
   it('shows the paused member notice without an action', () => {
     pausedState()
     state.canManageSubscription = false
-    state.canTopUp = false
+    useBillingCapabilities().canTopUp = computed(() => false)
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent(
@@ -376,6 +346,19 @@ describe('BillingStatusBanner', () => {
     ).toBeInTheDocument()
   })
 
+  it('shows payment recovery to personal workspace owners', async () => {
+    paymentFailedState()
+    state.isTeamPlan = false
+    state.workspaceType = 'personal'
+    renderBanner()
+
+    expect(screen.getByRole('status')).toHaveTextContent('Payment failed')
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Update payment' })
+    )
+    expect(state.manageSubscription).toHaveBeenCalledTimes(1)
+  })
+
   it('does not expose payment controls to members', () => {
     paymentFailedState()
     state.canManageSubscription = false
@@ -389,7 +372,7 @@ describe('BillingStatusBanner', () => {
   })
 
   it('hides payment recovery states while preserving existing notices when the new flag is off', () => {
-    state.v1PaymentRecovery = false
+    vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = false
     paymentFailedState()
     const { unmount } = renderBanner()
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
@@ -415,7 +398,7 @@ describe('BillingStatusBanner', () => {
       'Your team plan ends on'
     )
     await userEvent.click(
-      screen.getByRole('button', { name: 'Reactivate plan' })
+      screen.getByRole('button', { name: 'Resume subscription' })
     )
     expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
   })
@@ -424,7 +407,7 @@ describe('BillingStatusBanner', () => {
     // Cloud personal on legacy_stripe: handleResubscribe skips its capability
     // guard, so the affordance must follow the client permission instead.
     state.shouldUseWorkspaceBilling = false
-    state.canReactivate = false
+    useBillingCapabilities().canReactivate = computed(() => false)
     state.canManageSubscriptionLifecycle = true
     state.subscription = {
       hasFunds: true,
@@ -435,7 +418,7 @@ describe('BillingStatusBanner', () => {
     renderBanner()
 
     await userEvent.click(
-      screen.getByRole('button', { name: 'Reactivate plan' })
+      screen.getByRole('button', { name: 'Resume subscription' })
     )
     expect(state.handleResubscribe).toHaveBeenCalledTimes(1)
   })
@@ -449,12 +432,12 @@ describe('BillingStatusBanner', () => {
     }
     state.canManageSubscription = false
     state.canManageSubscriptionLifecycle = false
-    state.canReactivate = false
+    useBillingCapabilities().canReactivate = computed(() => false)
     renderBanner()
 
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Reactivate plan' })
+      screen.queryByRole('button', { name: 'Resume subscription' })
     ).not.toBeInTheDocument()
   })
 
@@ -474,7 +457,7 @@ describe('BillingStatusBanner', () => {
       'Your team plan ends on'
     )
     expect(
-      screen.queryByRole('button', { name: 'Reactivate plan' })
+      screen.queryByRole('button', { name: 'Resume subscription' })
     ).not.toBeInTheDocument()
   })
 

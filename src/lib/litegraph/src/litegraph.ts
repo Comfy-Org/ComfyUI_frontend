@@ -160,7 +160,6 @@ export { BaseWidget } from './widgets/BaseWidget'
 export { LegacyWidget } from './widgets/LegacyWidget'
 
 export { isComboWidget } from './widgets/widgetMap'
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export { isAssetWidget } from './widgets/widgetMap'
 // Additional test-specific exports
 export { LGraphButton } from './LGraphButton'

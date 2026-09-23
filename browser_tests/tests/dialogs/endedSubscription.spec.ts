@@ -82,7 +82,7 @@ test.describe('Inactive Team subscription billing', { tag: '@cloud' }, () => {
       content.getByRole('heading', { name: 'Inactive team subscription' })
     ).toBeVisible()
     await expect(
-      content.getByRole('button', { name: 'Reactivate plan' })
+      content.getByRole('button', { name: 'Resume subscription' })
     ).toBeVisible()
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
     await expect

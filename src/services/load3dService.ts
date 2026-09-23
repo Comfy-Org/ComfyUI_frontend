@@ -232,8 +232,8 @@ class Load3dService {
 
       if (source.isSplatModel()) {
         const originalURL = source.modelManager.originalURL
-        if (originalURL) {
-          await target.loadModel(originalURL)
+        if (originalURL && !(await target.loadModel(originalURL))) {
+          return
         }
       } else {
         // Use SkeletonUtils.clone for proper skeletal animation support
