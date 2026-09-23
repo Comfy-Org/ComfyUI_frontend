@@ -10,9 +10,6 @@ import { installNodeAddedTelemetry } from './installNodeAddedTelemetry'
 import { withNodeAddSource } from './nodeAddSource'
 
 vi.mock(import('..'))
-const telemetryResult = useTelemetry()
-if (!telemetryResult) throw new Error('Expected telemetry mock')
-const telemetry = vi.mocked(telemetryResult)
 
 function fakeGraph(): LGraph {
   return {
@@ -44,7 +41,7 @@ describe('installNodeAddedTelemetry', () => {
       addNode(graph, 'KSampler')
     })
 
-    expect(telemetry.trackNodeAdded).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackNodeAdded).toHaveBeenCalledExactlyOnceWith({
       node_type: 'KSampler',
       source: 'sidebar_drag'
     })
@@ -56,7 +53,7 @@ describe('installNodeAddedTelemetry', () => {
 
     addNode(graph, 'CheckpointLoader')
 
-    expect(telemetry.trackNodeAdded).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackNodeAdded).toHaveBeenCalledWith({
       node_type: 'CheckpointLoader',
       source: 'unknown'
     })
@@ -69,7 +66,7 @@ describe('installNodeAddedTelemetry', () => {
 
     addNode(graph, 'VAEDecode')
 
-    expect(telemetry.trackNodeAdded).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackNodeAdded).not.toHaveBeenCalled()
   })
 
   it('leaves the onNodeAdded callback slot untouched', () => {
@@ -81,6 +78,6 @@ describe('installNodeAddedTelemetry', () => {
 
     expect(graph.onNodeAdded).toBe(previous)
     addNode(graph, 'LoadImage')
-    expect(telemetry.trackNodeAdded).toHaveBeenCalledOnce()
+    expect(useTelemetry()?.trackNodeAdded).toHaveBeenCalledOnce()
   })
 })

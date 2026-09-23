@@ -31,9 +31,6 @@ const mockCanAccessSubscriptionFeatures = ref(false)
 const mockSubscriptionTier = ref<IngestSubscriptionTier | null>(null)
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
 
-const mockGetAuthHeader = vi.fn(() =>
-  Promise.resolve({ Authorization: 'Bearer test-token' as const })
-)
 const mockGetCheckoutAttribution = vi.hoisted(() => vi.fn(() => ({})))
 const mockLocalStorage = vi.hoisted(() => {
   const store = new Map<string, string>()
@@ -188,32 +185,31 @@ beforeEach(() => {
       }
     }
   const billing = useBillingContext()
-  Object.assign(billing, {
-    canAccessSubscriptionFeatures: computed(
-      () => mockCanAccessSubscriptionFeatures.value
-    ),
-    isFreeTier: computed(() => mockSubscriptionTier.value === 'FREE'),
-    tier: computed(() => mockSubscriptionTier.value),
-    subscription: computed(() =>
-      mockSubscriptionTier.value
-        ? {
-            isActive: mockCanAccessSubscriptionFeatures.value,
-            tier: mockSubscriptionTier.value,
-            duration: mockSubscriptionDuration.value,
-            planSlug: null,
-            renewalDate: null,
-            endDate: null,
-            isCancelled: false,
-            hasFunds: true
-          }
-        : null
-    )
-  })
+  billing.canAccessSubscriptionFeatures = computed(
+    () => mockCanAccessSubscriptionFeatures.value
+  )
+  billing.isFreeTier = computed(() => mockSubscriptionTier.value === 'FREE')
+  billing.tier = computed(() => mockSubscriptionTier.value)
+  billing.subscription = computed(() =>
+    mockSubscriptionTier.value
+      ? {
+          isActive: mockCanAccessSubscriptionFeatures.value,
+          tier: mockSubscriptionTier.value,
+          duration: mockSubscriptionDuration.value,
+          planSlug: null,
+          scheduledChange: null,
+          renewalDate: null,
+          endDate: null,
+          isCancelled: false,
+          hasFunds: true
+        }
+      : null
+  )
   vi.mocked(useBillingContext).mockReturnValue(billing)
   Object.assign(useAuthStore(), { userId: 'user-123' })
-  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
-    mockGetAuthHeader
-  )
+  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockResolvedValue({
+    Authorization: 'Bearer test-token' as const
+  })
   vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
     (input, init) => fetch(input, init)
   )

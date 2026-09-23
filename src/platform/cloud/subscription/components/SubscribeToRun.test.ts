@@ -24,8 +24,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-let workspaceUI: ReturnType<typeof useWorkspaceUI>
-
 vi.mock<unknown>(import('@vueuse/core'), () => ({
   breakpointsTailwind: { md: 768 },
   createSharedComposable: (composable: () => unknown) => composable,
@@ -54,8 +52,9 @@ const i18n = createI18n({
 })
 
 function renderButton() {
-  workspaceUI.permissions = computed(() => ({
-    ...workspaceUI.permissions.value,
+  const defaultPermissions = useWorkspaceUI().permissions.value
+  useWorkspaceUI().permissions = computed(() => ({
+    ...defaultPermissions,
     canManageSubscription: mockCanManageSubscription.value
   }))
   vi.mocked(useTelemetry).mockReturnValue(null)
@@ -72,7 +71,7 @@ function renderButton() {
 
 describe('SubscribeToRun', () => {
   beforeEach(() => {
-    workspaceUI = vi.mocked(useWorkspaceUI())
+    useWorkspaceUI()
     mockCanManageSubscription.value = true
     mockIsMdOrLarger.value = true
   })

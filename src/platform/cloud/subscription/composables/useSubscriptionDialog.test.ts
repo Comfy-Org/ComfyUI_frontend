@@ -28,19 +28,18 @@ import {
 
 import { useSubscriptionDialog } from './useSubscriptionDialog'
 
-const mockCloseDialog = vi.fn()
 const mockShowLayoutDialog = vi.fn()
 const mockShowTeamWorkspacesDialog = vi.fn()
 
 const mockIsFreeTier = vi.hoisted(() => ({ value: false }))
-const mockTier = vi.hoisted(() => ({ value: 'FREE' as string | null }))
+const mockTier = vi.hoisted(() => ({
+  value: 'FREE' as SubscriptionInfo['tier']
+}))
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 const mockIsLegacyTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockIsTeamPlan = vi.hoisted(() => ({ value: false }))
 const mockCurrentPlanSlug = vi.hoisted(() => ({ value: null as string | null }))
 const mockStartOperation = vi.hoisted(() => vi.fn())
-const mockFetchPlans = vi.hoisted(() => vi.fn())
-const mockFetchStatus = vi.hoisted(() => vi.fn())
 const mockTeamCreditStops = vi.hoisted(() => ({
   value: null as TeamCreditStops | null
 }))
@@ -115,23 +114,33 @@ beforeEach(() => {
     mockShowTeamWorkspacesDialog
   )
   const billing = useBillingContext()
-  Object.assign(billing, {
-    isFreeTier: mockIsFreeTier,
-    isLegacyTeamPlan: mockIsLegacyTeamPlan,
-    isTeamPlan: mockIsTeamPlan,
-    currentPlanSlug: mockCurrentPlanSlug,
-    tier: mockTier,
-    fetchPlans: mockFetchPlans,
-    fetchStatus: mockFetchStatus,
-    teamCreditStops: mockTeamCreditStops,
-    currentTeamCreditStop: mockCurrentTeamCreditStop,
-    subscription: mockSubscription,
-    subscriptionStatus: mockSubscriptionStatus
-  })
+  billing.isFreeTier = computed(() => mockIsFreeTier.value)
+  billing.isLegacyTeamPlan = computed(() => mockIsLegacyTeamPlan.value)
+  billing.isTeamPlan = computed(() => mockIsTeamPlan.value)
+  billing.currentPlanSlug = computed(() => mockCurrentPlanSlug.value)
+  billing.tier = computed(() => mockTier.value)
+  billing.teamCreditStops = computed(() => mockTeamCreditStops.value)
+  billing.currentTeamCreditStop = computed(
+    () => mockCurrentTeamCreditStop.value
+  )
+  billing.subscription = computed(() =>
+    mockSubscription.value
+      ? {
+          isActive: true,
+          tier: null,
+          planSlug: null,
+          scheduledChange: null,
+          renewalDate: null,
+          endDate: null,
+          isCancelled: false,
+          hasFunds: true,
+          ...mockSubscription.value
+        }
+      : null
+  )
+  billing.subscriptionStatus = computed(() => mockSubscriptionStatus.value)
   vi.mocked(useBillingContext).mockReturnValue(billing)
   Object.assign(useAuthStore(), { userId: 'user-1' })
-  vi.mocked(useDialogStore().closeDialog).mockImplementation(mockCloseDialog)
-
   vi.mocked(useBillingOperationStore().startOperation).mockImplementation(
     mockStartOperation
   )
@@ -150,8 +159,8 @@ describe('useSubscriptionDialog', () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-1' })
     Object.assign(useAuthStore(), { userId: 'user-1' })
     mockStartOperation.mockResolvedValue({ status: 'succeeded' })
-    mockFetchPlans.mockResolvedValue(undefined)
-    mockFetchStatus.mockResolvedValue(undefined)
+    vi.mocked(useBillingContext().fetchPlans).mockResolvedValue(undefined)
+    vi.mocked(useBillingContext().fetchStatus).mockResolvedValue(undefined)
     mockTeamCreditStops.value = null
     mockCurrentTeamCreditStop.value = null
     mockSubscription.value = null
@@ -587,7 +596,7 @@ describe('useSubscriptionDialog', () => {
 
       startTeamWorkspaceUpgradeFlow()
 
-      expect(mockCloseDialog).toHaveBeenCalledWith({
+      expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'subscription-required'
       })
       expect(mockShowTeamWorkspacesDialog).toHaveBeenCalledWith(
@@ -944,34 +953,38 @@ describe('useSubscriptionDialog', () => {
       useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
       useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
       mockStartOperation.mockResolvedValueOnce({ status: 'failed' })
-      mockFetchPlans.mockImplementationOnce(async () => {
-        mockTeamCreditStops.value = {
-          default_stop_index: 0,
-          stops: [
-            {
-              id: 'team_700',
-              credits: 147_700,
-              monthly: {
-                list_price_cents: 70_000,
-                price_cents: 66_500
-              },
-              yearly: {
-                list_price_cents: 70_000,
-                price_cents: 63_000
+      vi.mocked(useBillingContext().fetchPlans).mockImplementationOnce(
+        async () => {
+          mockTeamCreditStops.value = {
+            default_stop_index: 0,
+            stops: [
+              {
+                id: 'team_700',
+                credits: 147_700,
+                monthly: {
+                  list_price_cents: 70_000,
+                  price_cents: 66_500
+                },
+                yearly: {
+                  list_price_cents: 70_000,
+                  price_cents: 63_000
+                }
               }
-            }
-          ]
+            ]
+          }
         }
-      })
-      mockFetchStatus.mockImplementationOnce(async () => {
-        mockCurrentTeamCreditStop.value = {
-          id: 'team_400',
-          stop_usd: 400,
-          credits_monthly: 84_400
+      )
+      vi.mocked(useBillingContext().fetchStatus).mockImplementationOnce(
+        async () => {
+          mockCurrentTeamCreditStop.value = {
+            id: 'team_400',
+            stop_usd: 400,
+            credits_monthly: 84_400
+          }
+          mockSubscription.value = { duration: 'MONTHLY' }
+          mockSubscriptionStatus.value = 'active'
         }
-        mockSubscription.value = { duration: 'MONTHLY' }
-        mockSubscriptionStatus.value = 'active'
-      })
+      )
       savePendingSubscriptionCheckout({
         operationId: 'op-team-change',
         workspaceId: 'workspace-1',

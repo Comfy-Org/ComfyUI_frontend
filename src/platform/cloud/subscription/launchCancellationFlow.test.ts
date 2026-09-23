@@ -35,7 +35,6 @@ const mocks = vi.hoisted(
 )
 
 vi.mock(import('@/composables/billing/useBillingContext'))
-let billing: ReturnType<typeof useBillingContext>
 
 vi.mock(import('@/i18n'))
 
@@ -54,7 +53,7 @@ function session(
 }
 
 beforeEach(() => {
-  billing = vi.mocked(useBillingContext())
+  const billing = useBillingContext()
   vi.mocked(useBillingContext).mockReturnValue(billing)
   billing.type = computed(() => mocks.billingType.value)
   billing.tier = computed(() => mocks.tier.value)
@@ -98,7 +97,9 @@ describe('launchCancellationFlow', () => {
     }
     mocks.activeWorkspaceId = 'workspace-1'
     mocks.billingRail = 'stripe'
-    vi.mocked(billing.cancelSubscription).mockResolvedValue(undefined)
+    vi.mocked(useBillingContext().cancelSubscription).mockResolvedValue(
+      undefined
+    )
   })
 
   it('uses the native dialog for legacy billing', async () => {
@@ -145,7 +146,7 @@ describe('launchCancellationFlow', () => {
       showFallback
     })
 
-    expect(billing.cancelSubscription).toHaveBeenCalledOnce()
+    expect(useBillingContext().cancelSubscription).toHaveBeenCalledOnce()
     expect(
       useTelemetry()?.trackSubscriptionCancellation
     ).toHaveBeenNthCalledWith(1, 'flow_opened', {
@@ -181,7 +182,7 @@ describe('launchCancellationFlow', () => {
         end_date: '2026-08-01T00:00:00Z'
       })
     )
-    expect(billing.cancelSubscription).not.toHaveBeenCalled()
+    expect(useBillingContext().cancelSubscription).not.toHaveBeenCalled()
   })
 
   it('falls back when preparation or the provider fails', async () => {
@@ -222,7 +223,7 @@ describe('launchCancellationFlow', () => {
   })
 
   it('falls back and records a failed cancel callback', async () => {
-    vi.mocked(billing.cancelSubscription).mockRejectedValue(
+    vi.mocked(useBillingContext().cancelSubscription).mockRejectedValue(
       new Error('API down')
     )
     mocks.prepare.mockResolvedValue(
@@ -284,7 +285,7 @@ describe('launchCancellationFlow', () => {
 
     await launchCancellationFlow({ showFallback })
 
-    expect(billing.cancelSubscription).not.toHaveBeenCalled()
+    expect(useBillingContext().cancelSubscription).not.toHaveBeenCalled()
     expect(showFallback).not.toHaveBeenCalled()
     expect(cancellationError).toMatchObject({
       message: 'subscription.cancelDialog.workspaceChanged'

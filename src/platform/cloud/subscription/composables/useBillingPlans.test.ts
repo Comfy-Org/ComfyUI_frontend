@@ -1,12 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { MockedFunction } from 'vitest'
 
 import type {
   Plan,
   workspaceApi as realWorkspaceApi
 } from '@/platform/workspace/api/workspaceApi'
 
-let mockGetBillingPlans: MockedFunction<typeof realWorkspaceApi.getBillingPlans>
+let workspaceApi: typeof realWorkspaceApi
 
 vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
@@ -46,9 +45,8 @@ describe('useBillingPlans', () => {
 
   beforeEach(async () => {
     vi.resetModules()
-    const { workspaceApi } =
-      await import('@/platform/workspace/api/workspaceApi')
-    mockGetBillingPlans = vi.mocked(workspaceApi.getBillingPlans)
+    workspaceApi = (await import('@/platform/workspace/api/workspaceApi'))
+      .workspaceApi
     railState.rail = null
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
   })
@@ -63,7 +61,7 @@ describe('useBillingPlans', () => {
         buildPlan({ slug: 'standard-monthly', duration: 'MONTHLY' }),
         buildPlan({ slug: 'creator-annual', duration: 'ANNUAL' })
       ]
-      mockGetBillingPlans.mockResolvedValue({
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
         current_plan_slug: 'standard-monthly',
         plans: apiPlans
       })
@@ -81,7 +79,9 @@ describe('useBillingPlans', () => {
     })
 
     it('normalizes missing current_plan_slug to null', async () => {
-      mockGetBillingPlans.mockResolvedValue({ plans: [buildPlan()] })
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
+        plans: [buildPlan()]
+      })
 
       const useBillingPlans = await importUseBillingPlans()
       const { fetchPlans, currentPlanSlug } = useBillingPlans()
@@ -103,7 +103,7 @@ describe('useBillingPlans', () => {
           }
         ]
       }
-      mockGetBillingPlans.mockResolvedValue({
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
         plans: [buildPlan()],
         team_credit_stops: stops
       })
@@ -117,7 +117,9 @@ describe('useBillingPlans', () => {
     })
 
     it('leaves teamCreditStops null when the response omits it', async () => {
-      mockGetBillingPlans.mockResolvedValue({ plans: [buildPlan()] })
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
+        plans: [buildPlan()]
+      })
 
       const useBillingPlans = await importUseBillingPlans()
       const { fetchPlans, teamCreditStops } = useBillingPlans()
@@ -129,7 +131,7 @@ describe('useBillingPlans', () => {
 
     it('dedupes concurrent calls while a fetch is in flight', async () => {
       let resolveFetch: (value: { plans: Plan[] }) => void = () => {}
-      mockGetBillingPlans.mockImplementation(
+      vi.mocked(workspaceApi.getBillingPlans).mockImplementation(
         () =>
           new Promise((resolve) => {
             resolveFetch = resolve
@@ -152,13 +154,15 @@ describe('useBillingPlans', () => {
       resolveFetch({ plans: [buildPlan()] })
       await Promise.all([first, second])
 
-      expect(mockGetBillingPlans).toHaveBeenCalledTimes(1)
+      expect(workspaceApi.getBillingPlans).toHaveBeenCalledTimes(1)
       expect(plans.value).toEqual([buildPlan()])
       expect(isLoading.value).toBe(false)
     })
 
     it('captures Error messages into error.value and logs to console', async () => {
-      mockGetBillingPlans.mockRejectedValue(new Error('network down'))
+      vi.mocked(workspaceApi.getBillingPlans).mockRejectedValue(
+        new Error('network down')
+      )
 
       const useBillingPlans = await importUseBillingPlans()
       const { fetchPlans, error, isLoading, plans } = useBillingPlans()
@@ -175,7 +179,7 @@ describe('useBillingPlans', () => {
     })
 
     it('uses a fallback message when rejection is not an Error instance', async () => {
-      mockGetBillingPlans.mockRejectedValue('boom')
+      vi.mocked(workspaceApi.getBillingPlans).mockRejectedValue('boom')
 
       const useBillingPlans = await importUseBillingPlans()
       const { fetchPlans, error } = useBillingPlans()
@@ -186,8 +190,12 @@ describe('useBillingPlans', () => {
     })
 
     it('clears previous error state when a new fetch succeeds', async () => {
-      mockGetBillingPlans.mockRejectedValueOnce(new Error('first failure'))
-      mockGetBillingPlans.mockResolvedValueOnce({ plans: [buildPlan()] })
+      vi.mocked(workspaceApi.getBillingPlans).mockRejectedValueOnce(
+        new Error('first failure')
+      )
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValueOnce({
+        plans: [buildPlan()]
+      })
 
       const useBillingPlans = await importUseBillingPlans()
       const { fetchPlans, error } = useBillingPlans()
@@ -214,7 +222,7 @@ describe('useBillingPlans', () => {
       await fetchPlans()
 
       expect(readPlans).toHaveBeenCalledOnce()
-      expect(mockGetBillingPlans).not.toHaveBeenCalled()
+      expect(workspaceApi.getBillingPlans).not.toHaveBeenCalled()
       expect(plans.value).toEqual(apiPlans)
       expect(currentPlanSlug.value).toBe('standard-monthly')
     })
@@ -289,7 +297,7 @@ describe('useBillingPlans', () => {
         buildPlan({ slug: 'b-annual', duration: 'ANNUAL' }),
         buildPlan({ slug: 'c-monthly', duration: 'MONTHLY' })
       ]
-      mockGetBillingPlans.mockResolvedValue({ plans })
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({ plans })
 
       const useBillingPlans = await importUseBillingPlans()
       const { fetchPlans, monthlyPlans, annualPlans } = useBillingPlans()
@@ -315,7 +323,9 @@ describe('useBillingPlans', () => {
   describe('lookup helpers', () => {
     it('getPlanBySlug finds an existing plan and returns undefined otherwise', async () => {
       const plan = buildPlan({ slug: 'creator-annual' })
-      mockGetBillingPlans.mockResolvedValue({ plans: [plan] })
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
+        plans: [plan]
+      })
 
       const useBillingPlans = await importUseBillingPlans()
       const { fetchPlans, getPlanBySlug } = useBillingPlans()
@@ -327,7 +337,7 @@ describe('useBillingPlans', () => {
     })
 
     it('getPlansForTier filters plans by tier', async () => {
-      mockGetBillingPlans.mockResolvedValue({
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
         plans: [
           buildPlan({ slug: 'standard-monthly', tier: 'STANDARD' }),
           buildPlan({ slug: 'creator-monthly', tier: 'CREATOR' }),
@@ -348,7 +358,7 @@ describe('useBillingPlans', () => {
     })
 
     it('isCurrentPlan reflects the loaded currentPlanSlug', async () => {
-      mockGetBillingPlans.mockResolvedValue({
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
         current_plan_slug: 'standard-monthly',
         plans: [buildPlan()]
       })
@@ -367,7 +377,7 @@ describe('useBillingPlans', () => {
 
   describe('shared module state', () => {
     it('shares refs across separate useBillingPlans() invocations', async () => {
-      mockGetBillingPlans.mockResolvedValue({
+      vi.mocked(workspaceApi.getBillingPlans).mockResolvedValue({
         current_plan_slug: 'standard-monthly',
         plans: [buildPlan()]
       })

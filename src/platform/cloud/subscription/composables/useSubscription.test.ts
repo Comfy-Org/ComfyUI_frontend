@@ -15,36 +15,22 @@ import { useSubscription } from '@/platform/cloud/subscription/composables/useSu
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
 
 const {
-  mockGetAuthHeader,
   mockGetCheckoutAttribution,
-  mockTelemetry,
 
   mockIsCloud,
 
   mockGetBillingStatus,
 
-  mockSetWorkspaceBillingRail,
   mockLocalStorage
 } = vi.hoisted(() => ({
   mockIsCloud: { value: true },
 
   mockGetBillingStatus: vi.fn(),
 
-  mockSetWorkspaceBillingRail: vi.fn(),
-  mockGetAuthHeader: vi.fn(() =>
-    Promise.resolve({ Authorization: 'Bearer test-token' as const })
-  ),
   mockGetCheckoutAttribution: vi.fn(() => ({
     im_ref: 'impact-click-001',
     utm_source: 'impact'
   })),
-  mockTelemetry: {
-    trackSubscription: vi.fn(),
-    trackMonthlySubscriptionSucceeded: vi.fn(),
-    trackMonthlySubscriptionCancelled: vi.fn(),
-    trackBillingEvent: vi.fn()
-  },
-
   mockLocalStorage: (() => {
     const store = new Map<string, string>()
 
@@ -204,30 +190,12 @@ beforeEach(() => {
   vi.mocked(workspaceApi.getBillingStatus).mockImplementation(
     mockGetBillingStatus
   )
-  const telemetry = useTelemetry()
-  if (!telemetry) throw new Error('Expected telemetry mock')
-  vi.mocked(telemetry.trackSubscription).mockImplementation(
-    mockTelemetry.trackSubscription
-  )
-  vi.mocked(telemetry.trackMonthlySubscriptionSucceeded).mockImplementation(
-    mockTelemetry.trackMonthlySubscriptionSucceeded
-  )
-  vi.mocked(telemetry.trackMonthlySubscriptionCancelled).mockImplementation(
-    mockTelemetry.trackMonthlySubscriptionCancelled
-  )
-  vi.mocked(telemetry.trackBillingEvent).mockImplementation(
-    mockTelemetry.trackBillingEvent
-  )
   Object.assign(useAuthStore(), { isInitialized: true, userId: 'user-123' })
-  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
-    mockGetAuthHeader
-  )
+  vi.mocked(useAuthStore().getFirebaseAuthHeader).mockResolvedValue({
+    Authorization: 'Bearer test-token' as const
+  })
   vi.mocked(useAuthStore().fetchWithCustomerRecovery).mockImplementation(
     (input, init) => fetch(input, init)
-  )
-
-  vi.mocked(useTeamWorkspaceStore().setWorkspaceBillingRail).mockImplementation(
-    mockSetWorkspaceBillingRail
   )
 })
 
@@ -382,10 +350,9 @@ describe('useSubscription', () => {
         await fetchStatus()
 
         expect(subscriptionStatus.value).toEqual(status)
-        expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
-          'workspace-123',
-          'stripe'
-        )
+        expect(
+          useTeamWorkspaceStore().setWorkspaceBillingRail
+        ).toHaveBeenCalledWith('workspace-123', 'stripe')
         // One transport per read: the rail a read is on is the only client it
         // asks, or the panels read one thing and the rail settled another.
         expect(path.idleReader()).not.toHaveBeenCalled()
@@ -463,11 +430,12 @@ describe('useSubscription', () => {
         has_funds: false,
         billing_rail: 'legacy_stripe'
       })
-      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledOnce()
-      expect(mockSetWorkspaceBillingRail).toHaveBeenCalledWith(
-        'workspace-456',
-        'legacy_stripe'
-      )
+      expect(
+        useTeamWorkspaceStore().setWorkspaceBillingRail
+      ).toHaveBeenCalledOnce()
+      expect(
+        useTeamWorkspaceStore().setWorkspaceBillingRail
+      ).toHaveBeenCalledWith('workspace-456', 'legacy_stripe')
     })
 
     it('coalesces concurrent callers into one fetch', async () => {
@@ -653,7 +621,7 @@ describe('useSubscription', () => {
 
       await vi.waitFor(() => {
         expect(
-          mockTelemetry.trackMonthlySubscriptionSucceeded
+          useTelemetry()?.trackMonthlySubscriptionSucceeded
         ).toHaveBeenCalledWith(
           expect.objectContaining({
             user_id: 'user-123',
@@ -698,7 +666,7 @@ describe('useSubscription', () => {
 
       await vi.waitFor(() => {
         expect(
-          mockTelemetry.trackMonthlySubscriptionSucceeded
+          useTelemetry()?.trackMonthlySubscriptionSucceeded
         ).toHaveBeenCalledWith(
           expect.objectContaining({
             checkout_attempt_id: 'attempt-456',
@@ -738,7 +706,7 @@ describe('useSubscription', () => {
       useSubscriptionWithScope()
 
       await vi.waitFor(() => {
-        expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith({
+        expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
           operation: 'resubscribe',
           stage: 'succeeded',
           outcome: 'success',
@@ -772,10 +740,10 @@ describe('useSubscription', () => {
 
       await vi.waitFor(() => {
         expect(
-          mockTelemetry.trackMonthlySubscriptionSucceeded
+          useTelemetry()?.trackMonthlySubscriptionSucceeded
         ).toHaveBeenCalled()
       })
-      expect(mockTelemetry.trackBillingEvent).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
     })
 
     it('rechecks pending checkout attempts when the document becomes visible', async () => {
@@ -1026,7 +994,7 @@ describe('useSubscription', () => {
 
       expect(mockGetBillingStatus).not.toHaveBeenCalled()
       expect(
-        mockTelemetry.trackMonthlySubscriptionCancelled
+        useTelemetry()?.trackMonthlySubscriptionCancelled
       ).not.toHaveBeenCalled()
     })
 
@@ -1058,7 +1026,7 @@ describe('useSubscription', () => {
       await vi.advanceTimersByTimeAsync(5000)
 
       expect(
-        mockTelemetry.trackMonthlySubscriptionCancelled
+        useTelemetry()?.trackMonthlySubscriptionCancelled
       ).toHaveBeenCalledTimes(1)
     })
 
@@ -1090,7 +1058,7 @@ describe('useSubscription', () => {
       window.dispatchEvent(new Event('focus'))
       await vi.waitFor(() => {
         expect(
-          mockTelemetry.trackMonthlySubscriptionCancelled
+          useTelemetry()?.trackMonthlySubscriptionCancelled
         ).toHaveBeenCalledTimes(1)
       })
     })

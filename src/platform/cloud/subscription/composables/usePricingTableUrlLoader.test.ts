@@ -31,8 +31,6 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
-const mockRouterReplace = vi.mocked(useRouter().replace)
-const mockShowPricingTable = vi.mocked(useSubscriptionDialog().showPricingTable)
 
 const mockPermissions = vi.hoisted(() => ({
   value: { canManageSubscription: true }
@@ -94,7 +92,9 @@ describe('usePricingTableUrlLoader', () => {
 
     mockTeamCreditStops.value = TEAM_CREDIT_STOPS
     vi.mocked(billing.fetchPlans).mockResolvedValue(undefined)
-    mockShowPricingTable.mockResolvedValue(undefined)
+    vi.mocked(useSubscriptionDialog().showPricingTable).mockResolvedValue(
+      undefined
+    )
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
@@ -104,8 +104,8 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).not.toHaveBeenCalled()
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).not.toHaveBeenCalled()
   })
 
   it('opens the pricing table for any owner capability', async () => {
@@ -114,10 +114,10 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith(
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith(
       expect.objectContaining({ reason: 'deep_link' })
     )
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('never opens for a sales-managed workspace, even from a deep link', async () => {
@@ -127,8 +127,8 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('resolves the capability snapshot before deciding', async () => {
@@ -146,7 +146,7 @@ describe('usePricingTableUrlLoader', () => {
     expect(
       vi.mocked(useBillingCapabilities().initialize)
     ).toHaveBeenCalledOnce()
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 
   it('opens on the team tab for ?pricing=team', async () => {
@@ -155,7 +155,7 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith(
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith(
       expect.objectContaining({ reason: 'deep_link', planMode: 'team' })
     )
   })
@@ -166,7 +166,7 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith(
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith(
       expect.objectContaining({ reason: 'deep_link', planMode: 'personal' })
     )
   })
@@ -177,7 +177,7 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'personal',
       initialCheckout: {
@@ -186,7 +186,7 @@ describe('usePricingTableUrlLoader', () => {
         billingCycle: 'monthly'
       }
     })
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('is a silent no-op for a member', async () => {
@@ -196,7 +196,7 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 
   it('denies selected-plan entry and strips its params for a member', async () => {
@@ -210,8 +210,8 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({
       query: { other: 'param' }
     })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
@@ -233,7 +233,7 @@ describe('usePricingTableUrlLoader', () => {
     expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
       'pricing'
     )
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'team',
       initialCheckout: {
@@ -247,7 +247,7 @@ describe('usePricingTableUrlLoader', () => {
         billingCycle: 'yearly'
       }
     })
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('strips but does not open for an empty param', async () => {
@@ -256,8 +256,8 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'pricing'
     )
@@ -269,8 +269,8 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('strips but does not open for an unrecognized pricing value', async () => {
@@ -279,8 +279,8 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it.for<Record<string, string>>([
@@ -293,8 +293,8 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({
       query: 'other' in query ? { other: 'param' } : {}
     })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
@@ -311,8 +311,8 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({
       query: { other: 'param' }
     })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
@@ -330,8 +330,8 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it.for(
@@ -353,7 +353,7 @@ describe('usePricingTableUrlLoader', () => {
       const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
       await loadPricingTableFromUrl()
 
-      expect(mockShowPricingTable).toHaveBeenCalledWith({
+      expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
         reason: 'deep_link',
         planMode: 'team',
         initialCheckout: {
@@ -367,7 +367,7 @@ describe('usePricingTableUrlLoader', () => {
           billingCycle
         }
       })
-      expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+      expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
     }
   )
 
@@ -388,7 +388,7 @@ describe('usePricingTableUrlLoader', () => {
     await loadPricingTableFromUrl()
 
     expect(useBillingContext().fetchPlans).toHaveBeenCalledOnce()
-    expect(mockShowPricingTable).toHaveBeenCalledWith(
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith(
       expect.objectContaining({
         initialCheckout: expect.objectContaining({
           planMode: 'team',
@@ -413,11 +413,11 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'team'
     })
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('falls back when the catalog remains unavailable after fetching', async () => {
@@ -431,7 +431,7 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'team'
     })
@@ -447,11 +447,11 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'team'
     })
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it.for([
@@ -466,8 +466,8 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it.for([
@@ -479,7 +479,7 @@ describe('usePricingTableUrlLoader', () => {
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
 
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 })

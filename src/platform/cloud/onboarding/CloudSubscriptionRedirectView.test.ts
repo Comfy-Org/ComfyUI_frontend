@@ -35,7 +35,6 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
-const subscriptionDialog = vi.mocked(useSubscriptionDialog())
 
 const legacyCheckoutMocks = vi.hoisted(() => ({
   performSubscriptionCheckout: vi.fn(),
@@ -148,7 +147,7 @@ describe('CloudSubscriptionRedirectView', () => {
     // Shows copy under logo
     expect(screen.getByText('Subscribe to Creator')).toBeInTheDocument()
 
-    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'personal',
       initialCheckout: {
@@ -175,7 +174,7 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
     expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(1)
     expect(useAuthActions().accessBillingPortal).not.toHaveBeenCalled()
-    expect(subscriptionDialog.showPricingTable).not.toHaveBeenCalled()
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 
   test('uses first value when subscriptionType is an array', async () => {
@@ -185,7 +184,7 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
     expect(screen.getByText('Subscribe to Creator')).toBeInTheDocument()
-    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith(
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith(
       expect.objectContaining({
         initialCheckout: expect.objectContaining({ tierKey: 'creator' })
       })
@@ -197,7 +196,7 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
     expect(screen.getByText('Subscribe to Team Plan')).toBeInTheDocument()
-    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'team',
       initialCheckout: {
@@ -224,7 +223,7 @@ describe('CloudSubscriptionRedirectView', () => {
     await mountView({ tier: 'team', stop: 'team_700', cycle: 'yearly' })
 
     expect(useAuthActions().reportError).toHaveBeenCalledWith(plansError)
-    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'team',
       initialCheckout: undefined
@@ -249,7 +248,7 @@ describe('CloudSubscriptionRedirectView', () => {
     await mountView({ tier: 'team', cycle: 'yearly' })
 
     expect(mockRouterPush).toHaveBeenCalledWith('/')
-    expect(subscriptionDialog.showPricingTable).not.toHaveBeenCalled()
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 
   test('routes a personal tier in an active Team workspace to workspace subscription management', async () => {
@@ -262,7 +261,7 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(
       legacyCheckoutMocks.performSubscriptionCheckout
     ).not.toHaveBeenCalled()
-    expect(subscriptionDialog.showPricingTable).not.toHaveBeenCalled()
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 
   test('routes an active founder subscription to facade management', async () => {
@@ -272,13 +271,13 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(1)
     expect(mockRouterPush).not.toHaveBeenCalled()
-    expect(subscriptionDialog.showPricingTable).not.toHaveBeenCalled()
+    expect(useSubscriptionDialog().showPricingTable).not.toHaveBeenCalled()
   })
 
   test('opens personal pricing without unsupported direct checkout for an inactive founder link', async () => {
     await mountView({ tier: 'founder' })
 
-    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'personal'
     })

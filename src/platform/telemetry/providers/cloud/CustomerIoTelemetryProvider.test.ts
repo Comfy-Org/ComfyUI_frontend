@@ -108,9 +108,8 @@ describe('CustomerIoTelemetryProvider', () => {
     hoisted.load.mockReturnValue(hoisted.analytics)
     hoisted.analytics.identify.mockResolvedValue(undefined)
     hoisted.analytics.track.mockResolvedValue(undefined)
-    hoisted.analytics.reset.mockReset().mockResolvedValue(undefined)
+    hoisted.analytics.reset.mockResolvedValue(undefined)
     hoisted.analytics.register.mockResolvedValue(undefined)
-    hoisted.reportError.mockClear()
     hoisted.userEmail.value = null
     i18n.global.locale.value = 'en'
     window.__CONFIG__ = {}

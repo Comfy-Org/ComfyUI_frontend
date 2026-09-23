@@ -24,7 +24,6 @@ vi.mock(
 let mockRouteQuery: { value: LocationQuery }
 
 vi.mock(import('vue-router'))
-const mockRouterReplace = vi.mocked(useRouter().replace)
 
 vi.mock(import('@/services/dialogService'))
 
@@ -55,7 +54,7 @@ describe('useTopUpUrlLoader', () => {
     await loadTopUpFromUrl()
 
     expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
-    expect(mockRouterReplace).not.toHaveBeenCalled()
+    expect(useRouter().replace).not.toHaveBeenCalled()
   })
 
   it('opens the top-up dialog for an eligible user and strips the param', async () => {
@@ -65,7 +64,7 @@ describe('useTopUpUrlLoader', () => {
     await loadTopUpFromUrl()
 
     expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('emits deep_link telemetry on an eligible open', async () => {
@@ -98,14 +97,14 @@ describe('useTopUpUrlLoader', () => {
     const loading = loadTopUpFromUrl()
     await Promise.resolve()
 
-    expect(mockRouterReplace).not.toHaveBeenCalled()
+    expect(useRouter().replace).not.toHaveBeenCalled()
     expect(preservedQueryMocks.clearPreservedQuery).not.toHaveBeenCalled()
 
     canTopUp.value = true
     resolveCapabilities()
     await loading
 
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
     expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
@@ -144,7 +143,7 @@ describe('useTopUpUrlLoader', () => {
     await loadTopUpFromUrl()
 
     expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({
+    expect(useRouter().replace).toHaveBeenCalledWith({
       query: { other: 'param' }
     })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
@@ -174,7 +173,7 @@ describe('useTopUpUrlLoader', () => {
     await loadTopUpFromUrl()
 
     expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'topup'
     )
@@ -190,7 +189,7 @@ describe('useTopUpUrlLoader', () => {
     await loadTopUpFromUrl()
 
     expect(useDialogService().showTopUpCreditsDialog).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('opens for an unrecognized topup value', async () => {
