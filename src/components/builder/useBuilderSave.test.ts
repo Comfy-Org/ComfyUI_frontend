@@ -44,10 +44,7 @@ const SAVE_DIALOG_KEY = 'builder-save'
 const SUCCESS_DIALOG_KEY = 'builder-save-success'
 
 describe('useBuilderSave', () => {
-  let errorHandling: ReturnType<typeof useErrorHandling>
-
   beforeEach(() => {
-    errorHandling = vi.mocked(useErrorHandling())
     useWorkflowStore().activeWorkflow = null
   })
 
@@ -104,7 +101,7 @@ describe('useBuilderSave', () => {
 
       await save()
 
-      expect(errorHandling.toastErrorHandler).toHaveBeenCalledWith(error)
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(error)
       expect(showConfirmDialog).not.toHaveBeenCalled()
     })
 
@@ -293,7 +290,7 @@ describe('useBuilderSave', () => {
 
       await onSave('new-name', false)
 
-      expect(errorHandling.toastErrorHandler).toHaveBeenCalledWith(error)
+      expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(error)
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: SAVE_DIALOG_KEY
       })

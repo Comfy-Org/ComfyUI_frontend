@@ -115,8 +115,6 @@ function getPaymentRecoveryDialog(index = 0) {
 }
 
 describe('CloudRunButtonWrapper', () => {
-  let errorHandling: ReturnType<typeof useErrorHandling>
-
   beforeEach(() => {
     const billing = vi.mocked(useBillingContext())
     billing.canRunWorkflows = computed(() => mockCanRunWorkflows.value)
@@ -129,10 +127,8 @@ describe('CloudRunButtonWrapper', () => {
       subscription(mockSubscriptionTier.value)
     )
     vi.mocked(useBillingContext).mockReturnValue(billing)
-    errorHandling = vi.mocked(useErrorHandling())
-    const workspaceUI = vi.mocked(useWorkspaceUI())
-    const permissions = workspaceUI.permissions.value
-    workspaceUI.permissions = computed(() => ({
+    const permissions = useWorkspaceUI().permissions.value
+    vi.mocked(useWorkspaceUI()).permissions = computed(() => ({
       ...permissions,
       canManageSubscription: state.canManageSubscription
     }))
@@ -442,7 +438,7 @@ describe('CloudRunButtonWrapper', () => {
     const dialogProps = getPaymentRecoveryDialog()
     await dialogProps.onUpdatePayment()
 
-    expect(errorHandling.toastErrorHandler).toHaveBeenCalledWith(error)
+    expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(error)
     expect(vi.mocked(useDialogStore().closeDialog)).not.toHaveBeenCalled()
   })
 

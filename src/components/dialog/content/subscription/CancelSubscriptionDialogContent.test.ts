@@ -124,9 +124,8 @@ describe('CancelSubscriptionDialogContent', () => {
     useBillingRouting().shouldUseWorkspaceBilling = computed(
       () => mockShouldUseWorkspaceBilling.value
     )
-    const workspaceUI = useWorkspaceUI()
-    const permissions = workspaceUI.permissions.value
-    workspaceUI.permissions = computed(() => ({
+    const permissions = useWorkspaceUI().permissions.value
+    vi.mocked(useWorkspaceUI()).permissions = computed(() => ({
       ...permissions,
       canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value
     }))

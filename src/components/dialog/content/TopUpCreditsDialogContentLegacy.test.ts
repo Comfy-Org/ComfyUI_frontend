@@ -97,14 +97,11 @@ async function clickBuyCredits() {
 }
 
 describe('TopUpCreditsDialogContentLegacy', () => {
-  let subscription: ReturnType<typeof useSubscription>
-
   beforeEach(() => {
-    subscription = vi.mocked(useSubscription())
     useBillingRouting().shouldUseWorkspaceBilling = computed(
       () => mockShouldUseWorkspaceBilling.value
     )
-    vi.mocked(subscription.isSubscriptionEnabled).mockReturnValue(true)
+    vi.mocked(useSubscription().isSubscriptionEnabled).mockReturnValue(true)
     mockShouldUseWorkspaceBilling.value = false
   })
 
@@ -132,7 +129,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
   })
 
   it('shows Plan & Credits when no billing rail is active', async () => {
-    vi.mocked(subscription.isSubscriptionEnabled).mockReturnValue(false)
+    vi.mocked(useSubscription().isSubscriptionEnabled).mockReturnValue(false)
     vi.mocked(useAuthActions().purchaseCreditsDirect).mockResolvedValue(
       undefined
     )
