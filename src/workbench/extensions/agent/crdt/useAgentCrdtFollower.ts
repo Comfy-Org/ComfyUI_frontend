@@ -32,6 +32,8 @@ import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
+import { createHumanOpOutbox, createMemoryOutboxStore } from './humanOpOutbox'
+import { outboxSenderHooks, replayParkedOps } from './humanOpOutboxWiring'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
 import { createOpCoalescer } from './opCoalescer'
@@ -296,6 +298,17 @@ function startAgentCrdtFollower(
   // frame has not yet removed them from the doc. Kept pending for the
   // reconcile so the result-to-effect window cannot resurrect them.
   const confirmedDeletes = new Set<string>()
+  // mutref-3 s3: every minted human op is recorded here until the host rules
+  // on it. Batches the transport never carried (`undeliverable`) or whose
+  // result never arrived (`unconfirmed`) are parked, not lost, and replayed
+  // with their ORIGINAL op_ids once this tab is subscribed again (KA-6: the
+  // applier's `__applied` ledger dedupes the id, so a replay can never apply
+  // twice). Memory-backed for now; a page-lifetime store is s4.
+  const outbox = createHumanOpOutbox({
+    store: createMemoryOutboxStore(),
+    key: `agent-human-op-outbox:${tabId}`
+  })
+  const outboxHooks = outboxSenderHooks(outbox)
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
@@ -321,6 +334,7 @@ function startAgentCrdtFollower(
     tab: tabId,
     actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
     baseVersion: () => bridge.lastSequence,
+    onBatchMinted: outboxHooks.onBatchMinted,
     onBatchSettled: (outcome) => {
       if (outcome.state === 'acknowledged') {
         const applied = new Set(outcome.result.applied)
@@ -329,6 +343,7 @@ function startAgentCrdtFollower(
             confirmedDeletes.add(String(op.node_id))
         }
       }
+      outboxHooks.onBatchSettled(outcome)
       recordDevEvent('human_ops_settled', outcome)
     }
   })
@@ -415,6 +430,18 @@ function startAgentCrdtFollower(
     if (ok) {
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
+      // mutref-3 s3: the doc is bound again, so anything parked for it during
+      // the outage goes back out under its original op_id. `reconnected` only
+      // resubscribes; this ack is the first moment a send can succeed.
+      const subscribed = bridge.subscribedWorkflowId
+      if (subscribed !== null) {
+        const replayed = replayParkedOps(outbox, sender, subscribed)
+        if (replayed > 0)
+          recordDevEvent('human_ops_replayed', {
+            workflowId: subscribed,
+            count: replayed
+          })
+      }
     } else {
       lifecycle.onSubscribeRefused()
       // FE #16637 residual: a refusal is the earliest signal the sender can
@@ -488,6 +515,9 @@ function startAgentCrdtFollower(
     }
     projection.clearForReset(detail.workflowId, context)
     sender.abortAll()
+    // Lineage break: ops parked against the pre-reset doc must not be
+    // replayed into its successor (FC-5), so the outbox forgets them here.
+    outbox.drop(detail.workflowId)
     events.onReset?.(detail.workflowId)
     connected.value = false
     updatesApplied.value = 0
