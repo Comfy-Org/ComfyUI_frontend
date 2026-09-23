@@ -687,11 +687,35 @@ describe('usePaste', () => {
   })
 
   it.for([
-    { clipboard: 'node JSON', collaborator: 'pasteFromClipboard' },
-    { clipboard: 'an image', collaborator: 'createNode' }
+    {
+      clipboard: 'unrecognised node JSON',
+      collaborator: 'pasteFromClipboard',
+      createClipboard: () => {
+        const dataTransfer = new DataTransfer()
+        dataTransfer.setData('text/plain', '{}')
+        return dataTransfer
+      }
+    },
+    {
+      clipboard: 'a workflow',
+      collaborator: 'loadGraphData',
+      createClipboard: () => {
+        const dataTransfer = new DataTransfer()
+        dataTransfer.setData(
+          'text/plain',
+          JSON.stringify({ version: '1.0', nodes: [], extra: {} })
+        )
+        return dataTransfer
+      }
+    },
+    {
+      clipboard: 'an image',
+      collaborator: 'createNode',
+      createClipboard: () => createDataTransfer([createImageFile()])
+    }
   ] as const)(
     'ignores $clipboard paste while a modal dialog is open',
-    ({ clipboard, collaborator }) => {
+    ({ collaborator, createClipboard }) => {
       const dialogStore = useDialogStore()
       dialogStore.dialogStack.push(
         createTestDialogInstance('global-mask-editor')
@@ -702,18 +726,13 @@ describe('usePaste', () => {
 
       const collaborators = {
         pasteFromClipboard: mockCanvas.pasteFromClipboard,
+        loadGraphData: app.loadGraphData,
         createNode
       }
       usePaste()
 
-      const dataTransfer =
-        clipboard === 'an image'
-          ? createDataTransfer([createImageFile()])
-          : new DataTransfer()
-      if (clipboard === 'node JSON') dataTransfer.setData('text/plain', '{}')
-
       document.dispatchEvent(
-        new ClipboardEvent('paste', { clipboardData: dataTransfer })
+        new ClipboardEvent('paste', { clipboardData: createClipboard() })
       )
 
       expect(collaborators[collaborator]).not.toHaveBeenCalled()
