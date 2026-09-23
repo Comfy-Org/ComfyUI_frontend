@@ -65,6 +65,16 @@ async function routeCdp(
   })
 }
 
+async function reportCpuArchitecture(page: Page, architecture: string) {
+  await page.addInitScript((arch) => {
+    Object.defineProperty(Navigator.prototype, 'userAgentData', {
+      get: () => ({
+        getHighEntropyValues: async () => ({ architecture: arch })
+      })
+    })
+  }, architecture)
+}
+
 const HERO_HEADING = /Run on your hardware|在你的硬件上运行/i
 
 function heroLocator(page: Page) {
@@ -105,6 +115,7 @@ test.describe('Download page @smoke', () => {
     }) => {
       const captured: CdpCapture[] = []
       await routeCdp(context, captured)
+      await reportCpuArchitecture(page, 'x86')
       await page.goto('/download')
 
       const hero = heroLocator(page)
@@ -128,6 +139,17 @@ test.describe('Download page @smoke', () => {
 
       await page.waitForLoadState('networkidle')
       expect(captured).toHaveLength(0)
+    })
+
+    test('HeroSection links Windows on ARM to the arm64 installer', async ({
+      page
+    }) => {
+      await reportCpuArchitecture(page, 'arm')
+      await page.goto('/download')
+
+      await expect(
+        heroLocator(page).getByRole('link', { name: /DOWNLOAD DESKTOP/i })
+      ).toHaveAttribute('href', 'https://comfy.org/download/windows/nsis/arm64')
     })
   })
 
