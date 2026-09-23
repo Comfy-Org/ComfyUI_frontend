@@ -11,16 +11,14 @@ import AgentMessage from './AgentMessage.vue'
 // agent_thinking / agent_tool_call / agent_active_tab / agent_ask event)
 // between two generated assets, agentEventTransport.ts closes the open
 // TextPart on that event (closeOpenText) and opens a new one for the next
-// agent_message_delta. AgentMessage.vue's `groups` computed (~lines 66-89)
-// then gives every TextPart its own render group with no merging, so each
-// asset renders through its own MarkdownStream -> its own ReplyAssetGroup,
-// each with exactly one asset. ReplyAssetGroup's grid math (`multi =
-// visual.length > 1`) is itself correct; it simply never sees more than one
-// asset at a time.
+// agent_message_delta. AgentMessage.vue's `groups` computed now folds
+// consecutive TextParts back together when only tool/thinking parts (never
+// their own group) separated them, so they render through one MarkdownStream
+// and land in one ReplyAssetGroup instead of one per fragment.
 //
 // This test feeds AgentMessage.vue the exact fragmented `message.parts`
 // shape the transport produces (two TextParts, one asset each, split by a
-// tool part) directly, pinning the grouping bug at the lowest level,
+// tool part) directly, pinning the grouping fix at the lowest level,
 // independent of agentEventTransport and the full agent-replay harness.
 function fragmentedAssetsMessage(): AssistantMessage {
   return {
@@ -42,7 +40,7 @@ function fragmentedAssetsMessage(): AssistantMessage {
 }
 
 describe('AgentMessage asset grid fragmentation', () => {
-  it.fails('PM-1135: renders a batch reply as one asset grid, even when a tool call splits it across two TextParts', () => {
+  it('PM-1135: renders a batch reply as one asset grid, even when a tool call splits it across two TextParts', () => {
     render(AgentMessage, {
       props: { message: fragmentedAssetsMessage() },
       global: { plugins: [i18n] }
@@ -50,11 +48,9 @@ describe('AgentMessage asset grid fragmentation', () => {
 
     expect(screen.getAllByRole('img', { name: /^i[12]\.png$/ })).toHaveLength(2)
 
-    // Both assets should land inside the SAME grid container. Today each
-    // TextPart renders its own ReplyAssetGroup, so this is two distinct
-    // one-item grids instead of one two-item grid. A grid container carries
-    // no accessible role or text to query by, so this falls back to plain
-    // DOM traversal instead of a Testing Library query.
+    // Both assets should land inside the SAME grid container. A grid
+    // container carries no accessible role or text to query by, so this
+    // falls back to plain DOM traversal instead of a Testing Library query.
     /* eslint-disable testing-library/no-node-access -- no role/label/testid
        exists for a grid container; structural containment is the assertion. */
     const gridsWithImages = [
