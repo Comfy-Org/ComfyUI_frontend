@@ -42,7 +42,7 @@ const uploadFile = async (
 
   // Update AssetsStore input assets when files are uploaded to input folder
   if (formFields.type === 'input' || !formFields.type) {
-    await useAssetsStore().inputAssets.invalidate()
+    await useAssetsStore().invalidateInputAssets()
   }
 
   return data.subfolder ? `${data.subfolder}/${data.name}` : data.name

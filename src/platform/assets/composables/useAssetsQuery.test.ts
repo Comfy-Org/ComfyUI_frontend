@@ -101,6 +101,52 @@ describe('useAssetsQuery page size', () => {
   })
 })
 
+// Guards the shared plumbing `importedAssets` relies on: a boolean
+// `include_public` must survive `encodeParams` onto the wire and must key the
+// shared cache, or the owner-only list silently collapses onto the
+// public-inclusive one.
+describe('useAssetsQuery include_public plumbing', () => {
+  function requestedIncludePublic() {
+    return fetchApiMock.mock.calls.map(([url]) =>
+      new URL(url, 'http://localhost').searchParams.get('include_public')
+    )
+  }
+
+  it.for([true, false])(
+    'forwards include_public=%s to the server',
+    async (includePublic) => {
+      fetchApiMock.mockResolvedValueOnce(response(['only']))
+      const scope = effectScope()
+      scope.run(() =>
+        useAssetsQuery({
+          tags_any: ['input'],
+          include_public: includePublic
+        })
+      )
+      onTestFinished(() => scope.stop())
+
+      await vi.waitFor(() =>
+        expect(requestedIncludePublic()).toEqual([String(includePublic)])
+      )
+    }
+  )
+
+  it('keys the shared cache separately per ownership scope', async () => {
+    fetchApiMock.mockImplementation(async () => response(['only']))
+    const scope = effectScope()
+    scope.run(() => [
+      useAssetsQuery({ tags_any: ['input'], include_public: true }),
+      useAssetsQuery({ tags_any: ['input'], include_public: false })
+    ])
+    onTestFinished(() => scope.stop())
+
+    await vi.waitFor(() => expect(requestedIncludePublic()).toHaveLength(2))
+    expect(requestedIncludePublic()).toEqual(
+      expect.arrayContaining(['true', 'false'])
+    )
+  })
+})
+
 // `useAssetsQuery`'s internal `backingOff` ref (src/platform/assets/composables/
 // useAssetsQuery.ts) auto-resets after 2000ms via `refAutoReset`. It is only armed
 // for the "no response object" (network reject) and 5xx/429 branches of `doQuery`,
