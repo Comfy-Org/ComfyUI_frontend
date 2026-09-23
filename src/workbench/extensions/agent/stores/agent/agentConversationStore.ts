@@ -248,8 +248,10 @@ export const useAgentConversationStore = defineStore(
         if (!settledTransport.hasPendingCanvasSync())
           settledActiveTransports.delete(settledTransport)
       }
-      for (const entry of backgroundTurns.values())
+      for (const entry of backgroundTurns.values()) {
+        if (entry.settled && !entry.transport.hasPendingCanvasSync()) continue
         entry.transport.notifyCanvasCaughtUp(update)
+      }
     }
 
     function abortActiveTurn(): void {

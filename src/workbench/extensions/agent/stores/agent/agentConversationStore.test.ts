@@ -369,6 +369,20 @@ describe('useAgentConversationStore', () => {
     expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
   })
 
+  it('keeps forwarding canvas updates to settled background turns with pending sync', () => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(() => true)
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.ingest(correlatedToolCall('t1', 'add_node', 'success'))
+    store.stashActiveTurn()
+    store.ingest(done('t1'))
+
+    store.notifyCanvasCaughtUp(canvasUpdate('t1'))
+
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
+  })
+
   // PM-1575 regression (finding #5, medium): nothing cancelled a held tool
   // call's 30s timer when hydrate() discarded its transport. The orphaned
   // timer could fire after hydrate() replaced the transcript with
