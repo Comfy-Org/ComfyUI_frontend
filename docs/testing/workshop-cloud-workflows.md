@@ -18,6 +18,26 @@ JSON and no-store responses. These suites pass with the race detector; the new
 concurrency tests also exposed and fixed an unsynchronized shared PostHog test
 double.
 
+Cloud commit `b55e26bb50` adds Postgres/race coverage for owned upload grants,
+quota contention, immutable finalization, refreshed access, expiry and cleanup.
+Tests stream four simultaneous 25 MiB inputs with read buffers bounded to
+32 KiB, and reject checksum/size/type mismatches without persisting a finalized
+identity. FFmpeg/FFprobe fixtures cover MP4/WebM and WAV/MP3/FLAC/Ogg; image
+inspection covers declared types and dimension/pixel limits. GCS SDK tests
+check signed create-only/size/type constraints and decode the actual expiry.
+IAM tests cover request cancellation and bounded, sanitized failures.
+Follow-up `05415b7597` adds composed generated-handler/real-Postgres tests for
+grant/finalize/access, account/workspace switching, live membership revocation,
+expired credentials, signer recovery and access after admission disablement.
+Middleware tests cover request caps, compressed/inline/unknown payload rejection,
+parser-error sanitization, no-store and omission of bodies/grants from logs and
+analytics. Cloud JWT tests preserve restricted permissions and OAuth provenance.
+The race detector, vet/static checks, generation drift and formatting pass.
+Existing SQLite-backed tests exposed an Ent check-parenthesization issue; both
+SQLite tests and PostgreSQL migration/Ent comparison pass after the correction.
+These cover parts of M01/M03–M05/M10/M11 below; real signed PUT/CORS, Cloud asset
+staging, deployed auth and result delivery remain unproved.
+
 This is Cloud-boundary evidence for parts of R01–R03, R06, R08–R11, R14, R15 and R17.
 It does not prove comfy-api's durable worker/leases, public-operation isolation,
 publication/default parity, media delivery or real caller billing. The matrix
