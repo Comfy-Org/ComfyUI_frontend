@@ -14,7 +14,6 @@ import { api } from '@/scripts/api'
 
 const telemetry = useTelemetry()
 assert(telemetry)
-const trackFetchTimeout = vi.mocked(telemetry.trackFetchTimeout)
 
 function mockPendingFetch() {
   return vi.mocked(global.fetch).mockImplementation((_input, init) => {
@@ -218,7 +217,7 @@ describe('api.fetchApi', () => {
       await vi.advanceTimersByTimeAsync(60_000)
 
       expect(await settled).toMatchObject([fetchTimeoutRejection])
-      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
+      expect(telemetry.trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
         route: '/userdata/:resource',
         method: 'POST',
         timeout_ms: 60_000
@@ -239,7 +238,7 @@ describe('api.fetchApi', () => {
       await vi.advanceTimersByTimeAsync(60_000)
 
       expect(await settled).toMatchObject([fetchTimeoutRejection])
-      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
+      expect(telemetry.trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
         route: '/other',
         method: 'GET',
         timeout_ms: 60_000
@@ -254,7 +253,7 @@ describe('api.fetchApi', () => {
       await vi.advanceTimersByTimeAsync(60_000)
 
       expect(await settled).toMatchObject([fetchTimeoutRejection])
-      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
+      expect(telemetry.trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
         route: '/video_metadata',
         method: 'GET',
         timeout_ms: 60_000
@@ -270,11 +269,11 @@ describe('api.fetchApi', () => {
       const settled = Promise.allSettled([request])
       await vi.advanceTimersByTimeAsync(60_000)
 
-      expect(trackFetchTimeout).not.toHaveBeenCalled()
+      expect(telemetry.trackFetchTimeout).not.toHaveBeenCalled()
 
       await vi.advanceTimersByTimeAsync(60_000)
       expect(await settled).toMatchObject([fetchTimeoutRejection])
-      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
+      expect(telemetry.trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
         route: '/upload/:resource',
         method: 'GET',
         timeout_ms: 120_000
@@ -290,7 +289,7 @@ describe('api.fetchApi', () => {
       await vi.advanceTimersByTimeAsync(60_000)
 
       expect(await settled).toMatchObject([fetchTimeoutRejection])
-      expect(trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
+      expect(telemetry.trackFetchTimeout).toHaveBeenCalledExactlyOnceWith({
         route: '/assets',
         method: 'GET',
         timeout_ms: 60_000
@@ -305,7 +304,7 @@ describe('api.fetchApi', () => {
       controller.abort()
 
       await expect(request).rejects.toMatchObject({ name: 'AbortError' })
-      expect(trackFetchTimeout).not.toHaveBeenCalled()
+      expect(telemetry.trackFetchTimeout).not.toHaveBeenCalled()
       expect(addBreadcrumb).not.toHaveBeenCalled()
     })
 

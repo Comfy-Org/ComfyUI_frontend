@@ -35,12 +35,12 @@ vi.mock(
 
 import { useDialogService } from '@/services/dialogService'
 
-const showSubscriptionDialog = vi.mocked(useSubscriptionDialog().show)
+const subscriptionDialog = vi.mocked(useSubscriptionDialog())
 
 describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
     state.type = 'workspace'
-    const billing = useBillingContext()
+    const billing = vi.mocked(useBillingContext())
     billing.type = computed(() => state.type)
     vi.mocked(useBillingContext).mockReturnValue(billing)
 
@@ -97,7 +97,7 @@ describe('showTopUpCreditsDialog', () => {
     await useDialogService().showTopUpCreditsDialog()
 
     expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
-    expect(showSubscriptionDialog).not.toHaveBeenCalled()
+    expect(subscriptionDialog.show).not.toHaveBeenCalled()
   })
 
   it('awaits an in-flight capability read instead of dropping the request', async () => {
@@ -133,7 +133,7 @@ describe('showTopUpCreditsDialog', () => {
       vi.mocked(useBillingCapabilities().initialize)
     ).toHaveBeenCalledOnce()
     expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
-    expect(showSubscriptionDialog).not.toHaveBeenCalled()
+    expect(subscriptionDialog.show).not.toHaveBeenCalled()
   })
 
   it('routes self-serve subscribers to the subscription-required flow', async () => {
@@ -142,7 +142,7 @@ describe('showTopUpCreditsDialog', () => {
 
     await useDialogService().showTopUpCreditsDialog()
 
-    expect(showSubscriptionDialog).toHaveBeenCalledWith({
+    expect(subscriptionDialog.show).toHaveBeenCalledWith({
       reason: 'top_up_blocked'
     })
     expect(vi.mocked(useDialogStore().showDialog)).not.toHaveBeenCalled()
@@ -157,7 +157,7 @@ describe('showTopUpCreditsDialog', () => {
     it('opens the purchase dialog when the capability endpoint defaults open', async () => {
       await useDialogService().showTopUpCreditsDialog()
 
-      expect(showSubscriptionDialog).not.toHaveBeenCalled()
+      expect(subscriptionDialog.show).not.toHaveBeenCalled()
       const [args] = vi.mocked(useDialogStore().showDialog).mock.calls[0]
       expect(args.key).toBe('top-up-credits')
     })
