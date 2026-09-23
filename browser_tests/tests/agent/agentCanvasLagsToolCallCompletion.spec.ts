@@ -91,7 +91,7 @@ const CATALOG: WidgetCatalog = {
 }
 const SEED: WorkflowJSON = { nodes: [], links: [] }
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SEND_LABEL = enMessages.agent.send
 const COMPOSER_LABEL = createI18n({
   legacy: false,
@@ -117,9 +117,8 @@ function subscribeStateVectorOf(raw: Buffer | string): string | null {
 
 /**
  * Drives one "add a note to the canvas" turn through to the agent reporting
- * it done -- the tool call's own completion AND the turn's "Ran N tool
- * calls" summary (cloud/1.54's ToolCallGroup, not main's WorkSummary),
- * matching the bug report's "every working affordance" -- while the
+ * it done -- the tool call's own completion AND the turn's "Worked for Xs"
+ * summary, matching the bug report's "every working affordance" -- while the
  * doc host has ALREADY recorded the `add_node` op authoritatively
  * (`host.apply` below) but its broadcast `doc_update` is deliberately held
  * back. Callers decide when (if ever) to release it via the returned
@@ -300,9 +299,7 @@ async function driveThroughToolCallDone(
       class_type: 'MarkdownNote'
     }
   ])
-  expect(host.projection().nodes.map((n) => String(n.id))).toContain(
-    String(ADDED_NODE_ID)
-  )
+  expect(Object.keys(host.graph().nodes)).toContain(String(ADDED_NODE_ID))
 
   // The inverted ordering: the doc_update broadcast reaches this client
   // while the tool is still (from the chat frames' perspective) running --
@@ -338,10 +335,10 @@ async function driveThroughToolCallDone(
   })
 
   // Setup checkpoint: every working affordance the report names has settled --
-  // the composer is free again and the turn's own tool-call summary is up --
-  // while the canvas (asserted by the caller) has nothing yet.
+  // the composer is free again and the turn's own "Worked for Xs" summary is
+  // up -- while the canvas (asserted by the caller) has nothing yet.
   await expect(panel.getByRole('button', { name: SEND_LABEL })).toBeVisible()
-  await expect(panel.getByRole('button', { name: /^Ran/ })).toBeVisible()
+  await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
 
   return {
     vueNodes,
@@ -368,13 +365,10 @@ test.describe(
       // The turn's own summary settled instantly (asserted inside the arrange
       // step above), matching the report's "every working affordance" -- but
       // the fix under test lives one level down, on the tool call's OWN
-      // displayed state inside that summary. cloud/1.54's ToolCallGroup
-      // auto-expands (and stays expanded) while any of its own tool parts is
-      // still 'streaming' -- exactly this row's state here -- so there is
-      // nothing to click open; clicking an already-open trigger would only
-      // toggle it closed.
+      // displayed state inside that summary: expand it to look.
       const panel = page.locator('#agent-panel-root')
-      const workSummary = panel.getByRole('button', { name: /^Ran/ })
+      const workSummary = panel.getByRole('button', { name: /^Worked/ })
+      await workSummary.click()
       await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
 
       const addNodeRow = panel
@@ -435,7 +429,7 @@ test.describe(
       )
 
       const panel = page.locator('#agent-panel-root')
-      const workSummary = panel.getByRole('button', { name: /^Ran/ })
+      const workSummary = panel.getByRole('button', { name: /^Worked/ })
       await workSummary.click()
       await expect(workSummary).toHaveAttribute('aria-expanded', 'true')
 

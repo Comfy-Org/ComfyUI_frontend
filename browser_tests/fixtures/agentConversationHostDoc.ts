@@ -3,10 +3,12 @@ import {
   hasAppliedOp,
   linksMap,
   mint,
-  project
+  project,
+  readGraph
 } from '@comfyorg/comfy-multi-player'
 import type {
   ApplyOutcome,
+  GraphSnapshot,
   Op,
   WidgetCatalog,
   WorkflowJSON
@@ -80,6 +82,10 @@ export class HostDoc {
     private readonly catalog: WidgetCatalog
   ) {
     this.doc = mint(seed, catalog)
+  }
+
+  graph(): GraphSnapshot {
+    return readGraph(this.doc)
   }
 
   projection(): WorkflowJSON {

@@ -203,6 +203,28 @@ describe('HostTelemetrySink', () => {
     )
   })
 
+  it.for([
+    {
+      name: TelemetryEvents.AGENT_CONSENT_NOT_OFFERED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentNotOffered({ reason: 'tour_active' }),
+      properties: { reason: 'tour_active' }
+    },
+    {
+      name: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentOnboardingNotShown({
+          reason: 'target_missing',
+          step: 2
+        }),
+      properties: { reason: 'target_missing', step: 2 }
+    }
+  ])('forwards $name to the host bridge', ({ name, track, properties }) => {
+    track(new HostTelemetrySink())
+
+    expect(state.capture).toHaveBeenCalledExactlyOnceWith(name, properties)
+  })
+
   it('forwards link dedup drops to the host bridge', () => {
     new HostTelemetrySink().trackLinkDedupDrop({
       droppedLinkId: 7,
