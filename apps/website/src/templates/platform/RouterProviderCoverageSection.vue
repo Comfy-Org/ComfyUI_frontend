@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowRight, Check } from '@lucide/vue'
+import { Check } from '@lucide/vue'
 
 import type { CompareRow } from '../../components/blocks/CompareTable01.vue'
 import CompareTable01 from '../../components/blocks/CompareTable01.vue'
@@ -98,11 +98,16 @@ const browseAll = routerT('platform.router.coverage.browseAll', locale).replace(
       />
     </template>
     <template #column="{ column }">
-      <img
-        :src="logos[column].src"
-        :alt="column"
-        :class="['w-auto max-w-none brightness-0 invert', logos[column].class]"
-      />
+      <div class="flex justify-center">
+        <img
+          :src="logos[column].src"
+          :alt="column"
+          :class="[
+            'w-auto max-w-none brightness-0 invert',
+            logos[column].class
+          ]"
+        />
+      </div>
     </template>
     <template #feature="{ row }">
       <a
@@ -116,15 +121,17 @@ const browseAll = routerT('platform.router.coverage.browseAll', locale).replace(
       <span v-else class="whitespace-nowrap">{{ row.feature }}</span>
     </template>
     <template #cell="{ cell }">
-      <Check
-        v-if="cell === served"
-        class="size-5 text-primary-comfy-yellow"
-        aria-hidden="true"
-      />
-      <span v-else aria-hidden="true" class="text-primary-comfy-canvas/30"
-        >–</span
-      >
-      <span class="sr-only">{{ cell }}</span>
+      <div class="flex justify-center">
+        <Check
+          v-if="cell === served"
+          class="size-5 text-primary-comfy-yellow"
+          aria-hidden="true"
+        />
+        <span v-else aria-hidden="true" class="text-primary-comfy-canvas/30"
+          >–</span
+        >
+        <span class="sr-only">{{ cell }}</span>
+      </div>
     </template>
     <template #footer>
       <div
@@ -141,7 +148,6 @@ const browseAll = routerT('platform.router.coverage.browseAll', locale).replace(
           class="h-12 rounded-full text-sm"
         >
           {{ browseAll }}
-          <ArrowRight aria-hidden="true" />
         </Button>
       </div>
     </template>
