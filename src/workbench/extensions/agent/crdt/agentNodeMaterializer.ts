@@ -191,12 +191,18 @@ function tryCreateSubgraph(
 /**
  * Run `fn` with `LGraphNode.configure()` honouring `widgets_values_named`.
  *
- * The op layer stores interior widget values by name and the follower has no
- * widget catalog to project them positionally the way the package's
- * `project()` does. Named restore is otherwise gated behind the experimental
- * `Comfy.Workflow.NamedValuesRestore` setting; enabling it only while the
- * agent's definitions configure lets values land inside `configure()`, before
- * `onConfigure`, exactly as they do for a human-loaded workflow.
+ * The op layer stores widget values by name (both a subgraph definition's
+ * interior values and an ordinary node's `widgets` map, per
+ * `readSemanticNode`) and the follower has no widget catalog to project them
+ * positionally the way the package's `project()` does. Named restore is
+ * otherwise gated behind the experimental `Comfy.Workflow.NamedValuesRestore`
+ * setting; enabling it while a definition configures, or while `materialize`
+ * configures a freshly-created node, lets values land inside `configure()`,
+ * before `onConfigure`, exactly as they do for a human-loaded workflow.
+ * Without it, `configure()` falls back to positional restore against
+ * `info.widgets_values` — for a named payload that's a plain object, not an
+ * array, so nothing restores and the node keeps its constructor defaults
+ * (PM-1580).
  */
 function withNamedValuesRestore<T>(fn: () => T): T {
   const previous = LiteGraph.namedValuesRestore
@@ -356,7 +362,9 @@ function materialize(
 
   try {
     const savedInputs = serialised.inputs?.map((input) => ({ ...input }))
-    node.configure(withNamedWidgetValues(serialised, widgets))
+    withNamedValuesRestore(() =>
+      node.configure(withNamedWidgetValues(serialised, widgets))
+    )
     replayUpdatedWidgetCallbacks(node, serialised, widgets)
     // After configure and any widget-driven restructuring, re-point the saved
     // links at their named inputs (CRDT-INPUTS-0030).
