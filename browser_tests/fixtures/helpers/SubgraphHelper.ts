@@ -594,7 +594,9 @@ export class SubgraphHelper {
   async descendSubgraphs(levels: number): Promise<void> {
     for (let level = 0; level < levels; level++) {
       await expect.poll(() => this.countSubgraphNodes()).toBe(1)
+      const parentGraphId = await this.getActiveGraphId()
       await this.enterSubgraphWithFallback(await this.findSubgraphNodeId())
+      await expect.poll(() => this.getActiveGraphId()).not.toBe(parentGraphId)
     }
   }
 
@@ -609,9 +611,9 @@ export class SubgraphHelper {
 
   /**
    * Interior node and link counts of every subgraph definition, one row per
-   * definition sorted by name. Definitions sharing a name stay as separate
-   * rows, because `Convert to Subgraph` names every new definition
-   * 'New Subgraph'.
+   * definition sorted by name, then node count, then link count. Definitions
+   * sharing a name stay as separate rows, because `Convert to Subgraph` names
+   * every new definition 'New Subgraph'.
    */
   async getDefinitionInventory(): Promise<SubgraphDefinitionInventory> {
     return this.page.evaluate(() =>
@@ -621,7 +623,12 @@ export class SubgraphHelper {
           nodes: definition.nodes.length,
           links: definition.links.size
         }))
-        .sort((a, b) => a.name.localeCompare(b.name))
+        .sort(
+          (a, b) =>
+            a.name.localeCompare(b.name) ||
+            a.nodes - b.nodes ||
+            a.links - b.links
+        )
     )
   }
 
@@ -634,7 +641,12 @@ export class SubgraphHelper {
           nodes: definition.nodes?.length ?? 0,
           links: definition.links?.length ?? 0
         }))
-        .sort((a, b) => a.name.localeCompare(b.name))
+        .sort(
+          (a, b) =>
+            a.name.localeCompare(b.name) ||
+            a.nodes - b.nodes ||
+            a.links - b.links
+        )
     )
   }
 
