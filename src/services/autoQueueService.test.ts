@@ -1,15 +1,20 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
+import { app } from '@/scripts/app'
+
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
 const mocks = vi.hoisted(() => ({
   addEventListener:
     vi.fn<(event: string, listener: (event: Event) => void) => void>(),
   queuePrompt: vi.fn(() => Promise.resolve(true)),
-  lastExecutionError: null as object | null,
   gateBlocks: false
 }))
+const executionError = vi.hoisted<{ value: ExecutionErrorWsMessage | null }>(
+  () => ({ value: null })
+)
 
 vi.mock(import('@/composables/billing/usePartnerNodesRunGate'), () => ({
   partnerRunGateBlocksAutoQueue: () => mocks.gateBlocks
@@ -21,14 +26,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    queuePrompt: mocks.queuePrompt,
-    get lastExecutionError() {
-      return mocks.lastExecutionError
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 import { setupAutoQueueHandler } from '@/services/autoQueueService'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
@@ -45,11 +43,15 @@ function setupAndGetAutoQueueGraphChangedListener() {
 
 describe('setupAutoQueueHandler', () => {
   beforeEach(() => {
+    vi.mocked(app.queuePrompt).mockImplementation(mocks.queuePrompt)
+    vi.spyOn(app, 'lastExecutionError', 'get').mockImplementation(
+      () => executionError.value
+    )
     const queueSettingsStore = useQueueSettingsStore()
     queueSettingsStore.mode = 'change'
     queueSettingsStore.batchCount = 2
     useQueuePendingTaskCountStore().count = 0
-    mocks.lastExecutionError = null
+    executionError.value = null
     mocks.gateBlocks = false
   })
 
@@ -94,7 +96,18 @@ describe('setupAutoQueueHandler', () => {
 
     listener(new Event('autoQueueGraphChanged'))
     listener(new Event('autoQueueGraphChanged'))
-    mocks.lastExecutionError = new Error('execution failed')
+    executionError.value = {
+      prompt_id: 'prompt-1',
+      node_id: 'node-1',
+      node_type: 'TestNode',
+      executed: [],
+      exception_message: 'execution failed',
+      exception_type: 'Error',
+      traceback: [],
+      current_inputs: {},
+      current_outputs: {},
+      timestamp: 1
+    }
     queueCountStore.count = 1
     await nextTick()
     queueCountStore.count = 0

@@ -1,21 +1,20 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { useTelemetry } from '@/platform/telemetry'
+import { useTelemetry } from '@/platform/telemetry'
 
-const { addBreadcrumb, trackFetchTimeout } = vi.hoisted(() => ({
-  addBreadcrumb: vi.fn(),
-  trackFetchTimeout: vi.fn()
+const { addBreadcrumb } = vi.hoisted(() => ({
+  addBreadcrumb: vi.fn()
 }))
 
 vi.mock(import('@sentry/vue'), () => ({ addBreadcrumb }))
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () =>
-    fromPartial<ReturnType<typeof useTelemetry>>({ trackFetchTimeout })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 import { api } from '@/scripts/api'
+
+const telemetry = useTelemetry()
+assert(telemetry)
+const trackFetchTimeout = vi.mocked(telemetry.trackFetchTimeout)
 
 function mockPendingFetch() {
   return vi.mocked(global.fetch).mockImplementation((_input, init) => {

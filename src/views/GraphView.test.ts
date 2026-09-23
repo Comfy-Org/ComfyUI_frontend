@@ -51,15 +51,7 @@ const distribution = vi.hoisted(
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
 vi.mock(import('firebase/auth'))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    rootGraph: { getNodeById: vi.fn(), nodes: [] },
-    ui: {
-      menuContainer: { style: { setProperty: vi.fn() } },
-      restoreMenuPosition: vi.fn()
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/composables/useReconnectQueueRefresh'), () => {
   const refreshOnReconnect = vi.fn(async () => {})
@@ -84,12 +76,7 @@ vi.mock(import('@/composables/useCoreCommands'), () => ({
 vi.mock(import('@/platform/remote/comfyui/useQueuePolling'), () => ({
   useQueuePolling: vi.fn()
 }))
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandling: (f: unknown) => f,
-    wrapWithErrorHandlingAsync: (f: unknown) => f
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 vi.mock(import('@/composables/useProgressFavicon'), () => ({
   useProgressFavicon: vi.fn()
 }))

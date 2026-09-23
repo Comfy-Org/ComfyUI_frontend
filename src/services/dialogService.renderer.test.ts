@@ -7,9 +7,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/telemetry'))
 

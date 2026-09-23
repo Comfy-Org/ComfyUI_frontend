@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { useDialogStore } from '@/stores/dialogStore'
 
-vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
+vi.mock(import('@/i18n'))
 
 import { openHdrViewer } from './hdrViewerService'
 

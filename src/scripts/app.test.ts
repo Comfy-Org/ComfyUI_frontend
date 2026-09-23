@@ -117,13 +117,7 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/utils/litegraphUtil'), () => ({
-  createNode: vi.fn(),
-  isImageNode: fromAny(vi.fn()),
-  isVideoNode: fromAny(vi.fn()),
-  isAudioNode: fromAny(vi.fn()),
-  executeWidgetsCallback: vi.fn()
-}))
+vi.mock(import('@/utils/litegraphUtil'))
 
 vi.mock(import('@/composables/usePaste'), () => ({
   pasteAudioNode: vi.fn(),

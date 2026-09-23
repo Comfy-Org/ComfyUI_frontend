@@ -7,7 +7,9 @@
  * silent no-op.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Ref } from 'vue'
+
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
 vi.mock(import('@/platform/distribution/types'), () => ({
@@ -16,13 +18,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-type RemoteConfigState = 'unloaded' | 'anonymous' | 'authenticated' | 'error'
-const remoteConfigState = vi.hoisted(
-  () => ({ value: 'unloaded' }) as Ref<RemoteConfigState>
-)
-vi.mock(import('@/platform/remoteConfig/remoteConfig'), () => ({
-  remoteConfigState
-}))
+vi.mock(import('@/platform/remoteConfig/remoteConfig'))
 
 const refreshRemoteConfig = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/remoteConfig/refreshRemoteConfig'), () => ({
@@ -34,15 +30,13 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError
 }))
 
-const showSubscriptionDialog = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ show: showSubscriptionDialog })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 import { useDialogService } from '@/services/dialogService'
+
+const showSubscriptionDialog = vi.mocked(useSubscriptionDialog().show)
 
 describe('showSubscriptionRequiredDialog', () => {
   const originalConfig = window.__CONFIG__

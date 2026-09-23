@@ -36,9 +36,7 @@ const {
   }
 })
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/telemetry'))
 

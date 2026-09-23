@@ -1,19 +1,11 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
-import type { ComfyApp } from './app'
 
 import { app } from './app'
 import { ComfyUI } from './ui'
 
-vi.mock(import('./app'), () => ({
-  app: fromPartial<ComfyApp>({
-    lastExecutionError: null,
-    queuePrompt: vi.fn()
-  }),
-  ComfyApp: fromAny(class {})
-}))
+vi.mock(import('./app'))
 
 type SetStatusHost = {
   queueSize: { textContent: string }

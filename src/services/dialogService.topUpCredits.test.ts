@@ -1,4 +1,6 @@
 import { computed, ref } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
  * showTopUpCreditsDialog routes the paired server capabilities to purchase,
@@ -12,9 +14,7 @@ const state = vi.hoisted(() => ({
   type: 'workspace' as 'workspace' | 'legacy'
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -25,28 +25,24 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    type: { value: state.type }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-const showSubscriptionDialog = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ show: showSubscriptionDialog })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 import { useDialogService } from '@/services/dialogService'
 
+const showSubscriptionDialog = vi.mocked(useSubscriptionDialog().show)
+
 describe('showTopUpCreditsDialog', () => {
   beforeEach(() => {
     state.type = 'workspace'
+    const billing = useBillingContext()
+    billing.type = computed(() => state.type)
+    vi.mocked(useBillingContext).mockReturnValue(billing)
 
     mockIsCloud.value = true
   })

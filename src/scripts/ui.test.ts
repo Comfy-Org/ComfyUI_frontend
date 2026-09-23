@@ -1,9 +1,7 @@
-import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { ComfyApi } from './api'
-import type { ComfyApp } from './app'
-
+import { app } from './app'
 import { ComfyUI } from './ui'
 
 const { mockApp } = vi.hoisted(() => ({
@@ -19,16 +17,9 @@ const { mockApp } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock(import('./app'), () => ({
-  ComfyApp: fromAny(class {}),
-  app: fromPartial<ComfyApp>(mockApp)
-}))
+vi.mock(import('./app'))
 
-vi.mock(import('./api'), () => ({
-  api: fromPartial<ComfyApi>({
-    addEventListener: vi.fn()
-  })
-}))
+vi.mock(import('./api'))
 
 vi.mock(import('./ui/dialog'), () => ({
   ComfyDialog: fromAny(class {})
@@ -44,6 +35,7 @@ vi.mock(import('./ui/toggleSwitch'), () => ({
 
 describe('ComfyUI file input', () => {
   beforeEach(() => {
+    Object.assign(app, mockApp)
     vi.stubGlobal(
       'ResizeObserver',
       class {
@@ -58,7 +50,7 @@ describe('ComfyUI file input', () => {
     const file = new File([''], 'a1111.png', { type: 'image/png' })
     const error = new Error('import failed')
     mockApp.handleFile.mockRejectedValue(error)
-    new ComfyUI(mockApp)
+    new ComfyUI(app)
     const fileInput = document.getElementById(
       'comfy-file-input'
     ) as HTMLInputElement
