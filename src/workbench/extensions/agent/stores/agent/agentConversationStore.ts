@@ -4,7 +4,8 @@ import { computed, ref } from 'vue'
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import type {
   AgentChatEvent,
-  AgentEventTransport
+  AgentEventTransport,
+  CanvasSyncUpdate
 } from '../../services/agent/agentEventTransport'
 import { createAgentEventTransport } from '../../services/agent/agentEventTransport'
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
@@ -60,11 +61,6 @@ export const useAgentConversationStore = defineStore(
     // transport onto whichever function this variable held at its own
     // creation time.
     let canvasSyncGate: () => boolean = () => false
-    // PM-1575: mirrors canvasSyncGate above, for the monotonic doc-update
-    // outcome counter a transport compares its per-tool-call baseline
-    // against (agentEventTransport.ts's canvasSyncBaseline). Same
-    // read-indirectly rule applies.
-    let canvasSyncOutcomeCount: () => number = () => 0
     // PM-1575: settled turns (agent_message_done already applied) whose
     // transport is still holding at least one tool-call part back pending
     // canvas catch-up. clearActive() drops the `transport` slot the moment a
@@ -163,11 +159,8 @@ export const useAgentConversationStore = defineStore(
       liveMessage = message
       activeTurnId.value = turnId
       activeIndex.value = messages.value.push(message) - 1
-      transport = createAgentEventTransport(
-        message,
-        replaceActive,
-        () => canvasSyncGate(),
-        () => canvasSyncOutcomeCount()
+      transport = createAgentEventTransport(message, replaceActive, () =>
+        canvasSyncGate()
       )
     }
 
@@ -238,30 +231,25 @@ export const useAgentConversationStore = defineStore(
       entry.transport.ingest(event)
     }
 
-    function setCanvasSyncGate(
-      gate: () => boolean,
-      outcomeCount: () => number = () => 0
-    ): void {
+    function setCanvasSyncGate(gate: () => boolean): void {
       canvasSyncGate = gate
-      canvasSyncOutcomeCount = outcomeCount
     }
 
     /**
      * PM-1575: forwarded to every live transport (the active turn and any
-     * stashed background ones) whenever the bound workflow's CRDT follower
-     * applies a fresh doc update, so tool-call parts held back pending canvas
-     * catch-up can settle to 'done'. A no-op on a transport with nothing
-     * pending.
+     * stashed background ones) whenever the CRDT follower applies an update.
+     * Each transport settles only tool-call parts whose workflow and expected
+     * operation identities match that update.
      */
-    function notifyCanvasCaughtUp(): void {
-      transport?.notifyCanvasCaughtUp()
+    function notifyCanvasCaughtUp(update: CanvasSyncUpdate): void {
+      transport?.notifyCanvasCaughtUp(update)
       for (const settledTransport of settledActiveTransports) {
-        settledTransport.notifyCanvasCaughtUp()
+        settledTransport.notifyCanvasCaughtUp(update)
         if (!settledTransport.hasPendingCanvasSync())
           settledActiveTransports.delete(settledTransport)
       }
       for (const entry of backgroundTurns.values())
-        entry.transport.notifyCanvasCaughtUp()
+        entry.transport.notifyCanvasCaughtUp(update)
     }
 
     function abortActiveTurn(): void {
@@ -437,8 +425,7 @@ export const useAgentConversationStore = defineStore(
         transport = createAgentEventTransport(
           transcript.pending.message,
           replaceActive,
-          () => canvasSyncGate(),
-          () => canvasSyncOutcomeCount()
+          () => canvasSyncGate()
         )
       }
     }

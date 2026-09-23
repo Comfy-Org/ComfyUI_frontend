@@ -37,41 +37,24 @@ type AgentMessageDeltaEvent = Extract<
   { type: 'agent_message_delta' }
 >
 
-/**
- * PM-1575: tool names whose execution can plausibly land a CRDT `doc_update`
- * -- the only case `resolveToolCallState` below has anything to wait on. Most
- * agent tools are read-only or purely navigational (`print_workflow`,
- * `list_slots`, `switch_tab`, `remember`, ...) and never touch the doc at
- * all: gating those the same way as a real graph edit strands them at the
- * spinner glyph for the full `STALE_AFTER_MS`, since nothing -- no later
- * `notifyCanvasCaughtUp()` in that turn, ever -- settles them early. Confirmed
- * against every recorded conversation under
- * `browser_tests/fixtures/data/agent/conversations/`: a read-only turn (e.g.
- * `agent-rec-text-only-answer`'s `switch_tab` + `print_workflow`) carries no
- * `graph_ops` at all, so this is not a hypothetical.
- */
-const CANVAS_MUTATING_TOOLS = new Set([
-  'add_node',
-  'delete_node',
-  'set_widget',
-  'connect',
-  'disconnect',
-  'clear_canvas',
-  'apply_ops',
-  'insert_workflow',
-  'define_subgraph'
-])
+export interface CanvasSyncUpdate {
+  workflowId: string
+  opIds: readonly string[]
+}
+
+interface PendingCanvasSync {
+  correlation: CanvasSyncUpdate
+  timer: ReturnType<typeof setTimeout>
+}
 
 export interface AgentEventTransport {
   ingest: (event: AgentChatEvent) => void
   settle: () => void
   /**
-   * PM-1575: called whenever the bound workflow's CRDT follower applies a
-   * fresh doc update, so any tool-call parts this transport held back
-   * pending canvas catch-up (see `shouldAwaitCanvasSync` below) can settle to
-   * `done`. A no-op when nothing is pending.
+   * Called with each applied CRDT update so a pending tool-call part can
+   * settle when the workflow and every expected operation identity match.
    */
-  notifyCanvasCaughtUp: () => void
+  notifyCanvasCaughtUp: (update: CanvasSyncUpdate) => void
   /** Whether any tool-call part is currently held pending canvas catch-up. */
   hasPendingCanvasSync: () => boolean
   /**
@@ -93,27 +76,12 @@ export function createAgentEventTransport(
    * travels a separate, unrelated CRDT doc_update. When this returns `true`
    * at the moment a tool call reports done, its part's chat-visible `state`
    * is held at `'streaming'` (matching the in-progress icon/label) instead of
-   * flipping straight to `'done'`, until `notifyCanvasCaughtUp` is called or
-   * `STALE_AFTER_MS` elapses, whichever comes first -- reusing the same
-   * bound the CRDT follower's own passive heartbeat uses
-   * (`agentCrdtDocLifecycle.ts`), rather than inventing a new one. Defaults
-   * to never deferring, so a caller with no canvas to catch up on (or that
-   * never wires this up) keeps the immediate-done behavior.
+   * flipping straight to `'done'`, until a correlated canvas update arrives
+   * or `STALE_AFTER_MS` elapses, whichever comes first. Uncorrelated tool
+   * frames settle immediately. Defaults to never deferring, so a caller with
+   * no canvas to catch up on keeps the immediate-done behavior.
    */
-  shouldAwaitCanvasSync: () => boolean = () => false,
-  /**
-   * PM-1575: the bound workflow's CRDT `outcomes.appliedLive` counter (or an
-   * equivalent monotonic count of LIVE frames actually applied to the doc --
-   * deliberately excluding a subscribe's own catch-up frame, which is
-   * unrelated to any tool call and would otherwise look like "the matching
-   * update already arrived" to whichever tool call happens to be first after
-   * a (re)subscribe), read fresh whenever this transport needs it -- see
-   * `canvasSyncBaseline` below for why. Defaults to a constant so a caller
-   * with no counter to offer (e.g. a caller that also leaves
-   * `shouldAwaitCanvasSync` at its default) never spuriously looks "caught
-   * up".
-   */
-  getCanvasSyncOutcomeCount: () => number = () => 0
+  shouldAwaitCanvasSync: () => boolean = () => false
 ): AgentEventTransport {
   let openText: TextPart | null = null
   let openThinking: ThinkingPart | null = null
@@ -132,32 +100,27 @@ export function createAgentEventTransport(
   // Tool parts whose frame reported done but whose displayed state is held at
   // 'streaming' pending canvas catch-up. Each has its own bounded timer so a
   // part that never gets a `notifyCanvasCaughtUp` call still settles.
-  const pendingCanvasSync = new Map<ToolPart, ReturnType<typeof setTimeout>>()
-  // PM-1575: the outcome count as of the last time some tool part actually
-  // claimed a canvas catch-up (see `claimCanvasSyncOutcome` below), starting
-  // at this transport's own creation. `canvasSyncBaseline` below hands each
-  // NEW tool part this shared watermark rather than a fresh
-  // `getCanvasSyncOutcomeCount()` read, because that read is worthless when a
-  // tool call's first-ever frame is already its terminal one (the common
-  // case -- recorded conversations never send a `running` frame at all,
-  // see the file header): capturing the baseline and checking it happen in
-  // the same synchronous call, so a fresh read is trivially equal to itself
-  // regardless of whether a `doc_update` already landed moments earlier. The
-  // watermark instead stays stale across that no-op `notifyCanvasCaughtUp()`
-  // call, so the next part created can see the count has moved since the
-  // watermark was last claimed and settle immediately.
-  let canvasSyncOutcomeWatermark = getCanvasSyncOutcomeCount()
-  // The outcome-count watermark handed to each tool part when it is first
-  // seen (see `canvasSyncOutcomeWatermark` above).
-  const canvasSyncBaseline = new Map<ToolPart, number>()
+  const pendingCanvasSync = new Map<ToolPart, PendingCanvasSync>()
+  const appliedCanvasUpdates: CanvasSyncUpdate[] = []
 
-  function claimCanvasSyncOutcome(): void {
-    canvasSyncOutcomeWatermark = getCanvasSyncOutcomeCount()
+  function updateContainsCorrelation(
+    update: CanvasSyncUpdate,
+    correlation: CanvasSyncUpdate
+  ): boolean {
+    if (update.workflowId !== correlation.workflowId) return false
+    const applied = new Set(update.opIds)
+    return correlation.opIds.every((opId) => applied.has(opId))
+  }
+
+  function correlationAlreadyApplied(correlation: CanvasSyncUpdate): boolean {
+    return appliedCanvasUpdates.some((update) =>
+      updateContainsCorrelation(update, correlation)
+    )
   }
 
   function clearPendingCanvasSyncTimer(part: ToolPart): void {
-    const timer = pendingCanvasSync.get(part)
-    if (timer !== undefined) clearTimeout(timer)
+    const pending = pendingCanvasSync.get(part)
+    if (pending !== undefined) clearTimeout(pending.timer)
     pendingCanvasSync.delete(part)
   }
 
@@ -169,12 +132,18 @@ export function createAgentEventTransport(
   function flushPendingCanvasSync(): void {
     if (pendingCanvasSync.size === 0) return
     for (const part of pendingCanvasSync.keys()) settlePendingCanvasSync(part)
-    claimCanvasSyncOutcome()
     emit(snapshotMessage(message))
   }
 
-  function notifyCanvasCaughtUp(): void {
-    flushPendingCanvasSync()
+  function notifyCanvasCaughtUp(update: CanvasSyncUpdate): void {
+    appliedCanvasUpdates.push(update)
+    let changed = false
+    for (const [part, pending] of pendingCanvasSync) {
+      if (!updateContainsCorrelation(update, pending.correlation)) continue
+      settlePendingCanvasSync(part)
+      changed = true
+    }
+    if (changed) emit(snapshotMessage(message))
   }
 
   function hasPendingCanvasSync(): boolean {
@@ -201,15 +170,15 @@ export function createAgentEventTransport(
    * touch the canvas, `notifyCanvasCaughtUp` may never fire at all to rescue
    * it early.
    *
-   * Even a successful outcome is only worth waiting on when the tool itself
-   * is one that can mutate the doc (`CANVAS_MUTATING_TOOLS` above) -- the
-   * same stranding risk applies to e.g. a successful `print_workflow` or
-   * `switch_tab`, which never produces a `doc_update` at all.
+   * A successful outcome is deferred only when the server supplied explicit
+   * workflow and operation correlation. Read-only and no-op calls omit that
+   * correlation and settle immediately without a frontend tool-name policy.
    */
   function resolveToolCallState(
     part: ToolPart,
     status: 'success' | 'error',
-    durationMs: number | undefined
+    durationMs: number | undefined,
+    correlation: CanvasSyncUpdate | undefined
   ): void {
     part.ok = status === 'success'
     part.durationMs = durationMs
@@ -218,28 +187,21 @@ export function createAgentEventTransport(
     // clearing unconditionally, before either branch below, is what keeps
     // that impossible regardless of which branch runs.
     clearPendingCanvasSyncTimer(part)
-    const baseline = canvasSyncBaseline.get(part)
-    canvasSyncBaseline.delete(part)
     if (
       status === 'success' &&
-      CANVAS_MUTATING_TOOLS.has(part.name) &&
+      correlation !== undefined &&
       shouldAwaitCanvasSync()
     ) {
-      if (baseline !== undefined && getCanvasSyncOutcomeCount() > baseline) {
-        // The matching doc_update already applied -- either while the tool
-        // was still running, or before this tool call's first frame ever
-        // reached the transport -- see `canvasSyncBaseline` above. Nothing
-        // left to wait on.
+      if (correlationAlreadyApplied(correlation)) {
         part.state = 'done'
-        claimCanvasSyncOutcome()
       } else {
-        pendingCanvasSync.set(
-          part,
-          setTimeout(() => {
+        pendingCanvasSync.set(part, {
+          correlation,
+          timer: setTimeout(() => {
             settlePendingCanvasSync(part)
             emit(snapshotMessage(message))
           }, STALE_AFTER_MS)
-        )
+        })
       }
     } else {
       part.state = 'done'
@@ -263,11 +225,14 @@ export function createAgentEventTransport(
       }
       tools.set(data.tool_call_id, part)
       message.parts.push(part)
-      canvasSyncBaseline.set(part, canvasSyncOutcomeWatermark)
     }
     part.name = data.tool_name
     if (data.status !== 'running') {
-      resolveToolCallState(part, data.status, data.duration_ms)
+      const correlation =
+        data.workflow_id !== undefined && data.op_ids !== undefined
+          ? { workflowId: data.workflow_id, opIds: data.op_ids }
+          : undefined
+      resolveToolCallState(part, data.status, data.duration_ms, correlation)
     }
   }
 

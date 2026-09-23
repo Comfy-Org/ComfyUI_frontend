@@ -657,6 +657,7 @@ const {
         if (status.value === 'idle') graphActivity.finishTurn()
       }
     },
+    onAppliedUpdate: conversationStore.notifyCanvasCaughtUp,
     onReset: graphActivity.resetWorkflow
   }
 )
@@ -690,8 +691,9 @@ const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 // effect has actually reached the canvas -- the CRDT doc_update travels a
 // separate, unrelated listener (see agentEventTransport.ts's file header).
 // Gate the transport's tool-call "done" affordance on canvas catch-up only
-// while the CRDT follower is actually active, and re-check any parts it held
-// back every time the bound workflow applies a fresh update.
+// while the CRDT follower is actually active. The follower forwards each
+// applied update's workflow and operation identities so only its matching
+// tool call can settle.
 //
 // `agentPanelStore.enabled` alone is NOT that signal: it is the product
 // feature flag ("is the agent panel available at all"), which is on in any
@@ -707,30 +709,7 @@ const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 // actual "the follower is subscribed and could receive a doc_update" signal
 // (flipped true only by a real `doc_subscribed { ok: true }` frame); a
 // disabled panel never starts the follower, so this implies `enabled` too.
-// Read `outcomes.appliedLive`, never `outcomes.applied`: `applied` also
-// counts a subscribe's own one-time catch-up frame, which lands whenever the
-// follower (re)subscribes to the bound workflow and has nothing to do with
-// any tool call in flight. Gating on raw `applied` made the FIRST
-// canvas-mutating tool call after any (re)subscribe -- effectively every
-// tool call, since a `running` frame is never sent in practice, see
-// agentEventTransport.ts's file header -- read that unrelated catch-up as
-// its own matching update and settle to 'done' immediately, defeating the
-// wait this gate exists for.
-conversationStore.setCanvasSyncGate(
-  () => crdtStatus.value.connected,
-  () => crdtStatus.value.outcomes.appliedLive
-)
-watch(
-  () => crdtStatus.value.outcomes.appliedLive,
-  (applied, previouslyApplied) => {
-    // `useAgentCrdtFollower`'s status falls back to a disabled status with
-    // `applied: 0` when the follower is torn down, and a restarted follower
-    // counts from 0 again -- so toggling the panel mid-turn can drive this
-    // DOWN, not just up. A decrease is not a catch-up: nothing was applied,
-    // so it must not release parts that are still genuinely waiting.
-    if (applied > previouslyApplied) conversationStore.notifyCanvasCaughtUp()
-  }
-)
+conversationStore.setCanvasSyncGate(() => crdtStatus.value.connected)
 
 // The resumed turn's own workflow outlives a panel remount (the session
 // binds it at ack; only newChat/loadThread reset it), while the active tab
@@ -932,10 +911,7 @@ onBeforeUnmount(() => {
   // thing standing between the old (now torn-down) follower's gate and a
   // turn resumed in the meantime reading it -- reset to the always-safe
   // default instead of leaving whatever this instance last set.
-  conversationStore.setCanvasSyncGate(
-    () => false,
-    () => 0
-  )
+  conversationStore.setCanvasSyncGate(() => false)
 })
 
 const history = useAgentChatHistoryStore()

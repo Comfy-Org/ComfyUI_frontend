@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { nextTick, ref, watch } from 'vue'
+import { nextTick, watch } from 'vue'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
@@ -18,7 +18,11 @@ const delta = (id: string, text: string): AgentChatEvent =>
     type: 'agent_message_delta',
     data: { delta: text, message_id: id, thread_id: 'th' }
   })
-const toolCall = (id: string, name: string, status: string): AgentChatEvent =>
+const correlatedToolCall = (
+  id: string,
+  name: string,
+  status: string
+): AgentChatEvent =>
   chat({
     type: 'agent_tool_call',
     data: {
@@ -26,9 +30,15 @@ const toolCall = (id: string, name: string, status: string): AgentChatEvent =>
       tool_name: name,
       status,
       message_id: id,
-      thread_id: 'th'
+      thread_id: 'th',
+      workflow_id: 'workflow-1',
+      op_ids: [`op-${id}`]
     }
   })
+const canvasUpdate = (id: string) => ({
+  workflowId: 'workflow-1',
+  opIds: [`op-${id}`]
+})
 const done = (id: string): AgentChatEvent =>
   chat({
     type: 'agent_message_done',
@@ -228,7 +238,7 @@ describe('useAgentConversationStore', () => {
   it('folds a tool_call into the active turn', () => {
     const store = useAgentConversationStore()
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(correlatedToolCall('t1', 'add_node', 'success'))
     expect(store.messages[0].parts[0]).toMatchObject({
       type: 'tool',
       name: 'add_node',
@@ -247,7 +257,7 @@ describe('useAgentConversationStore', () => {
     const store = useAgentConversationStore()
     store.setCanvasSyncGate(() => true)
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(correlatedToolCall('t1', 'add_node', 'success'))
     store.ingest(done('t1'))
 
     // The turn is settled (message.streaming is false), but the tool part
@@ -258,7 +268,13 @@ describe('useAgentConversationStore', () => {
       state: 'streaming'
     })
 
-    store.notifyCanvasCaughtUp()
+    store.notifyCanvasCaughtUp({
+      workflowId: 'wrong-workflow',
+      opIds: ['op-t1']
+    })
+    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
+
+    store.notifyCanvasCaughtUp(canvasUpdate('t1'))
 
     expect(store.messages[0].parts[0]).toMatchObject({
       type: 'tool',
@@ -266,24 +282,16 @@ describe('useAgentConversationStore', () => {
     })
   })
 
-  // PM-1575 regression (finding #1/#9, high): the normal ordering on a
-  // healthy doc host is the matching doc_update applying WHILE the tool is
-  // still running, with the success frame landing after -- so by the time
-  // the terminal frame arrives there is nothing left to wait on. Threads the
-  // outcome-count getter end to end (store -> transport), unlike the
-  // transport-level unit test for the same finding.
+  // The matching doc_update can apply while the tool is still running, before
+  // the terminal frame arrives.
   it('settles a held tool call immediately when the canvas catches up while it is still running', () => {
     const store = useAgentConversationStore()
-    let outcomeCount = 0
-    store.setCanvasSyncGate(
-      () => true,
-      () => outcomeCount
-    )
+    store.setCanvasSyncGate(() => true)
     store.startTurn(T1)
 
-    store.ingest(toolCall('t1', 'add_node', 'running'))
-    outcomeCount += 1
-    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(correlatedToolCall('t1', 'add_node', 'running'))
+    store.notifyCanvasCaughtUp(canvasUpdate('t1'))
+    store.ingest(correlatedToolCall('t1', 'add_node', 'success'))
 
     expect(store.messages[0].parts[0]).toMatchObject({
       type: 'tool',
@@ -301,14 +309,14 @@ describe('useAgentConversationStore', () => {
     store.setCanvasSyncGate(() => true)
 
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(correlatedToolCall('t1', 'add_node', 'success'))
     store.ingest(done('t1'))
 
     store.startTurn(T2)
-    store.ingest(toolCall('t2', 'add_node', 'success'))
+    store.ingest(correlatedToolCall('t2', 'add_node', 'success'))
     store.ingest(done('t2'))
 
-    store.notifyCanvasCaughtUp()
+    store.notifyCanvasCaughtUp(canvasUpdate('t1'))
 
     expect(store.messages[0].parts[0]).toMatchObject({
       type: 'tool',
@@ -316,8 +324,11 @@ describe('useAgentConversationStore', () => {
     })
     expect(store.messages[1].parts[0]).toMatchObject({
       type: 'tool',
-      state: 'done'
+      state: 'streaming'
     })
+
+    store.notifyCanvasCaughtUp(canvasUpdate('t2'))
+    expect(store.messages[1].parts[0]).toMatchObject({ state: 'done' })
   })
 
   // PM-1575 regression (finding #4, medium): abortActiveTurn() used to drop
@@ -329,7 +340,7 @@ describe('useAgentConversationStore', () => {
     const store = useAgentConversationStore()
     store.setCanvasSyncGate(() => true)
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(correlatedToolCall('t1', 'add_node', 'success'))
     expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
 
     store.abortActiveTurn()
@@ -348,7 +359,7 @@ describe('useAgentConversationStore', () => {
     store.setCanvasSyncGate(() => true)
     store.setThreadId('th')
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(correlatedToolCall('t1', 'add_node', 'success'))
     store.stashActiveTurn()
     store.ingest(done('t1'))
     expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
@@ -367,7 +378,7 @@ describe('useAgentConversationStore', () => {
     const store = useAgentConversationStore()
     store.setCanvasSyncGate(() => true)
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(correlatedToolCall('t1', 'add_node', 'success'))
     store.ingest(done('t1'))
 
     store.hydrate([
@@ -390,43 +401,9 @@ describe('useAgentConversationStore', () => {
     store.startTurn(T1)
 
     store.setCanvasSyncGate(() => true)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
+    store.ingest(correlatedToolCall('t1', 'add_node', 'success'))
 
     expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
-  })
-
-  // PM-1575 regression (finding #10, medium): the source watcher this
-  // guards -- AgentPanelRoot.vue's `watch(() => crdtStatus.value.outcomes
-  // .applied, ...)` -- treated ANY change to the counter as catch-up,
-  // including a decrease. `useAgentCrdtFollower` resets `outcomes.applied`
-  // to 0 when its follower is torn down (e.g. toggling the panel mid-turn)
-  // and a restarted follower counts from 0 again, so that watcher's own
-  // guard, reproduced here against the real store, is what stops a mere
-  // reset from incorrectly releasing every held tool call.
-  it('does not release a held tool call when the applied counter decreases, only when it increases', () => {
-    const store = useAgentConversationStore()
-    const applied = ref(5)
-    store.setCanvasSyncGate(
-      () => true,
-      () => applied.value
-    )
-    store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'success'))
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
-
-    watch(
-      applied,
-      (value, previous) => {
-        if (value > previous) store.notifyCanvasCaughtUp()
-      },
-      { flush: 'sync' }
-    )
-
-    applied.value = 0
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'streaming' })
-
-    applied.value = 6
-    expect(store.messages[0].parts[0]).toMatchObject({ state: 'done' })
   })
 
   it('restores a pending run approval as the live turn and continues after it resolves', () => {
