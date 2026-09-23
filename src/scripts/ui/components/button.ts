@@ -27,8 +27,7 @@ export class ComfyButton implements ComfyComponent {
   isOver = false
   iconElement = $el('i.mdi')
   contentElement = $el('span')
-  // @ts-expect-error fixme ts strict error
-  popup: ComfyPopup
+  popup?: ComfyPopup
   element: HTMLElement
   overIcon: string
   iconSize: number
@@ -38,7 +37,7 @@ export class ComfyButton implements ComfyComponent {
   classList: ClassList
   hidden: boolean
   enabled: boolean
-  action: (e: Event, btn: ComfyButton) => void
+  action?: (e: Event, btn: ComfyButton) => void
 
   constructor({
     icon,
@@ -91,7 +90,7 @@ export class ComfyButton implements ComfyComponent {
       this,
       'content',
       content,
-      toggleElement(this.contentElement, {
+      toggleElement<ComfyButtonProps['content']>(this.contentElement, {
         onShow: (el, v) => {
           if (typeof v === 'string') {
             el.textContent = v
@@ -119,7 +118,6 @@ export class ComfyButton implements ComfyComponent {
       this.updateClasses()
       ;(this.element as HTMLButtonElement).disabled = !this.enabled
     })
-    // @ts-expect-error fixme ts strict error
     this.action = prop(this, 'action', action)
     this.element.addEventListener('click', (e) => {
       if (this.popup) {
@@ -171,12 +169,12 @@ export class ComfyButton implements ComfyComponent {
     this.popup = popup
 
     if (mode === 'hover') {
-      for (const el of [this.element, this.popup.element]) {
+      for (const el of [this.element, popup.element]) {
         el.addEventListener('mouseenter', () => {
-          this.popup.open = !!++this._over
+          popup.open = !!++this._over
         })
         el.addEventListener('mouseleave', () => {
-          this.popup.open = !!--this._over
+          popup.open = !!--this._over
         })
       }
     }

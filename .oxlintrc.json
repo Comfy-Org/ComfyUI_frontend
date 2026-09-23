@@ -230,20 +230,6 @@
       }
     },
     {
-      "files": [
-        "src/scripts/api.ts",
-        "src/scripts/changeTracker.test.ts",
-        "src/scripts/changeTracker.ts",
-        "src/scripts/ui.ts",
-        "src/scripts/ui/components/button.ts",
-        "src/scripts/ui/draggableList.ts",
-        "src/scripts/ui/utils.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["**/*.test.{ts,tsx}"],
       "rules": {
         "comfy/no-module-scope-vitest-mocks": "error",
