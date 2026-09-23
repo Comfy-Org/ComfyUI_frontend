@@ -5227,7 +5227,7 @@
     "permissionAsk": {
       "leadPath": "The agent wants to reach a folder on this computer:",
       "leadHost": "The agent wants to connect to a website:",
-      "reasonLabel": "Why:",
+      "reason": "Why: {reason}",
       "deny": "Deny",
       "allow": "Allow"
     },
