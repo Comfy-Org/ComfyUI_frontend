@@ -84,7 +84,6 @@ const { useNodeDrag } =
   await import('@/renderer/extensions/vueNodes/layout/useNodeDrag')
 
 const node1 = toNodeId('1')
-let transformState: ReturnType<typeof useTransformState>
 
 function pointerEvent(clientX: number, clientY: number): PointerEvent {
   const target = document.createElement('div')
@@ -100,11 +99,12 @@ beforeEach(() => {
       return layout ? fromPartial<NodeLayout>(layout) : null
     }
   )
-  transformState = vi.mocked(useTransformState())
-  vi.mocked(transformState.screenToCanvas).mockImplementation(({ x, y }) => ({
-    x: x / (testState.mockDs.scale || 1) - testState.mockDs.offset[0],
-    y: y / (testState.mockDs.scale || 1) - testState.mockDs.offset[1]
-  }))
+  vi.mocked(useTransformState().screenToCanvas).mockImplementation(
+    ({ x, y }) => ({
+      x: x / (testState.mockDs.scale || 1) - testState.mockDs.offset[0],
+      y: y / (testState.mockDs.scale || 1) - testState.mockDs.offset[1]
+    })
+  )
   vi.mocked(VueUse.whenever).mockImplementation(() =>
     Object.assign(vi.fn(), {
       pause: vi.fn(),

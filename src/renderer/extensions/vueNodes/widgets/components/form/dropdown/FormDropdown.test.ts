@@ -23,7 +23,6 @@ const i18n = createI18n({ legacy: false, locale: 'en', messages: { en: {} } })
 vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 let camera = reactive({ x: 0, y: 0, z: 1 })
-let transformState: ReturnType<typeof useTransformState>
 
 const MockFormDropdownMenu = {
   name: 'FormDropdownMenu',
@@ -135,8 +134,7 @@ async function openDropdown(user: ReturnType<typeof userEvent.setup>) {
 
 beforeEach(() => {
   camera = reactive({ x: 0, y: 0, z: 1 })
-  transformState = vi.mocked(useTransformState())
-  transformState.camera = camera
+  vi.mocked(useTransformState()).camera = camera
   vi.mocked(useToastStore().addAlert).mockImplementation(() => undefined)
 })
 

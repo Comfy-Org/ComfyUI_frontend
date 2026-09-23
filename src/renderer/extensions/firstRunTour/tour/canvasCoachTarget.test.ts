@@ -49,8 +49,6 @@ vi.mock(import('@vueuse/core'), { spy: true })
 vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
-let transformState: ReturnType<typeof useTransformState>
-
 function placeNode(bounds = { x: 100, y: 200, width: 80, height: 40 }) {
   if (!state.layout) throw new Error('Expected layout state to be initialized')
   state.layout.value = fromPartial<NodeLayout>({ bounds })
@@ -59,8 +57,7 @@ function placeNode(bounds = { x: 100, y: 200, width: 80, height: 40 }) {
 beforeEach(() => {
   state.camera = reactive({ x: 0, y: 0, z: 1 })
   state.layout = shallowRef<NodeLayout | null>(null)
-  transformState = vi.mocked(useTransformState())
-  transformState.camera = state.camera
+  vi.mocked(useTransformState()).camera = state.camera
   vi.mocked(layoutStore.getNodeLayoutRef).mockImplementation(
     (graphId, nodeId) => {
       state.layoutReads(graphId, nodeId)

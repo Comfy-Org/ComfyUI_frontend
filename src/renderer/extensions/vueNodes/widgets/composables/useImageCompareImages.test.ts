@@ -34,17 +34,14 @@ function buildGraph() {
 }
 
 describe('useImageCompareImages', () => {
-  let outputStore: ReturnType<typeof useNodeOutputStore>
-
   beforeEach(() => {
     vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
-    outputStore = useNodeOutputStore()
-    outputStore.resetAllOutputsAndPreviews()
+    useNodeOutputStore().resetAllOutputsAndPreviews()
   })
 
   it('shows the producer images as soon as an input is connected', () => {
     const { compare, producerA } = buildGraph()
-    outputStore.nodeOutputs[String(producerA.id)] = {
+    useNodeOutputStore().nodeOutputs[String(producerA.id)] = {
       images: [{ filename: 'source.png', type: 'input' }]
     }
 
@@ -62,10 +59,10 @@ describe('useImageCompareImages', () => {
     const { compare, producerA, producerB } = buildGraph()
     producerA.connect(0, compare, 0)
     producerB.connect(0, compare, 1)
-    outputStore.nodeOutputs[String(producerA.id)] = {
+    useNodeOutputStore().nodeOutputs[String(producerA.id)] = {
       images: [{ filename: 'a.png', type: 'input' }]
     }
-    outputStore.nodeOutputs[String(producerB.id)] = {
+    useNodeOutputStore().nodeOutputs[String(producerB.id)] = {
       images: [{ filename: 'b.png', type: 'input' }]
     }
 
@@ -80,7 +77,7 @@ describe('useImageCompareImages', () => {
   it('exposes every image of a batched producer', () => {
     const { compare, producerA } = buildGraph()
     producerA.connect(0, compare, 0)
-    outputStore.nodeOutputs[String(producerA.id)] = {
+    useNodeOutputStore().nodeOutputs[String(producerA.id)] = {
       images: [
         { filename: 'a1.png', type: 'input' },
         { filename: 'a2.png', type: 'input' }
@@ -98,7 +95,7 @@ describe('useImageCompareImages', () => {
   it('falls back to the images saved by its own run when the producer has none', () => {
     const { compare, producerA } = buildGraph()
     producerA.connect(0, compare, 0)
-    outputStore.nodeOutputs[String(compare.id)] = {
+    useNodeOutputStore().nodeOutputs[String(compare.id)] = {
       a_images: [{ filename: 'compare_a.png', type: 'temp' }],
       b_images: [{ filename: 'compare_b.png', type: 'temp' }]
     }
@@ -118,10 +115,10 @@ describe('useImageCompareImages', () => {
   it('prefers a connected producer over the images saved by its own run', () => {
     const { compare, producerA } = buildGraph()
     producerA.connect(0, compare, 0)
-    outputStore.nodeOutputs[String(producerA.id)] = {
+    useNodeOutputStore().nodeOutputs[String(producerA.id)] = {
       images: [{ filename: 'live.png', type: 'input' }]
     }
-    outputStore.nodeOutputs[String(compare.id)] = {
+    useNodeOutputStore().nodeOutputs[String(compare.id)] = {
       a_images: [{ filename: 'stale.png', type: 'temp' }]
     }
 
@@ -134,16 +131,16 @@ describe('useImageCompareImages', () => {
 
   it('survives the output reset a workflow switch performs', () => {
     const { compare } = buildGraph()
-    outputStore.nodeOutputs[String(compare.id)] = {
+    useNodeOutputStore().nodeOutputs[String(compare.id)] = {
       a_images: [{ filename: 'compare_a.png', type: 'temp' }]
     }
     const { beforeImages } = useImageCompareImages(computed(() => compare))
-    const snapshot = outputStore.snapshotOutputs()
+    const snapshot = useNodeOutputStore().snapshotOutputs()
 
-    outputStore.resetAllOutputsAndPreviews()
+    useNodeOutputStore().resetAllOutputsAndPreviews()
     expect(beforeImages.value).toEqual([])
 
-    outputStore.restoreOutputs(snapshot)
+    useNodeOutputStore().restoreOutputs(snapshot)
 
     expect(beforeImages.value).toEqual([
       '/api/view?filename=compare_a.png&type=temp'
@@ -167,7 +164,7 @@ describe('useImageCompareImages', () => {
     graph.add(subgraphNode)
     subgraphNode.connect(0, compare, 0)
 
-    outputStore.nodeOutputs[`${subgraph.id}:${inner.id}`] = {
+    useNodeOutputStore().nodeOutputs[`${subgraph.id}:${inner.id}`] = {
       images: [{ filename: 'inner.png', type: 'input' }]
     }
 

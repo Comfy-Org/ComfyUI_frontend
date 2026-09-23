@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import messages from '@/locales/en/main.json'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -23,14 +23,13 @@ const savedUrl = (filename: string) =>
   `/api/view?filename=${filename}&type=temp`
 
 function buildGraph() {
-  const graph = new LGraph()
+  const graph = app.rootGraph
 
   const compare = new LGraphNode('ImageCompare')
   compare.addInput('image_a', 'IMAGE')
   compare.addInput('image_b', 'IMAGE')
   graph.add(compare)
 
-  Object.assign(app, { rootGraph: graph, canvas: { graph } })
   return { compare, graph }
 }
 
