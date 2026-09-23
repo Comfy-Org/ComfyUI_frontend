@@ -1,10 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ChatSession } from './agentChatHistoryStore'
 import {
-  chatSessionFromThread,
   groupSessionsByRecency,
   useAgentChatHistoryStore
 } from './agentChatHistoryStore'
@@ -16,61 +13,6 @@ const session = (id: string, updatedAt: number): ChatSession => ({
   id,
   title: id,
   updatedAt
-})
-
-describe('chatSessionFromThread', () => {
-  it('uses the best title and valid newest timestamp with deterministic fallbacks', () => {
-    expect(
-      chatSessionFromThread(
-        {
-          id: 'thread-1',
-          title: '',
-          preview: 'make a duck',
-          last_message_at: '2026-07-07T10:00:00Z'
-        },
-        'Untitled',
-        NOW
-      )
-    ).toEqual({
-      id: 'thread-1',
-      title: 'make a duck',
-      updatedAt: Date.parse('2026-07-07T10:00:00Z')
-    })
-    expect(
-      chatSessionFromThread(
-        {
-          id: 'thread-2',
-          title: 'Duck pipeline',
-          preview: 'ignored preview',
-          updated_at: '2026-07-06T10:00:00Z'
-        },
-        'Untitled',
-        NOW
-      )
-    ).toEqual({
-      id: 'thread-2',
-      title: 'Duck pipeline',
-      updatedAt: Date.parse('2026-07-06T10:00:00Z')
-    })
-    expect(
-      chatSessionFromThread(
-        { id: 'thread-3', title: '', created_at: '2026-07-05T10:00:00Z' },
-        'Untitled',
-        NOW
-      )
-    ).toEqual({
-      id: 'thread-3',
-      title: 'Untitled',
-      updatedAt: Date.parse('2026-07-05T10:00:00Z')
-    })
-    expect(
-      chatSessionFromThread(
-        { id: 'thread-4', title: '', created_at: 'invalid' },
-        'Untitled',
-        NOW
-      )
-    ).toEqual({ id: 'thread-4', title: 'Untitled', updatedAt: NOW })
-  })
 })
 
 describe('groupSessionsByRecency', () => {
@@ -116,7 +58,6 @@ describe('groupSessionsByRecency', () => {
 
 describe('useAgentChatHistoryStore', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     localStorage.clear()
   })
 
@@ -178,5 +119,17 @@ describe('useAgentChatHistoryStore', () => {
     store.remove('b')
 
     expect(store.activeId).toBe('a')
+  })
+
+  it('removes a session with no server request', () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+    const store = useAgentChatHistoryStore()
+    store.replaceAll([session('a', 1)])
+
+    store.remove('a')
+
+    expect(fetchSpy).not.toHaveBeenCalled()
+    expect(store.sessions).toHaveLength(0)
+    fetchSpy.mockRestore()
   })
 })

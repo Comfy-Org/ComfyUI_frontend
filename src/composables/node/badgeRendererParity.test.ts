@@ -1,6 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { effectScope } from 'vue'
 
 import { badgeDrawObjects } from '@/lib/litegraph/src/nodeBadgeDraw'
@@ -16,27 +15,13 @@ import { nodeBadges } from '@/systems/badgeSystem'
 import type { NodeState } from '@/types/nodeState'
 import { NodeBadgeMode } from '@/types/nodeSource'
 
-const settings = vi.hoisted(() => ({ values: new Map<string, unknown>() }))
-
-vi.mock('@/platform/settings/settingStore', () => ({
-  useSettingStore: () => ({ get: (key: string) => settings.values.get(key) })
-}))
-vi.mock('@/stores/workspace/colorPaletteStore', () => ({
-  useColorPaletteStore: () => ({
-    completedActivePalette: {
-      colors: {
-        litegraph_base: { BADGE_FG_COLOR: '#fff', BADGE_BG_COLOR: '#000' }
-      }
-    }
-  })
-}))
-
 const CORE_SOURCE_BADGE = '🦊'
 
 function setModes(mode: NodeBadgeMode) {
-  settings.values.set('Comfy.NodeBadge.NodeIdBadgeMode', mode)
-  settings.values.set('Comfy.NodeBadge.NodeLifeCycleBadgeMode', mode)
-  settings.values.set('Comfy.NodeBadge.NodeSourceBadgeMode', mode)
+  useSettingStore().settingValues['Comfy.NodeBadge.NodeIdBadgeMode'] = mode
+  useSettingStore().settingValues['Comfy.NodeBadge.NodeLifeCycleBadgeMode'] =
+    mode
+  useSettingStore().settingValues['Comfy.NodeBadge.NodeSourceBadgeMode'] = mode
 }
 
 function seedNodeDef(name: string, pythonModule: string) {
@@ -56,11 +41,11 @@ function seedNodeDef(name: string, pythonModule: string) {
 }
 
 function legacyBadgeText(node: LGraphNode): string {
-  const badge = badgeDrawObjects(node, nodeBadges(node))[0]
+  const badge = badgeDrawObjects(node, nodeBadges(node)).at(0)
   return badge?.text.replaceAll('[', '').replaceAll(']', '') ?? ''
 }
 
-function vueBadgeText(node: LGraphNode): string {
+function vueBadges(node: LGraphNode) {
   if (!node.graph) throw new Error('node is not attached to a graph')
   const nodeData: NodeState = {
     flags: node.flags,
@@ -74,23 +59,21 @@ function vueBadgeText(node: LGraphNode): string {
     type: node.type
   }
   const scope = effectScope()
-  const facts = scope.run(() => {
-    const partitioned = usePartitionedBadges(nodeData).value
-    return [
-      ...partitioned.core.map((badge) => badge.text),
-      ...(partitioned.hasComfyBadge ? [CORE_SOURCE_BADGE] : [])
-    ]
-  })
+  const partitioned = scope.run(() => usePartitionedBadges(nodeData).value)
   scope.stop()
-  return (facts ?? []).join(' ')
+  if (!partitioned) throw new Error('partitioned badges were not computed')
+  return partitioned
+}
+
+function vueBadgeText(node: LGraphNode): string {
+  const partitioned = vueBadges(node)
+  return [
+    ...partitioned.core.map((badge) => badge.text),
+    ...(partitioned.hasComfyBadge ? [CORE_SOURCE_BADGE] : [])
+  ].join(' ')
 }
 
 describe('badge renderer parity (I2)', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-    settings.values = new Map<string, unknown>()
-  })
-
   function setup(
     mode: NodeBadgeMode,
     type: string,
@@ -168,6 +151,19 @@ describe('badge renderer parity (I2)', () => {
       const node = setup(NodeBadgeMode.ShowAll, 'CoreNode', 'nodes')
 
       expect(vueBadgeText(node)).toBe(`#1 BETA ${CORE_SOURCE_BADGE}`)
+    })
+  })
+
+  describe('Comfy Cloud mark', () => {
+    const CLOUD = 'comfy_api_nodes.nodes_comfy_cloud'
+    const OTHER_PARTNER = 'comfy_api_nodes.nodes_kling'
+
+    it('Vue marks Comfy Cloud and leaves the other partner node unmarked', () => {
+      const cloud = setup(NodeBadgeMode.ShowAll, 'CloudNode', CLOUD)
+      expect(vueBadges(cloud).hasComfyCloudBadge).toBe(true)
+
+      const partner = setup(NodeBadgeMode.ShowAll, 'KlingNode', OTHER_PARTNER)
+      expect(vueBadges(partner).hasComfyCloudBadge).toBe(false)
     })
   })
 

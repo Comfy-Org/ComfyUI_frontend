@@ -25,62 +25,89 @@ ComfyUI's extension system follows these key principles:
 
 ## Core Extensions List
 
-The following table lists ALL core extensions in the system as of 2025-01-30:
+Core extensions live in `src/extensions/core/`. `index.ts` is the entry point
+that decides which ones load — some are unconditional, some are gated on the
+build distribution, and the 3D stack is deferred behind a lazy loader. The
+tables below follow that grouping.
 
-### Main Extensions
+### Always Loaded
 
-| Extension               | Description                                                  | Category  |
-| ----------------------- | ------------------------------------------------------------ | --------- |
-| clipspace.ts            | Implements the Clipspace feature for temporary image storage | Image     |
-| contextMenuFilter.ts    | Provides context menu filtering capabilities                 | UI        |
-| dynamicPrompts.ts       | Provides dynamic prompt generation capabilities              | Prompts   |
-| editAttention.ts        | Implements attention editing functionality                   | Text      |
-| electronAdapter.ts      | Adapts functionality for Electron environment                | Platform  |
-| groupNode.ts            | Migrates deprecated group nodes to subgraphs on load         | Graph     |
-| groupOptions.ts         | Handles group node configuration options                     | Graph     |
-| index.ts                | Main extension registration and coordination                 | Core      |
-| load3d.ts               | Supports 3D model loading and visualization                  | 3D        |
-| maskeditor.ts           | Implements the mask editor for image masking operations      | Image     |
-| nodeTemplates.ts        | Provides node template functionality                         | Templates |
-| noteNode.ts             | Adds note nodes for documentation within workflows           | Graph     |
-| previewAny.ts           | Universal preview functionality for various data types       | Preview   |
-| rerouteNode.ts          | Implements reroute nodes for cleaner workflow connections    | Graph     |
-| saveImageExtraOutput.ts | Handles additional image output saving                       | Image     |
-| saveMesh.ts             | Implements 3D mesh saving functionality                      | 3D        |
-| simpleTouchSupport.ts   | Provides basic touch interaction support                     | Input     |
-| slotDefaults.ts         | Manages default values for node slots                        | Nodes     |
-| uploadAudio.ts          | Handles audio file upload functionality                      | Audio     |
-| uploadImage.ts          | Handles image upload functionality                           | Image     |
-| webcamCapture.ts        | Provides webcam capture capabilities                         | Media     |
-| widgetInputs.ts         | Implements various widget input types                        | Widgets   |
+| Extension               | Registered name                                               | Description                                           | Category |
+| ----------------------- | ------------------------------------------------------------- | ----------------------------------------------------- | -------- |
+| clipspace.ts            | `Comfy.Clipspace`                                             | Clipspace feature for passing images between nodes    | Image    |
+| contextMenuFilter.ts    | `Comfy.ContextMenuFilter`                                     | Filter box for long context menus                     | UI       |
+| createBoundingBoxes.ts  | `Comfy.CreateBoundingBoxes`                                   | Bounding-box editor widget                            | Image    |
+| customWidgets.ts        | `Comfy.CustomWidgets`                                         | Registers the custom widget types used by core nodes  | Widgets  |
+| dynamicPrompts.ts       | `Comfy.DynamicPrompts`                                        | Wildcard/dynamic prompt expansion                     | Prompts  |
+| editAttention.ts        | `Comfy.EditAttention`                                         | Ctrl+Up/Down attention weight editing in text widgets | Text     |
+| electronAdapter.ts      | `Comfy.ElectronAdapter`                                       | Desktop (Electron) environment adaptations            | Platform |
+| groupNode.ts            | `Comfy.GroupNode`                                             | Migrates deprecated group nodes to subgraphs on load  | Graph    |
+| groupOptions.ts         | `Comfy.GroupOptions`                                          | Group context-menu options                            | Graph    |
+| imageCompare.ts         | `Comfy.ImageCompare`                                          | Side-by-side / slider image comparison widget         | Image    |
+| imageCompositor.ts      | `Comfy.ImageCompositor`                                       | Layer compositing widget                              | Image    |
+| imageCrop.ts            | `Comfy.ImageCrop`                                             | Image crop widget                                     | Image    |
+| layerEditor.ts          | `Comfy.LayerEditor`                                           | Layer editing widget                                  | Image    |
+| load3dLazy.ts           | `Comfy.Load3DLazy`                                            | Defers the THREE.js 3D stack until a 3D node is used  | 3D       |
+| maskeditor.ts           | `Comfy.MaskEditor`                                            | Mask editor for image masking operations              | Image    |
+| noteNode.ts             | `Comfy.NoteNode`                                              | Note nodes for documentation within workflows         | Graph    |
+| painter.ts              | `Comfy.Painter`                                               | Freehand painting widget                              | Image    |
+| previewAny.ts           | `Comfy.PreviewAny`                                            | Universal preview for arbitrary output types          | Preview  |
+| rerouteNode.ts          | `Comfy.RerouteNode`                                           | Native reroute nodes for cleaner workflow connections | Graph    |
+| saveImageExtraOutput.ts | `Comfy.SaveImageExtraOutput`                                  | Additional image output saving                        | Image    |
+| saveText.ts             | `Comfy.saveText`                                              | Text output saving and preview                        | Text     |
+| selectionBorder.ts      | `Comfy.SelectionBorder`                                       | Selection border rendering on canvas                  | UI       |
+| simpleTouchSupport.ts   | `Comfy.SimpleTouchSupport`                                    | Basic touch and pinch-zoom interaction support        | Input    |
+| slotDefaults.ts         | `Comfy.SlotDefaults`                                          | Default node suggestions for slot drag-release        | Nodes    |
+| uploadAudio.ts          | `Comfy.AudioWidget`, `Comfy.UploadAudio`, `Comfy.RecordAudio` | Audio playback, upload, and recording widgets         | Audio    |
+| uploadImage.ts          | `Comfy.UploadImage`                                           | Image file upload widget                              | Image    |
+| webcamCapture.ts        | `Comfy.WebcamCapture`                                         | Webcam capture widget                                 | Media    |
+| widgetInputs.ts         | `Comfy.WidgetInputs`                                          | Widget-to-input conversion and primitive wiring       | Widgets  |
 
-### Conditional Lines Subdirectory
+### Conditionally Loaded
 
-Located in `extensions/core/load3d/conditional-lines/`:
+| Extension                    | Registered name             | Loads when                                                             |
+| ---------------------------- | --------------------------- | ---------------------------------------------------------------------- |
+| nodeTemplates.ts             | `Comfy.NodeTemplates`       | not a Cloud build                                                      |
+| cloudRemoteConfig.ts         | `Comfy.Cloud.RemoteConfig`  | Cloud build                                                            |
+| agentPanel.ts                | `Comfy.AgentPanel`          | Cloud build, or `VITE_AGENT_STANDALONE=true` in any other distribution |
+| cloudBadges.ts               | `Comfy.Cloud.Badges`        | Cloud build                                                            |
+| cloudSessionCookie.ts        | `Comfy.Cloud.SessionCookie` | Cloud build                                                            |
+| cloudFeedbackTopbarButton.ts | `Comfy.FeedbackButton`      | Cloud or nightly build                                                 |
+| nightlyBadges.ts             | `Comfy.Nightly.Badges`      | nightly build that is not Cloud                                        |
 
-| File                        | Description                             |
-| --------------------------- | --------------------------------------- |
-| ColoredShadowMaterial.js    | Material for colored shadow rendering   |
-| ConditionalEdgesGeometry.js | Geometry for conditional edge rendering |
-| ConditionalEdgesShader.js   | Shader for conditional edges            |
-| OutsideEdgesGeometry.js     | Geometry for outside edge detection     |
+The Cloud block is gated on a literal `__DISTRIBUTION__ === 'cloud'` comparison
+rather than the `isCloud` constant — that literal is what lets the bundler
+dead-code-eliminate the block, and its `posthog-js` import, from OSS builds.
+`agentPanel.ts` registers through an exported `registerAgentPanelExtension()`
+rather than on import.
 
-### Lines2 Subdirectory
+### Lazily Loaded (3D)
 
-Located in `extensions/core/load3d/conditional-lines/Lines2/`:
+`load3dLazy.ts` dynamically imports the following the first time a 3D node
+appears, so THREE.js (~1.8 MB) stays out of the initial bundle:
 
-| File                               | Description                             |
-| ---------------------------------- | --------------------------------------- |
-| ConditionalLineMaterial.js         | Material for conditional line rendering |
-| ConditionalLineSegmentsGeometry.js | Geometry for conditional line segments  |
+| Extension                  | Registered name(s)                                                                                         | Description                        |
+| -------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------- |
+| load3d.ts                  | `Comfy.Load3D`, `Comfy.Preview3D`                                                                          | 3D model loading and visualization |
+| load3dAdvanced.ts          | `Comfy.Load3DAdvanced`                                                                                     | Advanced 3D loading options        |
+| load3dPreviewExtensions.ts | `Comfy.PreviewGaussianSplat`, `Comfy.PreviewPointCloud`, `Comfy.SaveGaussianSplat`, `Comfy.SavePointCloud` | Splat and point-cloud preview/save |
+| saveMesh.ts                | `Comfy.SaveGLB`                                                                                            | 3D mesh saving                     |
+| cameraInfo.ts              | `Comfy.CreateCameraInfo`                                                                                   | Interactive camera-info widget     |
 
-### ThreeJS Override Subdirectory
+### Shared Helper Modules
 
-Located in `extensions/core/load3d/threejsOverride/`:
+These live alongside the extensions but register nothing themselves; they are
+imported by the extensions above:
 
-| File                 | Description                                   |
-| -------------------- | --------------------------------------------- |
-| OverrideMTLLoader.js | Custom MTL loader with enhanced functionality |
+| File                      | Used by                               |
+| ------------------------- | ------------------------------------- |
+| textPreviewWidgets.ts     | `previewAny.ts`, `saveText.ts`        |
+| widgetValuePropagation.ts | `customWidgets.ts`, `widgetInputs.ts` |
+
+The `load3d/` subdirectory holds the TypeScript manager classes backing the 3D
+viewport (`SceneManager`, `CameraManager`, `ControlsManager`, `LoaderManager`,
+`AnimationManager`, the `*ModelAdapter` implementations, and others), and
+`cameraInfo/` holds the camera overlay, viewport, and drag handles.
 
 ## Extension Development
 

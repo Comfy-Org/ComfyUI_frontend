@@ -1,15 +1,13 @@
-import { createPinia, setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { nextTick, watch } from 'vue'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { zAgentWsEvent } from '../../schemas/agentApiSchema'
+import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 
 import { useAgentConversationStore } from './agentConversationStore'
 
-const chat = (raw: unknown): AgentChatEvent =>
-  zAgentWsEvent.parse(raw) as AgentChatEvent
+const chat = (raw: unknown): AgentChatEvent => zAgentWsEvent.parse(raw)
 const thinking = (id: string, delta: string): AgentChatEvent =>
   chat({
     type: 'agent_thinking',
@@ -23,12 +21,29 @@ const delta = (id: string, text: string): AgentChatEvent =>
 const toolCall = (id: string, name: string, status: string): AgentChatEvent =>
   chat({
     type: 'agent_tool_call',
-    data: { tool_name: name, status, args: [], message_id: id, thread_id: 'th' }
+    data: {
+      tool_call_id: `call-${name}`,
+      tool_name: name,
+      status,
+      message_id: id,
+      thread_id: 'th'
+    }
   })
 const done = (id: string): AgentChatEvent =>
   chat({
     type: 'agent_message_done',
     data: { message_id: id, thread_id: 'th', usage: null }
+  })
+const askResolved = (id: string, askId: string): AgentChatEvent =>
+  chat({
+    type: 'agent_ask_resolved',
+    data: {
+      message_id: id,
+      thread_id: 'th',
+      ask_id: askId,
+      status: 'answered',
+      selected: ['run']
+    }
   })
 
 const T1 = 't1' as TurnId
@@ -71,8 +86,20 @@ const partTexts = (store: ReturnType<typeof useAgentConversationStore>) =>
   )
 
 describe('useAgentConversationStore', () => {
-  beforeEach(() => {
-    setActivePinia(createPinia())
+  it('publishes a turn identity before its live status', () => {
+    const store = useAgentConversationStore()
+    const observations: [typeof store.status, TurnId | null][] = []
+    watch(
+      () => [store.status, store.activeTurnId] as const,
+      ([status, turnId]) => observations.push([status, turnId]),
+      { flush: 'sync' }
+    )
+
+    store.startTurn(T1)
+
+    expect(observations.filter(([status]) => status !== 'idle')).toEqual([
+      ['streaming', T1]
+    ])
   })
 
   it('(M1) fires a deep watch on messages when a MID-turn delta event lands', async () => {
@@ -201,12 +228,70 @@ describe('useAgentConversationStore', () => {
   it('folds a tool_call into the active turn', () => {
     const store = useAgentConversationStore()
     store.startTurn(T1)
-    store.ingest(toolCall('t1', 'add_node', 'ok'))
+    store.ingest(toolCall('t1', 'add_node', 'success'))
     expect(store.messages[0].parts[0]).toMatchObject({
       type: 'tool',
       name: 'add_node',
       ok: true
     })
+  })
+
+  it('restores a pending run approval as the live turn and continues after it resolves', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'turn-1', 'Run it', 'user-message-1'),
+      zAgentMessages.parse([
+        {
+          id: 'assistant-message-1',
+          thread_id: 'th',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: 'turn-1',
+          pending_ask: {
+            message_id: 'assistant-message-1',
+            ask_id: 'turn-1:call-1',
+            kind: 'run_approval',
+            context: {
+              workflow_id: 'workflow-1',
+              workflow_name: 'Portrait workflow'
+            },
+            prompt: 'Run workflow “Portrait workflow”?',
+            options: [
+              { id: 'run', label: 'Run' },
+              { id: 'cancel', label: 'Cancel' }
+            ],
+            min_selections: 1,
+            max_selections: 1,
+            allow_other: false
+          }
+        }
+      ])[0]
+    ])
+
+    expect(store.activeTurnId).toBe('assistant-message-1')
+    expect(store.isStreaming).toBe(true)
+    expect(store.messages[0].parts).toContainEqual({
+      type: 'runApproval',
+      askId: 'turn-1:call-1',
+      workflowId: 'workflow-1',
+      workflowName: 'Portrait workflow'
+    })
+
+    store.ingest(askResolved('assistant-message-1', 'turn-1:call-1'))
+    store.ingest(delta('assistant-message-1', 'Running now.'))
+
+    expect(
+      store.messages[0].parts.some(
+        (part) => (part as { type: string }).type === 'runApproval'
+      )
+    ).toBe(false)
+    expect(partTexts(store)).toContain('Running now.')
+    expect(store.isStreaming).toBe(true)
+
+    store.ingest(done('assistant-message-1'))
+    expect(store.isStreaming).toBe(false)
   })
 
   it('recordFailedSend renders [user, assistant(notice)] and leaves the turn idle', () => {
@@ -255,6 +340,29 @@ describe('useAgentConversationStore', () => {
     expect(store.threadId).toBe('th-7')
     store.reset()
     expect(store.threadId).toBeNull()
+  })
+
+  it('snapshots local workflow references on the submitted turn', () => {
+    const store = useAgentConversationStore()
+    store.startTurn(T1)
+    Reflect.apply(store.recordUser, store, [
+      T1,
+      'compare these',
+      undefined,
+      undefined,
+      [
+        { id: 'wf-1', name: 'Workflow 1' },
+        { id: 'wf-2', name: 'Workflow 2' }
+      ]
+    ])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      workflowReferences: [
+        { id: 'wf-1', name: 'Workflow 1' },
+        { id: 'wf-2', name: 'Workflow 2' }
+      ]
+    })
   })
 
   it('revokes transcript blob previews on reset and on hydrate', () => {
@@ -340,6 +448,129 @@ describe('useAgentConversationStore', () => {
     expect(partTexts(store)).toContain('the awaited reply')
   })
 
+  it('hydrates transcript turns in sequence order', () => {
+    const store = useAgentConversationStore()
+
+    store.hydrate([
+      historyRow(4, 'assistant', 'turn-b', 'Second reply'),
+      historyRow(2, 'assistant', 'turn-a', 'First reply'),
+      historyRow(1, 'user', 'turn-a', 'First prompt'),
+      historyRow(3, 'user', 'turn-b', 'Second prompt')
+    ])
+
+    expect(store.entries.map((entry) => entry.id)).toEqual([
+      'turn-a',
+      'turn-a',
+      'turn-b',
+      'turn-b'
+    ])
+    expect(partTexts(store)).toEqual(['First reply', 'Second reply'])
+  })
+
+  it('hydrates persisted workflow reference chips on their original user turn', () => {
+    const user = historyRow(1, 'user', 'turn-a', 'Compare these')
+    user.content = {
+      text: 'Compare these',
+      workflow_references: [
+        { workflow_id: 'wf-reference', name: 'Reference workflow' }
+      ]
+    }
+    const store = useAgentConversationStore()
+
+    store.hydrate([user, historyRow(2, 'assistant', 'turn-a', 'Done')])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      workflowReferences: [{ id: 'wf-reference', name: 'Reference workflow' }]
+    })
+  })
+
+  it('hydrates a persisted user attachment preview on its original turn', () => {
+    const user = historyRow(1, 'user', 'turn-a', 'check this image')
+    user.content = {
+      text: 'check this image',
+      attachments: ['ComfyUI_00002_.png'],
+      attachment_refs: [
+        { name: 'ComfyUI_00002_.png', id: 'asset-1', kind: 'image' }
+      ]
+    }
+    const store = useAgentConversationStore()
+
+    store.hydrate([user, historyRow(2, 'assistant', 'turn-a', 'Looks good.')])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png' }]
+    })
+  })
+
+  it('hydrates persisted tool calls into the same parts array the live work-summary UI reads', () => {
+    const assistant = historyRow(2, 'assistant', 'turn-a', 'Done')
+    assistant.content = {
+      text: 'Done',
+      tool_calls: [{ id: 'call-1', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const store = useAgentConversationStore()
+
+    store.hydrate([historyRow(1, 'user', 'turn-a', 'Find a node'), assistant])
+
+    expect(store.messages[0].parts).toContainEqual({
+      type: 'tool',
+      callId: 'call-1',
+      name: 'search_nodes',
+      state: 'done',
+      ok: true
+    })
+  })
+
+  it('does not bleed a tool-call summary onto a different chat, and restores it when switching back', () => {
+    const store = useAgentConversationStore()
+    const threadAAssistant = historyRow(2, 'assistant', 'turn-a', 'Done A')
+    threadAAssistant.content = {
+      text: 'Done A',
+      tool_calls: [{ id: 'call-a', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const threadA = [
+      historyRow(1, 'user', 'turn-a', 'Find a node'),
+      threadAAssistant
+    ]
+    const threadB = [
+      historyRow(1, 'user', 'turn-b', 'Just chat'),
+      historyRow(2, 'assistant', 'turn-b', 'Done B')
+    ]
+    const hasToolPart = () =>
+      store.messages.some((message) =>
+        message.parts.some((part) => part.type === 'tool')
+      )
+
+    store.hydrate(threadA)
+    expect(hasToolPart()).toBe(true)
+
+    store.hydrate(threadB)
+    expect(hasToolPart()).toBe(false)
+
+    store.hydrate(threadA)
+    expect(hasToolPart()).toBe(true)
+  })
+
+  it('keeps hydrated turn identity stable when persisted row ids change', () => {
+    const store = useAgentConversationStore()
+    const firstRows = [
+      historyRow(1, 'user', 'turn-a', 'Prompt', 'user-row-v1'),
+      historyRow(2, 'assistant', 'turn-a', 'Reply', 'assistant-row-v1')
+    ]
+
+    store.hydrate(firstRows)
+    const firstMessage = store.messages[0]
+    store.hydrate([
+      historyRow(1, 'user', 'turn-a', 'Prompt', 'user-row-v2'),
+      historyRow(2, 'assistant', 'turn-a', 'Reply', 'assistant-row-v2')
+    ])
+
+    expect(store.messages[0].id).toBe(firstMessage.id)
+    expect(store.messages[0].id).toBe('turn-a')
+  })
+
   it('keeps an earlier completed turn when a returning live turn repeats its prompt text', () => {
     const store = useAgentConversationStore()
     store.setThreadId('th')
@@ -378,5 +609,34 @@ describe('useAgentConversationStore', () => {
     expect(store.messages.map((message) => message.id)).toEqual(['server-turn'])
     expect(partTexts(store)).toEqual(['persisted reply'])
     expect(store.isStreaming).toBe(false)
+  })
+
+  it('resolves existing paywalls without resurrecting them after funds run out again', () => {
+    const store = useAgentConversationStore()
+    store.recordPaywall(T1, 'subscribe')
+
+    store.setPaywallsResolved(true)
+    store.setPaywallsResolved(false)
+
+    expect(store.messages[0].parts).toEqual([])
+    expect(store.entries[0]).toMatchObject({ role: 'user', text: 'subscribe' })
+
+    store.recordPaywall(T2, 'top up')
+    expect(store.messages[1].parts).toEqual([
+      { type: 'paywall', message: undefined }
+    ])
+  })
+
+  it('shows a later paywall after resolving an earlier one', () => {
+    const store = useAgentConversationStore()
+    store.recordPaywall(T1, 'subscribe')
+    store.setPaywallsResolved(true)
+
+    store.recordPaywall(T2, 'continue')
+
+    expect(store.messages[0].parts).toEqual([])
+    expect(store.messages[1].parts).toEqual([
+      { type: 'paywall', message: undefined }
+    ])
   })
 })

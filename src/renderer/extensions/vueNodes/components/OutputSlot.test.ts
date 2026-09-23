@@ -10,31 +10,37 @@ import { toNodeId } from '@/types/nodeId'
 
 import OutputSlot from './OutputSlot.vue'
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({ toastErrorHandler: vi.fn() })
 }))
 
-vi.mock('@/renderer/core/canvas/links/slotLinkDragUIState', () => ({
-  useSlotLinkDragUIState: () => ({
-    state: { active: false, compatible: new Map() }
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/links/slotLinkDragUIState'),
+  () => ({
+    useSlotLinkDragUIState: () => ({
+      state: { active: false, compatible: new Map() }
+    })
   })
-}))
+)
 
-vi.mock('@/renderer/extensions/vueNodes/composables/useNodeTooltips', () => ({
-  useNodeTooltips: () => ({
-    getOutputSlotTooltip: () => '',
-    createTooltipConfig: (text: string) => ({ value: text })
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/composables/useNodeTooltips'),
+  () => ({
+    useNodeTooltips: () => ({
+      getOutputSlotTooltip: () => '',
+      createTooltipConfig: (text: string) => ({ value: text })
+    })
   })
-}))
+)
 
-vi.mock(
-  '@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction',
+vi.mock<unknown>(
+  import('@/renderer/extensions/vueNodes/composables/useSlotLinkInteraction'),
   () => ({
     useSlotLinkInteraction: () => ({ onPointerDown: vi.fn() })
   })
 )
 
-vi.mock('@/renderer/core/layout/slots/slotIdentifier', () => ({
+vi.mock<unknown>(import('@/renderer/core/layout/slots/slotIdentifier'), () => ({
   getSlotKey: () => 'mock-key'
 }))
 

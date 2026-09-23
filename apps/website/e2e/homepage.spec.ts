@@ -2,7 +2,7 @@ import { fileURLToPath } from 'node:url'
 
 import { expect } from '@playwright/test'
 
-import { test } from './fixtures/blockExternalMedia'
+import { test } from './fixtures/workshopVisibility'
 
 const caseStudyVideoPath = fileURLToPath(
   new URL(
@@ -40,8 +40,26 @@ test.describe('Homepage @smoke', () => {
     })
     await expect(activeSlide.getByText('New Model Release')).toBeVisible()
     const cta = activeSlide.getByRole('link', { name: 'Explore Seedance 2.5' })
+    await cta.scrollIntoViewIfNeeded()
     await expect(cta).toBeVisible()
-    await expect(cta).toHaveAttribute('href', '/seedance-2.5')
+    await expect(cta).toHaveAttribute(
+      'href',
+      '/models/byteplus--seedance-2-5-text-to-video--generate-videos/'
+    )
+  })
+
+  test('ModelDiscoverySection links providers to the Workshop', async ({
+    page
+  }) => {
+    const section = page.getByTestId('model-discovery')
+    await expect(
+      section.getByRole('heading', { name: /ready to run/i })
+    ).toBeVisible()
+    const bytedance = section.getByRole('link', { name: /ByteDance/ }).first()
+    await expect(bytedance).toHaveAttribute('href', '/models?q=ByteDance')
+    await expect(
+      section.getByRole('link', { name: 'Browse all models' })
+    ).toHaveAttribute('href', '/models')
   })
 
   test('FeaturedWorkflowsSection carousel is visible', async ({ page }) => {
@@ -76,7 +94,9 @@ test.describe('Homepage @smoke', () => {
     const section = page.locator('section', {
       has: page.getByRole('heading', { name: /The AI creation/ })
     })
-    const cards = section.locator('a[href]')
+    const cards = section
+      .getByRole('group', { name: 'Products' })
+      .getByRole('link')
     await expect(cards).toHaveCount(4)
   })
 
@@ -230,9 +250,10 @@ test.describe('Product cards links @smoke', () => {
     const section = page.locator('section', {
       has: page.getByRole('heading', { name: /The AI creation/ })
     })
+    const products = section.getByRole('group', { name: 'Products' })
 
-    for (const href of ['/download', '/cloud', '/api', '/enterprise']) {
-      await expect(section.locator(`a[href="${href}"]`)).toBeVisible()
+    for (const href of ['/download', '/cloud', '/platform', '/enterprise']) {
+      await expect(products.locator(`a[href="${href}"]`)).toBeVisible()
     }
   })
 })

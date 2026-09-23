@@ -1,3 +1,4 @@
+import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -8,41 +9,27 @@ import { widgetId } from '@/types/widgetId'
 import { api } from '@/scripts/api'
 import { useMaskEditorLoader } from './useMaskEditorLoader'
 
-// ---- Module Mocks ----
-
-const mockDataStore: Record<string, unknown> = {
-  inputData: null,
-  sourceNode: null,
-  setLoading: vi.fn()
-}
-
-vi.mock('@/stores/maskEditorDataStore', () => ({
-  useMaskEditorDataStore: vi.fn(() => mockDataStore)
-}))
-
-vi.mock('@/stores/nodeOutputStore', () => ({
-  useNodeOutputStore: vi.fn(() => ({
-    getNodeOutputs: vi.fn(() => undefined)
-  }))
-}))
+let mockDataStore: ReturnType<typeof useMaskEditorDataStore>
 
 const distribution = vi.hoisted(() => ({ isCloud: false }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
   }
 }))
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: vi.fn(),
     apiURL: vi.fn((route: string) => `http://localhost:8188/api${route}`)
   }
 }))
 
-vi.mock('@/scripts/app', () => ({
+vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
+    nodeOutputs: {},
+    nodePreviewImages: {},
     getPreviewFormatParam: vi.fn(() => ''),
     getRandParam: vi.fn(() => '')
   }
@@ -100,6 +87,7 @@ function requestedLayerUrls(layerFilename: string): string[] {
 
 describe('useMaskEditorLoader', () => {
   beforeEach(() => {
+    mockDataStore = useMaskEditorDataStore()
     requestedUrls.length = 0
     failUrlPattern = null
     distribution.isCloud = false

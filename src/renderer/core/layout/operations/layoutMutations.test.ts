@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -40,7 +38,6 @@ function seedNode(
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   seedNode(NODE_1, [10, 20], [200, 100], 0)
   seedNode(NODE_2, [300, 400], [150, 80], 1)
 })

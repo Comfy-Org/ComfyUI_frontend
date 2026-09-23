@@ -18,7 +18,7 @@ export function getDroppedAsset(
   const match = [...dataTransfer.types].find((type) =>
     validTypes.includes(type)
   )
-  const uri = match && dataTransfer.getData(match)?.split('\n')?.[0]
+  const uri = match && dataTransfer.getData(match).split('\n')[0]
   const ref = asset?.attachment_ref
 
   return uri || ref
@@ -39,6 +39,7 @@ export async function fetchDroppedAsset({
   if (!uri) return undefined
   try {
     const response = await fetch(uri)
+    if (!response.ok) return undefined
     const blob = await response.blob()
     return new File([blob], name, { type: blob.type })
   } catch {

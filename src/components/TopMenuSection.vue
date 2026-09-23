@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="!workspaceStore.focusMode"
-    class="ml-1 flex flex-col gap-1 pt-1"
+    class="ml-(--comfy-canvas-gutter) flex flex-col gap-1 pt-(--comfy-canvas-gutter)"
     @mouseenter="isTopMenuHovered = true"
     @mouseleave="isTopMenuHovered = false"
   >
@@ -19,7 +19,7 @@
         <SubgraphBreadcrumb />
       </div>
 
-      <div class="mx-1 flex flex-col items-end gap-1">
+      <div class="ml-(--comfy-canvas-gutter) flex flex-col items-end gap-1">
         <div
           data-testid="top-menu-actionbars"
           :inert="isActionBarsHidden"
@@ -123,6 +123,9 @@
               </div>
             </div>
             <FreeTierQuota v-if="!isActionbarFloating" />
+            <!-- Complement of ComfyActionbar's `!isDocked` mount (same storage
+                 key), so at most one caption renders in any menu state. -->
+            <PartnerNodesRunCaption v-if="isActionbarDocked" />
           </div>
         </div>
         <ErrorOverlay v-if="!isActionBarsHidden" />
@@ -167,6 +170,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import ComfyActionbar from '@/components/actionbar/ComfyActionbar.vue'
+import PartnerNodesRunCaption from '@/components/actionbar/PartnerNodesRunCaption.vue'
 import SubgraphBreadcrumb from '@/components/breadcrumb/SubgraphBreadcrumb.vue'
 import QueueInlineProgressSummary from '@/components/queue/QueueInlineProgressSummary.vue'
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'

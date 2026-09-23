@@ -1,0 +1,81 @@
+import type { WorkshopAnalyticsEvent } from './workshop-analytics'
+
+type ServiceHealth = 'success' | 'failure' | 'excluded' | 'pending'
+
+type FailedRun = Extract<
+  Extract<WorkshopAnalyticsEvent, { name: 'run_finished' }>['properties'],
+  { status: 'failed' }
+>
+
+function isAccountRefusal(failure: FailedRun): boolean {
+  if (failure.reason !== 'unavailable') return false
+  return (
+    failure.failure_stage === 'credential' ||
+    [401, 403].includes(failure.http_status ?? 0) ||
+    ['forbidden', 'not_enabled'].includes(failure.router_error_type ?? '')
+  )
+}
+
+function health(event: WorkshopAnalyticsEvent): ServiceHealth {
+  if (event.name === 'delivery_finished') {
+    if (event.properties.status === 'succeeded') return 'success'
+    return event.properties.status === 'failed' ? 'failure' : 'excluded'
+  }
+  if (event.name !== 'run_finished') return 'excluded'
+  if (event.properties.status === 'succeeded') return 'pending'
+  if (event.properties.status === 'cancelled') return 'excluded'
+  if (isAccountRefusal(event.properties)) return 'excluded'
+  return ['noCredits', 'policy', 'concurrency'].includes(
+    event.properties.reason
+  )
+    ? 'excluded'
+    : 'failure'
+}
+
+const HEALTH_FIELDS = new Set([
+  'model_slug',
+  'router_id',
+  'provider',
+  'modality',
+  'request_id',
+  'duration_ms',
+  'reason',
+  'failure_stage',
+  'http_status',
+  'router_error_type',
+  'field_error_codes',
+  'field_error_names',
+  'exception_name',
+  'exception_frames',
+  'output_count',
+  'output_kind'
+])
+
+export function workshopHealthLog(event: WorkshopAnalyticsEvent) {
+  if (
+    event.name !== 'run_started' &&
+    event.name !== 'run_finished' &&
+    event.name !== 'delivery_finished' &&
+    event.name !== 'run_validation_failed'
+  )
+    return
+  const properties = event.properties
+  return {
+    ...Object.fromEntries(
+      Object.entries(properties).filter(([key]) => HEALTH_FIELDS.has(key))
+    ),
+    feature: 'models',
+    telemetry_version: 1,
+    event_name: event.name,
+    service_health: health(event),
+    reason: 'reason' in properties ? properties.reason : 'none',
+    ...('attempt_id' in properties
+      ? { client_attempt_id: properties.attempt_id }
+      : {}),
+    ...('status' in properties ? { outcome: properties.status } : {})
+  }
+}
+
+export type WorkshopHealthLog = NonNullable<
+  ReturnType<typeof workshopHealthLog>
+>

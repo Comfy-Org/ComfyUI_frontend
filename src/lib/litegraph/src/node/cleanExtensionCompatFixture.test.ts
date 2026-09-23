@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -103,7 +101,6 @@ function runMode(mode: CleanExtensionMode) {
 
 describe('clean extension compatibility fixture', () => {
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     LiteGraph.onDeprecationWarning = []
   })
 

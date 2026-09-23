@@ -5,26 +5,20 @@ import {
   DropdownMenuPortal,
   DropdownMenuRoot,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-  TooltipContent,
-  TooltipPortal,
-  TooltipProvider,
-  TooltipRoot,
-  TooltipTrigger
+  DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, nextTick, ref, useTemplateRef } from 'vue'
+import { computed, nextTick, ref } from 'vue'
+import type { ComponentPublicInstance } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import {
-  AGENT_REKA_TOOLTIP_CONTENT_CLASS,
-  AGENT_REKA_TOOLTIP_PROVIDER_PROPS
-} from '@/composables/useTooltipConfig'
+import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
+import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 
 import type {
   ChatSession,
   HistoryGroups
 } from '../../stores/agent/agentChatHistoryStore'
-import AgentTooltip from './AgentTooltip.vue'
 
 const { groups } = defineProps<{ groups: HistoryGroups }>()
 const emit = defineEmits<{
@@ -54,17 +48,37 @@ function pick(session: ChatSession): void {
   emit('select', session.id)
 }
 
+const MAX_TITLE_LENGTH = 200
+
 const renamingId = ref<string | null>(null)
 const renameDraft = ref('')
-const renameInputs = useTemplateRef<HTMLInputElement[]>('renameInput')
+const selectOnFocus = ref(false)
 
-async function startRename(session: ChatSession): Promise<void> {
+function startRename(session: ChatSession): void {
   renamingId.value = session.id
   renameDraft.value = session.title
-  await nextTick()
-  const input = renameInputs.value?.[0]
-  input?.focus()
-  input?.select()
+  selectOnFocus.value = true
+}
+
+// Runs on every mount of the editor, so a row that regroups mid-rename gets
+// focus back; selecting is confined to the fresh open so a remount cannot
+// wipe what the user has already typed.
+function focusInput(el: Element | ComponentPublicInstance | null): void {
+  const input: unknown = el instanceof Element ? el : el?.$el
+  if (!(input instanceof HTMLInputElement)) return
+  const shouldSelect = selectOnFocus.value
+  selectOnFocus.value = false
+  // Deferred because the ref fires before the element is in the document and
+  // before v-model has written the draft, so focusing here directly would
+  // leave the caret at the end instead of selecting the existing title.
+  void nextTick(() => {
+    // The row can unmount within the tick (rapid regroup, delete); focusing a
+    // detached element is a silent no-op in browsers, but bail explicitly
+    // instead of relying on that quirk.
+    if (!input.isConnected) return
+    input.focus()
+    if (shouldSelect) input.select()
+  })
 }
 
 function cancelRename(): void {
@@ -72,9 +86,21 @@ function cancelRename(): void {
 }
 
 function commitRename(session: ChatSession): void {
+  // Idempotence guard: commit is reachable from both Enter and blur, so a
+  // second call for an already-ended rename must not emit a duplicate.
+  if (renamingId.value !== session.id) return
   renamingId.value = null
   const title = renameDraft.value.trim()
-  if (title !== '' && title !== session.title) emit('rename', session.id, title)
+  if (title !== '' && title !== session.title.trim())
+    emit('rename', session.id, title)
+}
+
+// Fence reka-ui's close focus-restore only when a rename was just started
+// (@select fires before this event, so renamingId is already set on that
+// path); otherwise let Escape/outside-click return focus to the trigger so
+// keyboard users keep their place.
+function onMenuCloseAutoFocus(event: Event): void {
+  if (renamingId.value !== null) event.preventDefault()
 }
 
 function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
@@ -92,31 +118,27 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
 <template>
   <div class="flex h-full flex-col overflow-hidden">
     <div class="flex h-10 shrink-0 items-center gap-1 px-2">
-      <TooltipProvider v-bind="AGENT_REKA_TOOLTIP_PROVIDER_PROPS">
-        <TooltipRoot disable-closing-trigger>
-          <TooltipTrigger as-child>
-            <button
-              type="button"
-              :aria-label="t('agent.backToPreviousChat')"
-              class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors"
-              @click="emit('back')"
-            >
-              <span class="icon-[lucide--chevron-left] size-4 shrink-0" />
-            </button>
-          </TooltipTrigger>
-          <TooltipPortal>
-            <TooltipContent
-              side="bottom"
-              :side-offset="6"
-              :collision-padding="8"
-              :class="AGENT_REKA_TOOLTIP_CONTENT_CLASS"
-            >
-              {{ t('agent.backToPreviousChat') }}
-            </TooltipContent>
-          </TooltipPortal>
-        </TooltipRoot>
-      </TooltipProvider>
-      <h2 class="text-agent-fg-muted m-0 text-xs font-normal">
+      <AccessibleTooltip
+        :label="t('agent.backToPreviousChat')"
+        side="bottom"
+        :skip-delay-duration="0"
+        disable-hoverable-content
+        :collision-padding="8"
+      >
+        <template #trigger>
+          <Button
+            type="button"
+            variant="muted-textonly"
+            size="icon-sm"
+            :aria-label="t('agent.backToPreviousChat')"
+            class="size-6 shrink-0"
+            @click="emit('back')"
+          >
+            <span class="icon-[lucide--chevron-left] size-4 shrink-0" />
+          </Button>
+        </template>
+      </AccessibleTooltip>
+      <h2 class="m-0 text-xs font-normal text-muted-foreground">
         {{ t('agent.history') }}
       </h2>
     </div>
@@ -124,84 +146,101 @@ function onRenameKeydown(session: ChatSession, event: KeyboardEvent): void {
     <div class="min-h-0 flex-1 overflow-y-auto p-2">
       <p
         v-if="isEmpty"
-        class="text-agent-fg-muted px-2 py-8 text-center text-sm"
+        class="px-2 py-8 text-center text-sm text-muted-foreground"
       >
         {{ t('agent.historyEmpty') }}
       </p>
 
-      <section v-for="[key, label, items] in sections" :key="key" class="mb-3">
-        <p class="text-agent-fg-muted my-0 px-2 py-1 text-xs font-medium">
+      <section v-for="[key, label, items] in sections" :key class="mb-3">
+        <p class="my-0 px-2 py-1 text-xs font-medium text-muted-foreground">
           {{ label }}
         </p>
         <div
           v-for="session in items"
           :key="session.id"
-          class="group hover:bg-agent-surface-hover flex items-center gap-2 rounded-sm px-2 py-1"
+          class="group flex items-center gap-2 rounded-sm px-2 py-1 hover:bg-secondary-background-hover"
         >
           <div
             v-if="renamingId === session.id"
             class="flex min-w-0 flex-1 items-center"
           >
             <span
-              class="text-agent-fg-muted icon-[lucide--circle-check] size-4 shrink-0"
+              class="icon-[lucide--circle-check] size-4 shrink-0 text-muted-foreground"
             />
-            <input
-              ref="renameInput"
+            <Input
+              :ref="focusInput"
               v-model="renameDraft"
               type="text"
               :aria-label="t('g.rename')"
-              class="text-agent-fg border-agent-accent h-6 min-w-0 flex-1 rounded-lg border px-2 py-1 text-xs outline-none"
+              :maxlength="MAX_TITLE_LENGTH"
+              class="h-6 flex-1 px-2 py-1 text-xs"
               @keydown="onRenameKeydown(session, $event)"
-              @blur="cancelRename"
+              @blur="commitRename(session)"
             />
           </div>
           <template v-else>
-            <button
+            <Button
               type="button"
-              class="text-agent-fg-muted flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-left text-xs"
+              variant="muted-textonly"
+              size="unset"
+              class="min-w-0 flex-1 justify-start text-left text-xs font-normal"
               @click="pick(session)"
             >
               <span class="icon-[lucide--circle-check] size-4 shrink-0" />
               <span class="truncate">{{
-                session.title || t('agent.untitledChat')
+                session.title.trim() || t('agent.untitledChat')
               }}</span>
-            </button>
-            <AgentTooltip :label="t('agent.copyMarkdown')">
-              <button
-                type="button"
-                class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex shrink-0 cursor-pointer items-center justify-center rounded-sm p-0.5 transition-colors"
-                :aria-label="t('agent.copyMarkdown')"
-                @click="emit('copyMarkdown', session.id)"
-              >
-                <span class="icon-[lucide--copy] size-3.5" />
-              </button>
-            </AgentTooltip>
+            </Button>
+            <AccessibleTooltip
+              :label="t('agent.copyMarkdown')"
+              :skip-delay-duration="0"
+              disable-hoverable-content
+              :collision-padding="8"
+            >
+              <template #trigger>
+                <Button
+                  type="button"
+                  variant="muted-textonly"
+                  size="icon-sm"
+                  class="shrink-0"
+                  :aria-label="t('agent.copyMarkdown')"
+                  @click="emit('copyMarkdown', session.id)"
+                >
+                  <span class="icon-[lucide--copy] size-3.5" />
+                </Button>
+              </template>
+            </AccessibleTooltip>
             <DropdownMenuRoot>
-              <DropdownMenuTrigger
-                :aria-label="t('agent.chatOptions')"
-                class="text-agent-fg-muted hover:bg-agent-surface-hover hover:text-agent-fg flex size-6 shrink-0 cursor-pointer items-center justify-center rounded-sm transition-colors"
-              >
-                <span class="icon-[lucide--chevron-down] size-3" />
+              <DropdownMenuTrigger as-child>
+                <Button
+                  variant="muted-textonly"
+                  size="icon-sm"
+                  class="size-6 shrink-0"
+                  :aria-label="t('agent.chatOptions')"
+                >
+                  <span class="icon-[lucide--chevron-down] size-3" />
+                </Button>
               </DropdownMenuTrigger>
               <DropdownMenuPortal>
                 <DropdownMenuContent
                   side="bottom"
                   align="end"
                   :side-offset="4"
-                  class="agent-scope bg-agent-surface-raised z-1100 flex h-16 w-32 flex-col gap-1 overflow-clip rounded-[10px] p-1 shadow-md ring-1 ring-black/10 ring-inset"
+                  class="agent-scope z-1100 flex w-32 flex-col gap-1 overflow-clip rounded-lg bg-secondary-background p-1 shadow-md ring-1 ring-border-subtle ring-inset"
+                  @close-auto-focus="onMenuCloseAutoFocus"
                 >
                   <DropdownMenuItem
-                    class="text-agent-fg data-highlighted:bg-agent-surface-hover flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs outline-none"
+                    class="flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
                     @select="startRename(session)"
                   >
                     <span class="icon-[lucide--pencil] size-4 shrink-0" />
                     <span class="truncate">{{ t('g.rename') }}</span>
                   </DropdownMenuItem>
                   <DropdownMenuSeparator
-                    class="before:bg-agent-border relative h-0 w-full shrink-0 before:absolute before:inset-x-0 before:top-0 before:h-px"
+                    class="relative h-0 w-full shrink-0 before:absolute before:inset-x-0 before:top-0 before:h-px before:bg-component-node-border"
                   />
                   <DropdownMenuItem
-                    class="text-agent-fg data-highlighted:bg-agent-surface-hover data-highlighted:text-agent-danger flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs outline-none"
+                    class="flex h-6 w-full shrink-0 cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-xs text-base-foreground outline-none data-highlighted:bg-secondary-background-hover data-highlighted:text-destructive-background"
                     @select="emit('delete', session.id)"
                   >
                     <span class="icon-[lucide--trash-2] size-4 shrink-0" />

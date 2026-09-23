@@ -184,7 +184,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   })
   const backgroundLayer = computed<FillData | null>(() => {
     const first = layers.value[0]
-    return first?.kind === 'fill' ? { ...first } : null
+    return first.kind === 'fill' ? { ...first } : null
   })
   const imageLayers = computed<SceneNode[]>(() =>
     layers.value.filter((n) => n.kind !== 'fill')
@@ -217,7 +217,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
 
   function backgroundNode(): FillData | null {
     const first = editor.document().root.children[0]
-    return first?.kind === 'fill' ? first : null
+    return first.kind === 'fill' ? first : null
   }
 
   function onChange(): void {
@@ -896,7 +896,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
   function onPointerDown(e: PointerEvent): void {
     const zone = viewportEl
     if (!zone) return
-    zone.focus?.()
+    zone.focus()
     pendingMoves = []
     if (
       e.button === 1 ||
@@ -919,7 +919,7 @@ export function useLayerEditorSession(opts: LayerEditorSessionOptions = {}) {
     moveRaf = null
     const events = pendingMoves
     pendingMoves = []
-    const e = events[events.length - 1]
+    const e = events.at(-1)
     if (!e) return
     if (panning.value) {
       panZoom.panBy(e.offsetX - panLast.x, e.offsetY - panLast.y)

@@ -6,10 +6,10 @@
       :subtitle="latestRelease?.version"
       :position
     >
-      <div
+      <SanitizedHtml
         class="pl-14 text-sm leading-[1.21] font-normal text-muted-foreground"
-        v-html="formattedContent"
-      ></div>
+        :html="formattedContent"
+      />
 
       <template #footer-start>
         <a
@@ -52,6 +52,7 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import NotificationPopup from '@/components/common/NotificationPopup.vue'
+import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useExternalLink } from '@/composables/useExternalLink'

@@ -19,11 +19,11 @@ const MockMediaRecorder = vi.hoisted(() =>
   )
 )
 
-vi.mock('extendable-media-recorder', () => ({
+vi.mock<unknown>(import('extendable-media-recorder'), () => ({
   MediaRecorder: MockMediaRecorder
 }))
 
-vi.mock('@/services/audioService', () => ({
+vi.mock<unknown>(import('@/services/audioService'), () => ({
   useAudioService: () => ({
     registerWavEncoder: vi.fn().mockResolvedValue(undefined)
   })

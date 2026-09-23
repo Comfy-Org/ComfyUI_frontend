@@ -1,6 +1,6 @@
 import { expect } from '@playwright/test'
 
-import type { PromptResponse } from '@/schemas/apiSchema'
+import type { PromptResponse } from '@/platform/remote/comfyui/types'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 
@@ -45,8 +45,7 @@ test.describe('Queue button modes', { tag: '@ui' }, () => {
     let promptQueued = false
     const mockResponse: PromptResponse = {
       prompt_id: 'test-id',
-      node_errors: {},
-      error: ''
+      node_errors: {}
     }
     await comfyPage.page.route('**/api/prompt', async (route) => {
       promptQueued = true

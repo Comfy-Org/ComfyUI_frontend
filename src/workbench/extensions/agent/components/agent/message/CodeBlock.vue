@@ -6,6 +6,9 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
+import Button from '@/components/ui/button/Button.vue'
+
 const { code, lang = 'text' } = defineProps<{
   code: string
   lang?: string
@@ -49,20 +52,22 @@ watchDebounced(
 
 <template>
   <div
-    class="group border-agent-border-strong relative my-2 overflow-hidden rounded-md border"
+    class="group relative my-2 overflow-hidden rounded-md border border-border-default"
   >
     <div
-      class="border-agent-border-strong bg-agent-surface-hover flex items-center justify-between border-b px-3 py-1.5"
+      class="flex items-center justify-between border-b border-border-default bg-secondary-background-hover px-3 py-1.5"
     >
       <span
-        class="text-agent-fg-subtle flex items-center gap-1.5 font-mono text-xs"
+        class="flex items-center gap-1.5 font-mono text-xs text-muted-foreground"
       >
         <span class="icon-[lucide--file-code] size-3.5" />
-        <span class="text-agent-fg font-medium">{{ lang }}</span>
+        <span class="font-medium text-base-foreground">{{ lang }}</span>
       </span>
-      <button
+      <Button
         type="button"
-        class="text-agent-fg-subtle hover:bg-agent-surface hover:text-agent-fg border-agent-border-strong flex items-center gap-1 rounded-sm border px-2 py-0.5 font-mono text-xs transition-colors"
+        variant="outline"
+        size="sm"
+        class="gap-1 font-mono"
         @click="copy(code)"
       >
         <span
@@ -74,16 +79,16 @@ watchDebounced(
           "
         />
         {{ copied ? t('agent.copied') : t('agent.copy') }}
-      </button>
+      </Button>
     </div>
-    <div
+    <SanitizedHtml
       v-if="highlighted"
       class="overflow-x-auto p-4 font-mono text-sm [&_pre]:bg-transparent"
-      v-html="highlighted"
+      :html="highlighted"
     />
     <pre
       v-else
-      class="text-agent-fg overflow-x-auto p-4 font-mono text-sm"
+      class="overflow-x-auto p-4 font-mono text-sm text-base-foreground"
     ><code>{{ code }}</code></pre>
   </div>
 </template>

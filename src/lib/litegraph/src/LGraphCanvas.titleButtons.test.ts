@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
@@ -16,7 +14,6 @@ describe('LGraphCanvas Title Button Rendering', () => {
   let node: LGraphNode
 
   beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
     // Create a mock canvas element
     const canvasElement = document.createElement('canvas')
     ctx = {

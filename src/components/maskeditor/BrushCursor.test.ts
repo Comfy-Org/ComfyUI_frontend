@@ -1,31 +1,11 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
-import { reactive } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import BrushCursor from '@/components/maskeditor/BrushCursor.vue'
 import { BrushShape } from '@/extensions/core/maskeditor/types'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-const initialMock = () =>
-  reactive({
-    brushVisible: true,
-    brushPreviewGradientVisible: false,
-    brushSettings: {
-      type: BrushShape.Arc,
-      size: 20,
-      opacity: 0.7,
-      hardness: 1,
-      stepSize: 5
-    },
-    zoomRatio: 1,
-    cursorPoint: { x: 100, y: 50 },
-    panOffset: { x: 0, y: 0 }
-  })
-
-let mockStore: ReturnType<typeof initialMock>
-
-vi.mock('@/stores/maskEditorStore', () => ({
-  useMaskEditorStore: () => mockStore
-}))
+let mockStore: ReturnType<typeof useMaskEditorStore>
 
 const styleOf = (el: Element): string => el.getAttribute('style') ?? ''
 
@@ -41,7 +21,21 @@ const getGradientEl = (): HTMLElement =>
 
 describe('BrushCursor', () => {
   beforeEach(() => {
-    mockStore = initialMock()
+    mockStore = useMaskEditorStore()
+    mockStore.$patch({
+      brushVisible: true,
+      brushPreviewGradientVisible: false,
+      brushSettings: {
+        type: BrushShape.Arc,
+        size: 20,
+        opacity: 0.7,
+        hardness: 1,
+        stepSize: 5
+      },
+      zoomRatio: 1,
+      cursorPoint: { x: 100, y: 50 },
+      panOffset: { x: 0, y: 0 }
+    })
   })
 
   describe('opacity', () => {
@@ -154,6 +148,37 @@ describe('BrushCursor', () => {
       })
       expect(styleOf(getBrushEl())).toContain('top: -79px')
       expect(getBoundingClientRect).toHaveBeenCalledTimes(2)
+    })
+
+    it('should read the container rect once per position, not once per axis', async () => {
+      const container = document.createElement('div')
+      const readRect = vi
+        .spyOn(container, 'getBoundingClientRect')
+        .mockReturnValue(DOMRect.fromRect({ x: 30, y: 60 }))
+
+      renderCursor(container)
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 50px')
+      })
+
+      // left and top are both derived from the same underlying rect; reading
+      // it once per rendered position (rather than once per axis) is what
+      // keeps a mousemove down to a single forced layout.
+      expect(
+        readRect,
+        'left and top come from the same rect; reading it twice is two forced layouts per mousemove'
+      ).toHaveBeenCalledTimes(1)
+
+      mockStore.cursorPoint = { x: 101, y: 51 }
+
+      await waitFor(() => {
+        expect(styleOf(getBrushEl())).toContain('left: 51px')
+      })
+
+      // A moved cursor must re-read the rect exactly once more, not once per
+      // axis: this is the same guarantee restated for the useElementBounding
+      // implementation that replaced the hand-rolled rect read.
+      expect(readRect).toHaveBeenCalledTimes(2)
     })
 
     it('updates when the container moves under a stationary cursor', async () => {

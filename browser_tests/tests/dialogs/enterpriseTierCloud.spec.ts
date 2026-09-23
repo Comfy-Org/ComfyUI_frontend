@@ -185,10 +185,13 @@ test.describe('Enterprise workspace billing', { tag: '@cloud' }, () => {
     )
     const content = await workspace.openPlanAndCreditsSettings()
 
-    await expect(content.getByText('Your subscription has ended')).toBeVisible()
     await expect(
       content.getByRole('heading', { name: 'Enterprise' })
     ).toBeVisible()
+    await expect(content.getByTestId('plan-status-badge')).toHaveText(
+      'Inactive'
+    )
+    await expect(content.getByTestId('subscription-state-card')).toHaveCount(0)
     await expect(
       content.getByRole('button', { name: 'Add credits' })
     ).toBeVisible()

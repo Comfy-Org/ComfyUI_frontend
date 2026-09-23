@@ -2,8 +2,6 @@ import { useLocalStorage, useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
-import type { AgentThreadSummary } from '../../schemas/agentApiSchema'
-
 export interface ChatSession {
   id: string
   title: string
@@ -15,20 +13,6 @@ export interface HistoryGroups {
   today: ChatSession[]
   yesterday: ChatSession[]
   earlier: ChatSession[]
-}
-
-export function chatSessionFromThread(
-  thread: AgentThreadSummary,
-  untitledTitle: string,
-  now = Date.now()
-): ChatSession {
-  const stamp = thread.last_message_at ?? thread.updated_at ?? thread.created_at
-  const updatedAt = stamp ? Date.parse(stamp) : now
-  return {
-    id: thread.id,
-    title: thread.title || thread.preview || untitledTitle,
-    updatedAt: Number.isNaN(updatedAt) ? now : updatedAt
-  }
 }
 
 function startOfLocalDay(now: number): number {
@@ -68,7 +52,7 @@ export const useAgentChatHistoryStore = defineStore('agentChatHistory', () => {
   // The server owns thread titles but has no rename or delete endpoint yet
   // (BE-3130), so renames live in a local overlay applied over the server
   // titles and deletes in a local tombstone set filtered out of every refresh.
-  const customTitles = useLocalStorage<Record<string, string>>(
+  const customTitles = useLocalStorage<Partial<Record<string, string>>>(
     'Comfy.Agent.ChatTitles',
     {}
   )

@@ -30,9 +30,8 @@ import type { InputLayoutSnapshot } from '@/lib/litegraph/src/node/slotLinks'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
-
-const INLINE_INPUTS = false
 
 type MatchTypeNode = LGraphNode &
   Pick<Required<LGraphNode>, 'onConnectionsChange'> & {
@@ -118,17 +117,61 @@ function dynamicComboWidget(
     appArg,
     widgetName
   )
+  const removedWidgetValues = new Map<
+    string | undefined,
+    Map<string, { type: string; value: WidgetValue }>
+  >()
+  let activeOption = widget.value as string | undefined
   function isInGroup(e: { name: string }): boolean {
     return e.name.startsWith(inputName + '.')
+  }
+  function restoreRemovedValues(
+    value: string | undefined,
+    widgetNames: string[]
+  ) {
+    const widgets = node.widgets
+    if (!widgets) return
+    const graphId = resolveNodeRootGraphId(node)
+    const removedValues = removedWidgetValues.get(value)
+    const names = new Set(widgetNames)
+    for (const name of removedValues?.keys() ?? []) names.add(name)
+    for (const name of names) {
+      const addedWidget = widgets.find((widget) => widget.name === name)
+      if (!addedWidget) continue
+      const removed = removedValues?.get(name)
+      const positionalIndex = widgets
+        .filter((widget) => widget.serialize !== false)
+        .indexOf(addedWidget)
+      const restored =
+        graphId && positionalIndex >= 0
+          ? useWidgetValueStore().getRestoredWidgetValue(
+              graphId,
+              node.id,
+              name,
+              positionalIndex
+            )
+          : undefined
+      if (!restored && removed?.type === addedWidget.type) {
+        addedWidget.value = removed.value
+      }
+    }
   }
   const updateWidgets = (value?: string) => {
     if (!node.widgets) throw new Error('Not Reachable')
     const newSpec = value ? options[value] : undefined
+    const removedOption = activeOption
+    activeOption = value
 
     const previous = captureInputLayout(node)
     const inputLinks = new Map(previous.links)
     const removedInputs = remove(node.inputs, isInGroup)
     for (const widget of remove(node.widgets, isInGroup)) {
+      const optionValues = removedWidgetValues.get(removedOption) ?? new Map()
+      optionValues.set(widget.name, {
+        type: widget.type,
+        value: widget.value
+      })
+      removedWidgetValues.set(removedOption, optionValues)
       widget.onRemove?.()
       if (widget.widgetId) deleteWidget(widget.widgetId)
     }
@@ -159,19 +202,13 @@ function dynamicComboWidget(
         })
         specToAdd.display_name = key
         addNodeInput(node, specToAdd)
-        const newInputs = node.inputs
-          .slice(startingInputLength)
-          .filter((inp) => inp.name.startsWith(name))
-        for (const newInput of newInputs) {
-          if (INLINE_INPUTS && !newInput.widget)
-            ensureWidgetForInput(node, newInput)
-        }
       }
     })
 
     const inputInsertionPoint =
       node.inputs.findIndex((i) => i.name === widget.name) + 1
     const addedWidgets = node.widgets.splice(startingLength)
+    const addedWidgetNames = addedWidgets.map(({ name }) => name)
     node.widgets.splice(insertionPoint, 0, ...addedWidgets)
     syncNodeWidgetOrder(node)
     if (inputInsertionPoint === 0) {
@@ -183,6 +220,7 @@ function dynamicComboWidget(
         throw new Error('Failed to find input socket for ' + widget.name)
       const result = commitMutatedInputs(node, previous, inputLinks)
       if (!result.ok) return
+      restoreRemovedValues(value, addedWidgetNames)
       return
     }
     const addedInputs = node.inputs
@@ -208,18 +246,19 @@ function dynamicComboWidget(
     for (const { input, link, slot } of result.replacements) {
       node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
     }
+    restoreRemovedValues(value, addedWidgetNames)
 
     if (!node.graph) return
     node._setConcreteSlots()
     node.arrange()
-    app.canvas?.setDirty(true, true)
+    node.graph.setDirtyCanvas(true, true)
   }
   //Refit height on the callback channel: interaction fires it after the value
   //setter, while configure (load, clone, paste) only fires the setter and must
   //keep the serialised height.
   widget.callback = useChainCallback(widget.callback, () => {
     node.size = [node.size[0], node.computeSize([...node.size])[1]]
-    app.canvas?.setDirty(true, true)
+    node.graph?.setDirtyCanvas(true, true)
   })
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
@@ -316,15 +355,16 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       iscon: boolean,
       linf: LLink | null | undefined
     ) {
-      const input = this.inputs[slot]
-      if (contype !== LiteGraph.INPUT || !this.graph || !input) return
+      const input = this.inputs.at(slot)
+      const { graph } = this
+      if (contype !== LiteGraph.INPUT || !graph || !input) return
       if (app.configuringGraph) return
       const [matchKey, matchGroup] = Object.entries(
         this.comfyDynamic.matchType
       ).find(([, group]) => input.name in group) ?? ['', undefined]
       if (!matchGroup) return
       if (iscon && linf) {
-        const { output, subgraphInput } = linf.resolve(this.graph)
+        const { output, subgraphInput } = linf.resolve(graph)
         const connectingType = (output ?? subgraphInput)?.type
         if (connectingType) linf.type = connectingType
       }
@@ -335,7 +375,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
       const connectedTypes = groupInputs.map((inp) => {
         const link = this.getInputLink(this.inputs.indexOf(inp))
         if (!link) return '*'
-        const { output, subgraphInput } = link.resolve(this.graph!)
+        const { output, subgraphInput } = link.resolve(graph)
         return (output ?? subgraphInput)?.type ?? '*'
       })
       //An input slot can accept a connection that is
@@ -361,7 +401,7 @@ function withComfyMatchType(node: LGraphNode): asserts node is MatchTypeNode {
         if (!(outputGroups?.[idx] == matchKey)) return
         changeOutputType(this, idx, outputType)
       })
-      app.canvas?.setDirty(true, true)
+      graph.setDirtyCanvas(true, true)
     }
   )
 }
@@ -391,11 +431,11 @@ function applyMatchType(node: LGraphNode, inputSpec: InputSpecV2) {
   //ensure outputs get updated
   const index = node.inputs.length - 1
   requestAnimationFrame(() => {
-    const input = node.inputs[index]
+    const input = node.inputs.at(index)
     if (!input || !node.graph) return
     node.inputs[index] = shallowReactive(input)
     const existingLink = node.getInputLink(index)
-    node.onConnectionsChange?.(
+    node.onConnectionsChange(
       LiteGraph.INPUT,
       index,
       !!existingLink,
@@ -435,15 +475,14 @@ function addAutogrowGroup(
   const inputLinks = new Map(previous.links)
   const namedSpecs = inputSpecs.map((input) => ({
     ...input,
-    isOptional: ordinal >= (min ?? 0) || input.isOptional,
+    isOptional: ordinal >= min || input.isOptional,
     ...autogrowOrdinalToName(ordinal, input.name, groupName, node)
   }))
 
   const newInputs = namedSpecs.map((namedSpec) => {
     addNodeInput(node, namedSpec)
     const input = node.inputs.splice(node.inputs.length - 1, 1)[0]
-    if (inputSpecs.length !== 1 || (INLINE_INPUTS && !input.widget))
-      ensureWidgetForInput(node, input)
+    if (inputSpecs.length !== 1) ensureWidgetForInput(node, input)
     return input
   })
 
@@ -470,29 +509,42 @@ function addAutogrowGroup(
   node.inputs.splice(insertionIndex, 0, ...newInputs)
   const result = commitMutatedInputs(node, previous, inputLinks)
   if (!result.ok) return
-  app.canvas?.setDirty(true, true)
+  node.graph?.setDirtyCanvas(true, true)
 }
 
 const ORDINAL_REGEX = /\d+$/
+
+/**
+ * Whether `key` -- an autogrow input name's segment after the group
+ * prefix -- is a member of an autogrow group: matched against an explicit
+ * `names` list when the group defines one, or (absent that) required to
+ * end in a numeric ordinal. The one membership rule a live autogrow
+ * registration (`resolveAutogrowOrdinal` below) and a node type's own
+ * static schema (`nodeDefAutogrowGroupOf` in `graphMutations.ts`) must
+ * agree on, so it is shared rather than reimplemented at each call site.
+ */
+export function isAutogrowGroupMember(
+  key: string,
+  names: readonly string[] | undefined
+): boolean {
+  return names ? names.includes(key) : ORDINAL_REGEX.test(key)
+}
+
 function resolveAutogrowOrdinal(
   inputName: string,
   groupName: string,
   node: AutogrowNode
 ): number | undefined {
-  //TODO preslice groupname?
   const name = inputName.slice(groupName.length + 1)
   const { names } = node.comfyDynamic.autogrow[groupName]
-  if (names) {
-    const ordinal = names.findIndex((s) => s === name)
-    return ordinal === -1 ? undefined : ordinal
-  }
+  if (!isAutogrowGroupMember(name, names)) return undefined
+  if (names) return names.indexOf(name)
   const match = name.match(ORDINAL_REGEX)
-  if (!match) return undefined
-  const ordinal = parseInt(match[0])
-  return ordinal !== ordinal ? undefined : ordinal
+  return match ? parseInt(match[0]) : undefined
 }
 function autogrowInputConnected(index: number, node: AutogrowNode) {
-  const input = node.inputs[index]
+  const input = node.inputs.at(index)
+  if (!input) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
   const lastInput = node.inputs.findLast((inp) =>
     inp.name.startsWith(groupName + '.')
@@ -507,11 +559,59 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
     return
   addAutogrowGroup(ordinal + 1, groupName, node)
 }
+
+function hasAutogrowGroups(node: LGraphNode): node is AutogrowNode {
+  return !!node.comfyDynamic?.autogrow
+}
+
+/**
+ * The live autogrow group `name` belongs to, from the node's own
+ * `comfyDynamic.autogrow` registration -- real provenance from
+ * `applyAutogrow`/`addAutogrowGroup`, rather than inferred from the name's
+ * shape. Confirms membership with `resolveAutogrowOrdinal`, the same check
+ * growth and shrink use, so a name that merely starts with a group's prefix
+ * without resolving to one of its members doesn't false-match. Undefined
+ * when the node has no autogrow groups, or `name` isn't a member of any of
+ * them.
+ */
+export function liveAutogrowGroupOf(
+  node: LGraphNode,
+  name: string
+): string | undefined {
+  if (!hasAutogrowGroups(node)) return undefined
+  for (const groupName of Object.keys(node.comfyDynamic.autogrow)) {
+    if (!name.startsWith(`${groupName}.`)) continue
+    if (resolveAutogrowOrdinal(name, groupName, node) !== undefined) {
+      return groupName
+    }
+  }
+  return undefined
+}
+
+export function reconcileAutogrowInputs(node: LGraphNode): void {
+  if (!node.comfyDynamic?.autogrow) return
+  withComfyAutogrow(node)
+  for (const groupName of Object.keys(node.comfyDynamic.autogrow)) {
+    const slot = node.inputs.findLastIndex(
+      (input, index) =>
+        input.name.slice(0, input.name.lastIndexOf('.')) === groupName &&
+        node.getInputLink(index)
+    )
+    if (slot !== -1) autogrowInputConnected(slot, node)
+  }
+}
+
 function autogrowInputDisconnected(index: number, node: AutogrowNode) {
-  const input = node.inputs[index]
+  const input = node.inputs.at(index)
   if (!input) return
+  //The slot was reconnected before this deferred compaction ran (e.g. a
+  //connect/disconnect/reconnect sequence in immediate succession); the
+  //compaction is stale and must not run against the slot's new link.
+  if (node.getInputLink(index)) return
   const groupName = input.name.slice(0, input.name.lastIndexOf('.'))
-  const autogrowGroup = node.comfyDynamic.autogrow[groupName]
+  const autogrowGroup = Object.hasOwn(node.comfyDynamic.autogrow, groupName)
+    ? node.comfyDynamic.autogrow[groupName]
+    : undefined
   if (!autogrowGroup) return
 
   const { min = 1, inputSpecs } = autogrowGroup
@@ -530,7 +630,7 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
     console.error('Failed to group multi-input autogrow inputs')
     return
   }
-  app.canvas?.setDirty(true, true)
+  node.graph?.setDirtyCanvas(true, true)
   const previous = captureInputLayout(node)
   const inputLinks = new Map(previous.links)
   const transplants: { input: INodeInputSlot; link: LLink }[] = []
@@ -569,10 +669,10 @@ function autogrowInputDisconnected(index: number, node: AutogrowNode) {
   for (const { input, link } of transplants) {
     const slot = node.inputs.indexOf(input)
     if (slot === -1) continue
-    node.onConnectionsChange?.(LiteGraph.INPUT, slot, true, link, input)
+    node.onConnectionsChange(LiteGraph.INPUT, slot, true, link, input)
   }
   for (const input of toRemove) {
-    const widgetName = input?.widget?.name
+    const widgetName = input.widget?.name
     if (!widgetName) continue
     for (const widget of remove(node.widgets, (w) => w.name === widgetName)) {
       widget.onRemove?.()
@@ -589,12 +689,40 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
   node.comfyDynamic.autogrow = {}
 
   let pendingConnection: number | undefined
-  let swappingConnection = false
+  //Whether the input-side `connect` event for `pendingConnection` has
+  //already fired. `connectSlots` (LGraphNode.ts) calls `onConnectInput`
+  //synchronously before it does anything else, then - only when the slot
+  //is replacing an existing link (a real swap) - fires the *disconnect*
+  //event for the old link before the *connect* event for the new one, all
+  //in the same synchronous call. So a disconnect that arrives for
+  //`pendingConnection` before its connect event has been seen is the
+  //synchronous tail of that swap. A disconnect that arrives *after* the
+  //connect event has already fired is a separate, later operation (e.g.
+  //the user - or an agent applying CRDT ops with no render yield between
+  //them - immediately disconnecting the slot it just connected) and must
+  //not be mistaken for a swap just because it lands within the same
+  //rAF-bounded window (PM-1496).
+  let pendingConnectionSeen = false
+  //Which slot, if any, is mid a same-slot swap: `connectSlots` just fired
+  //that slot's disconnect (the swap's tail, detected above) and its
+  //matching connect event is expected synchronously right after. Scoped
+  //to a single slot - not node-wide - so a genuine connect on a
+  //*different* slot of this node in between is never mistaken for the
+  //swap's own connect and silently dropped. Cleared deterministically by
+  //the connection lifecycle itself (the matching connect event) rather
+  //than solely by a frame boundary, so it cannot stay armed indefinitely
+  //while `requestAnimationFrame` is suspended (e.g. a hidden background
+  //tab); the frame-boundary reset below is only a defensive fallback.
+  let swappingSlot: number | undefined
 
   const originalOnConnectInput = node.onConnectInput
   node.onConnectInput = function (slot: number, ...args) {
     pendingConnection = slot
-    requestAnimationFrame(() => (pendingConnection = undefined))
+    pendingConnectionSeen = false
+    requestAnimationFrame(() => {
+      pendingConnection = undefined
+      pendingConnectionSeen = false
+    })
     return originalOnConnectInput?.apply(this, [slot, ...args]) ?? true
   }
 
@@ -607,21 +735,30 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
       iscon: boolean,
       linf: LLink | null | undefined
     ) {
-      const input = this.inputs[slot]
+      const input = this.inputs.at(slot)
       if (contype !== LiteGraph.INPUT || !input) return
       //Return if input isn't known autogrow
       const key = input.name.slice(0, input.name.lastIndexOf('.'))
-      const autogrowGroup = this.comfyDynamic.autogrow[key]
+      const autogrowGroup = Object.hasOwn(this.comfyDynamic.autogrow, key)
+        ? this.comfyDynamic.autogrow[key]
+        : undefined
       if (!autogrowGroup) return
       if (app.configuringGraph && input.widget)
         ensureWidgetForInput(node, input)
       if (iscon) {
-        if (swappingConnection || !linf) return
+        if (pendingConnection === slot) pendingConnectionSeen = true
+        if (swappingSlot === slot) {
+          swappingSlot = undefined
+          return
+        }
+        if (!linf) return
         autogrowInputConnected(slot, this)
       } else {
-        if (pendingConnection === slot) {
-          swappingConnection = true
-          requestAnimationFrame(() => (swappingConnection = false))
+        if (pendingConnection === slot && !pendingConnectionSeen) {
+          swappingSlot = slot
+          requestAnimationFrame(() => {
+            if (swappingSlot === slot) swappingSlot = undefined
+          })
           return
         }
         requestAnimationFrame(() => autogrowInputDisconnected(slot, this))

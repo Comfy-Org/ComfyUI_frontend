@@ -84,6 +84,10 @@
   "Comfy_EnableWorkflowViewRestore": {
     "name": "İş akışlarında tuval konumunu ve yakınlaştırma seviyesini kaydet ve geri yükle"
   },
+  "Comfy_ErrorSystem_ShowMissingModels": {
+    "name": "Sorunlar sekmesinde eksik modelleri göster",
+    "tooltip": "Devre dışı bırakıldığında, bulunamayan model dosyaları sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz."
+  },
   "Comfy_Execution_PreviewMethod": {
     "name": "Canlı önizleme yöntemi",
     "options": {
@@ -461,8 +465,13 @@
   "Comfy_Workflow_Persist": {
     "name": "İş akışı durumunu koru ve sayfayı (yeniden) yüklediğinde geri yükle"
   },
-  "Comfy_Workflow_ShowMissingModelsWarning": {
-    "name": "Eksik model uyarısını göster"
+  "Comfy_Workflow_ShowMissingMediaWarning": {
+    "name": "Sorunlar sekmesinde eksik medyayı göster",
+    "tooltip": "Devre dışı bırakıldığında, bulunamayan giriş görüntüleri, videoları ve ses dosyaları sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz."
+  },
+  "Comfy_Workflow_ShowMissingNodesWarning": {
+    "name": "Sorunlar sekmesinde eksik düğümleri göster",
+    "tooltip": "Devre dışı bırakıldığında, eksik düğüm paketleri sorunlar sekmesinde listelenmez ve düğümleri vurgulanmaz. İş akışı, yüklenene kadar yine de çalıştırılamaz."
   },
   "Comfy_Workflow_SortNodeIdOnSave": {
     "name": "İş akışını kaydederken düğüm kimliklerini sırala"

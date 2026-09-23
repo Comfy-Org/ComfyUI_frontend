@@ -6,7 +6,7 @@ export type SlotIndex = number
 export type SlotDirection = 'input' | 'output'
 
 function toSlotId(value: string): SlotId {
-  return String(value) as SlotId
+  return value as SlotId
 }
 
 export function slotId(
