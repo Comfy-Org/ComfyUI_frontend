@@ -17,7 +17,7 @@ const MATCH_SOURCE_POSITION = { x: 200, y: 500 }
 
 test.describe(
   'DynamicCombo revealed input link survives a workflow tab switch (#18388)',
-  { tag: ['@vue-nodes', '@slow'] },
+  { tag: ['@vue-nodes', '@slow', '@no-video'] },
   () => {
     test.afterEach(async ({ comfyPage }) => {
       await comfyPage.canvasOps.resetView()
@@ -27,12 +27,15 @@ test.describe(
       comfyPage
     }) => {
       // Three added nodes plus two real drag-connects exceed the project's
-      // default 15s budget. The CI video-walkthrough job
-      // (playwright-video-new-tests) reruns new specs like this one with
-      // RECORD_VIDEO=true and SLOW_MO=250, which adds ~250ms per Playwright
-      // action on top of video-capture overhead. The first 60s bump still
-      // timed out there, landing at ~64s actual, so this raises the budget
-      // to ~2x that observed runtime.
+      // default 15s budget.
+      //
+      // @no-video opts this spec out of the CI video-walkthrough job
+      // (playwright-video-new-tests), which reruns new specs with
+      // RECORD_VIDEO=true and SLOW_MO=250: that adds ~250ms per Playwright
+      // action on top of video-capture overhead, and three successive budget
+      // increases there (30s -> 60s -> 120s) each still timed out, landing
+      // closer to the ceiling every time. This spec still runs at full speed,
+      // untagged for video, in the regular sharded suite.
       test.setTimeout(120000)
       const { searchBoxV2, nodeOps, vueNodes, workflow } = comfyPage
 
