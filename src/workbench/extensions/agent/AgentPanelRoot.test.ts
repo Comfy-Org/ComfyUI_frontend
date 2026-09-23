@@ -603,6 +603,19 @@ describe('AgentPanelRoot onboarding', () => {
     )
   })
 
+  it('reports a deferral once however often the panel remounts', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-remount'
+    })
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } }).unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(
+      telemetry.trackAgentOnboardingNotShown
+    ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
+  })
+
   it('says nothing about App Mode to a user who already finished the tour', async () => {
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: 'workspace-seen'
