@@ -272,6 +272,23 @@ describe('useSessionCookie', () => {
     expect(consoleWarn).not.toHaveBeenCalled()
   })
 
+  it('keeps the server message out of the reported deletion failure', async () => {
+    vi.mocked(globalThis.fetch).mockResolvedValue(
+      new Response(JSON.stringify({ message: 'cookie for user-a@x.test' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' }
+      })
+    )
+    const { useSessionCookie } = await loadUseSessionCookie()
+
+    await useSessionCookie().deleteSession()
+
+    const [reported, options] = mockReportError.mock.calls[0]
+    expect(reported).toBeInstanceOf(Error)
+    expect((reported as Error).message).toBe('Session cookie deletion failed')
+    expect(JSON.stringify(options)).not.toContain('user-a@x.test')
+  })
+
   it('flags a concurrent session mutation when deletion fails', async () => {
     let resolveDelete: (value: Response) => void = () => {}
     vi.mocked(useAuthStore().getIdToken).mockResolvedValue('firebase-id-token')

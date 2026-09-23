@@ -166,11 +166,12 @@ export const useSessionCookie = () => {
         })
       sessionMutationTail = deleteRequest.catch(() => {})
       await deleteRequest
-    } catch (error) {
+    } catch {
       // Logout resolves regardless so the client-side sign-out completes, but
       // a failed DELETE leaves the server-side session cookie alive with no
-      // other signal.
-      reportError(error, {
+      // other signal. The caught error carries the server's message, which can
+      // name the user, so a fixed error is reported in its place.
+      reportError(new Error('Session cookie deletion failed'), {
         errorType: 'auth_session_cookie_delete_failed',
         tags: {
           failure_kind: 'caught_unexpected',
