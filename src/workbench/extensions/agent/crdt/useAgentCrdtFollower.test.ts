@@ -77,9 +77,8 @@ const materializerState = vi.hoisted(() => ({
       rootGraph: MaterializableGraph['rootGraph'],
       id: string
     ) => SubgraphDefinitionReadState
-  >(
-    (rootGraph: MaterializableGraph['rootGraph'], id: string) =>
-      rootGraph.subgraphs.has(id) ? ('registered' as const) : ('missing' as const)
+  >((rootGraph: MaterializableGraph['rootGraph'], id: string) =>
+    rootGraph.subgraphs.has(id) ? ('registered' as const) : ('missing' as const)
   )
 }))
 
