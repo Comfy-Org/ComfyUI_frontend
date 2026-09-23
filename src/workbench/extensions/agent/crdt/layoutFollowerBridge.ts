@@ -162,6 +162,43 @@ export class LayoutFollowerBridge extends EventTarget {
    * must still process normally.
    */
   private lastAppliedResetSeq: number | null = null
+  /**
+   * Identity (workflowId, seq, ok) of the last ack this bridge dequeued a
+   * generation for. Without a host-echoed request id this queue cannot PROVE
+   * two acks are the same delivery, so it only refuses to let an ack whose
+   * identity repeats the one just consumed steal a barrier that was ALREADY
+   * outstanding at that consumption — see {@link lastConsumptionHadNewerSend}
+   * for why that, not merely "the queue is non-empty right now", is the
+   * signal: `[ack1, duplicate ack1, ack2]` must dequeue `[1, 1, 2]`, never
+   * `[1, 2, 2]`. This is deliberately conservative, not exact: a genuinely
+   * identical re-ack of a generation whose slot has already been consumed
+   * with nothing else outstanding is left to the ordinary fallback below, and
+   * if this rule ever swallows a legitimate repeat ack instead, the bounded
+   * retry / ack-timeout resubscribe recovers — the safe direction per
+   * ADR-CRDT-RECONCILE-0035 (a)'s missing-generation-token gap.
+   */
+  private lastConsumedAckIdentity: {
+    workflowId: string
+    seq: number | undefined
+    ok: boolean
+  } | null = null
+  /** The generation {@link lastConsumedAckIdentity} was dequeued as. */
+  private lastConsumedGeneration = 0
+  /**
+   * True iff, at the moment {@link lastConsumedAckIdentity} was dequeued,
+   * ANOTHER generation was already outstanding too (queued concurrently,
+   * before either had an ack) — the FIFO front and one more behind it. This
+   * is captured once at consumption and reused for however many later acks
+   * repeat that identity, rather than re-read from the live queue: by the
+   * time a second, unrelated subscribe (tab-away then back) sends its own
+   * request and its ack happens to carry the same (workflowId, seq, ok) as
+   * an earlier, fully-settled one, the queue is back to holding only that
+   * ack's own entry — indistinguishable, by length alone, from the
+   * concurrent-outstanding case this guards. Recording the fact at the
+   * moment it was true keeps that ordinary sequential resubscribe from being
+   * misread as a duplicate of its predecessor.
+   */
+  private lastConsumptionHadNewerSend = false
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -466,11 +503,32 @@ export class LayoutFollowerBridge extends EventTarget {
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
     } else this.sentWorkflowId = null
+    const identity = {
+      workflowId: subscribed.workflowId,
+      seq: subscribed.seq,
+      ok: subscribed.ok
+    }
+    const isDuplicateOfLastConsumed =
+      this.lastConsumedAckIdentity !== null &&
+      this.lastConsumptionHadNewerSend &&
+      identity.workflowId === this.lastConsumedAckIdentity.workflowId &&
+      identity.seq === this.lastConsumedAckIdentity.seq &&
+      identity.ok === this.lastConsumedAckIdentity.ok
     // Dequeue the oldest outstanding generation: see `pendingGenerations`'s
     // doc comment for why this, not `subscribeGeneration` read here at
-    // receipt, is this ack's send-to-response identity.
-    const generation =
-      this.pendingGenerations.shift() ?? this.subscribeGeneration
+    // receipt, is this ack's send-to-response identity. A duplicate of the
+    // ack just consumed is never dequeued while a newer generation was
+    // ALREADY outstanding at that consumption — see
+    // `lastConsumptionHadNewerSend`'s doc comment — so it repeats the same
+    // generation instead of stealing the next one's barrier.
+    const generation = isDuplicateOfLastConsumed
+      ? this.lastConsumedGeneration
+      : (this.pendingGenerations.shift() ?? this.subscribeGeneration)
+    if (!isDuplicateOfLastConsumed) {
+      this.lastConsumedAckIdentity = identity
+      this.lastConsumedGeneration = generation
+      this.lastConsumptionHadNewerSend = this.pendingGenerations.length > 0
+    }
     this.dispatchEvent(
       new CustomEvent(event.type, {
         detail: { ...event.detail, generation }

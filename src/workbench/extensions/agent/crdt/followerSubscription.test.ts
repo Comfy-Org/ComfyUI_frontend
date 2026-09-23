@@ -1349,6 +1349,86 @@ describe('doc_subscribe_sent — the ack-timeout arming signal', () => {
     ])
   })
 
+  it('a duplicate ack for an already-consumed generation never steals a still-outstanding newer barrier', () => {
+    // DrJKL's repro (review 5284988677): sends 1 and 2 outstanding, then
+    // [ack1, duplicate ack1, ack2] must dequeue generations [1, 1, 2], never
+    // [1, 2, 2] — the duplicate acting as generation 2's barrier would let a
+    // consumer (pendingCorrelation.ts) treat a stale ack as the fresh one.
+    const { transport, bridge } = wire()
+    const acks: unknown[] = []
+    bridge.addEventListener('doc_subscribed', (event) => {
+      if (event instanceof CustomEvent) acks.push(event.detail)
+    })
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    // Generation 2 leaves before generation 1's ack (and its duplicate) land.
+    bridge.resubscribe()
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    // A duplicate delivery of the SAME ack (identical workflow, seq and ok) —
+    // the wire gives no exactly-once guarantee here either.
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 2
+    })
+
+    expect(
+      acks.map((ack) => (ack as { generation: number }).generation)
+    ).toEqual([1, 1, 2])
+  })
+
+  it('recovers cleanly once the true generation-2 ack lands after a suppressed duplicate', () => {
+    // The safe direction of the conservative rule above: even in the worst
+    // case where it swallows a legitimate repeat, the bridge is left in a
+    // state the ack-timeout resubscribe can still recover from — reality
+    // ends up subscribed and live from the real next ack, not permanently
+    // stuck relabeling every later ack as stale.
+    const { transport, bridge, projected } = wire()
+    transport.open = true
+    bridge.subscribe(WORKFLOW_ID)
+    bridge.resubscribe()
+
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 1
+    })
+    transport.deliver('doc_subscribed', {
+      v: 1,
+      workflow_id: WORKFLOW_ID,
+      ok: true,
+      seq: 2
+    })
+
+    expect(bridge.lastSequence).toBe(2)
+    transport.deliver(
+      'doc_update',
+      docUpdateFrame(hostDocUpdate(), WORKFLOW_ID, 3)
+    )
+    expect(projected).toHaveLength(1)
+    expect(bridge.lastSequence).toBe(3)
+  })
+
   it('a slow first subscribe answered after the retry merges idempotently with no stale or gap signal', () => {
     const { transport, bridge } = wire()
     const stale: unknown[] = []
