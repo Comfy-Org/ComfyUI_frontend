@@ -3,10 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useCachedRequest } from '@/composables/useCachedRequest'
 
 describe('useCachedRequest', () => {
-  let mockRequestFn: (
-    params: unknown,
-    signal?: AbortSignal
-  ) => Promise<unknown | null>
+  let mockRequestFn: (params: unknown, signal?: AbortSignal) => Promise<unknown>
   let abortSpy: () => void
 
   beforeEach(() => {

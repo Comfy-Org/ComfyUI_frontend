@@ -133,7 +133,7 @@ const appMock = vi.hoisted(() => {
       | {
           graph: {
             nodes: unknown[]
-            getNodeById: (id: string) => unknown | null
+            getNodeById: (id: string) => unknown
           }
           selectedItems: Set<LGraphNode>
           selectItems: ReturnType<typeof vi.fn>
@@ -2813,11 +2813,12 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   function makeTab(id?: string): LoadedComfyWorkflow {
-    const tab = addTab('workflows/current.json', {
-      ...(id === undefined
+    const tab = addTab(
+      'workflows/current.json',
+      id === undefined
         ? {}
-        : { activeState: fromPartial<ComfyWorkflowJSON>({ id }) })
-    })
+        : { activeState: fromPartial<ComfyWorkflowJSON>({ id }) }
+    )
     workflowStore.activeWorkflow = tab
     if (id !== undefined) useAgentWorkflowTabBindingStore().bind(id, tab.path)
     return tab
