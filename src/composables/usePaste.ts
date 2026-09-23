@@ -1,6 +1,8 @@
 import { useEventListener } from '@vueuse/core'
 
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ClipboardItems } from '@/lib/litegraph/src/types/serialisation'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -44,17 +46,29 @@ function pasteClipboardItems(data: DataTransfer): boolean {
   const rawData = data.getData('text/html')
   const match = rawData.match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
   if (!match) return false
+
+  let parsed: ClipboardItems
   try {
     // Decode UTF-8 safe base64
     const binaryString = atob(match)
     const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0))
     const decodedData = new TextDecoder().decode(bytes)
-    useCanvasStore().getCanvas()._deserializeItems(JSON.parse(decodedData), {})
-    return true
+    parsed = JSON.parse(decodedData) as ClipboardItems
   } catch (err) {
+    // Not a valid metadata payload — other paste strategies may still apply.
     console.error(err)
+    return false
   }
-  return false
+
+  // A real deserialization/graph-mutation failure (e.g. node ID space
+  // exhaustion) is a genuine paste error, not "no valid metadata payload" —
+  // it must not fall through to the other paste strategies below.
+  try {
+    useCanvasStore().getCanvas()._deserializeItems(parsed, {})
+  } catch (err) {
+    useErrorHandling().toastErrorHandler(err)
+  }
+  return true
 }
 
 function isWorkflow(

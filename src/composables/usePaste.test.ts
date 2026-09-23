@@ -1,4 +1,5 @@
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import {
   afterEach,
@@ -638,6 +639,34 @@ describe('usePaste', () => {
         data,
         expect.any(Object)
       )
+    })
+  })
+
+  it('should surface a deserialization error as a toast instead of falling back to legacy paste', async () => {
+    const deserializeError = new Error('Node ID space exhausted')
+    vi.mocked(mockCanvas._deserializeItems).mockImplementation(() => {
+      throw deserializeError
+    })
+
+    usePaste()
+
+    const data = { test: 'data' }
+    const encoded = btoa(JSON.stringify(data))
+    const html = `<div data-metadata="${encoded}"></div>`
+
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/html', html)
+    dataTransfer.setData('text/plain', 'some text')
+
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(mockCanvas._deserializeItems).toHaveBeenCalled()
+      expect(useToastStore().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
     })
   })
 
