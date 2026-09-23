@@ -470,25 +470,35 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_ops_result', event.detail ?? null)
   }
+  const parseDocResetDetail = (
+    event: Event
+  ): { workflowId?: string; actor?: string; seq?: number } | undefined =>
+    event instanceof CustomEvent
+      ? (event.detail as { workflowId?: string; actor?: string; seq?: number })
+      : undefined
+  const buildDocResetContext = (
+    actor: string | undefined,
+    seq: number | undefined
+  ): RemoteMutationContext => ({
+    source: 'agent-remote',
+    actor: actor ?? 'agent-reset',
+    opId: `doc-reset:${seq ?? 'unknown'}`
+  })
+  // Skip-check lives here so a benign first-mint reset (no prior projection
+  // state to lose) doesn't clear the canvas out from under the user.
+  const sweepProjectionUnlessMintActor = (
+    workflowId: string,
+    actor: string | undefined,
+    seq: number | undefined
+  ): void => {
+    if (actor === SYSTEM_MINT_ACTOR) return
+    projection.clearForReset(workflowId, buildDocResetContext(actor, seq))
+  }
   const onDocReset: EventListener = (event) => {
-    const detail =
-      event instanceof CustomEvent
-        ? (event.detail as {
-            workflowId?: string
-            actor?: string
-            seq?: number
-          })
-        : undefined
+    const detail = parseDocResetDetail(event)
     incrementOutcome('reset')
     if (!isCurrentWorkflow(detail?.workflowId)) return
-    const context: RemoteMutationContext = {
-      source: 'agent-remote',
-      actor: detail.actor ?? 'agent-reset',
-      opId: `doc-reset:${detail.seq ?? 'unknown'}`
-    }
-    if (detail.actor !== SYSTEM_MINT_ACTOR) {
-      projection.clearForReset(detail.workflowId, context)
-    }
+    sweepProjectionUnlessMintActor(detail.workflowId, detail.actor, detail.seq)
     sender.abortAll()
     events.onReset?.(detail.workflowId)
     connected.value = false
@@ -498,10 +508,7 @@ function startAgentCrdtFollower(
     knownDocNodeIds = new Set()
     pendingLiveNodeIds.clear()
     confirmedDeletes.clear()
-    recordDevEvent(
-      'doc_reset',
-      event instanceof CustomEvent ? (event.detail ?? null) : null
-    )
+    recordDevEvent('doc_reset', detail)
   }
   const onFollowerReplaced: EventListener = (event) => {
     // Gate on this composable's own INTENT, not the bridge's send REALITY
