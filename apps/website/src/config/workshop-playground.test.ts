@@ -10,6 +10,7 @@ import {
   schemaForModel,
   isVideoUrl,
   restoreFormValues,
+  urlUploadField,
   validateForm
 } from './workshop-playground'
 
@@ -37,6 +38,32 @@ const generatedFields: GeneratedField[] = [
     required: false
   }
 ]
+
+describe('urlUploadField', () => {
+  it.for([
+    { maxUploadBytes: 500 * 1024 * 1024, expected: 500 * 1024 * 1024 },
+    { maxUploadBytes: undefined, expected: MAX_UPLOAD_BYTES }
+  ])('uses upload limit $expected', ({ maxUploadBytes, expected }) => {
+    expect(
+      urlUploadField({
+        kind: 'text',
+        name: 'video',
+        label: 'Video',
+        required: false,
+        multiline: false,
+        presentation: {
+          label: 'Video',
+          help: '',
+          hidden: false,
+          advanced: false,
+          control: 'text-box',
+          urlUpload: 'video',
+          maxUploadBytes
+        }
+      })?.maxBytes
+    ).toBe(expected)
+  })
+})
 
 describe('restoreFormValues', () => {
   it('restores only field-typed scalars and preserves deliberate clearing without fake uploads', () => {

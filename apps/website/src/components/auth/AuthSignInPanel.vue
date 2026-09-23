@@ -1,19 +1,20 @@
 <script setup lang="ts">
-import SocialAuthButtons from '@comfyorg/account/vue/SocialAuthButtons'
-import { cn } from '@comfyorg/tailwind-utils'
 import { useTemplateRef } from 'vue'
+
+import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
+import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import AuthEmailForm from './AuthEmailForm.vue'
+import AuthFlagTimeout from './AuthFlagTimeout.vue'
+import AuthSpinnerIcon from './AuthSpinnerIcon.vue'
 import {
   AUTH_BRAND_GHOST_BUTTON_CLASS,
   AUTH_LINK_BUTTON_CLASS,
   AUTH_MESSAGE_ERROR_CLASS,
   AUTH_MESSAGE_WARN_CLASS
 } from './authClasses'
-import AuthEmailForm from './AuthEmailForm.vue'
-import AuthFlagTimeout from './AuthFlagTimeout.vue'
-import AuthSpinnerIcon from './AuthSpinnerIcon.vue'
 import { useAuthSignInController } from './useAuthSignInController'
 
 export type AuthMode = 'signIn' | 'signUp'

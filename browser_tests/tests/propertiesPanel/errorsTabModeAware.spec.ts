@@ -873,6 +873,7 @@ test.describe('Errors tab - Mode-aware errors', { tag: '@ui' }, () => {
       await expect(errorsTab).toBeHidden()
 
       const subgraphNode = await comfyPage.nodeOps.getNodeRefById('2')
+      await subgraphNode.centerOnNode()
       await subgraphNode.navigateIntoSubgraph()
 
       await expect(errorsTab).toBeHidden()

@@ -1,10 +1,24 @@
-import userEvent from '@testing-library/user-event'
-import { fireEvent, render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
+
 import { describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
+
+import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 
 import type { AssetMeta } from '../schemas/mediaAssetSchema'
 import MediaVideoTop from './MediaVideoTop.vue'
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: { en: {} },
+  missingWarn: false,
+  fallbackWarn: false
+})
+
+const globalConfig = { plugins: [i18n] }
 
 function createVideoAsset(
   src: string,
@@ -25,30 +39,94 @@ describe('MediaVideoTop', () => {
     const { container } = render(MediaVideoTop, {
       props: {
         asset: createVideoAsset('https://example.com/thumb.jpg')
-      }
+      },
+      global: globalConfig
     })
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
     const video = container.querySelector('video')!
     expect(video).toBeInTheDocument()
     expect(video.controls).toBe(false)
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <source> has no ARIA role in happy-dom
-    const source = container.querySelector('source')!
-    expect(source).toHaveAttribute('src', 'https://example.com/thumb.jpg')
-    expect(source).toHaveAttribute('type', 'video/mp4')
+    expect(video).toHaveAttribute('src', 'https://example.com/thumb.jpg')
   })
 
-  it('does not render source element when src is empty', () => {
+  it('renders no src when the asset has no source', () => {
     const { container } = render(MediaVideoTop, {
       props: {
         asset: createVideoAsset('')
-      }
+      },
+      global: globalConfig
     })
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
-    expect(container.querySelector('video')).toBeInTheDocument()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <source> has no ARIA role in happy-dom
-    expect(container.querySelector('source')).not.toBeInTheDocument()
+    const video = container.querySelector('video')!
+    expect(video).toBeInTheDocument()
+    expect(video).not.toHaveAttribute('src')
+  })
+
+  it('reloads the video after a load error', async () => {
+    const { container } = render(MediaVideoTop, {
+      props: {
+        asset: createVideoAsset('https://example.com/thumb.jpg')
+      },
+      global: globalConfig
+    })
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    const video = container.querySelector('video')!
+    await fireEvent.error(video)
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(video).toBeInTheDocument()
+    expect(video).toHaveAttribute('src', 'https://example.com/thumb.jpg')
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- assert the failed-state fallback is absent
+    expect(container.querySelector('[role="img"]')).not.toBeInTheDocument()
+  })
+
+  it('restores the play overlay when the video errors mid-playback', async () => {
+    const { container } = render(MediaVideoTop, {
+      props: {
+        asset: createVideoAsset('https://example.com/thumb.jpg')
+      },
+      global: globalConfig
+    })
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    const video = container.querySelector('video')!
+    await fireEvent.play(video)
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the paused overlay has no ARIA role
+    expect(container.querySelector('.bg-black\\/15')).not.toBeInTheDocument()
+
+    await fireEvent.error(video)
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the paused overlay has no ARIA role
+    expect(container.querySelector('.bg-black\\/15')).toBeInTheDocument()
+  })
+
+  it('shows a failed state once the retries are exhausted', async () => {
+    const { container } = render(MediaVideoTop, {
+      props: {
+        asset: createVideoAsset('https://example.com/thumb.jpg')
+      },
+      global: globalConfig
+    })
+
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    const video = container.querySelector('video')!
+    for (const delay of [500, 1000, 2000, 4000, 8000]) {
+      await fireEvent.error(video)
+      await vi.advanceTimersByTimeAsync(delay)
+    }
+    await fireEvent.error(video)
+    await nextTick()
+
+    expect(
+      screen.getByRole('img', { name: 'g.videoFailedToLoad' })
+    ).toBeVisible()
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
+    expect(container.querySelector('video')).not.toBeInTheDocument()
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- the paused overlay has no ARIA role
+    expect(container.querySelector('.bg-black\\/15')).not.toBeInTheDocument()
   })
 
   it('shows native controls only while playing and hovered', async () => {
@@ -56,7 +134,8 @@ describe('MediaVideoTop', () => {
     const { container } = render(MediaVideoTop, {
       props: {
         asset: createVideoAsset('https://example.com/thumb.jpg')
-      }
+      },
+      global: globalConfig
     })
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
@@ -83,7 +162,8 @@ describe('MediaVideoTop', () => {
     const { container } = render(MediaVideoTop, {
       props: {
         asset: createVideoAsset('https://example.com/thumb.jpg')
-      }
+      },
+      global: globalConfig
     })
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
@@ -113,7 +193,8 @@ describe('MediaVideoTop', () => {
       const { container } = render(MediaVideoTop, {
         props: {
           asset: createVideoAsset('https://example.com/thumb.jpg')
-        }
+        },
+        global: globalConfig
       })
 
       // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom
@@ -141,7 +222,8 @@ describe('MediaVideoTop', () => {
       props: {
         asset: createVideoAsset('https://example.com/thumb.jpg'),
         showNativeControls: false
-      }
+      },
+      global: globalConfig
     })
 
     // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- <video> has no ARIA role in happy-dom

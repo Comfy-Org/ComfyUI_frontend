@@ -274,5 +274,23 @@ describe('WorkshopModelsGrid', () => {
       expect(field).toHaveProperty('value', '')
       expect(screen.getByTestId('workshop-sections')).toBeTruthy()
     })
+
+    it('leaves the heading above the toolbar holding the controls', async () => {
+      const user = userEvent.setup()
+      render(WorkshopModelsGrid, { props: { models } })
+      await user.click(screen.getByTestId('browse-all-end'))
+
+      const toolbar = screen.getByTestId('workshop-toolbar')
+      const heading = screen.getByRole('heading', { level: 1 })
+
+      expect(toolbar).not.toContainElement(heading)
+      expect(
+        heading.compareDocumentPosition(toolbar) &
+          Node.DOCUMENT_POSITION_FOLLOWING
+      ).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+      expect(within(toolbar).getByRole('searchbox')).toBeVisible()
+      expect(within(toolbar).getByTestId('workshop-filters')).toBeVisible()
+      expect(within(toolbar).getByTestId('workshop-sort')).toBeVisible()
+    })
   })
 })

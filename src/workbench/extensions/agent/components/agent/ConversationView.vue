@@ -4,6 +4,7 @@ import { useIntersectionObserver } from '@vueuse/core'
 import { computed, nextTick, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import Button from '@/components/ui/button/Button.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
@@ -59,9 +60,13 @@ function scrollToLatest(): void {
 
 const latestContentSignal = computed(() => {
   const last = entries.at(-1)
-  if (!last) return '0'
-  const size = 'parts' in last ? JSON.stringify(last.parts).length : 0
-  return `${entries.length}:${size}`
+  if (!last || !('parts' in last)) return `${entries.length}`
+  const tail = last.parts.at(-1)
+  const tailText = tail && 'text' in tail ? tail.text.length : 0
+  const settled = last.parts.filter(
+    (part) => 'state' in part && part.state === 'done'
+  ).length
+  return `${entries.length}:${last.streaming}:${last.parts.length}:${settled}:${tailText}`
 })
 
 watch(
@@ -125,15 +130,17 @@ watch(
       </div>
     </div>
 
-    <button
+    <Button
       v-if="!atBottom"
       v-tooltip.top="buildTooltipConfig(t('agent.latest'))"
       type="button"
+      variant="secondary"
+      size="icon"
       :aria-label="t('agent.latest')"
-      class="text-secondary-foreground absolute bottom-2 left-1/2 flex size-8 -translate-x-1/2 cursor-pointer items-center justify-center rounded-full border-none bg-secondary-background shadow-md ring-1 ring-muted-foreground transition-colors hover:bg-secondary-background-hover"
+      class="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full shadow-md ring-1 ring-muted-foreground"
       @click="scrollToLatest"
     >
       <span class="icon-[lucide--chevron-down] size-4" />
-    </button>
+    </Button>
   </div>
 </template>

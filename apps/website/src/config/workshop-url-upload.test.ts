@@ -13,6 +13,49 @@ type StorageBody =
   operations['createCustomerStorageResource']['requestBody']['content']['application/json']
 
 describe('URL upload transport', () => {
+  it('uploads a video larger than 25 MiB without putting its bytes in JSON', async () => {
+    const file = new File([new Uint8Array(40_000_000)], 'clip.mp4', {
+      type: 'video/mp4'
+    })
+    const requests = vi.fn<typeof fetch>(async (_, init) => {
+      if (init?.method === 'POST') {
+        expect(typeof init.body).toBe('string')
+        expect(String(init.body).length).toBeLessThan(300)
+        return Response.json(grant)
+      }
+      expect(init?.body).toBe(file)
+      return new Response(null, { status: 200 })
+    })
+    vi.stubGlobal('fetch', requests)
+    expect(
+      await createWorkshopUrlUploader()(
+        file,
+        'token',
+        'scope',
+        new AbortController().signal
+      )
+    ).toBe(grant.download_url)
+    expect(requests).toHaveBeenCalledTimes(2)
+  })
+
+  it('identifies a browser upload transport failure without retaining the signed URL', async () => {
+    const requests = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(Response.json(grant))
+      .mockRejectedValueOnce(
+        new TypeError(`Failed to fetch ${grant.upload_url}`)
+      )
+    vi.stubGlobal('fetch', requests)
+    const error = await createWorkshopUrlUploader()(
+      new File(['image'], 'image.png'),
+      'token',
+      'scope',
+      new AbortController().signal
+    ).catch((error: unknown) => error)
+    expect(error).toMatchObject({ reason: 'upload', stage: 'upload_put' })
+    expect(String(error)).not.toContain('signature=')
+  })
+
   it('uploads the exact bytes without forwarding Comfy credentials and reuses completed uploads for retries', async () => {
     const names: string[] = []
     const bytes = new Uint8Array([0, 255, 13, 34])
@@ -76,9 +119,11 @@ describe('URL upload transport', () => {
     const upload = createWorkshopUrlUploader()
     const file = new File(['image'], 'image.png', { type: 'image/png' })
     const signal = new AbortController().signal
-    await expect(upload(file, 'token', 'scope', signal)).rejects.toThrow(
-      'Upload failed'
-    )
+    await expect(upload(file, 'token', 'scope', signal)).rejects.toMatchObject({
+      reason: 'upload',
+      stage: 'upload_put',
+      response: { status: 403 }
+    })
     expect(await upload(file, 'token', 'scope', signal)).toBe(
       grant.download_url
     )
@@ -126,7 +171,7 @@ describe('URL upload transport', () => {
         'scope',
         new AbortController().signal
       )
-    ).rejects.toThrow('Invalid upload expiry')
+    ).rejects.toMatchObject({ reason: 'upload', stage: 'upload_grant' })
     expect(requests).toHaveBeenCalledTimes(1)
   })
 
@@ -144,7 +189,7 @@ describe('URL upload transport', () => {
         'scope',
         new AbortController().signal
       )
-    ).rejects.toThrow('expired')
+    ).rejects.toMatchObject({ reason: 'upload', stage: 'upload_grant' })
     expect(requests).toHaveBeenCalledTimes(1)
   })
 
@@ -209,7 +254,8 @@ describe('URL upload transport', () => {
     const file = new File(['private'], 'image.png')
     const signal = new AbortController().signal
     await expect(upload(file, 'token', 'scope', signal)).rejects.toMatchObject({
-      name: 'TimeoutError'
+      reason: 'upload',
+      stage: 'upload_put'
     })
     expect(await upload(file, 'token', 'scope', signal)).toBe(
       grant.download_url

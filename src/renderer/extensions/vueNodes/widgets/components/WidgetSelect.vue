@@ -24,11 +24,11 @@
 import { computed } from 'vue'
 
 import { assetService } from '@/platform/assets/services/assetService'
-import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import WidgetSelectDefault from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDefault.vue'
 import WidgetSelectDropdown from '@/renderer/extensions/vueNodes/widgets/components/WidgetSelectDropdown.vue'
 import WidgetWithControl from '@/renderer/extensions/vueNodes/widgets/components/WidgetWithControl.vue'
-import type { ResultItemType } from '@/schemas/apiSchema'
+import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type { ComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type {

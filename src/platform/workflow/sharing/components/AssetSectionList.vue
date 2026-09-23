@@ -66,18 +66,18 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import {
   CollapsibleContent,
   CollapsibleRoot,
   CollapsibleTrigger
 } from 'reka-ui'
 
-import Button from '@/components/ui/button/Button.vue'
-import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import type { AssetInfo } from '@comfyorg/ingest-types'
 import ShareAssetThumbnail from '@/platform/workflow/sharing/components/ShareAssetThumbnail.vue'
 import { useAssetSections } from '@/platform/workflow/sharing/composables/useAssetSections'
-import type { AssetInfo } from '@/schemas/apiSchema'
+import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 
 const { items } = defineProps<{
   items: AssetInfo[]

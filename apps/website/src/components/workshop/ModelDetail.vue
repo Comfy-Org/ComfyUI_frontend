@@ -1,27 +1,27 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { Download, ExternalLink, Play } from '@lucide/vue'
 import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
-import { computed, onUnmounted, ref, useSlots, watch } from 'vue'
+import {
+  computed,
+  onScopeDispose,
+  onUnmounted,
+  ref,
+  useSlots,
+  watch
+} from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
-
+import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
+import { useWorkshopDelivery } from '../../composables/useWorkshopDelivery'
+import { sameFormValues } from '../../lib/workshop/form-values'
+import { validateWorkshopMediaInputs } from '../../config/workshop-media-validation'
+import { leaveForSignIn } from '../../config/workshop-return'
 import { useSignInHref } from '../../composables/useSignInHref'
 import { useTablist } from '../../composables/useTablist'
-import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
-import { router_render } from '../../config/router-render'
-import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
-import {
-  refreshWorkshopCredits,
-  useWorkshopCredits
-} from '../../config/workshop-credits'
-import {
-  initialWorkshopPageState,
-  workshopExampleState,
-  workshopPageSchema
-} from '../../config/workshop-page-state'
 import type {
   FieldErrors,
   FormValues,
@@ -32,34 +32,54 @@ import {
   schemaForModel,
   validateForm
 } from '../../config/workshop-playground'
-import { releaseRouterOutputs } from '../../config/workshop-response'
-import { leaveForSignIn } from '../../config/workshop-return'
-import { WorkshopRouterError } from '../../config/workshop-router-errors'
+import {
+  initialWorkshopPageState,
+  workshopExampleState,
+  workshopPageSchema
+} from '../../config/workshop-page-state'
 import type { RunOutput, RunRecord, RunState } from '../../config/workshop-run'
 import { IDLE, transition } from '../../config/workshop-run'
+import {
+  refreshWorkshopCredits,
+  useWorkshopCredits
+} from '../../config/workshop-credits'
+import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
+import type { RouterRenderResult } from '../../config/router-render'
+import { router_render } from '../../config/router-render'
+import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
+import {
+  WorkshopRouterError,
+  workshopRunMayStillSettle
+} from '../../config/workshop-router-errors'
+import { releaseRouterOutputs } from '../../config/workshop-response'
 import { retainRunHistory } from '../../config/workshop-run-history'
+import { reportWorkshopRun } from '../../config/workshop-run-state'
+import { modelDocsHref } from '../../lib/workshop/model-docs'
+import { linkLeavingPage } from '../../lib/workshop/leaving-link'
+import type { WorkshopSession } from '../../config/workshop-session-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
-import { createWorkshopUrlUploader } from '../../config/workshop-url-upload'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { sameFormValues } from '../../lib/workshop/form-values'
-import { linkLeavingPage } from '../../lib/workshop/leaving-link'
-import { modelDocsHref } from '../../lib/workshop/model-docs'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopAuthFlag
 } from '../../scripts/posthog'
-import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
 import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
+import {
+  workshopFailureAnalytics,
+  workshopFieldErrorCodes,
+  workshopModelAnalytics
+} from '../../scripts/workshop-analytics'
 import ApiTab from './ApiTab.vue'
-import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import ExamplesTab from './ExamplesTab.vue'
-import ModelSupport from './ModelSupport.vue'
+import { frameRatioRule } from '../../config/workshop-model-restrictions'
 import PlaygroundForm from './PlaygroundForm.vue'
 import PlaygroundOutput from './PlaygroundOutput.vue'
+import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
+import ModelSupport from './ModelSupport.vue'
 
 const {
   model,
@@ -76,6 +96,7 @@ const {
 
 const slots = useSlots()
 const modelAnalytics = workshopModelAnalytics(model)
+const frameRatio = frameRatioRule(model.slug)
 
 type Section = 'playground' | 'details' | 'api'
 const sections = computed<readonly Section[]>(() =>
@@ -343,19 +364,32 @@ useEventListener(
   }
 )
 const requestId = ref<string | null>(null)
-let activeRun:
-  | {
-      controller: AbortController
-      analytics: WorkshopRunAnalytics
-      startedAt: number
-    }
-  | undefined
+interface ActiveRun {
+  readonly controller: AbortController
+  readonly analytics: WorkshopRunAnalytics
+  readonly startedAt: number
+}
+
+let activeRun: ActiveRun | undefined
+const credentialFailures = new WeakSet<ActiveRun>()
+const delivery = useWorkshopDelivery()
+watch(activeSection, (section) => {
+  if (section !== 'playground') delivery.cancel()
+})
 let pendingRequest: { fingerprint: string; key: string } | undefined
 const uploadUrl = createWorkshopUrlUploader()
 
 const now = useTimestamp({ interval: 1000 })
 
+// The header is its own island and switching workspace is not a navigation,
+// so none of the guards above see it. This is how it learns there is a run.
+watch(isRunning, (running) =>
+  reportWorkshopRun(running ? cancelRun : undefined)
+)
+onScopeDispose(() => reportWorkshopRun(undefined))
+
 function cancelRun() {
+  delivery.cancel()
   if (activeRun) {
     activeRun.controller.abort()
     captureWorkshopEvent({
@@ -367,6 +401,7 @@ function cancelRun() {
       }
     })
     activeRun = undefined
+    pendingRequest = undefined
   }
   runState.value = transition(runState.value, { type: 'cancel' })
 }
@@ -410,19 +445,166 @@ watch(
   }
 )
 
-async function run() {
+function runnableSession(): WorkshopSession | undefined {
+  if (isRunning.value || gate.value !== 'ready' || !model.execution) return
+  return session.value
+}
+
+function runIsActive(attempt: ActiveRun): boolean {
+  return activeRun === attempt && !attempt.controller.signal.aborted
+}
+
+async function freshCredentialFor(
+  startedFor: WorkshopSession,
+  attempt: ActiveRun
+): Promise<WorkshopSession> {
+  const credential = await ensureFresh(undefined, {
+    signal: attempt.controller.signal
+  })
+  attempt.controller.signal.throwIfAborted()
   if (
-    isRunning.value ||
-    gate.value !== 'ready' ||
-    !session.value ||
-    !model.execution
+    credential?.status !== 'ok' ||
+    credential.session.uid !== startedFor.uid ||
+    credential.session.workspace.id !== startedFor.workspace.id
+  ) {
+    credentialFailures.add(attempt)
+    throw new WorkshopRouterError('unavailable')
+  }
+  return credential.session
+}
+
+function idempotencyKeyFor(
+  startedFor: WorkshopSession,
+  body: Readonly<Record<string, unknown>>
+): string {
+  const fingerprint = JSON.stringify([
+    startedFor.uid,
+    startedFor.workspace.id,
+    model.routerId,
+    body
+  ])
+  if (pendingRequest?.fingerprint !== fingerprint) {
+    pendingRequest = { fingerprint, key: workshopIdempotencyKey() }
+  }
+  return pendingRequest.key
+}
+
+async function renderRun(
+  startedFor: WorkshopSession,
+  attempt: ActiveRun
+): Promise<RouterRenderResult> {
+  return router_render(
+    model.slug,
+    {},
+    {
+      model,
+      form: { schema: schema.value, values: values.value },
+      signal: attempt.controller.signal,
+      token: async () => (await freshCredentialFor(startedFor, attempt)).token,
+      uploadFile: async (file, signal) => {
+        const credential = await freshCredentialFor(startedFor, attempt)
+        return uploadUrl(
+          file,
+          credential.token,
+          JSON.stringify([startedFor.uid, startedFor.workspace.id]),
+          signal
+        )
+      },
+      idempotencyKey: (body) => idempotencyKeyFor(startedFor, body),
+      onRequestId: (id) => {
+        if (runIsActive(attempt)) requestId.value = id
+      }
+    }
   )
+}
+
+function finishRun(result: RouterRenderResult, attempt: ActiveRun): void {
+  if (!runIsActive(attempt)) {
+    releaseRouterOutputs(result.outputs)
     return
+  }
+  pendingRequest = undefined
+  requestId.value = result.requestId
+  const [output, ...attachments] = result.outputs
+  if (!output)
+    throw new WorkshopRouterError(
+      'response',
+      result.requestId,
+      {},
+      undefined,
+      'response'
+    )
+  const { retained, discarded } = retainRunHistory([
+    { output, attachments },
+    ...runs.value
+  ])
+  runs.value = retained
+  releaseRouterOutputs(
+    discarded.flatMap((run) => [run.output, ...run.attachments])
+  )
+  delivery.start(attempt.analytics, result.requestId, output)
+  if (activeSection.value !== 'playground') delivery.cancel()
+  runState.value = transition(runState.value, {
+    type: 'complete',
+    at: Date.now(),
+    output,
+    nsfw: output.nsfw === true
+  })
+  captureWorkshopEvent({
+    name: 'run_finished',
+    properties: {
+      ...attempt.analytics,
+      status: 'succeeded',
+      duration_ms: Date.now() - attempt.startedAt,
+      request_id: result.requestId ?? undefined,
+      output_count: result.outputs.length
+    }
+  })
+}
+
+function failRun(error: unknown, attempt: ActiveRun): void {
+  if (!runIsActive(attempt)) return
+  const failure =
+    error instanceof WorkshopRouterError
+      ? error
+      : new WorkshopRouterError('client', null, {}, undefined, undefined, {
+          cause: error
+        })
+  if (!workshopRunMayStillSettle(failure)) pendingRequest = undefined
+  requestId.value = failure.requestId
+  runState.value = transition(runState.value, {
+    type: 'fail',
+    reason: failure.reason,
+    fieldErrors: failure.fieldErrors
+  })
+  captureWorkshopEvent({
+    name: 'run_finished',
+    properties: {
+      ...attempt.analytics,
+      status: 'failed',
+      duration_ms: Date.now() - attempt.startedAt,
+      ...workshopFailureAnalytics(failure, schema.value),
+      ...(credentialFailures.has(attempt)
+        ? { failure_stage: 'credential' }
+        : {})
+    }
+  })
+}
+
+async function run() {
+  const startedFor = runnableSession()
+  if (!startedFor) return
   const fieldErrors = validateForm(schema.value, values.value)
   if (Object.keys(fieldErrors).length) {
     captureWorkshopEvent({
       name: 'run_validation_failed',
-      properties: modelAnalytics
+      properties: {
+        ...modelAnalytics,
+        field_error_codes: workshopFieldErrorCodes(fieldErrors),
+        field_error_names: schema.value
+          .filter((field) => Object.hasOwn(fieldErrors, field.name))
+          .map((field) => field.name)
+      }
     })
     runState.value = transition(runState.value, {
       type: 'fail',
@@ -431,118 +613,35 @@ async function run() {
     })
     return
   }
-  const startedFor = session.value
-  const active = new AbortController()
   const startedAt = Date.now()
+  delivery.cancel()
   const analytics: WorkshopRunAnalytics = {
     ...modelAnalytics,
     user_id: startedFor.uid,
     workspace_id: startedFor.workspace.id,
     attempt_id: workshopIdempotencyKey()
   }
-  activeRun = { controller: active, analytics, startedAt }
+  const attempt: ActiveRun = {
+    controller: new AbortController(),
+    analytics,
+    startedAt
+  }
+  activeRun = attempt
   captureWorkshopEvent({ name: 'run_started', properties: analytics })
   requestId.value = null
   runState.value = transition(runState.value, { type: 'start', at: startedAt })
-  async function freshCredential() {
-    const credential = await ensureFresh(undefined, { signal: active.signal })
-    active.signal.throwIfAborted()
-    if (
-      credential?.status !== 'ok' ||
-      credential.session.uid !== startedFor.uid ||
-      credential.session.workspace.id !== startedFor.workspace.id
-    )
-      throw new WorkshopRouterError('unavailable')
-    return credential.session
-  }
   try {
-    const result = await router_render(
-      model.slug,
-      {},
-      {
-        model,
-        form: { schema: schema.value, values: values.value },
-        signal: active.signal,
-        token: async () => (await freshCredential()).token,
-        uploadFile: async (file, signal) => {
-          const credential = await freshCredential()
-          return uploadUrl(
-            file,
-            credential.token,
-            JSON.stringify([startedFor.uid, startedFor.workspace.id]),
-            signal
-          )
-        },
-        idempotencyKey: (body) => {
-          const fingerprint = JSON.stringify([
-            startedFor.uid,
-            startedFor.workspace.id,
-            model.routerId,
-            body
-          ])
-          if (pendingRequest?.fingerprint !== fingerprint) {
-            pendingRequest = { fingerprint, key: workshopIdempotencyKey() }
-          }
-          return pendingRequest.key
-        }
-      }
+    await validateWorkshopMediaInputs(
+      schema.value,
+      values.value,
+      attempt.controller.signal
     )
-    if (activeRun?.controller !== active || active.signal.aborted) {
-      releaseRouterOutputs(result.outputs)
-      return
-    }
-    pendingRequest = undefined
-    requestId.value = result.requestId
-    const [output, ...attachments] = result.outputs
-    if (!output) throw new WorkshopRouterError('provider', result.requestId)
-    const { retained, discarded } = retainRunHistory([
-      { output, attachments },
-      ...runs.value
-    ])
-    runs.value = retained
-    releaseRouterOutputs(
-      discarded.flatMap((run) => [run.output, ...run.attachments])
-    )
-    runState.value = transition(runState.value, {
-      type: 'complete',
-      at: Date.now(),
-      output,
-      nsfw: output.nsfw === true
-    })
-    captureWorkshopEvent({
-      name: 'run_finished',
-      properties: {
-        ...analytics,
-        status: 'succeeded',
-        duration_ms: Date.now() - startedAt,
-        request_id: result.requestId ?? undefined,
-        output_count: result.outputs.length
-      }
-    })
+    if (!runIsActive(attempt)) return
+    finishRun(await renderRun(startedFor, attempt), attempt)
   } catch (error) {
-    if (activeRun?.controller !== active || active.signal.aborted) return
-    const failure =
-      error instanceof WorkshopRouterError
-        ? error
-        : new WorkshopRouterError('provider')
-    requestId.value = failure.requestId
-    runState.value = transition(runState.value, {
-      type: 'fail',
-      reason: failure.reason,
-      fieldErrors: failure.fieldErrors
-    })
-    captureWorkshopEvent({
-      name: 'run_finished',
-      properties: {
-        ...analytics,
-        status: 'failed',
-        reason: failure.reason,
-        duration_ms: Date.now() - startedAt,
-        request_id: failure.requestId ?? undefined
-      }
-    })
+    failRun(error, attempt)
   } finally {
-    if (activeRun?.controller === active) activeRun = undefined
+    if (activeRun === attempt) activeRun = undefined
     void refreshWorkshopCredits({ force: true })
   }
 }
@@ -560,6 +659,7 @@ function reset() {
 }
 
 function applyExample(example: PlaygroundExample) {
+  delivery.cancel()
   if (!example.sampleOnly) {
     nativeJson.value = false
     activeExample.value = example.fields ? example : undefined
@@ -692,6 +792,7 @@ function useInCode() {
             v-model="values"
             :schema
             :errors
+            :frame-ratio
             :locale
             :disabled="isRunning || draftPending"
             :file-uploads-disabled="!mounted"
@@ -728,7 +829,7 @@ function useInCode() {
                the wrong wallet visible before it happens. -->
           <template v-else-if="gate === 'noCredits'">
             <p
-              class="mb-2 text-sm font-bold text-primary-warm-white"
+              class="mb-2 text-sm font-bold text-content-secondary"
               data-testid="gate-note"
             >
               {{
@@ -750,10 +851,10 @@ function useInCode() {
           </template>
           <template v-else-if="gate === 'memberNoCredits'">
             <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
-              <p class="text-sm font-bold text-primary-warm-white">
+              <p class="text-sm font-bold text-content-secondary">
                 {{ t('workshop.error.creditsTitle', locale) }}
               </p>
-              <p class="text-xs text-primary-warm-gray">
+              <p class="text-xs text-content-secondary">
                 {{
                   t('workshop.error.memberNoCredits', locale).replace(
                     '{workspace}',
@@ -846,6 +947,8 @@ function useInCode() {
           @retry="gate === 'ready' ? run() : reset()"
           @use-in-code="useInCode"
           @download="captureOutputDownload"
+          @delivery="delivery.settle"
+          @playback-started="delivery.beginPlayback"
         />
         <div
           v-if="runState.status === 'succeeded' || requestId"
@@ -858,7 +961,10 @@ function useInCode() {
           >
             {{ t('workshop.output.expires', locale) }}
           </p>
-          <div v-if="requestId" class="flex flex-col items-start gap-1">
+          <!-- The id is for the rare conversation with support, so it keeps
+            to itself and the copy comes to hand when the reader reaches for
+            it. A screen that cannot hover keeps the button in view. -->
+          <div v-if="requestId" class="group/request flex items-center gap-1">
             <p
               class="text-2xs break-all text-primary-warm-gray/70"
               data-testid="router-request-id"
@@ -869,6 +975,8 @@ function useInCode() {
               :value="requestId"
               :label="t('workshop.run.copyRequestId', locale)"
               :copied-label="t('workshop.api.copied', locale)"
+              icon-class="size-3.5"
+              class="h-7 min-w-7 rounded-lg px-1.5 transition-opacity can-hover:opacity-0 can-hover:group-focus-within/request:opacity-100 can-hover:group-hover/request:opacity-100"
             />
           </div>
         </div>
@@ -918,7 +1026,12 @@ function useInCode() {
       role="tabpanel"
       aria-labelledby="tab-api"
     >
-      <ApiTab :contract="model.execution" :values :locale />
+      <ApiTab
+        :contract="model.execution"
+        :values
+        :locale
+        :model-slug="model.slug"
+      />
     </section>
 
     <RunLeaveDialog

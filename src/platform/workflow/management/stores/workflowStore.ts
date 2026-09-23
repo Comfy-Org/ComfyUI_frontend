@@ -39,12 +39,6 @@ import { ComfyWorkflow } from './comfyWorkflow'
 import type { LoadedComfyWorkflow } from './comfyWorkflow'
 export { ComfyWorkflow, type LoadedComfyWorkflow }
 
-function currentCanvas(
-  canvas: typeof comfyApp.canvas | undefined
-): typeof comfyApp.canvas | undefined {
-  return canvas
-}
-
 /**
  * Exposed store interface for the workflow store.
  * Explicitly typed to avoid trigger following error:
@@ -163,12 +157,15 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const openWorkflowPaths = ref<string[]>([])
   const openWorkflowPathSet = computed(() => new Set(openWorkflowPaths.value))
   const openWorkflows = computed(() =>
-    openWorkflowPaths.value.map((path) => workflowLookup.value[path])
+    openWorkflowPaths.value
+      .map(getWorkflowByPath)
+      .filter((workflow) => workflow !== null)
   )
   const reorderWorkflows = (from: number, to: number) => {
-    const movedTab = openWorkflowPaths.value[from]
-    openWorkflowPaths.value.splice(from, 1)
-    openWorkflowPaths.value.splice(to, 0, movedTab)
+    const paths = openWorkflows.value.map((workflow) => workflow.path)
+    const [movedTab] = paths.splice(from, 1)
+    paths.splice(to, 0, movedTab)
+    openWorkflowPaths.value = paths
   }
   const isOpen = (workflow: ComfyWorkflow) =>
     openWorkflowPathSet.value.has(workflow.path)
@@ -358,8 +355,8 @@ export const useWorkflowStore = defineStore('workflow', () => {
    * @returns The next workflow or null if the shift is out of bounds.
    */
   const openedWorkflowIndexShift = (shift: number): ComfyWorkflow | null => {
-    const index = openWorkflowPaths.value.indexOf(
-      activeWorkflow.value?.path ?? ''
+    const index = openWorkflows.value.findIndex(
+      (workflow) => workflow.path === activeWorkflow.value?.path
     )
 
     if (index !== -1) {
@@ -579,7 +576,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
 
   /** @see WorkflowStore.updateActiveGraph */
   const updateActiveGraph = () => {
-    const canvas = currentCanvas(comfyApp.canvas)
+    const canvas = comfyApp.canvasOrUndefined
     if (!canvas) return
     const subgraph = canvas.subgraph
     activeSubgraph.value = subgraph ? markRaw(subgraph) : undefined

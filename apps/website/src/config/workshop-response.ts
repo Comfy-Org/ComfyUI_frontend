@@ -1,6 +1,13 @@
 import type { WorkshopContract } from './workshop-contract'
-import { valuesAtPointer } from './workshop-json-pointer'
 import { validateWorkshopInput } from './workshop-json-schema'
+import { valuesAtPointer } from './workshop-json-pointer'
+import {
+  WorkshopRouterError,
+  workshopResponseDetails
+} from './workshop-router-errors'
+import type { RunOutput } from './workshop-run'
+import type { WorkshopSvgRasterizer } from './workshop-svg-output'
+import { svgOutputs } from './workshop-svg-output'
 import {
   discoverOutputMimes,
   inlineOutput,
@@ -9,9 +16,6 @@ import {
   outputKind,
   outputMimeForUrl
 } from './workshop-output-media'
-import type { RunOutput } from './workshop-run'
-import type { WorkshopSvgRasterizer } from './workshop-svg-output'
-import { svgOutputs } from './workshop-svg-output'
 
 const MAX_RESPONSE_BYTES = 128 * 1024 * 1024
 
@@ -157,6 +161,14 @@ async function responseBytes(
     }
   } catch (error) {
     await reader.cancel().catch(() => {})
+    if (error instanceof TypeError)
+      throw new WorkshopRouterError(
+        'network',
+        response.headers.get('X-Comfy-Request-Id'),
+        {},
+        workshopResponseDetails(response),
+        'response'
+      )
     throw error
   } finally {
     reader.releaseLock()

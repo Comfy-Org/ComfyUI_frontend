@@ -1,11 +1,10 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import type { TagsInputItemDeleteProps } from 'reka-ui'
 import { TagsInputItemDelete, useForwardProps } from 'reka-ui'
 import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import TagRemoveButton from '@/components/chip/TagRemoveButton.vue'
 
 const { class: className, ...restProps } = defineProps<
   TagsInputItemDeleteProps & { class?: HTMLAttributes['class'] }
@@ -18,16 +17,9 @@ const { t } = useI18n()
 <template>
   <TagsInputItemDelete
     v-bind="forwardedProps"
-    :as="Button"
-    variant="textonly"
-    size="icon-sm"
-    :aria-label="t('g.removeTag')"
-    :class="
-      cn(
-        'w-4 overflow-hidden opacity-60 transition-[opacity,width] duration-150 hover:bg-transparent hover:opacity-100 data-disabled:pointer-events-none data-disabled:w-0 data-disabled:opacity-0',
-        className
-      )
-    "
+    :as="TagRemoveButton"
+    :label="t('g.removeTag')"
+    :class="className"
   >
     <slot>
       <i class="icon-[lucide--x] size-4" />

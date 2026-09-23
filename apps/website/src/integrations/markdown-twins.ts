@@ -37,6 +37,8 @@ const SECTIONS: SectionSpec[] = [
   }
 ]
 
+const ALTERNATE_TWIN_SOURCES = new Map([['models', 'models/showcase']])
+
 export interface TwinReport {
   written: string[]
   /** A twin already existed at this path (hand-written by a page endpoint). */
@@ -58,7 +60,7 @@ async function readBuiltPage(
   root: string,
   pathname: string
 ): Promise<string | undefined> {
-  const trimmed = pathname.replace(/\/$/, '')
+  const trimmed = pathname.replace(/^\/+|\/+$/g, '')
   const candidates = [
     join(root, trimmed, 'index.html'),
     join(root, `${trimmed || 'index'}.html`)
@@ -67,6 +69,22 @@ async function readBuiltPage(
     if (await exists(candidate)) return readFile(candidate, 'utf8')
   }
   return undefined
+}
+
+async function readBuiltTwinSource(
+  root: string,
+  pathname: string
+): Promise<{ html: string; alternate: boolean } | undefined> {
+  const alternatePathname = ALTERNATE_TWIN_SOURCES.get(
+    pathname.replace(/^\/+|\/+$/g, '')
+  )
+  if (alternatePathname) {
+    const html = await readBuiltPage(root, alternatePathname)
+    if (html !== undefined) return { html, alternate: true }
+  }
+
+  const html = await readBuiltPage(root, pathname)
+  return html === undefined ? undefined : { html, alternate: false }
 }
 
 /**
@@ -99,12 +117,15 @@ export async function writeMarkdownTwins(
       continue
     }
 
-    const html = await readBuiltPage(root, pathname)
-    if (!html) {
+    const source = await readBuiltTwinSource(root, pathname)
+    if (!source) {
       report.skipped.push(twinPath)
       continue
     }
-    const page = htmlToTwin(html, new URL(route, site).href)
+    const canonical = new URL(route, site).href
+    const page = htmlToTwin(source.html, canonical, {
+      canonical: source.alternate ? canonical : undefined
+    })
     await mkdir(dirname(target), { recursive: true })
     await writeFile(target, renderTwin(page), 'utf8')
     report.written.push(twinPath)

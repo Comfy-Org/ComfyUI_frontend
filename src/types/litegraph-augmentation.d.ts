@@ -10,7 +10,7 @@ import type {
   IBaseWidget,
   TWidgetValue
 } from '@/lib/litegraph/src/types/widgets'
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { ComfyNodeDef as ComfyNodeDefV2 } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import type {
   ComfyNodeDef as ComfyNodeDefV1,

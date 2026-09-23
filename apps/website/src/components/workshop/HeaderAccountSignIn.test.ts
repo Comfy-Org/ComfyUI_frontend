@@ -1,72 +1,13 @@
-import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { onBeforeSignInLeave } from '../../config/workshop-return'
 import HeaderAccount from './HeaderAccount.vue'
 
-const h = vi.hoisted(() => ({
-  flag: undefined as { value: boolean } | undefined,
-  user: undefined as { value: unknown } | undefined,
-  session: undefined as { value: unknown } | undefined,
-  sessionFailure: undefined as { value: unknown } | undefined,
-  balance: undefined as { value: unknown } | undefined,
-  ensureFresh: vi.fn(),
-  remint: vi.fn(),
-  signOut: vi.fn()
-}))
-
-vi.mock<unknown>(import('../../scripts/posthog'), async () => {
-  const { ref } = await import('vue')
-  const flag = ref(true)
-  h.flag = flag
-  return { useWorkshopAuthFlag: () => flag }
-})
-
-vi.mock<unknown>(import('../../config/workshop-session-state'), async () => {
-  const { ref } = await import('vue')
-  const user = ref<unknown>(null)
-  const session = ref<unknown>(undefined)
-  const sessionFailure = ref<unknown>(undefined)
-  h.user = user
-  h.session = session
-  h.sessionFailure = sessionFailure
-  return {
-    useWorkshopSession: () => ({
-      user,
-      session,
-      sessionFailure,
-      ensureFresh: h.ensureFresh,
-      remint: h.remint,
-      signOut: h.signOut
-    })
-  }
-})
-
-vi.mock<unknown>(import('../../config/workshop-credits'), async () => {
-  const { ref } = await import('vue')
-  const balance = ref<unknown>({ status: 'unknown' })
-  h.balance = balance
-  const { computed } = await import('vue')
-  return {
-    useWorkshopCredits: () => ({ balance }),
-    refreshWorkshopCredits: vi.fn().mockResolvedValue(undefined),
-    watchForTopUp: vi.fn(),
-    clearTopUpWatch: vi.fn(),
-    useTopUpWatch: () => computed(() => ({ status: 'idle' }))
-  }
-})
-
-beforeEach(() => {
-  h.remint.mockReset()
-  h.flag!.value = true
-  h.user!.value = null
-  h.session!.value = undefined
-  h.sessionFailure!.value = undefined
-  h.balance!.value = { status: 'unknown' }
-  h.ensureFresh.mockReset().mockResolvedValue({ status: 'error' })
-  h.signOut.mockReset().mockResolvedValue(undefined)
-})
+vi.mock(import('../../scripts/posthog'))
+vi.mock(import('../../config/workshop-session-state'))
+vi.mock(import('../../config/workshop-credits'))
 
 describe('HeaderAccount sign-in link', () => {
   it('runs the registered stashes before leaving for sign-in', async () => {

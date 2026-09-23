@@ -7,16 +7,12 @@
   >
     <TreeExplorerTreeNode :node="node" @contextmenu="handleContextMenu">
       <template #before-label>
-        <Tag
-          v-if="nodeDef.experimental"
-          :value="$t('g.experimental')"
-          severity="primary"
-        />
-        <Tag
-          v-if="nodeDef.deprecated"
-          :value="$t('g.deprecated')"
-          severity="danger"
-        />
+        <Badge v-if="nodeDef.experimental" severity="primary">
+          {{ $t('g.experimental') }}
+        </Badge>
+        <Badge v-if="nodeDef.deprecated" severity="danger">
+          {{ $t('g.deprecated') }}
+        </Badge>
       </template>
       <template v-if="isUserBlueprint" #actions>
         <Button
@@ -79,13 +75,13 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import ContextMenu from 'primevue/contextmenu'
 import type { MenuItem } from 'primevue/menuitem'
-import Tag from 'primevue/tag'
 import type { CSSProperties } from 'vue'
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import TreeExplorerTreeNode from '@/components/common/TreeExplorerTreeNode.vue'
 import NodePreview from '@/components/node/NodePreview.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'

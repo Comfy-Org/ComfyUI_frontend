@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
-import { useFullscreen, usePointerSwipe } from '@vueuse/core'
 import type { MenuItem } from 'primevue/menuitem'
+import { useFullscreen, usePointerSwipe } from '@vueuse/core'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -18,10 +17,11 @@ import LinearControls from '@/renderer/extensions/linearMode/LinearControls.vue'
 import LinearPreview from '@/renderer/extensions/linearMode/LinearPreview.vue'
 import MobileError from '@/renderer/extensions/linearMode/MobileError.vue'
 import { useColorPaletteService } from '@/services/colorPaletteService'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import { useQueueStore } from '@/stores/queueStore'
+import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const tabs = [
   ['linearMode.mobileControls', 'icon-[lucide--play]', 'control'],
@@ -33,7 +33,7 @@ const canvasStore = useCanvasStore()
 const colorPaletteService = useColorPaletteService()
 const colorPaletteStore = useColorPaletteStore()
 const { isLoggedIn } = useCurrentUser()
-const executionErrorStore = useExecutionErrorStore()
+const { isVisible: isErrorOverlayVisible } = useErrorOverlayState()
 const { t } = useI18n()
 const { commandIdToMenuItem } = useMenuItemStore()
 const queueStore = useQueueStore()
@@ -220,7 +220,7 @@ const menuEntries = computed<MenuItem[]>(() => [
           :inert="activeIndex !== 1"
         >
           <MobileError
-            v-if="executionErrorStore.isErrorOverlayOpen"
+            v-if="isErrorOverlayVisible"
             @navigate-controls="activeIndex = 0"
           />
           <LinearPreview v-else mobile @navigate-controls="activeIndex = 0" />
@@ -254,7 +254,7 @@ const menuEntries = computed<MenuItem[]>(() => [
         <div class="relative size-4">
           <i :class="cn('size-4', icon)" />
           <div
-            v-if="index === 1 && executionErrorStore.isErrorOverlayOpen"
+            v-if="index === 1 && isErrorOverlayVisible"
             class="absolute -top-1 -right-1 size-2 rounded-full bg-error"
           />
           <div

@@ -5,19 +5,23 @@ import { estimateWorkshopNodePrice } from './workshop-node-pricing'
 import { workshopNodePricingSchema } from './workshop-node-pricing.schema'
 
 describe('node-based Models price estimates', () => {
-  it('uses the published Kontext flat rates when the nodes have no price badge', async () => {
-    expect(
-      await estimateWorkshopNodePrice(
-        { routerId: 'bfl/flux-kontext-pro' },
-        'edit-images'
+  it.for([
+    ['bfl/flux-kontext-pro', 'edit-images', '8.44 credits/Run'],
+    ['bria/image-edit-gen-fill', 'edit-images', '9.05 credits/Run'],
+    ['luma/photon-flash-1', 'generate-images', '0.57 credits/Run'],
+    ['runway/gen4_image', 'generate-images', '24.14 credits/Run'],
+    ['wan/wan2.5-i2i-preview', 'edit-images', '6.33 credits/Run'],
+    ['wavespeed/seedvr2', 'edit-images', '2.11 credits/Run']
+  ] as const)(
+    'uses the published flat rate for %s',
+    async ([routerId, useCase, expected]) => {
+      expect(await estimateWorkshopNodePrice({ routerId }, useCase)).toBe(
+        expected
       )
-    ).toBe('8.44 credits/Run')
-    expect(
-      await estimateWorkshopNodePrice(
-        { routerId: 'bfl/flux-kontext-max' },
-        'edit-images'
-      )
-    ).toBe('16.88 credits/Run')
+    }
+  )
+
+  it('does not reuse a published rate for another operation', async () => {
     expect(
       await estimateWorkshopNodePrice(
         { routerId: 'bfl/flux-kontext-pro' },

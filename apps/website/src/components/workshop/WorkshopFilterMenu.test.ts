@@ -48,7 +48,7 @@ describe('WorkshopFilterMenu', () => {
     await waitFor(() => expect(trigger.matches(':focus')).toBe(true))
   })
 
-  it('toggles a use case and counts it on the button and tab', async () => {
+  it('toggles a use case and counts it on the button and panel', async () => {
     const user = userEvent.setup()
     const { useCases } = mountMenu()
 
@@ -60,9 +60,9 @@ describe('WorkshopFilterMenu', () => {
     expect(screen.getByTestId('workshop-filter-count').textContent.trim()).toBe(
       '1'
     )
-    expect(
-      screen.getByTestId('workshop-facet-useCase-count').textContent.trim()
-    ).toBe('1')
+    expect(screen.getByTestId('workshop-filter-applied')).toHaveTextContent(
+      '1 selected'
+    )
   })
 
   it('narrows a facet with its search box', async () => {

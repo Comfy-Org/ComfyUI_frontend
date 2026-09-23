@@ -27,7 +27,7 @@
         </p>
       </div>
 
-      <Message v-if="!isSecureContext" severity="warn" class="mb-4">
+      <Message v-if="!isSecureContext" severity="warning" class="mb-4">
         {{ t('auth.login.insecureContextWarning') }}
       </Message>
 
@@ -45,7 +45,7 @@
         </div>
         <Message
           v-else-if="regionStatus === 'blocked'"
-          severity="warn"
+          severity="warning"
           class="mb-4"
         >
           {{ t('auth.signup.regionRestrictionChina') }}
@@ -127,12 +127,13 @@
           </small>
         </template>
         <Message
-          v-if="authActions.accessError.value"
+          v-model:visible="authActions.accessError.value"
           severity="info"
-          icon="pi pi-info-circle"
-          variant="outlined"
           closable
         >
+          <template #icon>
+            <i class="pi pi-info-circle" />
+          </template>
           {{ t('toastMessages.useApiKeyTip') }}
         </Message>
       </div>
@@ -165,22 +166,23 @@
 </template>
 
 <script setup lang="ts">
-import { useRegionGate } from '@comfyorg/account/vue/regionGate'
-import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
-import Message from 'primevue/message'
 import { computed, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
+import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
+
 import Button from '@/components/ui/button/Button.vue'
+import Message from '@/components/ui/message/Message.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
-import { isCloud } from '@/platform/distribution/types'
 import {
   configValueOrDefault,
   remoteConfig
 } from '@/platform/remoteConfig/remoteConfig'
 import type { SignInData, SignUpData } from '@/schemas/signInSchema'
+import { isCloud } from '@/platform/distribution/types'
 import { isHostWhitelisted, normalizeHost } from '@/utils/hostWhitelist'
 
 import ApiKeyForm from './signin/ApiKeyForm.vue'

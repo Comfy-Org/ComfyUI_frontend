@@ -1,9 +1,9 @@
-import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
+import type { AssetInfo } from '@comfyorg/ingest-types'
 import type {
   ComfyWorkflowJSON,
   WorkflowId
 } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { AssetInfo } from '@/schemas/apiSchema'
+import type { ThumbnailType } from '@/platform/workflow/sharing/types/comfyHubTypes'
 
 export interface WorkflowPublishResult {
   publishedAt: Date

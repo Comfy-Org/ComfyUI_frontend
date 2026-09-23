@@ -557,6 +557,28 @@ describe('PartnerNodeAccessPanel', () => {
     )
   })
 
+  it.fails('KNOWN BUG: leaves a provider on the server state when its save fails', async () => {
+    const user = userEvent.setup()
+    restrictPolicy()
+    vi.mocked(
+      usePartnerNodeGovernanceStore().isProviderEnabled
+    ).mockReturnValue(true)
+    vi.mocked(
+      usePartnerNodeGovernanceStore().setProviderEnabled
+    ).mockRejectedValueOnce(new Error('Save failed'))
+    renderComponent()
+    const providerSwitch = screen.getByRole('switch', {
+      name: 'Set access for OpenAI (inc. Sora)'
+    })
+
+    expect(providerSwitch.getAttribute('aria-checked')).toBe('true')
+
+    await user.click(providerSwitch)
+    await screen.findByRole('alert')
+
+    expect(providerSwitch.getAttribute('aria-checked')).toBe('true')
+  })
+
   it('locks provider controls while saving', () => {
     restrictPolicy()
     Object.assign(usePartnerNodeGovernanceStore(), { isSaving: true })

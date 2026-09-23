@@ -1,28 +1,28 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed, ref, watch } from 'vue'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
-
-import { useTablist } from '../../composables/useTablist'
+import { apiKeysLink, externalLinks } from '../../config/routes'
+import type { FileValue, FormValues } from '../../config/workshop-playground'
+import { schemaForModel } from '../../config/workshop-playground'
+import { formForContract } from '../../config/workshop-contract'
+import { workshopExampleFile } from '../../config/workshop-example-file'
+import { shouldRehostWorkshopUrl } from '../../config/workshop-url-input'
 import type { SnippetFile, SnippetLanguage } from '../../config/models-snippets'
 import {
   SNIPPET_LANGUAGES,
   buildSnippet,
   hasOmittedCurlFiles
 } from '../../config/models-snippets'
-import { externalLinks } from '../../config/routes'
-import { formForContract } from '../../config/workshop-contract'
 import type { WorkshopContract } from '../../config/workshop-contract'
-import { workshopExampleFile } from '../../config/workshop-example-file'
-import type { FileValue, FormValues } from '../../config/workshop-playground'
-import { schemaForModel } from '../../config/workshop-playground'
 import { prepareWorkshopRouterInput } from '../../config/workshop-request'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
-import { shouldRehostWorkshopUrl } from '../../config/workshop-url-input'
 import type { Locale } from '../../i18n/translations'
+import { useTablist } from '../../composables/useTablist'
 import { t } from '../../i18n/translations'
 import type { CodeLang } from '../../lib/highlight'
 import HighlightedCode from './HighlightedCode.vue'
@@ -30,11 +30,13 @@ import HighlightedCode from './HighlightedCode.vue'
 const {
   contract,
   values,
-  locale = 'en'
+  locale = 'en',
+  modelSlug
 } = defineProps<{
   contract?: WorkshopContract
   values: FormValues
   locale?: Locale
+  modelSlug?: string
 }>()
 
 const language = ref<SnippetLanguage>('python')
@@ -279,7 +281,7 @@ const highlightLanguage = {
     <div class="flex flex-wrap gap-3">
       <Button
         as="a"
-        :href="externalLinks.apiKeys"
+        :href="apiKeysLink({ onboarding: 'models', model: modelSlug })"
         target="_blank"
         rel="noopener noreferrer"
         data-testid="api-get-key"

@@ -1,11 +1,12 @@
-import userEvent from '@testing-library/user-event'
+import { useDialogService } from '@/services/dialogService'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspaceMenuButton from './WorkspaceMenuButton.vue'
 
@@ -30,10 +31,6 @@ const mockUiConfig = ref<Record<string, unknown>>(ownerConfig)
 const mockCanLeaveWorkspace = ref(false)
 const mockCanManageSubscription = ref(true)
 
-const mockShowLeaveWorkspaceDialog = vi.fn()
-const mockShowDeleteWorkspaceDialog = vi.fn()
-const mockShowEditWorkspaceDialog = vi.fn()
-
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useWorkspaceUI'),
   () => ({
@@ -47,13 +44,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    showLeaveWorkspaceDialog: mockShowLeaveWorkspaceDialog,
-    showDeleteWorkspaceDialog: mockShowDeleteWorkspaceDialog,
-    showEditWorkspaceDialog: mockShowEditWorkspaceDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 const i18n = createI18n({
   legacy: false,
@@ -72,7 +63,7 @@ function renderComponent() {
     global: {
       plugins: [i18n],
       directives: { tooltip: {} },
-      stubs: { DropdownMenu: DropdownMenuStub, Button: true }
+      stubs: { DropdownMenu: DropdownMenuStub }
     }
   })
 }
@@ -111,7 +102,7 @@ describe('WorkspaceMenuButton', () => {
     ).toBeEnabled()
 
     await user.click(screen.getByRole('button', { name: 'Delete Workspace' }))
-    expect(mockShowDeleteWorkspaceDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showDeleteWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
   it('does not expose Delete in a personal workspace', () => {
@@ -146,7 +137,7 @@ describe('WorkspaceMenuButton', () => {
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: 'Leave Workspace' }))
-    expect(mockShowLeaveWorkspaceDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showLeaveWorkspaceDialog).toHaveBeenCalledOnce()
   })
 
   it('rechecks permission before opening the leave dialog', () => {
@@ -157,7 +148,7 @@ describe('WorkspaceMenuButton', () => {
     mockCanLeaveWorkspace.value = false
     leave.click()
 
-    expect(mockShowLeaveWorkspaceDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showLeaveWorkspaceDialog).not.toHaveBeenCalled()
   })
 
   it('rechecks owner permission before opening the delete dialog', () => {
@@ -169,7 +160,7 @@ describe('WorkspaceMenuButton', () => {
     mockCanManageSubscription.value = false
     deleteWorkspace.click()
 
-    expect(mockShowDeleteWorkspaceDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showDeleteWorkspaceDialog).not.toHaveBeenCalled()
   })
 
   it('rechecks the subscription lock before opening the delete dialog', () => {
@@ -181,6 +172,6 @@ describe('WorkspaceMenuButton', () => {
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: true })
     deleteWorkspace.click()
 
-    expect(mockShowDeleteWorkspaceDialog).not.toHaveBeenCalled()
+    expect(useDialogService().showDeleteWorkspaceDialog).not.toHaveBeenCalled()
   })
 })

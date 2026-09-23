@@ -2,11 +2,6 @@ import { toString } from 'es-toolkit/compat'
 import { shallowRef, toRaw } from 'vue'
 
 import { assert } from '@/base/assert'
-import {
-  attachNodeToStores,
-  detachAllNodesFromStores,
-  detachNodeFromStores
-} from '@/core/graph/nodeShell/nodeShellLifecycle'
 import { adoptPromotedWidgetValue } from '@/core/graph/subgraph/adoptPromotedWidgetValue'
 import {
   getAgreedLinkPresentation,
@@ -16,8 +11,14 @@ import {
   SUBGRAPH_INPUT_ID,
   SUBGRAPH_OUTPUT_ID
 } from '@/lib/litegraph/src/constants'
+import {
+  attachNodeToStores,
+  detachAllNodesFromStores,
+  detachNodeFromStores
+} from '@/core/graph/nodeShell/nodeShellLifecycle'
+import type { UUID } from '@/utils/uuid'
+import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { reportError } from '@/platform/telemetry/reportError'
-import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import {
   attachGroupLayout,
   attachNodeLayout,
@@ -28,43 +29,21 @@ import {
   materializeRerouteLayout,
   releaseNodeLayoutAttachment
 } from '@/renderer/core/layout/operations/graphLayoutAttachment'
+import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
-import { useEntityIdStore } from '@/stores/entityIdStore'
-import { useExecutionOrderStore } from '@/stores/executionOrderStore'
-import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
+import { nodesInRenderOrder } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
+import type { LinkPresentation } from '@/types/linkPresentation'
 import { useLinkStore } from '@/stores/linkStore'
 import type { EndpointUpdate } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
-import { rekeyGraphId } from '@/stores/rekeyGraphId'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
-import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import { parseLinkId, toLinkId } from '@/types/linkId'
-import type { LinkPresentation } from '@/types/linkPresentation'
 import { isFloatingTopology } from '@/types/linkTopology'
-import {
-  UNASSIGNED_NODE_ID,
-  compareNodeIds,
-  parseNodeId,
-  serializeNodeId,
-  toNodeId
-} from '@/types/nodeId'
-import type { NodeId, SerializedNodeId } from '@/types/nodeId'
 import { toRerouteId } from '@/types/rerouteId'
-import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
-import type { UUID } from '@/utils/uuid'
-import { createUuidv4, zeroUuid } from '@/utils/uuid'
-
-import type { DragAndScaleState } from './DragAndScale'
-import {
-  extensionConfigureView,
-  GRAPH_CANONICAL_FIELDS,
-  hydrateExtensionPayload,
-  runExtensionSerializeHook
-} from './extensionPersistence'
+import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import {
   createLGraphState,
   mintGroupId,
@@ -76,10 +55,63 @@ import {
   observeNodeId,
   observeRerouteId
 } from './idAllocation'
-import type { LGraphState } from './idAllocation'
+import type { LGraphState, NodeIdMintMode } from './idAllocation'
+import { isRootGraphDocBound } from './docBoundGraphs'
+import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
+import { normalizeWidgetsView } from './node/widgetsView'
+import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
+import { useEntityIdStore } from '@/stores/entityIdStore'
+import { useExecutionOrderStore } from '@/stores/executionOrderStore'
+import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
+import { rekeyGraphId } from '@/stores/rekeyGraphId'
+import {
+  UNASSIGNED_NODE_ID,
+  compareNodeIds,
+  parseNodeId,
+  serializeNodeId,
+  toNodeId
+} from '@/types/nodeId'
+import type { NodeId, SerializedNodeId } from '@/types/nodeId'
+import { forEachNode, visitGraphNodes } from '@/utils/graphTraversalUtil'
+
+import {
+  normalizeConfiguredTopology,
+  realignInputLinkSlots
+} from './linkDeduplication'
+import {
+  countRequestedNodeIds,
+  getRemintedEndpointPatch,
+  recordUnambiguousRemint
+} from './remintLinkRemap'
+import {
+  beginNamedValuesShadowDiffLoad,
+  endNamedValuesShadowDiffLoad
+} from './utils/namedValuesShadowDiffTelemetry'
+
+import type { DragAndScaleState } from './DragAndScale'
+import { LGraphCanvas } from './LGraphCanvas'
+import { Rectangle } from './infrastructure/Rectangle'
+import { LGraphGroup } from './LGraphGroup'
+import { LGraphNode } from './LGraphNode'
+import {
+  LLink,
+  registerLinkTopology,
+  resolveLinkTopology,
+  unregisterAllLinkTopologies,
+  unregisterLinkTopology
+} from './LLink'
+import { LinkMap } from './LinkMap'
+import type { LinkId } from './LLink'
+import { MapProxyHandler } from './MapProxyHandler'
+import {
+  registerRerouteChain,
+  Reroute,
+  unregisterAllRerouteChains,
+  unregisterRerouteChain
+} from './Reroute'
+import type { RerouteId } from './Reroute'
 import { CustomEventTarget } from './infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from './infrastructure/LGraphEventMap'
-import { Rectangle } from './infrastructure/Rectangle'
 import type { SubgraphEventMap } from './infrastructure/SubgraphEventMap'
 import type {
   DefaultConnectionColors,
@@ -95,57 +127,28 @@ import type {
   Positionable,
   Size
 } from './interfaces'
-import { LGraphCanvas } from './LGraphCanvas'
-import { LGraphGroup } from './LGraphGroup'
-import { LGraphNode } from './LGraphNode'
-import {
-  normalizeConfiguredTopology,
-  realignInputLinkSlots
-} from './linkDeduplication'
-import { LinkMap } from './LinkMap'
 import { LiteGraph, SubgraphNode } from './litegraph'
-import {
-  LLink,
-  registerLinkTopology,
-  resolveLinkTopology,
-  unregisterAllLinkTopologies,
-  unregisterLinkTopology
-} from './LLink'
-import type { LinkId } from './LLink'
-import { MapProxyHandler } from './MapProxyHandler'
 import {
   alignOutsideContainer,
   alignToContainer,
   createBounds,
   snapPoint
 } from './measure'
-import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
-import { normalizeWidgetsView } from './node/widgetsView'
-import {
-  countRequestedNodeIds,
-  getRemintedEndpointPatch,
-  recordUnambiguousRemint
-} from './remintLinkRemap'
-import {
-  registerRerouteChain,
-  Reroute,
-  unregisterAllRerouteChains,
-  unregisterRerouteChain
-} from './Reroute'
-import type { RerouteId } from './Reroute'
-import {
-  collectReservedGroupIds,
-  collectReservedLinkIds,
-  collectReservedRerouteIds,
-  normalizeSubgraphDefinitions,
-  topologicalSortSubgraphs
-} from './subgraph/subgraphDeduplication'
+import { warnDeprecated } from './utils/feedback'
 import { SubgraphInput } from './subgraph/SubgraphInput'
 import { SubgraphInputNode } from './subgraph/SubgraphInputNode'
 import { SubgraphOutput } from './subgraph/SubgraphOutput'
 import { SubgraphOutputNode } from './subgraph/SubgraphOutputNode'
 import {
+  captureUnpackedTargetInput,
+  findUnavailableSubgraphNodeType,
+  materializeSubgraphNodes,
+  resolveUnpackedTargetInput
+} from './subgraph/unpackSubgraph'
+import type { UnpackedTargetInput } from './subgraph/unpackSubgraph'
+import {
   findUnresolvableSubgraphLink,
+  findOrphanedSubgraphs,
   findReleasableSubgraphs,
   findUsedSubgraphIds,
   getBoundaryLinks,
@@ -155,13 +158,6 @@ import {
   multiClone,
   splitPositionables
 } from './subgraph/subgraphUtils'
-import {
-  captureUnpackedTargetInput,
-  findUnavailableSubgraphNodeType,
-  materializeSubgraphNodes,
-  resolveUnpackedTargetInput
-} from './subgraph/unpackSubgraph'
-import type { UnpackedTargetInput } from './subgraph/unpackSubgraph'
 import { Alignment, LGraphEventMode } from './types/globalEnums'
 import type {
   LGraphTriggerAction,
@@ -180,11 +176,19 @@ import type {
   SerialisableReroute
 } from './types/serialisation'
 import { getAllNestedItems } from './utils/collections'
-import { warnDeprecated } from './utils/feedback'
 import {
-  beginNamedValuesShadowDiffLoad,
-  endNamedValuesShadowDiffLoad
-} from './utils/namedValuesShadowDiffTelemetry'
+  extensionConfigureView,
+  GRAPH_CANONICAL_FIELDS,
+  hydrateExtensionPayload,
+  runExtensionSerializeHook
+} from './extensionPersistence'
+import {
+  collectReservedGroupIds,
+  collectReservedLinkIds,
+  collectReservedRerouteIds,
+  normalizeSubgraphDefinitions,
+  topologicalSortSubgraphs
+} from './subgraph/subgraphDeduplication'
 
 export type {
   LGraphTriggerAction,
@@ -239,6 +243,8 @@ export interface GraphRemoveOptions {
    * Same-id replacement state is left intact.
    */
   preserveCanonicalState?: boolean
+  /** Keep the subgraph definitions the node references; the caller re-creates the node elsewhere in the same root graph. */
+  preserveSubgraphDefinitions?: boolean
 }
 
 export interface LGraphExtra extends Dictionary<unknown> {
@@ -442,12 +448,30 @@ function serialiseStoredNodes(owner: LGraph, sortNodes: boolean) {
     return nodes.map((node) => node.serialize())
   }
   return serialisers.map(({ adapter, state }) =>
-    adapter.serializeFromStoreState(state)
+    adapter.serialize === LGraphNode.prototype.serialize
+      ? adapter.serializeFromStoreState(state)
+      : adapter.serialize()
   )
 }
 
 function serialiseStoredGroups(owner: LGraph) {
   return owner._groups.map((group) => group.serialize())
+}
+
+/**
+ * `idAllocation.ts` stays pure and context-free, so the mode is decided here:
+ * `'crdt-disjoint'` only for a mint landing directly on a root graph that
+ * shares its id space with the agent's collaborative doc — subgraph-owned
+ * nodes are outside the doc's scope (see `agentNodeMaterializer.ts`) and keep
+ * plain sequential ids.
+ */
+function nodeIdMintModeFor(graph: {
+  isRootGraph: boolean
+  id: string
+}): NodeIdMintMode {
+  return graph.isRootGraph && isRootGraphDocBound(graph.id)
+    ? 'crdt-disjoint'
+    : 'sequential'
 }
 
 export class LGraph
@@ -797,9 +821,13 @@ export class LGraph
       useLinkPresentationStore().clearGraph(toRootGraphId(graphId))
       useRerouteStore().clearGraph(toRootGraphId(graphId))
       useNodeDataStore().clearGraph(graphId)
+      useSelectionStore().clearRoot(toRootGraphId(graphId))
       layoutStore.clearGraph(graphId)
     } else if (getRuntimeRootGraph(this)) {
       useExecutionOrderStore().clearGraph(graphScopeOf(this))
+      useSelectionStore().apply(graphScopeOf(this), {
+        type: 'selection.clear'
+      })
     }
     this.reroutes.clear()
 
@@ -1373,7 +1401,8 @@ export class LGraph
 
     // give him an id
     if (node.id === UNASSIGNED_NODE_ID) {
-      node.id = mintNodeId(state)
+      const mintMode = nodeIdMintModeFor(this)
+      node.id = mintNodeId(state, mintMode)
     } else {
       observeNodeId(state, node.id)
     }
@@ -1386,7 +1415,9 @@ export class LGraph
     normalizeWidgetsView(node)
     node.graph = this
 
-    attachNodeToStores(this, node, () => mintNodeId(state))
+    attachNodeToStores(this, node, () =>
+      mintNodeId(state, nodeIdMintModeFor(this))
+    )
 
     this._nodes.push(node)
     this._nodes_by_id[node.id] = node
@@ -1507,7 +1538,7 @@ export class LGraph
       }
     }
 
-    if (node.isSubgraphNode()) {
+    if (node.isSubgraphNode() && !options.preserveSubgraphDefinitions) {
       this.releaseSubgraphs(findReleasableSubgraphs(this.rootGraph, node))
     }
 
@@ -2252,11 +2283,18 @@ export class LGraph
         resolved.inputNode
       )
 
-    for (const node of nodes) this.remove(node)
+    for (const node of nodes)
+      this.remove(node, { preserveSubgraphDefinitions: true })
     for (const reroute of reroutes) this.removeReroute(reroute.id)
     for (const group of groups) this.remove(group)
 
-    const subgraph = this.createSubgraph(data)
+    let subgraph: Subgraph
+    try {
+      subgraph = this.createSubgraph(data)
+    } catch (error) {
+      this.releaseSubgraphs(findOrphanedSubgraphs(this.rootGraph, nodes))
+      throw error
+    }
     for (const node of subgraph.nodes) node.onGraphConfigured?.()
     for (const node of subgraph.nodes) node.onAfterGraphConfigured?.()
 
@@ -2552,7 +2590,10 @@ export class LGraph
           )
         : undefined
       if (link.origin_id === SUBGRAPH_INPUT_ID && !hostInput) {
-        console.error('Missing host input when unpacking subgraph')
+        reportError(new Error('Missing host input when unpacking subgraph'), {
+          errorType: 'subgraph_unpack_missing_host_input',
+          context: { linkId: link.id, subgraphNodeId: subgraphNode.id }
+        })
         continue
       }
       const outerLink =

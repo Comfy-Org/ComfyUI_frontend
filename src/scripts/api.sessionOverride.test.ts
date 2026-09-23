@@ -1,4 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
+import type { User } from 'firebase/auth'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { useCurrentUser } from 'vuefire'
 
@@ -13,21 +14,18 @@ vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 const mockCurrentUser = vi.hoisted(() => ({
   value: null as { email: string | null; emailVerified: boolean } | null
 }))
-vi.mock(import('vuefire'), () => ({
-  useCurrentUser: vi.fn(() =>
-    fromPartial<ReturnType<typeof useCurrentUser>>(mockCurrentUser)
-  )
+vi.mock<unknown>(import('@/platform/auth/firebaseIdentity'), () => ({
+  firebaseIdentity: {
+    currentUser: () =>
+      mockCurrentUser.value && fromPartial<User>(mockCurrentUser.value)
+  }
 }))
 
 /**
  * Every call here happens at plain module scope — no component, no `setup()`,
  * no active Vue instance — which is how `api.getServerFeature` is reached from
- * stores and utilities. Identity is stubbed at the `vuefire` boundary, so what
- * these cases pin is the precedence and gating logic, not VueFire itself.
- *
- * That VueFire resolves the default Firebase app outside a component is a
- * property of the real SDK and needs a real initialised app, so it is verified
- * against a live Firebase app in the browser rather than here.
+ * stores and utilities. Identity is stubbed at the identity module, so what
+ * these cases pin is the precedence and gating logic, not Firebase itself.
  */
 describe('api.getServerFeature session override outside component setup', () => {
   beforeEach(() => {

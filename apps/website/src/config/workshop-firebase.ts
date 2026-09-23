@@ -1,9 +1,3 @@
-import { createFirebaseIdentity } from '@comfyorg/account/firebase'
-import {
-  CUSTOMER_PROVISIONING_PATH,
-  customerProvisioningRequest,
-  signUpWithProvisioning
-} from '@comfyorg/account/provisioning'
 /**
  * The Workshop's Firebase surface: the package-owned identity entry bound
  * to the env-selected project, plus sign-in and customer provisioning as
@@ -13,6 +7,13 @@ import {
  */
 import type { User, UserCredential } from 'firebase/auth'
 import { getAdditionalUserInfo } from 'firebase/auth'
+
+import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
+import {
+  CUSTOMER_PROVISIONING_PATH,
+  customerProvisioningRequest,
+  signUpWithProvisioning
+} from '@comfyorg/account-core/provisioning'
 
 import { captureSignupRollbackFailure } from '../scripts/posthog'
 import {
@@ -142,6 +143,5 @@ export function signOutWorkshop(): Promise<void> {
   return identity.signOut()
 }
 
-/** Fires with the restored user (or null) once Firebase settles, then on every change. */
-/** The identity the session client attaches; only the package can mint one. */
+/** Reached only through workshop-account's lazy port, so this chunk stays off the flag-off path. */
 export const workshopIdentity = identity

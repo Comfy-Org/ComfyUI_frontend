@@ -10,7 +10,7 @@ test(
   { tag: ['@cloud', '@ui'] },
   async ({ page, workflowSelection, promptHistory }) => {
     await page
-      .getByRole('button', { name: enMessages.agent.askComfyAgent })
+      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
       .click()
     await page
       .getByRole('button', {
@@ -73,7 +73,7 @@ test(
       .getByRole('button', { name: enMessages.g.close, exact: true })
       .click()
     await page
-      .getByRole('button', { name: enMessages.agent.askComfyAgent })
+      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
       .click()
     await expect(editor).toHaveText(text)
     await expect(chips).toHaveCount(2)
@@ -142,8 +142,7 @@ test(
       .click()
     await expect(editor).toHaveText(text)
     await expect(chips).toHaveCount(2)
-    await editor.press('ControlOrMeta+a')
-    await editor.press('ArrowRight')
+    await editor.press('ControlOrMeta+End')
     await editor.pressSequentially(' again')
     await expect(editor).toHaveText(`${text} again`)
     await panel

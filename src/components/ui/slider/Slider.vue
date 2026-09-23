@@ -13,7 +13,6 @@ import { ref } from 'vue'
 import type { HTMLAttributes } from 'vue'
 
 const props = defineProps<
-  // eslint-disable-next-line vue/no-unused-properties
   SliderRootProps & {
     class?: HTMLAttributes['class']
     rangeClass?: HTMLAttributes['class']

@@ -90,12 +90,6 @@ function renderPanel() {
       stubs: {
         TabPanel: { template: '<div><slot /></div>' },
         Divider: true,
-        ProgressSpinner: true,
-        Button: {
-          template:
-            '<button :disabled="disabled" @click="$emit(\'click\')"><slot /></button>',
-          props: ['disabled']
-        },
         SecretListItem: {
           template:
             '<button data-testid="delete-trigger" @click="$emit(\'delete\')">delete</button>',

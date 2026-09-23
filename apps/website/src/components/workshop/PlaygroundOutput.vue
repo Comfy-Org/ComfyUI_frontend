@@ -57,6 +57,8 @@ const emit = defineEmits<{
   switchPersonal: []
   buyCredits: []
   download: [kind: RunOutput['kind']]
+  delivery: [url: string, status: 'succeeded' | 'failed' | 'cancelled']
+  playbackStarted: [url: string]
 }>()
 
 const elapsed = computed(() =>
@@ -72,12 +74,24 @@ const mediaControlClass =
 const failureKey: Record<RunFailure, TranslationKey> = {
   validation: 'workshop.error.validation',
   provider: 'workshop.error.provider',
+  upload: 'workshop.error.upload',
+  network: 'workshop.error.network',
+  response: 'workshop.error.response',
+  client: 'workshop.error.client',
+  concurrency: 'workshop.error.concurrency',
+  conflict: 'workshop.error.conflict',
   rateLimit: 'workshop.error.rateLimit',
   policy: 'workshop.error.policy',
   noCredits: 'workshop.error.noCredits',
   unavailable: 'workshop.error.unavailable',
   timeout: 'workshop.error.timeout'
 }
+
+const hasUnreadableFile = computed(
+  () =>
+    state.status === 'failed' &&
+    Object.values(state.fieldErrors).includes('fileUnreadable')
+)
 
 const statusMessage = computed(() => {
   if (
@@ -89,7 +103,7 @@ const statusMessage = computed(() => {
       '{workspace}',
       memberWorkspace
     )
-  if (state.status === 'failed') return t(failureKey[state.reason], locale)
+  if (state.status === 'failed') return t(failureTranslationKey(state), locale)
   if (state.status === 'running') return t('workshop.run.running', locale)
   if (state.status === 'cancelled')
     return t('workshop.output.cancelled', locale)
@@ -102,6 +116,18 @@ const statusMessage = computed(() => {
     )
   return ''
 })
+
+function failureTranslationKey(
+  failure: Extract<RunState, { status: 'failed' }>
+): TranslationKey {
+  if (hasUnreadableFile.value) return 'workshop.error.fileUnreadable'
+  if (
+    failure.reason === 'validation' &&
+    !Object.keys(failure.fieldErrors).length
+  )
+    return 'workshop.error.inputRejected'
+  return failureKey[failure.reason]
+}
 
 const selected = ref(0)
 // Earlier outputs from this visit stay reachable; the latest is the default.
@@ -135,6 +161,12 @@ const outputs = computed(() =>
     : []
 )
 const currentUrl = computed(() => outputs.value[selected.value] ?? '')
+// The media element is keyed on this URL, so leaving it destroys an element
+// that can no longer report. Whoever is waiting on that URL must hear it was
+// abandoned, or the wait ends as a media timeout the visitor caused.
+watch(currentUrl, (_, previous) => {
+  if (previous) emit('delivery', previous, 'cancelled')
+})
 const failedDownloadUrl = ref<string>()
 const downloadNeedsLink = computed(
   () => failedDownloadUrl.value === currentUrl.value
@@ -275,7 +307,7 @@ const earlierClass = (active: boolean) =>
       class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
     >
       <Loader2
-        class="size-8 animate-spin text-primary-comfy-yellow"
+        class="size-8 text-primary-comfy-yellow motion-safe:animate-spin"
         aria-hidden="true"
       />
       <p class="flex items-baseline gap-2 text-sm text-primary-warm-white">
@@ -352,7 +384,9 @@ const earlierClass = (active: boolean) =>
         {{ t('nav.buyCredits', locale) }}
       </Button>
       <Button
-        v-else-if="state.reason !== 'validation'"
+        v-else-if="
+          !hasUnreadableFile && !['validation', 'policy'].includes(state.reason)
+        "
         variant="outline"
         size="sm"
         @click="emit('retry')"
@@ -382,12 +416,16 @@ const earlierClass = (active: boolean) =>
             autoplay
             loop
             no-cors
+            @loaded="emit('delivery', $event, 'succeeded')"
+            @failed="emit('delivery', $event, 'failed')"
           />
           <img
             v-else-if="currentUrl && shown.kind === 'image' && !blurred"
             :src="currentUrl"
             :alt="t('workshop.output.title', locale)"
             class="size-full object-contain"
+            @load="emit('delivery', currentUrl, 'succeeded')"
+            @error="emit('delivery', currentUrl, 'failed')"
           />
           <pre
             v-else-if="shown.kind === 'text' && !blurred"
@@ -440,6 +478,10 @@ const earlierClass = (active: boolean) =>
           :src="currentUrl"
           :locale
           class="absolute inset-x-0 bottom-0"
+          @loaded="emit('delivery', $event, 'succeeded')"
+          @failed="emit('delivery', $event, 'failed')"
+          @playback-started="emit('playbackStarted', $event)"
+          @cancelled="emit('delivery', $event, 'cancelled')"
         />
         <button
           v-if="blurred"

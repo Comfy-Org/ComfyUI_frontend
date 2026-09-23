@@ -1,4 +1,27 @@
-import { getBillingWebUrl } from './billingWeb'
+import {
+  getBillingWebUrl,
+  normalizeHostedBillingDestination
+} from './billingWeb'
+
+describe('normalizeHostedBillingDestination', () => {
+  it('routes to the hosted app only on the exact billing_web variant', () => {
+    expect(normalizeHostedBillingDestination('billing_web')).toBe('billing_web')
+  })
+
+  it.for([
+    'stripe',
+    '',
+    null,
+    undefined,
+    true,
+    false,
+    'true',
+    'BILLING_WEB',
+    'billing-web'
+  ])('stays on the provider page for %s', (value) => {
+    expect(normalizeHostedBillingDestination(value)).toBe('stripe')
+  })
+})
 
 describe('getBillingWebUrl', () => {
   it('accepts an HTTPS deployment URL', () => {

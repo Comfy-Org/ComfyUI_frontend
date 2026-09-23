@@ -5,7 +5,7 @@ import { expect } from '@playwright/test'
 /**
  * Sign-up submission stays blocked while a password rule is unmet, end to end
  * through the dialog. Per-rule marking as the person types lives in
- * `@comfyorg/account`'s `PasswordRules.test.ts` unit test; asserting the red
+ * `@comfyorg/account-core`'s `PasswordRules.test.ts` unit test; asserting the red
  * marking here would couple the spec to the host's `unmet-class`.
  */
 test.describe('Sign In dialog — password requirements checklist', () => {

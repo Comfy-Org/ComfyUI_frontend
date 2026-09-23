@@ -147,14 +147,14 @@ function adoptConcreteWidget<C extends BaseWidget>(
   const foreignDescriptors = collectDescriptors(widget)
   for (const [key, foreignDescriptor] of foreignDescriptors) {
     if (key === 'options') continue
-    descriptors.set(
-      key,
-      mergeDescriptor(
-        descriptors.get(key),
-        foreignDescriptor,
-        Object.getOwnPropertyDescriptor(widget, key)
-      )
+    const descriptor = mergeDescriptor(
+      descriptors.get(key),
+      foreignDescriptor,
+      Object.getOwnPropertyDescriptor(widget, key)
     )
+    if (key === 'disabled' && foreignDescriptor.get)
+      descriptor.get = foreignDescriptor.get
+    descriptors.set(key, descriptor)
   }
   preserveHiddenFacade(descriptors, foreignDescriptors)
 

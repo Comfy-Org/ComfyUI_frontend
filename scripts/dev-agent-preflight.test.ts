@@ -6,7 +6,7 @@ import { describe, expect, it, vi } from 'vitest'
 import { parseOptions } from './dev-agent-options'
 import { preflightAgent } from './dev-agent-preflight'
 
-vi.mock('node:fs/promises', () => ({ access: vi.fn() }))
+vi.mock(import('node:fs/promises'), () => ({ access: vi.fn() }))
 
 describe('preflightAgent', () => {
   it('resolves one runtime contract for both launch modes', async () => {

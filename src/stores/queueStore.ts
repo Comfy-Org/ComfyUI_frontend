@@ -7,18 +7,21 @@ import type {
   JobListItem,
   TaskType
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { useSettingStore } from '@/platform/settings/settingStore'
-import type { StatusWsMessageStatus, TaskOutput } from '@/schemas/apiSchema'
+import type {
+  StatusWsMessageStatus,
+  TaskOutput
+} from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
+import type { AugmentedResultItem } from '@/utils/resultItem'
+import { filterPreviewableResults } from '@/utils/resultItem'
+import { parseTaskOutput } from '@/stores/resultItemParsing'
 import type { ComfyApp } from '@/scripts/app'
 import { useExtensionService } from '@/services/extensionService'
 import { getJobDetail } from '@/services/jobOutputCache'
-import { useExecutionStore } from '@/stores/executionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
-import { parseTaskOutput } from '@/stores/resultItemParsing'
+import { useExecutionStore } from '@/stores/executionStore'
 import { tryNormalizeNodeExecutionId } from '@/types/nodeIdentification'
-import type { AugmentedResultItem } from '@/utils/resultItem'
-import { filterPreviewableResults } from '@/utils/resultItem'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 enum TaskItemDisplayStatus {
   Running = 'Running',
@@ -432,7 +435,8 @@ export const useQueuePendingTaskCountStore = defineStore(
     }),
     actions: {
       update(e: CustomEvent<StatusWsMessageStatus | null>) {
-        this.count = e.detail?.exec_info.queue_remaining || 0
+        const queueRemaining = e.detail?.exec_info?.queue_remaining
+        if (queueRemaining != null) this.count = queueRemaining
       }
     }
   }

@@ -1,16 +1,17 @@
 /**
  * The header's balance read, owned by the site: an authorized GET with
  * identity-keyed in-flight dedupe and the one forced re-mint a stale token
- * is allowed. Billing stays outside @comfyorg/account in V1, so this is
+ * is allowed. Billing stays outside @comfyorg/account-core in V1, so this is
  * the site's own copy of that rule, bound to the shared session client.
  */
-import { createBoundedOperation } from '@comfyorg/account/boundedOperation'
+import { createBoundedOperation } from '@comfyorg/account-core/boundedOperation'
+import type { User } from 'firebase/auth'
+
 import type {
   AccountCredential,
   SessionClient
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 import { zBillingBalanceResponse } from '@comfyorg/ingest-types/zod'
-import type { User } from 'firebase/auth'
 
 export type BalanceState =
   /** Cents, as the cloud app reads it: the `_micros` fields carry cents. */

@@ -1,15 +1,12 @@
+import { useDialogService } from '@/services/dialogService'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import * as utils from '@/scripts/utils'
-
 import { useWorkflowActionsService } from './workflowActionsService'
 
-const mockPrompt = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({ prompt: mockPrompt })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(
   import('@/platform/workflow/core/services/workflowService'),
@@ -33,7 +30,7 @@ beforeEach(() => {
 describe('workflowActionsService.exportWorkflowAction', () => {
   it('returns { cancelled: true } when the user dismisses the filename prompt', async () => {
     useSettingStore().settingValues['Comfy.PromptFilename'] = true
-    mockPrompt.mockResolvedValue(null)
+    vi.mocked(useDialogService().prompt).mockResolvedValue(null)
     const { exportWorkflowAction } = useWorkflowActionsService()
 
     const result = await exportWorkflowAction(minimalWorkflow, 'wf.json')
@@ -44,7 +41,7 @@ describe('workflowActionsService.exportWorkflowAction', () => {
 
   it('downloads with the prompted filename and returns success', async () => {
     useSettingStore().settingValues['Comfy.PromptFilename'] = true
-    mockPrompt.mockResolvedValue('custom')
+    vi.mocked(useDialogService().prompt).mockResolvedValue('custom')
     const { exportWorkflowAction } = useWorkflowActionsService()
 
     const result = await exportWorkflowAction(minimalWorkflow, 'wf.json')
@@ -63,7 +60,7 @@ describe('workflowActionsService.exportWorkflowAction', () => {
     const result = await exportWorkflowAction(minimalWorkflow, 'default.json')
 
     expect(result).toEqual({ success: true })
-    expect(mockPrompt).not.toHaveBeenCalled()
+    expect(useDialogService().prompt).not.toHaveBeenCalled()
     expect(utils.downloadBlob).toHaveBeenCalledWith(
       'default.json',
       expect.any(Blob)

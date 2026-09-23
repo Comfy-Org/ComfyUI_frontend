@@ -1,10 +1,10 @@
+import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import {
   zHubAssetUploadUrlResponse,
   zHubLabelListResponse,
   zHubProfileResponse,
   zHubWorkflowPublishResponse
 } from '@/platform/workflow/sharing/schemas/shareSchemas'
-import type { ComfyHubProfile } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
 
 type HubThumbnailType = 'image' | 'video' | 'image_comparison'

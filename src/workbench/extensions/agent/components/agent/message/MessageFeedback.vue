@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { useClipboard } from '@vueuse/core'
 import {
   DropdownMenuContent,
@@ -11,10 +10,12 @@ import {
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+import Button from '@/components/ui/button/Button.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import { useAssetDownload } from '@/platform/assets/composables/useAssetDownload'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
-
-import { downloadReplyAsset } from '../../../utils/downloadReplyAsset'
+import { resolveReplyAssetDownload } from '../../../utils/resolveReplyAssetDownload'
 import type { ReplyAsset } from '../../../utils/replyAssets'
 
 const { markdown, assets = [] } = defineProps<{
@@ -25,6 +26,7 @@ const emit = defineEmits<{ feedback: [vote: 'up' | 'down' | null] }>()
 
 const { t } = useI18n()
 const { copy, copied } = useClipboard({ copiedDuring: 2000, legacy: true })
+const { downloadFiles } = useAssetDownload()
 
 const vote = ref<'up' | 'down' | null>(null)
 
@@ -47,13 +49,9 @@ async function downloadAssets(): Promise<void> {
   if (downloading.value) return
   downloading.value = true
   try {
-    for (const asset of assets) {
-      try {
-        await downloadReplyAsset(asset)
-      } catch {
-        continue
-      }
-    }
+    await downloadFiles(
+      await Promise.all(assets.map(resolveReplyAssetDownload))
+    )
   } finally {
     downloading.value = false
   }
@@ -71,20 +69,17 @@ async function downloadAssets(): Promise<void> {
       :collision-padding="8"
     >
       <template #trigger>
-        <button
+        <Button
           type="button"
+          :variant="vote === 'up' ? 'textonly' : 'muted-textonly'"
+          size="icon-sm"
           :aria-label="t('agent.helpful')"
           :aria-pressed="vote === 'up'"
-          :class="
-            cn(
-              'flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-secondary-background-hover hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:outline-none',
-              vote === 'up' ? 'text-base-foreground' : 'text-muted-foreground'
-            )
-          "
+          class="size-6"
           @click="setVote('up')"
         >
           <span class="icon-[lucide--thumbs-up] size-3" />
-        </button>
+        </Button>
       </template>
     </AccessibleTooltip>
     <AccessibleTooltip
@@ -94,20 +89,17 @@ async function downloadAssets(): Promise<void> {
       :collision-padding="8"
     >
       <template #trigger>
-        <button
+        <Button
           type="button"
+          :variant="vote === 'down' ? 'textonly' : 'muted-textonly'"
+          size="icon-sm"
           :aria-label="t('agent.notHelpful')"
           :aria-pressed="vote === 'down'"
-          :class="
-            cn(
-              'flex size-6 cursor-pointer items-center justify-center rounded-lg transition-colors hover:bg-secondary-background-hover hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:outline-none',
-              vote === 'down' ? 'text-base-foreground' : 'text-muted-foreground'
-            )
-          "
+          class="size-6"
           @click="setVote('down')"
         >
           <span class="icon-[lucide--thumbs-down] size-3" />
-        </button>
+        </Button>
       </template>
     </AccessibleTooltip>
     <AccessibleTooltip
@@ -118,15 +110,17 @@ async function downloadAssets(): Promise<void> {
       :collision-padding="8"
     >
       <template #trigger>
-        <button
+        <Button
           type="button"
+          variant="muted-textonly"
+          size="icon-sm"
           :aria-label="t('agent.downloadAssets')"
           :disabled="downloading"
-          class="flex size-6 cursor-pointer items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:outline-none"
+          class="size-6 rounded-lg"
           @click="downloadAssets"
         >
           <span class="icon-[lucide--download] size-3" />
-        </button>
+        </Button>
       </template>
     </AccessibleTooltip>
     <div
@@ -139,12 +133,14 @@ async function downloadAssets(): Promise<void> {
         :collision-padding="8"
       >
         <template #trigger>
-          <button
+          <Button
             type="button"
+            variant="muted-textonly"
+            size="unset"
             :aria-label="copied ? t('agent.copied') : t('agent.copy')"
             :class="
               cn(
-                'flex h-6 w-8 cursor-pointer items-center justify-center rounded-l-lg focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:outline-none',
+                'h-6 w-8 rounded-l-lg rounded-r-none focus-visible:z-10',
                 copied ? 'text-base-foreground' : 'text-inherit'
               )
             "
@@ -158,15 +154,19 @@ async function downloadAssets(): Promise<void> {
                 )
               "
             />
-          </button>
+          </Button>
         </template>
       </AccessibleTooltip>
       <DropdownMenuRoot>
-        <DropdownMenuTrigger
-          :aria-label="t('agent.copyMarkdown')"
-          class="flex size-6 cursor-pointer items-center justify-center rounded-r-lg text-inherit focus-visible:z-10 focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:outline-none"
-        >
-          <span class="icon-[lucide--chevron-down] size-3" />
+        <DropdownMenuTrigger as-child>
+          <Button
+            variant="muted-textonly"
+            size="icon-sm"
+            :aria-label="t('agent.copyMarkdown')"
+            class="size-6 rounded-l-none rounded-r-lg text-inherit focus-visible:z-10"
+          >
+            <span class="icon-[lucide--chevron-down] size-3" />
+          </Button>
         </DropdownMenuTrigger>
         <DropdownMenuPortal>
           <DropdownMenuContent

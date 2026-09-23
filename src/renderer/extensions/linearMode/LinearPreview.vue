@@ -133,7 +133,13 @@ async function rerun(e: Event) {
           command: () => mediaActions.deleteAssets(selectedItem!)
         }
       ]"
-    />
+    >
+      <template #button>
+        <Button size="icon" :aria-label="t('g.moreOptions')">
+          <i class="icon-[lucide--ellipsis]" />
+        </Button>
+      </template>
+    </Popover>
   </section>
   <ImagePreview
     v-if="canShowPreview && latentPreview"

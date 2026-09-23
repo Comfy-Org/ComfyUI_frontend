@@ -1,13 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
-import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
+import { useDialogService } from '@/services/dialogService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const mockBillingFetchBalance = vi.fn()
-const mockAuthFetchBalance = vi.fn()
-const mockFetchStatus = vi.fn()
-const mockShowTopUpCreditsDialog = vi.fn()
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+
 const mockExecute = vi.fn<ReturnType<typeof useCommandStore>['execute']>(
   async () => undefined
 )
@@ -21,24 +20,11 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: () => ({
-    fetchBalance: mockAuthFetchBalance
-  })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    fetchBalance: mockBillingFetchBalance,
-    fetchStatus: mockFetchStatus
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    showTopUpCreditsDialog: mockShowTopUpCreditsDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 // useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
 const {
@@ -82,7 +68,7 @@ describe('useSubscriptionActions', () => {
     it('should call showTopUpCreditsDialog', () => {
       const { handleAddApiCredits } = useSubscriptionActions()
       handleAddApiCredits()
-      expect(mockShowTopUpCreditsDialog).toHaveBeenCalledOnce()
+      expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
       expect(mockTrackAddApiCreditButtonClicked).toHaveBeenCalledWith({
         source: 'settings_billing_panel'
       })
@@ -171,16 +157,20 @@ describe('useSubscriptionActions', () => {
 
   describe('handleRefresh', () => {
     it('should refresh balance and status through the billing facade', async () => {
+      const billing = mockBillingContext()
       const { handleRefresh } = useSubscriptionActions()
       await handleRefresh()
 
-      expect(mockBillingFetchBalance).toHaveBeenCalledOnce()
-      expect(mockFetchStatus).toHaveBeenCalledOnce()
-      expect(mockAuthFetchBalance).not.toHaveBeenCalled()
+      expect(billing.fetchBalance).toHaveBeenCalledOnce()
+      expect(billing.fetchStatus).toHaveBeenCalledOnce()
+      expect(useAuthActions().fetchBalance).not.toHaveBeenCalled()
     })
 
     it('swallows refresh failures without surfacing a toast', async () => {
-      mockBillingFetchBalance.mockRejectedValueOnce(new Error('Fetch failed'))
+      const billing = mockBillingContext()
+      vi.mocked(billing.fetchBalance).mockRejectedValueOnce(
+        new Error('Fetch failed')
+      )
       const { handleRefresh } = useSubscriptionActions()
 
       await expect(handleRefresh()).resolves.toBeUndefined()

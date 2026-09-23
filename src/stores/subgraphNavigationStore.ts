@@ -22,20 +22,6 @@ import { isNonNullish, isSubgraph } from '@/utils/typeGuardUtil'
 
 export const VIEWPORT_CACHE_MAX_SIZE = 32
 
-function currentCanvas(
-  canvas: typeof app.canvas | undefined = app.canvas
-): typeof app.canvas | undefined {
-  return canvas
-}
-
-function currentRootGraph(graph: LGraph | Subgraph): LGraph | undefined {
-  return graph.rootGraph
-}
-
-function appRootGraph(rootGraph: LGraph | undefined): LGraph | undefined {
-  return rootGraph
-}
-
 /**
  * Stores the current subgraph navigation state; a stack representing subgraph
  * navigation history from the root graph to the subgraph that is currently
@@ -62,10 +48,7 @@ export const useSubgraphNavigationStore = defineStore(
 
     /** Get the ID of the root graph for the currently active workflow. */
     const getCurrentRootGraphId = () => {
-      const canvas = currentCanvas(canvasStore.getCanvas())
-      return canvas?.graph
-        ? (currentRootGraph(canvas.graph)?.id ?? 'root')
-        : 'root'
+      return canvasStore.canvas?.graph?.rootGraph.id ?? 'root'
     }
 
     /**
@@ -89,8 +72,7 @@ export const useSubgraphNavigationStore = defineStore(
 
     /** ID of the graph currently shown on the canvas. */
     function getActiveGraphId(): string {
-      const canvas = currentCanvas(canvasStore.getCanvas())
-      return canvas?.subgraph?.id ?? getCurrentRootGraphId()
+      return canvasStore.canvas?.subgraph?.id ?? getCurrentRootGraphId()
     }
 
     // ── Navigation stack ─────────────────────────────────────────────
@@ -124,7 +106,7 @@ export const useSubgraphNavigationStore = defineStore(
 
     /** Get the current viewport state, or null if the canvas is not available. */
     const getCurrentViewport = (): DragAndScaleState | null => {
-      const canvas = currentCanvas(canvasStore.getCanvas())
+      const canvas = canvasStore.canvas
       if (!canvas) return null
       return {
         scale: canvas.ds.state.scale,
@@ -141,7 +123,7 @@ export const useSubgraphNavigationStore = defineStore(
 
     /** Apply a viewport state to the canvas. */
     function applyViewport(viewport: DragAndScaleState): void {
-      const canvas = currentCanvas()
+      const canvas = canvasStore.canvas
       if (!canvas) return
       canvas.ds.scale = viewport.scale
       canvas.ds.offset[0] = viewport.offset[0]
@@ -150,7 +132,7 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     function restoreViewport(graphId: string): void {
-      const canvas = currentCanvas()
+      const canvas = canvasStore.canvas
       if (!canvas) return
 
       const expectedKey = buildCacheKey(graphId)
@@ -288,8 +270,8 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     function ensureCanvasOnRoot() {
-      const root = appRootGraph(app.rootGraph)
-      const canvas = currentCanvas(canvasStore.getCanvas())
+      const root = app.rootGraphOrUndefined
+      const canvas = canvasStore.canvas
       if (!root || !canvas) return
       if (canvas.graph?.id !== root.id) canvas.setGraph(root)
     }
@@ -442,7 +424,7 @@ export const useSubgraphNavigationStore = defineStore(
     }
 
     async function navigateToGraph(targetGraph: LGraph): Promise<boolean> {
-      const canvas = currentCanvas(canvasStore.getCanvas())
+      const canvas = canvasStore.canvas
       const targetId = targetGraph.id
       const belongsToCurrentWorkflow =
         targetGraph === app.rootGraph ||

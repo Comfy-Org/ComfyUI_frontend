@@ -14,6 +14,6 @@ const forwardedProps = useForwardProps(restProps)
 <template>
   <TagsInputItemText
     v-bind="forwardedProps"
-    :class="cn('bg-transparent text-xs', className)"
+    :class="cn('min-w-0 truncate bg-transparent text-xs', className)"
   />
 </template>

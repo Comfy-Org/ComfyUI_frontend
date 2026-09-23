@@ -136,6 +136,8 @@ function makeInstance() {
     animationManager,
     eventManager,
     adapterRef: { current: null },
+    _loadGeneration: 0,
+    loadingPromise: null,
     forceRender: vi.fn(),
     handleResize: vi.fn(),
     preRenderCallbacks: [],
@@ -829,8 +831,8 @@ describe('Load3d', () => {
     })
 
     it('waits for the current loadingPromise to settle', async () => {
-      let resolveLoad!: () => void
-      const p = new Promise<void>((resolve) => {
+      let resolveLoad!: (accepted: boolean) => void
+      const p = new Promise<boolean>((resolve) => {
         resolveLoad = resolve
       })
       Object.assign(ctx.load3d, { loadingPromise: p })
@@ -844,7 +846,7 @@ describe('Load3d', () => {
       await Promise.resolve()
       expect(settled).toBe(false)
 
-      resolveLoad()
+      resolveLoad(true)
 
       Object.assign(ctx.load3d, { loadingPromise: null })
       await idle
@@ -852,12 +854,12 @@ describe('Load3d', () => {
     })
 
     it('drains a chained sequence of loads before resolving', async () => {
-      let resolveFirst!: () => void
-      const first = new Promise<void>((resolve) => {
+      let resolveFirst!: (accepted: boolean) => void
+      const first = new Promise<boolean>((resolve) => {
         resolveFirst = resolve
       })
-      let resolveSecond!: () => void
-      const second = new Promise<void>((resolve) => {
+      let resolveSecond!: (accepted: boolean) => void
+      const second = new Promise<boolean>((resolve) => {
         resolveSecond = resolve
       })
 
@@ -872,11 +874,11 @@ describe('Load3d', () => {
         settled = true
       })
 
-      resolveFirst()
+      resolveFirst(true)
       await new Promise((r) => setTimeout(r, 0))
       expect(settled).toBe(false)
 
-      resolveSecond()
+      resolveSecond(true)
       Object.assign(ctx.load3d, { loadingPromise: null })
       await idle
       expect(settled).toBe(true)
@@ -891,6 +893,94 @@ describe('Load3d', () => {
       Object.assign(ctx.load3d, { loadingPromise: null })
 
       await expect(idle).resolves.toBeUndefined()
+    })
+
+    it('waits for a load accepted while the current load is still pending', async () => {
+      let resolveFirst!: () => void
+      let resolveSecond!: () => void
+      const first = new Promise<void>((resolve) => {
+        resolveFirst = resolve
+      })
+      const second = new Promise<void>((resolve) => {
+        resolveSecond = resolve
+      })
+      const internal = vi
+        .fn()
+        .mockImplementationOnce(() => first)
+        .mockImplementationOnce(() => second)
+      Object.assign(ctx.load3d, {
+        loadingPromise: null,
+        _loadModelInternal: internal
+      })
+
+      const loadA = ctx.load3d.loadModel('api/view?filename=a.glb')
+      const idle = ctx.load3d.whenLoadIdle()
+      const loadB = ctx.load3d.loadModel('api/view?filename=b.glb')
+      let settled = false
+      void idle.then(() => {
+        settled = true
+      })
+
+      resolveFirst()
+      await loadA
+      await Promise.resolve()
+      expect(internal).toHaveBeenCalledTimes(2)
+      expect(settled).toBe(false)
+
+      resolveSecond()
+      await Promise.all([idle, loadB])
+      expect(settled).toBe(true)
+    })
+
+    it('keeps the viewer empty when clear is accepted during a pending load', async () => {
+      let resolveLoad!: () => void
+      const pendingLoad = new Promise<void>((resolve) => {
+        resolveLoad = resolve
+      })
+      const loadedModel = new THREE.Group()
+      const modelManager: typeof ctx.modelManager & {
+        currentModel: THREE.Object3D | null
+        originalModel: THREE.Object3D | null
+      } = {
+        ...ctx.modelManager,
+        currentModel: null,
+        originalModel: null,
+        clearModel: vi.fn(() => {
+          modelManager.currentModel = null
+        })
+      }
+      Object.assign(ctx.load3d, {
+        _loadGeneration: 0,
+        loadingPromise: null,
+        cameraManager: {
+          ...ctx.cameraManager,
+          getCameraState: vi.fn(),
+          getCurrentCameraType: vi.fn(() => 'perspective'),
+          setCameraState: vi.fn()
+        },
+        controlsManager: { ...ctx.controlsManager, reset: vi.fn() },
+        loaderManager: {
+          loadModel: vi.fn(async () => {
+            await pendingLoad
+            modelManager.currentModel = loadedModel
+          })
+        },
+        modelManager,
+        animationManager: {
+          ...ctx.animationManager,
+          setupModelAnimations: vi.fn()
+        },
+        hasLoadedModel: false
+      })
+
+      const load = ctx.load3d.loadModel('api/view?filename=a.glb')
+      ctx.load3d.clearModel()
+      const idle = ctx.load3d.whenLoadIdle()
+      resolveLoad()
+      const [accepted] = await Promise.all([load, idle])
+
+      expect(accepted).toBe(false)
+      expect(ctx.load3d.getCurrentModel()).toBeNull()
     })
   })
 
@@ -1468,8 +1558,25 @@ describe('Load3d', () => {
 
       expect(source(12, 34)).toBe(ndc)
       expect(clientPointToNdc).toHaveBeenCalledWith(12, 34)
+    })
+
+    it('runs the replaced configuration cleanup immediately and the current one once on remove()', () => {
+      const { container, deps } = makeConstructorDeps()
+      const load3d = new Load3d(container, deps)
+      const first = vi.fn()
+      const second = vi.fn()
+
+      load3d.setConfigurationCleanup(first)
+      expect(first).not.toHaveBeenCalled()
+
+      load3d.setConfigurationCleanup(second)
+      expect(first).toHaveBeenCalledOnce()
+      expect(second).not.toHaveBeenCalled()
 
       load3d.remove()
+      load3d.remove()
+      expect(first).toHaveBeenCalledOnce()
+      expect(second).toHaveBeenCalledOnce()
     })
   })
 })

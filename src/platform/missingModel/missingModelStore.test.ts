@@ -1,12 +1,14 @@
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { MissingModelCandidate } from '@/platform/missingModel/types'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import {
   createNodeExecutionId,
   createNodeLocatorId
 } from '@/types/nodeIdentification'
+
+import type { MissingModelCandidate } from '@/platform/missingModel/types'
+import { useSettingStore } from '@/platform/settings/settingStore'
 
 const mockNodeLocatorIdToNodeExecutionId = vi.hoisted(() =>
   vi.fn((nodeLocatorId: string) => nodeLocatorId)
@@ -21,11 +23,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
+import { useMissingModelStore } from './missingModelStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { app } from '@/scripts/app'
 import { toNodeId } from '@/types/nodeId'
-
-import { useMissingModelStore } from './missingModelStore'
 
 function makeModelCandidate(
   name: string,
@@ -72,6 +73,25 @@ describe('missingModelStore', () => {
 
       expect(store.missingModelCandidates).not.toBeNull()
       expect(store.missingModelCandidates).toHaveLength(1)
+      expect(store.hasMissingModels).toBe(true)
+    })
+
+    it('hides derived state while the missing models warning is off', () => {
+      const settingStore = useSettingStore()
+      const store = useMissingModelStore()
+      store.setMissingModels([makeModelCandidate('model_a.safetensors')])
+      expect(store.hasMissingModels).toBe(true)
+
+      settingStore.settingValues['Comfy.ErrorSystem.ShowMissingModels'] = false
+
+      expect(store.missingModelCandidates).toHaveLength(1)
+      expect(store.visibleMissingModelCandidates).toBeNull()
+      expect(store.hasMissingModels).toBe(false)
+      expect(store.missingModelCount).toBe(0)
+      expect(store.missingModelNodeIds.size).toBe(0)
+
+      settingStore.settingValues['Comfy.ErrorSystem.ShowMissingModels'] = true
+
       expect(store.hasMissingModels).toBe(true)
     })
 

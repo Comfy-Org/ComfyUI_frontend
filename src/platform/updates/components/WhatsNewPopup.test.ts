@@ -1,5 +1,3 @@
-import type { ComfyApp } from '@/scripts/app'
-
 import { useReleaseStore } from '../common/releaseStore'
 beforeEach(() => {
   Object.assign(useReleaseStore(), {
@@ -10,15 +8,14 @@ beforeEach(() => {
   Object.assign(useReleaseStore(), { releases: [] as ReleaseNote[] })
   vi.mocked(useReleaseStore().fetchReleases).mockResolvedValue(undefined)
 })
-import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import Button from '@/components/ui/button/Button.vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-
 import type { ReleaseNote } from '../common/releaseService'
 import WhatsNewPopup from './WhatsNewPopup.vue'
 
@@ -67,10 +64,7 @@ vi.mock(import('@/utils/markdownRendererUtil'), () => ({
   renderMarkdownToHtml: vi.fn((content: string) => `<div>${content}</div>`)
 }))
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))
 
 // Mock release store
 

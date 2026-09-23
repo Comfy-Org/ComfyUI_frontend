@@ -199,7 +199,7 @@ export function replaceNodeInputs(
       return result
     }
     node.inputs.splice(0, node.inputs.length, ...finalInputs)
-    for (const { link, slot } of removals.toReversed()) {
+    for (const { link, slot } of [...removals].reverse()) {
       finalizeInputLinkRemoval(
         node,
         previous.inputs[slot],

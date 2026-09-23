@@ -1,19 +1,11 @@
-import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import ViewerCameraControls from '@/components/load3d/controls/viewer/ViewerCameraControls.vue'
 import type { CameraType } from '@/extensions/core/load3d/interfaces'
-
-vi.mock(import('@/components/ui/select/Select.vue'))
-vi.mock(import('@/components/ui/select/SelectContent.vue'))
-vi.mock(import('@/components/ui/select/SelectItem.vue'))
-vi.mock(import('@/components/ui/select/SelectTrigger.vue'))
-vi.mock(import('@/components/ui/select/SelectValue.vue'))
-
-vi.mock(import('@/components/ui/slider/Slider.vue'))
 
 const i18n = createI18n({
   legacy: false,
@@ -54,12 +46,15 @@ function renderComponent(initial: { type?: CameraType; fov?: number } = {}) {
 }
 
 describe('ViewerCameraControls', () => {
-  it('exposes both camera types in the dropdown', () => {
-    renderComponent()
-    const select = screen.getByRole('combobox') as HTMLSelectElement
-    const options = Array.from(select.options).map((o) => o.value)
+  it('exposes both camera types in the dropdown', async () => {
+    const { user } = renderComponent()
+    await user.click(screen.getByRole('combobox'))
+    const options = await screen.findAllByRole('option')
 
-    expect(options).toEqual(['perspective', 'orthographic'])
+    expect(options.map((option) => option.textContent)).toEqual([
+      'Perspective',
+      'Orthographic'
+    ])
   })
 
   it('shows the FOV slider when the camera is perspective', () => {
@@ -83,12 +78,11 @@ describe('ViewerCameraControls', () => {
     expect(screen.getByLabelText('FOV')).toBeInTheDocument()
   })
 
-  it('updates fov via v-model when the slider changes', () => {
-    const { fov } = renderComponent({ type: 'perspective', fov: 60 })
-    const slider = screen.getByLabelText('FOV') as HTMLInputElement
-
-    slider.value = '90'
-    slider.dispatchEvent(new Event('input', { bubbles: true }))
+  it('updates fov via v-model when the slider changes', async () => {
+    const { fov, user } = renderComponent({ type: 'perspective', fov: 89 })
+    const slider = await screen.findByRole('slider')
+    slider.focus()
+    await user.keyboard('{ArrowRight}')
 
     expect(fov.value).toBe(90)
   })
@@ -96,7 +90,10 @@ describe('ViewerCameraControls', () => {
   it('updates cameraType via v-model when the dropdown changes', async () => {
     const { user, cameraType } = renderComponent({ type: 'perspective' })
 
-    await user.selectOptions(screen.getByRole('combobox'), 'orthographic')
+    await user.click(screen.getByRole('combobox'))
+    await user.click(
+      await screen.findByRole('option', { name: 'Orthographic' })
+    )
 
     expect(cameraType.value).toBe('orthographic')
   })

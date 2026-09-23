@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type {
   PartnerNodePolicy,
   PartnerProvider
@@ -23,14 +24,7 @@ const PartnerNodePolicyApiError = vi.hoisted(
       }
     }
 )
-const mockFlags = vi.hoisted(() => ({
-  partnerNodeGovernanceEnabled: true
-}))
-
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({ flags: mockFlags })
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 vi.mock(import('@/platform/workspace/api/partnerNodePolicyApi'), () => ({
   getPartnerNodePolicy: mockGetPartnerNodePolicy,
   getPartnerProviders: mockGetPartnerProviders,
@@ -65,7 +59,7 @@ describe('partnerNodeGovernanceStore', () => {
   let store: ReturnType<typeof usePartnerNodeGovernanceStore> | undefined
 
   beforeEach(() => {
-    mockFlags.partnerNodeGovernanceEnabled = true
+    vi.mocked(useFeatureFlags().flags).partnerNodeGovernanceEnabled = true
     mockGetPartnerProviders.mockResolvedValue(providers)
     mockGetPartnerNodePolicy.mockResolvedValue(null)
     activateWorkspace('workspace-one')
@@ -480,7 +474,7 @@ describe('partnerNodeGovernanceStore', () => {
   })
 
   it('stays inactive when partner-provider governance is disabled', async () => {
-    mockFlags.partnerNodeGovernanceEnabled = false
+    vi.mocked(useFeatureFlags().flags).partnerNodeGovernanceEnabled = false
 
     store = usePartnerNodeGovernanceStore()
     await nextTick()

@@ -10,11 +10,8 @@
     :class="
       cn(
         'flex h-8 shrink-0 items-center justify-center',
-        'cursor-pointer rounded-lg border-none px-2.5 text-sm transition-all duration-200',
-        'focus-visible:ring-ring/20 outline-hidden focus-visible:ring-1',
-        isActive
-          ? 'bg-interface-menu-component-surface-hovered text-text-primary'
-          : 'bg-transparent text-text-secondary hover:bg-button-hover-surface focus:bg-button-hover-surface',
+        'px-2.5',
+        tabStateVariants({ active: isActive }),
         props.class
       )
     "
@@ -30,6 +27,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import type { HTMLAttributes } from 'vue'
 import { computed, inject } from 'vue'
 
+import { tabStateVariants } from './tab.variants'
 import { TAB_LIST_INJECTION_KEY } from './tabKeys'
 
 const props = defineProps<{

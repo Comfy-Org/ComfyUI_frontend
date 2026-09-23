@@ -8,7 +8,7 @@ import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const SHOW_HISTORY_LABEL = enMessages.agent.showChatHistory
 const CHAT_OPTIONS_LABEL = enMessages.agent.chatOptions
 const RENAME_LABEL = enMessages.g.rename
@@ -60,7 +60,10 @@ test.describe('Agent chat history rename', { tag: '@cloud' }, () => {
     await seedOneThread(page)
     await bootAgentApp(page, agentFlagEnabled)
 
-    const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
+    const openButton = page.getByRole('button', {
+      name: OPEN_AGENT_LABEL,
+      exact: true
+    })
     await expect(openButton).toBeVisible()
     await openButton.click()
 

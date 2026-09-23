@@ -64,8 +64,13 @@ test('Beeble displays readable options while the API keeps its native values', a
 })
 
 test('HeyGen offers named language and locale choices and uses the supported voice without exposing its account-specific ID', async ({
+  context,
   page
 }) => {
+  await context.route(
+    'https://media.comfy.org/website/workshop/heygen/starfish-tts/harbour-radio-signs-off.mp3',
+    (route) => route.fulfill({ contentType: 'audio/mpeg', body: '' })
+  )
   await page.goto('/models/heygen--starfish-tts--audio/')
   await expect(
     page.getByRole('combobox', { name: 'Language', exact: true })
@@ -103,4 +108,123 @@ test('BRIA Expand previews its source image instead of showing a URL textbox', a
   await expect(
     source.getByLabel('Source image', { exact: true })
   ).toHaveAttribute('type', 'file')
+})
+
+test('Magnific Skin Enhancer uploads a source image instead of asking for a URL', async ({
+  page
+}) => {
+  await page.goto('/models/freepik--magnific-skin-enhancer--edit-images/')
+  const source = page.getByRole('group', { name: 'Source image', exact: true })
+  await expect(source.getByRole('textbox')).toHaveCount(0)
+  const input = source.getByLabel('Source image', { exact: true })
+  await expect(input).toHaveAttribute('type', 'file')
+  await input.setInputFiles({
+    name: 'portrait.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+      'base64'
+    )
+  })
+  await expect(
+    source.getByRole('button', { name: 'Replace portrait.png' })
+  ).toBeVisible()
+})
+
+test('FLUX 2 Max takes an exact height the slider cannot be dragged onto', async ({
+  page
+}) => {
+  await page.goto('/models/bfl--flux-2-max--generate-images/')
+  const slider = page.getByRole('slider', { name: 'Height', exact: true })
+  const value = page.getByRole('spinbutton', {
+    name: 'Height value',
+    exact: true
+  })
+  await slider.fill('1023')
+  await expect(value).toHaveValue('1023')
+  await value.fill('1024')
+  await expect(slider).toHaveValue('1024')
+  await expect(page.getByRole('alert')).toHaveCount(0)
+
+  // The widest value the field accepts has to be readable, not scrolled out
+  // of a box sized for a shorter one.
+  await value.fill('2048')
+  expect(
+    await value.evaluate(
+      (box: HTMLInputElement) => box.scrollWidth <= box.clientWidth
+    )
+  ).toBe(true)
+})
+
+test('FLUX Pro 1.1 Ultra keeps a dragged blend readable in its box', async ({
+  page
+}) => {
+  await page.goto('/models/bfl--flux-pro-1.1-ultra--generate-images/')
+  await page.getByTestId('playground-advanced').locator('summary').click()
+
+  const slider = page.getByRole('slider', {
+    name: 'Image influence',
+    exact: true
+  })
+  const value = page.getByRole('spinbutton', {
+    name: 'Image influence value',
+    exact: true
+  })
+  await expect(value).toHaveValue('0.1')
+
+  // A 0-to-1 range with no declared step reports the thumb's pixel position in
+  // full double precision, so this drag used to hand back 0.367299194177281.
+  const track = await slider.boundingBox()
+  await slider.click({
+    position: { x: (track?.width ?? 0) * 0.37, y: (track?.height ?? 0) / 2 }
+  })
+  await expect(value).not.toHaveValue('0.1')
+
+  const readout = await value.evaluate((box: HTMLInputElement) => ({
+    fits: box.scrollWidth <= box.clientWidth,
+    decimals: (box.value.split('.')[1] ?? '').length
+  }))
+  expect(readout.fits).toBe(true)
+  expect(readout.decimals).toBeLessThanOrEqual(3)
+})
+
+// A field that holds every file it can take stops offering to take another.
+// The prompt has to come back when a slot frees, or removing a file would
+// leave the reader with no way to put one back.
+test('the upload prompt leaves a full frame field and returns when it empties', async ({
+  page
+}) => {
+  await page.goto(
+    '/models/byteplus--seedance-2-5-first-last-frame--animate-images/'
+  )
+  const lastFrame = page.getByRole('group', { name: 'Last frame', exact: true })
+  const firstFrame = page.getByRole('group', {
+    name: 'First frame',
+    exact: true
+  })
+  const promptIn = (field: typeof lastFrame) =>
+    field.getByText(/select or drop/i)
+
+  // The page opens with its worked example already in both fields, so both
+  // start full.
+  await expect(lastFrame.getByRole('listitem')).toHaveCount(1)
+  await expect(promptIn(lastFrame)).toHaveCount(0)
+  await expect(promptIn(firstFrame)).toHaveCount(0)
+
+  await lastFrame.getByRole('button', { name: /^Remove / }).click()
+
+  await expect(promptIn(lastFrame)).toBeVisible()
+  await expect(promptIn(firstFrame)).toHaveCount(0)
+
+  await lastFrame.locator('input[type=file]').setInputFiles({
+    name: 'last.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+      'base64'
+    )
+  })
+
+  await expect(lastFrame.getByRole('listitem')).toHaveCount(1)
+  await expect(promptIn(lastFrame)).toHaveCount(0)
 })

@@ -49,6 +49,7 @@ import { st } from '@/i18n'
 import type { INodeSlot } from '@/lib/litegraph/src/litegraph'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { syncSlotOffsets } from '@/renderer/core/layout/slots/syncSlotOffsets'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import {
   linkedWidgetedInputs,
   nonWidgetedInputs
@@ -124,7 +125,12 @@ const layoutKey = computed(() =>
 )
 
 watch(
-  [layoutKey, slots, () => canvasStore.rootGraphId],
+  [
+    layoutKey,
+    slots,
+    () => canvasStore.rootGraphId,
+    () => layoutStore.slotOffsetVersion
+  ],
   () => {
     const rootGraphId = canvasStore.rootGraphId
     if (syncLayout && slots.value && rootGraphId) {

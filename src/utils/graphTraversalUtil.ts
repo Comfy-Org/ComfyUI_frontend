@@ -16,6 +16,7 @@ import {
 } from '@/types/nodeIdentification'
 import type { NodeState } from '@/types/nodeState'
 import type { UUID } from '@/utils/uuid'
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
 
@@ -536,8 +537,14 @@ export function isCandidateScopeActive(
   candidate: {
     nodeId?: string | number | null | undefined
     sourceExecutionId?: string | number | null | undefined
+    promotedSources?: readonly PromotedWidgetExecutionSource[]
   }
 ): boolean {
+  if (candidate.promotedSources) {
+    return candidate.promotedSources.some((source) =>
+      isExecutionPathActive(rootGraph, source.executionId)
+    )
+  }
   const executionId = getCandidateActivityExecutionId(candidate)
   return executionId == null || isExecutionPathActive(rootGraph, executionId)
 }
@@ -557,6 +564,7 @@ export function isMissingCandidateActive(
     nodeId?: string | number | null | undefined
     sourceExecutionId?: string | number | null | undefined
     isMissing?: boolean | undefined
+    promotedSources?: readonly PromotedWidgetExecutionSource[]
   }
 ): boolean {
   if (candidate.isMissing !== true) return false
@@ -949,4 +957,26 @@ function findPartialExecutionPathToGraph(
     if (subpath !== undefined) return node.id + ':' + subpath
   }
   return undefined
+}
+
+export function resolveInputSourceNode(
+  node: LGraphNode,
+  slot: number
+): LGraphNode | undefined {
+  let upstream = node.getInputNode(slot)
+  let link = node.getInputLink(slot)
+  const visited = new Set<LGraphNode>()
+
+  while (upstream?.isSubgraphNode()) {
+    if (!link || visited.has(upstream)) return undefined
+    visited.add(upstream)
+
+    const resolved = upstream.resolveSubgraphOutputLink(link.origin_slot)
+    if (!resolved) return undefined
+
+    upstream = resolved.outputNode ?? null
+    link = resolved.link
+  }
+
+  return upstream ?? undefined
 }

@@ -2,16 +2,19 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { i18n, loadLocale } from '@/i18n'
-import { drawHiddenLinkBadges } from '@/lib/litegraph/src/canvas/linkBadges'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/litegraph'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  drawHiddenLinkBadges,
+  layoutHiddenLinkBadges
+} from '@/lib/litegraph/src/canvas/linkBadges'
 import { LLink } from '@/lib/litegraph/src/LLink'
 import { LinkMarkerShape } from '@/lib/litegraph/src/types/globalEnums'
+import { toLinkId } from '@/types/linkId'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas,
@@ -214,16 +217,16 @@ describe('LGraphCanvas link visibility interactions', () => {
       useLinkPresentationStore().patch(graphScopeOf(graph), link.id, {
         hidden: true
       })
-      drawHiddenLinkBadges(
+      const layout = layoutHiddenLinkBadges(
         canvas,
         canvas.ctx,
         link,
         { hidden: true },
         [400, 300],
         [700, 300],
-        '#89A',
-        [0, 0, 800, 600]
+        '#89A'
       )
+      drawHiddenLinkBadges(canvas.ctx, layout, [0, 0, 800, 600])
       const prompt = vi
         .spyOn(canvas, 'prompt')
         .mockReturnValue(document.createElement('div'))

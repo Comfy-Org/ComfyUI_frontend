@@ -3,7 +3,7 @@ import { TestIds } from '@e2e/fixtures/selectors'
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { PromptResponse } from '@/schemas/apiSchema'
+import type { PromptFailureResponse } from '@/platform/remote/comfyui/types'
 
 // Regression for #12840: a free-tier paywall on queue (`POST /prompt` 402 with
 // `{ error: { type: 'PAYMENT_REQUIRED', message: 'Subscription required to
@@ -13,8 +13,11 @@ import type { PromptResponse } from '@/schemas/apiSchema'
 test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
   test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
 
-  async function mockQueueError(page: Page, error: PromptResponse['error']) {
-    const body: PromptResponse = { node_errors: {}, error }
+  async function mockQueueError(
+    page: Page,
+    error: PromptFailureResponse['error']
+  ) {
+    const body: PromptFailureResponse = { node_errors: {}, error }
     await page.route('**/api/prompt', async (route) => {
       await route.fulfill({
         status: 402,

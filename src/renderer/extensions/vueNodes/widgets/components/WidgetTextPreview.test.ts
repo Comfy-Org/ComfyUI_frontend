@@ -1,13 +1,17 @@
-import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
-import { fromPartial } from '@total-typescript/shoehorn'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { getActivePinia } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type {
+  NodeOutputWith,
+  ResultItem
+} from '@/platform/remote/comfyui/execution/types'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeOutputWith, ResultItem } from '@/schemas/apiSchema'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'

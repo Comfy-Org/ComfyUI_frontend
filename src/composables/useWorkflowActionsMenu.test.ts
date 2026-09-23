@@ -1,21 +1,22 @@
-import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, ref } from 'vue'
-import { createI18n } from 'vue-i18n'
-
-import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/composables/useWorkflowActionsMenu'
 import {
   useWorkflowBookmarkStore,
   useWorkflowStore
 } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
-import { toNodeId } from '@/types/nodeId'
+import { useMenuItemStore } from '@/stores/menuItemStore'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { render } from '@testing-library/vue'
+import { defineComponent, ref } from 'vue'
+import { createI18n } from 'vue-i18n'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/composables/useWorkflowActionsMenu'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
+import { toNodeId } from '@/types/nodeId'
 
 const i18n = createI18n({
   legacy: false,
@@ -44,10 +45,6 @@ let mockMenuItemStore: ReturnType<typeof useMenuItemStore>
 
 let mockAppModeStore: ReturnType<typeof useAppModeStore>
 
-const mockFeatureFlags = vi.hoisted(() => ({
-  flags: { linearToggleEnabled: false }
-}))
-
 vi.mock<unknown>(
   import('@/platform/workflow/core/services/workflowService'),
   () => ({
@@ -55,10 +52,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: vi.fn(() => mockFeatureFlags)
-}))
-
+vi.mock(import('@/composables/useFeatureFlags'))
 function useWorkflowActionsMenu(
   ...args: Parameters<typeof useWorkflowActionsMenuComposable>
 ) {
@@ -104,7 +98,6 @@ describe('useWorkflowActionsMenu', () => {
     vi.mocked(mockBookmarkStore.isBookmarked).mockReturnValue(false)
     vi.mocked(mockSubgraphStore.isSubgraphBlueprint).mockReturnValue(false)
     mockMenuItemStore.hasSeenLinear = false
-    mockFeatureFlags.flags.linearToggleEnabled = false
     mockAppModeStore.selectedInputs.length = 0
     mockAppModeStore.selectedOutputs.length = 0
     mockWorkflowStore.activeWorkflow = fromPartial<
@@ -151,7 +144,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('shows app mode items when linearToggleEnabled flag is set', () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
+    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const labels = menuLabels(menuItems.value)
@@ -170,7 +163,6 @@ describe('useWorkflowActionsMenu', () => {
 
   it('hides app mode items when conditions not met', () => {
     mockMenuItemStore.hasSeenLinear = false
-    mockFeatureFlags.flags.linearToggleEnabled = false
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const labels = menuLabels(menuItems.value)
@@ -179,7 +171,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('hides app mode items when not root', () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
+    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: false })
     const labels = menuLabels(menuItems.value)
@@ -188,7 +180,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('shows "go to workflow mode" when in linear mode', () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
+    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
     mockWorkflowStore.activeWorkflow = fromPartial<
       NonNullable<typeof mockWorkflowStore.activeWorkflow>
     >({
@@ -215,7 +207,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('adds badge to app mode items', () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
+    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     const appModeItem = findItem(
@@ -302,7 +294,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('enter builder mode calls enterBuilder', async () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
+    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     await findItem(
@@ -314,7 +306,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('shows "Edit app" when workflow has linear data', async () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
+    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
     mockWorkflowStore.activeWorkflow = fromPartial<
       NonNullable<typeof mockWorkflowStore.activeWorkflow>
     >({
@@ -332,7 +324,7 @@ describe('useWorkflowActionsMenu', () => {
   })
 
   it('app mode toggle executes Comfy.ToggleLinear', async () => {
-    mockFeatureFlags.flags.linearToggleEnabled = true
+    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = true
 
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     await findItem(menuItems.value, 'breadcrumbsMenu.enterAppMode').command?.()

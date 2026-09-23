@@ -93,11 +93,6 @@ test.describe('Error overlay', { tag: '@ui' }, () => {
   })
 
   test.describe('View details flow', () => {
-    test.beforeEach(async ({ comfyPage }) => {
-      // oxlint-disable-next-line comfy/no-comfy-page-setup-call -- pre-existing call, tracked by evfail-23; not fixed in this pass
-      await comfyPage.setup()
-    })
-
     async function triggerExecutionError(comfyPage: {
       canvasOps: { disconnectEdge: () => Promise<void> }
       page: Page

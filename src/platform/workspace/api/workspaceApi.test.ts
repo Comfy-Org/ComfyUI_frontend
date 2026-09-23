@@ -1,11 +1,6 @@
-import {
-  onAuthStateChanged,
-  onIdTokenChanged,
-  setPersistence
-} from 'firebase/auth'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-
 import { useAuthStore } from '@/stores/authStore'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
   BillingOpStatusResponse,
@@ -47,12 +42,11 @@ vi.mock(import('./workspaceApiUrl'), () => ({
 vi.mock(import('firebase/auth'), { spy: true })
 
 beforeEach(() => {
-  vi.mocked(setPersistence).mockResolvedValue(undefined)
-  vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
-  vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+  stubFirebaseAuthHarness()
 })
 
 import { workspaceApi } from './workspaceApi'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
 

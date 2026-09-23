@@ -77,21 +77,6 @@ vi.mock<unknown>(import('@/components/common/TreeExplorer.vue'), () => ({
   }
 }))
 
-vi.mock<unknown>(
-  import('@/components/ui/search-input/SearchInput.vue'),
-  () => ({
-    default: {
-      name: 'SearchInput',
-      template: '<input data-testid="search-input" />',
-      props: ['modelValue', 'placeholder'],
-      setup() {
-        return { focus: vi.fn() }
-      },
-      expose: ['focus']
-    }
-  })
-)
-
 vi.mock<unknown>(import('./nodeLibrary/NodeBookmarkTreeExplorer.vue'), () => ({
   default: {
     name: 'NodeBookmarkTreeExplorer',
@@ -123,17 +108,6 @@ vi.mock<unknown>(import('@/components/searchbox/NodeSearchFilter.vue'), () => ({
       "<div data-testid=\"node-search-filter\" @click=\"$emit('add-filter', { filterDef: { invokeSequence: 'test' }, value: 'test-val' })\" />"
   }
 }))
-
-vi.mock<unknown>(
-  import('primevue/popover'), // eslint-disable-line primevue-removal/no-imports
-  () => ({
-    default: {
-      name: 'Popover',
-      template: '<div><slot /></div>',
-      methods: { toggle: vi.fn(), hide: vi.fn() }
-    }
-  })
-)
 
 const i18n = createI18n({
   legacy: false,
@@ -190,6 +164,7 @@ describe('NodeLibrarySidebarTab', () => {
     await nextTick()
 
     // Add filter by clicking the mocked search filter
+    await user.click(screen.getByRole('button', { name: 'g.filter' }))
     const searchFilter = screen.getByTestId('node-search-filter')
     await user.click(searchFilter)
     await nextTick()

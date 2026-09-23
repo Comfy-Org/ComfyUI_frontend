@@ -62,9 +62,9 @@
 import { useAsyncState } from '@vueuse/core'
 import { computed, watch } from 'vue'
 
+import type { ComfyHubProfile } from '@/platform/workflow/sharing/schemas/shareSchemas'
 import ShareAssetWarningBox from '@/platform/workflow/sharing/components/ShareAssetWarningBox.vue'
 import { useWorkflowShareService } from '@/platform/workflow/sharing/services/workflowShareService'
-import type { ComfyHubProfile } from '@/schemas/apiSchema'
 
 const { profile } = defineProps<{
   profile: ComfyHubProfile

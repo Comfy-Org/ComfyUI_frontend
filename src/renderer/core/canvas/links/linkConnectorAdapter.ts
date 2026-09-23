@@ -1,11 +1,11 @@
-import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
-import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
+import type { SlotLayout } from '@/renderer/core/layout/types'
 import type { Point } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { RerouteId } from '@/lib/litegraph/src/Reroute'
+import type { LinkConnector } from '@/lib/litegraph/src/canvas/LinkConnector'
+import type { RenderLink } from '@/lib/litegraph/src/canvas/RenderLink'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
-import type { SlotLayout } from '@/renderer/core/layout/types'
-import { app } from '@/scripts/app'
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { NodeId } from '@/types/nodeId'
 import { isSubgraph } from '@/utils/typeGuardUtil'
 
@@ -162,11 +162,10 @@ export class LinkConnectorAdapter {
 
 /** Convenience creator using the current app canvas graph. */
 export function createLinkConnectorAdapter(): LinkConnectorAdapter | null {
-  const getGraph = (): LGraph | null => app.canvas.graph
-  const getConnector = (): LinkConnector | null => app.canvas.linkConnector
-  const graph = getGraph()
-  const connector = getConnector()
-  if (!graph || !connector) return null
+  const canvas = useCanvasStore().canvas
+  const graph = canvas?.graph
+  if (!graph) return null
+  const connector = canvas.linkConnector
 
   const adapter = adapterByGraph.get(graph)
   if (adapter && adapter.linkConnector === connector) {

@@ -1,12 +1,13 @@
+import type { Locator } from '@playwright/test'
+
+import type { PromptResponse } from '@/platform/remote/comfyui/types'
+
 import {
   comfyExpect as expect,
   comfyPageFixture as test
 } from '@e2e/fixtures/ComfyPage'
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import type { NodeReference } from '@e2e/fixtures/utils/litegraphUtils'
-import type { Locator } from '@playwright/test'
-
-import type { PromptResponse } from '@/schemas/apiSchema'
 
 const BYPASS_CLASS = /before:bg-bypass\/60/
 
@@ -313,8 +314,7 @@ test.describe('Selection Toolbox - Button Actions', { tag: '@ui' }, () => {
     await comfyPage.page.route('**/api/prompt', async (route) => {
       const promptResponse: PromptResponse = {
         prompt_id: '1',
-        node_errors: {},
-        error: ''
+        node_errors: {}
       }
       await route.fulfill({
         status: 200,

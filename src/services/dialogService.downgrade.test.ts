@@ -1,3 +1,5 @@
+import { computed } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Component } from 'vue'
 
@@ -39,21 +41,23 @@ vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackEvent: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'))
+
+beforeEach(() => {
+  const billing = useBillingContext()
+  Object.assign(billing, {
+    canAccessSubscriptionFeatures: computed(() => true),
+    isFreeTier: computed(() => false),
+    type: computed(() => 'legacy')
+  })
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+})
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: { value: true },
-    isFreeTier: { value: false },
-    type: { value: 'legacy' }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useDowngradeToPersonal'),

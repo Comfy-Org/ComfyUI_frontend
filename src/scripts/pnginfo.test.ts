@@ -260,15 +260,18 @@ describe('importA1111', () => {
       if (type === 'CLIPTextEncode') {
         node.addWidget('text', 'text', '', () => {})
       }
+      if (type === 'KSampler') {
+        node.addWidget('number', 'steps', 0, () => {})
+      }
       vi.spyOn(node, 'connect').mockReturnValue(null)
       return node
     })
   }
 
-  it.each([
+  it.for([
     ['has no steps', 'positive'],
     ['has no options', 'positive\nNegative prompt: negative\nSteps:']
-  ])('does not load embeddings when parameters %s', async (_case, input) => {
+  ])('does not load embeddings when parameters %s', async ([, input]) => {
     const graph = new LGraph()
     const beforeGraphClear = vi.fn()
     vi.mocked(api.getEmbeddings).mockRejectedValue(
@@ -342,10 +345,10 @@ describe('importA1111', () => {
     expect(clear).toHaveBeenCalledOnce()
   })
 
-  it.each([
+  it.for([
     ['with a negative prompt', parameters, 'negative'],
     ['without a negative prompt', parametersWithoutNegativePrompt, '']
-  ])('imports parameters %s', async (_case, input, expectedNegativePrompt) => {
+  ])('imports parameters %s', async ([, input, expectedNegativePrompt]) => {
     const graph = new LGraph()
     const clear = vi.spyOn(graph, 'clear')
     const beforeGraphClear = vi.fn()
@@ -387,4 +390,30 @@ describe('importA1111', () => {
         .map((node) => node?.widgets?.[0].value)
     ).toEqual(['masterpiece', 'embedding:EasyNegative, blurry'])
   })
+
+  it.for([
+    ['its own step count', 'Hires steps: 12, ', [20, 12]],
+    ['the base step count', '', [20, 20]]
+  ] as const)(
+    'adds a hires sampler that uses %s',
+    async ([, hiresSteps, expectedSteps]) => {
+      const graph = new LGraph()
+      vi.mocked(api.getEmbeddings).mockResolvedValue([])
+      mockAvailableCoreNodes(graph)
+
+      const imported = await importA1111(
+        graph,
+        `${parameters}, Hires upscale: 2, ${hiresSteps}Hires upscaler: Latent`
+      )
+
+      expect(imported).toBe('imported')
+      expect(
+        vi
+          .mocked(LiteGraph.createNode)
+          .mock.results.map(({ value }) => value)
+          .filter((node) => node?.type === 'KSampler')
+          .map((node) => node?.widgets?.[0].value)
+      ).toEqual(expectedSteps)
+    }
+  )
 })

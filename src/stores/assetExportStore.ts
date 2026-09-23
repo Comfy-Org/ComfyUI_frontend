@@ -2,13 +2,13 @@ import { useIntervalFn } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
-import { t } from '@/i18n'
 import { assetService } from '@/platform/assets/services/assetService'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { TaskId } from '@/platform/tasks/services/taskService'
 import { taskService } from '@/platform/tasks/services/taskService'
-import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { AssetExportWsMessage } from '@/schemas/apiSchema'
+import type { AssetExportWsMessage } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
+import { t } from '@/i18n'
 
 export interface AssetExport {
   taskId: TaskId

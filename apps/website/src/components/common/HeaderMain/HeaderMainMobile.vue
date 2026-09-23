@@ -1,24 +1,21 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
+import BreadthumbIcon from '@/components/icons/BreadthumbIcon.vue'
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { computed, onUnmounted, ref, watch } from 'vue'
-
-import BreadthumbIcon from '@/components/icons/BreadthumbIcon.vue'
-import Button from '@/components/ui/button/Button.vue'
+import { getMainNavigation } from '../../../data/mainNavigation'
+import { getRoutes } from '../../../config/routes.ts'
+import { lockScroll, unlockScroll } from '../../../composables/scrollLock'
+import type { Locale } from '../../../i18n/translations.ts'
+import { t } from '../../../i18n/translations.ts'
+import NavLinkContent from './NavLinkContent.vue'
 import Sheet from '@/components/ui/sheet/Sheet.vue'
 import SheetContent from '@/components/ui/sheet/SheetContent.vue'
 import SheetDescription from '@/components/ui/sheet/SheetDescription.vue'
 import SheetHeader from '@/components/ui/sheet/SheetHeader.vue'
 import SheetTitle from '@/components/ui/sheet/SheetTitle.vue'
 import SheetTrigger from '@/components/ui/sheet/SheetTrigger.vue'
-
-import { lockScroll, unlockScroll } from '../../../composables/scrollLock'
-import { getRoutes } from '../../../config/routes.ts'
-import { getMainNavigation } from '../../../data/mainNavigation'
-import type { Locale } from '../../../i18n/translations.ts'
-import { t } from '../../../i18n/translations.ts'
-import NavLinkContent from './NavLinkContent.vue'
-import NewBadge from './NewBadge.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { locale = 'en', workshopInBuild = false } = defineProps<{
   locale?: Locale
@@ -104,8 +101,7 @@ onUnmounted(() => {
                   :href="item.columns ? undefined : item.href"
                   @click="item.columns && (activeSection = item.label)"
                 >
-                  <span class="ppformula-text-center">{{ item.label }}</span>
-                  <NewBadge v-if="item.badge" :locale="locale" size="xxs" />
+                  <NavLinkContent :item="item" :locale="locale" />
                   <template #append>
                     <ChevronRight class="size-7" />
                   </template>

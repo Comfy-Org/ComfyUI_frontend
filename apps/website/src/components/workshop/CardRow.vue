@@ -2,7 +2,7 @@
 import { cn } from '@comfyorg/tailwind-utils'
 import { ChevronLeft, ChevronRight } from '@lucide/vue'
 import { useMutationObserver, useResizeObserver } from '@vueuse/core'
-import { nextTick, onMounted, ref, useTemplateRef } from 'vue'
+import { nextTick, onMounted, ref, useTemplateRef, watch } from 'vue'
 
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
@@ -30,6 +30,29 @@ function page(direction: 1 | -1) {
     el.scrollBy({ left: direction * el.clientWidth * 0.8, behavior: 'smooth' })
 }
 
+const prevArrow = useTemplateRef<HTMLButtonElement>('prevArrow')
+const nextArrow = useTemplateRef<HTMLButtonElement>('nextArrow')
+
+// Paging to an end spends the arrow the reader is standing on. Letting it
+// unmount under them drops focus to the document, and the row's other arrow,
+// which is only shown while the row holds focus, goes with it. So the row hands
+// focus across first, and a reader who arrived by keyboard can turn back. When
+// the row stops overflowing there is no arrow left to hand to, and the row
+// itself takes the focus, which keeps the reader where they were standing.
+function handOver(
+  spent: HTMLElement | null,
+  survivor: () => HTMLElement | null
+) {
+  if (document.activeElement !== spent) return
+  void nextTick(() => (survivor() ?? row.value)?.focus())
+}
+watch(atEnd, (spent) => {
+  if (spent) handOver(nextArrow.value, () => prevArrow.value)
+})
+watch(atStart, (spent) => {
+  if (spent) handOver(prevArrow.value, () => nextArrow.value)
+})
+
 // Which arrow is spent depends on the cards themselves, so the edges are
 // re-read whenever they change, not only on scroll.
 onMounted(() => void nextTick(measure))
@@ -46,14 +69,9 @@ const arrowClass =
 
 // A pointer that can hover earns them by hovering, so a page of rows is not a
 // page of chrome, and a keyboard earns them by focusing. A touch screen can do
-// neither, so there they stay: the fade is the only thing saying there is more.
+// neither, so there they stay.
 const revealClass =
   'pointer-events-none absolute -inset-x-1 top-0 bottom-2 transition-opacity duration-200 can-hover:opacity-0 can-hover:group-hover/row:opacity-100 can-hover:group-focus-within/row:opacity-100'
-
-// The fade says there is more that way, so it keeps the arrows' company: each
-// side carries one only while that side has somewhere to go.
-const fadeClass =
-  'pointer-events-none absolute inset-y-0 z-0 w-20 from-page via-page/70 to-transparent'
 </script>
 
 <template>
@@ -68,7 +86,9 @@ const fadeClass =
     <div class="group/row relative">
       <ul
         ref="row"
-        class="-mx-1 scrollbar-hide flex snap-x snap-mandatory gap-5 overflow-x-auto px-1 pb-2"
+        tabindex="-1"
+        data-testid="card-row"
+        class="-mx-1 scrollbar-hide flex snap-x snap-mandatory gap-5 overflow-x-auto rounded-xl px-1 pb-2 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         @scroll="measure"
       >
         <slot />
@@ -82,11 +102,8 @@ const fadeClass =
         data-testid="card-row-arrows"
       >
         <template v-if="!atStart">
-          <span
-            :class="cn(fadeClass, 'left-0 bg-linear-to-r')"
-            aria-hidden="true"
-          />
           <button
+            ref="prevArrow"
             type="button"
             :aria-label="t('workshop.sections.scrollBack', locale)"
             :class="cn(arrowClass, 'left-0 -translate-x-1/2')"
@@ -97,11 +114,8 @@ const fadeClass =
           </button>
         </template>
         <template v-if="!atEnd">
-          <span
-            :class="cn(fadeClass, 'right-0 bg-linear-to-l')"
-            aria-hidden="true"
-          />
           <button
+            ref="nextArrow"
             type="button"
             :aria-label="t('workshop.sections.scrollForward', locale)"
             :class="cn(arrowClass, 'right-0 translate-x-1/2')"

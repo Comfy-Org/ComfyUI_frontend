@@ -3,7 +3,10 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import AgentConsentCard from '@/workbench/extensions/agent/components/agent/AgentConsentCard.vue'
 
-const VIDEO_SRC = 'https://media.comfy.org/website/mcp/launch-film.mp4'
+const MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
+const VIDEO_SRC = `${MEDIA_BASE}/agent-consent-1280.webm`
+const VIDEO_SRC_MP4 = `${MEDIA_BASE}/agent-consent-1280.mp4`
+const POSTER_SRC = `${MEDIA_BASE}/agent-consent-poster.jpg`
 
 const paragraphs = [
   enMessages.agent.consent.body1,
@@ -20,6 +23,8 @@ const meta: Meta<typeof AgentConsentCard> = {
     title: enMessages.agent.consent.title,
     paragraphs,
     videoSrc: VIDEO_SRC,
+    videoSrcMp4: VIDEO_SRC_MP4,
+    posterSrc: POSTER_SRC,
     docsUrl: 'https://docs.comfy.org/agent-tools/in-app-agent'
   },
   decorators: [

@@ -34,14 +34,16 @@ const workflowLabel = computed(
       </p>
       <ul class="m-0 min-w-0 list-disc pl-5 text-muted-foreground">
         <li>
-          <button
+          <Button
             v-if="part.workflowId"
             type="button"
-            class="max-w-full cursor-pointer border-0 bg-transparent p-0 text-left font-normal wrap-break-word text-inherit underline underline-offset-2 transition-colors hover:text-base-foreground focus-visible:ring-2 focus-visible:ring-primary-background focus-visible:outline-none"
+            variant="link"
+            size="unset"
+            class="max-w-full justify-start text-left font-normal wrap-break-word whitespace-normal text-inherit underline underline-offset-2"
             @click="emit('openWorkflow', part.workflowId, part.workflowName)"
           >
             {{ workflowLabel }}
-          </button>
+          </Button>
           <span v-else class="wrap-break-word underline underline-offset-2">
             {{ workflowLabel }}
           </span>

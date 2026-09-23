@@ -38,6 +38,14 @@ describe('rumBeforeSend', () => {
     expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
   })
 
+  it('drops browser-extension messaging noise', () => {
+    const event = createErrorEvent(
+      'Error: Invalid call to runtime.sendMessage(). Tab not found.'
+    )
+
+    expect(rumBeforeSend(event, fromPartial({}))).toBe(false)
+  })
+
   it('drops the console echo of an assertion the reporter also reports', () => {
     const event = createErrorEvent(
       '[Assertion failed]: graph is corrupt',

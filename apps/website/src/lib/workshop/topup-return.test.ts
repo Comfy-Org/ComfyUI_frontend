@@ -7,22 +7,17 @@ import {
 } from './topup-return'
 
 describe('topUpReturnUrl', () => {
-  it('adds an attempt marker without losing the model page state', () => {
+  it('adds an attempt marker to the checkout return page', () => {
     expect(
-      topUpReturnUrl(
-        'https://comfy.org/models/foo?q=bar#playground',
-        'attempt_1'
-      )
-    ).toBe(
-      'https://comfy.org/models/foo?q=bar&workshopTopUpReturn=attempt_1#playground'
-    )
+      topUpReturnUrl('https://comfy.org/checkout-return', 'attempt_1')
+    ).toBe('https://comfy.org/checkout-return?workshopTopUpReturn=attempt_1')
   })
 
   it.for(['', '../escape', 'contains space', 'a'.repeat(65)])(
     'rejects an invalid attempt marker: %s',
     (attemptId) => {
       expect(() =>
-        topUpReturnUrl('https://comfy.org/models/foo', attemptId)
+        topUpReturnUrl('https://comfy.org/checkout-return', attemptId)
       ).toThrow('Invalid checkout attempt')
     }
   )
@@ -45,6 +40,14 @@ describe('subscribeToTopUpReturns', () => {
         data: { type: 'workshop-topup-return', attemptId: '../invalid' }
       })
     )
+    for (const data of [null, {}, { type: 'workshop-topup-return' }]) {
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: window.location.origin,
+          data
+        })
+      )
+    }
     window.dispatchEvent(
       new MessageEvent('message', {
         origin: window.location.origin,
@@ -75,6 +78,12 @@ describe('subscribeToTopUpReturns', () => {
     window.dispatchEvent(
       new StorageEvent('storage', {
         key: 'comfy-workshop-topup-return',
+        newValue: '{'
+      })
+    )
+    window.dispatchEvent(
+      new StorageEvent('storage', {
+        key: 'comfy-workshop-topup-return',
         newValue: JSON.stringify({
           type: 'workshop-topup-return',
           attemptId: 'attempt-2'
@@ -91,8 +100,6 @@ describe('announceTopUpReturnFromLocation', () => {
   it('removes the marker and broadcasts the return', () => {
     const postMessage = vi.fn()
     const closeChannel = vi.fn()
-    const closeWindow = vi.spyOn(window, 'close').mockImplementation(() => {})
-    onTestFinished(() => closeWindow.mockRestore())
     vi.stubGlobal(
       'BroadcastChannel',
       class {
@@ -103,24 +110,22 @@ describe('announceTopUpReturnFromLocation', () => {
     window.history.replaceState(
       {},
       '',
-      '/models/foo?q=bar&workshopTopUpReturn=attempt-1#playground'
+      '/checkout-return?workshopTopUpReturn=attempt-1'
     )
 
     announceTopUpReturnFromLocation()
 
     expect(window.location.href).toBe(
-      `${window.location.origin}/models/foo?q=bar#playground`
+      `${window.location.origin}/checkout-return`
     )
     expect(postMessage).toHaveBeenCalledWith({
       type: 'workshop-topup-return',
       attemptId: 'attempt-1'
     })
     expect(closeChannel).toHaveBeenCalledOnce()
-    expect(closeWindow).toHaveBeenCalledOnce()
   })
 
-  it('still closes after a blocked BroadcastChannel constructor', () => {
-    const closeWindow = vi.spyOn(window, 'close').mockImplementation(() => {})
+  it('falls back to storage when channel messaging throws', () => {
     vi.stubGlobal(
       'BroadcastChannel',
       class {
@@ -129,17 +134,21 @@ describe('announceTopUpReturnFromLocation', () => {
         }
       }
     )
-    onTestFinished(() => {
-      closeWindow.mockRestore()
-      vi.unstubAllGlobals()
-    })
+    const setItem = vi.spyOn(Storage.prototype, 'setItem')
+    const removeItem = vi.spyOn(Storage.prototype, 'removeItem')
     window.history.replaceState(
       {},
       '',
-      '/models/foo?workshopTopUpReturn=attempt-2'
+      '/checkout-return?workshopTopUpReturn=attempt-2'
     )
 
-    expect(() => announceTopUpReturnFromLocation()).not.toThrow()
-    expect(closeWindow).toHaveBeenCalledOnce()
+    announceTopUpReturnFromLocation()
+
+    const message = JSON.stringify({
+      type: 'workshop-topup-return',
+      attemptId: 'attempt-2'
+    })
+    expect(setItem).toHaveBeenCalledWith('comfy-workshop-topup-return', message)
+    expect(removeItem).toHaveBeenCalledWith('comfy-workshop-topup-return')
   })
 })

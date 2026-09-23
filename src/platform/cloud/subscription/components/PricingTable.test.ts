@@ -1,14 +1,16 @@
-import userEvent from '@testing-library/user-event'
+import { useAuthStore } from '@/stores/authStore'
 import { render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useTelemetry } from '@/platform/telemetry'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
+import Button from '@/components/ui/button/Button.vue'
 import type { IngestSubscriptionTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
-import { useAuthStore } from '@/stores/authStore'
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
@@ -26,10 +28,6 @@ function createDeferredPromise<T>() {
 const mockCanAccessSubscriptionFeatures = ref(false)
 const mockSubscriptionTier = ref<IngestSubscriptionTier | null>(null)
 const mockSubscriptionDuration = ref<'MONTHLY' | 'ANNUAL'>('MONTHLY')
-const mockAccessBillingPortal = vi.fn()
-const mockReportError = vi.fn()
-const mockTrackBeginCheckout = vi.fn()
-const mockTrackBillingEvent = vi.fn()
 
 const mockGetAuthHeader = vi.fn(() =>
   Promise.resolve({ Authorization: 'Bearer test-token' as const })
@@ -89,12 +87,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: () => ({
-    accessBillingPortal: mockAccessBillingPortal,
-    reportError: mockReportError
-  })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({
@@ -114,12 +107,7 @@ vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackBeginCheckout: mockTrackBeginCheckout,
-    trackBillingEvent: mockTrackBillingEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(
   import('@/platform/telemetry/utils/checkoutAttribution'),
@@ -216,8 +204,7 @@ function renderComponent() {
           `,
           props: ['modelValue', 'options'],
           emits: ['update:modelValue']
-        },
-        Popover: { template: '<div><slot /></div>' }
+        }
       }
     }
   })
@@ -241,7 +228,6 @@ describe('PricingTable', () => {
     mockSubscriptionTier.value = null
     mockSubscriptionDuration.value = 'MONTHLY'
     Object.assign(useAuthStore(), { userId: 'user-123' })
-    mockAccessBillingPortal.mockResolvedValue(true)
     mockLocalStorage.__reset()
     vi.mocked(global.fetch).mockResolvedValue({
       ok: true,
@@ -265,7 +251,7 @@ describe('PricingTable', () => {
       await userEvent.click(creatorButton!)
       await flushPromises()
 
-      expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith({
         user_id: 'user-123',
         tier: 'creator',
         cycle: 'yearly',
@@ -273,7 +259,9 @@ describe('PricingTable', () => {
         checkout_attempt_id: expect.any(String),
         previous_tier: 'standard'
       })
-      expect(mockAccessBillingPortal).toHaveBeenCalledWith('creator-yearly')
+      expect(useAuthActions().accessBillingPortal).toHaveBeenCalledWith(
+        'creator-yearly'
+      )
     })
 
     it('should call accessBillingPortal with different tiers correctly', async () => {
@@ -290,7 +278,9 @@ describe('PricingTable', () => {
       await userEvent.click(proButton!)
       await flushPromises()
 
-      expect(mockAccessBillingPortal).toHaveBeenCalledWith('pro-yearly')
+      expect(useAuthActions().accessBillingPortal).toHaveBeenCalledWith(
+        'pro-yearly'
+      )
     })
 
     it('records the plan snapshot that was actually opened', async () => {
@@ -298,7 +288,9 @@ describe('PricingTable', () => {
       mockSubscriptionTier.value = 'STANDARD'
 
       const portalOpen = createDeferredPromise<boolean>()
-      mockAccessBillingPortal.mockReturnValueOnce(portalOpen.promise)
+      vi.mocked(useAuthActions().accessBillingPortal).mockReturnValueOnce(
+        portalOpen.promise
+      )
 
       renderComponent()
       await flushPromises()
@@ -317,7 +309,9 @@ describe('PricingTable', () => {
       portalOpen.resolve(true)
       await flushPromises()
 
-      expect(mockAccessBillingPortal).toHaveBeenCalledWith('creator-yearly')
+      expect(useAuthActions().accessBillingPortal).toHaveBeenCalledWith(
+        'creator-yearly'
+      )
       expect(
         JSON.parse(
           window.localStorage.getItem(
@@ -336,7 +330,9 @@ describe('PricingTable', () => {
     it('does not record a pending upgrade when the billing portal does not open', async () => {
       mockCanAccessSubscriptionFeatures.value = true
       mockSubscriptionTier.value = 'STANDARD'
-      mockAccessBillingPortal.mockResolvedValueOnce(false)
+      vi.mocked(useAuthActions().accessBillingPortal).mockResolvedValueOnce(
+        false
+      )
 
       renderComponent()
       await flushPromises()
@@ -351,7 +347,7 @@ describe('PricingTable', () => {
       expect(
         window.localStorage.getItem(PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY)
       ).toBeNull()
-      expect(mockTrackBeginCheckout).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackBeginCheckout).not.toHaveBeenCalled()
     })
 
     it('should use the latest userId value when it changes after mount', async () => {
@@ -371,8 +367,8 @@ describe('PricingTable', () => {
       await userEvent.click(creatorButton!)
       await flushPromises()
 
-      expect(mockTrackBeginCheckout).toHaveBeenCalledTimes(1)
-      expect(mockTrackBeginCheckout).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith({
         user_id: 'user-late',
         tier: 'creator',
         cycle: 'yearly',
@@ -399,7 +395,7 @@ describe('PricingTable', () => {
       await userEvent.click(currentPlanButton!)
       await flushPromises()
 
-      expect(mockAccessBillingPortal).not.toHaveBeenCalled()
+      expect(useAuthActions().accessBillingPortal).not.toHaveBeenCalled()
     })
 
     it('does not highlight a current plan when the facade duration differs from the selected cycle', async () => {
@@ -434,7 +430,7 @@ describe('PricingTable', () => {
       await userEvent.click(subscribeButton!)
       await flushPromises()
 
-      expect(mockAccessBillingPortal).not.toHaveBeenCalled()
+      expect(useAuthActions().accessBillingPortal).not.toHaveBeenCalled()
       expect(global.fetch).toHaveBeenCalledWith(
         expect.stringContaining('/customers/cloud-subscription-checkout/'),
         expect.any(Object)
@@ -467,7 +463,7 @@ describe('PricingTable', () => {
       await userEvent.click(subscribeButton!)
       await flushPromises()
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
         operation: 'subscription_checkout',
         stage: 'failed',
         outcome: 'failure',
@@ -477,7 +473,7 @@ describe('PricingTable', () => {
         payment_intent_source: undefined,
         failure_category: 'api_rejected'
       })
-      expect(mockReportError).toHaveBeenCalled()
+      expect(useAuthActions().reportError).toHaveBeenCalled()
     })
 
     it('categorizes a connectivity failure as network, not api_rejected', async () => {
@@ -496,7 +492,7 @@ describe('PricingTable', () => {
       await userEvent.click(subscribeButton!)
       await flushPromises()
 
-      expect(mockTrackBillingEvent).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({ failure_category: 'network' })
       )
     })
@@ -515,7 +511,9 @@ describe('PricingTable', () => {
       await userEvent.click(standardButton!)
       await flushPromises()
 
-      expect(mockAccessBillingPortal).toHaveBeenCalledWith('standard-yearly')
+      expect(useAuthActions().accessBillingPortal).toHaveBeenCalledWith(
+        'standard-yearly'
+      )
     })
   })
 

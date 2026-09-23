@@ -13,12 +13,15 @@
         class="about-badge inline-flex items-center no-underline"
         :title="badge.url"
       >
-        <Tag class="mr-2" :severity="badge.severity">
+        <Badge
+          class="mr-2"
+          :severity="badge.severity === 'warn' ? 'warning' : badge.severity"
+        >
           <template #icon>
             <i :class="cn(badge.icon, 'mr-2 text-xl')" />
           </template>
           {{ badge.label }}
-        </Tag>
+        </Badge>
       </a>
     </div>
 
@@ -36,6 +39,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import Tag from 'primevue/tag'
 
 import SystemStatsPanel from '@/components/common/SystemStatsPanel.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import { useAboutPanelStore } from '@/stores/aboutPanelStore'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 

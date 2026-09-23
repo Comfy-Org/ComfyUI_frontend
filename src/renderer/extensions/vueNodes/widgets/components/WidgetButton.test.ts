@@ -19,13 +19,6 @@ const BUTTON_DEFAULTS = {
   name: 'test_button'
 } as const
 
-const ButtonStub = {
-  name: 'Button',
-  props: ['size', 'variant', 'disabled'],
-  template:
-    '<button :data-size="size" :data-variant="variant" :disabled="disabled"><slot /></button>'
-}
-
 describe('WidgetButton Interactions', () => {
   const createButtonWidget = (
     overrides: Partial<SimplifiedWidget<undefined, ButtonWidgetOptions>> = {}
@@ -34,11 +27,6 @@ describe('WidgetButton Interactions', () => {
   const mountComponent = (widget: SimplifiedWidget<undefined>) => {
     const user = userEvent.setup()
     const result = render(WidgetButton, {
-      global: {
-        stubs: {
-          Button: ButtonStub
-        }
-      },
       props: {
         widget
       }
@@ -104,7 +92,7 @@ describe('WidgetButton Interactions', () => {
       const widget = createButtonWidget()
       mountComponent(widget)
 
-      expect(screen.getByRole('button').getAttribute('data-size')).toBe('sm')
+      expect(screen.getByRole('button')).toHaveClass('h-6', 'rounded-sm')
     })
 
     it('passes widget options to button component', () => {
@@ -113,8 +101,8 @@ describe('WidgetButton Interactions', () => {
       })
       mountComponent(widget)
 
-      expect(screen.getByRole('button').getAttribute('data-variant')).toBe(
-        'secondary'
+      expect(screen.getByRole('button')).toHaveClass(
+        'hover:bg-secondary-background-hover'
       )
     })
   })
@@ -153,16 +141,19 @@ describe('WidgetButton Interactions', () => {
       expect(container.querySelector('i.pi.pi-save')).not.toBeNull()
     })
 
-    it.for(['secondary', 'primary', 'inverted', 'textonly'] as const)(
-      'handles button variant: %s',
-      (variant) => {
-        const widget = createButtonWidget({ options: { variant } })
-        mountComponent(widget)
-        expect(screen.getByRole('button').getAttribute('data-variant')).toBe(
-          variant
-        )
-      }
-    )
+    it.for([
+      ['secondary', 'hover:bg-secondary-background-hover'],
+      ['primary', 'hover:bg-primary-background-hover'],
+      ['inverted', 'hover:bg-base-foreground/80'],
+      ['textonly', 'hover:bg-secondary-background-hover']
+    ] as const)('handles button variant: %s', ([variant, hoverClass]) => {
+      const widget = createButtonWidget({ options: { variant } })
+      mountComponent(widget)
+      expect(screen.getByRole('button')).toHaveClass(
+        'bg-component-node-widget-background',
+        hoverClass
+      )
+    })
   })
 
   describe('Edge Cases', () => {

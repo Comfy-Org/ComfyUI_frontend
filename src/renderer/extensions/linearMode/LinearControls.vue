@@ -5,34 +5,38 @@ import { computed, ref, toValue, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import AppModeWidgetList from '@/components/builder/AppModeWidgetList.vue'
-import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import { useErrorOverlayState } from '@/components/error/useErrorOverlayState'
 import Loader from '@/components/loader/Loader.vue'
-import Button from '@/components/ui/button/Button.vue'
-import Popover from '@/components/ui/Popover.vue'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
-import { useAppMode } from '@/composables/useAppMode'
-import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
-import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
+import ScrubableNumberInput from '@/components/common/ScrubableNumberInput.vue'
 import { COACH_IDS } from '@/platform/onboarding/onboardingTours'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { vCoachmark } from '@/platform/onboarding/vCoachmark'
+import Popover from '@/components/ui/Popover.vue'
+import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { isCloud } from '@/platform/distribution/types'
+import FreeTierQuota from '@/platform/cloud/subscription/components/FreeTierQuota.vue'
+import SubscribeToRunButton from '@/platform/cloud/subscription/components/SubscribeToRun.vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import LinearRunErrorWarning from '@/renderer/extensions/linearMode/LinearRunErrorWarning.vue'
 import { LINEAR_RUN_ERROR_WARNING_DESCRIPTION_ID } from '@/renderer/extensions/linearMode/linearRunErrorWarningIds'
 import PartnerNodesList from '@/renderer/extensions/linearMode/PartnerNodesList.vue'
-import { useAppModeStore } from '@/stores/appModeStore'
 import { useCommandStore } from '@/stores/commandStore'
-import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useQueueSettingsStore } from '@/stores/queueSettingsStore'
+import { useAppMode } from '@/composables/useAppMode'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 
 const { t } = useI18n()
 const commandStore = useCommandStore()
 const { batchCount } = storeToRefs(useQueueSettingsStore())
 const settingStore = useSettingStore()
 const { canRunWorkflows, showsSubscribeToRunPrompt } = useBillingContext()
+const showsCloudSubscribePrompt = computed(
+  () => isCloud && showsSubscribeToRunPrompt.value
+)
 const workflowStore = useWorkflowStore()
 const { isBuilderMode } = useAppMode()
 const appModeStore = useAppModeStore()
@@ -180,7 +184,7 @@ function replayAppModeTour() {
         <LinearRunErrorWarning v-if="showRunErrorWarning" />
         <div v-coachmark="COACH_IDS.appRunButton">
           <SubscribeToRunButton
-            v-if="showsSubscribeToRunPrompt"
+            v-if="showsCloudSubscribePrompt"
             class="mt-4 w-full"
           />
           <div v-else class="mt-4 flex">
@@ -247,7 +251,7 @@ function replayAppModeTour() {
             class="h-7 min-w-40"
           />
           <SubscribeToRunButton
-            v-if="showsSubscribeToRunPrompt"
+            v-if="showsCloudSubscribePrompt"
             class="mt-4 w-full"
           />
           <Button

@@ -1,16 +1,16 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
-
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
-import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionStore } from '@/stores/executionStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useAppModeStore } from '@/stores/appModeStore'
 import { useJobPreviewStore } from '@/stores/jobPreviewStore'
 import { toNodeId } from '@/types/nodeId'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
+import type { Ref } from 'vue'
 
-const isAppModeRef = ref(true)
+import { useAppMode } from '@/composables/useAppMode'
+import { useLinearOutputStore } from '@/renderer/extensions/linearMode/linearOutputStore'
+import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 
 const { apiTarget } = vi.hoisted(() => ({
   apiTarget: new EventTarget()
@@ -18,12 +18,7 @@ const { apiTarget } = vi.hoisted(() => ({
 
 vi.mock(import('@/platform/assets/composables/media/assetMappers'))
 
-vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => ({
-    isAppMode: isAppModeRef,
-    isBuilderMode: ref(false)
-  })
-}))
+vi.mock(import('@/composables/useAppMode'))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: Object.assign(apiTarget, {
@@ -53,10 +48,13 @@ function makeExecutedDetail(
 }
 
 describe('linearOutputStore', () => {
+  let isAppModeRef: Ref<boolean>
+
   beforeEach(() => {
+    isAppModeRef = ref(true)
+    useAppMode().isAppMode = computed(() => isAppModeRef.value)
     useExecutionStore().activeJobId = null
     useJobPreviewStore().clearAllPreviews()
-    isAppModeRef.value = true
     useWorkflowStore().activeWorkflow = fromPartial({
       path: 'workflows/test-workflow.json'
     })

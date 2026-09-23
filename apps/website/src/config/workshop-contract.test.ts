@@ -6,9 +6,12 @@ import {
   countPackedRecords
 } from '../../scripts/generate-workshop-router-contracts'
 import packedContracts from '../content/workshop-router-contracts.json'
-import rawBindings from '../data/workshop-router-bindings.json'
 import rawSnapshots from '../data/workshop-router-openapi.snapshot.json'
-import { workshopModels, routerContentBySlug } from './workshop-browse-content'
+import rawBindings from '../data/workshop-router-bindings.json'
+import {
+  authoredRouterContentBySlug,
+  authoredWorkshopModels
+} from './workshop-browse-content'
 import {
   formForContract,
   workshopContractRecordSchema,
@@ -22,7 +25,7 @@ import { validateWorkshopInput } from './workshop-json-schema'
 import type { FormValues } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { parseRouterResponse, releaseRouterOutputs } from './workshop-response'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import { parseRouterOpenApiSnapshot } from './workshop-router-openapi'
 
 const contracts = packedContracts.map((entry) =>
@@ -270,10 +273,10 @@ describe('schema-driven Router coverage', () => {
 
   it.for(
     contracts.filter((contract) =>
-      workshopModels.some((model) => model.routerId === contract.id)
+      authoredWorkshopModels.some((model) => model.routerId === contract.id)
     )
   )('connects the matched Router model $id to its page', (contract) => {
-    const card = workshopModels.find(
+    const card = authoredWorkshopModels.find(
       (model) => model.routerId === contract.id && !model.incompleteReason
     )
     expect(card).toBeDefined()
@@ -282,7 +285,7 @@ describe('schema-driven Router coverage', () => {
     expect(card.incompleteReason).toBeUndefined()
     expect(detail?.incompleteReason).toBeUndefined()
     const { creatorVariants, ...base } = workshopContractSchema.parse(contract)
-    const content = routerContentBySlug.get(card.slug)
+    const content = authoredRouterContentBySlug.get(card.slug)
     if (!content) throw new Error('Missing content record')
     const creator = creatorVariants?.[content.overlay.id] ?? base.creator
     expect(detail?.execution).toEqual({

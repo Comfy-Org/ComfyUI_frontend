@@ -1,7 +1,7 @@
 <template>
   <div class="flex flex-col gap-2" @pointerdown.stop>
     <div
-      v-if="!videoUrl"
+      v-if="!hasSource"
       data-testid="video-edit-empty"
       class="flex min-h-24 flex-col items-center justify-center gap-1 rounded-lg border border-dashed border-node-stroke bg-node-component-surface p-4 text-center"
     >
@@ -34,6 +34,7 @@
           @loadedmetadata="handleVideoMetadata"
           @timeupdate="handleVideoTimeUpdate"
           @ended="isPlaying = false"
+          @error="emit('loadError')"
         />
         <VideoCropOverlay
           v-if="hasCrop && !loading && width > 0 && height > 0"
@@ -81,7 +82,7 @@
     </div>
 
     <div
-      v-if="videoUrl"
+      v-if="hasSource && error !== 'load-failed'"
       data-testid="video-playback-controls"
       class="flex h-8 items-center gap-2 px-1"
     >
@@ -153,7 +154,7 @@
     </div>
 
     <div
-      v-if="videoUrl"
+      v-if="hasSource && error !== 'load-failed'"
       class="grid grid-cols-[minmax(80px,min-content)_minmax(125px,1fr)] gap-1"
     >
       <VideoFilmstripTrim
@@ -280,6 +281,7 @@ import { frameToTime, timeToFrame } from '@/utils/videoFrameUtil'
 const {
   features,
   videoUrl,
+  hasSource = false,
   thumbnail,
   totalFrames,
   duration,
@@ -292,6 +294,7 @@ const {
 } = defineProps<{
   features: VideoEditFeature[]
   videoUrl?: string
+  hasSource?: boolean
   thumbnail: string
   totalFrames: number
   duration: number
@@ -305,6 +308,7 @@ const {
 
 const emit = defineEmits<{
   retry: []
+  loadError: []
 }>()
 
 const startFrame = defineModel<number>('startFrame', { default: 0 })
@@ -384,7 +388,7 @@ const startFrameWidget = computed(
       step: 1,
       step2: 1,
       precision: 0,
-      disabled: !videoUrl || loading
+      disabled: !hasSource || loading
     }
   })
 )
@@ -401,7 +405,7 @@ const endFrameWidget = computed(
       step: 1,
       step2: 1,
       precision: 0,
-      disabled: !videoUrl || loading
+      disabled: !hasSource || loading
     }
   })
 )

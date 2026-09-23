@@ -1,4 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/vue3-vite'
+import { useIntervalFn } from '@vueuse/core'
+import { defineComponent, onMounted, ref } from 'vue'
+
+import Button from '@/components/ui/button/Button.vue'
 
 import type { TurnId } from '../../../schemas/agentApiSchema'
 import type {
@@ -164,4 +168,46 @@ export const ErrorNotice: Story = {
       false
     )
   }
+}
+
+const ArrivingTurn = defineComponent({
+  components: { AgentMessage, Button },
+  setup() {
+    const parts = ref<MessagePart[]>([])
+
+    const { pause, resume } = useIntervalFn(
+      () => {
+        if (parts.value.length >= trace.length) return pause()
+        parts.value = trace.slice(0, parts.value.length + 1)
+      },
+      900,
+      { immediate: false }
+    )
+
+    const replay = () => {
+      pause()
+      parts.value = []
+      resume()
+    }
+
+    onMounted(replay)
+
+    return { parts, replay, message }
+  },
+  template: `
+    <div>
+      <Button variant="secondary" size="sm" class="mb-3" @click="replay">
+        Replay
+      </Button>
+      <AgentMessage :message="message(parts, true)" />
+    </div>
+  `
+})
+
+export const StepsArriving: Story = {
+  name: 'DES-1032 Each step fades in as it arrives',
+  render: () => ({
+    components: { ArrivingTurn },
+    template: '<ArrivingTurn />'
+  })
 }

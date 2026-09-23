@@ -9,7 +9,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/platform/settings/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 import { toNodeId } from '@/types/nodeId'

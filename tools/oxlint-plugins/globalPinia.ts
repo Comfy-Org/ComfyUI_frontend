@@ -1,4 +1,4 @@
-import { readFileSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
 import { resolve } from 'node:path'
 
 import type { RuleTester } from 'oxlint/plugins-dev'
@@ -10,10 +10,19 @@ type Node = Parameters<Context['sourceCode']['getScope']>[0]
 
 const PINIA_MODULES = new Set(['pinia', '@pinia/testing'])
 const PINIA_FACTORIES = new Set(['createPinia', 'createTestingPinia'])
+const VITEST_MOCK_METHODS = new Set(['mock', 'doMock', 'spyOn', 'mocked'])
+const MAY_EXPORT_STORE =
+  /\bdefineStore\b|^\s*export\s*(?:\*|\{[^}]*\})\s*from\b/m
 const compilerOptions: ts.CompilerOptions = {
   moduleResolution: ts.ModuleResolutionKind.Bundler,
   paths: { '@/*': [resolve(import.meta.dirname, '../../src/*')] }
 }
+const resolutionCache = ts.createModuleResolutionCache(
+  process.cwd(),
+  (fileName) => fileName,
+  compilerOptions
+)
+const piniaModules = new Map<string, { mtimeMs: number; result: boolean }>()
 
 function literal(node: Node | undefined): string | undefined {
   if (node?.type === 'Literal' && typeof node.value === 'string') {
@@ -99,84 +108,161 @@ function importedReference(
   }
 }
 
+function resolveLocalModule(
+  specifier: string,
+  importer: string
+): string | undefined {
+  if (!specifier.startsWith('.') && !specifier.startsWith('@/')) return
+  return ts.resolveModuleName(
+    specifier,
+    importer,
+    compilerOptions,
+    ts.sys,
+    resolutionCache
+  ).resolvedModule?.resolvedFileName
+}
+
+function piniaNamedBindings(
+  statement: ts.Statement
+): ts.NamedImportBindings | undefined {
+  if (!ts.isImportDeclaration(statement)) return
+  if (
+    !ts.isStringLiteral(statement.moduleSpecifier) ||
+    statement.moduleSpecifier.text !== 'pinia'
+  )
+    return
+  return statement.importClause?.namedBindings
+}
+
+function piniaImportBindings(source: ts.SourceFile) {
+  const factories = new Set<string>()
+  const namespaces = new Set<string>()
+  for (const statement of source.statements) {
+    const bindings = piniaNamedBindings(statement)
+    if (!bindings) continue
+    if (ts.isNamespaceImport(bindings)) {
+      namespaces.add(bindings.name.text)
+      continue
+    }
+    for (const binding of bindings.elements) {
+      if ((binding.propertyName ?? binding.name).text === 'defineStore')
+        factories.add(binding.name.text)
+    }
+  }
+  return { factories, namespaces }
+}
+
+function definesStore(source: ts.SourceFile): boolean {
+  const { factories, namespaces } = piniaImportBindings(source)
+  if (factories.size === 0 && namespaces.size === 0) return false
+
+  function isDefineStoreCall(callee: ts.Expression): boolean {
+    if (ts.isIdentifier(callee)) return factories.has(callee.text)
+    return (
+      ts.isPropertyAccessExpression(callee) &&
+      ts.isIdentifier(callee.expression) &&
+      namespaces.has(callee.expression.text) &&
+      callee.name.text === 'defineStore'
+    )
+  }
+  function visit(node: ts.Node): boolean {
+    if (ts.isCallExpression(node) && isDefineStoreCall(node.expression))
+      return true
+    return ts.forEachChild(node, visit) ?? false
+  }
+  return visit(source)
+}
+
+function hasValueExports(statement: ts.ExportDeclaration): boolean {
+  if (statement.isTypeOnly) return false
+  if (!statement.exportClause || !ts.isNamedExports(statement.exportClause))
+    return true
+  return statement.exportClause.elements.some(
+    (specifier) => !specifier.isTypeOnly
+  )
+}
+
+function valueReexportSpecifiers(source: ts.SourceFile): string[] {
+  return source.statements.flatMap((statement) =>
+    ts.isExportDeclaration(statement) &&
+    hasValueExports(statement) &&
+    statement.moduleSpecifier &&
+    ts.isStringLiteral(statement.moduleSpecifier)
+      ? [statement.moduleSpecifier.text]
+      : []
+  )
+}
+
+function exportsPiniaStore(resolved: string, text: string): boolean {
+  if (!MAY_EXPORT_STORE.test(text)) return false
+  const source = ts.createSourceFile(resolved, text, ts.ScriptTarget.Latest)
+  return (
+    definesStore(source) ||
+    valueReexportSpecifiers(source).some((specifier) =>
+      isPiniaModule(specifier, resolved)
+    )
+  )
+}
+
+function isPiniaModule(specifier: string, importer: string): boolean {
+  if (PINIA_MODULES.has(specifier)) return true
+  const resolved = resolveLocalModule(specifier, importer)
+  if (!resolved) return false
+  const mtimeMs = statSync(resolved).mtimeMs
+  const cached = piniaModules.get(resolved)
+  if (cached?.mtimeMs === mtimeMs) return cached.result
+  piniaModules.set(resolved, { mtimeMs, result: false })
+  const result = exportsPiniaStore(resolved, readFileSync(resolved, 'utf8'))
+  piniaModules.set(resolved, { mtimeMs, result })
+  return result
+}
+
+function vitestMethod(context: Context, callee: Node): string | undefined {
+  const reference = importedReference(context, callee)
+  if (reference?.source !== 'vitest' || reference.path.length !== 2) return
+  return ['vi', 'vitest'].includes(reference.path[0])
+    ? reference.path[1]
+    : undefined
+}
+
+function vitestMockCall(
+  context: Context,
+  node: Extract<Node, { type: 'CallExpression' }>
+): { method: string; argument: Node } | undefined {
+  if (
+    node.callee.type === 'MemberExpression' &&
+    !VITEST_MOCK_METHODS.has(propertyName(node.callee.property) ?? '')
+  )
+    return
+  const method = vitestMethod(context, node.callee)
+  const argument = node.arguments.at(0)
+  if (!method || !VITEST_MOCK_METHODS.has(method) || !argument) return
+  return { method, argument }
+}
+
+function mocksPiniaModule(argument: Node, importer: string): boolean {
+  const source = literal(
+    argument.type === 'ImportExpression' ? argument.source : argument
+  )
+  return source !== undefined && isPiniaModule(source, importer)
+}
+
+function spiesOnPiniaStore(
+  context: Context,
+  node: Extract<Node, { type: 'CallExpression' }>,
+  method: string,
+  argument: Node
+): boolean {
+  const target = importedReference(context, argument)
+  if (!target || !isPiniaModule(target.source, context.filename)) return false
+  if (PINIA_MODULES.has(target.source)) return true
+  const name =
+    method === 'spyOn' ? literal(node.arguments[1]) : target.path.at(-1)
+  return name?.startsWith('use') ?? false
+}
+
 export const useGlobalPinia: Rule = {
   create(context) {
-    const modules = new Map<string, boolean>()
-    function isPiniaModule(
-      specifier: string,
-      importer = context.filename
-    ): boolean {
-      if (PINIA_MODULES.has(specifier)) return true
-      if (!specifier.startsWith('.') && !specifier.startsWith('@/'))
-        return false
-      const resolved = ts.resolveModuleName(
-        specifier,
-        importer,
-        compilerOptions,
-        ts.sys
-      ).resolvedModule?.resolvedFileName
-      if (!resolved) return false
-      const cached = modules.get(resolved)
-      if (cached !== undefined) return cached
-      modules.set(resolved, false)
-      const source = ts.createSourceFile(
-        resolved,
-        readFileSync(resolved, 'utf8'),
-        ts.ScriptTarget.Latest,
-        true
-      )
-      const factories = new Set<string>()
-      const namespaces = new Set<string>()
-      for (const statement of source.statements) {
-        if (
-          !ts.isImportDeclaration(statement) ||
-          !ts.isStringLiteral(statement.moduleSpecifier) ||
-          statement.moduleSpecifier.text !== 'pinia'
-        )
-          continue
-        const bindings = statement.importClause?.namedBindings
-        if (bindings && ts.isNamespaceImport(bindings))
-          namespaces.add(bindings.name.text)
-        if (bindings && ts.isNamedImports(bindings)) {
-          for (const binding of bindings.elements) {
-            if ((binding.propertyName ?? binding.name).text === 'defineStore')
-              factories.add(binding.name.text)
-          }
-        }
-      }
-      function definesStore(node: ts.Node): boolean {
-        if (ts.isCallExpression(node)) {
-          const callee = node.expression
-          if (ts.isIdentifier(callee) && factories.has(callee.text)) return true
-          if (
-            ts.isPropertyAccessExpression(callee) &&
-            ts.isIdentifier(callee.expression) &&
-            namespaces.has(callee.expression.text) &&
-            callee.name.text === 'defineStore'
-          )
-            return true
-        }
-        return ts.forEachChild(node, definesStore) ?? false
-      }
-      const result =
-        definesStore(source) ||
-        source.statements.some(
-          (statement) =>
-            ts.isExportDeclaration(statement) &&
-            !statement.isTypeOnly &&
-            (!statement.exportClause ||
-              !ts.isNamedExports(statement.exportClause) ||
-              statement.exportClause.elements.some(
-                (specifier) => !specifier.isTypeOnly
-              )) &&
-            statement.moduleSpecifier &&
-            ts.isStringLiteral(statement.moduleSpecifier) &&
-            isPiniaModule(statement.moduleSpecifier.text, resolved)
-        )
-      modules.set(resolved, result)
-      return result
-    }
-
     function reportCreation(node: Node) {
       context.report({
         node,
@@ -234,30 +320,14 @@ export const useGlobalPinia: Rule = {
         }
       },
       CallExpression(node) {
-        const reference = importedReference(context, node.callee)
-        if (
-          reference?.source !== 'vitest' ||
-          reference.path.length !== 2 ||
-          !['vi', 'vitest'].includes(reference.path[0])
-        )
-          return
-        const argument = node.arguments.at(0)
-        if (!argument) return
-        const method = reference.path[1]
-        if (method === 'mock' || method === 'doMock') {
-          const source = literal(
-            argument.type === 'ImportExpression' ? argument.source : argument
-          )
-          if (source && isPiniaModule(source)) reportMock(node)
-        }
-        if (method === 'spyOn' || method === 'mocked') {
-          const target = importedReference(context, argument)
-          if (!target || !isPiniaModule(target.source)) return
-          const name =
-            method === 'spyOn' ? literal(node.arguments[1]) : target.path.at(-1)
-          if (PINIA_MODULES.has(target.source) || name?.startsWith('use'))
-            reportMock(node)
-        }
+        const call = vitestMockCall(context, node)
+        if (!call) return
+        const { method, argument } = call
+        const mocked =
+          method === 'mock' || method === 'doMock'
+            ? mocksPiniaModule(argument, context.filename)
+            : spiesOnPiniaStore(context, node, method, argument)
+        if (mocked) reportMock(node)
       }
     }
   }

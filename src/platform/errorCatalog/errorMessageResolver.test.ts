@@ -1,17 +1,16 @@
 import { describe, expect, it } from 'vitest'
 
-import { i18n, te } from '@/i18n'
-import type { MissingMediaGroup } from '@/platform/missingMedia/types'
-import type { MissingModelGroup } from '@/platform/missingModel/types'
-import type { ExecutionErrorWsMessage } from '@/schemas/apiSchema'
-import type { MissingNodeType } from '@/types/comfy'
-
 import {
   resolveMissingErrorMessage,
   resolveMissingMediaItemLabel,
   resolveRunErrorMessage
 } from './errorMessageResolver'
 import type { NodeValidationError } from './types'
+import type { ExecutionErrorWsMessage } from '@/platform/remote/comfyui/execution/types'
+import type { MissingMediaGroup } from '@/platform/missingMedia/types'
+import type { MissingModelGroup } from '@/platform/missingModel/types'
+import type { MissingNodeType } from '@/types/comfy'
+import { i18n, te } from '@/i18n'
 
 function nodeValidationError(
   type: string,
@@ -622,6 +621,23 @@ describe('errorMessageResolver', () => {
       displayTitle: 'Prompt has no outputs',
       displayMessage:
         'The workflow does not contain any output nodes (e.g. Save Image, Preview Image) to produce a result.'
+    })
+  })
+
+  it('resolves agent API failures with catalog copy', () => {
+    expect(
+      resolveRunErrorMessage({
+        kind: 'prompt',
+        isCloud: true,
+        error: {
+          type: 'agent_api_failed',
+          message: 'The agent request failed',
+          details: ''
+        }
+      })
+    ).toEqual({
+      displayTitle: 'Comfy Agent error',
+      displayMessage: 'Comfy Agent hit a server error.'
     })
   })
 

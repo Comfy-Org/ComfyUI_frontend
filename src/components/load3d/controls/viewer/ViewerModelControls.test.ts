@@ -1,5 +1,5 @@
+import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -8,12 +8,6 @@ import type {
   MaterialMode,
   UpDirection
 } from '@/extensions/core/load3d/interfaces'
-
-vi.mock(import('@/components/ui/select/Select.vue'))
-vi.mock(import('@/components/ui/select/SelectContent.vue'))
-vi.mock(import('@/components/ui/select/SelectItem.vue'))
-vi.mock(import('@/components/ui/select/SelectTrigger.vue'))
-vi.mock(import('@/components/ui/select/SelectValue.vue'))
 
 const i18n = createI18n({
   legacy: false,
@@ -59,10 +53,6 @@ function renderControls(overrides: RenderProps = {}) {
   return { ...result, user: userEvent.setup() }
 }
 
-function getOptions(select: HTMLElement) {
-  return Array.from(select.querySelectorAll('option'))
-}
-
 describe('ViewerModelControls', () => {
   describe('rendering', () => {
     it('renders both up direction and material mode selects by default', () => {
@@ -80,26 +70,11 @@ describe('ViewerModelControls', () => {
   })
 
   describe('up direction options', () => {
-    it('exposes the seven supported directions', () => {
-      renderControls()
+    it('exposes the seven supported directions', async () => {
+      const { user } = renderControls()
       const [upDirectionSelect] = screen.getAllByRole('combobox')
-      const options = getOptions(upDirectionSelect)
-
-      expect(options.map((o) => o.getAttribute('value'))).toEqual([
-        'original',
-        '-x',
-        '+x',
-        '-y',
-        '+y',
-        '-z',
-        '+z'
-      ])
-    })
-
-    it('localizes the "original" option label and uses raw axis labels for the rest', () => {
-      renderControls()
-      const [upDirectionSelect] = screen.getAllByRole('combobox')
-      const options = getOptions(upDirectionSelect)
+      await user.click(upDirectionSelect)
+      const options = await screen.findAllByRole('option')
 
       expect(options.map((o) => o.textContent.trim())).toEqual([
         'Original',
@@ -111,19 +86,38 @@ describe('ViewerModelControls', () => {
         '+Z'
       ])
     })
+
+    it.for([
+      ['Original', 'original'],
+      ['-X', '-x'],
+      ['+X', '+x'],
+      ['-Y', '-y'],
+      ['+Y', '+y'],
+      ['-Z', '-z'],
+      ['+Z', '+z']
+    ])('selects %s as %s', async ([label, value]) => {
+      const listener = vi.fn()
+      const { user } = renderControls({
+        upDirection: undefined,
+        'onUpdate:upDirection': listener
+      })
+      const [upDirectionSelect] = screen.getAllByRole('combobox')
+      await user.click(upDirectionSelect)
+      await user.click(await screen.findByRole('option', { name: label }))
+      expect(listener).toHaveBeenCalledWith(value)
+    })
   })
 
   describe('material mode options', () => {
-    it('emits one option per materialModes entry with localized labels', () => {
-      renderControls({ materialModes: ['original', 'normal', 'wireframe'] })
+    it('emits one option per materialModes entry with localized labels', async () => {
+      const { user } = renderControls({
+        materialModes: ['original', 'normal', 'wireframe']
+      })
       const [, materialModeSelect] = screen.getAllByRole('combobox')
-      const options = getOptions(materialModeSelect)
+      await user.click(materialModeSelect)
+      const options = await screen.findAllByRole('option')
 
-      expect(options.map((o) => o.getAttribute('value'))).toEqual([
-        'original',
-        'normal',
-        'wireframe'
-      ])
+      expect(options).toHaveLength(3)
       expect(options.map((o) => o.textContent.trim())).toEqual([
         'Original',
         'Normal',
@@ -131,30 +125,36 @@ describe('ViewerModelControls', () => {
       ])
     })
 
-    it('includes pointCloud when the adapter exposes it (PLY)', () => {
-      renderControls({
-        materialModes: ['original', 'pointCloud', 'normal', 'wireframe']
+    it('includes pointCloud when the adapter exposes it (PLY)', async () => {
+      const listener = vi.fn()
+      const { user } = renderControls({
+        materialModes: ['original', 'pointCloud', 'normal', 'wireframe'],
+        'onUpdate:materialMode': listener
       })
       const [, materialModeSelect] = screen.getAllByRole('combobox')
-      const options = getOptions(materialModeSelect)
+      await user.click(materialModeSelect)
+      const options = await screen.findAllByRole('option')
 
       expect(options).toHaveLength(4)
       expect(options[1].textContent.trim()).toBe('Point Cloud')
-      expect(options[1].getAttribute('value')).toBe('pointCloud')
+      await user.click(screen.getByRole('option', { name: 'Point Cloud' }))
+      expect(listener).toHaveBeenCalledWith('pointCloud')
     })
   })
 
   describe('v-model binding', () => {
-    it('renders the initial upDirection as the selected option', () => {
+    it('renders the initial upDirection as the selected option', async () => {
       renderControls({ upDirection: '-z' })
       const [upDirectionSelect] = screen.getAllByRole('combobox')
-      expect((upDirectionSelect as HTMLSelectElement).value).toBe('-z')
+      await waitFor(() => expect(upDirectionSelect).toHaveTextContent('-Z'))
     })
 
-    it('renders the initial materialMode as the selected option', () => {
+    it('renders the initial materialMode as the selected option', async () => {
       renderControls({ materialMode: 'normal' })
       const [, materialModeSelect] = screen.getAllByRole('combobox')
-      expect((materialModeSelect as HTMLSelectElement).value).toBe('normal')
+      await waitFor(() =>
+        expect(materialModeSelect).toHaveTextContent('Normal')
+      )
     })
 
     it('emits update:upDirection when a new direction is chosen', async () => {
@@ -162,7 +162,8 @@ describe('ViewerModelControls', () => {
       const { user } = renderControls({ 'onUpdate:upDirection': listener })
       const [upDirectionSelect] = screen.getAllByRole('combobox')
 
-      await user.selectOptions(upDirectionSelect, '+x')
+      await user.click(upDirectionSelect)
+      await user.click(await screen.findByRole('option', { name: '+X' }))
 
       expect(listener).toHaveBeenCalledWith('+x')
     })
@@ -172,7 +173,8 @@ describe('ViewerModelControls', () => {
       const { user } = renderControls({ 'onUpdate:materialMode': listener })
       const [, materialModeSelect] = screen.getAllByRole('combobox')
 
-      await user.selectOptions(materialModeSelect, 'wireframe')
+      await user.click(materialModeSelect)
+      await user.click(await screen.findByRole('option', { name: 'Wireframe' }))
 
       expect(listener).toHaveBeenCalledWith('wireframe')
     })

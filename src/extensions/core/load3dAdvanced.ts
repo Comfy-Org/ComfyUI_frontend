@@ -6,8 +6,9 @@ import { createExportMenuItems } from '@/extensions/core/load3d/exportMenuHelper
 import type { CameraConfig } from '@/extensions/core/load3d/interfaces'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
-import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
+import type { INumericWidget } from '@/lib/litegraph/src/types/widgets'
 import type { CustomInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { ComponentWidgetImpl, addWidget } from '@/scripts/domWidget'
 import { useExtensionService } from '@/services/extensionService'
@@ -67,8 +68,12 @@ useExtensionService().registerExtension({
 
     useLoad3d(node).onLoad3dReady((load3d) => {
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-      const width = node.widgets?.find((w) => w.name === 'width')
-      const height = node.widgets?.find((w) => w.name === 'height')
+      const width = node.widgets?.find(
+        (w): w is INumericWidget => w.name === 'width' && w.type === 'number'
+      )
+      const height = node.widgets?.find(
+        (w): w is INumericWidget => w.name === 'height' && w.type === 'number'
+      )
       if (!modelWidget || !width || !height) return
 
       const cameraConfig = node.properties['Camera Config'] as

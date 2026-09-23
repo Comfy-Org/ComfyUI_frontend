@@ -6,27 +6,34 @@
  * to the delivery primitive fails here, by name, instead of silently
  * emptying `delete_node.removed_links` or leaking clear captures.
  *
+ * Also covers the tab-switch root-scope race: `LGraph.add()` queues its
+ * layout `createNode` change on the store's own microtask, so it can still
+ * be pending when a workflow switch reuses the same `LGraph` instance for
+ * the next workflow (see the second describe block below).
+ *
  * Lives in renderer (not workbench) because it imports the real layout store;
  * workbench must not import renderer, so the wiring takes the store's seams
  * injected - exactly as the composition root will inject them.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-import { LayoutSource } from '@/renderer/core/layout/types'
-import { useLinkStore } from '@/stores/linkStore'
-import type { GraphScope } from '@/types/graphScopeId'
-import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
-import { toLinkId } from '@/types/linkId'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { GraphScope, RootGraphId } from '@/types/graphScopeId'
 import type { LinkTopology } from '@/types/linkTopology'
-import { toNodeId } from '@/types/nodeId'
-import { createUuidv4 } from '@/utils/uuid'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import type {
   MintPortWiring,
   MintableGraph
 } from '@/workbench/extensions/agent/crdt/mintPortWiring'
+
+import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { LayoutSource } from '@/renderer/core/layout/types'
+import { useLinkStore } from '@/stores/linkStore'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toLinkId } from '@/types/linkId'
+import { toNodeId } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
 import { attachMintPortWiring } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
 function createNodeOp(graphId: string, id: string) {
@@ -117,7 +124,8 @@ describe('mint ports against the real layout store delivery', () => {
       enqueue: (operations) => minted.push(...operations),
       layoutChanges: (listener) => layoutStore.onChange(listener),
       localActorPrefix: 'user-',
-      getGraph: () => graph
+      getGraph: () => graph,
+      boundRootGraphId: () => toRootGraphId(graphId)
     })
   })
 
@@ -225,6 +233,72 @@ describe('mint ports against the real layout store delivery', () => {
     expect(minted).toEqual([])
   })
 
+  it('re-mints add_node for an id a remote delete removed from the document', async () => {
+    graphNodes.set('5', {
+      id: toNodeId('5'),
+      serialize: () => ({ id: 5, type: 'TestNode' })
+    })
+
+    layoutStore.applyOperation(createNodeOp(graphId, '5'))
+    await realDelivery()
+    expect(minted).toHaveLength(1)
+    minted.length = 0
+
+    layoutStore.applyOperation({
+      ...deleteNodeOp(graphId, '5'),
+      source: LayoutSource.AgentRemote
+    })
+    await realDelivery()
+    expect(minted).toEqual([])
+
+    layoutStore.applyOperation(createNodeOp(graphId, '5'))
+    await realDelivery()
+
+    expect(minted).toEqual([
+      {
+        op: 'add_node',
+        node_id: toNodeId('5'),
+        class_type: 'TestNode',
+        pos: [10, 20],
+        node: { id: 5, type: 'TestNode' }
+      }
+    ])
+  })
+
+  it('does not re-mint add_node for an id an incidental graph-load teardown clear removed (id_collision guard)', async () => {
+    // A graph-load teardown clear bracketed by onBeforeGraphLoad/
+    // onAfterGraphConfigure but never wrapped in runIntentionalClear is not
+    // a human clear - it must not forget the bound root's dedupe bucket for
+    // a node this port already relayed, or a later replay re-mints it
+    // (id_collision). Mirrors the incidental-clear regression in
+    // layoutMintPort.test.ts.
+    graphNodes.set('5', {
+      id: toNodeId('5'),
+      serialize: () => ({ id: 5, type: 'TestNode' })
+    })
+
+    layoutStore.applyOperation(createNodeOp(graphId, '5'))
+    await realDelivery()
+    expect(minted).toHaveLength(1)
+    minted.length = 0
+
+    wiring.onBeforeGraphLoad()
+    graphNodes.delete('5')
+    layoutStore.clearGraph(graphId)
+    await realDelivery()
+    wiring.onAfterGraphConfigure()
+    expect(minted).toEqual([])
+
+    graphNodes.set('5', {
+      id: toNodeId('5'),
+      serialize: () => ({ id: 5, type: 'TestNode' })
+    })
+    layoutStore.applyOperation(createNodeOp(graphId, '5'))
+    await realDelivery()
+
+    expect(minted).toEqual([])
+  })
+
   it('surfaces a real bare disconnect as divergence after the sweep', async () => {
     const linkStore = useLinkStore()
     const dangling = linkTopology(43, '9')
@@ -239,5 +313,80 @@ describe('mint ports against the real layout store delivery', () => {
 
     expect(consoleError).toHaveBeenCalledOnce()
     consoleError.mockRestore()
+  })
+})
+
+describe('attachMintPortWiring: root graph scope across a tab switch', () => {
+  let minted: GraphOperation[]
+  let wiring: MintPortWiring
+  let liveGraph: LGraph
+  let graphNodes: Map<string, LGraphNode>
+  let boundRootGraphId: RootGraphId
+
+  beforeEach(() => {
+    minted = []
+    graphNodes = new Map()
+    liveGraph = new LGraph()
+    liveGraph.id = createUuidv4()
+    // The workflow bound before the switch below starts; `boundRootGraphId`
+    // (AgentPanelRoot.vue) reads it off the bound workflow's own serialized
+    // state, which does not change until the binding itself changes.
+    boundRootGraphId = toRootGraphId(liveGraph.id)
+
+    const graphAdapter: MintableGraph = {
+      get id() {
+        return liveGraph.id
+      },
+      get rootGraph() {
+        return { id: liveGraph.rootGraph.id }
+      },
+      getNodeById: (id) => graphNodes.get(String(id)) ?? null,
+      get _nodes() {
+        return [...graphNodes.values()]
+      }
+    }
+
+    wiring = attachMintPortWiring({
+      isEnabled: () => true,
+      // The bound document never becomes unbound during this race: the
+      // follower flips `isBoundWorkflowActive` only once `activeWorkflow`
+      // itself changes, which happens strictly after this bracket closes.
+      isDocBound: () => true,
+      enqueue: (operations) => minted.push(...operations),
+      layoutChanges: (listener) => layoutStore.onChange(listener),
+      localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
+      getGraph: () => graphAdapter,
+      boundRootGraphId: () => boundRootGraphId
+    })
+  })
+
+  afterEach(() => wiring.detach())
+
+  it("does not mint add_node for a newly configured workflow's nodes while the previous workflow is still the bound document", async () => {
+    // Switch-away: `beforeLoadNewGraph` -> `beforeLoadGraph` fires first.
+    wiring.onBeforeGraphLoad()
+
+    // `rootGraph.configure(B)` reuses the SAME LGraph instance but rewrites
+    // its `id` from B's stored workflow JSON (`_configureBase`), then adds
+    // B's nodes to it. Each `LGraph.add()` queues a layout `createNode`
+    // change for the NEW graph id on a microtask.
+    liveGraph.id = createUuidv4()
+    const nodeFromOtherWorkflow = new LGraphNode('TestNode')
+    nodeFromOtherWorkflow.id = toNodeId(101)
+    liveGraph.add(nodeFromOtherWorkflow)
+    graphNodes.set('101', nodeFromOtherWorkflow)
+
+    // `afterConfigureGraph` -> `endGraphTeardown()` runs synchronously right
+    // after `configure()`, with no `await` in between on the happy path.
+    wiring.onAfterGraphConfigure()
+
+    // The queued layout change flushes only now, once the synchronous
+    // portion of the switch has finished, and lands while `isDocBound()`
+    // still (wrongly) reports the previous workflow's document as bound.
+    await realDelivery()
+
+    expect(minted.filter((operation) => operation.op === 'add_node')).toEqual(
+      []
+    )
   })
 })

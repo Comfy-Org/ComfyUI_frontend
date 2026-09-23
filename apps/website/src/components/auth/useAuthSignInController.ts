@@ -1,4 +1,3 @@
-import type { OperationHandle } from '@comfyorg/account/boundedOperation'
 /**
  * The whole sign-in flow in one owner: the reducer for the mint phases plus
  * the flag/identity/timeout/secure-context/region state that used to live as
@@ -6,18 +5,19 @@ import type { OperationHandle } from '@comfyorg/account/boundedOperation'
  * state and calls the returned commands; it holds no flow logic of its own.
  */
 import {
-  AUTH_TOAST_SUMMARIES,
   isFirebaseAuthErrorLike,
   severityForAuthError
-} from '@comfyorg/account/firebaseAuthError'
-import type { AuthErrorClassification } from '@comfyorg/account/firebaseAuthError'
-import type { RegionGateStatus } from '@comfyorg/account/vue/regionGate'
-import { useRegionGate } from '@comfyorg/account/vue/regionGate'
-import { useGenerationGuard } from '@comfyorg/account/vue/useGenerationGuard'
-import { isEmbeddedWebView } from '@comfyorg/account/webviewDetection'
+} from '@comfyorg/account-core/firebaseAuthError'
+import type { AuthErrorClassification } from '@comfyorg/account-core/firebaseAuthError'
 import { until } from '@vueuse/core'
 import type { UserCredential } from 'firebase/auth'
 import { computed, onBeforeUnmount, onMounted, readonly, ref, watch } from 'vue'
+
+import type { OperationHandle } from '@comfyorg/account-core/boundedOperation'
+import { useGenerationGuard } from '@comfyorg/account-ui/auth/useGenerationGuard'
+import type { RegionGateStatus } from '@comfyorg/account-ui/auth/regionGate'
+import { useRegionGate } from '@comfyorg/account-ui/auth/regionGate'
+import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
 
 import type {
   AuthSignInEvent,
@@ -36,6 +36,7 @@ import {
 import type { WorkshopSessionUser } from '../../config/workshop-session-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import type { Locale } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import {
   captureAuthCompleted,
   captureAuthFailed,
@@ -211,7 +212,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     const severity = severityForAuthError(classification)
     addToast({
       severity,
-      summary: AUTH_TOAST_SUMMARIES[locale][severity],
+      summary: t(severity === 'warn' ? 'g.warning' : 'g.error', locale),
       detail: signInErrorMessage(classification, locale, hostname)
     })
   }

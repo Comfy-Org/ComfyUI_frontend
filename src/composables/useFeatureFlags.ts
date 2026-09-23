@@ -1,6 +1,7 @@
 import { computed, reactive, readonly, watchEffect } from 'vue'
 import type { Ref } from 'vue'
 
+import { normalizeHostedBillingDestination } from '@/config/billingWeb'
 import { isCloud, isNightly } from '@/platform/distribution/types'
 import {
   cachedBillingControlEnabled,
@@ -35,12 +36,14 @@ export enum ServerFeatureFlag {
   WORKFLOW_SHARING_ENABLED = 'workflow_sharing_enabled',
   COMFYHUB_UPLOAD_ENABLED = 'comfyhub_upload_enabled',
   COMFYHUB_PROFILE_GATE_ENABLED = 'comfyhub_profile_gate_enabled',
-  HOSTED_BILLING_WEB_ENABLED = 'hosted_billing_web_enabled',
+  HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
   EMBEDDED_CHECKOUT_ENABLED = 'embedded_checked_enabled',
+  BILLING_SDK_TOPUP_ENABLED = 'billing_sdk_topup_enabled',
+  BILLING_SDK_SUBSCRIPTION_ENABLED = 'billing_sdk_subscription_enabled',
   V1_PAYMENT_RECOVERY = 'v1_payment_recovery',
   FREE_TIER_JOB_ALLOWANCE_ENABLED = 'free_tier_job_allowance_enabled',
   CHURNKEY_APP_ID = 'churnkey_app_id',
@@ -72,6 +75,26 @@ function resolveFlag<T>(
 }
 
 /**
+ * A flag that enables a payment flow: same channels as `resolveFlag`, but only
+ * a literal `true` counts. A malformed wire value (`'true'`, `1`) or a failed
+ * lookup resolves to false rather than switching a charge onto a new transport.
+ *
+ * Needs no auth gate: the server returns a concrete `false` for these keys to
+ * an unauthenticated caller, so the anonymous window resolves to the legacy
+ * rail and cannot enable a flow before authenticated config confirms it.
+ */
+function resolveStrictBooleanFlag(
+  flagKey: string,
+  remoteConfigValue: boolean | undefined
+): boolean {
+  try {
+    return resolveFlag<unknown>(flagKey, remoteConfigValue, false) === true
+  } catch {
+    return false
+  }
+}
+
+/**
  * Resolves a per-user, Cloud-only flag that selects backend behavior. Off the
  * Cloud build it is always false; during the auth window it falls back to the
  * cached session value so anonymous bootstrap config cannot route the user to
@@ -94,19 +117,19 @@ function resolveAuthGatedFlag(
   return remoteConfigValue ?? api.getServerFeature(flagKey, false)
 }
 
-function resolveFailClosedBooleanFlag(flagKey: string): boolean {
-  try {
-    const value: unknown = api.getServerFeature(flagKey, false)
-    return value === true
-  } catch {
-    return false
-  }
-}
-
 /**
  * Composable for reactive access to server-side feature flags
  */
 export function useFeatureFlags() {
+  const hostedBillingDestination = () =>
+    normalizeHostedBillingDestination(
+      resolveFlag(
+        ServerFeatureFlag.HOSTED_BILLING_DESTINATION,
+        remoteConfig.value.hosted_billing_destination,
+        'stripe'
+      )
+    )
+
   const flags = reactive({
     get supportsPreviewMetadata() {
       return api.getServerFeature(ServerFeatureFlag.SUPPORTS_PREVIEW_METADATA)
@@ -213,12 +236,11 @@ export function useFeatureFlags() {
         false
       )
     },
+    get hostedBillingDestination() {
+      return hostedBillingDestination()
+    },
     get hostedBillingWebEnabled() {
-      return resolveFlag(
-        ServerFeatureFlag.HOSTED_BILLING_WEB_ENABLED,
-        remoteConfig.value.hosted_billing_web_enabled,
-        false
-      )
+      return hostedBillingDestination() === 'billing_web'
     },
     get showSignInButton(): boolean | undefined {
       return api.getServerFeature<boolean | undefined>(
@@ -250,9 +272,29 @@ export function useFeatureFlags() {
       )
     },
     get embeddedCheckoutEnabled() {
-      return resolveFailClosedBooleanFlag(
-        ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED,
+        remoteConfig.value.embedded_checked_enabled
       )
+    },
+    get billingSdkTopupEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED,
+        remoteConfig.value.billing_sdk_topup_enabled
+      )
+    },
+    /** The SDK rail runs on the unified session, so it needs both flags. */
+    get billingSdkTopupRailEnabled() {
+      return this.billingSdkTopupEnabled && this.unifiedCloudAuthEnabled
+    },
+    get billingSdkSubscriptionEnabled() {
+      return resolveStrictBooleanFlag(
+        ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED,
+        remoteConfig.value.billing_sdk_subscription_enabled
+      )
+    },
+    get billingSdkSubscriptionRailEnabled() {
+      return this.billingSdkSubscriptionEnabled && this.unifiedCloudAuthEnabled
     },
     get v1PaymentRecovery() {
       return resolveAuthGatedFlag(
@@ -342,8 +384,8 @@ export function startFeatureFlagTelemetry() {
       [ServerFeatureFlag.COMFYHUB_UPLOAD_ENABLED]: flags.comfyHubUploadEnabled,
       [ServerFeatureFlag.COMFYHUB_PROFILE_GATE_ENABLED]:
         flags.comfyHubProfileGateEnabled,
-      [ServerFeatureFlag.HOSTED_BILLING_WEB_ENABLED]:
-        flags.hostedBillingWebEnabled,
+      [ServerFeatureFlag.HOSTED_BILLING_DESTINATION]:
+        flags.hostedBillingDestination,
       [ServerFeatureFlag.SHOW_SIGNIN_BUTTON]: flags.showSignInButton,
       [ServerFeatureFlag.UNIFIED_CLOUD_AUTH]: flags.unifiedCloudAuthEnabled,
       [ServerFeatureFlag.BILLING_CONTROL_ENABLED]: flags.billingControlEnabled,
@@ -351,6 +393,10 @@ export function startFeatureFlagTelemetry() {
         flags.legacyBillingMigrationEnabled,
       [ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED]:
         flags.embeddedCheckoutEnabled,
+      [ServerFeatureFlag.BILLING_SDK_TOPUP_ENABLED]:
+        flags.billingSdkTopupEnabled,
+      [ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED]:
+        flags.billingSdkSubscriptionEnabled,
       [ServerFeatureFlag.V1_PAYMENT_RECOVERY]: flags.v1PaymentRecovery,
       [ServerFeatureFlag.FREE_TIER_JOB_ALLOWANCE_ENABLED]:
         flags.freeTierJobAllowanceEnabled,

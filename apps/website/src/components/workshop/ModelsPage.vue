@@ -8,19 +8,16 @@ import {
 } from '../../config/models-page-data'
 import { t } from '../../i18n/translations'
 import WorkshopGate from './WorkshopGate.vue'
+import WorkshopLoading from './WorkshopLoading.vue'
 
 const { slug } = defineProps<{
   slug?: string
 }>()
 
+const loadingLabel = t('workshop.load.pending', 'en')
+
 const Loading: FunctionalComponent = () =>
-  h('div', {
-    role: 'status',
-    'aria-busy': 'true',
-    'aria-label': t('workshop.load.pending', 'en'),
-    class: 'min-h-svh',
-    'data-testid': 'models-loading'
-  })
+  h(WorkshopLoading, { label: loadingLabel, 'data-testid': 'models-loading' })
 
 const LoadError: FunctionalComponent<{ error?: unknown }> = () =>
   h(
@@ -90,6 +87,9 @@ const Content = shallowRef(createContent())
 <template>
   <WorkshopGate :keep-mounted="Boolean(slug)">
     <component :is="Content" />
+    <template #loading>
+      <WorkshopLoading :label="loadingLabel" />
+    </template>
     <template #fallback>
       <slot name="fallback" />
     </template>

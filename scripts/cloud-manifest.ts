@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { posix, win32 } from 'node:path'
-import { fileURLToPath, pathToFileURL } from 'node:url'
+import { fileURLToPath } from 'node:url'
 
 import { zComfyNodeDef } from '@comfyorg/object-info-parser'
 import { parse } from 'yaml'
@@ -13,6 +13,7 @@ import type {
 import { assertCloudEntry } from '../browser_tests/fixtures/customNode/manifest'
 import type { RawNodeDef } from '../browser_tests/fixtures/customNode/typePairing'
 import { packOf } from '../browser_tests/fixtures/customNode/typePairing'
+import { isMainModule } from './isMainModule'
 
 export interface SupportedNodesPack {
   name: string
@@ -150,7 +151,7 @@ export function validateObjectInfoSnapshot(value: unknown): ObjectInfoSnapshot {
   for (const [node, def] of Object.entries(value)) {
     const parsed = zComfyNodeDef.safeParse(def)
     if (!parsed.success) {
-      const issue = parsed.error.issues[0]
+      const issue = parsed.error.issues.at(0)
       const path = issue?.path.length ? `.${issue.path.join('.')}` : ''
       throw new Error(
         `object_info snapshot: node ${node}${path} ${issue?.message ?? 'is invalid'}`
@@ -170,7 +171,7 @@ interface CuratedCloudWorkflow {
   timeoutMs?: number
 }
 
-export type CuratedCloudOverlay = Record<string, CuratedCloudWorkflow>
+export type CuratedCloudOverlay = Partial<Record<string, CuratedCloudWorkflow>>
 
 const OVERLAY_KEYS = [
   'workflow',
@@ -301,7 +302,7 @@ function snapshotPacksOf(snapshot: ObjectInfoSnapshot): Map<string, string[]> {
 // serves at /extensions/. One sentinel, not the full set: the assert only has
 // to prove the pack's JS loaded, and a conditionally-registered extra would
 // red a healthy run.
-export type CloudExtensionSentinels = Record<string, string[]>
+export type CloudExtensionSentinels = Partial<Record<string, string[]>>
 
 export function validateCloudExtensionSentinels(
   value: unknown
@@ -328,7 +329,7 @@ export function validateCloudExtensionSentinels(
 // Per-pack auto-run calibration (nodes that cannot execute on pure defaults
 // against the cloud backend), carried as a sidecar so regeneration preserves
 // it. Calibrated from gate-run failure details, not authored by hand.
-export type CloudCannotRunAlone = Record<string, string[]>
+export type CloudCannotRunAlone = Partial<Record<string, string[]>>
 
 export function validateCloudCannotRunAlone(
   value: unknown
@@ -526,12 +527,8 @@ function generate(snapshotPath: string): void {
   writeFileSync(manifestPath, renderCloudManifest(manifest))
 }
 
-const invokedDirectly =
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href
-
-if (invokedDirectly) {
-  const snapshotPath = process.argv[2]
+if (isMainModule(import.meta.url)) {
+  const snapshotPath = process.argv.at(2)
   if (snapshotPath === undefined) {
     process.stderr.write(
       'usage: pnpm gen:cloud-manifest <object-info-snapshot.json>\n'

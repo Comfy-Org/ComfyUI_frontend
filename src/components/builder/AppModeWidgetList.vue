@@ -1,33 +1,30 @@
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { computed, provide, watchEffect } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
-import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import WidgetDescription from '@/components/builder/WidgetDescription.vue'
-import Button from '@/components/ui/button/Button.vue'
+import { useAppModeWidgetResizing } from '@/components/builder/useAppModeWidgetResizing'
+import { getLoaderDropIndicator } from '@/components/builder/useLoaderDropIndicator'
+import { useResolvedSelectedInputs } from '@/components/builder/useResolvedSelectedInputs'
 import Popover from '@/components/ui/Popover.vue'
-import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
-import { extractWidgetStringValue } from '@/composables/maskeditor/useMaskEditorLoader'
+import Button from '@/components/ui/button/Button.vue'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { deriveWidgetRenderState } from '@/lib/litegraph/src/utils/widget'
-import { appendCloudResParam } from '@/platform/distribution/cloudPreviewUtil'
+import type { WidgetId } from '@/types/widgetId'
+import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 import DropZone from '@/renderer/extensions/linearMode/DropZone.vue'
 import NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
-import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
-import { useAppModeStore } from '@/stores/appModeStore'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
-import type { WidgetId } from '@/types/widgetId'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useAppModeStore } from '@/stores/appModeStore'
+import { cn } from '@comfyorg/tailwind-utils'
 import { HideLayoutFieldKey, WidgetHeightKey } from '@/types/widgetTypes'
-import { parseImageWidgetValue } from '@/utils/imageUtil'
+import { UNASSIGNED_NODE_ID } from '@/types/nodeId'
 import { promptRenameWidget } from '@/utils/widgetUtil'
 
 interface WidgetEntry {
@@ -118,32 +115,12 @@ const mappedSelections = computed((): WidgetEntry[] => {
 })
 
 function getDropIndicator(node: LGraphNode, id: WidgetId) {
-  if (node.type !== 'LoadImage') return undefined
-
-  const stringValue = extractWidgetStringValue(
-    widgetValueStore.getWidget(id)?.value
-  )
-
-  const { filename, subfolder, type } = stringValue
-    ? parseImageWidgetValue(stringValue)
-    : { filename: '', subfolder: '', type: 'input' }
-
-  const buildImageUrl = () => {
-    if (!filename) return undefined
-    const params = new URLSearchParams({ filename, subfolder, type })
-    appendCloudResParam(params, filename)
-    return api.apiURL(`/view?${params}${app.getPreviewFormatParam()}`)
-  }
-
-  const imageUrl = buildImageUrl()
-
-  return {
-    iconClass: 'icon-[lucide--image]',
-    imageUrl,
-    label: mobile ? undefined : t('linearMode.dragAndDropImage'),
-    onClick: () => node.widgets?.[1]?.callback?.(undefined),
-    onMaskEdit: imageUrl ? () => maskEditor.openMaskEditor(node) : undefined
-  }
+  return getLoaderDropIndicator(node, id, {
+    mobile,
+    label: t,
+    onMaskEdit: maskEditor.openMaskEditor,
+    widgetValueStore
+  })
 }
 
 function nodeToNodeData(node: LGraphNode, id: WidgetId) {
@@ -222,6 +199,7 @@ defineExpose({ handleDragDrop })
         :entries="[
           {
             label: t('g.rename'),
+            // fallow-ignore-next-line css-token-drift
             icon: 'icon-[lucide--pencil]',
             command: () => promptRenameWidget(action.widget, action.node, t)
           },
@@ -238,6 +216,7 @@ defineExpose({ handleDragDrop })
             size="icon"
             data-testid="widget-actions-menu"
           >
+            <!-- fallow-ignore-next-line css-token-drift -->
             <i class="icon-[lucide--ellipsis]" />
           </Button>
         </template>

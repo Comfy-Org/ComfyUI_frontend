@@ -16,7 +16,7 @@ import type {
   ComfyWorkflowJSON
 } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import type { NodeError } from '@/schemas/apiSchema'
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import type {
   ComfyNodeDef as ComfyNodeDefV1,
   InputSpec

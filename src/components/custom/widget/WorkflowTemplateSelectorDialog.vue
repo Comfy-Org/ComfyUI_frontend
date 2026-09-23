@@ -268,8 +268,8 @@
                       :get-logo-url="workflowTemplatesStore.getLogoUrl"
                       default-position="right-2 bottom-2"
                     />
-                    <ProgressSpinner
-                      v-if="loadingTemplate === template.name"
+                    <Spinner
+                      v-if="loadingTemplateId === template.name"
                       class="absolute inset-0 z-10 m-auto size-12"
                     />
                   </div>
@@ -420,9 +420,7 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import { useAsyncState } from '@vueuse/core'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onBeforeUnmount, onMounted, provide, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -432,16 +430,17 @@ import CardTop from '@/components/card/CardTop.vue'
 import Tag from '@/components/chip/Tag.vue'
 import PaidTemplateBadge from '@/components/custom/widget/PaidTemplateBadge.vue'
 import TemplateFilterControls from '@/components/custom/widget/TemplateFilterControls.vue'
+import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
 import AudioThumbnail from '@/components/templates/thumbnails/AudioThumbnail.vue'
 import CompareSliderThumbnail from '@/components/templates/thumbnails/CompareSliderThumbnail.vue'
 import DefaultThumbnail from '@/components/templates/thumbnails/DefaultThumbnail.vue'
 import HoverDissolveThumbnail from '@/components/templates/thumbnails/HoverDissolveThumbnail.vue'
 import LogoOverlay from '@/components/templates/thumbnails/LogoOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
-import AsyncSearchInput from '@/components/ui/search-input/AsyncSearchInput.vue'
+import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { selectCountBadgeClass } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
-import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import LeftSidePanel from '@/components/widget/panel/LeftSidePanel.vue'
 import { useIntersectionObserver } from '@/composables/useIntersectionObserver'
@@ -450,7 +449,6 @@ import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import type { TemplateSortMode } from '@/composables/useTemplateFiltering'
 import { useTelemetry } from '@/platform/telemetry'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
-import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type {
   TemplateInfo,
   TemplateTypeFilter
@@ -460,8 +458,10 @@ import {
   getTemplateTags,
   isAppTemplate
 } from '@/platform/workflow/templates/utils/templateDisplay'
+import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
 import type { NavGroupData, NavItemData } from '@/types/navTypes'
 import { OnCloseKey } from '@/types/widgetTypes'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
 
@@ -499,6 +499,7 @@ const workflowTemplatesStore = useWorkflowTemplatesStore()
 const {
   loadTemplates,
   loadWorkflowTemplate,
+  loadingTemplateId,
   getTemplateThumbnailUrl,
   getTemplateTitle
 } = useTemplateWorkflows()
@@ -709,7 +710,6 @@ const hasActiveFilters = computed(
 
 // UI state
 const mobileFiltersOpen = ref(false)
-const loadingTemplate = ref<string | null>(null)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
 
@@ -887,25 +887,20 @@ watch(
   ],
   () => {
     resetPagination()
-    // Clear loading state and force re-render of template list
-    loadingTemplate.value = null
     templateListKey.value++
   }
 )
 
 // Methods
-const onLoadWorkflow = async (template: TemplateInfo) => {
-  loadingTemplate.value = template.name
-  try {
-    await loadWorkflowTemplate(
-      template.name,
-      getEffectiveSourceModule(template)
-    )
-    templateWasSelected.value = true
-    onClose()
-  } finally {
-    loadingTemplate.value = null
-  }
+async function onLoadWorkflow(template: TemplateInfo) {
+  const result = await loadWorkflowTemplate(
+    template.name,
+    getEffectiveSourceModule(template)
+  )
+  if (result === 'not-started') return
+
+  templateWasSelected.value = result === 'loaded'
+  onClose()
 }
 
 const pageTitle = computed(() => {

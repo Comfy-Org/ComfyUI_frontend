@@ -9,6 +9,7 @@ import {
 import { dirname, join } from 'path'
 
 import type { LocaleData } from './i18n-types'
+import { isNestedLocaleData } from './i18n-types'
 
 // Ensure directories exist
 function ensureDir(dir: string) {
@@ -47,15 +48,15 @@ function findAdditions(base: LocaleData, updated: LocaleData): LocaleData {
   const additions: LocaleData = {}
 
   for (const key in updated) {
+    const updatedValue = updated[key]
+    const baseValue = base[key]
     if (!(key in base)) {
-      additions[key] = updated[key]
+      additions[key] = updatedValue
     } else if (
-      typeof updated[key] === 'object' &&
-      !Array.isArray(updated[key]) &&
-      typeof base[key] === 'object' &&
-      !Array.isArray(base[key])
+      isNestedLocaleData(updatedValue) &&
+      isNestedLocaleData(baseValue)
     ) {
-      const nestedAdditions = findAdditions(base[key], updated[key])
+      const nestedAdditions = findAdditions(baseValue, updatedValue)
       if (Object.keys(nestedAdditions).length > 0) {
         additions[key] = nestedAdditions
       }

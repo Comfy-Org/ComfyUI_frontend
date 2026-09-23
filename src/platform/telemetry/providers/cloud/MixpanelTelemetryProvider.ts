@@ -1,10 +1,10 @@
-import { omit } from 'es-toolkit'
 import type { OverridedMixpanel } from 'mixpanel-browser'
+import { omit } from 'es-toolkit'
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { reportError } from '@/platform/telemetry/reportError'
+import { whenStoresReady } from '@/platform/telemetry/storeReadiness'
 
 import type {
   AuthMetadata,
@@ -41,6 +41,8 @@ import type {
   WorkflowSavedMetadata,
   WorkspaceInviteMetadata
 } from '../../types'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import {
   CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE,
   OnboardingTourEvents,
@@ -114,11 +116,19 @@ export class MixpanelTelemetryProvider implements TelemetryProvider {
               loaded: () => {
                 this.isInitialized = true
                 this.flushEventQueue() // flush events that were queued while initializing
-                useCurrentUser().onUserResolved((user) => {
-                  if (this.mixpanel && user.id) {
-                    this.mixpanel.identify(user.id)
-                  }
-                })
+                void whenStoresReady()
+                  .then(() => {
+                    useCurrentUser().onUserResolved((user) => {
+                      if (this.mixpanel && user.id) {
+                        this.mixpanel.identify(user.id)
+                      }
+                    })
+                  })
+                  .catch((error) => {
+                    reportError(error, {
+                      errorType: 'mixpanel_user_identification_failure'
+                    })
+                  })
               }
             })
           })

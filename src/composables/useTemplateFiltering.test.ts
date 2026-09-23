@@ -1,15 +1,17 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { until } from '@vueuse/core'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTemplateRankingStore } from '@/stores/templateRankingStore'
+import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { until } from '@vueuse/core'
 
-import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
-import { useSettingStore } from '@/platform/settings/settingStore'
+import { useTelemetry } from '@/platform/telemetry'
+
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 import { TemplateIncludeOnDistributionEnum } from '@/platform/workflow/templates/types/template'
+import { useTemplateFiltering } from '@/composables/useTemplateFiltering'
 import { api } from '@/scripts/api'
-import { useSystemStatsStore } from '@/stores/systemStatsStore'
-import { useTemplateRankingStore } from '@/stores/templateRankingStore'
 
 let defaultSettingStore: ReturnType<typeof useSettingStore>
 
@@ -17,13 +19,7 @@ let defaultRankingStore: ReturnType<typeof useTemplateRankingStore>
 
 let mockSystemStatsStore: ReturnType<typeof useSystemStatsStore>
 
-const trackTemplateFilterChanged = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => ({
-    trackTemplateFilterChanged,
-    trackSearchQuery: vi.fn()
-  }))
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock(
   import('@/platform/telemetry/searchQuery/useSearchQueryTracking'),
@@ -612,7 +608,7 @@ describe('useTemplateFiltering', () => {
       await vi.runOnlyPendingTimersAsync()
 
       expect(
-        trackTemplateFilterChanged,
+        useTelemetry()?.trackTemplateFilterChanged,
         'telemetry must report the search default, not the persisted browse sort'
       ).toHaveBeenLastCalledWith(
         expect.objectContaining({ sort_by: 'popular' })

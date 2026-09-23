@@ -565,6 +565,19 @@ export function findReleasableSubgraphs(
   return removedSubtree.filter((subgraph) => !liveIds.has(subgraph.id))
 }
 
+export function findOrphanedSubgraphs(
+  rootGraph: LGraph,
+  removedNodes: Iterable<LGraphNode>
+): Subgraph[] {
+  const orphaned = new Map<SubgraphId, Subgraph>()
+  for (const node of removedNodes) {
+    if (!node.isSubgraphNode()) continue
+    for (const subgraph of findReleasableSubgraphs(rootGraph, node))
+      orphaned.set(subgraph.id, subgraph)
+  }
+  return [...orphaned.values()]
+}
+
 function reorderInPlace(arr: unknown[], indices: readonly number[]): void {
   arr.splice(0, arr.length, ...indices.flatMap((i) => arr[i] ?? []))
 }

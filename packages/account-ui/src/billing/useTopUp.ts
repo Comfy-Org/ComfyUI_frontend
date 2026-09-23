@@ -1,9 +1,3 @@
-import type {
-  CapabilitiesSnapshot,
-  CapabilityDenialReason,
-  TopupInvalidAmount,
-  TopupResult
-} from '@comfyorg/account/billing'
 /**
  * The headless top-up: amount selection against host-owned presets and
  * bounds, the server's `can_top_up` verdict, one command on the shared
@@ -12,6 +6,13 @@ import type {
  */
 import { computed, ref, shallowReadonly } from 'vue'
 import type { Ref } from 'vue'
+
+import type {
+  CapabilitiesSnapshot,
+  CapabilityDenialReason,
+  TopupInvalidAmount,
+  TopupResult
+} from '@comfyorg/account-core/billing'
 
 import type { BillingClient } from './billingClient'
 import { useBillingClient } from './billingClient'

@@ -26,8 +26,8 @@ export async function getWorkflowDataFromFile(
   if (file.type === 'image/webp') {
     const pngInfo = await getWebpMetadata(file)
     // Support loading workflows from that webp custom node.
-    const workflow = pngInfo?.workflow || pngInfo?.Workflow
-    const prompt = pngInfo?.prompt || pngInfo?.Prompt
+    const workflow = pngInfo.workflow || pngInfo.Workflow
+    const prompt = pngInfo.prompt || pngInfo.Prompt
     return { workflow, prompt }
   }
   if (file.type === 'audio/mpeg') {
@@ -38,8 +38,8 @@ export async function getWorkflowDataFromFile(
   }
   if (file.type === 'audio/flac' || file.type === 'audio/x-flac') {
     const pngInfo = await getFlacMetadata(file)
-    const workflow = pngInfo?.workflow || pngInfo?.Workflow
-    const prompt = pngInfo?.prompt || pngInfo?.Prompt
+    const workflow = pngInfo.workflow || pngInfo.Workflow
+    const prompt = pngInfo.prompt || pngInfo.Prompt
 
     return { workflow, prompt }
   }
@@ -47,26 +47,26 @@ export async function getWorkflowDataFromFile(
     return await getFromWebmFile(file)
   }
   if (
-    file.name?.endsWith('.mp4') ||
-    file.name?.endsWith('.mov') ||
-    file.name?.endsWith('.m4v') ||
+    file.name.endsWith('.mp4') ||
+    file.name.endsWith('.mov') ||
+    file.name.endsWith('.m4v') ||
     file.type === 'video/mp4' ||
     file.type === 'video/quicktime' ||
     file.type === 'video/x-m4v'
   ) {
     return await getFromIsobmffFile(file)
   }
-  if (file.type === 'image/svg+xml' || file.name?.endsWith('.svg')) {
+  if (file.type === 'image/svg+xml' || file.name.endsWith('.svg')) {
     return await getSvgMetadata(file)
   }
-  if (file.type === 'model/gltf-binary' || file.name?.endsWith('.glb')) {
+  if (file.type === 'model/gltf-binary' || file.name.endsWith('.glb')) {
     return await getGltfBinaryMetadata(file)
   }
-  if (file.name?.endsWith('.latent') || file.name?.endsWith('.safetensors')) {
+  if (file.name.endsWith('.latent') || file.name.endsWith('.safetensors')) {
     return await getLatentMetadata(file)
   }
 
-  if (file.type === 'application/json' || file.name?.endsWith('.json')) {
+  if (file.type === 'application/json' || file.name.endsWith('.json')) {
     return getDataFromJSON(file)
   }
   return

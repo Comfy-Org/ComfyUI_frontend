@@ -1,21 +1,23 @@
-import { fromPartial } from '@total-typescript/shoehorn'
-import { storeToRefs } from 'pinia'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { effectScope, nextTick, computed } from 'vue'
 import type { Ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { fromPartial } from '@total-typescript/shoehorn'
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useAuthStore } from '@/stores/authStore'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
-import {
-  remoteConfig,
-  remoteConfigState
-} from '@/platform/remoteConfig/remoteConfig'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingRail,
   BillingStatusResponse,
   Plan
 } from '@/platform/workspace/api/workspaceApi'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import { useAuthStore } from '@/stores/authStore'
+import {
+  remoteConfig,
+  remoteConfigState
+} from '@/platform/remoteConfig/remoteConfig'
 
 import { useBillingContext as useSharedBillingContext } from './useBillingContext'
 
@@ -38,15 +40,7 @@ const DEFAULT_BILLING_STATUS: BillingStatusResponse = {
   subscription_duration: 'MONTHLY'
 }
 
-const {
-  mockPlans,
-  mockFetchPlans,
-  mockLegacyFetchStatus,
-  mockLegacySubscribe,
-  mockPurchaseCredits,
-  mockLegacyStatus,
-  mockBillingStatus
-} = vi.hoisted(() => {
+const { mockPlans, mockFetchPlans, mockBillingStatus } = vi.hoisted(() => {
   const mockBillingStatus: { value: Partial<BillingStatusResponse> } = {
     value: {
       is_active: true,
@@ -58,16 +52,6 @@ const {
   return {
     mockPlans: { value: [] as Plan[] },
     mockFetchPlans: vi.fn(async () => undefined),
-    mockLegacyFetchStatus: vi.fn(async () => undefined),
-    mockLegacySubscribe: vi.fn(async () => undefined),
-    mockPurchaseCredits: vi.fn(),
-    mockLegacyStatus: {
-      value: {
-        is_active: true,
-        has_funds: true,
-        renewal_date: '2025-01-01T00:00:00Z'
-      } as BillingStatusResponse
-    },
     mockBillingStatus
   }
 })
@@ -77,30 +61,7 @@ let mockBillingRail: Ref<BillingRail | null | undefined>
 
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscription'),
-  () => ({
-    useSubscription: () => ({
-      canAccessSubscriptionFeatures: { value: true },
-      subscriptionTier: { value: 'PRO' },
-      subscriptionDuration: { value: 'MONTHLY' },
-      subscriptionStatus: {
-        get value() {
-          return mockLegacyStatus.value
-        }
-      },
-      isCancelled: {
-        get value() {
-          return Boolean(mockLegacyStatus.value.cancel_at)
-        }
-      },
-      fetchStatus: mockLegacyFetchStatus,
-      manageSubscription: vi.fn(async () => undefined),
-      subscribe: mockLegacySubscribe,
-      showSubscriptionDialog: vi.fn()
-    })
-  })
-)
+vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
@@ -112,11 +73,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/auth/useAuthActions'), () => ({
-  useAuthActions: () => ({
-    purchaseCredits: mockPurchaseCredits
-  })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useBillingPlans'),
@@ -177,7 +134,8 @@ describe('useBillingContext', () => {
       mockBillingRail.value = billingRail
     })
     mockPlans.value = []
-    mockLegacyStatus.value = {
+    const subscription = useSubscription()
+    subscription.subscriptionStatus.value = {
       is_active: true,
       has_funds: true,
       max_seats: 0,
@@ -186,6 +144,11 @@ describe('useBillingContext', () => {
       scheduled_change: null,
       renewal_date: '2025-01-01T00:00:00Z'
     }
+    subscription.subscriptionTier = computed(() => 'PRO')
+    subscription.subscriptionDuration = computed(() => 'MONTHLY')
+    subscription.isCancelled = computed(() =>
+      Boolean(subscription.subscriptionStatus.value?.cancel_at)
+    )
     mockBillingStatus.value = { ...DEFAULT_BILLING_STATUS }
   })
 
@@ -235,7 +198,7 @@ describe('useBillingContext', () => {
 
   it('passes canonical status fields through legacy billing', () => {
     mockBillingRail.value = 'legacy_stripe'
-    mockLegacyStatus.value = {
+    useSubscription().subscriptionStatus.value = {
       ...DEFAULT_BILLING_STATUS,
       billing_status: 'payment_failed',
       subscription_status: 'ended',
@@ -291,7 +254,7 @@ describe('useBillingContext', () => {
     const { topup } = useBillingContext()
     await topup(500)
 
-    expect(mockPurchaseCredits).toHaveBeenCalledWith(5)
+    expect(useAuthActions().purchaseCredits).toHaveBeenCalledWith(5)
   })
 
   it('uses workspace checkout while keeping legacy topups on legacy Stripe', async () => {
@@ -323,7 +286,7 @@ describe('useBillingContext', () => {
     await context.fetchStatus()
 
     expect(mockFetchPlans).toHaveBeenCalledOnce()
-    expect(mockLegacyFetchStatus).toHaveBeenCalled()
+    expect(useSubscription().fetchStatus).toHaveBeenCalled()
     expect(workspaceApi.getBillingStatus).not.toHaveBeenCalled()
 
     await context.previewSubscribe('creator-annual')
@@ -338,8 +301,8 @@ describe('useBillingContext', () => {
       'creator-annual',
       undefined
     )
-    expect(mockLegacySubscribe).not.toHaveBeenCalled()
-    expect(mockPurchaseCredits).toHaveBeenCalledWith(5)
+    expect(useSubscription().subscribe).not.toHaveBeenCalled()
+    expect(useAuthActions().purchaseCredits).toHaveBeenCalledWith(5)
   })
 
   it('routes migrated legacy Stripe topups through workspace billing', async () => {
@@ -355,7 +318,7 @@ describe('useBillingContext', () => {
     await context.topup(500)
 
     expect(workspaceApi.createTopup).toHaveBeenCalledWith(500)
-    expect(mockPurchaseCredits).not.toHaveBeenCalled()
+    expect(useAuthActions().purchaseCredits).not.toHaveBeenCalled()
   })
 
   it('switches billing adapters before refreshing a migrated balance', async () => {
@@ -367,7 +330,7 @@ describe('useBillingContext', () => {
 
     const context = useBillingContext()
     await vi.waitFor(() => {
-      expect(mockLegacyFetchStatus).toHaveBeenCalled()
+      expect(useSubscription().fetchStatus).toHaveBeenCalled()
       expect(vi.mocked(useAuthStore().fetchBalance)).toHaveBeenCalled()
     })
     vi.clearAllMocks()
@@ -380,7 +343,7 @@ describe('useBillingContext', () => {
     expect(context.type.value).toBe('workspace')
     expect(workspaceApi.getBillingStatus).toHaveBeenCalled()
     expect(workspaceApi.getBillingBalance).toHaveBeenCalled()
-    expect(mockLegacyFetchStatus).not.toHaveBeenCalled()
+    expect(useSubscription().fetchStatus).not.toHaveBeenCalled()
     expect(vi.mocked(useAuthStore().fetchBalance)).not.toHaveBeenCalled()
   })
 
@@ -389,7 +352,7 @@ describe('useBillingContext', () => {
 
     const context = useBillingContext()
     await vi.waitFor(() => {
-      expect(mockLegacyFetchStatus).toHaveBeenCalled()
+      expect(useSubscription().fetchStatus).toHaveBeenCalled()
       expect(vi.mocked(useAuthStore().fetchBalance)).toHaveBeenCalled()
     })
     vi.clearAllMocks()

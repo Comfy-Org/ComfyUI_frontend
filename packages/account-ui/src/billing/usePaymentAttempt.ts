@@ -1,15 +1,3 @@
-import type {
-  BillingOperationKind,
-  BillingOperationState,
-  EmbeddedChallengePort,
-  HostPaymentStep,
-  PaymentProjection
-} from '@comfyorg/account/billing'
-import {
-  driveEmbeddedChallenge,
-  isTerminal,
-  projectPaymentStep
-} from '@comfyorg/account/billing'
 /**
  * What the top-up and checkout experiences share: the operation being
  * followed, the eight-state projection over it, the step the host reports,
@@ -20,6 +8,19 @@ import {
  */
 import { computed, ref, shallowReadonly, watch } from 'vue'
 import type { Ref } from 'vue'
+
+import type {
+  BillingOperationKind,
+  BillingOperationState,
+  EmbeddedChallengePort,
+  HostPaymentStep,
+  PaymentProjection
+} from '@comfyorg/account-core/billing'
+import {
+  driveEmbeddedChallenge,
+  isTerminal,
+  projectPaymentStep
+} from '@comfyorg/account-core/billing'
 
 import type { BillingClient } from './billingClient'
 import { useBillingOperation } from './useBillingOperation'

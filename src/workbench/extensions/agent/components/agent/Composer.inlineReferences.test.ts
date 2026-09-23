@@ -29,6 +29,8 @@ function renderComposer() {
       return () =>
         h(Composer, {
           hasWorkflowTarget: true,
+          availableWorkflows: [{ id: 'wf-b', name: 'Reference B' }],
+          selectWorkflowReference: async ({ name }) => ({ id: 'wf-b', name }),
           selectionTags: selection.staged.value,
           onRemoveTag: selection.remove,
           onSend: send
@@ -194,5 +196,56 @@ describe('inline node and asset references', () => {
     expect(
       screen.queryByTestId('composer-node-section')
     ).not.toBeInTheDocument()
+  })
+
+  it.for([
+    {
+      via: 'the chip remove button',
+      remove: () =>
+        userEvent.click(
+          screen.getByRole('button', { name: 'Remove Reference B reference' })
+        )
+    },
+    {
+      via: 'Backspace beside the chip',
+      remove: () => userEvent.keyboard('{ArrowLeft}{Backspace}')
+    }
+  ])(
+    'leaves an empty draft after removing the only reference via $via',
+    async ({ remove }) => {
+      const { store, editor } = renderComposer()
+      await userEvent.click(editor)
+      await userEvent.paste('@')
+      await userEvent.click(
+        within(screen.getByRole('menu', { name: 'Add to prompt' })).getByRole(
+          'menuitem',
+          { name: 'Workflows' }
+        )
+      )
+      await userEvent.click(
+        within(screen.getByRole('menu', { name: 'Add to prompt' })).getByRole(
+          'menuitem',
+          { name: 'Reference B' }
+        )
+      )
+      await screen.findByTestId('workflow-reference-chip')
+      expect(editor.textContent).toBe('Reference B ')
+
+      await remove()
+      await waitFor(() =>
+        expect(
+          screen.queryByTestId('workflow-reference-chip')
+        ).not.toBeInTheDocument()
+      )
+      expect(editor.textContent).toBe('')
+      expect(store.prompt).toEqual({ text: '', references: [] })
+    }
+  )
+
+  it('keeps a typed leading space when no reference was inserted', async () => {
+    const { store, editor } = renderComposer()
+    await userEvent.type(editor, ' hello')
+    expect(editor.textContent).toBe(' hello')
+    expect(store.draft).toBe(' hello')
   })
 })

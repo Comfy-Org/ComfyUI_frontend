@@ -32,13 +32,13 @@ app.registerExtension({
 
         lastTouch = null
         lastScale = null
-        if (e.touches?.length === 1) {
+        if (e.touches.length === 1) {
           // Store start time for press+hold for context menu
           touchTime = new Date()
           lastTouch = e.touches[0]
         } else {
           touchTime = null
-          if (e.touches?.length === 2) {
+          if (e.touches.length === 2) {
             // Store center pos for zoom
             lastScale = app.canvas.ds.scale
             lastTouch = getMultiTouchCenter(e)
@@ -56,8 +56,8 @@ app.registerExtension({
       (e: TouchEvent) => {
         touchCount -= e.changedTouches.length
 
-        if (e.touches?.length !== 1) touchZooming = false
-        if (touchTime && !e.touches?.length) {
+        if (e.touches.length !== 1) touchZooming = false
+        if (touchTime && !e.touches.length) {
           if (new Date().getTime() - touchTime.getTime() > 600) {
             if (e.target === app.canvasEl) {
               const touch = {
@@ -105,7 +105,7 @@ app.registerExtension({
       'touchmove',
       (e) => {
         // make a threshold for touchmove to prevent clear touchTime for long press
-        if (touchTime && lastTouch && e.touches?.length === 1) {
+        if (touchTime && lastTouch && e.touches.length === 1) {
           const onlyTouch = e.touches[0]
           const deltaX = onlyTouch.clientX - lastTouch.clientX
           const deltaY = onlyTouch.clientY - lastTouch.clientY
@@ -113,13 +113,12 @@ app.registerExtension({
             touchTime = null
           }
         }
-        if (e.touches?.length === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
+        if (e.touches.length === 2 && lastTouch && !e.ctrlKey && !e.shiftKey) {
           e.preventDefault() // Prevent browser from zooming when two textareas are touched
           app.canvas.pointer.isDown = false
           touchZooming = true
 
           LiteGraph.closeAllContextMenus(window)
-          // @ts-expect-error
           app.canvas.search_box?.close()
           const newTouchDist = getMultiTouchPos(e)
 
@@ -172,6 +171,12 @@ app.registerExtension({
 
 const processMouseDown = LGraphCanvas.prototype.processMouseDown
 LGraphCanvas.prototype.processMouseDown = function (e: PointerEvent) {
+  const startsFreshTouch = e.pointerType === 'touch' && e.isPrimary
+  if (startsFreshTouch) {
+    touchCount = 0
+    touchZooming = false
+  }
+
   if (touchZooming || touchCount) {
     return
   }

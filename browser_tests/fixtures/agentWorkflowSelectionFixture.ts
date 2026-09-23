@@ -2,7 +2,7 @@ import { bootAgentApp } from '@e2e/fixtures/agentPanelFixture'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
-import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { CloudWorkflowEntry } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 

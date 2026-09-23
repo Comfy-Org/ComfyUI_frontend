@@ -1,8 +1,14 @@
 import { render, screen, within } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { ref } from 'vue'
 
-import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
 import type { ModelLaunchHero } from './types'
+
+import { useHeroLogo } from '../../composables/useHeroLogo'
+import ModelLaunchHeroSection from './ModelLaunchHeroSection.vue'
+
+vi.mock(import('../../composables/useHeroLogo'), { spy: true })
+vi.mocked(useHeroLogo).mockReturnValue({ loaded: ref(false) })
 
 const hero: ModelLaunchHero = {
   layout: 'media-first',
@@ -25,5 +31,25 @@ describe('ModelLaunchHeroSection', () => {
         name: /ChatGPT Images 2\.5/
       })
     ).toBeTruthy()
+  })
+
+  it('spins the logo mask over the placeholder for overlay heroes that opt in', () => {
+    render(ModelLaunchHeroSection, {
+      props: {
+        hero: {
+          layout: 'overlay',
+          placeholderImageSrc: '/still.webp',
+          logoMaskImageSrc: '/still.webp',
+          titleKey: 'chatgptImage25.hero.title'
+        }
+      }
+    })
+
+    const logoMask = screen.getByTestId('model-launch-hero-logo-mask')
+    expect(
+      within(logoMask).getByTestId('model-launch-hero-logo-fallback')
+    ).toBeTruthy()
+    expect(within(logoMask).queryByRole('img', { hidden: true })).toBeNull()
+    expect(screen.queryByAltText('')).toBeNull()
   })
 })

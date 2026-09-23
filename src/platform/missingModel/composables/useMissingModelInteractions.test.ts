@@ -33,7 +33,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
-    rootGraph: null
+    rootGraphOrUndefined: undefined
   }
 }))
 
@@ -131,7 +131,7 @@ describe('useMissingModelInteractions', () => {
 
   beforeEach(() => {
     mockDownloadList.mockReturnValue([])
-    ;(app as { rootGraph: unknown }).rootGraph = null
+    ;(app as { rootGraphOrUndefined: unknown }).rootGraphOrUndefined = undefined
   })
 
   afterEach(() => {
@@ -161,15 +161,17 @@ describe('useMissingModelInteractions', () => {
   })
 
   describe('getNodeDisplayLabel', () => {
-    it('returns fallback when graph is null', () => {
-      ;(app as { rootGraph: unknown }).rootGraph = null
+    it('returns fallback when graph is not ready', () => {
+      ;(app as { rootGraphOrUndefined: unknown }).rootGraphOrUndefined =
+        undefined
       expect(getNodeDisplayLabel('1', 'Node #1')).toBe('Node #1')
     })
 
     it('calls resolveNodeDisplayName when graph is available', () => {
       const mockGraph = {}
       const mockNode = { id: 1 }
-      ;(app as { rootGraph: unknown }).rootGraph = mockGraph
+      ;(app as { rootGraphOrUndefined: unknown }).rootGraphOrUndefined =
+        mockGraph
       mockGetNodeByExecutionId.mockReturnValue(mockNode)
       mockResolveNodeDisplayName.mockReturnValue('My Checkpoint')
 
@@ -205,7 +207,8 @@ describe('useMissingModelInteractions', () => {
   describe('confirmLibrarySelect', () => {
     it('updates widget values on referencing nodes and removes missing model', () => {
       const mockGraph = {}
-      ;(app as { rootGraph: unknown }).rootGraph = mockGraph
+      ;(app as { rootGraphOrUndefined: unknown }).rootGraphOrUndefined =
+        mockGraph
 
       const widget1 = { name: 'ckpt_name', value: 'old_model.safetensors' }
       const widget2 = { name: 'ckpt_name', value: 'old_model.safetensors' }
@@ -252,7 +255,7 @@ describe('useMissingModelInteractions', () => {
     })
 
     it('does nothing when no selection exists', () => {
-      ;(app as { rootGraph: unknown }).rootGraph = {}
+      ;(app as { rootGraphOrUndefined: unknown }).rootGraphOrUndefined = {}
       const store = useMissingModelStore()
       const removeSpy = vi.spyOn(store, 'removeMissingModelByNameOnNodes')
 
@@ -263,7 +266,8 @@ describe('useMissingModelInteractions', () => {
     })
 
     it('does nothing when graph is null', () => {
-      ;(app as { rootGraph: unknown }).rootGraph = null
+      ;(app as { rootGraphOrUndefined: unknown }).rootGraphOrUndefined =
+        undefined
       const store = useMissingModelStore()
       store.selectedLibraryModel['key1'] = 'new.safetensors'
       const removeSpy = vi.spyOn(store, 'removeMissingModelByNameOnNodes')
@@ -275,7 +279,7 @@ describe('useMissingModelInteractions', () => {
     })
 
     it('refreshes model cache when directory is provided', () => {
-      ;(app as { rootGraph: unknown }).rootGraph = {}
+      ;(app as { rootGraphOrUndefined: unknown }).rootGraphOrUndefined = {}
       mockGetNodeByExecutionId.mockReturnValue(null)
       mockGetAllNodeProviders.mockReturnValue([
         fromPartial({ nodeDef: { name: 'CheckpointLoaderSimple' } })

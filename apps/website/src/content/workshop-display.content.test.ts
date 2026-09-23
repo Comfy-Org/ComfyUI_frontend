@@ -1,17 +1,16 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-
 import { describe, expect, it } from 'vitest'
 
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../config/workshop-router-content'
+import { workshopContract } from '../config/workshop-contract-catalog'
+import { schemaForModel } from '../config/workshop-playground'
 import {
-  workshopModels,
+  authoredWorkshopModels,
   routerAliasById,
   routerContentById
 } from '../config/workshop-browse-content'
-import { workshopContract } from '../config/workshop-contract-catalog'
 import { fieldsForDefinition } from '../config/workshop-form-definition'
-import { schemaForModel } from '../config/workshop-playground'
-import { getRouterWorkshopModelDetail } from '../config/workshop-router-content'
 import {
   WORKSHOP_USE_CASES,
   workshopDisplayEntriesSchema
@@ -41,19 +40,25 @@ const STILL = new Set(['image', 'svg'])
 
 describe('the display overlay against the catalog', () => {
   it.for([
-    { id: 'minimax/hailuo-03', name: 'MiniMax H3' },
+    { id: 'minimax/hailuo-03', name: 'MiniMax H3 Text-to-Video' },
     {
       id: 'minimax/hailuo-03-regeneration',
       name: 'MiniMax H3 Video Regeneration'
     },
-    { id: 'vertexai/gemini-3-pro-image', name: 'Nano Banana Pro' }
+    {
+      id: 'vertexai/gemini-3-pro-image',
+      name: 'Nano Banana Pro Text-to-Image',
+      // The first content record for this model is its edit page; the
+      // generate page is the one the Router slug resolves to.
+      contentName: 'Nano Banana Pro Image Edit'
+    }
   ])(
     'preserves Rob’s display name for $id independently of Router eligibility',
-    ({ id, name }) => {
+    ({ id, name, contentName }) => {
       const catalogEntry = catalogById.get(id)
       if (!catalogEntry) throw new Error('Missing renamed model')
       const detail = getRouterWorkshopModelDetail(catalogEntry.slug)
-      expect(contentFor(id)?.displayName).toBe(name)
+      expect(contentFor(id)?.displayName).toBe(contentName ?? name)
       const alias = routerAliasById.get(id)
       if (!alias || !workshopContract(alias.routerId)) {
         expect(detail).toBeUndefined()
@@ -83,6 +88,23 @@ describe('the display overlay against the catalog', () => {
     )
   })
 
+  it.for([
+    {
+      id: 'elevenlabs/speech-to-speech',
+      name: 'ElevenLabs Speech-to-Speech'
+    },
+    { id: 'ideogram/v3-edit', name: 'Ideogram V3 Edit' },
+    { id: 'ltx/audio-to-video-v2', name: 'LTX-2.5 Audio-to-Video' },
+    { id: 'quiver/arrow-image-to-svg', name: 'Quiver Arrow Image-to-SVG' },
+    { id: 'quiver/arrow-text-to-svg', name: 'Quiver Arrow Text-to-SVG' },
+    {
+      id: 'xai/grok-imagine-image-2.0-edit',
+      name: 'Grok Imagine Image 2.0 Edit'
+    }
+  ])('does not append a contradictory generic task to $id', ({ id, name }) => {
+    expect(contentFor(id)?.displayName).toBe(name)
+  })
+
   it('covers models the catalog actually has', () => {
     expect(display.length).toBeGreaterThan(0)
     const orphans = display
@@ -99,7 +121,7 @@ describe('the display overlay against the catalog', () => {
   })
 
   it('keeps every effective Advanced field attached to a real generated input', () => {
-    const stale = workshopModels.flatMap((model) => {
+    const stale = authoredWorkshopModels.flatMap((model) => {
       const detail = getRouterWorkshopModelDetail(model.slug)
       if (!detail) throw new Error('Missing model detail')
       const names = new Set(schemaForModel(detail).map((field) => field.name))

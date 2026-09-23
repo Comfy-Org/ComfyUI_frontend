@@ -46,7 +46,6 @@
 </template>
 
 <script setup lang="ts">
-import { cn } from '@comfyorg/tailwind-utils'
 import TabPanel from 'primevue/tabpanel'
 import TabView from 'primevue/tabview'
 import { computed } from 'vue'
@@ -59,7 +58,8 @@ import {
 } from '@/components/common/systemStatsColumns'
 import Button from '@/components/ui/button/Button.vue'
 import { useCopySystemInfo } from '@/composables/useCopySystemInfo'
-import type { SystemStats } from '@/schemas/apiSchema'
+import type { SystemStats } from '@/platform/remote/comfyui/types'
+import { cn } from '@comfyorg/tailwind-utils'
 
 const { stats } = defineProps<{
   stats: SystemStats

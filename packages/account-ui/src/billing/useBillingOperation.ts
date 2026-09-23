@@ -1,10 +1,11 @@
-import type {
-  BillingOperationKind,
-  BillingOperationState
-} from '@comfyorg/account/billing'
 import { tryOnScopeDispose } from '@vueuse/core'
 import { ref, shallowReadonly, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter, Ref } from 'vue'
+
+import type {
+  BillingOperationKind,
+  BillingOperationState
+} from '@comfyorg/account-core/billing'
 
 import type { BillingClient } from './billingClient'
 import { useBillingClient } from './billingClient'

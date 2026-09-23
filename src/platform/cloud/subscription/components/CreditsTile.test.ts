@@ -1,5 +1,7 @@
-import userEvent from '@testing-library/user-event'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useDialogService } from '@/services/dialogService'
 import { render, screen, waitFor } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -28,13 +30,11 @@ const state = vi.hoisted(() => ({
   tier: null as SubscriptionInfo['tier'],
   currentTeamCreditStop: null as TeamStop | null,
   isLoading: false,
-  canTopUp: true,
-  canSubscribeSelfServe: false,
   type: 'workspace' as 'workspace' | 'legacy',
   fetchBalance: vi.fn(),
   fetchStatus: vi.fn(),
   showPricingTable: vi.fn(),
-  showTopUpCreditsDialog: vi.fn(),
+
   trackAddApiCreditButtonClicked: vi.fn(),
   trackApiCreditTopupSucceeded: vi.fn(),
   telemetryUnavailable: false,
@@ -79,15 +79,7 @@ vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useBillingCapabilities'),
-  () => ({
-    useBillingCapabilities: () => ({
-      canTopUp: computed(() => state.canTopUp),
-      canSubscribeSelfServe: computed(() => state.canSubscribeSelfServe)
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock<unknown>(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
@@ -105,11 +97,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    showTopUpCreditsDialog: state.showTopUpCreditsDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   useTelemetry: () =>
@@ -181,16 +169,7 @@ function renderTile(props: Record<string, unknown> = {}) {
     props,
     global: {
       plugins: [i18n],
-      directives: { tooltip: () => {} },
-      stubs: {
-        Button: {
-          template:
-            '<button v-bind="$attrs" :data-variant="variant" :disabled="loading" @click="$emit(\'click\')"><slot/></button>',
-          props: ['variant', 'size', 'loading'],
-          emits: ['click']
-        },
-        Skeleton: { template: '<div role="status" aria-label="Loading"></div>' }
-      }
+      directives: { tooltip: () => {} }
     }
   })
 }
@@ -230,8 +209,7 @@ describe('CreditsTile', () => {
     state.tier = null
     state.currentTeamCreditStop = null
     state.isLoading = false
-    state.canTopUp = true
-    state.canSubscribeSelfServe = false
+
     state.type = 'workspace'
     state.customerEventsError = null
     state.telemetryUnavailable = false
@@ -480,7 +458,6 @@ describe('CreditsTile', () => {
     activeProSubscription()
     // canTopUp fails open for owners on an unreadable snapshot, so a lapsed
     // self-serve plan must keep this state on tier alone.
-    state.canTopUp = true
     const { container } = renderTile({ inactivePlan: true })
 
     expect(container.textContent).toContain('0remaining')
@@ -495,7 +472,6 @@ describe('CreditsTile', () => {
     activeProSubscription()
     // A sales-managed plan has no self-serve reactivation to sell, so the
     // reactivate-to-use-credits treatment must not apply.
-    state.canTopUp = true
     state.tier = 'ENTERPRISE'
     state.subscription = {
       tier: 'ENTERPRISE',
@@ -554,7 +530,7 @@ describe('CreditsTile', () => {
     renderTile()
     expect(screen.queryByText('Upgrade to add credits')).toBeNull()
     await userEvent.click(screen.getByText('Add credits'))
-    expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('keeps add-credits available on local for an unsubscribed team workspace', async () => {
@@ -565,7 +541,7 @@ describe('CreditsTile', () => {
     renderTile()
     expect(screen.queryByText('Upgrade to add credits')).toBeNull()
     await userEvent.click(screen.getByText('Add credits'))
-    expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('shows no depletion notice or in-use badge while monthly credits remain', () => {
@@ -591,7 +567,10 @@ describe('CreditsTile', () => {
       "You're now spending additional credits."
     )
     expect(screen.getByText('In use')).toBeTruthy()
-    expect(screen.getByText('Add credits').dataset.variant).toBe('secondary')
+    expect(screen.getByRole('button', { name: 'Add credits' })).toHaveClass(
+      'bg-interface-menu-component-surface-selected',
+      'hover:bg-secondary-background-hover'
+    )
   })
 
   it('emphasizes add-credits when fully out of credits', () => {
@@ -609,7 +588,9 @@ describe('CreditsTile', () => {
       'Add more credits to continue generating.'
     )
     expect(screen.queryByText('In use')).toBeNull()
-    expect(screen.getByText('Add credits').dataset.variant).toBe('inverted')
+    expect(screen.getByRole('button', { name: 'Add credits' })).toHaveClass(
+      'bg-base-foreground'
+    )
   })
 
   it('suppresses the depletion notice until the balance has loaded', () => {
@@ -626,14 +607,14 @@ describe('CreditsTile', () => {
     renderTile()
     await userEvent.click(screen.getByText('Add credits'))
     expect(state.trackAddApiCreditButtonClicked).toHaveBeenCalledOnce()
-    expect(state.showTopUpCreditsDialog).toHaveBeenCalledOnce()
+    expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
   })
 
   it('offers the upgrade path when top-up is denied but self-serve subscribe is allowed', async () => {
     activeProSubscription()
     state.tier = 'FREE'
-    state.canTopUp = false
-    state.canSubscribeSelfServe = true
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
     renderTile()
     expect(screen.queryByText('Add credits')).toBeNull()
     await userEvent.click(screen.getByText('Upgrade to add credits'))
@@ -652,7 +633,6 @@ describe('CreditsTile', () => {
   it('uses the fail-open capability fallback on legacy billing', () => {
     activeProSubscription()
     state.type = 'legacy'
-    state.canTopUp = true
     renderTile()
     expect(screen.getByText('Add credits')).toBeInTheDocument()
   })

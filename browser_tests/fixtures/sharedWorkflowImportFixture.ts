@@ -1,14 +1,14 @@
 import type {
   Asset,
   ImportPublishedAssetsRequest,
-  ListAssetsResponse
+  ListAssetsResponse,
+  AssetInfo
 } from '@comfyorg/ingest-types'
 import { networkIsolationFixture as base } from '@e2e/fixtures/networkIsolationFixture'
 import type { Page } from '@playwright/test'
 import type { z } from 'zod'
 
 import type { zSharedWorkflowResponse } from '@/platform/workflow/sharing/schemas/shareSchemas'
-import type { AssetInfo } from '@/schemas/apiSchema'
 
 type SharedWorkflowResponse = z.input<typeof zSharedWorkflowResponse>
 

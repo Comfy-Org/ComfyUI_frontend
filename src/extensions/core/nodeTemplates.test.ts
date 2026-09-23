@@ -4,7 +4,6 @@ import { expect, it, vi } from 'vitest'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyApi } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
-import type { useDialogService } from '@/services/dialogService'
 
 const { extensions, getUserData, reportErrorMock } = await vi.hoisted(
   async () => {
@@ -24,10 +23,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: reportErrorMock
 }))
 
-vi.mock(import('@/services/dialogService'), () => ({
-  useDialogService: () =>
-    fromPartial<ReturnType<typeof useDialogService>>({ prompt: vi.fn() })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/utils/vintageClipboard'), () => ({
   deserialiseAndCreate: vi.fn()

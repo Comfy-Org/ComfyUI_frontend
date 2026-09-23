@@ -11,12 +11,13 @@ import {
   useTemplateRef,
   watch
 } from 'vue'
+import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { resolveDeployEnv } from '@/platform/telemetry/initDatadogRum'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -25,14 +26,23 @@ import { useQueueStore } from '@/stores/queueStore'
 import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
 import type { CrdtLogLevel } from './crdtDebugGate'
 import { CRDT_LOG_LEVELS, crdtLogLevel, setCrdtLogLevel } from './crdtDebugGate'
-import type { ReportIdentifiers, ReportSources } from './crdtDebugReport'
+import type {
+  CrdtDebugReportInput,
+  ReportIdentifiers,
+  ReportSources
+} from './crdtDebugReport'
+import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import {
   DEFAULT_REPORT_SOURCES,
   collectCrdtDebugReport
 } from './crdtDebugReport'
-import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import type { CrdtLogScope, DevEvent, DevEventKind } from './devPanelLog'
-import { clearDevEvents, devEvents, stringifyDevEvents } from './devPanelLog'
+import {
+  DEV_EVENT_KINDS,
+  clearDevEvents,
+  devEvents,
+  stringifyDevEvents
+} from './devPanelLog'
 import type { MergeScenario, MergeSimulation } from './mergeScenarios'
 import { getMergeScenarios, runScenario } from './mergeScenarios'
 import type { MergeTraceEntry, NodeLifecycleRow } from './mergeTrace'
@@ -68,6 +78,8 @@ const { status, snapshot } = defineProps<{
   /** Reads the follower's live document state; see useAgentCrdtFollower. */
   snapshot?: () => CrdtDebugSnapshot
 }>()
+
+const { t } = useI18n()
 
 // Script-side strings: this is a dev instrument, deliberately kept out of
 // src/locales so it cannot leak into the product's translation surface.
@@ -113,7 +125,6 @@ const S = {
   survivingNodes: 'nodes left',
   survivingWidgets: 'widget values left',
   verbosity: 'console',
-  sectionInclude: 'Also include in the report (off by default)',
   includeLogs: 'Server logs',
   includeSettings: 'Settings',
   includeWorkflow: 'Workflow JSON',
@@ -153,24 +164,6 @@ const STATUS_ROWS = [
 ] as const
 
 const SCOPES: readonly CrdtLogScope[] = ['wire', 'doc']
-
-const EVENT_KINDS: readonly DevEventKind[] = [
-  'ws_out',
-  'doc_subscribed',
-  'doc_update',
-  'doc_ops_result',
-  'human_ops_settled',
-  'doc_reset',
-  'doc_nodes_changed',
-  'schema_error',
-  'reconnected',
-  'subscribe_retry',
-  'stale_probe',
-  'rebind',
-  'doc_gap',
-  'doc_stale',
-  'frame_send_failed'
-]
 
 const VERDICT_TONE: Record<string, string> = {
   applied: 'text-success-background border-success-background',
@@ -394,15 +387,19 @@ function verdictLabel(entry: MergeTraceEntry): string {
 // ── copy actions ──────────────────────────────────────────────────────────
 type CopyState = 'idle' | 'busy' | 'done' | 'failed'
 const logCopyState = ref<CopyState>('idle')
-const reportCopyState = ref<CopyState>('idle')
+const reportCopyState = ref<
+  | { status: 'idle' | 'busy' | 'done' }
+  | { status: 'failed'; report: string | null }
+>({ status: 'idle' })
 const itemCopy = ref<{ key: string; state: 'done' | 'failed' } | null>(null)
 const reportSources = ref<ReportSources>({ ...DEFAULT_REPORT_SOURCES })
 const { copy } = useClipboard({ legacy: true })
 
 const copyReportLabel = computed(() => {
-  if (reportCopyState.value === 'busy') return S.copying
-  if (reportCopyState.value === 'done') return S.copied
-  if (reportCopyState.value === 'failed') return S.copyFailed
+  if (reportCopyState.value.status === 'busy') return S.copying
+  if (reportCopyState.value.status === 'done') return S.copied
+  if (reportCopyState.value.status === 'failed')
+    return t('agent.diagnosticReport.retry')
   return S.copyReport
 })
 
@@ -439,12 +436,6 @@ function flashLogCopyState(ok: boolean) {
   logCopyReset = setTimeout(() => (logCopyState.value = 'idle'), 1600)
 }
 
-function flashReportCopyState(ok: boolean) {
-  clearTimeout(reportCopyReset)
-  reportCopyState.value = ok ? 'done' : 'failed'
-  reportCopyReset = setTimeout(() => (reportCopyState.value = 'idle'), 1600)
-}
-
 async function copyLog() {
   try {
     flashLogCopyState(
@@ -457,25 +448,46 @@ async function copyLog() {
 
 async function copyReport() {
   clearTimeout(reportCopyReset)
-  reportCopyState.value = 'busy'
+  const retainedReport =
+    reportCopyState.value.status === 'failed'
+      ? reportCopyState.value.report
+      : null
+  reportCopyState.value = { status: 'busy' }
+  if (retainedReport !== null) {
+    await copyCollectedReport(retainedReport)
+    return
+  }
   try {
     const crdt = snapshot?.() ?? docState.value ?? fallbackSnapshot()
     const report = await collectCrdtDebugReport({
       crdt,
       events: devEvents.value,
+      agentMessages: useAgentConversationStore().messages,
       identifiers: collectIdentifiers(crdt),
       testerNote: testerNote.value,
       mergeTrace: simulation.value?.entries,
       sources: reportSources.value,
-      workflow: reportSources.value.workflow
-        ? serializeActiveWorkflow()
-        : undefined
+      ...(reportSources.value.workflow ? serializeActiveWorkflow() : {})
     })
-    flashReportCopyState(await writeClipboard(report))
+    await copyCollectedReport(report)
   } catch (error) {
     reportError(error, { errorType: 'crdt_dev_panel_report_copy_failed' })
-    flashReportCopyState(false)
+    reportCopyState.value = { status: 'failed', report: null }
   }
+}
+
+async function copyCollectedReport(report: string): Promise<void> {
+  try {
+    await navigator.clipboard.writeText(report)
+  } catch {
+    reportCopyState.value = { status: 'failed', report }
+    return
+  }
+  reportCopyState.value = { status: 'done' }
+  reportCopyReset = setTimeout(
+    () => (reportCopyState.value = { status: 'idle' }),
+    1600
+  )
 }
 
 function fallbackSnapshot(): CrdtDebugSnapshot {
@@ -492,11 +504,14 @@ function fallbackSnapshot(): CrdtDebugSnapshot {
   }
 }
 
-function serializeActiveWorkflow(): unknown {
+function serializeActiveWorkflow(): Pick<
+  CrdtDebugReportInput,
+  'workflow' | 'workflowError'
+> {
   try {
-    return app.rootGraph.serialize()
+    return { workflow: app.rootGraph.serialize() }
   } catch (error) {
-    return { error: String(error) }
+    return { workflowError: String(error) }
   }
 }
 
@@ -809,7 +824,7 @@ function fmtTime(at: number): string {
               data-testid="crdt-dev-panel-filter"
             >
               <option value="">{{ S.allKinds }}</option>
-              <option v-for="kind in EVENT_KINDS" :key="kind" :value="kind">
+              <option v-for="kind in DEV_EVENT_KINDS" :key="kind" :value="kind">
                 {{ kind }}
               </option>
             </select>
@@ -1037,7 +1052,9 @@ function fmtTime(at: number): string {
       </div>
 
       <footer class="shrink-0 border-t border-component-node-border p-2">
-        <div class="mb-1 text-muted-foreground">{{ S.sectionInclude }}</div>
+        <div class="mb-1 text-muted-foreground">
+          {{ t('agent.diagnosticReport.includedSources') }}
+        </div>
         <div class="mb-1 flex flex-wrap gap-1">
           <button
             v-for="source in REPORT_SOURCE_LABELS"
@@ -1080,13 +1097,30 @@ function fmtTime(at: number): string {
           </button>
           <button
             type="button"
-            :disabled="reportCopyState === 'busy'"
+            :disabled="reportCopyState.status === 'busy'"
             class="flex-2 cursor-pointer rounded-sm border border-primary-background px-2 py-1 hover:bg-secondary-background-hover disabled:cursor-default"
             data-testid="crdt-dev-panel-copy-report"
             @click="copyReport"
           >
             {{ copyReportLabel }}
           </button>
+        </div>
+        <div v-if="reportCopyState.status === 'failed'" class="mt-2">
+          <p role="alert" class="text-danger m-0">
+            {{
+              reportCopyState.report === null
+                ? t('agent.diagnosticReport.collectionFailed')
+                : t('agent.diagnosticReport.clipboardFailed')
+            }}
+          </p>
+          <textarea
+            v-if="reportCopyState.report !== null"
+            :aria-label="t('agent.diagnosticReport.manualCopy')"
+            :value="reportCopyState.report"
+            readonly
+            rows="3"
+            class="mt-1 w-full rounded-sm border border-component-node-border bg-secondary-background p-1 text-base-foreground"
+          />
         </div>
       </footer>
     </section>

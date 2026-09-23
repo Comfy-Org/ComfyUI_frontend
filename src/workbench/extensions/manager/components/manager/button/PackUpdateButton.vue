@@ -1,27 +1,49 @@
 <template>
-  <Button
-    v-tooltip.top="
-      hasDisabledUpdatePacks ? $t('manager.disabledNodesWontUpdate') : null
-    "
-    variant="primary"
-    :size
-    :disabled="isUpdating"
-    @click="updateAllPacks"
-  >
-    <DotSpinner v-if="isUpdating" duration="1s" />
-    <i v-else class="icon-[lucide--refresh-cw]" />
-    <span>{{
-      nodePacks.length > 1 ? $t('manager.updateAll') : $t('manager.update')
-    }}</span>
-  </Button>
+  <ButtonGroup class="shrink-0">
+    <Button
+      v-tooltip.top="
+        hasDisabledUpdatePacks
+          ? $t('manager.disabledNodesWontUpdate')
+          : $t('manager.updateLatestActiveTooltip')
+      "
+      variant="primary"
+      :size
+      class="flex-1 rounded-r-none"
+      :disabled="isUpdating || !enabledPacks.length"
+      @click="manager.updatePacks(nodePacks)"
+    >
+      <DotSpinner v-if="isUpdating" duration="1s" />
+      <i v-else class="icon-[lucide--refresh-cw]" />
+      <span>{{
+        nodePacks.length > 1 ? $t('manager.updateAll') : $t('manager.update')
+      }}</span>
+    </Button>
+    <DropdownMenu :entries="updateOptions" align="end">
+      <template #button>
+        <Button
+          variant="primary"
+          :size
+          class="shrink-0 rounded-l-none border-0 border-l border-solid border-border-subtle px-3"
+          :disabled="isUpdating || !enabledPacks.length"
+          :aria-label="$t('manager.updateOptions')"
+        >
+          <TinyChevronIcon />
+        </Button>
+      </template>
+    </DropdownMenu>
+  </ButtonGroup>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 
+import TinyChevronIcon from '@/components/actionbar/TinyChevronIcon.vue'
 import DotSpinner from '@/components/common/DotSpinner.vue'
-import type { ButtonVariants } from '@/components/ui/button/button.variants'
+import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
+import type { ButtonVariants } from '@/components/ui/button/button.variants'
+import ButtonGroup from '@/components/ui/button-group/ButtonGroup.vue'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
@@ -37,49 +59,24 @@ const {
   size?: ButtonVariants['size']
 }>()
 
-const isUpdating = ref<boolean>(false)
-
-const managerStore = useComfyManagerStore()
-
-const createPayload = (updateItem: NodePack) => {
-  return {
-    id: updateItem.id!,
-    version: updateItem.latest_version!.version!
+const manager = useComfyManagerStore()
+const { t } = useI18n()
+const enabledPacks = computed(() =>
+  nodePacks.filter((pack) => manager.isPackEnabled(pack.id))
+)
+const isUpdating = computed(() =>
+  enabledPacks.value.some((pack) => manager.isPackInstalling(pack.id))
+)
+const updateOptions = computed(() => [
+  {
+    label: t('manager.latestActive'),
+    tooltip: t('manager.updateLatestActiveTooltip'),
+    command: () => manager.updatePacks(nodePacks, 'active')
+  },
+  {
+    label: t('manager.latestInstallable'),
+    tooltip: t('manager.updateLatestInstallableTooltip'),
+    command: () => manager.updatePacks(nodePacks, 'installable')
   }
-}
-
-const updatePack = async (item: NodePack) => {
-  if (!item.id || !item.latest_version?.version) {
-    console.warn('Pack missing required id or version:', item)
-    return
-  }
-  await managerStore.updatePack.call(createPayload(item))
-}
-
-const updateAllPacks = async () => {
-  if (!nodePacks?.length) {
-    console.warn('No packs provided for update')
-    return
-  }
-  isUpdating.value = true
-  const updatablePacks = nodePacks.filter((pack) =>
-    managerStore.isPackInstalled(pack.id)
-  )
-  if (!updatablePacks.length) {
-    isUpdating.value = false
-    return
-  }
-  try {
-    await Promise.all(updatablePacks.map(updatePack))
-    managerStore.updatePack.clear()
-  } catch (error) {
-    console.error('Pack update failed:', error)
-    console.error(
-      'Failed packs info:',
-      updatablePacks.map((p) => p.id)
-    )
-  } finally {
-    isUpdating.value = false
-  }
-}
+])
 </script>

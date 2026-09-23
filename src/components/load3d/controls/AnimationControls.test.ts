@@ -1,12 +1,10 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { defineComponent, h, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import AnimationControls from '@/components/load3d/controls/AnimationControls.vue'
-
-vi.mock(import('@/components/ui/slider/Slider.vue'))
 
 const i18n = createI18n({
   legacy: false,
@@ -34,36 +32,41 @@ function renderComponent(opts: RenderOpts = {}) {
   const animationProgress = ref<number>(opts.animationProgress ?? 0)
   const animationDuration = ref<number>(opts.animationDuration ?? 10)
 
-  const utils = render(AnimationControls, {
-    props: {
-      animations: animations.value,
-      'onUpdate:animations': (v: Animation[] | undefined) => {
-        if (v) animations.value = v
-      },
-      playing: playing.value,
-      'onUpdate:playing': (v: boolean | undefined) => {
-        if (v !== undefined) playing.value = v
-      },
-      selectedSpeed: selectedSpeed.value,
-      'onUpdate:selectedSpeed': (v: number | undefined) => {
-        if (v !== undefined) selectedSpeed.value = v
-      },
-      selectedAnimation: selectedAnimation.value,
-      'onUpdate:selectedAnimation': (v: number | undefined) => {
-        if (v !== undefined) selectedAnimation.value = v
-      },
-      animationProgress: animationProgress.value,
-      'onUpdate:animationProgress': (v: number | undefined) => {
-        if (v !== undefined) animationProgress.value = v
-      },
-      animationDuration: animationDuration.value,
-      'onUpdate:animationDuration': (v: number | undefined) => {
-        if (v !== undefined) animationDuration.value = v
-      },
-      onSeek: opts.onSeek
-    },
-    global: { plugins: [i18n] }
-  })
+  const utils = render(
+    defineComponent({
+      setup: () => () =>
+        h(AnimationControls, {
+          animations: animations.value,
+          'onUpdate:animations': (v: Animation[] | undefined) => {
+            if (v) animations.value = v
+          },
+          playing: playing.value,
+          'onUpdate:playing': (v: boolean | undefined) => {
+            if (v !== undefined) playing.value = v
+          },
+          selectedSpeed: selectedSpeed.value,
+          'onUpdate:selectedSpeed': (v: number | undefined) => {
+            if (v !== undefined) selectedSpeed.value = v
+          },
+          selectedAnimation: selectedAnimation.value,
+          'onUpdate:selectedAnimation': (v: number | undefined) => {
+            if (v !== undefined) selectedAnimation.value = v
+          },
+          animationProgress: animationProgress.value,
+          'onUpdate:animationProgress': (v: number | undefined) => {
+            if (v !== undefined) animationProgress.value = v
+          },
+          animationDuration: animationDuration.value,
+          'onUpdate:animationDuration': (v: number | undefined) => {
+            if (v !== undefined) animationDuration.value = v
+          },
+          onSeek: opts.onSeek
+        })
+    }),
+    {
+      global: { plugins: [i18n] }
+    }
+  )
 
   return {
     ...utils,
@@ -85,7 +88,7 @@ describe('AnimationControls', () => {
     ).not.toBeInTheDocument()
   })
 
-  it('renders the play / speed / track / progress widgets when animations are present', () => {
+  it('renders the play / speed / track / progress widgets when animations are present', async () => {
     renderComponent({
       animations: [
         { name: 'idle', index: 0 },
@@ -97,7 +100,7 @@ describe('AnimationControls', () => {
       screen.getByRole('button', { name: 'Play / pause' })
     ).toBeInTheDocument()
     expect(screen.getAllByRole('combobox')).toHaveLength(2)
-    expect(screen.getByRole('slider')).toBeInTheDocument()
+    expect(await screen.findByRole('slider')).toBeInTheDocument()
   })
 
   it('flips playing to true via v-model when starting from a paused state', async () => {
@@ -122,17 +125,17 @@ describe('AnimationControls', () => {
     expect(playing.value).toBe(false)
   })
 
-  it('updates animationProgress and emits seek with the new progress when the slider moves', () => {
+  it('updates animationProgress and emits seek with the new progress when the slider moves', async () => {
     const onSeek = vi.fn()
-    const { animationProgress } = renderComponent({
+    const { animationProgress, user } = renderComponent({
       animations: [{ name: 'idle', index: 0 }],
-      animationProgress: 0,
+      animationProgress: 37.4,
       onSeek
     })
 
-    const slider = screen.getByRole('slider') as HTMLInputElement
-    slider.value = '37.5'
-    slider.dispatchEvent(new Event('input', { bubbles: true }))
+    const slider = await screen.findByRole('slider')
+    slider.focus()
+    await user.keyboard('{ArrowRight}')
 
     expect(animationProgress.value).toBe(37.5)
     expect(onSeek).toHaveBeenCalledWith(37.5)

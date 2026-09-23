@@ -6,19 +6,30 @@
   "scripts": {
     "build": "pnpm typecheck && vite build",
     "dev": "vite --port 5174 --strictPort",
-    "lint": "eslint src vite.config.ts vitest.config.ts && stylelint 'src/**/*.{css,vue}'",
+    "lint": "eslint src e2e vite.config.ts vitest.config.ts playwright.config.ts && stylelint 'src/**/*.{css,vue}'",
     "preview": "vite preview",
     "test:coverage": "vitest run --coverage",
     "test:unit": "vitest run",
-    "typecheck": "vue-tsc --noEmit -p tsconfig.json"
+    "typecheck": "vue-tsc --noEmit -p tsconfig.json",
+    "test:e2e": "playwright test",
+    "test:e2e:local": "cross-env PLAYWRIGHT_LOCAL=1 playwright test"
   },
   "dependencies": {
+    "@comfyorg/account-core": "workspace:*",
+    "@comfyorg/account-ui": "workspace:*",
+    "@comfyorg/billing-contract": "workspace:*",
     "@comfyorg/design-system": "workspace:*",
+    "@comfyorg/tailwind-utils": "workspace:*",
+    "@stripe/stripe-js": "catalog:",
+    "@vueuse/core": "catalog:",
+    "firebase": "catalog:",
     "vue": "catalog:",
     "vue-i18n": "catalog:",
     "vue-router": "catalog:"
   },
   "devDependencies": {
+    "@comfyorg/ingest-types": "workspace:*",
+    "@playwright/test": "catalog:",
     "@tailwindcss/vite": "catalog:",
     "@testing-library/jest-dom": "catalog:",
     "@testing-library/user-event": "catalog:",
@@ -26,6 +37,7 @@
     "@types/node": "catalog:",
     "@vitejs/plugin-vue": "catalog:",
     "@vitest/coverage-v8": "catalog:",
+    "cross-env": "catalog:",
     "eslint": "catalog:",
     "happy-dom": "catalog:",
     "stylelint": "catalog:",

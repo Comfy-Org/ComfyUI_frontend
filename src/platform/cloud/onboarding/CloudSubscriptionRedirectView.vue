@@ -1,16 +1,16 @@
 <script setup lang="ts">
 import Button from 'primevue/button'
-import ProgressSpinner from 'primevue/progressspinner'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useErrorHandling } from '@/composables/useErrorHandling'
-import { getPricingCheckoutSelection } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
-import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { getPricingCheckoutSelection } from '@/platform/cloud/subscription/composables/usePricingTableUrlLoader'
 import type { CheckoutTierKey } from '@/platform/workspace/composables/useSubscriptionCheckout'
 
 import type { BillingCycle } from '../subscription/utils/subscriptionTierRank'
@@ -182,7 +182,7 @@ onMounted(() => {
           })
         }}
       </p>
-      <ProgressSpinner v-if="planLabel" class="size-8" stroke-width="4" />
+      <Spinner v-if="planLabel" class="size-8" />
       <Button
         v-if="planLabel"
         as="a"

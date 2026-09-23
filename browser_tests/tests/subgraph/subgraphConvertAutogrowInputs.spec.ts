@@ -111,11 +111,14 @@ test.describe(
           .toEqual(REFERENCE_IMAGE_SLOTS)
       })
 
-      // Reported in #bug-dump: converting the upstream Load Image nodes into a
-      // subgraph leaves only the first reference-image connection attached to
-      // the downstream node; the rest are silently dropped. The plain
-      // multi-input node above keeps all of its links through the same
-      // conversion, so the loss is specific to autogrow groups.
+      // Was reported in #bug-dump: converting the upstream Load Image nodes
+      // into a subgraph left only the first reference-image connection
+      // attached to the downstream node, with the rest silently dropped.
+      // `LGraph.convertToSubgraph` reconnects each grouped output link with
+      // a synchronous `connectSlots` call per slot, and `withComfyAutogrow`'s
+      // swap guard (PM-1496) used to be node-wide instead of per-slot, so
+      // slot 1's disconnect/reconnect swap suppressed the genuine connect
+      // events for slots 2 and 3 on the same node. Fixed by PM-1496.
       test('keeps every link when its sources become a subgraph', async ({
         comfyPage
       }) => {
@@ -132,7 +135,6 @@ test.describe(
         const subgraphNodeId =
           await comfyPage.subgraph.convertSelectionToSubgraph()
 
-        test.fail()
         await expect
           .poll(() =>
             getConnectedInputs(

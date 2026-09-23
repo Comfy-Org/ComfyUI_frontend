@@ -5,7 +5,7 @@ import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDi
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { WORKFLOW_ACCEPT_STRING } from '@/platform/workflow/core/types/formats'
-import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
+import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useCommandStore } from '@/stores/commandStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -359,7 +359,7 @@ class ComfyList {
       this.hide()
       return false
     } else {
-      this.show()
+      void this.show()
       return true
     }
   }
@@ -400,8 +400,8 @@ export class ComfyUI {
     this.history = new ComfyList('History', 'history', true)
 
     api.addEventListener('status', () => {
-      this.queue.update()
-      this.history.update()
+      void this.queue.update()
+      void this.history.update()
     })
 
     this.setup(document.body)
@@ -445,7 +445,6 @@ export class ComfyUI {
         }
       ],
       {
-        // @ts-expect-error fixme ts strict error
         onChange: (value) => {
           this.autoQueueMode = value.item.value
         }
@@ -457,7 +456,7 @@ export class ComfyUI {
       if (this.autoQueueMode === 'change' && this.autoQueueEnabled) {
         if (this.lastQueueSize === 0) {
           this.graphHasChanged = false
-          app.queuePrompt(0, this.batchCount, {
+          void app.queuePrompt(0, this.batchCount, {
             intent: { trigger_source: 'auto_queue' }
           })
         } else {
@@ -510,7 +509,7 @@ export class ComfyUI {
             } as const
             useRunButtonTelemetry().trackRunButton(workflowQueueIntent)
             useTelemetry()?.trackWorkflowExecution()
-            app.queuePrompt(0, this.batchCount, {
+            void app.queuePrompt(0, this.batchCount, {
               intent: workflowQueueIntent
             })
           }
@@ -621,7 +620,7 @@ export class ComfyUI {
               } as const
               useRunButtonTelemetry().trackRunButton(workflowQueueIntent)
               useTelemetry()?.trackWorkflowExecution()
-              app.queuePrompt(-1, this.batchCount, {
+              void app.queuePrompt(-1, this.batchCount, {
                 intent: workflowQueueIntent
               })
             }
@@ -651,7 +650,7 @@ export class ComfyUI {
           id: 'comfy-save-button',
           textContent: 'Save',
           onclick: () => {
-            useCommandStore().execute('Comfy.ExportWorkflow')
+            void useCommandStore().execute('Comfy.ExportWorkflow')
           }
         }),
         $el('button', {
@@ -659,7 +658,7 @@ export class ComfyUI {
           textContent: 'Save (API Format)',
           style: { width: '100%', display: 'none' },
           onclick: () => {
-            useCommandStore().execute('Comfy.ExportWorkflowAPI')
+            void useCommandStore().execute('Comfy.ExportWorkflowAPI')
           }
         }),
         $el('button', {
@@ -720,8 +719,7 @@ export class ComfyUI {
 
     this.restoreMenuPosition = dragElement(this.menuContainer)
 
-    // @ts-expect-error
-    this.setStatus({ exec_info: { queue_remaining: 'X' } })
+    this.queueSize.textContent = 'Queue size: X'
   }
 
   setStatus(status: StatusWsMessageStatus | null) {
@@ -736,7 +734,7 @@ export class ComfyUI {
       (this.autoQueueMode === 'instant' || this.graphHasChanged) &&
       !app.lastExecutionError
     ) {
-      app.queuePrompt(0, this.batchCount, {
+      void app.queuePrompt(0, this.batchCount, {
         intent: { trigger_source: 'auto_queue' }
       })
       this.graphHasChanged = false

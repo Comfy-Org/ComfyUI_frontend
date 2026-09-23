@@ -205,6 +205,7 @@ const DEV_SERVER_COMFYUI_URL =
   DEV_SERVER_COMFYUI_ENV_URL || DEV_SEVER_FALLBACK_URL
 const DEV_AGENT_URL = process.env.DEV_AGENT_URL
 const DEV_AGENT_SESSION_TOKEN = process.env.DEV_AGENT_SESSION_TOKEN
+const DEV_AGENT_COMFY_TOKEN = process.env.DEV_AGENT_COMFY_TOKEN
 
 if (Boolean(DEV_AGENT_URL) !== Boolean(DEV_AGENT_SESSION_TOKEN)) {
   throw new Error(
@@ -331,7 +332,11 @@ const vuePluginOptions = process.env.VITEST
 export default defineConfig({
   base: DISTRIBUTION === 'cloud' ? '/' : '',
   server: {
-    host: VITE_REMOTE_DEV ? '0.0.0.0' : undefined,
+    host: DEV_AGENT_COMFY_TOKEN
+      ? undefined
+      : VITE_REMOTE_DEV
+        ? '0.0.0.0'
+        : undefined,
     allowedHosts: process.env.AMP_ORB ? true : undefined,
     watch: {
       ignored: [
@@ -368,7 +373,10 @@ export default defineConfig({
               target: DEV_AGENT_URL,
               ws: true,
               headers: {
-                Authorization: `Bearer ${DEV_AGENT_SESSION_TOKEN}`
+                Authorization: `Bearer ${DEV_AGENT_SESSION_TOKEN}`,
+                ...(DEV_AGENT_COMFY_TOKEN
+                  ? { 'X-Comfy-Token': DEV_AGENT_COMFY_TOKEN }
+                  : {})
               },
               rewrite: (path: string) => path.replace(/^\/api/, ''),
               configure: (proxy) => {

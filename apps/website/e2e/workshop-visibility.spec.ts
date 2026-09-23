@@ -118,6 +118,7 @@ test.describe('without JavaScript', () => {
     page
   }) => {
     await page.goto('/models/')
+    await expect(page.getByTestId('workshop-loading')).toBeHidden()
     await expect(page.getByTestId('workshop-search')).toHaveCount(0)
     await expect(
       page.getByRole('link', { name: /Grok Imagine/i }).first()

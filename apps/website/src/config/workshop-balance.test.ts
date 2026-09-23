@@ -1,7 +1,7 @@
 import type {
   AccountCredential,
   SessionResult
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 import type { BillingBalanceResponse } from '@comfyorg/ingest-types'
 import type { User } from 'firebase/auth'
 import { describe, expect, it, vi } from 'vitest'

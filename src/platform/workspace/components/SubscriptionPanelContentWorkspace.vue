@@ -401,27 +401,26 @@ import { storeToRefs } from 'pinia'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
+import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
-import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
-import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
-import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
 import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
 import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useSubscriptionOperationView } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useWorkspaceMenuItems } from '@/platform/workspace/composables/useWorkspaceMenuItems'
 import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWorkspacePlanPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-
 import {
   formatSubscriptionDate,
   resolveSubscriptionTierKey
@@ -442,11 +441,7 @@ const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()
 
-const billingOperationStore = useBillingOperationStore()
-const isSettingUp = computed(() => billingOperationStore.isSettingUp)
-const subscriptionActionUrl = computed(
-  () => billingOperationStore.subscriptionActionOperation?.actionUrl ?? null
-)
+const { isSettingUp, subscriptionActionUrl } = useSubscriptionOperationView()
 
 function openSubscriptionVerification() {
   if (!subscriptionActionUrl.value) return

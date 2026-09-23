@@ -20,6 +20,7 @@ export const promptHistoryTest = base.extend<{
   promptHistory: {
     requests: AgentPostMessageRequest[]
     historyReads: () => number
+    historyRequestThreadIds: string[]
   }
 }>({
   promptHistory: async ({ page, workflowSelection, getWebSocket }, use) => {
@@ -27,6 +28,7 @@ export const promptHistoryTest = base.extend<{
     void workflowSelection
     const requests: AgentPostMessageRequest[] = []
     const messages: AgentMessage[] = []
+    const historyRequestThreadIds: string[] = []
     let threadId = ''
     let historyReads = 0
     await page.route('**/api/agent/threads', (route) => {
@@ -58,6 +60,9 @@ export const promptHistoryTest = base.extend<{
     await page.route('**/api/agent/threads/*/messages', (route) => {
       if (route.request().method() === 'GET') {
         historyReads++
+        historyRequestThreadIds.push(
+          new URL(route.request().url()).pathname.split('/').at(-2)!
+        )
         return route.fulfill(jsonRoute(messages))
       }
       const request = zAgentPostMessageRequest.parse(
@@ -113,6 +118,10 @@ export const promptHistoryTest = base.extend<{
         socket.send(JSON.stringify(done))
       }
     )
-    await use({ requests, historyReads: () => historyReads })
+    await use({
+      requests,
+      historyReads: () => historyReads,
+      historyRequestThreadIds
+    })
   }
 })

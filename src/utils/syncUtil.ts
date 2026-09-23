@@ -1,5 +1,5 @@
-import type { UserDataFullInfo } from '@/schemas/apiSchema'
 import { api } from '@/scripts/api'
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 
 /**
  * Sync entities from the API to the entityByPath map.

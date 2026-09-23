@@ -1,3 +1,6 @@
+import { mergeTests } from '@playwright/test'
+
+import type { NodeError } from '@/platform/remote/comfyui/types'
 import {
   comfyExpect as expect,
   comfyPageFixture
@@ -6,9 +9,6 @@ import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import { TestIds } from '@e2e/fixtures/selectors'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-import { mergeTests } from '@playwright/test'
-
-import type { NodeError } from '@/schemas/apiSchema'
 
 const test = mergeTests(comfyPageFixture, webSocketFixture)
 

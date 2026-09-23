@@ -5,9 +5,10 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { CORE_KEYBINDINGS } from './defaults'
+import { consultEscapeOverride } from './escapeOverride'
+import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import { useKeybindingStore } from './keybindingStore'
-import { KeyComboImpl } from './keyCombo'
 
 export function useKeybindingService() {
   const keybindingStore = useKeybindingStore()
@@ -58,6 +59,15 @@ export function useKeybindingService() {
         if (keyCombo.ctrl) {
           event.preventDefault()
         }
+        return
+      }
+
+      // A registered override (e.g. the agent composer owning Escape while a
+      // turn is running) wins over the default keybinding, but only once an
+      // open menu or dialog has already had first refusal above - those are
+      // more specific to the moment than "some feature elsewhere is running".
+      if (event.key === 'Escape' && consultEscapeOverride(event)) {
+        if (!event.defaultPrevented) event.preventDefault()
         return
       }
 

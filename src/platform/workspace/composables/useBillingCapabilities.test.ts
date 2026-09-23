@@ -1,11 +1,7 @@
 import type { BillingCapabilitiesResponse } from '@comfyorg/ingest-types'
 import type { AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import axios, { AxiosError, AxiosHeaders } from 'axios'
-import {
-  onAuthStateChanged,
-  onIdTokenChanged,
-  setPersistence
-} from 'firebase/auth'
+
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick } from 'vue'
 import type { EffectScope } from 'vue'
@@ -15,13 +11,12 @@ import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspace
 import { useAuthStore } from '@/stores/authStore'
 
 import { useBillingCapabilities } from './useBillingCapabilities'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 vi.mock(import('firebase/auth'), { spy: true })
 
 beforeEach(() => {
-  vi.mocked(setPersistence).mockResolvedValue(undefined)
-  vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
-  vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+  stubFirebaseAuthHarness()
 })
 
 const mockGetBillingCapabilities = vi.hoisted(() => vi.fn())
@@ -50,6 +45,15 @@ vi.mock(import('@/platform/distribution/types'), () => ({
     return mockIsCloud.value
   }
 }))
+
+/** Null is the legacy client; a rail is what the SDK store would hand back. */
+const railState = vi.hoisted(() => ({
+  rail: null as { readCapabilities: ReturnType<typeof vi.fn> } | null
+}))
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useBillingReadRail'),
+  () => ({ useBillingReadRail: () => railState.rail })
+)
 
 function capabilitiesResponse(
   canTopUp: boolean,
@@ -178,6 +182,7 @@ describe('useBillingCapabilities', () => {
 
   beforeEach(() => {
     mockIsCloud.value = true
+    railState.rail = null
     scope = effectScope()
     billingCapabilities = scope.run(() => useBillingCapabilities())!
   })
@@ -203,11 +208,13 @@ describe('useBillingCapabilities', () => {
     expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
 
     const initialization = billingCapabilities.initialize()
+    expect(billingCapabilities.hasResolvedCapabilities.value).toBe(false)
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
 
     resolveRequest(capabilitiesResponse(true))
     await initialization
+    expect(billingCapabilities.hasResolvedCapabilities.value).toBe(true)
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(true)
     expect(billingCapabilities.canCancel.value).toBe(true)
@@ -274,6 +281,7 @@ describe('useBillingCapabilities', () => {
 
     await billingCapabilities.initialize()
 
+    expect(billingCapabilities.hasResolvedCapabilities.value).toBe(false)
     expect(billingCapabilities.canTopUp.value).toBe(true)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.canCancel.value).toBe(false)
@@ -309,6 +317,7 @@ describe('useBillingCapabilities', () => {
 
     await billingCapabilities.initialize()
 
+    expect(billingCapabilities.hasResolvedCapabilities.value).toBe(false)
     expect(billingCapabilities.canTopUp.value).toBe(false)
     expect(billingCapabilities.canSubscribeSelfServe.value).toBe(false)
     expect(billingCapabilities.isReady.value).toBe(true)
@@ -986,5 +995,108 @@ describe('useBillingCapabilities', () => {
 
     expect(mockGetBillingCapabilities).toHaveBeenCalledOnce()
     expect(billingCapabilities.canTopUp.value).toBe(false)
+  })
+})
+
+describe('useBillingCapabilities on the SDK rail', () => {
+  let scope: EffectScope
+  let billingCapabilities: ReturnType<typeof useBillingCapabilities>
+  const readCapabilities = vi.fn()
+
+  beforeEach(() => {
+    mockIsCloud.value = true
+    readCapabilities.mockReset()
+    railState.rail = { readCapabilities }
+    scope = effectScope()
+    billingCapabilities = scope.run(() => useBillingCapabilities())!
+  })
+
+  afterEach(() => {
+    scope.stop()
+    railState.rail = null
+  })
+
+  it('applies the server capability read through the rail and leaves the legacy client alone', async () => {
+    readCapabilities.mockResolvedValueOnce({
+      status: 'ok',
+      value: capabilitiesResponse(true)
+    })
+
+    await billingCapabilities.initialize()
+
+    expect(billingCapabilities.canTopUp.value).toBe(true)
+    expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
+    expect(readCapabilities).toHaveBeenCalledWith({
+      signal: expect.any(AbortSignal),
+      forceRefresh: false
+    })
+    expect(mockGetBillingCapabilities).not.toHaveBeenCalled()
+  })
+
+  it('bypasses the SDK cache when a mutation reports a new revision', async () => {
+    readCapabilities.mockResolvedValue({
+      status: 'ok',
+      value: capabilitiesResponse(true, 'workspace-1', true, { revision: 7 })
+    })
+    await billingCapabilities.initialize()
+
+    await emitMutationRevision('8')
+
+    expect(readCapabilities).toHaveBeenCalledTimes(2)
+    expect(readCapabilities).toHaveBeenLastCalledWith({
+      signal: expect.any(AbortSignal),
+      forceRefresh: true
+    })
+  })
+
+  it.for([
+    {
+      failure: 'ACCESS_DENIED at 403',
+      result: { status: 'error', code: 'ACCESS_DENIED', httpStatus: 403 },
+      canTopUp: false,
+      authoritative: true,
+      reads: 1
+    },
+    {
+      failure: 'REQUEST_FAILED at 503',
+      result: { status: 'error', code: 'REQUEST_FAILED', httpStatus: 503 },
+      canTopUp: true,
+      authoritative: false,
+      reads: 2
+    }
+  ])(
+    'treats $failure on the rail as the legacy client treats the same status',
+    async ({ result, canTopUp, authoritative, reads }) => {
+      readCapabilities.mockResolvedValue(result)
+
+      await billingCapabilities.initialize()
+      expect(billingCapabilities.canTopUp.value).toBe(canTopUp)
+      expect(billingCapabilities.snapshotAuthoritative.value).toBe(
+        authoritative
+      )
+
+      await vi.advanceTimersByTimeAsync(600_000)
+      expect(readCapabilities.mock.calls.length).toBeGreaterThanOrEqual(reads)
+      if (reads === 1) expect(readCapabilities).toHaveBeenCalledOnce()
+    }
+  )
+
+  it('retries a read the scope moved on under without reporting it', async () => {
+    readCapabilities
+      .mockResolvedValueOnce({ status: 'error', code: 'SUPERSEDED' })
+      .mockResolvedValueOnce({
+        status: 'ok',
+        value: capabilitiesResponse(true)
+      })
+
+    await billingCapabilities.initialize()
+    expect(billingCapabilities.isReady.value).toBe(true)
+    expect(billingCapabilities.snapshotAuthoritative.value).toBe(false)
+    expect(mockReportError).not.toHaveBeenCalled()
+
+    await vi.advanceTimersByTimeAsync(60_000)
+
+    expect(readCapabilities).toHaveBeenCalledTimes(2)
+    expect(billingCapabilities.snapshotAuthoritative.value).toBe(true)
   })
 })

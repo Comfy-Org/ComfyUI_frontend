@@ -21,7 +21,7 @@ const sizeDir = path.resolve('temp/size')
  * @property {number} brotli
  */
 
-run()
+void run()
 
 /**
  * Main function to collect bundle size data

@@ -1,3 +1,9 @@
+import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
+
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import type { operations } from '@/types/comfyRegistryTypes'
+
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import {
   CLOUD_SELF_EMAIL,
@@ -7,10 +13,6 @@ import {
   mockCloudBoot,
   preselectCloudUser
 } from '@e2e/fixtures/utils/cloudBootMocks'
-import { expect } from '@playwright/test'
-import type { Page } from '@playwright/test'
-
-import type { operations } from '@/types/comfyRegistryTypes'
 
 const APP_URL = process.env.PLAYWRIGHT_TEST_URL || 'http://localhost:8188'
 type CreateCustomerResponse =
@@ -141,9 +143,7 @@ test.describe('Cloud onboarding — auth error codes', { tag: '@cloud' }, () => 
     await page.getByRole('button', { name: 'Sign up', exact: true }).click()
 
     await expect(
-      page.getByText(
-        'An account with this email already exists. Try signing in instead.'
-      )
+      page.getByText(enMessages.auth.errors['auth/email-already-in-use'])
     ).toBeVisible()
     await expect(page).toHaveURL(/\/cloud\/signup/)
   })

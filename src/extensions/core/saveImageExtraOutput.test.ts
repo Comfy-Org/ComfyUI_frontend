@@ -70,7 +70,7 @@ describe('Comfy.SaveImageExtraOutput', () => {
     app.graph = graph
   })
 
-  it.each([
+  it.for([
     'SaveImage',
     'SaveImageAdvanced',
     'SaveSVGNode',

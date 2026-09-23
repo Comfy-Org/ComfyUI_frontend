@@ -4,13 +4,12 @@ import type {
   HubLabelInfo,
   HubLabelListResponse,
   HubProfile,
+  PostAssetsFromWorkflowResponse,
   WorkflowPublishInfo
 } from '@comfyorg/ingest-types'
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 import { PublishDialog } from '@e2e/fixtures/components/PublishDialog'
 import type { Page, Route } from '@playwright/test'
-
-import type { ShareableAssetsResponse } from '@/schemas/apiSchema'
 
 const DEFAULT_PROFILE: HubProfile = {
   username: 'testuser',
@@ -101,7 +100,7 @@ class PublishApiHelper {
   }
 
   async mockShareableAssets(assets: AssetInfo[] = []): Promise<void> {
-    const response: ShareableAssetsResponse = { assets }
+    const response: PostAssetsFromWorkflowResponse = { assets }
     await this.addRoute('**/assets/from-workflow', async (route) => {
       await route.fulfill({
         status: 200,

@@ -35,13 +35,12 @@ const ext = {
         requestAnimationFrame(() => {
           const currentNode = LGraphCanvas.active_canvas.current_node
           const clickedComboValue = currentNode?.widgets
-            ?.filter(
-              (w) =>
-                isComboWidget(w) && w.options.values?.length === values.length
-            )
-            .find((w) =>
-              // @ts-expect-error Poorly typed; filter above "should" mitigate exceptions
-              w.options.values?.every((v, i) => v === values[i])
+            ?.filter(isComboWidget)
+            .find(
+              ({ options: { values: widgetValues } }) =>
+                Array.isArray(widgetValues) &&
+                widgetValues.length === values.length &&
+                widgetValues.every((v, i) => v === values[i])
             )?.value
 
           let selectedIndex = clickedComboValue
@@ -50,14 +49,14 @@ const ext = {
           if (selectedIndex < 0) {
             selectedIndex = 0
           }
-          let selectedItem = displayedItems[selectedIndex]
+          let selectedItem = displayedItems.at(selectedIndex)
           updateSelected()
 
           // Apply highlighting to the selected item
           function updateSelected() {
             selectedItem?.style.setProperty('background-color', '')
             selectedItem?.style.setProperty('color', '')
-            selectedItem = displayedItems[selectedIndex]
+            selectedItem = displayedItems.at(selectedIndex)
             selectedItem?.style.setProperty(
               'background-color',
               '#ccc',
@@ -127,17 +126,15 @@ const ext = {
             // When filtering, recompute which items are visible for arrow up/down and maintain selection.
             displayedItems = items.filter((item) => {
               const isVisible =
-                !term || item.textContent?.toLocaleLowerCase().includes(term)
+                !term || item.textContent.toLocaleLowerCase().includes(term)
               item.style.display = isVisible ? 'block' : 'none'
               return isVisible
             })
 
-            selectedIndex = 0
-            if (displayedItems.includes(selectedItem)) {
-              selectedIndex = displayedItems.findIndex(
-                (d) => d === selectedItem
-              )
-            }
+            selectedIndex = Math.max(
+              0,
+              displayedItems.findIndex((d) => d === selectedItem)
+            )
             itemCount = displayedItems.length
 
             updateSelected()

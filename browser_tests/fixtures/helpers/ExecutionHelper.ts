@@ -1,13 +1,13 @@
-import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 import type { WebSocketRoute } from '@playwright/test'
 
-import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import type {
   NodeError,
-  NodeProgressState,
-  PromptResponse
-} from '@/schemas/apiSchema'
+  PromptFailureResponse
+} from '@/platform/remote/comfyui/types'
+import type { NodeProgressState } from '@/platform/remote/comfyui/execution/types'
+import type { RawJobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { createMockJob } from '@e2e/fixtures/helpers/AssetsHelper'
 
 const PROMPT_ROUTE_PATTERN = /\/api\/prompt$/
 
@@ -112,7 +112,7 @@ export class ExecutionHelper {
   async mockValidationFailure(
     nodeErrors: Record<string, NodeError>
   ): Promise<void> {
-    const response: PromptResponse = {
+    const response: PromptFailureResponse = {
       node_errors: nodeErrors,
       error: {
         type: 'prompt_outputs_failed_validation',

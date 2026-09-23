@@ -12,16 +12,6 @@ import type {
 import { createMockWidget } from './widgetTestUtils'
 import WidgetWithControl from './WidgetWithControl.vue'
 
-const PopoverStub = defineComponent({
-  name: 'Popover',
-  template: `
-    <div data-testid="popover">
-      <slot name="button" />
-      <slot />
-    </div>
-  `
-})
-
 const ValueControlButtonStub = defineComponent({
   name: 'ValueControlButton',
   props: { mode: { type: String, default: '' } },
@@ -79,7 +69,6 @@ const mount = (widget: SimplifiedControlWidget, modelValue = 0) =>
   render(WidgetWithControl, {
     global: {
       stubs: {
-        Popover: PopoverStub,
         ValueControlButton: ValueControlButtonStub,
         ValueControlPopover: ValueControlPopoverStub
       }
@@ -108,6 +97,7 @@ describe('WidgetWithControl', () => {
     mount(makeControlWidget(update, 'randomize'))
 
     const user = userEvent.setup()
+    await user.click(screen.getByTestId('control-button'))
     await user.click(screen.getByTestId('set-fixed'))
     await nextTick()
 

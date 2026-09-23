@@ -63,7 +63,7 @@
     </div>
 
     <!-- Submit Button -->
-    <ProgressSpinner v-if="loading" class="mx-auto size-8" />
+    <Spinner v-if="loading" class="mx-auto size-8" />
     <Button
       v-else
       type="submit"
@@ -83,12 +83,12 @@ import { zodResolver } from '@primevue/forms/resolvers/zod'
 import { useThrottleFn } from '@vueuse/core'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
-import ProgressSpinner from 'primevue/progressspinner'
 import { useToast } from 'primevue/usetoast'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'

@@ -38,6 +38,14 @@ const PREVIEW_BORDER_COLOR = 0x2a2a2a
 const LOOK_THROUGH_SENSITIVITY = 0.005
 
 type DragHandleType = OrbitHandleType | 'roll'
+const DRAG_HANDLE_TYPES: Record<DragHandleType, true> = {
+  yaw: true,
+  pitch: true,
+  distance: true,
+  roll: true
+}
+const isDragHandleType = (value: string): value is DragHandleType =>
+  Object.hasOwn(DRAG_HANDLE_TYPES, value)
 
 export type TransformGizmoMode =
   | 'none'
@@ -332,13 +340,14 @@ export class CameraInfoViewport {
     const targets = this.pickableTargetsFor(this.overlay.getState().mode)
     if (targets.length === 0) return null
     this.updatePointer(position)
-    return pickHandleAtPointer<DragHandleType>(
+    const picked = pickHandleAtPointer(
       this.raycaster,
       this.pointer,
       this.viewport.cameraManager.activeCamera,
       targets,
       this.canvas
     )
+    return picked !== null && isDragHandleType(picked) ? picked : null
   }
 
   private setHoveredHandle(type: DragHandleType | null): void {

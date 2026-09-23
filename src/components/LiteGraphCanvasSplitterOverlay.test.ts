@@ -13,7 +13,6 @@ import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 /**
  * Regression test: the graph-canvas-panel SplitterPanel must not clip

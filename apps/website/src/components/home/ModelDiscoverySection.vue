@@ -6,7 +6,7 @@ import { getRoutes } from '../../config/routes'
 import type { DiscoveryProvider } from '../../data/modelDiscovery'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import BrandButton from '../common/BrandButton.vue'
+import Button from '../ui/button/Button.vue'
 import StaticFrame from '../workshop/StaticFrame.vue'
 import WorkshopGate from '../workshop/WorkshopGate.vue'
 
@@ -33,7 +33,7 @@ const cardClass =
 <template>
   <WorkshopGate>
     <section
-      class="mx-auto max-w-9xl overflow-hidden py-16 lg:py-24"
+      class="overflow-hidden py-16 lg:py-24"
       data-testid="model-discovery"
     >
       <div
@@ -57,11 +57,13 @@ const cardClass =
       </div>
 
       <div
-        class="mt-12 px-6 lg:mt-16 lg:px-12"
+        class="mt-12 lg:mt-16"
         :aria-label="t('modelDiscovery.rowLabel', locale)"
         role="region"
       >
-        <div class="overflow-hidden">
+        <div
+          class="overflow-hidden mask-[linear-gradient(to_right,transparent,black_2rem,black_calc(100%-2rem),transparent)]"
+        >
           <div class="group flex w-max gap-3">
             <div
               v-for="copy in 2"
@@ -109,9 +111,9 @@ const cardClass =
       </div>
 
       <div class="mt-12 flex justify-center px-6 lg:mt-16">
-        <BrandButton :href="routes.workshop" variant="outline" size="xs">
+        <Button as="a" :href="routes.workshop" variant="outline">
           {{ t('modelDiscovery.browse', locale) }}
-        </BrandButton>
+        </Button>
       </div>
     </section>
   </WorkshopGate>

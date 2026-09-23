@@ -146,7 +146,7 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].value).toBe(333)
   })
 
-  it.each([
+  it.for([
     { label: 'null', value: null },
     { label: 'undefined', value: undefined }
   ])('restores an explicit $label value', ({ value }) => {
@@ -265,10 +265,10 @@ describe('PrimitiveNode', () => {
     expect(primitive.widgets?.[0].type).toBe('custom_widget')
   })
 
-  it('restores its serialized value through the reroute lifecycle', () => {
-    widgetInputsExtension.registerCustomNodes?.(app)
+  it('restores its serialized value through the reroute lifecycle', async () => {
+    await widgetInputsExtension.registerCustomNodes?.(app)
     localStorage.setItem('Comfy.RerouteNode.DefaultVisibility', 'true')
-    rerouteNodeExtension.registerCustomNodes?.(app)
+    await rerouteNodeExtension.registerCustomNodes?.(app)
     const frameCallbacks: FrameRequestCallback[] = []
     vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
       frameCallbacks.push(callback)
@@ -496,8 +496,8 @@ describe('convertToInput', () => {
 })
 
 describe('setWidgetConfig', () => {
-  beforeEach(() => {
-    widgetInputsExtension.registerCustomNodes?.(app)
+  beforeEach(async () => {
+    await widgetInputsExtension.registerCustomNodes?.(app)
   })
 
   /** A primitive feeding a widget-backed input, as reroute/paste leave it. */
@@ -631,8 +631,8 @@ describe('Comfy.WidgetInputs node-def hooks', () => {
   })
 
   describe('onInputDblClick', () => {
-    beforeEach(() => {
-      widgetInputsExtension.registerCustomNodes?.(app)
+    beforeEach(async () => {
+      await widgetInputsExtension.registerCustomNodes?.(app)
     })
 
     async function targetIn(graph: LGraph) {

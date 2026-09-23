@@ -8,9 +8,11 @@ import type {
   AgentPaywallPresentation
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 
-const { presentation = DEFAULT_AGENT_PAYWALL_PRESENTATION } = defineProps<{
-  presentation?: AgentPaywallPresentation
-}>()
+const { presentation = DEFAULT_AGENT_PAYWALL_PRESENTATION, message } =
+  defineProps<{
+    presentation?: AgentPaywallPresentation
+    message?: string
+  }>()
 const emit = defineEmits<{
   paywallAction: [action: AgentPaywallAction]
 }>()
@@ -20,7 +22,8 @@ const bodyKeys: Record<AgentPaywallPresentation['kind'], string> = {
   subscriptionRequired: 'agent.paywall.body.subscriptionRequired',
   member: 'agent.paywall.body.member',
   salesManaged: 'agent.paywall.body.salesManaged',
-  local: 'agent.paywall.body.local'
+  local: 'agent.paywall.body.local',
+  unavailable: 'agent.paywall.body.subscriptionRequired'
 }
 const bodyKey = computed(() => bodyKeys[presentation.kind])
 const showUpgrade = computed(
@@ -36,6 +39,7 @@ const showAddCredits = computed(
 
 <template>
   <div
+    role="alert"
     class="flex w-full flex-col justify-center gap-2 overflow-hidden rounded-lg border border-component-node-border bg-modal-card-background p-4 shadow-sm"
   >
     <div class="flex w-full items-start gap-2">
@@ -48,7 +52,7 @@ const showAddCredits = computed(
           {{ $t('agent.paywall.title') }}
         </p>
         <p class="m-0 text-muted-foreground">
-          {{ $t(bodyKey) }}
+          {{ message || $t(bodyKey) }}
         </p>
       </div>
     </div>

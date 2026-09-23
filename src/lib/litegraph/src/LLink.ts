@@ -59,6 +59,16 @@ export function resolveLinkTopology(topology: LinkTopology): LLink | undefined {
  * mutation its live LiteGraph facade. The store remains the identity owner;
  * this only installs the adapter used by graph lookup, painting, and link
  * interactions.
+ *
+ * This adoption is the only one of the three `adoptLinkTopology` call sites
+ * that can run strictly after the topology's own registration bumped
+ * {@link useLinkStore}'s revision (`registerLinkTopology` and
+ * `replaceLinkTopology` register and adopt in the same call, so their
+ * revision bump already postdates their adoption). Something reading
+ * `graph.links` between this topology's registration and this function
+ * materializing it — e.g. a CRDT `connect` mutation's own commit, checking
+ * the slot it just displaced — would otherwise cache "no facade yet"
+ * against that revision forever, since adoption alone never bumps it.
  */
 export function materializeLinkAdapter(
   graph: Pick<LGraph, 'rootGraph' | 'id'>,
@@ -87,6 +97,7 @@ export function materializeLinkAdapter(
     topology.parentId
   )
   adoptLinkTopology(link, scope, registered)
+  useLinkStore().notifyAdapterAdopted()
   return link
 }
 

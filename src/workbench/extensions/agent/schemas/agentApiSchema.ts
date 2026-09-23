@@ -94,6 +94,38 @@ export const zAgentRunMode = zGeneratedAgentRunMode.superRefine(
 )
 export type AgentRunModeValue = AgentRunModePreference['mode']
 
+/**
+ * One entry of a persisted assistant row's `content.tool_calls` (see
+ * `agentTranscript.ts`'s `parseToolCallEntry`), the reload-path counterpart
+ * to the live WebSocket's `zAgentToolCallData` above. `status` is
+ * deliberately `z.string()` rather than a closed enum: an unrecognized value
+ * must still surface as a failed `ToolPart` (`toolCallOk` treats anything
+ * other than `pending`/`running`/`ok`/`success` as failure), so schema
+ * validation should reject a malformed *entry* (missing `id`/`tool_name`),
+ * not an unfamiliar *status* string or a bad `duration_ms` — `duration_ms` is
+ * `z.unknown().optional()` so a NaN/Infinity/negative value there doesn't
+ * sink the whole entry; `parseToolCallEntry` narrows it separately and just
+ * omits it. `status` is likewise `.optional()`: an entry that omits it
+ * entirely must still survive validation (`toolCallPartState`/`toolCallOk`
+ * already treat `undefined` as terminal-and-failed, matching the old
+ * parser's behavior for a status-less call).
+ */
+export const zPersistedToolCallSummary = z
+  .object({
+    id: z.string(),
+    // The provider tool-use id a LIVE `agent_tool_call` frame carries as
+    // `tool_call_id` (see `zAgentToolCallData` above). `parseToolCallEntry`
+    // prefers this over `id` when building `callId` so a restored `ToolPart`
+    // is keyed the same way a live frame for the same call will be, and can
+    // be updated in place rather than rendered as an unmatched duplicate.
+    // Optional: rows recorded before `tool_call_id` existed have none.
+    tool_call_id: z.string().optional(),
+    tool_name: z.string(),
+    status: z.string().optional(),
+    duration_ms: z.unknown().optional()
+  })
+  .passthrough()
+
 export const zAgentMessage = zGeneratedAgentMessage
   .extend({
     pending_ask: zAgentPendingAsk.optional()
@@ -118,13 +150,15 @@ export type CloudWorkflowEntry = z.infer<
 
 export const zAgentError = z.union([zGeneratedAgentError, zAgentAdmissionError])
 
-export const zUploadImageResult = z.object({
-  name: z.string(),
-  subfolder: z.string(),
-  type: z.string()
+/**
+ * The 403 body the agent service returns when it will not serve the turn's
+ * `workflow_id` to the caller's workspace, whether the row is gone or belongs
+ * elsewhere. The message is the only discriminator on the wire: a 403 refusing
+ * the thread or the message carries the same shape with a different subject.
+ */
+export const zDisownedWorkflowError = z.object({
+  error: z.literal('workflow not found or access denied')
 })
-export type UploadImageResult = z.infer<typeof zUploadImageResult>
-
 const zAgentThinkingData = z
   .object({
     delta: z.string(),

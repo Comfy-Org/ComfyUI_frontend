@@ -1,7 +1,7 @@
 import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, defineComponent, h, nextTick } from 'vue'
+import { computed, defineComponent, h, nextTick, watch } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -41,16 +41,16 @@ function fakeNode(overrides: Record<string, unknown> = {}): LGraphNode {
 }
 
 function mountSource(node: LGraphNode) {
-  let videoUrl!: ReturnType<typeof useVideoSourceUrl>['videoUrl']
+  let source!: ReturnType<typeof useVideoSourceUrl>
   const view = render(
     defineComponent({
       setup() {
-        videoUrl = useVideoSourceUrl(computed(() => node)).videoUrl
+        source = useVideoSourceUrl(computed(() => node))
         return () => h('div')
       }
     })
   )
-  return { videoUrl, unmount: view.unmount }
+  return { ...source, unmount: view.unmount }
 }
 
 describe('useVideoSourceUrl', () => {
@@ -147,6 +147,126 @@ describe('useVideoSourceUrl', () => {
     const { videoUrl } = mountSource(node)
 
     expect(videoUrl.value).toBe('/api/view?filename=out.mp4&type=temp')
+  })
+
+  it('re-emits the resolved url after a load error', async () => {
+    vi.mocked(outputStore.getNodeImageUrls).mockReturnValue([
+      '/api/view?filename=out.mp4&type=temp&rand=0.123'
+    ])
+    vi.mocked(widgetStore.getWidget).mockReturnValue(undefined)
+
+    const upstream = fakeNode({ id: 'up' })
+    const node = fakeNode({
+      inputs: [{ name: 'video' }],
+      getInputNode: () => upstream
+    })
+
+    const { videoUrl, status, onError } = mountSource(node)
+    const history = [videoUrl.value]
+    watch(videoUrl, (value) => history.push(value), { flush: 'sync' })
+
+    onError()
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(history.slice(-2)).toEqual([
+      undefined,
+      '/api/view?filename=out.mp4&type=temp'
+    ])
+    expect(status.value).toBe('loading')
+  })
+
+  it('resets the retry budget when the source node re-executes with a new filename', async () => {
+    outputStore.nodeOutputs['up'] = { images: [{ filename: 'out.mp4' }] }
+    vi.mocked(outputStore.getNodeImageUrls).mockReturnValue([
+      '/api/view?filename=out.mp4&type=temp&rand=0.123'
+    ])
+    vi.mocked(widgetStore.getWidget).mockReturnValue(undefined)
+
+    const upstream = fakeNode({ id: 'up' })
+    const node = fakeNode({
+      inputs: [{ name: 'video' }],
+      getInputNode: () => upstream
+    })
+
+    const { videoUrl, status, onError } = mountSource(node)
+
+    onError()
+    expect(status.value).toBe('retrying')
+
+    vi.mocked(outputStore.getNodeImageUrls).mockReturnValue([
+      '/api/view?filename=new.mp4&type=temp&rand=0.456'
+    ])
+    outputStore.nodeOutputs['up'] = { images: [{ filename: 'new.mp4' }] }
+    await nextTick()
+
+    expect(videoUrl.value).toBe('/api/view?filename=new.mp4&type=temp')
+    expect(status.value).toBe('loading')
+  })
+
+  it('re-arms, reloads and resets the budget when a re-execution resolves the identical url', async () => {
+    const url = '/api/view?filename=out.mp4&type=temp'
+    outputStore.nodeOutputs['up'] = { images: [{ filename: 'out.mp4' }] }
+    vi.mocked(outputStore.getNodeImageUrls).mockReturnValue([
+      `${url}&rand=0.123`
+    ])
+    vi.mocked(widgetStore.getWidget).mockReturnValue(undefined)
+
+    const upstream = fakeNode({ id: 'up' })
+    const node = fakeNode({
+      inputs: [{ name: 'video' }],
+      getInputNode: () => upstream
+    })
+
+    const { videoUrl, status, onError } = mountSource(node)
+    onError()
+    await vi.advanceTimersByTimeAsync(500)
+    onError()
+
+    const history = [videoUrl.value]
+    watch(videoUrl, (value) => history.push(value), { flush: 'sync' })
+
+    vi.mocked(outputStore.getNodeImageUrls).mockReturnValue([
+      `${url}&rand=0.456`
+    ])
+    outputStore.nodeOutputs['up'] = { images: [{ filename: 'out.mp4' }] }
+    await nextTick()
+    await nextTick()
+
+    expect(history.slice(-2)).toEqual([undefined, url])
+    expect(status.value).toBe('loading')
+
+    const historyLength = history.length
+    onError()
+    await vi.advanceTimersByTimeAsync(500)
+
+    expect(history.slice(historyLength)).toEqual([undefined, url])
+  })
+
+  it('does not reload when an unrelated connection change resolves the same url', async () => {
+    const url = '/api/view?filename=out.mp4&type=temp'
+    outputStore.nodeOutputs['up'] = { images: [{ filename: 'out.mp4' }] }
+    vi.mocked(outputStore.getNodeImageUrls).mockReturnValue([
+      `${url}&rand=0.123`
+    ])
+    vi.mocked(widgetStore.getWidget).mockReturnValue(undefined)
+
+    const upstream = fakeNode({ id: 'up' })
+    const node = fakeNode({
+      inputs: [{ name: 'video' }],
+      getInputNode: () => upstream
+    })
+
+    const { videoUrl, status } = mountSource(node)
+    const history = [videoUrl.value]
+    watch(videoUrl, (value) => history.push(value), { flush: 'sync' })
+
+    const fireConnectionsChange = node.onConnectionsChange as () => void
+    fireConnectionsChange()
+    await nextTick()
+    await nextTick()
+
+    expect(history).toEqual([url])
+    expect(status.value).toBe('loading')
   })
 
   it('falls back to the upstream file widget before any execution', () => {

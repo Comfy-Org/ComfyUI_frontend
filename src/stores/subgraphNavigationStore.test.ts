@@ -69,14 +69,19 @@ vi.mock<unknown>(import('@/scripts/app'), () => {
     _nodes: [],
     nodes: [],
     subgraphs: new Map(),
-    getNodeById: vi.fn()
+    getNodeById: vi.fn(),
+    get rootGraph() {
+      return mockGraph
+    }
   }
 
   return {
     app: {
       graph: mockGraph,
       rootGraph: mockGraph,
-      canvas: mockCanvas
+      rootGraphOrUndefined: mockGraph,
+      canvas: mockCanvas,
+      canvasOrUndefined: mockCanvas
     }
   }
 })
@@ -103,6 +108,7 @@ vi.mock<unknown>(
 
 describe('useSubgraphNavigationStore', () => {
   beforeEach(() => {
+    useCanvasStore().canvas = app.canvas
     vi.mocked(useCanvasStore().getCanvas).mockImplementation(() => app.canvas)
     app.rootGraph.subgraphs.clear()
     app.rootGraph.id = 'current-root'

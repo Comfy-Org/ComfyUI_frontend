@@ -1,13 +1,12 @@
 import { execFileSync } from 'node:child_process'
-
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { expect, it } from 'vitest'
 
-import { workshopContract } from '../../config/workshop-contract-catalog'
 import { workshopExampleFile } from '../../config/workshop-example-file'
 import { initialWorkshopPageState } from '../../config/workshop-page-state'
-import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import { workshopContract } from '../../config/workshop-contract-catalog'
 import defaultMedia from '../../data/router-default-media.json'
 import ApiTab from './ApiTab.vue'
 

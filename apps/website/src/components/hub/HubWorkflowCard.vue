@@ -304,9 +304,10 @@ function openCard() {
             class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-500 group-hover/pill-trigger:grid-cols-[1fr]"
           >
             <span class="overflow-hidden">
-              <span class="ppformula-text-center relative leading-none">{{
-                tryNowLabel
-              }}</span>
+              <span
+                class="ppformula-text-center relative inline-block leading-none"
+                >{{ tryNowLabel }}</span
+              >
             </span>
           </span>
           <span

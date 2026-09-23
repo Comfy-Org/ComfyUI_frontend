@@ -259,22 +259,23 @@ import { useI18n } from 'vue-i18n'
 
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import UserAvatar from '@/components/common/UserAvatar.vue'
+import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
+import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
-import { useBillingContext } from '@/composables/billing/useBillingContext'
+
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
-import { getBillingWebUrl } from '@/config/billingWeb'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import SubscribeButton from '@/platform/cloud/subscription/components/SubscribeButton.vue'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { isCloud } from '@/platform/distribution/types'
-import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
-import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
-import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
+import { hostedBillingRoute } from '@/platform/workspace/billing/hostedBillingRoutes'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useDialogService } from '@/services/dialogService'
 
 const workspaceStore = useTeamWorkspaceStore()
@@ -391,13 +392,24 @@ const handleOpenWorkspaceSettings = () => {
   emit('close')
 }
 
+/**
+ * `noopener` returns a null handle even on success, so the blocked tab and the
+ * opened one are told apart by opening a blank tab and clearing `opener` by
+ * hand before it leaves `about:blank`. Only that one property survives: the
+ * tab stays in this page's browsing-context group and sends this origin as
+ * the referrer, both of which `'noopener,noreferrer'` would have prevented.
+ */
+const openDisownedTab = (url: URL): boolean => {
+  const tab = window.open('', '_blank')
+  if (!tab) return false
+  tab.opener = null
+  tab.location.href = url.href
+  return true
+}
+
 const handleOpenPlansAndPricing = () => {
-  const billingWebUrl = getBillingWebUrl()
-  const hostedTab =
-    flags.hostedBillingWebEnabled && billingWebUrl
-      ? window.open(billingWebUrl.href, '_blank', 'noopener,noreferrer')
-      : null
-  if (!hostedTab) {
+  const route = hostedBillingRoute(flags.hostedBillingDestination, 'pricing')
+  if (route.kind !== 'billing_web' || !openDisownedTab(route.url)) {
     subscriptionDialog.showPricingTable({ reason: 'avatar_menu_plans' })
   }
   emit('close')

@@ -30,7 +30,7 @@
       <button
         class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
         :aria-label="$t('g.close')"
-        @click="() => handleClose()"
+        @click="() => handleClose(!topupIsParkedWithoutLink)"
       >
         <i class="icon-[lucide--x] size-6" />
       </button>
@@ -92,11 +92,7 @@
           {{ $t('credits.topUp.verifyTitle') }}
         </h2>
         <p class="m-0 text-sm text-balance text-muted-foreground">
-          {{
-            topupReconciliationOperationId
-              ? $t('billingOperation.reconciliationDetail')
-              : topupAuthenticationError || $t('credits.topUp.verifyBody')
-          }}
+          {{ verifyingBody }}
         </p>
         <span
           v-if="topupReconciliationOperationId"
@@ -228,6 +224,15 @@
           {{ $t('credits.topUp.startOver') }}
         </Button>
         <Button
+          v-else-if="topupIsParkedWithoutLink"
+          variant="secondary"
+          size="lg"
+          class="h-10 w-full justify-center"
+          @click="() => handleClose(false)"
+        >
+          {{ $t('g.ok') }}
+        </Button>
+        <Button
           v-else-if="!topupReconciliationOperationId"
           variant="primary"
           size="lg"
@@ -303,9 +308,10 @@ import { reportError } from '@/platform/telemetry/reportError'
 import type { CheckoutJourneyPhaseEvent } from '@/platform/telemetry/types'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
+import { isBlockedOnCustomerPhase } from '@/platform/workspace/billing/customerAttention'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useHasSavedPaymentMethod } from '@/platform/workspace/composables/useHasSavedPaymentMethod'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
+import { useTopupOperation } from '@/platform/workspace/composables/useTopupOperation'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   bindOperationToCheckoutJourney,
@@ -330,13 +336,10 @@ const settingsDialog = useSettingsDialog()
 const telemetry = useTelemetry()
 const toast = useToast()
 const { buildDocsUrl, docsPaths } = useExternalLink()
-const { fetchBalance, fetchStatus, manageSubscription, topup } =
-  useBillingContext()
+const { fetchBalance, fetchStatus, manageSubscription } = useBillingContext()
 const { canTopUp } = useBillingCapabilities()
 
-const billingOperationStore = useBillingOperationStore()
 const workspaceStore = useTeamWorkspaceStore()
-const isAddingCredits = computed(() => billingOperationStore.isAddingCredits)
 
 function emitTopupJourneyPhase(
   record: CheckoutJourneyRecord,
@@ -366,9 +369,18 @@ function enterTopupJourney(): void {
 }
 
 onMounted(enterTopupJourney)
-const topupOperation = computed(
-  () => billingOperationStore.topupActionOperation
-)
+const {
+  isAddingCredits,
+  topupOperation,
+  topup,
+  retryPaymentAuthentication,
+  dismissOperation,
+  adoptPendingOperation
+} = useTopupOperation()
+// Start over invalidates the attempt in flight: on the SDK rail the purchase
+// call resolves only at settlement, so a superseded attempt must not unlock
+// or close the dialog for the attempt that replaced it.
+let purchaseAttempt = 0
 const topupActionUrl = computed(() => topupOperation.value?.actionUrl ?? null)
 const topupAuthenticationError = computed(
   () => topupOperation.value?.errorMessage ?? null
@@ -382,11 +394,35 @@ const topupIsAuthenticating = computed(
 const topupIsFailedRetryable = computed(
   () => topupOperation.value?.authenticationState === 'failed_retryable'
 )
+// Parked on the customer with no link to send them to. The operation stays open
+// server-side, and that also refuses a replacement purchase, so this state
+// explains the wait rather than offering a restart that would be rejected.
+// Leaving this screen keeps the pending-top-up marker: the copy sends the
+// customer off to pay elsewhere, and the marker outlives the wait, so it is
+// what refreshes the balance when they come back to a settled purchase.
+// Latent on this rail today — only the legacy hosted-checkout path sets the
+// marker, so usually there is none here to keep. Preserving it is still right,
+// and it starts paying off if this rail ever sets one when it parks.
+const topupIsParkedWithoutLink = computed(
+  () =>
+    !topupActionUrl.value &&
+    isBlockedOnCustomerPhase(topupOperation.value?.phase)
+)
 const topupReconciliationOperationId = computed(() =>
   topupOperation.value?.status === 'reconciliation_needed'
     ? topupOperation.value.opId
     : null
 )
+const verifyingBody = computed(() => {
+  if (topupReconciliationOperationId.value) {
+    return t('billingOperation.reconciliationDetail')
+  }
+  if (topupAuthenticationError.value) return topupAuthenticationError.value
+  if (topupIsParkedWithoutLink.value) {
+    return t('credits.topUp.awaitingBankApprovalBody')
+  }
+  return t('credits.topUp.verifyBody')
+})
 
 // Constants
 const PRESET_AMOUNTS = [10, 25, 50, 100]
@@ -450,6 +486,7 @@ const paymentLocked = computed(
 watch(
   [isAddingCredits, topupOperation, canTopUp],
   ([addingCredits, operation, allowed]) => {
+    if (addingCredits || operation) loading.value = false
     if (step.value === 'verifying' && !addingCredits && !operation) {
       step.value = 'amount'
       return
@@ -517,12 +554,13 @@ function openTopupVerification() {
 function resumeTopupAuthentication() {
   const operation = topupOperation.value
   if (!operation || !canTopUp.value) return
-  void billingOperationStore.retryPaymentAuthentication(operation.opId)
+  void retryPaymentAuthentication(operation.opId)
 }
 
 function startOverTopup() {
+  purchaseAttempt += 1
   const operation = topupOperation.value
-  if (operation) billingOperationStore.dismissOperation(operation.opId)
+  if (operation) dismissOperation(operation.opId)
   paymentSubmitted.value = false
   step.value = 'amount'
 }
@@ -539,6 +577,9 @@ async function handleBuy() {
     return
   }
 
+  purchaseAttempt += 1
+  const attempt = purchaseAttempt
+  const isCurrentAttempt = () => attempt === purchaseAttempt
   loading.value = true
   paymentSubmitted.value = true
   const attemptStartedAt = Date.now()
@@ -564,7 +605,7 @@ async function handleBuy() {
     const amountCents = payAmount.value * 100
     const response = await topup(amountCents)
     if (!response) {
-      paymentSubmitted.value = false
+      if (isCurrentAttempt()) paymentSubmitted.value = false
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'failed',
@@ -628,23 +669,25 @@ async function handleBuy() {
         life: 5000
       })
       await Promise.allSettled([fetchBalance(), fetchStatus()])
+      if (!isCurrentAttempt()) return
       handleClose(false)
       settingsDialog.show(isCloud ? 'workspace' : 'credits')
     } else if (response.status === 'pending') {
-      void billingOperationStore
-        .startOperation(response.billing_op_id, 'topup', {
-          attemptStartedAt,
-          autoHandleRequiresAction: true
-        })
+      void adoptPendingOperation(response.billing_op_id, { attemptStartedAt })
         .then(() => {
-          paymentSubmitted.value = false
+          if (isCurrentAttempt()) paymentSubmitted.value = false
         })
         .catch(() => {
-          reportPurchaseError(attemptStartedAt, response.billing_op_id)
+          reportPurchaseError(
+            attemptStartedAt,
+            response.billing_op_id,
+            undefined,
+            isCurrentAttempt()
+          )
         })
     } else {
       // Synchronous 'failed' here means the charge was declined, not rejected pre-attempt.
-      paymentSubmitted.value = false
+      if (isCurrentAttempt()) paymentSubmitted.value = false
       telemetry?.trackBillingEvent({
         operation: 'topup',
         stage: 'failed',
@@ -669,18 +712,19 @@ async function handleBuy() {
       })
     }
   } catch (error) {
-    reportPurchaseError(attemptStartedAt, undefined, error)
+    reportPurchaseError(attemptStartedAt, undefined, error, isCurrentAttempt())
   } finally {
-    loading.value = false
+    if (isCurrentAttempt()) loading.value = false
   }
 }
 
 function reportPurchaseError(
   attemptStartedAt: number,
   billingOpId?: string,
-  error?: unknown
+  error?: unknown,
+  currentAttempt = true
 ) {
-  paymentSubmitted.value = false
+  if (currentAttempt) paymentSubmitted.value = false
   console.error('Purchase failed', ...(error === undefined ? [] : [error]))
 
   telemetry?.trackBillingEvent({
@@ -702,19 +746,26 @@ function reportPurchaseError(
       error === undefined ? 'unknown' : categorizeBillingApiError(error),
     duration_ms: Date.now() - attemptStartedAt
   })
-  const missingPaymentMethod =
-    error instanceof WorkspaceApiError && error.code === 'NO_PAYMENT_METHOD'
   toast.add({
     severity: 'error',
     summary: t('credits.topUp.purchaseError'),
-    detail: missingPaymentMethod
-      ? t('credits.topUp.noPaymentMethodError')
-      : t('credits.topUp.purchaseErrorDetail', {
-          error:
-            error instanceof Error
-              ? error.message
-              : t('credits.topUp.unknownError')
-        })
+    detail: purchaseErrorDetail(error)
+  })
+}
+
+function purchaseErrorDetail(error?: unknown): string {
+  const code = error instanceof WorkspaceApiError ? error.code : undefined
+  if (code === 'NO_PAYMENT_METHOD') {
+    return t('credits.topUp.noPaymentMethodError')
+  }
+  // Only one billing operation is open at a time, so this refusal means the
+  // previous purchase has not settled or expired yet — not that anything failed.
+  if (code === 'SUBSCRIPTION_CHANGE_IN_PROGRESS') {
+    return t('credits.topUp.changeInProgressError')
+  }
+  return t('credits.topUp.purchaseErrorDetail', {
+    error:
+      error instanceof Error ? error.message : t('credits.topUp.unknownError')
   })
 }
 </script>

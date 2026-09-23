@@ -1,17 +1,18 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { formForContract } from './workshop-contract'
 import { workshopContract } from './workshop-contract-catalog'
-import { workshopExampleValues } from './workshop-example-values'
-import { validateWorkshopInput } from './workshop-json-schema'
+import { formForContract } from './workshop-contract'
 import {
   defaultValues,
   schemaForModel,
   validateForm
 } from './workshop-playground'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import { prepareWorkshopRouterInput } from './workshop-request'
 import { prepareWorkshopRequestCallback } from './workshop-request-callbacks'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { validateWorkshopInput } from './workshop-json-schema'
+import { workshopExampleValues } from './workshop-example-values'
+import { WorkshopRouterError } from './workshop-router-errors'
 
 function contractFor(id: string) {
   const contract = workshopContract(id)
@@ -27,6 +28,26 @@ function image(name = 'source.png') {
 }
 
 describe('reviewed model request regressions', () => {
+  it('rejects unsupported GPT Image edit media', () => {
+    const prepare = () =>
+      prepareWorkshopRequestCallback(
+        { kind: 'callback', callback: 'gpt-image', options: {} },
+        {
+          values: { prompt: 'Restyle this image' },
+          files: {
+            images: [{ data: 'AAH/Ig==', mimeType: 'image/png' }]
+          }
+        }
+      )
+    expect(prepare).toThrow(WorkshopRouterError)
+    expect(prepare).toThrow(
+      expect.objectContaining({
+        reason: 'validation',
+        fieldErrors: { images: 'rejected' }
+      })
+    )
+  })
+
   it('preserves reference image order beyond the originally hardcoded three inputs', () => {
     const urls = {
       image_url_10: 'ten',

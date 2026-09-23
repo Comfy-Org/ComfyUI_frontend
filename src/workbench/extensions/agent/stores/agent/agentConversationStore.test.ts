@@ -85,6 +85,22 @@ const partTexts = (store: ReturnType<typeof useAgentConversationStore>) =>
   )
 
 describe('useAgentConversationStore', () => {
+  it('publishes a turn identity before its live status', () => {
+    const store = useAgentConversationStore()
+    const observations: [typeof store.status, TurnId | null][] = []
+    watch(
+      () => [store.status, store.activeTurnId] as const,
+      ([status, turnId]) => observations.push([status, turnId]),
+      { flush: 'sync' }
+    )
+
+    store.startTurn(T1)
+
+    expect(observations.filter(([status]) => status !== 'idle')).toEqual([
+      ['streaming', T1]
+    ])
+  })
+
   it('(M1) fires a deep watch on messages when a MID-turn delta event lands', async () => {
     const store = useAgentConversationStore()
     const spy = vi.fn()
@@ -466,6 +482,74 @@ describe('useAgentConversationStore', () => {
       role: 'user',
       workflowReferences: [{ id: 'wf-reference', name: 'Reference workflow' }]
     })
+  })
+
+  it('hydrates a persisted user attachment preview on its original turn', () => {
+    const user = historyRow(1, 'user', 'turn-a', 'check this image')
+    user.content = {
+      text: 'check this image',
+      attachments: ['ComfyUI_00002_.png'],
+      attachment_refs: [
+        { name: 'ComfyUI_00002_.png', id: 'asset-1', kind: 'image' }
+      ]
+    }
+    const store = useAgentConversationStore()
+
+    store.hydrate([user, historyRow(2, 'assistant', 'turn-a', 'Looks good.')])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [{ name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png' }]
+    })
+  })
+
+  it('hydrates persisted tool calls into the same parts array the live work-summary UI reads', () => {
+    const assistant = historyRow(2, 'assistant', 'turn-a', 'Done')
+    assistant.content = {
+      text: 'Done',
+      tool_calls: [{ id: 'call-1', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const store = useAgentConversationStore()
+
+    store.hydrate([historyRow(1, 'user', 'turn-a', 'Find a node'), assistant])
+
+    expect(store.messages[0].parts).toContainEqual({
+      type: 'tool',
+      callId: 'call-1',
+      name: 'search_nodes',
+      state: 'done',
+      ok: true
+    })
+  })
+
+  it('does not bleed a tool-call summary onto a different chat, and restores it when switching back', () => {
+    const store = useAgentConversationStore()
+    const threadAAssistant = historyRow(2, 'assistant', 'turn-a', 'Done A')
+    threadAAssistant.content = {
+      text: 'Done A',
+      tool_calls: [{ id: 'call-a', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const threadA = [
+      historyRow(1, 'user', 'turn-a', 'Find a node'),
+      threadAAssistant
+    ]
+    const threadB = [
+      historyRow(1, 'user', 'turn-b', 'Just chat'),
+      historyRow(2, 'assistant', 'turn-b', 'Done B')
+    ]
+    const hasToolPart = () =>
+      store.messages.some((message) =>
+        message.parts.some((part) => part.type === 'tool')
+      )
+
+    store.hydrate(threadA)
+    expect(hasToolPart()).toBe(true)
+
+    store.hydrate(threadB)
+    expect(hasToolPart()).toBe(false)
+
+    store.hydrate(threadA)
+    expect(hasToolPart()).toBe(true)
   })
 
   it('keeps hydrated turn identity stable when persisted row ids change', () => {

@@ -1,20 +1,23 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import creatorModels from '../data/workshop-creator-models.json'
-import type { WorkshopModelDetail } from './models-catalogue'
-import { workshopModels } from './workshop-browse-content'
-import { formForContract } from './workshop-contract'
-import { workshopContract } from './workshop-contract-catalog'
-import { validateWorkshopInput } from './workshop-json-schema'
+import { authoredWorkshopModels } from './workshop-browse-content'
+import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from './workshop-router-content'
 import {
   defaultValues,
   schemaForModel,
   validateForm
 } from './workshop-playground'
 import type { FileValue, FormValues } from './workshop-playground'
+import type { WorkshopModelDetail } from './models-catalogue'
 import { prepareWorkshopRouterInput } from './workshop-request'
-import { getRouterWorkshopModelDetail } from './workshop-router-content'
+import { validateWorkshopInput } from './workshop-json-schema'
+import creatorModels from '../data/workshop-creator-models.json'
+import { workshopContract } from './workshop-contract-catalog'
+import { formForContract } from './workshop-contract'
 import { createWorkshopUrlUploader } from './workshop-url-upload'
+import { prepareWorkshopCreatorRequest } from './workshop-creator-request'
+import { workshopExampleFile } from './workshop-example-file'
+import { WorkshopRouterError } from './workshop-router-errors'
 
 const imageUrl = 'https://example.invalid/source.png'
 const videoUrl = 'https://example.invalid/source.mp4'
@@ -107,9 +110,59 @@ function prepare(id: string, values: FormValues = {}) {
   )
 }
 
-const models = workshopModels.filter(
+const models = authoredWorkshopModels.filter(
   (model) => getRouterWorkshopModelDetail(model.slug)?.execution?.creator
 )
+
+describe('creator file failure diagnostics', () => {
+  it('preserves the original download failure and identifies the example field', async () => {
+    const { creator } = modelFor('vertexai/gemini-3-pro-image').execution
+    assert.isDefined(creator)
+    const example = workshopExampleFile(
+      'https://example.invalid/creator-source.png'
+    )
+    assert.isDefined(example)
+    const cause = new TypeError('Private download detail')
+    vi.stubGlobal('fetch', vi.fn<typeof fetch>().mockRejectedValue(cause))
+
+    const failure = await prepareWorkshopCreatorRequest(
+      creator,
+      { prompt: 'Edit', images: [example] },
+      new AbortController().signal
+    ).catch((error: unknown) => error)
+
+    assert.instanceOf(failure, WorkshopRouterError)
+    expect(failure).toMatchObject({
+      reason: 'upload',
+      stage: 'example_download',
+      fieldErrors: { images: 'uploadFailed' }
+    })
+    expect(failure.cause).toBe(cause)
+  })
+
+  it('identifies the creator file widget when the real encoder cannot read its input', async () => {
+    const { creator } = modelFor('vertexai/gemini-3-pro-image').execution
+    assert.isDefined(creator)
+    const image = upload()
+    assert.instanceOf(image.file, File)
+    const cause = new DOMException('Private filename', 'NotReadableError')
+    vi.spyOn(image.file, 'arrayBuffer').mockRejectedValue(cause)
+
+    const failure = await prepareWorkshopCreatorRequest(
+      creator,
+      { prompt: 'Edit', images: [image] },
+      new AbortController().signal
+    ).catch((error: unknown) => error)
+
+    assert.instanceOf(failure, WorkshopRouterError)
+    expect(failure).toMatchObject({
+      reason: 'client',
+      stage: 'file_read',
+      fieldErrors: { images: 'fileUnreadable' }
+    })
+    expect(failure.cause).toBe(cause)
+  })
+})
 
 describe('creator widgets to native Router requests', () => {
   beforeEach(() => {
@@ -156,7 +209,9 @@ describe('creator widgets to native Router requests', () => {
   })
 
   it.for([
-    ...new Map(workshopModels.map((model) => [model.routerId, model])).values()
+    ...new Map(
+      authoredWorkshopModels.map((model) => [model.routerId, model])
+    ).values()
   ])(
     'initializes valid defaults and leaves optional seeds unset: $slug',
     async (model) => {
@@ -230,7 +285,9 @@ describe('creator widgets to native Router requests', () => {
       expect(workshopContract(id)?.creator).toBeDefined()
     expect([...new Set(models.map((model) => model.routerId))].sort()).toEqual(
       Object.keys(creatorModels.models)
-        .filter((id) => workshopModels.some((model) => model.routerId === id))
+        .filter((id) =>
+          authoredWorkshopModels.some((model) => model.routerId === id)
+        )
         .sort()
     )
   })
@@ -333,7 +390,8 @@ describe('creator widgets to native Router requests', () => {
       const field = fields.find((entry) => entry.name === widget)
       if (field?.kind !== 'select')
         throw new Error(`Missing resolution dropdown: ${id}`)
-      expect(field.label).toBe('Resolution')
+      // Seedream and GPT Image widgets mix resolution tiers with pixel presets.
+      expect(['Resolution', 'Image size']).toContain(field.label)
       expect(field.options).toContain(value)
       expect(await prepare(id, { [widget]: value })).toMatchObject(expected)
       await expect(

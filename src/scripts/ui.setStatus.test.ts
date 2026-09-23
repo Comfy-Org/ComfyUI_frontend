@@ -1,9 +1,9 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { StatusWsMessageStatus } from '@/schemas/apiSchema'
-
+import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 import type { ComfyApp } from './app'
+
 import { app } from './app'
 import { ComfyUI } from './ui'
 
@@ -54,7 +54,7 @@ describe('ComfyUI.setStatus', () => {
   it('does not throw or update when exec_info is missing', () => {
     const host = createHost({ lastQueueSize: 5 })
 
-    expect(() => host.setStatus({} as StatusWsMessageStatus)).not.toThrow()
+    expect(() => host.setStatus({})).not.toThrow()
     expect(host.queueSize.textContent).toBe('')
     expect(host.lastQueueSize).toBe(5)
     expect(app.queuePrompt).not.toHaveBeenCalled()

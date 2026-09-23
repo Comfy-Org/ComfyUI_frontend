@@ -1,6 +1,9 @@
+import { computed } from 'vue'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { WORKSPACE_STORAGE_KEYS } from '@/platform/workspace/workspaceConstants'
 
 import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
@@ -8,6 +11,8 @@ import { sortWorkspaces, useTeamWorkspaceStore } from './teamWorkspaceStore'
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
+
+vi.mock(import('firebase/auth'))
 
 const mockClearWorkflowRestoreState = vi.hoisted(() => vi.fn())
 const mockPrepareWorkflowWorkspaceTransition = vi.hoisted(() => vi.fn())
@@ -25,19 +30,7 @@ vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
   })
 }))
 
-// Mock current user (drives the original-owner self-row match by email and
-// the API-key bootstrap branch)
-const mockCurrentUser = vi.hoisted(() => ({
-  userEmail: { value: null as string | null },
-  isApiKeyLogin: { value: false }
-}))
-
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    userEmail: mockCurrentUser.userEmail,
-    isApiKeyLogin: mockCurrentUser.isApiKeyLogin
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 // Mock workspaceApi
 const mockWorkspaceApi = vi.hoisted(() => ({
@@ -144,6 +137,9 @@ function expectCleanupBeforeContextAndReload(): void {
 }
 
 beforeEach(() => {
+  stubAccountIdentityPort()
+  useCurrentUser().userEmail = computed(() => null)
+
   Object.assign(useWorkspaceAuthStore(), {
     currentWorkspace: null,
     workspaceToken: null,
@@ -173,8 +169,6 @@ describe('useTeamWorkspaceStore', () => {
     mockDistributionTypes.isCloud = true
     vi.stubGlobal('localStorage', mockLocalStorage)
     sessionStorage.clear()
-    mockCurrentUser.userEmail.value = null
-    mockCurrentUser.isApiKeyLogin.value = false
 
     vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
       false
@@ -465,7 +459,7 @@ describe('useTeamWorkspaceStore', () => {
 
   describe('initialize with an API-key session', () => {
     beforeEach(() => {
-      mockCurrentUser.isApiKeyLogin.value = true
+      useCurrentUser().isApiKeyLogin = computed(() => true)
       mockWorkspaceApi.getCurrentWorkspace.mockResolvedValue({
         id: 'ws-api-key',
         name: 'Key Workspace',
@@ -1730,19 +1724,19 @@ describe('useTeamWorkspaceStore', () => {
     const promotedSelf = { ...ownerSelf, is_original_owner: false }
 
     it('is true when the self-row is the original owner', async () => {
-      mockCurrentUser.userEmail.value = 'owner@test.com'
+      useCurrentUser().userEmail = computed(() => 'owner@test.com')
       const store = await loadTeamWithMembers([ownerSelf])
       expect(store.isCurrentUserOriginalOwner).toBe(true)
     })
 
     it('matches the self-row by email case-insensitively', async () => {
-      mockCurrentUser.userEmail.value = 'OWNER@TEST.COM'
+      useCurrentUser().userEmail = computed(() => 'OWNER@TEST.COM')
       const store = await loadTeamWithMembers([ownerSelf])
       expect(store.isCurrentUserOriginalOwner).toBe(true)
     })
 
     it('is false when the self-row is a promoted (non-creator) owner', async () => {
-      mockCurrentUser.userEmail.value = 'owner@test.com'
+      useCurrentUser().userEmail = computed(() => 'owner@test.com')
       const creator = {
         id: 'creator',
         name: 'Creator',
@@ -1756,14 +1750,14 @@ describe('useTeamWorkspaceStore', () => {
     })
 
     it('infers the earliest owner as the original owner when no member is flagged', async () => {
-      mockCurrentUser.userEmail.value = 'owner@test.com'
+      useCurrentUser().userEmail = computed(() => 'owner@test.com')
       const { is_original_owner: _omitted, ...ownerWithoutFlag } = ownerSelf
       const store = await loadTeamWithMembers([ownerWithoutFlag])
       expect(store.isCurrentUserOriginalOwner).toBe(true)
     })
 
     it('is false when the self-row is a plain member', async () => {
-      mockCurrentUser.userEmail.value = 'member@test.com'
+      useCurrentUser().userEmail = computed(() => 'member@test.com')
       const plainMember = {
         id: 'plain-member',
         name: 'Plain Member',
@@ -1776,13 +1770,13 @@ describe('useTeamWorkspaceStore', () => {
     })
 
     it('is false when no member row matches the current user', async () => {
-      mockCurrentUser.userEmail.value = 'someone-else@test.com'
+      useCurrentUser().userEmail = computed(() => 'someone-else@test.com')
       const store = await loadTeamWithMembers([ownerSelf])
       expect(store.isCurrentUserOriginalOwner).toBe(false)
     })
 
     it('fails closed when members are not loaded', async () => {
-      mockCurrentUser.userEmail.value = 'owner@test.com'
+      useCurrentUser().userEmail = computed(() => 'owner@test.com')
       vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
         true
       )
@@ -1797,13 +1791,13 @@ describe('useTeamWorkspaceStore', () => {
     })
 
     it('fails closed when the current user email is unknown', async () => {
-      mockCurrentUser.userEmail.value = null
+      useCurrentUser().userEmail = computed(() => null)
       const store = await loadTeamWithMembers([ownerSelf])
       expect(store.isCurrentUserOriginalOwner).toBe(false)
     })
 
     it('recomputes reactively when the self-row arrives after an empty read', async () => {
-      mockCurrentUser.userEmail.value = 'owner@test.com'
+      useCurrentUser().userEmail = computed(() => 'owner@test.com')
       mockWorkspaceApi.listMembers.mockResolvedValue({
         members: [ownerSelf],
         pagination: { offset: 0, limit: 50, total: 1 }
@@ -1864,6 +1858,7 @@ describe('useTeamWorkspaceStore', () => {
       expect(result).toHaveLength(1)
       expect(store.pendingInvites).toHaveLength(1)
       expect(store.pendingInvites[0].email).toBe('invite@test.com')
+      expect(store.pendingInvites[0].token).toBe('token-abc')
     })
 
     it('createInvite adds to local list', async () => {
@@ -1893,6 +1888,34 @@ describe('useTeamWorkspaceStore', () => {
       expect(result.email).toBe('new@test.com')
       expect(store.pendingInvites).toContainEqual(
         expect.objectContaining({ email: 'new@test.com' })
+      )
+    })
+
+    it('createInvite keeps the token from the create response', async () => {
+      // The invite link the confirmation step offers is built from this token,
+      // so the mapper must carry it through whenever the API returns one.
+      mockWorkspaceApi.createInvite.mockResolvedValue({
+        id: 'inv-new',
+        email: 'new@test.com',
+        token: 'token-new',
+        invited_at: '2024-01-01T00:00:00Z',
+        expires_at: '2024-01-08T00:00:00Z'
+      })
+      vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
+        true
+      )
+      Object.assign(useWorkspaceAuthStore(), {
+        currentWorkspace: mockTeamWorkspace
+      })
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+
+      const result = await store.createInvite('new@test.com')
+
+      expect(result.token).toBe('token-new')
+      expect(store.pendingInvites).toContainEqual(
+        expect.objectContaining({ email: 'new@test.com', token: 'token-new' })
       )
     })
 
@@ -1971,6 +1994,44 @@ describe('useTeamWorkspaceStore', () => {
       expect(store.pendingInvites[0].expiryDate).toEqual(
         new Date('2024-02-08T00:00:00Z')
       )
+    })
+
+    it('resendInvite keeps the token from the resend response', async () => {
+      // A resend issues a fresh token, so the pending row's copy-link action
+      // has to follow the refreshed value rather than the seeded one.
+      mockWorkspaceApi.listInvites.mockResolvedValue({
+        invites: [
+          {
+            id: 'inv-1',
+            email: 'one@test.com',
+            token: 'token-1',
+            invited_at: '2024-01-01T00:00:00Z',
+            expires_at: '2024-01-08T00:00:00Z'
+          }
+        ]
+      })
+      mockWorkspaceApi.resendInvite.mockResolvedValue({
+        id: 'inv-1',
+        email: 'one@test.com',
+        token: 'token-2',
+        invited_at: '2024-02-01T00:00:00Z',
+        expires_at: '2024-02-08T00:00:00Z'
+      })
+      vi.mocked(useWorkspaceAuthStore().initializeFromSession).mockReturnValue(
+        true
+      )
+      Object.assign(useWorkspaceAuthStore(), {
+        currentWorkspace: mockTeamWorkspace
+      })
+
+      const store = useTeamWorkspaceStore()
+      await store.initialize()
+      await store.fetchPendingInvites()
+
+      const result = await store.resendInvite('inv-1')
+
+      expect(result.token).toBe('token-2')
+      expect(store.pendingInvites[0].token).toBe('token-2')
     })
 
     it('resendInvite propagates a 404 and leaves the original invite unchanged', async () => {

@@ -1,20 +1,21 @@
-import userEvent from '@testing-library/user-event'
+import type {
+  WorkflowReference,
+  WorkflowReferenceMetadata,
+  WorkflowReferenceOption
+} from '../../types/workflowReference'
+import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { render, screen, waitFor, within } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { DirectiveBinding } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
+import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-
-import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import { api } from '@/scripts/api'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
-import type {
-  WorkflowReference,
-  WorkflowReferenceMetadata,
-  WorkflowReferenceOption
-} from '../../types/workflowReference'
 import Composer from './Composer.vue'
 import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSetup'
 
@@ -30,10 +31,8 @@ const tooltipDirectiveStub = {
   }
 }
 
-const fetchApi = vi.hoisted(() =>
-  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
-)
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+vi.mock(import('@/scripts/api'))
+const fetchApi = vi.mocked(api.fetchApi)
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -113,6 +112,15 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
+  it('preserves new input on Enter without stopping an active run', async () => {
+    const { emitted } = mount({ streaming: true })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'Next draft{Enter}')
+    expect(textbox).toHaveTextContent('Next draft')
+    expect(emitted().stop).toBeUndefined()
+    expect(emitted().send).toBeUndefined()
+  })
+
   it('blocks all node entry points and explains why while workflow references remain available', async () => {
     const reason = 'Please select a workflow first'
     const props = {
@@ -181,7 +189,7 @@ describe('Composer', () => {
     })
     expect(addNodes).toBeVisible()
     expect(addNodes).toContainHTML(
-      '<span class="icon-[lucide--mouse-pointer-click] size-[14px] shrink-0"></span>'
+      '<span class="icon-[lucide--mouse-pointer-click] size-3.5 shrink-0"></span>'
     )
     expect(
       text.compareDocumentPosition(addNodes) & Node.DOCUMENT_POSITION_FOLLOWING
@@ -235,12 +243,6 @@ describe('Composer', () => {
     mount()
     const send = screen.getByRole('button', { name: 'Send' })
     expect(send).toBeDisabled()
-
-    await userEvent.hover(send)
-    expect(
-      await screen.findByRole('tooltip', { hidden: true })
-    ).toHaveTextContent('Add a prompt to send')
-    await userEvent.unhover(send)
 
     await userEvent.click(screen.getByRole('textbox'))
     await userEvent.paste('hello')
@@ -313,6 +315,206 @@ describe('Composer', () => {
     expect(emitted().send).toBeUndefined()
   })
 
+  it('shows the Stop tooltip with the Esc shortcut while running', async () => {
+    mount({ streaming: true })
+    const stop = screen.getByRole('button', { name: 'Stop' })
+    await userEvent.hover(stop)
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent('Stop Esc')
+  })
+
+  it('emits stop on Escape while running and ignores Enter', async () => {
+    const { emitted } = mount({ submitting: true })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'hello{Enter}')
+    expect(emitted().stop).toBeUndefined()
+    expect(emitted().send).toBeUndefined()
+
+    // An auto-repeated Escape is still contained by the registered override
+    // (which keybindHandler would otherwise let dispatch ExitSubgraph), but
+    // it doesn't itself trigger a stop.
+    const repeatedEscapeEvent = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      repeat: true,
+      cancelable: true
+    })
+    expect(consultEscapeOverride(repeatedEscapeEvent)).toBe(true)
+    expect(repeatedEscapeEvent.defaultPrevented).toBe(true)
+    expect(emitted().stop).toBeUndefined()
+
+    await userEvent.type(box, '{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('stops the run on Escape after submitting by clicking Send with the mouse', async () => {
+    // A plain click moves focus onto the Send button (Chrome's behavior), so
+    // the event never reaches the editor-scoped keydown handler. This is
+    // exactly the case the registered Escape override exists for, so it's
+    // consulted directly rather than dispatched through the DOM - the same
+    // way `keybindHandler` consults it in the real app.
+    useAgentComposerStore().setText('run this')
+    const { rerender, emitted } = mount()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    expect(emitted().send).toHaveLength(1)
+
+    await rerender({ streaming: true })
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true
+    })
+    expect(consultEscapeOverride(event)).toBe(true)
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('stops the run on Escape after clicking Send without moving focus (Safari/Firefox)', async () => {
+    // Safari and Firefox don't move focus onto a plain-clicked <button> the
+    // way Chrome does, so simulate that by dispatching the click directly
+    // instead of going through userEvent.click(), which always focuses the
+    // element it clicks.
+    useAgentComposerStore().setText('run this')
+    const { rerender, emitted } = mount()
+
+    const sendButton = screen.getByRole('button', { name: 'Send' })
+    sendButton.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+    await nextTick()
+    expect(emitted().send).toHaveLength(1)
+    // eslint-disable-next-line testing-library/no-node-access
+    expect(document.activeElement).toBe(document.body)
+
+    await rerender({ streaming: true })
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true
+    })
+    expect(consultEscapeOverride(event)).toBe(true)
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('does not stop the run on Escape once focus has left the composer entirely', async () => {
+    const onStop = vi.fn()
+    const Host = defineComponent({
+      setup: () => () =>
+        h('div', [
+          h(Composer, { hasWorkflowTarget: true, streaming: true, onStop }),
+          h('button', { type: 'button' }, 'Elsewhere on the page')
+        ])
+    })
+    render(Host, {
+      global: {
+        plugins: [i18n],
+        directives: { tooltip: tooltipDirectiveStub }
+      }
+    })
+    const box = screen.getByRole('textbox')
+    await userEvent.click(box)
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Elsewhere on the page' })
+    )
+    const event = new KeyboardEvent('keydown', {
+      key: 'Escape',
+      cancelable: true
+    })
+    expect(consultEscapeOverride(event)).toBe(false)
+    expect(onStop).not.toHaveBeenCalled()
+  })
+
+  it('shows the Stop tooltip while submitting and stops on Escape while streaming', async () => {
+    const submitting = mount({ submitting: true })
+    await userEvent.hover(screen.getByRole('button', { name: 'Stop' }))
+    expect(
+      await screen.findByRole('tooltip', { hidden: true })
+    ).toHaveTextContent('Stop Esc')
+    submitting.unmount()
+
+    const { emitted } = mount({ streaming: true })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, 'hello{Enter}')
+    expect(emitted().send).toBeUndefined()
+    expect(emitted().stop).toBeUndefined()
+    await userEvent.type(box, '{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('does not stop the run on Escape during IME composition', async () => {
+    const { emitted } = mount({ streaming: true })
+    const box = screen.getByRole('textbox')
+    box.focus()
+    const notCanceled = box.dispatchEvent(
+      new KeyboardEvent('keydown', {
+        key: 'Escape',
+        isComposing: true,
+        bubbles: true,
+        cancelable: true
+      })
+    )
+    expect(notCanceled).toBe(true)
+    expect(emitted().stop).toBeUndefined()
+  })
+
+  it('lets Escape close the mention list before it stops a run', async () => {
+    const { emitted } = mount({
+      streaming: true,
+      getMentionNodes: () => [{ id: '2', title: 'KSampler' }]
+    })
+    const box = screen.getByRole('textbox')
+    await userEvent.type(box, '@')
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(emitted().stop).toBeUndefined()
+    await userEvent.keyboard('{Escape}')
+    expect(emitted().stop).toHaveLength(1)
+  })
+
+  it('keeps handled Escapes inside the composer and lets idle Escape bubble', async () => {
+    const parentKeydown = vi.fn<(event: KeyboardEvent) => void>()
+    const escapesSeenByParent = () =>
+      parentKeydown.mock.calls.filter(([event]) => event.key === 'Escape')
+        .length
+    const onStop = vi.fn()
+    const mentionNodes = [{ id: '2', title: 'KSampler' }]
+    const streaming = ref(true)
+    const Host = defineComponent({
+      setup: () => () =>
+        h('div', { onKeydown: parentKeydown }, [
+          h(Composer, {
+            hasWorkflowTarget: true,
+            streaming: streaming.value,
+            getMentionNodes: () => mentionNodes,
+            onStop
+          })
+        ])
+    })
+    render(Host, {
+      global: {
+        plugins: [i18n],
+        directives: { tooltip: tooltipDirectiveStub }
+      }
+    })
+    const box = screen.getByRole('textbox')
+
+    await userEvent.type(box, '@')
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    await userEvent.keyboard('{Escape}')
+    expect(screen.queryByRole('menu')).not.toBeInTheDocument()
+    expect(onStop).not.toHaveBeenCalled()
+    expect(escapesSeenByParent()).toBe(0)
+
+    await userEvent.keyboard('{Escape}')
+    expect(onStop).toHaveBeenCalledTimes(1)
+    expect(escapesSeenByParent()).toBe(0)
+
+    streaming.value = false
+    await nextTick()
+    await userEvent.keyboard('{Escape}')
+    expect(onStop).toHaveBeenCalledTimes(1)
+    expect(escapesSeenByParent()).toBe(1)
+  })
+
   describe('run permissions popover', () => {
     beforeEach(() => {
       localStorage.clear()
@@ -331,28 +533,33 @@ describe('Composer', () => {
         await screen.findByText('Choose when the agent needs your consent')
       ).toBeInTheDocument()
       expect(
-        screen.getByRole('radio', { name: /Ask before a workflow runs/ })
+        screen.getByRole('menuitemradio', {
+          name: /Ask before a workflow runs/
+        })
       ).toBeChecked()
+      expect(screen.getAllByRole('menuitemradio')).toHaveLength(2)
       expect(
-        screen.getByRole('button', { name: 'Save changes' })
-      ).toBeDisabled()
-      expect(screen.getAllByRole('radio')).toHaveLength(2)
-      expect(
-        screen.queryByRole('radio', { name: /Auto-run with limits/ })
+        screen.queryByRole('menuitemradio', { name: /Auto-run with limits/ })
       ).not.toBeInTheDocument()
+
+      const menu = screen.getByRole('menu')
+      expect(within(menu).queryAllByRole('button')).toHaveLength(0)
+      expect(menu).toHaveAccessibleDescription(
+        'Choose when the agent needs your consent'
+      )
+      expect(menu).not.toContainElement(screen.getByRole('status'))
     })
 
-    it('saves auto mode and closes', async () => {
+    it('applies the picked mode without a separate save step', async () => {
       mount()
       const store = useAgentRunModeStore()
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
-        await screen.findByRole('radio', { name: /Auto-run without approval/ })
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
       )
-      const save = screen.getByRole('button', { name: 'Save changes' })
-      expect(save).toBeEnabled()
-      await userEvent.click(save)
       await vi.waitFor(() => expect(store.mode).toBe('auto'))
       await nextTick()
 
@@ -362,30 +569,160 @@ describe('Composer', () => {
       expect(
         await screen.findByRole('button', { name: 'Auto' })
       ).toBeInTheDocument()
-      expect(store.mode).toBe('auto')
       expect(store.creditLimit).toBeNull()
     })
 
-    it('keeps the popover open and reports a failed save', async () => {
+    it('rewrites the active mode when it is picked again', async () => {
+      mount()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: /Ask before a workflow runs/
+        })
+      )
+
+      expect(
+        screen.queryByText('Choose when the agent needs your consent')
+      ).toBeNull()
+      expect(
+        fetchApi.mock.calls.filter(([, init]) => init?.method === 'PUT')
+      ).toHaveLength(1)
+      expect(useAgentRunModeStore().mode).toBe('ask_approval')
+    })
+
+    it('keeps the popover open on the unchanged mode when the save fails', async () => {
       fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
       mount()
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
-        await screen.findByRole('radio', { name: /Auto-run without approval/ })
-      )
-      await userEvent.click(
-        screen.getByRole('button', { name: 'Save changes' })
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
       )
 
       expect(
         await screen.findByText('Choose when the agent needs your consent')
       ).toBeInTheDocument()
       expect(useAgentRunModeStore().mode).toBe('ask_approval')
+      await vi.waitFor(() =>
+        expect(
+          screen.getByRole('menuitemradio', {
+            name: /Ask before a workflow runs/
+          })
+        ).toBeChecked()
+      )
+      expect(screen.getByRole('status')).toBeEmptyDOMElement()
       expect(useToastStore().messagesToAdd).toContainEqual({
         severity: 'error',
         detail: i18n.global.t('agent.runModeSaveFailed')
       })
+    })
+
+    it('blocks a second pick while the write is in flight', async () => {
+      let resolvePut!: (response: Response) => void
+      fetchApi.mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          resolvePut = resolve
+        })
+      )
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+      )
+
+      const ask = screen.getByRole('menuitemradio', {
+        name: /Ask before a workflow runs/
+      })
+      const auto = screen.getByRole('menuitemradio', {
+        name: /Auto-run without approval/
+      })
+      expect(screen.getByRole('status')).toHaveTextContent('Saving')
+      expect(ask).toHaveAttribute('aria-disabled', 'true')
+      expect(auto).toHaveAttribute('aria-disabled', 'true')
+      expect(auto).toHaveAttribute('aria-busy', 'true')
+      expect(ask).not.toHaveAttribute('aria-busy')
+      expect(ask).toBeChecked()
+      await userEvent.click(ask)
+      expect(fetchApi).toHaveBeenCalledTimes(1)
+
+      resolvePut(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+      expect(fetchApi).toHaveBeenCalledTimes(1)
+      expect(
+        screen.queryByText('Choose when the agent needs your consent')
+      ).toBeNull()
+    })
+
+    it('takes a retry after a failed save', async () => {
+      fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      const auto = await screen.findByRole('menuitemradio', {
+        name: /Auto-run without approval/
+      })
+      await userEvent.click(auto)
+      await vi.waitFor(() => expect(auto).not.toHaveAttribute('aria-disabled'))
+
+      await userEvent.click(auto)
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+      expect(fetchApi).toHaveBeenCalledTimes(2)
+    })
+
+    it('commits the focused mode on Enter', async () => {
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await screen.findByRole('menu')
+      screen
+        .getByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+        .focus()
+      await userEvent.keyboard('{Enter}')
+
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+    })
+
+    it('keeps a re-picked mode when a slower load disagrees', async () => {
+      let resolveGet!: (response: Response) => void
+      const pendingGet = new Promise<Response>((resolve) => {
+        resolveGet = resolve
+      })
+      fetchApi.mockImplementation(async (_route, init) =>
+        init?.method === 'PUT'
+          ? jsonResponse(200, { mode: 'auto', credit_limit: null })
+          : pendingGet
+      )
+      localStorage.setItem(
+        'Comfy.Agent.RunModePreference',
+        JSON.stringify({ mode: 'auto', credit_limit: null })
+      )
+      mount()
+      const store = useAgentRunModeStore()
+      const load = store.load()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Auto' }))
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+      )
+      resolveGet(
+        jsonResponse(200, { mode: 'ask_approval', credit_limit: null })
+      )
+      await load
+
+      expect(store.mode).toBe('auto')
     })
 
     it('keeps unlimited auto mode distinct from limited auto mode', async () => {
@@ -420,20 +757,60 @@ describe('Composer', () => {
       }
     )
 
-    it('discards an unsaved draft when the popover closes without saving', async () => {
+    it('leaves a menu reopened during the write open once it settles', async () => {
+      let resolvePut!: (response: Response) => void
+      fetchApi.mockReturnValueOnce(
+        new Promise<Response>((resolve) => {
+          resolvePut = resolve
+        })
+      )
       mount()
       const store = useAgentRunModeStore()
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       await userEvent.click(
-        await screen.findByRole('radio', { name: /Auto-run without approval/ })
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
       )
       await userEvent.keyboard('{Escape}')
-      expect(store.mode).toBe('ask_approval')
+      await waitFor(() =>
+        expect(
+          screen.queryByText('Choose when the agent needs your consent')
+        ).toBeNull()
+      )
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
       expect(
-        await screen.findByRole('radio', { name: /Ask before a workflow runs/ })
+        await screen.findByText('Choose when the agent needs your consent')
+      ).toBeInTheDocument()
+
+      resolvePut(jsonResponse(200, { mode: 'auto', credit_limit: null }))
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+      await nextTick()
+
+      expect(
+        screen.getByText('Choose when the agent needs your consent')
+      ).toBeInTheDocument()
+    })
+
+    it('reopens on the mode saved by the previous choice', async () => {
+      mount()
+      const store = useAgentRunModeStore()
+
+      await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
+      await userEvent.click(
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
+      )
+      await vi.waitFor(() => expect(store.mode).toBe('auto'))
+
+      await userEvent.click(await screen.findByRole('button', { name: 'Auto' }))
+      expect(
+        await screen.findByRole('menuitemradio', {
+          name: /Auto-run without approval/
+        })
       ).toBeChecked()
     })
   })
@@ -484,13 +861,12 @@ describe('Composer', () => {
     })
 
     it('opens the Nodes submenu and lists matching nodes alphabetically', async () => {
-      mount({
-        getMentionNodes: () => [
-          { id: '3', title: 'VAE Decode' },
-          { id: '1', title: 'Alpha' },
-          { id: '2', title: 'KSampler' }
-        ]
-      })
+      const mentionNodes = [
+        { id: '3', title: 'VAE Decode' },
+        { id: '1', title: 'Alpha' },
+        { id: '2', title: 'KSampler' }
+      ]
+      mount({ getMentionNodes: () => mentionNodes })
 
       const menu = await openReferenceSection('Nodes')
 
@@ -499,6 +875,11 @@ describe('Composer', () => {
           .getAllByRole('menuitem')
           .map((item) => item.textContent.trim())
       ).toEqual(['Back', 'Alpha', 'KSampler', 'VAE Decode'])
+      expect(mentionNodes.map(({ title }) => title)).toEqual([
+        'VAE Decode',
+        'Alpha',
+        'KSampler'
+      ])
     })
 
     // Re-picking a staged node is a no-op, so it drops out of the list.
