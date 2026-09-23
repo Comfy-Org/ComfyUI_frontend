@@ -9006,6 +9006,28 @@ Enterprise`
     en: 'Sample outputs from partner models',
     'zh-CN': '合作伙伴模型的示例输出'
   },
+  'platform.routerMigration.heading': {
+    en: 'Migrate to Comfy Router with your agent',
+    'zh-CN': '让你的编程 Agent 帮你迁移到 Comfy Router'
+  },
+  'platform.routerMigration.copy': {
+    en: 'Copy migration prompt',
+    'zh-CN': '复制迁移提示词'
+  },
+  'platform.routerMigration.copied': {
+    en: 'Prompt copied',
+    'zh-CN': '已复制提示词'
+  },
+  'platform.routerMigration.retry': { en: 'Try again', 'zh-CN': '重试' },
+  'platform.routerMigration.failed': {
+    en: 'Copying to your clipboard did not work. Copy the prompt from the box below instead.',
+    'zh-CN': '无法写入剪贴板。请从下方文本框手动复制提示词。'
+  },
+  'platform.routerMigration.promptLabel': {
+    en: 'Migration prompt',
+    'zh-CN': '迁移提示词'
+  },
+  'platform.routerMigration.selectAll': { en: 'Select all', 'zh-CN': '全选' },
   'platform.modelsFeatures.heading': {
     en: 'Built for production',
     'zh-CN': '为生产环境而建'

@@ -5,6 +5,7 @@ import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
 import ModelsApiFeaturesSection from '../../templates/platform/ModelsApiFeaturesSection.vue'
 import ModelsApiGallery from '../../templates/platform/ModelsApiGallery.vue'
 import ModelsApiHero from '../../templates/platform/ModelsApiHero.vue'
+import RouterMigrationSection from '../../templates/platform/RouterMigrationSection.vue'
 import { t } from '../../i18n/translations'
 ---
 
@@ -13,6 +14,7 @@ import { t } from '../../i18n/translations'
   description={t('platform.products.models.description', 'en')}
 >
   <ModelsApiHero locale="en" client:load />
+  <RouterMigrationSection locale="en" client:load />
   <ModelsApiGallery locale="en" client:visible />
   <ModelsApiFeaturesSection locale="en" />
   <ClosingCtaSection
