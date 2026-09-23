@@ -1,11 +1,19 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../components/common/ProductCardsSection.vue'
+import FAQSection from '../../components/common/FAQSection.vue'
 import ClosingCtaSection from '../../templates/platform/ClosingCtaSection.vue'
-import ModelsApiFeaturesSection from '../../templates/platform/ModelsApiFeaturesSection.vue'
-import ModelsApiGallery from '../../templates/platform/ModelsApiGallery.vue'
 import ModelsApiHero from '../../templates/platform/ModelsApiHero.vue'
+import ModelsApiGallery from '../../templates/platform/ModelsApiGallery.vue'
+import RouterCapabilitiesSection from '../../templates/platform/RouterCapabilitiesSection.vue'
+import RouterCodeSection from '../../templates/platform/RouterCodeSection.vue'
+import RouterVideoSection from '../../templates/platform/RouterVideoSection.vue'
+import RouterMigrationBanner from '../../templates/platform/RouterMigrationBanner.vue'
+import RouterProofStripSection from '../../templates/platform/RouterProofStripSection.vue'
+import RouterRoadmapSection from '../../templates/platform/RouterRoadmapSection.vue'
+import { apiKeysLink } from '../../config/routes'
 import { t } from '../../i18n/translations'
+import { routerFaq, routerT } from '../../templates/platform/routerCopy'
 ---
 
 <BaseLayout
@@ -13,11 +21,27 @@ import { t } from '../../i18n/translations'
   description={t('platform.products.models.description', 'en')}
 >
   <ModelsApiHero locale="en" client:load />
+  <RouterMigrationBanner locale="en" client:visible />
+  <RouterProofStripSection locale="en" />
   <ModelsApiGallery locale="en" client:visible />
-  <ModelsApiFeaturesSection locale="en" />
+  <RouterCodeSection locale="en" client:visible />
+  <RouterVideoSection locale="en" client:visible />
+  <RouterCapabilitiesSection locale="en" />
+  <RouterRoadmapSection locale="en" client:visible />
+  <FAQSection
+    locale="en"
+    heading={routerT('platform.router.faq.heading', 'en')}
+    items={routerFaq('en')}
+    client:load
+  />
   <ClosingCtaSection
     locale="en"
-    heading-after-badge={t('platform.closing.headingAfterBadge', 'en')}
+    heading-after-badge={routerT(
+      'platform.router.closing.headingAfterBadge',
+      'en'
+    )}
+    subtitle={routerT('platform.router.closing.subtitle', 'en')}
+    primary-href={apiKeysLink({ onboarding: 'router' })}
     client:visible
   />
   <ProductCardsSection locale="en" label-key="products.labelProducts" />
