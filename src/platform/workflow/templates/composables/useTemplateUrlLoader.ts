@@ -109,21 +109,12 @@ export function useTemplateUrlLoader() {
     try {
       await templateWorkflows.loadTemplates()
 
-      const success = await templateWorkflows.loadWorkflowTemplate(
+      const result = await templateWorkflows.loadWorkflowTemplate(
         templateParam,
         sourceParam
       )
 
-      if (!success) {
-        toast.add({
-          severity: 'error',
-          summary: t('g.error'),
-          detail: t('templateWorkflows.error.templateNotFound', {
-            templateName: templateParam
-          })
-        })
-        return
-      }
+      if (result !== 'loaded') return
 
       if (modeParam === 'linear') {
         // Set linear mode after successful template load
@@ -139,7 +130,7 @@ export function useTemplateUrlLoader() {
       toast.add({
         severity: 'error',
         summary: t('g.error'),
-        detail: t('g.errorLoadingTemplate')
+        detail: t('templateWorkflows.error.loading')
       })
     } finally {
       cleanupUrlParams()

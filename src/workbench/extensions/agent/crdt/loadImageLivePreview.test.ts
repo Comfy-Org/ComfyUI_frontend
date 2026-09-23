@@ -9,7 +9,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createGraphMutations } from './graphMutations'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
 // oxlint-disable-next-line comfy/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 // oxlint-disable-next-line comfy/no-restricted-paths
@@ -44,18 +43,9 @@ vi.mock<unknown>(import('@/composables/node/useNodeImageUpload'), () => ({
   useNodeImageUpload: () => ({ openFileSelection: vi.fn() })
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock(import('@/utils/litegraphUtil'), () => ({
-  addToComboValues: (widget: IComboWidget, value: string) => {
-    const values = widget.options.values
-    if (Array.isArray(values) && !values.includes(value)) {
-      values.push(value)
-    }
-  }
-}))
+vi.mock(import('@/utils/litegraphUtil'))
 
 /**
  * Same two-widget shape production LoadImage-style nodes use: a plain combo

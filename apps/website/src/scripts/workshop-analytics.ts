@@ -1,6 +1,10 @@
 import type { Modality, WorkshopModel } from '../config/models-catalogue'
 import type { RunFailure, RunOutput } from '../config/workshop-run'
-import type { FieldErrorCode, FieldErrors } from '../config/workshop-playground'
+import type {
+  FieldErrorCode,
+  FieldErrors,
+  FieldSchema
+} from '../config/workshop-playground'
 import type {
   WorkshopFailureStage,
   WorkshopRouterError
@@ -78,6 +82,7 @@ export type WorkshopAnalyticsEvent =
       name: 'run_validation_failed'
       properties: WorkshopModelAnalytics & {
         field_error_codes?: FieldErrorCode[]
+        field_error_names?: string[]
       }
     }
   | { name: 'run_started'; properties: WorkshopRunAnalytics }
@@ -106,6 +111,7 @@ export type WorkshopAnalyticsEvent =
               router_error_type?: WorkshopRouterErrorType
               failure_stage?: WorkshopFailureStage | 'credential'
               field_error_codes?: FieldErrorCode[]
+              field_error_names?: string[]
             } & WorkshopExceptionAnalytics)
           | { status: 'cancelled' }
         )
@@ -158,10 +164,16 @@ export function workshopFieldErrorCodes(errors: FieldErrors): FieldErrorCode[] {
   return [...new Set(Object.values(errors))]
 }
 
-export function workshopFailureAnalytics(failure: WorkshopRouterError) {
+export function workshopFailureAnalytics(
+  failure: WorkshopRouterError,
+  schema: readonly FieldSchema[] = []
+) {
   const httpStatus = workshopHttpStatus(failure.response?.status)
   const routerErrorType = workshopRouterErrorType(failure.response?.errorType)
   const fieldErrorCodes = workshopFieldErrorCodes(failure.fieldErrors)
+  const fieldErrorNames = schema
+    .filter((field) => Object.hasOwn(failure.fieldErrors, field.name))
+    .map((field) => field.name)
   return {
     reason: failure.reason,
     request_id: failure.requestId ?? undefined,
@@ -171,7 +183,8 @@ export function workshopFailureAnalytics(failure: WorkshopRouterError) {
       : { router_error_type: routerErrorType }),
     ...(failure.stage ? { failure_stage: failure.stage } : {}),
     ...('cause' in failure ? workshopExceptionAnalytics(failure.cause) : {}),
-    ...(fieldErrorCodes.length ? { field_error_codes: fieldErrorCodes } : {})
+    ...(fieldErrorCodes.length ? { field_error_codes: fieldErrorCodes } : {}),
+    ...(fieldErrorNames.length ? { field_error_names: fieldErrorNames } : {})
   }
 }
 

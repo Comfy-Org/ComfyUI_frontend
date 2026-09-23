@@ -5,7 +5,7 @@ import {
   nodesMap
 } from '@comfyorg/comfy-multi-player'
 import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from './graphMutations'
@@ -36,10 +36,12 @@ import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
+import type { NodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
@@ -404,6 +406,29 @@ describe('reconcileAgentAdapters', () => {
       ).toBe(9)
     })
 
+    it.fails('keeps canonical layout geometry when configuring a materialized node', () => {
+      const graph = new LGraph()
+      const scope = seedAgentAddedNode(graph, 1)
+      layoutStore.applyOperation({
+        type: 'moveNode',
+        graphId: scope.rootGraphId,
+        nodeId: toNodeId(1),
+        position: { x: 400, y: 500 },
+        source: LayoutSource.AgentRemote,
+        timestamp: Date.now()
+      })
+
+      reconcileAgentAdapters(graph)
+
+      const live = graph.getNodeById(toNodeId(1))
+      assert.exists(live)
+      expect({
+        live: [...live.pos],
+        stored: layoutStore.getNodeLayout(scope.rootGraphId, toNodeId(1))
+          ?.position
+      }).toEqual({ live: [400, 500], stored: { x: 400, y: 500 } })
+    })
+
     it('is idempotent once the node is live', () => {
       const graph = new LGraph()
       const scope = seedAgentAddedNode(graph, 1)
@@ -452,6 +477,79 @@ describe('reconcileAgentAdapters', () => {
       expect(reconcileAgentAdapters(graph)).toEqual([])
       expect(graph._nodes).toHaveLength(1)
       expect(graph.getNodeById(toNodeId(1))).toBe(live)
+    })
+
+    it.fails('adopts canonical node and widget state across materialization and reconcile', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.addNode(
+        { ...nodePayload(1, 'widget-node'), widgets_values: { value: 7 } },
+        REMOTE
+      )
+      const addedState = useNodeDataStore().getNode(
+        scope.rootGraphId,
+        toNodeId(1)
+      )
+      assert.exists(addedState)
+      reconcileAgentAdapters(graph)
+      const live = graph.getNodeById(toNodeId(1))
+      assert.exists(live)
+      const materializedState = live._state
+
+      mutations.batch({ ...REMOTE, opId: 'reconcile-value' }, (batch) => {
+        batch.reconcileNode({
+          ...nodePayload(1, 'widget-node'),
+          widgets_values: { value: 9 }
+        })
+      })
+      reconcileAgentAdapters(graph)
+
+      expect({
+        adoptedAddedState: materializedState === addedState,
+        keptMaterializedState: live._state === materializedState,
+        liveWidget: live.widgets?.[0].value,
+        storedWidget: useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, toNodeId(1), 'value')
+        )?.value
+      }).toEqual({
+        adoptedAddedState: true,
+        keptMaterializedState: true,
+        liveWidget: 9,
+        storedWidget: 9
+      })
+      const widgets = live.widgets
+      assert.exists(widgets)
+      widgets[0].value = 10
+      expect(
+        useWidgetValueStore().getWidget(
+          widgetId(scope.rootGraphId, toNodeId(1), 'value')
+        )?.value
+      ).toBe(10)
+    })
+
+    it.fails('keeps a live rename after a workflow reload and unrelated reconcile', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const docPayload = {
+        ...nodePayload(1),
+        title: 'Positive prompt'
+      }
+      remoteMutations(scope).addNode(docPayload, REMOTE)
+      reconcileAgentAdapters(graph)
+
+      const live = graph.getNodeById(toNodeId(1))
+      assert.exists(live)
+      live.title = 'My Custom Prompt'
+      graph.configure(graph.serialize())
+
+      remoteMutations(scope).batch(
+        { ...REMOTE, opId: 'unrelated-reconcile' },
+        (batch) => batch.reconcileNode(docPayload)
+      )
+      reconcileAgentAdapters(graph)
+
+      expect(graph.getNodeById(toNodeId(1))?.title).toBe('My Custom Prompt')
     })
 
     it('replaces a node whose record was re-created under the same id', () => {
@@ -1529,6 +1627,111 @@ describe('reconcileAgentAdapters', () => {
       })
     })
   })
+})
+
+describe('reserved-bit mint-convention guard', () => {
+  /** Bit 40 set: comfy-cli's `mint_id()` shape. */
+  const AGENT_MINTED_ID = 2 ** 40 + 7
+  /** Large enough for the guard to look, but carrying neither bit 40 nor 41. */
+  const VIOLATING_ID = 2 ** 42
+
+  function seedRemoteNode(graph: LGraph, id: NodeId): GraphScope {
+    const scope = graphScopeOf(graph)
+    remoteMutations(scope).addNode(
+      { ...nodePayload(1), id },
+      { ...REMOTE, opId: `op-${String(id)}` }
+    )
+    return scope
+  }
+
+  function bindGraph(graph: LGraph): () => void {
+    return registerDocBoundRootGraphProbe(() => graph.id)
+  }
+
+  it.for([
+    { bound: true, id: AGENT_MINTED_ID, name: 'an agent-minted id' },
+    {
+      bound: false,
+      id: VIOLATING_ID,
+      name: 'an off-convention id on a graph no doc is bound to'
+    },
+    { bound: true, id: '2e12', name: 'an agent-minted id in exponent form' },
+    {
+      bound: true,
+      id: '2.0e12',
+      name: 'an agent-minted id in decimal-mantissa exponent form'
+    },
+    {
+      bound: true,
+      id: `${VIOLATING_ID}.0001`,
+      name: 'a fractional id that only coerces to the violating floor'
+    },
+    {
+      bound: true,
+      id: (BigInt(Number.MAX_SAFE_INTEGER) + 2n).toString(),
+      name: 'an unsafe integer past Number.MAX_SAFE_INTEGER, even though its rounded value falls in the violating range'
+    }
+  ])('stays silent for $name', ({ bound, id }) => {
+    const graph = new LGraph()
+    const unbind = bound ? bindGraph(graph) : () => {}
+    seedRemoteNode(graph, toNodeId(id))
+
+    expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(id)])
+    unbind()
+
+    expect(graph.getNodeById(toNodeId(id))).toBeTruthy()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  // A bound doc may legally carry a string id (`NodeId` is `string | number`):
+  // a legacy `"named"` node, or a subgraph-scoped `"57:3"` address. Converting
+  // one for the bit test threw and aborted reconciliation before the node was
+  // ever materialized.
+  it('materializes a nonnumeric remote id without reporting a violation', () => {
+    const graph = new LGraph()
+    const unbind = bindGraph(graph)
+    const id = toNodeId('named')
+    seedRemoteNode(graph, id)
+
+    expect(reconcileAgentAdapters(graph)).toEqual([id])
+    unbind()
+
+    expect(graph.getNodeById(id)).toBeTruthy()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { rawId: VIOLATING_ID, name: 'the canonical integer spelling' },
+    {
+      rawId: `${VIOLATING_ID}.`,
+      name: 'a trailing decimal point with no fractional digits'
+    },
+    {
+      rawId: `.${VIOLATING_ID}e13`,
+      name: 'a leading decimal point with an exponent'
+    }
+  ])(
+    'reports a large remote id carrying neither reserved bit, spelled as $name',
+    ({ rawId }) => {
+      const graph = new LGraph()
+      const unbind = bindGraph(graph)
+      const id = toNodeId(rawId)
+      seedRemoteNode(graph, id)
+
+      expect(reconcileAgentAdapters(graph)).toEqual([id])
+      unbind()
+
+      expect(graph.getNodeById(id)).toBeTruthy()
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+        errorType: 'agent_node_id_reserved_bit_violation',
+        tags: expect.objectContaining({
+          feature_area: 'agent',
+          outcome: 'degraded'
+        }),
+        context: { graphId: graph.id, nodeId: String(rawId) }
+      })
+    }
+  )
 })
 
 describe('node id write-drop guard', () => {
