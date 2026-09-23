@@ -765,36 +765,45 @@ function onOpenApprovalWorkflow(
 }
 
 let referenceNavigationGeneration = 0
+
+async function resolveReferenceWorkflow(
+  workflowId: string,
+  isCurrent: () => boolean
+): Promise<{ recovered: boolean; target: ComfyWorkflow | null }> {
+  let target = openWorkflowFor(workflowId)
+  if (target === null) {
+    await Promise.all([
+      refreshCloudWorkflowIds(),
+      workflowStore.syncWorkflows()
+    ])
+    if (!isCurrent()) return { recovered: false, target: null }
+    target = storedWorkflowFor(workflowId)
+  }
+  if (target !== null) return { recovered: false, target }
+  target = await recoverWorkflow(workflowId)
+  return { recovered: target !== null, target }
+}
+
 async function onNavigateToReferenceWorkflow(
   workflowId: string
 ): Promise<void> {
   const generation = ++referenceNavigationGeneration
   const isCurrent = () => generation === referenceNavigationGeneration
-  let recovered = false
-  let target: ComfyWorkflow | null = null
+  let recoveredTarget: ComfyWorkflow | null = null
   async function closeRecovered(): Promise<void> {
-    if (!recovered || target === null) return
-    const recoveredTarget = target
-    recovered = false
-    target = null
-    await workflowService.closeWorkflow(recoveredTarget, {
+    if (recoveredTarget === null) return
+    const target = recoveredTarget
+    recoveredTarget = null
+    await workflowService.closeWorkflow(target, {
       warnIfUnsaved: false
     })
   }
   try {
-    target = openWorkflowFor(workflowId)
-    if (target === null) {
-      await Promise.all([
-        refreshCloudWorkflowIds(),
-        workflowStore.syncWorkflows()
-      ])
-      if (!isCurrent()) return
-      target = storedWorkflowFor(workflowId)
-    }
-    if (target === null) {
-      target = await recoverWorkflow(workflowId)
-      recovered = target !== null
-    }
+    const { target, recovered } = await resolveReferenceWorkflow(
+      workflowId,
+      isCurrent
+    )
+    if (recovered) recoveredTarget = target
     if (!isCurrent()) {
       await closeRecovered()
       return

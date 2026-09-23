@@ -191,6 +191,33 @@ export function useAgentWorkflowSelection({
     if (!workflowSelection.value) void refreshCloudWorkflowIds()
   }
 
+  async function resolveRestoredWorkflow(
+    workflowId: string,
+    isCurrent: () => boolean
+  ): Promise<{ recovered: boolean; target: ComfyWorkflow | null }> {
+    let target = boundOrOpenWorkflowFor(workflowId)
+    if (target === null) {
+      await workflowStore.syncWorkflows()
+      if (!isCurrent()) return { recovered: false, target: null }
+      target = storedWorkflowFor(workflowId)
+    }
+    if (target !== null) return { recovered: false, target }
+    try {
+      target = await recoverWorkflow(workflowId)
+      return { recovered: target !== null, target }
+    } catch {
+      return { recovered: false, target: null }
+    }
+  }
+
+  async function closeRecoveredWorkflow(
+    target: ComfyWorkflow | null,
+    recovered: boolean
+  ): Promise<void> {
+    if (recovered && target !== null)
+      await workflowService.closeWorkflow(target, { warnIfUnsaved: false })
+  }
+
   async function onWorkflowRestored(
     workflowId: string | undefined,
     isSessionCurrent: () => boolean
@@ -204,24 +231,12 @@ export function useAgentWorkflowSelection({
     if (workflowId === undefined) return
     await refreshCloudWorkflowIds()
     if (!isCurrent()) return
-    let target = boundOrOpenWorkflowFor(workflowId)
-    if (target === null) {
-      await workflowStore.syncWorkflows()
-      if (!isCurrent()) return
-      target = storedWorkflowFor(workflowId)
-    }
-    let recovered = false
-    if (target === null) {
-      try {
-        target = await recoverWorkflow(workflowId)
-        recovered = target !== null
-      } catch {
-        target = null
-      }
-    }
+    const { target, recovered } = await resolveRestoredWorkflow(
+      workflowId,
+      isCurrent
+    )
     if (!isCurrent()) {
-      if (recovered && target !== null)
-        await workflowService.closeWorkflow(target, { warnIfUnsaved: false })
+      await closeRecoveredWorkflow(target, recovered)
       return
     }
     if (target === null) {
@@ -232,25 +247,18 @@ export function useAgentWorkflowSelection({
     try {
       const opened = await workflowService.openWorkflow(target)
       if (!isCurrent()) {
-        if (recovered)
-          await workflowService.closeWorkflow(target, {
-            warnIfUnsaved: false
-          })
+        await closeRecoveredWorkflow(target, recovered)
         return
       }
       if (!opened) {
-        if (recovered)
-          await workflowService.closeWorkflow(target, {
-            warnIfUnsaved: false
-          })
+        await closeRecoveredWorkflow(target, recovered)
         panelStore.setWorkflowTarget(null)
         warnWorkflowUnavailable()
         return
       }
       commitWorkflowTarget(target, workflowId)
     } catch {
-      if (recovered)
-        await workflowService.closeWorkflow(target, { warnIfUnsaved: false })
+      await closeRecoveredWorkflow(target, recovered)
       if (!isCurrent()) return
       warnWorkflowUnavailable()
     }

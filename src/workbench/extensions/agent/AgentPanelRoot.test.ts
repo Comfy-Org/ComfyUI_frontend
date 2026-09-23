@@ -3315,7 +3315,7 @@ describe('AgentPanelRoot workflow binding', () => {
         expect.objectContaining({ filename: 'Recovered Workflow' }),
         { warnIfUnsaved: false }
       )
-      expect(workflowStore.activeWorkflow).toBe(viewed)
+      expect(workflowStore.activeWorkflow?.path).toBe(viewed.path)
       expect(recovered).not.toBeNull()
       if (recovered === null) throw new Error('Recovery was never opened')
       expect(workflowStore.getWorkflowByPath(recovered.path)).toBeNull()
@@ -3362,7 +3362,7 @@ describe('AgentPanelRoot workflow binding', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     await vi.waitFor(() =>
-      expect(useAgentPanelStore().selectedWorkflow).toBe(saved)
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(saved.path)
     )
     expect(workflowService.openWorkflow).toHaveBeenCalledWith(saved)
     expect(
@@ -5936,12 +5936,14 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await vi.waitFor(() => {
       expect(
-        workflowStore.openWorkflows.filter((workflow) => workflow !== current)
+        workflowStore.openWorkflows.filter(
+          ({ filename }) => filename === 'Recovered Workflow'
+        )
       ).toHaveLength(1)
       expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-reference')).toBe(
         workflowStore.activeWorkflow?.path
       )
-      expect(useAgentPanelStore().selectedWorkflow).toBe(current)
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
       expect(workflowService.closeWorkflow).toHaveBeenCalledWith(
         expect.objectContaining({ filename: 'Recovered Workflow' }),
         { warnIfUnsaved: false }
@@ -6008,8 +6010,10 @@ describe('AgentPanelRoot workflow binding', () => {
         expect.objectContaining({ filename: 'Recovered Workflow' }),
         { warnIfUnsaved: false }
       )
-      expect(workflowStore.openWorkflows).toEqual([current])
-      expect(workflowStore.activeWorkflow).toBe(current)
+      expect(workflowStore.openWorkflows.map(({ path }) => path)).toEqual([
+        current.path
+      ])
+      expect(workflowStore.activeWorkflow?.path).toBe(current.path)
       expect(
         useAgentWorkflowTabBindingStore().tabPathFor('wf-reference')
       ).toBeUndefined()

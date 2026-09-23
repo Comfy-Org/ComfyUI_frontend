@@ -48,6 +48,7 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
       })
     ),
     getMessages: vi.fn(async (): Promise<AgentMessages> => []),
+    getDraft: vi.fn(async () => ({ content: {}, version: 0 })),
     listThreads: vi.fn(async (): Promise<AgentThreadSummary[]> => []),
     getRunMode: vi.fn(
       async (): Promise<AgentRunModePreference> => ({
