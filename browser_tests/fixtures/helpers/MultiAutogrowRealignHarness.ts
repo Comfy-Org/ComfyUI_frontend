@@ -227,8 +227,8 @@ export class MultiAutogrowRealignHarness {
       this.submittedPrompt = getQueuedPrompt(route.request().postDataJSON())
       const response: PromptResponse = {
         prompt_id: 'b6c1a2d3-4e5f-4a6b-8c7d-9e0f1a2b3c4d',
-        number: 1,
-        node_errors: {}
+        node_errors: {},
+        error: ''
       }
       return route.fulfill(jsonRoute(response))
     })
