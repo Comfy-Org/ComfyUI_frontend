@@ -196,7 +196,7 @@ async function countColumns(locator: Locator) {
 test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
   wstest(
     'Image previews tile to fit node',
-    async ({ comfyMouse, comfyPage, getWebSocket }) => {
+    async ({ comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
       await test.step('Add node', async () => {
@@ -217,11 +217,10 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         await expect(node.imageGrid.locator('img')).toHaveCount(100)
       })
 
-      const { bottomRight } = node.resize
       await expect.poll(() => countColumns(node.imageGrid)).toBe(10)
-      await comfyMouse.dragElementBy(bottomRight, { x: 200 })
+      await node.resizeFromCorner('SE', 200, 0)
       await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(10)
-      await comfyMouse.dragElementBy(bottomRight, { x: -200, y: 200 })
+      await node.resizeFromCorner('SE', -200, 200)
       await expect.poll(() => countColumns(node.imageGrid)).toBeLessThan(10)
     }
   )
