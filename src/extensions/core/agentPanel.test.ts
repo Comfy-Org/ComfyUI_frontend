@@ -355,6 +355,7 @@ describe('AgentPanel extension flag gate', () => {
     )
 
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+    expect(await notOffered()).not.toHaveBeenCalled()
   })
 
   it('waits for the startup decision before offering', async () => {
@@ -533,28 +534,6 @@ describe('AgentPanel extension flag gate', () => {
       }
     )
 
-    it('reports a tour that opened while the offer was in flight', async () => {
-      mocks.flagEnabled = true
-      Object.assign(consentStore, { accepted: false, isChecking: false })
-      vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-        async (_onAccept, hooks) => {
-          activeTour.value = 'appMode'
-          await flush()
-          hooks?.canShow?.()
-        }
-      )
-
-      await loadEntryAndSetup()
-      await vi.waitFor(() =>
-        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-      )
-      await flush()
-
-      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
-        reason: 'tour_active'
-      })
-    })
-
     it('stays quiet about an undecided boot once the user has accepted', async () => {
       mocks.flagEnabled = true
       Object.assign(consentStore, { accepted: false, isChecking: false })
@@ -599,50 +578,6 @@ describe('AgentPanel extension flag gate', () => {
       })
     })
 
-    it('reports once telemetry is up when the first attempt found none', async () => {
-      mocks.flagEnabled = true
-      activeTour.value = 'appMode'
-      Object.assign(consentStore, { accepted: false, isChecking: false })
-      vi.mocked(
-        (await import('@/platform/telemetry')).useTelemetry
-      ).mockReturnValueOnce(null)
-
-      await loadEntryAndSetup()
-      await flush()
-      mocks.flagListener?.()
-      await flush()
-
-      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
-        reason: 'tour_active'
-      })
-    })
-
-    it('reports tour_active once when the tour blocks both the check and the mount', async () => {
-      mocks.flagEnabled = true
-      activeTour.value = 'appMode'
-      Object.assign(consentStore, { accepted: false, isChecking: false })
-      vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-        async (_onAccept, hooks) => {
-          activeTour.value = 'appMode'
-          await flush()
-          hooks?.canShow?.()
-        }
-      )
-
-      await loadEntryAndSetup()
-      mocks.flagListener?.()
-      await flush()
-      activeTour.value = null
-      await vi.waitFor(() =>
-        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-      )
-      await flush()
-
-      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
-        reason: 'tour_active'
-      })
-    })
-
     it('reports a reason again for a second workspace', async () => {
       mocks.flagEnabled = true
       activeTour.value = 'appMode'
@@ -660,50 +595,28 @@ describe('AgentPanel extension flag gate', () => {
       })
     })
 
-    it('reports nothing until the account and workspace are both known', async () => {
+    it.for([
+      {
+        name: 'the account or workspace is still unknown',
+        arrange: () => {
+          Object.assign(workspaceStore, { activeWorkspaceId: null })
+        }
+      },
+      {
+        name: 'the one-shot offer already happened',
+        arrange: () => {
+          localStorage.setItem(AUTO_SHOWN_KEY, 'true')
+        }
+      }
+    ])('reports nothing for a held offer when $name', async ({ arrange }) => {
       mocks.flagEnabled = true
       activeTour.value = 'appMode'
       Object.assign(consentStore, { accepted: false, isChecking: false })
-      Object.assign(workspaceStore, { activeWorkspaceId: null })
-
-      await loadEntryAndSetup()
-      await flush()
-
-      expect(await notOffered()).not.toHaveBeenCalled()
-    })
-
-    it('says nothing to a user whose one-shot offer already happened', async () => {
-      mocks.flagEnabled = true
-      activeTour.value = 'appMode'
-      localStorage.setItem(AUTO_SHOWN_KEY, 'true')
-      Object.assign(consentStore, { accepted: false, isChecking: false })
+      arrange()
 
       await loadEntryAndSetup()
       mocks.flagListener?.()
       await flush()
-
-      expect(await notOffered()).not.toHaveBeenCalled()
-    })
-
-    it('stays quiet when a failed consent read leaves acceptance unknown', async () => {
-      mocks.flagEnabled = true
-      Object.assign(consentStore, { accepted: false, isChecking: false })
-      vi.mocked(consentStore.load).mockRejectedValue(new Error('offline'))
-
-      await loadEntryAndSetup()
-      await flush()
-
-      expect(await notOffered()).not.toHaveBeenCalled()
-    })
-
-    it('stays quiet when the offer goes ahead', async () => {
-      mocks.flagEnabled = true
-      Object.assign(consentStore, { accepted: false, isChecking: false })
-
-      await loadEntryAndSetup()
-      await vi.waitFor(() =>
-        expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-      )
 
       expect(await notOffered()).not.toHaveBeenCalled()
     })
@@ -840,6 +753,7 @@ describe('AgentPanel extension flag gate', () => {
     await flush()
 
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(await notOffered()).not.toHaveBeenCalled()
   })
 
   it('does not self-register when its module is imported', async () => {

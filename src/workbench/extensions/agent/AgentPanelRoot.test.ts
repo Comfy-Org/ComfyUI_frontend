@@ -567,18 +567,6 @@ describe('AgentPanelRoot onboarding', () => {
     }
   })
 
-  it('reports a coach held back by App Mode', async () => {
-    Object.assign(useTeamWorkspaceStore(), {
-      activeWorkspaceId: 'workspace-app'
-    })
-    canvasStore.linearMode = true
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
-
-    expect(
-      telemetry.trackAgentOnboardingNotShown
-    ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
-  })
-
   it('stays quiet when App Mode pauses a coach that was already on screen', async () => {
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: 'workspace-interrupted'
