@@ -16,15 +16,13 @@ export const useAboutPanelStore = defineStore('aboutPanel', () => {
   const systemStatsStore = useSystemStatsStore()
   const { staticUrls } = useExternalLink()
   const coreVersion = computed(
-    () => systemStatsStore?.systemStats?.system?.comfyui_version ?? ''
+    () => systemStatsStore.systemStats?.system.comfyui_version ?? ''
   )
   const templatesVersion = computed(
-    () =>
-      systemStatsStore?.systemStats?.system?.installed_templates_version ?? ''
+    () => systemStatsStore.systemStats?.system.installed_templates_version ?? ''
   )
   const requiredTemplatesVersion = computed(
-    () =>
-      systemStatsStore?.systemStats?.system?.required_templates_version ?? ''
+    () => systemStatsStore.systemStats?.system.required_templates_version ?? ''
   )
   const isTemplatesOutdated = computed(
     () =>

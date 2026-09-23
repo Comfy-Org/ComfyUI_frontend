@@ -13,13 +13,15 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-function makeConfig(overrides: Partial<CameraConfig> = {}): CameraConfig {
+function makeConfig(
+  overrides: Partial<Pick<CameraConfig, 'cameraType' | 'fov'>> = {}
+): CameraConfig {
   return { cameraType: 'perspective', fov: 75, ...overrides }
 }
 
-function renderGroup(config = makeConfig()) {
+function renderGroup(config = makeConfig(), compact = false) {
   const result = render(CameraMenuGroup, {
-    props: { config },
+    props: { config, compact },
     global: { plugins: [i18n], directives: { tooltip: () => {} } }
   })
   return { ...result, user: userEvent.setup(), config }
@@ -42,6 +44,47 @@ describe('CameraMenuGroup', () => {
     ).not.toBeInTheDocument()
     expect(
       screen.getByRole('button', { name: 'Orthographic' })
+    ).toBeInTheDocument()
+  })
+
+  it('hides the up toggle when the camera has no custom up', () => {
+    renderGroup()
+
+    expect(
+      screen.queryByRole('button', { name: /custom up|natural up/i })
+    ).not.toBeInTheDocument()
+  })
+
+  it('toggles between the custom and natural up', async () => {
+    const config: CameraConfig = {
+      ...makeConfig(),
+      hasCustomUp: true,
+      useCustomUp: true
+    }
+    const { user } = renderGroup(config)
+
+    await user.click(screen.getByRole('button', { name: 'Custom up' }))
+    expect(config.useCustomUp).toBe(false)
+
+    await user.click(screen.getByRole('button', { name: 'Natural up' }))
+    expect(config.useCustomUp).toBe(true)
+  })
+
+  it('announces the up toggle as an action in compact mode', async () => {
+    const config: CameraConfig = {
+      ...makeConfig(),
+      hasCustomUp: true,
+      useCustomUp: true
+    }
+    const { user } = renderGroup(config, true)
+
+    await user.click(
+      screen.getByRole('button', { name: 'Reset camera up to Y' })
+    )
+
+    expect(config.useCustomUp).toBe(false)
+    expect(
+      screen.getByRole('button', { name: 'Restore camera up from input' })
     ).toBeInTheDocument()
   })
 })

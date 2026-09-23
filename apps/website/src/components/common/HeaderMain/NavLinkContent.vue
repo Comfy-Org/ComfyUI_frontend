@@ -5,16 +5,24 @@ import type { NavColumnItem } from '../../../data/mainNavigation'
 import type { Locale } from '../../../i18n/translations'
 import NewBadge from './NewBadge.vue'
 
-defineProps<{ item: NavColumnItem; locale: Locale }>()
+defineProps<{
+  item: Pick<NavColumnItem, 'label' | 'badge' | 'external'>
+  locale: Locale
+}>()
 </script>
 
 <template>
   <span class="flex items-center gap-2">
-    <span class="ppformula-text-center">{{ item.label }}</span>
-    <NewBadge v-if="item.badge" :locale="locale" size="xs" />
+    <span class="ppformula-text-center inline-block">{{ item.label }}</span>
+    <NewBadge
+      v-if="item.badge"
+      :locale="locale"
+      size="xs"
+      :label="item.badge"
+    />
     <ArrowUpRight
       v-if="item.external"
-      class="text-primary-comfy-yellow size-4"
+      class="size-4 text-primary-comfy-yellow"
     />
   </span>
 </template>

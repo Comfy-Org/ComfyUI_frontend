@@ -1,24 +1,21 @@
+import { useDialogStore } from '@/stores/dialogStore'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import DowngradeRemoveMembersDialogContent from './DowngradeRemoveMembersDialogContent.vue'
 
-const mockCloseDialog = vi.fn()
 const mockToastAdd = vi.fn()
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({
-    add: mockToastAdd
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  () => ({
+    useToast: () => ({
+      add: mockToastAdd
+    })
   })
-}))
-
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({
-    closeDialog: mockCloseDialog
-  })
-}))
+)
 
 const i18n = createI18n({
   legacy: false,
@@ -68,6 +65,10 @@ const getChangePlanButton = () =>
   screen.getByRole('button', { name: 'Change plan' })
 const getCancelButton = () => screen.getByRole('button', { name: 'Cancel' })
 
+beforeEach(() => {
+  vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+})
+
 describe('DowngradeRemoveMembersDialogContent', () => {
   it('disables Change plan until the exact phrase is typed', async () => {
     const { user } = mountComponent()
@@ -92,7 +93,7 @@ describe('DowngradeRemoveMembersDialogContent', () => {
     await user.click(getChangePlanButton())
 
     expect(onConfirm).toHaveBeenCalledWith('founder-monthly', false)
-    expect(mockCloseDialog).toHaveBeenCalledWith({
+    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'downgrade-remove-members'
     })
   })
@@ -146,7 +147,7 @@ describe('DowngradeRemoveMembersDialogContent', () => {
     await user.click(getCancelButton())
 
     expect(onConfirm).not.toHaveBeenCalled()
-    expect(mockCloseDialog).toHaveBeenCalledWith({
+    expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
       key: 'downgrade-remove-members'
     })
   })
@@ -160,7 +161,7 @@ describe('DowngradeRemoveMembersDialogContent', () => {
     expect(mockToastAdd).toHaveBeenCalledWith(
       expect.objectContaining({ severity: 'error' })
     )
-    expect(mockCloseDialog).not.toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
   })
 
   // Regression guard: a drift refresh (dialogService's onConfirm handler)

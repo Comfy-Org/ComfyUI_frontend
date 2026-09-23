@@ -95,7 +95,7 @@ export class PropertiesPanelHelper {
   }
 
   get errorsTabIcon(): Locator {
-    return this.root.locator('nav i[class*="lucide--octagon-alert"]')
+    return this.errorsTab.getByTestId('panel-tab-icon')
   }
 
   get viewAllSettingsButton(): Locator {

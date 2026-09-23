@@ -158,10 +158,10 @@ function deleteBlueprint() {
   }
 }
 const editBlueprint = async () => {
-  if (!nodeDef.value)
-    throw new Error(
-      'Failed to edit subgraph blueprint lacking backing node data'
-    )
+  if (!nodeDef.value) {
+    console.error('Failed to edit subgraph blueprint lacking backing node data')
+    return
+  }
   await useSubgraphStore().editBlueprint(nodeDef.value.name)
 }
 

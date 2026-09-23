@@ -1,11 +1,13 @@
 # ECS Target Architecture
 
-This document describes the target ECS architecture for the litegraph entity system. It shows how the entities and interactions from the [current system](entity-interactions.md) transform under ECS, and how the [structural problems](entity-problems.md) are resolved. For the full design rationale, see [ADR 0008](../adr/0008-entity-component-system.md).
+This document describes the target ECS architecture for the litegraph entity system. It shows how the entities and interactions from the [current system](entity-interactions.md) transform under ECS, and how the [structural problems](entity-problems.md) are resolved. For the full design rationale, see [ADR-ECS-0008](../adr/ECS-0008-entity-component-system.md).
 
 ## 1. Store Overview
 
 The source of truth for runtime entity state in one workflow instance is the set
-of dedicated Pinia stores. Each store is keyed by per-store string IDs.
+of dedicated Pinia stores. Each store chooses the key type for its concern;
+current stores use both branded numeric IDs inside scoped buckets and composite
+string keys. A universal string entity-ID scheme is not required.
 Components are plain data objects. Systems are functions that query the relevant
 store(s).
 
@@ -16,9 +18,15 @@ graph TD
         WidgetValueStore["widgetValueStore
 Map&lt;WidgetId, WidgetValue&gt;"]
         DomWidgetStore["domWidgetStore
-Map&lt;WidgetId, DomWidgetState&gt;"]
+Map&lt;BaseDOMWidget.id, DomWidgetState&gt;"]
         LayoutStore["layoutStore (Y.js CRDT)
-nodeId / linkId / rerouteId → layout"]
+ScopedLayoutKey = rootGraphId:localId
+for node/group/reroute geometry"]
+        LinkStore["linkStore
+rootGraphId → linkId → LinkTopology
+owner-qualified endpoint indexes"]
+        RerouteStore["rerouteStore
+rootGraphId → RerouteId → RerouteChain"]
         NodeOutputStore["nodeOutputStore
 Map&lt;nodeLocatorId, outputs&gt;"]
         SubgraphNavStore["subgraphNavigationStore
@@ -39,7 +47,8 @@ preview exposure state"]
 
     RS -->|reads| Stores
     SS -->|reads/writes| Stores
-    CS -->|reads/writes| LayoutStore
+    CS -->|reads/writes| LinkStore
+    CS -->|reads/writes| RerouteStore
     LS -->|reads/writes| LayoutStore
     ES -->|reads| NodeOutputStore
     VS -->|reads/writes| LayoutStore
@@ -50,33 +59,50 @@ preview exposure state"]
 
 ### Entity Keys
 
-Each store addresses entities by its own string-key convention.
+Each store addresses entities by its own key convention.
 
 ```mermaid
 graph LR
-    subgraph "Per-store string keys"
+    subgraph "Per-store keys"
         WID["WidgetId
 graphId:nodeId:name
 (branded string, src/types/widgetId.ts)"]
         NLID["nodeLocatorId
-subgraphId:nodeId"]
-        NID["nodeId (raw)"]
-        LID["linkId (raw)"]
-        RID["rerouteId (raw)"]
+subgraphUUID:nodeId"]
+        NID["rootGraphId:localId
+(ScopedLayoutKey)"]
+        LID["linkId (raw;
+root-scoped in linkStore)"]
+        RID["rerouteId in root bucket;
+rootGraphId:rerouteId in layout"]
+        EPI["owningGraphId:nodeId:slot
+(target/origin index)"]
     end
 
-    WID -->|widgetValueStore, domWidgetStore| W["keyed lookups"]
+    WID -->|widgetValueStore| W["keyed lookups"]
+    DWID["BaseDOMWidget.id"] -->|domWidgetStore| W
     NLID -->|nodeOutputStore| W
-    NID -->|layoutStore| W
-    LID -->|layoutStore| W
-    RID -->|layoutStore| W
+    NID -->|layoutStore entity geometry| W
+    LID -->|linkStore identity| W
+    RID -->|layoutStore, rerouteStore| W
+    EPI -->|linkStore indexes| W
 ```
 
 `WidgetId = graphId:nodeId:name` is itself a branded string (see
-`src/types/widgetId.ts`). `nodeLocatorId = subgraphId:nodeId` addresses node
-outputs. `layoutStore` keys layout records by raw `nodeId` / `linkId` /
-`rerouteId`. Each store enforces its own key shape; there is no single shared
-entity-ID type across stores.
+`src/types/widgetId.ts`). `nodeLocatorId = subgraphDefinitionUUID:nodeId`
+addresses node outputs, where the first segment is the subgraph definition's
+UUID and the second is the node's sequential integer ID (not a UUID).
+`layoutStore` keys persistent node, group, and reroute geometry with
+`makeScopedLayoutKey(rootGraphId, localId)`. Link topology does not live in
+LayoutStore; transient segment geometry uses a separate cache key.
+`linkStore` keys `LinkTopology` identity by `linkId` inside
+root-graph-scoped buckets. Owner-local and endpoint indexes provide graph
+iteration and slot queries; the target index includes only links whose target
+slot is unique (see [link-topology-store.md](link-topology-store.md)).
+`rerouteStore` keys `RerouteChain` by raw `rerouteId` in root-graph-scoped
+buckets (see
+[reroute-chain-store.md](reroute-chain-store.md)). Each store enforces its own
+key shape; there is no single shared entity-ID type across stores.
 
 Note: `graphId` is a scope identifier. It identifies which graph an entity
 belongs to and forms the prefix of `WidgetId`. Subgraphs are nodes with a
@@ -177,14 +203,15 @@ target_id, target_slot, type"]
         B5["resolve()"]
     end
 
-    subgraph After["linkId-keyed components (layoutStore)"]
+    subgraph After["link-id-keyed topology (linkStore) + unextracted state"]
         direction TB
-        A1["LinkEndpoints
-{ originId, originSlot,
-targetId, targetSlot, type }"]
-        A2["LinkVisual
+        A1["LinkTopology — SHIPPED
+{ id, originNodeId, originSlot,
+targetNodeId, targetSlot, type, parentId? }
+primary linkId; owner-qualified endpoint indexes"]
+        A2["LinkVisual — not yet extracted
 { color, path, centerPos }"]
-        A3["LinkState
+        A3["LinkState — not yet extracted
 { dragging, data }"]
     end
 
@@ -197,6 +224,26 @@ targetId, targetSlot, type }"]
     style Before fill:#4a1a1a,stroke:#6a2a2a,color:#e0e0e0
     style After fill:#1a4a1a,stroke:#2a6a2a,color:#e0e0e0
 ```
+
+`LinkTopology` has shipped in `src/stores/linkStore.ts`: `LLink._state` IS the
+store entry — the class fields are accessors over the store's reactive proxy,
+so the store and the instance cannot disagree. Registration is first-wins with
+identity-checked delete/update. See
+[link-topology-store.md](link-topology-store.md) for the full design record.
+`LinkVisual` and `LinkState` remain on the `LLink` class.
+
+### Reroute: RerouteChain (shipped)
+
+Reroutes follow the same pattern. `RerouteChain { id, parentId?, floating? }`
+lives in `src/stores/rerouteStore.ts`, keyed by `RerouteId` in
+root-graph-scoped buckets; `Reroute._chain` is the store entry. Link
+membership (`Reroute.linkIds` / `floatingLinkIds`) is **not stored** — it is
+derived per root graph by a cached computed reverse index walking the links'
+`parentId` chains, replacing ~10 hand-maintained write sites and the
+`validateLinks` set-repair. See
+[reroute-chain-store.md](reroute-chain-store.md). Reroute _position_ has since
+migrated too: `Reroute.posInternal` is deleted and the layout store's
+`{ id, position }` entry is the source of truth.
 
 ### Widget: Before vs After
 
@@ -248,8 +295,8 @@ graph TD
         direction TB
         CS["ConnectivitySystem
 Manages link/slot mutations.
-Writes: LinkEndpoints, SlotConnection,
-Connectivity"]
+Writes: LinkTopology (shipped),
+SlotConnection (future), Connectivity"]
         VS["VersionSystem
 Centralizes change tracking.
 Replaces 15+ scattered _version++.
@@ -312,9 +359,11 @@ graph LR
         Exe["Execution"]
         Props["Properties"]
         WC["WidgetContainer"]
-        LE["LinkEndpoints"]
+        LE["LinkTopology
+(linkStore — shipped)"]
         LV["LinkVisual"]
-        SC["SlotConnection"]
+        SC["Slot identity, metadata,
+order, and visuals — future"]
         SV["SlotVisual"]
         WVal["WidgetValue"]
         WL["WidgetLayout"]
@@ -333,7 +382,7 @@ graph LR
     LS -.->|read| WC
 
     CS -->|write| LE
-    CS -->|write| SC
+    CS -.->|future write| SC
     CS -->|write| Con
 
     ES -.->|read| Con
@@ -348,6 +397,13 @@ graph LR
     VS -.->|read| Pos
     VS -.->|read| Con
 ```
+
+ConnectivitySystem's `LinkEndpoints` write target is realized as
+`LinkTopology` in `linkStore`. Runtime connectivity for both input and output
+slots is store-owned. `NodeInputSlot.link` and `NodeOutputSlot.links` remain
+deprecated, read-only compatibility accessors derived from owner-qualified
+target and origin indexes; they are not mutable mirrors. Slot identity,
+metadata, order, and visual state remain class-side extraction work.
 
 ## 4. Dependency Flow
 
@@ -439,8 +495,8 @@ Subgraph = node + component."]
         S3["One system per concern.
 Systems don't overlap."]
         S4["Consistent per-store
-string-key conventions
-(WidgetId, nodeLocatorId, raw ids)."]
+key conventions
+(WidgetId, nodeLocatorId, scoped raw ids)."]
         S5["Systems query stores.
 No entity→entity refs."]
         S6["VersionSystem owns
@@ -478,14 +534,14 @@ sequenceDiagram
 
     Legacy->>Class: node.pos = [100, 200]
     Class->>Bridge: pos setter intercepted
-    Bridge->>Store: useLayoutMutations().moveNode(nodeId, { pos: [100, 200] })
+    Bridge->>Store: useLayoutMutations(source).moveNode(rootGraphId, nodeId, { x: 100, y: 200 })
 
     New->>Store: layoutStore read for nodeId
     Store-->>New: { pos: [100, 200], size: [...] }
 
     Note over Legacy,New: Phase 2: New features build on ECS directly
 
-    New->>Store: useLayoutMutations().moveNode(nodeId, { pos: [150, 250] })
+    New->>Store: useLayoutMutations(source).moveNode(rootGraphId, nodeId, { x: 150, y: 250 })
     Store->>Bridge: change detected
     Bridge->>Class: node._pos = [150, 250]
     Legacy->>Class: node.pos
@@ -556,4 +612,4 @@ behavior layer"]
 
 This diagram is intentionally high level. The operational Phase 4 -> 5 entry
 criteria (compatibility matrix, bridge fallback usage, rollback requirements)
-are defined in [ecs-migration-plan.md](ecs-migration-plan.md).
+are defined in [ecs-migration-plan.md](ecs/ecs-migration-plan.md).

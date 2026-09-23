@@ -9,9 +9,7 @@
       <UserAvatar
         class="mb-1"
         :photo-url="userPhotoUrl"
-        :pt:icon:class="{
-          'text-2xl!': !userPhotoUrl
-        }"
+        icon-class="size-6"
         size="large"
       />
 
@@ -46,7 +44,8 @@
         <div class="flex w-0 flex-1 items-center gap-2">
           <WorkspaceProfilePic
             class="size-6 shrink-0 text-xs"
-            :workspace-name="workspaceName"
+            :workspace-name
+            :subscription-tier="tier"
           />
           <span class="truncate text-sm text-base-foreground">
             {{ workspaceName }}
@@ -99,7 +98,7 @@
       </Button>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <div class="mx-0 my-2 border-t border-interface-stroke" />
 
     <div
       v-if="canAccessSubscriptionFeatures"
@@ -136,7 +135,7 @@
       }}</span>
     </div>
 
-    <Divider class="mx-0 my-2" />
+    <div class="mx-0 my-2 border-t border-interface-stroke" />
 
     <div
       class="flex cursor-pointer items-center gap-2 px-4 py-2 hover:bg-secondary-background-hover"
@@ -154,7 +153,6 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Divider from 'primevue/divider'
 import Skeleton from 'primevue/skeleton'
 import { computed, onMounted, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -167,10 +165,10 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import { useWorkspaceTierLabel } from '@/platform/workspace/composables/useWorkspaceTierLabel'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useDialogService } from '@/services/dialogService'
 
@@ -214,11 +212,9 @@ const showWorkspaceSwitcher = computed(
   () => initState.value === 'ready' && workspaces.value.length > 0
 )
 
-const { permissions } = useWorkspaceUI()
-const showAddCredits = computed(() =>
-  showWorkspaceSwitcher.value
-    ? permissions.value.canTopUp
-    : canAccessSubscriptionFeatures.value
+const { canTopUp, canSubscribeSelfServe } = useBillingCapabilities()
+const showAddCredits = computed(
+  () => canTopUp.value || canSubscribeSelfServe.value
 )
 
 const subscriptionTierName = computed(() =>
@@ -244,7 +240,9 @@ const handleOpenUserSettings = () => {
 }
 
 const handleOpenPlanAndCreditsSettings = () => {
-  settingsDialog.show('credits')
+  // 'workspace' is the V1 Plan & Credits panel; the legacy 'credits' panel is
+  // hidden from the settings menu and only reachable by key.
+  settingsDialog.show('workspace')
   emit('close')
 }
 

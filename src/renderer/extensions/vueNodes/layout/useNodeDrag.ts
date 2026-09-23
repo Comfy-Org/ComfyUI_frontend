@@ -15,10 +15,8 @@ import { useShiftKeySync } from '@/renderer/extensions/vueNodes/composables/useS
 import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 
-export const useNodeDrag = createSharedComposable(useNodeDragIndividual)
-
-function useNodeDragIndividual() {
-  const mutations = useLayoutMutations()
+export const useNodeDrag = createSharedComposable(() => {
+  const mutations = useLayoutMutations(LayoutSource.Vue)
   const { selectedNodeIds, selectedItems } = storeToRefs(useCanvasStore())
 
   // Get transform utilities from TransformPane if available
@@ -39,9 +37,8 @@ function useNodeDragIndividual() {
   let rafId: number | null = null
   let stopShiftSync: (() => void) | null = null
 
-  // For groups: track the last applied canvas delta to compute frame delta
-  let lastCanvasDelta: Point | null = null
-  let selectedNonNode: Positionable[] | null = null
+  /** `pos` is readonly on Positionable, so absolute targets are reached via `move()`. */
+  let nonNodeStartPositions: Map<Positionable, Point> | null = null
 
   // Auto-pan state
   let autoPan: AutoPanController | null = null
@@ -49,9 +46,12 @@ function useNodeDragIndividual() {
   let lastPointerY = 0
 
   function startDrag(event: PointerEvent, nodeId: NodeId) {
-    const layout = toValue(layoutStore.getNodeLayoutRef(nodeId))
+    const { rootGraphId } = canvasStore
+    if (!rootGraphId) return
+
+    const layout = layoutStore.getNodeLayout(rootGraphId, nodeId)
     if (!layout) return
-    const position = layout.position ?? { x: 0, y: 0 }
+    const position = layout.position
 
     // Track shift key state and sync to canvas for snap preview
     stopShiftSync = trackShiftKey(event)
@@ -65,7 +65,7 @@ function useNodeDragIndividual() {
 
     // capture the starting positions of all other selected nodes
     // Only move other selected items if the dragged node is part of the selection
-    const isDraggedNodeInSelection = selectedNodes?.has(nodeId)
+    const isDraggedNodeInSelection = selectedNodes.has(nodeId)
 
     if (isDraggedNodeInSelection && selectedNodes.size > 1) {
       otherSelectedNodesStartPositions = new Map()
@@ -74,7 +74,7 @@ function useNodeDragIndividual() {
         // Skip the current node being dragged
         if (id === nodeId) continue
 
-        const nodeLayout = layoutStore.getNodeLayoutRef(id).value
+        const nodeLayout = layoutStore.getNodeLayout(rootGraphId, id)
         if (nodeLayout) {
           otherSelectedNodesStartPositions.set(id, { ...nodeLayout.position })
         }
@@ -85,15 +85,13 @@ function useNodeDragIndividual() {
 
     // Capture selected groups only if the dragged node is part of the selection
     // This prevents groups from moving when dragging an unrelated node
-    if (isDraggedNodeInSelection) {
-      selectedNonNode = toValue(selectedItems).filter((i) => !isLGraphNode(i))
-      lastCanvasDelta = { x: 0, y: 0 }
-    } else {
-      selectedNonNode = null
-      lastCanvasDelta = null
-    }
-
-    mutations.setSource(LayoutSource.Vue)
+    nonNodeStartPositions = isDraggedNodeInSelection
+      ? new Map(
+          toValue(selectedItems)
+            .filter((item) => !isLGraphNode(item))
+            .map((item) => [item, { x: item.pos[0], y: item.pos[1] }])
+        )
+      : null
   }
 
   function startAutoPan(event: PointerEvent, nodeId: NodeId) {
@@ -119,9 +117,10 @@ function useNodeDragIndividual() {
             pos.y += panY
           }
         }
-        if (selectedNonNode) {
-          for (const group of selectedNonNode) {
-            group.move(panX, panY, true)
+        if (nonNodeStartPositions) {
+          for (const start of nonNodeStartPositions.values()) {
+            start.x += panX
+            start.y += panY
           }
         }
         updateNodePositions(nodeId)
@@ -137,6 +136,9 @@ function useNodeDragIndividual() {
    */
   function updateNodePositions(nodeId: NodeId) {
     if (!dragStartPos || !dragStartMouse) return
+
+    const { rootGraphId } = canvasStore
+    if (!rootGraphId) return
 
     const mouseDelta = {
       x: lastPointerX - dragStartMouse.x,
@@ -176,20 +178,17 @@ function useNodeDragIndividual() {
       }
     }
 
-    mutations.batchMoveNodes(updates)
+    mutations.batchMoveNodes(rootGraphId, updates)
 
-    if (selectedNonNode && selectedNonNode.length > 0 && lastCanvasDelta) {
-      const frameDelta = {
-        x: canvasDelta.x - lastCanvasDelta.x,
-        y: canvasDelta.y - lastCanvasDelta.y
-      }
-
-      for (const group of selectedNonNode) {
-        group.move(frameDelta.x, frameDelta.y, true)
-      }
+    for (const [item, start] of nonNodeStartPositions ?? []) {
+      // Absolute target every frame, so a dropped frame cannot leave the item
+      // behind and per-frame deltas cannot drift out of step with the nodes.
+      item.move(
+        start.x + canvasDelta.x - item.pos[0],
+        start.y + canvasDelta.y - item.pos[1],
+        true
+      )
     }
-
-    lastCanvasDelta = canvasDelta
   }
 
   function handleDrag(event: PointerEvent, nodeId: NodeId) {
@@ -232,11 +231,12 @@ function useNodeDragIndividual() {
 
   function endDrag(event: PointerEvent, nodeId: NodeId | undefined) {
     // Apply snap to final position if snap was active (matches LiteGraph behavior)
-    if (shouldSnap(event) && nodeId) {
+    const { rootGraphId } = canvasStore
+    if (shouldSnap(event) && nodeId && rootGraphId) {
       const boundsUpdates: NodeBoundsUpdate[] = []
 
       // Snap main node
-      const currentLayout = toValue(layoutStore.getNodeLayoutRef(nodeId))
+      const currentLayout = layoutStore.getNodeLayout(rootGraphId, nodeId)
       if (currentLayout) {
         const currentPos = currentLayout.position
         const snappedPos = applySnapToPosition({ ...currentPos })
@@ -262,7 +262,7 @@ function useNodeDragIndividual() {
         otherSelectedNodesStartPositions.size > 0
       ) {
         for (const otherNodeId of otherSelectedNodesStartPositions.keys()) {
-          const nodeLayout = layoutStore.getNodeLayoutRef(otherNodeId).value
+          const nodeLayout = layoutStore.getNodeLayout(rootGraphId, otherNodeId)
           if (nodeLayout) {
             const currentPos = { ...nodeLayout.position }
             const snappedPos = applySnapToPosition(currentPos)
@@ -288,7 +288,9 @@ function useNodeDragIndividual() {
 
       // Apply all snap updates in a single batched transaction
       if (boundsUpdates.length > 0) {
-        layoutStore.batchUpdateNodeBounds(boundsUpdates)
+        layoutStore.batchUpdateNodeBounds(rootGraphId, boundsUpdates, {
+          source: LayoutSource.Vue
+        })
       }
     }
 
@@ -299,8 +301,7 @@ function useNodeDragIndividual() {
     dragStartPos = null
     dragStartMouse = null
     otherSelectedNodesStartPositions = null
-    selectedNonNode = null
-    lastCanvasDelta = null
+    nonNodeStartPositions = null
 
     autoPan?.stop()
     autoPan = null
@@ -320,4 +321,4 @@ function useNodeDragIndividual() {
     handleDrag,
     endDrag
   }
-}
+})

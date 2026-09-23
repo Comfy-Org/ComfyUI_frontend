@@ -1,6 +1,8 @@
 import axios from 'axios'
+import { shallowReactive } from 'vue'
 
 import { useChainCallback } from '@/composables/functional/useChainCallback'
+import type { ComboWidgetInventoryStatus } from '@/core/graph/widgets/comboWidgetInventory'
 import type { IWidget, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { isCloud } from '@/platform/distribution/types'
 import type { RemoteWidgetConfig } from '@/schemas/nodeDefSchema'
@@ -32,7 +34,7 @@ async function getAuthHeaders() {
   return {}
 }
 
-const dataCache = new Map<string, CacheEntry<unknown>>()
+const dataCache = shallowReactive(new Map<string, CacheEntry<unknown>>())
 
 const createCacheKey = (config: RemoteWidgetConfig): string => {
   const { route, query_params = {}, refresh = 0 } = config
@@ -50,7 +52,7 @@ const getBackoff = (retryCount: number) =>
 
 const isInitialized = (entry: CacheEntry<unknown> | undefined) =>
   entry?.data !== undefined &&
-  entry?.timestamp !== undefined &&
+  entry.timestamp !== undefined &&
   entry.timestamp > 0
 
 const isStale = (entry: CacheEntry<unknown> | undefined, ttl: number) =>
@@ -64,7 +66,7 @@ const isFailed = (entry: CacheEntry<unknown> | undefined) =>
 
 const isBackingOff = (entry: CacheEntry<unknown> | undefined) =>
   entry?.error &&
-  entry?.lastErrorTime &&
+  entry.lastErrorTime &&
   Date.now() - entry.lastErrorTime < getBackoff(entry.retryCount || 0)
 
 const fetchData = async (
@@ -105,14 +107,13 @@ export function useRemoteWidget<
     entry.lastErrorTime = 0
     entry.error = null
     entry.timestamp = Date.now()
-    entry.data = data ?? defaultValue
+    entry.data = data
   }
 
   const setError = (entry: CacheEntry<T>, error: Error | unknown) => {
     entry.retryCount = (entry.retryCount || 0) + 1
     entry.lastErrorTime = Date.now()
     entry.error = error instanceof Error ? error : new Error(String(error))
-    entry.data ??= defaultValue
     entry.fetchPromise = undefined
     if (entry.retryCount >= max_retries) {
       setFailed(entry)
@@ -121,7 +122,7 @@ export function useRemoteWidget<
 
   const setFailed = (entry: CacheEntry<T>) => {
     dataCache.set(cacheKey, {
-      data: entry.data ?? defaultValue,
+      data: entry.data,
       failed: true
     })
   }
@@ -132,8 +133,9 @@ export function useRemoteWidget<
 
   const onFirstLoad = (data: T | T[]) => {
     isLoaded = true
-    const nextValue =
-      Array.isArray(data) && data.length > 0 ? data[0] : undefined
+    const nextValue = Array.isArray(data)
+      ? (data.find((value) => value === widget.value) ?? data[0])
+      : undefined
     widget.value = nextValue ?? (Array.isArray(data) ? defaultValue : data)
     widget.callback?.(widget.value)
     node.graph?.setDirtyCanvas(true)
@@ -149,9 +151,9 @@ export function useRemoteWidget<
     if (isValid || isBackingOff(entry) || isFetching(entry))
       return entry!.data as T
 
-    const currentEntry: CacheEntry<T> = (entry as
-      | CacheEntry<T>
-      | undefined) || { data: defaultValue }
+    const currentEntry: CacheEntry<T> = shallowReactive(
+      (entry as CacheEntry<T> | undefined) || { data: defaultValue }
+    )
     dataCache.set(cacheKey, currentEntry)
 
     try {
@@ -209,6 +211,28 @@ export function useRemoteWidget<
     return dataCache.get(cacheKey)?.data as T
   }
 
+  function getInventoryStatus(): ComboWidgetInventoryStatus {
+    const entry = dataCache.get(cacheKey)
+    const isFresh =
+      isInitialized(entry) && (isPermanent || !isStale(entry, refresh))
+    if (isFresh) return isLoaded ? 'ready' : 'loading'
+    if (isFetching(entry)) return 'loading'
+    if (isFailed(entry) || entry?.error) return 'error'
+    return 'loading'
+  }
+
+  async function waitForInventory(signal?: AbortSignal): Promise<void> {
+    while (!signal?.aborted) {
+      const inFlight = dataCache.get(cacheKey)?.fetchPromise
+      if (inFlight) {
+        await inFlight.catch(() => undefined)
+        continue
+      }
+      await new Promise<void>((resolve) => getValue(resolve))
+      if (!dataCache.get(cacheKey)?.fetchPromise) return
+    }
+  }
+
   /**
    * Getter of the remote property of the widget (e.g., options.values, value, etc.).
    * Starts the fetch process then returns the cached value immediately.
@@ -222,12 +246,12 @@ export function useRemoteWidget<
           onRefresh()
           refreshQueued = false
         }
-        onFulfilled?.()
       })
+      .finally(() => onFulfilled?.())
       .catch((err) => {
         console.error(err)
       })
-    return getCachedValue() ?? defaultValue
+    return getCachedValue()
   }
 
   /**
@@ -292,6 +316,8 @@ export function useRemoteWidget<
     refreshValue: widget.refresh,
     addRefreshButton,
     getCacheEntry: () => dataCache.get(cacheKey),
+    getInventoryStatus,
+    waitForInventory,
 
     cacheKey
   }

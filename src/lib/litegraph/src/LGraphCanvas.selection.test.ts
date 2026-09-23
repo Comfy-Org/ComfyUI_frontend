@@ -1,0 +1,697 @@
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import type { Positionable, Rect } from '@/lib/litegraph/src/interfaces'
+import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
+import {
+  LGraph,
+  LGraphCanvas,
+  LGraphGroup,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
+import {
+  resolveSelectable,
+  selectableKeyOf
+} from '@/renderer/core/canvas/litegraph/selectionAdapter'
+import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
+
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
+
+type Modifiers = Partial<
+  Pick<MouseEventInit, 'shiftKey' | 'ctrlKey' | 'metaKey' | 'altKey'>
+>
+
+function createCanvas(graph: LGraph): LGraphCanvas {
+  const canvasElement = document.createElement('canvas')
+  canvasElement.width = 800
+  canvasElement.height = 600
+  canvasElement.getContext = vi
+    .fn()
+    .mockReturnValue(createMockCanvasRenderingContext2D())
+  canvasElement.getBoundingClientRect = vi.fn().mockReturnValue({
+    left: 0,
+    top: 0,
+    width: 800,
+    height: 600
+  })
+  document.body.append(canvasElement)
+  return new LGraphCanvas(canvasElement, graph, { skip_render: true })
+}
+
+function addNode(graph: LGraph, title: string, x: number, y: number) {
+  const node = new LGraphNode(title)
+  node.pos = [x, y]
+  node.size = [100, 60]
+  node.updateArea()
+  graph.add(node)
+  return node
+}
+
+function addGroup(graph: LGraph, title: string, bounds: Rect) {
+  const group = new LGraphGroup(title)
+  group._bounding.set(bounds)
+  graph.add(group)
+  return group
+}
+
+function pointerEvent(
+  type: 'pointerdown' | 'pointerup',
+  x: number,
+  y: number,
+  modifiers: Modifiers
+): PointerEvent {
+  const event = new MouseEvent(type, {
+    button: 0,
+    buttons: type === 'pointerdown' ? 1 : 0,
+    clientX: x,
+    clientY: y,
+    ...modifiers
+  })
+  Object.defineProperty(event, 'isPrimary', { value: true })
+  Object.defineProperty(event, 'pointerId', { value: 1 })
+  return event as PointerEvent
+}
+
+function click(
+  canvas: LGraphCanvas,
+  x: number,
+  y: number,
+  modifiers: Modifiers = {}
+) {
+  canvas.visible_nodes = [...canvas.graph!.nodes]
+  canvas.processMouseDown(pointerEvent('pointerdown', x, y, modifiers))
+  canvas.processMouseUp(pointerEvent('pointerup', x, y, modifiers))
+}
+
+function marquee(
+  canvas: LGraphCanvas,
+  from: [number, number],
+  to: [number, number],
+  modifiers: Modifiers
+) {
+  const initialSelection = new Set<Positionable>(canvas.selectedItems)
+  const dragRect: Rect = [from[0], from[1], to[0] - from[0], to[1] - from[1]]
+  const event = {
+    canvasX: to[0],
+    canvasY: to[1],
+    ...modifiers
+  } as CanvasPointerEvent
+  if (canvas.liveSelection) {
+    canvas['handleLiveSelect'](event, dragRect, initialSelection)
+    canvas['finalizeLiveSelect']()
+  } else {
+    canvas['_handleMultiSelect'](event, dragRect)
+  }
+}
+
+function keyEvent(type: 'keydown' | 'keyup', key: string): KeyboardEvent {
+  const event = new KeyboardEvent(type, { key })
+  Object.defineProperty(event, 'target', { value: { localName: 'div' } })
+  return event
+}
+
+function selectedTitles(canvas: LGraphCanvas): string[] {
+  return [...canvas.selectedItems]
+    .map((item) => ('title' in item ? String(item.title) : String(item)))
+    .sort()
+}
+
+describe('LGraphCanvas selection', () => {
+  let graph: LGraph
+  let canvas: LGraphCanvas
+  let a: LGraphNode
+  let b: LGraphNode
+  let onSelectionChange: NonNullable<LGraphCanvas['onSelectionChange']>
+
+  beforeEach(() => {
+    LiteGraph.vueNodesMode = false
+    graph = new LGraph()
+    canvas = createCanvas(graph)
+    a = addNode(graph, 'A', 20, 40)
+    b = addNode(graph, 'B', 300, 40)
+    onSelectionChange = vi.fn()
+    canvas.onSelectionChange = onSelectionChange
+  })
+
+  afterEach(() => {
+    expect(useSelectionStore().selectedKeys(graphScopeOf(graph))).toEqual(
+      [...canvas.selectedItems].map(selectableKeyOf)
+    )
+  })
+
+  describe('click', () => {
+    it.for<{ name: string; modifiers: Modifiers; expected: string[] }>([
+      { name: 'plain click replaces', modifiers: {}, expected: ['B'] },
+      {
+        name: 'shift click adds',
+        modifiers: { shiftKey: true },
+        expected: ['A', 'B']
+      },
+      {
+        name: 'ctrl click adds',
+        modifiers: { ctrlKey: true },
+        expected: ['A', 'B']
+      },
+      {
+        name: 'meta click adds',
+        modifiers: { metaKey: true },
+        expected: ['A', 'B']
+      }
+    ])('$name', ({ modifiers, expected }) => {
+      click(canvas, 60, 60)
+      click(canvas, 340, 60, modifiers)
+
+      expect(selectedTitles(canvas)).toEqual(expected)
+    })
+
+    it.fails('a replacing click reports one change', () => {
+      click(canvas, 60, 60)
+      click(canvas, 340, 60)
+
+      expect(onSelectionChange).toHaveBeenCalledTimes(2)
+    })
+
+    it('ctrl click on a selected item removes it', () => {
+      click(canvas, 60, 60)
+      click(canvas, 340, 60, { ctrlKey: true })
+      click(canvas, 60, 60, { ctrlKey: true })
+
+      expect(selectedTitles(canvas)).toEqual(['B'])
+      expect(a.selected).toBe(false)
+    })
+
+    it('plain click on empty canvas clears', () => {
+      click(canvas, 60, 60)
+      click(canvas, 600, 500)
+
+      expect(canvas.selectedItems.size).toBe(0)
+      expect(a.selected).toBe(false)
+    })
+
+    it.fails('a clearing click reports one change', () => {
+      click(canvas, 60, 60)
+      click(canvas, 600, 500)
+
+      expect(onSelectionChange).toHaveBeenCalledTimes(2)
+    })
+
+    it('modifier click on empty canvas keeps the selection', () => {
+      click(canvas, 60, 60)
+      click(canvas, 600, 500, { shiftKey: true })
+
+      expect(selectedTitles(canvas)).toEqual(['A'])
+    })
+
+    it('click on a group title selects the group only', () => {
+      const group = addGroup(graph, 'G', [0, 0, 500, 300])
+
+      click(canvas, 250, 10)
+
+      expect(selectedTitles(canvas)).toEqual(['G'])
+      expect(group.selected).toBe(true)
+      expect(a.selected).toBeFalsy()
+    })
+
+    it('click on a node inside a group selects the node only', () => {
+      addGroup(graph, 'G', [0, 0, 500, 300])
+
+      click(canvas, 60, 60)
+
+      expect(selectedTitles(canvas)).toEqual(['A'])
+    })
+
+    it('keeps item flags, selected_nodes and highlighted links aligned', () => {
+      a.addOutput('out', 'number')
+      b.addInput('in', 'number')
+      a.connect(0, b, 0)
+
+      click(canvas, 60, 60)
+      click(canvas, 340, 60, { shiftKey: true })
+      expect(Object.keys(canvas.highlighted_links)).toHaveLength(1)
+      expect(Object.keys(canvas.selected_nodes)).toHaveLength(2)
+
+      click(canvas, 600, 500)
+      expect(Object.keys(canvas.highlighted_links)).toHaveLength(0)
+      expect(Object.keys(canvas.selected_nodes)).toHaveLength(0)
+      expect(a.selected).toBe(false)
+      expect(b.selected).toBe(false)
+    })
+  })
+
+  describe('programmatic API', () => {
+    it('publishes each selection before its synchronous node hook', () => {
+      const store = useSelectionStore()
+      const scope = graphScopeOf(graph)
+      const selections: string[][] = []
+      a.onSelected = () => selections.push([...store.selectedKeys(scope)])
+      b.onSelected = () => selections.push([...store.selectedKeys(scope)])
+
+      canvas.selectItems([a, b])
+
+      expect(selections).toEqual([
+        [`node:${a.id}`],
+        [`node:${a.id}`, `node:${b.id}`]
+      ])
+    })
+
+    it.for(['single', 'all'] as const)(
+      '%s deselection publishes before synchronous hooks',
+      (mode) => {
+        canvas.selectItems([a, b])
+        const store = useSelectionStore()
+        const scope = graphScopeOf(graph)
+        const selections: string[][] = []
+        const capture = () => selections.push([...store.selectedKeys(scope)])
+        a.onDeselected = capture
+        canvas.onNodeDeselected = capture
+        canvas.onSelectionChange = capture
+
+        const deselect = {
+          single: () => canvas.deselect(a),
+          all: () => canvas.deselectAll(b)
+        }
+        deselect[mode]()
+
+        expect(selections).toEqual([[`node:${b.id}`], [`node:${b.id}`]])
+      }
+    )
+
+    it('publishes retained legacy selection before bulk deselection hooks', () => {
+      const target = addNode(graph, 'Target', 500, 40)
+      a.addOutput('out', 'number')
+      b.addOutput('out', 'number')
+      target.addInput('first', 'number')
+      target.addInput('second', 'number')
+      a.connect(0, target, 0)
+      const retainedLink = b.connect(0, target, 1)
+      assert.exists(retainedLink)
+      canvas.selectItems([a, b])
+      a.onDeselected = vi.fn(() => {
+        expect({
+          keys: useSelectionStore().selectedKeys(graphScopeOf(graph)),
+          items: [...canvas.selectedItems],
+          nodes: canvas.selected_nodes,
+          flags: [a.selected, b.selected],
+          links: canvas.highlighted_links
+        }).toEqual({
+          keys: [`node:${b.id}`],
+          items: [b],
+          nodes: { [b.id]: b },
+          flags: [false, true],
+          links: { [retainedLink.id]: true }
+        })
+      })
+
+      canvas.deselectAll(b)
+
+      expect(a.onDeselected).toHaveBeenCalledOnce()
+    })
+
+    it('keeps selection made by a synchronous deselection hook', () => {
+      canvas.select(a)
+      a.onDeselected = () => canvas.select(b)
+
+      canvas.deselectAll()
+
+      expect(canvas.selectedItems).toEqual(new Set([b]))
+      expect(a.selected).toBe(false)
+      expect(b.selected).toBe(true)
+      expect(canvas.selected_nodes).toEqual({ [b.id]: b })
+      expect(useSelectionStore().selectedKeys(graphScopeOf(graph))).toEqual([
+        `node:${b.id}`
+      ])
+    })
+
+    it('does not retain a foreign legacy item as a local selection', () => {
+      const foreignGraph = new LGraph()
+      const foreign = addNode(foreignGraph, 'Foreign', 0, 0)
+      expect(foreign.id).toBe(a.id)
+      foreign.selected = true
+      canvas.select(a)
+      canvas.selectedItems.add(foreign)
+
+      canvas.deselectAll(foreign)
+
+      expect(canvas.selectedItems.size).toBe(0)
+      expect(canvas.selected_nodes).toEqual({})
+      expect(useSelectionStore().selectedKeys(graphScopeOf(graph))).toEqual([])
+      expect(a.selected).toBe(false)
+      expect(foreign.selected).toBe(true)
+    })
+
+    it('bulk selection does at most linear key insertion work', () => {
+      const count = 128
+      const nodes = Array.from({ length: count }, (_, index) =>
+        addNode(graph, `Node ${index}`, 0, 0)
+      )
+      const add = Set.prototype.add
+      let keyInsertions = 0
+      vi.spyOn(Set.prototype, 'add').mockImplementation(function (
+        this: Set<unknown>,
+        value: unknown
+      ) {
+        if (typeof value === 'string' && value.startsWith('node:'))
+          keyInsertions++
+        return add.call(this, value)
+      })
+
+      canvas.selectItems(nodes)
+
+      expect(keyInsertions).toBeLessThanOrEqual(2 * count)
+      expect(canvas.selectedItems.size).toBe(count)
+      expect(
+        useSelectionStore().selectedKeys(graphScopeOf(graph))
+      ).toHaveLength(count)
+    })
+
+    it('does not classify an unsupported positionable as subgraph IO', () => {
+      const item: Positionable = {
+        id: a.id,
+        pos: [0, 0],
+        boundingRect: [0, 0, 10, 10],
+        move: vi.fn(),
+        snapToGrid: () => false
+      }
+
+      expect(selectableKeyOf(item)).toBeUndefined()
+    })
+
+    it.for([
+      { additive: false, selected: false, callbacks: 1 },
+      { additive: true, selected: true, callbacks: 0 }
+    ])(
+      'empty selectItems with additive=$additive',
+      ({ additive, selected, callbacks }) => {
+        canvas.select(a)
+        a.onDeselected = vi.fn()
+
+        canvas.selectItems([], additive)
+
+        expect(canvas.selectedItems.has(a)).toBe(selected)
+        expect(a.selected).toBe(selected)
+        expect(a.onDeselected).toHaveBeenCalledTimes(callbacks)
+        expect(
+          useSelectionStore().isSelected(
+            graphScopeOf(graph),
+            selectableKeyOf(a)
+          )
+        ).toBe(selected)
+      }
+    )
+
+    it.for(['group', 'reroute'] as const)(
+      'direct %s removal clears only its selection before id reuse',
+      (kind) => {
+        const group = addGroup(graph, 'G', [400, 200, 100, 100])
+        const reroute = graph.setReroute({ pos: [500, 500], linkIds: [] })!
+        const targets = {
+          group: {
+            item: group,
+            remove: () => graph.remove(group),
+            recreate: () => graph.add(new LGraphGroup('Replacement', group.id))
+          },
+          reroute: {
+            item: reroute,
+            remove: () => graph.removeReroute(reroute.id),
+            recreate: () =>
+              graph.setReroute({ id: reroute.id, pos: [500, 500], linkIds: [] })
+          }
+        }
+        const target = targets[kind]
+        canvas.selectItems([a, target.item])
+
+        target.remove()
+        target.recreate()
+
+        const replacement = resolveSelectable(
+          graph,
+          selectableKeyOf(target.item)
+        )
+        assert.exists(replacement)
+        expect(replacement).not.toBe(target.item)
+        expect(replacement.selected).toBeFalsy()
+        expect(canvas.selectedItems).toEqual(new Set([a]))
+        expect(target.item.selected).toBe(false)
+        expect(
+          useSelectionStore().isSelected(
+            graphScopeOf(graph),
+            selectableKeyOf(target.item)
+          )
+        ).toBe(false)
+      }
+    )
+
+    it.fails('select() reports the change', () => {
+      canvas.select(a)
+
+      expect(onSelectionChange).toHaveBeenCalledTimes(1)
+    })
+
+    it.fails('deselect() reports the change', () => {
+      canvas.select(a)
+      canvas.deselect(a)
+
+      expect(onSelectionChange).toHaveBeenCalledTimes(2)
+    })
+
+    it('deleteSelected() empties the selection', () => {
+      canvas.select(a)
+      canvas.select(b)
+
+      canvas.deleteSelected()
+
+      expect(canvas.selectedItems.size).toBe(0)
+      expect(graph.nodes).toHaveLength(0)
+    })
+
+    it('records and removes every selectable kind', () => {
+      const group = addGroup(graph, 'G', [400, 200, 100, 100])
+      const reroute = graph.setReroute({ pos: [500, 500], linkIds: [] })!
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+
+      for (const item of [a, group, reroute]) canvas.select(item)
+      expect(canvas.selectedItems.size).toBe(3)
+      for (const item of [a, group, reroute]) canvas.deselect(item)
+      expect(canvas.selectedItems.size).toBe(0)
+
+      canvas.setGraph(subgraph)
+      graph = subgraph
+      const ioNodes = [subgraph.inputNode, subgraph.outputNode]
+      for (const item of ioNodes) canvas.select(item)
+      expect(canvas.selectedItems.size).toBe(2)
+      for (const item of ioNodes) canvas.deselect(item)
+      expect(canvas.selectedItems.size).toBe(0)
+    })
+
+    it('graph.clear() evicts the selection of every scope in that root', () => {
+      const store = useSelectionStore()
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+      const scopes = [graphScopeOf(graph), graphScopeOf(subgraph)]
+      for (const scope of scopes) {
+        store.apply(scope, {
+          type: 'selection.add',
+          key: selectableKeyOf(a)
+        })
+      }
+
+      graph.clear()
+
+      for (const scope of scopes) expect(store.selectedKeys(scope)).toEqual([])
+    })
+
+    it('subgraph.clear() evicts only that graph scope', () => {
+      const store = useSelectionStore()
+      const subgraph = createTestSubgraph({ rootGraph: graph })
+      const scope = graphScopeOf(subgraph)
+      const rootScope = graphScopeOf(graph)
+      const rootGroup = addGroup(graph, 'Root', [0, 0, 100, 100])
+      const selectedGroup = addGroup(subgraph, 'Selected', [0, 0, 100, 100])
+      canvas.select(rootGroup)
+      store.apply(scope, {
+        type: 'selection.add',
+        key: selectableKeyOf(selectedGroup)
+      })
+
+      subgraph.clear()
+      const replacement = new LGraphGroup('Replacement', selectedGroup.id)
+      subgraph.add(replacement)
+
+      expect(store.selectedKeys(scope)).toEqual([])
+      expect(store.selectedKeys(rootScope)).toEqual([
+        selectableKeyOf(rootGroup)
+      ])
+      expect(
+        store.isSelected(graphScopeOf(subgraph), selectableKeyOf(replacement))
+      ).toBe(false)
+    })
+
+    it('ignores items owned by another graph', () => {
+      const foreignGraph = new LGraph()
+      const foreignNode = addNode(foreignGraph, 'Foreign', 20, 40)
+      foreignNode.id = a.id
+      canvas.select(a)
+
+      canvas.select(foreignNode)
+      canvas.deselect(foreignNode)
+      canvas.selectItems([foreignNode])
+
+      expect(canvas.selectedItems).toEqual(new Set([a]))
+      expect(foreignNode.selected).toBeFalsy()
+      expect(a.selected).toBe(true)
+    })
+
+    it('setGraph() clears the selection of the graph being left', () => {
+      canvas.select(a)
+      const scope = graphScopeOf(graph)
+
+      canvas.setGraph(new LGraph())
+
+      expect(useSelectionStore().selectedKeys(scope)).toEqual([])
+      expect(a.selected).toBeFalsy()
+    })
+
+    it('deselectAll() reports only when something was selected', () => {
+      canvas.deselectAll()
+      expect(onSelectionChange).not.toHaveBeenCalled()
+
+      canvas.select(a)
+      canvas.deselectAll()
+      expect(onSelectionChange).toHaveBeenCalledTimes(1)
+      expect(a.selected).toBe(false)
+    })
+  })
+
+  describe('marquee', () => {
+    beforeEach(() => {
+      addNode(graph, 'C', 300, 300)
+    })
+
+    describe.for([{ liveSelection: false }, { liveSelection: true }])(
+      'liveSelection=$liveSelection',
+      ({ liveSelection }) => {
+        beforeEach(() => {
+          canvas.liveSelection = liveSelection
+        })
+
+        it('plain marquee replaces the selection', () => {
+          click(canvas, 60, 60)
+
+          marquee(canvas, [250, 0], [450, 400], {})
+
+          expect(selectedTitles(canvas)).toEqual(['B', 'C'])
+          expect(a.selected).toBe(false)
+        })
+
+        it('shift marquee adds to the selection', () => {
+          click(canvas, 60, 60)
+
+          marquee(canvas, [250, 0], [450, 400], { shiftKey: true })
+
+          expect(selectedTitles(canvas)).toEqual(['A', 'B', 'C'])
+        })
+
+        it('alt marquee removes from the selection', () => {
+          click(canvas, 60, 60)
+          click(canvas, 340, 60, { shiftKey: true })
+          click(canvas, 340, 320, { shiftKey: true })
+
+          marquee(canvas, [250, 0], [450, 100], { altKey: true })
+
+          expect(selectedTitles(canvas)).toEqual(['A', 'C'])
+          expect(b.selected).toBe(false)
+        })
+      }
+    )
+
+    it.fails('shift+alt marquee resolves the same way in both modes', () => {
+      click(canvas, 60, 60)
+      canvas.liveSelection = false
+      marquee(canvas, [250, 0], [450, 400], { shiftKey: true, altKey: true })
+      const classic = selectedTitles(canvas)
+
+      click(canvas, 60, 60)
+      canvas.liveSelection = true
+      marquee(canvas, [250, 0], [450, 400], { shiftKey: true, altKey: true })
+
+      expect(selectedTitles(canvas)).toEqual(classic)
+    })
+
+    it.fails('live marquee reports one change', () => {
+      canvas.liveSelection = true
+
+      marquee(canvas, [250, 0], [450, 400], {})
+
+      expect(onSelectionChange).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('groups with groupSelectChildren', () => {
+    let group: LGraphGroup
+
+    beforeEach(() => {
+      canvas.groupSelectChildren = true
+      group = addGroup(graph, 'G', [0, 0, 500, 300])
+      group.recomputeInsideNodes()
+    })
+
+    it('selecting the group selects its children', () => {
+      click(canvas, 250, 10)
+
+      expect(selectedTitles(canvas)).toEqual(['A', 'B', 'G'])
+    })
+
+    it.fails('nested groups receive onSelected', () => {
+      const inner = addGroup(graph, 'Inner', [10, 30, 200, 200])
+      inner.recomputeInsideNodes()
+      group.recomputeInsideNodes()
+      const onSelected = vi.fn()
+      Object.assign(inner, { onSelected })
+
+      canvas.select(group)
+
+      expect(inner.selected).toBe(true)
+      expect(onSelected).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('space bar pan override', () => {
+    it.for([{ readOnly: true }, { readOnly: false }])(
+      'restores read_only=$readOnly after release',
+      ({ readOnly }) => {
+        canvas.read_only = readOnly
+
+        canvas.processKey(keyEvent('keydown', ' '))
+        expect(canvas.read_only).toBe(true)
+
+        canvas.processKey(keyEvent('keyup', ' '))
+        expect(canvas.read_only).toBe(readOnly)
+      }
+    )
+
+    it('ignores a release without a matching press', () => {
+      canvas.read_only = true
+
+      canvas.processKey(keyEvent('keyup', ' '))
+
+      expect(canvas.read_only).toBe(true)
+    })
+
+    it('clears held state when the graph is detached before release', () => {
+      canvas.processKey(keyEvent('keydown', ' '))
+      graph.detachCanvas(canvas)
+
+      canvas.processKey(keyEvent('keyup', ' '))
+      expect(canvas.read_only).toBe(false)
+
+      new LGraph().attachCanvas(canvas)
+      canvas.read_only = true
+      canvas.processKey(keyEvent('keydown', ' '))
+      canvas.processKey(keyEvent('keyup', ' '))
+
+      expect(canvas.read_only).toBe(true)
+    })
+  })
+})

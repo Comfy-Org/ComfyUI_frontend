@@ -34,10 +34,10 @@ const _useWorkflowPacks = () => {
   const unresolvedNodeNames = ref<string[]>([])
 
   const getWorkflowNodePackId = (node: LGraphNode): string | undefined => {
-    if (typeof node.properties?.cnr_id === 'string') {
+    if (typeof node.properties.cnr_id === 'string') {
       return node.properties.cnr_id
     }
-    if (typeof node.properties?.aux_id === 'string') {
+    if (typeof node.properties.aux_id === 'string') {
       return node.properties.aux_id
     }
     return undefined
@@ -61,14 +61,14 @@ const _useWorkflowPacks = () => {
 
     // Check if node is a core node
     const nodeDef = nodeDefStore.nodeDefsByName[nodeName]
-    if (nodeDef?.isCoreNode) {
+    if (nodeDef.isCoreNode) {
       if (!systemStatsStore.systemStats) {
         await systemStatsStore.refetchSystemStats()
       }
       return {
         id: CORE_NODES_PACK_NAME,
         version:
-          systemStatsStore.systemStats?.system?.comfyui_version ?? 'nightly'
+          systemStatsStore.systemStats?.system.comfyui_version ?? 'nightly'
       }
     }
 
@@ -116,12 +116,6 @@ const _useWorkflowPacks = () => {
    * as unresolved so downstream consumers can surface them to the user.
    */
   const getWorkflowPacks = async () => {
-    if (!app.rootGraph) {
-      workflowPacks.value = []
-      unresolvedNodeNames.value = []
-      return
-    }
-
     const resolvedPacks: WorkflowPack[] = []
     const unresolved: string[] = []
 
@@ -130,15 +124,6 @@ const _useWorkflowPacks = () => {
         const pack = await workflowNodeToPack(node)
         if (pack) {
           resolvedPacks.push(pack)
-        } else {
-          const nodeName = node.type
-          if (
-            nodeName &&
-            getWorkflowNodePackId(node) === undefined &&
-            !nodeDefStore.nodeDefsByName[nodeName]
-          ) {
-            unresolved.push(nodeName)
-          }
         }
       })
     )
@@ -149,7 +134,7 @@ const _useWorkflowPacks = () => {
 
   const packsToUniqueIds = (packs: WorkflowPack[]) =>
     packs.reduce((acc, pack) => {
-      if (pack?.id) acc.add(pack.id)
+      if (pack.id) acc.add(pack.id)
       return acc
     }, new Set<string>())
 

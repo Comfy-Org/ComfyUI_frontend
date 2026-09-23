@@ -31,6 +31,15 @@ test.describe('MCP page @smoke', () => {
     }
   })
 
+  test('agent beta banner links to the waitlist page', async ({ page }) => {
+    await expect(
+      page.getByText('The Comfy Agent is in beta. Get early access.')
+    ).toBeVisible()
+    await expect(
+      page.getByRole('link', { name: 'Join the waitlist' })
+    ).toHaveAttribute('href', '/agent')
+  })
+
   test('cloud is the default connection with Claude Desktop active', async ({
     page
   }) => {
