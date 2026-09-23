@@ -74,6 +74,34 @@ describe('PlaygroundField', () => {
       screen.getByRole('combobox', { name: 'Image size' })
     ).toHaveAttribute('aria-invalid', 'true')
   })
+
+  it('shows the declared video-width bounds on the affected field', () => {
+    mountField(
+      {
+        kind: 'text',
+        name: 'video_url',
+        label: 'Source video',
+        required: true,
+        multiline: false,
+        presentation: {
+          label: 'Source video',
+          help: '',
+          hidden: false,
+          advanced: false,
+          control: 'media',
+          urlUpload: 'video',
+          videoWidthPixels: { minimum: 700, maximum: 4553 }
+        }
+      },
+      { video_url: 'https://media.example/source.mp4' },
+      'en',
+      { video_url: 'videoWidthOutOfRange' }
+    )
+
+    expect(screen.getByTestId('error-video_url')).toHaveTextContent(
+      'Use a video between 700 and 4553 pixels wide.'
+    )
+  })
   it('disables a fixed single option while keeping its native value', () => {
     const field: FieldSchema = {
       kind: 'select',
