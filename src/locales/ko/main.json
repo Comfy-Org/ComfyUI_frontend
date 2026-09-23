@@ -2223,8 +2223,10 @@
     "star": "별"
   },
   "imageCompare": {
+    "afterAlt": "이후 이미지",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "이전 이미지",
     "noImages": "비교할 이미지가 없습니다"
   },
   "imageCrop": {
@@ -4809,6 +4811,7 @@
     },
     "clearAllFilters": "모든 필터 지우기",
     "error": {
+      "loading": "템플릿을 열 수 없습니다. 다시 시도해 주세요.",
       "templateNotFound": "템플릿 \"{templateName}\"을(를) 찾을 수 없음"
     },
     "filtersApplied": "{count}개 필터 적용됨",
@@ -5089,6 +5092,7 @@
   },
   "workspace": {
     "addedToWorkspace": "다음 워크스페이스에 추가되었습니다:",
+    "deepLinkStayed": "해당 워크스페이스를 열 수 없습니다. 현재 {workspaceName}에 있습니다.",
     "inviteAccepted": "초대 수락됨",
     "inviteFailed": "초대 수락에 실패했습니다",
     "switchFailed": "워크스페이스 전환에 실패했습니다. 다시 시도해 주세요.",

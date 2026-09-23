@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Bundle categorization configuration
  *
@@ -6,16 +5,14 @@
  * Categories help identify which parts of the application are growing.
  */
 
-/**
- * @typedef {Object} BundleCategory
- * @property {string} name - Display name of the category
- * @property {string} description - Description of what this category includes
- * @property {RegExp[]} patterns - Regex patterns to match bundle files
- * @property {number} order - Sort order for display (lower = first)
- */
+export interface BundleCategory {
+  name: string
+  description: string
+  patterns: RegExp[]
+  order: number
+}
 
-/** @type {BundleCategory[]} */
-const BUNDLE_CATEGORIES = [
+const BUNDLE_CATEGORIES: BundleCategory[] = [
   {
     name: 'App Entry Points',
     description: 'Main entry bundles and manifests',
@@ -97,34 +94,16 @@ const BUNDLE_CATEGORIES = [
   }
 ]
 
-/**
- * Categorize a bundle file based on its name
- *
- * @param {string} fileName - The bundle file name (e.g., "assets/GraphView-BnV6iF9h.js")
- * @returns {string} - The category name
- */
-export function categorizeBundle(fileName) {
-  // Extract just the file name without path
+export function categorizeBundle(fileName: string): string {
   const baseName = fileName.split('/').pop() || fileName
-
-  // Find the first matching category
-  for (const category of BUNDLE_CATEGORIES) {
-    for (const pattern of category.patterns) {
-      if (pattern.test(baseName)) {
-        return category.name
-      }
-    }
-  }
-
-  return 'Other'
+  const match = BUNDLE_CATEGORIES.find((category) =>
+    category.patterns.some((pattern) => pattern.test(baseName))
+  )
+  return match?.name ?? 'Other'
 }
 
-/**
- * Get category metadata by name
- *
- * @param {string} categoryName - The category name
- * @returns {BundleCategory | undefined} - The category metadata
- */
-export function getCategoryMetadata(categoryName) {
+export function getCategoryMetadata(
+  categoryName: string
+): BundleCategory | undefined {
   return BUNDLE_CATEGORIES.find((cat) => cat.name === categoryName)
 }

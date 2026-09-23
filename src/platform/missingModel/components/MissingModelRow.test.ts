@@ -38,7 +38,7 @@ const mockUploadContext = vi.hoisted(() => ({
 }))
 const mockUploadCallbacks = vi.hoisted(() => ({
   onUploadSuccess: undefined as
-    | ((result: UploadModelSuccess) => Promise<unknown> | unknown)
+    | ((result: UploadModelSuccess) => unknown)
     | undefined
 }))
 
@@ -84,9 +84,7 @@ vi.mock<unknown>(
   import('@/platform/assets/composables/useModelUpload'),
   () => ({
     useModelUpload: (
-      onUploadSuccess?: (
-        result: UploadModelSuccess
-      ) => Promise<unknown> | unknown,
+      onUploadSuccess?: (result: UploadModelSuccess) => unknown,
       uploadContext?: UploadModelDialogContext | UploadModelContextResolver
     ) => {
       mockUploadCallbacks.onUploadSuccess = onUploadSuccess
