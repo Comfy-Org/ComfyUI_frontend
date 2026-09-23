@@ -1,7 +1,6 @@
 <script setup lang="ts">
-import type { Locale } from '../../i18n/translations'
-import type { HubKey } from '../../i18n/hub'
-import { tHub } from '../../i18n/hub'
+import type { Locale, TranslationKey } from '../../i18n/translations'
+import { t } from '../../i18n/translations'
 import IconModel from './IconModel.vue'
 import IconWorkflow from './IconWorkflow.vue'
 
@@ -19,7 +18,7 @@ const icons: Record<Kind, typeof IconWorkflow> = {
   model: IconModel
 }
 
-const labels: Record<Kind, HubKey> = {
+const labels: Record<Kind, TranslationKey> = {
   workflow: 'workshop.v2.kind.workflow',
   model: 'workshop.v2.kind.model'
 }
@@ -39,7 +38,7 @@ const labels: Record<Kind, HubKey> = {
       <span
         class="flex min-w-0 items-center ps-1.5 leading-none whitespace-nowrap"
       >
-        {{ tHub(labels[kind], locale) }}
+        {{ t(labels[kind], locale) }}
       </span>
     </span>
   </span>

@@ -30,14 +30,12 @@ const hub = {
     'zh-CN': '按你想做的东西浏览模型、工作流和应用。'
   },
   'workshop.v2.kind.label': { en: 'Show', 'zh-CN': '显示' },
-  'workshop.v2.kind.model': { en: 'Model', 'zh-CN': '模型' },
   'workshop.v2.kind.models': { en: 'Models', 'zh-CN': '模型' },
   'workshop.v2.kind.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
   'workshop.v2.card.runsOn': {
     en: 'Runs on {model}',
     'zh-CN': '运行于 {model}'
   },
-  'workshop.v2.kind.workflow': { en: 'Workflow', 'zh-CN': '工作流' },
   'workshop.v2.card.ownEndpoint': {
     en: 'Own endpoint',
     'zh-CN': '需自建端点'

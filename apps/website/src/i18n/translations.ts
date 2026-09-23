@@ -11007,6 +11007,9 @@ Enterprise`
     'zh-CN':
       '更新到 v0.34.5 或更高版本，在节点库中搜索 Comfy Cloud，然后连线使用。'
   },
+  'workshop.v2.kind.workflow': { en: 'Workflow', 'zh-CN': '工作流' },
+  'workshop.v2.kind.model': { en: 'Model', 'zh-CN': '模型' },
+  'workshop.field.play': { en: 'Play', 'zh-CN': '播放' },
   'footer.cloudNodes': {
     en: 'Comfy Cloud Nodes',
     'zh-CN': 'Comfy Cloud 节点'
