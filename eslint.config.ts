@@ -60,7 +60,7 @@ const tailwindTokenUtilityPrefixes = [
   'rounded',
   'animate'
 ]
-const nonTokenUtilityClassPattern = `^(?!(?:.*:)?(?:${tailwindTokenUtilityPrefixes.join('|')})-)`
+const nonTokenUtilityClassPattern = `^(?!(?:.*:)?!?(?:${tailwindTokenUtilityPrefixes.join('|')})-)`
 
 const commonGlobals = {
   ...globals.browser,
