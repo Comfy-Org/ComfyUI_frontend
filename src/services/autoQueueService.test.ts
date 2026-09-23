@@ -11,9 +11,6 @@ const mocks = vi.hoisted(() => ({
     vi.fn<(event: string, listener: (event: Event) => void) => void>(),
   gateBlocks: false
 }))
-const executionError = vi.hoisted<{ value: ExecutionErrorWsMessage | null }>(
-  () => ({ value: null })
-)
 
 vi.mock(import('@/composables/billing/usePartnerNodesRunGate'), () => ({
   partnerRunGateBlocksAutoQueue: () => mocks.gateBlocks
@@ -43,14 +40,11 @@ function setupAndGetAutoQueueGraphChangedListener() {
 describe('setupAutoQueueHandler', () => {
   beforeEach(() => {
     vi.mocked(app.queuePrompt).mockResolvedValue(true)
-    vi.spyOn(app, 'lastExecutionError', 'get').mockImplementation(
-      () => executionError.value
-    )
+    vi.spyOn(app, 'lastExecutionError', 'get').mockReturnValue(null)
     const queueSettingsStore = useQueueSettingsStore()
     queueSettingsStore.mode = 'change'
     queueSettingsStore.batchCount = 2
     useQueuePendingTaskCountStore().count = 0
-    executionError.value = null
     mocks.gateBlocks = false
   })
 
@@ -95,7 +89,7 @@ describe('setupAutoQueueHandler', () => {
 
     listener(new Event('autoQueueGraphChanged'))
     listener(new Event('autoQueueGraphChanged'))
-    executionError.value = {
+    const executionError: ExecutionErrorWsMessage = {
       prompt_id: 'prompt-1',
       node_id: 'node-1',
       node_type: 'TestNode',
@@ -107,6 +101,7 @@ describe('setupAutoQueueHandler', () => {
       current_outputs: {},
       timestamp: 1
     }
+    vi.spyOn(app, 'lastExecutionError', 'get').mockReturnValue(executionError)
     queueCountStore.count = 1
     await nextTick()
     queueCountStore.count = 0
