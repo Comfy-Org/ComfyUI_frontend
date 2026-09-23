@@ -427,6 +427,30 @@ function startAgentCrdtFollower(
     incrementOutcome(applied ? 'applied' : 'skipped')
     return applied ? projection.reconcileLiveGraph(update.workflowId) : []
   }
+  const handleSubscribeRefused = (detail: {
+    workflowId?: unknown
+    code?: unknown
+    message?: unknown
+  }): void => {
+    const refusedWorkflowId =
+      typeof detail.workflowId === 'string' ? detail.workflowId : null
+    if (
+      detail.code === 'schema_version_mismatch' &&
+      refusedWorkflowId === subscribedWorkflowId.value
+    ) {
+      lifecycle.clearForRetarget()
+      permanentSchemaMismatchWorkflowId = refusedWorkflowId
+      schemaError.value =
+        readSchemaErrorMessage(detail) || schemaErrorFallback.value
+    } else {
+      lifecycle.onSubscribeRefused()
+    }
+    // FE #16637 residual: a refusal is the earliest signal the sender can
+    // get that its in-flight batch's doc is gone — don't make it wait out
+    // the 10 s result-silence window to notice on its own.
+    releaseHeldOps()
+    sender.abortIfUnbound()
+  }
 
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
@@ -444,26 +468,7 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
-      const refusedWorkflowId =
-        typeof event.detail?.workflowId === 'string'
-          ? event.detail.workflowId
-          : null
-      if (
-        event.detail?.code === 'schema_version_mismatch' &&
-        refusedWorkflowId === subscribedWorkflowId.value
-      ) {
-        lifecycle.clearForRetarget()
-        permanentSchemaMismatchWorkflowId = refusedWorkflowId
-        schemaError.value =
-          readSchemaErrorMessage(event.detail) || schemaErrorFallback.value
-      } else {
-        lifecycle.onSubscribeRefused()
-      }
-      // FE #16637 residual: a refusal is the earliest signal the sender can
-      // get that its in-flight batch's doc is gone — don't make it wait out
-      // the 10 s result-silence window to notice on its own.
-      releaseHeldOps()
-      sender.abortIfUnbound()
+      handleSubscribeRefused(event.detail ?? {})
     }
   }
   const onUpdate: EventListener = (event) => {
