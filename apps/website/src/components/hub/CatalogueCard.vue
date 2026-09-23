@@ -1,9 +1,10 @@
 <script setup lang="ts">
-import { useTemplateRef } from 'vue'
+import { ref, useTemplateRef } from 'vue'
 
 import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { Locale } from '../../i18n/translations'
 import type { CardView } from '../../lib/hub/catalogue-card'
+import HubCardCompare from './HubCardCompare.vue'
 import HubCardMark from './HubCardMark.vue'
 import HubCardReach from './HubCardReach.vue'
 import TagRow from './TagRow.vue'
@@ -17,6 +18,21 @@ const video = useTemplateRef<HTMLVideoElement>('video')
 const previewSrc = usePreviewVideo(video, () =>
   view.media?.kind === 'video' ? view.media.url : undefined
 )
+
+// Halfway is what a card shows at rest, on a phone, and before the pointer
+// ever reaches it.
+const frame = useTemplateRef<HTMLElement>('frame')
+const split = ref(50)
+
+// The link covers the whole card, so the move is read where it lands and
+// measured against the artwork underneath it.
+function followPointer(event: MouseEvent) {
+  if (!view.compare) return
+  const frameRect = frame.value?.getBoundingClientRect()
+  if (!frameRect?.width) return
+  const reached = ((event.clientX - frameRect.left) / frameRect.width) * 100
+  split.value = Math.min(100, Math.max(0, reached))
+}
 </script>
 
 <template>
@@ -24,6 +40,7 @@ const previewSrc = usePreviewVideo(video, () =>
     class="group relative flex h-full min-w-0 flex-col gap-3 rounded-4xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200 hover:bg-hub-surface-hover"
     data-testid="catalogue-card"
     :data-kind="view.kind"
+    @mousemove="followPointer"
   >
     <a
       :href="view.href"
@@ -33,7 +50,9 @@ const previewSrc = usePreviewVideo(video, () =>
       <span class="sr-only">{{ view.title }}</span>
     </a>
     <div
+      ref="frame"
       class="relative aspect-4/3 overflow-hidden rounded-3.5xl bg-hub-surface-hover"
+      data-testid="catalogue-card-frame"
     >
       <HubCardMark
         v-if="view.mark.label"
@@ -55,23 +74,32 @@ const previewSrc = usePreviewVideo(video, () =>
         preload="metadata"
       />
       <template v-else-if="view.media?.kind === 'image'">
-        <img
-          :src="view.media.url"
-          :alt="view.title"
-          loading="lazy"
-          decoding="async"
-          draggable="false"
-          class="size-full object-cover transition-transform duration-300 select-none group-hover:scale-105"
+        <HubCardCompare
+          v-if="view.compare && view.hoverMedia"
+          :still="view.media.url"
+          :over="view.hoverMedia"
+          :title="view.title"
+          :split
         />
-        <img
-          v-if="view.hoverMedia"
-          :src="view.hoverMedia"
-          alt=""
-          loading="lazy"
-          decoding="async"
-          draggable="false"
-          class="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-500 select-none group-hover:opacity-100"
-        />
+        <template v-else>
+          <img
+            :src="view.media.url"
+            :alt="view.title"
+            loading="lazy"
+            decoding="async"
+            draggable="false"
+            class="size-full object-cover transition-transform duration-300 select-none group-hover:scale-105"
+          />
+          <img
+            v-if="view.hoverMedia"
+            :src="view.hoverMedia"
+            alt=""
+            loading="lazy"
+            decoding="async"
+            draggable="false"
+            class="absolute inset-0 size-full object-cover opacity-0 transition-opacity duration-500 select-none group-hover:opacity-100"
+          />
+        </template>
       </template>
       <div
         v-else

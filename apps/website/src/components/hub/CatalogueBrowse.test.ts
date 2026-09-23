@@ -26,6 +26,7 @@ function entry(overrides: Partial<BrowseEntry> = {}): BrowseEntry {
       title,
       media: undefined,
       hoverMedia: undefined,
+      compare: false,
       maker: { label: 'BFL', logo: undefined },
       mark: { label: 'BFL', logo: undefined },
       badges: [],

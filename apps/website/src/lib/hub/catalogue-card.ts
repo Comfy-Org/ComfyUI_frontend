@@ -26,6 +26,12 @@ export interface CardView {
   readonly title: string
   readonly media: CardMedia | undefined
   readonly hoverMedia: string | undefined
+  /**
+   * Whether the two stills are the same frame before and after the workflow
+   * ran. They are split under the pointer rather than crossfaded, because what
+   * changed is the point and a fade shows it only in passing.
+   */
+  readonly compare: boolean
   readonly maker: { readonly label: string; readonly logo: string | undefined }
   /**
    * Who answers for the thing: the provider of a model, the model a workflow
@@ -64,6 +70,7 @@ function modelCard(
     title: displayModelName(model, entry.operations),
     media: model.thumbnail,
     hoverMedia: undefined,
+    compare: false,
     maker: { label: provider, logo },
     mark: { label: provider, logo },
     badges: [taskLabelFor(model, locale), ...model.capabilities],
@@ -86,6 +93,7 @@ function workflowCard(
       ? { url: template.thumbnails[0], kind: 'image' }
       : undefined,
     hoverMedia: template.thumbnails[1],
+    compare: template.thumbnailVariant === 'compareSlider',
     maker: { label: template.username || 'ComfyUI', logo: undefined },
     // The registry names a row for its operation, so `Seedream 5.0 Lite
     // Text-to-Image` is the model plus a verb the card has already said. Most

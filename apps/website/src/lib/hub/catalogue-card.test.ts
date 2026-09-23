@@ -112,6 +112,24 @@ describe('cardViewFor', () => {
     expect(cardViewFor(modelEntry()).mark.label).toBe('BFL')
   })
 
+  // The registry already says which pairs are a before and an after, and the
+  // rest are two stills of the same kind.
+  it.for([
+    ['compareSlider', true],
+    ['hoverDissolve', false],
+    [undefined, false]
+  ] as const)('splits the pair only for %s', ([variant, split]) => {
+    const view = cardViewFor(
+      workflowEntry({ template: template({ thumbnailVariant: variant }) })
+    )
+
+    expect(view.compare).toBe(split)
+  })
+
+  it('never splits a model card, which carries one still', () => {
+    expect(cardViewFor(modelEntry()).compare).toBe(false)
+  })
+
   it('shows no media for a workflow with no thumbnail', () => {
     const view = cardViewFor(
       workflowEntry({ template: template({ thumbnails: [] }) })
