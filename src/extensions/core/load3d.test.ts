@@ -202,7 +202,7 @@ function makeLoad3DNode(
     setSize: vi.fn(),
     addWidget: vi.fn(),
     widgets: overrides.widgets ?? [
-      { name: 'model_file', value: '' },
+      { name: 'model_file', value: '', options: { values: [] } },
       { name: 'width', value: 512 },
       { name: 'height', value: 512 },
       { name: 'image', value: '' }
@@ -576,7 +576,7 @@ describe('Comfy.Load3D.getCustomWidgets LOAD_3D', () => {
     await modelInput.onchange!(new Event('change'))
     await flush()
 
-    expect(load3d.loadModel).toHaveBeenCalledWith('/view')
+    expect(load3d.loadModel).toHaveBeenCalledWith('/api/view')
     expect(useToastStore().addAlert).toHaveBeenCalledWith(
       'toastMessages.failedToLoadModel'
     )

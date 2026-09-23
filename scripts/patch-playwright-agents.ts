@@ -1,11 +1,9 @@
-#!/usr/bin/env node
-
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
 const agentsDir = join(process.cwd(), '.claude', 'agents')
 
-const patches = {
+const patches: Record<string, string> = {
   'playwright-test-planner.md': `
 
 ## ComfyUI Project Context
@@ -136,7 +134,7 @@ Tests in this project use \`comfyPage\` fixture, not bare \`page\`. When healing
 
 const CONTEXT_HEADING = '## ComfyUI Project Context'
 
-const missingFiles = []
+const missingFiles: string[] = []
 
 for (const [filename, patch] of Object.entries(patches)) {
   const filePath = join(agentsDir, filename)
@@ -147,10 +145,8 @@ for (const [filename, patch] of Object.entries(patches)) {
   }
   let content = readFileSync(filePath, 'utf-8')
 
-  // Strip existing ComfyUI context section (heading to EOF)
   const idx = content.indexOf(CONTEXT_HEADING)
   if (idx !== -1) {
-    // Trim trailing whitespace before the heading too
     content = content.substring(0, idx).trimEnd()
     console.log(`  ♻️  ${filename}: stripped existing ComfyUI context`)
   }
