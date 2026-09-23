@@ -137,7 +137,8 @@ test.describe(
         await expect
           .poll(() => agentConversation.savedWorkflowPath())
           .toContain(SAVED_NAME)
-        const savedNodes = agentConversation.savedWorkflowContent().nodes
+        const savedNodes = (await agentConversation.savedWorkflowContent())
+          .nodes
         expect(savedNodes.find((node) => node.id === NOTE_ID)).toMatchObject({
           type: 'Note',
           widgets_values: [NOTE_TEXT]

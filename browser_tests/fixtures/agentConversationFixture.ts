@@ -7,6 +7,7 @@ import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 import type {
@@ -329,12 +330,26 @@ export class AgentConversationHarness {
     return name === undefined ? null : `workflows/${name}.json`
   }
 
-  /** The workflow JSON the app last saved, parsed; throws before any save. */
-  savedWorkflowContent(): ComfyWorkflowJSON {
+  /**
+   * The workflow JSON the app last saved, parsed and schema-validated.
+   * Throws before any save, and throws with the schema errors when the saved
+   * file is not a valid workflow, so a spec cannot pass on a file the app
+   * itself would refuse to reload.
+   */
+  async savedWorkflowContent(): Promise<ComfyWorkflowJSON> {
     const content = this.savedWorkflow?.savedContent()
     if (content === undefined)
       throw new Error('the app has not saved a workflow yet')
-    return JSON.parse(content) as ComfyWorkflowJSON
+    const errors: string[] = []
+    const workflow = await validateComfyWorkflow(
+      JSON.parse(content) as unknown,
+      (error) => errors.push(error)
+    )
+    if (!workflow)
+      throw new Error(
+        `the saved workflow is not schema-valid: ${errors.join('; ')}`
+      )
+    return workflow
   }
 
   /**
