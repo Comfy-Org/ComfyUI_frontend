@@ -1,6 +1,8 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useRoute, useRouter } from 'vue-router'
 
+import { useSettingsDialog } from './useSettingsDialog'
 import { useSettingsUrlLoader } from './useSettingsUrlLoader'
 
 const preservedQueryMocks = vi.hoisted(() => ({
@@ -14,106 +16,83 @@ vi.mock(
   () => preservedQueryMocks
 )
 
-const mockRouteQuery = vi.hoisted(() => ({
-  value: {} as Record<string, string>
-}))
-const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
-
-vi.mock<unknown>(import('vue-router'), () => ({
-  useRoute: () => ({
-    query: mockRouteQuery.value
-  }),
-  useRouter: () => ({
-    replace: mockRouterReplace
-  })
-}))
-
-const mockShowSettings = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(
-  import('@/platform/settings/composables/useSettingsDialog'),
-  () => ({
-    useSettingsDialog: () => ({
-      show: mockShowSettings
-    })
-  })
-)
+vi.mock(import('vue-router'))
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 describe('useSettingsUrlLoader', () => {
   beforeEach(() => {
-    mockRouteQuery.value = {}
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
   it('does nothing when no settings param present', async () => {
-    mockRouteQuery.value = {}
-
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(mockShowSettings).not.toHaveBeenCalled()
-    expect(mockRouterReplace).not.toHaveBeenCalled()
+    expect(useSettingsDialog().show).not.toHaveBeenCalled()
+    expect(useRouter().replace).not.toHaveBeenCalled()
   })
 
   it('opens the Plans & Credits panel and strips the param', async () => {
-    mockRouteQuery.value = { settings: 'plan-credits' }
+    useRoute().query.settings = 'plan-credits'
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(mockShowSettings).toHaveBeenCalledExactlyOnceWith('workspace')
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSettingsDialog().show).toHaveBeenCalledExactlyOnceWith(
+      'workspace'
+    )
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'settings'
     )
   })
 
   it('preserves unrelated params when stripping', async () => {
-    mockRouteQuery.value = { settings: 'plan-credits', other: 'param' }
+    useRoute().query.settings = 'plan-credits'
+    useRoute().query.other = 'param'
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(mockRouterReplace).toHaveBeenCalledWith({
+    expect(useRouter().replace).toHaveBeenCalledWith({
       query: { other: 'param' }
     })
   })
 
   it('strips but does not open for an unrecognized panel value', async () => {
-    mockRouteQuery.value = { settings: 'garbage' }
+    useRoute().query.settings = 'garbage'
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(mockShowSettings).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSettingsDialog().show).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
     expect(preservedQueryMocks.clearPreservedQuery).toHaveBeenCalledWith(
       'settings'
     )
   })
 
   it('strips but does not open for an empty param', async () => {
-    mockRouteQuery.value = { settings: '' }
+    useRoute().query.settings = ''
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(mockShowSettings).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSettingsDialog().show).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('strips but does not open for a non-string param', async () => {
-    mockRouteQuery.value = { settings: fromAny<string, unknown>(['array']) }
+    useRoute().query.settings = fromAny<string, unknown>(['array'])
 
     const { loadSettingsFromUrl } = useSettingsUrlLoader()
     await loadSettingsFromUrl()
 
-    expect(mockShowSettings).not.toHaveBeenCalled()
-    expect(mockRouterReplace).toHaveBeenCalledWith({ query: {} })
+    expect(useSettingsDialog().show).not.toHaveBeenCalled()
+    expect(useRouter().replace).toHaveBeenCalledWith({ query: {} })
   })
 
   it('restores preserved query and opens the panel', async () => {
-    mockRouteQuery.value = {}
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
       settings: 'plan-credits'
     })
@@ -124,6 +103,8 @@ describe('useSettingsUrlLoader', () => {
     expect(preservedQueryMocks.hydratePreservedQuery).toHaveBeenCalledWith(
       'settings'
     )
-    expect(mockShowSettings).toHaveBeenCalledExactlyOnceWith('workspace')
+    expect(useSettingsDialog().show).toHaveBeenCalledExactlyOnceWith(
+      'workspace'
+    )
   })
 })

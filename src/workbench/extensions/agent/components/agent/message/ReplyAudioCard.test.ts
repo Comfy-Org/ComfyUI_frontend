@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { i18n } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { api } from '@/scripts/api'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import ReplyAudioCard from './ReplyAudioCard.vue'
@@ -12,15 +13,8 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 
-const fetchApi = vi.hoisted(() =>
-  vi.fn(async () => new Response(new Blob(['x'])))
-)
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    apiURL: (route: string) => `http://x/api${route}`,
-    fetchApi
-  }
-}))
+vi.mock(import('@/scripts/api'))
+const fetchApi = vi.mocked(api.fetchApi)
 
 const isAssetPreviewSupported = vi.hoisted(() => vi.fn(() => false))
 const findOutputAsset = vi.hoisted(() =>
@@ -56,6 +50,7 @@ describe('ReplyAudioCard', () => {
   let anchorClick: ReturnType<typeof vi.spyOn>
 
   beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation((route) => `http://x/api${route}`)
     fetchApi.mockReset().mockResolvedValue(new Response(new Blob(['x'])))
     vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:mock')
     vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
