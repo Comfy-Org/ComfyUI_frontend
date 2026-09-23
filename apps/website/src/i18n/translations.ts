@@ -6811,12 +6811,12 @@ Enterprise`
   // Launches page (/launches) — subscribe banner
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
   'launches.banner.text': {
-    en: 'Now turn your agent into a creative technologist.',
-    'zh-CN': '现在，让你的智能体成为创意技术专家。'
+    en: 'One API for frontier media models.',
+    'zh-CN': '一个 API，调用前沿媒体模型。'
   },
   'launches.banner.cta': {
-    en: 'Start Comfy MCP',
-    'zh-CN': '启动 Comfy MCP'
+    en: 'Try Comfy Router',
+    'zh-CN': '试用 Comfy Router'
   },
 
   // Launches page (/launches) — closing CTA
