@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "يحرر أو يدمج ما يصل إلى 5 صور مرجعية بتوجيه من موجّه نصي باستخدام نموذج Hunyuan Image من Tencent.",
+    "display_name": "Tencent HY Image: تحرير",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "ينشئ صورًا من موجّه نصي باستخدام نموذج Hunyuan Image من Tencent.",
+    "display_name": "Tencent HY Image: تحويل النص إلى صورة",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "height"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolution"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      },
+      "model_width": {
+        "name": "width"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "Hunyuan صورة إلى فيديو",
     "inputs": {
@@ -9137,6 +9218,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "يستخرج قيمة مفتاح من أول كائن JSON صالح في النص، بما في ذلك كتل تعليمات Markdown البرمجية.",
     "display_name": "استخراج سلسلة من JSON",
     "inputs": {
       "json_string": {
@@ -13234,6 +13316,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "شغّل تمريرة تحسين إضافية للحصول على هندسة أعلى دقة وتفاصيل سطح أدق."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "دقة التمرير الفائق: يشغّل 2k بدقة 2048³، و4k بدقة 4096³ للحصول على أدق تفاصيل السطح. يتطلب 4k meshy-7.1 أو أحدث. يُستخدم فقط عند تمكين ultra_mode."
       }
     },
     "outputs": {
@@ -13300,6 +13386,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "يشغّل تمريرًا إضافيًا للتحسين بدقة 2048³ للحصول على هندسة أعلى دقة مع تفاصيل سطح أدق."
       }
     },
     "outputs": {
@@ -13441,6 +13531,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "شغّل تمريرة تحسين إضافية للحصول على هندسة أعلى دقة وتفاصيل سطح أدق."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "دقة التمرير الفائق: يشغّل 2k بدقة 2048³، و4k بدقة 4096³ للحصول على أدق تفاصيل السطح. يتطلب 4k meshy-7.1 أو أحدث. يُستخدم فقط عند تمكين ultra_mode."
       }
     },
     "outputs": {
@@ -23955,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "أعلى p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "يستبدل موجّه النظام في قالب الدردشة الخاص بالنموذج. يُتجاهل عند عدم استخدام القالب الافتراضي."
+      },
       "thinking": {
         "name": "التفكير",
         "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
@@ -23971,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "النص المولّد",
+        "tooltip": null
+      },
+      "1": {
+        "name": "التفكير",
         "tooltip": null
       }
     }
@@ -24021,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "أعلى p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "يستبدل موجّه النظام في قالب الدردشة الخاص بالنموذج. يُتجاهل عند عدم استخدام القالب الافتراضي."
+      },
       "thinking": {
         "name": "التفكير",
         "tooltip": "التشغيل في وضع التفكير إذا كان النموذج يدعم ذلك."
@@ -24037,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "النص المُولّد",
+        "tooltip": null
+      },
+      "1": {
+        "name": "التفكير",
         "tooltip": null
       }
     }

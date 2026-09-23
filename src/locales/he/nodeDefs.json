@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "עורך או משלב עד 5 תמונות ייחוס בהנחיית פרומפט טקסט באמצעות מודל Hunyuan Image של Tencent.",
+    "display_name": "Tencent HY Image: עריכה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_aspect_ratio": {
+        "name": "יחס גובה־רוחב"
+      },
+      "model_height": {
+        "name": "גובה"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_reference_detail": {
+        "name": "פירוט ייחוס"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_watermark": {
+        "name": "סימן מים"
+      },
+      "model_width": {
+        "name": "רוחב"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "יוצר תמונות מפרומפט טקסט באמצעות מודל Hunyuan Image של Tencent.",
+    "display_name": "Tencent HY Image: טקסט לתמונה",
+    "inputs": {
+      "control_after_generate": {
+        "name": "בקרה לאחר יצירה"
+      },
+      "model": {
+        "name": "מודל",
+        "tooltip": "המודל לשימוש."
+      },
+      "model_aspect_ratio": {
+        "name": "יחס גובה־רוחב"
+      },
+      "model_height": {
+        "name": "גובה"
+      },
+      "model_prompt": {
+        "name": "פרומפט"
+      },
+      "model_resolution": {
+        "name": "רזולוציה"
+      },
+      "model_seed": {
+        "name": "זרע"
+      },
+      "model_watermark": {
+        "name": "סימן מים"
+      },
+      "model_width": {
+        "name": "רוחב"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -9137,6 +9218,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "מחלץ את ערכו של מפתח מאובייקט ה-JSON התקין הראשון בטקסט, כולל בלוקי קוד של Markdown.",
     "display_name": "חילוץ טקסט מ-JSON",
     "inputs": {
       "json_string": {
@@ -13234,6 +13316,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "הפעל מעבר עידון נוסף לקבלת גאומטריה נאמנה יותר למקור עם פרטי פני שטח עדינים יותר."
+      },
+      "ultra_resolution": {
+        "name": "רזולוציה גבוהה במיוחד",
+        "tooltip": "רזולוציית מעבר ה-ultra: ‏2k מפעיל אותו ב-2048³, ‏4k ב-4096³ לקבלת פרטי פני שטח עדינים ביותר. ‏4k מחייב את meshy-7.1 או גרסה עדכנית יותר. משמש רק כאשר ultra_mode מופעל."
       }
     },
     "outputs": {
@@ -13300,6 +13386,10 @@
       },
       "symmetry_mode": {
         "name": "מצב סימטריה"
+      },
+      "ultra_mode": {
+        "name": "מצב ultra",
+        "tooltip": "הפעלת מעבר ליטוש נוסף ב-2048³ לקבלת גאומטריה באיכות גבוהה יותר עם פרטי פני שטח עדינים יותר."
       }
     },
     "outputs": {
@@ -13441,6 +13531,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "הפעל מעבר עידון נוסף לקבלת גאומטריה נאמנה יותר למקור עם פרטי פני שטח עדינים יותר."
+      },
+      "ultra_resolution": {
+        "name": "רזולוציה גבוהה במיוחד",
+        "tooltip": "רזולוציית מעבר ה-ultra: ‏2k מפעיל אותו ב-2048³, ‏4k ב-4096³ לקבלת פרטי פני שטח עדינים ביותר. ‏4k מחייב את meshy-7.1 או גרסה עדכנית יותר. משמש רק כאשר ultra_mode מופעל."
       }
     },
     "outputs": {
@@ -23955,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "הנחיית מערכת",
+        "tooltip": "מחליף את הנחיית המערכת בתבנית הצ'אט של המודל. ההנחיה אינה נלקחת בחשבון כאשר לא נעשה שימוש בתבנית ברירת המחדל."
+      },
       "thinking": {
         "name": "מצב_חשיבה",
         "tooltip": "הפעל במצב חשיבה אם המודל תומך בכך."
@@ -23971,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "טקסט_שנוצר",
+        "tooltip": null
+      },
+      "1": {
+        "name": "חשיבה",
         "tooltip": null
       }
     }
@@ -24021,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "הנחיית מערכת",
+        "tooltip": "מחליף את הנחיית המערכת בתבנית הצ'אט של המודל. ההנחיה אינה נלקחת בחשבון כאשר לא נעשה שימוש בתבנית ברירת המחדל."
+      },
       "thinking": {
         "name": "מצב חשיבה",
         "tooltip": "הפעל במצב חשיבה אם המודל תומך בכך."
@@ -24037,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "טקסט שנוצר",
+        "tooltip": null
+      },
+      "1": {
+        "name": "חשיבה",
         "tooltip": null
       }
     }

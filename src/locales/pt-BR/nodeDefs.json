@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Edita ou combina até 5 imagens de referência orientadas por um prompt de texto usando o modelo Hunyuan Image da Tencent.",
+    "display_name": "Tencent HY Image: Editar",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+      },
+      "model_watermark": {
+        "name": "marca-d'água"
+      },
+      "model_width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Gera imagens a partir de um prompt de texto usando o modelo Hunyuan Image da Tencent.",
+    "display_name": "Tencent HY Image: Texto para imagem",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controle após gerar"
+      },
+      "model": {
+        "name": "modelo",
+        "tooltip": "Modelo a ser usado."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "altura"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "resolução"
+      },
+      "model_seed": {
+        "name": "semente"
+      },
+      "model_watermark": {
+        "name": "marca-d'água"
+      },
+      "model_width": {
+        "name": "largura"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -9137,6 +9218,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Extrai o valor de uma chave do primeiro objeto JSON válido no texto, incluindo blocos de código Markdown.",
     "display_name": "Extrair String do JSON",
     "inputs": {
       "json_string": {
@@ -13234,6 +13316,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Execute uma etapa extra de refinamento para obter geometria de maior fidelidade com detalhes de superfície mais finos."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Resolução da etapa ultra: 2k a executa em 2048³, 4k em 4096³ para os detalhes mais finos da superfície. 4k requer meshy-7.1 ou mais recente. Usada somente quando ultra_mode está ativado."
       }
     },
     "outputs": {
@@ -13300,6 +13386,10 @@
       },
       "symmetry_mode": {
         "name": "modo_de_simetria"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Execute uma etapa adicional de refinamento em 2048³ para obter geometria de maior fidelidade com detalhes de superfície mais finos."
       }
     },
     "outputs": {
@@ -13441,6 +13531,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Execute uma etapa extra de refinamento para obter geometria de maior fidelidade com detalhes de superfície mais finos."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Resolução da etapa ultra: 2k a executa em 2048³, 4k em 4096³ para os detalhes mais finos da superfície. 4k requer meshy-7.1 ou mais recente. Usada somente quando ultra_mode está ativado."
       }
     },
     "outputs": {
@@ -23955,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Substitui o prompt de sistema no template de chat do modelo. Ignorado quando o template padrão não é usado."
+      },
       "thinking": {
         "name": "pensando",
         "tooltip": "Operar no modo de pensamento se o modelo suportar."
@@ -23971,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "texto_gerado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "raciocínio",
         "tooltip": null
       }
     }
@@ -24021,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Substitui o prompt de sistema no template de chat do modelo. Ignorado quando o template padrão não é usado."
+      },
       "thinking": {
         "name": "pensando",
         "tooltip": "Operar no modo de pensamento se o modelo suportar."
@@ -24037,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "texto_gerado",
+        "tooltip": null
+      },
+      "1": {
+        "name": "raciocínio",
         "tooltip": null
       }
     }
