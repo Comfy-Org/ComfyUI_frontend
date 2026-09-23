@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Modifica o combina fino a 5 immagini di riferimento guidate da un prompt testuale usando il modello Hunyuan Image di Tencent.",
+    "display_name": "Tencent HY Image: Modifica",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da usare."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "altezza"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "risoluzione"
+      },
+      "model_seed": {
+        "name": "seme"
+      },
+      "model_watermark": {
+        "name": "filigrana"
+      },
+      "model_width": {
+        "name": "larghezza"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Genera immagini da un prompt testuale usando il modello Hunyuan Image di Tencent.",
+    "display_name": "Tencent HY Image: Da testo a immagine",
+    "inputs": {
+      "control_after_generate": {
+        "name": "controllo dopo la generazione"
+      },
+      "model": {
+        "name": "modello",
+        "tooltip": "Modello da usare."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "altezza"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "risoluzione"
+      },
+      "model_seed": {
+        "name": "seme"
+      },
+      "model_watermark": {
+        "name": "filigrana"
+      },
+      "model_width": {
+        "name": "larghezza"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -9137,6 +9218,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Estrae il valore di una chiave dal primo oggetto JSON valido nel testo, inclusi i blocchi di codice Markdown.",
     "display_name": "Estrai Testo da JSON",
     "inputs": {
       "json_string": {
@@ -13234,6 +13316,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Esegue un passaggio di raffinamento aggiuntivo per una geometria più fedele con dettagli della superficie più fini."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Risoluzione del passaggio ultra: 2k lo esegue a 2048³, 4k a 4096³ per i dettagli superficiali più fini. 4k richiede meshy-7.1 o versione più recente. Usato solo quando ultra_mode è abilitato."
       }
     },
     "outputs": {
@@ -13300,6 +13386,10 @@
       },
       "symmetry_mode": {
         "name": "modalità_simmetria"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Esegue un passaggio di raffinamento aggiuntivo a 2048³ per una geometria a maggiore fedeltà con dettagli superficiali più fini."
       }
     },
     "outputs": {
@@ -13441,6 +13531,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Esegue un passaggio di raffinamento aggiuntivo per una geometria più fedele con dettagli della superficie più fini."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Risoluzione del passaggio ultra: 2k lo esegue a 2048³, 4k a 4096³ per i dettagli superficiali più fini. 4k richiede meshy-7.1 o versione più recente. Usato solo quando ultra_mode è abilitato."
       }
     },
     "outputs": {
@@ -23955,6 +24049,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Sostituisce il prompt di sistema nel template di chat del modello. Ignorato quando non viene usato il template predefinito."
+      },
       "thinking": {
         "name": "modalità_riflessione",
         "tooltip": "Opera in modalità riflessione se il modello lo supporta."
@@ -23971,6 +24069,10 @@
     "outputs": {
       "0": {
         "name": "testo_generato",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ragionamento",
         "tooltip": null
       }
     }
@@ -24021,6 +24123,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Sostituisce il prompt di sistema nel template di chat del modello. Ignorato quando non viene usato il template predefinito."
+      },
       "thinking": {
         "name": "modalità_riflessione",
         "tooltip": "Opera in modalità riflessione se il modello lo supporta."
@@ -24037,6 +24143,10 @@
     "outputs": {
       "0": {
         "name": "testo_generato",
+        "tooltip": null
+      },
+      "1": {
+        "name": "ragionamento",
         "tooltip": null
       }
     }
