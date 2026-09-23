@@ -1,6 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import type { Mock } from 'vitest'
 import { defineComponent } from 'vue'
 
 import type { useLoad3d } from '@/composables/useLoad3d'
@@ -8,7 +7,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { useExtensionService } from '@/services/extensionService'
 import type { useLoad3dService } from '@/services/load3dService'
 import type { ComfyExtension } from '@/types/comfy'
-import type { getNodeByLocatorId as realGetNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import type * as GraphTraversalModule from '@/utils/graphTraversalUtil'
 
 const {
   registerExtensionMock,
@@ -22,7 +21,7 @@ const {
   configureForSaveMeshMock: vi.fn()
 }))
 
-let getNodeByLocatorIdMock: Mock<typeof realGetNodeByLocatorId>
+let graphTraversal: typeof GraphTraversalModule
 
 vi.mock(import('@/services/extensionService'), () => ({
   useExtensionService: () =>
@@ -84,8 +83,7 @@ type SaveMeshExtension = ComfyExtension & {
 async function loadSaveMeshExtensionFresh(): Promise<SaveMeshExtension> {
   vi.resetModules()
   registerExtensionMock.mockClear()
-  const { getNodeByLocatorId } = await import('@/utils/graphTraversalUtil')
-  getNodeByLocatorIdMock = vi.mocked(getNodeByLocatorId)
+  graphTraversal = await import('@/utils/graphTraversalUtil')
   await import('@/extensions/core/saveMesh')
   return registerExtensionMock.mock.calls[0][0] as SaveMeshExtension
 }
@@ -274,7 +272,7 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
   it('rehydrates a SaveGLB node from restored outputs', async () => {
     const ext = await loadSaveMeshExtensionFresh()
     const node = makeNode()
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
     ext.onNodeOutputsUpdated({
       '7': {
@@ -296,17 +294,17 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
   it('skips entries with no 3d output', async () => {
     const ext = await loadSaveMeshExtensionFresh()
     const node = makeNode()
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
     ext.onNodeOutputsUpdated({ '7': {} } as never)
 
-    expect(getNodeByLocatorIdMock).not.toHaveBeenCalled()
+    expect(graphTraversal.getNodeByLocatorId).not.toHaveBeenCalled()
     expect(configureForSaveMeshMock).not.toHaveBeenCalled()
   })
 
   it('skips entries whose node is not in the active rootGraph', async () => {
     const ext = await loadSaveMeshExtensionFresh()
-    getNodeByLocatorIdMock.mockReturnValue(null)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(null)
 
     ext.onNodeOutputsUpdated({
       '7': {
@@ -320,7 +318,7 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
   it('skips nodes whose comfyClass is not SaveGLB', async () => {
     const ext = await loadSaveMeshExtensionFresh()
     const node = makeNode({ comfyClass: 'Preview3D' })
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
     ext.onNodeOutputsUpdated({
       '7': {
@@ -342,7 +340,7 @@ describe('Comfy.SaveGLB.onNodeOutputsUpdated', () => {
     ;(
       node.widgets!.find((w) => w.name === 'image') as { value: string }
     ).value = 'sub/mesh.glb'
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
     ext.onNodeOutputsUpdated({
       '7': {

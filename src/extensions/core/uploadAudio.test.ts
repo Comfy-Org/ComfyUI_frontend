@@ -8,7 +8,6 @@ import type { useAudioService } from '@/services/audioService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 const {
-  extensions,
   mockApiURL,
   mockFetchApi,
   mockMediaRecorderConstruct,
@@ -16,11 +15,8 @@ const {
   mockMediaRecorderStop,
   mockReportError,
   mockStopAllTracks
-} = await vi.hoisted(async () => {
-  const { createExtensionCapture } =
-    await import('@/utils/__tests__/extensionTestUtils')
+} = vi.hoisted(() => {
   return {
-    extensions: createExtensionCapture(),
     mockApiURL: vi.fn((url: string) => `api:${url}`),
     mockFetchApi: vi.fn(),
     mockMediaRecorderConstruct: vi.fn(),
@@ -93,10 +89,6 @@ vi.mock(import('@/scripts/api'), () => ({
 
 vi.mock(import('@/scripts/app'))
 
-vi.mocked(app.registerExtension).mockImplementation(
-  extensions.registerExtension
-)
-
 vi.mock(import('@/utils/graphTraversalUtil'))
 
 vi.mock(import('@/services/audioService'), () => ({
@@ -107,9 +99,15 @@ vi.mock(import('@/services/audioService'), () => ({
 }))
 
 await import('./uploadAudio')
+const registeredExtensions = vi
+  .mocked(app.registerExtension)
+  .mock.calls.map(([extension]) => extension)
 
 async function getCustomWidget(extensionName: string, widgetName: string) {
-  const extension = extensions.getExtension(extensionName)
+  const extension = registeredExtensions.find(
+    ({ name }) => name === extensionName
+  )
+  if (!extension) throw new Error(`${extensionName} was not registered`)
   if (!extension.getCustomWidgets) {
     throw new Error(`${extensionName} does not register custom widgets`)
   }

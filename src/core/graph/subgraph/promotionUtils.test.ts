@@ -50,7 +50,7 @@ function promotedWidgetRef(host: SubgraphNode, name: string): IBaseWidget {
 
 vi.mock(import('@/services/litegraphService'))
 
-const updatePreviewsMock = vi.mocked(useLitegraphService().updatePreviews)
+const litegraphService = vi.mocked(useLitegraphService())
 
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
@@ -371,7 +371,7 @@ describe('promoteRecommendedWidgets', () => {
 
     promoteRecommendedWidgets(subgraphNode)
 
-    expect(updatePreviewsMock).not.toHaveBeenCalled()
+    expect(litegraphService.updatePreviews).not.toHaveBeenCalled()
   })
 
   it('eagerly exposes virtual preview widget for CANVAS_IMAGE_PREVIEW nodes', () => {
@@ -393,7 +393,7 @@ describe('promoteRecommendedWidgets', () => {
       sourceNodeId: String(glslNode.id),
       sourcePreviewName: CANVAS_IMAGE_PREVIEW_WIDGET
     })
-    expect(updatePreviewsMock).not.toHaveBeenCalled()
+    expect(litegraphService.updatePreviews).not.toHaveBeenCalled()
   })
 })
 

@@ -11,7 +11,7 @@ import type { ComfyApp } from '@/scripts/app'
 import { app } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
 import type { useLoad3dService } from '@/services/load3dService'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import * as graphTraversal from '@/utils/graphTraversalUtil'
 
 const {
   capture,
@@ -132,8 +132,6 @@ vi.mock(import('@/scripts/app'), () => ({
 }))
 
 vi.mock(import('@/utils/graphTraversalUtil'))
-
-const getNodeByLocatorIdMock = vi.mocked(getNodeByLocatorId)
 
 vi.mock(import('@/i18n'))
 
@@ -663,7 +661,7 @@ describe('Comfy.Preview3D.onNodeOutputsUpdated', () => {
 
   it('rehydrates a Preview3D node from restored outputs', async () => {
     const node = makePreview3DNode()
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
     preview3DExt.onNodeOutputsUpdated!({
       '7': { result: ['sub\\nested\\mesh.glb', { position: [1, 2, 3] }] }
@@ -683,18 +681,18 @@ describe('Comfy.Preview3D.onNodeOutputsUpdated', () => {
 
   it('skips entries with no result file path', async () => {
     const node = makePreview3DNode()
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
     preview3DExt.onNodeOutputsUpdated!({
       '7': { result: [undefined] }
     } as never)
 
-    expect(getNodeByLocatorIdMock).not.toHaveBeenCalled()
+    expect(graphTraversal.getNodeByLocatorId).not.toHaveBeenCalled()
     expect(configureMock).not.toHaveBeenCalled()
   })
 
   it('skips entries whose node is not in the active rootGraph', async () => {
-    getNodeByLocatorIdMock.mockReturnValue(null)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(null)
 
     preview3DExt.onNodeOutputsUpdated!({
       '7': { result: ['mesh.glb'] }
@@ -705,7 +703,7 @@ describe('Comfy.Preview3D.onNodeOutputsUpdated', () => {
 
   it('skips nodes whose comfyClass is not Preview3D', async () => {
     const node = makePreview3DNode({ comfyClass: 'Load3D' })
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
     preview3DExt.onNodeOutputsUpdated!({
       '7': { result: ['mesh.glb'] }
@@ -719,7 +717,7 @@ describe('Comfy.Preview3D.onNodeOutputsUpdated', () => {
       properties: { 'Last Time Model File': 'mesh.glb' },
       widgets: [{ name: 'model_file', value: 'mesh.glb' }]
     })
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
     preview3DExt.onNodeOutputsUpdated!({
       '7': {
@@ -741,7 +739,7 @@ describe('Comfy.Save3DAdvanced.onNodeOutputsUpdated', () => {
 
   it('restores the saved model from the output folder when opened from history', async () => {
     const node = makePreview3DAdvancedNode({ comfyClass: 'Save3DAdvanced' })
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
     save3DAdvancedExt.onNodeOutputsUpdated!({
       '7': { result: ['3d\\ComfyUI_00001.glb'] }
@@ -757,7 +755,7 @@ describe('Comfy.Save3DAdvanced.onNodeOutputsUpdated', () => {
 
   it('skips nodes whose comfyClass is not Save3DAdvanced', async () => {
     const node = makePreview3DAdvancedNode({ comfyClass: 'Preview3DAdvanced' })
-    getNodeByLocatorIdMock.mockReturnValue(node)
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(node)
 
     save3DAdvancedExt.onNodeOutputsUpdated!({
       '7': { result: ['mesh.glb'] }

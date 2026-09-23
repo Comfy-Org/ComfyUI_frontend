@@ -9,7 +9,7 @@ import type { useExtensionService } from '@/services/extensionService'
 import type { useLoad3dService } from '@/services/load3dService'
 import { toNodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
-import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
+import * as graphTraversal from '@/utils/graphTraversalUtil'
 
 const {
   capture,
@@ -72,8 +72,6 @@ vi.mock(import('@/extensions/core/load3d/exportMenuHelper'), () => ({
 vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/utils/graphTraversalUtil'))
-
-const getNodeByLocatorIdMock = vi.mocked(getNodeByLocatorId)
 
 vi.mock(import('@/i18n'))
 
@@ -400,7 +398,9 @@ describe('Comfy.PreviewGaussianSplat.onNodeOutputsUpdated', () => {
   const nodeLocatorId = createNodeLocatorId(null, toNodeId(1))
 
   it('skips entries whose comfyClass is not PreviewGaussianSplat', async () => {
-    getNodeByLocatorIdMock.mockReturnValue(makePreviewNode({ comfyClass: 'X' }))
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(
+      makePreviewNode({ comfyClass: 'X' })
+    )
 
     splatExt.onNodeOutputsUpdated!({
       [nodeLocatorId]: { result: ['scene.ply'] }
@@ -410,7 +410,9 @@ describe('Comfy.PreviewGaussianSplat.onNodeOutputsUpdated', () => {
   })
 
   it('skips entries with no result file path', async () => {
-    getNodeByLocatorIdMock.mockReturnValue(makePreviewNode())
+    vi.mocked(graphTraversal.getNodeByLocatorId).mockReturnValue(
+      makePreviewNode()
+    )
 
     splatExt.onNodeOutputsUpdated!({ [nodeLocatorId]: { result: [] } })
 

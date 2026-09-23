@@ -23,17 +23,15 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { serializeNodeId, toNodeId } from '@/types/nodeId'
 
-const extensions = await vi.hoisted(async () => {
-  const { createExtensionCapture } =
-    await import('@/utils/__tests__/extensionTestUtils')
-  return createExtensionCapture()
-})
-
 vi.mock(import('@/scripts/app'))
 
-vi.mocked(app.registerExtension).mockImplementation(
-  extensions.registerExtension
-)
+function getRegisteredExtension(name: string) {
+  const extension = vi
+    .mocked(app.registerExtension)
+    .mock.calls.find(([extension]) => extension.name === name)?.[0]
+  if (!extension) throw new Error(`${name} was not registered`)
+  return extension
+}
 
 const {
   PrimitiveNode,
@@ -48,10 +46,10 @@ beforeEach(() => {
   app.canvas.graph = null
 })
 
-const widgetInputsExtension = extensions.getExtension('Comfy.WidgetInputs')
+const widgetInputsExtension = getRegisteredExtension('Comfy.WidgetInputs')
 
 await import('./rerouteNode')
-const rerouteNodeExtension = extensions.getExtension('Comfy.RerouteNode')
+const rerouteNodeExtension = getRegisteredExtension('Comfy.RerouteNode')
 
 /**
  * Applies the extension's `beforeRegisterNodeDef` to a throwaway node class.

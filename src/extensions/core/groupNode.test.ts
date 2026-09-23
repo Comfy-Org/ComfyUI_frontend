@@ -10,23 +10,20 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
-import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/types/comfy'
 
 import type { GroupNodeLink, GroupNodeWorkflowData } from './groupNode'
 
-const extensionState = vi.hoisted(() => ({
-  ext: undefined as ComfyExtension | undefined
-}))
-
 vi.mock(import('@/scripts/app'))
 
-vi.mocked(app.registerExtension).mockImplementation((ext) => {
-  extensionState.ext = ext
-})
 const registerNodeDef = vi.mocked(app.registerNodeDef)
 
 const { GroupNodeConfig, GroupNodeHandler, replaceLegacySeparators } =
   await import('./groupNode')
+const groupNodeExtension = vi
+  .mocked(app.registerExtension)
+  .mock.calls.find(([extension]) => extension.name === 'Comfy.GroupNode')?.[0]
+if (!groupNodeExtension) throw new Error('Comfy.GroupNode was not registered')
 
 function makeNode(type: string): ComfyNode {
   return {
@@ -309,8 +306,8 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
 
 describe('group node extension beforeConfigureGraph', () => {
   it('wires serialized instance positions per group into registerFromWorkflow', async () => {
-    const ext = extensionState.ext
-    if (!ext?.beforeConfigureGraph) throw new Error('extension not registered')
+    const ext = groupNodeExtension
+    if (!ext.beforeConfigureGraph) throw new Error('extension not registered')
     const spy = vi
       .spyOn(GroupNodeConfig, 'registerFromWorkflow')
       .mockResolvedValue()
@@ -346,8 +343,8 @@ describe('group node extension beforeConfigureGraph', () => {
   })
 
   it('binds duplicate serialized ids to distinct configured graph ids', async () => {
-    const ext = extensionState.ext
-    if (!ext?.beforeConfigureGraph || !ext.afterConfigureGraph) {
+    const ext = groupNodeExtension
+    if (!ext.beforeConfigureGraph || !ext.afterConfigureGraph) {
       throw new Error('extension not registered')
     }
     const groupNodes = {
@@ -397,8 +394,8 @@ describe('group node extension beforeConfigureGraph', () => {
   })
 
   it('does not reinterpret reports appended by concurrent extensions', async () => {
-    const ext = extensionState.ext
-    if (!ext?.beforeConfigureGraph || !ext.afterConfigureGraph) {
+    const ext = groupNodeExtension
+    if (!ext.beforeConfigureGraph || !ext.afterConfigureGraph) {
       throw new Error('extension not registered')
     }
     const missingNodeTypes: MissingNodeType[] = []
@@ -450,8 +447,8 @@ describe('group node extension beforeConfigureGraph', () => {
   })
 
   it('skips stray conversion while configuring and converts afterwards', async () => {
-    const ext = extensionState.ext
-    if (!ext?.nodeCreated) throw new Error('extension not registered')
+    const ext = groupNodeExtension
+    if (!ext.nodeCreated) throw new Error('extension not registered')
     const convertToNodes = vi.fn(() => [])
     const isGroupNode = vi
       .spyOn(GroupNodeHandler, 'isGroupNode')
