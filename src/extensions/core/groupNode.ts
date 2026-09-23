@@ -783,6 +783,35 @@ export class GroupNodeConfig {
 }
 
 /**
+ * Finds the outer widget matching `name`, skipping any index already in
+ * `consumed`.
+ *
+ * Widget names inside a synthesized group-node type are meant to be unique
+ * (see {@link GroupNodeConfig.getInputConfig}'s de-duplication), so pairing
+ * by name alone is normally safe. But it is not *guaranteed* unique across
+ * every inner node/widget combination, and a plain `Array.findIndex` always
+ * resolves a shared name to the *first* matching widget — silently copying
+ * that node's value into every other inner node exposing a widget with the
+ * same final name. Consuming each match exactly once, in the same
+ * node-by-node order the inner nodes are unpacked, keeps every widget paired
+ * with the widget belonging to its own originating node even when two
+ * inner nodes end up sharing an outer widget name (e.g. two `CLIPTextEncode`
+ * nodes both exposing `text`).
+ */
+export function findUnconsumedWidgetIndex(
+  widgets: { name?: string }[] | undefined,
+  name: string,
+  consumed: Set<number>
+): number {
+  if (!widgets) return -1
+  for (let i = 0; i < widgets.length; i++) {
+    if (consumed.has(i)) continue
+    if (widgets[i]?.name === name) return i
+  }
+  return -1
+}
+
+/**
  * Migration-only adapter for deprecated group nodes.
  *
  * Group nodes are no longer a supported feature. When a legacy workflow that
@@ -828,6 +857,10 @@ export class GroupNodeHandler {
       // matches nodeData.nodes order.
       const selectedIds = Object.keys(app.canvas.selected_nodes)
       const newNodes: LGraphNode[] = []
+      // Shared across every inner node processed below, in nodeData.nodes
+      // order, so a widget already paired to one inner node's value can
+      // never be matched again for another (see findUnconsumedWidgetIndex).
+      const consumedOuterWidgetIndices = new Set<number>()
       for (let i = 0; i < selectedIds.length; i++) {
         const selectedId = parseNodeId(selectedIds[i])
         const newNode = selectedId
@@ -848,13 +881,18 @@ export class GroupNodeHandler {
           const newName = map[oldName]
           if (!newName) continue
 
-          const widgetIndex =
-            node.widgets?.findIndex((w) => w.name === newName) ?? -1
+          const widgetIndex = findUnconsumedWidgetIndex(
+            node.widgets,
+            newName,
+            consumedOuterWidgetIndices
+          )
           if (widgetIndex === -1) continue
+          consumedOuterWidgetIndices.add(widgetIndex)
 
           // Populate the main and any linked widgets
           if (innerNodeData.type === 'PrimitiveNode') {
             for (let j = 0; j < newNode.widgets.length; j++) {
+              consumedOuterWidgetIndices.add(widgetIndex + j)
               const srcWidget = node.widgets?.[widgetIndex + j]
               if (srcWidget) newNode.widgets[j].value = srcWidget.value
             }

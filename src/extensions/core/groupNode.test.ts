@@ -42,6 +42,7 @@ vi.mock(import('@/scripts/app'), () => ({
 import {
   GroupNodeConfig,
   GroupNodeHandler,
+  findUnconsumedWidgetIndex,
   replaceLegacySeparators
 } from './groupNode'
 
@@ -132,6 +133,60 @@ describe('GroupNodeConfig.getLinks', () => {
   it('maps external links by [node index][slot] to their type', () => {
     const config = configFrom([], [[0, 1, 'IMAGE']])
     expect(config.externalFrom).toEqual({ 0: { 1: 'IMAGE' } })
+  })
+})
+
+describe('findUnconsumedWidgetIndex', () => {
+  it('pairs same-named widgets to distinct originating nodes in request order', () => {
+    // Two inner nodes (e.g. two CLIPTextEncode nodes both exposing `text`)
+    // that end up sharing an outer widget name. A plain `findIndex` by name
+    // would resolve both to the first "text" widget, copying that node's
+    // value into both inner nodes.
+    const outerWidgets = [
+      { name: 'text' },
+      { name: 'text' },
+      { name: 'denoise' }
+    ]
+    const consumed = new Set<number>()
+
+    const firstMatch = findUnconsumedWidgetIndex(outerWidgets, 'text', consumed)
+    expect(firstMatch).toBe(0)
+    consumed.add(firstMatch)
+
+    const secondMatch = findUnconsumedWidgetIndex(
+      outerWidgets,
+      'text',
+      consumed
+    )
+    expect(secondMatch).toBe(1)
+  })
+
+  it('never re-matches an index already recorded as consumed, even for a genuine name collision', () => {
+    const outerWidgets = [{ name: 'text' }, { name: 'text' }, { name: 'text' }]
+    const consumed = new Set<number>()
+
+    const indices = [0, 1, 2].map(() => {
+      const index = findUnconsumedWidgetIndex(outerWidgets, 'text', consumed)
+      consumed.add(index)
+      return index
+    })
+
+    expect(indices).toEqual([0, 1, 2])
+
+    // A fourth request has nothing left to consume.
+    expect(findUnconsumedWidgetIndex(outerWidgets, 'text', consumed)).toBe(-1)
+  })
+
+  it('ignores consumed indices and matches by name otherwise', () => {
+    const outerWidgets = [{ name: 'denoise' }, { name: 'filename_prefix' }]
+
+    expect(
+      findUnconsumedWidgetIndex(outerWidgets, 'filename_prefix', new Set())
+    ).toBe(1)
+    expect(
+      findUnconsumedWidgetIndex(outerWidgets, 'denoise', new Set([0]))
+    ).toBe(-1)
+    expect(findUnconsumedWidgetIndex(undefined, 'denoise', new Set())).toBe(-1)
   })
 })
 
