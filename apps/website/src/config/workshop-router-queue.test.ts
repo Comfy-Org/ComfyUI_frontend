@@ -308,6 +308,30 @@ describe('queued Router delivery', () => {
     })
   })
 
+  it('reports a stored provider moderation payload as a terminal policy refusal', async () => {
+    stubFetch(
+      admitted(),
+      Response.json(
+        {
+          code: 'DataInspectionFailed',
+          message:
+            'Green net check failed for image (input): Input data may contain inappropriate content.'
+        },
+        {
+          status: 502,
+          headers: { 'X-Comfy-Error-Type': 'provider_error' }
+        }
+      )
+    )
+
+    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+      reason: 'policy',
+      requestId: REQUEST_ID,
+      response: { status: 502, errorType: 'provider_error' },
+      requestSettlement: 'terminal'
+    })
+  })
+
   it('falls back to the synchronous route when queued delivery is not enabled for the caller', async () => {
     const calls = stubFetch(refusal(403, 'not_enabled'), result())
     const tokens = ['queued-token', 'synchronous-token']

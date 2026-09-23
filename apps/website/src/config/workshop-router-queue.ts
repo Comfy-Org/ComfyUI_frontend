@@ -237,7 +237,8 @@ async function settleQueuedResult(
       {
         cause: error,
         requestSettlement:
-          errorType && TERMINAL_RESULT_ERRORS.has(errorType)
+          error.reason === 'policy' ||
+          (errorType && TERMINAL_RESULT_ERRORS.has(errorType))
             ? 'terminal'
             : 'pending'
       }

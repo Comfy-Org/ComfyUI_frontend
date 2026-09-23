@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { FieldSchema, FieldValue } from './workshop-playground'
-import { readWorkshopVideoDuration } from './workshop-media-metadata'
+import { readWorkshopVideoMetadata } from './workshop-media-metadata'
 import { validateWorkshopMediaInputs } from './workshop-media-validation'
 
 vi.mock(import('./workshop-media-metadata'))
@@ -19,13 +19,18 @@ const videoField: FieldSchema = {
     advanced: false,
     control: 'media',
     urlUpload: 'video',
-    maxVideoDurationSeconds: 15.5
+    maxVideoDurationSeconds: 15.5,
+    videoWidthPixels: { minimum: 700, maximum: 4553 }
   }
+}
+
+function metadata(durationSeconds: number, widthPixels = 1920) {
+  return { durationSeconds, widthPixels, heightPixels: 1080 }
 }
 
 describe('Workshop media validation', () => {
   it.for([4.2, 15.5])('allows a %s-second video', async (duration) => {
-    vi.mocked(readWorkshopVideoDuration).mockResolvedValue(duration)
+    vi.mocked(readWorkshopVideoMetadata).mockResolvedValue(metadata(duration))
 
     await expect(
       validateWorkshopMediaInputs(
@@ -93,8 +98,8 @@ describe('Workshop media validation', () => {
     'rejects a $name just over the configured duration',
     async ({ create }) => {
       const { value, source } = create()
-      vi.mocked(readWorkshopVideoDuration).mockImplementation(async (input) =>
-        input === source ? 15.501 : 1
+      vi.mocked(readWorkshopVideoMetadata).mockImplementation(async (input) =>
+        metadata(input === source ? 15.501 : 1)
       )
 
       await expect(
@@ -113,9 +118,9 @@ describe('Workshop media validation', () => {
   )
 
   it('checks later files in a multiple-video input', async () => {
-    vi.mocked(readWorkshopVideoDuration)
-      .mockResolvedValueOnce(15.5)
-      .mockResolvedValueOnce(15.501)
+    vi.mocked(readWorkshopVideoMetadata)
+      .mockResolvedValueOnce(metadata(15.5))
+      .mockResolvedValueOnce(metadata(15.501))
 
     await expect(
       validateWorkshopMediaInputs(
@@ -144,11 +149,40 @@ describe('Workshop media validation', () => {
     })
   })
 
+  it.for([700, 4553])('allows a %s-pixel-wide video', async (width) => {
+    vi.mocked(readWorkshopVideoMetadata).mockResolvedValue(metadata(10, width))
+
+    await expect(
+      validateWorkshopMediaInputs(
+        [videoField],
+        { source_video: 'https://media.example/source.mp4' },
+        new AbortController().signal
+      )
+    ).resolves.toBeUndefined()
+  })
+
+  it.for([699, 4554])('rejects a %s-pixel-wide video', async (width) => {
+    vi.mocked(readWorkshopVideoMetadata).mockResolvedValue(metadata(10, width))
+
+    await expect(
+      validateWorkshopMediaInputs(
+        [videoField],
+        { source_video: 'https://media.example/source.mp4' },
+        new AbortController().signal
+      )
+    ).rejects.toMatchObject({
+      reason: 'validation',
+      requestId: null,
+      stage: 'input_preparation',
+      fieldErrors: { source_video: 'videoWidthOutOfRange' }
+    })
+  })
+
   it.for(['NotSupportedError', 'TimeoutError'])(
     'preserves a metadata %s as a client failure on its field',
     async (name) => {
       const cause = new DOMException('Video metadata unavailable', name)
-      vi.mocked(readWorkshopVideoDuration).mockRejectedValue(cause)
+      vi.mocked(readWorkshopVideoMetadata).mockRejectedValue(cause)
 
       await expect(
         validateWorkshopMediaInputs(
@@ -167,8 +201,8 @@ describe('Workshop media validation', () => {
   )
 
   it('preserves cancellation instead of reporting unreadable media', async () => {
-    const metadata = Promise.withResolvers<number>()
-    vi.mocked(readWorkshopVideoDuration).mockReturnValue(metadata.promise)
+    const pending = Promise.withResolvers<ReturnType<typeof metadata>>()
+    vi.mocked(readWorkshopVideoMetadata).mockReturnValue(pending.promise)
     const controller = new AbortController()
     const result = validateWorkshopMediaInputs(
       [videoField],
@@ -178,7 +212,7 @@ describe('Workshop media validation', () => {
     const reason = new DOMException('Cancelled', 'AbortError')
 
     controller.abort(reason)
-    metadata.reject(new DOMException('Decode stopped', 'NotSupportedError'))
+    pending.reject(new DOMException('Decode stopped', 'NotSupportedError'))
 
     await expect(result).rejects.toBe(reason)
   })
@@ -190,7 +224,7 @@ describe('Workshop media validation', () => {
   ] satisfies { name: string; value: FieldValue }[])(
     'does not read a $name optional input',
     async ({ value }) => {
-      vi.mocked(readWorkshopVideoDuration).mockRejectedValue(
+      vi.mocked(readWorkshopVideoMetadata).mockRejectedValue(
         new Error('Unexpected metadata read')
       )
 
@@ -205,7 +239,7 @@ describe('Workshop media validation', () => {
   )
 
   it('does not read inputs without a declared duration limit', async () => {
-    vi.mocked(readWorkshopVideoDuration).mockRejectedValue(
+    vi.mocked(readWorkshopVideoMetadata).mockRejectedValue(
       new Error('Unexpected metadata read')
     )
 
