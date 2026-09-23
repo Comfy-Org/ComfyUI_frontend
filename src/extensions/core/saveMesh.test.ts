@@ -82,7 +82,6 @@ type SaveMeshExtension = ComfyExtension & {
 
 async function loadSaveMeshExtensionFresh(): Promise<SaveMeshExtension> {
   vi.resetModules()
-  registerExtensionMock.mockClear()
   graphTraversal = await import('@/utils/graphTraversalUtil')
   await import('@/extensions/core/saveMesh')
   return registerExtensionMock.mock.calls[0][0] as SaveMeshExtension

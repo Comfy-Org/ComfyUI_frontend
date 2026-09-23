@@ -23,11 +23,9 @@ describe('DEFAULT_MODEL_CAPABILITIES', () => {
 })
 
 describe('fetchModelData', () => {
-  const mockFetchApi = vi.mocked(api.fetchApi)
-
   it('returns the arrayBuffer on a successful response', async () => {
     const buf = new ArrayBuffer(8)
-    mockFetchApi.mockResolvedValue({
+    vi.mocked(api.fetchApi).mockResolvedValue({
       ok: true,
       status: 200,
       arrayBuffer: vi.fn().mockResolvedValue(buf)
@@ -39,7 +37,7 @@ describe('fetchModelData', () => {
   })
 
   it('throws with status code when the response is not ok', async () => {
-    mockFetchApi.mockResolvedValue({
+    vi.mocked(api.fetchApi).mockResolvedValue({
       ok: false,
       status: 404
     } as unknown as Response)
@@ -50,7 +48,7 @@ describe('fetchModelData', () => {
   })
 
   it('strips the leading api/ prefix and encodes the filename', async () => {
-    mockFetchApi.mockResolvedValue({
+    vi.mocked(api.fetchApi).mockResolvedValue({
       ok: true,
       arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
     } as unknown as Response)
@@ -60,19 +58,19 @@ describe('fetchModelData', () => {
       'a b c.ply'
     )
 
-    expect(mockFetchApi).toHaveBeenCalledWith(
+    expect(api.fetchApi).toHaveBeenCalledWith(
       '/view?type=input&subfolder=&filename=a%20b%20c.ply'
     )
   })
 
   it('prepends a single slash when the path has no api/ prefix', async () => {
-    mockFetchApi.mockResolvedValue({
+    vi.mocked(api.fetchApi).mockResolvedValue({
       ok: true,
       arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
     } as unknown as Response)
 
     await fetchModelData('custom?filename=', 'scene.splat')
 
-    expect(mockFetchApi).toHaveBeenCalledWith('/custom?filename=scene.splat')
+    expect(api.fetchApi).toHaveBeenCalledWith('/custom?filename=scene.splat')
   })
 })

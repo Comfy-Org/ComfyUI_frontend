@@ -42,7 +42,6 @@ const {
 } = await import('./widgetInputs')
 
 beforeEach(() => {
-  vi.mocked(app).configuringGraph = false
   app.canvas.graph = null
 })
 

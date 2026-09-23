@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
 import type { useExtensionService } from '@/services/extensionService'
@@ -13,10 +14,8 @@ const registered = vi.hoisted<{
   setup: ComfyExtension['setup'] | null
 }>(() => ({ setup: null }))
 
-const reportErrorMock = vi.hoisted(() => vi.fn())
-
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: reportErrorMock
+  reportError: vi.fn()
 }))
 
 // The throwing factory rejects the gate's guarded dynamic import - the
@@ -47,7 +46,6 @@ vi.mock(import('@/services/extensionService'), () => ({
 
 describe('the agent panel gate under a dependency-chunk failure', () => {
   beforeEach(() => {
-    reportErrorMock.mockClear()
     useAgentPanelStore().enabled = false
     useAgentPanelStore().gateSettled = false
   })
@@ -65,7 +63,7 @@ describe('the agent panel gate under a dependency-chunk failure', () => {
     const store = useAgentPanelStore()
     expect(store.gateSettled).toBe(true)
     expect(store.enabled).toBe(false)
-    expect(reportErrorMock).toHaveBeenCalledWith(expect.any(Error), {
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'agent_flag_gate_load_failure',
       tags: {
         failure_kind: 'caught_unexpected',

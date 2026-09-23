@@ -5,15 +5,12 @@ import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyApi } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
-const { getUserData, reportErrorMock } = vi.hoisted(() => ({
-  getUserData: vi.fn(),
-  reportErrorMock: vi.fn()
-}))
+const getUserData = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob: vi.fn() }))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: reportErrorMock
+  reportError: vi.fn()
 }))
 
 vi.mock(import('@/services/dialogService'))

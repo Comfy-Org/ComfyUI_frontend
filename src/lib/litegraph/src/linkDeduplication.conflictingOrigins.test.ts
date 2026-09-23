@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
@@ -22,10 +22,6 @@ import {
 import { normalizeConfiguredTopology } from './linkDeduplication'
 
 vi.mock(import('@/platform/telemetry'))
-
-const telemetry = useTelemetry()
-assert.exists(telemetry)
-const { trackLinkDedupDrop } = telemetry
 
 class DupTestNode extends LGraphNode {
   constructor(title?: string) {
@@ -106,8 +102,8 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
   it('fires LinkDedupDrop exactly once with the dropped/survivor ids and target when origins differ', () => {
     configureConflictingOrigins()
 
-    expect(trackLinkDedupDrop).toHaveBeenCalledOnce()
-    expect(trackLinkDedupDrop).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackLinkDedupDrop).toHaveBeenCalledOnce()
+    expect(useTelemetry()?.trackLinkDedupDrop).toHaveBeenCalledWith({
       droppedLinkId: 1,
       survivorLinkId: 2,
       target: '3:0'
@@ -140,7 +136,7 @@ describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => 
     const graph = new LGraph()
     graph.configure(structuredClone(duplicateLinksRoot))
 
-    expect(trackLinkDedupDrop).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackLinkDedupDrop).not.toHaveBeenCalled()
   })
 })
 

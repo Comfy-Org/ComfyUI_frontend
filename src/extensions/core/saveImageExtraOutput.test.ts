@@ -22,7 +22,6 @@ async function loadExtension(): Promise<ComfyExtension> {
   const { app } = await import('@/scripts/app')
   vi.mocked(app).graph = graph
   const registerExtension = vi.mocked(app.registerExtension)
-  registerExtension.mockClear()
   await import('./saveImageExtraOutput')
   return registerExtension.mock.calls[0][0]
 }

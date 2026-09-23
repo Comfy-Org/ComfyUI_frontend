@@ -16,8 +16,6 @@ import type { GroupNodeLink, GroupNodeWorkflowData } from './groupNode'
 
 vi.mock(import('@/scripts/app'))
 
-const registerNodeDef = vi.mocked(app.registerNodeDef)
-
 const { GroupNodeConfig, GroupNodeHandler, replaceLegacySeparators } =
   await import('./groupNode')
 const groupNodeExtension = vi
@@ -242,45 +240,43 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
   it('removes a prior same-name group type before reporting missing nodes', async () => {
     const groupType = 'workflow>MyGroup'
     const missing: MissingNodeType[] = []
-    registerNodeDef.mockImplementation(async (typeName, nodeDef) => {
-      class PreviousGroupNode extends LGraphNode {
-        static override nodeData = nodeDef
+    vi.mocked(app.registerNodeDef).mockImplementation(
+      async (typeName, nodeDef) => {
+        class PreviousGroupNode extends LGraphNode {
+          static override nodeData = nodeDef
+        }
+        LiteGraph.registerNodeType(typeName, PreviousGroupNode)
       }
-      LiteGraph.registerNodeType(typeName, PreviousGroupNode)
-    })
+    )
 
-    try {
-      await GroupNodeConfig.registerFromWorkflow(
-        {
-          MyGroup: {
-            nodes: [],
-            links: [],
-            external: []
-          }
-        },
-        []
-      )
-      const previousGroupNode = LiteGraph.createNode(groupType)
-      if (!previousGroupNode) throw new Error('group type not registered')
-      expect(GroupNodeHandler.isGroupNode(previousGroupNode)).toBe(true)
-      expect(LiteGraph.Nodes.PreviousGroupNode).toBeDefined()
-      expect(useNodeDefStore().nodeDefsByName[groupType]).toBeDefined()
+    await GroupNodeConfig.registerFromWorkflow(
+      {
+        MyGroup: {
+          nodes: [],
+          links: [],
+          external: []
+        }
+      },
+      []
+    )
+    const previousGroupNode = LiteGraph.createNode(groupType)
+    if (!previousGroupNode) throw new Error('group type not registered')
+    expect(GroupNodeHandler.isGroupNode(previousGroupNode)).toBe(true)
+    expect(LiteGraph.Nodes.PreviousGroupNode).toBeDefined()
+    expect(useNodeDefStore().nodeDefsByName[groupType]).toBeDefined()
 
-      await GroupNodeConfig.registerFromWorkflow(
-        groupWithMissingInnerNodes(),
-        missing,
-        new Map([['MyGroup', [7]]])
-      )
+    await GroupNodeConfig.registerFromWorkflow(
+      groupWithMissingInnerNodes(),
+      missing,
+      new Map([['MyGroup', [7]]])
+    )
 
-      expect(LiteGraph.registered_node_types[groupType]).toBeUndefined()
-      expect(LiteGraph.Nodes.PreviousGroupNode).toBeUndefined()
-      expect(useNodeDefStore().nodeDefsByName[groupType]).toBeUndefined()
-      expect(missing).toStrictEqual([
-        expect.objectContaining({ type: groupType, nodeId: '7' })
-      ])
-    } finally {
-      registerNodeDef.mockReset()
-    }
+    expect(LiteGraph.registered_node_types[groupType]).toBeUndefined()
+    expect(LiteGraph.Nodes.PreviousGroupNode).toBeUndefined()
+    expect(useNodeDefStore().nodeDefsByName[groupType]).toBeUndefined()
+    expect(missing).toStrictEqual([
+      expect.objectContaining({ type: groupType, nodeId: '7' })
+    ])
   })
 
   it('keeps the legacy unbacked entries when no instance map is given', async () => {
