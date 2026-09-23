@@ -152,6 +152,11 @@ export class AgentCrdtDocLifecycle {
     this.clearForRetarget()
   }
 
+  retry(): void {
+    this.clearForRetarget()
+    this.resubscribe()
+  }
+
   onDocumentUpdate(): void {
     this.usedCatchUpGrace = false
     if (this.staleProbeTimer !== null) this.armStaleProbe()
@@ -231,14 +236,11 @@ export class AgentCrdtDocLifecycle {
       { attempt: this.subscribeRetryAttempt, workflowId, terminal: true },
       { level: 'warn' }
     )
-    reportError(
-      new Error('agent doc subscribe was sent but never acknowledged'),
-      {
-        errorType: 'failure_confirming_agent_doc_subscribe',
-        level: 'warning',
-        tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
-      }
-    )
+    reportError(new Error('agent doc subscription could not be confirmed'), {
+      errorType: 'failure_confirming_agent_doc_subscribe',
+      level: 'warning',
+      tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+    })
     this.onGaveUp()
   }
 
@@ -253,9 +255,12 @@ export class AgentCrdtDocLifecycle {
 
   private scheduleSubscribeRetry(): void {
     if (this.shouldDeferSubscribe()) return
-    if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) return
     const target = this.workflowId()
     if (target === null) return
+    if (this.subscribeRetryAttempt >= SUBSCRIBE_RETRY_MAX_ATTEMPTS) {
+      this.giveUp(target)
+      return
+    }
     const delay = SUBSCRIBE_RETRY_BASE_MS * 2 ** this.subscribeRetryAttempt
     this.subscribeRetryAttempt += 1
     this.subscribeRetryTimer = setTimeout(() => {

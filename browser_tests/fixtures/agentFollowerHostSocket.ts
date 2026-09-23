@@ -21,6 +21,10 @@ const SUBSCRIBE_TIMEOUT = 15_000
  */
 export type HumanOpsHost = 'apply' | 'hold'
 
+export type SubscribeBehavior =
+  | { kind: 'accept' }
+  | { kind: 'refuse'; code: string; message?: string }
+
 /** One `doc_*` frame the page sent, as the test attaches it. */
 export interface ClientDocFrame {
   /** Milliseconds since the socket was created. */
@@ -70,10 +74,10 @@ export function parseClientDocFrame(
 
 /** Routed `/ws` host shared by black-box Agent follower fixtures. */
 export class AgentFollowerHostSocket {
-  private refuseReason: string | null = null
-
   private socket: WebSocketRoute | null = null
   private subscribes = 0
+  private subscribeAttempts = 0
+  private subscribeBehavior: SubscribeBehavior = { kind: 'accept' }
   private readonly createdAt = Date.now()
   private readonly clientFrames: ClientDocFrame[] = []
   private readonly humanOutcomes: ApplyOutcome[] = []
@@ -89,6 +93,14 @@ export class AgentFollowerHostSocket {
     private readonly socketSid: string,
     private readonly humanOpsHost: HumanOpsHost = 'hold'
   ) {}
+
+  setSubscribeBehavior(behavior: SubscribeBehavior): void {
+    this.subscribeBehavior = behavior
+  }
+
+  subscribeAttemptCount(): number {
+    return this.subscribeAttempts
+  }
 
   async install(): Promise<void> {
     await this.page.routeWebSocket(/\/ws/, (socket) => {
@@ -154,26 +166,27 @@ export class AgentFollowerHostSocket {
       this.rejectForeignOps(frame)
       return
     }
-    if (frame.type === 'doc_subscribe' && frame.stateVector !== null)
+    if (frame.type === 'doc_subscribe' && frame.stateVector !== null) {
+      this.subscribeAttempts += 1
       this.answerSubscribe(frame.stateVector)
-    else if (frame.type === 'doc_ops' && this.humanOpsHost === 'apply')
+    } else if (frame.type === 'doc_ops' && this.humanOpsHost === 'apply')
       this.judgeHumanOps(frame.opsResult)
   }
 
-  /**
-   * Make the host REFUSE every subscribe, as it does when `docService` is nil,
-   * when it is overloaded, or at the per-session document cap. No catch-up
-   * follows a refusal, so the follower gets no canvas frame at all.
-   */
-  refuseSubscribes(reason = 'overloaded'): void {
-    this.refuseReason = reason
-  }
-
   private answerSubscribe(stateVector: string): void {
-    if (this.refuseReason) {
-      this.send(this.host.subscribeRefused(this.refuseReason))
-      this.subscribes += 1
-      this.resolveSubscribed?.()
+    if (this.subscribeBehavior.kind === 'refuse') {
+      this.send({
+        type: 'doc_subscribed',
+        data: {
+          v: DOC_PROTOCOL_VERSION,
+          workflow_id: this.workflowId,
+          ok: false,
+          code: this.subscribeBehavior.code,
+          ...(this.subscribeBehavior.message !== undefined && {
+            message: this.subscribeBehavior.message
+          })
+        }
+      })
       return
     }
     this.send(this.host.subscribed())

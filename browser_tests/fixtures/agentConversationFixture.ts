@@ -24,7 +24,8 @@ import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import type {
   ClientDocFrame,
-  HumanOpsHost
+  HumanOpsHost,
+  SubscribeBehavior
 } from '@e2e/fixtures/agentFollowerHostSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
@@ -695,6 +696,28 @@ export class AgentConversationHarness {
   // host answers with the catch-up frame this counter has just sent.
   subscribeCount(): number {
     return this.hostSocket.subscribeCount()
+  }
+
+  subscribeAttemptCount(): number {
+    return this.hostSocket.subscribeAttemptCount()
+  }
+
+  setSubscribeBehavior(behavior: SubscribeBehavior): void {
+    this.hostSocket.setSubscribeBehavior(behavior)
+  }
+
+  applyOpsHostSideOnly(turn = 0): number {
+    for (const entry of this.conversation.turns[turn].response) {
+      if (entry.kind !== 'graph_ops') continue
+      this.host.apply(entry.ops)
+      for (const id of Object.keys(this.host.graph().nodes))
+        this.seenIds.add(id)
+    }
+    return this.hostNodeCount()
+  }
+
+  hostNodeCount(): number {
+    return Object.keys(this.host.graph().nodes).length
   }
 
   async disconnectAndApplyRecordedTurn(turn: number): Promise<void> {

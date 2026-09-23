@@ -152,6 +152,7 @@ function notifyAgentMaterialization(
 export interface AgentCrdtStatus {
   enabled: boolean
   connected: boolean
+  subscriptionFailed: boolean
   workflowId: string | null
   /**
    * Mirror of `bridge.follower.updatesApplied` (Yjs merges, reset to 0 on
@@ -207,6 +208,7 @@ export function useAgentCrdtFollower(
   const disabledStatus: AgentCrdtStatus = {
     enabled: false,
     connected: false,
+    subscriptionFailed: false,
     workflowId: null,
     updatesApplied: 0,
     lastFrameType: null,
@@ -256,7 +258,8 @@ export function useAgentCrdtFollower(
         schemaError: null
       }),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
-      follower.value?.enqueueHumanOperations(operations)
+      follower.value?.enqueueHumanOperations(operations),
+    retrySubscription: () => follower.value?.retrySubscription()
   }
 }
 
@@ -269,6 +272,7 @@ function startAgentCrdtFollower(
   events: AgentCrdtFollowerEvents
 ) {
   const acknowledgedWorkflowId = ref<string | null>(null)
+  const subscriptionFailed = ref(false)
   const updatesApplied = ref(0)
   const lastFrameType = ref<string | null>(null)
   const subscribedWorkflowId = ref<string | null>(null)
@@ -289,6 +293,7 @@ function startAgentCrdtFollower(
     () => bridge.resubscribe(),
     () => {
       acknowledgedWorkflowId.value = null
+      subscriptionFailed.value = true
     }
   )
   const tabId = createUuidv4()
@@ -413,6 +418,7 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
     if (ok) {
+      subscriptionFailed.value = false
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
@@ -566,6 +572,7 @@ function startAgentCrdtFollower(
   }
   const onReconnected: EventListener = () => {
     acknowledgedWorkflowId.value = null
+    subscriptionFailed.value = false
     lifecycle.onReconnected()
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
@@ -722,6 +729,7 @@ function startAgentCrdtFollower(
       const justActivated = active && previous?.[1] === false
       lifecycle.clearForRetarget()
       acknowledgedWorkflowId.value = null
+      subscriptionFailed.value = false
       knownDocNodeIds = new Set()
       pendingLiveNodeIds.clear()
       if (!active) {
@@ -764,6 +772,7 @@ function startAgentCrdtFollower(
   const status = computed<AgentCrdtStatus>(() => ({
     enabled: true,
     connected: acknowledgedWorkflowId.value !== null,
+    subscriptionFailed: subscriptionFailed.value,
     workflowId: subscribedWorkflowId.value,
     updatesApplied: updatesApplied.value,
     lastFrameType: lastFrameType.value,
@@ -781,6 +790,11 @@ function startAgentCrdtFollower(
   return {
     status: readonly(status),
     debugSnapshot,
+    acknowledgedWorkflowId: readonly(acknowledgedWorkflowId),
+    retrySubscription: () => {
+      subscriptionFailed.value = false
+      lifecycle.retry()
+    },
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       coalescer.enqueue(operations)
   }

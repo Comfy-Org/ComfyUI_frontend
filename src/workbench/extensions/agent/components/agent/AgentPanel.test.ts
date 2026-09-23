@@ -76,6 +76,30 @@ describe('AgentPanel', () => {
     ).toBeInTheDocument()
   })
 
+  it('shows an actionable alert when workflow sync fails', async () => {
+    const user = userEvent.setup()
+    const { emitted } = render(AgentPanel, {
+      props: { entries: [], historyGroups, syncFailed: true },
+      global: {
+        plugins: [i18n],
+        stubs: {
+          Composer: true,
+          EmptyState: true,
+          PanelHeader: true,
+          RunNoticeBanner: true
+        }
+      }
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'Workflow changes stopped syncing. Your chat is safe.'
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Retry sync' }))
+
+    expect(emitted().retrySync).toHaveLength(1)
+  })
+
   it('groups chat options with the title and separates history navigation', () => {
     const title = 'A comfortably short title'
     render(AgentPanel, {

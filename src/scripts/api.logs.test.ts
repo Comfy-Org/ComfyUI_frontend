@@ -43,6 +43,7 @@ describe('api.getLogs', () => {
         status: {
           enabled: true,
           connected: false,
+          subscriptionFailed: false,
           workflowId: 'doc-1',
           updatesApplied: 0,
           lastFrameType: null,

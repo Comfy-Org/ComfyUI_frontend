@@ -66,7 +66,8 @@ const {
   customTitle,
   historyGroups,
   editableTurnId = null,
-  answeringAskIds = new Set<string>()
+  answeringAskIds = new Set<string>(),
+  syncFailed = false
 } = defineProps<{
   entries: ConversationEntry[]
   userName?: string
@@ -96,6 +97,7 @@ const {
   historyGroups: HistoryGroups
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
+  syncFailed?: boolean
 }>()
 const emit = defineEmits<{
   send: [
@@ -125,6 +127,7 @@ const emit = defineEmits<{
   answerAsk: [askId: string, selection: 'run' | 'cancel']
   openWorkflow: [workflowId: string, workflowName?: string]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
+  retrySync: []
 }>()
 
 const showHistory = ref(false)
@@ -373,6 +376,27 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       <slot name="instrument" />
       <footer class="shrink-0 py-3">
         <div class="mx-auto flex w-full max-w-[640px] flex-col gap-4 px-4">
+          <div
+            v-if="syncFailed"
+            role="alert"
+            class="flex items-center gap-3 rounded-lg border border-destructive-background/40 bg-base-background p-3 text-sm text-base-foreground"
+          >
+            <span
+              class="icon-[lucide--circle-alert] size-5 shrink-0 text-destructive-background"
+            />
+            <p class="m-0 min-w-0 flex-1">
+              {{ t('agent.syncFailed') }}
+            </p>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              class="shrink-0"
+              @click="emit('retrySync')"
+            >
+              {{ t('agent.retrySync') }}
+            </Button>
+          </div>
           <RunNoticeBanner
             :expanded="isMaximized"
             :workflow-name="workflowDetached ? undefined : activeTab?.name"

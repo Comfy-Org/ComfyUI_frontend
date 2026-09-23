@@ -661,7 +661,8 @@ const isBoundWorkflowActive = computed(() => {
 const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
-  enqueueHumanOperations
+  enqueueHumanOperations,
+  retrySubscription
 } = useAgentCrdtFollower(
   followerWorkflowId,
   graphMutations,
@@ -1397,6 +1398,7 @@ function onPanelDrop(event: DragEvent): void {
       :workflow-detached="workflowDetached"
       :get-mention-nodes="mentionableNodes"
       :paywall-presentation="paywallPresentation"
+      :sync-failed="crdtStatus.subscriptionFailed"
       @send="onSend"
       @stop="onStop"
       @attach="onAttach"
@@ -1420,6 +1422,7 @@ function onPanelDrop(event: DragEvent): void {
       @rename-history="onRenameHistory"
       @rename-chat="onRenameChat"
       @copy-history="onCopyMarkdown"
+      @retry-sync="retrySubscription"
     >
       <template v-if="isCrdtDevPanelEnabled" #instrument>
         <CrdtDevPanel :status="crdtStatus" :snapshot="crdtDebugSnapshot" />

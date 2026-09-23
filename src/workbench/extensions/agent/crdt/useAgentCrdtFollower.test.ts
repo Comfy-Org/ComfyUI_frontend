@@ -220,23 +220,27 @@ function mountFollower(
   workflowId: Ref<string | null>
   isTargetActive: Ref<boolean>
   status: () => AgentCrdtStatus
+  retrySubscription: () => void
   enqueue: (operations: GraphOperation[]) => void
 } {
   const workflowId = ref<string | null>(initial)
   const isTargetActive = ref(initiallyActive)
   let exposedStatus!: () => AgentCrdtStatus
+  let exposedRetry!: () => void
   let enqueue!: (operations: GraphOperation[]) => void
   const host = defineComponent({
     setup() {
-      const { status, enqueueHumanOperations } = useAgentCrdtFollower(
-        workflowId,
-        graphMutations,
-        () => null,
-        isTargetActive,
-        getGraph,
-        events
-      )
+      const { status, retrySubscription, enqueueHumanOperations } =
+        useAgentCrdtFollower(
+          workflowId,
+          graphMutations,
+          () => null,
+          isTargetActive,
+          getGraph,
+          events
+        )
       exposedStatus = () => status.value as AgentCrdtStatus
+      exposedRetry = retrySubscription
       enqueue = enqueueHumanOperations
       return () => null
     }
@@ -247,6 +251,7 @@ function mountFollower(
     workflowId,
     isTargetActive,
     status: exposedStatus,
+    retrySubscription: exposedRetry,
     enqueue
   }
 }
@@ -428,9 +433,9 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('FE-1901: retries a refused subscribe with bounded exponential backoff', () => {
+  it('FE-1901: surfaces exhausted refusal retries and lets the user retry', () => {
     vi.useFakeTimers()
-    const { unmount } = mountFollower('wf-1')
+    const { retrySubscription, status, unmount } = mountFollower('wf-1')
 
     dispatchFrame('doc_subscribed', { ok: false })
     expect(bridge().resubscribe).not.toHaveBeenCalled()
@@ -453,6 +458,12 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: false })
     vi.advanceTimersByTime(60_000)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(6)
+    expect(status().subscriptionFailed).toBe(true)
+
+    retrySubscription()
+
+    expect(status().subscriptionFailed).toBe(false)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(7)
     unmount()
   })
 
