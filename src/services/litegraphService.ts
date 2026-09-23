@@ -32,7 +32,6 @@ import type {
 } from '@/lib/litegraph/src/litegraph'
 import type {
   ExportedSubgraphInstance,
-  ISerialisableNodeInput,
   ISerialisableNodeOutput,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
@@ -457,29 +456,31 @@ export const useLitegraphService = () => {
 
         // Note: input name is unique in a node definition, so we can lookup
         // input by name.
-        const inputByName = new Map<string, ISerialisableNodeInput>(
-          data.inputs?.map((input) => [input.name, input]) ?? []
+        const freshInputByName = new Map(
+          this.inputs.map((input) => [input.name, input])
         )
-        // Inputs defined by the node definition.
-        const definedInputNames = new Set(
-          this.inputs.map((input) => input.name)
-        )
-        const definedInputs = this.inputs.map((input) => {
-          const inputData = inputByName.get(input.name)
-          return inputData
+        // Preserve the serialised input order: a link's `target_slot` is an
+        // index into it, and a dynamically-added input (e.g. a DynamicCombo
+        // option's revealed socket) can sit at a different index in a
+        // freshly-constructed node than it did when the workflow was saved.
+        const mergedInputs = (data.inputs ?? []).map((inputData) => {
+          const input = freshInputByName.get(inputData.name)
+          return input
             ? {
                 ...inputData,
                 // Whether the input has associated widget follows the
                 // original node definition.
                 ...pick(input, RESERVED_KEYS.concat('widget'))
               }
-            : input
+            : inputData
         })
-        // Extra inputs that potentially dynamically added by custom js logic.
-        const extraInputs = data.inputs?.filter(
-          (input) => !definedInputNames.has(input.name)
+        // Inputs defined by the node but missing from the serialised data,
+        // potentially added dynamically by custom js logic.
+        const serialisedNames = new Set(mergedInputs.map((input) => input.name))
+        const newInputs = this.inputs.filter(
+          (input) => !serialisedNames.has(input.name)
         )
-        data.inputs = [...definedInputs, ...(extraInputs ?? [])]
+        data.inputs = [...mergedInputs, ...newInputs]
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
@@ -560,29 +561,31 @@ export const useLitegraphService = () => {
 
         // Note: input name is unique in a node definition, so we can lookup
         // input by name.
-        const inputByName = new Map<string, ISerialisableNodeInput>(
-          data.inputs?.map((input) => [input.name, input]) ?? []
+        const freshInputByName = new Map(
+          this.inputs.map((input) => [input.name, input])
         )
-        // Inputs defined by the node definition.
-        const definedInputNames = new Set(
-          this.inputs.map((input) => input.name)
-        )
-        const definedInputs = this.inputs.map((input) => {
-          const inputData = inputByName.get(input.name)
-          return inputData
+        // Preserve the serialised input order: a link's `target_slot` is an
+        // index into it, and a dynamically-added input (e.g. a DynamicCombo
+        // option's revealed socket) can sit at a different index in a
+        // freshly-constructed node than it did when the workflow was saved.
+        const mergedInputs = (data.inputs ?? []).map((inputData) => {
+          const input = freshInputByName.get(inputData.name)
+          return input
             ? {
                 ...inputData,
                 // Whether the input has associated widget follows the
                 // original node definition.
                 ...pick(input, RESERVED_KEYS.concat('widget'))
               }
-            : input
+            : inputData
         })
-        // Extra inputs that potentially dynamically added by custom js logic.
-        const extraInputs = data.inputs?.filter(
-          (input) => !definedInputNames.has(input.name)
+        // Inputs defined by the node but missing from the serialised data,
+        // potentially added dynamically by custom js logic.
+        const serialisedNames = new Set(mergedInputs.map((input) => input.name))
+        const newInputs = this.inputs.filter(
+          (input) => !serialisedNames.has(input.name)
         )
-        data.inputs = [...definedInputs, ...(extraInputs ?? [])]
+        data.inputs = [...mergedInputs, ...newInputs]
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
