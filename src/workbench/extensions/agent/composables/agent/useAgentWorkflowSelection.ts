@@ -44,7 +44,8 @@ export function useAgentWorkflowSelection({
     cloudIdFor,
     cloudWorkflowName,
     nextSaveFilename,
-    boundOrOpenWorkflowFor
+    boundOrOpenWorkflowFor,
+    storedWorkflowFor
   } = resolver
   const editableWorkflowId = computed(() =>
     selectedTarget.value ? cloudIdFor(selectedTarget.value) : undefined
@@ -204,6 +205,11 @@ export function useAgentWorkflowSelection({
     await refreshCloudWorkflowIds()
     if (!isCurrent()) return
     let target = boundOrOpenWorkflowFor(workflowId)
+    if (target === null) {
+      await workflowStore.syncWorkflows()
+      if (!isCurrent()) return
+      target = storedWorkflowFor(workflowId)
+    }
     let recovered = false
     if (target === null) {
       try {
@@ -215,7 +221,7 @@ export function useAgentWorkflowSelection({
     }
     if (!isCurrent()) {
       if (recovered && target !== null)
-        await workflowStore.closeWorkflow(target)
+        await workflowService.closeWorkflow(target, { warnIfUnsaved: false })
       return
     }
     if (target === null) {
@@ -226,18 +232,25 @@ export function useAgentWorkflowSelection({
     try {
       const opened = await workflowService.openWorkflow(target)
       if (!isCurrent()) {
-        if (recovered) await workflowStore.closeWorkflow(target)
+        if (recovered)
+          await workflowService.closeWorkflow(target, {
+            warnIfUnsaved: false
+          })
         return
       }
       if (!opened) {
-        if (recovered) await workflowStore.closeWorkflow(target)
+        if (recovered)
+          await workflowService.closeWorkflow(target, {
+            warnIfUnsaved: false
+          })
         panelStore.setWorkflowTarget(null)
         warnWorkflowUnavailable()
         return
       }
       commitWorkflowTarget(target, workflowId)
     } catch {
-      if (recovered) await workflowStore.closeWorkflow(target)
+      if (recovered)
+        await workflowService.closeWorkflow(target, { warnIfUnsaved: false })
       if (!isCurrent()) return
       warnWorkflowUnavailable()
     }
