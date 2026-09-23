@@ -228,28 +228,30 @@ function dependenciesAreFresh(dependencies: Map<string, number>): boolean {
   return true
 }
 
+function resolveExistingLocalModule(specifier: string, importer: string) {
+  const cached = resolveLocalModule(specifier, importer)
+  if (cached) {
+    const stat = statSync(cached, { throwIfNoEntry: false })
+    if (stat) return { resolved: cached, mtimeMs: stat.mtimeMs }
+    piniaModules.delete(cached)
+  }
+
+  resolutionCache.clear()
+  const resolved = resolveLocalModule(specifier, importer)
+  if (!resolved) return
+  const stat = statSync(resolved, { throwIfNoEntry: false })
+  if (stat) return { resolved, mtimeMs: stat.mtimeMs }
+}
+
 function isPiniaModule(
   specifier: string,
   importer: string,
   parentDependencies?: Map<string, number>
 ): boolean {
   if (PINIA_MODULES.has(specifier)) return true
-  let resolved = resolveLocalModule(specifier, importer)
-  if (!resolved) {
-    resolutionCache.clear()
-    resolved = resolveLocalModule(specifier, importer)
-  }
-  if (!resolved) return false
-  let stat = statSync(resolved, { throwIfNoEntry: false })
-  if (!stat) {
-    piniaModules.delete(resolved)
-    resolutionCache.clear()
-    resolved = resolveLocalModule(specifier, importer)
-    if (!resolved) return false
-    stat = statSync(resolved, { throwIfNoEntry: false })
-    if (!stat) return false
-  }
-  const { mtimeMs } = stat
+  const module = resolveExistingLocalModule(specifier, importer)
+  if (!module) return false
+  const { resolved, mtimeMs } = module
   parentDependencies?.set(resolved, mtimeMs)
   const cached = piniaModules.get(resolved)
   if (
