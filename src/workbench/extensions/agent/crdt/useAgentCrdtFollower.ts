@@ -486,8 +486,17 @@ function startAgentCrdtFollower(
       actor: detail.actor ?? 'agent-reset',
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
+    // The reset's projection reconcile can throw out of an extension's
+    // `onRemoved()` hook. Nothing below may be skipped because of it: the
+    // sent human batches must settle, the follower must drop to
+    // disconnected, and the doc bookkeeping must start over - otherwise the
+    // next frame is judged against ids from the doc that no longer exists.
     try {
       projection.clearForReset(detail.workflowId, context)
+    } catch (error) {
+      reportError(error, {
+        errorType: 'failure_clearing_agent_crdt_projection_on_reset'
+      })
     } finally {
       sender.abortAll()
     }
