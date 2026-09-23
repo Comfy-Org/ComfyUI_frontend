@@ -57,7 +57,6 @@
     "copy": "複製",
     "copyMarkdown": "複製為 Markdown",
     "copyUnavailable": "此版本僅能複製目前的對話",
-    "credits": "點數",
     "currentTab": "目前分頁",
     "delete": "刪除",
     "diagnosticReport": {
@@ -151,7 +150,6 @@
     "runNoticeExpanded": "代理程式可以修改您的工作流程。請先確認「執行」權限，再允許其執行。",
     "runPermissions": "執行權限",
     "runPermissionsDescription": "選擇代理何時需要您的同意",
-    "saveChanges": "儲存變更",
     "savingWorkflow": "正在儲存工作流程",
     "searchWorkflows": "搜尋工作流程",
     "selectWorkflowForAgent": "選擇供代理處理的工作流程",

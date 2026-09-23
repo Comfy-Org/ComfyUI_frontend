@@ -57,7 +57,6 @@
     "copy": "복사",
     "copyMarkdown": "markdown으로 복사",
     "copyUnavailable": "이 버전에서는 현재 대화만 복사할 수 있습니다",
-    "credits": "크레딧",
     "currentTab": "현재 탭",
     "delete": "삭제",
     "diagnosticReport": {
@@ -151,7 +150,6 @@
     "runNoticeExpanded": "에이전트가 워크플로를 수정할 수 있습니다. 실행을 허용하기 전에 실행 권한을 확인하세요.",
     "runPermissions": "실행 권한",
     "runPermissionsDescription": "에이전트에 동의가 필요한 시점 선택",
-    "saveChanges": "변경 사항 저장",
     "savingWorkflow": "워크플로 저장 중",
     "searchWorkflows": "워크플로 검색",
     "selectWorkflowForAgent": "에이전트가 작업할 워크플로 선택",

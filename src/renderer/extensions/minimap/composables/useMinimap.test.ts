@@ -96,6 +96,7 @@ let rafCallbackId = 0
 vi.mock('@vueuse/core', () => {
   return {
     useDocumentVisibility: vi.fn(() => ref('visible')),
+    usePreferredReducedMotion: vi.fn(() => ref('no-preference')),
     useRafFn: vi.fn((callback, options) => {
       const id = rafCallbackId++
       rafCallbacks[id] = callback
@@ -241,7 +242,10 @@ vi.mock('@/platform/settings/settingStore', () => ({
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   useColorPaletteStore: vi.fn(() => ({
     completedActivePalette: {
-      light_theme: false
+      light_theme: false,
+      colors: {
+        litegraph_base: { NODE_SELECTED_TITLE_COLOR: '#fff' }
+      }
     }
   }))
 }))

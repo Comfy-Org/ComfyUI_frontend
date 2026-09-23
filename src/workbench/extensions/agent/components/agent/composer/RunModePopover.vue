@@ -1,80 +1,54 @@
 <script setup lang="ts">
 import {
-  PopoverContent,
-  PopoverPortal,
-  PopoverRoot,
-  PopoverTrigger,
-  RadioGroupItem,
-  RadioGroupRoot
+  DropdownMenuContent,
+  DropdownMenuPortal,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuRoot,
+  DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, ref } from 'vue'
+import { computed, ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
+
+import { cn } from '@comfyorg/tailwind-utils'
 
 import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type { AgentRunModeValue } from '../../../stores/agent/agentRunModeStore'
-import {
-  DEFAULT_CREDIT_LIMIT,
-  useAgentRunModeStore
-} from '../../../stores/agent/agentRunModeStore'
-import { cn } from '@comfyorg/tailwind-utils'
+import { useAgentRunModeStore } from '../../../stores/agent/agentRunModeStore'
 
 const { t } = useI18n()
 const store = useAgentRunModeStore()
 const toast = useToastStore()
 
 const open = ref(false)
-const saving = ref(false)
-const draftMode = ref<AgentRunModeValue>(store.mode)
-const draftLimit = ref(store.creditLimit ?? DEFAULT_CREDIT_LIMIT)
+const savingMode = ref<AgentRunModeValue | null>(null)
+const descriptionId = useId()
+let openCount = 0
 
 function onOpenChange(next: boolean): void {
   open.value = next
-  if (next) {
-    draftMode.value = store.mode
-    draftLimit.value = store.creditLimit ?? DEFAULT_CREDIT_LIMIT
-  }
+  if (next) openCount += 1
 }
 
-async function saveChanges(): Promise<void> {
-  saving.value = true
+async function onSelectMode(value: string): Promise<void> {
+  const match = options.find((option) => option.mode === value)
+  if (!match || savingMode.value !== null) return
+
+  const openedAs = openCount
+  savingMode.value = match.mode
   try {
-    await store.save(
-      draftMode.value,
-      draftMode.value === 'auto_limited' ? draftLimit.value : null
-    )
-    open.value = false
+    await store.save(match.mode, null)
+    if (openedAs === openCount) open.value = false
   } catch (error) {
     reportError(error, { errorType: 'agent_run_mode_save_failure' })
     toast.add({ severity: 'error', detail: t('agent.runModeSaveFailed') })
   } finally {
-    saving.value = false
+    savingMode.value = null
   }
 }
-
-function onDraftMode(value: string | undefined): void {
-  const match = options.find((option) => option.mode === value)
-  if (match) draftMode.value = match.mode
-}
-
-const dirty = computed(
-  () =>
-    draftMode.value !== store.mode ||
-    (draftMode.value === 'auto_limited' &&
-      draftLimit.value !== store.creditLimit)
-)
-
-const limitValid = computed(() => {
-  if (draftMode.value !== 'auto_limited') return true
-  const limit = draftLimit.value
-  return limit !== null && Number.isInteger(limit) && limit > 0
-})
-
-const saveable = computed(
-  () => dirty.value && limitValid.value && !saving.value
-)
 
 const TRIGGER_LABEL_KEYS: Record<AgentRunModeValue, string> = {
   ask_approval: 'agent.runModeTriggerAsk',
@@ -114,8 +88,8 @@ const options: {
 </script>
 
 <template>
-  <PopoverRoot :open @update:open="onOpenChange">
-    <PopoverTrigger
+  <DropdownMenuRoot :open :modal="false" @update:open="onOpenChange">
+    <DropdownMenuTrigger
       v-tooltip.top="buildAgentTooltipConfig(triggerTooltip)"
       :class="
         cn(
@@ -129,42 +103,54 @@ const options: {
         data-testid="run-mode-chevron"
         class="icon-[lucide--chevron-down] size-4"
       />
-    </PopoverTrigger>
-    <PopoverPortal>
-      <PopoverContent
+    </DropdownMenuTrigger>
+    <DropdownMenuPortal>
+      <DropdownMenuContent
         side="top"
         align="end"
         :side-offset="8"
-        class="agent-scope border-agent-border bg-agent-surface-raised z-1100 flex w-80 flex-col gap-2.5 rounded-[10px] border p-2.5 shadow-lg"
+        :aria-describedby="descriptionId"
+        class="agent-scope border-agent-border bg-agent-surface-raised z-1100 flex w-80 flex-col gap-2.5 rounded-[10px] border p-2.5 shadow-lg outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
       >
         <div class="flex flex-col gap-0.5">
-          <div class="text-agent-fg text-sm/5 font-medium">
+          <div aria-hidden="true" class="text-agent-fg text-sm/5 font-medium">
             {{ t('agent.runPermissions') }}
           </div>
-          <div class="text-agent-fg-muted text-xs/4">
+          <div
+            :id="descriptionId"
+            aria-hidden="true"
+            class="text-agent-fg-muted text-xs/4"
+          >
             {{ t('agent.runPermissionsDescription') }}
           </div>
         </div>
 
-        <RadioGroupRoot
-          :model-value="draftMode"
+        <DropdownMenuRadioGroup
+          :model-value="store.mode"
           :aria-label="t('agent.runPermissions')"
           class="flex flex-col gap-1"
-          @update:model-value="onDraftMode"
+          @update:model-value="onSelectMode"
         >
-          <div
+          <DropdownMenuRadioItem
             v-for="option in options"
             :key="option.mode"
-            :class="
-              cn(
-                'rounded-[10px]',
-                draftMode === option.mode && 'bg-charcoal-500'
-              )
-            "
+            :value="option.mode"
+            :disabled="savingMode !== null"
+            :aria-busy="savingMode === option.mode || undefined"
+            as-child
+            @select.prevent
           >
-            <RadioGroupItem
-              :value="option.mode"
-              class="hover:bg-agent-surface-hover flex w-full cursor-pointer items-start gap-3 rounded-[10px] px-2.5 py-2 text-left"
+            <button
+              type="button"
+              :class="
+                cn(
+                  'hover:bg-agent-surface-hover flex w-full cursor-pointer items-start gap-3 rounded-[10px] px-2.5 py-2 text-left whitespace-normal data-disabled:pointer-events-none',
+                  store.mode === option.mode && 'bg-charcoal-500',
+                  savingMode !== null &&
+                    savingMode !== option.mode &&
+                    'opacity-50'
+                )
+              "
             >
               <span
                 :class="
@@ -180,44 +166,24 @@ const options: {
                 </span>
               </span>
               <span
+                aria-hidden="true"
                 :class="
                   cn(
                     'mt-0.5 size-4 shrink-0',
-                    draftMode === option.mode &&
-                      'text-agent-fg icon-[lucide--check]'
+                    savingMode === option.mode
+                      ? 'text-agent-fg-muted icon-[lucide--loader-circle] motion-safe:animate-spin'
+                      : store.mode === option.mode &&
+                          'text-agent-fg icon-[lucide--check]'
                   )
                 "
               />
-            </RadioGroupItem>
-            <div
-              v-if="
-                option.mode === 'auto_limited' && draftMode === 'auto_limited'
-              "
-              class="flex items-center gap-3 px-9.5 pb-2.5"
-            >
-              <input
-                v-model.number="draftLimit"
-                type="number"
-                min="1"
-                :aria-label="t('agent.credits')"
-                class="border-agent-border text-agent-fg focus:border-agent-fg-muted h-8 min-w-0 flex-1 rounded-[10px] border bg-transparent px-2.5 text-sm/5 outline-none"
-              />
-              <span class="text-agent-fg-muted text-xs/4">
-                {{ t('agent.credits') }}
-              </span>
-            </div>
-          </div>
-        </RadioGroupRoot>
-
-        <button
-          type="button"
-          :disabled="!saveable"
-          class="bg-agent-fg text-agent-surface hover:bg-agent-fg/90 h-8 w-full cursor-pointer rounded-[10px] text-sm/5 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50"
-          @click="saveChanges"
-        >
-          {{ t('agent.saveChanges') }}
-        </button>
-      </PopoverContent>
-    </PopoverPortal>
-  </PopoverRoot>
+            </button>
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+      <span v-if="open" role="status" class="sr-only">
+        {{ savingMode === null ? '' : t('g.saving') }}
+      </span>
+    </DropdownMenuPortal>
+  </DropdownMenuRoot>
 </template>

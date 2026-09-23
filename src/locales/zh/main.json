@@ -57,7 +57,6 @@
     "copy": "复制",
     "copyMarkdown": "复制为 Markdown",
     "copyUnavailable": "此版本只能复制当前对话",
-    "credits": "积分",
     "currentTab": "当前标签页",
     "delete": "删除",
     "diagnosticReport": {
@@ -151,7 +150,6 @@
     "runNoticeExpanded": "代理可以修改您的工作流。允许其执行前，请检查运行权限。",
     "runPermissions": "运行权限",
     "runPermissionsDescription": "选择代理何时需要您的同意",
-    "saveChanges": "保存更改",
     "savingWorkflow": "正在保存工作流",
     "searchWorkflows": "搜索工作流",
     "selectWorkflowForAgent": "选择一个供 Agent 使用的工作流",

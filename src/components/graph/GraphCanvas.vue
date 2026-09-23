@@ -202,7 +202,10 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 import { IS_CONTROL_WIDGET, updateControlWidgetLabel } from '@/scripts/widgets'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useNewUserService } from '@/services/useNewUserService'
-import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
+import {
+  collapseOutsideSelectionOnPrimaryPointerDown,
+  shouldIgnoreCopyPaste
+} from '@/workbench/eventHelpers'
 import { storeToRefs } from 'pinia'
 
 import { useBootstrapStore } from '@/stores/bootstrapStore'
@@ -298,6 +301,14 @@ function exitToLegacyRendering(graph: LGraph | null) {
 watch(
   [shouldRenderVueNodes, () => canvasStore.currentGraph],
   ([enabled, graph], previous) => {
+    if (previous && previous[0] !== enabled && graph) {
+      forEachNode(graph.rootGraph, (node) => {
+        for (const widget of node.widgets ?? []) {
+          widget.syncLiveDisabled?.()
+        }
+      })
+    }
+
     if (enabled) {
       layoutStore.clearViewGeometry()
     } else if (previous?.[0]) {
@@ -617,7 +628,16 @@ onUnmounted(() => {
   cleanupErrorHooks?.()
   cleanupErrorHooks = null
 })
+
+useEventListener(
+  canvasRef,
+  'pointerdown',
+  collapseOutsideSelectionOnPrimaryPointerDown,
+  { capture: true }
+)
+
 function forwardPointerDownPanEvent(e: PointerEvent) {
+  collapseOutsideSelectionOnPrimaryPointerDown(e)
   forwardPanEvent(e, isMiddlePointerInput)
 }
 

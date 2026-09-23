@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "يحرر أو يدمج ما يصل إلى 5 صور مرجعية استنادًا إلى مطالبة نصية باستخدام نموذج Hunyuan Image من Tencent.",
+    "display_name": "Tencent HY Image: تحرير",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_watermark": {
+        "name": "العلامة المائية"
+      },
+      "model_width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "ينشئ صورًا من مطالبة نصية باستخدام نموذج Hunyuan Image من Tencent.",
+    "display_name": "Tencent HY Image: نص إلى صورة",
+    "inputs": {
+      "control_after_generate": {
+        "name": "التحكم بعد التوليد"
+      },
+      "model": {
+        "name": "النموذج",
+        "tooltip": "النموذج المراد استخدامه."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "الارتفاع"
+      },
+      "model_prompt": {
+        "name": "المطالبة"
+      },
+      "model_resolution": {
+        "name": "الدقة"
+      },
+      "model_seed": {
+        "name": "البذرة"
+      },
+      "model_watermark": {
+        "name": "العلامة المائية"
+      },
+      "model_width": {
+        "name": "العرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "Hunyuan صورة إلى فيديو",
     "inputs": {

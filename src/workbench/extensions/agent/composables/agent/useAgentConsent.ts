@@ -18,6 +18,12 @@ const AgentConsentCard = defineAsyncComponent(
     import('@/workbench/extensions/agent/components/agent/AgentConsentCard.vue')
 )
 
+export interface ConsentOfferHooks {
+  onShown?: () => void
+  /** Asked right before the card mounts, after every await that precedes it. */
+  canShow?: () => boolean
+}
+
 export function useAgentConsent() {
   const dialogStore = useDialogStore()
   const dialogService = useDialogService()
@@ -30,9 +36,13 @@ export function useAgentConsent() {
   function showConsentDialog(
     persistOnAccept = true,
     expectedIdentity?: string,
-    onShown?: () => void
+    { onShown, canShow }: ConsentOfferHooks = {}
   ): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
+      if (canShow && !canShow()) {
+        resolve(false)
+        return
+      }
       let settled = false
       let saving = false
 
@@ -123,9 +133,9 @@ export function useAgentConsent() {
   }
 
   async function acceptAfterSignIn(
-    onShown?: () => void
+    hooks: ConsentOfferHooks
   ): Promise<string | null> {
-    if (!(await showConsentDialog(false, undefined, onShown))) return null
+    if (!(await showConsentDialog(false, undefined, hooks))) return null
     try {
       if (!(await dialogService.showSignInDialog())) return null
     } catch (error) {
@@ -159,7 +169,7 @@ export function useAgentConsent() {
   }
 
   async function requestConsentForCurrentUser(
-    onShown?: () => void
+    hooks: ConsentOfferHooks
   ): Promise<string | null> {
     let decisionIdentity: string | null
     try {
@@ -181,7 +191,7 @@ export function useAgentConsent() {
     if (identity.value !== decisionIdentity) return null
     if (
       !accepted.value &&
-      !(await showConsentDialog(true, decisionIdentity, onShown))
+      !(await showConsentDialog(true, decisionIdentity, hooks))
     )
       return null
     return decisionIdentity
@@ -189,11 +199,11 @@ export function useAgentConsent() {
 
   async function withConsent(
     onAccept: () => void,
-    onShown?: () => void
+    hooks: ConsentOfferHooks = {}
   ): Promise<void> {
     const decisionIdentity = isLoggedIn.value
-      ? await requestConsentForCurrentUser(onShown)
-      : await acceptAfterSignIn(onShown)
+      ? await requestConsentForCurrentUser(hooks)
+      : await acceptAfterSignIn(hooks)
     if (
       !decisionIdentity ||
       identity.value !== decisionIdentity ||

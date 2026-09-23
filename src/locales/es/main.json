@@ -57,7 +57,6 @@
     "copy": "Copiar",
     "copyMarkdown": "Copiar como markdown",
     "copyUnavailable": "Solo se puede copiar la conversación actual en esta versión",
-    "credits": "créditos",
     "currentTab": "Pestaña actual",
     "delete": "Eliminar",
     "diagnosticReport": {
@@ -151,7 +150,6 @@
     "runNoticeExpanded": "El agente puede modificar tu flujo de trabajo. Comprueba los permisos de ejecución antes de permitir que lo ejecute.",
     "runPermissions": "Permisos de ejecución",
     "runPermissionsDescription": "Elige cuándo el agente necesita tu consentimiento",
-    "saveChanges": "Guardar cambios",
     "savingWorkflow": "Guardando el flujo de trabajo",
     "searchWorkflows": "Buscar flujos de trabajo",
     "selectWorkflowForAgent": "Selecciona un flujo de trabajo para que el agente trabaje en él",

@@ -4061,6 +4061,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   copyToClipboard(items?: Iterable<Positionable>): string {
     const serializedData = JSON.stringify(this._serializeItems(items))
     localStorage.setItem('litegrapheditor_clipboard', serializedData)
+    localStorage.setItem('litegrapheditor_clipboard_id', createUuidv4())
     return serializedData
   }
 

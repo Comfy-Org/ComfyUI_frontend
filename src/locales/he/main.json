@@ -57,7 +57,6 @@
     "copy": "העתק",
     "copyMarkdown": "העתק כ-Markdown",
     "copyUnavailable": "בגרסה זו ניתן להעתיק רק את השיחה הנוכחית",
-    "credits": "זיכויים",
     "currentTab": "הלשונית הנוכחית",
     "delete": "מחק",
     "diagnosticReport": {
@@ -151,7 +150,6 @@
     "runNoticeExpanded": "הסוכן יכול לשנות את תהליך העבודה שלך. בדוק את הרשאות ההפעלה לפני שתאפשר לו לבצע אותו.",
     "runPermissions": "הרשאות הפעלה",
     "runPermissionsDescription": "בחר מתי הסוכן זקוק להסכמתך",
-    "saveChanges": "שמור שינויים",
     "savingWorkflow": "שומר את תהליך העבודה",
     "searchWorkflows": "חפש תהליכי עבודה",
     "selectWorkflowForAgent": "בחר תהליך עבודה שבו הסוכן יעבוד",

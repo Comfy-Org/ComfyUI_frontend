@@ -25,6 +25,10 @@ import type {
   SerialisableLLink,
   SerialisableReroute
 } from '@/lib/litegraph/src/types/serialisation'
+import {
+  isRootGraphDocBound,
+  registerDocBoundRootGraphProbe
+} from '@/lib/litegraph/src/docBoundGraphs'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useEntityIdStore } from '@/stores/entityIdStore'
@@ -482,6 +486,78 @@ describe('LGraph', () => {
     const yPos2 = node.getInputPos(0)[1]
     expect(reroute.pos[1]).toBe(yPos2)
     expect(emptySubgraph.inputNode.emptySlot.pos[1]).toBe(yPos2)
+  })
+})
+
+describe('node id minting for a graph that shares its id space', () => {
+  /** Stands in for the agent panel's probe (`mintPortWiring.ts`). */
+  function bindRootGraph(rootGraphId: string): () => void {
+    return registerDocBoundRootGraphProbe(() => rootGraphId)
+  }
+
+  it('mints a plain sequential id when no collaborator shares the root graph', () => {
+    const graph = new LGraph()
+    const node = new DummyNode()
+
+    graph.add(node)
+
+    expect(node.id).toBe(toNodeId(1))
+  })
+
+  it('mints a disjoint id, never advancing lastNodeId, while the root graph is doc-bound', () => {
+    const graph = new LGraph()
+    const unbind = bindRootGraph(graph.id)
+
+    const node = new DummyNode()
+    graph.add(node)
+    unbind()
+
+    const mintedId = BigInt(node.id)
+    expect((mintedId >> 40n) & 1n).toBe(0n)
+    expect((mintedId >> 41n) & 1n).toBe(1n)
+    expect(graph.state.lastNodeId).toBe(0)
+  })
+
+  it('returns to sequential mints once the graph is no longer doc-bound', () => {
+    const graph = new LGraph()
+    const unbind = bindRootGraph(graph.id)
+    graph.add(new DummyNode())
+    unbind()
+
+    const node = new DummyNode()
+    graph.add(node)
+
+    expect(node.id).toBe(toNodeId(1))
+  })
+
+  it('leaves a subgraph-interior mint sequential even when its root graph is doc-bound', () => {
+    const subgraph = createTestSubgraph()
+    const unbind = bindRootGraph(subgraph.rootGraph.id)
+
+    const node = new DummyNode()
+    subgraph.add(node)
+    unbind()
+
+    expect(node.id).toBe(toNodeId(1))
+  })
+
+  it('tracks two probes independently: registering a second does not replace the first, and disposing one leaves the other answering', () => {
+    const graphA = new LGraph()
+    const graphB = new LGraph()
+    const unbindA = bindRootGraph(graphA.id)
+    const unbindB = bindRootGraph(graphB.id)
+
+    expect(isRootGraphDocBound(graphA.id)).toBe(true)
+    expect(isRootGraphDocBound(graphB.id)).toBe(true)
+
+    unbindA()
+
+    expect(isRootGraphDocBound(graphA.id)).toBe(false)
+    expect(isRootGraphDocBound(graphB.id)).toBe(true)
+
+    unbindB()
+
+    expect(isRootGraphDocBound(graphB.id)).toBe(false)
   })
 })
 
@@ -1945,6 +2021,41 @@ describe('Subgraph Unpacking', () => {
       serialized.definitions?.subgraphs?.map((definition) => definition.id) ??
       []
     expect(definitionIds).toContain(subgraph.id)
+  })
+
+  it('mints unpacked nodes from the disjoint range when unpacking into a doc-bound root', () => {
+    const rootGraph = new LGraph()
+    const unbindRootGraph = registerDocBoundRootGraphProbe(() => rootGraph.id)
+    try {
+      const subgraph = createSubgraphOnGraph(rootGraph)
+      const interiorNode = new TestNode('interior')
+      subgraph.add(interiorNode)
+
+      const subgraphNode = createTestSubgraphNode(subgraph, {
+        pos: [100, 100]
+      })
+      rootGraph.add(subgraphNode)
+
+      const lastNodeIdBefore = rootGraph.state.lastNodeId
+      const didUnpack = rootGraph.unpackSubgraph(subgraphNode)
+      expect(didUnpack).toBe(true)
+
+      const unpacked = rootGraph.nodes.find(
+        (node) => node.title === 'interior'
+      )!
+      const mintedId = BigInt(unpacked.id)
+
+      // `unpackSubgraph` leaves the interior node's id unassigned and
+      // delegates minting to `graph.add`, which selects 'crdt-disjoint' mode
+      // for a doc-bound root — so the id it assigns must land in the
+      // disjoint range, not the agent's own reserved range.
+      expect((mintedId >> 40n) & 1n).toBe(0n)
+      expect((mintedId >> 41n) & 1n).toBe(1n)
+      // 'crdt-disjoint' mode never touches the plain sequential counter.
+      expect(rootGraph.state.lastNodeId).toBe(lastNodeIdBefore)
+    } finally {
+      unbindRootGraph()
+    }
   })
 })
 

@@ -3,6 +3,7 @@ import type { Page } from '@playwright/test'
 import type { GlobalSetting, ListAssetsResponse } from '@comfyorg/ingest-types'
 
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
@@ -27,8 +28,8 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
 interface BootAgentAppOptions {
   /** Extra `/api/settings` entries layered over the panel defaults. */
   settings?: Record<string, unknown>
-  /** Node definitions to expose instead of the empty boot catalog. */
-  objectInfo?: 'server' | Record<string, unknown>
+  /** Server definitions, optionally augmented with deterministic test entries. */
+  objectInfo?: 'server' | Record<string, ComfyNodeDef>
   /** Preserve existing tests by default; onboarding specs opt into the tour. */
   onboardingCompleted?: boolean
   /**
@@ -55,14 +56,9 @@ async function mockAgentBoot(
       'Comfy.TutorialCompleted': true,
       'Comfy.RightSidePanel.ShowErrorsTab': false,
       ...settings
-    }
+    },
+    objectInfo
   })
-  if (objectInfo && objectInfo !== 'server') {
-    await page.unroute('**/api/object_info')
-    await page.route('**/api/object_info', (route) =>
-      route.fulfill(jsonRoute(objectInfo))
-    )
-  }
   await mockBilling(page)
   const storedConsent: GlobalSetting = {
     key: AGENT_CONSENT_SETTING_ID,
