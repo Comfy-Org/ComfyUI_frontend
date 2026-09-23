@@ -1,10 +1,14 @@
 // eslint-disable-next-line no-restricted-imports -- the telemetry layer owns the sinks that reportError() fans out to
 import { datadogRum } from '@datadog/browser-rum'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+
 import type {
+  AuthMetadata,
   BillingTelemetryEvent,
-  BootstrapCompleteMetadata,
+  CheckoutJourneyTelemetryEvent,
   ExecutionOutcomeMetadata,
+  FetchTimeoutMetadata,
   ImageLoadFailureMetadata,
   TelemetryProvider,
   UnifiedAuthRefreshMetadata,
@@ -13,10 +17,37 @@ import type {
 import {
   getBillingTelemetryEventName,
   getBillingTelemetryEventPayload,
+  getCheckoutJourneyTelemetryEventName,
+  getCheckoutJourneyTelemetryEventPayload,
   TelemetryEvents
 } from '../../types'
 
 export class DatadogRumTelemetryProvider implements TelemetryProvider {
+  private isWatchingLogout = false
+
+  trackAuth({ user_id, email }: AuthMetadata): void {
+    this.setUser(user_id, email)
+  }
+
+  trackUserLoggedIn(): void {
+    const { resolvedUserInfo, userEmail } = useCurrentUser()
+    this.setUser(resolvedUserInfo.value?.id, userEmail.value)
+  }
+
+  private setUser(userId: string | undefined, email?: string | null): void {
+    if (!userId) return
+
+    datadogRum.setUser({ id: userId, ...(email && { email }) })
+    if (this.isWatchingLogout) return
+
+    this.isWatchingLogout = true
+    useCurrentUser().onUserLogout(() => datadogRum.clearUser())
+  }
+
+  trackFetchTimeout(metadata: FetchTimeoutMetadata): void {
+    datadogRum.addAction(TelemetryEvents.FETCH_TIMEOUT, metadata)
+  }
+
   trackUnifiedAuthRetry(metadata: UnifiedAuthRetryMetadata): void {
     datadogRum.addAction(
       metadata.outcome === 'succeeded'
@@ -39,17 +70,6 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     datadogRum.addAction(TelemetryEvents.IMAGE_LOAD_FAILED, metadata)
   }
 
-  trackBootstrapComplete(metadata: BootstrapCompleteMetadata): void {
-    datadogRum.addAction(TelemetryEvents.BOOTSTRAP_COMPLETE, metadata)
-    if (metadata.outcome === 'timed_out') return
-
-    datadogRum.addDurationVital('bootstrap', {
-      startTime: performance.timeOrigin,
-      duration: metadata.total_ms,
-      context: { outcome: metadata.outcome }
-    })
-  }
-
   trackFeatureFlagEvaluation(key: string, value: unknown): void {
     datadogRum.addFeatureFlagEvaluation(
       key.replace(/[.:+\-=&|><!(){}[\]^"“”~*?\\\s]/g, '_'),
@@ -61,6 +81,13 @@ export class DatadogRumTelemetryProvider implements TelemetryProvider {
     datadogRum.addAction(
       getBillingTelemetryEventName(event),
       getBillingTelemetryEventPayload(event)
+    )
+  }
+
+  trackCheckoutJourneyEvent(event: CheckoutJourneyTelemetryEvent): void {
+    datadogRum.addAction(
+      getCheckoutJourneyTelemetryEventName(event),
+      getCheckoutJourneyTelemetryEventPayload(event)
     )
   }
 

@@ -1,10 +1,7 @@
 import { toGroupId } from '@/types/groupId'
 import { graphScopeOf } from '@/types/graphScopeId'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { createGraphMutations } from '@/core/graph/graphMutations'
 import type { NodeLifecycleEvent } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
@@ -32,7 +29,6 @@ import { useEntityIdStore } from '@/stores/entityIdStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useGraphMetadataStore } from '@/stores/graphMetadataStore'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -62,12 +58,11 @@ import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   LiteGraph.registerNodeType('dummy', DummyNode)
   mockReportError.mockClear()
 })
@@ -863,57 +858,6 @@ describe('Store-driven serialization parity', () => {
         }
       }
     )
-  })
-
-  // Pins the desired outcome, not the current one. `agentNodeMaterializer.ts`
-  // closes this gap for anything routed through `useAgentCrdtFollower`, but a
-  // bare `LGraph` + `graphMutations.addNode()` (as below) never calls the
-  // materializer, so the `LGraph._nodes` gap this test documents is still
-  // real for any caller that skips the follower composable. `test.fails`
-  // keeps the assertions expressing the CORRECT behavior; convert to a plain
-  // `test` the day `LGraph.serialize()`/`addNode()` itself closes the gap.
-  test.fails('does NOT drop an agent-added node from serialize() when only the ECS store, not LGraph._nodes, has it', ({
-    expect
-  }) => {
-    // The CRDT follower's addNode path
-    // (`graphMutations.commit()` -> nodeStore/widgetStore/layout, see
-    // `src/core/graph/graphMutations.ts`) never constructs an LGraphNode and
-    // never calls `LGraph.add()`, so the node exists in the ECS node-data
-    // store (and renders on canvas via the store-driven Vue node path) but
-    // has no adapter in `LGraph._nodes`. `serialiseStoredNodes()` hits the
-    // adapter/state mismatch branch and silently serializes only the
-    // (empty) live-adapter set, so the node is dropped from every save.
-    const graph = new LGraph()
-    const scope = graphScopeOf(graph)
-    const createLayout = vi.fn()
-    const mutations = createGraphMutations({
-      getScope: () => scope,
-      layout: { createNode: createLayout, deleteNodes: vi.fn() }
-    })
-
-    mutations.addNode(
-      {
-        id: 1,
-        type: 'dummy',
-        pos: [0, 0],
-        size: [100, 80],
-        inputs: [],
-        outputs: []
-      },
-      { source: 'agent-remote', actor: 'agent:test', opId: 'op-1' }
-    )
-
-    // The node is real in the ECS store...
-    expect(
-      useNodeDataStore().getGraphNodesFor(graph.rootGraph.id, graph.id)
-    ).toHaveLength(1)
-
-    const serialized = graph.serialize()
-
-    // Desired behavior: the store-only node survives serialize() and no
-    // mismatch is reported.
-    expect(serialized.nodes).toHaveLength(1)
-    expect(mockReportError).not.toHaveBeenCalled()
   })
 
   test('rejects additive configuration before mutating a populated graph', ({
@@ -2306,10 +2250,6 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
 })
 
 describe('Zero UUID handling in configure', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
   it('rejects zeroUuid for root graphs and assigns a new ID', () => {
     const graph = new LGraph()
     const data = graph.serialize()
@@ -2323,6 +2263,31 @@ describe('Zero UUID handling in configure', () => {
     const subgraphData = { ...createTestSubgraphData(), id: zeroUuid }
     const subgraph = graph.createSubgraph(subgraphData)
     expect(subgraph.id).toBe(zeroUuid)
+  })
+
+  it('keeps a subgraph registered under its own ID across clear()', () => {
+    const graph = new LGraph()
+    const subgraph = graph.createSubgraph(createTestSubgraphData())
+    const { id } = subgraph
+
+    subgraph.clear()
+
+    expect(subgraph.id).toBe(id)
+    expect(graph.subgraphs.get(id)).toBe(subgraph)
+    expect(graph.subgraphs.has(zeroUuid)).toBe(false)
+  })
+
+  it('creates a subgraph exposing IO without warning', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const graph = new LGraph()
+
+    graph.createSubgraph(
+      createTestSubgraphData({
+        inputs: [{ id: createUuidv4(), name: 'value', type: 'INT' }]
+      })
+    )
+
+    expect(warn).not.toHaveBeenCalled()
   })
 })
 

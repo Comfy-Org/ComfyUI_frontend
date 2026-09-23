@@ -9,17 +9,17 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 <template>
   <section
-    class="bg-transparency-white-t4 relative z-20 p-4 text-center lg:px-20 lg:py-8"
+    class="relative z-20 bg-transparency-white-t4 p-4 text-center lg:px-20 lg:py-8"
   >
     <p
-      class="text-primary-comfy-canvas relative z-10 text-sm font-semibold lg:text-sm lg:font-normal"
+      class="relative z-10 text-sm font-semibold text-primary-comfy-canvas lg:text-sm lg:font-normal"
     >
       <span class="whitespace-nowrap">
         {{ t('download.cloud.prefix', locale) }}
       </span>
       <a
         :href="externalLinks.cloud"
-        class="text-primary-comfy-yellow mx-1 font-bold tracking-widest whitespace-nowrap uppercase hover:underline"
+        class="mx-1 font-bold tracking-widest whitespace-nowrap text-primary-comfy-yellow uppercase hover:underline"
       >
         {{ t('download.cloud.cta', locale) }}
       </a>

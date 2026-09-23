@@ -3,95 +3,116 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 
+import { createI18n } from 'vue-i18n'
+
+import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
+import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
+import { useDialogStore } from '@/stores/dialogStore'
+
 import CloudRunButtonWrapper from './CloudRunButtonWrapper.vue'
 
 const mockCanRunWorkflows = ref(true)
+const mockIsFreeTier = ref(true)
 const mockIsInitialized = ref(true)
-const mockBillingStatus = ref<string | null>('paid')
+const mockBillingStatus = ref<BillingStatus | null>('paid')
 const mockSubscriptionTier = ref<string | null>(null)
 const state = vi.hoisted(() => ({
-  v1PaymentRecovery: true,
   canManageSubscription: true,
   manageSubscription: vi.fn(),
   fetchStatus: vi.fn(),
   fetchBalance: vi.fn(),
   toastErrorHandler: vi.fn(),
-  showLayoutDialog: vi.fn(),
-  closeDialog: vi.fn(),
-  updateDialog: vi.fn()
+  showLayoutDialog: vi.fn()
 }))
 
-vi.mock('@/composables/billing/useBillingContext', async () => {
-  const { computed } = await import('vue')
-  return {
-    useBillingContext: () => ({
-      canRunWorkflows: mockCanRunWorkflows,
-      showsSubscribeToRunPrompt: computed(
-        () => mockIsInitialized.value && !mockCanRunWorkflows.value
-      ),
-      billingStatus: mockBillingStatus,
-      subscription: computed(() =>
-        mockSubscriptionTier.value ? { tier: mockSubscriptionTier.value } : null
-      ),
-      manageSubscription: state.manageSubscription,
-      fetchStatus: state.fetchStatus,
-      fetchBalance: state.fetchBalance
-    })
-  }
-})
-
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get v1PaymentRecovery() {
-        return state.v1PaymentRecovery
-      }
+vi.mock<unknown>(
+  import('@/composables/billing/useBillingContext'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useBillingContext: () => ({
+        canRunWorkflows: mockCanRunWorkflows,
+        showsSubscribeToRunPrompt: computed(
+          () => mockIsInitialized.value && !mockCanRunWorkflows.value
+        ),
+        billingStatus: mockBillingStatus,
+        isFreeTier: mockIsFreeTier,
+        subscription: computed(() =>
+          mockSubscriptionTier.value
+            ? { tier: mockSubscriptionTier.value }
+            : null
+        ),
+        manageSubscription: state.manageSubscription,
+        fetchStatus: state.fetchStatus,
+        fetchBalance: state.fetchBalance
+      })
     }
-  })
+  }
+)
+
+vi.mock(import('@/platform/distribution/types'), () => ({
+  isCloud: true
 }))
 
-vi.mock('@/composables/useErrorHandling', () => ({
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
+  () => ({
+    useSubscriptionDialog: () => ({ showPricingTable: vi.fn() })
+  })
+)
+
+vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
   useErrorHandling: () => ({ toastErrorHandler: state.toastErrorHandler })
 }))
 
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', async () => {
-  const { computed } = await import('vue')
-  return {
-    useWorkspaceUI: () => ({
-      permissions: computed(() => ({
-        canManageSubscription: state.canManageSubscription
-      }))
-    })
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  async () => {
+    const { computed } = await import('vue')
+    return {
+      useWorkspaceUI: () => ({
+        permissions: computed(() => ({
+          canManageSubscription: state.canManageSubscription
+        }))
+      })
+    }
   }
-})
+)
 
-vi.mock('@/services/dialogService', () => ({
+vi.mock<unknown>(import('@/services/dialogService'), () => ({
   useDialogService: () => ({ showLayoutDialog: state.showLayoutDialog })
 }))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({
-    closeDialog: state.closeDialog,
-    updateDialog: state.updateDialog
+vi.mock<unknown>(
+  import('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'),
+  () => ({
+    default: {
+      name: 'ComfyQueueButton',
+      props: ['paymentRecoveryLock'],
+      emits: ['paymentRecoveryClick'],
+      template:
+        '<div data-testid="queue-group"><div data-testid="batch-count"/><button data-testid="queue-button" @click="$emit(\'paymentRecoveryClick\')">{{ paymentRecoveryLock === \'owner\' ? \'Update payment to run\' : \'Run\' }}</button><div data-testid="queue-dropdown"/></div>'
+    }
   })
-}))
+)
 
-vi.mock('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue', () => ({
-  default: {
-    name: 'ComfyQueueButton',
-    props: ['paymentRecoveryLock'],
-    emits: ['paymentRecoveryClick'],
-    template:
-      '<div data-testid="queue-group"><div data-testid="batch-count"/><button data-testid="queue-button" @click="$emit(\'paymentRecoveryClick\')">{{ paymentRecoveryLock === \'owner\' ? \'Update payment to run\' : \'Run\' }}</button><div data-testid="queue-dropdown"/></div>'
+vi.mock<unknown>(
+  import('@/platform/cloud/subscription/components/SubscribeToRun.vue'),
+  async () => {
+    const { registerSubscribeToRunPrompt } =
+      await import('@/platform/cloud/subscription/composables/useSubscribeCtaPresence')
+    return {
+      default: {
+        name: 'SubscribeToRun',
+        setup: () => registerSubscribeToRunPrompt(),
+        template: '<div data-testid="subscribe-to-run-button" />'
+      }
+    }
   }
-}))
-
-vi.mock('@/platform/cloud/subscription/components/SubscribeToRun.vue', () => ({
-  default: {
-    name: 'SubscribeToRun',
-    template: '<div data-testid="subscribe-to-run-button" />'
-  }
-}))
+)
 
 function renderWrapper() {
   return render(CloudRunButtonWrapper)
@@ -103,8 +124,61 @@ describe('CloudRunButtonWrapper', () => {
     mockIsInitialized.value = true
     mockBillingStatus.value = 'paid'
     mockSubscriptionTier.value = null
-    state.v1PaymentRecovery = true
+    vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
     state.canManageSubscription = true
+    mockIsFreeTier.value = true
+  })
+
+  describe('one subscribe CTA at a time', () => {
+    const CtaSurface = {
+      components: { CloudRunButtonWrapper, TopbarSubscribeButton },
+      template: '<div><TopbarSubscribeButton /><CloudRunButtonWrapper /></div>'
+    }
+
+    function renderCtaSurface() {
+      const i18n = createI18n({
+        legacy: false,
+        locale: 'en',
+        messages: { en: enMessages }
+      })
+      return render(CtaSurface, { global: { plugins: [i18n] } })
+    }
+
+    it('keeps the topbar CTA on a sales-managed plan, where the prompt never mounts', () => {
+      mockCanRunWorkflows.value = false
+      mockSubscriptionTier.value = 'ENTERPRISE'
+
+      renderCtaSurface()
+
+      expect(
+        screen.queryByTestId('subscribe-to-run-button')
+      ).not.toBeInTheDocument()
+      expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
+    })
+
+    it('keeps the topbar CTA under payment recovery, where the prompt never mounts', () => {
+      mockCanRunWorkflows.value = false
+      mockBillingStatus.value = 'paused'
+
+      renderCtaSurface()
+
+      expect(
+        screen.queryByTestId('subscribe-to-run-button')
+      ).not.toBeInTheDocument()
+      expect(screen.getByTestId('topbar-subscribe-button')).toBeInTheDocument()
+    })
+
+    it('yields the topbar CTA only while the prompt is actually mounted', async () => {
+      mockCanRunWorkflows.value = false
+
+      renderCtaSurface()
+      await nextTick()
+
+      expect(screen.getByTestId('subscribe-to-run-button')).toBeInTheDocument()
+      expect(
+        screen.queryByTestId('topbar-subscribe-button')
+      ).not.toBeInTheDocument()
+    })
   })
 
   it('renders the runnable queue button when the subscription is active', () => {
@@ -309,9 +383,10 @@ describe('CloudRunButtonWrapper', () => {
     )
     const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
     expect(dialogOptions.props.canManage).toBe(true)
+    expect(dialogOptions.props.status).toBe('paused')
 
     await dialogOptions.props.onUpdatePayment()
-    expect(state.closeDialog).toHaveBeenCalledWith({
+    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
       key: 'subscription-paused'
     })
     expect(state.manageSubscription).toHaveBeenCalledOnce()
@@ -340,7 +415,7 @@ describe('CloudRunButtonWrapper', () => {
     await dialogOptions.props.onUpdatePayment()
 
     expect(state.toastErrorHandler).toHaveBeenCalledWith(error)
-    expect(state.closeDialog).not.toHaveBeenCalled()
+    expect(vi.mocked(useDialogStore().closeDialog)).not.toHaveBeenCalled()
   })
 
   it('refreshes billing once on focus after returning from the portal', async () => {
@@ -402,7 +477,7 @@ describe('CloudRunButtonWrapper', () => {
 
     resolvePortal()
     await firstRequest
-    expect(state.updateDialog).toHaveBeenLastCalledWith({
+    expect(vi.mocked(useDialogStore().updateDialog)).toHaveBeenLastCalledWith({
       key: 'subscription-paused',
       contentProps: { isUpdatingPayment: false }
     })
@@ -429,9 +504,9 @@ describe('CloudRunButtonWrapper', () => {
 
     resolvePortal()
     await portalRequest
-    expect(state.closeDialog).not.toHaveBeenCalled()
-    expect(state.updateDialog).toHaveBeenCalledTimes(1)
-    expect(state.updateDialog).toHaveBeenCalledWith({
+    expect(vi.mocked(useDialogStore().closeDialog)).not.toHaveBeenCalled()
+    expect(vi.mocked(useDialogStore().updateDialog)).toHaveBeenCalledTimes(1)
+    expect(vi.mocked(useDialogStore().updateDialog)).toHaveBeenCalledWith({
       key: 'subscription-paused',
       contentProps: { isUpdatingPayment: true }
     })
@@ -448,17 +523,69 @@ describe('CloudRunButtonWrapper', () => {
 
     const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
     expect(dialogOptions.props.canManage).toBe(false)
+    expect(dialogOptions.props.status).toBe('paused')
     dialogOptions.props.onClose()
-    expect(state.closeDialog).toHaveBeenCalledWith({
+    expect(vi.mocked(useDialogStore().closeDialog)).toHaveBeenCalledWith({
       key: 'subscription-paused'
     })
     expect(state.manageSubscription).not.toHaveBeenCalled()
   })
 
+  it('opens payment recovery for a payment-failed owner', async () => {
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'payment_failed'
+    renderWrapper()
+
+    expect(screen.getByTestId('queue-button')).toHaveTextContent(
+      'Update payment to run'
+    )
+    expect(
+      screen.queryByTestId('subscribe-to-run-button')
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('queue-button'))
+
+    const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
+    expect(dialogOptions.props.canManage).toBe(true)
+    expect(dialogOptions.props.status).toBe('payment_failed')
+  })
+
+  it('keeps Run locked with owner guidance for a payment-failed member', async () => {
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'payment_failed'
+    state.canManageSubscription = false
+    renderWrapper()
+
+    expect(screen.getByTestId('queue-button')).toHaveTextContent('Run')
+    expect(
+      screen.queryByTestId('subscribe-to-run-button')
+    ).not.toBeInTheDocument()
+
+    await userEvent.click(screen.getByTestId('queue-button'))
+
+    const dialogOptions = state.showLayoutDialog.mock.calls[0][0]
+    expect(dialogOptions.props.canManage).toBe(false)
+    expect(dialogOptions.props.status).toBe('payment_failed')
+  })
+
+  it('does not fall back to Subscribe to Run for payment failure when recovery flag is disabled', () => {
+    mockCanRunWorkflows.value = false
+    mockBillingStatus.value = 'payment_failed'
+    vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = false
+    renderWrapper()
+
+    expect(screen.getByTestId('queue-button')).toHaveTextContent(
+      'Update payment to run'
+    )
+    expect(
+      screen.queryByTestId('subscribe-to-run-button')
+    ).not.toBeInTheDocument()
+  })
+
   it('keeps generic inactive behavior when payment recovery is disabled', () => {
     mockCanRunWorkflows.value = false
     mockBillingStatus.value = 'paused'
-    state.v1PaymentRecovery = false
+    vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = false
     renderWrapper()
 
     expect(screen.getByTestId('subscribe-to-run-button')).toBeInTheDocument()

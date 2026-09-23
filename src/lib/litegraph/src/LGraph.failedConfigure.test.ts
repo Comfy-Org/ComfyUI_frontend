@@ -1,5 +1,3 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it } from 'vitest'
 
 import type {
@@ -65,7 +63,6 @@ class ThrowingNode extends LGraphNode {
 }
 
 beforeEach(() => {
-  setActivePinia(createTestingPinia({ stubActions: false }))
   layoutStore.resetForTests()
   LiteGraph.registerNodeType('test/good', GoodNode)
   LiteGraph.registerNodeType('test/throwing', ThrowingNode)

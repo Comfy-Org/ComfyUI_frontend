@@ -4,7 +4,13 @@ import { render } from '@testing-library/vue'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import { publishSkillPack, SkillPacksApiError } from '../api/skillsApi'
+import { reportError } from '@/platform/telemetry/reportError'
+
+import {
+  listSkillPacks,
+  publishSkillPack,
+  SkillPacksApiError
+} from '../api/skillsApi'
 import { useSkillPacksStore } from '../stores/skillPacksStore'
 import type { SkillPack } from '../types'
 import { useSkillPackForm } from './useSkillPackForm'
@@ -22,6 +28,10 @@ vi.mock('../api/skillsApi', () => ({
   }
 }))
 
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
+
 const i18n = createI18n({
   legacy: false,
   locale: 'en',
@@ -29,19 +39,18 @@ const i18n = createI18n({
   fallbackWarn: false,
   messages: {
     en: {
+      g: { unknownError: 'unknown-error' },
       skillPacks: {
         errors: {
           nameRequired: 'name-required',
           nameTooLong: 'name-too-long',
           nameCharset: 'name-charset',
           nameReserved: 'name-reserved',
+          nameAlreadyExists: 'name-already-exists',
           descriptionRequired: 'description-required',
           descriptionSingleLine: 'description-single-line',
           descriptionTooLong: 'description-too-long',
-          bodyRequired: 'body-required',
-          bodyTooLarge: 'body-too-large',
-          tooManyPacks: 'too-many-packs',
-          totalTooLarge: 'total-too-large'
+          bodyRequired: 'body-required'
         }
       }
     }
@@ -85,6 +94,8 @@ describe('useSkillPackForm', () => {
   beforeEach(() => {
     setActivePinia(createPinia())
     vi.mocked(publishSkillPack).mockReset()
+    vi.mocked(listSkillPacks).mockReset()
+    vi.mocked(reportError).mockReset()
   })
 
   it('seeds the editor from the pack it was given, with no second fetch', () => {
@@ -94,6 +105,7 @@ describe('useSkillPackForm', () => {
     expect(form.name).toBe(pack.name)
     expect(form.description).toBe(pack.description)
     expect(form.body).toBe(pack.body)
+    expect(listSkillPacks).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -125,6 +137,32 @@ describe('useSkillPackForm', () => {
     expect(publishSkillPack).not.toHaveBeenCalled()
   })
 
+  it('rejects Unicode line separators in the trigger description', async () => {
+    const { form, errors, handleSubmit } = mountForm()
+    form.name = 'my-pack'
+    form.description = 'line one\u2028line two'
+    form.body = 'do the thing'
+
+    await handleSubmit()
+
+    expect(errors.description).toBe('description-single-line')
+    expect(publishSkillPack).not.toHaveBeenCalled()
+  })
+
+  it('does not silently replace an existing pack from create mode', async () => {
+    const store = useSkillPacksStore()
+    store.packs = [makePack()]
+    const { form, errors, handleSubmit } = mountForm()
+    form.name = 'my-pack'
+    form.description = 'replacement trigger'
+    form.body = 'replacement body'
+
+    await handleSubmit()
+
+    expect(errors.name).toBe('name-already-exists')
+    expect(publishSkillPack).not.toHaveBeenCalled()
+  })
+
   it('counts the description in code points, not UTF-16 units', async () => {
     const { form, errors, handleSubmit } = mountForm()
     form.name = 'my-pack'
@@ -138,50 +176,26 @@ describe('useSkillPackForm', () => {
     expect(publishSkillPack).toHaveBeenCalledOnce()
   })
 
-  it('rejects a body over the per-pack byte cap before sending a request', async () => {
-    const { form, errors, handleSubmit } = mountForm()
-    form.name = 'my-pack'
+  it('lets the server enforce deployment-configured pack budgets', async () => {
+    const store = useSkillPacksStore()
+    store.packs = Array.from({ length: 5 }, (_, index) =>
+      makePack({ id: `pack-${index}`, name: `pack-${index}` })
+    )
+    const saved = makePack({ id: 'pack-6', name: 'a-sixth-pack' })
+    vi.mocked(publishSkillPack).mockResolvedValue(saved)
+    const { form, budgetError, handleSubmit } = mountForm()
+    form.name = 'a-sixth-pack'
     form.description = 'load me'
     form.body = 'a'.repeat(10 * 1024 + 1)
 
     await handleSubmit()
 
-    expect(errors.body).toBe('body-too-large')
-    expect(publishSkillPack).not.toHaveBeenCalled()
-  })
-
-  it('reports the pack-count budget as a limit state, not a field error', async () => {
-    const store = useSkillPacksStore()
-    store.packs = Array.from({ length: 5 }, (_, index) =>
-      makePack({ id: `pack-${index}`, name: `pack-${index}` })
-    )
-    const { form, errors, budgetError, handleSubmit } = mountForm()
-    form.name = 'a-sixth-pack'
-    form.description = 'load me'
-    form.body = 'do the thing'
-
-    await handleSubmit()
-
-    expect(budgetError.value).toBe('too-many-packs')
-    expect(errors.name).toBe('')
-    expect(publishSkillPack).not.toHaveBeenCalled()
-  })
-
-  it('does not count the pack it replaces against the budgets', async () => {
-    const store = useSkillPacksStore()
-    store.packs = Array.from({ length: 5 }, (_, index) =>
-      makePack({ id: `pack-${index}`, name: `pack-${index}` })
-    )
-    vi.mocked(publishSkillPack).mockResolvedValue(makePack({ name: 'pack-0' }))
-    const { form, budgetError, handleSubmit } = mountForm(
-      makePack({ name: 'pack-0' })
-    )
-    form.body = 'replacement text'
-
-    await handleSubmit()
-
     expect(budgetError.value).toBeNull()
-    expect(publishSkillPack).toHaveBeenCalledOnce()
+    expect(publishSkillPack).toHaveBeenCalledWith({
+      name: 'a-sixth-pack',
+      description: 'load me',
+      body: 'a'.repeat(10 * 1024 + 1)
+    })
   })
 
   it('surfaces a 409 as the limit state, carrying the server message verbatim', async () => {
@@ -229,6 +243,22 @@ describe('useSkillPackForm', () => {
 
     expect(store.routesAvailable).toBe(false)
     expect(visible.value).toBe(false)
+  })
+
+  it('reports an unexpected publish failure and shows a fallback', async () => {
+    const failure = new TypeError('network unavailable')
+    vi.mocked(publishSkillPack).mockRejectedValue(failure)
+    const { form, fieldError, handleSubmit } = mountForm()
+    form.name = 'my-pack'
+    form.description = 'load me'
+    form.body = 'do the thing'
+
+    await handleSubmit()
+
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      errorType: 'error_publishing_agent_skill_pack'
+    })
+    expect(fieldError.value).toBe('unknown-error')
   })
 
   it('publishes the trimmed name and stores the returned pack', async () => {

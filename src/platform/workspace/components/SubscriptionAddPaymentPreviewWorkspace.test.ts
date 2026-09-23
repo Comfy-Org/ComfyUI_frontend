@@ -65,10 +65,7 @@ const i18n = createI18n({
 const globalOptions = {
   plugins: [i18n],
   stubs: {
-    'i18n-t': { template: '<span />' },
-    Button: {
-      template: '<button @click="$emit(\'click\')"><slot /></button>'
-    }
+    'i18n-t': { template: '<span />' }
   }
 }
 
@@ -364,6 +361,87 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
     )
   })
 
+  it('hides the capture-mode payment surface during parked-checkout recovery', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        parkedCheckoutRecovery: true,
+        usePaymentElement: true,
+        // A ready quote, so the selector is absent because recovery hides it
+        // rather than because there is nothing to price.
+        previewData: {
+          ...previewFixture('MONTHLY', 50_000),
+          quote_id: 'quote_parked',
+          quote_version: 1
+        }
+      },
+      global: globalOptions
+    })
+
+    expect(screen.queryByTestId('payment-selector')).toBeNull()
+    expect(
+      screen.queryByRole('button', {
+        name: /subscription\.preview\.(subscribeToPlan|payAndSubscribe)/
+      })
+    ).toBeNull()
+  })
+
+  it('hides the saved-method payment action during parked-checkout recovery', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: {
+        tierKey: 'creator',
+        parkedCheckoutRecovery: true,
+        savedMethods: [
+          {
+            type: 'card',
+            id: 'pm_1',
+            brand: 'visa',
+            last4: '4242',
+            is_default: true
+          }
+        ]
+      },
+      global: globalOptions
+    })
+
+    expect(
+      screen.queryByRole('button', {
+        name: /subscription\.preview\.(subscribeToPlan|payAndSubscribe)/
+      })
+    ).toBeNull()
+  })
+
+  it('hides the standard subscribe action during parked-checkout recovery', () => {
+    render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator', parkedCheckoutRecovery: true },
+      global: globalOptions
+    })
+
+    // Both emit addCreditCard; rendering them together offers the same action twice.
+    expect(
+      screen.queryByRole('button', {
+        name: /subscription\.preview\.(subscribeToPlan|payAndSubscribe)/
+      })
+    ).toBeNull()
+  })
+
+  it('retries the subscribe from the parked-checkout prompt', async () => {
+    const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
+      props: { tierKey: 'creator', parkedCheckoutRecovery: true },
+      global: globalOptions
+    })
+
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'subscription.preview.parkedCheckoutDetail'
+    )
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: 'subscription.preview.completePayment'
+      })
+    )
+    expect(emitted().addCreditCard).toBeTruthy()
+  })
+
   it('reports failed verification without offering to resume it', () => {
     render(SubscriptionAddPaymentPreviewWorkspace, {
       props: {
@@ -406,17 +484,7 @@ describe('SubscriptionAddPaymentPreviewWorkspace', () => {
   it('owns a back action whether or not the payment element is embedded', async () => {
     const { emitted } = render(SubscriptionAddPaymentPreviewWorkspace, {
       props: { tierKey: 'creator' },
-      global: {
-        ...globalOptions,
-        stubs: {
-          ...globalOptions.stubs,
-          Button: {
-            props: ['ariaLabel'],
-            template:
-              '<button :aria-label="ariaLabel" @click="$emit(\'click\')"><slot /></button>'
-          }
-        }
-      }
+      global: globalOptions
     })
 
     await userEvent.click(screen.getByRole('button', { name: 'g.back' }))

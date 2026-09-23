@@ -3,16 +3,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 
-vi.mock('@/services/jobOutputCache', () => ({
+vi.mock(import('@/services/jobOutputCache'), () => ({
   getJobWorkflow: vi.fn()
 }))
-vi.mock('@/platform/assets/utils/assetUrlUtil', () => ({
+vi.mock(import('@/platform/assets/utils/assetUrlUtil'), () => ({
   getAssetUrl: vi.fn()
 }))
-vi.mock('@/scripts/metadata/parser', () => ({
+vi.mock(import('@/scripts/metadata/parser'), () => ({
   getWorkflowDataFromFile: vi.fn()
 }))
-vi.mock('@/platform/assets/schemas/assetMetadataSchema', () => ({
+vi.mock(import('@/platform/assets/schemas/assetMetadataSchema'), () => ({
   getOutputAssetMetadata: vi.fn()
 }))
 

@@ -1,31 +1,18 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h, nextTick } from 'vue'
+import { render, screen } from '@testing-library/vue'
+import { describe, expect, it, vi } from 'vitest'
+import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { BalanceInfo } from '@/composables/billing/types'
+import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 import CreditsPanel from './CreditsPanel.vue'
 
-const billingMocks = vi.hoisted(() => ({
-  balance: { value: null as BalanceInfo | null },
-  manageSubscription: vi.fn()
-}))
-vi.mock('@/composables/billing/useBillingContext', async () => {
-  const { ref } = await import('vue')
-  const balance = ref<BalanceInfo | null>(null)
-  Object.defineProperty(billingMocks, 'balance', { get: () => balance })
-  return {
-    useBillingContext: () => ({
-      balance,
-      manageSubscription: billingMocks.manageSubscription
-    })
-  }
-})
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 const refreshActivity = vi.hoisted(() => vi.fn())
-vi.mock('./UsageLogsTable.vue', async () => {
+vi.mock<unknown>(import('./UsageLogsTable.vue'), async () => {
   const { defineComponent, h } = await import('vue')
   return {
     default: defineComponent({
@@ -37,24 +24,14 @@ vi.mock('./UsageLogsTable.vue', async () => {
   }
 })
 
-vi.mock('@/platform/cloud/subscription/components/CreditsTile.vue', () => ({
-  default: defineComponent({ setup: () => () => h('div') })
-}))
-
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({ trackHelpResourceClicked: vi.fn() })
-}))
-
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({ execute: vi.fn() })
-}))
-
-vi.mock('@/composables/useExternalLink', () => ({
-  useExternalLink: () => ({
-    buildDocsUrl: () => 'https://docs.comfy.org',
-    docsPaths: { partnerNodesPricing: '/partner-nodes' }
+vi.mock(
+  import('@/platform/cloud/subscription/components/CreditsTile.vue'),
+  () => ({
+    default: defineComponent({ setup: () => () => h('div') })
   })
-}))
+)
+
+vi.mock(import('@/platform/telemetry'))
 
 const i18n = createI18n({
   legacy: false,
@@ -84,10 +61,6 @@ function makeBalance(amountMicros: number): BalanceInfo {
 }
 
 describe('CreditsPanel', () => {
-  beforeEach(() => {
-    billingMocks.balance.value = null
-  })
-
   function renderComponent() {
     return render(CreditsPanel, {
       global: { plugins: [i18n], stubs: { Divider: true } }
@@ -95,22 +68,26 @@ describe('CreditsPanel', () => {
   }
 
   it('opens the billing portal for the active billing rail', async () => {
+    const billing = mockBillingContext()
     const user = userEvent.setup()
     renderComponent()
 
     await user.click(screen.getByRole('button', { name: /Invoice History/ }))
 
-    expect(billingMocks.manageSubscription).toHaveBeenCalledOnce()
+    expect(billing.manageSubscription).toHaveBeenCalledOnce()
   })
 
   it('refreshes activity on a balance change but not on first hydration', async () => {
+    const billing = mockBillingContext()
+    const balance = ref<BalanceInfo | null>(null)
+    billing.balance = computed(() => balance.value)
     renderComponent()
 
-    billingMocks.balance.value = makeBalance(5000)
+    balance.value = makeBalance(5000)
     await nextTick()
     expect(refreshActivity).not.toHaveBeenCalled()
 
-    billingMocks.balance.value = makeBalance(9000)
+    balance.value = makeBalance(9000)
     await nextTick()
     expect(refreshActivity).toHaveBeenCalledOnce()
   })

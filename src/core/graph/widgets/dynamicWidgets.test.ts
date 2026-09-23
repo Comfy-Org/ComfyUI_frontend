@@ -1,21 +1,34 @@
-import { setActivePinia } from 'pinia'
-import { createTestingPinia } from '@pinia/testing'
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+import {
+  afterEach,
+  assert,
+  beforeEach,
+  describe,
+  expect,
+  test,
+  vi
+} from 'vitest'
+import { useChainCallback } from '@/composables/functional/useChainCallback'
 import {
   addAutogrow,
   addDynamicCombo
 } from '@/core/graph/widgets/__fixtures__/dynamicInputHelpers'
+import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 
-setActivePinia(createTestingPinia({ stubActions: false }))
-beforeEach(() => setActivePinia(createTestingPinia({ stubActions: false })))
+const originalNamedValuesRestore = LiteGraph.namedValuesRestore
+afterEach(() => {
+  LiteGraph.namedValuesRestore = originalNamedValuesRestore
+})
 type TestAutogrowNode = LGraphNode & {
   comfyDynamic: { autogrow: Record<string, unknown> }
 }
 
-const { addNodeInput } = useLitegraphService()
+let addNodeInput: ReturnType<typeof useLitegraphService>['addNodeInput']
+beforeEach(() => {
+  ;({ addNodeInput } = useLitegraphService())
+})
 
 function nextTick() {
   return new Promise<void>((r) => requestAnimationFrame(() => r()))
@@ -71,6 +84,19 @@ describe('Dynamic Combos', () => {
     expect(node.inputs.length).toBe(4)
     expect(node.inputs[1].name).toBe('0.0.0.0')
     expect(node.inputs[3].name).toBe('2.2.0.0')
+  })
+  test('liveAutogrowGroupOf reports a DynamicCombo key with an all-numeric final segment as belonging to no autogrow group', () => {
+    // `0.0.0.0` is indistinguishable from a genuine autogrow ordinal by
+    // name shape alone (see `nameShapeAutogrowGroupOf`'s documented false
+    // positive) -- `liveAutogrowGroupOf` must not be fooled by it, since
+    // this node has no `comfyDynamic.autogrow` group at all.
+    const node = testNode()
+    addDynamicCombo(node, [['INT'], ['IMAGE']])
+    addDynamicCombo(node, [['INT'], ['IMAGE']])
+    node.widgets[2].value = '1'
+    node.widgets[0].value = '1'
+    expect(node.inputs[1].name).toBe('0.0.0.0')
+    expect(liveAutogrowGroupOf(node, '0.0.0.0')).toBeUndefined()
   })
   test('Shrinking dynamic inputs preserves remaining connections and disconnects removed links', () => {
     const graph = new LGraph()
@@ -173,6 +199,56 @@ describe('Dynamic Combos', () => {
     node.widgets[0].value = '1'
     expect.soft(node.widgets[1].tooltip).toBe('1')
   })
+  test('An edited nested value survives toggling the combo away and back after load (#16006)', () => {
+    LiteGraph.namedValuesRestore = true
+    const node = testNode()
+    node.serialize_widgets = true
+    addDynamicCombo(node, [['INT'], ['INT']])
+
+    node.widgets[0].value = '1'
+    node.widgets[1].value = 0.8
+    const serialized = node.serialize()
+
+    const reloaded = testNode()
+    addDynamicCombo(reloaded, [['INT'], ['INT']])
+    reloaded.configure(serialized)
+    expect(reloaded.widgets[1].value).toBe(0.8)
+
+    reloaded.widgets[1].value = 0.3
+
+    reloaded.widgets[0].value = '0'
+    reloaded.widgets[0].value = '1'
+
+    expect(reloaded.widgets[1].value).toBe(0.3)
+  })
+  test('Same-name children keep separate values across options', () => {
+    const node = testNode()
+    addDynamicCombo(node, [['INT'], ['INT']])
+
+    node.widgets[1].value = 3
+    node.widgets[0].value = '1'
+    expect(node.widgets[1].value).not.toBe(3)
+    node.widgets[1].value = 7
+
+    node.widgets[0].value = '0'
+    expect(node.widgets[1].value).toBe(3)
+    node.widgets[0].value = '1'
+    expect(node.widgets[1].value).toBe(7)
+    node.widgets[0].value = '0'
+    expect(node.widgets[1].value).toBe(3)
+  })
+  test('Nested child keeps its value when its parent option is recreated', () => {
+    const node = testNode()
+    addDynamicCombo(node, [[[[], ['INT']]], ['INT']])
+    node.widgets[1].value = '1'
+    node.widgets[2].value = 7
+
+    node.widgets[0].value = '1'
+    node.widgets[0].value = '0'
+
+    expect(node.widgets[1].value).toBe('1')
+    expect(node.widgets[2].value).toBe(7)
+  })
 })
 describe('Autogrow', () => {
   const inputsSpec = { required: { image: ['IMAGE', {}] } }
@@ -199,6 +275,21 @@ describe('Autogrow', () => {
     expect(node.inputs.length).toBe(3)
     expect(node.inputs[0].name).toBe('0.a')
     expect(node.inputs[2].name).toBe('0.c')
+  })
+  test('liveAutogrowGroupOf recognizes an explicit-names member even though it does not end in a digit', () => {
+    // `0.b` does not end in an ordinal digit, so
+    // `nameShapeAutogrowGroupOf` cannot recognize it (see its documented
+    // false negative) -- `liveAutogrowGroupOf` must, since this node's
+    // `comfyDynamic.autogrow['0']` really does own it.
+    const graph = new LGraph()
+    const node = testNode()
+    graph.add(node)
+    addAutogrow(node, { input: inputsSpec, names: ['a', 'b', 'c'] })
+    connectInput(node, 0, graph)
+    connectInput(node, 1, graph)
+    expect(node.inputs[1].name).toBe('0.b')
+    expect(liveAutogrowGroupOf(node, '0.b')).toBe('0')
+    expect(liveAutogrowGroupOf(node, 'unrelated.b')).toBeUndefined()
   })
   test('Can add autogrow with min input count', () => {
     const node = testNode()
@@ -242,6 +333,165 @@ describe('Autogrow', () => {
     await nextTick()
     expect(node.inputs.length).toBe(5)
   })
+  test(
+    'Disconnecting a just-connected slot still compacts to one spare slot ' +
+      '(PM-1496)',
+    async () => {
+      const graph = new LGraph()
+      const node = testNode()
+      graph.add(node)
+      addAutogrow(node, {
+        min: 0,
+        input: inputsSpec,
+        names: ['image_1', 'image_2', 'image_3', 'image_4']
+      })
+
+      connectInput(node, 0, graph)
+      await nextTick()
+      connectInput(node, 1, graph)
+
+      node.disconnectInput(1)
+      await nextTick()
+      await nextTick()
+
+      expect(node.inputs.map((i) => i.name)).toEqual(['0.image_1', '0.image_2'])
+      expect(node.isInputConnected(0)).toBe(true)
+      expect(node.isInputConnected(1)).toBe(false)
+      expect(node.getInputLink(0)?.target_slot).toBe(0)
+    }
+  )
+  test(
+    'A same-slot swap in progress does not drop a genuine connect on a ' +
+      'different slot of the same node (PM-1496)',
+    async () => {
+      const graph = new LGraph()
+      const node = testNode()
+      graph.add(node)
+      addAutogrow(node, {
+        min: 0,
+        input: inputsSpec,
+        names: ['image_1', 'image_2', 'image_3', 'image_4']
+      })
+
+      connectInput(node, 0, graph)
+      await nextTick()
+
+      const oldLink = node.getInputLink(0)
+      const swapSource = testNode()
+      swapSource.addOutput('out', '*')
+      graph.add(swapSource)
+      node.onConnectInput?.(
+        0,
+        swapSource.outputs[0].type,
+        swapSource.outputs[0],
+        swapSource,
+        0
+      )
+      node.onConnectionsChange?.(
+        LiteGraph.INPUT,
+        0,
+        false,
+        oldLink,
+        node.inputs[0]
+      )
+
+      connectInput(node, 1, graph)
+      await nextTick()
+
+      expect(node.inputs.map((i) => i.name)).toEqual([
+        '0.image_1',
+        '0.image_2',
+        '0.image_3'
+      ])
+    }
+  )
+  test(
+    'A genuine occupied-slot replacement via connectSlots does not drop a ' +
+      'concurrent connect on a different slot (PM-1496)',
+    async () => {
+      const graph = new LGraph()
+      const node = testNode()
+      graph.add(node)
+      addAutogrow(node, {
+        min: 0,
+        input: inputsSpec,
+        names: ['image_1', 'image_2', 'image_3', 'image_4']
+      })
+
+      connectInput(node, 0, graph)
+      await nextTick()
+      expect(node.inputs.map((i) => i.name)).toEqual(['0.image_1', '0.image_2'])
+
+      const oldLink = node.getInputLink(0)
+      assert.exists(oldLink)
+      const oldSource = graph.getNodeById(oldLink.origin_id)
+
+      //connectSlots (LGraphNode.ts) fires slot 0's disconnect (the swap's
+      //tail) and its matching connect synchronously, back to back, while
+      //replacing slot 0's link below. Chaining onto onConnectionsChange -
+      //the same public extension point real custom nodes use - lets a
+      //second, genuine connect land on a different slot in that exact
+      //window, without faking either connection.
+      let sawSwapTail = false
+      node.onConnectionsChange = useChainCallback(
+        node.onConnectionsChange,
+        (contype, slot, iscon) => {
+          if (contype !== LiteGraph.INPUT || slot !== 0 || iscon) return
+          sawSwapTail = true
+          connectInput(node, 1, graph)
+        }
+      )
+
+      const replacement = testNode()
+      replacement.addOutput('out', '*')
+      graph.add(replacement)
+      const newLink = replacement.connect(0, node, 0)
+      assert.exists(newLink)
+
+      expect(sawSwapTail).toBe(true)
+      expect(node.getInputLink(0)).toBe(newLink)
+      expect(oldSource?.isOutputConnected(0)).toBe(false)
+
+      await nextTick()
+      await nextTick()
+
+      expect(node.inputs.map((i) => i.name)).toEqual([
+        '0.image_1',
+        '0.image_2',
+        '0.image_3'
+      ])
+    }
+  )
+  test(
+    'A slot reconnected before its deferred disconnect compaction runs ' +
+      'keeps the new link',
+    async () => {
+      const graph = new LGraph()
+      const node = testNode()
+      graph.add(node)
+      addAutogrow(node, {
+        min: 0,
+        input: inputsSpec,
+        names: ['image_1', 'image_2', 'image_3', 'image_4']
+      })
+
+      connectInput(node, 0, graph)
+      await nextTick()
+
+      connectInput(node, 1, graph)
+      node.disconnectInput(1)
+      const reconnectLink = connectInput(node, 1, graph)
+
+      await nextTick()
+      await nextTick()
+
+      expect(node.getInputLink(1)).toBe(reconnectLink)
+      expect(node.isInputConnected(1)).toBe(true)
+      expect(graph.getLink(reconnectLink.id)).toBe(reconnectLink)
+      const sourceNode = graph.getNodeById(reconnectLink.origin_id)
+      expect(sourceNode?.isOutputConnected(0)).toBe(true)
+    }
+  )
   test('Autogrow compaction never emits a negative input slot', async () => {
     const graph = new LGraph()
     const node = testNode()

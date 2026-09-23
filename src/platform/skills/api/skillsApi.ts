@@ -7,6 +7,7 @@ import { parseErrorResponse } from '@/platform/remote/comfyui/errors'
 import { api } from '@/scripts/api'
 
 import type { SkillPack, SkillPackPublishRequest } from '../types'
+import { MAX_NAME_LENGTH, PACK_NAME_PATTERN } from '../types'
 
 /**
  * A failed skill-pack request. `status` is the whole error contract: 400 means
@@ -74,6 +75,9 @@ export async function publishSkillPack(
 }
 
 export async function deleteSkillPack(name: string): Promise<void> {
+  if (name.length > MAX_NAME_LENGTH || !PACK_NAME_PATTERN.test(name)) {
+    throw new SkillPacksApiError('Invalid skill pack name', 400)
+  }
   const response = await api.fetchApi(
     `/agent/skills/${encodeURIComponent(name)}`,
     { method: 'DELETE' }

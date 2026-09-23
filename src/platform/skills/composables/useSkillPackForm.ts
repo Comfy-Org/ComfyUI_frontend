@@ -3,6 +3,8 @@ import type { MaybeRefOrGetter } from 'vue'
 import { computed, reactive, ref, toValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 import { publishSkillPack, SkillPacksApiError } from '../api/skillsApi'
 import { useSkillPacksStore } from '../stores/skillPacksStore'
 import type { SkillPack } from '../types'
@@ -11,12 +13,8 @@ import {
   codePointLength,
   MAX_DESCRIPTION_CODE_POINTS,
   MAX_NAME_LENGTH,
-  MAX_PACK_BODY_BYTES,
-  MAX_PACK_COUNT,
-  MAX_TOTAL_BYTES,
   PACK_NAME_PATTERN,
   RESERVED_PACK_NAMES,
-  packByteSize,
   utf8ByteLength
 } from '../types'
 
@@ -79,23 +77,6 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
     codePointLength(form.description)
   )
 
-  /**
-   * The user's total after this publish lands: the pack it replaces (if any)
-   * stops counting, because publishing a held name is an update.
-   */
-  const projectedTotalBytes = computed(() => {
-    const name = form.name.trim()
-    const others = store.packs.filter((existing) => existing.name !== name)
-    return (
-      others.reduce((sum, existing) => sum + packByteSize(existing), 0) +
-      packByteSize({ description: form.description, body: form.body })
-    )
-  })
-
-  const projectedPackCount = computed(
-    () => store.packs.length + (isReplacing.value ? 0 : 1)
-  )
-
   function resetForm() {
     const pack = toValue(packRef)
     form.name = pack?.name ?? ''
@@ -117,18 +98,22 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
       errors.name = t('skillPacks.errors.nameRequired')
       return false
     }
-    if (!PACK_NAME_PATTERN.test(name)) {
-      errors.name = t('skillPacks.errors.nameCharset')
-      return false
-    }
     if (name.length > MAX_NAME_LENGTH) {
       errors.name = t('skillPacks.errors.nameTooLong', {
         max: MAX_NAME_LENGTH
       })
       return false
     }
+    if (!PACK_NAME_PATTERN.test(name)) {
+      errors.name = t('skillPacks.errors.nameCharset')
+      return false
+    }
     if (isReservedName(name)) {
       errors.name = t('skillPacks.errors.nameReserved', { name })
+      return false
+    }
+    if (!toValue(packRef) && isReplacing.value) {
+      errors.name = t('skillPacks.errors.nameAlreadyExists', { name })
       return false
     }
     return true
@@ -157,12 +142,6 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
       errors.body = t('skillPacks.errors.bodyRequired')
       return false
     }
-    if (bodyBytes.value > MAX_PACK_BODY_BYTES) {
-      errors.body = t('skillPacks.errors.bodyTooLarge', {
-        max: MAX_PACK_BODY_BYTES
-      })
-      return false
-    }
     return true
   }
 
@@ -174,19 +153,6 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
     budgetError.value = null
 
     if (!validateName() || !validateDescription() || !validateBody()) {
-      return false
-    }
-    if (projectedPackCount.value > MAX_PACK_COUNT) {
-      budgetError.value = t('skillPacks.errors.tooManyPacks', {
-        max: MAX_PACK_COUNT
-      })
-      return false
-    }
-    if (projectedTotalBytes.value > MAX_TOTAL_BYTES) {
-      budgetError.value = t('skillPacks.errors.totalTooLarge', {
-        max: MAX_TOTAL_BYTES,
-        over: projectedTotalBytes.value - MAX_TOTAL_BYTES
-      })
       return false
     }
     return true
@@ -206,12 +172,19 @@ export function useSkillPackForm(options: UseSkillPackFormOptions) {
       onSaved()
       visible.value = false
     } catch (error) {
-      if (!(error instanceof SkillPacksApiError)) throw error
-      if (error.status === 409) budgetError.value = error.message
-      else if (error.status === 404) {
+      if (error instanceof SkillPacksApiError && error.status === 409) {
+        budgetError.value = error.message
+      } else if (error instanceof SkillPacksApiError && error.status === 404) {
         store.markUnavailable()
         visible.value = false
-      } else fieldError.value = error.message
+      } else if (error instanceof SkillPacksApiError) {
+        fieldError.value = error.message
+      } else {
+        reportError(error, {
+          errorType: 'error_publishing_agent_skill_pack'
+        })
+        fieldError.value = t('g.unknownError')
+      }
     } finally {
       loading.value = false
     }

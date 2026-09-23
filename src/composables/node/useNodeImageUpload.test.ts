@@ -1,18 +1,22 @@
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { ResultItem } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { api } from '@/scripts/api'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useAssetsStore } from '@/stores/assetsStore'
+import type { Mock } from 'vitest'
 
-const { mockFetchApi, mockAddAlert, mockInvalidateInputs } = vi.hoisted(() => ({
-  mockFetchApi: vi.fn(),
-  mockAddAlert: vi.fn(),
-  mockInvalidateInputs: vi.fn()
-}))
+const mockFetchApi = vi.hoisted(() => vi.fn<typeof api.fetchApi>())
+let mockInvalidateInputs: Mock<
+  ReturnType<typeof useAssetsStore>['inputAssets']['invalidate']
+>
 
 let capturedDragOnDrop: (files: File[]) => Promise<string[]>
 
-vi.mock('@/composables/node/useNodeDragAndDrop', () => ({
+vi.mock<unknown>(import('@/composables/node/useNodeDragAndDrop'), () => ({
   useNodeDragAndDrop: (
     _node: LGraphNode,
     opts: { onDrop: typeof capturedDragOnDrop }
@@ -21,30 +25,25 @@ vi.mock('@/composables/node/useNodeDragAndDrop', () => ({
   }
 }))
 
-vi.mock('@/composables/node/useNodeFileInput', () => ({
+vi.mock(import('@/composables/node/useNodeFileInput'), () => ({
   useNodeFileInput: () => ({ openFileSelection: vi.fn() })
 }))
 
-vi.mock('@/composables/node/useNodePaste', () => ({
+vi.mock(import('@/composables/node/useNodePaste'), () => ({
   useNodePaste: vi.fn()
 }))
 
-vi.mock('@/i18n', () => ({
+vi.mock(import('@/i18n'), () => ({
   t: (key: string) => key
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: () => ({ addAlert: mockAddAlert })
-}))
-
-vi.mock('@/scripts/api', () => ({
-  api: { fetchApi: mockFetchApi }
-}))
-
-vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({
-    inputAssets: { invalidate: mockInvalidateInputs }
-  })
+vi.mock<unknown>(import('@/scripts/api'), () => ({
+  api: {
+    fetchApi: mockFetchApi,
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    getServerFeature: vi.fn()
+  }
 }))
 
 function createMockNode(): LGraphNode {
@@ -61,17 +60,14 @@ function createFile(name = 'test.png', type = 'image/png'): File {
 }
 
 function successResponse(name: string, subfolder?: string) {
-  return {
-    status: 200,
-    json: () => Promise.resolve({ name, subfolder })
-  }
+  return Response.json({ name, subfolder })
 }
 
 function failResponse(status = 500) {
-  return {
+  return new Response(null, {
     status,
     statusText: 'Server Error'
-  }
+  })
 }
 
 describe('useNodeImageUpload', () => {
@@ -80,19 +76,40 @@ describe('useNodeImageUpload', () => {
   let onUploadStart: (files: File[]) => void
   let onUploadError: () => void
 
-  beforeEach(async () => {
-    vi.resetModules()
+  beforeEach(() => {
+    mockInvalidateInputs = vi
+      .spyOn(useAssetsStore().inputAssets, 'invalidate')
+      .mockResolvedValue(undefined)
     node = createMockNode()
     onUploadComplete = vi.fn()
     onUploadStart = vi.fn()
     onUploadError = vi.fn()
 
-    const { useNodeImageUpload } = await import('./useNodeImageUpload')
     useNodeImageUpload(node, {
       onUploadComplete,
       onUploadStart,
       onUploadError,
       folder: 'input'
+    })
+  })
+
+  it('uploads image.png with the configured destination', async () => {
+    const { handleUpload } = useNodeImageUpload(node, {
+      folder: 'output',
+      onUploadComplete
+    })
+    mockFetchApi.mockResolvedValueOnce(successResponse('image.png'))
+    const file = createFile('image.png')
+
+    await handleUpload(file)
+
+    const body = mockFetchApi.mock.calls[0][1]?.body
+    if (!(body instanceof FormData)) {
+      throw new Error('Image upload must send multipart form data')
+    }
+    expect(Object.fromEntries(body.entries())).toEqual({
+      image: file,
+      type: 'output'
     })
   })
 
@@ -148,6 +165,10 @@ describe('useNodeImageUpload', () => {
     invalidateResolve()
     await drop
     expect(onUploadComplete).toHaveBeenCalledWith(['test.png'])
+    expect(mockFetchApi).toHaveBeenCalledWith(
+      '/upload/image',
+      expect.objectContaining({ timeoutMs: 120_000 })
+    )
   })
 
   it('includes subfolder in returned path', async () => {
@@ -184,7 +205,9 @@ describe('useNodeImageUpload', () => {
     const second = await capturedDragOnDrop([createFile('b.png')])
 
     expect(second).toEqual([])
-    expect(mockAddAlert).toHaveBeenCalledWith('g.uploadAlreadyInProgress')
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      'g.uploadAlreadyInProgress'
+    )
 
     await first
   })

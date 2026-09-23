@@ -4,6 +4,8 @@ This guide provides an overview of testing approaches used in the ComfyUI Fronte
 
 ## Testing Documentation
 
+Design rules that apply at every test level live in [`docs/guidance/testing-principles.md`](../guidance/testing-principles.md); worked examples for those rules are in [`testing-principles-examples.md`](./testing-principles-examples.md). The guides below cover mechanics.
+
 Documentation for unit tests is organized into five guides:
 
 - [Component Testing](./component-testing.md) - How to test Vue components
@@ -11,6 +13,10 @@ Documentation for unit tests is organized into five guides:
 - [Store Testing](./store-testing.md) - How to test Pinia stores specifically
 - [LiteGraph Testing](./litegraph-testing.md) - How to test LiteGraph graph, node, link, and workflow behavior
 - [Vitest Patterns](./vitest-patterns.md) - Setup, mocking, and fake-timer patterns that apply across all of the above
+
+Playwright testing has a separate strategy guide:
+
+- [E2E Coverage Strategy](./e2e-coverage-strategy.md) - How Playwright coverage is measured, where the gaps are, and the plan to close them
 
 ## Testing Structure
 
@@ -23,7 +29,7 @@ The ComfyUI Frontend project uses **colocated tests** - test files are placed al
 
 ### Test File Naming
 
-- Use `.test.ts` extension for test files
+- Unit tests use the `.test.ts` extension; Playwright browser tests use `.spec.ts` (Playwright ignores `**/*.test.ts`)
 - Name tests after their source file: `sourceFile.test.ts`
 
 ## Test Frameworks and Libraries
@@ -34,7 +40,7 @@ Our tests use the following frameworks and libraries:
 - [@testing-library/vue](https://testing-library.com/docs/vue-testing-library/intro/) - Preferred for user-centric component testing
 - [@testing-library/user-event](https://testing-library.com/docs/user-event/intro/) - Realistic user interaction simulation
 - [@testing-library/jest-dom](https://github.com/testing-library/jest-dom) - DOM matchers, registered globally in `vitest.setup.ts`
-- [@pinia/testing](https://pinia.vuejs.org/cookbook/testing.html) - For store testing
+- [@pinia/testing](https://pinia.vuejs.org/cookbook/testing.html) - For store testing. Installed globally in `vitest.setup.ts`; test files must not import it themselves (enforced by `comfy/use-global-pinia`)
 
 ## Getting Started
 

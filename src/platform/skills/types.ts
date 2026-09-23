@@ -13,16 +13,6 @@ export type SkillPack = AgentSkill
 /** The create-or-replace payload for `POST /api/agent/skills`. */
 export type SkillPackPublishRequest = AgentSkillPublishRequest
 
-/**
- * Client-side budgets, checked before submit so the user does not discover them
- * by rejection. The server enforces them too, and its rejection message names
- * the limit and the overage — which is what the 409 state surfaces verbatim
- * rather than restating in invented copy.
- */
-export const MAX_PACK_BODY_BYTES = 10 * 1024
-export const MAX_PACK_COUNT = 5
-export const MAX_TOTAL_BYTES = 25 * 1024
-
 /** `maxLength` from the spec, counted in code points as JSON Schema defines it. */
 export const MAX_DESCRIPTION_CODE_POINTS = 1024
 export const MAX_NAME_LENGTH = 64
@@ -51,9 +41,9 @@ export const RESERVED_PACK_NAMES = [
  * a single-line trigger description that rides in every prompt.
  */
 // eslint-disable-next-line no-control-regex
-export const CONTROL_CHARACTERS = /[\u0000-\u001F\u007F]/
+export const CONTROL_CHARACTERS = /[\u0000-\u001F\u007F-\u009F\u2028\u2029]/
 
-/** UTF-8 byte length, which is what every byte budget above is counted in. */
+/** UTF-8 byte length, used to show the payload size before publishing. */
 export function utf8ByteLength(value: string): number {
   return new TextEncoder().encode(value).length
 }

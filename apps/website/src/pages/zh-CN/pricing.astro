@@ -4,7 +4,6 @@ import CloudPricingSection from '../../components/pricing/CloudPricingSection.vu
 import WhatsIncludedSection from '../../components/pricing/WhatsIncludedSection.vue'
 import PricingFaq from '../../components/pricing/PricingFaq.astro'
 import ResourceCostsSection from '../../templates/platform/PricingSection.vue'
-import LookingForElseSection from '../../components/pricing/LookingForElseSection.vue'
 import MinimaxLicensePricingSection from '../../components/pricing/MinimaxLicensePricingSection.vue'
 import MinimaxLicenseHeroSection from '../../components/common/MinimaxLicenseHeroSection.vue'
 import { pricingOffers } from '../../config/pricing'
@@ -13,13 +12,13 @@ import {
   absoluteUrl,
   jsonLdId,
   pageContext,
-  productNode,
+  productNode
 } from '../../utils/jsonLd'
 
 const { siteUrl, locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 const productId = jsonLdId(url, 'product')
 ---
@@ -31,10 +30,10 @@ const productId = jsonLdId(url, 'product')
   breadcrumbs={[
     {
       name: t('breadcrumb.home', locale),
-      url: absoluteUrl(Astro.site, '/zh-CN'),
+      url: absoluteUrl(Astro.site, '/zh-CN')
     },
     { name: 'Comfy Cloud', url: absoluteUrl(Astro.site, '/zh-CN/cloud') },
-    { name: t('breadcrumb.pricing', locale) },
+    { name: t('breadcrumb.pricing', locale) }
   ]}
   extraJsonLd={[
     productNode({
@@ -42,8 +41,8 @@ const productId = jsonLdId(url, 'product')
       id: productId,
       name: 'Comfy Cloud',
       url,
-      offers: pricingOffers(locale),
-    }),
+      offers: pricingOffers(locale)
+    })
   ]}
 >
   <CloudPricingSection locale="zh-CN" client:load />
@@ -51,10 +50,10 @@ const productId = jsonLdId(url, 'product')
   <ResourceCostsSection
     locale="zh-CN"
     heading={t('pricing.resourceCosts.heading', 'zh-CN')}
-    note={t('pricing.resourceCosts.note', 'zh-CN')}
+    subtitle={t('pricing.resourceCosts.subtitle', 'zh-CN')}
+    headingSize="subsection"
   />
   <MinimaxLicenseHeroSection locale="zh-CN" client:visible />
   <MinimaxLicensePricingSection locale="zh-CN" />
-  <LookingForElseSection locale="zh-CN" />
   <PricingFaq locale="zh-CN" />
 </BaseLayout>

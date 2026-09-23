@@ -23,15 +23,10 @@ const mockPack: SkillPack = {
   updated_at: '2026-08-22T00:00:00Z'
 }
 
-const atPackLimit = ref(false)
-const atByteLimit = ref(false)
-
 vi.mock('@/platform/skills/composables/useSkillPacks', () => ({
   useSkillPacks: () => ({
     packs: ref<SkillPack[]>([mockPack]),
     loading: ref(false),
-    atPackLimit,
-    atByteLimit,
     operatingPackName: ref(null),
     fetchSkillPacks: mockFetchSkillPacks,
     deleteSkillPack: mockDeleteSkillPack
@@ -81,11 +76,7 @@ const i18n = createI18n({
         addPack: 'Add Skill Pack',
         noPacks: 'No skill packs yet',
         deleteConfirmTitle: 'Delete Skill Pack',
-        deleteConfirmMessage: 'Delete {name}?',
-        errors: {
-          tooManyPacks: 'too-many-packs',
-          totalAtLimit: 'total-at-limit'
-        }
+        deleteConfirmMessage: 'Delete {name}?'
       }
     }
   }
@@ -114,8 +105,6 @@ function renderPanel() {
 
 describe('SkillPacksPanel', () => {
   beforeEach(() => {
-    atPackLimit.value = false
-    atByteLimit.value = false
     mockShowConfirmDialog.mockReturnValue(
       DIALOG_HANDLE as ReturnType<typeof showConfirmDialog>
     )
@@ -141,26 +130,5 @@ describe('SkillPacksPanel', () => {
 
     expect(mockCloseDialog).toHaveBeenCalledExactlyOnceWith(DIALOG_HANDLE)
     expect(mockDeleteSkillPack).toHaveBeenCalledWith(mockPack)
-  })
-
-  it('blocks adding a pack and explains which limit is full when at the count budget', async () => {
-    atPackLimit.value = true
-    renderPanel()
-
-    expect(screen.getByTestId('skill-packs-at-limit')).toHaveTextContent(
-      'too-many-packs'
-    )
-    expect(
-      screen.getByRole('button', { name: /Add Skill Pack/ })
-    ).toBeDisabled()
-  })
-
-  it('explains the total-bytes budget when only that one is full', async () => {
-    atByteLimit.value = true
-    renderPanel()
-
-    expect(screen.getByTestId('skill-packs-at-limit')).toHaveTextContent(
-      'total-at-limit'
-    )
   })
 })

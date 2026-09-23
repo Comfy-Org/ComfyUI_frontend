@@ -1,7 +1,8 @@
 import { storeToRefs } from 'pinia'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import {
@@ -10,21 +11,17 @@ import {
 } from '../api/skillsApi'
 import { useSkillPacksStore } from '../stores/skillPacksStore'
 import type { SkillPack } from '../types'
-import { MAX_PACK_COUNT, MAX_TOTAL_BYTES } from '../types'
 
 export function useSkillPacks() {
   const { t } = useI18n()
   const toastStore = useToastStore()
   const store = useSkillPacksStore()
-  const { packs, loading, totalBytes } = storeToRefs(store)
+  const { packs, loading } = storeToRefs(store)
 
   const operatingPackName = ref<string | null>(null)
 
-  const atPackLimit = computed(() => packs.value.length >= MAX_PACK_COUNT)
-  const atByteLimit = computed(() => totalBytes.value >= MAX_TOTAL_BYTES)
-
-  function reportUnexpected(error: unknown, context: string) {
-    console.error(context, error)
+  function reportUnexpected(error: unknown, errorType: string) {
+    reportError(error, { errorType })
     toastStore.add({
       severity: 'error',
       summary: t('g.error'),
@@ -39,7 +36,7 @@ export function useSkillPacks() {
     try {
       await store.fetchPacks()
     } catch (error) {
-      reportUnexpected(error, 'Unexpected error fetching skill packs:')
+      reportUnexpected(error, 'error_fetching_agent_skill_packs')
     }
   }
 
@@ -59,7 +56,7 @@ export function useSkillPacks() {
         await fetchSkillPacks()
         return
       }
-      reportUnexpected(error, 'Unexpected error deleting skill pack:')
+      reportUnexpected(error, 'error_deleting_agent_skill_pack')
     } finally {
       operatingPackName.value = null
     }
@@ -68,9 +65,6 @@ export function useSkillPacks() {
   return {
     packs,
     loading,
-    totalBytes,
-    atPackLimit,
-    atByteLimit,
     operatingPackName,
     fetchSkillPacks,
     deleteSkillPack

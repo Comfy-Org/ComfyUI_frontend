@@ -1,4 +1,5 @@
-import { createTestingPinia } from '@pinia/testing'
+import type { Pinia } from 'pinia'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -20,49 +21,55 @@ const { mockMaxSeats, mockIsPlanLoading } = vi.hoisted(() => {
   }
 })
 
-let pinia: ReturnType<typeof createTestingPinia>
+let pinia: Pinia
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore> & {
   activeWorkspaceId: string | null
 }
 let members: WorkspaceMember[]
 let workspaceType: 'personal' | 'team'
 
-vi.mock('@/platform/workspace/composables/useTeamPlan', () => ({
-  useTeamPlan: () => ({
-    maxSeats: mockMaxSeats,
-    hasMemberSeats: computed(
-      () => mockMaxSeats.value === 0 || (mockMaxSeats.value ?? 0) > 1
-    ),
-    isPlanLoading: mockIsPlanLoading
-  })
-}))
-
-vi.mock('@/platform/workspace/composables/useWorkspaceUI', () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
-  const { ref } = require('vue') as typeof import('vue')
-  return {
-    useWorkspaceUI: () => ({
-      workspaceRole: ref('owner')
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useTeamPlan'),
+  () => ({
+    useTeamPlan: () => ({
+      maxSeats: mockMaxSeats,
+      hasMemberSeats: computed(
+        () => mockMaxSeats.value === 0 || (mockMaxSeats.value ?? 0) > 1
+      ),
+      isPlanLoading: mockIsPlanLoading
     })
-  }
-})
+  })
+)
 
-vi.mock(
-  '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue',
+vi.mock<unknown>(
+  import('@/platform/workspace/composables/useWorkspaceUI'),
+  () => {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+    const { ref } = require('vue') as typeof import('vue')
+    return {
+      useWorkspaceUI: () => ({
+        workspaceRole: ref('owner')
+      })
+    }
+  }
+)
+
+vi.mock<unknown>(
+  import('@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'),
   () => ({
     default: { name: 'SubscriptionPanelContentWorkspace', template: '<div />' }
   })
 )
 
-vi.mock(
-  '@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue',
+vi.mock<unknown>(
+  import('@/platform/workspace/components/dialogs/settings/MembersPanelContent.vue'),
   () => ({
     default: { name: 'MembersPanelContent', template: '<div />' }
   })
 )
 
-vi.mock(
-  '@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue',
+vi.mock<unknown>(
+  import('@/platform/workspace/components/dialogs/settings/BillingStatusBanner.vue'),
   () => ({
     default: {
       name: 'BillingStatusBanner',
@@ -117,7 +124,7 @@ function renderComponent() {
 }
 
 beforeEach(() => {
-  pinia = createTestingPinia({ createSpy: vi.fn, stubActions: false })
+  pinia = getActivePinia()!
   workspaceStore = useTeamWorkspaceStore(pinia)
   vi.mocked(workspaceStore.fetchMembers).mockResolvedValue([])
   vi.mocked(workspaceStore.fetchPendingInvites).mockResolvedValue([])

@@ -13,19 +13,11 @@
       <h3 class="my-0 text-lg font-semibold">
         {{ $t('skillPacks.yourPacks') }}
       </h3>
-      <Button :disabled="atPackLimit || atByteLimit" @click="openCreateDialog">
+      <Button @click="openCreateDialog">
         <i class="mr-1 icon-[lucide--plus] size-4" />
         {{ $t('skillPacks.addPack') }}
       </Button>
     </div>
-
-    <p
-      v-if="atPackLimit || atByteLimit"
-      data-testid="skill-packs-at-limit"
-      class="mb-4 text-sm text-muted"
-    >
-      {{ atLimitMessage }}
-    </p>
 
     <div v-if="loading" class="flex items-center justify-center py-8">
       <i class="icon-[lucide--loader-circle] size-8 animate-spin text-muted" />
@@ -64,7 +56,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
@@ -73,7 +65,6 @@ import { useDialogStore } from '@/stores/dialogStore'
 
 import { useSkillPacks } from '../composables/useSkillPacks'
 import type { SkillPack } from '../types'
-import { MAX_PACK_COUNT, MAX_TOTAL_BYTES } from '../types'
 import SkillPackFormDialog from './SkillPackFormDialog.vue'
 import SkillPackListItem from './SkillPackListItem.vue'
 
@@ -83,8 +74,6 @@ const dialogStore = useDialogStore()
 const {
   packs,
   loading,
-  atPackLimit,
-  atByteLimit,
   operatingPackName,
   fetchSkillPacks,
   deleteSkillPack
@@ -93,12 +82,6 @@ const {
 const createDialogVisible = ref(false)
 const editDialogVisible = ref(false)
 const selectedPack = ref<SkillPack | undefined>()
-
-const atLimitMessage = computed(() =>
-  atPackLimit.value
-    ? t('skillPacks.errors.tooManyPacks', { max: MAX_PACK_COUNT })
-    : t('skillPacks.errors.totalAtLimit', { max: MAX_TOTAL_BYTES })
-)
 
 function openCreateDialog() {
   createDialogVisible.value = true

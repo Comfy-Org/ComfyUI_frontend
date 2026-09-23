@@ -36,6 +36,7 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
   )
 
   let flagGateStarted = false
+  let fetchGeneration = 0
 
   /**
    * Subscribes to both cohort flags. PostHog is imported lazily so a build with
@@ -43,7 +44,12 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
    * own gate is wired.
    */
   async function startFlagGate(): Promise<void> {
-    if (flagGateStarted) return
+    if (flagGateStarted) {
+      if (flagsEnabled.value && !routesAvailable.value) {
+        void fetchPacks().catch(reportFetchFailure)
+      }
+      return
+    }
     flagGateStarted = true
     try {
       const { default: posthog } = await import('posthog-js')
@@ -54,7 +60,9 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
           posthog.isFeatureEnabled(SKILL_PACKS_FLAG) === true
         // The flags can disagree with the deployed backend, so probe the routes
         // once rather than advertising a surface that answers 404.
-        if (!wasEnabled && flagsEnabled.value) void fetchPacks().catch(() => {})
+        if (!wasEnabled && flagsEnabled.value) {
+          void fetchPacks().catch(reportFetchFailure)
+        }
       }
       posthog.onFeatureFlags((_flags, _variants, context) => {
         // A pre-init errorsLoading is an error report, not a flag delivery.
@@ -63,37 +71,54 @@ export const useSkillPacksStore = defineStore('skillPacks', () => {
       })
       sync()
     } catch (error) {
+      flagGateStarted = false
       reportError(error, { errorType: 'agent_skill_packs_flag_gate_failure' })
     }
   }
 
+  function reportFetchFailure(error: unknown): void {
+    reportError(error, {
+      errorType: 'error_fetching_agent_skill_packs'
+    })
+  }
+
   async function fetchPacks(): Promise<void> {
+    const generation = ++fetchGeneration
     loading.value = true
     try {
-      packs.value = await listSkillPacks()
+      const nextPacks = await listSkillPacks()
+      if (generation !== fetchGeneration) return
+      packs.value = nextPacks
       routesAvailable.value = true
     } catch (error) {
+      if (generation !== fetchGeneration) return
       if (error instanceof SkillPacksApiError && error.status === 404) {
         markUnavailable()
         return
       }
       throw error
     } finally {
-      loading.value = false
+      if (generation === fetchGeneration) loading.value = false
     }
   }
 
   /** Replaces the pack of the same name, mirroring the create-or-replace route. */
   function upsertPack(pack: SkillPack): void {
+    fetchGeneration++
+    loading.value = false
     const rest = packs.value.filter((existing) => existing.name !== pack.name)
     packs.value = [...rest, pack].sort((a, b) => a.name.localeCompare(b.name))
   }
 
   function removePack(name: string): void {
+    fetchGeneration++
+    loading.value = false
     packs.value = packs.value.filter((pack) => pack.name !== name)
   }
 
   function markUnavailable(): void {
+    fetchGeneration++
+    loading.value = false
     routesAvailable.value = false
     packs.value = []
   }

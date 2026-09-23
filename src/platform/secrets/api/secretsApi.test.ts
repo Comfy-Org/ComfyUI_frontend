@@ -4,7 +4,7 @@ import { listSecretProviders } from './secretsApi'
 
 const mockFetchApi = vi.fn()
 
-vi.mock('@/scripts/api', () => ({
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     fetchApi: (...args: unknown[]) => mockFetchApi(...args)
   }

@@ -1,3 +1,5 @@
+import { calculatePositionExtents } from '@/utils/positionBounds'
+
 /**
  * Spatial bounds calculations for node layouts
  */
@@ -22,26 +24,9 @@ export interface PositionedNode {
 export function calculateNodeBounds(
   nodes: PositionedNode[]
 ): SpatialBounds | null {
-  if (nodes.length === 0) {
-    return null
-  }
-
-  let minX = Infinity
-  let minY = Infinity
-  let maxX = -Infinity
-  let maxY = -Infinity
-
-  for (const node of nodes) {
-    const x = node.pos[0]
-    const y = node.pos[1]
-    const width = node.size[0]
-    const height = node.size[1]
-
-    minX = Math.min(minX, x)
-    minY = Math.min(minY, y)
-    maxX = Math.max(maxX, x + width)
-    maxY = Math.max(maxY, y + height)
-  }
+  const extents = calculatePositionExtents(nodes)
+  if (!extents) return null
+  const { minX, minY, maxX, maxY } = extents
 
   return {
     minX,

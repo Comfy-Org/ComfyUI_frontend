@@ -22,6 +22,7 @@
               v-model="form.name"
               :placeholder="$t('skillPacks.namePlaceholder')"
               :disabled="pack !== undefined"
+              :maxlength="MAX_NAME_LENGTH"
             />
             <small v-if="errors.name" class="text-destructive">
               {{ errors.name }}
@@ -39,6 +40,7 @@
               id="skill-pack-description"
               v-model="form.description"
               :placeholder="$t('skillPacks.triggerLinePlaceholder')"
+              :maxlength="MAX_DESCRIPTION_CODE_POINTS"
             />
             <small v-if="errors.description" class="text-destructive">
               {{ errors.description }}
@@ -118,7 +120,7 @@ import Textarea from '@/components/ui/textarea/Textarea.vue'
 
 import { useSkillPackForm } from '../composables/useSkillPackForm'
 import type { SkillPack } from '../types'
-import { MAX_PACK_BODY_BYTES } from '../types'
+import { MAX_DESCRIPTION_CODE_POINTS, MAX_NAME_LENGTH } from '../types'
 
 const { pack } = defineProps<{
   pack?: SkillPack
@@ -149,8 +151,7 @@ const {
 
 const bodySizeLabel = computed(() =>
   t('skillPacks.bodySize', {
-    bytes: bodyBytes.value,
-    max: MAX_PACK_BODY_BYTES
+    bytes: bodyBytes.value
   })
 )
 </script>
