@@ -165,13 +165,11 @@ export function getMainNavigation(
             },
             {
               label: t('nav.affiliates', locale),
-              href: routes.affiliates,
-              badge: 'new'
+              href: routes.affiliates
             },
             {
               label: t('nav.learning', locale),
-              href: routes.learning,
-              badge: 'new'
+              href: routes.learning
             }
           ]
         },
