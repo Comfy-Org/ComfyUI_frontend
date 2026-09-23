@@ -32,7 +32,11 @@ import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
 import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
-import { createHumanOpOutbox, createMemoryOutboxStore } from './humanOpOutbox'
+import { createHumanOpOutbox } from './humanOpOutbox'
+import {
+  HUMAN_OP_OUTBOX_KEY,
+  createSessionOutboxStore
+} from './humanOpOutboxStore'
 import { outboxSenderHooks, replayParkedOps } from './humanOpOutboxWiring'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
@@ -303,10 +307,13 @@ function startAgentCrdtFollower(
   // result never arrived (`unconfirmed`) are parked, not lost, and replayed
   // with their ORIGINAL op_ids once this tab is subscribed again (KA-6: the
   // applier's `__applied` ledger dedupes the id, so a replay can never apply
-  // twice). Memory-backed for now; a page-lifetime store is s4.
+  // twice). s4: the slot is per browser tab, not per mount, so a remount or
+  // reload rehydrates what the previous owner never got a verdict on (the
+  // sender's `detach()` drops in-flight batches silently) and replays it on
+  // the first `doc_subscribed ok` of the new mount.
   const outbox = createHumanOpOutbox({
-    store: createMemoryOutboxStore(),
-    key: `agent-human-op-outbox:${tabId}`
+    store: createSessionOutboxStore(),
+    key: HUMAN_OP_OUTBOX_KEY
   })
   const outboxHooks = outboxSenderHooks(outbox)
   const sender = createOpSender({

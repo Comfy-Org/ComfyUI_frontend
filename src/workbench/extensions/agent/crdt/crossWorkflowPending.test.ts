@@ -158,7 +158,15 @@ function mountFollower(initial: string): {
       return () => null
     }
   })
-  const { unmount } = render(host)
+  const rendered = render(host)
+  // A test may unmount explicitly (remount cases); the finish hook then
+  // finds nothing left to do.
+  let mounted = true
+  const unmount = (): void => {
+    if (!mounted) return
+    mounted = false
+    rendered.unmount()
+  }
   onTestFinished(unmount)
   return { unmount, workflowId, enqueue, status: exposedStatus }
 }
@@ -195,6 +203,9 @@ function ackResubscribe(workflowId: string): void {
 
 describe('R-73 cross-workflow pending operation characterization', () => {
   beforeEach(() => {
+    // mutref-3 s4: the outbox slot is per browser tab, so a parked op left by
+    // one test would replay into the next test's subscribe ack.
+    sessionStorage.clear()
     useAgentPanelStore().enabled = true
     bridgeState.current = null
     bridgeState.transport.up = true
@@ -382,6 +393,9 @@ describe('R-73 cross-workflow pending operation characterization', () => {
 // orphaned node in the CRDT doc while the client believes the add failed.
 describe('abortIfUnbound settles delivered ops as undeliverable', () => {
   beforeEach(() => {
+    // mutref-3 s4: the outbox slot is per browser tab, so a parked op left by
+    // one test would replay into the next test's subscribe ack.
+    sessionStorage.clear()
     useAgentPanelStore().enabled = true
     bridgeState.current = null
     bridgeState.transport.up = true
@@ -435,6 +449,9 @@ describe('abortIfUnbound settles delivered ops as undeliverable', () => {
 // server's applier dedupes by op_id (KA-6), so a replay can never apply twice.
 describe('parked human ops survive the transport retry budget', () => {
   beforeEach(() => {
+    // mutref-3 s4: the outbox slot is per browser tab, so a parked op left by
+    // one test would replay into the next test's subscribe ack.
+    sessionStorage.clear()
     useAgentPanelStore().enabled = true
     bridgeState.current = null
     bridgeState.transport.up = true
@@ -524,5 +541,56 @@ describe('parked human ops survive the transport retry budget', () => {
       'human_ops_replayed',
       expect.anything()
     )
+  })
+
+  it('replays an op the previous mount never got a verdict on, under the same op_id, after a remount', async () => {
+    const first = mountFollower('wf-a')
+    clientState.transportUp = false
+    await first.enqueue([deleteNode('parked-across-remount')])
+    // Two refused attempts, then the panel goes away with the batch still
+    // in flight: the sender's detach drops it without a settlement.
+    vi.advanceTimersByTime(500)
+    expect(clientState.attempts).toHaveLength(2)
+    const operationId = clientState.attempts[0].ops[0].op_id
+    const firstTab = clientState.attempts[0].tab
+    first.unmount()
+    expect(settlements()).toHaveLength(0)
+
+    // Nothing leaks out of the dead mount's retry timer.
+    vi.advanceTimersByTime(5 * 500)
+    expect(clientState.attempts).toHaveLength(2)
+
+    clientState.transportUp = true
+    mountFollower('wf-a')
+    expect(clientState.sent).toHaveLength(0)
+
+    ackResubscribe('wf-a')
+    expect(clientState.sent).toHaveLength(1)
+    expect(clientState.sent[0].workflowId).toBe('wf-a')
+    expect(clientState.sent[0].tab).not.toBe(firstTab)
+    expect(clientState.sent[0].ops).toEqual([
+      expect.objectContaining({
+        op_id: operationId,
+        op: 'delete_node',
+        node_id: 'parked-across-remount'
+      })
+    ])
+    expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
+      'human_ops_replayed',
+      { workflowId: 'wf-a', count: 1 }
+    )
+
+    // The host had in fact applied it before the first mount died: the
+    // replay settles as skipped and the slot empties for good.
+    dispatchOpsResult({
+      workflowId: 'wf-a',
+      ok: true,
+      applied: [],
+      skipped: [operationId]
+    })
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    ackResubscribe('wf-a')
+    expect(clientState.sent).toHaveLength(1)
+    expect(sessionStorage.getItem('Comfy.Agent.HumanOpOutbox')).toBeNull()
   })
 })
