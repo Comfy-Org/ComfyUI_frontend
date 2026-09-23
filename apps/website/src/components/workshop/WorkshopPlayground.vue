@@ -3,7 +3,7 @@ import { useClipboard } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { externalLinks } from '../../config/routes'
+import { apiKeysLink } from '../../config/routes'
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
 import { defaultWorkshopValues } from '../../config/workshop-detail'
 import { parseWorkshopJsonInput } from '../../config/workshop-json-schema'
@@ -206,7 +206,7 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
         </TabsContent>
       </TabsRoot>
       <a
-        :href="externalLinks.apiKeys"
+        :href="apiKeysLink({ onboarding: 'models', model: model.slug })"
         target="_blank"
         rel="noopener noreferrer"
         class="mt-4 inline-flex text-sm font-medium text-primary-comfy-yellow hover:underline"

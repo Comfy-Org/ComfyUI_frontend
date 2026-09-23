@@ -980,6 +980,29 @@ describe('nodeOutputStore setNodeOutputs (widget path)', () => {
     expect(store.nodeOutputs['5']?.images?.[0]?.type).toBe('input')
   })
 
+  it('previews an annotated widget value from its own directory', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 5, comfyClass: 'LoadImage' })
+
+    store.setNodeOutputs(node, 'nested/preview.png [temp]', {
+      isAnimated: true
+    })
+
+    expect(store.nodeOutputs['5']?.images?.[0]).toMatchObject({
+      filename: 'preview.png [temp]',
+      subfolder: 'nested',
+      type: 'input'
+    })
+    const previewUrl = new URL(
+      store.getNodeImageUrls(node)?.[0] ?? '',
+      window.location.origin
+    )
+    expect(store.nodeOutputs['5']?.animated).toEqual([true])
+    expect(previewUrl.searchParams.get('filename')).toBe('preview.png')
+    expect(previewUrl.searchParams.get('subfolder')).toBe('nested')
+    expect(previewUrl.searchParams.get('type')).toBe('temp')
+  })
+
   it('leaves node images unchanged for preview change detection', () => {
     const store = useNodeOutputStore()
     const images = [{ filename: 'previous.png' }]

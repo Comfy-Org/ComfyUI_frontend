@@ -112,8 +112,7 @@ describe('ImagePreview', () => {
           'i-lucide:venetian-mask': true,
           'i-lucide:download': true,
           'i-lucide:x': true,
-          'i-lucide:image-off': true,
-          Skeleton: true
+          'i-lucide:image-off': true
         }
       }
     })

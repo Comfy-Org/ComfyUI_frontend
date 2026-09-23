@@ -66,6 +66,26 @@ describe('Workshop failure analytics', () => {
     )
   })
 
+  it('reports only error field names declared by the form', () => {
+    const failure = new WorkshopRouterError('validation', null, {
+      size: 'incompatible',
+      'private provider text': 'rejected'
+    })
+    expect(
+      workshopFailureAnalytics(failure, [
+        {
+          kind: 'select',
+          name: 'size',
+          label: 'Size',
+          options: ['2K']
+        }
+      ])
+    ).toMatchObject({ field_error_names: ['size'] })
+    expect(JSON.stringify(workshopFailureAnalytics(failure))).not.toContain(
+      'private'
+    )
+  })
+
   it('captures the original exception with only application bundle locations', () => {
     const cause = new TypeError('Private prompt, filename.png and token=secret')
     cause.stack = [
