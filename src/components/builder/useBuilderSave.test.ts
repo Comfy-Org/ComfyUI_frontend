@@ -5,6 +5,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAppMode } from '@/composables/useAppMode'
 import { useErrorHandling } from '@/composables/useErrorHandling'
+import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -16,6 +17,9 @@ import { useBuilderSave } from './useBuilderSave'
 beforeEach(() => {
   vi.mocked(useAppModeStore().exitBuilder).mockImplementation(() => {})
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => {})
+  vi.mocked(t).mockImplementation((key: unknown, params?: unknown) =>
+    params ? `${String(key)}:${JSON.stringify(params)}` : String(key)
+  )
 })
 
 vi.mock(import('@/composables/useAppMode'))
@@ -30,12 +34,7 @@ vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/components/dialog/confirm/confirmDialog'))
 
-vi.mock<unknown>(import('@/i18n'), () => ({
-  t: (key: string, params?: Record<string, string>) => {
-    if (params) return `${key}:${JSON.stringify(params)}`
-    return key
-  }
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock<unknown>(import('./BuilderSaveDialogContent.vue'), () => ({
   default: { template: '<div />' }
