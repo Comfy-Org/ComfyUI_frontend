@@ -830,61 +830,39 @@ describe('realignGroupWidgetChildLinks (FE-258)', () => {
     ).toBe(link.id)
   })
 
-  it('moves an ordinary input link that holds a child destination slot', () => {
-    const { source, target } = groupWidgetSetup(
-      [
-        'image',
-        'resize_type.width',
-        'resize_type',
-        'roll',
-        'resize_type.multiplier'
-      ],
-      'resize_type'
-    )
-    const child = source.connect(0, target, 1)!
-    const ordinary = source.connect(0, target, 4)!
+  it.for([
+    { label: 'a plain ordinary', ordinaryName: 'roll' },
+    { label: 'a dotted ordinary', ordinaryName: 'metadata.scale' }
+  ])(
+    'moves $label input link that holds a child destination slot',
+    ({ ordinaryName }) => {
+      const { source, target } = groupWidgetSetup(
+        [
+          'image',
+          'resize_type.width',
+          'resize_type',
+          ordinaryName,
+          'resize_type.multiplier'
+        ],
+        'resize_type'
+      )
+      const child = source.connect(0, target, 1)!
+      const ordinary = source.connect(0, target, 4)!
 
-    realignGroupWidgetChildLinks(target, {
-      id: target.id,
-      inputs: serializedInputs(target, {
-        'resize_type.multiplier': child.id,
-        roll: ordinary.id
+      realignGroupWidgetChildLinks(target, {
+        id: target.id,
+        inputs: serializedInputs(target, {
+          'resize_type.multiplier': child.id,
+          [ordinaryName]: ordinary.id
+        })
       })
-    })
 
-    expect({
-      child: child.target_slot,
-      ordinary: ordinary.target_slot
-    }).toEqual({ child: 4, ordinary: 3 })
-  })
-
-  it('moves a dotted ordinary input link that holds a child destination slot', () => {
-    const { source, target } = groupWidgetSetup(
-      [
-        'image',
-        'resize_type.width',
-        'resize_type',
-        'metadata.scale',
-        'resize_type.multiplier'
-      ],
-      'resize_type'
-    )
-    const child = source.connect(0, target, 1)!
-    const ordinary = source.connect(0, target, 4)!
-
-    realignGroupWidgetChildLinks(target, {
-      id: target.id,
-      inputs: serializedInputs(target, {
-        'resize_type.multiplier': child.id,
-        'metadata.scale': ordinary.id
-      })
-    })
-
-    expect({
-      child: child.target_slot,
-      ordinary: ordinary.target_slot
-    }).toEqual({ child: 4, ordinary: 3 })
-  })
+      expect({
+        child: child.target_slot,
+        ordinary: ordinary.target_slot
+      }).toEqual({ child: 4, ordinary: 3 })
+    }
+  )
 
   it('leaves a node that has no group widget child input', () => {
     const { source, target } = groupWidgetSetup(
