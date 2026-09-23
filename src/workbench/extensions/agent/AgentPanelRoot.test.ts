@@ -676,6 +676,71 @@ describe('AgentPanelRoot paywall actions', () => {
     )
   })
 
+  it('hides a paywall that arrives after funds were already confirmed', async () => {
+    paywallCapabilities.canTopUp = false
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'render one more frame'
+    )
+
+    await vi.waitFor(() =>
+      expect(screen.getAllByText('render one more frame')).not.toHaveLength(0)
+    )
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('hides a paywall hydrated from history with no funds transition to observe', async () => {
+    paywallCapabilities.canTopUp = false
+    paywallHasFunds.value = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findByRole('textbox')).toBeInTheDocument()
+
+    useAgentConversationStore().messages.push({
+      id: toTurnId('msg-paywall'),
+      role: 'assistant',
+      parts: [{ type: 'paywall' }],
+      streaming: false,
+      thinking: false
+    })
+
+    await nextTick()
+    expect(
+      screen.queryByRole('button', { name: 'Subscribe' })
+    ).not.toBeInTheDocument()
+  })
+
+  it('shows the paywall again when funds run out after being restored', async () => {
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+
+    paywallHasFunds.value = true
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('button', { name: 'Subscribe' })
+      ).not.toBeInTheDocument()
+    )
+
+    paywallHasFunds.value = false
+    await vi.waitFor(() =>
+      expect(
+        screen.getByRole('button', { name: 'Subscribe' })
+      ).toBeInTheDocument()
+    )
+  })
+
   it('hides purchase actions from a Team member without billing permissions', async () => {
     paywallWorkspace.role = 'member'
     paywallCapabilities.canTopUp = false

@@ -144,19 +144,6 @@ export const useAgentConversationStore = defineStore(
       recordSettledReply(turnId, text, [{ type: 'paywall', message }])
     }
 
-    function resolvePaywalls(): void {
-      messages.value = messages.value.map((message) => {
-        const parts = message.parts.filter((part) => part.type !== 'paywall')
-        return parts.length === message.parts.length
-          ? message
-          : { ...message, parts }
-      })
-    }
-
-    function setPaywallsResolved(resolved: boolean): void {
-      if (resolved) resolvePaywalls()
-    }
-
     function startTurn(turnId: TurnId): void {
       if (transport) abortActiveTurn()
       const message = createAssistantMessage(turnId)
@@ -484,7 +471,6 @@ export const useAgentConversationStore = defineStore(
       setThreadId,
       recordFailedSend,
       recordPaywall,
-      setPaywallsResolved,
       startTurn,
       ingest,
       setCanvasSyncGate,
