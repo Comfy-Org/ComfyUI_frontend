@@ -1,10 +1,7 @@
 import { cloneDeep } from 'es-toolkit'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { canvas: undefined, isGraphReady: false },
-  ComfyApp: class {}
-}))
+vi.mock(import('@/scripts/app'))
 
 import { i18n, mergeCustomNodesI18n } from '@/i18n'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
@@ -19,8 +16,7 @@ const zhMessages = cloneDeep(i18n.global.getLocaleMessage('zh'))
 
 describe('useLitegraphService().getCanvasCenter', () => {
   it('returns origin when canvas is not yet initialised', () => {
-    Reflect.set(app, 'isGraphReady', false)
-    Reflect.set(app, 'canvas', undefined)
+    Reflect.set(app, 'rootGraphOrUndefined', undefined)
 
     const center = useLitegraphService().getCanvasCenter()
 
@@ -28,10 +24,7 @@ describe('useLitegraphService().getCanvasCenter', () => {
   })
 
   it('returns the visible-area centre once the canvas is ready', () => {
-    Reflect.set(app, 'isGraphReady', true)
-    Reflect.set(app, 'canvas', {
-      ds: { visible_area: [10, 20, 200, 100] }
-    })
+    app.canvas.ds.visible_area.set([10, 20, 200, 100])
 
     const center = useLitegraphService().getCanvasCenter()
 
