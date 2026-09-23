@@ -34,7 +34,11 @@ setupInlinePromptEditorDom()
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
-import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type {
+  LGraph,
+  LGraphNode,
+  Subgraph
+} from '@/lib/litegraph/src/litegraph'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -106,7 +110,12 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 const appMock = vi.hoisted(() => {
   const graph = {
     nodes: [] as unknown[],
+    _nodes: [] as LGraph['_nodes'],
+    _nodes_by_id: {} as LGraph['_nodes_by_id'],
     arrange: vi.fn(),
+    add: vi.fn(),
+    remove: vi.fn(),
+    setDirtyCanvas: vi.fn(),
     serialize: () => ({ version: 0.4, nodes: graph.nodes }),
     getNodeById: (id: string | number) =>
       graph.nodes.find(
@@ -117,6 +126,7 @@ const appMock = vi.hoisted(() => {
           String(node.id) === String(id)
       ) ?? null
   }
+  Object.assign(graph, { rootGraph: graph })
   return {
     loadGraphData: vi.fn(),
     graph,
@@ -278,10 +288,20 @@ const mintPortWiringDeps = vi.hoisted(() => ({
   current: null as MintPortWiringDeps | null
 }))
 vi.mock(import('./crdt/mintPortWiring'), { spy: true })
-vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
+
+// The mock replaces the real `attachMintPortWiring` body entirely. It only
+// captures `deps` for assertions below — it must NOT reproduce any of that
+// body's own behaviour (e.g. the doc-bound probe registration), or a test
+// against the reimplementation could stay green while the real one breaks.
+// The doc-bound probe's registration/disposal is covered directly against
+// the real `attachMintPortWiring` in `mintPortWiring.test.ts`.
+function stubAttachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   mintPortWiringDeps.current = deps
-  return fromPartial<MintPortWiring>({ detach: vi.fn() })
-})
+  return fromPartial<MintPortWiring>({
+    detach: vi.fn()
+  })
+}
+vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 
@@ -338,15 +358,13 @@ beforeEach(() => {
   canvasStore.selectedItems = []
   canvasStore.currentGraph = null
   appMock.graph.nodes = []
+  appMock.isGraphReady = false
   appMock.graph.arrange.mockClear()
   Object.assign(appMock.rootGraph, { subgraphs: new Map(), id: undefined })
   appMock.isGraphReady = false
   appMock.canvas = undefined
   mintPortWiringDeps.current = null
-  vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
-    mintPortWiringDeps.current = deps
-    return fromPartial<MintPortWiring>({ detach: vi.fn() })
-  })
+  vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
   workflowService.saveWorkflow.mockClear()
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
@@ -6581,6 +6599,36 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it('wires getGraph() to the live root graph, following a graph swap', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('hello')
+
+    appMock.isGraphReady = true
+    Object.assign(appMock.rootGraph, { id: 'graph-a' })
+    expect(mintPortWiringDeps.current?.getGraph()?.id).toBe('graph-a')
+
+    // A workflow switch rebuilds the canvas against a new root graph without
+    // touching agentPanelStore.enabled or isBoundWorkflowActive, so the mint
+    // port wiring's own doc-bound predicate (covered directly against the
+    // real `attachMintPortWiring` in `mintPortWiring.test.ts`) has to read
+    // this live graph at mint time to follow the swap.
+    Object.assign(appMock.rootGraph, { id: 'graph-b' })
+
+    expect(mintPortWiringDeps.current?.getGraph()?.id).toBe('graph-b')
+  })
+
+  it('wires getGraph() to null before the graph is ready', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('hello')
+
+    Object.assign(appMock.rootGraph, { id: 'graph-a' })
+    appMock.isGraphReady = false
+
+    expect(mintPortWiringDeps.current?.getGraph()).toBeNull()
   })
 
   it("reports the bound workflow's own stored root graph id once bound", async () => {
