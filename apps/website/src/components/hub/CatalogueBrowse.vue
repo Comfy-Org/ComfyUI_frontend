@@ -2,7 +2,6 @@
 import { ChevronLeft } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
-import type { UseCase } from '../../config/models-catalogue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type {
@@ -15,7 +14,7 @@ import {
   sortBrowseEntries
 } from '../../lib/hub/browse-entry'
 import type { WorkshopOutcome } from '../../config/workshop-outcomes'
-import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
+import { shelvesFor } from '../../lib/hub/shelves'
 import { entrySlides } from '../../lib/workshop/featured-slides'
 import FeaturedBanner from '../workshop/FeaturedBanner.vue'
 import WorkshopHero from '../workshop/WorkshopHero.vue'
@@ -49,8 +48,11 @@ const {
 
 const PAGE = 30
 
-const useCase = ref<UseCase | 'all'>('all')
 const type = ref<TypeFilter>('model')
+// Which row of the half the reader is standing in. The two halves shelve by
+// different axes, so the key is theirs rather than one shared enumeration.
+const shelf = ref('all')
+const shelves = computed(() => shelvesFor(type.value))
 const order = ref<CatalogueOrder>('popular')
 const query = ref('')
 // Set by a model card's "N workflows use this": the catalogue arrives already
@@ -118,8 +120,7 @@ const usesTheModel = (entry: BrowseEntry, name: string) =>
 const narrowings = computed<((entry: BrowseEntry) => boolean)[]>(() => {
   const text = searchable(query.value)
   return [
-    (entry) =>
-      useCase.value === 'all' || entry.useCases.includes(useCase.value),
+    (entry) => shelf.value === 'all' || entry.shelves.includes(shelf.value),
     (entry) => usesTheModel(entry, usesModel.value),
     (entry) => matchesOutcome(entry, outcome.value),
     (entry) => matchesQuery(entry, text)
@@ -156,6 +157,13 @@ watch(order, (next) => {
 watch(type, (next) => {
   const only = ORDERS.find((option) => option.value === order.value)?.only
   if (only && only !== next) order.value = 'popular'
+  // A shelf key belongs to one axis, and the other half has no such row. A
+  // reader already inside a list stays inside one, over the half they have
+  // just switched to, rather than being sent back to the shelves.
+  if (shelf.value !== 'all') {
+    wholeList.value = true
+    shelf.value = 'all'
+  }
 })
 
 watch([matched, order], () => {
@@ -193,13 +201,13 @@ function clearNarrowing() {
 const wholeList = ref(false)
 
 const browsing = computed(
-  () => useCase.value !== 'all' || narrowed.value || wholeList.value
+  () => shelf.value !== 'all' || narrowed.value || wholeList.value
 )
 
 // What the models page does: the hero introduces the catalogue and steps aside
 // once the reader has chosen a section or asked for the half entire, and the
 // featured strip stands only while nothing at all has been asked.
-const inSection = computed(() => useCase.value !== 'all' || wholeList.value)
+const inSection = computed(() => shelf.value !== 'all' || wholeList.value)
 
 // The two halves are searched apart, so the field says which one it is in,
 // in the words each already had on its own page.
@@ -214,7 +222,7 @@ const searchPlaceholder = computed(() =>
 
 function backToShelves() {
   clearNarrowing()
-  useCase.value = 'all'
+  shelf.value = 'all'
   wholeList.value = false
   order.value = 'popular'
 }
@@ -222,7 +230,9 @@ function backToShelves() {
 onMounted(() => {
   const asked = browseRequestFrom(location.search)
   type.value = asked.type
-  useCase.value = asked.useCase
+  shelf.value = shelves.value.some((row) => row.key === asked.shelf)
+    ? asked.shelf
+    : 'all'
   wholeList.value = asked.all
   usesModel.value = asked.usesModel
   query.value = asked.query
@@ -264,20 +274,21 @@ const modelsInTab = computed(() => {
 
 // The rows are a way in, so they stand while the medium is the only thing
 // chosen: once a reader narrows further they are past being shown around.
-const showRows = computed(() => useCase.value !== 'all' && !narrowed.value)
+const showRows = computed(() => shelf.value !== 'all' && !narrowed.value)
 
 function openOutcome(asked: WorkshopOutcome) {
   outcome.value = asked
 }
 
-const heading = computed(() =>
-  useCase.value === 'all'
-    ? t('workshop.v2.allOf', locale).replace(
+const heading = computed(() => {
+  const standing = shelves.value.find((row) => row.key === shelf.value)
+  return standing
+    ? t(standing.labelKey, locale)
+    : t('workshop.v2.allOf', locale).replace(
         '{kind}',
         t(kindLabelKey[type.value], locale).toLowerCase()
       )
-    : t(useCaseLabelKey[useCase.value], locale)
-)
+})
 </script>
 
 <template>
@@ -362,8 +373,9 @@ const heading = computed(() =>
     <HubSections
       v-if="!browsing"
       :entries="matched"
+      :shelves
       :locale
-      @open="useCase = $event"
+      @open="shelf = $event"
       @open-all="wholeList = true"
     />
 
@@ -389,7 +401,7 @@ const heading = computed(() =>
       <CatalogueGrid
         :visible
         :total="sorted.length"
-        :shelf="useCase"
+        :shelf
         :locale
         @more="shown += PAGE"
       />

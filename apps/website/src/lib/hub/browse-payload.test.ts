@@ -54,7 +54,7 @@ describe('browseEntries', () => {
       key: 'bfl--flux',
       kind: 'model',
       title: 'Flux',
-      useCases: ['generate-images'],
+      shelves: ['generate-images'],
       models: [],
       tags: [],
       standing: 3,

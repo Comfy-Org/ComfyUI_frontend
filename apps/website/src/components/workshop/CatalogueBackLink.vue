@@ -2,12 +2,11 @@
 import { ChevronLeft } from '@lucide/vue'
 import { onMounted, ref } from 'vue'
 
-import { catalogSearch } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { lastShelf } from '../../lib/workshop/shelf-memory'
-import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
+import { shelfLabelKey } from '../../lib/workshop/shelf-label'
 
 const {
   catalogue,
@@ -30,9 +29,10 @@ const category = ref<string>()
 // somebody shared, there is no shelf to return to and the catalogue answers.
 onMounted(() => {
   const shelf = lastShelf(location.pathname)
-  if (!shelf || shelf === 'all') return
-  href.value = `${catalogueHref}${catalogSearch({ useCase: shelf })}`
-  category.value = t(useCaseLabelKey[shelf], locale)
+  const labelKey = shelf ? shelfLabelKey(shelf) : undefined
+  if (!shelf || !labelKey) return
+  href.value = `${catalogueHref}?useCase=${encodeURIComponent(shelf)}`
+  category.value = t(labelKey, locale)
 })
 </script>
 

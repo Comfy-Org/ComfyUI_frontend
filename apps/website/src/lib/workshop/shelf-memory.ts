@@ -1,7 +1,9 @@
-import type { UseCase } from '../../config/models-catalogue'
-import { USE_CASES } from '../../config/models-catalogue'
-
-export type Shelf = UseCase | 'all' | 'other'
+/**
+ * A shelf key, or `all` for the catalogue entire and `other` for what no shelf
+ * claimed. Which keys are shelves depends on the half the reader was in, so
+ * the memory keeps the key and the page it returns to resolves it.
+ */
+export type Shelf = string
 
 const KEY = 'comfy-models-shelf'
 
@@ -57,10 +59,7 @@ export function lastShelf(modelPath: string): Shelf | undefined {
 }
 
 function asShelf(value: unknown): Shelf | undefined {
-  if (value === 'all' || value === 'other') return value
-  return typeof value === 'string'
-    ? USE_CASES.find((useCase) => useCase === value)
-    : undefined
+  return typeof value === 'string' && value !== '' ? value : undefined
 }
 
 function isShelfReturn(value: unknown): value is ShelfReturn {

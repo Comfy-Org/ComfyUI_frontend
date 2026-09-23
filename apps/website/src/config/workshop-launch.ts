@@ -170,6 +170,14 @@ const BY_TEMPLATE = new Map(
   )
 )
 
+const CATEGORY_BY_TEMPLATE = new Map(
+  LAUNCH_CATEGORIES.flatMap((category) =>
+    category.workflows.map(
+      (workflow) => [workflow.template, category.key] as const
+    )
+  )
+)
+
 export function launchesHere(templateName: string): boolean {
   return BY_TEMPLATE.has(templateName)
 }
@@ -177,4 +185,9 @@ export function launchesHere(templateName: string): boolean {
 /** The name the spec gives the job, which is what a card says. */
 export function launchOutcome(templateName: string): string | undefined {
   return BY_TEMPLATE.get(templateName)?.outcome
+}
+
+/** The shelf the spec files it under, which is how the workflows half is read. */
+export function launchCategoryOf(templateName: string): string | undefined {
+  return CATEGORY_BY_TEMPLATE.get(templateName)
 }

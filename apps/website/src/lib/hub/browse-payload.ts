@@ -3,6 +3,7 @@ import type { BrowseEntry } from './browse-entry'
 import { cardViewFor } from './catalogue-card'
 import type { CatalogueEntry } from './catalogue-entries'
 import { buildCatalogue, entryUseCases } from './catalogue-entries'
+import { launchCategoryOf } from '../../config/workshop-launch'
 import type { FacetedTemplate } from './facet-fields'
 import { workflowDisplayTitle } from './workflow-title'
 
@@ -15,7 +16,7 @@ function modelEntry(
     key: entry.key,
     kind: 'model',
     title: entry.name,
-    useCases: entryUseCases(entry, models),
+    shelves: entryUseCases(entry, models),
     models: [],
     tags: model.capabilities,
     standing: model.recommendedRank ?? Number.POSITIVE_INFINITY,
@@ -34,7 +35,11 @@ function workflowEntry(
     key: entry.key,
     kind: entry.kind,
     title: workflowDisplayTitle(template),
-    useCases: entryUseCases(entry, models),
+    // The workflows half is shelved by the launch spec's categories, not by
+    // the use cases the models half is read through.
+    shelves: [launchCategoryOf(template.name)].filter(
+      (key) => key !== undefined
+    ),
     models: template.models,
     tags: template.tags,
     standing: template.usage,

@@ -2,38 +2,47 @@
 import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
-import type { UseCase } from '../../config/models-catalogue'
-import { USE_CASES } from '../../config/models-catalogue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { BrowseEntry } from '../../lib/hub/browse-entry'
 import { sortBrowseEntries } from '../../lib/hub/browse-entry'
-import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
+import type { CatalogueShelf } from '../../lib/hub/shelves'
 import CardRow from '../workshop/CardRow.vue'
 import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
 import CatalogueCard from './CatalogueCard.vue'
 
 const ROW_LIMIT = 8
 
-const { entries, locale = 'en' } = defineProps<{
+// The axis the half is read through, in the order the reader meets it. The
+// two halves shelve differently, so the page that knows which tab it is in
+// passes the axis rather than this component choosing one.
+const {
+  entries,
+  shelves,
+  locale = 'en'
+} = defineProps<{
   entries: readonly BrowseEntry[]
+  shelves: readonly CatalogueShelf[]
   locale?: Locale
 }>()
 
-const emit = defineEmits<{ open: [UseCase]; openAll: [] }>()
+const emit = defineEmits<{ open: [string]; openAll: [] }>()
 
-const shelves = computed(() =>
-  USE_CASES.map((useCase) => {
-    const matches = sortBrowseEntries(
-      entries.filter((entry) => entry.useCases.includes(useCase)),
-      'popular'
-    )
-    return {
-      useCase,
-      total: matches.length,
-      shown: matches.slice(0, ROW_LIMIT)
-    }
-  }).filter((shelf) => shelf.total > 0)
+const rows = computed(() =>
+  shelves
+    .map((shelf) => {
+      const matches = sortBrowseEntries(
+        entries.filter((entry) => entry.shelves.includes(shelf.key)),
+        'popular'
+      )
+      return {
+        key: shelf.key,
+        labelKey: shelf.labelKey,
+        total: matches.length,
+        shown: matches.slice(0, ROW_LIMIT)
+      }
+    })
+    .filter((shelf) => shelf.total > 0)
 )
 
 const titleClass =
@@ -68,21 +77,21 @@ const browseAllLabel = computed(() =>
 <template>
   <div class="flex flex-col gap-12" data-testid="hub-sections">
     <section
-      v-for="shelf in shelves"
-      :key="shelf.useCase"
-      :aria-labelledby="`shelf-${shelf.useCase}`"
-      :data-testid="`shelf-${shelf.useCase}`"
+      v-for="shelf in rows"
+      :key="shelf.key"
+      :aria-labelledby="`shelf-${shelf.key}`"
+      :data-testid="`shelf-${shelf.key}`"
     >
       <CardRow :locale>
         <template #heading>
-          <h2 :id="`shelf-${shelf.useCase}`">
+          <h2 :id="`shelf-${shelf.key}`">
             <button
               type="button"
               :class="titleClass"
-              :data-testid="`shelf-${shelf.useCase}-open`"
-              @click="emit('open', shelf.useCase)"
+              :data-testid="`shelf-${shelf.key}-open`"
+              @click="emit('open', shelf.key)"
             >
-              {{ t(useCaseLabelKey[shelf.useCase], locale) }}
+              {{ t(shelf.labelKey, locale) }}
             </button>
           </h2>
         </template>
@@ -92,8 +101,8 @@ const browseAllLabel = computed(() =>
             v-if="shelf.total > shelf.shown.length"
             type="button"
             :class="seeAllClass"
-            :data-testid="`shelf-${shelf.useCase}-see-all`"
-            @click="emit('open', shelf.useCase)"
+            :data-testid="`shelf-${shelf.key}-see-all`"
+            @click="emit('open', shelf.key)"
           >
             <span class="tabular-nums">
               {{

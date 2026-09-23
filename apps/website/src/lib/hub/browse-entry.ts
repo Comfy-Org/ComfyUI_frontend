@@ -1,5 +1,3 @@
-import type { UseCase } from '../../config/models-catalogue'
-import { USE_CASES } from '../../config/models-catalogue'
 import type { CardView } from './catalogue-card'
 import type { EntryKind } from './catalogue-entries'
 
@@ -22,7 +20,12 @@ export interface BrowseEntry {
   readonly key: string
   readonly kind: EntryKind
   readonly title: string
-  readonly useCases: readonly UseCase[]
+  /**
+   * The shelves it stands on. The two halves shelve by different axes: a model
+   * by the use cases it serves, a workflow by the one launch category the spec
+   * files it under, so the key is a string rather than either axis's own type.
+   */
+  readonly shelves: readonly string[]
   /** The models it names, for search and for "the workflows that use this". */
   readonly models: readonly string[]
   /** What it is good for, in the reader's words. Read by search only. */
@@ -71,7 +74,8 @@ export function sortBrowseEntries(
 /** What the catalogue opens on, read off a link rather than off the browser. */
 export interface BrowseRequest {
   readonly type: TypeFilter
-  readonly useCase: UseCase | 'all'
+  /** Unvalidated: which keys are shelves depends on the tab it arrives with. */
+  readonly shelf: string
   readonly usesModel: string
   readonly query: string
   /** Whether the address asked past the shelves, for the half entire. */
@@ -84,12 +88,11 @@ export function browseRequestFrom(search: string): BrowseRequest {
   const params = new URLSearchParams(search)
   const asked = params.get('type')
   const model = params.get('model') ?? ''
-  const useCase = USE_CASES.find((value) => value === params.get('useCase'))
   return {
     // "N workflows use this" lands on that model's uses, so the link implies
     // the tab even when it does not name one.
     type: model ? 'workflow' : (TABS.find((tab) => tab === asked) ?? 'model'),
-    useCase: useCase ?? 'all',
+    shelf: params.get('useCase') ?? 'all',
     usesModel: model,
     query: params.get('q') ?? '',
     all: params.get('all') === '1'

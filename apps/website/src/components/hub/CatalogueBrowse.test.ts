@@ -14,7 +14,7 @@ function entry(overrides: Partial<BrowseEntry> = {}): BrowseEntry {
     key,
     kind: 'model',
     title,
-    useCases: ['generate-images'],
+    shelves: ['generate-images'],
     models: [],
     tags: [],
     standing: 1,
@@ -35,12 +35,15 @@ function entry(overrides: Partial<BrowseEntry> = {}): BrowseEntry {
   }
 }
 
+// A model shelves by use case and a workflow by the launch spec's category,
+// so a fixture of each carries a key from its own axis.
 const workflow = (overrides: Partial<BrowseEntry> = {}) =>
   entry({
     key: 'poster',
     kind: 'workflow',
     title: 'Movie poster',
     models: ['Flux'],
+    shelves: ['product'],
     standing: 400,
     ...overrides
   })
@@ -52,25 +55,25 @@ const EDITING = [
   workflow({
     key: 'upscale-photo',
     title: 'Upscale a photo',
-    useCases: ['edit-images'],
+    shelves: ['cleanup'],
     tags: ['Image Upscale']
   }),
   workflow({
     key: 'restore-scan',
     title: 'Restore a scan',
-    useCases: ['edit-images'],
+    shelves: ['cleanup'],
     tags: ['Image Upscale']
   }),
   workflow({
     key: 'erase',
     title: 'Erase an object',
-    useCases: ['edit-images'],
+    shelves: ['cleanup'],
     tags: ['Inpainting']
   }),
   workflow({
     key: 'extend',
     title: 'Extend a photo',
-    useCases: ['edit-images'],
+    shelves: ['cleanup'],
     tags: ['Outpainting']
   })
 ]
@@ -110,33 +113,35 @@ describe('CatalogueBrowse', () => {
   // A model is a capability and a workflow is a job. They carry different
   // measures and different rows, so each tab is its own catalogue rather than
   // a filter over one shared list.
+  // They are read through different axes too: a model by the use case it
+  // serves, a workflow by the job category the launch spec files it under.
   it('gives each tab its own shelves', async () => {
     await at('')
     expect(onShelf('generate-images')).toEqual(['model'])
+    expect(screen.queryByTestId('shelf-product')).toBeNull()
 
     await userEvent.click(screen.getByTestId('catalogue-type-workflow'))
-    expect(onShelf('generate-images')).toEqual(['workflow'])
+    expect(onShelf('product')).toEqual(['workflow'])
+    expect(screen.queryByTestId('shelf-generate-images')).toBeNull()
   })
 
-  // Three of the eight use cases hold no model at all, and a shelf standing
-  // empty says the catalogue is broken rather than that this tab has none.
-  it('leaves out a use case the chosen tab has nothing in', async () => {
+  // A shelf standing empty says the catalogue is broken rather than that this
+  // tab has nothing of that kind.
+  it('leaves out a shelf the chosen tab has nothing in', async () => {
     await at('?type=workflow', [
       ...ENTRIES,
-      workflow({ key: 'mesh', title: 'Photo to mesh', useCases: ['3d'] })
+      workflow({ key: 'clip', title: 'Make a clip', shelves: ['videos'] })
     ])
-    expect(screen.getByTestId('shelf-3d')).toBeTruthy()
-
-    await userEvent.click(screen.getByTestId('catalogue-type-model'))
-    expect(screen.queryByTestId('shelf-3d')).toBeNull()
+    expect(screen.getByTestId('shelf-videos')).toBeTruthy()
+    expect(screen.queryByTestId('shelf-upscale')).toBeNull()
   })
 
-  it('opens a shelf into the list for that use case', async () => {
+  it('opens a shelf into the list for that shelf', async () => {
     await at('?type=workflow')
-    await userEvent.click(screen.getByTestId('shelf-generate-images-open'))
+    await userEvent.click(screen.getByTestId('shelf-product-open'))
     expect(shown()).toEqual(['Movie poster'])
     expect(screen.getByTestId('catalogue-heading').textContent).toMatch(
-      /image/i
+      /product/i
     )
   })
 
@@ -207,7 +212,7 @@ describe('CatalogueBrowse', () => {
 
   it('opens a medium on the rows that name a job inside it', async () => {
     await at('?type=workflow', [...ENTRIES, ...EDITING])
-    await userEvent.click(screen.getByTestId('shelf-edit-images-open'))
+    await userEvent.click(screen.getByTestId('shelf-cleanup-open'))
 
     const rows = screen.getByTestId('outcome-rows')
     expect(within(rows).getByText('Upscale & restore')).toBeTruthy()
@@ -221,19 +226,19 @@ describe('CatalogueBrowse', () => {
       workflow({
         key: 'upscale-clip',
         title: 'Upscale a clip',
-        useCases: ['edit-videos'],
+        shelves: ['videos'],
         tags: ['Video Upscale']
       }),
       workflow({
         key: 'smooth-clip',
         title: 'Smooth a clip',
-        useCases: ['edit-videos'],
+        shelves: ['videos'],
         tags: ['Frame Interpolation']
       })
     ]
     await at('?type=workflow', [...EDITING, ...videos])
 
-    await userEvent.click(screen.getByTestId('shelf-edit-videos-open'))
+    await userEvent.click(screen.getByTestId('shelf-videos-open'))
     expect(
       within(screen.getByTestId('outcome-upscale-restore')).getAllByTestId(
         'catalogue-card'
@@ -246,11 +251,11 @@ describe('CatalogueBrowse', () => {
   it('heads no row on the models tab', async () => {
     await at('?type=model', [
       ...EDITING,
-      entry({ key: 'seedvr', title: 'SeedVR2', useCases: ['edit-images'] }),
+      entry({ key: 'seedvr', title: 'SeedVR2', shelves: ['edit-images'] }),
       entry({
         key: 'kontext',
         title: 'Flux Kontext',
-        useCases: ['edit-images']
+        shelves: ['edit-images']
       })
     ])
 
@@ -263,7 +268,7 @@ describe('CatalogueBrowse', () => {
   // so it offers no way in: opening it would draw the same cards again.
   it('offers no way into a row that is holding nothing back', async () => {
     await at('?type=workflow', [...ENTRIES, ...EDITING])
-    await userEvent.click(screen.getByTestId('shelf-edit-images-open'))
+    await userEvent.click(screen.getByTestId('shelf-cleanup-open'))
 
     expect(screen.queryByTestId('outcome-upscale-restore-see-all')).toBeNull()
   })
@@ -273,12 +278,12 @@ describe('CatalogueBrowse', () => {
       workflow({
         key: `upscale-${index}`,
         title: `Upscale ${index}`,
-        useCases: ['edit-images'],
+        shelves: ['cleanup'],
         tags: ['Image Upscale']
       })
     )
     await at('?type=workflow', [...ENTRIES, ...EDITING, ...crowded])
-    await userEvent.click(screen.getByTestId('shelf-edit-images-open'))
+    await userEvent.click(screen.getByTestId('shelf-cleanup-open'))
 
     await userEvent.click(screen.getByTestId('outcome-upscale-restore-see-all'))
 

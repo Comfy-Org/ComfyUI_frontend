@@ -9,19 +9,19 @@ describe('browseRequestFrom', () => {
   it('opens on the models when the link asks for nothing', () => {
     expect(browseRequestFrom('')).toEqual({
       type: 'model',
-      useCase: 'all',
+      shelf: 'all',
       usesModel: '',
       query: '',
       all: false
     })
   })
 
-  it('reads the tab, the use case and the search off the link', () => {
+  it('reads the tab, the shelf and the search off the link', () => {
     expect(
       browseRequestFrom('?type=model&useCase=edit-images&q=poster')
     ).toEqual({
       type: 'model',
-      useCase: 'edit-images',
+      shelf: 'edit-images',
       usesModel: '',
       query: 'poster',
       all: false
@@ -38,8 +38,10 @@ describe('browseRequestFrom', () => {
     expect(browseRequestFrom('?type=workflow&all=1').all).toBe(true)
   })
 
-  it('ignores a use case it does not have', () => {
-    expect(browseRequestFrom('?useCase=knitting').useCase).toBe('all')
+  // The two halves shelve by different axes, so the link is read without
+  // judging the key: the page that knows its tab decides whether it names one.
+  it('carries the shelf key through unjudged', () => {
+    expect(browseRequestFrom('?useCase=characters').shelf).toBe('characters')
   })
 
   // "42 workflows use this" is a link, and what it means is the workflows, not
@@ -60,7 +62,7 @@ describe('sortBrowseEntries', () => {
     key: overrides.title ?? 'x',
     kind: 'workflow',
     title: 'x',
-    useCases: [],
+    shelves: [],
     models: [],
     tags: [],
     standing: 0,
