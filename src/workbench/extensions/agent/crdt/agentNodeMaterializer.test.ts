@@ -802,6 +802,133 @@ describe('reconcileAgentAdapters', () => {
       expect(graph.serialize().links).toEqual([])
     })
 
+    it('hard-detaches every output link even when an earlier target’s onConnectionsChange throws', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.batch(REMOTE, (batch) => {
+        batch.addNode({
+          ...nodePayload(1, 'widget-node'),
+          outputs: [{ name: 'value', type: '*', links: [] }]
+        })
+        batch.addNode({
+          ...nodePayload(2),
+          inputs: [{ name: 'value', type: '*', link: null }]
+        })
+        batch.addNode({
+          ...nodePayload(3),
+          inputs: [{ name: 'value', type: '*', link: null }]
+        })
+        // Lower link id first: `disconnectOutput` walks links in ascending
+        // id order, so the throwing target is the one it reaches first.
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: '*'
+        })
+        batch.connect({
+          id: 10,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 3,
+          targetSlot: 0,
+          type: '*'
+        })
+      })
+      expect(reconcileAgentAdapters(graph)).toHaveLength(3)
+      const orphan = graph.getNodeById(toNodeId(1))!
+      const throwingTarget = graph.getNodeById(toNodeId(2))!
+      const laterTarget = graph.getNodeById(toNodeId(3))!
+      throwingTarget.onConnectionsChange = () => {
+        throw new Error('target extension blew up in onConnectionsChange')
+      }
+
+      const record = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))!
+      expect(useNodeDataStore().deleteNode(scope, record, REMOTE)).toBe(true)
+      const failure = new Error('undo bookkeeping blew up in beforeChange')
+      vi.spyOn(graph, 'beforeChange').mockImplementation(() => {
+        throw failure
+      })
+
+      expect(() => reconcileAgentAdapters(graph)).toThrow(failure)
+
+      expect(graph._nodes).toEqual([throwingTarget, laterTarget])
+      expect(orphan.graph).toBeNull()
+      // `LGraphNode.disconnectOutput` stops at the first throwing callback;
+      // the link behind it must still come down.
+      expect(graph.getLink(toLinkId(10))).toBeUndefined()
+      expect(graph.getLink(toLinkId(9))).toBeUndefined()
+      expect(laterTarget.inputs[0]?.link).toBeNull()
+      expect(throwingTarget.inputs[0]?.link).toBeNull()
+      expect(graph.serialize().links).toEqual([])
+    })
+
+    it('leaves a same-id successor’s links alone when the stale node is hard-detached', () => {
+      const graph = new LGraph()
+      const scope = graphScopeOf(graph)
+      const mutations = remoteMutations(scope)
+      mutations.batch(REMOTE, (batch) => {
+        batch.addNode({
+          ...nodePayload(1, 'widget-node'),
+          outputs: [{ name: 'value', type: '*', links: [] }]
+        })
+        batch.addNode({
+          ...nodePayload(2),
+          inputs: [{ name: 'value', type: '*', link: null }]
+        })
+        batch.connect({
+          id: 9,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 2,
+          targetSlot: 0,
+          type: '*'
+        })
+      })
+      reconcileAgentAdapters(graph)
+      const stale = graph.getNodeById(toNodeId(1))!
+      const incumbent = useNodeDataStore().getNode(
+        scope.rootGraphId,
+        toNodeId(1)
+      )!
+      expect(useNodeDataStore().deleteNode(scope, incumbent, REMOTE)).toBe(true)
+      expect(
+        mutations.addNode(
+          {
+            ...nodePayload(1, 'widget-node'),
+            outputs: [{ name: 'value', type: '*', links: [9] }]
+          },
+          { ...REMOTE, opId: 'op-replace-1' }
+        )
+      ).toBe(true)
+      // The stale node's removal fails outright, so the fallback runs while
+      // its id slot is already owned by the replacement.
+      const failure = new Error('removal path blew up for the stale node')
+      const realRemove = graph.remove.bind(graph)
+      vi.spyOn(graph, 'remove').mockImplementation((node, options) => {
+        if (node === stale) throw failure
+        realRemove(node, options)
+      })
+
+      expect(() => reconcileAgentAdapters(graph)).toThrow(failure)
+
+      const replacement = graph.getNodeById(toNodeId(1))!
+      expect(replacement).not.toBe(stale)
+      expect(graph._nodes).not.toContain(stale)
+      expect(stale.graph).toBeNull()
+      // Link 9 is keyed by node id 1, which the replacement now owns; the
+      // stale node's teardown must not take it down.
+      expect(graph.getLink(toLinkId(9))).toMatchObject({
+        origin_id: toNodeId(1),
+        target_id: toNodeId(2)
+      })
+      expect(graph.getNodeById(toNodeId(2))!.inputs[0]?.link).toBe(toLinkId(9))
+      expect(graph.serialize().links).toHaveLength(1)
+    })
+
     it('detaches nodes dropped by an authoritative snapshot', () => {
       const graph = new LGraph()
       const scope = seedAgentAddedNode(graph, 1)

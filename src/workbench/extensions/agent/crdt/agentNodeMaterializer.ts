@@ -7,10 +7,13 @@ import {
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import {
   inputHasLink,
-  outputHasLinks
+  inputLink,
+  outputHasLinks,
+  outputLinks
 } from '@/lib/litegraph/src/node/slotLinks'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
@@ -314,7 +317,14 @@ function forceDetachOrphan(
     // `removeNode` disconnects links only after `beforeChange()`, so a throw
     // there leaves every link registered; take them down first so no
     // topology keeps pointing at a node the containers no longer hold.
-    detachOrphanLinks(graph, orphan)
+    //
+    // Links are keyed by node id. When a same-id replacement already owns
+    // the slot, those links are the successor's now (`removeNode` skips the
+    // teardown for the same reason), so only an unowned id is cleaned up.
+    const successor = graph._nodes_by_id[orphan.id]
+    if (successor == null || successor === orphan) {
+      detachOrphanLinks(graph, orphan)
+    }
     const pos = graph._nodes.indexOf(orphan)
     if (pos !== -1) graph._nodes.splice(pos, 1)
     if (graph._nodes_by_id[orphan.id] === orphan) {
@@ -333,6 +343,29 @@ function detachOrphanLinks(
   graph: MaterializableGraph,
   orphan: LGraphNode
 ): void {
+  // The node-level disconnect helpers fire `onConnectionsChange` per link and
+  // stop at the first throw (or bail on a missing far end), which can leave
+  // later links registered. Whatever is still there afterwards is taken
+  // down link by link, without callbacks. The node's own graph is the link
+  // network those helpers resolve against; it is still set at this point.
+  const network = orphan.graph
+  const forceRemaining = (
+    links: readonly LLink[],
+    keepReroutes: 'input' | 'output'
+  ): boolean => {
+    if (!network) return false
+    let forced = false
+    for (const link of links) {
+      try {
+        link.disconnect(network, keepReroutes)
+        forced = true
+      } catch {
+        // Same: keep going so every remaining link gets its own attempt.
+      }
+    }
+    return forced
+  }
+  let forced = false
   for (const [slot] of orphan.inputs.entries()) {
     try {
       if (inputHasLink(graph, orphan.id, slot)) {
@@ -341,6 +374,8 @@ function detachOrphanLinks(
     } catch {
       // Already failing; the container splice below is what must not be lost.
     }
+    const remaining = network && inputLink(network, orphan.id, slot)
+    if (remaining) forced = forceRemaining([remaining], 'output') || forced
   }
   for (const slot of orphan.outputs.keys()) {
     try {
@@ -350,7 +385,12 @@ function detachOrphanLinks(
     } catch {
       // Same: keep going so every remaining link gets its own attempt.
     }
+    if (network) {
+      forced =
+        forceRemaining(outputLinks(network, orphan.id, slot), 'input') || forced
+    }
   }
+  if (forced && network) network.incrementVersion()
   for (const link of [...graph.floatingLinks.values()]) {
     if (link.origin_id !== orphan.id && link.target_id !== orphan.id) continue
     try {
