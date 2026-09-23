@@ -14,7 +14,6 @@ import enMessages from '@/locales/en/main.json'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/platform/settings/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { ComfyNodeDefImpl, useNodeDefStore } from '@/stores/nodeDefStore'
 
 import NodeHeader from './NodeHeader.vue'
@@ -133,23 +132,11 @@ const renderHeader = (props?: Partial<ComponentProps<typeof NodeHeader>>) => {
 }
 
 describe('NodeHeader.vue', () => {
-  it.for([
-    { picking: false, disabled: false, collapseCalls: 1 },
-    { picking: true, disabled: true, collapseCalls: 0 }
-  ])(
-    'picking=$picking sets collapse disabled=$disabled and emits collapse $collapseCalls times',
-    async ({ picking, disabled, collapseCalls }) => {
-      useAgentNodeSelectionStore().isActive = picking
-      const { user, onCollapse } = renderHeader()
-      const collapseButton = screen.getByTestId('node-collapse-button')
-
-      expect(collapseButton).toHaveProperty('disabled', disabled)
-
-      await user.click(collapseButton)
-
-      expect(onCollapse).toHaveBeenCalledTimes(collapseCalls)
-    }
-  )
+  it('emits collapse when collapse button is clicked', async () => {
+    const { user, onCollapse } = renderHeader()
+    await user.click(screen.getByTestId('node-collapse-button'))
+    expect(onCollapse).toHaveBeenCalled()
+  })
 
   it('shows the current node title and updates when prop changes', async () => {
     const { rerender } = renderHeader({
@@ -197,18 +184,6 @@ describe('NodeHeader.vue', () => {
     expect(onUpdateTitle).not.toHaveBeenCalled()
 
     expect(screen.getByTestId('node-title').textContent).toContain('KeepMe')
-  })
-
-  it('does not open the title editor on double click while picking nodes', async () => {
-    useAgentNodeSelectionStore().isActive = true
-    const { user } = renderHeader({
-      nodeData: makeNodeData({ title: 'Locked' })
-    })
-
-    await user.dblClick(screen.getByTestId('node-header-1'))
-
-    expect(screen.queryByTestId('node-title-input')).not.toBeInTheDocument()
-    expect(screen.getByTestId('node-title').textContent).toContain('Locked')
   })
 
   it('renders correct chevron icon based on collapsed prop', async () => {

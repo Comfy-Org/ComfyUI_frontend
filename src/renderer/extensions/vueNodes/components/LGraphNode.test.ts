@@ -1,5 +1,4 @@
-import userEvent from '@testing-library/user-event'
-import { fireEvent, render, screen } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -20,7 +19,6 @@ import {
   TitleMode
 } from '@/lib/litegraph/src/types/globalEnums'
 import type { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
-import { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { NodeState } from '@/types/nodeState'
 import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
@@ -28,11 +26,8 @@ import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidg
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
 import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { useNodeResize } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { app } from '@/scripts/app'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
@@ -60,21 +55,9 @@ vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'),
   () => {
     const handleNodeSelect = vi.fn()
-    const handleNodeRightClick = vi.fn()
-    const toggleNodeSelectionAfterPointerUp = vi.fn()
-    return {
-      useNodeEventHandlers: () => ({
-        handleNodeSelect,
-        handleNodeRightClick,
-        toggleNodeSelectionAfterPointerUp
-      })
-    }
+    return { useNodeEventHandlers: () => ({ handleNodeSelect }) }
   }
 )
-
-vi.mock<unknown>(import('@/composables/graph/useMoreOptionsMenu'), () => ({
-  showNodeOptions: vi.fn()
-}))
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'),
@@ -138,18 +121,15 @@ vi.mock<unknown>(
 
 vi.mock(
   import('@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'),
-  () => {
-    const startResize = vi.fn()
-    return {
-      useNodeResize: vi.fn((resizeCallback: ResizeCallback) => {
-        mockData.resizeCallback = resizeCallback
-        return {
-          startResize,
-          isResizing: ref(false)
-        }
-      })
-    }
-  }
+  () => ({
+    useNodeResize: vi.fn((resizeCallback: ResizeCallback) => {
+      mockData.resizeCallback = resizeCallback
+      return {
+        startResize: vi.fn(),
+        isResizing: ref(false)
+      }
+    })
+  })
 )
 
 vi.mock(import('@/renderer/core/layout/operations/graphLayoutAttachment'), {
@@ -683,106 +663,6 @@ describe('LGraphNode', () => {
     expect(
       screen.queryByRole('button', { name: /show advanced/i })
     ).not.toBeInTheDocument()
-  })
-
-  describe('while picking nodes for the agent', () => {
-    it.for([
-      { picking: false, contextMenuCalls: 1, resizeCalls: 1 },
-      { picking: true, contextMenuCalls: 0, resizeCalls: 0 }
-    ])(
-      'picking=$picking opens the options menu $contextMenuCalls times and starts $resizeCalls resizes',
-      async ({ picking, contextMenuCalls, resizeCalls }) => {
-        useAgentNodeSelectionStore().isActive = picking
-        const { startResize } = useNodeResize(vi.fn())
-        const { container } = renderLGraphNode({ nodeData: mockNodeData })
-
-        await fireEvent.contextMenu(getNodeRoot(container))
-        await userEvent.pointer({
-          keys: '[MouseLeft>]',
-          target: screen.getAllByRole('button')[0]
-        })
-
-        expect(showNodeOptions).toHaveBeenCalledTimes(contextMenuCalls)
-        expect(startResize).toHaveBeenCalledTimes(resizeCalls)
-      }
-    )
-
-    it.for([
-      { picking: false, inert: false },
-      { picking: true, inert: true }
-    ])(
-      'picking=$picking renders the node media content inert=$inert',
-      ({ picking, inert }) => {
-        useAgentNodeSelectionStore().isActive = picking
-        useNodeOutputStore().nodeOutputs['test-node-123'] = {
-          images: [{ filename: 'output.png', type: 'output' }]
-        }
-        vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
-          '/output.png'
-        ])
-
-        renderLGraphNode({ nodeData: mockNodeData })
-
-        expect(screen.getByTestId('node-media').hasAttribute('inert')).toBe(
-          inert
-        )
-      }
-    )
-
-    it.for([
-      { picking: false, cloneCalls: 1, showAdvanced: true, acceptsDrop: true },
-      { picking: true, cloneCalls: 0, showAdvanced: false, acceptsDrop: false }
-    ])(
-      'picking=$picking alt-clones $cloneCalls times, toggles advanced to $showAdvanced and accepts drops: $acceptsDrop',
-      async ({ picking, cloneCalls, showAdvanced, acceptsDrop }) => {
-        useAgentNodeSelectionStore().isActive = picking
-        const cloneNodes = vi
-          .spyOn(LGraphCanvas, 'cloneNodes')
-          .mockReturnValue(undefined)
-        mockData.mockLgraphNode = {
-          isSubgraphNode: () => false,
-          onDragOver: vi.fn(),
-          showAdvanced: false
-        }
-        const rootGraph: Record<string, unknown> = {
-          id: 'graph-test',
-          getNodeById: () => mockData.mockLgraphNode,
-          subgraphs: new Map()
-        }
-        rootGraph.rootGraph = rootGraph
-        useCanvasStore().currentGraph = fromAny(rootGraph)
-        const store = useWidgetValueStore()
-        const advancedId = widgetId('graph-test', mockNodeData.id, 'advanced')
-        store.registerWidget(advancedId, {
-          type: 'number',
-          value: 0,
-          options: { advanced: true }
-        })
-        const visibility = store.getWidgetVisibility(advancedId)
-        if (!visibility) throw new Error('advanced widget visibility missing')
-        visibility.surfaces.vueNode = 'advanced'
-        app.dragOverNode = null
-        const { container } = renderLGraphNode({
-          nodeData: { ...mockNodeData, graphId: 'graph-test' }
-        })
-
-        const user = userEvent.setup()
-        await user.keyboard('{Alt>}')
-        await user.pointer({
-          keys: '[MouseLeft>]',
-          target: getNodeRoot(container)
-        })
-        await user.keyboard('{/Alt}')
-        await user.click(screen.getByRole('button', { name: /show advanced/i }))
-        await fireEvent.drop(getNodeRoot(container))
-
-        expect(cloneNodes).toHaveBeenCalledTimes(cloneCalls)
-        expect(mockData.mockLgraphNode.showAdvanced).toBe(showAdvanced)
-        expect(app.dragOverNode).toBe(
-          acceptsDrop ? mockData.mockLgraphNode : null
-        )
-      }
-    )
   })
 
   describe('Reroute node sizing', () => {

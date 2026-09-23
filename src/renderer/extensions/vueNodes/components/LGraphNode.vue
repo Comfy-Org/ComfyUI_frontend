@@ -162,8 +162,6 @@
 
           <div
             v-if="hasCustomContent"
-            data-testid="node-media"
-            :inert="!canFocusWidgets"
             :class="
               cn(
                 'flex min-h-0 flex-col',
@@ -404,12 +402,7 @@ const nodeOpacity = computed(() => {
 const hasInputs = computed(() => nonWidgetedInputs(nodeData.inputs).length > 0)
 
 // Use canvas interactions for proper wheel event handling and pointer event capture control
-const {
-  handleWheel,
-  shouldHandleNodePointerEvents,
-  canEditNodes,
-  canFocusWidgets
-} = useCanvasInteractions()
+const { handleWheel, shouldHandleNodePointerEvents } = useCanvasInteractions()
 
 // Error boundary implementation
 const renderError = ref<string | null>(null)
@@ -445,7 +438,7 @@ const badges = usePartitionedBadges(nodeData)
 
 async function nodeOnPointerdown(event: PointerEvent) {
   const node = resolveLGraphNode()
-  if (event.altKey && node && canEditNodes.value) {
+  if (event.altKey && node) {
     const result = LGraphCanvas.cloneNodes([node])
     if (result?.created.length) {
       const [newNode] = result.created
@@ -465,7 +458,6 @@ async function nodeOnPointerdown(event: PointerEvent) {
 const handleContextMenu = (event: MouseEvent) => {
   event.preventDefault()
   event.stopPropagation()
-  if (!canEditNodes.value) return
 
   // First handle the standard right-click behavior (selection)
   handleNodeRightClick(event as PointerEvent, nodeData.id)
@@ -501,7 +493,7 @@ const handleResizePointerDown = (
   corner: CompassCorners
 ) => {
   if (event.button !== 0) return
-  if (!canEditNodes.value) return
+  if (!shouldHandleNodePointerEvents.value) return
   if (nodeData.flags?.pinned) return
   if (nodeData.resizable === false) return
   startResize(event, corner)
@@ -602,7 +594,7 @@ const handleOpenErrors = () => {
 
 const handleToggleAdvanced = () => {
   const node = resolveLGraphNode()
-  if (!node || !canEditNodes.value) return
+  if (!node) return
 
   // A subgraph node has no advanced section of its own; the side panel hosts it.
   if (node instanceof SubgraphNode) {
@@ -765,7 +757,7 @@ const isDraggingOver = ref(false)
 
 function handleDragOver(event: DragEvent) {
   const node = resolveLGraphNode()
-  if (!node || !node.onDragOver || !canEditNodes.value) {
+  if (!node || !node.onDragOver) {
     isDraggingOver.value = false
     return
   }
@@ -781,7 +773,6 @@ function handleDragLeave() {
 
 function handleDrop() {
   isDraggingOver.value = false
-  if (!canEditNodes.value) return
   app.dragOverNode = resolveLGraphNode()
 }
 </script>
