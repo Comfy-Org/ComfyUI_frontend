@@ -86,7 +86,9 @@ class AgentNewChatServer {
 
   async install(): Promise<void> {
     this.page.on('response', (response) => {
-      const record = this.recordAccepted(response)
+      const record = this.recordAccepted(response).catch((error: unknown) => {
+        this.ackFailures.push(`${response.url()}: ${String(error)}`)
+      })
       this.recording.add(record)
       void record.finally(() => this.recording.delete(record))
     })

@@ -610,6 +610,14 @@ describe('createOpSender', () => {
 
     expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
     expect(sender.pending()).toBe(1)
+
+    ackInFlight()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'acknowledged',
+      'acknowledged'
+    ])
+    expect(sender.pending()).toBe(0)
   })
 
   it('reports a throw that only starts on a retry, after the transport first refused', () => {
