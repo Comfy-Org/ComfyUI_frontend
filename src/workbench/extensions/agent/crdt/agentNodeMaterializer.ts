@@ -1,3 +1,8 @@
+import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
+import {
+  isReservedBitRangeNodeId,
+  matchesReservedBitConvention
+} from '@/lib/litegraph/src/idAllocation'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
@@ -23,6 +28,21 @@ import type { WidgetStateInit } from '@/types/widgetState'
 
 import { allSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { runMintPortsSuppressed } from './mintPortWiring'
+
+// Backport-only note: this constant is duplicated here (rather than
+// imported) because it was introduced on main by an earlier, still-
+// unbackported PR that also added other reportError() call sites in this
+// file. Only the two reserved-bit/collision reports added by #18095 use it
+// on this branch.
+const AGENT_ECS_TAGS = {
+  failure_kind: 'caught_unexpected',
+  feature_area: 'agent',
+  operation: 'sync',
+  integration_target: 'ecs',
+  feature_flag: 'agent_crdt_follower',
+  feature_flag_state: 'enabled',
+  project_context: 'active_workflow'
+}
 
 export type MaterializableGraph = Pick<
   LGraph,
@@ -254,6 +274,7 @@ function materialize(
   const node =
     LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
   node.id = state.id
+  reportReservedBitViolation(graph, scope, state.id)
 
   const widgets = widgetStore.getNodeWidgets(scope.rootGraphId, state.id).map(
     (widget): WidgetStateInit => ({
@@ -345,6 +366,39 @@ function materialize(
     })
   }
   return true
+}
+
+/**
+ * The disjoint-mint partition (`idAllocation.ts`'s `AGENT_RESERVED_BIT`)
+ * rests on comfy-cli's `mint_id()` always setting bit 40 — a premise this
+ * repo cannot verify and comfy-cli could change without notice. Surface a
+ * remote id that carries NEITHER reserved bit (on a doc-bound graph, at the
+ * size only a modern mint produces) as telemetry instead of leaving the
+ * partition to silently stop holding.
+ *
+ * Only a numeric integer id says anything here: string ids are legal
+ * (`NodeId` is `string | number`, and a bound doc can carry a legacy
+ * `"named"` node or a `"57:3"` subgraph address), predate both mints, and
+ * are not `BigInt`-convertible — reconciliation must not abort on one.
+ */
+function reportReservedBitViolation(
+  graph: MaterializableGraph,
+  scope: GraphScope,
+  nodeId: NodeId
+): void {
+  if (!isRootGraphDocBound(scope.rootGraphId)) return
+  if (!isReservedBitRangeNodeId(nodeId)) return
+  if (matchesReservedBitConvention(nodeId)) return
+  reportError(
+    new Error(
+      `Remote node id ${String(nodeId)} on a CRDT-bound graph carries neither reserved mint bit (the agent's nor this app's)`
+    ),
+    {
+      errorType: 'agent_node_id_reserved_bit_violation',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
+      context: { graphId: graph.id, nodeId: String(nodeId) }
+    }
+  )
 }
 
 function replayUpdatedWidgetCallbacks(
