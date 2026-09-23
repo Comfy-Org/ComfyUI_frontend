@@ -100,7 +100,9 @@ function renderComponent() {
       subscriptionPlan: null,
       subscriptionTier: workspaceType === 'team' ? 'PRO' : 'FREE',
       members,
-      pendingInvites: []
+      pendingInvites: [],
+      membersLoaded: true,
+      pendingInvitesLoaded: true
     }
   ]
   workspaceStore.activeWorkspaceId = 'workspace-one'
