@@ -150,7 +150,9 @@ const SIZE_CLASSES = {
   sm: 'h-[80vh] w-[90vw] max-w-[960px]',
   md: 'h-[80vh] w-[90vw] max-w-[1400px]',
   lg: 'h-[80vh] w-[90vw] max-w-[1280px] aspect-[20/13] min-[1450px]:max-w-[1724px]',
-  full: 'h-full w-full max-w-[1400px] 2xl:max-w-[1600px]'
+  full: 'h-full w-full max-w-[1400px] 2xl:max-w-[1600px]',
+  // Defers sizing to the dialog panel, which clips with `overflow: hidden`.
+  fill: 'size-full'
 } as const
 
 type ModalSize = keyof typeof SIZE_CLASSES
