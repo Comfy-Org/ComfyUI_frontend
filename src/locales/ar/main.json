@@ -69,6 +69,7 @@
     "dismiss": "تجاهل",
     "downloadAssets": "تنزيل الأصول",
     "dragAndDropAssets": "اسحب الأصول وأفلتها هنا",
+    "editWhileWorking": "يمكنك متابعة التحرير أثناء عمله",
     "feedbackCaption": "مشاركة الملاحظات",
     "focusNode": "إظهار على اللوحة",
     "focusNodeLabel": "إظهار {node} على اللوحة",
@@ -102,6 +103,7 @@
       "selectNode": "تحديد عقدة"
     },
     "nodes": "العُقد",
+    "nodesAdded": "أضاف الوكيل عقدة واحدة إلى الرسم البياني | أضاف الوكيل {count} عُقَد إلى الرسم البياني",
     "notHelpful": "غير مفيد",
     "openWorkflowTab": "فتح {name}",
     "otherOpenWorkflows": "مهام سير العمل المفتوحة الأخرى",
@@ -190,7 +192,9 @@
     "unavailableWorkflowReference": "{name} (غير متاح)",
     "unsavedWorkflow": "غير محفوظ",
     "untitledChat": "بلا عنوان",
+    "updatingGraph": "يقوم الوكيل بتحديث الرسم البياني",
     "uploading": "جارٍ الرفع",
+    "viewAddedNodes": "عرض العقدة | عرض العُقَد",
     "worked": "اكتمل العمل",
     "workedForMinutes": "عمل لمدة {minutes}د {seconds}ث",
     "workedForSeconds": "عمل لمدة {seconds} ثوانٍ",
@@ -3108,6 +3112,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "العُقَد المُبرزة: {count}",
+    "label": "الخريطة المصغّرة",
     "nodeColors": "ألوان العقد",
     "renderBypassState": "عرض حالة التجاوز",
     "renderErrorState": "عرض حالة الخطأ",

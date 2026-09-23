@@ -18447,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "描画前にモデルが使用する推論量です。レベルを上げると詳細度が向上しますが、消費トークンも増えます。Arrow 2 モデルでのみ使用されます。"
+      },
       "seed": {
         "name": "seed",
         "tooltip": "ノードを再実行するかどうかを決定するシード値。実際の結果はシードに関係なく非決定的です。"
@@ -18485,6 +18489,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "希望するSVG出力のテキスト説明。"
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "描画前にモデルが使用する推論量です。レベルを上げると詳細度が向上しますが、消費トークンも増えます。Arrow 2 モデルでのみ使用されます。"
       },
       "reference_images": {
         "name": "reference_images",
@@ -19156,7 +19164,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "生成に使用するモデル。recraftv4_styles モデルはスタイル一貫性のある生成向けに構築されており、常に style_id または style_references が必要です。"
+        "tooltip": "生成に使用するモデルです。recraftv4_styles モデルはスタイル一貫性のある生成向けに設計されており、常に style_id または style_references が必要です。recraftv4_1_flash は最速かつ最も低コストなモデルで、スタイルは一切サポートしません。"
       },
       "model_size": {
         "name": "サイズ"
@@ -24049,6 +24057,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "モデルのチャットテンプレート内のシステムプロンプトを置き換えます。デフォルトテンプレートが使用されていない場合は無視されます。"
+      },
       "thinking": {
         "name": "思考モード",
         "tooltip": "モデルが対応している場合、思考モードで動作します。"
@@ -24065,6 +24077,10 @@
     "outputs": {
       "0": {
         "name": "生成テキスト",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }
@@ -24115,6 +24131,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "モデルのチャットテンプレート内のシステムプロンプトを置き換えます。デフォルトテンプレートが使用されていない場合は無視されます。"
+      },
       "thinking": {
         "name": "思考モード",
         "tooltip": "モデルが対応している場合、思考モードで動作します。"
@@ -24131,6 +24151,10 @@
     "outputs": {
       "0": {
         "name": "生成テキスト",
+        "tooltip": null
+      },
+      "1": {
+        "name": "思考",
         "tooltip": null
       }
     }

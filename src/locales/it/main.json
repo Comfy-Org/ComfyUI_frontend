@@ -69,6 +69,7 @@
     "dismiss": "Ignora",
     "downloadAssets": "Scarica risorse",
     "dragAndDropAssets": "Trascina qui le risorse",
+    "editWhileWorking": "Puoi continuare a modificare mentre lavora",
     "feedbackCaption": "Condividi feedback",
     "focusNode": "Mostra sul canvas",
     "focusNodeLabel": "Mostra {node} sul canvas",
@@ -102,6 +103,7 @@
       "selectNode": "Seleziona nodo"
     },
     "nodes": "Nodi",
+    "nodesAdded": "L'agente ha aggiunto 1 nodo al grafo | L'agente ha aggiunto {count} nodi al grafo",
     "notHelpful": "Non utile",
     "openWorkflowTab": "Apri {name}",
     "otherOpenWorkflows": "Altri flussi di lavoro aperti",
@@ -190,7 +192,9 @@
     "unavailableWorkflowReference": "{name} (non disponibile)",
     "unsavedWorkflow": "Non salvato",
     "untitledChat": "Senza titolo",
+    "updatingGraph": "L'agente sta aggiornando il grafo",
     "uploading": "Caricamento in corso",
+    "viewAddedNodes": "Visualizza nodo | Visualizza nodi",
     "worked": "Completato",
     "workedForMinutes": "Elaborazione completata in {minutes}m {seconds}s",
     "workedForSeconds": "Elaborazione completata in {seconds} secondi",
@@ -3108,6 +3112,8 @@
     "linearMode_appModeToolbar_apps": "linearMode.appModeToolbar.apps"
   },
   "minimap": {
+    "highlightedNodes": "Nodi evidenziati: {count}",
+    "label": "Minimappa",
     "nodeColors": "Colori dei nodi",
     "renderBypassState": "Visualizza stato di bypass",
     "renderErrorState": "Visualizza stato di errore",
