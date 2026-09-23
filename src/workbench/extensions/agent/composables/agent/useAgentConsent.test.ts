@@ -143,7 +143,7 @@ describe('useAgentConsent', () => {
     expect(useDialogStore().dialogStack).toHaveLength(0)
     expect(onOpen).not.toHaveBeenCalled()
     expect(reportError).toHaveBeenCalledOnce()
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
+    expect(useToastStore().add).toHaveBeenCalledWith(
       expect.objectContaining({
         detail: i18n.global.t('agent.consent.loadError')
       })
@@ -372,7 +372,7 @@ describe('useAgentConsent', () => {
     await request
 
     expect(useDialogService().showSignInDialog).toHaveBeenCalledOnce()
-    expect(vi.mocked(useTeamWorkspaceStore().initialize)).toHaveBeenCalledOnce()
+    expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     expect(fetchWithUnifiedRemint).toHaveBeenCalledWith(
       'https://api.comfy.test/api/global-settings',

@@ -561,9 +561,7 @@ describe('useKeybindingPresetService', () => {
       const service = await getPresetService()
       await service.switchPreset('vim')
 
-      expect(
-        vi.mocked(useDialogService()).showSmallLayoutDialog
-      ).not.toHaveBeenCalled()
+      expect(useDialogService().showSmallLayoutDialog).not.toHaveBeenCalled()
       expect(store.currentPresetName).toBe('vim')
     })
 
@@ -593,7 +591,7 @@ describe('useKeybindingPresetService', () => {
       const service = await getPresetService()
       await service.switchPreset('vim')
 
-      expect(vi.mocked(useDialogService()).prompt).toHaveBeenCalled()
+      expect(useDialogService().prompt).toHaveBeenCalled()
       expect(store.currentPresetName).toBe('vim')
     })
 
@@ -688,7 +686,7 @@ describe('useKeybindingPresetService', () => {
       const result = await service.promptAndSaveNewPreset()
 
       expect(result).toBe(true)
-      expect(vi.mocked(useDialogService()).confirm).toHaveBeenCalled()
+      expect(useDialogService().confirm).toHaveBeenCalled()
       expect(mockApi.storeUserData).toHaveBeenCalledWith(
         'keybindings/test-preset.json',
         expect.any(String),
