@@ -58,7 +58,7 @@ test.describe(
       await field.pressSequentially(FIRST_CHUNK, { delay: 20 })
 
       const typing = field.pressSequentially(REST_CHUNK, { delay: 20 })
-      agentConversation.resyncWidget(NEW_NODE_ID, 'text')
+      void agentConversation.resyncWidget(NEW_NODE_ID, 'text')
       await typing
 
       const finalValue = await field.inputValue()

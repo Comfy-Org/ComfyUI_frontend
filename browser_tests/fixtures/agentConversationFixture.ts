@@ -699,24 +699,6 @@ export class AgentConversationHarness {
     return this.hostSocket.subscribeCount()
   }
 
-  // Sends one more doc_update that resyncs `widget` on `nodeId` to its
-  // current doc value — the same effect on a live widget as a stale echo,
-  // a reconnect resync, or an unrelated full-graph reconcile has whenever
-  // that frame's changed-widgets sweep happens to touch it. Lets a test
-  // race this deterministically against a live keystroke instead of
-  // waiting on the timing a real run happens to produce.
-  resyncWidget(nodeId: string, widget: string): void {
-    const widgets = this.host.graph().nodes[nodeId]?.widgets as
-      | Record<string, unknown>
-      | undefined
-    const value = widgets?.[widget]
-    this.hostSocket.send(
-      this.host.apply([
-        { op: 'set_widget', node_id: nodeId, widget, value, old: value }
-      ] as RecordedGraphOperation[])
-    )
-  }
-
   async disconnectAndApplyRecordedTurn(turn: number): Promise<void> {
     await this.hostSocket.disconnect()
     for (const entry of this.conversation.turns[turn].response) {
@@ -939,6 +921,12 @@ export class AgentConversationHarness {
     await this.selectWorkflowTarget()
   }
 
+  // Sends one more doc_update that resyncs `widget` on `nodeId` to its
+  // current doc value — the same effect on a live widget as a stale echo,
+  // a reconnect resync, or an unrelated full-graph reconcile has whenever
+  // that frame's changed-widgets sweep happens to touch it. Lets a test
+  // race this deterministically against a live keystroke instead of
+  // waiting on the timing a real run happens to produce.
   async resyncWidget(nodeId: string, widget: string): Promise<void> {
     const widgets = z
       .record(z.string(), z.unknown())
