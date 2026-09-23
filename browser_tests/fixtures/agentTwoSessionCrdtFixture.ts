@@ -1,6 +1,7 @@
 import type { Locator, Page, WebSocketRoute } from '@playwright/test'
 import { expect } from '@playwright/test'
 
+import type { WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
@@ -19,10 +20,13 @@ import {
   bootAgentApp,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
+import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
+import { TestIds } from '@e2e/fixtures/selectors'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import type { RecordedGraphOperation } from '@e2e/fixtures/data/agent/agentConversation'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -31,6 +35,8 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 // observable on the canvas. Borrowed from a recorded conversation so the
 // seed and its widget catalog are the shapes the production library mints.
 const TEMPLATE_CASE = 'agent-rec-set-widget-existing'
+/** The document an "Unsaved Workflow" tab is bound to before anything edits it. */
+export const emptySeed = (): WorkflowJSON => ({ nodes: [], links: [] })
 const SOCKET_SID = 'b6f0a2c1-8e34-4d21-9c07-2a1b3c4d5e60'
 const PANEL_MOUNT_TIMEOUT = 30_000
 const SUBSCRIBE_TIMEOUT = 15_000
@@ -49,7 +55,7 @@ const HOME_WORKFLOW_ID = '00000000-0000-4000-8000-000000000000'
 // One agent-bound workflow, its doc held by the shared library stand-in. Two
 // of these describe the two-session scenario under test: two agent threads
 // targeting two workflows in one running app.
-interface AgentBoundWorkflow {
+export interface AgentBoundWorkflow {
   workflowId: string
   name: string
   host: HostDoc
@@ -93,9 +99,10 @@ interface ClientDocFrame {
  * `doc_update`), as the relay does, so the sender settles each batch instead
  * of retrying it.
  */
-class AgentTwoSessionCrdtHarness {
+export class AgentTwoSessionCrdtHarness {
   readonly panel: Locator
   readonly vueNodes: VueNodeHelpers
+  readonly topbar: Topbar
 
   private readonly hosts = new Map<string, HostDoc>()
   private readonly names = new Map<string, string>()
@@ -116,15 +123,20 @@ class AgentTwoSessionCrdtHarness {
     this.template = loadAgentConversation(TEMPLATE_CASE).workflow
     this.panel = page.locator('#agent-panel-root')
     this.vueNodes = new VueNodeHelpers(page)
+    this.topbar = new Topbar(page)
   }
 
-  /** Register a workflow the shared doc host will answer subscribes for. */
-  addWorkflow(workflowId: string, name: string): AgentBoundWorkflow {
-    const host = new HostDoc(
-      workflowId,
-      this.template.seed,
-      this.template.catalog
-    )
+  /**
+   * Register a workflow the shared doc host will answer subscribes for. The
+   * seed defaults to the template's five wired nodes; pass `emptySeed()` for
+   * the unsaved, never-edited workflow an agent thread builds from scratch.
+   */
+  addWorkflow(
+    workflowId: string,
+    name: string,
+    seed: WorkflowJSON = this.template.seed
+  ): AgentBoundWorkflow {
+    const host = new HostDoc(workflowId, seed, this.template.catalog)
     this.hosts.set(workflowId, host)
     this.names.set(workflowId, name)
     this.subscribes.set(workflowId, 0)
@@ -248,6 +260,59 @@ class AgentTwoSessionCrdtHarness {
     ).toHaveCount(0)
   }
 
+  /**
+   * One whole agent turn: open a thread through the composer, let the agent
+   * move the user onto `bound`'s tab, and end the turn. This is the lifecycle
+   * that binds the session — the tab click a user makes later does not — so
+   * every test that needs a workflow bound starts here.
+   */
+  async runBoundTurn(
+    prompt: string,
+    bound: AgentBoundWorkflow
+  ): Promise<AgentThread> {
+    const thread = await this.startThread(prompt)
+    await this.bindViaActiveTab(thread, bound)
+    await expect(this.topbar.getActiveTab()).toContainText(bound.name)
+    await this.finishTurn(thread)
+    return thread
+  }
+
+  /**
+   * Reload the page the way the user's refresh does, and wait for the app and
+   * the agent panel to come back. The mocked routes, the `/ws` route and the
+   * host documents all outlive the navigation, so the reloaded app meets the
+   * same backend state the first one left. The composer's target does not
+   * survive, though: a caller that wants `startThread` after this has to
+   * re-pin one the way `boot()` does.
+   */
+  async reload(): Promise<void> {
+    const socket = this.socket
+    const objectInfo = this.page.waitForResponse((response) =>
+      new URL(response.url()).pathname.endsWith('/api/object_info')
+    )
+    await this.page.reload()
+    await waitForCloudApp(this.page)
+    // Startup restores the workflow tabs after extensionManager exists, so
+    // the overlay is the boundary for "the tabs are back".
+    const loadingOverlay = this.page.getByTestId(TestIds.app.loadingOverlay)
+    await loadingOverlay.waitFor({
+      state: 'attached',
+      timeout: PANEL_MOUNT_TIMEOUT
+    })
+    await loadingOverlay.waitFor({
+      state: 'hidden',
+      timeout: PANEL_MOUNT_TIMEOUT
+    })
+    // The same two boundaries `boot()` waits on, for the same reasons: node
+    // types registered before any catch-up materializes them, and the socket
+    // this harness sends on replaced by the reloaded page's own.
+    await objectInfo
+    await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    await expect
+      .poll(() => this.socket !== socket, { timeout: SUBSCRIBE_TIMEOUT })
+      .toBe(true)
+  }
+
   /** Leave the current thread through the panel's own New chat button. */
   async newChat(): Promise<void> {
     await this.panel.getByRole('button', { name: NEW_CHAT_LABEL }).click()
@@ -269,6 +334,11 @@ class AgentTwoSessionCrdtHarness {
     return typeof widgets === 'object' && widgets !== null
       ? (widgets as Record<string, unknown>)[widget]
       : undefined
+  }
+
+  /** The node ids a workflow's host doc currently holds, ascending. */
+  hostNodeIds(bound: AgentBoundWorkflow): string[] {
+    return Object.keys(bound.host.graph().nodes).sort()
   }
 
   /** How many times the client has subscribed this workflow's doc. */
