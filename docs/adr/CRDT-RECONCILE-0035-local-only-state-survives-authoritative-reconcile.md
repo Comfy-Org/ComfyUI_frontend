@@ -246,17 +246,21 @@ Both scopes apply; neither alone covers the two repros.
   deleted and #18078's never-landed node alive until the ledger resolves. A
   widget with a non-terminal `set_widget` keeps its local value through a
   full reconcile the same way.
-- **Lineage-aware, in PR A now.** The session keeps a lineage-scoped
+- **Lineage-aware, deferred to PR B.** The session will keep a lineage-scoped
   **known-id set** in the same registry as the ledger: the node and link ids
   the document holds now, plus ids it held whose removal `removeMissing` has
-  not yet applied locally. An id leaves the set only when a local sweep has
-  removed it, never merely because the document dropped it, so `removeMissing`
-  removes exactly the ids in the set the document no longer holds. An id the
-  document never held is retained and reported once per session
-  (`reportError`, `agent_crdt_local_only_node_retained`).
-  - **Lifetime, deferred to A1.** This known-id set is per-follower until A1
-    hoists both it and the ledger to the workflow/document lifetime
-    described in (a). Before A1, a follower mount starts this set empty.
+  not yet applied locally. An id will leave the set only when a local sweep
+  has removed it, never merely because the document dropped it, so
+  `removeMissing` will remove exactly the ids in the set the document no
+  longer holds. An id the document never held will be retained and reported
+  once per session (`reportError`, `agent_crdt_local_only_node_retained`).
+  **Not landed yet**: PR A's `ecsFullReconcile.ts` still reads its node list
+  live off the document's own map on every reconcile (see (c) below), and
+  the composable's own `knownDocNodeIds` is only a dev-panel event tap, not
+  this set. Per Sequencing below, PR B (which introduces this set) comes
+  after A1, so the set is introduced already at the ledger's post-A1
+  workflow/document lifetime — there is no separate per-follower phase for
+  it to outgrow.
 
 The genuine "stale local canvas" case is a lineage break: `doc_reset` and
 `follower_replaced` already run `clearForReset` plus the sweep, unchanged by
@@ -384,12 +388,16 @@ above.
   plus the doc host admitting it from human actors — the host pins its own
   copy of the package separately, so a package release carrying the op is
   required regardless of which frontend copy this repo consumes.
-- **This ADR's PR A/A1 pairing is carried in
-  [#18106](https://github.com/Comfy-Org/ComfyUI_frontend/pull/18106)** and
-  the same text is mirrored, byte-identically, inside
-  [#18210](https://github.com/Comfy-Org/ComfyUI_frontend/pull/18210) (branch
-  `claude/pending-op-tracker-survives-tab-switch`), whose base branch carries
-  the implementation this ADR's (a)/(c) deltas describe.
+- **PR A is
+  [#18210](https://github.com/Comfy-Org/ComfyUI_frontend/pull/18210)** (branch
+  `claude/pending-op-tracker-survives-tab-switch`), implementing this ADR's
+  (a)/(c) deltas on top of its stacked base. **PR A1 (hoisting the ledger's
+  ownership from the follower to the bound workflow/document) remains
+  pending** — #18210 keeps the ledger follower-scoped, which survives a tab
+  switch but not yet a panel close/reopen; A1 is the next stacked PR.
+  [#18106](https://github.com/Comfy-Org/ComfyUI_frontend/pull/18106) is a
+  documentation-only PR carrying this same ADR text byte-identically; it is
+  not an implementation carrier for A or A1.
 
 ## Consequences
 
