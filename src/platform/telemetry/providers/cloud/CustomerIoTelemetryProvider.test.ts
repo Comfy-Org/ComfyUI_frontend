@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 
@@ -84,11 +85,24 @@ function createDeferred() {
 
 describe('CustomerIoTelemetryProvider', () => {
   beforeEach(() => {
-    Object.assign(useCurrentUser(), {
-      userEmail: hoisted.userEmail,
-      resolvedUserInfo: hoisted.resolvedUserInfo,
-      onUserResolved: hoisted.onUserResolved,
-      onUserLogout: hoisted.onUserLogout
+    const currentUser = vi.mocked(useCurrentUser())
+    currentUser.userEmail = computed(() => hoisted.userEmail.value)
+    currentUser.resolvedUserInfo = computed(
+      () => hoisted.resolvedUserInfo.value
+    )
+    currentUser.onUserResolved.mockImplementation((callback) => {
+      hoisted.onUserResolved(callback)
+      return watch(
+        () => false,
+        () => {}
+      )
+    })
+    currentUser.onUserLogout.mockImplementation((callback) => {
+      hoisted.onUserLogout(callback)
+      return watch(
+        () => false,
+        () => {}
+      )
     })
     hoisted.resetCallbacks()
     hoisted.load.mockReturnValue(hoisted.analytics)

@@ -1,6 +1,6 @@
 import { setActivePinia } from 'pinia'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
@@ -101,13 +101,13 @@ async function flushMicrotasks(): Promise<void> {
  */
 describe('telemetry providers wait for Pinia before touching stores', () => {
   beforeEach(() => {
-    const currentUser = useCurrentUser()
-    Object.assign(currentUser, {
-      userEmail: ref(hoisted.userEmail.value),
-      resolvedUserInfo: ref(hoisted.resolvedUserInfo.value),
-      onUserResolved: hoisted.onUserResolved,
-      onUserLogout: hoisted.onUserLogout
-    })
+    const currentUser = vi.mocked(useCurrentUser())
+    currentUser.userEmail = computed(() => hoisted.userEmail.value)
+    currentUser.resolvedUserInfo = computed(
+      () => hoisted.resolvedUserInfo.value
+    )
+    currentUser.onUserResolved.mockImplementation(hoisted.onUserResolved)
+    currentUser.onUserLogout.mockImplementation(hoisted.onUserLogout)
     const billing = useBillingContext()
     billing.tier = computed(() => null)
     vi.mocked(useBillingContext).mockReturnValue(billing)

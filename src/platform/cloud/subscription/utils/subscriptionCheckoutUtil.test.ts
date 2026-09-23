@@ -6,17 +6,12 @@ import { useTelemetry } from '@/platform/telemetry'
 import { performSubscriptionCheckout } from './subscriptionCheckoutUtil'
 
 const {
-  mockTelemetry,
   mockGetAuthHeader,
 
   mockIsCloud,
   mockGetCheckoutAttribution,
   mockLocalStorage
 } = vi.hoisted(() => ({
-  mockTelemetry: {
-    trackBeginCheckout: vi.fn(),
-    trackBillingEvent: vi.fn()
-  },
   mockGetAuthHeader: vi.fn<
     ReturnType<typeof useAuthStore>['getFirebaseAuthHeader']
   >(() => Promise.resolve({ Authorization: 'Bearer test-token' as const })),
@@ -66,6 +61,9 @@ Object.defineProperty(globalThis, 'localStorage', {
 })
 
 vi.mock(import('@/platform/telemetry'))
+const telemetryResult = useTelemetry()
+if (!telemetryResult) throw new Error('Expected telemetry mock')
+const telemetry = vi.mocked(telemetryResult)
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -83,17 +81,6 @@ vi.mock<unknown>(
 global.fetch = vi.fn()
 
 type Distribution = 'desktop' | 'localhost' | 'cloud'
-
-beforeEach(() => {
-  const telemetry = useTelemetry()
-  if (!telemetry) throw new Error('Expected telemetry mock')
-  vi.mocked(telemetry.trackBeginCheckout).mockImplementation(
-    mockTelemetry.trackBeginCheckout
-  )
-  vi.mocked(telemetry.trackBillingEvent).mockImplementation(
-    mockTelemetry.trackBillingEvent
-  )
-})
 
 const setDistribution = (distribution: Distribution) => {
   ;(
@@ -144,7 +131,7 @@ describe('performSubscriptionCheckout', () => {
 
     await performSubscriptionCheckout('pro', 'yearly')
 
-    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith({
+    expect(telemetry.trackBeginCheckout).toHaveBeenCalledWith({
       user_id: 'user-123',
       tier: 'pro',
       cycle: 'yearly',
@@ -161,8 +148,7 @@ describe('performSubscriptionCheckout', () => {
       gbraid: 'gbraid-456',
       wbraid: 'wbraid-789'
     })
-    const beginCheckoutMetadata =
-      mockTelemetry.trackBeginCheckout.mock.calls[0][0]
+    const beginCheckoutMetadata = telemetry.trackBeginCheckout.mock.calls[0][0]
     const [, storedAttempt] = mockLocalStorage.setItem.mock.calls[0]
     expect(beginCheckoutMetadata.checkout_attempt_id).toBe(
       JSON.parse(storedAttempt).attempt_id
@@ -216,7 +202,7 @@ describe('performSubscriptionCheckout', () => {
         body: JSON.stringify({})
       })
     )
-    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith({
+    expect(telemetry.trackBeginCheckout).toHaveBeenCalledWith({
       user_id: 'user-123',
       tier: 'pro',
       cycle: 'monthly',
@@ -239,11 +225,10 @@ describe('performSubscriptionCheckout', () => {
       paymentIntentSource: 'out_of_credits'
     })
 
-    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith(
+    expect(telemetry.trackBeginCheckout).toHaveBeenCalledWith(
       expect.objectContaining({ payment_intent_source: 'out_of_credits' })
     )
-    const beginCheckoutMetadata =
-      mockTelemetry.trackBeginCheckout.mock.calls[0][0]
+    const beginCheckoutMetadata = telemetry.trackBeginCheckout.mock.calls[0][0]
     const [, storedAttempt] = mockLocalStorage.setItem.mock.calls[0]
     const pendingAttempt = JSON.parse(storedAttempt)
     expect(pendingAttempt).toMatchObject({
@@ -279,8 +264,8 @@ describe('performSubscriptionCheckout', () => {
 
     await checkoutPromise
 
-    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledTimes(1)
-    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith(
+    expect(telemetry.trackBeginCheckout).toHaveBeenCalledTimes(1)
+    expect(telemetry.trackBeginCheckout).toHaveBeenCalledWith(
       expect.objectContaining({
         user_id: 'user-late',
         tier: 'pro',
@@ -309,7 +294,7 @@ describe('performSubscriptionCheckout', () => {
     )
     expect(storedAttempt).toBeNull()
     expect(mockLocalStorage.setItem).not.toHaveBeenCalled()
-    expect(mockTelemetry.trackBeginCheckout).toHaveBeenCalledWith(
+    expect(telemetry.trackBeginCheckout).toHaveBeenCalledWith(
       expect.objectContaining({
         checkout_attempt_id: expect.any(String)
       })
@@ -331,7 +316,7 @@ describe('performSubscriptionCheckout', () => {
       })
     ).rejects.toThrow()
 
-    expect(mockTelemetry.trackBillingEvent).toHaveBeenCalledWith({
+    expect(telemetry.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'subscription_checkout',
       stage: 'failed',
       outcome: 'failure',

@@ -28,17 +28,12 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/services/dialogService'))
 
 // useTelemetry() returns null in OSS, a dispatcher in cloud — toggle via mockIsCloud.
-const {
-  mockIsCloud,
-  mockTrackHelpResourceClicked,
-  mockTrackAddApiCreditButtonClicked
-} = vi.hoisted(() => ({
-  mockIsCloud: { value: true },
-  mockTrackHelpResourceClicked: vi.fn(),
-  mockTrackAddApiCreditButtonClicked: vi.fn()
-}))
+const mockIsCloud = vi.hoisted(() => ({ value: true }))
 
 vi.mock(import('@/platform/telemetry'))
+const telemetryResult = useTelemetry()
+if (!telemetryResult) throw new Error('Expected telemetry mock')
+const telemetry = vi.mocked(telemetryResult)
 
 // Mock window.open
 const mockOpen = vi.fn()
@@ -48,14 +43,6 @@ Object.defineProperty(window, 'open', {
 })
 
 beforeEach(() => {
-  const telemetry = useTelemetry()
-  if (!telemetry) throw new Error('Expected telemetry mock')
-  vi.mocked(telemetry.trackHelpResourceClicked).mockImplementation(
-    mockTrackHelpResourceClicked
-  )
-  vi.mocked(telemetry.trackAddApiCreditButtonClicked).mockImplementation(
-    mockTrackAddApiCreditButtonClicked
-  )
   vi.mocked(useTelemetry).mockImplementation(() =>
     mockIsCloud.value ? telemetry : null
   )
@@ -73,7 +60,7 @@ describe('useSubscriptionActions', () => {
       const { handleAddApiCredits } = useSubscriptionActions()
       handleAddApiCredits()
       expect(useDialogService().showTopUpCreditsDialog).toHaveBeenCalledOnce()
-      expect(mockTrackAddApiCreditButtonClicked).toHaveBeenCalledWith({
+      expect(telemetry.trackAddApiCreditButtonClicked).toHaveBeenCalledWith({
         source: 'settings_billing_panel'
       })
     })
@@ -99,7 +86,7 @@ describe('useSubscriptionActions', () => {
 
       await handleMessageSupport()
 
-      expect(mockTrackHelpResourceClicked).toHaveBeenCalledWith({
+      expect(telemetry.trackHelpResourceClicked).toHaveBeenCalledWith({
         resource_type: 'help_feedback',
         is_external: true,
         source: 'subscription'
@@ -112,7 +99,7 @@ describe('useSubscriptionActions', () => {
 
       await handleMessageSupport()
 
-      expect(mockTrackHelpResourceClicked).not.toHaveBeenCalled()
+      expect(telemetry.trackHelpResourceClicked).not.toHaveBeenCalled()
     })
 
     it('tells the user when contacting support fails, and stops loading', async () => {

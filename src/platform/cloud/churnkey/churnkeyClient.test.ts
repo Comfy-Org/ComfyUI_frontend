@@ -6,7 +6,6 @@ import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { ChurnkeyInitConfig } from './types'
 
 const mocks = vi.hoisted(() => ({
-  getChurnkeyAuth: vi.fn(),
   init: vi.fn(),
   hide: vi.fn(),
   clearState: vi.fn()
@@ -35,10 +34,7 @@ function capturedConfig(): ChurnkeyInitConfig {
 describe('churnkeyClient', () => {
   beforeEach(() => {
     vi.mocked(useFeatureFlags().flags).churnkeyAppId = 'app_test'
-    vi.mocked(workspaceApi.getChurnkeyAuth).mockImplementation(
-      mocks.getChurnkeyAuth
-    )
-    mocks.getChurnkeyAuth.mockResolvedValue(authResponse())
+    vi.mocked(workspaceApi.getChurnkeyAuth).mockResolvedValue(authResponse())
     window.churnkey = {
       init: mocks.init,
       hide: mocks.hide,
@@ -98,7 +94,7 @@ describe('churnkeyClient', () => {
     vi.mocked(useFeatureFlags().flags).churnkeyAppId = ''
 
     await expect(prepareChurnkey()).resolves.toBeNull()
-    expect(mocks.getChurnkeyAuth).not.toHaveBeenCalled()
+    expect(workspaceApi.getChurnkeyAuth).not.toHaveBeenCalled()
     expect(mocks.init).not.toHaveBeenCalled()
   })
 

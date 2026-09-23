@@ -32,10 +32,10 @@ vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-const mockShowPricingTable = vi.hoisted(() => vi.fn())
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
+const subscriptionDialog = vi.mocked(useSubscriptionDialog())
 
 const legacyCheckoutMocks = vi.hoisted(() => ({
   performSubscriptionCheckout: vi.fn(),
@@ -73,13 +73,11 @@ function installBillingContextFixture() {
   const billing = useBillingContext()
   const canAccessSubscriptionFeatures = ref(false)
   const teamCreditStops = ref<TeamCreditStops | null>(TEAM_CREDIT_STOPS)
-  Object.assign(billing, {
-    isInitialized: ref(true),
-    canAccessSubscriptionFeatures: computed(
-      () => canAccessSubscriptionFeatures.value
-    ),
-    teamCreditStops: computed(() => teamCreditStops.value)
-  })
+  billing.isInitialized = ref(true)
+  billing.canAccessSubscriptionFeatures = computed(
+    () => canAccessSubscriptionFeatures.value
+  )
+  billing.teamCreditStops = computed(() => teamCreditStops.value)
   vi.mocked(useBillingContext).mockReturnValue(billing)
 }
 
@@ -125,9 +123,6 @@ const mountView = async (query: Record<string, unknown>) => {
 
 describe('CloudSubscriptionRedirectView', () => {
   beforeEach(() => {
-    vi.mocked(useSubscriptionDialog().showPricingTable).mockImplementation(
-      mockShowPricingTable
-    )
     mockQuery = {}
     installBillingContextFixture()
   })
@@ -153,7 +148,7 @@ describe('CloudSubscriptionRedirectView', () => {
     // Shows copy under logo
     expect(screen.getByText('Subscribe to Creator')).toBeInTheDocument()
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
+    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'personal',
       initialCheckout: {
@@ -173,16 +168,14 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('opens billing portal when subscription is already active', async () => {
-    Object.assign(useBillingContext(), {
-      canAccessSubscriptionFeatures: computed(() => true)
-    })
+    useBillingContext().canAccessSubscriptionFeatures = computed(() => true)
 
     await mountView({ tier: 'creator' })
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
     expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(1)
     expect(useAuthActions().accessBillingPortal).not.toHaveBeenCalled()
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(subscriptionDialog.showPricingTable).not.toHaveBeenCalled()
   })
 
   test('uses first value when subscriptionType is an array', async () => {
@@ -192,7 +185,7 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
     expect(screen.getByText('Subscribe to Creator')).toBeInTheDocument()
-    expect(mockShowPricingTable).toHaveBeenCalledWith(
+    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith(
       expect.objectContaining({
         initialCheckout: expect.objectContaining({ tierKey: 'creator' })
       })
@@ -204,7 +197,7 @@ describe('CloudSubscriptionRedirectView', () => {
 
     expect(mockRouterPush).not.toHaveBeenCalledWith('/')
     expect(screen.getByText('Subscribe to Team Plan')).toBeInTheDocument()
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
+    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'team',
       initialCheckout: {
@@ -224,16 +217,14 @@ describe('CloudSubscriptionRedirectView', () => {
   })
 
   test('opens the generic team pricing table when plan loading fails', async () => {
-    Object.assign(useBillingContext(), {
-      teamCreditStops: computed(() => null)
-    })
+    useBillingContext().teamCreditStops = computed(() => null)
     const plansError = new Error('plans down')
     vi.mocked(useBillingContext().fetchPlans).mockRejectedValue(plansError)
 
     await mountView({ tier: 'team', stop: 'team_700', cycle: 'yearly' })
 
     expect(useAuthActions().reportError).toHaveBeenCalledWith(plansError)
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
+    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'team',
       initialCheckout: undefined
@@ -258,13 +249,11 @@ describe('CloudSubscriptionRedirectView', () => {
     await mountView({ tier: 'team', cycle: 'yearly' })
 
     expect(mockRouterPush).toHaveBeenCalledWith('/')
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(subscriptionDialog.showPricingTable).not.toHaveBeenCalled()
   })
 
   test('routes a personal tier in an active Team workspace to workspace subscription management', async () => {
-    Object.assign(useBillingContext(), {
-      canAccessSubscriptionFeatures: computed(() => true)
-    })
+    useBillingContext().canAccessSubscriptionFeatures = computed(() => true)
 
     await mountView({ tier: 'creator', cycle: 'yearly' })
 
@@ -273,25 +262,23 @@ describe('CloudSubscriptionRedirectView', () => {
     expect(
       legacyCheckoutMocks.performSubscriptionCheckout
     ).not.toHaveBeenCalled()
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(subscriptionDialog.showPricingTable).not.toHaveBeenCalled()
   })
 
   test('routes an active founder subscription to facade management', async () => {
-    Object.assign(useBillingContext(), {
-      canAccessSubscriptionFeatures: computed(() => true)
-    })
+    useBillingContext().canAccessSubscriptionFeatures = computed(() => true)
 
     await mountView({ tier: 'founder' })
 
     expect(useBillingContext().manageSubscription).toHaveBeenCalledTimes(1)
     expect(mockRouterPush).not.toHaveBeenCalled()
-    expect(mockShowPricingTable).not.toHaveBeenCalled()
+    expect(subscriptionDialog.showPricingTable).not.toHaveBeenCalled()
   })
 
   test('opens personal pricing without unsupported direct checkout for an inactive founder link', async () => {
     await mountView({ tier: 'founder' })
 
-    expect(mockShowPricingTable).toHaveBeenCalledWith({
+    expect(subscriptionDialog.showPricingTable).toHaveBeenCalledWith({
       reason: 'deep_link',
       planMode: 'personal'
     })

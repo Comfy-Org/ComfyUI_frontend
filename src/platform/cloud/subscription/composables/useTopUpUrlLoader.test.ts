@@ -22,9 +22,9 @@ vi.mock(
 )
 
 let mockRouteQuery: { value: LocationQuery }
-const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
 vi.mock(import('vue-router'))
+const mockRouterReplace = vi.mocked(useRouter().replace)
 
 vi.mock(import('@/services/dialogService'))
 
@@ -44,7 +44,6 @@ describe('useTopUpUrlLoader', () => {
         Object.assign(query, value)
       }
     }
-    vi.mocked(useRouter().replace).mockImplementation(mockRouterReplace)
     mockRouteQuery.value = {}
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })

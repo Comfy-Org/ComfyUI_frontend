@@ -9,9 +9,10 @@ import { useTelemetry } from '..'
 import { installNodeAddedTelemetry } from './installNodeAddedTelemetry'
 import { withNodeAddSource } from './nodeAddSource'
 
-const trackNodeAdded = vi.fn()
-
 vi.mock(import('..'))
+const telemetryResult = useTelemetry()
+if (!telemetryResult) throw new Error('Expected telemetry mock')
+const telemetry = vi.mocked(telemetryResult)
 
 function fakeGraph(): LGraph {
   return {
@@ -29,9 +30,6 @@ function addNode(graph: LGraph, type: string) {
 describe('installNodeAddedTelemetry', () => {
   beforeEach(() => {
     ChangeTracker.isLoadingGraph = false
-    const telemetry = useTelemetry()
-    if (!telemetry) throw new Error('Expected telemetry mock')
-    vi.mocked(telemetry.trackNodeAdded).mockImplementation(trackNodeAdded)
   })
 
   afterEach(() => {
@@ -46,7 +44,7 @@ describe('installNodeAddedTelemetry', () => {
       addNode(graph, 'KSampler')
     })
 
-    expect(trackNodeAdded).toHaveBeenCalledExactlyOnceWith({
+    expect(telemetry.trackNodeAdded).toHaveBeenCalledExactlyOnceWith({
       node_type: 'KSampler',
       source: 'sidebar_drag'
     })
@@ -58,7 +56,7 @@ describe('installNodeAddedTelemetry', () => {
 
     addNode(graph, 'CheckpointLoader')
 
-    expect(trackNodeAdded).toHaveBeenCalledWith({
+    expect(telemetry.trackNodeAdded).toHaveBeenCalledWith({
       node_type: 'CheckpointLoader',
       source: 'unknown'
     })
@@ -71,7 +69,7 @@ describe('installNodeAddedTelemetry', () => {
 
     addNode(graph, 'VAEDecode')
 
-    expect(trackNodeAdded).not.toHaveBeenCalled()
+    expect(telemetry.trackNodeAdded).not.toHaveBeenCalled()
   })
 
   it('leaves the onNodeAdded callback slot untouched', () => {
@@ -83,6 +81,6 @@ describe('installNodeAddedTelemetry', () => {
 
     expect(graph.onNodeAdded).toBe(previous)
     addNode(graph, 'LoadImage')
-    expect(trackNodeAdded).toHaveBeenCalledOnce()
+    expect(telemetry.trackNodeAdded).toHaveBeenCalledOnce()
   })
 })

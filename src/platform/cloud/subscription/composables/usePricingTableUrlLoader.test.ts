@@ -22,11 +22,8 @@ vi.mock(
 )
 
 let mockRouteQuery: { value: LocationQuery }
-const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
 vi.mock(import('vue-router'))
-
-const mockShowPricingTable = vi.hoisted(() => vi.fn())
 
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -34,6 +31,8 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 vi.mock(
   import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
+const mockRouterReplace = vi.mocked(useRouter().replace)
+const mockShowPricingTable = vi.mocked(useSubscriptionDialog().showPricingTable)
 
 const mockPermissions = vi.hoisted(() => ({
   value: { canManageSubscription: true }
@@ -76,10 +75,6 @@ describe('usePricingTableUrlLoader', () => {
         Object.assign(query, value)
       }
     }
-    vi.mocked(useRouter().replace).mockImplementation(mockRouterReplace)
-    vi.mocked(useSubscriptionDialog().showPricingTable).mockImplementation(
-      mockShowPricingTable
-    )
     const workspaceUI = useWorkspaceUI()
     const defaultPermissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
