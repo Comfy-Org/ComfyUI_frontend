@@ -1,0 +1,36 @@
+---
+import BaseLayout from '../../layouts/BaseLayout.astro'
+import CinematicStudioPage from '../../components/workshop/cinematic-studio/CinematicStudioPage.vue'
+import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
+import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
+import { CINEMATIC_MODEL_LOGOS } from '../../lib/workshop/cinematic-studio/catalog'
+import { t } from '../../i18n/translations'
+
+const models = Object.entries(CINEMATIC_MODEL_LOGOS).flatMap(([slug, logo]) => {
+  const model = getRouterWorkshopModelDetail(slug)
+  return model?.execution
+    ? [
+        {
+          slug: model.slug,
+          name: model.name,
+          provider: model.provider ?? '',
+          logo
+        }
+      ]
+    : []
+})
+if (!models.length) throw new Error('Cinematic Studio has no runnable models')
+---
+
+<BaseLayout
+  title={`${t('cinematic.title')} · ${t('workshop.title')} - Comfy`}
+  description={t('cinematic.meta.description')}
+  noindex
+>
+  <CinematicStudioPage models={models} client:load>
+    <ModelsShowcase slot="fallback" />
+  </CinematicStudioPage>
+  <noscript>
+    <ModelsShowcase />
+  </noscript>
+</BaseLayout>

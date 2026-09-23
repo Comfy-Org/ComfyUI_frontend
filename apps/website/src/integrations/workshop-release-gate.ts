@@ -29,6 +29,10 @@ export function modelsBuildRoutes(enabled: boolean) {
           { pattern: '/models/[slug]', entrypoint: entry('[slug].astro') },
           { pattern: '/models/showcase', entrypoint: entry('showcase.astro') },
           {
+            pattern: '/models/cinematic-studio',
+            entrypoint: entry('cinematic-studio.astro')
+          },
+          {
             pattern: '/checkout-opening',
             entrypoint: entry('checkout-opening.astro')
           },

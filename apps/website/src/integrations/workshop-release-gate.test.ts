@@ -120,6 +120,7 @@ describe('Workshop release output', () => {
       '/models',
       '/models/[slug]',
       '/models/showcase',
+      '/models/cinematic-studio',
       '/checkout-opening',
       '/zh-CN/checkout-opening',
       '/checkout-return',
