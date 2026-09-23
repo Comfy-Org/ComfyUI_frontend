@@ -304,8 +304,26 @@ async function driveThroughToolCallDone(
   // The inverted ordering: the doc_update broadcast reaches this client
   // while the tool is still (from the chat frames' perspective) running --
   // the healthy-doc-host case most reviewers flagged as the lost-wakeup risk
-  // for notifyCanvasCaughtUp()'s edge triggering.
-  if (order === 'docUpdateBeforeToolCall') send(update)
+  // for notifyCanvasCaughtUp()'s edge triggering. The fix (agentEventTransport.ts's
+  // canvasSyncBaseline) detects "already caught up" by comparing the CRDT
+  // outcome count at the moment a tool-call part is FIRST seen against its
+  // value when the terminal frame lands -- so this frame's own `running`
+  // status has to arrive and establish that baseline BEFORE the update,
+  // or there is nothing pre-update for the later comparison to be relative
+  // to.
+  if (order === 'docUpdateBeforeToolCall') {
+    send({
+      type: 'agent_tool_call',
+      data: {
+        tool_call_id: 'call-add-node',
+        tool_name: 'add_node',
+        status: 'running',
+        thread_id: THREAD_ID,
+        message_id: MESSAGE_ID
+      }
+    })
+    send(update)
+  }
 
   // The tool-call-completion affordance: `agentEventTransport.ts`'s `ingest()`
   // flips this tool part `done` the instant this frame is read, purely from
