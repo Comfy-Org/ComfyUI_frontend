@@ -178,12 +178,12 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       store.restoreViewport('root')
 
-      expect(vi.mocked(useLitegraphService()).fitView).not.toHaveBeenCalled()
+      expect(useLitegraphService().fitView).not.toHaveBeenCalled()
       expect(rafCallbacks).toHaveLength(1)
 
       rafCallbacks[0](performance.now())
 
-      expect(vi.mocked(useLitegraphService()).fitView).toHaveBeenCalledOnce()
+      expect(useLitegraphService().fitView).toHaveBeenCalledOnce()
 
       mockGraph.nodes = []
       mockGraph._nodes = []
@@ -202,7 +202,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(rafCallbacks).toHaveLength(1)
       rafCallbacks[0](performance.now())
 
-      expect(vi.mocked(useLitegraphService()).fitView).not.toHaveBeenCalled()
+      expect(useLitegraphService().fitView).not.toHaveBeenCalled()
     })
 
     it('fits the first visit on the next frame', () => {
@@ -217,7 +217,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
       expect(rafCallbacks).toHaveLength(1)
 
       rafCallbacks[0](performance.now())
-      expect(vi.mocked(useLitegraphService()).fitView).toHaveBeenCalledOnce()
+      expect(useLitegraphService().fitView).toHaveBeenCalledOnce()
       expect(rafCallbacks).toHaveLength(1)
 
       mockGraph.nodes = []
@@ -236,7 +236,7 @@ describe('useSubgraphNavigationStore - Viewport Persistence', () => {
 
       rafCallbacks[0](performance.now())
 
-      expect(vi.mocked(useLitegraphService()).fitView).not.toHaveBeenCalled()
+      expect(useLitegraphService().fitView).not.toHaveBeenCalled()
     })
   })
 

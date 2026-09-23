@@ -478,7 +478,7 @@ describe('nodeOutputStore getPreviewParam', () => {
     const node = createMockNode()
     const outputs = createMockOutputs([{ filename: 'img.png' }])
     expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
+    expect(app.getPreviewFormatParam).not.toHaveBeenCalled()
   })
 
   it('should return empty string if isVideoNode returns true', () => {
@@ -487,7 +487,7 @@ describe('nodeOutputStore getPreviewParam', () => {
     const node = createMockNode()
     const outputs = createMockOutputs([{ filename: 'img.png' }])
     expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
+    expect(app.getPreviewFormatParam).not.toHaveBeenCalled()
   })
 
   it('should return empty string if outputs.images is undefined', () => {
@@ -495,7 +495,7 @@ describe('nodeOutputStore getPreviewParam', () => {
     const node = createMockNode()
     const outputs: ExecutedWsMessage['output'] = {}
     expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
+    expect(app.getPreviewFormatParam).not.toHaveBeenCalled()
   })
 
   it('should return empty string if outputs.images is empty', () => {
@@ -503,7 +503,7 @@ describe('nodeOutputStore getPreviewParam', () => {
     const node = createMockNode()
     const outputs = createMockOutputs([])
     expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
+    expect(app.getPreviewFormatParam).not.toHaveBeenCalled()
   })
 
   it('should return empty string if outputs.images only contains null entries', () => {
@@ -511,7 +511,7 @@ describe('nodeOutputStore getPreviewParam', () => {
     const node = createMockNode()
     const outputs = createMockOutputs(fromAny([null]))
     expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
+    expect(app.getPreviewFormatParam).not.toHaveBeenCalled()
   })
 
   it('should return empty string if outputs.images contains SVG images', () => {
@@ -519,7 +519,7 @@ describe('nodeOutputStore getPreviewParam', () => {
     const node = createMockNode()
     const outputs = createMockOutputs([{ filename: 'img.svg' }])
     expect(store.getPreviewParam(node, outputs)).toBe('')
-    expect(vi.mocked(app).getPreviewFormatParam).not.toHaveBeenCalled()
+    expect(app.getPreviewFormatParam).not.toHaveBeenCalled()
   })
 
   it('should return format param for standard image outputs', () => {
@@ -527,7 +527,7 @@ describe('nodeOutputStore getPreviewParam', () => {
     const node = createMockNode()
     const outputs = createMockOutputs([{ filename: 'img.png' }])
     expect(store.getPreviewParam(node, outputs)).toBe('&format=test_webp')
-    expect(vi.mocked(app).getPreviewFormatParam).toHaveBeenCalledTimes(1)
+    expect(app.getPreviewFormatParam).toHaveBeenCalledTimes(1)
   })
 
   it('should return format param for multiple standard images', () => {
@@ -538,7 +538,7 @@ describe('nodeOutputStore getPreviewParam', () => {
       { filename: 'img2.jpg' }
     ])
     expect(store.getPreviewParam(node, outputs)).toBe('&format=test_webp')
-    expect(vi.mocked(app).getPreviewFormatParam).toHaveBeenCalledTimes(1)
+    expect(app.getPreviewFormatParam).toHaveBeenCalledTimes(1)
   })
 })
 

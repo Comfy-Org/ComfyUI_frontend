@@ -352,7 +352,7 @@ describe('useSubgraphNavigationStore', () => {
     expect(routerPush).toHaveBeenCalledWith(
       expect.objectContaining({ hash: '#next-root' })
     )
-    expect(vi.mocked(useWorkflowService()).openWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 
   it('writes the latest graph after an earlier route write settles', async () => {
@@ -397,7 +397,7 @@ describe('useSubgraphNavigationStore', () => {
       routerPush.mock.calls.map(([target]) => getRouteTargetHash(target))
     ).toEqual(['#' + firstId, '#' + secondId])
     expect(routeHash.value).toBe('#' + secondId)
-    expect(vi.mocked(useWorkflowService()).openWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
   })
 
   it('handles an external route while an internal write is pending', async () => {
@@ -537,7 +537,7 @@ describe('useSubgraphNavigationStore', () => {
     )
 
     expect(app.canvas.setGraph).toHaveBeenCalledWith(targetGraph)
-    expect(vi.mocked(useWorkflowService()).openWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
     expect(routerPush).toHaveBeenCalledWith(
       expect.objectContaining({ hash: '#' + targetId })
     )
@@ -612,7 +612,7 @@ describe('useSubgraphNavigationStore', () => {
 
     expect(app.canvas.graph).toBe(originalGraph)
     expect(app.canvas.setGraph).not.toHaveBeenCalled()
-    expect(vi.mocked(useWorkflowService()).openWorkflow).not.toHaveBeenCalled()
+    expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
     expect(routerPush).not.toHaveBeenCalled()
   })
 
