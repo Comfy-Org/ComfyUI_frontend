@@ -4,7 +4,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute, useRouter } from 'vue-router'
-import type { LocationQuery } from 'vue-router'
+import type { LocationQueryRaw } from 'vue-router'
 
 import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
 
@@ -20,8 +20,6 @@ vi.mock(
   import('@/platform/navigation/preservedQueryManager'),
   () => preservedQueryMocks
 )
-
-let mockRouteQuery: { value: LocationQuery }
 
 vi.mock(import('vue-router'))
 
@@ -61,18 +59,14 @@ const TEAM_CREDIT_STOPS = {
   }))
 } satisfies TeamCreditStops
 
+function setRouteQuery(value: LocationQueryRaw) {
+  const query = useRoute().query
+  for (const key of Object.keys(query)) delete query[key]
+  Object.assign(query, value)
+}
+
 describe('usePricingTableUrlLoader', () => {
   beforeEach(() => {
-    const query = useRoute().query
-    mockRouteQuery = {
-      get value() {
-        return query
-      },
-      set value(value) {
-        for (const key of Object.keys(query)) delete query[key]
-        Object.assign(query, value)
-      }
-    }
     const workspaceUI = useWorkspaceUI()
     const defaultPermissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
@@ -86,7 +80,7 @@ describe('usePricingTableUrlLoader', () => {
     billing.teamCreditStops = computed(() => mockTeamCreditStops.value)
     vi.mocked(useBillingContext).mockReturnValue(billing)
 
-    mockRouteQuery.value = {}
+    setRouteQuery({})
     mockPermissions.value = { canManageSubscription: true }
     mockCanOpenPricingSurface.value = true
 
@@ -99,7 +93,7 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('does nothing when no pricing param present', async () => {
-    mockRouteQuery.value = {}
+    setRouteQuery({})
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
@@ -109,7 +103,7 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('opens the pricing table for any owner capability', async () => {
-    mockRouteQuery.value = { pricing: '1' }
+    setRouteQuery({ pricing: '1' })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
@@ -121,7 +115,7 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('never opens for a sales-managed workspace, even from a deep link', async () => {
-    mockRouteQuery.value = { pricing: '1' }
+    setRouteQuery({ pricing: '1' })
     mockCanOpenPricingSurface.value = false
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
@@ -132,7 +126,7 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('resolves the capability snapshot before deciding', async () => {
-    mockRouteQuery.value = { pricing: '1' }
+    setRouteQuery({ pricing: '1' })
     mockCanOpenPricingSurface.value = true
     vi.mocked(useBillingCapabilities().initialize).mockImplementation(
       async () => {
@@ -150,7 +144,7 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('opens on the team tab for ?pricing=team', async () => {
-    mockRouteQuery.value = { pricing: 'team' }
+    setRouteQuery({ pricing: 'team' })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
@@ -161,7 +155,7 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('opens on the personal tab for ?pricing=personal', async () => {
-    mockRouteQuery.value = { pricing: 'personal' }
+    setRouteQuery({ pricing: 'personal' })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
@@ -172,7 +166,7 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('opens the selected plan confirmation from a marketing deep link', async () => {
-    mockRouteQuery.value = { pricing: 'creator', cycle: 'monthly' }
+    setRouteQuery({ pricing: 'creator', cycle: 'monthly' })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
@@ -190,7 +184,7 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('is a silent no-op for a member', async () => {
-    mockRouteQuery.value = { pricing: '1' }
+    setRouteQuery({ pricing: '1' })
     mockPermissions.value = { canManageSubscription: false }
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
@@ -200,11 +194,11 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('denies selected-plan entry and strips its params for a member', async () => {
-    mockRouteQuery.value = {
+    setRouteQuery({
       pricing: 'creator',
       cycle: 'monthly',
       other: 'param'
-    }
+    })
     mockPermissions.value = { canManageSubscription: false }
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
@@ -220,7 +214,7 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('restores a preserved Team selection with its catalog values', async () => {
-    mockRouteQuery.value = {}
+    setRouteQuery({})
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
       pricing: 'team',
       stop: 'team_700',
@@ -251,7 +245,7 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('strips but does not open for an empty param', async () => {
-    mockRouteQuery.value = { pricing: '' }
+    setRouteQuery({ pricing: '' })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
@@ -264,7 +258,7 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('strips but does not open for a non-string param', async () => {
-    mockRouteQuery.value = { pricing: fromAny<string, unknown>(['array']) }
+    setRouteQuery({ pricing: fromAny<string, unknown>(['array']) })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
@@ -274,7 +268,7 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('strips but does not open for an unrecognized pricing value', async () => {
-    mockRouteQuery.value = { pricing: 'garbage' }
+    setRouteQuery({ pricing: 'garbage' })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
@@ -288,7 +282,7 @@ describe('usePricingTableUrlLoader', () => {
     { cycle: 'monthly' },
     { stop: 'team_700', cycle: 'yearly', other: 'param' }
   ])('cleans orphaned pricing state: %o', async (query) => {
-    mockRouteQuery.value = query
+    setRouteQuery(query)
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
@@ -325,7 +319,7 @@ describe('usePricingTableUrlLoader', () => {
     { pricing: 'creator', cycle: 'weekly' },
     { pricing: 'founder', cycle: 'yearly' }
   ])('strips but does not open an unsupported checkout: %o', async (query) => {
-    mockRouteQuery.value = query
+    setRouteQuery(query)
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
@@ -344,11 +338,11 @@ describe('usePricingTableUrlLoader', () => {
   )(
     'opens $catalogStop.id $billingCycle from the API catalog',
     async ({ catalogStop, billingCycle }) => {
-      mockRouteQuery.value = {
+      setRouteQuery({
         pricing: 'team',
         stop: catalogStop.id,
         cycle: billingCycle
-      }
+      })
 
       const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
       await loadPricingTableFromUrl()
@@ -372,11 +366,11 @@ describe('usePricingTableUrlLoader', () => {
   )
 
   it('fetches the Team catalog before resolving a selected stop', async () => {
-    mockRouteQuery.value = {
+    setRouteQuery({
       pricing: 'team',
       stop: 'team_700',
       cycle: 'yearly'
-    }
+    })
     mockTeamCreditStops.value = null
     vi.mocked(useBillingContext().fetchPlans).mockImplementationOnce(
       async () => {
@@ -399,11 +393,11 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('falls back to the Team table when the catalog fetch fails', async () => {
-    mockRouteQuery.value = {
+    setRouteQuery({
       pricing: 'team',
       stop: 'team_700',
       cycle: 'yearly'
-    }
+    })
     mockTeamCreditStops.value = null
     vi.mocked(useBillingContext().fetchPlans).mockRejectedValueOnce(
       new Error('catalog unavailable')
@@ -421,11 +415,11 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('falls back when the catalog remains unavailable after fetching', async () => {
-    mockRouteQuery.value = {
+    setRouteQuery({
       pricing: 'team',
       stop: 'team_700',
       cycle: 'yearly'
-    }
+    })
     mockTeamCreditStops.value = null
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
@@ -438,11 +432,11 @@ describe('usePricingTableUrlLoader', () => {
   })
 
   it('falls back to the Team table for a stop absent from the catalog', async () => {
-    mockRouteQuery.value = {
+    setRouteQuery({
       pricing: 'team',
       stop: 'unknown',
       cycle: 'monthly'
-    }
+    })
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
@@ -461,7 +455,7 @@ describe('usePricingTableUrlLoader', () => {
     { pricing: 'team', stop: 'team_700', cycle: 'weekly' },
     { pricing: 'personal', stop: 'team_700', cycle: 'yearly' }
   ])('fails closed for an invalid Team selection: %o', async (query) => {
-    mockRouteQuery.value = fromAny<Record<string, string>, unknown>(query)
+    setRouteQuery(fromAny<Record<string, string>, unknown>(query))
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()
@@ -474,7 +468,7 @@ describe('usePricingTableUrlLoader', () => {
     { pricing: 'team', stop: ['team_700'], cycle: 'yearly' },
     { pricing: 'team', stop: 'team_700', cycle: ['yearly'] }
   ])('fails closed for array Team params: %o', async (query) => {
-    mockRouteQuery.value = fromAny<Record<string, string>, unknown>(query)
+    setRouteQuery(fromAny<Record<string, string>, unknown>(query))
 
     const { loadPricingTableFromUrl } = usePricingTableUrlLoader()
     await loadPricingTableFromUrl()

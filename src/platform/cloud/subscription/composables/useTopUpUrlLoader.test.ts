@@ -4,7 +4,7 @@ import { useDialogService } from '@/services/dialogService'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useRoute, useRouter } from 'vue-router'
-import type { LocationQuery } from 'vue-router'
+import type { LocationQueryRaw } from 'vue-router'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -21,8 +21,6 @@ vi.mock(
   () => preservedQueryMocks
 )
 
-let mockRouteQuery: { value: LocationQuery }
-
 vi.mock(import('vue-router'))
 
 vi.mock(import('@/services/dialogService'))
@@ -31,24 +29,20 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 vi.mock(import('@/platform/telemetry'))
 
+function setRouteQuery(value: LocationQueryRaw) {
+  const query = useRoute().query
+  for (const key of Object.keys(query)) delete query[key]
+  Object.assign(query, value)
+}
+
 describe('useTopUpUrlLoader', () => {
   beforeEach(() => {
-    const query = useRoute().query
-    mockRouteQuery = {
-      get value() {
-        return query
-      },
-      set value(value) {
-        for (const key of Object.keys(query)) delete query[key]
-        Object.assign(query, value)
-      }
-    }
-    mockRouteQuery.value = {}
+    setRouteQuery({})
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })
 
   it('does nothing when no topup param present', async () => {
-    mockRouteQuery.value = {}
+    setRouteQuery({})
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -58,7 +52,7 @@ describe('useTopUpUrlLoader', () => {
   })
 
   it('opens the top-up dialog for an eligible user and strips the param', async () => {
-    mockRouteQuery.value = { topup: '1' }
+    setRouteQuery({ topup: '1' })
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -68,7 +62,7 @@ describe('useTopUpUrlLoader', () => {
   })
 
   it('emits deep_link telemetry on an eligible open', async () => {
-    mockRouteQuery.value = { topup: '1' }
+    setRouteQuery({ topup: '1' })
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -85,7 +79,7 @@ describe('useTopUpUrlLoader', () => {
     useBillingCapabilities().canTopUp = computed(() => canTopUp.value)
 
     let resolveCapabilities!: () => void
-    mockRouteQuery.value = { topup: '1' }
+    setRouteQuery({ topup: '1' })
     vi.mocked(useBillingCapabilities().initialize).mockImplementationOnce(
       () =>
         new Promise<void>((resolve) => {
@@ -109,7 +103,7 @@ describe('useTopUpUrlLoader', () => {
   })
 
   it('is a silent no-op when the server denies top-up', async () => {
-    mockRouteQuery.value = { topup: '1' }
+    setRouteQuery({ topup: '1' })
     useBillingCapabilities().canTopUp = computed(() => false)
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
@@ -122,7 +116,7 @@ describe('useTopUpUrlLoader', () => {
   })
 
   it('opens the subscription path without top-up telemetry', async () => {
-    mockRouteQuery.value = { topup: '1' }
+    setRouteQuery({ topup: '1' })
     useBillingCapabilities().canTopUp = computed(() => false)
     useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
@@ -136,7 +130,7 @@ describe('useTopUpUrlLoader', () => {
   })
 
   it('denies, strips, and clears together when the user is not eligible', async () => {
-    mockRouteQuery.value = { topup: '1', other: 'param' }
+    setRouteQuery({ topup: '1', other: 'param' })
     useBillingCapabilities().canTopUp = computed(() => false)
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
@@ -152,7 +146,7 @@ describe('useTopUpUrlLoader', () => {
   })
 
   it('restores preserved query and opens the dialog', async () => {
-    mockRouteQuery.value = {}
+    setRouteQuery({})
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue({
       topup: '1'
     })
@@ -167,7 +161,7 @@ describe('useTopUpUrlLoader', () => {
   })
 
   it('strips but does not open for an empty param', async () => {
-    mockRouteQuery.value = { topup: '' }
+    setRouteQuery({ topup: '' })
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -183,7 +177,7 @@ describe('useTopUpUrlLoader', () => {
   })
 
   it('strips but does not open for a non-string param', async () => {
-    mockRouteQuery.value = { topup: fromAny<string, unknown>(['array']) }
+    setRouteQuery({ topup: fromAny<string, unknown>(['array']) })
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
@@ -193,7 +187,7 @@ describe('useTopUpUrlLoader', () => {
   })
 
   it('opens for an unrecognized topup value', async () => {
-    mockRouteQuery.value = { topup: 'garbage' }
+    setRouteQuery({ topup: 'garbage' })
 
     const { loadTopUpFromUrl } = useTopUpUrlLoader()
     await loadTopUpFromUrl()
