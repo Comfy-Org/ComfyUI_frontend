@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
+
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 
-const fetchApi = vi.hoisted(() =>
-  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
-)
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+vi.mock(import('@/scripts/api'))
+const fetchApi = vi.mocked(api.fetchApi)
 
 import { AgentApiError, createAgentRestClient } from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'
@@ -334,6 +334,32 @@ describe('success response parsing', () => {
     expect(result.message_id).toBe('m1')
     expect(result.thread_id).toBe('t1')
     expect((result as Record<string, unknown>).workflow_id).toBe('w1')
+  })
+
+  it.for([
+    {
+      name: 'an incomplete thread row',
+      response: {
+        threads: [{ id: 'th-1', title: 'Thread' }],
+        pagination: { has_more: false, limit: 20, offset: 0, total: 1 }
+      },
+      path: ['threads', 0, 'created_at']
+    },
+    {
+      name: 'incomplete pagination',
+      response: {
+        threads: [],
+        pagination: { has_more: false }
+      },
+      path: ['pagination', 'limit']
+    }
+  ])('rejects $name from the agent service', async ({ response, path }) => {
+    respond(jsonResponse(200, response))
+
+    await expect(makeClient().listThreads()).rejects.toMatchObject({
+      name: 'ZodError',
+      issues: expect.arrayContaining([expect.objectContaining({ path })])
+    })
   })
 })
 

@@ -269,7 +269,7 @@
                       default-position="right-2 bottom-2"
                     />
                     <Spinner
-                      v-if="loadingTemplate === template.name"
+                      v-if="loadingTemplateId === template.name"
                       class="absolute inset-0 z-10 m-auto size-12"
                     />
                   </div>
@@ -499,6 +499,7 @@ const workflowTemplatesStore = useWorkflowTemplatesStore()
 const {
   loadTemplates,
   loadWorkflowTemplate,
+  loadingTemplateId,
   getTemplateThumbnailUrl,
   getTemplateTitle
 } = useTemplateWorkflows()
@@ -709,7 +710,6 @@ const hasActiveFilters = computed(
 
 // UI state
 const mobileFiltersOpen = ref(false)
-const loadingTemplate = ref<string | null>(null)
 const hoveredTemplate = ref<string | null>(null)
 const cardRefs = ref<HTMLElement[]>([])
 
@@ -887,25 +887,20 @@ watch(
   ],
   () => {
     resetPagination()
-    // Clear loading state and force re-render of template list
-    loadingTemplate.value = null
     templateListKey.value++
   }
 )
 
 // Methods
-const onLoadWorkflow = async (template: TemplateInfo) => {
-  loadingTemplate.value = template.name
-  try {
-    await loadWorkflowTemplate(
-      template.name,
-      getEffectiveSourceModule(template)
-    )
-    templateWasSelected.value = true
-    onClose()
-  } finally {
-    loadingTemplate.value = null
-  }
+async function onLoadWorkflow(template: TemplateInfo) {
+  const result = await loadWorkflowTemplate(
+    template.name,
+    getEffectiveSourceModule(template)
+  )
+  if (result === 'not-started') return
+
+  templateWasSelected.value = result === 'loaded'
+  onClose()
 }
 
 const pageTitle = computed(() => {
