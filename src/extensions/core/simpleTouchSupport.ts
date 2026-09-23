@@ -173,6 +173,12 @@ app.registerExtension({
 
 const processMouseDown = LGraphCanvas.prototype.processMouseDown
 LGraphCanvas.prototype.processMouseDown = function (e: PointerEvent) {
+  const startsFreshTouch = e.pointerType === 'touch' && e.isPrimary
+  if (startsFreshTouch) {
+    touchCount = 0
+    touchZooming = false
+  }
+
   if (touchZooming || touchCount) {
     return
   }
