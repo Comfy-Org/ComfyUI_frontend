@@ -133,13 +133,13 @@ export function addToComboValues(widget: IComboWidget, value: string) {
 }
 
 /**
- * True while the canvas is a picking surface rather than an editable one: the
- * agent's node selection mode pins `selectOnly` (ADR-CANVAS-INTERACTION-0035).
+ * True while the canvas is a picking surface rather than an editable one: its
+ * own `selectOnly` flag is set, or the interaction mode the application
+ * injected reads select-only (ADR-CANVAS-INTERACTION-0035).
  *
- * Core commands declare `mutatesGraph` and the command store refuses them once;
- * the classic canvas reads `this.selectOnly` in its own pointer and key paths.
- * Every other edit path (paste, drops, history, node creation) guards with this
- * helper at its call site, so a new path has to opt in or it runs during picking.
+ * The canvas pointer and key dispatch and the command store read the mode
+ * themselves. The document-level paste, drop and history listeners guard with
+ * this helper, so a new document-level edit path has to opt in.
  */
 export const isSelectOnly = (canvas: LGraphCanvas | undefined): boolean =>
   canvas?.selectOnly === true

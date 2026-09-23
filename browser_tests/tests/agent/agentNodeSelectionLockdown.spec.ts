@@ -1,6 +1,18 @@
+import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
+
+async function centerOf(locator: Locator): Promise<{ x: number; y: number }> {
+  const box = await locator.boundingBox()
+  if (!box) throw new Error('element is not rendered')
+  return { x: box.x + box.width / 2, y: box.y + box.height / 2 }
+}
+
+async function clickThroughInertLayer(page: Page, locator: Locator) {
+  const { x, y } = await centerOf(locator)
+  await page.mouse.click(x, y)
+}
 
 test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
   test.describe('canvas info overlay', () => {
@@ -88,7 +100,7 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
         await expect(node).toBeVisible()
         await agentPanel.enterNodeSelectionMode()
         await expect(node).toBeInViewport()
-        await node.getByTestId('node-title').click()
+        await clickThroughInertLayer(page, node.getByTestId('node-title'))
         await expect(node).toHaveClass(/outline-node-component-outline/)
         await expect(selectedNodeReference).toBeVisible()
       })
@@ -151,16 +163,10 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
       await test.step('enter node selection mode', async () => {
         await agentPanel.enterNodeSelectionMode()
         await expect(node).toBeInViewport()
-        await node.getByTestId('node-title').hover()
       })
 
       await test.step('clicking the prompt widget selects the node', async () => {
-        const promptBox = await prompt.boundingBox()
-        if (!promptBox) throw new Error('prompt widget is not rendered')
-        await page.mouse.click(
-          promptBox.x + promptBox.width / 2,
-          promptBox.y + promptBox.height / 2
-        )
+        await clickThroughInertLayer(page, prompt)
         await expect(node).toHaveClass(/outline-node-component-outline/)
         await expect(
           agentPanel.root.getByRole('button', {
