@@ -341,6 +341,24 @@ describe('queued Router delivery', () => {
     })
   })
 
+  it('settles a successful HTTP result with a BFL moderation status', async () => {
+    stubFetch(
+      admitted(),
+      Response.json({
+        id: 'bfl-task',
+        status: 'Content Moderated',
+        result: null
+      })
+    )
+
+    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+      reason: 'policy',
+      requestId: REQUEST_ID,
+      response: { status: 200, errorType: null },
+      requestSettlement: 'terminal'
+    })
+  })
+
   it('retains a queued response parser exception for analytics', async () => {
     const malformed = () =>
       new Response('{', { headers: { 'Content-Type': 'application/json' } })

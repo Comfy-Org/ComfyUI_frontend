@@ -84,27 +84,38 @@ async function automaticOutputs(
     })
     seen.add(value)
   }
-  function visit(value: unknown, depth: number, mimeHint?: string) {
-    if (depth > 64 || outputs.length >= 256) return
+  function visit(
+    value: unknown,
+    depth: number,
+    mimeHint?: string,
+    key = ''
+  ): boolean {
+    if (depth > 64 || outputs.length >= 256) return false
     if (typeof value === 'string') {
       if (!seen.has(value)) collectString(value, mimeHint)
-      return
+      return (
+        (key === 'text' || key === 'output_text') && value.trim().length > 0
+      )
     }
-    if (value === null || typeof value !== 'object') return
+    if (value === null || typeof value !== 'object') return false
     const entries = Object.entries(value)
     const hint: unknown = entries.find(
       ([key]) => key === 'mimeType' || key === 'mime_type'
     )?.[1]
+    let hasTextOutput = false
     for (const [key, child] of entries)
-      visit(
-        child,
-        depth + 1,
-        key === 'data' && typeof hint === 'string' ? hint : undefined
-      )
+      hasTextOutput =
+        visit(
+          child,
+          depth + 1,
+          key === 'data' && typeof hint === 'string' ? hint : undefined,
+          key
+        ) || hasTextOutput
+    return hasTextOutput
   }
   try {
-    visit(data, 0)
-    if (!outputs.length && workshopContentPolicyPayload(data))
+    const hasTextOutput = visit(data, 0)
+    if (!outputs.length && !hasTextOutput && workshopContentPolicyPayload(data))
       throw new WorkshopRouterError('policy', null, {}, undefined, 'response')
     const discovered = await discoverOutputMimes(
       outputs.map(({ url }) => url),

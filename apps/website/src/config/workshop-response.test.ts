@@ -174,6 +174,63 @@ describe('native Router output handling', () => {
     }
   )
 
+  it.for([
+    {
+      name: 'a partially moderated Gemini candidate',
+      response: {
+        candidates: [
+          {
+            content: {
+              parts: [{ text: 'Here is the first half of the story' }]
+            },
+            finishReason: 'SAFETY'
+          }
+        ]
+      },
+      text: 'Here is the first half of the story'
+    },
+    {
+      name: 'a usable Gemini candidate beside a moderated candidate',
+      response: {
+        candidates: [
+          {
+            content: { parts: [{ text: 'A complete answer' }] },
+            finishReason: 'STOP'
+          },
+          { finishReason: 'IMAGE_SAFETY' }
+        ]
+      },
+      text: 'A complete answer'
+    },
+    {
+      name: 'an incomplete OpenAI response with partial text',
+      response: {
+        status: 'incomplete',
+        incomplete_details: { reason: 'content_filter' },
+        output: [
+          {
+            type: 'message',
+            content: [
+              { type: 'output_text', text: 'A partial but usable answer' }
+            ]
+          }
+        ]
+      },
+      text: 'A partial but usable answer'
+    }
+  ])('preserves $name', async ({ response, text }) => {
+    const outputs = await parseRouterResponse(contract, Response.json(response))
+    try {
+      expect(outputs).toHaveLength(1)
+      expect(outputs[0]).toMatchObject({
+        kind: 'text',
+        text: expect.stringContaining(text)
+      })
+    } finally {
+      releaseRouterOutputs(outputs)
+    }
+  })
+
   it('keeps usable output from a partially moderated response', async () => {
     const outputs = await parseRouterResponse(
       contract,

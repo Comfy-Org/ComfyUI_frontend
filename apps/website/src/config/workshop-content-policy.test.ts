@@ -22,6 +22,23 @@ describe('Workshop content-policy attribution', () => {
       payload: { failures: [{ failureCode: 'SAFETY.OUTPUT.MULTIMODAL' }] }
     },
     {
+      name: 'Runway preprocessing safety code',
+      payload: { failureCode: 'INPUT_PREPROCESSING.SAFETY.TEXT' }
+    },
+    {
+      name: 'Kling task status message',
+      payload: {
+        data: {
+          task_status: 'failed',
+          task_status_msg: 'Failure to pass the risk control system'
+        }
+      }
+    },
+    {
+      name: 'BFL moderation status',
+      payload: { id: 'task', status: 'Content Moderated', result: null }
+    },
+    {
       name: 'Gemini prompt block',
       payload: { promptFeedback: { blockReason: 'BLOCKLIST' } }
     },
@@ -30,8 +47,12 @@ describe('Workshop content-policy attribution', () => {
       payload: { candidates: [{ finishReason: 'IMAGE_SAFETY' }] }
     },
     {
+      name: 'Gemini copyright recitation refusal',
+      payload: { candidates: [{ finishReason: 'RECITATION' }] }
+    },
+    {
       name: 'provider refusal message',
-      payload: 'The request was rejected by risk control.'
+      payload: { failure: 'The request was rejected by risk control.' }
     }
   ])('recognizes $name', ({ payload }) => {
     expect(workshopContentPolicyPayload(payload)).toBe(true)
@@ -44,6 +65,23 @@ describe('Workshop content-policy attribution', () => {
         code: 'ModerationServiceUnavailable',
         message: 'The content moderation service is unavailable.'
       }
+    },
+    {
+      name: 'snake-case moderation outage',
+      payload: {
+        error: {
+          code: 'content_moderation_unavailable',
+          message: 'upstream timeout'
+        }
+      }
+    },
+    {
+      name: 'content-filter processing error',
+      payload: { error: { code: 'content_filter_error' } }
+    },
+    {
+      name: 'dotted safety-check timeout',
+      payload: { error: { code: 'safety.input.check timed out' } }
     },
     {
       name: 'successful Gemini response',
@@ -60,18 +98,38 @@ describe('Workshop content-policy attribution', () => {
     {
       name: 'unspecified Gemini block reason',
       payload: { promptFeedback: { blockReason: 'BLOCK_REASON_UNSPECIFIED' } }
+    },
+    {
+      name: 'validation error quoting the prompt',
+      payload: {
+        detail: 'prompt "this violates our content policy" is too long'
+      }
+    },
+    {
+      name: 'tool-call arguments discussing policy',
+      payload: {
+        output: [
+          {
+            type: 'function_call',
+            arguments: {
+              reason: 'The user asked what violates our content policy',
+              message: 'Explain content_filter behavior'
+            }
+          }
+        ]
+      }
     }
   ])('does not classify $name as policy', ({ payload }) => {
     expect(workshopContentPolicyPayload(payload)).toBe(false)
   })
 
-  it('recognizes a non-JSON provider refusal body', () => {
-    expect(
-      workshopContentPolicyBody(
-        'Input media did not pass content moderation. Request rejected.'
-      )
-    ).toBe(true)
-    expect(workshopContentPolicyBody('')).toBe(false)
+  it.for([
+    '',
+    'Input media did not pass content moderation. Request rejected.',
+    '<html>content_filter upstream failure</html>',
+    '{"error":{"code":"content_filter"}'
+  ])('does not classify an incomplete or non-JSON body', (body) => {
+    expect(workshopContentPolicyBody(body)).toBe(false)
   })
 
   it('bounds traversal of wide provider payloads', () => {

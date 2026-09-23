@@ -15,16 +15,23 @@ async function videoMetadata(
   name: string,
   signal: AbortSignal
 ): Promise<WorkshopVideoMetadata> {
+  const source = videoSource(file)
   try {
-    const source = videoSource(file)
     if (!source) throw new TypeError('Missing video source')
     return await readWorkshopVideoMetadata(source, signal)
   } catch (cause) {
     signal.throwIfAborted()
+    const missingSelectedFile =
+      source === undefined && typeof file === 'object' && !Array.isArray(file)
+    const code =
+      (source !== undefined && typeof source !== 'string') ||
+      missingSelectedFile
+        ? 'fileUnreadable'
+        : 'videoUnreadable'
     throw new WorkshopRouterError(
       'client',
       null,
-      { [name]: 'videoUnreadable' },
+      { [name]: code },
       undefined,
       'input_preparation',
       { cause }

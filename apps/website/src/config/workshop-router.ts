@@ -55,40 +55,54 @@ export function waitFor(ms: number, signal: AbortSignal): Promise<void> {
 async function failureDetails(response: Response) {
   const reader = response.body?.getReader()
   let body = ''
+  let bodyComplete = reader === undefined
   if (reader) {
     const decoder = new TextDecoder()
     let remaining = 16_384
     try {
       while (remaining > 0) {
         const { done, value } = await reader.read()
-        if (done) break
-        body += decoder.decode(value.subarray(0, remaining), { stream: true })
-        remaining -= value.byteLength
+        if (done) {
+          bodyComplete = true
+          break
+        }
+        const included = value.subarray(0, remaining)
+        body += decoder.decode(included, { stream: true })
+        remaining -= included.byteLength
+        if (included.byteLength < value.byteLength) break
       }
       body += decoder.decode()
     } catch (cause) {
-      return { response: workshopResponseDetails(response), cause }
+      return {
+        response: workshopResponseDetails(response),
+        bodyComplete: false,
+        cause
+      }
     } finally {
       await reader.cancel().catch(() => {})
       reader.releaseLock()
     }
   }
-  return { response: workshopResponseDetails(response, body) }
+  return { response: workshopResponseDetails(response, body), bodyComplete }
 }
 
-function failureFor(response: Response, body: string): RunFailure {
+function failureFor(
+  response: Response,
+  body: string,
+  bodyComplete: boolean
+): RunFailure {
   const bucket = response.headers.get('X-Comfy-Error-Type')
   if (bucket === 'insufficient_credits') return 'noCredits'
   if (bucket === 'content_policy_violation') return 'policy'
   if (bucket === 'not_enabled' || bucket === 'forbidden') return 'unavailable'
   if (bucket === 'concurrency_limit_exceeded') return 'concurrency'
-  if (workshopContentPolicyBody(body)) return 'policy'
   if (response.status === 402) return 'noCredits'
   if (response.status === 429) return 'rateLimit'
   if (response.status === 409) return 'conflict'
-  if (response.status === 400 || response.status === 422) return 'validation'
   if ([401, 403, 404].includes(response.status)) return 'unavailable'
   if (response.status === 504) return 'timeout'
+  if (bodyComplete && workshopContentPolicyBody(body)) return 'policy'
+  if (response.status === 400 || response.status === 422) return 'validation'
   return 'provider'
 }
 
@@ -239,7 +253,7 @@ export async function settleRouterResponse(
     if (!response.ok) {
       const details = await failureDetails(response)
       throw new WorkshopRouterError(
-        failureFor(response, details.response.body),
+        failureFor(response, details.response.body, details.bodyComplete),
         requestId,
         {},
         details.response,

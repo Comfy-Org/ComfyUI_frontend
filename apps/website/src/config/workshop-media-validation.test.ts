@@ -179,7 +179,7 @@ describe('Workshop media validation', () => {
   })
 
   it.for(['NotSupportedError', 'TimeoutError'])(
-    'preserves a metadata %s as a client failure on its field',
+    'preserves a remote metadata %s as a client failure on its field',
     async (name) => {
       const cause = new DOMException('Video metadata unavailable', name)
       vi.mocked(readWorkshopVideoMetadata).mockRejectedValue(cause)
@@ -199,6 +199,37 @@ describe('Workshop media validation', () => {
       })
     }
   )
+
+  it('asks for a local video to be selected again when metadata is unreadable', async () => {
+    const file = new File(['video'], 'private-video.mp4', {
+      type: 'video/mp4'
+    })
+    const cause = new DOMException(
+      'Video metadata unavailable',
+      'NotSupportedError'
+    )
+    vi.mocked(readWorkshopVideoMetadata).mockRejectedValue(cause)
+
+    await expect(
+      validateWorkshopMediaInputs(
+        [videoField],
+        {
+          source_video: {
+            name: file.name,
+            size: file.size,
+            type: file.type,
+            file
+          }
+        },
+        new AbortController().signal
+      )
+    ).rejects.toMatchObject({
+      reason: 'client',
+      stage: 'input_preparation',
+      fieldErrors: { source_video: 'fileUnreadable' },
+      cause
+    })
+  })
 
   it('preserves cancellation instead of reporting unreadable media', async () => {
     const pending = Promise.withResolvers<ReturnType<typeof metadata>>()
@@ -261,7 +292,7 @@ describe('Workshop media validation', () => {
       )
     ).rejects.toMatchObject({
       reason: 'client',
-      fieldErrors: { source_video: 'videoUnreadable' },
+      fieldErrors: { source_video: 'fileUnreadable' },
       cause: new TypeError('Missing video source')
     })
   })

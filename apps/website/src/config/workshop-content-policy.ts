@@ -7,24 +7,21 @@ const POLICY_CODES = new Set([
   'moderation_blocked'
 ])
 
-const POLICY_CODE_FRAGMENTS = [
-  'content_filter',
-  'content_moderation',
-  'content_policy_violation',
-  'datainspectionfailed',
-  'image_content_policy_violation',
-  'moderation_blocked',
-  'safety.input.',
-  'safety.output.'
-]
-
 const POLICY_REASONS = new Set([
   'blocklist',
   'image_prohibited_content',
   'image_safety',
+  'jailbreak',
+  'model_armor',
   'prohibited_content',
   'recitation',
   'safety'
+])
+
+const POLICY_STATUSES = new Set([
+  'content moderated',
+  'nsfw',
+  'request moderated'
 ])
 
 const POLICY_PHRASES = [
@@ -33,6 +30,7 @@ const POLICY_PHRASES = [
   'content policy violation',
   'did not pass content moderation',
   'flagged by the content moderation',
+  'failure to pass the risk control system',
   'may contain inappropriate content',
   'nsfw content detected',
   'rejected by the safety system',
@@ -42,16 +40,13 @@ const POLICY_PHRASES = [
 ]
 
 const POLICY_TEXT_FIELDS = new Set([
-  'body',
-  'detail',
   'error',
   'errormessage',
   'failure',
-  'message',
   'rawresponse',
-  'reason',
   'statusmessage',
-  'taskstatusmessage'
+  'taskstatusmessage',
+  'taskstatusmsg'
 ])
 
 const POLICY_CODE_FIELDS = new Set([
@@ -63,33 +58,35 @@ const POLICY_CODE_FIELDS = new Set([
   'statuscode'
 ])
 
+const NESTED_PAYLOAD_FIELDS = new Set([
+  'body',
+  'detail',
+  'error',
+  'failure',
+  'rawresponse'
+])
+
 const MAX_POLICY_NODES = 2048
+const RUNWAY_POLICY_CODE =
+  /^(?:input_preprocessing\.safety|safety\.(?:input|output))\.(?:audio|image|multimodal|text|video)$/
 
 function normalizedKey(key: string): string {
   return key.toLowerCase().replaceAll(/[^a-z]/g, '')
 }
 
-function isPolicySignalField(field: string): boolean {
-  if (!field) return true
-  if (POLICY_TEXT_FIELDS.has(field)) return true
-  return POLICY_CODE_FIELDS.has(field)
-}
-
 function codeSignalsPolicy(value: string, field: string): boolean {
-  if (!isPolicySignalField(field)) return false
-  if (POLICY_CODES.has(value)) return true
-  return POLICY_CODE_FRAGMENTS.some((code) => value.includes(code))
+  if (!POLICY_CODE_FIELDS.has(field)) return false
+  return POLICY_CODES.has(value) || RUNWAY_POLICY_CODE.test(value)
 }
 
 function phraseSignalsPolicy(value: string, field: string): boolean {
-  if (field && !POLICY_TEXT_FIELDS.has(field)) return false
+  if (!POLICY_TEXT_FIELDS.has(field)) return false
   return POLICY_PHRASES.some((phrase) => value.includes(phrase))
 }
 
 function geminiBlockSignalsPolicy(value: string, field: string): boolean {
   if (field !== 'blockreason') return false
-  if (value === 'block_reason_unspecified') return false
-  return value.length > 0
+  return POLICY_REASONS.has(value)
 }
 
 function stringSignalsPolicy(value: string, key = ''): boolean {
@@ -98,8 +95,18 @@ function stringSignalsPolicy(value: string, key = ''): boolean {
   if (codeSignalsPolicy(normalized, field)) return true
   if (phraseSignalsPolicy(normalized, field)) return true
   if (geminiBlockSignalsPolicy(normalized, field)) return true
+  if (field === 'status' && POLICY_STATUSES.has(normalized)) return true
   if (!POLICY_CODE_FIELDS.has(field)) return false
   return POLICY_REASONS.has(normalized)
+}
+
+function nestedPayload(value: string, key: string): unknown | undefined {
+  if (!NESTED_PAYLOAD_FIELDS.has(normalizedKey(key))) return
+  try {
+    return JSON.parse(value) as unknown
+  } catch {
+    return
+  }
 }
 
 export function workshopContentPolicyPayload(payload: unknown): boolean {
@@ -110,6 +117,9 @@ export function workshopContentPolicyPayload(payload: unknown): boolean {
     const current = pending[index]
     if (typeof current.value === 'string') {
       if (stringSignalsPolicy(current.value, current.key)) return true
+      const nested = nestedPayload(current.value, current.key)
+      if (nested !== undefined && pending.length < MAX_POLICY_NODES)
+        pending.push({ key: '', value: nested })
       continue
     }
     if (current.value === null || typeof current.value !== 'object') continue
@@ -134,6 +144,6 @@ export function workshopContentPolicyBody(body: string): boolean {
     const parsed: unknown = JSON.parse(body)
     return workshopContentPolicyPayload(parsed)
   } catch {
-    return stringSignalsPolicy(body)
+    return false
   }
 }

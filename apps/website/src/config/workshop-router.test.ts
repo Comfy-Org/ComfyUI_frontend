@@ -558,6 +558,69 @@ describe('native Router requests', () => {
     ).rejects.toMatchObject({ reason: 'provider' })
   })
 
+  it.for([
+    [402, 'noCredits'],
+    [429, 'rateLimit'],
+    [409, 'conflict'],
+    [403, 'unavailable'],
+    [504, 'timeout']
+  ] as const)(
+    'keeps the status classification for a %i response with policy text',
+    async ([status, reason]) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn<typeof fetch>().mockResolvedValue(
+          Response.json(
+            {
+              code: 'content_filter',
+              message: 'Content policy violation'
+            },
+            { status }
+          )
+        )
+      )
+
+      await expect(
+        runSynchronousWorkshopRouter({
+          contract: contractFor('bfl/flux-2-pro'),
+          body: { prompt: 'Test' },
+          token: 'test-token',
+          idempotencyKey: 'one-key',
+          signal: new AbortController().signal
+        })
+      ).rejects.toMatchObject({ reason })
+    }
+  )
+
+  it.for([
+    'Input media did not pass content moderation.',
+    '<html>content_filter upstream failure</html>',
+    JSON.stringify({
+      code: 'content_filter',
+      padding: 'x'.repeat(20_000)
+    })
+  ])('does not classify an incomplete or non-JSON error body', async (body) => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(
+        new Response(body, {
+          status: 502,
+          headers: { 'X-Comfy-Error-Type': 'provider_error' }
+        })
+      )
+    )
+
+    await expect(
+      runSynchronousWorkshopRouter({
+        contract: contractFor('bfl/flux-2-pro'),
+        body: { prompt: 'Test' },
+        token: 'test-token',
+        idempotencyKey: 'one-key',
+        signal: new AbortController().signal
+      })
+    ).rejects.toMatchObject({ reason: 'provider' })
+  })
+
   it('reports errors without silently retrying a paid request', async () => {
     const fetch = vi.fn().mockResolvedValue(
       new Response(null, {
