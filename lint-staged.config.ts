@@ -69,10 +69,19 @@ function lintCommands(
     ),
     ...commandsWithFiles(
       [...codeFiles, ...astroFiles],
-      'pnpm exec eslint --cache --cache-strategy content --concurrency auto --fix --no-warn-ignored'
+      `pnpm exec eslint --cache --cache-strategy content --concurrency auto --fix --no-warn-ignored ${skipCanonicalClasses}`
     )
   ]
 }
+
+// enforce-canonical-classes pays a ~4.5 s Tailwind warm-up in every ESLint
+// process; the pre-push hook and CI run it over the pushed files instead.
+// Reporting unused directives must stay off, or --fix would strip the
+// directives that silence the rule in the full run.
+const skipCanonicalClasses = [
+  "--rule 'better-tailwindcss/enforce-canonical-classes: off'",
+  '--report-unused-disable-directives-severity off'
+].join(' ')
 
 // Directories outside the root program, each with its own tsconfig.
 const standaloneTypecheckScripts = {
