@@ -2,7 +2,9 @@ import { until } from '@vueuse/core'
 import { compare } from 'semver'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
+import type { Ref } from 'vue'
 
+import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
 import type { EntryPath } from '@/platform/onboarding/onboardingTours'
 import type { ReleaseNote } from '@/platform/updates/common/releaseService'
 import { useSettingStore } from '@/platform/settings/settingStore'
@@ -111,6 +113,7 @@ vi.mock('@/platform/onboarding/onboardingTourStore', async () => {
 })
 
 describe('useReleaseStore', () => {
+  let overlayActive: Ref<boolean>
   const mockRelease = {
     id: 1,
     project: 'comfyui' as const,
@@ -124,6 +127,10 @@ describe('useReleaseStore', () => {
     mockSystemStatsState.reset()
     mockData.isCloud = false
     mocks.tour.activeTour = null
+    overlayActive = ref(false)
+    vi.spyOn(useOnboardingOverlayStore(), 'active', 'get').mockImplementation(
+      () => overlayActive.value
+    )
   })
 
   describe('initial state', () => {
@@ -685,6 +692,26 @@ describe('useReleaseStore', () => {
       store.releases = [mockRelease]
       mocks.tour.activeTour = 'appMode'
 
+      expect(store.shouldShowPopup).toBe(true)
+    })
+
+    it('withholds the popup while an onboarding overlay is on screen', () => {
+      const store = useReleaseStore()
+      const systemStatsStore = useSystemStatsStore()
+      const settingStore = useSettingStore()
+      systemStatsStore.systemStats!.system.comfyui_version = '1.2.0'
+      vi.mocked(settingStore.get).mockImplementation((key: string) => {
+        if (key === 'Comfy.Notification.ShowVersionUpdates') return true
+        return null
+      })
+      vi.mocked(compare).mockReturnValue(0)
+
+      store.releases = [mockRelease]
+
+      overlayActive.value = true
+      expect(store.shouldShowPopup).toBe(false)
+
+      overlayActive.value = false
       expect(store.shouldShowPopup).toBe(true)
     })
   })

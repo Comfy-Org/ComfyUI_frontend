@@ -1150,6 +1150,103 @@ describe('EcsFollowerAdapter integration', () => {
     followerB.destroy()
   })
 
+  it('projects links inserted with a workflow batch', () => {
+    const host = mint({ nodes: [], links: [] }, catalog)
+    const follower = new FollowerDoc()
+    const adapter = new EcsFollowerAdapter(
+      createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+    )
+    adapter.bind('wf', follower)
+
+    try {
+      const insertWorkflow = op('insert-workflow', 1, {
+        op: 'insert_workflow',
+        workflow: {
+          nodes: [
+            {
+              id: 101,
+              type: 'Source',
+              outputs: [{ name: 'image', type: 'IMAGE', links: [201] }]
+            },
+            {
+              id: 102,
+              type: 'Source',
+              inputs: [{ name: 'image', type: 'IMAGE', link: 201 }],
+              outputs: [{ name: 'image', type: 'IMAGE', links: [202] }]
+            },
+            {
+              id: 103,
+              type: 'Sink',
+              inputs: [{ name: 'image', type: 'IMAGE', link: 202 }]
+            }
+          ],
+          links: [
+            [201, 101, 0, 102, 0, 'IMAGE'],
+            [202, 102, 0, 103, 0, 'IMAGE']
+          ]
+        }
+      })
+      const result = applyOps(
+        host,
+        [insertWorkflow] as Parameters<typeof applyOps>[1],
+        catalog
+      )
+      expect(result.outcomes).toEqual([
+        { op_id: 'insert-workflow', outcome: 'applied' }
+      ])
+
+      const insertedLinks = [...linksMap(host).entries()].map(
+        ([key, value]) => {
+          const id =
+            value instanceof Y.Array
+              ? value.get(0)
+              : Array.isArray(value)
+                ? value[0]
+                : null
+          return [key, id] as const
+        }
+      )
+      expect(insertedLinks).toHaveLength(2)
+      expect(
+        insertedLinks.every(
+          ([key, id]) =>
+            typeof id === 'number' &&
+            Number.isSafeInteger(id) &&
+            id >= 0 &&
+            String(id) === key
+        )
+      ).toBe(true)
+
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 1,
+          update,
+          actor: 'agent:test',
+          opIds: [insertWorkflow.op_id]
+        })
+      ).toBe(true)
+
+      for (const [, id] of insertedLinks) {
+        expect(typeof id).toBe('number')
+        if (typeof id !== 'number') continue
+        expect(
+          useLinkStore().getTopology(scope.rootGraphId, toLinkId(id))
+        ).toBeDefined()
+      }
+    } finally {
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    }
+  })
+
   it('populates node slot arrays identically whether add+connect ops arrive in one combined frame or separate singleton frames (R-96)', () => {
     const buildOps = (prefix: string) => [
       op(`${prefix}-1`, 1, {
