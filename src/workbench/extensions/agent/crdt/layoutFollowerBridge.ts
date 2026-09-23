@@ -503,37 +503,44 @@ export class LayoutFollowerBridge extends EventTarget {
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
     } else this.sentWorkflowId = null
-    const identity = {
+    const generation = this.resolveAckGeneration({
       workflowId: subscribed.workflowId,
       seq: subscribed.seq,
       ok: subscribed.ok
-    }
+    })
+    this.dispatchEvent(
+      new CustomEvent(event.type, {
+        detail: { ...event.detail, generation }
+      })
+    )
+  }
+
+  /**
+   * This ack's send-to-response identity: see `pendingGenerations`'s and
+   * `lastConsumptionHadNewerSend`'s doc comments for why a duplicate of the
+   * ack just consumed is never dequeued — and instead repeats the same
+   * generation rather than stealing the next one's barrier — while a
+   * genuinely distinct ack always dequeues the oldest outstanding send,
+   * never `subscribeGeneration` read here at receipt.
+   */
+  private resolveAckGeneration(identity: {
+    workflowId: string
+    seq: number | undefined
+    ok: boolean
+  }): number {
     const isDuplicateOfLastConsumed =
       this.lastConsumedAckIdentity !== null &&
       this.lastConsumptionHadNewerSend &&
       identity.workflowId === this.lastConsumedAckIdentity.workflowId &&
       identity.seq === this.lastConsumedAckIdentity.seq &&
       identity.ok === this.lastConsumedAckIdentity.ok
-    // Dequeue the oldest outstanding generation: see `pendingGenerations`'s
-    // doc comment for why this, not `subscribeGeneration` read here at
-    // receipt, is this ack's send-to-response identity. A duplicate of the
-    // ack just consumed is never dequeued while a newer generation was
-    // ALREADY outstanding at that consumption — see
-    // `lastConsumptionHadNewerSend`'s doc comment — so it repeats the same
-    // generation instead of stealing the next one's barrier.
-    const generation = isDuplicateOfLastConsumed
-      ? this.lastConsumedGeneration
-      : (this.pendingGenerations.shift() ?? this.subscribeGeneration)
-    if (!isDuplicateOfLastConsumed) {
-      this.lastConsumedAckIdentity = identity
-      this.lastConsumedGeneration = generation
-      this.lastConsumptionHadNewerSend = this.pendingGenerations.length > 0
-    }
-    this.dispatchEvent(
-      new CustomEvent(event.type, {
-        detail: { ...event.detail, generation }
-      })
-    )
+    if (isDuplicateOfLastConsumed) return this.lastConsumedGeneration
+    const generation =
+      this.pendingGenerations.shift() ?? this.subscribeGeneration
+    this.lastConsumedAckIdentity = identity
+    this.lastConsumedGeneration = generation
+    this.lastConsumptionHadNewerSend = this.pendingGenerations.length > 0
+    return generation
   }
 
   private readonly forwardFrame: EventListener = (event) => {
