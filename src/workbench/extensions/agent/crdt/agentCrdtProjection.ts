@@ -85,9 +85,9 @@ export class AgentCrdtProjection {
         .map(({ id }) => id)
     )
     const definitions = needsDefinitionBody
-      ? allSubgraphDefinitions(readSubgraphDefinitions(followerDoc))
-          .filter(({ id }) => !failedDefinitionIds.has(id))
-          .map((definition) => ({ ...definition, definitions: undefined }))
+      ? allSubgraphDefinitions(
+          readSubgraphDefinitions(followerDoc, failedDefinitionIds)
+        ).map((definition) => ({ ...definition, definitions: undefined }))
       : []
     const nodeIds = failedDefinitionIds.size
       ? reconcileAgentAdapters(graph, definitions, failedDefinitionIds)
