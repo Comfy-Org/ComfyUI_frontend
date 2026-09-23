@@ -6,12 +6,15 @@ import { adjustColor } from '@/utils/colorUtil'
 import { MinimapDataSource } from './data/MinimapDataSource'
 import type { MinimapNodeData, MinimapRenderContext } from './types'
 
+export const MINIMAP_DECORATION_POP_MS = 260
+
 /**
  * Get theme-aware colors for the minimap
  */
 function getMinimapColors() {
   const colorPaletteStore = useColorPaletteStore()
-  const isLightTheme = colorPaletteStore.completedActivePalette.light_theme
+  const palette = colorPaletteStore.completedActivePalette
+  const isLightTheme = palette.light_theme
 
   return {
     nodeColor: isLightTheme ? '#3DA8E099' : '#0B8CE999',
@@ -24,6 +27,8 @@ function getMinimapColors() {
     errorColor: '#FF0000',
     runningColor: '#00FF00',
     successColor: '#239B23',
+    activityOutlineColor:
+      palette.colors.litegraph_base.NODE_SELECTED_TITLE_COLOR,
     isLightTheme
   }
 }
@@ -87,6 +92,46 @@ function renderGroups(
   }
 }
 
+function renderNodeDecorations(
+  ctx: CanvasRenderingContext2D,
+  nodes: readonly MinimapNodeData[],
+  offsetX: number,
+  offsetY: number,
+  context: MinimapRenderContext,
+  colors: ReturnType<typeof getMinimapColors>
+) {
+  const decorations = new Map(
+    (context.decorations ?? []).map((decoration) => [
+      decoration.target.nodeId,
+      decoration
+    ])
+  )
+  if (decorations.size === 0) return
+
+  const now = context.now ?? performance.now()
+  ctx.fillStyle = colors.nodeColor
+  ctx.strokeStyle = colors.activityOutlineColor
+  ctx.lineWidth = 1
+  for (const node of nodes) {
+    const decoration = decorations.get(node.id)
+    if (!decoration) continue
+    const elapsed = Math.max(0, now - (decoration.enteredAt ?? now))
+    const progress =
+      decoration.enter === 'pop'
+        ? Math.min(1, elapsed / MINIMAP_DECORATION_POP_MS)
+        : 1
+    const eased = 1 - (1 - progress) ** 3
+    const x = (node.x - context.bounds.minX) * context.scale + offsetX
+    const y = (node.y - context.bounds.minY) * context.scale + offsetY
+    const width = Math.max(2, node.width * context.scale * eased)
+    const height = Math.max(2, node.height * context.scale * eased)
+    const centerX = x + (node.width * context.scale) / 2
+    const centerY = y + (node.height * context.scale) / 2
+    ctx.fillRect(centerX - width / 2, centerY - height / 2, width, height)
+    ctx.strokeRect(centerX - width / 2, centerY - height / 2, width, height)
+  }
+}
+
 /**
  * Render nodes on the minimap with performance optimizations
  */
@@ -145,6 +190,8 @@ function renderNodes(
       ctx.fillRect(node.x, node.y, node.w, node.h)
     }
   }
+
+  renderNodeDecorations(ctx, nodes, offsetX, offsetY, context, colors)
 
   ctx.lineWidth = 0.3
   for (const nodes of nodesByColor.values()) {

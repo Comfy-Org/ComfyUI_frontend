@@ -11,6 +11,11 @@ import { wireLog } from './crdtLog'
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
+/** A document update after the follower bridge has classified its provenance. */
+export interface ClassifiedDocUpdate extends DocUpdate {
+  catchUp: boolean
+}
+
 /**
  * Outbound frames are advisory: the follower's correctness never depends on one
  * arriving. A transport that cannot carry a frame reports `false`; one that
@@ -268,14 +273,7 @@ export class LayoutFollowerBridge extends EventTarget {
     // null the catch-up arrives AT ackSeq, so `<= ackSeq` would drop it and
     // leave the follower on an empty doc (KA-11).
     const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
-    if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq) {
-      this.dispatchEvent(
-        new CustomEvent('doc_stale', {
-          detail: { workflowId: update.workflowId, seq: update.seq }
-        })
-      )
-      return
-    }
+    if (this.rejectStaleUpdate(update, isCatchUp)) return
 
     // Seq is only a gap detector. A jump withholds the uncertain frame and
     // asks the host for a same-lineage state-vector delta using this EXACT
@@ -285,20 +283,7 @@ export class LayoutFollowerBridge extends EventTarget {
     // N instead: the catch-up (seq N) and the first live frame (seq N+1) are
     // both contiguous with it, so neither trips it, while a first frame at
     // N+2 or beyond is a real drop. Nothing arms it before the ack lands.
-    const baseline = this.lastSeq ?? this.ackSeq
-    if (baseline !== null && update.seq > baseline + 1) {
-      this.dispatchEvent(
-        new CustomEvent('doc_gap', {
-          detail: {
-            workflowId: update.workflowId,
-            expected: baseline + 1,
-            received: update.seq
-          }
-        })
-      )
-      this.resubscribe()
-      return
-    }
+    if (this.rejectSequenceGap(update)) return
     if (this.lastSeq === null || update.seq > this.lastSeq)
       this.lastSeq = update.seq
     if (isCatchUp) this.catchUpPending = false
@@ -309,8 +294,50 @@ export class LayoutFollowerBridge extends EventTarget {
     // this build was not written against. Failing closed here, before the
     // frame is re-dispatched, is what keeps a v2 doc from being half-projected
     // onto the canvas by a v1 reader.
+    if (!this.isReadableUpdate(update)) return
+
+    const classifiedUpdate: ClassifiedDocUpdate = {
+      ...update,
+      catchUp: isCatchUp
+    }
+    this.dispatchEvent(
+      new CustomEvent('doc_update', {
+        detail: classifiedUpdate
+      })
+    )
+  }
+
+  private rejectStaleUpdate(update: DocUpdate, isCatchUp: boolean): boolean {
+    if (isCatchUp || this.lastSeq === null || update.seq > this.lastSeq)
+      return false
+    this.dispatchEvent(
+      new CustomEvent('doc_stale', {
+        detail: { workflowId: update.workflowId, seq: update.seq }
+      })
+    )
+    return true
+  }
+
+  private rejectSequenceGap(update: DocUpdate): boolean {
+    const baseline = this.lastSeq ?? this.ackSeq
+    if (baseline === null || update.seq <= baseline + 1) return false
+    this.dispatchEvent(
+      new CustomEvent('doc_gap', {
+        detail: {
+          workflowId: update.workflowId,
+          expected: baseline + 1,
+          received: update.seq
+        }
+      })
+    )
+    this.resubscribe()
+    return true
+  }
+
+  private isReadableUpdate(update: DocUpdate): boolean {
     try {
       assertReadableSchema(this.follower.doc)
+      return true
     } catch (error) {
       if (!(error instanceof FollowerSchemaError)) throw error
       this.schemaError = error
@@ -319,10 +346,8 @@ export class LayoutFollowerBridge extends EventTarget {
           detail: { workflowId: update.workflowId, found: error.found }
         })
       )
-      return
+      return false
     }
-
-    this.dispatchEvent(new CustomEvent('doc_update', { detail: update }))
   }
 
   /**

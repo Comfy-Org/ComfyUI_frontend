@@ -91,6 +91,22 @@ describe('useAgentConversationStore', () => {
     setActivePinia(createPinia())
   })
 
+  it('publishes a turn identity before its live status', () => {
+    const store = useAgentConversationStore()
+    const observations: [typeof store.status, TurnId | null][] = []
+    watch(
+      () => [store.status, store.activeTurnId] as const,
+      ([status, turnId]) => observations.push([status, turnId]),
+      { flush: 'sync' }
+    )
+
+    store.startTurn(T1)
+
+    expect(observations.filter(([status]) => status !== 'idle')).toEqual([
+      ['streaming', T1]
+    ])
+  })
+
   it('(M1) fires a deep watch on messages when a MID-turn delta event lands', async () => {
     const store = useAgentConversationStore()
     const spy = vi.fn()

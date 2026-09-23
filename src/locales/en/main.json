@@ -3597,6 +3597,8 @@
     }
   },
   "minimap": {
+    "label": "Minimap",
+    "highlightedNodes": "Highlighted nodes: {count}",
     "nodeColors": "Node Colors",
     "showLinks": "Show Links",
     "showGroups": "Show Frames/Groups",
@@ -5280,6 +5282,10 @@
     "addPromptToSend": "Add a prompt to send",
     "send": "Send",
     "stop": "Stop",
+    "updatingGraph": "The agent is updating the graph",
+    "editWhileWorking": "You can keep editing while it works",
+    "nodesAdded": "The agent added 1 node to the graph | The agent added {count} nodes to the graph",
+    "viewAddedNodes": "View node | View nodes",
     "stopShortcut": "Esc",
     "thinking": "Thinking...",
     "working": "Working...",

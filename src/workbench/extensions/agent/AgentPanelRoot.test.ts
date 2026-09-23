@@ -278,6 +278,7 @@ import { MAX_ATTACHMENT_BYTES } from './composables/agent/useAttachment'
 import type { AgentChatEvent } from './services/agent/agentEventTransport'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { useAgentConversationStore } from './stores/agent/agentConversationStore'
+import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
@@ -2478,6 +2479,74 @@ describe('AgentPanelRoot workflow binding', () => {
     )
     return bodies
   }
+
+  it('preserves active-turn graph activity across remount and delayed hydration', async () => {
+    makeTab('wf-42')
+    let resolveHistory!: (response: Response) => void
+    const delayedHistory = new Promise<Response>((resolve) => {
+      resolveHistory = resolve
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string, init?: RequestInit) => {
+        if (url.includes('/messages') && init?.method === 'POST')
+          return json(202, ack('wf-42'))
+        if (url.includes('/messages')) return delayedHistory
+        if (url.includes('/agent/threads')) return json(200, agentThreadList())
+        return new Response('{}', { status: 200 })
+      })
+    )
+
+    const first = renderWithSelectedTarget()
+    await sendFromComposer('build two nodes')
+    const activity = useAgentGraphActivityStore()
+    activity.recordMaterialized(
+      { workflowId: 'wf-42', rootGraphId: toRootGraphId('graph-1') },
+      [toNodeId(301), toNodeId(302)]
+    )
+
+    first.unmount()
+    renderWithSelectedTarget()
+    expect(activity.state).toMatchObject({
+      phase: 'settling',
+      nodeIds: ['301', '302']
+    })
+
+    resolveHistory(json(200, []))
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().activeTurnId).toBe('m-1')
+    )
+    expect(activity.state).toMatchObject({
+      phase: 'running',
+      nodeIds: ['301', '302']
+    })
+  })
+
+  it('starts a fresh activity report when the session starts its next turn', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    renderWithSelectedTarget()
+    const activity = useAgentGraphActivityStore()
+
+    await sendFromComposer('first turn')
+    activity.recordMaterialized(
+      { workflowId: 'wf-42', rootGraphId: toRootGraphId('graph-1') },
+      [toNodeId(401)]
+    )
+    ws.emit('agent_message_done', { message_id: 'm-1', thread_id: 'th-1' })
+    await screen.findByRole('button', { name: 'Send' })
+
+    await sendFromComposer('second turn')
+    activity.recordMaterialized(
+      { workflowId: 'wf-42', rootGraphId: toRootGraphId('graph-1') },
+      [toNodeId(402)]
+    )
+
+    expect(activity.state).toMatchObject({
+      phase: 'running',
+      nodeIds: ['402']
+    })
+  })
 
   it('requires explicit selection on first entry even with an unsaved canvas', async () => {
     Object.assign(makeTab(), { isTemporary: true })
