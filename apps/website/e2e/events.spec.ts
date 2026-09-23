@@ -689,6 +689,7 @@ test.describe('Events page — desktop @smoke', () => {
     const agendaIds = await rows.evaluateAll((nodes) =>
       nodes.map((node) => node.getAttribute('data-event-id'))
     )
+    expect(agendaIds).toHaveLength(expected.length)
     expect(new Set(agendaIds)).toEqual(
       new Set(expected.map((event) => event.id))
     )

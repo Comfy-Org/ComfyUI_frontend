@@ -3646,20 +3646,20 @@
   },
   "products": {
     "cloud": {
-      "cta": "查看云端属性",
+      "cta": "查看云端功能",
       "description": "随时随地使用 ComfyUI 的全部能力。",
       "title": "Comfy\nCloud"
     },
-    "ctaShort": "查看属性",
+    "ctaShort": "查看功能",
     "enterprise": {
-      "cta": "查看企业版属性",
+      "cta": "查看企业版功能",
       "description": "为组织内的创作引擎提供企业级基础设施。",
       "title": "Comfy\n企业版"
     },
     "heading": "完全掌控的\nAI 创作引擎",
     "labelProducts": "产品",
     "local": {
-      "cta": "查看桌面版属性",
+      "cta": "查看桌面版功能",
       "description": "在您自己的硬件上运行 ComfyUI。",
       "title": "Comfy\n桌面版"
     },

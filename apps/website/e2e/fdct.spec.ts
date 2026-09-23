@@ -213,7 +213,7 @@ test.describe('FDCT page @smoke', () => {
           'script[type="application/ld+json"]'
         )
       )
-      const match = scripts.find((s) => s.textContent.includes('FAQPage'))
+      const match = scripts.find((s) => s.textContent?.includes('FAQPage'))
       return match?.textContent ?? null
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
