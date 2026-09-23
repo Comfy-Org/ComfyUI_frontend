@@ -1,10 +1,16 @@
 import type { Modality, WorkshopModel } from '../config/models-catalogue'
 import type { RunFailure, RunOutput } from '../config/workshop-run'
-import type { FieldErrorCode, FieldErrors } from '../config/workshop-playground'
+import type {
+  FieldErrorCode,
+  FieldErrors,
+  FieldSchema
+} from '../config/workshop-playground'
 import type {
   WorkshopFailureStage,
   WorkshopRouterError
 } from '../config/workshop-router-errors'
+import type { WorkshopExceptionAnalytics } from './workshop-exception'
+import { workshopExceptionAnalytics } from './workshop-exception'
 
 interface WorkshopModelAnalytics {
   model_slug: string
@@ -76,9 +82,21 @@ export type WorkshopAnalyticsEvent =
       name: 'run_validation_failed'
       properties: WorkshopModelAnalytics & {
         field_error_codes?: FieldErrorCode[]
+        field_error_names?: string[]
       }
     }
   | { name: 'run_started'; properties: WorkshopRunAnalytics }
+  | {
+      name: 'delivery_finished'
+      properties: WorkshopRunAnalytics & {
+        request_id?: string
+        duration_ms: number
+        output_kind: RunOutput['kind']
+        status: 'succeeded' | 'failed' | 'cancelled' | 'unverified'
+        reason?: 'media_error' | 'media_timeout'
+        failure_stage?: 'delivery'
+      }
+    }
   | {
       name: 'run_finished'
       properties: WorkshopRunAnalytics & {
@@ -86,14 +104,15 @@ export type WorkshopAnalyticsEvent =
         request_id?: string
       } & (
           | { status: 'succeeded'; output_count: number }
-          | {
+          | ({
               status: 'failed'
               reason: RunFailure
               http_status?: number
               router_error_type?: WorkshopRouterErrorType
-              failure_stage?: WorkshopFailureStage
+              failure_stage?: WorkshopFailureStage | 'credential'
               field_error_codes?: FieldErrorCode[]
-            }
+              field_error_names?: string[]
+            } & WorkshopExceptionAnalytics)
           | { status: 'cancelled' }
         )
     }
@@ -145,10 +164,16 @@ export function workshopFieldErrorCodes(errors: FieldErrors): FieldErrorCode[] {
   return [...new Set(Object.values(errors))]
 }
 
-export function workshopFailureAnalytics(failure: WorkshopRouterError) {
+export function workshopFailureAnalytics(
+  failure: WorkshopRouterError,
+  schema: readonly FieldSchema[] = []
+) {
   const httpStatus = workshopHttpStatus(failure.response?.status)
   const routerErrorType = workshopRouterErrorType(failure.response?.errorType)
   const fieldErrorCodes = workshopFieldErrorCodes(failure.fieldErrors)
+  const fieldErrorNames = schema
+    .filter((field) => Object.hasOwn(failure.fieldErrors, field.name))
+    .map((field) => field.name)
   return {
     reason: failure.reason,
     request_id: failure.requestId ?? undefined,
@@ -157,7 +182,9 @@ export function workshopFailureAnalytics(failure: WorkshopRouterError) {
       ? {}
       : { router_error_type: routerErrorType }),
     ...(failure.stage ? { failure_stage: failure.stage } : {}),
-    ...(fieldErrorCodes.length ? { field_error_codes: fieldErrorCodes } : {})
+    ...('cause' in failure ? workshopExceptionAnalytics(failure.cause) : {}),
+    ...(fieldErrorCodes.length ? { field_error_codes: fieldErrorCodes } : {}),
+    ...(fieldErrorNames.length ? { field_error_names: fieldErrorNames } : {})
   }
 }
 

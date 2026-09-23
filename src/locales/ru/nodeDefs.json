@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "Пустое латентное видео Cosmos",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "Пустой латент изображения Hunyuan",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "Пустой HunyuanLatentVideo",
+    "display_name": "Пустой латент Hunyuan Video 1.0",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Пустой HunyuanVideo 1.5 latent",
+    "display_name": "Пустой латент Hunyuan Video 1.5",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "Пустой LTXVLatentVideo",
+    "display_name": "Пустое латентное видео LTXV",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "Пустой латент Hunyuan 3D v2",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "Пустая латентная структура Trellis2",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -8072,7 +8072,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "Масштабирование латента Hunyuan Video 1.5 с моделью",
     "inputs": {
       "crop": {
         "name": "crop"
@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Извлекает значение ключа из первого допустимого объекта JSON в тексте, включая блоки кода Markdown.",
     "display_name": "Извлечь строку из JSON",
     "inputs": {
       "json_string": {
@@ -10514,7 +10515,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Пустое латентное аудио",
+    "display_name": "Пустое латентное аудио LTXV",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -13234,6 +13235,10 @@
       "ultra_mode": {
         "name": "ультра-режим",
         "tooltip": "Выполняет дополнительный проход уточнения для более точной геометрии с более мелкими деталями поверхности."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Разрешение ultra-прохода: 2k запускает его при 2048³, 4k — при 4096³ для максимальной детализации поверхности. Для 4k требуется meshy-7.1 или новее. Используется только при включённом ultra_mode."
       }
     },
     "outputs": {
@@ -13300,6 +13305,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Запускает дополнительный проход уточнения при 2048³ для более точной геометрии с более детализированной поверхностью."
       }
     },
     "outputs": {
@@ -13441,6 +13450,10 @@
       "ultra_mode": {
         "name": "ультра-режим",
         "tooltip": "Выполняет дополнительный проход уточнения для более точной геометрии с более мелкими деталями поверхности."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Разрешение ultra-прохода: 2k запускает его при 2048³, 4k — при 4096³ для максимальной детализации поверхности. Для 4k требуется meshy-7.1 или новее. Используется только при включённом ultra_mode."
       }
     },
     "outputs": {
@@ -14199,6 +14212,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Только для MoGe-3: разреженные объёмные проходы уточнения предсказанной глубины. Большее число проходов повышает чёткость мелких деталей и краёв при примерно линейном росте затрат. 0 отключает уточнение. Игнорируется MoGe-1 / MoGe-2."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = быстрее всего, 9 = максимальная детализация."
@@ -14229,6 +14246,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Только для MoGe-3: разреженные объёмные проходы уточнения предсказанной глубины. Большее число проходов повышает чёткость мелких деталей и краёв при примерно линейном росте затрат. 0 отключает уточнение. Игнорируется MoGe-1 / MoGe-2."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17422,7 +17443,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Кондиционирование Pixal3D",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -18391,6 +18412,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "Сид для определения необходимости повторного запуска узла; фактические результаты недетерминированы независимо от сида."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "Позволяет задать устройство и квантизацию KV-кэша; по умолчанию модель использует параметр auto. Квантизация может ускорить рабочие процессы редактирования при нехватке памяти ",
+    "display_name": "Кэш Qwen Image 2.1",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto использует свободную VRAM, затем RAM. cpu (RAM) предварительно загружается параллельно с вычислениями и почти не влияет на скорость. off пересчитывает префикс на каждом шаге: это медленнее, но это единственный способ исключить кэш."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Точность хранения. default — без потерь. int8 уменьшает кэш вдвое при точности примерно bf16, int4 — вчетверо, но примерно удваивает ошибку на каждом шаге."
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -22751,7 +22794,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_Пустое латентное изображение",
+    "display_name": "Пустое латентное изображение Stable Cascade",
     "inputs": {
       "batch_size": {
         "name": "размер_пакета"
@@ -22794,7 +22837,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_Этап C_VAE Кодирование",
+    "display_name": "Кодирование VAE этапа C Stable Cascade",
     "inputs": {
       "compression": {
         "name": "сжатие"
@@ -23756,8 +23799,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "Кодирование текста Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Эталонные изображения, обрабатываемые текстовым кодировщиком и вставляемые в последовательность как VAE-латенты."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "Эталонные изображения масштабируются примерно до размера resolution x resolution пикселей, с кратностью 32 и сохранением соотношения сторон. 0 сохраняет каждое эталонное изображение в исходном размере, округлённом до кратного 32. "
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "положительный",
+        "tooltip": null
+      },
+      "1": {
+        "name": "отрицательный",
+        "tooltip": null
+      },
+      "2": {
+        "name": "латент",
+        "tooltip": "Пустой латент размера первого эталонного изображения для соответствия сэмплингу, поскольку любой другой размер смещает редактирование."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "Кодирование текста Qwen Image Edit",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23779,7 +23861,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "Кодирование текста Qwen Image Edit Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23855,6 +23937,10 @@
       "max_length": {
         "name": "максимальная длина"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Спекулятивное декодирование с помощью головы multi-token-prediction чекпойнта. Без весов MTP не действует. auto адаптирует глубину черновой генерации; 2-5 фиксирует её. Выход при сэмплировании сохраняет корректное распределение, но отличается от вывода без MTP при том же seed."
+      },
       "prompt": {
         "name": "запрос"
       },
@@ -23916,6 +24002,10 @@
       },
       "max_length": {
         "name": "максимальная длина"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Спекулятивное декодирование с помощью головы предсказания нескольких токенов контрольной точки. Не действует без весов MTP. auto адаптирует глубину черновика; 2–5 фиксирует её. Сэмплированный результат сохраняет корректное распределение, но отличается от результата без MTP при том же seed."
       },
       "prompt": {
         "name": "подсказка"
@@ -24432,7 +24522,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Кондиционирование Trellis2",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24454,7 +24544,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Этап формы Trellis2",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24482,7 +24572,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Этап текстуры Trellis2",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -26162,7 +26252,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "Декодирование Hunyuan 3D VAE",
     "inputs": {
       "num_chunks": {
         "name": "количество_частей"
@@ -26470,7 +26560,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Декодирование формы Trellis2 VAE",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -26491,7 +26581,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Декодирование структуры Trellis2 VAE",
     "inputs": {
       "resolution": {
         "name": "resolution"
@@ -26511,7 +26601,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Декодирование текстуры Trellis2 VAE",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -29466,6 +29556,10 @@
       "abc": {
         "name": "abc",
         "tooltip": "Подключите генератор ABC или укажите отредактированную партитуру. Оставьте пустым, чтобы автоматически использовать режим off."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "Авторегрессионное управление стилем и текстом песни. 1.0 отключает CFG, как в процессе ABC. Используйте 1.01, чтобы соответствовать исходному управлению в выключенном режиме."
       },
       "clip": {
         "name": "clip"

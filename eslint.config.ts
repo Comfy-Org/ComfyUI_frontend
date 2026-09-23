@@ -24,6 +24,7 @@ import vueParser from 'vue-eslint-parser'
 import path from 'node:path'
 
 import { noNewErrorThrow } from './tools/eslint-plugins/noNewErrorThrow'
+import { es2022CompatPlugin } from './tools/eslint-plugins/noEs2023ArrayCopyMethod'
 import { primeVueImportAllowlist } from './scripts/primevue-import-allowlist'
 
 const extraFileExtensions = ['.vue']
@@ -64,8 +65,6 @@ const settings = {
 
 const commonParserOptions = {
   parser: tseslintParser,
-  projectService: true,
-  tsConfigRootDir: import.meta.dirname,
   ecmaVersion: 2020,
   sourceType: 'module',
   extraFileExtensions
@@ -160,7 +159,9 @@ export default defineConfig([
       'apps/website/coverage/**',
       'apps/website/playwright-report/**',
       'apps/website/test-results/**',
-      'vitest.setup.ts'
+      'vitest.setup.ts',
+      '.agents/checks/eslint.strict.config.js',
+      'ComfyUI/**'
     ]
   },
   {
@@ -168,25 +169,7 @@ export default defineConfig([
     settings,
     languageOptions: {
       globals: commonGlobals,
-      parserOptions: {
-        ...commonParserOptions,
-        projectService: {
-          allowDefaultProject: [
-            'packages/account-core/vitest.config.ts',
-            'packages/account-ui/vite.config.ts',
-            'packages/account-ui/vitest.config.ts',
-            'packages/billing-contract/vitest.config.ts',
-            'packages/design-system/vitest.config.ts',
-            'packages/ingest-types/openapi-ts.config.ts',
-            'packages/object-info-parser/vitest.config.ts',
-            'packages/shared-frontend-utils/vitest.config.ts',
-            'vite.electron.config.mts',
-            'vite.types.config.mts',
-            'vitest.matrix.config.mts',
-            'vitest.timer.setup.ts'
-          ]
-        }
-      }
+      parserOptions: commonParserOptions
     }
   },
   {
@@ -218,6 +201,13 @@ export default defineConfig([
   pluginJs.configs.recommended,
 
   tseslintConfigs.recommended,
+  {
+    // vue-tsc owns undefined-name checks in .vue script blocks
+    files: ['**/*.vue'],
+    rules: {
+      'no-undef': 'off'
+    }
+  },
   // Difference in typecheck on CI vs Local
   pluginVue.configs['flat/recommended'],
   astroConfigs['flat/recommended'],
@@ -226,18 +216,12 @@ export default defineConfig([
     settings,
     languageOptions: {
       parserOptions: {
-        parser: tseslintParser,
-        projectService: false
+        parser: tseslintParser
       }
     }
   },
   {
     files: ['apps/website/**/*.astro/*.{js,ts}'],
-    languageOptions: {
-      parserOptions: {
-        projectService: false
-      }
-    },
     rules: {
       'no-empty': ['error', { allowEmptyCatch: true }]
     }
@@ -260,7 +244,11 @@ export default defineConfig([
       'better-tailwindcss/enforce-consistent-line-wrapping': 'off',
       // Off: large batch change, enable and apply with `eslint --fix`
       'better-tailwindcss/enforce-consistent-class-order': 'error',
-      'better-tailwindcss/enforce-canonical-classes': 'error',
+      // collapse (mt-2 mb-2 → my-2) is an unmemoized subset search: ~30 s per lint
+      'better-tailwindcss/enforce-canonical-classes': [
+        'error',
+        { collapse: false }
+      ],
       'better-tailwindcss/no-deprecated-classes': 'error'
     }
   },
@@ -364,6 +352,16 @@ export default defineConfig([
     }
   },
   {
+    files: ['src/**/*.{js,mjs,cjs,ts,mts,cts,vue}'],
+    ignores: ['src/**/*.test.ts', 'src/**/*.test.tsx'],
+    plugins: {
+      'es2022-compat': es2022CompatPlugin
+    },
+    rules: {
+      'es2022-compat/no-array-copy-method': 'error'
+    }
+  },
+  {
     files: ['**/*.test.ts'],
     rules: {
       'no-restricted-properties': [
@@ -399,26 +397,6 @@ export default defineConfig([
   },
   {
     // Devtools extension scripts are loaded by ComfyUI in the browser.
-    files: ['tools/devtools/web/**/*.js'],
-    languageOptions: {
-      globals: {
-        ...globals.browser
-      }
-    }
-  },
-  {
-    files: ['scripts/**/*.js'],
-    languageOptions: {
-      globals: {
-        ...globals.node
-      }
-    },
-    rules: {
-      '@typescript-eslint/no-floating-promises': 'off',
-      'no-console': 'off'
-    }
-  },
-  {
     files: ['tools/devtools/web/**/*.js'],
     languageOptions: {
       globals: {

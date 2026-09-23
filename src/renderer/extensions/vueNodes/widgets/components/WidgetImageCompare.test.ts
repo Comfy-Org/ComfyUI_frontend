@@ -1,322 +1,156 @@
-import { describe, expect, it } from 'vitest'
-
-import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
+import { createI18n } from 'vue-i18n'
 
-import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import messages from '@/locales/en/main.json'
+import { app } from '@/scripts/app'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
+import { createNodeLocatorId } from '@/types/nodeIdentification'
 
 import WidgetImageCompare from './WidgetImageCompare.vue'
-import type { ImageCompareValue } from './WidgetImageCompare.vue'
-import { createMockWidget } from './widgetTestUtils'
 
-describe('WidgetImageCompare Display', () => {
-  const createImageCompareWidget = (
-    value: ImageCompareValue | string,
-    options: SimplifiedWidget<ImageCompareValue | string>['options'] = {}
-  ) =>
-    createMockWidget<ImageCompareValue | string>({
-      value,
-      name: 'test_imagecompare',
-      type: 'object',
-      options
-    })
+vi.mock<unknown>(import('@/scripts/api'), () => ({
+  api: { apiURL: (path: string) => `/api${path}` }
+}))
 
-  function renderComponent(
-    widget: SimplifiedWidget<ImageCompareValue | string>
-  ) {
-    return render(WidgetImageCompare, {
-      global: {
-        mocks: {
-          $t: (key: string, params?: Record<string, unknown>) => {
-            if (key === 'batch.index' && params) {
-              return `${params.current} / ${params.total}`
-            }
-            return key
-          }
-        }
-      },
-      props: {
-        widget
-      }
-    })
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: {
+    rootGraph: undefined,
+    canvas: { graph: undefined },
+    getRandParam: () => '',
+    getPreviewFormatParam: () => '',
+    nodeOutputs: {},
+    nodePreviewImages: {}
   }
+}))
 
-  describe('Component Rendering', () => {
-    it('renders with proper structure and styling when images are provided', () => {
-      const value: ImageCompareValue = {
-        beforeImages: ['https://example.com/before.jpg'],
-        afterImages: ['https://example.com/after.jpg']
-      }
-      const widget = createImageCompareWidget(value)
-      renderComponent(widget)
+const savedItems = (filenames: string[]) =>
+  filenames.map((filename) => ({ filename, type: 'temp' as const }))
+
+const savedUrl = (filename: string) =>
+  `/api/view?filename=${filename}&type=temp`
+
+function buildGraph() {
+  const graph = new LGraph()
+
+  const compare = new LGraphNode('ImageCompare')
+  compare.addInput('image_a', 'IMAGE')
+  compare.addInput('image_b', 'IMAGE')
+  graph.add(compare)
+
+  Object.assign(app, { rootGraph: graph, canvas: { graph } })
+  return { compare, graph }
+}
+
+function setSavedImages(
+  compare: LGraphNode,
+  before: string[],
+  after: string[]
+) {
+  useNodeOutputStore().nodeOutputs[String(compare.id)] = {
+    a_images: savedItems(before),
+    b_images: savedItems(after)
+  }
+}
+
+const i18n = createI18n({
+  legacy: false,
+  locale: 'en',
+  messages: {
+    en: { batch: messages.batch, imageCompare: messages.imageCompare }
+  }
+})
+
+function renderWidget(compare: LGraphNode) {
+  return render(WidgetImageCompare, {
+    global: { plugins: [i18n] },
+    props: {
+      widget: {
+        name: 'compare_view',
+        type: 'imagecompare',
+        value: [],
+        nodeLocatorId: createNodeLocatorId(null, compare.id)
+      },
+      nodeId: compare.id
+    }
+  })
+}
+
+describe('WidgetImageCompare', () => {
+  beforeEach(() => {
+    useNodeOutputStore().resetAllOutputsAndPreviews()
+  })
+
+  describe('Image sources', () => {
+    it('shows the images the node saved on its last run', () => {
+      const { compare } = buildGraph()
+      setSavedImages(compare, ['before.png'], ['after.png'])
+
+      renderWidget(compare)
 
       const images = screen.getAllByRole('img')
-      expect(images).toHaveLength(2)
-
-      // After image is first (background), before image is second (overlay)
-      expect(images[0]).toHaveAttribute('src', 'https://example.com/after.jpg')
-      expect(images[1]).toHaveAttribute('src', 'https://example.com/before.jpg')
-
-      images.forEach((img) => {
-        expect(img).toHaveClass('object-contain')
-      })
-    })
-  })
-
-  describe('Object Value Input', () => {
-    it('handles alt text correctly - custom, default, and empty', () => {
-      // Test custom alt text
-      const customAltValue: ImageCompareValue = {
-        beforeImages: ['https://example.com/before.jpg'],
-        afterImages: ['https://example.com/after.jpg'],
-        beforeAlt: 'Original design',
-        afterAlt: 'Updated design'
-      }
-      renderComponent(createImageCompareWidget(customAltValue))
-      const customImages = screen.getAllByRole('img')
-      // DOM order: [after, before]
-      expect(customImages[0]).toHaveAttribute('alt', 'Updated design')
-      expect(customImages[1]).toHaveAttribute('alt', 'Original design')
+      expect(images[0]).toHaveAttribute('src', savedUrl('after.png'))
+      expect(images[1]).toHaveAttribute('src', savedUrl('before.png'))
     })
 
-    it('handles default alt text', () => {
-      const defaultAltValue: ImageCompareValue = {
-        beforeImages: ['https://example.com/before.jpg'],
-        afterImages: ['https://example.com/after.jpg']
-      }
-      renderComponent(createImageCompareWidget(defaultAltValue))
-      const defaultImages = screen.getAllByRole('img')
-      expect(defaultImages[0]).toHaveAttribute('alt', 'After image')
-      expect(defaultImages[1]).toHaveAttribute('alt', 'Before image')
-    })
+    it('shows the empty state while the node is unconnected and unrun', () => {
+      const { compare } = buildGraph()
 
-    it('handles empty string alt text (falls back to default)', () => {
-      const emptyAltValue: ImageCompareValue = {
-        beforeImages: ['https://example.com/before.jpg'],
-        afterImages: ['https://example.com/after.jpg'],
-        beforeAlt: '',
-        afterAlt: ''
-      }
-      renderComponent(createImageCompareWidget(emptyAltValue))
-      const emptyImages = screen.getAllByRole('img')
-      expect(emptyImages[0]).toHaveAttribute('alt', 'After image')
-      expect(emptyImages[1]).toHaveAttribute('alt', 'Before image')
-    })
-
-    it('handles partial image URLs gracefully', () => {
-      // Only before image provided
-      renderComponent(
-        createImageCompareWidget({
-          beforeImages: ['https://example.com/before.jpg']
-        })
-      )
-      const beforeOnlyImages = screen.getAllByRole('img')
-      expect(beforeOnlyImages).toHaveLength(1)
-      expect(beforeOnlyImages[0]).toHaveAttribute(
-        'src',
-        'https://example.com/before.jpg'
-      )
-    })
-
-    it('handles only after image provided', () => {
-      renderComponent(
-        createImageCompareWidget({
-          afterImages: ['https://example.com/after.jpg']
-        })
-      )
-      const afterOnlyImages = screen.getAllByRole('img')
-      expect(afterOnlyImages).toHaveLength(1)
-      expect(afterOnlyImages[0]).toHaveAttribute(
-        'src',
-        'https://example.com/after.jpg'
-      )
-    })
-  })
-
-  describe('String Value Input', () => {
-    it('handles string value as before image only', () => {
-      const value = 'https://example.com/single.jpg'
-      const widget = createImageCompareWidget(value)
-      renderComponent(widget)
-
-      const images = screen.getAllByRole('img')
-      expect(images).toHaveLength(1)
-      expect(images[0]).toHaveAttribute('src', 'https://example.com/single.jpg')
-      expect(images[0]).toHaveAttribute('alt', 'Before image')
-    })
-  })
-
-  describe('Readonly Mode', () => {
-    it('renders normally in readonly mode', () => {
-      const value: ImageCompareValue = {
-        beforeImages: ['https://example.com/before.jpg'],
-        afterImages: ['https://example.com/after.jpg']
-      }
-      const widget = createImageCompareWidget(value)
-      renderComponent(widget)
-
-      const images = screen.getAllByRole('img')
-      expect(images).toHaveLength(2)
-    })
-  })
-
-  describe('Edge Cases', () => {
-    it('shows no images message when widget value is empty string', () => {
-      const widget = createImageCompareWidget('')
-      renderComponent(widget)
+      renderWidget(compare)
 
       expect(screen.queryByRole('img')).not.toBeInTheDocument()
-      expect(screen.getByText('imageCompare.noImages')).toBeInTheDocument()
-    })
-
-    it('shows no images message when both arrays are empty', () => {
-      const value: ImageCompareValue = {
-        beforeImages: [],
-        afterImages: []
-      }
-      const widget = createImageCompareWidget(value)
-      renderComponent(widget)
-
-      expect(screen.queryByRole('img')).not.toBeInTheDocument()
-      expect(screen.getByText('imageCompare.noImages')).toBeInTheDocument()
-    })
-
-    it('shows no images message for empty object value', () => {
-      const value: ImageCompareValue = {} as ImageCompareValue
-      const widget = createImageCompareWidget(value)
-      renderComponent(widget)
-
-      expect(screen.queryByRole('img')).not.toBeInTheDocument()
-      expect(screen.getByText('imageCompare.noImages')).toBeInTheDocument()
-    })
-
-    it('handles special content - long URLs, special characters, and long alt text', () => {
-      const longUrl = 'https://example.com/' + 'a'.repeat(1000) + '.jpg'
-      renderComponent(
-        createImageCompareWidget({
-          beforeImages: [longUrl],
-          afterImages: [longUrl]
-        })
-      )
-      const longUrlImages = screen.getAllByRole('img')
-      expect(longUrlImages[0]).toHaveAttribute('src', longUrl)
-      expect(longUrlImages[1]).toHaveAttribute('src', longUrl)
-    })
-
-    it('handles special characters in URLs', () => {
-      const specialUrl =
-        'https://example.com/path with spaces & symbols!@#$.jpg'
-      renderComponent(
-        createImageCompareWidget({
-          beforeImages: [specialUrl],
-          afterImages: [specialUrl]
-        })
-      )
-      const specialUrlImages = screen.getAllByRole('img')
-      expect(specialUrlImages[0]).toHaveAttribute('src', specialUrl)
-      expect(specialUrlImages[1]).toHaveAttribute('src', specialUrl)
-    })
-
-    it('handles long alt text', () => {
-      const longAlt =
-        'Very long alt text that exceeds normal length: ' +
-        'description '.repeat(50)
-      renderComponent(
-        createImageCompareWidget({
-          beforeImages: ['https://example.com/before.jpg'],
-          afterImages: ['https://example.com/after.jpg'],
-          beforeAlt: longAlt,
-          afterAlt: longAlt
-        })
-      )
-      const longAltImages = screen.getAllByRole('img')
-      expect(longAltImages[0]).toHaveAttribute('alt', longAlt)
-      expect(longAltImages[1]).toHaveAttribute('alt', longAlt)
+      expect(screen.getByText('No images to compare')).toBeInTheDocument()
     })
   })
 
-  describe('Template Structure', () => {
-    it('correctly renders after image as background and before image as overlay', () => {
-      const value: ImageCompareValue = {
-        beforeImages: ['https://example.com/before.jpg'],
-        afterImages: ['https://example.com/after.jpg']
-      }
-      const widget = createImageCompareWidget(value)
-      renderComponent(widget)
+  describe('Comparison viewport', () => {
+    it('labels each side for assistive technology', () => {
+      const { compare } = buildGraph()
+      setSavedImages(compare, ['before.png'], ['after.png'])
+
+      renderWidget(compare)
 
       const images = screen.getAllByRole('img')
-      expect(images[0]).toHaveAttribute('src', 'https://example.com/after.jpg')
-      expect(images[1]).toHaveAttribute('src', 'https://example.com/before.jpg')
-      expect(images[1]).toHaveClass('absolute')
-    })
-  })
-
-  describe('Integration', () => {
-    it('works with various URL types - data URLs and blob URLs', () => {
-      const dataUrl =
-        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI7wAAAABJRU5ErkJggg=='
-      renderComponent(
-        createImageCompareWidget({
-          beforeImages: [dataUrl],
-          afterImages: [dataUrl]
-        })
-      )
-      const dataUrlImages = screen.getAllByRole('img')
-      expect(dataUrlImages[0]).toHaveAttribute('src', dataUrl)
-      expect(dataUrlImages[1]).toHaveAttribute('src', dataUrl)
+      expect(images[0]).toHaveAttribute('alt', 'After image')
+      expect(images[1]).toHaveAttribute('alt', 'Before image')
     })
 
-    it('works with blob URLs', () => {
-      const blobUrl =
-        'blob:http://example.com/12345678-1234-1234-1234-123456789012'
-      renderComponent(
-        createImageCompareWidget({
-          beforeImages: [blobUrl],
-          afterImages: [blobUrl]
-        })
-      )
-      const blobUrlImages = screen.getAllByRole('img')
-      expect(blobUrlImages[0]).toHaveAttribute('src', blobUrl)
-      expect(blobUrlImages[1]).toHaveAttribute('src', blobUrl)
-    })
-  })
+    it.for([
+      { name: 'only a before image', before: ['before.png'], after: [] },
+      { name: 'only an after image', before: [], after: ['after.png'] }
+    ])('renders one image without a slider for $name', (row) => {
+      const { compare } = buildGraph()
+      setSavedImages(compare, row.before, row.after)
 
-  describe('Slider Element', () => {
-    it('renders slider divider when images are present', () => {
-      const value: ImageCompareValue = {
-        beforeImages: ['https://example.com/before.jpg'],
-        afterImages: ['https://example.com/after.jpg']
-      }
-      const widget = createImageCompareWidget(value)
-      renderComponent(widget)
+      renderWidget(compare)
+
+      expect(screen.getAllByRole('img')).toHaveLength(1)
+      expect(screen.queryByRole('presentation')).not.toBeInTheDocument()
+    })
+
+    it('shows the slider handle when both sides have an image', () => {
+      const { compare } = buildGraph()
+      setSavedImages(compare, ['before.png'], ['after.png'])
+
+      renderWidget(compare)
 
       expect(screen.getByRole('presentation')).toBeInTheDocument()
     })
-
-    it('does not render slider when no images', () => {
-      const widget = createImageCompareWidget('')
-      renderComponent(widget)
-
-      expect(screen.queryByRole('presentation')).not.toBeInTheDocument()
-    })
   })
 
-  describe('Batch Navigation', () => {
-    const beforeImages = [
-      'https://example.com/a1.jpg',
-      'https://example.com/a2.jpg',
-      'https://example.com/a3.jpg'
-    ]
-    const afterImages = [
-      'https://example.com/b1.jpg',
-      'https://example.com/b2.jpg'
-    ]
+  describe('Batch navigation', () => {
+    const before = ['a1.png', 'a2.png', 'a3.png']
+    const after = ['b1.png', 'b2.png']
 
-    it('shows batch nav when either side has multiple images', () => {
-      const value: ImageCompareValue = { beforeImages, afterImages }
-      renderComponent(createImageCompareWidget(value))
+    it('counts each side when either has multiple images', () => {
+      const { compare } = buildGraph()
+      setSavedImages(compare, before, after)
 
-      expect(screen.getByTestId('batch-nav')).toBeInTheDocument()
+      renderWidget(compare)
+
       expect(
         within(screen.getByTestId('before-batch')).getByTestId('batch-counter')
       ).toHaveTextContent('1 / 3')
@@ -325,112 +159,126 @@ describe('WidgetImageCompare Display', () => {
       ).toHaveTextContent('1 / 2')
     })
 
-    it('hides batch nav for single images', () => {
-      const value: ImageCompareValue = {
-        beforeImages: ['https://example.com/a1.jpg'],
-        afterImages: ['https://example.com/b1.jpg']
-      }
-      renderComponent(createImageCompareWidget(value))
+    it.for([
+      { name: 'single images', before: ['a1.png'], after: ['b1.png'] },
+      { name: 'no images', before: [], after: [] }
+    ])('hides the navigation for $name', (row) => {
+      const { compare } = buildGraph()
+      setSavedImages(compare, row.before, row.after)
+
+      renderWidget(compare)
 
       expect(screen.queryByTestId('batch-nav')).not.toBeInTheDocument()
     })
 
-    it('hides batch nav when no batch arrays are provided', () => {
-      renderComponent(createImageCompareWidget({} as ImageCompareValue))
+    it('only offers controls for the side with multiple images', () => {
+      const { compare } = buildGraph()
+      setSavedImages(compare, before, ['b1.png'])
 
-      expect(screen.queryByTestId('batch-nav')).not.toBeInTheDocument()
-    })
+      renderWidget(compare)
 
-    it('navigates before images with prev/next buttons', async () => {
-      const user = userEvent.setup()
-      const value: ImageCompareValue = { beforeImages, afterImages }
-      renderComponent(createImageCompareWidget(value))
-
-      const beforeBatch = screen.getByTestId('before-batch')
-      const images = screen.getAllByRole('img')
-
-      // Initially shows first before image
-      expect(images[1]).toHaveAttribute('src', 'https://example.com/a1.jpg')
-
-      // Click next on before
-      const nextBtn = within(beforeBatch).getByTestId('batch-next')
-      await user.click(nextBtn)
-      expect(screen.getAllByRole('img')[1]).toHaveAttribute(
-        'src',
-        'https://example.com/a2.jpg'
-      )
-      expect(
-        within(beforeBatch).getByTestId('batch-counter')
-      ).toHaveTextContent('2 / 3')
-
-      // Click next again
-      await user.click(nextBtn)
-      expect(screen.getAllByRole('img')[1]).toHaveAttribute(
-        'src',
-        'https://example.com/a3.jpg'
-      )
-      expect(
-        within(beforeBatch).getByTestId('batch-counter')
-      ).toHaveTextContent('3 / 3')
-
-      // Next button should be disabled at last index
-      expect(nextBtn).toBeDisabled()
-
-      // Click prev
-      const prevBtn = within(beforeBatch).getByTestId('batch-prev')
-      await user.click(prevBtn)
-      expect(screen.getAllByRole('img')[1]).toHaveAttribute(
-        'src',
-        'https://example.com/a2.jpg'
-      )
-    })
-
-    it('navigates after images independently from before images', async () => {
-      const user = userEvent.setup()
-      const value: ImageCompareValue = { beforeImages, afterImages }
-      renderComponent(createImageCompareWidget(value))
-
-      const afterBatch = screen.getByTestId('after-batch')
-
-      // Navigate after to index 1
-      const nextBtn = within(afterBatch).getByTestId('batch-next')
-      await user.click(nextBtn)
-      expect(within(afterBatch).getByTestId('batch-counter')).toHaveTextContent(
-        '2 / 2'
-      )
-
-      // After image should be b2, before image should still be a1
-      const images = screen.getAllByRole('img')
-      expect(images[0]).toHaveAttribute('src', 'https://example.com/b2.jpg')
-      expect(images[1]).toHaveAttribute('src', 'https://example.com/a1.jpg')
-    })
-
-    it('disables prev button at first index', () => {
-      const value: ImageCompareValue = { beforeImages, afterImages }
-      renderComponent(createImageCompareWidget(value))
-
-      const beforePrev = within(screen.getByTestId('before-batch')).getByTestId(
-        'batch-prev'
-      )
-      const afterPrev = within(screen.getByTestId('after-batch')).getByTestId(
-        'batch-prev'
-      )
-      expect(beforePrev).toBeDisabled()
-      expect(afterPrev).toBeDisabled()
-    })
-
-    it('only shows controls for the side with multiple images', () => {
-      const value: ImageCompareValue = {
-        beforeImages,
-        afterImages: ['https://example.com/b1.jpg']
-      }
-      renderComponent(createImageCompareWidget(value))
-
-      expect(screen.getByTestId('batch-nav')).toBeInTheDocument()
       expect(
         within(screen.getByTestId('before-batch')).getByTestId('batch-counter')
       ).toBeInTheDocument()
       expect(screen.queryByTestId('after-batch')).not.toBeInTheDocument()
+    })
+
+    it('steps through the before batch without moving the after batch', async () => {
+      const user = userEvent.setup()
+      const { compare } = buildGraph()
+      setSavedImages(compare, before, after)
+
+      renderWidget(compare)
+      const beforeBatch = screen.getByTestId('before-batch')
+      const nextBtn = within(beforeBatch).getByTestId('batch-next')
+      const prevBtn = within(beforeBatch).getByTestId('batch-prev')
+
+      expect(prevBtn).toBeDisabled()
+
+      await user.click(nextBtn)
+      expect(screen.getAllByRole('img')[1]).toHaveAttribute(
+        'src',
+        savedUrl('a2.png')
+      )
+
+      await user.click(nextBtn)
+      expect(
+        within(beforeBatch).getByTestId('batch-counter')
+      ).toHaveTextContent('3 / 3')
+      expect(nextBtn).toBeDisabled()
+
+      await user.click(prevBtn)
+      const images = screen.getAllByRole('img')
+      expect(images[1]).toHaveAttribute('src', savedUrl('a2.png'))
+      expect(images[0]).toHaveAttribute('src', savedUrl('b1.png'))
+    })
+
+    it('steps through the after batch independently', async () => {
+      const user = userEvent.setup()
+      const { compare } = buildGraph()
+      setSavedImages(compare, before, after)
+
+      renderWidget(compare)
+      const afterBatch = screen.getByTestId('after-batch')
+      await user.click(within(afterBatch).getByTestId('batch-next'))
+
+      expect(within(afterBatch).getByTestId('batch-counter')).toHaveTextContent(
+        '2 / 2'
+      )
+      const images = screen.getAllByRole('img')
+      expect(images[0]).toHaveAttribute('src', savedUrl('b2.png'))
+      expect(images[1]).toHaveAttribute('src', savedUrl('a1.png'))
+    })
+
+    it('keeps the selected image when an unrelated link changes', async () => {
+      const user = userEvent.setup()
+      const { compare, graph } = buildGraph()
+      setSavedImages(compare, ['a1.png', 'a2.png'], ['b1.png'])
+
+      renderWidget(compare)
+      await user.click(
+        within(screen.getByTestId('before-batch')).getByTestId('batch-next')
+      )
+      expect(
+        within(screen.getByTestId('before-batch')).getByTestId('batch-counter')
+      ).toHaveTextContent('2 / 2')
+
+      const producer = new LGraphNode('EmptyImage')
+      producer.addOutput('IMAGE', 'IMAGE')
+      graph.add(producer)
+      const consumer = new LGraphNode('PreviewImage')
+      consumer.addInput('images', 'IMAGE')
+      graph.add(consumer)
+      producer.connect(0, consumer, 0)
+      await nextTick()
+
+      expect(screen.getAllByRole('img')[1]).toHaveAttribute(
+        'src',
+        savedUrl('a2.png')
+      )
+    })
+
+    it('returns to the first image when a newer run has fewer images', async () => {
+      const user = userEvent.setup()
+      const { compare } = buildGraph()
+      setSavedImages(compare, ['a1.png', 'a2.png'], ['b1.png'])
+
+      renderWidget(compare)
+      await user.click(
+        within(screen.getByTestId('before-batch')).getByTestId('batch-next')
+      )
+      expect(
+        within(screen.getByTestId('before-batch')).getByTestId('batch-counter')
+      ).toHaveTextContent('2 / 2')
+
+      setSavedImages(compare, ['a3.png'], ['b1.png'])
+      await nextTick()
+
+      expect(screen.getAllByRole('img')[1]).toHaveAttribute(
+        'src',
+        savedUrl('a3.png')
+      )
+      expect(screen.queryByTestId('batch-nav')).not.toBeInTheDocument()
     })
   })
 })

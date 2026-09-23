@@ -10,16 +10,12 @@ import { createAgentEventTransport } from '../../services/agent/agentEventTransp
 import type { AssistantMessage } from '../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../services/agent/agentMessageParts'
 import { normalizeAgentTranscript } from '../../services/agent/agentTranscript'
+import type { UserAttachment } from '../../services/agent/agentTranscript'
 import type { WorkflowReference } from '../../types/workflowReference'
 
-type ConversationStatus = 'idle' | 'thinking' | 'streaming'
+export type { UserAttachment }
 
-export interface UserAttachment {
-  name: string
-  previewUrl?: string
-  /** Uploaded input filename; resolves the sent file for grid previews. */
-  ref?: string
-}
+type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 
 interface UserEntry {
   id: TurnId
@@ -51,7 +47,6 @@ export const useAgentConversationStore = defineStore(
     const userTags = ref(new Map<TurnId, string[]>())
     const userWorkflowReferences = ref(new Map<TurnId, WorkflowReference[]>())
     const latestWorkflowId = ref<string>()
-
     let transport: AgentEventTransport | null = null
     let liveMessage: AssistantMessage | null = null
     const backgroundTurns = new Map<string, BackgroundTurn>()
@@ -108,8 +103,25 @@ export const useAgentConversationStore = defineStore(
       ])
     }
 
-    function recordPaywall(turnId: TurnId, text: string): void {
-      recordSettledReply(turnId, text, [{ type: 'paywall' }])
+    function recordPaywall(
+      turnId: TurnId,
+      text: string,
+      message?: string
+    ): void {
+      recordSettledReply(turnId, text, [{ type: 'paywall', message }])
+    }
+
+    function resolvePaywalls(): void {
+      messages.value = messages.value.map((message) => {
+        const parts = message.parts.filter((part) => part.type !== 'paywall')
+        return parts.length === message.parts.length
+          ? message
+          : { ...message, parts }
+      })
+    }
+
+    function setPaywallsResolved(resolved: boolean): void {
+      if (resolved) resolvePaywalls()
     }
 
     function startTurn(turnId: TurnId): void {
@@ -278,6 +290,7 @@ export const useAgentConversationStore = defineStore(
       hydratedMessageIds = transcript.rowIds
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
+      userAttachments.value = transcript.userAttachments
       if (transcript.pending) {
         liveMessage = transcript.pending.message
         activeTurnId.value = transcript.pending.messageId
@@ -330,6 +343,7 @@ export const useAgentConversationStore = defineStore(
       setThreadId,
       recordFailedSend,
       recordPaywall,
+      setPaywallsResolved,
       startTurn,
       ingest,
       abortActiveTurn,

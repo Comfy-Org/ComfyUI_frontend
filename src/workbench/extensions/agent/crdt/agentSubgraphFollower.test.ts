@@ -14,6 +14,7 @@ import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from './graphMutations'
+import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import {
   LGraph,
   LGraphNode,
@@ -171,6 +172,7 @@ function startFollower(options: FixtureOptions = {}) {
   const follower = new FollowerDoc()
   const adapter = new EcsFollowerAdapter(
     createGraphMutations({
+      placement: inertPlacementPort,
       getScope: () => (options.scope?.blocked ? null : graphScopeOf(graph)),
       layout: { createNode: () => {}, deleteNodes: () => {} }
     })

@@ -6,6 +6,7 @@ import { computed, ref } from 'vue'
 
 import type { BillingOperationRecordView } from '@/platform/workspace/billing/sdk/operationRecordView'
 import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
+import type { SubscriptionRailOutcome } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 import { billingOperation } from './billingOperationTestUtils'
 import type { BillingOperation } from './billingOperationTestUtils'
 import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
@@ -23,6 +24,7 @@ import {
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import type {
   BillingStatus,
+  BillingStatusResponse,
   Plan,
   PreviewSubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
@@ -250,6 +252,9 @@ interface SubscriptionRailStub {
   subscriptionActionUrl: string | null
   subscriptionActionOperation?: RailOperation
   getOperation: (opId: string) => RailOperation | undefined
+  openPaymentPortal?: (
+    returnUrl: string
+  ) => Promise<SubscriptionRailOutcome<string>>
 }
 
 /**
@@ -378,11 +383,11 @@ vi.mock<unknown>(
   () => ({ useSubscriptionRail: () => mockSubscriptionRail.value })
 )
 
-type PaymentMethodsRail = Pick<BillingReadRail, 'readPaymentMethods'>
+type ReadRail = Pick<BillingReadRail, 'readPaymentMethods' | 'readStatus'>
 
 /** Null is the legacy client; a rail is what the SDK store would hand back. */
 const railState = vi.hoisted(() => ({
-  rail: null as PaymentMethodsRail | null
+  rail: null as Partial<ReadRail> | null
 }))
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useBillingReadRail'),
@@ -1474,6 +1479,142 @@ describe('useSubscriptionCheckout', () => {
           detail: 'Update your payment method before changing plans'
         })
       )
+    })
+
+    describe('payment recovery on the SDK rail', () => {
+      const RAIL_PORTAL = 'https://billing.stripe.com/rail-portal'
+
+      /** Only `billing_status` is read, but the response requires six more. */
+      function railStatus(
+        billing_status: BillingStatus
+      ): BillingStatusResponse {
+        return {
+          billing_status,
+          has_funds: true,
+          is_active: true,
+          max_seats: 1,
+          occupied_seats: 1,
+          scheduled_change: null,
+          team_credit_stop: null
+        }
+      }
+
+      /** A read rail answering `readStatus` with `result`. */
+      function readStatusOnRail(
+        result: Awaited<ReturnType<ReadRail['readStatus']>>
+      ) {
+        const readStatus = vi
+          .fn<ReadRail['readStatus']>()
+          .mockResolvedValue(result)
+        railState.rail = {
+          readStatus,
+          readPaymentMethods: vi
+            .fn<ReadRail['readPaymentMethods']>()
+            .mockResolvedValue({ status: 'ok', value: [] })
+        }
+        return readStatus
+      }
+
+      function railPortal(outcome: SubscriptionRailOutcome<string>) {
+        const openPaymentPortal = vi
+          .fn<NonNullable<SubscriptionRailStub['openPaymentPortal']>>()
+          .mockResolvedValue(outcome)
+        mockSubscriptionRail.value = railStub({ openPaymentPortal })
+        return openPaymentPortal
+      }
+
+      it('reads the second TRANSITION_NOT_ALLOWED check off the rail', async () => {
+        const readStatus = readStatusOnRail({
+          status: 'ok',
+          value: railStatus('payment_failed')
+        })
+
+        await submitRejectedPreview('TRANSITION_NOT_ALLOWED')
+
+        expect(readStatus).toHaveBeenCalledOnce()
+        expect(mockGetBillingStatus).not.toHaveBeenCalled()
+        expect(mockOpen).toHaveBeenCalledWith(
+          'https://billing.stripe.com/portal',
+          '_blank'
+        )
+      })
+
+      // The legacy client says `payment_failed` throughout, so recovering
+      // nothing is only possible if the rail's answer is the one being read.
+      it.for([
+        [
+          'reports a healthy status',
+          { status: 'ok', value: railStatus('paid') }
+        ],
+        [
+          'has left the scope the read was for',
+          { status: 'error', code: 'SUPERSEDED' }
+        ],
+        ['cannot answer at all', { status: 'error', code: 'REQUEST_FAILED' }]
+      ] as const)('recovers nothing when the rail %s', async ([, result]) => {
+        mockGetBillingStatus.mockResolvedValue({
+          billing_status: 'payment_failed'
+        })
+        readStatusOnRail(result)
+
+        await submitRejectedPreview('TRANSITION_NOT_ALLOWED', 'Not allowed')
+
+        expect(mockGetBillingStatus).not.toHaveBeenCalled()
+        expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
+        expect(mockOpen).not.toHaveBeenCalled()
+      })
+
+      it('opens the portal URL the rail hands back', async () => {
+        const openPaymentPortal = railPortal({
+          status: 'ok',
+          value: RAIL_PORTAL
+        })
+
+        await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+
+        expect(openPaymentPortal).toHaveBeenCalledWith(
+          'https://app.test/subscribe'
+        )
+        expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
+        expect(mockOpen).toHaveBeenCalledWith(RAIL_PORTAL, '_blank')
+      })
+
+      it('falls back to the legacy client when the route is not deployed', async () => {
+        const openPaymentPortal = railPortal({ status: 'unavailable' })
+
+        await submitRejectedPreview('SUBSCRIPTION_PAYMENT_REQUIRED')
+
+        expect(openPaymentPortal).toHaveBeenCalledWith(
+          'https://app.test/subscribe'
+        )
+        expect(mockGetPaymentPortalUrl).toHaveBeenCalledWith(
+          'https://app.test/subscribe'
+        )
+        expect(mockOpen).toHaveBeenCalledWith(
+          'https://billing.stripe.com/portal',
+          '_blank'
+        )
+      })
+
+      it('reports a rail portal failure where a legacy throw lands', async () => {
+        const portalError = new Error('Portal unavailable')
+        railPortal({ status: 'error', error: portalError })
+
+        await submitRejectedPreview(
+          'SUBSCRIPTION_PAYMENT_REQUIRED',
+          'Update your payment method before changing plans'
+        )
+
+        expect(mockGetPaymentPortalUrl).not.toHaveBeenCalled()
+        expect(mockReportError).toHaveBeenCalledWith(portalError, {
+          errorType: 'billing_portal_open_failure'
+        })
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({
+            detail: 'Update your payment method before changing plans'
+          })
+        )
+      })
     })
 
     it('shows error toast when plan slug is not found', async () => {
@@ -3311,6 +3452,218 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.parkedCheckoutRecovery.value).toBe(true)
       expect(checkout.authenticationError.value).toBe('Your card was declined.')
     })
+  })
+
+  /**
+   * The net M1-20 is checked against. `useSubscriptionCheckout` is 1817 lines
+   * and half of it is a legacy branch that Step 5 deletes; the rest of this
+   * suite asserts a great deal but not as a matrix over the two rails, so a
+   * removal could pass by deleting a case rather than by preserving a
+   * behaviour. Every row below asserts the same user-visible result on both
+   * rails, so a removal that changes one of them fails here.
+   */
+  describe('rail x checkoutType x outcome', () => {
+    type Outcome =
+      | 'settled'
+      | 'parked then settles'
+      | 'parked then fails'
+      | 'no response'
+
+    /**
+     * The two parked outcomes share a body on purpose: `pending_payment` is
+     * all the subscribe call says, and whether that park settles or fails is
+     * decided a layer down by the operation the row registers.
+     */
+    const SUBSCRIBE_RESULT: Record<Outcome, unknown> = {
+      settled: { status: 'subscribed', billing_op_id: 'op-matrix' },
+      'parked then settles': {
+        status: 'pending_payment',
+        billing_op_id: 'op-matrix'
+      },
+      'parked then fails': {
+        status: 'pending_payment',
+        billing_op_id: 'op-matrix'
+      },
+      'no response': undefined
+    }
+
+    /**
+     * Annotated rather than asserted: `previewData` holds a wider union whose
+     * other member requires the whole cost breakdown, so a bare literal
+     * resolves to that member and fails. The annotation picks the member this
+     * table means, with no fields no row reads.
+     */
+    function quoteFor(
+      checkoutType: 'new' | 'change'
+    ): PreviewSubscribeResponse {
+      return {
+        allowed: true,
+        transition_type:
+          checkoutType === 'change' ? 'upgrade' : 'new_subscription',
+        is_immediate: true,
+        requires_reactivation_confirmation: false,
+        effective_at: '2026-09-20T00:00:00Z',
+        cost_today_cents: 2_000,
+        cost_next_period_cents: 2_000,
+        credits_today_cents: 2_110,
+        credits_next_period_cents: 2_110,
+        new_plan: {
+          slug: 'standard-annual',
+          tier: 'STANDARD',
+          duration: 'ANNUAL',
+          price_cents: 2_000,
+          credits_cents: 2_110,
+          seat_summary: {
+            seat_count: 1,
+            total_cost_cents: 2_000,
+            total_credits_cents: 2_110
+          }
+        }
+      }
+    }
+
+    /**
+     * The same operation in the shape each owner hands out. Deriving the rail
+     * view from the store record keeps the two columns comparing one
+     * operation rather than two fixtures free to drift apart.
+     */
+    function onRail(record: BillingOperation): RailOperation {
+      // A rail record is always scoped; the legacy one need not be.
+      assert(record.workspaceId !== null)
+      return {
+        opId: record.opId,
+        kind: 'subscription',
+        status: record.status,
+        workspaceId: record.workspaceId,
+        actionUrl: record.actionUrl,
+        phase: record.phase,
+        authenticationState: record.authenticationState,
+        isAuthenticating: record.isAuthenticating,
+        canRetryAuthentication: record.canRetryAuthentication,
+        errorMessage: record.errorMessage
+      }
+    }
+
+    async function runCheckout(
+      railOn: boolean,
+      checkoutType: 'new' | 'change',
+      outcome: Outcome,
+      confirmReactivation = false
+    ) {
+      const operation = billingOperation({
+        opId: 'op-matrix',
+        status: outcome === 'parked then fails' ? 'failed' : 'succeeded',
+        workspaceId: 'workspace-1'
+      })
+      // The read the two columns actually differ on. Whoever owns the rail
+      // owns the operation, so the row hands it to that owner and leaves the
+      // other empty: on the SDK rail the lifecycle answers `getOperation`, on
+      // the legacy rail the store does. A rail that answers `undefined` while
+      // the store holds the operation is the 404 fallback, not this axis, and
+      // has its own case above; giving the SDK column that stub would leave
+      // every row resolving through the store Step 5 deletes.
+      mockSubscriptionRail.value = railOn
+        ? railStub({ getOperation: () => onRail(operation) })
+        : null
+      vi.mocked(useBillingOperationStore().getOperation).mockReturnValue(
+        railOn ? undefined : operation
+      )
+      const checkout = await setup()
+      checkout.selectedTierKey.value = 'standard'
+      checkout.selectedBillingCycle.value = 'yearly'
+      checkout.previewData.value = quoteFor(checkoutType)
+      checkout.quoteIsCurrent.value = true
+      mockSubscribe.mockResolvedValueOnce(SUBSCRIBE_RESULT[outcome])
+      vi.mocked(useBillingOperationStore().startOperation).mockResolvedValue(
+        operation
+      )
+
+      await checkout.handleConfirmTransition(confirmReactivation)
+      return checkout
+    }
+
+    // Sparse: each row names the outcome, the step it must leave behind, and
+    // whether the checkout is still watching the operation afterwards.
+    // `checkoutType` and the rail are the two axes crossed over it. Anything
+    // short of a settled operation leaves the customer where they were, which
+    // this harness enters at.
+    //
+    // `stillWatching` is the assertion the rail axis rides on. The step is
+    // settled by the operation the checkout registers, and both columns
+    // register it the same way, so a matrix asserting only the step passes
+    // even with the rail read deleted outright. `isPolling` reads through
+    // `activeCheckoutOperation`, the one value the rail owns here, so the SDK
+    // rows fail unless the rail is actually consulted. It is also a live CTA:
+    // the confirm action stays shut while it holds.
+    //
+    // Only a park registers an operation at all. A subscribe the server
+    // settled in its own response has nothing left to watch, and neither does
+    // one that never answered.
+    const UNMOVED = 'pricing'
+    const OUTCOMES: {
+      outcome: Outcome
+      step: string
+      stillWatching: boolean
+    }[] = [
+      { outcome: 'settled', step: 'success', stillWatching: false },
+      { outcome: 'parked then settles', step: 'success', stillWatching: true },
+      { outcome: 'parked then fails', step: UNMOVED, stillWatching: false },
+      { outcome: 'no response', step: UNMOVED, stillWatching: false }
+    ]
+
+    const CHECKOUT_TYPES = ['new', 'change'] as const
+    const RAILS = [
+      { rail: 'legacy', railOn: false },
+      { rail: 'SDK', railOn: true }
+    ] as const
+
+    it.for(
+      RAILS.flatMap(({ rail, railOn }) =>
+        CHECKOUT_TYPES.flatMap((checkoutType) =>
+          OUTCOMES.map(({ outcome, step, stillWatching }) => ({
+            rail,
+            railOn,
+            checkoutType,
+            outcome,
+            step,
+            stillWatching
+          }))
+        )
+      )
+    )(
+      'a $checkoutType checkout that is $outcome leaves the same step on the $rail rail',
+      async ({ railOn, checkoutType, outcome, step, stillWatching }) => {
+        const checkout = await runCheckout(railOn, checkoutType, outcome)
+
+        expect(checkout.checkoutStep.value).toBe(step)
+        expect(checkout.isPolling.value).toBe(stillWatching)
+        // Whatever the outcome, the attempt is over: a checkout left busy is
+        // a dialog the customer cannot leave or retry from.
+        expect(checkout.isSubscribing.value).toBe(false)
+      }
+    )
+
+    // Parked rather than settled inline, so this pair crosses the rails on the
+    // operation read too: a reactivation the server charges for is the one
+    // that leaves an operation behind.
+    it.for(RAILS)(
+      'a reactivation sends its confirmation on the $rail rail and succeeds',
+      async ({ railOn }) => {
+        const checkout = await runCheckout(
+          railOn,
+          'change',
+          'parked then settles',
+          true
+        )
+
+        expect(mockSubscribe).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.objectContaining({ confirmReactivation: true })
+        )
+        expect(checkout.checkoutStep.value).toBe('success')
+        expect(checkout.isPolling.value).toBe(true)
+      }
+    )
   })
 
   describe('handleBackToPricing', () => {

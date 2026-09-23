@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
+import { toRootGraphId } from '@/types/graphScopeId'
 
 import type { GraphOperation } from './graphOperations'
 import {
@@ -126,7 +127,8 @@ describe('attachMintPortWiring undo/redo restore', () => {
       layoutChanges: () => () => {},
       localActorPrefix: 'user-',
       getGraph: () => graph,
-      isRestoringState: () => restoring
+      isRestoringState: () => restoring,
+      boundRootGraphId: () => toRootGraphId(ROOT_ID)
     })
   })
 
