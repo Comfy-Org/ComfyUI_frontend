@@ -12,7 +12,10 @@ import type { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import type { EntryPath } from '@/platform/onboarding/onboardingTours'
 import type { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
-import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
+import {
+  CONSENT_DIALOG_KEY,
+  useAgentConsent
+} from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import type { ConsentOfferHooks } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useTelemetry } from '@/platform/telemetry'
 import type { useExtensionService } from '@/services/extensionService'
@@ -67,7 +70,8 @@ vi.mock(
         }
       )
     })
-    return { useAgentConsent: () => consent }
+    const CONSENT_DIALOG_KEY = 'agent-consent' as const
+    return { CONSENT_DIALOG_KEY, useAgentConsent: () => consent }
   }
 )
 
@@ -586,30 +590,60 @@ describe('AgentPanel extension flag gate', () => {
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
   })
 
-  it('does not offer again when the consent card itself closes', async () => {
+  it('does not re-offer after the user declines a manually opened card', async () => {
     mocks.flagEnabled = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
-    vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_onAccept, hooks) => {
-        hooks?.onShown?.()
-        openDialog('agent-consent')
-      }
-    )
+    let decide = (_: boolean) => {}
+    startupDecision = new Promise<boolean>((resolve) => {
+      decide = resolve
+    })
 
     await loadEntryAndSetup()
-    await vi.waitFor(() =>
-      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-    )
+    openDialog(CONSENT_DIALOG_KEY)
     await flush()
-    const loadsBeforeClose = vi.mocked(consentStore.load).mock.calls.length
-
-    closeDialog('agent-consent')
-    await vi.waitFor(() =>
-      expect(consentStore.load).toHaveBeenCalledTimes(loadsBeforeClose + 1)
-    )
+    decide(true)
+    await flush()
+    closeDialog(CONSENT_DIALOG_KEY)
     await flush()
 
-    expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
+  })
+
+  it('skips the automatic offer for the session once the user has seen the card', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    let decide = (_: boolean) => {}
+    startupDecision = new Promise<boolean>((resolve) => {
+      decide = resolve
+    })
+
+    await loadEntryAndSetup()
+    openDialog(CONSENT_DIALOG_KEY)
+    await flush()
+    closeDialog(CONSENT_DIALOG_KEY)
+    decide(true)
+    await flush()
+
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+  })
+
+  it('does not re-read consent on every dialog close while the read keeps failing', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    vi.mocked(consentStore.load).mockRejectedValue(new Error('offline'))
+
+    await loadEntryAndSetup()
+    await flush()
+    const loadsAfterBoot = vi.mocked(consentStore.load).mock.calls.length
+    for (let cycle = 0; cycle < 3; cycle++) {
+      openDialog()
+      await flush()
+      closeDialog()
+      await flush()
+    }
+
+    expect(consentStore.load).toHaveBeenCalledTimes(loadsAfterBoot)
   })
 
   it('stays silent when the account already accepted', async () => {

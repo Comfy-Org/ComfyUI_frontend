@@ -1,13 +1,16 @@
 import { whenever } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import { computed, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
-import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
+import {
+  CONSENT_DIALOG_KEY,
+  useAgentConsent
+} from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -171,16 +174,28 @@ export function registerAgentPanelExtension(): void {
           onboardingTourStore.activeTour === null &&
           dialogStore.dialogStack.length === 0
       )
-      const screenIsHeld = (): boolean =>
-        firstRunTookScreen.value || !screenIsClear.value
+      const offerHeld = ref(false)
+      const holdIfScreenBusy = (): boolean => {
+        if (screenIsClear.value) return false
+        offerHeld.value = true
+        return true
+      }
+      let consentCardSeen = false
+      whenever(
+        () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
+        () => {
+          consentCardSeen = true
+        }
+      )
 
       let autoShowInFlight = false
       const offerConsentUnprompted = (): void => {
         if (autoShowInFlight) return
         if (!agentPanelStore.enabled || !isLoggedIn.value) return
         if (consentStore.isChecking || consentStore.accepted) return
+        if (firstRunTookScreen.value || consentCardSeen) return
         // Must precede prepareAutoShow, which burns the one-shot key.
-        if (screenIsHeld()) return
+        if (holdIfScreenBusy()) return
 
         const userId = resolvedUserInfo.value?.id
         const workspaceId = workspaceStore.activeWorkspaceId
@@ -200,7 +215,7 @@ export function registerAgentPanelExtension(): void {
             onShown: () => {
               writeAutoShown(key, true)
             },
-            canShow: () => !screenIsHeld()
+            canShow: () => !holdIfScreenBusy()
           }
         ).finally(() => {
           autoShowInFlight = false
@@ -240,7 +255,13 @@ export function registerAgentPanelExtension(): void {
         loadConsentIfEligible,
         { immediate: true }
       )
-      whenever(screenIsClear, loadConsentIfEligible)
+      whenever(
+        () => offerHeld.value && screenIsClear.value,
+        () => {
+          offerHeld.value = false
+          loadConsentIfEligible()
+        }
+      )
       return setupFlagGate(loadConsentIfEligible)
     }
   })
