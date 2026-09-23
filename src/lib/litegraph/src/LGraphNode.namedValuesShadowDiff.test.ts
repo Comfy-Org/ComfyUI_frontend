@@ -1,17 +1,14 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { ISerialisedNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import { useTelemetry } from '@/platform/telemetry'
 
-const trackNamedValuesShadowDiffMismatch = vi.fn()
-const trackNamedValuesShadowDiffSummary = vi.fn()
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackNamedValuesShadowDiffMismatch,
-    trackNamedValuesShadowDiffSummary
-  })
-}))
+const telemetry = useTelemetry()
+assert.exists(telemetry)
+const { trackNamedValuesShadowDiffMismatch } = telemetry
 
 vi.mock(import('@/platform/nodeReplacement/cnrIdUtil'), () => ({
   getCnrIdFromNode: () => undefined

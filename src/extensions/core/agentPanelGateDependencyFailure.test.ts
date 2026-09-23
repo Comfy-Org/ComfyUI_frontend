@@ -25,9 +25,7 @@ vi.mock(import('@/workbench/extensions/agent/utils/postHogFlagSource'), () => {
   throw new Error('flag source chunk failed to load')
 })
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
-  getNodeByLocatorId: vi.fn()
-}))
+vi.mock(import('@/utils/graphTraversalUtil'))
 
 vi.mock(import('@/utils/litegraphUtil'), () => ({
   isLGraphNode: (_item: unknown): _item is LGraphNode => false

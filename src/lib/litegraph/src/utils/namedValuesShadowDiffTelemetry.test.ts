@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '../LGraphNode'
+import { useTelemetry } from '@/platform/telemetry'
 import type { NamedValuesShadowDiffResult } from './namedValuesShadowDiff'
 import {
   beginNamedValuesShadowDiffLoad,
@@ -8,16 +9,16 @@ import {
   reportNamedValuesShadowDiff
 } from './namedValuesShadowDiffTelemetry'
 
-const trackNamedValuesShadowDiffMismatch = vi.fn()
-const trackNamedValuesShadowDiffSummary = vi.fn()
 const getCnrIdFromNode = vi.fn<(node: unknown) => string | undefined>()
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackNamedValuesShadowDiffMismatch,
-    trackNamedValuesShadowDiffSummary
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
+
+const telemetry = useTelemetry()
+assert.exists(telemetry)
+const {
+  trackNamedValuesShadowDiffMismatch,
+  trackNamedValuesShadowDiffSummary
+} = telemetry
 
 vi.mock(import('@/platform/nodeReplacement/cnrIdUtil'), () => ({
   getCnrIdFromNode: (node: unknown) => getCnrIdFromNode(node)

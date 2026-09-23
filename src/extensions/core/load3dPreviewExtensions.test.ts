@@ -4,12 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { useLoad3d } from '@/composables/useLoad3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
-import type { ComfyApp } from '@/scripts/app'
 import { app } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
 import type { useLoad3dService } from '@/services/load3dService'
 import { toNodeId } from '@/types/nodeId'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const {
   capture,
@@ -18,7 +18,6 @@ const {
   onLoad3dReadyMock,
   configureForSaveMeshMock,
   getLoad3dMock,
-  getNodeByLocatorIdMock,
   nodeToLoad3dMapMock
 } = await vi.hoisted(async () => {
   const { createExtensionCapture } =
@@ -31,7 +30,6 @@ const {
     onLoad3dReadyMock: vi.fn(),
     configureForSaveMeshMock: vi.fn(),
     getLoad3dMock: vi.fn(),
-    getNodeByLocatorIdMock: vi.fn(),
     nodeToLoad3dMapMock: new Map<LGraphNode, FakeLoad3d>()
   }
 })
@@ -71,17 +69,13 @@ vi.mock(import('@/extensions/core/load3d/exportMenuHelper'), () => ({
   createExportMenuItems: vi.fn(() => [{ content: 'Export' }])
 }))
 
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({ rootGraph: {} })
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
-  getNodeByLocatorId: getNodeByLocatorIdMock
-}))
+vi.mock(import('@/utils/graphTraversalUtil'))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+const getNodeByLocatorIdMock = vi.mocked(getNodeByLocatorId)
+
+vi.mock(import('@/i18n'))
 
 await import('@/extensions/core/load3dPreviewExtensions')
 const splatExt = capture.getExtension('Comfy.PreviewGaussianSplat')

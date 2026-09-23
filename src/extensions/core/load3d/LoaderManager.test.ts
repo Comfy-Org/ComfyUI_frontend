@@ -115,9 +115,7 @@ vi.mock(import('@/scripts/metadata/ply'), () => ({
   isGaussianSplatPLY: isGaussianSplatPLYMock
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 type LoaderManagerInternals = {
   pickAdapter(

@@ -1,5 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { SerialisedLLinkArray } from '@/lib/litegraph/src/LLink'
@@ -13,6 +13,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { useTelemetry } from '@/platform/telemetry'
 
 import {
   conflictingOriginLinksRoot,
@@ -20,13 +21,11 @@ import {
 } from './__fixtures__/duplicateLinks'
 import { normalizeConfiguredTopology } from './linkDeduplication'
 
-const trackLinkDedupDrop = vi.fn()
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackLinkDedupDrop
-  })
-}))
+const telemetry = useTelemetry()
+assert.exists(telemetry)
+const { trackLinkDedupDrop } = telemetry
 
 class DupTestNode extends LGraphNode {
   constructor(title?: string) {

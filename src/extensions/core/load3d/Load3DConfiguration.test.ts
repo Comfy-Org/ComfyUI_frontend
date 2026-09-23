@@ -5,8 +5,6 @@ import { nextTick, reactive } from 'vue'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3DConfiguration from '@/extensions/core/load3d/Load3DConfiguration'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
-import type { ComfyApi } from '@/scripts/api'
-import type { ComfyApp } from '@/scripts/app'
 import { parseAnnotatedPath } from '@/utils/createAnnotatedPath'
 import type {
   CameraConfig,
@@ -27,20 +25,8 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { Settings } from '@/platform/settings/types'
 
-vi.mock(import('@/scripts/api'), () => ({
-  api: fromPartial<ComfyApi>({
-    apiURL: (p: string) => p,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchCustomEvent: vi.fn(),
-    fetchApi: vi.fn(),
-    getSystemStats: vi.fn()
-  })
-}))
-
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({ rootGraph: { extra: {} } })
-}))
+vi.mock(import('@/scripts/api'))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/extensions/core/load3d/Load3d'), () => ({
   default: fromAny(class {})

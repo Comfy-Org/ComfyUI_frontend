@@ -7,8 +7,7 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { ComfyApp } from '@/scripts/app'
+import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
 import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
@@ -16,34 +15,18 @@ import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
 import type { GroupNodeLink, GroupNodeWorkflowData } from './groupNode'
 
 const extensionState = vi.hoisted(() => ({
-  ext: undefined as ComfyExtension | undefined,
-  configuringGraph: false,
-  rootGraph: {
-    extra: {},
-    nodes: [] as { id: string | number }[]
-  },
-  registerNodeDef:
-    vi.fn<(typeName: string, nodeDef: ComfyNodeDef) => Promise<void>>()
+  ext: undefined as ComfyExtension | undefined
 }))
 
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({
-    get configuringGraph() {
-      return extensionState.configuringGraph
-    },
-    rootGraph: fromAny(extensionState.rootGraph),
-    registerNodeDef: extensionState.registerNodeDef,
-    registerExtension: (ext: ComfyExtension) => {
-      extensionState.ext = ext
-    }
-  })
-}))
+vi.mock(import('@/scripts/app'))
 
-import {
-  GroupNodeConfig,
-  GroupNodeHandler,
-  replaceLegacySeparators
-} from './groupNode'
+vi.mocked(app.registerExtension).mockImplementation((ext) => {
+  extensionState.ext = ext
+})
+const registerNodeDef = vi.mocked(app.registerNodeDef)
+
+const { GroupNodeConfig, GroupNodeHandler, replaceLegacySeparators } =
+  await import('./groupNode')
 
 function makeNode(type: string): ComfyNode {
   return {
@@ -262,14 +245,12 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
   it('removes a prior same-name group type before reporting missing nodes', async () => {
     const groupType = 'workflow>MyGroup'
     const missing: MissingNodeType[] = []
-    extensionState.registerNodeDef.mockImplementation(
-      async (typeName, nodeDef) => {
-        class PreviousGroupNode extends LGraphNode {
-          static override nodeData = nodeDef
-        }
-        LiteGraph.registerNodeType(typeName, PreviousGroupNode)
+    registerNodeDef.mockImplementation(async (typeName, nodeDef) => {
+      class PreviousGroupNode extends LGraphNode {
+        static override nodeData = nodeDef
       }
-    )
+      LiteGraph.registerNodeType(typeName, PreviousGroupNode)
+    })
 
     try {
       await GroupNodeConfig.registerFromWorkflow(
@@ -301,7 +282,7 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
         expect.objectContaining({ type: groupType, nodeId: '7' })
       ])
     } finally {
-      extensionState.registerNodeDef.mockReset()
+      registerNodeDef.mockReset()
     }
   })
 
@@ -386,7 +367,10 @@ describe('group node extension beforeConfigureGraph', () => {
       extra: { groupNodes }
     })
     const missingNodeTypes: MissingNodeType[] = []
-    extensionState.rootGraph.nodes = [{ id: 7 }, { id: 8 }]
+    vi.mocked(app).rootGraph = fromAny({
+      extra: {},
+      nodes: [{ id: 7 }, { id: 8 }]
+    })
 
     try {
       await ext.beforeConfigureGraph(
@@ -408,7 +392,7 @@ describe('group node extension beforeConfigureGraph', () => {
         expect.objectContaining({ nodeId: '8', type: 'workflow>MyGroup' })
       ])
     } finally {
-      extensionState.rootGraph.nodes = []
+      vi.mocked(app).rootGraph = fromAny({ extra: {}, nodes: [] })
     }
   })
 
@@ -442,7 +426,7 @@ describe('group node extension beforeConfigureGraph', () => {
         }
       }
     })
-    extensionState.rootGraph.nodes = [{ id: 7 }]
+    vi.mocked(app).rootGraph = fromAny({ extra: {}, nodes: [{ id: 7 }] })
 
     try {
       await ext.beforeConfigureGraph(
@@ -460,7 +444,7 @@ describe('group node extension beforeConfigureGraph', () => {
         })
       ])
     } finally {
-      extensionState.rootGraph.nodes = []
+      vi.mocked(app).rootGraph = fromAny({ extra: {}, nodes: [] })
       spy.mockRestore()
     }
   })
@@ -482,15 +466,15 @@ describe('group node extension beforeConfigureGraph', () => {
     pastedNode.graph = graph
 
     try {
-      extensionState.configuringGraph = true
+      vi.mocked(app).configuringGraph = true
       ext.nodeCreated(failedLoadNode, fromPartial({}))
-      extensionState.configuringGraph = false
+      vi.mocked(app).configuringGraph = false
       ext.nodeCreated(pastedNode, fromPartial({}))
       await Promise.resolve()
 
       expect(convertToNodes).toHaveBeenCalledOnce()
     } finally {
-      extensionState.configuringGraph = false
+      vi.mocked(app).configuringGraph = false
       isGroupNode.mockRestore()
       getHandler.mockRestore()
     }

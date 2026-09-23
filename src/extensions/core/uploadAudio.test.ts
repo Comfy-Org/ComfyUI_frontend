@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyApi } from '@/scripts/api'
-import type { ComfyApp } from '@/scripts/app'
+import { app } from '@/scripts/app'
 import type { useAudioService } from '@/services/audioService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
@@ -68,9 +68,7 @@ vi.mock(import('@/composables/node/useNodePaste'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 let mockAddAlert: ReturnType<typeof useToastStore>['addAlert']
 beforeEach(() => {
@@ -93,16 +91,13 @@ vi.mock(import('@/scripts/api'), () => ({
   })
 }))
 
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({
-    registerExtension: extensions.registerExtension,
-    rootGraph: { id: 'root' }
-  })
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
-  getNodeByLocatorId: vi.fn()
-}))
+vi.mocked(app.registerExtension).mockImplementation(
+  extensions.registerExtension
+)
+
+vi.mock(import('@/utils/graphTraversalUtil'))
 
 vi.mock(import('@/services/audioService'), () => ({
   useAudioService: () =>

@@ -8,7 +8,6 @@ let setupScope: EffectScope
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
 import type { ComfyExtension } from '@/types/comfy'
-import type { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { useTelemetry } from '@/platform/telemetry'
 import type { useExtensionService } from '@/services/extensionService'
@@ -33,13 +32,7 @@ let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
 const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
 
-vi.mock(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () =>
-    fromPartial<ReturnType<typeof useCurrentUser>>({
-      resolvedUserInfo: currentUser,
-      isLoggedIn: computed(() => currentUser.value !== null)
-    })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -107,6 +100,10 @@ const flush = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, 0))
 
 async function loadEntryAndSetup(): Promise<void> {
+  const { useCurrentUser } = await import('@/composables/auth/useCurrentUser')
+  const user = useCurrentUser()
+  user.resolvedUserInfo = computed(() => currentUser.value)
+  user.isLoggedIn = computed(() => currentUser.value !== null)
   const { registerAgentPanelExtension } = await import('./agentPanel')
   registerAgentPanelExtension()
   const ext = mocks.capturedExtensions.find(

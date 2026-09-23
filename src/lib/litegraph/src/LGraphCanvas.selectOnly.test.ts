@@ -10,23 +10,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 
-vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
-  layoutStore: {
-    querySlotAtPoint: vi.fn(),
-    queryRerouteAtPoint: vi.fn(),
-    queryLinkSegmentAtPoint: vi.fn(),
-    getNodeLayoutRef: vi.fn(() => ({ value: null })),
-    getNodeLayout: vi.fn(),
-    getSlotLayout: vi.fn(),
-    setSource: vi.fn(),
-    batchUpdateNodeBounds: vi.fn(),
-    applyOperation: vi.fn(),
-    allocateZIndex: vi.fn(() => 0),
-    readNodeRect: vi.fn(() => false),
-    contentSizeOf: vi.fn(),
-    getGroupLayout: vi.fn()
-  }
-}))
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 function createHarness() {
   const canvasElement = document.createElement('canvas')

@@ -8,9 +8,7 @@ import type { useExtensionService } from '@/services/extensionService'
 const registerExtension = vi.hoisted(() => vi.fn())
 const openFeedbackDialog = vi.hoisted(() => vi.fn())
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/services/extensionService'), () => ({
   useExtensionService: () =>

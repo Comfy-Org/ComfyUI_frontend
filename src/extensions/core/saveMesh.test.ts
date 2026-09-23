@@ -1,27 +1,28 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 import { defineComponent } from 'vue'
 
 import type { useLoad3d } from '@/composables/useLoad3d'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { ComfyApp } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
 import type { useLoad3dService } from '@/services/load3dService'
 import type { ComfyExtension } from '@/types/comfy'
+import type { getNodeByLocatorId as realGetNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const {
   registerExtensionMock,
   waitForLoad3dMock,
   onLoad3dReadyMock,
-  configureForSaveMeshMock,
-  getNodeByLocatorIdMock
+  configureForSaveMeshMock
 } = vi.hoisted(() => ({
   registerExtensionMock: vi.fn(),
   waitForLoad3dMock: vi.fn(),
   onLoad3dReadyMock: vi.fn(),
-  configureForSaveMeshMock: vi.fn(),
-  getNodeByLocatorIdMock: vi.fn()
+  configureForSaveMeshMock: vi.fn()
 }))
+
+let getNodeByLocatorIdMock: Mock<typeof realGetNodeByLocatorId>
 
 vi.mock(import('@/services/extensionService'), () => ({
   useExtensionService: () =>
@@ -69,13 +70,9 @@ vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   persistThumbnail: vi.fn()
 }))
 
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({ rootGraph: {} })
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
-  getNodeByLocatorId: getNodeByLocatorIdMock
-}))
+vi.mock(import('@/utils/graphTraversalUtil'))
 
 type SaveMeshExtension = ComfyExtension & {
   nodeCreated: (node: LGraphNode) => Promise<void>
@@ -87,6 +84,8 @@ type SaveMeshExtension = ComfyExtension & {
 async function loadSaveMeshExtensionFresh(): Promise<SaveMeshExtension> {
   vi.resetModules()
   registerExtensionMock.mockClear()
+  const { getNodeByLocatorId } = await import('@/utils/graphTraversalUtil')
+  getNodeByLocatorIdMock = vi.mocked(getNodeByLocatorId)
   await import('@/extensions/core/saveMesh')
   return registerExtensionMock.mock.calls[0][0] as SaveMeshExtension
 }

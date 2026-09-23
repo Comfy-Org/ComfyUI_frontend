@@ -1,16 +1,10 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
-import type { ComfyApi } from '@/scripts/api'
 import { api } from '@/scripts/api'
 
 import { DEFAULT_MODEL_CAPABILITIES, fetchModelData } from './ModelAdapter'
 
-vi.mock(import('@/scripts/api'), () => ({
-  api: fromPartial<ComfyApi>({
-    fetchApi: vi.fn()
-  })
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('DEFAULT_MODEL_CAPABILITIES', () => {
   it('enables fit-to-viewer / gizmo / lighting / export by default', () => {

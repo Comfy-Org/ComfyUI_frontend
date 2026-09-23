@@ -3,7 +3,7 @@ import { expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyApi } from '@/scripts/api'
-import type { ComfyApp } from '@/scripts/app'
+import { app } from '@/scripts/app'
 
 const { extensions, getUserData, reportErrorMock } = await vi.hoisted(
   async () => {
@@ -33,12 +33,11 @@ vi.mock(import('@/scripts/api'), () => ({
   api: fromPartial<ComfyApi>({ getUserData, storeUserData: vi.fn() })
 }))
 
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({
-    registerExtension: extensions.registerExtension,
-    canvas: { selected_nodes: {} }
-  })
-}))
+vi.mock(import('@/scripts/app'))
+
+vi.mocked(app.registerExtension).mockImplementation(
+  extensions.registerExtension
+)
 
 vi.mock(import('@/scripts/ui'), () => ({
   ComfyDialog: fromAny(

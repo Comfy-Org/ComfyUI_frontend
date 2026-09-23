@@ -7,11 +7,11 @@ import type { CameraState } from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { ComfyApi } from '@/scripts/api'
 import type { ComfyApp } from '@/scripts/app'
 import { app } from '@/scripts/app'
 import type { useExtensionService } from '@/services/extensionService'
 import type { useLoad3dService } from '@/services/load3dService'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 const {
   capture,
@@ -21,7 +21,6 @@ const {
   configureMock,
   configureForSaveMeshMock,
   getLoad3dMock,
-  getNodeByLocatorIdMock,
   nodeToLoad3dMap
 } = await vi.hoisted(async () => {
   const { createExtensionCapture } =
@@ -35,7 +34,6 @@ const {
     configureMock: vi.fn(),
     configureForSaveMeshMock: vi.fn(),
     getLoad3dMock: vi.fn(),
-    getNodeByLocatorIdMock: vi.fn(),
     nodeToLoad3dMap: new Map<object, unknown>()
   }
 })
@@ -126,22 +124,18 @@ vi.mock(import('@/scripts/domWidget'), () => ({
   addWidget: vi.fn()
 }))
 
-vi.mock(import('@/scripts/api'), () => ({
-  api: fromPartial<ComfyApi>({ apiURL: (p: string) => p })
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/scripts/app'), () => ({
   app: fromPartial<ComfyApp>({ canvas: { selected_nodes: {} }, rootGraph: {} }),
   ComfyApp: fromAny({ copyToClipspace: vi.fn(), clipspace_return_node: null })
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'), () => ({
-  getNodeByLocatorId: getNodeByLocatorIdMock
-}))
+vi.mock(import('@/utils/graphTraversalUtil'))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+const getNodeByLocatorIdMock = vi.mocked(getNodeByLocatorId)
+
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/utils/litegraphUtil'), () => ({
   isLoad3dNode: vi.fn(() => true)

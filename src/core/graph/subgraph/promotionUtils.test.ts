@@ -9,6 +9,7 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -47,10 +48,9 @@ function promotedWidgetRef(host: SubgraphNode, name: string): IBaseWidget {
   return widget
 }
 
-const updatePreviewsMock = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ updatePreviews: updatePreviewsMock })
-}))
+vi.mock(import('@/services/litegraphService'))
+
+const updatePreviewsMock = vi.mocked(useLitegraphService().updatePreviews)
 
 import {
   CANVAS_IMAGE_PREVIEW_WIDGET,
