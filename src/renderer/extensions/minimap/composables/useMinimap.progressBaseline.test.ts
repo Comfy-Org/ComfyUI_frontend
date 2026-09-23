@@ -82,6 +82,7 @@ const {
 
 vi.mock('@vueuse/core', () => ({
   useDocumentVisibility: () => ({ value: 'visible' }),
+  usePreferredReducedMotion: () => ({ value: 'no-preference' }),
   useIntervalFn: (callback: () => void) => {
     counters.pollRegistrations++
     // The callback is driven explicitly so WS fanout and 100 ms poll cadence
@@ -144,7 +145,12 @@ vi.mock('@/stores/linkStore', () => ({
 
 vi.mock('@/stores/workspace/colorPaletteStore', () => ({
   useColorPaletteStore: () => ({
-    completedActivePalette: { light_theme: false }
+    completedActivePalette: {
+      light_theme: false,
+      colors: {
+        litegraph_base: { NODE_SELECTED_TITLE_COLOR: '#fff' }
+      }
+    }
   })
 }))
 
