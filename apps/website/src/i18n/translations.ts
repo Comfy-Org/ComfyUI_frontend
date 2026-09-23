@@ -11010,6 +11010,7 @@ Enterprise`
   'workshop.v2.kind.workflow': { en: 'Workflow', 'zh-CN': '工作流' },
   'workshop.v2.kind.model': { en: 'Model', 'zh-CN': '模型' },
   'workshop.field.play': { en: 'Play', 'zh-CN': '播放' },
+  'workshop.field.pause': { en: 'Pause', 'zh-CN': '暂停' },
   'footer.cloudNodes': {
     en: 'Comfy Cloud Nodes',
     'zh-CN': 'Comfy Cloud 节点'

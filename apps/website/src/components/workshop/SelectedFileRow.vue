@@ -1,14 +1,15 @@
 <script setup lang="ts">
-import { X } from '@lucide/vue'
+import { Pause, Play, X } from '@lucide/vue'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 import { formatSize } from '@comfyorg/shared-frontend-utils/formatUtil'
 
+import { clock, useAudioPlayback } from '../../composables/useAudioPlayback'
+import { useSourceUrl } from '../../composables/useSourceUrl'
 import type { FileValue } from '../../config/workshop-playground'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import AudioSourcePreview from './AudioSourcePreview.vue'
 import ImageSourcePreview from './ImageSourcePreview.vue'
 import VideoSourcePreview from './VideoSourcePreview.vue'
 
@@ -26,46 +27,70 @@ const {
 }>()
 defineEmits<{ replace: []; remove: [] }>()
 
-const isAudio = computed(() => file.type.startsWith('audio/'))
-
 const fileType = computed(
   () =>
     /\.([a-z\d]{1,12})$/i.exec(file.name)?.[1].toUpperCase() ??
     t('workshop.field.file', locale)
 )
+
+// An audio file says nothing as a filename, so the row plays it: the square
+// that would hold a thumbnail holds the button, and the line it travels runs
+// under the name, inside the same row.
+const isAudio = computed(() => file.type.startsWith('audio/'))
+const source = useSourceUrl(
+  () => file.file,
+  () => file.previewUrl
+)
+const { audio, playing, elapsed, duration, progress, toggle, seek } =
+  useAudioPlayback(source)
 </script>
 
 <template>
   <li
     :class="
       cn(
-        'flex min-w-0 flex-col gap-2 rounded-xl bg-transparency-white-t4 p-2',
+        'flex min-w-0 items-center gap-3 rounded-xl bg-transparency-white-t4 p-2',
         attention && 'ring-1 ring-primary-comfy-orange'
       )
     "
     :data-attention="attention ? '' : undefined"
   >
-    <div class="flex min-w-0 items-center gap-3">
-      <ImageSourcePreview
-        v-if="file.type.startsWith('image/')"
-        :file="file.file"
-        :src="file.previewUrl"
-        :name="file.name"
-        :locale
+    <ImageSourcePreview
+      v-if="file.type.startsWith('image/')"
+      :file="file.file"
+      :src="file.previewUrl"
+      :name="file.name"
+      :locale
+    />
+    <VideoSourcePreview
+      v-else-if="file.type.startsWith('video/')"
+      :file="file.file"
+      :src="file.previewUrl"
+      :name="file.name"
+      :locale
+    />
+    <button
+      v-else-if="isAudio && source"
+      type="button"
+      :aria-label="`${t(playing ? 'workshop.field.pause' : 'workshop.field.play', locale)} ${file.name}`"
+      class="flex size-12 shrink-0 cursor-pointer items-center justify-center rounded-lg bg-transparency-white-t8 text-primary-warm-white transition-colors outline-none hover:bg-transparency-white-t20 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
+      data-testid="audio-source-play"
+      @click="toggle"
+    >
+      <component
+        :is="playing ? Pause : Play"
+        class="size-5 fill-current"
+        aria-hidden="true"
       />
-      <VideoSourcePreview
-        v-else-if="file.type.startsWith('video/')"
-        :file="file.file"
-        :src="file.previewUrl"
-        :name="file.name"
-        :locale
-      />
-      <span
-        v-else
-        class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-transparency-white-t8 text-xs font-bold text-primary-warm-gray"
-      >
-        {{ fileType }}
-      </span>
+    </button>
+    <span
+      v-else
+      class="flex size-12 shrink-0 items-center justify-center rounded-lg bg-transparency-white-t8 text-xs font-bold text-primary-warm-gray"
+    >
+      {{ fileType }}
+    </span>
+
+    <div class="flex min-w-0 flex-1 flex-col gap-1.5">
       <button
         type="button"
         :disabled
@@ -75,36 +100,56 @@ const fileType = computed(
             () => file.name
           )
         "
-        class="min-w-0 flex-1 cursor-pointer truncate text-left text-sm text-primary-warm-white underline-offset-4 hover:underline focus-visible:outline-primary-comfy-yellow"
+        class="min-w-0 cursor-pointer truncate text-left text-sm text-primary-warm-white underline-offset-4 hover:underline focus-visible:outline-primary-comfy-yellow"
         @click="$emit('replace')"
       >
         {{ file.name }}
       </button>
-      <span v-if="file.size" class="shrink-0 text-xs text-primary-warm-gray">{{
-        formatSize(file.size)
-      }}</span>
-      <button
-        type="button"
-        :disabled
-        :aria-label="
-          t('workshop.field.removeNamedFile', locale).replace(
-            '{name}',
-            () => file.name
-          )
-        "
-        class="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-primary-warm-gray hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:outline-primary-comfy-yellow"
-        @click="$emit('remove')"
-      >
-        <X class="size-4" aria-hidden="true" />
-      </button>
+      <div v-if="isAudio && source" class="flex items-center gap-2">
+        <div
+          class="h-1 min-w-0 flex-1 cursor-pointer rounded-full bg-transparency-white-t20"
+          data-testid="audio-source-line"
+          @click="seek"
+        >
+          <div
+            class="h-full rounded-full bg-primary-comfy-yellow"
+            :style="{ width: `${progress}%` }"
+          />
+        </div>
+        <span class="shrink-0 text-2xs text-primary-warm-gray tabular-nums">
+          {{ clock(elapsed) }} / {{ clock(duration) }}
+        </span>
+        <audio
+          ref="audio"
+          :key="source"
+          :src="source"
+          preload="metadata"
+          class="hidden"
+          @play="playing = true"
+          @pause="playing = false"
+          @ended="playing = false"
+          @timeupdate="elapsed = audio?.currentTime ?? 0"
+          @loadedmetadata="duration = audio?.duration ?? 0"
+        />
+      </div>
     </div>
 
-    <AudioSourcePreview
-      v-if="isAudio"
-      :file="file.file"
-      :src="file.previewUrl"
-      :name="file.name"
-      :locale
-    />
+    <span v-if="file.size" class="shrink-0 text-xs text-primary-warm-gray">{{
+      formatSize(file.size)
+    }}</span>
+    <button
+      type="button"
+      :disabled
+      :aria-label="
+        t('workshop.field.removeNamedFile', locale).replace(
+          '{name}',
+          () => file.name
+        )
+      "
+      class="flex size-8 shrink-0 cursor-pointer items-center justify-center rounded-lg text-primary-warm-gray hover:bg-transparency-white-t8 hover:text-primary-warm-white focus-visible:outline-primary-comfy-yellow"
+      @click="$emit('remove')"
+    >
+      <X class="size-4" aria-hidden="true" />
+    </button>
   </li>
 </template>

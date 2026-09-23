@@ -87,7 +87,7 @@ const previewSrc = usePreviewVideo(video, () =>
       </div>
     </div>
 
-    <div class="flex flex-col gap-2 px-3">
+    <div class="flex flex-col gap-3 px-3">
       <h3
         class="truncate text-xs font-medium text-content-bright lg:text-sm"
         data-testid="catalogue-card-title"
