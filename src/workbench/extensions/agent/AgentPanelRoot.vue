@@ -1055,12 +1055,24 @@ async function onOpenApprovalWorkflow(
     trackApprovalResolved(askId, 'open_workflow', decidedAt)
 }
 
+let referenceNavigationGeneration = 0
 async function onNavigateToReferenceWorkflow(
   workflowId: string,
   workflowName: string
 ): Promise<void> {
+  const generation = ++referenceNavigationGeneration
+  const isCurrent = () => generation === referenceNavigationGeneration
   let recovered = false
   let target: ComfyWorkflow | null = null
+  async function closeRecovered(): Promise<void> {
+    if (!recovered || target === null) return
+    const recoveredTarget = target
+    recovered = false
+    target = null
+    await workflowService.closeWorkflow(recoveredTarget, {
+      warnIfUnsaved: false
+    })
+  }
   try {
     target = openWorkflowFor(workflowId)
     if (target === null) {
@@ -1068,22 +1080,30 @@ async function onNavigateToReferenceWorkflow(
         refreshCloudWorkflowIds(),
         workflowStore.syncWorkflows()
       ])
+      if (!isCurrent()) return
       target = storedWorkflowFor(workflowId)
     }
     if (target === null) {
       target = await recoverWorkflow(workflowId, workflowName)
       recovered = target !== null
     }
+    if (!isCurrent()) {
+      await closeRecovered()
+      return
+    }
     if (target === null || !(await workflowService.openWorkflow(target))) {
-      if (recovered && target !== null)
-        await workflowStore.closeWorkflow(target)
+      await closeRecovered()
       warnWorkflowUnavailable()
+      return
+    }
+    if (!isCurrent()) {
+      await closeRecovered()
       return
     }
     bindingStore.bind(workflowId, target.path)
   } catch {
-    if (recovered && target !== null) await workflowStore.closeWorkflow(target)
-    warnWorkflowUnavailable()
+    await closeRecovered()
+    if (isCurrent()) warnWorkflowUnavailable()
   }
 }
 
@@ -1272,6 +1292,7 @@ onBeforeUnmount(() => {
   exitNodeSelectionMode()
   stop()
   ++activeTabGeneration
+  ++referenceNavigationGeneration
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
   agentMinimapLayer.dispose()
@@ -1356,6 +1377,7 @@ async function onSelectHistory(
 
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
+  ++referenceNavigationGeneration
   agentPanelStore.beginWorkflowRestoration()
   exitNodeSelectionMode()
   const opened = await loadThread(id, isCurrent)
@@ -1510,6 +1532,7 @@ function onDeleteHistory(id: string): void {
 function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
+  ++referenceNavigationGeneration
   exitNodeSelectionMode()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
