@@ -178,6 +178,52 @@ function getMinSize(node: LGraphNode) {
 }
 
 /**
+ * Merges a node's freshly-constructed inputs (`this.inputs`, following the
+ * current node definition) with its serialised inputs (`data.inputs`, from
+ * the saved workflow) ahead of `super.configure()`.
+ *
+ * Inputs known to both are re-ordered to match the fresh definition's
+ * relative order, since a node's input order can change between the
+ * workflow's save and reload (#3348). Inputs that only exist in the
+ * serialised data - a dynamically-added socket the fresh construction
+ * hasn't (re)created yet, e.g. a DynamicCombo option's revealed input, or an
+ * autogrow group member beyond the fresh definition's default count - are
+ * left exactly where they were serialised, so their `target_slot` stays
+ * correct across the reload (#18388).
+ */
+function mergeConfiguredInputs<T extends { name: string }>(
+  freshInputs: readonly INodeInputSlot[],
+  serializedInputs: readonly T[],
+  reservedKeys: string[]
+): (T | INodeInputSlot)[] {
+  const freshByName = new Map(freshInputs.map((input) => [input.name, input]))
+  const serializedByName = new Map(
+    serializedInputs.map((input) => [input.name, input])
+  )
+  const freshCommonNames = freshInputs
+    .map((input) => input.name)
+    .filter((name) => serializedByName.has(name))
+
+  let cursor = 0
+  const merged = serializedInputs.map((inputData) => {
+    if (!freshByName.has(inputData.name)) return inputData
+    const name = freshCommonNames[cursor++]
+    return {
+      ...serializedByName.get(name)!,
+      // Whether the input has associated widget follows the original node
+      // definition.
+      ...pick(freshByName.get(name), reservedKeys.concat('widget'))
+    }
+  })
+
+  const consumedNames = new Set(freshCommonNames)
+  const newInputs = freshInputs.filter(
+    (input) => !consumedNames.has(input.name)
+  )
+  return [...merged, ...newInputs]
+}
+
+/**
  * Service that augments litegraph with ComfyUI specific functionality.
  */
 export const useLitegraphService = () => {
@@ -454,33 +500,11 @@ export const useLitegraphService = () => {
       override configure(data: ISerialisedNode): void {
         const RESERVED_KEYS = ['name', 'type', 'shape', 'localized_name']
 
-        // Note: input name is unique in a node definition, so we can lookup
-        // input by name.
-        const freshInputByName = new Map(
-          this.inputs.map((input) => [input.name, input])
+        data.inputs = mergeConfiguredInputs(
+          this.inputs,
+          data.inputs ?? [],
+          RESERVED_KEYS
         )
-        // Preserve the serialised input order: a link's `target_slot` is an
-        // index into it, and a dynamically-added input (e.g. a DynamicCombo
-        // option's revealed socket) can sit at a different index in a
-        // freshly-constructed node than it did when the workflow was saved.
-        const mergedInputs = (data.inputs ?? []).map((inputData) => {
-          const input = freshInputByName.get(inputData.name)
-          return input
-            ? {
-                ...inputData,
-                // Whether the input has associated widget follows the
-                // original node definition.
-                ...pick(input, RESERVED_KEYS.concat('widget'))
-              }
-            : inputData
-        })
-        // Inputs defined by the node but missing from the serialised data,
-        // potentially added dynamically by custom js logic.
-        const serialisedNames = new Set(mergedInputs.map((input) => input.name))
-        const newInputs = this.inputs.filter(
-          (input) => !serialisedNames.has(input.name)
-        )
-        data.inputs = [...mergedInputs, ...newInputs]
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.
@@ -559,33 +583,11 @@ export const useLitegraphService = () => {
       override configure(data: ISerialisedNode): void {
         const RESERVED_KEYS = ['name', 'type', 'shape', 'localized_name']
 
-        // Note: input name is unique in a node definition, so we can lookup
-        // input by name.
-        const freshInputByName = new Map(
-          this.inputs.map((input) => [input.name, input])
+        data.inputs = mergeConfiguredInputs(
+          this.inputs,
+          data.inputs ?? [],
+          RESERVED_KEYS
         )
-        // Preserve the serialised input order: a link's `target_slot` is an
-        // index into it, and a dynamically-added input (e.g. a DynamicCombo
-        // option's revealed socket) can sit at a different index in a
-        // freshly-constructed node than it did when the workflow was saved.
-        const mergedInputs = (data.inputs ?? []).map((inputData) => {
-          const input = freshInputByName.get(inputData.name)
-          return input
-            ? {
-                ...inputData,
-                // Whether the input has associated widget follows the
-                // original node definition.
-                ...pick(input, RESERVED_KEYS.concat('widget'))
-              }
-            : inputData
-        })
-        // Inputs defined by the node but missing from the serialised data,
-        // potentially added dynamically by custom js logic.
-        const serialisedNames = new Set(mergedInputs.map((input) => input.name))
-        const newInputs = this.inputs.filter(
-          (input) => !serialisedNames.has(input.name)
-        )
-        data.inputs = [...mergedInputs, ...newInputs]
 
         // Note: output name is not unique, so we cannot lookup output by name.
         // Use index instead.

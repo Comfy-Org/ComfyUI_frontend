@@ -263,6 +263,14 @@ function dynamicComboWidget(
   //A little hacky, but onConfigure won't work.
   //It fires too late and is overly disruptive
   let widgetValue = widget.value
+  // Whether `updateWidgets` has materialised a group for `activeOption` yet.
+  // A workflow reload replays widgets_values through this setter even when
+  // the restored value matches the option the node already constructed
+  // (e.g. a DynamicCombo with a single/default option). Without this guard,
+  // that redundant call tears the group down and rebuilds it from its
+  // default member count, discarding any additional autogrow-grown members
+  // (and their links) the node already had.
+  let optionMaterialized = false
   const getState = () => {
     const graphId = resolveNodeRootGraphId(node)
     if (!graphId) return undefined
@@ -278,6 +286,8 @@ function dynamicComboWidget(
       const state = getState()
       if (state) state.value = value
       widgetValue = value
+      if (optionMaterialized && value === activeOption) return
+      optionMaterialized = true
       updateWidgets(value)
     }
   })
