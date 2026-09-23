@@ -6,6 +6,7 @@ import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -73,15 +74,7 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({
-      openWorkflow,
-      closeWorkflow: vi.fn()
-    })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const consentChecking = await vi.hoisted(async () =>
   (await import('vue')).ref(false)
@@ -168,6 +161,7 @@ function renderComponent(errorHandler?: (error: unknown) => void) {
 }
 
 beforeEach(() => {
+  vi.mocked(useWorkflowService().openWorkflow).mockImplementation(openWorkflow)
   vi.mocked(useTelemetry).mockReturnValue(fromPartial(telemetry))
   consentChecking.value = false
   distribution.isCloud = false

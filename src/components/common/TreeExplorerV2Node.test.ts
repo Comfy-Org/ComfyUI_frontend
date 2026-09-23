@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSubgraphStore } from '@/stores/subgraphStore'
@@ -17,6 +18,10 @@ beforeEach(() => {
   useSettingStore().settingValues['Comfy.Sidebar.Location'] = 'left'
   vi.mocked(useSubgraphStore().isUserBlueprint).mockReturnValue(false)
   vi.mocked(useSubgraphStore().deleteBlueprint).mockResolvedValue(undefined)
+  vi.mocked(useNodeDragToCanvas().startDrag).mockImplementation(mockStartDrag)
+  vi.mocked(useNodeDragToCanvas().handleNativeDrop).mockImplementation(
+    mockHandleNativeDrop
+  )
 })
 
 const i18n = createI18n({
@@ -32,12 +37,7 @@ vi.mock<unknown>(import('@/components/node/NodePreviewCard.vue'), () => ({
 const mockStartDrag = vi.fn()
 const mockHandleNativeDrop = vi.fn()
 
-vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
-  useNodeDragToCanvas: () => ({
-    startDrag: mockStartDrag,
-    handleNativeDrop: mockHandleNativeDrop
-  })
-}))
+vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
 describe('TreeExplorerV2Node', () => {
   function createMockItem(

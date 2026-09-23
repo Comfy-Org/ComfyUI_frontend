@@ -8,6 +8,7 @@ import { afterAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { formatCreditsFromCents } from '@/base/credits/comfyCredits'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
@@ -18,16 +19,11 @@ import CurrentUserPopoverLegacy from './CurrentUserPopoverLegacy.vue'
 
 const mockShowSettingsDialog = vi.fn()
 
-vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
-  useSettingsDialog: vi.fn(() => ({
-    show: mockShowSettingsDialog,
-    hide: vi.fn(),
-    showAbout: vi.fn()
-  }))
-}))
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 const originalWindowOpen = window.open
 beforeEach(() => {
+  vi.mocked(useSettingsDialog().show).mockImplementation(mockShowSettingsDialog)
   const billing = useBillingContext()
   Object.assign(billing, {
     canAccessSubscriptionFeatures: computed(

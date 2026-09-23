@@ -1,14 +1,18 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { createI18n } from 'vue-i18n'
 
 import TopbarSubscribeButton from '@/components/topbar/TopbarSubscribeButton.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
+import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
 import CloudRunButtonWrapper from './CloudRunButtonWrapper.vue'
@@ -27,64 +31,22 @@ const state = vi.hoisted(() => ({
   showLayoutDialog: vi.fn()
 }))
 
-vi.mock<unknown>(
-  import('@/composables/billing/useBillingContext'),
-  async () => {
-    const { computed } = await import('vue')
-    return {
-      useBillingContext: () => ({
-        canRunWorkflows: mockCanRunWorkflows,
-        showsSubscribeToRunPrompt: computed(
-          () => mockIsInitialized.value && !mockCanRunWorkflows.value
-        ),
-        billingStatus: mockBillingStatus,
-        isFreeTier: mockIsFreeTier,
-        subscription: computed(() =>
-          mockSubscriptionTier.value
-            ? { tier: mockSubscriptionTier.value }
-            : null
-        ),
-        manageSubscription: state.manageSubscription,
-        fetchStatus: state.fetchStatus,
-        fetchBalance: state.fetchBalance
-      })
-    }
-  }
-)
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ showPricingTable: vi.fn() })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({ toastErrorHandler: state.toastErrorHandler })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  async () => {
-    const { computed } = await import('vue')
-    return {
-      useWorkspaceUI: () => ({
-        permissions: computed(() => ({
-          canManageSubscription: state.canManageSubscription
-        }))
-      })
-    }
-  }
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({ showLayoutDialog: state.showLayoutDialog })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(
   import('@/components/actionbar/ComfyRunButton/ComfyQueueButton.vue'),
@@ -120,6 +82,32 @@ function renderWrapper() {
 
 describe('CloudRunButtonWrapper', () => {
   beforeEach(() => {
+    const billing = useBillingContext()
+    Object.assign(billing, {
+      canRunWorkflows: mockCanRunWorkflows,
+      showsSubscribeToRunPrompt: computed(
+        () => mockIsInitialized.value && !mockCanRunWorkflows.value
+      ),
+      billingStatus: mockBillingStatus,
+      isFreeTier: mockIsFreeTier,
+      subscription: computed(() =>
+        mockSubscriptionTier.value ? { tier: mockSubscriptionTier.value } : null
+      ),
+      manageSubscription: state.manageSubscription,
+      fetchStatus: state.fetchStatus,
+      fetchBalance: state.fetchBalance
+    })
+    vi.mocked(useBillingContext).mockReturnValue(billing)
+    useErrorHandling().toastErrorHandler = state.toastErrorHandler
+    const workspaceUI = useWorkspaceUI()
+    const permissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...permissions,
+      canManageSubscription: state.canManageSubscription
+    }))
+    vi.mocked(useDialogService().showLayoutDialog).mockImplementation(
+      state.showLayoutDialog
+    )
     mockCanRunWorkflows.value = true
     mockIsInitialized.value = true
     mockBillingStatus.value = 'paid'

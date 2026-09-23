@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import type { EssentialTile } from '@/constants/essentialsNodes'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComfyNodeDef as ComfyNodeDefV1 } from '@/schemas/nodeDefSchema'
@@ -12,6 +13,10 @@ import EssentialNodeCard from './EssentialNodeCard.vue'
 
 beforeEach(() => {
   useSettingStore().settingValues['Comfy.Sidebar.Location'] = 'left'
+  vi.mocked(useNodeDragToCanvas().startDrag).mockImplementation(mockStartDrag)
+  vi.mocked(useNodeDragToCanvas().handleNativeDrop).mockImplementation(
+    mockHandleNativeDrop
+  )
 })
 
 const { mockStartDrag, mockHandleNativeDrop } = vi.hoisted(() => ({
@@ -19,12 +24,7 @@ const { mockStartDrag, mockHandleNativeDrop } = vi.hoisted(() => ({
   mockHandleNativeDrop: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
-  useNodeDragToCanvas: () => ({
-    startDrag: mockStartDrag,
-    handleNativeDrop: mockHandleNativeDrop
-  })
-}))
+vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
 vi.mock<unknown>(import('@/components/node/NodePreviewCard.vue'), () => ({
   default: {

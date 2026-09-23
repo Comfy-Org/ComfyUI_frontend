@@ -1,9 +1,13 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { AuthStoreError } from '@/stores/authStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -18,31 +22,11 @@ const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: {
-      get value() {
-        return mockShouldUseWorkspaceBilling.value
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingRouting'))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscription'),
-  () => ({
-    useSubscription: () => ({
-      isSubscriptionEnabled: mockIsSubscriptionEnabled
-    })
-  })
-)
+vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
-vi.mock<unknown>(
-  import('@/platform/settings/composables/useSettingsDialog'),
-  () => ({
-    useSettingsDialog: () => ({ show: mockShowSettings })
-  })
-)
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -116,6 +100,13 @@ async function clickBuyCredits() {
 
 describe('TopUpCreditsDialogContentLegacy', () => {
   beforeEach(() => {
+    useBillingRouting().shouldUseWorkspaceBilling = computed(
+      () => mockShouldUseWorkspaceBilling.value
+    )
+    vi.mocked(useSubscription().isSubscriptionEnabled).mockImplementation(
+      mockIsSubscriptionEnabled
+    )
+    vi.mocked(useSettingsDialog().show).mockImplementation(mockShowSettings)
     mockIsSubscriptionEnabled.mockReturnValue(true)
     mockShouldUseWorkspaceBilling.value = false
   })

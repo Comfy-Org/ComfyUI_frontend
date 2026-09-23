@@ -2,7 +2,7 @@ import { getActivePinia } from 'pinia'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import userEvent from '@testing-library/user-event'
@@ -11,6 +11,9 @@ import { render, screen, waitFor } from '@testing-library/vue'
 import type { AuditLog } from '@/services/customerEventsService'
 import { EventType } from '@/services/customerEventsService'
 
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useTelemetry } from '@/platform/telemetry'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import UsageLogsTable from './UsageLogsTable.vue'
@@ -40,9 +43,7 @@ vi.mock<unknown>(import('@/services/customerEventsService'), () => ({
 const mockTelemetry = vi.hoisted(() => ({
   trackApiCreditTopupSucceeded: vi.fn()
 }))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => mockTelemetry
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const mockPendingTopup = vi.hoisted(() => ({
   isPendingTopupCompleted: vi.fn().mockReturnValue(true)
@@ -51,42 +52,13 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => mockPendingTopup
 }))
 
-const mockBillingRouting = vi.hoisted(() => ({
-  shouldUseWorkspaceBilling: false
-}))
-vi.mock<unknown>(
-  import('@/composables/billing/useBillingRouting'),
-  async () => {
-    const { ref } = await import('vue')
-    const shouldUseWorkspaceBilling = ref(false)
-    Object.defineProperty(mockBillingRouting, 'shouldUseWorkspaceBilling', {
-      get: () => shouldUseWorkspaceBilling.value,
-      set: (value: boolean) => {
-        shouldUseWorkspaceBilling.value = value
-      }
-    })
-    return {
-      useBillingRouting: () => ({ shouldUseWorkspaceBilling })
-    }
-  }
-)
+const mockShouldUseWorkspaceBilling = ref(false)
+vi.mock(import('@/composables/billing/useBillingRouting'))
 
 const mockWorkspaceApi = vi.hoisted(() => ({
   getBillingEvents: vi.fn()
 }))
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: mockWorkspaceApi,
-  // readOnRail throws this on a failed read, so the real one has to exist.
-  WorkspaceApiError: class WorkspaceApiError extends Error {
-    constructor(
-      message: string,
-      readonly status?: number,
-      readonly code?: string
-    ) {
-      super(message)
-    }
-  }
-}))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
 // The table only ever calls `readEvents`; the other five are here so the
 // factory satisfies `BillingReadRail` and the module type stays checked.
@@ -171,6 +143,18 @@ describe('UsageLogsTable', () => {
   ])
 
   beforeEach(() => {
+    useBillingRouting().shouldUseWorkspaceBilling = computed(
+      () => mockShouldUseWorkspaceBilling.value
+    )
+    vi.mocked(workspaceApi.getBillingEvents).mockImplementation(
+      mockWorkspaceApi.getBillingEvents
+    )
+    const telemetry = useTelemetry()
+    if (telemetry) {
+      vi.mocked(telemetry.trackApiCreditTopupSucceeded).mockImplementation(
+        mockTelemetry.trackApiCreditTopupSucceeded
+      )
+    }
     mockCustomerEventsService.getMyEvents.mockResolvedValue(mockEventsResponse)
     mockWorkspaceApi.getBillingEvents.mockResolvedValue(mockEventsResponse)
     mockBillingReadRail.readEvents.mockResolvedValue({
@@ -178,7 +162,7 @@ describe('UsageLogsTable', () => {
       value: mockEventsResponse
     })
     mockBillingReadRail.enabled = false
-    mockBillingRouting.shouldUseWorkspaceBilling = false
+    mockShouldUseWorkspaceBilling.value = false
     mockCustomerEventsService.formatEventType.mockImplementation(
       (type: string) => {
         switch (type) {
@@ -255,7 +239,7 @@ describe('UsageLogsTable', () => {
     })
 
     it('loads activity on mount on the workspace billing rail', async () => {
-      mockBillingRouting.shouldUseWorkspaceBilling = true
+      mockShouldUseWorkspaceBilling.value = true
 
       await renderLoaded()
 
@@ -416,7 +400,7 @@ describe('UsageLogsTable', () => {
 
   describe('billing events source', () => {
     it('uses workspaceApi.getBillingEvents on the workspace billing flow', async () => {
-      mockBillingRouting.shouldUseWorkspaceBilling = true
+      mockShouldUseWorkspaceBilling.value = true
 
       await renderLoaded()
 
@@ -447,7 +431,7 @@ describe('UsageLogsTable', () => {
 
       renderComponent()
 
-      mockBillingRouting.shouldUseWorkspaceBilling = true
+      mockShouldUseWorkspaceBilling.value = true
       await waitFor(() => {
         expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
       })
@@ -490,7 +474,7 @@ describe('UsageLogsTable', () => {
 
       renderComponent()
 
-      mockBillingRouting.shouldUseWorkspaceBilling = true
+      mockShouldUseWorkspaceBilling.value = true
       await waitFor(() => {
         expect(screen.getByText('WorkspaceAPI')).toBeInTheDocument()
       })
@@ -547,7 +531,7 @@ describe('UsageLogsTable', () => {
     function onTheRail(
       result: unknown = { status: 'ok', value: railResponse }
     ) {
-      mockBillingRouting.shouldUseWorkspaceBilling = true
+      mockShouldUseWorkspaceBilling.value = true
       mockBillingReadRail.enabled = true
       mockBillingReadRail.readEvents.mockResolvedValue(result)
     }
@@ -560,7 +544,7 @@ describe('UsageLogsTable', () => {
     ] as const)(
       'serves the page from $serves with workspaceBilling=$workspaceBilling rail=$rail',
       async ({ workspaceBilling, rail, serves }) => {
-        mockBillingRouting.shouldUseWorkspaceBilling = workspaceBilling
+        mockShouldUseWorkspaceBilling.value = workspaceBilling
         mockBillingReadRail.enabled = rail
 
         await renderLoaded()

@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useNodeDragToCanvas } from '@/composables/node/useNodeDragToCanvas'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -18,6 +19,7 @@ import type { TreeExplorerNode } from '@/types/treeExplorerTypes'
 import ModelLibrarySidebarTab from './ModelLibrarySidebarTab.vue'
 
 beforeEach(() => {
+  vi.mocked(useNodeDragToCanvas().startDrag).mockImplementation(mockStartDrag)
   vi.mocked(useModelStore().loadModels).mockResolvedValue([])
   vi.mocked(useModelStore().loadModelFolders).mockResolvedValue(true)
   vi.mocked(useModelStore().getLoadedModelFolder).mockResolvedValue(null)
@@ -54,9 +56,7 @@ const {
   }
 })
 
-vi.mock<unknown>(import('@/composables/node/useNodeDragToCanvas'), () => ({
-  useNodeDragToCanvas: () => ({ startDrag: mockStartDrag })
-}))
+vi.mock(import('@/composables/node/useNodeDragToCanvas'))
 
 const mockModel = fromPartial<ComfyModelDef>({
   key: 'checkpoints/model.safetensors',

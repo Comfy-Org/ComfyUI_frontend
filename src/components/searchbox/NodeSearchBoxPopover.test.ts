@@ -8,6 +8,7 @@ import { createI18n } from 'vue-i18n'
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Settings } from '@/platform/settings/types'
+import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
@@ -20,12 +21,7 @@ const { addNodeOnGraph } = vi.hoisted(() => ({
   addNodeOnGraph: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({
-    getCanvasCenter: vi.fn(() => [0, 0]),
-    addNodeOnGraph
-  })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 type EmitAddFilter = (filter: FuseFilterWithValue<ComfyNodeDefImpl>) => void
 type EmitAddNode = (nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) => void
@@ -122,6 +118,9 @@ describe('NodeSearchBoxPopover', () => {
   }
 
   beforeEach(() => {
+    vi.mocked(useLitegraphService().addNodeOnGraph).mockImplementation(
+      addNodeOnGraph
+    )
     addNodeOnGraph.mockReturnValue(null)
   })
 

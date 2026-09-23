@@ -12,6 +12,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 
 import QueueNotificationBannerHost from '@/components/queue/QueueNotificationBannerHost.vue'
 import TopMenuSection from '@/components/TopMenuSection.vue'
@@ -56,24 +57,9 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useManagerState'),
+vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
 
-  () => ({
-    useManagerState: () => ({
-      shouldShowManagerButtons: computed(() => true),
-      openManager: vi.fn()
-    })
-  })
-)
-
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    menu: {
-      element: document.createElement('div')
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -183,6 +169,7 @@ function createComfyActionbarStub(actionbarTarget: HTMLElement) {
 
 describe('TopMenuSection', () => {
   beforeEach(() => {
+    useManagerState().shouldShowManagerButtons = computed(() => true)
     mockData.setShowConflictRedDot(false)
   })
 

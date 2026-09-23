@@ -1,5 +1,8 @@
 import { computed, ref } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -63,40 +66,15 @@ const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 const mockCanManageSubscriptionLifecycle = vi.hoisted(() => ({ value: true }))
 const mockDistributionTypes = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: vi.fn(() => ({
-    cancelSubscription: mockCancelSubscription,
-    fetchStatus: mockFetchStatus,
-    subscription: mockSubscription,
-    tier: mockTier
-  }))
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingRouting'), () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: mockShouldUseWorkspaceBilling
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingRouting'))
 
 vi.mock(import('@/platform/distribution/types'), () => mockDistributionTypes)
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: {
-        get value() {
-          return {
-            canManageSubscriptionLifecycle:
-              mockCanManageSubscriptionLifecycle.value
-          }
-        }
-      }
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -129,6 +107,23 @@ function renderComponent(
 
 describe('CancelSubscriptionDialogContent', () => {
   beforeEach(() => {
+    const billing = useBillingContext()
+    Object.assign(billing, {
+      cancelSubscription: mockCancelSubscription,
+      fetchStatus: mockFetchStatus,
+      subscription: mockSubscription,
+      tier: mockTier
+    })
+    vi.mocked(useBillingContext).mockReturnValue(billing)
+    useBillingRouting().shouldUseWorkspaceBilling = computed(
+      () => mockShouldUseWorkspaceBilling.value
+    )
+    const workspaceUI = useWorkspaceUI()
+    const permissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...permissions,
+      canManageSubscriptionLifecycle: mockCanManageSubscriptionLifecycle.value
+    }))
     mockTier.value = 'STANDARD'
     mockShouldUseWorkspaceBilling.value = false
     useBillingCapabilities().canCancel = computed(() => true)

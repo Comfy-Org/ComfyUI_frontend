@@ -6,6 +6,7 @@ import { markRaw, nextTick } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -15,6 +16,12 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import WorkflowTab from './WorkflowTab.vue'
 vi.mock(import('firebase/auth'))
 const mockCloseWorkflow = vi.hoisted(() => vi.fn().mockResolvedValue(true))
+
+beforeEach(() => {
+  vi.mocked(useWorkflowService().closeWorkflow).mockImplementation(
+    mockCloseWorkflow
+  )
+})
 
 vi.mock(import('@/composables/usePragmaticDragAndDrop'), () => ({
   usePragmaticDraggable: vi.fn(),
@@ -27,14 +34,7 @@ vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({
-      closeWorkflow: mockCloseWorkflow
-    })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock<unknown>(
   import('@/renderer/core/thumbnail/useWorkflowThumbnail'),

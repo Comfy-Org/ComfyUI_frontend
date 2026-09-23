@@ -71,18 +71,7 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(
-  import('@/platform/assets/composables/useMediaAssetActions'),
-  () => ({
-    useMediaAssetActions: () => ({
-      downloadAssets: vi.fn(),
-      deleteAssets: vi.fn(),
-      addMultipleToWorkflow: vi.fn(),
-      openMultipleWorkflows: vi.fn(),
-      exportMultipleWorkflows: vi.fn()
-    })
-  })
-)
+vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type {
@@ -15,6 +16,9 @@ import type {
 import NodeBookmarkTreeExplorer from './NodeBookmarkTreeExplorer.vue'
 
 beforeEach(() => {
+  vi.mocked(useLitegraphService().addNodeOnGraph).mockImplementation(
+    mockAddNodeOnGraph
+  )
   Object.assign(useNodeBookmarkStore(), { bookmarkedRoot: mockBookmarkedRoot })
   vi.mocked(useNodeBookmarkStore().addBookmark).mockResolvedValue(undefined)
   vi.mocked(useNodeBookmarkStore().toggleBookmark).mockResolvedValue(undefined)
@@ -82,9 +86,7 @@ const mockBookmarkedRoot: TreeNode = {
   ]
 }
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ addNodeOnGraph: mockAddNodeOnGraph })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({

@@ -9,6 +9,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import type { ComponentWidget } from '@/scripts/domWidget'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 const { load3dState, resolveNodeMock } = vi.hoisted(() => ({
   load3dState: {
@@ -65,9 +66,7 @@ vi.mock<unknown>(import('@/composables/useLoad3d'), () => ({
   useLoad3d: () => load3dState.current
 }))
 
-vi.mock(import('@/utils/litegraphUtil'), () => ({
-  resolveNode: resolveNodeMock
-}))
+vi.mock(import('@/utils/litegraphUtil'))
 
 const i18n = createI18n({
   legacy: false,
@@ -138,6 +137,7 @@ function renderLoad3D(options: RenderOptions = {}) {
 
 describe('Load3D', () => {
   beforeEach(() => {
+    vi.mocked(resolveNode).mockImplementation(resolveNodeMock)
     load3dState.current = null
   })
 
