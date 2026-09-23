@@ -12,30 +12,27 @@ import { isFloatingTopology } from '@/types/linkTopology'
 import type { NodeId } from '@/types/nodeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 
-export type EndpointPatch = Partial<
-  Pick<
-    LinkTopology,
-    'originNodeId' | 'originSlot' | 'targetNodeId' | 'targetSlot'
-  >
->
-
-export interface EndpointUpdate {
-  topology: LinkTopology
-  patch: EndpointPatch
-}
-export interface EndpointUpdateError {
-  code:
-    | 'duplicate-topology'
-    | 'unowned-topology'
-    | 'duplicate-target'
-    | 'occupied-target'
-  message: string
-}
-
 type EndpointUpdateResult<T> =
   | { ok: true; value: T }
   | { ok: false; error: EndpointUpdateError }
 
+/**
+ * Endpoint slot keys are `${owningGraphId}:${nodeId}:${slot}`; slot is numeric
+ * so the separator is unambiguous for any node id. Target (input side) and
+ * origin (output side) keys are branded separately so a key built for one
+ * index cannot be looked up in the other.
+ */
+type TargetSlotKey = string & { readonly __brand: 'TargetSlotKey' }
+type OriginSlotKey = string & { readonly __brand: 'OriginSlotKey' }
+
+type OriginIndex = Map<OriginSlotKey, Set<LinkTopology>>
+
+interface RootTopologyBucket {
+  byId: Map<LinkId, LinkTopology>
+  idsByOwner: Map<OwningGraphId, Set<LinkId>>
+  targetIndex: Map<TargetSlotKey, LinkTopology>
+  originIndex: OriginIndex
+}
 function patchedEndpoints(
   topology: LinkTopology,
   patch: EndpointPatch
@@ -47,15 +44,6 @@ function patchedEndpoints(
     targetSlot: patch.targetSlot ?? topology.targetSlot
   }
 }
-/**
- * Endpoint slot keys are `${owningGraphId}:${nodeId}:${slot}`; slot is numeric
- * so the separator is unambiguous for any node id. Target (input side) and
- * origin (output side) keys are branded separately so a key built for one
- * index cannot be looked up in the other.
- */
-type TargetSlotKey = string & { readonly __brand: 'TargetSlotKey' }
-type OriginSlotKey = string & { readonly __brand: 'OriginSlotKey' }
-
 function targetKey(
   graphId: OwningGraphId,
   nodeId: NodeId,
@@ -72,13 +60,25 @@ function originKey(
   return `${graphId}:${nodeId}:${slot}` as OriginSlotKey
 }
 
-type OriginIndex = Map<OriginSlotKey, Set<LinkTopology>>
+export type EndpointPatch = Partial<
+  Pick<
+    LinkTopology,
+    'originNodeId' | 'originSlot' | 'targetNodeId' | 'targetSlot'
+  >
+>
 
-interface RootTopologyBucket {
-  byId: Map<LinkId, LinkTopology>
-  idsByOwner: Map<OwningGraphId, Set<LinkId>>
-  targetIndex: Map<TargetSlotKey, LinkTopology>
-  originIndex: OriginIndex
+export interface EndpointUpdate {
+  topology: LinkTopology
+  patch: EndpointPatch
+}
+
+export interface EndpointUpdateError {
+  code:
+    | 'duplicate-topology'
+    | 'unowned-topology'
+    | 'duplicate-target'
+    | 'occupied-target'
+  message: string
 }
 
 const EMPTY_LINKS: ReadonlySet<LinkTopology> = new Set()

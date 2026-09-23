@@ -11,6 +11,13 @@ import { parseImageWidgetValue } from '@/utils/imageUtil'
 
 type LoaderMediaType = 'image' | 'video' | 'audio'
 
+interface LoaderMediaConfig {
+  /** Name of the widget holding the selected filename. */
+  widgetName: string
+  mediaType: LoaderMediaType
+  labelKey: string
+}
+
 export interface LoaderDropIndicator {
   iconClass: string
   mediaUrl: string | undefined
@@ -18,13 +25,6 @@ export interface LoaderDropIndicator {
   label: string | undefined
   onClick: () => void
   onMaskEdit: (() => void) | undefined
-}
-
-interface LoaderMediaConfig {
-  /** Name of the widget holding the selected filename. */
-  widgetName: string
-  mediaType: LoaderMediaType
-  labelKey: string
 }
 
 /**

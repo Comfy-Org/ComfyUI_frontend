@@ -302,6 +302,10 @@ function resolveValidationCatalogCopy(
   }
 }
 
+function getValidationRule(type: string): ValidationCatalogRule | undefined {
+  return VALIDATION_ERROR_RULES[type]
+}
+
 export function resolveNodeValidationErrorMessage(
   error: NodeValidationError,
   context: ErrorResolveContext
@@ -329,8 +333,4 @@ export function resolveNodeValidationErrorMessage(
   }
 
   return resolveValidationCatalogCopy(error, context, error.type, rule)
-}
-
-function getValidationRule(type: string): ValidationCatalogRule | undefined {
-  return VALIDATION_ERROR_RULES[type]
 }

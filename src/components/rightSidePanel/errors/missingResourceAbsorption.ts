@@ -12,8 +12,6 @@ import type { NodeValidationError } from '@/utils/executionErrorUtil'
 
 import type { PromptError } from '@/platform/remote/comfyui/types'
 
-export type MissingResourceAbsorption = 'missing_model' | 'missing_media'
-
 function normalizePath(value: string): string {
   return value.replace(/[\\/]+/g, '/').replace(/\/+$/, '')
 }
@@ -146,6 +144,8 @@ function matchesMissingMedia(
     candidate.promotedSources
   )
 }
+
+export type MissingResourceAbsorption = 'missing_model' | 'missing_media'
 
 export function classifyValidationErrorAbsorption(
   missingModels: readonly MissingModelCandidate[] | null,

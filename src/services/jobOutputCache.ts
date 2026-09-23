@@ -42,6 +42,11 @@ let latestTaskRequestId: string | null = null
 
 // ===== Task Output Caching =====
 
+function getPreviewableOutputs(outputs?: TaskOutput): AugmentedResultItem[] {
+  if (!outputs) return []
+  return filterPreviewableResults(parseTaskOutput(outputs))
+}
+
 export function findActiveIndex(
   items: readonly AugmentedResultItem[],
   url?: string
@@ -85,11 +90,6 @@ export async function getOutputsForTask(
     console.warn('Failed to load full outputs, using preview:', error)
     return [...task.previewableOutputs]
   }
-}
-
-function getPreviewableOutputs(outputs?: TaskOutput): AugmentedResultItem[] {
-  if (!outputs) return []
-  return filterPreviewableResults(parseTaskOutput(outputs))
 }
 
 export function getPreviewableOutputsFromJobDetail(

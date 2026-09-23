@@ -197,20 +197,6 @@ export type {
 
 const validTriggerActions = new Set<LGraphTriggerAction>(LGraphTriggerActions)
 
-function isLGraphTriggerAction(action: string): action is LGraphTriggerAction {
-  return validTriggerActions.has(action as LGraphTriggerAction)
-}
-
-export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
-
-/**
- * Unique identifier for a subgraph definition. Structurally a {@link UUID};
- * provided as a domain-specific alias for clarity at adoption sites.
- */
-export type SubgraphId = UUID
-
-export type { LGraphState } from './idAllocation'
-
 type ParamsArray<T, K extends MethodNames<T>> = Parameters<
   Extract<T[K], (...args: never[]) => unknown>
 >[1] extends undefined
@@ -218,6 +204,20 @@ type ParamsArray<T, K extends MethodNames<T>> = Parameters<
       | Parameters<Extract<T[K], (...args: never[]) => unknown>>
       | Parameters<Extract<T[K], (...args: never[]) => unknown>>[0]
   : Parameters<Extract<T[K], (...args: never[]) => unknown>>
+
+function isLGraphTriggerAction(action: string): action is LGraphTriggerAction {
+  return validTriggerActions.has(action as LGraphTriggerAction)
+}
+
+export type RendererType = 'LG' | 'Vue' | 'Vue-corrected'
+
+export type { LGraphState } from './idAllocation'
+
+/**
+ * Unique identifier for a subgraph definition. Structurally a {@link UUID};
+ * provided as a domain-specific alias for clarity at adoption sites.
+ */
+export type SubgraphId = UUID
 
 /** Configuration used by {@link LGraph} `config`. */
 export interface LGraphConfig {
@@ -261,6 +261,24 @@ export interface BaseLGraph {
 }
 
 const nodesBeingRemoved = new WeakSet<LGraphNode>()
+
+/** A reroute chain segment, terminal-first. */
+interface ChainSegment {
+  /** Emitted reroute ids, in walk order. */
+  segment: RerouteId[]
+  /** `false` if the walk stopped at a broken reference or a cycle. */
+  complete: boolean
+}
+
+/**
+ * Resolves one hop of a reroute chain.
+ * @param id The reroute id to resolve.
+ * @returns The id to emit and the next id upstream, or `undefined` if the
+ * reference is broken.
+ */
+type ChainStep = (
+  id: RerouteId
+) => { emit: RerouteId; next: RerouteId | undefined } | undefined
 
 function getRuntimeRootGraph(graph: LGraph): LGraph | undefined {
   return graph.rootGraph
@@ -322,24 +340,6 @@ function teardownOwnedGraphs(owner: LGraph): void {
     detachGraphLayouts([owner], { removeLayouts: !owner.isRootGraph })
   }
 }
-
-/** A reroute chain segment, terminal-first. */
-interface ChainSegment {
-  /** Emitted reroute ids, in walk order. */
-  segment: RerouteId[]
-  /** `false` if the walk stopped at a broken reference or a cycle. */
-  complete: boolean
-}
-
-/**
- * Resolves one hop of a reroute chain.
- * @param id The reroute id to resolve.
- * @returns The id to emit and the next id upstream, or `undefined` if the
- * reference is broken.
- */
-type ChainStep = (
-  id: RerouteId
-) => { emit: RerouteId; next: RerouteId | undefined } | undefined
 
 /**
  * Walks a reroute chain, resolving each hop with `step`, until it runs out,
@@ -473,6 +473,9 @@ function nodeIdMintModeFor(graph: {
     ? 'crdt-disjoint'
     : 'sequential'
 }
+
+/** Internal; simplifies type definitions. */
+export type GraphOrSubgraph = LGraph | Subgraph
 
 export class LGraph
   implements LinkNetwork, BaseLGraph, Serialisable<SerialisableGraph>
@@ -3416,9 +3419,6 @@ export class LGraph
     })
   }
 }
-
-/** Internal; simplifies type definitions. */
-export type GraphOrSubgraph = LGraph | Subgraph
 
 // ============================================================================
 // TEMPORARY: Subgraph class moved here to resolve circular dependency

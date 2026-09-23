@@ -2,6 +2,12 @@ import { RenderShape } from '@/lib/litegraph/src/types/globalEnums'
 import { useColorPaletteStore } from '@/stores/workspace/colorPaletteStore'
 import { adjustColor } from '@/utils/colorUtil'
 
+export interface ShapeClassVariants {
+  readonly box: string
+  readonly card: string
+  readonly default: string
+}
+
 /**
  * Applies light theme color adjustments to a color
  */
@@ -11,12 +17,6 @@ export function applyLightThemeColor(color?: string): string {
   if (!useColorPaletteStore().completedActivePalette.light_theme) return color
 
   return adjustColor(color, { lightness: 0.5 })
-}
-
-export interface ShapeClassVariants {
-  readonly box: string
-  readonly card: string
-  readonly default: string
 }
 
 /**

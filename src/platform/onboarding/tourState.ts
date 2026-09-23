@@ -2,6 +2,11 @@ import type { CoachStep, EntryPath } from './onboardingTours'
 
 export const IDLE = { phase: 'idle' } as const
 
+type RunningState = Extract<
+  TourState,
+  { phase: 'waiting' | 'entering' | 'showing' }
+>
+
 /**
  * One activation of a tour. The same tour can start, lose its trigger and start
  * again, so its name cannot tell a reply meant for this run apart from one that
@@ -36,10 +41,15 @@ export type TourState =
       idx: number
     }
 
-type RunningState = Extract<
-  TourState,
-  { phase: 'waiting' | 'entering' | 'showing' }
->
+/** Events answering an `await` name their run, so a late reply can be refused. */
+export type TourEvent =
+  | { type: 'requested'; tour: EntryPath; run: RunId }
+  | { type: 'resolved'; run: RunId; steps: CoachStep[] }
+  | { type: 'resolvedEmpty'; run: RunId }
+  | { type: 'targetAwaited'; run: RunId; fromIdx: number | null }
+  | { type: 'stepEntering'; run: RunId; toIdx: number }
+  | { type: 'stepShown'; run: RunId; idx: number }
+  | { type: 'ended'; run: RunId }
 
 export function isRunning(state: TourState): state is RunningState {
   return (
@@ -57,16 +67,6 @@ export function shownIdx(state: TourState): number | null {
   if (state.phase === 'waiting') return state.fromIdx
   return null
 }
-
-/** Events answering an `await` name their run, so a late reply can be refused. */
-export type TourEvent =
-  | { type: 'requested'; tour: EntryPath; run: RunId }
-  | { type: 'resolved'; run: RunId; steps: CoachStep[] }
-  | { type: 'resolvedEmpty'; run: RunId }
-  | { type: 'targetAwaited'; run: RunId; fromIdx: number | null }
-  | { type: 'stepEntering'; run: RunId; toIdx: number }
-  | { type: 'stepShown'; run: RunId; idx: number }
-  | { type: 'ended'; run: RunId }
 
 /**
  * The only transition table. An event meaningless in the current phase, or from

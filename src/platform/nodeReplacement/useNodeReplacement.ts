@@ -34,19 +34,6 @@ interface ReplacementGroup {
   nodeTypes: MissingNodeType[]
 }
 
-/** Compares sanitized type strings to match placeholder → missing node type. */
-function findMatchingType(
-  node: LGraphNode,
-  selectedTypes: MissingNodeType[]
-): Extract<MissingNodeType, { type: string }> | undefined {
-  const nodeType = node.type
-  for (const selected of selectedTypes) {
-    if (typeof selected !== 'object' || !selected.isReplaceable) continue
-    if (sanitizeNodeName(selected.type) === nodeType) return selected
-  }
-  return undefined
-}
-
 interface ReplacementTopologyPlan {
   error?: string
   updates: EndpointUpdate[]
@@ -58,6 +45,19 @@ interface ReplacementTopologyPlan {
       'input' | 'inputNode' | 'output' | 'outputNode'
     >
   }[]
+}
+
+/** Compares sanitized type strings to match placeholder → missing node type. */
+function findMatchingType(
+  node: LGraphNode,
+  selectedTypes: MissingNodeType[]
+): Extract<MissingNodeType, { type: string }> | undefined {
+  const nodeType = node.type
+  for (const selected of selectedTypes) {
+    if (typeof selected !== 'object' || !selected.isReplaceable) continue
+    if (sanitizeNodeName(selected.type) === nodeType) return selected
+  }
+  return undefined
 }
 
 function planReplacementTopology(

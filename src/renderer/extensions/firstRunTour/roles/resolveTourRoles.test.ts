@@ -22,10 +22,6 @@ if (!source || !prompt) {
   )
 }
 
-class OutputNode extends LGraphNode {
-  static override nodeData = { output_node: true }
-}
-
 function addPinnedNode(graph: LGraph | Subgraph, pin: RolePin) {
   const node = new LGraphNode(pin.type, pin.type)
   node.id = toNodeId(pin.id)
@@ -40,6 +36,10 @@ function addHostedSubgraph(root: LGraph, parent: LGraph | Subgraph = root) {
   const host = createTestSubgraphNode(subgraph, { parentGraph: parent })
   parent.add(host)
   return { subgraph, host }
+}
+
+class OutputNode extends LGraphNode {
+  static override nodeData = { output_node: true }
 }
 
 describe('resolveTourRoles', () => {

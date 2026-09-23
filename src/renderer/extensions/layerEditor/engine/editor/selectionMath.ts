@@ -1,89 +1,5 @@
 import type { Rect, Vec2 } from '../node'
 
-export type SelectionOp = 'replace' | 'add' | 'subtract' | 'intersect'
-
-export interface GrayMask {
-  data: Float32Array
-  width: number
-  height: number
-}
-
-export function emptyMask(width: number, height: number): GrayMask {
-  return { data: new Float32Array(width * height), width, height }
-}
-
-export function maskFromCanvas(canvas: HTMLCanvasElement): GrayMask | null {
-  const g = canvas.getContext('2d')
-  if (!g) return null
-  const img = g.getImageData(0, 0, canvas.width, canvas.height)
-  const mask = emptyMask(canvas.width, canvas.height)
-  for (let p = 0; p < mask.data.length; p++)
-    mask.data[p] = img.data[p * 4] / 255
-  return mask
-}
-
-export function maskToCanvas(mask: GrayMask): HTMLCanvasElement | null {
-  const c = document.createElement('canvas')
-  c.width = mask.width
-  c.height = mask.height
-  const g = c.getContext('2d')
-  if (!g) return null
-  const img = g.createImageData(mask.width, mask.height)
-  for (let p = 0; p < mask.data.length; p++) {
-    const v = Math.round(Math.max(0, Math.min(1, mask.data[p])) * 255)
-    img.data[p * 4] = img.data[p * 4 + 1] = img.data[p * 4 + 2] = v
-    img.data[p * 4 + 3] = 255
-  }
-  g.putImageData(img, 0, 0)
-  return c
-}
-
-export function combineMasks(
-  base: GrayMask,
-  addOn: GrayMask,
-  op: SelectionOp
-): GrayMask {
-  const out = emptyMask(base.width, base.height)
-  const a = base.data
-  const b = addOn.data
-  const d = out.data
-  switch (op) {
-    case 'replace':
-      d.set(b)
-      break
-    case 'add':
-      for (let p = 0; p < d.length; p++) d[p] = Math.min(a[p] + b[p], 1)
-      break
-    case 'subtract':
-      for (let p = 0; p < d.length; p++) d[p] = Math.max(a[p] - b[p], 0)
-      break
-    case 'intersect':
-      for (let p = 0; p < d.length; p++) d[p] = Math.min(a[p], b[p])
-      break
-  }
-  return out
-}
-
-export function maskBounds(mask: GrayMask): Rect | null {
-  let minX = mask.width
-  let minY = mask.height
-  let maxX = -1
-  let maxY = -1
-  for (let y = 0; y < mask.height; y++) {
-    const row = y * mask.width
-    for (let x = 0; x < mask.width; x++) {
-      if (mask.data[row + x] > 0) {
-        if (x < minX) minX = x
-        if (x > maxX) maxX = x
-        if (y < minY) minY = y
-        if (y > maxY) maxY = y
-      }
-    }
-  }
-  if (maxX < 0) return null
-  return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 }
-}
-
 function vanHerk(
   line: Float32Array,
   out: Float32Array,
@@ -215,42 +131,6 @@ function withBounds(
   return pasteMask(run(cropMask(mask, rect)), rect, mask.width, mask.height)
 }
 
-export function growMask(
-  mask: GrayMask,
-  radius: number,
-  bounds: Rect | null = null
-): GrayMask {
-  return withBounds(mask, bounds, Math.round(radius) + 1, (m) =>
-    ellipticalFilter(m, radius, Math.max, 0)
-  )
-}
-
-export function shrinkMask(
-  mask: GrayMask,
-  radius: number,
-  bounds: Rect | null = null
-): GrayMask {
-  return withBounds(mask, bounds, Math.round(radius) + 1, (m) =>
-    ellipticalFilter(m, radius, Math.min, 0)
-  )
-}
-
-export function borderMask(
-  mask: GrayMask,
-  radius: number,
-  bounds: Rect | null = null
-): GrayMask {
-  return withBounds(mask, bounds, Math.round(radius) + 1, (m) => {
-    const grown = ellipticalFilter(m, radius, Math.max, 0)
-    const shrunk = ellipticalFilter(m, radius, Math.min, 0)
-    const out = emptyMask(m.width, m.height)
-    for (let p = 0; p < out.data.length; p++) {
-      out.data[p] = Math.max(grown.data[p] - shrunk.data[p], 0)
-    }
-    return out
-  })
-}
-
 function boxBlurPass(
   src: Float32Array,
   dst: Float32Array,
@@ -298,16 +178,6 @@ function boxesForGauss(sigma: number, n: number): number[] {
   const sizes: number[] = []
   for (let i = 0; i < n; i++) sizes.push(i < m ? wl : wu)
   return sizes
-}
-
-export function featherMask(
-  mask: GrayMask,
-  radius: number,
-  bounds: Rect | null = null
-): GrayMask {
-  return withBounds(mask, bounds, Math.ceil(radius) + 2, (m) =>
-    featherMaskFull(m, radius)
-  )
 }
 
 function smallGaussian(mask: GrayMask, sigma: number): GrayMask {
@@ -365,12 +235,6 @@ function featherMaskFull(mask: GrayMask, radius: number): GrayMask {
   return cur
 }
 
-export interface FloodSource {
-  data: Uint8ClampedArray
-  width: number
-  height: number
-}
-
 function pixelDifference(
   c1r: number,
   c1g: number,
@@ -400,6 +264,142 @@ function pixelDifference(
     return 1
   }
   return max > threshold ? 0 : 1
+}
+
+export type SelectionOp = 'replace' | 'add' | 'subtract' | 'intersect'
+
+export interface GrayMask {
+  data: Float32Array
+  width: number
+  height: number
+}
+
+export interface FloodSource {
+  data: Uint8ClampedArray
+  width: number
+  height: number
+}
+
+export function emptyMask(width: number, height: number): GrayMask {
+  return { data: new Float32Array(width * height), width, height }
+}
+
+export function maskFromCanvas(canvas: HTMLCanvasElement): GrayMask | null {
+  const g = canvas.getContext('2d')
+  if (!g) return null
+  const img = g.getImageData(0, 0, canvas.width, canvas.height)
+  const mask = emptyMask(canvas.width, canvas.height)
+  for (let p = 0; p < mask.data.length; p++)
+    mask.data[p] = img.data[p * 4] / 255
+  return mask
+}
+
+export function maskToCanvas(mask: GrayMask): HTMLCanvasElement | null {
+  const c = document.createElement('canvas')
+  c.width = mask.width
+  c.height = mask.height
+  const g = c.getContext('2d')
+  if (!g) return null
+  const img = g.createImageData(mask.width, mask.height)
+  for (let p = 0; p < mask.data.length; p++) {
+    const v = Math.round(Math.max(0, Math.min(1, mask.data[p])) * 255)
+    img.data[p * 4] = img.data[p * 4 + 1] = img.data[p * 4 + 2] = v
+    img.data[p * 4 + 3] = 255
+  }
+  g.putImageData(img, 0, 0)
+  return c
+}
+
+export function combineMasks(
+  base: GrayMask,
+  addOn: GrayMask,
+  op: SelectionOp
+): GrayMask {
+  const out = emptyMask(base.width, base.height)
+  const a = base.data
+  const b = addOn.data
+  const d = out.data
+  switch (op) {
+    case 'replace':
+      d.set(b)
+      break
+    case 'add':
+      for (let p = 0; p < d.length; p++) d[p] = Math.min(a[p] + b[p], 1)
+      break
+    case 'subtract':
+      for (let p = 0; p < d.length; p++) d[p] = Math.max(a[p] - b[p], 0)
+      break
+    case 'intersect':
+      for (let p = 0; p < d.length; p++) d[p] = Math.min(a[p], b[p])
+      break
+  }
+  return out
+}
+
+export function maskBounds(mask: GrayMask): Rect | null {
+  let minX = mask.width
+  let minY = mask.height
+  let maxX = -1
+  let maxY = -1
+  for (let y = 0; y < mask.height; y++) {
+    const row = y * mask.width
+    for (let x = 0; x < mask.width; x++) {
+      if (mask.data[row + x] > 0) {
+        if (x < minX) minX = x
+        if (x > maxX) maxX = x
+        if (y < minY) minY = y
+        if (y > maxY) maxY = y
+      }
+    }
+  }
+  if (maxX < 0) return null
+  return { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 }
+}
+
+export function growMask(
+  mask: GrayMask,
+  radius: number,
+  bounds: Rect | null = null
+): GrayMask {
+  return withBounds(mask, bounds, Math.round(radius) + 1, (m) =>
+    ellipticalFilter(m, radius, Math.max, 0)
+  )
+}
+
+export function shrinkMask(
+  mask: GrayMask,
+  radius: number,
+  bounds: Rect | null = null
+): GrayMask {
+  return withBounds(mask, bounds, Math.round(radius) + 1, (m) =>
+    ellipticalFilter(m, radius, Math.min, 0)
+  )
+}
+
+export function borderMask(
+  mask: GrayMask,
+  radius: number,
+  bounds: Rect | null = null
+): GrayMask {
+  return withBounds(mask, bounds, Math.round(radius) + 1, (m) => {
+    const grown = ellipticalFilter(m, radius, Math.max, 0)
+    const shrunk = ellipticalFilter(m, radius, Math.min, 0)
+    const out = emptyMask(m.width, m.height)
+    for (let p = 0; p < out.data.length; p++) {
+      out.data[p] = Math.max(grown.data[p] - shrunk.data[p], 0)
+    }
+    return out
+  })
+}
+
+export function featherMask(
+  mask: GrayMask,
+  radius: number,
+  bounds: Rect | null = null
+): GrayMask {
+  return withBounds(mask, bounds, Math.ceil(radius) + 2, (m) =>
+    featherMaskFull(m, radius)
+  )
 }
 
 export function floodSelectMask(

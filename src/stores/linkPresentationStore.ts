@@ -12,6 +12,16 @@ import type { LinkPresentation } from '@/types/linkPresentation'
 
 const EMPTY_LINK_IDS: readonly LinkId[] = []
 
+interface OwnedLinkPresentation {
+  graphId: OwningGraphId
+  presentation: LinkPresentation
+}
+
+interface RootPresentationBucket {
+  byId: Map<LinkId, OwnedLinkPresentation>
+  idsByOwner: Map<OwningGraphId, Set<LinkId>>
+}
+
 function isDefaultLinkPresentation(
   hidden: boolean | undefined,
   label: string | undefined
@@ -28,16 +38,6 @@ function compactLinkPresentation(
     ...(hidden && { hidden: true }),
     ...(label !== undefined && { label })
   }
-}
-
-interface OwnedLinkPresentation {
-  graphId: OwningGraphId
-  presentation: LinkPresentation
-}
-
-interface RootPresentationBucket {
-  byId: Map<LinkId, OwnedLinkPresentation>
-  idsByOwner: Map<OwningGraphId, Set<LinkId>>
 }
 
 /**

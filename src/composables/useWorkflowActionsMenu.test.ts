@@ -53,6 +53,8 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/composables/useFeatureFlags'))
+type MenuItems = ReturnType<typeof useWorkflowActionsMenu>['menuItems']['value']
+
 function useWorkflowActionsMenu(
   ...args: Parameters<typeof useWorkflowActionsMenuComposable>
 ) {
@@ -66,8 +68,6 @@ function useWorkflowActionsMenu(
   render(Wrapper, { global: { plugins: [i18n] } })
   return composable
 }
-
-type MenuItems = ReturnType<typeof useWorkflowActionsMenu>['menuItems']['value']
 
 function actionItems(items: MenuItems): WorkflowMenuAction[] {
   return items.filter(

@@ -7,6 +7,14 @@
  */
 import type { components } from '@/types/comfyRegistryTypes'
 
+/**
+ * Detailed information about a Python import failure
+ */
+interface ImportFailureDetail {
+  error?: string
+  traceback?: string
+}
+
 // Re-export core types from Registry API
 export type Node = components['schemas']['Node']
 
@@ -77,14 +85,6 @@ export interface ConflictDetectionResponse {
   error_message?: string
   results: ConflictDetectionResult[]
   detected_system_environment?: Partial<SystemEnvironment>
-}
-
-/**
- * Detailed information about a Python import failure
- */
-interface ImportFailureDetail {
-  error?: string
-  traceback?: string
 }
 
 /**

@@ -1,10 +1,3 @@
-export interface PlacementRect {
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
 interface PlacementOffset {
   dx: number
   dy: number
@@ -14,6 +7,13 @@ interface PlacementInput {
   existing: readonly PlacementRect[]
   viewport: PlacementRect | null
   incoming: readonly PlacementRect[]
+}
+
+export interface PlacementRect {
+  x: number
+  y: number
+  width: number
+  height: number
 }
 
 export const DISCONNECTED_GAP_PX = 600

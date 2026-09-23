@@ -54,12 +54,6 @@ import {
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
 
 type TooltipValueType = 'asset' | 'combo' | 'number' | 'text'
-function isTooltipValueType(val: unknown): val is TooltipValueType {
-  return (
-    val === 'asset' || val === 'combo' || val === 'number' || val === 'text'
-  )
-}
-
 interface WidgetTooltipSource {
   name: string
   tooltip?: string
@@ -70,31 +64,36 @@ interface WidgetErrorTarget {
   widgetName: string
 }
 
-export interface ProcessedWidget extends WidgetGridItem {
-  handleContextMenu: (e: PointerEvent) => void
-  hasLayoutSize: boolean
-  hasError: boolean
-  widgetId: WidgetId
-  tooltipConfig: TooltipOptions
-  updateHandler: (value: WidgetValue) => void
+interface LiveWidgetContext {
+  live?: { node: LGraphNode; widget: IBaseWidget }
+  errorTarget?: WidgetErrorTarget
+  controlWidget?: SafeControlWidget
+  sourceExecutionId?: NodeExecutionId
 }
 
-export interface WidgetUiCallbacks {
-  getTooltipConfig: (
-    widget: WidgetTooltipSource,
-    fullVal?: string
-  ) => TooltipOptions
-  handleNodeRightClick: (e: PointerEvent, nodeId: NodeId) => void
-}
-
-export interface ComputeProcessedWidgetsOptions {
-  nodeData: NodeState | undefined
-  widgetIds?: readonly WidgetId[]
-  graphId: string | undefined
+interface WidgetProcessingContext {
+  nodeData: NodeState
   showAdvanced: boolean
-  isGraphReady: boolean
   rootGraph: LGraph | null
+  /** Root graph id, known even before `app.isGraphReady`. */
+  rootGraphId: string | undefined
+  hostNode: LGraphNode | null
+  liveWidgets: Map<WidgetId, IBaseWidget>
+  slotMetadata: Map<string, WidgetSlotMetadata>
+  nodeExecId: NodeExecutionId
+  nodeErrors: Parameters<typeof hasWidgetError>[2]
+  widgetValueStore: ReturnType<typeof useWidgetValueStore>
+  executionErrorStore: ReturnType<typeof useExecutionErrorStore>
+  missingModelStore: ReturnType<typeof useMissingModelStore>
+  missingMediaStore: ReturnType<typeof useMissingMediaStore>
+  nodeDefStore: ReturnType<typeof useNodeDefStore>
   ui: WidgetUiCallbacks
+}
+
+function isTooltipValueType(val: unknown): val is TooltipValueType {
+  return (
+    val === 'asset' || val === 'combo' || val === 'number' || val === 'text'
+  )
 }
 
 function normalizeWidgetValue(value: unknown): WidgetValue {
@@ -274,13 +273,6 @@ function resolveWidgetIds(
     : []
 }
 
-interface LiveWidgetContext {
-  live?: { node: LGraphNode; widget: IBaseWidget }
-  errorTarget?: WidgetErrorTarget
-  controlWidget?: SafeControlWidget
-  sourceExecutionId?: NodeExecutionId
-}
-
 /**
  * Resolves the live litegraph widget (and, for promoted subgraph inputs, its
  * interior source) into the control widget and error target the render path
@@ -340,25 +332,6 @@ function widgetNodeLocatorId(
     subgraphIdFromState(ctx.nodeData, ctx.rootGraphId),
     bareWidgetId
   )
-}
-
-interface WidgetProcessingContext {
-  nodeData: NodeState
-  showAdvanced: boolean
-  rootGraph: LGraph | null
-  /** Root graph id, known even before `app.isGraphReady`. */
-  rootGraphId: string | undefined
-  hostNode: LGraphNode | null
-  liveWidgets: Map<WidgetId, IBaseWidget>
-  slotMetadata: Map<string, WidgetSlotMetadata>
-  nodeExecId: NodeExecutionId
-  nodeErrors: Parameters<typeof hasWidgetError>[2]
-  widgetValueStore: ReturnType<typeof useWidgetValueStore>
-  executionErrorStore: ReturnType<typeof useExecutionErrorStore>
-  missingModelStore: ReturnType<typeof useMissingModelStore>
-  missingMediaStore: ReturnType<typeof useMissingMediaStore>
-  nodeDefStore: ReturnType<typeof useNodeDefStore>
-  ui: WidgetUiCallbacks
 }
 
 function processWidget(
@@ -468,6 +441,33 @@ function processWidget(
     tooltipConfig,
     slotMetadata: slotInfo
   }
+}
+
+export interface ProcessedWidget extends WidgetGridItem {
+  handleContextMenu: (e: PointerEvent) => void
+  hasLayoutSize: boolean
+  hasError: boolean
+  widgetId: WidgetId
+  tooltipConfig: TooltipOptions
+  updateHandler: (value: WidgetValue) => void
+}
+
+export interface WidgetUiCallbacks {
+  getTooltipConfig: (
+    widget: WidgetTooltipSource,
+    fullVal?: string
+  ) => TooltipOptions
+  handleNodeRightClick: (e: PointerEvent, nodeId: NodeId) => void
+}
+
+export interface ComputeProcessedWidgetsOptions {
+  nodeData: NodeState | undefined
+  widgetIds?: readonly WidgetId[]
+  graphId: string | undefined
+  showAdvanced: boolean
+  isGraphReady: boolean
+  rootGraph: LGraph | null
+  ui: WidgetUiCallbacks
 }
 
 export function computeProcessedWidgets({

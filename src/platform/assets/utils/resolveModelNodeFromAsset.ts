@@ -14,19 +14,19 @@ import type { ModelNodeProvider } from '@/stores/modelToNodeStore'
 
 type ResolveErrorCode = 'INVALID_ASSET' | 'NO_PROVIDER'
 
-export interface ResolveModelNodeError {
-  code: ResolveErrorCode
-  message: string
-  assetId: string
-  details?: Record<string, unknown>
-}
-
 interface ResolvedModelNode {
   provider: ModelNodeProvider
   filename: string
 }
 
 type Result<T, E> = { success: true; value: T } | { success: false; error: E }
+
+export interface ResolveModelNodeError {
+  code: ResolveErrorCode
+  message: string
+  assetId: string
+  details?: Record<string, unknown>
+}
 
 /**
  * Resolves an asset item to the node provider and filename needed to add a

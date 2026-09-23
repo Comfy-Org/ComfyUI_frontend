@@ -9,6 +9,12 @@ function activeTextSelection(): Selection | null {
   return selection !== null && !selection.isCollapsed ? selection : null
 }
 
+function rangesOf(selection: Selection): Range[] {
+  return Array.from({ length: selection.rangeCount }, (_, i) =>
+    selection.getRangeAt(i)
+  )
+}
+
 export function hasTextSelection(target: EventTarget | null): boolean {
   if (
     target instanceof HTMLInputElement ||
@@ -23,12 +29,6 @@ export function hasTextSelection(target: EventTarget | null): boolean {
   }
 
   return activeTextSelection() !== null
-}
-
-function rangesOf(selection: Selection): Range[] {
-  return Array.from({ length: selection.rangeCount }, (_, i) =>
-    selection.getRangeAt(i)
-  )
 }
 
 /**

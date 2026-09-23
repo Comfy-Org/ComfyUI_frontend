@@ -55,6 +55,13 @@ const PERMANENT_AUTH_ERROR_CODES = new Set([
   'NOT_AUTHENTICATED'
 ])
 
+interface StoredSession {
+  workspace: WorkspaceIdentity
+  token: string
+  expiresAt: number
+  ownerUid: string
+}
+
 function isPermanentAuthError(err: unknown): err is WorkspaceAuthError {
   return (
     err instanceof WorkspaceAuthError &&
@@ -125,13 +132,6 @@ function parseMintedToken(rawData: unknown, ownerUid: string): MintedToken {
     workspace: { ...data.workspace, role: data.role },
     ownerUid
   }
-}
-
-interface StoredSession {
-  workspace: WorkspaceIdentity
-  token: string
-  expiresAt: number
-  ownerUid: string
 }
 
 const REFRESH_ATTEMPT_MAX_RETRIES = 3

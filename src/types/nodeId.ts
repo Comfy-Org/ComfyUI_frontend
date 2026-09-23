@@ -1,8 +1,8 @@
+type ToNodeIdInput = number | (string & { readonly __brand?: never })
+
 export type SerializedNodeId = number | string
 
 export type NodeId = string & { readonly __brand: 'NodeId' }
-
-type ToNodeIdInput = number | (string & { readonly __brand?: never })
 
 export function toNodeId(value: ToNodeIdInput): NodeId {
   return String(value) as NodeId

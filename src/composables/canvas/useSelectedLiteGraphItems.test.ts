@@ -47,6 +47,20 @@ const makeSubgraphNode = (
 
 // Mock Positionable objects
 
+function makeReroute(
+  pos: [number, number] = [0, 0],
+  size: [number, number] = [20, 20]
+): Reroute & Positionable {
+  const reroute = fromAny<Reroute & Positionable, unknown>(
+    Object.create(Reroute.prototype)
+  )
+  Object.defineProperties(reroute, {
+    pos: { value: pos, writable: true },
+    size: { value: size, writable: true }
+  })
+  return reroute
+}
+
 class MockNode implements Positionable {
   pos: [number, number]
   size: [number, number]
@@ -67,20 +81,6 @@ class MockNode implements Positionable {
   snapToGrid(_: number): boolean {
     return true
   }
-}
-
-function makeReroute(
-  pos: [number, number] = [0, 0],
-  size: [number, number] = [20, 20]
-): Reroute & Positionable {
-  const reroute = fromAny<Reroute & Positionable, unknown>(
-    Object.create(Reroute.prototype)
-  )
-  Object.defineProperties(reroute, {
-    pos: { value: pos, writable: true },
-    size: { value: size, writable: true }
-  })
-  return reroute
 }
 
 describe('useSelectedLiteGraphItems', () => {

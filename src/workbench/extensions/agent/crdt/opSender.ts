@@ -24,6 +24,16 @@ const SEND_RETRY_LIMIT = 5
 const SEND_RETRY_INTERVAL_MS = 500
 const RESULT_TIMEOUT_MS = 10_000
 
+interface InFlight {
+  workflowId: string
+  ops: Op[]
+  opIds: Set<string>
+  transmitted: boolean
+  resent: boolean
+  parked: boolean
+  timer: ReturnType<typeof setTimeout> | null
+}
+
 export interface OpsResultView {
   workflowId?: string
   ok: boolean
@@ -122,16 +132,6 @@ export interface OpSender {
    */
   abortAll(): void
   detach(): void
-}
-
-interface InFlight {
-  workflowId: string
-  ops: Op[]
-  opIds: Set<string>
-  transmitted: boolean
-  resent: boolean
-  parked: boolean
-  timer: ReturnType<typeof setTimeout> | null
 }
 
 export function createOpSender(deps: OpSenderDeps): OpSender {

@@ -20,8 +20,6 @@ export const CONTROL_OPTIONS = [
   'decrement',
   'randomize'
 ] as const
-export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
-
 function isControlOption(val: WidgetValue): val is ControlOptions {
   return CONTROL_OPTIONS.includes(val as ControlOptions)
 }
@@ -31,20 +29,11 @@ function normalizeControlOption(val: WidgetValue): ControlOptions {
   return 'randomize'
 }
 
+export type ControlOptions = (typeof CONTROL_OPTIONS)[number]
+
 export type SafeControlWidget = {
   value: ControlOptions
   update: (value: WidgetValue) => void
-}
-
-export function getControlWidget(
-  widget: IBaseWidget
-): SafeControlWidget | undefined {
-  const controlWidget = widget.linkedWidgets?.find((w) => w[IS_CONTROL_WIDGET])
-  if (!controlWidget) return
-  return {
-    value: normalizeControlOption(controlWidget.value),
-    update: (value) => (controlWidget.value = normalizeControlOption(value))
-  }
 }
 
 export interface LinkedUpstreamInfo {
@@ -103,4 +92,15 @@ export interface SimplifiedControlWidget<
   O extends IWidgetOptions = IWidgetOptions
 > extends SimplifiedWidget<T, O> {
   controlWidget: SafeControlWidget
+}
+
+export function getControlWidget(
+  widget: IBaseWidget
+): SafeControlWidget | undefined {
+  const controlWidget = widget.linkedWidgets?.find((w) => w[IS_CONTROL_WIDGET])
+  if (!controlWidget) return
+  return {
+    value: normalizeControlOption(controlWidget.value),
+    update: (value) => (controlWidget.value = normalizeControlOption(value))
+  }
 }

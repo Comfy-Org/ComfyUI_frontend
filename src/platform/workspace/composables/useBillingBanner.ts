@@ -7,60 +7,6 @@ import { isCloud } from '@/platform/distribution/types'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
-export type BillingBannerKind =
-  | 'paused'
-  | 'paymentFailed'
-  | 'outOfCredits'
-  | 'ending'
-  | 'planChange'
-
-export interface BillingBannerInputs {
-  billingControlEnabled: boolean
-  v1PaymentRecovery: boolean
-  isTeamPlan: boolean
-  isLoaded: boolean
-  canAccessSubscriptionFeatures: boolean
-  billingStatus: BillingStatus | null
-  hasFunds: boolean | null
-  isCancelled: boolean
-  endDate: string | null
-  canManage: boolean
-  outOfCreditsDismissed: boolean
-  hasScheduledChange: boolean
-}
-
-// The single billing banner slot, in priority order: paused > paymentFailed >
-// outOfCredits > ending > planChange. Payment recovery and the existing
-// billing-control notices have independent rollout gates.
-export function deriveBillingBanner(
-  inputs: BillingBannerInputs
-): BillingBannerKind | null {
-  if (!inputs.isLoaded) return null
-
-  if (inputs.v1PaymentRecovery) {
-    if (inputs.isTeamPlan && inputs.billingStatus === 'paused') return 'paused'
-    if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
-      return 'paymentFailed'
-    }
-  }
-
-  if (!inputs.isTeamPlan) return null
-  if (!inputs.canAccessSubscriptionFeatures) return null
-  if (!inputs.billingControlEnabled) return null
-
-  if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
-    return 'outOfCredits'
-  }
-  if (inputs.isCancelled && inputs.endDate && inputs.canManage) {
-    return 'ending'
-  }
-  if (inputs.hasScheduledChange && !inputs.isCancelled) {
-    return 'planChange'
-  }
-
-  return null
-}
-
 function useBillingBannerInternal() {
   const {
     canAccessSubscriptionFeatures,
@@ -114,6 +60,60 @@ function useBillingBannerInternal() {
   }
 
   return { kind, dismiss }
+}
+
+export type BillingBannerKind =
+  | 'paused'
+  | 'paymentFailed'
+  | 'outOfCredits'
+  | 'ending'
+  | 'planChange'
+
+export interface BillingBannerInputs {
+  billingControlEnabled: boolean
+  v1PaymentRecovery: boolean
+  isTeamPlan: boolean
+  isLoaded: boolean
+  canAccessSubscriptionFeatures: boolean
+  billingStatus: BillingStatus | null
+  hasFunds: boolean | null
+  isCancelled: boolean
+  endDate: string | null
+  canManage: boolean
+  outOfCreditsDismissed: boolean
+  hasScheduledChange: boolean
+}
+
+// The single billing banner slot, in priority order: paused > paymentFailed >
+// outOfCredits > ending > planChange. Payment recovery and the existing
+// billing-control notices have independent rollout gates.
+export function deriveBillingBanner(
+  inputs: BillingBannerInputs
+): BillingBannerKind | null {
+  if (!inputs.isLoaded) return null
+
+  if (inputs.v1PaymentRecovery) {
+    if (inputs.isTeamPlan && inputs.billingStatus === 'paused') return 'paused'
+    if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
+      return 'paymentFailed'
+    }
+  }
+
+  if (!inputs.isTeamPlan) return null
+  if (!inputs.canAccessSubscriptionFeatures) return null
+  if (!inputs.billingControlEnabled) return null
+
+  if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
+    return 'outOfCredits'
+  }
+  if (inputs.isCancelled && inputs.endDate && inputs.canManage) {
+    return 'ending'
+  }
+  if (inputs.hasScheduledChange && !inputs.isCancelled) {
+    return 'planChange'
+  }
+
+  return null
 }
 
 export const useBillingBanner = createSharedComposable(useBillingBannerInternal)

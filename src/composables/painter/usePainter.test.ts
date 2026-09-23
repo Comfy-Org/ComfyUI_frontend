@@ -59,6 +59,8 @@ interface PaintWidgetSpec {
   value: string | number
 }
 
+type PainterResult = ReturnType<typeof usePainter>
+
 function makePaintNode(widgets: PaintWidgetSpec[] = []) {
   const graph = new LGraph()
   const node = new LGraphNode('PainterTestNode')
@@ -90,8 +92,6 @@ function storedValue(name: string): unknown {
   const id = widgetOf(name).widgetId
   return id ? useWidgetValueStore().getWidget(id)?.value : undefined
 }
-
-type PainterResult = ReturnType<typeof usePainter>
 
 /**
  * Mounts a thin wrapper component so Vue lifecycle hooks fire.

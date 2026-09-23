@@ -4,11 +4,6 @@ import type { CameraInfoState } from './types'
 
 const DEG2RAD = Math.PI / 180
 
-export interface SubjectCameraTransform {
-  position: THREE.Vector3
-  quaternion: THREE.Quaternion
-}
-
 function orbitPosition(
   target: THREE.Vector3Like,
   yawDeg: number,
@@ -45,6 +40,11 @@ function lookAtQuaternion(
     q.multiply(rollQ)
   }
   return q
+}
+
+export interface SubjectCameraTransform {
+  position: THREE.Vector3
+  quaternion: THREE.Quaternion
 }
 
 export function normalizeQuaternion(q: THREE.Quaternion): THREE.Quaternion {

@@ -149,30 +149,6 @@ function notifyAgentMaterialization(
   )
 }
 
-export interface AgentCrdtStatus {
-  enabled: boolean
-  connected: boolean
-  workflowId: string | null
-  /**
-   * Mirror of `bridge.follower.updatesApplied` (Yjs merges, reset to 0 on
-   * `doc_reset` / `follower_replaced`). Not interchangeable with
-   * `outcomes.applied`, which is monotonic and counts only frames that passed
-   * this composable's filter. Kept for AgentPanelRoot.vue and CrdtDevPanel.vue.
-   */
-  updatesApplied: number
-  lastFrameType: string | null
-  outcomes: AgentCrdtOutcomeCounters
-}
-
-export interface AgentCrdtFollowerEvents {
-  onMaterialized?: (event: {
-    workflowId: string
-    actor: string | undefined
-    nodeIds: readonly NodeId[]
-  }) => void
-  onReset?: (workflowId: string) => void
-}
-
 // Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
 // logError, which re-throws in dev/test builds (this app registers no
 // app.config.errorHandler) and aborts the rest of unmountComponent - leaving
@@ -186,77 +162,6 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
         errorType: 'failure_tearing_down_agent_crdt_follower'
       })
     }
-  }
-}
-
-export function useAgentCrdtFollower(
-  workflowId: Ref<string | null>,
-  graphMutations: MutationsForTarget,
-  userId: () => string | null = () => null,
-  isTargetActive: Ref<boolean> = ref(true),
-  /**
-   * Live graph that receives node adapters for store-only records. Reactive
-   * reads inside the getter are tracked, so a `null` → graph flip triggers a
-   * reconcile without waiting for the next remote frame.
-   */
-  getGraph: () => MaterializableGraph | null = () => null,
-  events: AgentCrdtFollowerEvents = {}
-) {
-  const productGate = useAgentPanelStore()
-  const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
-  const disabledStatus: AgentCrdtStatus = {
-    enabled: false,
-    connected: false,
-    workflowId: null,
-    updatesApplied: 0,
-    lastFrameType: null,
-    outcomes: {
-      received: 0,
-      applied: 0,
-      skipped: 0,
-      errored: 0,
-      gap: 0,
-      reset: 0,
-      dropped: 0
-    }
-  }
-  const status = computed(() => follower.value?.status.value ?? disabledStatus)
-
-  watch(
-    () => productGate.enabled,
-    (enabled, _previous, onCleanup) => {
-      if (!enabled) return
-      const scope = effectScope()
-      onCleanup(() => {
-        follower.value = undefined
-        scope.stop()
-      })
-      follower.value = scope.run(() =>
-        startAgentCrdtFollower(
-          workflowId,
-          graphMutations,
-          userId,
-          isTargetActive,
-          getGraph,
-          events
-        )
-      )
-    },
-    { immediate: true, flush: 'sync' }
-  )
-
-  return {
-    status: readonly(status),
-    debugSnapshot: (): CrdtDebugSnapshot =>
-      follower.value?.debugSnapshot() ??
-      readCrdtSnapshot(null, {
-        status: status.value,
-        tabId: null,
-        lastSeq: null,
-        schemaError: null
-      }),
-    enqueueHumanOperations: (operations: GraphOperation[]) =>
-      follower.value?.enqueueHumanOperations(operations)
   }
 }
 
@@ -783,5 +688,100 @@ function startAgentCrdtFollower(
     debugSnapshot,
     enqueueHumanOperations: (operations: GraphOperation[]) =>
       coalescer.enqueue(operations)
+  }
+}
+
+export interface AgentCrdtStatus {
+  enabled: boolean
+  connected: boolean
+  workflowId: string | null
+  /**
+   * Mirror of `bridge.follower.updatesApplied` (Yjs merges, reset to 0 on
+   * `doc_reset` / `follower_replaced`). Not interchangeable with
+   * `outcomes.applied`, which is monotonic and counts only frames that passed
+   * this composable's filter. Kept for AgentPanelRoot.vue and CrdtDevPanel.vue.
+   */
+  updatesApplied: number
+  lastFrameType: string | null
+  outcomes: AgentCrdtOutcomeCounters
+}
+
+export interface AgentCrdtFollowerEvents {
+  onMaterialized?: (event: {
+    workflowId: string
+    actor: string | undefined
+    nodeIds: readonly NodeId[]
+  }) => void
+  onReset?: (workflowId: string) => void
+}
+
+export function useAgentCrdtFollower(
+  workflowId: Ref<string | null>,
+  graphMutations: MutationsForTarget,
+  userId: () => string | null = () => null,
+  isTargetActive: Ref<boolean> = ref(true),
+  /**
+   * Live graph that receives node adapters for store-only records. Reactive
+   * reads inside the getter are tracked, so a `null` → graph flip triggers a
+   * reconcile without waiting for the next remote frame.
+   */
+  getGraph: () => MaterializableGraph | null = () => null,
+  events: AgentCrdtFollowerEvents = {}
+) {
+  const productGate = useAgentPanelStore()
+  const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
+  const disabledStatus: AgentCrdtStatus = {
+    enabled: false,
+    connected: false,
+    workflowId: null,
+    updatesApplied: 0,
+    lastFrameType: null,
+    outcomes: {
+      received: 0,
+      applied: 0,
+      skipped: 0,
+      errored: 0,
+      gap: 0,
+      reset: 0,
+      dropped: 0
+    }
+  }
+  const status = computed(() => follower.value?.status.value ?? disabledStatus)
+
+  watch(
+    () => productGate.enabled,
+    (enabled, _previous, onCleanup) => {
+      if (!enabled) return
+      const scope = effectScope()
+      onCleanup(() => {
+        follower.value = undefined
+        scope.stop()
+      })
+      follower.value = scope.run(() =>
+        startAgentCrdtFollower(
+          workflowId,
+          graphMutations,
+          userId,
+          isTargetActive,
+          getGraph,
+          events
+        )
+      )
+    },
+    { immediate: true, flush: 'sync' }
+  )
+
+  return {
+    status: readonly(status),
+    debugSnapshot: (): CrdtDebugSnapshot =>
+      follower.value?.debugSnapshot() ??
+      readCrdtSnapshot(null, {
+        status: status.value,
+        tabId: null,
+        lastSeq: null,
+        schemaError: null
+      }),
+    enqueueHumanOperations: (operations: GraphOperation[]) =>
+      follower.value?.enqueueHumanOperations(operations)
   }
 }

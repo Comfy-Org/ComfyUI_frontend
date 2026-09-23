@@ -5,6 +5,37 @@ import type { Keybinding } from '@/platform/keybindings/types'
 import type { NodeBadgeMode } from '@/types/nodeSource'
 import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
+type SettingInputType =
+  | 'boolean'
+  | 'number'
+  | 'slider'
+  | 'knob'
+  | 'combo'
+  | 'radio'
+  | 'text'
+  | 'image'
+  | 'color'
+  | 'url'
+  | 'hidden'
+  | 'backgroundImage'
+
+type SettingCustomRenderer = (
+  name: string,
+  setter: (v: unknown) => void,
+  value: unknown,
+  attrs?: Record<string, unknown>
+) => HTMLElement
+
+type SettingTelemetryOptions =
+  | {
+      trackChanges: false
+      includeValues?: never
+    }
+  | {
+      trackChanges?: true
+      includeValues?: boolean
+    }
+
 export type BookmarkCustomization = {
   icon?: string
   color?: string
@@ -182,41 +213,10 @@ export type Settings = {
   'LiteGraph.Group.SelectChildrenOnClick': boolean
 }
 
-type SettingInputType =
-  | 'boolean'
-  | 'number'
-  | 'slider'
-  | 'knob'
-  | 'combo'
-  | 'radio'
-  | 'text'
-  | 'image'
-  | 'color'
-  | 'url'
-  | 'hidden'
-  | 'backgroundImage'
-
-type SettingCustomRenderer = (
-  name: string,
-  setter: (v: unknown) => void,
-  value: unknown,
-  attrs?: Record<string, unknown>
-) => HTMLElement
-
 export interface SettingOption {
   text: string
   value?: string | number
 }
-
-type SettingTelemetryOptions =
-  | {
-      trackChanges: false
-      includeValues?: never
-    }
-  | {
-      trackChanges?: true
-      includeValues?: boolean
-    }
 
 export interface SettingParams<TValue = unknown> extends FormItem {
   id: keyof Settings

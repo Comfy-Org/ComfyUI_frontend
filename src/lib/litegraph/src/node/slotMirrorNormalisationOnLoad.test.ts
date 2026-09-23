@@ -88,21 +88,6 @@ const CORRUPT_WORKFLOW = fromPartial<ISerialisedGraph>({
   ]
 })
 
-class SourceNode extends LGraphNode {
-  constructor(title?: string) {
-    super(title ?? 'source', 'source')
-    this.addOutput('a', 'number')
-    this.addOutput('b', 'number')
-  }
-}
-
-class SinkNode extends LGraphNode {
-  constructor(title?: string) {
-    super(title ?? 'sink', 'sink')
-    this.addInput('in', 'number')
-  }
-}
-
 function load(data: ISerialisedGraph | SerialisableGraph) {
   const graph = new LGraph()
   graph.configure(structuredClone(data))
@@ -115,6 +100,21 @@ function mirrors(graph: LGraph) {
     outputsOfNode1: graph
       .getNodeById(toNodeId(1))
       ?.outputs.map((output) => [...(output.links ?? [])])
+  }
+}
+
+class SourceNode extends LGraphNode {
+  constructor(title?: string) {
+    super(title ?? 'source', 'source')
+    this.addOutput('a', 'number')
+    this.addOutput('b', 'number')
+  }
+}
+
+class SinkNode extends LGraphNode {
+  constructor(title?: string) {
+    super(title ?? 'sink', 'sink')
+    this.addInput('in', 'number')
   }
 }
 

@@ -39,6 +39,41 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 
 const WORKFLOW_ID = 'wf-1'
 
+/** A real host doc: seeded by the shared package, so it carries schema v1 meta. */
+function hostDocUpdate(mutate?: (doc: Y.Doc) => void): Uint8Array {
+  const doc = mint({ nodes: [], links: [] }, { types: {} })
+  const node = new Y.Map<unknown>()
+  node.set('type', 'LoadImage')
+  node.set('pos', [10, 20])
+  nodesMap(doc).set('1', node)
+  mutate?.(doc)
+  return Y.encodeStateAsUpdate(doc)
+}
+
+function docUpdateFrame(update: Uint8Array, workflowId = WORKFLOW_ID, seq = 1) {
+  return {
+    v: 1,
+    workflow_id: workflowId,
+    seq,
+    update_b64: encodeBase64(update)
+  }
+}
+
+function wire() {
+  const transport = new SocketTransport()
+  const client = new DocFrameClient(transport)
+  const bridge = new LayoutFollowerBridge(client)
+  const projected: DocUpdate[] = []
+  const schemaErrors: unknown[] = []
+  bridge.addEventListener('doc_update', (event) => {
+    if (event instanceof CustomEvent) projected.push(event.detail as DocUpdate)
+  })
+  bridge.addEventListener('schema_error', (event) => {
+    if (event instanceof CustomEvent) schemaErrors.push(event.detail)
+  })
+  return { transport, client, bridge, projected, schemaErrors }
+}
+
 /**
  * Transport double that models the real socket lifecycle rather than an
  * always-ready pipe: it starts CLOSED (the state `apiTransport` is in while
@@ -81,41 +116,6 @@ class SocketTransport extends EventTarget implements DocFrameTransport {
       .map((frame) => JSON.parse(frame) as { type: string })
       .filter((frame) => frame.type === type)
   }
-}
-
-/** A real host doc: seeded by the shared package, so it carries schema v1 meta. */
-function hostDocUpdate(mutate?: (doc: Y.Doc) => void): Uint8Array {
-  const doc = mint({ nodes: [], links: [] }, { types: {} })
-  const node = new Y.Map<unknown>()
-  node.set('type', 'LoadImage')
-  node.set('pos', [10, 20])
-  nodesMap(doc).set('1', node)
-  mutate?.(doc)
-  return Y.encodeStateAsUpdate(doc)
-}
-
-function docUpdateFrame(update: Uint8Array, workflowId = WORKFLOW_ID, seq = 1) {
-  return {
-    v: 1,
-    workflow_id: workflowId,
-    seq,
-    update_b64: encodeBase64(update)
-  }
-}
-
-function wire() {
-  const transport = new SocketTransport()
-  const client = new DocFrameClient(transport)
-  const bridge = new LayoutFollowerBridge(client)
-  const projected: DocUpdate[] = []
-  const schemaErrors: unknown[] = []
-  bridge.addEventListener('doc_update', (event) => {
-    if (event instanceof CustomEvent) projected.push(event.detail as DocUpdate)
-  })
-  bridge.addEventListener('schema_error', (event) => {
-    if (event instanceof CustomEvent) schemaErrors.push(event.detail)
-  })
-  return { transport, client, bridge, projected, schemaErrors }
 }
 
 describe('follower commit boundary', () => {

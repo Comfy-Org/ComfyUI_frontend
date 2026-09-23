@@ -22,6 +22,12 @@ interface BaseBottomPanelExtension {
   targetPanel?: 'terminal' | 'shortcuts'
 }
 
+type VueSidebarTabExtension = BaseSidebarTabExtension & VueExtension
+
+type CustomSidebarTabExtension = BaseSidebarTabExtension & CustomExtension
+
+type VueBottomPanelExtension = BaseBottomPanelExtension & VueExtension
+type CustomBottomPanelExtension = BaseBottomPanelExtension & CustomExtension
 export interface VueExtension {
   id: string
   type: 'vue'
@@ -34,15 +40,9 @@ export interface CustomExtension {
   render: (container: HTMLElement) => void
   destroy?: () => void
 }
-
-type VueSidebarTabExtension = BaseSidebarTabExtension & VueExtension
-type CustomSidebarTabExtension = BaseSidebarTabExtension & CustomExtension
 export type SidebarTabExtension =
   | VueSidebarTabExtension
   | CustomSidebarTabExtension
-
-type VueBottomPanelExtension = BaseBottomPanelExtension & VueExtension
-type CustomBottomPanelExtension = BaseBottomPanelExtension & CustomExtension
 export type BottomPanelExtension =
   | VueBottomPanelExtension
   | CustomBottomPanelExtension

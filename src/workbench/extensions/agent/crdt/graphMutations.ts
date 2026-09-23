@@ -42,27 +42,6 @@ import {
   widgetType
 } from './nodePayload'
 
-export interface SemanticNodePayload extends Record<string, unknown> {
-  id: string | number
-  type: string
-}
-
-export interface SemanticLinkPayload {
-  id: number
-  originNodeId: string | number
-  originSlot: number
-  targetNodeId: string | number
-  targetSlot: number
-  type: string | number
-  /** Final semantic slot records after the shared applier handled this link. */
-  originOutputs?: readonly ISerialisableNodeOutput[]
-  targetInputs?: readonly ISerialisableNodeInput[]
-}
-
-function isSlotRecord(value: unknown): value is { name?: unknown } {
-  return value !== null && typeof value === 'object'
-}
-
 interface SemanticNodeLayout {
   position: { x: number; y: number }
   size: { width: number; height: number }
@@ -86,17 +65,6 @@ interface SemanticLayoutMutationPort {
   ): void
 }
 
-/**
- * Renderer-owned placement geometry. `viewportBounds` returns the visible
- * area in canvas coordinates only while the displayed graph is the scope's
- * owning graph, and null otherwise (background workflow, subgraph editing,
- * no canvas mounted). See ADR-CRDT-PLACEMENT-0035.
- */
-export interface SemanticPlacementPort {
-  nodeBounds(scope: GraphScope, nodeId: NodeId): PlacementRect | null
-  viewportBounds(scope: GraphScope): PlacementRect | null
-}
-
 type LiveWidgetMutationResult =
   | { status: 'skipped' }
   | { status: 'applied'; resolvedValue: WidgetValue }
@@ -118,6 +86,109 @@ interface SemanticLiveWidgetMutationPort {
     context: RemoteMutationContext
   ): LiveWidgetMutationResult
   rebind?(scope: GraphScope, nodeId: NodeId, name: string): void
+}
+
+type QueuedMutation =
+  | { kind: 'addNode'; payload: SemanticNodePayload }
+  | { kind: 'reconcileNode'; payload: SemanticNodePayload }
+  | { kind: 'reconcileNodeFields'; payload: SemanticNodePayload }
+  | { kind: 'setWidget'; nodeId: NodeId; name: string; value: unknown }
+  | { kind: 'connect'; link: SemanticLinkPayload }
+  | {
+      kind: 'removeMissing'
+      retainedNodeIds: readonly NodeId[]
+      retainedLinkIds: readonly number[]
+    }
+  | { kind: 'removeLinks'; linkIds: readonly number[] }
+  | {
+      kind: 'deleteNode'
+      nodeId: NodeId
+      removedLinkIds: readonly number[]
+    }
+  | { kind: 'clearSemanticGraph' }
+
+interface PreparedNode {
+  state: NodeState
+  layout: SemanticNodeLayout
+  widgets: WidgetValuePayload
+}
+
+type PreparedMutation =
+  | {
+      kind: 'addNode'
+      node: PreparedNode
+      queued: 'addNode' | 'reconcileNodeFields'
+    }
+  | {
+      kind: 'reconcileNode'
+      node: PreparedNode
+      documentInputs: unknown
+      preserveLinkedAutogrow: boolean
+    }
+  | { kind: 'replaceNode'; node: PreparedNode }
+  | {
+      kind: 'reconcileNodeFields'
+      state: NodeState
+      widgets: WidgetValuePayload
+    }
+  | { kind: 'setWidget'; nodeId: NodeId; name: string; value: WidgetValue }
+  | {
+      kind: 'connect'
+      topology: LinkTopology
+      originOutputs?: NodeState['outputs']
+      targetInputs?: NodeState['inputs']
+    }
+  | {
+      kind: 'removeMissing'
+      nodeIds: readonly NodeId[]
+      linkIds: readonly LinkId[]
+    }
+  | { kind: 'removeLinks'; linkIds: readonly LinkId[] }
+  | {
+      kind: 'deleteNode'
+      nodeId: NodeId
+      removedLinkIds: readonly LinkId[]
+    }
+  | { kind: 'clearSemanticGraph'; nodeIds: readonly NodeId[] }
+
+function isSlotRecord(value: unknown): value is { name?: unknown } {
+  return value !== null && typeof value === 'object'
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+}
+
+function cloneRecord(value: unknown): Record<string, unknown> {
+  return isRecord(value) ? structuredClone(value) : {}
+}
+
+export interface SemanticNodePayload extends Record<string, unknown> {
+  id: string | number
+  type: string
+}
+
+export interface SemanticLinkPayload {
+  id: number
+  originNodeId: string | number
+  originSlot: number
+  targetNodeId: string | number
+  targetSlot: number
+  type: string | number
+  /** Final semantic slot records after the shared applier handled this link. */
+  originOutputs?: readonly ISerialisableNodeOutput[]
+  targetInputs?: readonly ISerialisableNodeInput[]
+}
+
+/**
+ * Renderer-owned placement geometry. `viewportBounds` returns the visible
+ * area in canvas coordinates only while the displayed graph is the scope's
+ * owning graph, and null otherwise (background workflow, subgraph editing,
+ * no canvas mounted). See ADR-CRDT-PLACEMENT-0035.
+ */
+export interface SemanticPlacementPort {
+  nodeBounds(scope: GraphScope, nodeId: NodeId): PlacementRect | null
+  viewportBounds(scope: GraphScope): PlacementRect | null
 }
 
 /**
@@ -205,77 +276,6 @@ export interface GraphMutationsDeps {
   liveNodes?: SemanticLiveNodeQueryPort
 }
 
-type QueuedMutation =
-  | { kind: 'addNode'; payload: SemanticNodePayload }
-  | { kind: 'reconcileNode'; payload: SemanticNodePayload }
-  | { kind: 'reconcileNodeFields'; payload: SemanticNodePayload }
-  | { kind: 'setWidget'; nodeId: NodeId; name: string; value: unknown }
-  | { kind: 'connect'; link: SemanticLinkPayload }
-  | {
-      kind: 'removeMissing'
-      retainedNodeIds: readonly NodeId[]
-      retainedLinkIds: readonly number[]
-    }
-  | { kind: 'removeLinks'; linkIds: readonly number[] }
-  | {
-      kind: 'deleteNode'
-      nodeId: NodeId
-      removedLinkIds: readonly number[]
-    }
-  | { kind: 'clearSemanticGraph' }
-
-interface PreparedNode {
-  state: NodeState
-  layout: SemanticNodeLayout
-  widgets: WidgetValuePayload
-}
-
-type PreparedMutation =
-  | {
-      kind: 'addNode'
-      node: PreparedNode
-      queued: 'addNode' | 'reconcileNodeFields'
-    }
-  | {
-      kind: 'reconcileNode'
-      node: PreparedNode
-      documentInputs: unknown
-      preserveLinkedAutogrow: boolean
-    }
-  | { kind: 'replaceNode'; node: PreparedNode }
-  | {
-      kind: 'reconcileNodeFields'
-      state: NodeState
-      widgets: WidgetValuePayload
-    }
-  | { kind: 'setWidget'; nodeId: NodeId; name: string; value: WidgetValue }
-  | {
-      kind: 'connect'
-      topology: LinkTopology
-      originOutputs?: NodeState['outputs']
-      targetInputs?: NodeState['inputs']
-    }
-  | {
-      kind: 'removeMissing'
-      nodeIds: readonly NodeId[]
-      linkIds: readonly LinkId[]
-    }
-  | { kind: 'removeLinks'; linkIds: readonly LinkId[] }
-  | {
-      kind: 'deleteNode'
-      nodeId: NodeId
-      removedLinkIds: readonly LinkId[]
-    }
-  | { kind: 'clearSemanticGraph'; nodeIds: readonly NodeId[] }
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value)
-}
-
-function cloneRecord(value: unknown): Record<string, unknown> {
-  return isRecord(value) ? structuredClone(value) : {}
-}
-
 const SERIALISABLE_SLOT_FIELDS = [
   'name',
   'localized_name',
@@ -290,6 +290,122 @@ const SERIALISABLE_SLOT_FIELDS = [
   'nameLocked',
   'pos'
 ] as const satisfies readonly (keyof INodeSlot)[]
+
+/**
+ * Whether the node TYPE's own static definition has an opinion on `name`'s
+ * autogrow membership -- and, when it does, what that opinion is. `known:
+ * false` means the type itself hasn't loaded into `useNodeDefStore()` yet,
+ * so this has no evidence either way and the name-shape heuristic is the
+ * only option left. `known: true` means the type's full, authoritative set
+ * of `COMFY_AUTOGROW_V3` groups is available, so `group: undefined` is a
+ * real "not a member of any of them" -- not "unknown" -- exactly like a
+ * live node's own `notMember` answer.
+ */
+type NodeDefAutogrowAnswer =
+  | { readonly known: false }
+  | { readonly known: true; readonly group: string | undefined }
+
+type ConnectTargetSlotResolution =
+  | { readonly error: string }
+  | {
+      readonly targetInputs: NodeState['inputs']
+      readonly targetSlot: number
+    }
+
+type NodeColors = Pick<NodeState, 'bgcolor' | 'boxcolor' | 'color'>
+
+type NodeDisplayFlags = Pick<NodeState, 'resizable' | 'shape' | 'showAdvanced'>
+
+type ChangedNodeSlots = Map<NodeId, Pick<NodeState, 'inputs' | 'outputs'>>
+
+/**
+ * A remembered live `member`/`notMember` answer, pinned to the exact node
+ * INCARNATION it was answered for: the node type, and the identity of that
+ * type's definition object at the time. Both are part of the entry because a
+ * node id can be reused for a different type (replace), and a type name can
+ * be re-registered against a different schema (hot reload) -- either way the
+ * old answer describes a node that no longer exists and must not win.
+ * `group: null` records a definitive "not a member"; no entry at all means
+ * never resolved.
+ */
+interface RememberedAutogrowGroup {
+  readonly nodeType: string
+  readonly nodeDef: ComfyNodeDefImpl | undefined
+  readonly group: string | null
+}
+
+/**
+ * Distinguishes "never resolved" (the caller should fall through to the node
+ * definition, then the name-shape heuristic) from a remembered, definitive
+ * `notMember` (`group: undefined`, but resolved -- the caller must trust that
+ * "no" and not let the heuristic override it).
+ */
+type RememberedAutogrowRead =
+  | { readonly remembered: true; readonly group: string | undefined }
+  | { readonly remembered: false }
+
+type StagedAutogrowWrite =
+  | {
+      readonly kind: 'remember'
+      readonly scope: GraphScope
+      readonly nodeId: NodeId
+      readonly name: string
+      readonly entry: RememberedAutogrowGroup
+    }
+  | {
+      readonly kind: 'forget'
+      readonly scope: GraphScope
+      readonly nodeId: NodeId
+    }
+
+/**
+ * The writes one batch wants to make to the follower's autogrow memory. They
+ * are staged rather than applied, because `prepare()` resolves (and therefore
+ * learns) autogrow answers before a later queued mutation can still reject the
+ * whole batch: a rejected batch must leave no trace, or a retry that finds the
+ * live port `unavailable` classifies slots off an answer the store never
+ * accepted.
+ *
+ * Each mutation's writes go into its own pending overlay (`remember`/`forget`
+ * build it lazily off `read`'s current view -- this mutation's own overlay if
+ * already touched, else the nearest earlier-indexed mutation's still-pending
+ * overlay, else the batch's confirmed shadow, else the persisted store)
+ * rather than straight onto the batch's shared shadow. A later mutation can
+ * therefore see an earlier one's answer as soon as it is staged during
+ * `prepare()`, before either has committed -- required for two mutations
+ * prepared back to back in one batch to agree on the same name's
+ * classification. `applyMutation` merges that overlay onto the shadow once
+ * that mutation's own graph effect has actually landed; `rollbackMutation`
+ * instead discards the overlay outright, so a mutation whose effect did not
+ * land (e.g. `connect`'s `replaceLink` refusing a stale or collided target)
+ * can never leak its staged answer to a later mutation in the same batch, no
+ * matter how the two interleave on the same node. Each write is also
+ * journaled the same way, so `applyMutation`
+ * can additionally replay it onto the persisted store; a batch whose commit
+ * throws partway through therefore keeps the memory writes for every
+ * mutation that committed before the throw, and drops the rest, instead of
+ * an all-or-nothing `apply()` that would discard already-committed
+ * mutations' writes too.
+ */
+interface AutogrowMemoryDraft {
+  read(
+    scope: GraphScope,
+    nodeId: NodeId,
+    nodeType: string,
+    name: string
+  ): RememberedAutogrowRead
+  remember(
+    scope: GraphScope,
+    nodeId: NodeId,
+    nodeType: string,
+    name: string,
+    group: string | undefined
+  ): void
+  forget(scope: GraphScope, nodeId: NodeId): void
+  beginMutation(mutationIndex: number): void
+  applyMutation(mutationIndex: number): void
+  rollbackMutation(mutationIndex: number): void
+}
 
 function serialisableSlotFields(
   raw: Record<string, unknown>,
@@ -465,20 +581,6 @@ function hasNonGrowthInputSetChange(
 }
 
 /**
- * Whether the node TYPE's own static definition has an opinion on `name`'s
- * autogrow membership -- and, when it does, what that opinion is. `known:
- * false` means the type itself hasn't loaded into `useNodeDefStore()` yet,
- * so this has no evidence either way and the name-shape heuristic is the
- * only option left. `known: true` means the type's full, authoritative set
- * of `COMFY_AUTOGROW_V3` groups is available, so `group: undefined` is a
- * real "not a member of any of them" -- not "unknown" -- exactly like a
- * live node's own `notMember` answer.
- */
-type NodeDefAutogrowAnswer =
-  | { readonly known: false }
-  | { readonly known: true; readonly group: string | undefined }
-
-/**
  * Reads the same `COMFY_AUTOGROW_V3` registration `SemanticLiveNodeQueryPort`
  * would, off the node TYPE's own static definition rather than a live
  * instance -- real provenance, just as authoritative as a live answer,
@@ -593,13 +695,6 @@ function mergeInputSlotsByName(
   return merged
 }
 
-type ConnectTargetSlotResolution =
-  | { readonly error: string }
-  | {
-      readonly targetInputs: NodeState['inputs']
-      readonly targetSlot: number
-    }
-
 function occurrenceIndexOf<T>(
   items: readonly T[],
   index: number,
@@ -680,8 +775,6 @@ function readPair(
     : fallback
 }
 
-type NodeColors = Pick<NodeState, 'bgcolor' | 'boxcolor' | 'color'>
-
 function resolveColorField(
   value: unknown,
   existing?: string
@@ -707,8 +800,6 @@ function resolveNodeColors(
     ...(color !== undefined && { color })
   }
 }
-
-type NodeDisplayFlags = Pick<NodeState, 'resizable' | 'shape' | 'showAdvanced'>
 
 function resolveNodeDisplayFlags(
   payload: SemanticNodePayload
@@ -782,36 +873,6 @@ function prepareTopology(
 function nodeKey(nodeId: NodeId): string {
   return String(nodeId)
 }
-
-/**
- * Whether a link's declared origin output type and target input type are
- * both resolvable and definitively incompatible, using the exact rule
- * `connect` enforces before applying a link (`LiteGraph.isValidConnection`).
- * An unresolvable slot (missing slot list, or an index past its end) reports
- * `false` rather than `true`: `connect`'s own "does not exist" checks give
- * that case a more specific rejection reason, and this predicate exists only
- * to let a caller pre-exclude a link it already knows would be refused for
- * an origin/target TYPE mismatch, not to duplicate every reason `connect`
- * can refuse a link.
- *
- * Exposed so `EcsFollowerAdapter` can keep an already-invalid retained link
- * out of what it projects into the local canvas mirror during
- * reconciliation, without duplicating `LiteGraph`'s compatibility rules or
- * risking them drifting from what `connect` actually enforces.
- */
-export function isIncompatibleLinkType(link: {
-  originSlot: number
-  targetSlot: number
-  originOutputs?: readonly ISerialisableNodeOutput[]
-  targetInputs?: readonly ISerialisableNodeInput[]
-}): boolean {
-  const originType = link.originOutputs?.[link.originSlot]?.type
-  const targetType = link.targetInputs?.[link.targetSlot]?.type
-  if (originType === undefined || targetType === undefined) return false
-  return !LiteGraph.isValidConnection(originType, targetType)
-}
-
-type ChangedNodeSlots = Map<NodeId, Pick<NodeState, 'inputs' | 'outputs'>>
 
 function keepsOriginSlot(
   topology: LinkTopology,
@@ -925,95 +986,6 @@ function removeSimulatedLink(
     const node = nodes.get(nodeKey(nodeId))
     if (node) nodes.set(nodeKey(nodeId), { ...node, ...slots })
   }
-}
-
-/**
- * A remembered live `member`/`notMember` answer, pinned to the exact node
- * INCARNATION it was answered for: the node type, and the identity of that
- * type's definition object at the time. Both are part of the entry because a
- * node id can be reused for a different type (replace), and a type name can
- * be re-registered against a different schema (hot reload) -- either way the
- * old answer describes a node that no longer exists and must not win.
- * `group: null` records a definitive "not a member"; no entry at all means
- * never resolved.
- */
-interface RememberedAutogrowGroup {
-  readonly nodeType: string
-  readonly nodeDef: ComfyNodeDefImpl | undefined
-  readonly group: string | null
-}
-
-/**
- * Distinguishes "never resolved" (the caller should fall through to the node
- * definition, then the name-shape heuristic) from a remembered, definitive
- * `notMember` (`group: undefined`, but resolved -- the caller must trust that
- * "no" and not let the heuristic override it).
- */
-type RememberedAutogrowRead =
-  | { readonly remembered: true; readonly group: string | undefined }
-  | { readonly remembered: false }
-
-type StagedAutogrowWrite =
-  | {
-      readonly kind: 'remember'
-      readonly scope: GraphScope
-      readonly nodeId: NodeId
-      readonly name: string
-      readonly entry: RememberedAutogrowGroup
-    }
-  | {
-      readonly kind: 'forget'
-      readonly scope: GraphScope
-      readonly nodeId: NodeId
-    }
-
-/**
- * The writes one batch wants to make to the follower's autogrow memory. They
- * are staged rather than applied, because `prepare()` resolves (and therefore
- * learns) autogrow answers before a later queued mutation can still reject the
- * whole batch: a rejected batch must leave no trace, or a retry that finds the
- * live port `unavailable` classifies slots off an answer the store never
- * accepted.
- *
- * Each mutation's writes go into its own pending overlay (`remember`/`forget`
- * build it lazily off `read`'s current view -- this mutation's own overlay if
- * already touched, else the nearest earlier-indexed mutation's still-pending
- * overlay, else the batch's confirmed shadow, else the persisted store)
- * rather than straight onto the batch's shared shadow. A later mutation can
- * therefore see an earlier one's answer as soon as it is staged during
- * `prepare()`, before either has committed -- required for two mutations
- * prepared back to back in one batch to agree on the same name's
- * classification. `applyMutation` merges that overlay onto the shadow once
- * that mutation's own graph effect has actually landed; `rollbackMutation`
- * instead discards the overlay outright, so a mutation whose effect did not
- * land (e.g. `connect`'s `replaceLink` refusing a stale or collided target)
- * can never leak its staged answer to a later mutation in the same batch, no
- * matter how the two interleave on the same node. Each write is also
- * journaled the same way, so `applyMutation`
- * can additionally replay it onto the persisted store; a batch whose commit
- * throws partway through therefore keeps the memory writes for every
- * mutation that committed before the throw, and drops the rest, instead of
- * an all-or-nothing `apply()` that would discard already-committed
- * mutations' writes too.
- */
-interface AutogrowMemoryDraft {
-  read(
-    scope: GraphScope,
-    nodeId: NodeId,
-    nodeType: string,
-    name: string
-  ): RememberedAutogrowRead
-  remember(
-    scope: GraphScope,
-    nodeId: NodeId,
-    nodeType: string,
-    name: string,
-    group: string | undefined
-  ): void
-  forget(scope: GraphScope, nodeId: NodeId): void
-  beginMutation(mutationIndex: number): void
-  applyMutation(mutationIndex: number): void
-  rollbackMutation(mutationIndex: number): void
 }
 
 /**
@@ -1256,6 +1228,34 @@ function createAutogrowMemory() {
       }
     }
   }
+}
+
+/**
+ * Whether a link's declared origin output type and target input type are
+ * both resolvable and definitively incompatible, using the exact rule
+ * `connect` enforces before applying a link (`LiteGraph.isValidConnection`).
+ * An unresolvable slot (missing slot list, or an index past its end) reports
+ * `false` rather than `true`: `connect`'s own "does not exist" checks give
+ * that case a more specific rejection reason, and this predicate exists only
+ * to let a caller pre-exclude a link it already knows would be refused for
+ * an origin/target TYPE mismatch, not to duplicate every reason `connect`
+ * can refuse a link.
+ *
+ * Exposed so `EcsFollowerAdapter` can keep an already-invalid retained link
+ * out of what it projects into the local canvas mirror during
+ * reconciliation, without duplicating `LiteGraph`'s compatibility rules or
+ * risking them drifting from what `connect` actually enforces.
+ */
+export function isIncompatibleLinkType(link: {
+  originSlot: number
+  targetSlot: number
+  originOutputs?: readonly ISerialisableNodeOutput[]
+  targetInputs?: readonly ISerialisableNodeInput[]
+}): boolean {
+  const originType = link.originOutputs?.[link.originSlot]?.type
+  const targetType = link.targetInputs?.[link.targetSlot]?.type
+  if (originType === undefined || targetType === undefined) return false
+  return !LiteGraph.isValidConnection(originType, targetType)
 }
 
 /**

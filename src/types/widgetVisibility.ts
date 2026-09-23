@@ -20,7 +20,10 @@ const WIDGET_SURFACE_TIERS = ['shown', 'advanced', 'never'] as const
 
 type WidgetSurfaceTier = (typeof WIDGET_SURFACE_TIERS)[number]
 
-export type WidgetSurfaces = Record<WidgetSurface, WidgetSurfaceTier>
+interface WidgetSuppression {
+  byExtension: boolean
+  byConnection: boolean
+}
 
 function isWidgetSurfaces(value: unknown): value is WidgetSurfaces {
   return (
@@ -31,10 +34,33 @@ function isWidgetSurfaces(value: unknown): value is WidgetSurfaces {
   )
 }
 
-interface WidgetSuppression {
-  byExtension: boolean
-  byConnection: boolean
+function isTierVisible(
+  tier: WidgetSurfaceTier,
+  view: { showAdvanced: boolean }
+): boolean {
+  switch (tier) {
+    case 'shown':
+      return true
+    case 'advanced':
+      return view.showAdvanced
+    case 'never':
+      return false
+    default: {
+      const unreachable: never = tier
+      return unreachable
+    }
+  }
 }
+
+function isNeverShown(surfaces: WidgetSurfaces): boolean {
+  return (
+    surfaces.canvas === 'never' &&
+    surfaces.vueNode === 'never' &&
+    surfaces.panel === 'never'
+  )
+}
+
+export type WidgetSurfaces = Record<WidgetSurface, WidgetSurfaceTier>
 
 export interface WidgetVisibilityComponent {
   surfaces: WidgetSurfaces
@@ -116,24 +142,6 @@ export function deriveWidgetVisibility(
   }
 }
 
-function isTierVisible(
-  tier: WidgetSurfaceTier,
-  view: { showAdvanced: boolean }
-): boolean {
-  switch (tier) {
-    case 'shown':
-      return true
-    case 'advanced':
-      return view.showAdvanced
-    case 'never':
-      return false
-    default: {
-      const unreachable: never = tier
-      return unreachable
-    }
-  }
-}
-
 export function isWidgetVisibleOnSurface(
   visibility: WidgetVisibilityComponent,
   surface: WidgetSurface,
@@ -157,14 +165,6 @@ export function occupiesCanvasRow(
   return (
     visibility.suppression.byConnection ||
     isTierVisible(visibility.surfaces.canvas, view)
-  )
-}
-
-function isNeverShown(surfaces: WidgetSurfaces): boolean {
-  return (
-    surfaces.canvas === 'never' &&
-    surfaces.vueNode === 'never' &&
-    surfaces.panel === 'never'
   )
 }
 

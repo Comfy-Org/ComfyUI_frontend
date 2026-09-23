@@ -3,14 +3,14 @@ import { getCurrentScope, onScopeDispose, ref, toValue, watch } from 'vue'
 import type { MaybeRefOrGetter, Ref, WatchStopHandle } from 'vue'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 
+function signature(scope: string | null, nodes: SelectedNode[]): string {
+  return JSON.stringify([scope, nodes.map(selectedNodeKey).sort()])
+}
+
 export interface SelectedNode {
   id: string
   locatorId?: NodeLocatorId
   title: string
-}
-
-export function selectedNodeKey(node: SelectedNode): string {
-  return node.locatorId ?? node.id
 }
 
 export interface UseCanvasSelectionOptions {
@@ -26,8 +26,8 @@ export interface UseCanvasSelectionOptions {
   retainStagedNode?: (node: SelectedNode) => boolean
 }
 
-function signature(scope: string | null, nodes: SelectedNode[]): string {
-  return JSON.stringify([scope, nodes.map(selectedNodeKey).sort()])
+export function selectedNodeKey(node: SelectedNode): string {
+  return node.locatorId ?? node.id
 }
 
 export function useCanvasSelection(options: UseCanvasSelectionOptions) {

@@ -11,23 +11,6 @@ import type {
   CleanExtensionScheduler
 } from '@/lib/litegraph/test/fixtures/cleanExtensionCompatFixture'
 
-class ManualScheduler implements CleanExtensionScheduler {
-  private readonly callbacks = new Set<() => void>()
-
-  setInterval(callback: () => void, _delay: number): () => void {
-    this.callbacks.add(callback)
-    return () => this.callbacks.delete(callback)
-  }
-
-  tick(): void {
-    for (const callback of this.callbacks) callback()
-  }
-
-  get activeTimers(): number {
-    return this.callbacks.size
-  }
-}
-
 interface MatrixSetup {
   graph: LGraph
   nodes: LGraphNode[]
@@ -97,6 +80,23 @@ function runMode(mode: CleanExtensionMode) {
   setup.scheduler.tick()
   setup.host.events.dispatchEvent(new Event('fixture:refresh'))
   return { ...setup, before, fixture, after: topology(setup.graph) }
+}
+
+class ManualScheduler implements CleanExtensionScheduler {
+  private readonly callbacks = new Set<() => void>()
+
+  setInterval(callback: () => void, _delay: number): () => void {
+    this.callbacks.add(callback)
+    return () => this.callbacks.delete(callback)
+  }
+
+  tick(): void {
+    for (const callback of this.callbacks) callback()
+  }
+
+  get activeTimers(): number {
+    return this.callbacks.size
+  }
 }
 
 describe('clean extension compatibility fixture', () => {

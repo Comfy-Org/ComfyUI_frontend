@@ -13,14 +13,9 @@ const SEEK_EVENT_TIMEOUT_MS = 5000
 const FRAME_DECODE_TIMEOUT_MS = 5000
 const FRAME_DECODE_RETRY_INTERVAL_MS = 250
 
-export type FilmstripError = 'canvas-unavailable' | 'load-failed'
-
 interface UseVideoFilmstripOptions {
   fps?: number
 }
-
-class EventTimeoutError extends Error {}
-class LoadAbortedError extends Error {}
 
 function waitForEvent(
   target: EventTarget,
@@ -70,7 +65,6 @@ function blobToDataUrl(blob: Blob): Promise<string> {
     reader.readAsDataURL(blob)
   })
 }
-
 function canvasToJpegDataUrl(canvas: HTMLCanvasElement): Promise<string> {
   return new Promise((resolve) => {
     canvas.toBlob(
@@ -193,6 +187,12 @@ async function captureRepresentativeFrame(
   const frame = await captureFrame(video, canvas, context)
   return frame || waitForDecodableFrame(video, canvas, context, signal)
 }
+
+class EventTimeoutError extends Error {}
+
+class LoadAbortedError extends Error {}
+
+export type FilmstripError = 'canvas-unavailable' | 'load-failed'
 
 export function useVideoFilmstrip(
   videoUrl: Ref<string | undefined>,

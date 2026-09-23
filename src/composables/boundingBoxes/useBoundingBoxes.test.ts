@@ -42,6 +42,13 @@ const ctx = {
   lineWidth: 0
 } as unknown as CanvasRenderingContext2D
 
+interface MockNode {
+  widgets: { name: string; value: unknown }[]
+  findInputSlot: (name: string) => number
+  getInputNode: () => null
+  isInputConnected?: () => boolean
+}
+
 function makeCanvas(): HTMLCanvasElement {
   const el = document.createElement('canvas')
   Object.defineProperty(el, 'clientWidth', { value: 100, configurable: true })
@@ -62,13 +69,6 @@ function makeCanvas(): HTMLCanvasElement {
   el.setPointerCapture = () => {}
   el.releasePointerCapture = () => {}
   return el
-}
-
-interface MockNode {
-  widgets: { name: string; value: unknown }[]
-  findInputSlot: (name: string) => number
-  getInputNode: () => null
-  isInputConnected?: () => boolean
 }
 
 function makeNode(): MockNode {

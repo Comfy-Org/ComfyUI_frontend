@@ -12,6 +12,25 @@ import type { Subgraph } from '@/lib/litegraph/src/subgraph/Subgraph'
 import type { UUID } from '@/utils/uuid'
 
 /**
+ * Whether a detached node's widget values leave the store with it. A node that
+ * may come back — undo of a deletion — keeps its values and drops only its
+ * ordering; a node whose whole graph is going away takes its values along.
+ */
+type WidgetDetachMode = 'keep-values' | 'discard-values'
+
+function releaseNodePreviewExposures(
+  rootGraphId: UUID,
+  node: LGraphNode
+): void {
+  const previewExposureStore = usePreviewExposureStore()
+  const hostNodeLocator = String(node.id)
+  if (!previewExposureStore.getExposures(rootGraphId, hostNodeLocator).length) {
+    return
+  }
+  previewExposureStore.setExposures(rootGraphId, hostNodeLocator, [])
+}
+
+/**
  * Registers a node's shell state and its widget bindings with the app
  * stores. Call once the node has a valid id and graph reference. Retries
  * with a freshly minted id on a registration collision.
@@ -38,25 +57,6 @@ export function attachNodeToStores(
     node.id,
     getWidgetIds(node.widgets)
   )
-}
-
-/**
- * Whether a detached node's widget values leave the store with it. A node that
- * may come back — undo of a deletion — keeps its values and drops only its
- * ordering; a node whose whole graph is going away takes its values along.
- */
-type WidgetDetachMode = 'keep-values' | 'discard-values'
-
-function releaseNodePreviewExposures(
-  rootGraphId: UUID,
-  node: LGraphNode
-): void {
-  const previewExposureStore = usePreviewExposureStore()
-  const hostNodeLocator = String(node.id)
-  if (!previewExposureStore.getExposures(rootGraphId, hostNodeLocator).length) {
-    return
-  }
-  previewExposureStore.setExposures(rootGraphId, hostNodeLocator, [])
 }
 
 /**

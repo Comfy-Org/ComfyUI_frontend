@@ -118,8 +118,6 @@ function buildExecutionNodeLookup(
  */
 export const MAX_PROGRESS_JOBS = 1000
 
-export type WorkflowExecutionStatus = 'running' | 'completed' | 'failed'
-
 interface WorkflowStatusUpdate {
   status: WorkflowExecutionStatus
   executionStartedAt?: number
@@ -132,6 +130,8 @@ interface PendingExecutionError {
   detail: ExecutionErrorWsMessage
   endTime: number
 }
+
+export type WorkflowExecutionStatus = 'running' | 'completed' | 'failed'
 
 export const WORKFLOW_STATUS_I18N_KEYS: Record<
   WorkflowExecutionStatus,

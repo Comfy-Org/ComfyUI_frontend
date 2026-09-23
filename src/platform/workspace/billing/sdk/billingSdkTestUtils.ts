@@ -39,6 +39,15 @@ type PendingOverrides = Partial<
 > &
   Partial<BillingPresentationState>
 
+function fakeReader() {
+  return {
+    read: vi.fn(),
+    getSnapshot: vi.fn(),
+    invalidate: vi.fn(),
+    dispose: vi.fn()
+  }
+}
+
 export function pendingTopup(
   overrides: PendingOverrides = {}
 ): PendingBillingOperation {
@@ -98,15 +107,6 @@ export function settledTopup<
   P extends 'succeeded' | 'timed_out' | 'reconciliation_needed' | 'superseded'
 >(phase: P): BillingOperationIdentity & { readonly phase: P } {
   return { ...IDENTITY, phase }
-}
-
-function fakeReader() {
-  return {
-    read: vi.fn(),
-    getSnapshot: vi.fn(),
-    invalidate: vi.fn(),
-    dispose: vi.fn()
-  }
 }
 
 /** A composition root stand-in whose lifecycle the test publishes into. */

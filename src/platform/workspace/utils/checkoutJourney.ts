@@ -51,6 +51,28 @@ const toEntrySource = (value: unknown): CheckoutEntrySource =>
     ? (value as CheckoutEntrySource)
     : 'unknown'
 
+interface CheckoutJourneyIdentity {
+  actorUid: string
+  workspaceId: string
+}
+
+function isCheckoutJourneyExpired(
+  record: CheckoutJourneyRecord,
+  now: number
+): boolean {
+  return now - record.started_at_ms > CHECKOUT_JOURNEY_MAX_AGE_MS
+}
+
+function journeyMatchesIdentity(
+  record: CheckoutJourneyRecord,
+  identity: CheckoutJourneyIdentity
+): boolean {
+  return (
+    record.actor_uid === identity.actorUid &&
+    record.workspace_id === identity.workspaceId
+  )
+}
+
 export interface CheckoutJourneyRecord {
   journey_id: string
   entered_at: string
@@ -73,11 +95,6 @@ export interface CheckoutJourneyRecord {
 export type CheckoutAssignment =
   | { status: 'resolved'; arm: CheckoutJourneyArm }
   | { status: 'unavailable' }
-
-interface CheckoutJourneyIdentity {
-  actorUid: string
-  workspaceId: string
-}
 
 export interface StartCheckoutJourneyInput extends CheckoutJourneyIdentity {
   entryFlow: CheckoutEntryFlow
@@ -167,23 +184,6 @@ export function toCheckoutJourneyContext(
         assigned_arm: record.assigned_arm
       }
     : { ...base, assignment_status: 'unavailable' }
-}
-
-function isCheckoutJourneyExpired(
-  record: CheckoutJourneyRecord,
-  now: number
-): boolean {
-  return now - record.started_at_ms > CHECKOUT_JOURNEY_MAX_AGE_MS
-}
-
-function journeyMatchesIdentity(
-  record: CheckoutJourneyRecord,
-  identity: CheckoutJourneyIdentity
-): boolean {
-  return (
-    record.actor_uid === identity.actorUid &&
-    record.workspace_id === identity.workspaceId
-  )
 }
 
 /**
@@ -403,6 +403,11 @@ type PersistedJourneyIdentity = Pick<
   'journey_id' | 'entered_at' | 'started_at_ms' | 'actor_uid' | 'workspace_id'
 >
 
+type PersistedAssignment = Pick<
+  CheckoutJourneyRecord,
+  'assignment_status' | 'assigned_arm'
+>
+
 function readIdentity(
   candidate: Record<string, unknown>
 ): PersistedJourneyIdentity | null {
@@ -421,11 +426,6 @@ function readIdentity(
     ? { journey_id, entered_at, started_at_ms, actor_uid, workspace_id }
     : null
 }
-
-type PersistedAssignment = Pick<
-  CheckoutJourneyRecord,
-  'assignment_status' | 'assigned_arm'
->
 
 /**
  * Enforce the assignment invariant on persisted records: resolved must carry an

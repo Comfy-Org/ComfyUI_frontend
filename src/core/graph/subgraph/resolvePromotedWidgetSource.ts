@@ -14,18 +14,18 @@ type PromotedWidgetInput = INodeInputSlot & {
   widgetId: NonNullable<INodeInputSlot['widgetId']>
 }
 
-function hasWidgetId(
-  input: INodeInputSlot | undefined
-): input is PromotedWidgetInput {
-  return input?.widgetId !== undefined
-}
-
 interface ResolvedPromotedWidgetSource {
   input: PromotedWidgetInput
   sourceExecutionId?: NodeExecutionId
   sourceNode: LGraphNode
   sourceWidget: IBaseWidget
   sourceWidgetName: string
+}
+
+function hasWidgetId(
+  input: INodeInputSlot | undefined
+): input is PromotedWidgetInput {
+  return input?.widgetId !== undefined
 }
 
 export function resolvePromotedWidgetSource(

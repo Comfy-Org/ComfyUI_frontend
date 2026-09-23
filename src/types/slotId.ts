@@ -1,13 +1,13 @@
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 
-export type SlotId = string & { readonly __brand: 'SlotId' }
-export type SlotIndex = number
-export type SlotDirection = 'input' | 'output'
-
 function toSlotId(value: string): SlotId {
   return value as SlotId
 }
+export type SlotId = string & { readonly __brand: 'SlotId' }
+export type SlotIndex = number
+
+export type SlotDirection = 'input' | 'output'
 
 export function slotId(
   nodeId: NodeId,

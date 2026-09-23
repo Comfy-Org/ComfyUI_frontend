@@ -74,21 +74,6 @@ class PlainNode extends LGraphNode {
 
 const canvases: LGraphCanvas[] = []
 
-function createCanvas(graph: LGraph): LGraphCanvas {
-  const el = document.createElement('canvas')
-  el.width = 800
-  el.height = 600
-  el.getContext = vi.fn().mockReturnValue(createMockCanvasRenderingContext2D())
-  el.getBoundingClientRect = vi
-    .fn()
-    .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })
-  // LGraph.remove -> checkPanels dereferences canvas.parentNode.
-  document.body.append(el)
-  const canvas = new LGraphCanvas(el, graph, { skip_render: true })
-  canvases.push(canvas)
-  return canvas
-}
-
 interface Fixture {
   rootGraph: LGraph
   original: SubgraphNode
@@ -102,6 +87,21 @@ interface Fixture {
   originalInLinkId: LinkId
   originalOutLinkId: LinkId
   copyInLinkId: LinkId
+}
+
+function createCanvas(graph: LGraph): LGraphCanvas {
+  const el = document.createElement('canvas')
+  el.width = 800
+  el.height = 600
+  el.getContext = vi.fn().mockReturnValue(createMockCanvasRenderingContext2D())
+  el.getBoundingClientRect = vi
+    .fn()
+    .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })
+  // LGraph.remove -> checkPanels dereferences canvas.parentNode.
+  document.body.append(el)
+  const canvas = new LGraphCanvas(el, graph, { skip_render: true })
+  canvases.push(canvas)
+  return canvas
 }
 
 /**

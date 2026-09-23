@@ -1,6 +1,14 @@
 import type { FuseOptionKey, FuseSearchOptions, IFuseOptions } from 'fuse.js'
 import Fuse from 'fuse.js'
 
+function isFuseSearchable(item: unknown): item is FuseSearchable {
+  return (
+    typeof item === 'object' &&
+    item !== null &&
+    'postProcessSearchScores' in item
+  )
+}
+
 export type SearchAuxScore = number[]
 
 export interface FuseFilterWithValue<T, O = string> {
@@ -8,79 +16,8 @@ export interface FuseFilterWithValue<T, O = string> {
   value: O
 }
 
-export class FuseFilter<T, O = string> {
-  public readonly fuseSearch: FuseSearch<O>
-  /** The unique identifier for the filter. */
-  public readonly id: string
-  /** The name of the filter for display purposes. */
-  public readonly name: string
-  /** The sequence of characters to invoke the filter. */
-  public readonly invokeSequence: string
-  /** A function that returns the options for the filter. */
-  public readonly getItemOptions: (item: T) => O[]
-
-  constructor(
-    data: T[],
-    options: {
-      id: string
-      name: string
-      invokeSequence: string
-      getItemOptions: (item: T) => O[]
-      fuseOptions?: IFuseOptions<O>
-    }
-  ) {
-    this.id = options.id
-    this.name = options.name
-    this.invokeSequence = options.invokeSequence
-    this.getItemOptions = options.getItemOptions
-
-    this.fuseSearch = new FuseSearch(this.getAllNodeOptions(data), {
-      fuseOptions: options.fuseOptions
-    })
-  }
-
-  public getAllNodeOptions(data: T[]): O[] {
-    const options = new Set<O>()
-    for (const item of data) {
-      for (const option of this.getItemOptions(item)) {
-        options.add(option)
-      }
-    }
-    return Array.from(options)
-  }
-
-  public matches(
-    item: T,
-    value: O,
-    extraOptions: {
-      wildcard?: O
-    } = {}
-  ): boolean {
-    const { wildcard } = extraOptions
-
-    if (wildcard && value === wildcard) {
-      return true
-    }
-    const options = this.getItemOptions(item)
-    if (wildcard) return options.some((option) => option === wildcard)
-    if (typeof value !== 'string' || !value.includes(','))
-      return options.includes(value)
-    const values = value.split(',')
-    //Alas, typescript doesn't understand string satisfies O
-    return values.some((v) => options.includes(v as O))
-  }
-}
-
 export interface FuseSearchable {
   postProcessSearchScores: (scores: SearchAuxScore) => SearchAuxScore
-}
-
-function isFuseSearchable(item: unknown): item is FuseSearchable {
-  return (
-    typeof item === 'object' &&
-    item !== null &&
-    'postProcessSearchScores' in item
-  )
 }
 
 /**
@@ -215,5 +152,68 @@ export class FuseSearch<T> {
       }
     }
     return a.length - b.length
+  }
+}
+
+export class FuseFilter<T, O = string> {
+  public readonly fuseSearch: FuseSearch<O>
+  /** The unique identifier for the filter. */
+  public readonly id: string
+  /** The name of the filter for display purposes. */
+  public readonly name: string
+  /** The sequence of characters to invoke the filter. */
+  public readonly invokeSequence: string
+  /** A function that returns the options for the filter. */
+  public readonly getItemOptions: (item: T) => O[]
+
+  constructor(
+    data: T[],
+    options: {
+      id: string
+      name: string
+      invokeSequence: string
+      getItemOptions: (item: T) => O[]
+      fuseOptions?: IFuseOptions<O>
+    }
+  ) {
+    this.id = options.id
+    this.name = options.name
+    this.invokeSequence = options.invokeSequence
+    this.getItemOptions = options.getItemOptions
+
+    this.fuseSearch = new FuseSearch(this.getAllNodeOptions(data), {
+      fuseOptions: options.fuseOptions
+    })
+  }
+
+  public getAllNodeOptions(data: T[]): O[] {
+    const options = new Set<O>()
+    for (const item of data) {
+      for (const option of this.getItemOptions(item)) {
+        options.add(option)
+      }
+    }
+    return Array.from(options)
+  }
+
+  public matches(
+    item: T,
+    value: O,
+    extraOptions: {
+      wildcard?: O
+    } = {}
+  ): boolean {
+    const { wildcard } = extraOptions
+
+    if (wildcard && value === wildcard) {
+      return true
+    }
+    const options = this.getItemOptions(item)
+    if (wildcard) return options.some((option) => option === wildcard)
+    if (typeof value !== 'string' || !value.includes(','))
+      return options.includes(value)
+    const values = value.split(',')
+    //Alas, typescript doesn't understand string satisfies O
+    return values.some((v) => options.includes(v as O))
   }
 }

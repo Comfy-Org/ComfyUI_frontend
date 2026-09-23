@@ -23,29 +23,6 @@ import type {
 } from '@/renderer/core/layout/types'
 import { pointInBounds } from '@/renderer/core/layout/utils/layoutMath'
 
-export interface SlotPositionContext {
-  /** Node's X position in graph coordinates */
-  nodeX: number
-  /** Node's Y position in graph coordinates */
-  nodeY: number
-  /** Node's width */
-  nodeWidth: number
-  /** Node's height */
-  nodeHeight: number
-  /** Whether the node is collapsed */
-  collapsed: boolean
-  /** Collapsed width (if applicable) */
-  collapsedWidth?: number
-  /** Node constructor's slot_start_y offset */
-  slotStartY?: number
-  /** Node's input slots */
-  inputs: INodeInputSlot[]
-  /** Node's output slots */
-  outputs: INodeOutputSlot[]
-  /** Node's widgets (for widget slot detection) */
-  widgets?: Array<{ name?: string }>
-}
-
 /**
  * Calculate the position of an input slot in graph coordinates
  * @param context Node context containing position and slot data
@@ -60,48 +37,6 @@ function calculateInputSlotPos(
   if (!input) return [context.nodeX, context.nodeY]
 
   return calculateInputSlotPosFromSlot(context, input)
-}
-
-/**
- * Calculate the position of an input slot in graph coordinates
- * @param context Node context containing position and slot data
- * @param input The input slot object
- * @returns Position of the input slot center in graph coordinates
- */
-export function calculateInputSlotPosFromSlot(
-  context: SlotPositionContext,
-  input: INodeInputSlot
-): Point {
-  const { nodeX, nodeY, collapsed } = context
-
-  // Handle collapsed nodes
-  if (collapsed) {
-    const halfTitle = LiteGraph.NODE_TITLE_HEIGHT * 0.5
-    return [nodeX, nodeY - halfTitle]
-  }
-
-  // Handle hard-coded positions
-  const { pos } = input
-  if (pos) return [nodeX + pos[0], nodeY + pos[1]]
-
-  // Default vertical slots
-  const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
-  const nodeOffsetY = context.slotStartY || 0
-  let slotIndex = -1
-  const inputIndex = context.inputs.indexOf(input)
-  if (inputIndex === -1) return [nodeX, nodeY]
-  if (!input.pos && !(context.widgets?.length && isWidgetInputSlot(input))) {
-    slotIndex = 0
-    for (const [index, slot] of context.inputs.entries()) {
-      if (index >= inputIndex) break
-      if (!slot.pos && !(context.widgets?.length && isWidgetInputSlot(slot))) {
-        slotIndex++
-      }
-    }
-  }
-  const slotY = (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
-
-  return [nodeX + offsetX, nodeY + slotY + nodeOffsetY]
 }
 
 /**
@@ -140,39 +75,6 @@ function calculateOutputSlotPos(
 
   // TODO: Why +1?
   return [nodeX + nodeWidth + 1 - offsetX, nodeY + slotY + nodeOffsetY]
-}
-
-/**
- * Get a slot center from current node and slot geometry.
- * @param node The LGraphNode
- * @param slotIndex The slot index
- * @param isInput Whether this is an input slot
- * @returns Position of the slot center in graph coordinates
- */
-export function getSlotPosition(
-  node: LGraphNode,
-  slotIndex: number,
-  isInput: boolean
-): Point {
-  if (LiteGraph.vueNodesMode)
-    return getVueSlotPosition(node, slotIndex, isInput)
-
-  const context: SlotPositionContext = {
-    nodeX: node.pos[0],
-    nodeY: node.pos[1],
-    nodeWidth: node.size[0],
-    nodeHeight: node.size[1],
-    collapsed: node.flags.collapsed || false,
-    collapsedWidth: node._collapsed_width,
-    slotStartY: node.constructor.slot_start_y,
-    inputs: node.inputs,
-    outputs: node.outputs,
-    widgets: node.widgets
-  }
-
-  return isInput
-    ? calculateInputSlotPos(context, slotIndex)
-    : calculateOutputSlotPos(context, slotIndex)
 }
 
 function getVueSlotPosition(
@@ -298,22 +200,6 @@ function getVueNodeContentY(node: LGraphNode, nodeY: number): number {
     : nodeY
 }
 
-export function getSlotLayout(
-  node: LGraphNode,
-  slotIndex: number,
-  isInput: boolean
-): SlotLayout | null {
-  const slot = isInput ? node.inputs.at(slotIndex) : node.outputs.at(slotIndex)
-  if (!slot) return null
-
-  return createSlotLayout(
-    node,
-    slotIndex,
-    isInput,
-    getSlotPosition(node, slotIndex, isInput)
-  )
-}
-
 function createSlotLayout(
   node: LGraphNode,
   slotIndex: number,
@@ -329,30 +215,6 @@ function createSlotLayout(
     position: { x, y },
     bounds: { x: x - half, y: y - half, width: size, height: size }
   }
-}
-
-export function getGraphSlotLayout(
-  graph: LGraph,
-  nodeId: LGraphNode['id'],
-  slotIndex: number,
-  isInput: boolean
-): SlotLayout | null {
-  const node = graph.getNodeById(nodeId)
-  return node ? getSlotLayout(node, slotIndex, isInput) : null
-}
-
-export function getSlotLayoutAtPoint(
-  graph: LGraph,
-  point: LayoutPoint,
-  node?: LGraphNode
-): SlotLayout | null {
-  if (node) return getNodeSlotLayoutAtPoint(node, point)
-  const nodes = nodesInRenderOrder(graph)
-  for (let index = nodes.length - 1; index >= 0; index--) {
-    const layout = getNodeSlotLayoutAtPoint(nodes[index], point)
-    if (layout) return layout
-  }
-  return null
 }
 
 function getNodeSlotLayoutAtPoint(
@@ -377,4 +239,142 @@ function getDefaultVerticalOutputs(
   context: SlotPositionContext
 ): INodeOutputSlot[] {
   return context.outputs.filter((slot) => !slot.pos)
+}
+
+export interface SlotPositionContext {
+  /** Node's X position in graph coordinates */
+  nodeX: number
+  /** Node's Y position in graph coordinates */
+  nodeY: number
+  /** Node's width */
+  nodeWidth: number
+  /** Node's height */
+  nodeHeight: number
+  /** Whether the node is collapsed */
+  collapsed: boolean
+  /** Collapsed width (if applicable) */
+  collapsedWidth?: number
+  /** Node constructor's slot_start_y offset */
+  slotStartY?: number
+  /** Node's input slots */
+  inputs: INodeInputSlot[]
+  /** Node's output slots */
+  outputs: INodeOutputSlot[]
+  /** Node's widgets (for widget slot detection) */
+  widgets?: Array<{ name?: string }>
+}
+
+/**
+ * Calculate the position of an input slot in graph coordinates
+ * @param context Node context containing position and slot data
+ * @param input The input slot object
+ * @returns Position of the input slot center in graph coordinates
+ */
+export function calculateInputSlotPosFromSlot(
+  context: SlotPositionContext,
+  input: INodeInputSlot
+): Point {
+  const { nodeX, nodeY, collapsed } = context
+
+  // Handle collapsed nodes
+  if (collapsed) {
+    const halfTitle = LiteGraph.NODE_TITLE_HEIGHT * 0.5
+    return [nodeX, nodeY - halfTitle]
+  }
+
+  // Handle hard-coded positions
+  const { pos } = input
+  if (pos) return [nodeX + pos[0], nodeY + pos[1]]
+
+  // Default vertical slots
+  const offsetX = LiteGraph.NODE_SLOT_HEIGHT * 0.5
+  const nodeOffsetY = context.slotStartY || 0
+  let slotIndex = -1
+  const inputIndex = context.inputs.indexOf(input)
+  if (inputIndex === -1) return [nodeX, nodeY]
+  if (!input.pos && !(context.widgets?.length && isWidgetInputSlot(input))) {
+    slotIndex = 0
+    for (const [index, slot] of context.inputs.entries()) {
+      if (index >= inputIndex) break
+      if (!slot.pos && !(context.widgets?.length && isWidgetInputSlot(slot))) {
+        slotIndex++
+      }
+    }
+  }
+  const slotY = (slotIndex + 0.7) * LiteGraph.NODE_SLOT_HEIGHT
+
+  return [nodeX + offsetX, nodeY + slotY + nodeOffsetY]
+}
+
+/**
+ * Get a slot center from current node and slot geometry.
+ * @param node The LGraphNode
+ * @param slotIndex The slot index
+ * @param isInput Whether this is an input slot
+ * @returns Position of the slot center in graph coordinates
+ */
+export function getSlotPosition(
+  node: LGraphNode,
+  slotIndex: number,
+  isInput: boolean
+): Point {
+  if (LiteGraph.vueNodesMode)
+    return getVueSlotPosition(node, slotIndex, isInput)
+
+  const context: SlotPositionContext = {
+    nodeX: node.pos[0],
+    nodeY: node.pos[1],
+    nodeWidth: node.size[0],
+    nodeHeight: node.size[1],
+    collapsed: node.flags.collapsed || false,
+    collapsedWidth: node._collapsed_width,
+    slotStartY: node.constructor.slot_start_y,
+    inputs: node.inputs,
+    outputs: node.outputs,
+    widgets: node.widgets
+  }
+
+  return isInput
+    ? calculateInputSlotPos(context, slotIndex)
+    : calculateOutputSlotPos(context, slotIndex)
+}
+
+export function getSlotLayout(
+  node: LGraphNode,
+  slotIndex: number,
+  isInput: boolean
+): SlotLayout | null {
+  const slot = isInput ? node.inputs.at(slotIndex) : node.outputs.at(slotIndex)
+  if (!slot) return null
+
+  return createSlotLayout(
+    node,
+    slotIndex,
+    isInput,
+    getSlotPosition(node, slotIndex, isInput)
+  )
+}
+
+export function getGraphSlotLayout(
+  graph: LGraph,
+  nodeId: LGraphNode['id'],
+  slotIndex: number,
+  isInput: boolean
+): SlotLayout | null {
+  const node = graph.getNodeById(nodeId)
+  return node ? getSlotLayout(node, slotIndex, isInput) : null
+}
+
+export function getSlotLayoutAtPoint(
+  graph: LGraph,
+  point: LayoutPoint,
+  node?: LGraphNode
+): SlotLayout | null {
+  if (node) return getNodeSlotLayoutAtPoint(node, point)
+  const nodes = nodesInRenderOrder(graph)
+  for (let index = nodes.length - 1; index >= 0; index--) {
+    const layout = getNodeSlotLayoutAtPoint(nodes[index], point)
+    if (layout) return layout
+  }
+  return null
 }

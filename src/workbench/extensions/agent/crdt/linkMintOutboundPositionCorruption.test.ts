@@ -94,6 +94,17 @@ const PROMPT_DOC_INDEX = 6
  */
 const REF_VIDEO_1_LIVE_INDEX = 6
 
+interface ProjectedInput {
+  name: string
+  type: string
+  link: unknown
+}
+
+interface ProjectedNode {
+  inputs: ProjectedInput[]
+  outputs: { name: string; type: string; links: unknown[] }[]
+}
+
 function buildSeedWorkflow(): WorkflowJSON {
   return {
     nodes: [
@@ -116,17 +127,6 @@ function buildSeedWorkflow(): WorkflowJSON {
     ],
     links: []
   }
-}
-
-interface ProjectedInput {
-  name: string
-  type: string
-  link: unknown
-}
-
-interface ProjectedNode {
-  inputs: ProjectedInput[]
-  outputs: { name: string; type: string; links: unknown[] }[]
 }
 
 function projectedNode(doc: ReturnType<typeof mint>, nodeId: number) {

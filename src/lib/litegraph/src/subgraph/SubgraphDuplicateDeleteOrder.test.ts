@@ -32,6 +32,15 @@ const PROMOTED_INPUT = 'value'
 const EXTERNAL_INPUT = 'signal'
 const CONVERTIBLE_NODE_TYPE = 'test/convertible-promoted-widget'
 
+interface DuplicatedSubgraphScenario {
+  rootGraph: LGraph
+  definition: Subgraph
+  producer: LGraphNodeClass
+  instances: [SubgraphNode, SubgraphNode]
+  links: [LLink, LLink]
+  reroutes: [Reroute, Reroute]
+}
+
 function addInteriorNodes(definition: Subgraph) {
   const withWidget = new LGraphNodeClass('Interior')
   const promotedTarget = withWidget.addInput(PROMOTED_INPUT, 'number')
@@ -112,15 +121,6 @@ function convertPromotedWidgetNode(rootGraph: LGraph): SubgraphNode {
 
   if (!producer.connect(0, node, 0)) throw new Error('expected an input link')
   return rootGraph.convertToSubgraph(new Set([node])).node
-}
-
-interface DuplicatedSubgraphScenario {
-  rootGraph: LGraph
-  definition: Subgraph
-  producer: LGraphNodeClass
-  instances: [SubgraphNode, SubgraphNode]
-  links: [LLink, LLink]
-  reroutes: [Reroute, Reroute]
 }
 
 function buildScenario(): DuplicatedSubgraphScenario {

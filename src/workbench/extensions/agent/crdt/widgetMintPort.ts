@@ -8,6 +8,11 @@ import type { GraphOperation } from './graphOperations'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
 
+interface WidgetEventFeed {
+  /** Fires after a `setValue` that actually applied (the action returned true). */
+  onSet(listener: (set: WidgetSetView) => void): () => void
+}
+
 export interface WidgetSetView {
   /** Owning (sub)graph uuid from the widget id. */
   graphId: string
@@ -18,11 +23,6 @@ export interface WidgetSetView {
   value: unknown
   /** Value before the write (informational `old` on the wire op). */
   old: unknown
-}
-
-interface WidgetEventFeed {
-  /** Fires after a `setValue` that actually applied (the action returned true). */
-  onSet(listener: (set: WidgetSetView) => void): () => void
 }
 
 export interface WidgetMintPortDeps {

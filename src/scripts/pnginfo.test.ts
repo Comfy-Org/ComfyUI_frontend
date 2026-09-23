@@ -39,6 +39,8 @@ const fixturesDir = path.resolve(__dirname, 'metadata/__fixtures__')
 
 type AsciiIfdEntry = { tag: number; value: string }
 
+type WebpChunk = { type: string; payload: Uint8Array }
+
 function encodeAsciiIfd(entries: AsciiIfdEntry[]): Uint8Array {
   const tableSize = 10 + 12 * entries.length
   const strings = entries.map((e) => new TextEncoder().encode(`${e.value}\0`))
@@ -65,8 +67,6 @@ function encodeAsciiIfd(entries: AsciiIfdEntry[]): Uint8Array {
 
   return buf
 }
-
-type WebpChunk = { type: string; payload: Uint8Array }
 
 function wrapInWebp(chunks: WebpChunk[]): File {
   let payloadSize = 0

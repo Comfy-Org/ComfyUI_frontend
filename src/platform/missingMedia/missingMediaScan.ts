@@ -41,6 +41,17 @@ import {
 } from './missingMediaAssetResolver'
 import type { MissingMediaAssetResolver } from './missingMediaAssetResolver'
 
+interface MediaVerificationOptions {
+  isCloud: boolean
+  signal?: AbortSignal
+  resolveAssetSources?: MissingMediaAssetResolver
+}
+
+interface GeneratedCandidateMatchNames {
+  names: Set<string>
+  hashRequiredNames: Set<string>
+}
+
 function isComboWidget(widget: IBaseWidget): widget is IComboWidget {
   return widget.type === 'combo'
 }
@@ -63,34 +74,6 @@ function mediaTypeFromSpec(
   return undefined
 }
 
-/**
- * Scan combo widgets on media nodes for file values that may be missing.
- *
- * OSS: `isMissing` is resolved immediately via widget options unless an
- * output annotation needs generated-history verification.
- * Cloud: `isMissing` left `undefined` for async verification.
- */
-export function scanAllMediaCandidates(
-  rootGraph: LGraph,
-  isCloud: boolean
-): MissingMediaCandidate[] {
-  const allNodes = collectAllNodes(rootGraph)
-  const candidates: MissingMediaCandidate[] = []
-
-  for (const node of allNodes) {
-    if (!node.widgets?.length) continue
-    if (
-      node.mode === LGraphEventMode.NEVER ||
-      node.mode === LGraphEventMode.BYPASS
-    )
-      continue
-
-    candidates.push(...scanNodeMediaCandidates(rootGraph, node, isCloud))
-  }
-
-  return candidates
-}
-
 function resolveMediaMissingState(
   widget: IComboWidget,
   value: string,
@@ -104,186 +87,6 @@ function resolveMediaMissingState(
   return !getMediaPathDetectionNames(value).some((name) =>
     options.includes(name)
   )
-}
-
-/** Scan a single node for missing media candidates (OSS immediate resolution). */
-export function scanNodeMediaCandidates(
-  rootGraph: LGraph,
-  node: LGraphNode,
-  isCloud: boolean
-): MissingMediaCandidate[] {
-  if (!node.widgets?.length) return []
-
-  const executionId = getExecutionIdByNode(rootGraph, node)
-  if (!executionId) return []
-
-  if (node.isUploading) return []
-
-  const nodeDefStore = useNodeDefStore()
-  const candidates: MissingMediaCandidate[] = []
-  for (const widget of node.widgets) {
-    if (!isComboWidget(widget)) continue
-
-    const mediaType = mediaTypeFromSpec(
-      nodeDefStore.getInputSpecForWidget(node, widget.name)
-    )
-    if (!mediaType) continue
-    if (!isEditableValueOwner(node, widget)) continue
-
-    const value = widget.value
-    if (typeof value !== 'string' || !value.trim()) continue
-
-    const isMissing = resolveMediaMissingState(widget, value, isCloud)
-
-    // Label only, and leaf-derived to match missingModelScan: the overlay
-    // formats nodeType directly and a SubgraphNode's own type is a UUID.
-    const promotedSource = resolvePromotedWidgetSource(rootGraph, node, widget)
-    const labelNode = promotedSource?.sourceNode ?? node
-
-    const candidate: MissingMediaCandidate = {
-      nodeId: executionId,
-      nodeType: labelNode.type,
-      widgetName: widget.name,
-      mediaType,
-      name: value,
-      isMissing
-    }
-    if (node.isSubgraphNode()) {
-      const consumers = resolveActivePromotedWidgetConsumers(node, widget.name)
-      candidate.promotedSources = buildPromotedWidgetExecutionSources(
-        executionId,
-        consumers
-      )
-    }
-    candidates.push(candidate)
-  }
-
-  return candidates
-}
-
-export function isMissingMediaCandidateScopeActive(
-  rootGraph: LGraph | null | undefined,
-  candidate: MissingMediaCandidate
-): boolean {
-  if (!rootGraph) return false
-
-  const executionId = String(candidate.nodeId)
-  if (!isExecutionPathActive(rootGraph, executionId)) return false
-
-  const node = getNodeByExecutionId(rootGraph, executionId)
-  if (!node) return false
-  const widget = node.widgets?.find(
-    (candidateWidget) => candidateWidget.name === candidate.widgetName
-  )
-  if (!widget) return false
-
-  return widget.value === candidate.name && isEditableValueOwner(node, widget)
-}
-
-export function isMissingMediaCandidateActive(
-  rootGraph: LGraph | null | undefined,
-  candidate: MissingMediaCandidate
-): boolean {
-  return (
-    candidate.isMissing === true &&
-    isMissingMediaCandidateScopeActive(rootGraph, candidate)
-  )
-}
-
-interface MediaVerificationOptions {
-  isCloud: boolean
-  signal?: AbortSignal
-  resolveAssetSources?: MissingMediaAssetResolver
-}
-
-interface GeneratedCandidateMatchNames {
-  names: Set<string>
-  hashRequiredNames: Set<string>
-}
-
-/**
- * Verify media candidates against assets available to the current runtime.
- *
- * A candidate's `name` may be either a filename or an opaque asset hash.
- * Cloud-side `hash` is not guaranteed to follow a single shape, so we
- * match against the union of `asset.name` and `asset.hash`. Output
- * candidates are matched against Cloud output assets or Core generated-history
- * assets because Core resolves those annotations against output folders, not
- * input files.
- * Cloud accepts compact annotated media paths, so only Cloud verification
- * normalizes compact suffixes.
- */
-export async function verifyMediaCandidates(
-  candidates: MissingMediaCandidate[],
-  {
-    isCloud,
-    signal,
-    resolveAssetSources = resolveMissingMediaAssetSources
-  }: MediaVerificationOptions
-): Promise<void> {
-  if (signal?.aborted) return
-
-  const pending = candidates.filter((c) => c.isMissing === undefined)
-  if (pending.length === 0) return
-
-  // Core stores spaced annotations such as `file.png [output]`; Cloud also
-  // accepts compact forms such as `file.png[output]`.
-  const pathOptions = { allowCompactSuffix: isCloud }
-  const generatedMatchNames = getGeneratedCandidateMatchNames(
-    pending,
-    isCloud,
-    pathOptions
-  )
-
-  let inputAssets: readonly AssetItem[]
-  let generatedAssets: readonly AssetItem[]
-  try {
-    const assetSources = await resolveAssetSources({
-      signal,
-      isCloud,
-      includeGeneratedAssets: generatedMatchNames.names.size > 0,
-      generatedMatchNames: generatedMatchNames.names,
-      generatedHashRequiredNames: generatedMatchNames.hashRequiredNames,
-      allowCompactSuffix: isCloud
-    })
-    inputAssets = assetSources.inputAssets
-    generatedAssets = assetSources.generatedAssets
-  } catch (err) {
-    if (signal?.aborted || isAbortError(err)) return
-    throw err
-  }
-
-  if (signal?.aborted) return
-
-  const inputAssetIdentifiers = new Set<string>()
-  const outputAssetIdentifiers = new Set<string>()
-  const outputAssetHashIdentifiers = new Set<string>()
-  addAssetIdentifiers(inputAssetIdentifiers, inputAssets, pathOptions)
-  addAssetIdentifiers(outputAssetIdentifiers, generatedAssets, pathOptions)
-  addAssetHashIdentifiers(
-    outputAssetHashIdentifiers,
-    generatedAssets,
-    pathOptions
-  )
-
-  for (const candidate of pending) {
-    const type = getAnnotatedMediaPathTypeForDetection(
-      candidate.name,
-      pathOptions
-    )
-    const isOutputCandidate = type === 'output'
-    const identifiers = isOutputCandidate
-      ? outputAssetIdentifiers
-      : inputAssetIdentifiers
-    candidate.isMissing = !isCandidateResolved(
-      candidate,
-      identifiers,
-      isOutputCandidate,
-      isCloud,
-      outputAssetHashIdentifiers,
-      pathOptions
-    )
-  }
 }
 
 function getGeneratedCandidateMatchNames(
@@ -372,6 +175,203 @@ function addAssetHashIdentifiers(
     for (const name of getMediaPathDetectionNames(asset.hash, pathOptions)) {
       identifiers.add(name)
     }
+  }
+}
+
+/**
+ * Scan combo widgets on media nodes for file values that may be missing.
+ *
+ * OSS: `isMissing` is resolved immediately via widget options unless an
+ * output annotation needs generated-history verification.
+ * Cloud: `isMissing` left `undefined` for async verification.
+ */
+export function scanAllMediaCandidates(
+  rootGraph: LGraph,
+  isCloud: boolean
+): MissingMediaCandidate[] {
+  const allNodes = collectAllNodes(rootGraph)
+  const candidates: MissingMediaCandidate[] = []
+
+  for (const node of allNodes) {
+    if (!node.widgets?.length) continue
+    if (
+      node.mode === LGraphEventMode.NEVER ||
+      node.mode === LGraphEventMode.BYPASS
+    )
+      continue
+
+    candidates.push(...scanNodeMediaCandidates(rootGraph, node, isCloud))
+  }
+
+  return candidates
+}
+
+/** Scan a single node for missing media candidates (OSS immediate resolution). */
+export function scanNodeMediaCandidates(
+  rootGraph: LGraph,
+  node: LGraphNode,
+  isCloud: boolean
+): MissingMediaCandidate[] {
+  if (!node.widgets?.length) return []
+
+  const executionId = getExecutionIdByNode(rootGraph, node)
+  if (!executionId) return []
+
+  if (node.isUploading) return []
+
+  const nodeDefStore = useNodeDefStore()
+  const candidates: MissingMediaCandidate[] = []
+  for (const widget of node.widgets) {
+    if (!isComboWidget(widget)) continue
+
+    const mediaType = mediaTypeFromSpec(
+      nodeDefStore.getInputSpecForWidget(node, widget.name)
+    )
+    if (!mediaType) continue
+    if (!isEditableValueOwner(node, widget)) continue
+
+    const value = widget.value
+    if (typeof value !== 'string' || !value.trim()) continue
+
+    const isMissing = resolveMediaMissingState(widget, value, isCloud)
+
+    // Label only, and leaf-derived to match missingModelScan: the overlay
+    // formats nodeType directly and a SubgraphNode's own type is a UUID.
+    const promotedSource = resolvePromotedWidgetSource(rootGraph, node, widget)
+    const labelNode = promotedSource?.sourceNode ?? node
+
+    const candidate: MissingMediaCandidate = {
+      nodeId: executionId,
+      nodeType: labelNode.type,
+      widgetName: widget.name,
+      mediaType,
+      name: value,
+      isMissing
+    }
+    if (node.isSubgraphNode()) {
+      const consumers = resolveActivePromotedWidgetConsumers(node, widget.name)
+      candidate.promotedSources = buildPromotedWidgetExecutionSources(
+        executionId,
+        consumers
+      )
+    }
+    candidates.push(candidate)
+  }
+
+  return candidates
+}
+
+export function isMissingMediaCandidateScopeActive(
+  rootGraph: LGraph | null | undefined,
+  candidate: MissingMediaCandidate
+): boolean {
+  if (!rootGraph) return false
+
+  const executionId = String(candidate.nodeId)
+  if (!isExecutionPathActive(rootGraph, executionId)) return false
+
+  const node = getNodeByExecutionId(rootGraph, executionId)
+  if (!node) return false
+  const widget = node.widgets?.find(
+    (candidateWidget) => candidateWidget.name === candidate.widgetName
+  )
+  if (!widget) return false
+
+  return widget.value === candidate.name && isEditableValueOwner(node, widget)
+}
+
+export function isMissingMediaCandidateActive(
+  rootGraph: LGraph | null | undefined,
+  candidate: MissingMediaCandidate
+): boolean {
+  return (
+    candidate.isMissing === true &&
+    isMissingMediaCandidateScopeActive(rootGraph, candidate)
+  )
+}
+
+/**
+ * Verify media candidates against assets available to the current runtime.
+ *
+ * A candidate's `name` may be either a filename or an opaque asset hash.
+ * Cloud-side `hash` is not guaranteed to follow a single shape, so we
+ * match against the union of `asset.name` and `asset.hash`. Output
+ * candidates are matched against Cloud output assets or Core generated-history
+ * assets because Core resolves those annotations against output folders, not
+ * input files.
+ * Cloud accepts compact annotated media paths, so only Cloud verification
+ * normalizes compact suffixes.
+ */
+export async function verifyMediaCandidates(
+  candidates: MissingMediaCandidate[],
+  {
+    isCloud,
+    signal,
+    resolveAssetSources = resolveMissingMediaAssetSources
+  }: MediaVerificationOptions
+): Promise<void> {
+  if (signal?.aborted) return
+
+  const pending = candidates.filter((c) => c.isMissing === undefined)
+  if (pending.length === 0) return
+
+  // Core stores spaced annotations such as `file.png [output]`; Cloud also
+  // accepts compact forms such as `file.png[output]`.
+  const pathOptions = { allowCompactSuffix: isCloud }
+  const generatedMatchNames = getGeneratedCandidateMatchNames(
+    pending,
+    isCloud,
+    pathOptions
+  )
+
+  let inputAssets: readonly AssetItem[]
+  let generatedAssets: readonly AssetItem[]
+  try {
+    const assetSources = await resolveAssetSources({
+      signal,
+      isCloud,
+      includeGeneratedAssets: generatedMatchNames.names.size > 0,
+      generatedMatchNames: generatedMatchNames.names,
+      generatedHashRequiredNames: generatedMatchNames.hashRequiredNames,
+      allowCompactSuffix: isCloud
+    })
+    inputAssets = assetSources.inputAssets
+    generatedAssets = assetSources.generatedAssets
+  } catch (err) {
+    if (signal?.aborted || isAbortError(err)) return
+    throw err
+  }
+
+  if (signal?.aborted) return
+
+  const inputAssetIdentifiers = new Set<string>()
+  const outputAssetIdentifiers = new Set<string>()
+  const outputAssetHashIdentifiers = new Set<string>()
+  addAssetIdentifiers(inputAssetIdentifiers, inputAssets, pathOptions)
+  addAssetIdentifiers(outputAssetIdentifiers, generatedAssets, pathOptions)
+  addAssetHashIdentifiers(
+    outputAssetHashIdentifiers,
+    generatedAssets,
+    pathOptions
+  )
+
+  for (const candidate of pending) {
+    const type = getAnnotatedMediaPathTypeForDetection(
+      candidate.name,
+      pathOptions
+    )
+    const isOutputCandidate = type === 'output'
+    const identifiers = isOutputCandidate
+      ? outputAssetIdentifiers
+      : inputAssetIdentifiers
+    candidate.isMissing = !isCandidateResolved(
+      candidate,
+      identifiers,
+      isOutputCandidate,
+      isCloud,
+      outputAssetHashIdentifiers,
+      pathOptions
+    )
   }
 }
 

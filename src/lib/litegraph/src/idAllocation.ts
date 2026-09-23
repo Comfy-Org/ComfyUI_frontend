@@ -15,6 +15,14 @@ export interface LGraphState {
   lastRerouteId: RerouteId
 }
 
+/**
+ * `'sequential'` (default) is the plain-local `++lastNodeId` counter.
+ * `'crdt-disjoint'` is for a graph bound to the in-app agent's collaborative
+ * doc, where a local mint can otherwise land on an id the agent independently
+ * mints for the same doc — see {@link mintCrdtDisjointNodeId}.
+ */
+export type NodeIdMintMode = 'sequential' | 'crdt-disjoint'
+
 export function createLGraphState(): LGraphState {
   return {
     lastGroupId: 0,
@@ -23,14 +31,6 @@ export function createLGraphState(): LGraphState {
     lastRerouteId: toRerouteId(0)
   }
 }
-
-/**
- * `'sequential'` (default) is the plain-local `++lastNodeId` counter.
- * `'crdt-disjoint'` is for a graph bound to the in-app agent's collaborative
- * doc, where a local mint can otherwise land on an id the agent independently
- * mints for the same doc — see {@link mintCrdtDisjointNodeId}.
- */
-export type NodeIdMintMode = 'sequential' | 'crdt-disjoint'
 
 /**
  * The agent mints node ids as `2**40 | random52bits` (comfy-cli's

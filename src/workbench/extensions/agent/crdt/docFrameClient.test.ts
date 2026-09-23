@@ -16,6 +16,12 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
 
+function updateAfter(doc: Y.Doc, mutate: () => void): Uint8Array {
+  const before = Y.encodeStateVector(doc)
+  mutate()
+  return Y.encodeStateAsUpdate(doc, before)
+}
+
 class TestTransport extends EventTarget implements DocFrameTransport {
   readonly sent: string[] = []
 
@@ -27,12 +33,6 @@ class TestTransport extends EventTarget implements DocFrameTransport {
   receive(type: string, data: unknown): void {
     this.dispatchEvent(new CustomEvent(type, { detail: data }))
   }
-}
-
-function updateAfter(doc: Y.Doc, mutate: () => void): Uint8Array {
-  const before = Y.encodeStateVector(doc)
-  mutate()
-  return Y.encodeStateAsUpdate(doc, before)
 }
 
 describe('doc frame client', () => {

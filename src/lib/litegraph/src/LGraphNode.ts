@@ -173,54 +173,6 @@ interface IMouseOverData {
   overWidget?: IBaseWidget
 }
 
-function legacyArrayItem<T>(items: readonly T[], index: number): T | undefined {
-  return items[index]
-}
-
-function legacyValue<T>(value: T): T | undefined {
-  return value
-}
-
-function serialiseWidgetValues(widgets: IBaseWidget[]) {
-  const positional: TWidgetValue[] = []
-  const named: Record<string, TWidgetValue> = {}
-  for (const widget of widgets) {
-    if (widget.serialize === false) continue
-    const value = widget.value
-    const serialisedValue =
-      value != null && typeof value === 'object'
-        ? JSON.parse(JSON.stringify(value))
-        : (value ?? null)
-    positional.push(serialisedValue)
-    named[widget.name] = serialisedValue
-  }
-  return { widgets_values: positional, widgets_values_named: named }
-}
-
-export function createWidgetRestorationState(
-  info: Pick<ISerialisedNode, 'widgets_values' | 'widgets_values_named'>,
-  fallbackNames?: readonly string[]
-) {
-  const positional = Array.from(info.widgets_values ?? [])
-  const named =
-    info.widgets_values_named ??
-    (info.widgets_values && fallbackNames
-      ? Object.fromEntries(
-          positional.flatMap((value, index) =>
-            fallbackNames[index] ? [[fallbackNames[index], value]] : []
-          )
-        )
-      : undefined)
-
-  return {
-    positional,
-    named: named ? { ...named } : undefined,
-    restoreNamed: Boolean(
-      named && (LiteGraph.namedValuesRestore || fallbackNames)
-    )
-  }
-}
-
 interface ConnectByTypeOptions {
   /** @deprecated Events */
   createEventInCase?: boolean
@@ -261,8 +213,36 @@ interface DrawTitleTextOptions extends DrawTitleOptions {
   default_title_color: string
 }
 
+function legacyArrayItem<T>(items: readonly T[], index: number): T | undefined {
+  return items[index]
+}
+
+function legacyValue<T>(value: T): T | undefined {
+  return value
+}
+
+function serialiseWidgetValues(widgets: IBaseWidget[]) {
+  const positional: TWidgetValue[] = []
+  const named: Record<string, TWidgetValue> = {}
+  for (const widget of widgets) {
+    if (widget.serialize === false) continue
+    const value = widget.value
+    const serialisedValue =
+      value != null && typeof value === 'object'
+        ? JSON.parse(JSON.stringify(value))
+        : (value ?? null)
+    positional.push(serialisedValue)
+    named[widget.name] = serialisedValue
+  }
+  return { widgets_values: positional, widgets_values_named: named }
+}
+
 export interface DrawTitleBoxOptions extends DrawTitleOptions {
   box_size?: number
+}
+
+export interface LGraphNode {
+  constructor: LGraphNodeConstructor
 }
 
 /*
@@ -316,8 +296,28 @@ supported callbacks:
     + getExtraMenuOptions: to add option to context menu
 */
 
-export interface LGraphNode {
-  constructor: LGraphNodeConstructor
+export function createWidgetRestorationState(
+  info: Pick<ISerialisedNode, 'widgets_values' | 'widgets_values_named'>,
+  fallbackNames?: readonly string[]
+) {
+  const positional = Array.from(info.widgets_values ?? [])
+  const named =
+    info.widgets_values_named ??
+    (info.widgets_values && fallbackNames
+      ? Object.fromEntries(
+          positional.flatMap((value, index) =>
+            fallbackNames[index] ? [[fallbackNames[index], value]] : []
+          )
+        )
+      : undefined)
+
+  return {
+    positional,
+    named: named ? { ...named } : undefined,
+    restoreNamed: Boolean(
+      named && (LiteGraph.namedValuesRestore || fallbackNames)
+    )
+  }
 }
 
 // #endregion Types

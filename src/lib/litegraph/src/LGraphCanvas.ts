@@ -321,6 +321,11 @@ const tmp_area = new Rectangle()
 const margin_area = new Rectangle()
 const link_bounding = new Rectangle()
 
+export interface LGraphCanvas {
+  /** @deprecated Use {@link LGraphCanvas.applyNodePositions} instead. */
+  repositionNodesVueMode(positions: NewNodePosition[]): void
+}
+
 /**
  * This class is in charge of rendering one graph inside a canvas. And provides all the interaction required.
  * Valid callbacks are: onNodeSelected, onNodeDeselected, onShowNodePanel, onNodeDblClicked
@@ -9024,11 +9029,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       }
     }
   }
-}
-
-export interface LGraphCanvas {
-  /** @deprecated Use {@link LGraphCanvas.applyNodePositions} instead. */
-  repositionNodesVueMode(positions: NewNodePosition[]): void
 }
 
 defineDeprecatedProperty(

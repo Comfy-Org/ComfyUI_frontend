@@ -102,6 +102,53 @@ export const MERGE_VOCABULARY: readonly {
   }
 ]
 
+function formatStampKey(key: StampKey): string {
+  const [baseVersion, actor, opId] = key
+  return `v${baseVersion} · ${actor} · ${opId.slice(0, 8)}`
+}
+
+function explainVerdict(
+  op: WireOp,
+  label: string,
+  verdict: MergeVerdict
+): string {
+  switch (verdict.kind) {
+    case 'applied':
+      return `Applied. \`${op.op}\` now owns ${label}.`
+    case 'no-op':
+      if (verdict.because === 'delete-wins') {
+        return `No effect: node ${opNodeId(op) ?? '?'} had already been deleted, so this write had nowhere to land. Deletion is not a stamp contest — it wins over every write that arrives after it, whatever the stamps say. A later add_node re-creates the node as a fresh incarnation and does NOT resurrect this value.`
+      }
+      if (verdict.because === 'duplicate-op-id') {
+        return `No effect: op_id ${op.op_id.slice(0, 8)} had already been applied. Resends are idempotent, which is why the sender never re-mints an op_id.`
+      }
+      return 'No effect. The document had nothing to change for this op.'
+    case 'lww-dropped':
+      return verdict.incumbent
+        ? `Dropped: ${label} was already owned by a higher stamp (${formatStampKey(verdict.incumbent)}) than this op's (${formatStampKey(stampKey(op))}). Last-writer-wins picked the incumbent.`
+        : `Dropped: a higher stamp already owned ${label}. Last-writer-wins picked the incumbent.`
+    case 'rejected':
+      return `Rejected (${verdict.code}): ${verdict.message}. Everything after it in the same batch was abandoned; everything before it was kept.`
+    case 'not-reached':
+      return 'Never attempted: an earlier op in the same batch was rejected, and a batch abandons everything after the failure. The ops before it are kept, so resending the batch without the bad op converges.'
+  }
+}
+
+/**
+ * The per-node story: every op that touched a node, in arrival order, with
+ * the incarnation it belonged to.
+ *
+ * Incarnation is the concept the delete/re-add case turns on — a node that is
+ * deleted and re-added under the same id is NOT the same node, and every
+ * widget value from the previous incarnation is gone. Numbering them makes
+ * that visible instead of leaving a tester to infer it.
+ */
+export interface NodeLifecycleRow {
+  nodeId: string
+  incarnation: number
+  entry: MergeTraceEntry
+}
+
 /** The node an op addresses, or `null` for ops that address the whole graph. */
 export function opNodeId(op: WireOp): string | null {
   if (op.op === 'clear' || op.op === 'reset_doc') return null
@@ -132,38 +179,6 @@ export function registerLabel(target: readonly unknown[]): string {
       return 'the whole graph'
     default:
       return target.map((part) => String(part)).join(' · ')
-  }
-}
-
-function formatStampKey(key: StampKey): string {
-  const [baseVersion, actor, opId] = key
-  return `v${baseVersion} · ${actor} · ${opId.slice(0, 8)}`
-}
-
-function explainVerdict(
-  op: WireOp,
-  label: string,
-  verdict: MergeVerdict
-): string {
-  switch (verdict.kind) {
-    case 'applied':
-      return `Applied. \`${op.op}\` now owns ${label}.`
-    case 'no-op':
-      if (verdict.because === 'delete-wins') {
-        return `No effect: node ${opNodeId(op) ?? '?'} had already been deleted, so this write had nowhere to land. Deletion is not a stamp contest — it wins over every write that arrives after it, whatever the stamps say. A later add_node re-creates the node as a fresh incarnation and does NOT resurrect this value.`
-      }
-      if (verdict.because === 'duplicate-op-id') {
-        return `No effect: op_id ${op.op_id.slice(0, 8)} had already been applied. Resends are idempotent, which is why the sender never re-mints an op_id.`
-      }
-      return 'No effect. The document had nothing to change for this op.'
-    case 'lww-dropped':
-      return verdict.incumbent
-        ? `Dropped: ${label} was already owned by a higher stamp (${formatStampKey(verdict.incumbent)}) than this op's (${formatStampKey(stampKey(op))}). Last-writer-wins picked the incumbent.`
-        : `Dropped: a higher stamp already owned ${label}. Last-writer-wins picked the incumbent.`
-    case 'rejected':
-      return `Rejected (${verdict.code}): ${verdict.message}. Everything after it in the same batch was abandoned; everything before it was kept.`
-    case 'not-reached':
-      return 'Never attempted: an earlier op in the same batch was rejected, and a batch abandons everything after the failure. The ops before it are kept, so resending the batch without the bad op converges.'
   }
 }
 
@@ -221,21 +236,6 @@ export function groupByRegister(
   return [...groups]
     .map(([register, group]) => ({ register, ...group }))
     .sort((a, b) => b.entries.length - a.entries.length)
-}
-
-/**
- * The per-node story: every op that touched a node, in arrival order, with
- * the incarnation it belonged to.
- *
- * Incarnation is the concept the delete/re-add case turns on — a node that is
- * deleted and re-added under the same id is NOT the same node, and every
- * widget value from the previous incarnation is gone. Numbering them makes
- * that visible instead of leaving a tester to infer it.
- */
-export interface NodeLifecycleRow {
-  nodeId: string
-  incarnation: number
-  entry: MergeTraceEntry
 }
 
 export function nodeLifecycle(

@@ -105,24 +105,6 @@ function activeStateFallbackId(workflow: ComfyWorkflow): string | undefined {
   return workflow.activeState?.id
 }
 
-/** @internal Test-only: clears the module-level load queue between tests. */
-export function resetWorkflowLoadQueueForTests(): {
-  pendingLoads: number
-  closingCount: number
-  pendingPaths: number
-} {
-  const drained = {
-    pendingLoads: pendingWorkflowLoads,
-    closingCount: closingWorkflowCounts.size,
-    pendingPaths: pendingWorkflowLoadsByPath.size
-  }
-  workflowLoadTail = Promise.resolve()
-  pendingWorkflowLoads = 0
-  pendingWorkflowLoadsByPath.clear()
-  closingWorkflowCounts.clear()
-  return drained
-}
-
 function queueWorkflowLoad<T>(
   load: () => Promise<T>,
   workflowPath?: string
@@ -149,6 +131,24 @@ function queueWorkflowLoad<T>(
     pendingWorkflowLoadsByPath.set(workflowPath, settledResult)
   }
   return result
+}
+
+/** @internal Test-only: clears the module-level load queue between tests. */
+export function resetWorkflowLoadQueueForTests(): {
+  pendingLoads: number
+  closingCount: number
+  pendingPaths: number
+} {
+  const drained = {
+    pendingLoads: pendingWorkflowLoads,
+    closingCount: closingWorkflowCounts.size,
+    pendingPaths: pendingWorkflowLoadsByPath.size
+  }
+  workflowLoadTail = Promise.resolve()
+  pendingWorkflowLoads = 0
+  pendingWorkflowLoadsByPath.clear()
+  closingWorkflowCounts.clear()
+  return drained
 }
 
 export const useWorkflowService = () => {

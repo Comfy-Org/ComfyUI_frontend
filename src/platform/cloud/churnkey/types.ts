@@ -2,6 +2,17 @@ import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
 
 type ChurnkeyMode = ChurnkeyAuthResponse['mode']
 
+type ChurnkeyUnsupportedHandler = (
+  ...args: unknown[]
+) => Promise<ChurnkeyHandlerResult>
+
+interface ChurnkeyWindow {
+  created?: boolean
+  init?: ChurnkeyInit
+  hide?: () => void
+  clearState?: () => void
+}
+
 export interface ChurnkeyHandlerResult {
   message?: string
 }
@@ -9,10 +20,6 @@ export interface ChurnkeyHandlerResult {
 export interface ChurnkeySessionResults {
   aborted?: boolean
 }
-
-type ChurnkeyUnsupportedHandler = (
-  ...args: unknown[]
-) => Promise<ChurnkeyHandlerResult>
 
 export interface ChurnkeyInitConfig {
   appId: string
@@ -36,13 +43,6 @@ export interface ChurnkeyInitConfig {
 }
 
 export type ChurnkeyInit = (action: 'show', config: ChurnkeyInitConfig) => void
-
-interface ChurnkeyWindow {
-  created?: boolean
-  init?: ChurnkeyInit
-  hide?: () => void
-  clearState?: () => void
-}
 
 declare global {
   interface Window {

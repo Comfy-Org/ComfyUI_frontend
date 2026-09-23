@@ -82,6 +82,21 @@ const extractFilenameFromUrl = (url: string): string | null => {
 }
 
 /**
+ * Fetch a URL and return its body as a Blob.
+ * Shared by download and open-in-new-tab cloud paths.
+ */
+async function fetchAsBlob(
+  url: string,
+  fetchFile: (url: string) => Promise<Response> = fetch
+): Promise<Response> {
+  const response = await fetchFile(url)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.status}`)
+  }
+  return response
+}
+
+/**
  * Extract filename from Content-Disposition header
  * Handles both simple format: attachment; filename="name.png"
  * And RFC 5987 format: attachment; filename="fallback.png"; filename*=UTF-8''encoded%20name.png
@@ -116,21 +131,6 @@ export function extractFilenameFromContentDisposition(
   }
 
   return null
-}
-
-/**
- * Fetch a URL and return its body as a Blob.
- * Shared by download and open-in-new-tab cloud paths.
- */
-async function fetchAsBlob(
-  url: string,
-  fetchFile: (url: string) => Promise<Response> = fetch
-): Promise<Response> {
-  const response = await fetchFile(url)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch ${url}: ${response.status}`)
-  }
-  return response
 }
 
 export async function downloadFileAsBlob(

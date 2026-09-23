@@ -22,12 +22,6 @@ import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
-export interface WidgetRenderState {
-  hasLayoutSize?: boolean
-  isDOMWidget?: boolean
-  tooltip?: string
-}
-
 interface WidgetRestorationState {
   positional: readonly WidgetValue[]
   named?: Readonly<Record<string, WidgetValue>>
@@ -70,6 +64,12 @@ function clearNodeScoped<T>(
   if (!nodeMap) return
   nodeMap.delete(nodeId)
   if (nodeMap.size === 0) graphMap.delete(graphId)
+}
+
+export interface WidgetRenderState {
+  hasLayoutSize?: boolean
+  isDOMWidget?: boolean
+  tooltip?: string
 }
 
 export function stripGraphPrefix(scopedId: SerializedNodeId): NodeId | null {

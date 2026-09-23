@@ -1,5 +1,20 @@
 import type { QuaternionLike, Vector3Like } from 'three'
 
+interface OrbitInputs {
+  yaw: number
+  pitch: number
+  distance: number
+}
+
+interface LookAtInputs {
+  position: Vector3Like
+}
+
+interface QuaternionInputs {
+  position: Vector3Like
+  quat: QuaternionLike
+}
+
 export type CameraInfoMode = 'orbit' | 'look_at' | 'quaternion'
 
 export type CameraInfoCameraType = 'perspective' | 'orthographic'
@@ -21,21 +36,6 @@ export type CameraInfoFieldName =
   | 'roll'
   | 'fov'
   | 'zoom'
-
-interface OrbitInputs {
-  yaw: number
-  pitch: number
-  distance: number
-}
-
-interface LookAtInputs {
-  position: Vector3Like
-}
-
-interface QuaternionInputs {
-  position: Vector3Like
-  quat: QuaternionLike
-}
 
 export interface CameraInfoState {
   mode: CameraInfoMode

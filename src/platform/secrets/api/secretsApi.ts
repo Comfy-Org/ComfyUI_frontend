@@ -15,17 +15,6 @@ import type {
 } from '../types'
 import { SECRET_ERROR_CODES } from '../types'
 
-export class SecretsApiError extends Error {
-  constructor(
-    message: string,
-    public readonly status?: number,
-    public readonly code?: SecretErrorCode
-  ) {
-    super(message)
-    this.name = 'SecretsApiError'
-  }
-}
-
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const errorData = await parseErrorResponse(response)
@@ -80,5 +69,16 @@ export async function deleteSecret(id: string): Promise<void> {
   })
   if (!response.ok) {
     await handleResponse<void>(response)
+  }
+}
+
+export class SecretsApiError extends Error {
+  constructor(
+    message: string,
+    public readonly status?: number,
+    public readonly code?: SecretErrorCode
+  ) {
+    super(message)
+    this.name = 'SecretsApiError'
   }
 }

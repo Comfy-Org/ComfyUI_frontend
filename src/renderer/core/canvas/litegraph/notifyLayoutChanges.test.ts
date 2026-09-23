@@ -8,6 +8,8 @@ import { toGroupId } from '@/types/groupId'
 import { createUuidv4 } from '@/utils/uuid'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 
+type TestContext = ReturnType<typeof setup>
+
 function setup() {
   const graph = new LGraph()
   graph.id = createUuidv4()
@@ -28,8 +30,6 @@ function setup() {
     }
   }
 }
-
-type TestContext = ReturnType<typeof setup>
 
 describe('notifyLayoutChanges', () => {
   it('does not change graph membership order after a z-index change', async () => {

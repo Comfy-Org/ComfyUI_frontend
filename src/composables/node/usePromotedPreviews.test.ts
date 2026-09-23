@@ -16,6 +16,12 @@ import { toNodeId } from '@/types/nodeId'
 import { CANVAS_IMAGE_PREVIEW_WIDGET } from './canvasImagePreviewTypes'
 import { usePromotedPreviews } from './usePromotedPreviews'
 
+interface ArrangeOptions {
+  id?: number
+  previewMediaType?: 'image' | 'video' | 'audio' | 'model'
+  urls?: string[]
+}
+
 function createSetup() {
   const subgraph = createTestSubgraph()
   const subgraphNode = createTestSubgraphNode(subgraph)
@@ -72,12 +78,6 @@ function exposePreview(
     hostLocator,
     { sourceNodeId, sourcePreviewName }
   )
-}
-
-interface ArrangeOptions {
-  id?: number
-  previewMediaType?: 'image' | 'video' | 'audio' | 'model'
-  urls?: string[]
 }
 
 function arrangePromotedPreview(options: ArrangeOptions = {}) {

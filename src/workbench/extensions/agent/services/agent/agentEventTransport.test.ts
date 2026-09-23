@@ -19,14 +19,14 @@ const fixtureText = import.meta.glob(
   { query: '?raw', import: 'default', eager: true }
 )
 
+interface WsLine {
+  frame: unknown
+}
+
 function fixtureFor(name: string): string {
   const path = Object.keys(fixtureText).find((p) => p.endsWith(`/${name}`))
   if (!path) throw new Error(`fixture not found: ${name}`)
   return fixtureText[path]
-}
-
-interface WsLine {
-  frame: unknown
 }
 
 function chatEventsFor(fixture: string, messageId: string): AgentChatEvent[] {

@@ -8,6 +8,12 @@ import type { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import type { ComfyExtension } from '@/types/comfy'
 
+function mutatesGraph(command: ComfyCommand): boolean {
+  return typeof command.mutatesGraph === 'function'
+    ? command.mutatesGraph()
+    : command.mutatesGraph === true
+}
+
 export interface ComfyCommand {
   id: string
   function: (metadata?: Record<string, unknown>) => void | Promise<void>
@@ -23,12 +29,6 @@ export interface ComfyCommand {
   category?: 'essentials' | 'view-controls' // For shortcuts panel organization
   /** Refused by `execute()` while the canvas interaction mode is select-only. */
   mutatesGraph?: boolean | (() => boolean)
-}
-
-function mutatesGraph(command: ComfyCommand): boolean {
-  return typeof command.mutatesGraph === 'function'
-    ? command.mutatesGraph()
-    : command.mutatesGraph === true
 }
 
 export class ComfyCommandImpl implements ComfyCommand {

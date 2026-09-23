@@ -20,6 +20,34 @@ const NOOP_PERF_SPAN: PerfSpan = {
   stop: () => 0
 }
 
+function _measure(
+  name: string,
+  startName: string,
+  endName: string,
+  fallbackStart: number
+): number {
+  try {
+    return performance.measure(name, startName, endName).duration
+  } catch {
+    return performance.now() - fallbackStart
+  }
+}
+
+function _emitToSentry(name: string, durationMs: number): void {
+  try {
+    // addBreadcrumb is a module-level function in @sentry/vue v10 — safe to
+    // call before Sentry.init() completes (it queues internally).
+    addBreadcrumb({
+      category: 'perf',
+      message: name,
+      level: 'info',
+      data: { duration_ms: durationMs }
+    })
+  } catch {
+    return
+  }
+}
+
 /**
  * Begin a named performance span.
  *
@@ -69,34 +97,6 @@ export function perfPoint(name: string): void {
   try {
     performance.mark(name)
     _emitToSentry(name, 0)
-  } catch {
-    return
-  }
-}
-
-function _measure(
-  name: string,
-  startName: string,
-  endName: string,
-  fallbackStart: number
-): number {
-  try {
-    return performance.measure(name, startName, endName).duration
-  } catch {
-    return performance.now() - fallbackStart
-  }
-}
-
-function _emitToSentry(name: string, durationMs: number): void {
-  try {
-    // addBreadcrumb is a module-level function in @sentry/vue v10 — safe to
-    // call before Sentry.init() completes (it queues internally).
-    addBreadcrumb({
-      category: 'perf',
-      message: name,
-      level: 'info',
-      data: { duration_ms: durationMs }
-    })
   } catch {
     return
   }

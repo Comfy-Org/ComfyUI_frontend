@@ -10,6 +10,12 @@ interface SlideProgressInput {
   fallbackMs: number
 }
 
+interface ProgressBarPainterOptions {
+  target: MaybeRefOrGetter<HTMLElement | null | undefined>
+  progress: () => number
+  active: MaybeRefOrGetter<boolean>
+}
+
 /**
  * Fraction of the way to the next slide. Falls back to elapsed wall-clock against
  * the watchdog's delay, so a buffering video still tracks when it will change.
@@ -25,12 +31,6 @@ export function slideProgress({
       ? currentTime / duration
       : elapsedMs / fallbackMs
   return clamp(ratio, 0, 1)
-}
-
-interface ProgressBarPainterOptions {
-  target: MaybeRefOrGetter<HTMLElement | null | undefined>
-  progress: () => number
-  active: MaybeRefOrGetter<boolean>
 }
 
 /**

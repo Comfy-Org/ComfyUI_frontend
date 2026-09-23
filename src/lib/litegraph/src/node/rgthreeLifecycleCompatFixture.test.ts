@@ -19,33 +19,6 @@ import type {
   RgthreeLifecycleInstallation
 } from '@/lib/litegraph/test/fixtures/rgthreeLifecycleCompatFixture'
 
-class ManualScheduler implements CleanExtensionScheduler {
-  private readonly callbacks = new Set<() => void>()
-
-  setInterval(callback: () => void, _delay: number): () => void {
-    this.callbacks.add(callback)
-    return () => this.callbacks.delete(callback)
-  }
-
-  tick(): void {
-    for (const callback of this.callbacks) callback()
-  }
-
-  get activeTimers(): number {
-    return this.callbacks.size
-  }
-}
-
-class TestCanvas implements RgthreeLifecycleCanvas {
-  readonly coreDraws = vi.fn<(node: LGraphNode) => string>(
-    (node) => `${node.id}:${node.title}`
-  )
-
-  drawNode(node: LGraphNode, _context: CleanExtensionDrawContext): unknown {
-    return this.coreDraws(node)
-  }
-}
-
 interface ScaleSetup {
   canvas: TestCanvas
   graph: LGraph
@@ -90,6 +63,33 @@ function createScaleSetup(scale: number): ScaleSetup {
     scheduler: new ManualScheduler(),
     dirtyRequests,
     measurements
+  }
+}
+
+class ManualScheduler implements CleanExtensionScheduler {
+  private readonly callbacks = new Set<() => void>()
+
+  setInterval(callback: () => void, _delay: number): () => void {
+    this.callbacks.add(callback)
+    return () => this.callbacks.delete(callback)
+  }
+
+  tick(): void {
+    for (const callback of this.callbacks) callback()
+  }
+
+  get activeTimers(): number {
+    return this.callbacks.size
+  }
+}
+
+class TestCanvas implements RgthreeLifecycleCanvas {
+  readonly coreDraws = vi.fn<(node: LGraphNode) => string>(
+    (node) => `${node.id}:${node.title}`
+  )
+
+  drawNode(node: LGraphNode, _context: CleanExtensionDrawContext): unknown {
+    return this.coreDraws(node)
   }
 }
 

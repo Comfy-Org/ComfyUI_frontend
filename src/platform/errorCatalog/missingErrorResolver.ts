@@ -7,6 +7,35 @@ import { countMissingMediaReferences } from '@/platform/missingMedia/missingMedi
 import { countMissingModels } from '@/platform/missingModel/missingModelGrouping'
 import { st } from '@/i18n'
 
+type NodeTypeErrorSource = Extract<
+  MissingErrorMessageSource,
+  { kind: 'missing_node' | 'swap_nodes' }
+>
+
+type NodeTypeErrorItem = NodeTypeErrorSource['nodeTypes'][number]
+type MissingNodeSource = Extract<
+  MissingErrorMessageSource,
+  { kind: 'missing_node' }
+>
+
+type SwapNodeSource = Extract<MissingErrorMessageSource, { kind: 'swap_nodes' }>
+
+type MissingModelSource = Extract<
+  MissingErrorMessageSource,
+  { kind: 'missing_model' }
+>
+
+type MissingMediaSource = Extract<
+  MissingErrorMessageSource,
+  { kind: 'missing_media' }
+>
+
+interface MissingMediaItemLabelSource {
+  nodeDisplayName?: string
+  nodeType?: string
+  widgetName?: string
+}
+
 function formatNodeTypeName(nodeType: string): string | null {
   const trimmed = nodeType.trim()
   if (!trimmed) return null
@@ -19,12 +48,6 @@ function formatNodeTypeName(nodeType: string): string | null {
     .trim()
 }
 
-type NodeTypeErrorSource = Extract<
-  MissingErrorMessageSource,
-  { kind: 'missing_node' | 'swap_nodes' }
->
-type NodeTypeErrorItem = NodeTypeErrorSource['nodeTypes'][number]
-
 function getNodeTypeLabel(nodeType: NodeTypeErrorItem): string {
   return typeof nodeType === 'string' ? nodeType : nodeType.type
 }
@@ -34,11 +57,6 @@ function getDistinctNodeTypeLabels(nodeTypes: NodeTypeErrorItem[]): string[] {
   for (const nodeType of nodeTypes) labels.add(getNodeTypeLabel(nodeType))
   return Array.from(labels)
 }
-
-type MissingNodeSource = Extract<
-  MissingErrorMessageSource,
-  { kind: 'missing_node' }
->
 
 function isMissingNodeType(nodeType: NodeTypeErrorItem): boolean {
   return typeof nodeType === 'string' || !nodeType.isReplaceable
@@ -103,8 +121,6 @@ function resolveMissingNodeToastMessage(source: MissingNodeSource): string {
   return translateCatalogMessage(key, fallback, { count })
 }
 
-type SwapNodeSource = Extract<MissingErrorMessageSource, { kind: 'swap_nodes' }>
-
 function isSwapNodeType(nodeType: NodeTypeErrorItem): nodeType is Exclude<
   NodeTypeErrorItem,
   string
@@ -161,11 +177,6 @@ function resolveSwapNodeDisplayMessage(): string {
     'Some nodes can be replaced with alternatives'
   )
 }
-
-type MissingModelSource = Extract<
-  MissingErrorMessageSource,
-  { kind: 'missing_model' }
->
 
 function getMissingModelCount(source: MissingModelSource): number {
   return countMissingModels(source.groups) || source.count
@@ -244,17 +255,6 @@ function resolveMissingModelToastMessage(source: MissingModelSource): string {
   )
 }
 
-type MissingMediaSource = Extract<
-  MissingErrorMessageSource,
-  { kind: 'missing_media' }
->
-
-interface MissingMediaItemLabelSource {
-  nodeDisplayName?: string
-  nodeType?: string
-  widgetName?: string
-}
-
 function getMissingMediaItems(source: MissingMediaSource) {
   return source.groups.flatMap((group) => group.items)
 }
@@ -270,27 +270,6 @@ function resolveMissingMediaDisplayMessage(): string {
     'errorCatalog.missingErrors.missing_media.displayMessage',
     'A required media input has no file selected.'
   )
-}
-
-export function resolveMissingMediaItemLabel(
-  source: MissingMediaItemLabelSource
-): { displayItemLabel: string } {
-  const nodeName = normalizeNodeName(
-    source.nodeDisplayName ||
-      formatNodeTypeName(source.nodeType ?? '') ||
-      undefined
-  )
-  const inputName =
-    source.widgetName?.trim() ||
-    translateCatalogMessage('errorCatalog.fallbacks.inputName', 'unknown input')
-
-  return {
-    displayItemLabel: translateCatalogMessage(
-      'errorCatalog.missingErrors.missing_media.itemLabel',
-      '{nodeName} - {inputName}',
-      { nodeName, inputName }
-    )
-  }
 }
 
 function resolveMissingMediaToastTitle(source: MissingMediaSource): string {
@@ -328,6 +307,27 @@ function resolveMissingMediaToastMessage(source: MissingMediaSource): string {
       nodeName: displayNodeName
     }
   )
+}
+
+export function resolveMissingMediaItemLabel(
+  source: MissingMediaItemLabelSource
+): { displayItemLabel: string } {
+  const nodeName = normalizeNodeName(
+    source.nodeDisplayName ||
+      formatNodeTypeName(source.nodeType ?? '') ||
+      undefined
+  )
+  const inputName =
+    source.widgetName?.trim() ||
+    translateCatalogMessage('errorCatalog.fallbacks.inputName', 'unknown input')
+
+  return {
+    displayItemLabel: translateCatalogMessage(
+      'errorCatalog.missingErrors.missing_media.itemLabel',
+      '{nodeName} - {inputName}',
+      { nodeName, inputName }
+    )
+  }
 }
 
 export function resolveMissingErrorMessage(

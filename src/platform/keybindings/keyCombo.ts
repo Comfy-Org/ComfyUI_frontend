@@ -10,6 +10,31 @@ const MODIFIER_KEY_LABELS: Record<string, string> = {
   Shift: 'Shift'
 }
 
+function toNormalizedString(combo: KeyComboImpl): string {
+  const sequences = getModifierSequences(combo)
+
+  if (!combo.isModifier || sequences.length === 0) {
+    sequences.push(getKeyLabel(combo.key, true))
+  }
+
+  return sequences.join(' + ')
+}
+
+function getModifierSequences(combo: KeyComboImpl): string[] {
+  const sequences: string[] = []
+  if (combo.ctrl) sequences.push('Ctrl')
+  if (combo.alt) sequences.push('Alt')
+  if (combo.shift) sequences.push('Shift')
+  return sequences
+}
+
+function getKeyLabel(key: string, normalizeSingleCharacter = false): string {
+  const label = MODIFIER_KEY_LABELS[key] ?? key
+  return normalizeSingleCharacter && label.length === 1
+    ? label.toLowerCase()
+    : label
+}
+
 export class KeyComboImpl implements KeyCombo {
   key: string
   ctrl: boolean
@@ -89,29 +114,4 @@ export class KeyComboImpl implements KeyCombo {
 
     return sequences
   }
-}
-
-function toNormalizedString(combo: KeyComboImpl): string {
-  const sequences = getModifierSequences(combo)
-
-  if (!combo.isModifier || sequences.length === 0) {
-    sequences.push(getKeyLabel(combo.key, true))
-  }
-
-  return sequences.join(' + ')
-}
-
-function getModifierSequences(combo: KeyComboImpl): string[] {
-  const sequences: string[] = []
-  if (combo.ctrl) sequences.push('Ctrl')
-  if (combo.alt) sequences.push('Alt')
-  if (combo.shift) sequences.push('Shift')
-  return sequences
-}
-
-function getKeyLabel(key: string, normalizeSingleCharacter = false): string {
-  const label = MODIFIER_KEY_LABELS[key] ?? key
-  return normalizeSingleCharacter && label.length === 1
-    ? label.toLowerCase()
-    : label
 }

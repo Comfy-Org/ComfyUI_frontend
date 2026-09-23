@@ -13,6 +13,14 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
+type Props = {
+  config?: SceneConfig
+  fov?: number
+  hdriActive?: boolean
+  canUseBackgroundImage?: boolean
+  onUpdateBackgroundImage?: (file: File | null) => void
+}
+
 function makeConfig(overrides: Partial<SceneConfig> = {}): SceneConfig {
   return {
     showGrid: true,
@@ -21,14 +29,6 @@ function makeConfig(overrides: Partial<SceneConfig> = {}): SceneConfig {
     backgroundRenderMode: 'tiled',
     ...overrides
   }
-}
-
-type Props = {
-  config?: SceneConfig
-  fov?: number
-  hdriActive?: boolean
-  canUseBackgroundImage?: boolean
-  onUpdateBackgroundImage?: (file: File | null) => void
 }
 
 function renderGroup(props: Props = {}) {

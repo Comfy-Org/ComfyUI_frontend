@@ -12,19 +12,6 @@ import type { FormDropdownItem, SortOption } from './types'
  */
 export const DROPDOWN_PANEL_CLASS = 'comfy-form-dropdown-panel'
 
-export async function defaultSearcher(
-  query: string,
-  items: FormDropdownItem[]
-) {
-  if (query.trim() === '') return items
-  const words = query.trim().toLowerCase().split(' ')
-  return items.filter((item) => {
-    const name = item.name.toLowerCase()
-    const label = item.label?.toLowerCase() ?? ''
-    return words.every((word) => name.includes(word) || label.includes(word))
-  })
-}
-
 /**
  * Create a SortOption that delegates to the shared sortAssets utility
  */
@@ -37,6 +24,19 @@ function createSortOption(
     name,
     sorter: ({ items }) => sortAssets(items, id)
   }
+}
+
+export async function defaultSearcher(
+  query: string,
+  items: FormDropdownItem[]
+) {
+  if (query.trim() === '') return items
+  const words = query.trim().toLowerCase().split(' ')
+  return items.filter((item) => {
+    const name = item.name.toLowerCase()
+    const label = item.label?.toLowerCase() ?? ''
+    return words.every((word) => name.includes(word) || label.includes(word))
+  })
 }
 
 export function getDefaultSortOptions(): SortOption<AssetSortOption>[] {

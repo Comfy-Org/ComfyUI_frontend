@@ -27,22 +27,6 @@ const MEDIA_SRC_REGEX =
 const NON_REBASEABLE_HREF = /^(?:[/#?]|[a-z][a-z0-9+.-]*:)/i
 const COMFY_ORG_HOST = /(?:^|\.)comfy\.org$/
 
-export function resolveMarkdownUrl(href: string, baseUrl: string): string {
-  if (!baseUrl) return href
-  if (!NON_REBASEABLE_HREF.test(href)) return `${baseUrl}/${href}`
-
-  try {
-    const url = new URL(href)
-    if (COMFY_ORG_HOST.test(url.hostname) && url.pathname.startsWith('/api/')) {
-      return `${baseUrl}${url.pathname.slice(4)}${url.search}${url.hash}`
-    }
-  } catch {
-    return href
-  }
-
-  return href
-}
-
 // Create a marked Renderer that prefixes relative URLs with base
 function createMarkdownRenderer(baseUrl?: string): Renderer {
   const normalizedBase = baseUrl ? baseUrl.replace(/\/+$/, '') : ''
@@ -65,6 +49,22 @@ function createMarkdownRenderer(baseUrl?: string): Renderer {
     return `<a href="${target}" ${titleAttr} target="_blank" rel="noopener noreferrer">${linkText}</a>`
   }
   return renderer
+}
+
+export function resolveMarkdownUrl(href: string, baseUrl: string): string {
+  if (!baseUrl) return href
+  if (!NON_REBASEABLE_HREF.test(href)) return `${baseUrl}/${href}`
+
+  try {
+    const url = new URL(href)
+    if (COMFY_ORG_HOST.test(url.hostname) && url.pathname.startsWith('/api/')) {
+      return `${baseUrl}${url.pathname.slice(4)}${url.search}${url.hash}`
+    }
+  } catch {
+    return href
+  }
+
+  return href
 }
 
 export function renderMarkdownToHtml(

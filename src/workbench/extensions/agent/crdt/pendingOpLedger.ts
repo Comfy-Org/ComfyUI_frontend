@@ -29,6 +29,14 @@
  *   clocks, no IO — every transition is an explicit call.
  */
 
+interface MutableEntry<TShadow> {
+  opId: string
+  state: PendingOpState
+  shadow: TShadow
+  failure?: unknown
+  attempt: number
+}
+
 /** Lifecycle of one pending op. All transitions are explicit caller calls. */
 export type PendingOpState =
   /** Enqueued locally; not yet handed to the transport. */
@@ -122,14 +130,6 @@ export interface PendingOpLedger<TShadow = unknown> {
   entries(state?: PendingOpState): PendingOpEntry<TShadow>[]
   get(opId: string): PendingOpEntry<TShadow> | undefined
   size(): number
-}
-
-interface MutableEntry<TShadow> {
-  opId: string
-  state: PendingOpState
-  shadow: TShadow
-  failure?: unknown
-  attempt: number
 }
 
 const RETRYABLE: ReadonlySet<PendingOpState> = new Set([

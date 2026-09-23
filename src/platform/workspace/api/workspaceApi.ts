@@ -56,21 +56,16 @@ import type { UserId } from '@/types/authTypes'
 
 import { workspaceApiUrl } from './workspaceApiUrl'
 
-export type WorkspaceType = 'personal' | 'team'
-export type WorkspaceRole = 'owner' | 'member'
-export type BillingRail = NonNullable<BillingStatusResponse['billing_rail']>
-
-export type Member = GeneratedMember & {
-  // Per-member monthly credit limit UI (FE-1277). The cloud OpenAPI carries
-  // neither usage nor limit yet; persistence and real usage land in FE-1278.
-  credits_used_this_month?: number
-  monthly_credit_limit?: number | null
-}
-
-export interface ListMembersParams {
-  offset?: number
+type SubscribeBillingCycle = 'monthly' | 'yearly'
+interface GetBillingEventsParams {
+  page?: number
   limit?: number
 }
+export type WorkspaceType = 'personal' | 'team'
+
+export type WorkspaceRole = 'owner' | 'member'
+
+export type BillingRail = NonNullable<BillingStatusResponse['billing_rail']>
 
 export type { PendingInvite }
 
@@ -84,7 +79,17 @@ export type { BillingPlansResponse }
 export type { TeamCreditStops }
 export type { TeamCreditStopSummary }
 
-type SubscribeBillingCycle = 'monthly' | 'yearly'
+export type Member = GeneratedMember & {
+  // Per-member monthly credit limit UI (FE-1277). The cloud OpenAPI carries
+  // neither usage nor limit yet; persistence and real usage land in FE-1278.
+  credits_used_this_month?: number
+  monthly_credit_limit?: number | null
+}
+
+export interface ListMembersParams {
+  offset?: number
+  limit?: number
+}
 
 export interface SubscribeOptions {
   confirmationToken?: string
@@ -100,18 +105,14 @@ export interface SubscribeOptions {
   prorationAt?: string
 }
 
-export interface PreviewSubscribeOptions {
-  teamCreditStopId?: string
-  promotionCode?: string
-}
-
 export type { SubscribeResponse }
 
 export type { PreviewSubscribeResponse }
 
-export type BillingSubscriptionStatus = NonNullable<
-  BillingStatusResponse['subscription_status']
->
+export interface PreviewSubscribeOptions {
+  teamCreditStopId?: string
+  promotionCode?: string
+}
 
 export type { BillingStatus }
 export type { BillingStatusResponse }
@@ -123,6 +124,9 @@ export type { BillingCapabilitiesResponse }
 export type { CreateTopupResponse }
 export type { BillingOpStatusResponse }
 export type { SavedPaymentMethod }
+export type BillingSubscriptionStatus = NonNullable<
+  BillingStatusResponse['subscription_status']
+>
 export type BillingAuthenticationState = NonNullable<
   BillingOpStatusResponse['authentication_state']
 >
@@ -132,14 +136,10 @@ export type BillingDeclineReason = NonNullable<
 export type BillingOperationPhase = NonNullable<
   BillingOpStatusResponse['phase']
 >
+
 export type BillingRecoveryAction = NonNullable<
   BillingOpStatusResponse['recovery_action']
 >
-
-interface GetBillingEventsParams {
-  page?: number
-  limit?: number
-}
 
 export class WorkspaceApiError extends Error {
   constructor(

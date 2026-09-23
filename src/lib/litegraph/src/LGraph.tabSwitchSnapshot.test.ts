@@ -26,14 +26,6 @@ import {
 
 const INTERIOR_TYPE = 'Fixture/BlueprintInterior'
 
-class BlueprintInteriorNode extends LGraphNode {
-  constructor() {
-    super('Interior')
-    this.addInput('image', 'IMAGE')
-    this.addOutput('IMAGE', 'IMAGE')
-  }
-}
-
 function createCanvas(graph: LGraph): LGraphCanvas {
   const el = document.createElement('canvas')
   el.width = 800
@@ -114,6 +106,14 @@ function blueprintItems() {
     widgets_values: []
   }
   return { nodes: [host], subgraphs: [definition] }
+}
+
+class BlueprintInteriorNode extends LGraphNode {
+  constructor() {
+    super('Interior')
+    this.addInput('image', 'IMAGE')
+    this.addOutput('IMAGE', 'IMAGE')
+  }
 }
 
 describe('LGraph serialize as the workflow tab-switch snapshot', () => {

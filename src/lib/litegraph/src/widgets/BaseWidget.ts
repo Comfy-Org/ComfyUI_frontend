@@ -36,15 +36,6 @@ import {
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 
-export interface DrawWidgetOptions {
-  /** The width of the node where this widget will be displayed. */
-  width: number
-  /** Synonym for "low quality". */
-  showText?: boolean
-  /** Transient image source for preview widgets rendered on behalf of another node (e.g. subgraph promotion). */
-  previewImages?: HTMLImageElement[]
-}
-
 interface DrawTruncatingTextOptions extends DrawWidgetOptions {
   /** The canvas context to draw the text on. */
   ctx: CanvasRenderingContext2D
@@ -54,7 +45,18 @@ interface DrawTruncatingTextOptions extends DrawWidgetOptions {
   rightPadding?: number
 }
 
+export interface DrawWidgetOptions {
+  /** The width of the node where this widget will be displayed. */
+  width: number
+  /** Synonym for "low quality". */
+  showText?: boolean
+  /** Transient image source for preview widgets rendered on behalf of another node (e.g. subgraph promotion). */
+  previewImages?: HTMLImageElement[]
+}
+
 const rawOptionsByShim = new WeakMap<object, object>()
+
+type LegacyVisibilityKey = 'hidden' | 'hideInPanel' | 'advanced' | 'canvasOnly'
 
 /**
  * Extensions sometimes assign a widget's own options facade back to itself
@@ -68,8 +70,6 @@ function unwrapOptionsShim<TOptions extends object>(
   if (!options) return options
   return (rawOptionsByShim.get(options) ?? options) as TOptions
 }
-
-type LegacyVisibilityKey = 'hidden' | 'hideInPanel' | 'advanced' | 'canvasOnly'
 const LEGACY_VISIBILITY_KEYS: readonly LegacyVisibilityKey[] = [
   'hidden',
   'hideInPanel',

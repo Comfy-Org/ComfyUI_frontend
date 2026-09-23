@@ -34,32 +34,6 @@ import { opNodeId, traceEntry } from './mergeTrace'
 import type { GraphOperation } from './graphOperations'
 import { mintWireOps } from './opEnvelope'
 
-export interface MergeScenario {
-  id: string
-  title: string
-  /** What a tester is meant to learn from running it. */
-  question: string
-  workflow: WorkflowJSON
-  catalog: WidgetCatalog
-  /**
-   * Ops grouped into the batches the host would receive, in arrival order.
-   *
-   * Batching is explicit because it is load-bearing, not incidental: the
-   * applier aborts the remainder of a BATCH on a rejection, so a scenario
-   * about abort-remainder is only honest if its ops actually share one.
-   * `opSender` chunks real traffic the same way.
-   */
-  batches: Op[][]
-}
-
-export interface MergeSimulation {
-  entries: MergeTraceEntry[]
-  /** Node ids surviving in the document after the whole stream. */
-  survivingNodeIds: string[]
-  /** Widget values that survived, keyed `nodeId.widget`. */
-  survivingWidgets: Record<string, unknown>
-}
-
 function stampKeyOf(value: unknown): StampKey | null {
   if (!Array.isArray(value) || value.length < 3) return null
   const [baseVersion, actor, opId] = value
@@ -196,13 +170,39 @@ function simulateOpStream(
   }
 }
 
-export function runScenario(scenario: MergeScenario): MergeSimulation {
-  return simulateOpStream(scenario.workflow, scenario.catalog, scenario.batches)
-}
-
 /** Each op arrives in its own batch — the ordinary frame-by-frame case. */
 function separately(...ops: Op[]): Op[][] {
   return ops.map((op) => [op])
+}
+
+export interface MergeScenario {
+  id: string
+  title: string
+  /** What a tester is meant to learn from running it. */
+  question: string
+  workflow: WorkflowJSON
+  catalog: WidgetCatalog
+  /**
+   * Ops grouped into the batches the host would receive, in arrival order.
+   *
+   * Batching is explicit because it is load-bearing, not incidental: the
+   * applier aborts the remainder of a BATCH on a rejection, so a scenario
+   * about abort-remainder is only honest if its ops actually share one.
+   * `opSender` chunks real traffic the same way.
+   */
+  batches: Op[][]
+}
+
+export interface MergeSimulation {
+  entries: MergeTraceEntry[]
+  /** Node ids surviving in the document after the whole stream. */
+  survivingNodeIds: string[]
+  /** Widget values that survived, keyed `nodeId.widget`. */
+  survivingWidgets: Record<string, unknown>
+}
+
+export function runScenario(scenario: MergeScenario): MergeSimulation {
+  return simulateOpStream(scenario.workflow, scenario.catalog, scenario.batches)
 }
 
 // ── canned scenarios ──────────────────────────────────────────────────────

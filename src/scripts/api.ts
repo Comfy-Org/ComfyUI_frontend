@@ -182,15 +182,6 @@ const FETCH_ROUTE_GROUPS = new Set([
   'workspace'
 ])
 
-function getFetchRouteTemplate(route: string): string {
-  const segments = (route.split(/[?#]/)[0] ?? '').split('/').filter(Boolean)
-  const routeSegments = segments[0] === 'api' ? segments.slice(1) : segments
-  const [routeGroup, ...resources] = routeSegments
-
-  if (!routeGroup || !FETCH_ROUTE_GROUPS.has(routeGroup)) return '/other'
-  return `/${routeGroup}${resources.length ? '/:resource' : ''}`
-}
-
 /**
  * Options for queuePrompt method
  */
@@ -228,9 +219,6 @@ interface FrontendApiCalls {
   reconnected: never
 }
 
-export type PromptQueueingEventPayload = FrontendApiCalls['promptQueueing']
-export type PromptQueuedEventPayload = FrontendApiCalls['promptQueued']
-
 /** Dictionary of calls originating from ComfyUI core */
 interface BackendApiCalls {
   progress: ProgressWsMessage
@@ -267,14 +255,11 @@ interface ApiCalls extends BackendApiCalls, FrontendApiCalls {
   'cm-task-started': ManagerComponents['schemas']['MessageTaskStarted']
   'cm-task-completed': ManagerComponents['schemas']['MessageTaskDone']
 }
-
 /** Used to create a discriminating union on type value. */
 interface ApiMessage<T extends keyof ApiCalls> {
   type: T
   data: ApiCalls[T]
 }
-
-export class UnauthorizedError extends Error {}
 
 /** Ensures workers get a fair shake. */
 type Unionize<T> = T[keyof T]
@@ -324,20 +309,17 @@ type PickNevers<T> = {
 
 /** Keys (names) of API events that _do not_ pass a {@link CustomEvent} `detail` object. */
 type SimpleApiEvents = keyof PickNevers<ApiEventTypes>
+
 /** Keys (names) of API events that pass a {@link CustomEvent} `detail` object. */
 type ComplexApiEvents = keyof NeverNever<ApiEventTypes>
 
-export type GlobalSubgraphData = {
-  name: string
-  info: {
-    node_pack: string
-    category?: string
-    search_aliases?: string[]
-    requiresCustomNodes?: string[]
-    includeOnDistributions?: TemplateIncludeOnDistributionEnum[]
-  }
-  data: string | Promise<string>
-  essentials_category?: string
+function getFetchRouteTemplate(route: string): string {
+  const segments = (route.split(/[?#]/)[0] ?? '').split('/').filter(Boolean)
+  const routeSegments = segments[0] === 'api' ? segments.slice(1) : segments
+  const [routeGroup, ...resources] = routeSegments
+
+  if (!routeGroup || !FETCH_ROUTE_GROUPS.has(routeGroup)) return '/other'
+  return `/${routeGroup}${resources.length ? '/:resource' : ''}`
 }
 
 function addHeaderEntry(headers: HeadersInit, key: string, value: string) {
@@ -367,6 +349,22 @@ async function trackWsTokenUnavailable(): Promise<void> {
     console.warn('Failed to report WebSocket token unavailability:', err)
   }
 }
+export type PromptQueueingEventPayload = FrontendApiCalls['promptQueueing']
+
+export type PromptQueuedEventPayload = FrontendApiCalls['promptQueued']
+
+export type GlobalSubgraphData = {
+  name: string
+  info: {
+    node_pack: string
+    category?: string
+    search_aliases?: string[]
+    requiresCustomNodes?: string[]
+    includeOnDistributions?: TemplateIncludeOnDistributionEnum[]
+  }
+  data: string | Promise<string>
+  essentials_category?: string
+}
 
 /** EventTarget typing has no generic capability. */
 export interface ComfyApi extends EventTarget {
@@ -382,6 +380,8 @@ export interface ComfyApi extends EventTarget {
     options?: EventListenerOptions | boolean
   ): void
 }
+
+export class UnauthorizedError extends Error {}
 
 export class PromptExecutionError extends Error {
   response: PromptFailureResponse

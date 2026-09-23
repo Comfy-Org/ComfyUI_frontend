@@ -2,12 +2,22 @@ import { mapValues } from 'es-toolkit'
 
 import { BLUEPRINT_TYPE_PREFIX } from '@/utils/blueprintUtils'
 
-export type EssentialsMediaType = 'image' | 'video' | 'text' | 'audio' | '3d'
-
 interface EssentialsPath {
   section: string
   subgroup?: string
 }
+
+interface EssentialSubgroup {
+  key: string
+  media: EssentialsMediaType
+  tiles: EssentialTile[]
+}
+
+function blueprint(name: string) {
+  return BLUEPRINT_TYPE_PREFIX + name
+}
+
+export type EssentialsMediaType = 'image' | 'video' | 'text' | 'audio' | '3d'
 
 export interface EssentialTile {
   icon?: string
@@ -24,20 +34,10 @@ export interface EssentialTile {
   nodeName: string
 }
 
-interface EssentialSubgroup {
-  key: string
-  media: EssentialsMediaType
-  tiles: EssentialTile[]
-}
-
 export interface EssentialSection {
   key: string
   subgroups?: EssentialSubgroup[]
   tiles?: EssentialTile[]
-}
-
-function blueprint(name: string) {
-  return BLUEPRINT_TYPE_PREFIX + name
 }
 
 export const ESSENTIAL_SECTIONS: EssentialSection[] = [

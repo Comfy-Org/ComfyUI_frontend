@@ -3,18 +3,6 @@ import type { PreviewSubscribeResponse } from '@comfyorg/ingest-types'
 // Legacy previews price in USD and carry no currency field.
 const LEGACY_QUOTE_CURRENCY = 'usd'
 
-export function formatQuoteMoney(
-  cents: number,
-  currency: string | undefined,
-  locale: string
-): string {
-  if (!currency) return ''
-  return new Intl.NumberFormat(locale, {
-    style: 'currency',
-    currency: currency.toUpperCase()
-  }).format(cents / 100)
-}
-
 interface QuoteMoney {
   cents: number
   currency: string | undefined
@@ -36,6 +24,18 @@ function resolveAmountDueToday(preview: PreviewSubscribeResponse): QuoteMoney {
     preview.currency,
     preview.cost_today_cents
   )
+}
+
+export function formatQuoteMoney(
+  cents: number,
+  currency: string | undefined,
+  locale: string
+): string {
+  if (!currency) return ''
+  return new Intl.NumberFormat(locale, {
+    style: 'currency',
+    currency: currency.toUpperCase()
+  }).format(cents / 100)
 }
 
 export function amountDueTodayChanged(

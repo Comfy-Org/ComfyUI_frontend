@@ -62,11 +62,11 @@ function buildDrawObjects(rows: readonly BadgeData[]): LGraphBadge[] {
 
 const EMPTY_BADGE_ROWS: readonly BadgeData[] = []
 
+type BadgeRowsProvider = typeof badgeRows
+
 export function badgeRows(node: LGraphNode): readonly BadgeData[] {
   return rowsProvider?.(node) ?? EMPTY_BADGE_ROWS
 }
-
-type BadgeRowsProvider = typeof badgeRows
 
 let rowsProvider: BadgeRowsProvider | undefined
 let rowsProviderRegistration: symbol | undefined

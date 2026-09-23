@@ -15,6 +15,13 @@ import type { MissingModelGroup } from '@/platform/missingModel/types'
 
 type OverlayCopy = { title?: string; message: string }
 
+interface OverlayGroupContext {
+  missingPackGroups: MissingPackGroup[]
+  missingModelGroups: MissingModelGroup[]
+  missingMediaGroups: MissingMediaGroup[]
+  swapNodeGroups: SwapNodeGroup[]
+}
+
 function resolveSingleOverlayCopy(group: ErrorGroup): OverlayCopy | undefined {
   if (group.type === 'execution') {
     const [card] = group.cards
@@ -71,13 +78,6 @@ function hasSingleRowWithAtMostOneReference(
 ): boolean {
   const row = rows[0]
   return rows.length === 1 && row.referencingNodes.length <= 1
-}
-
-interface OverlayGroupContext {
-  missingPackGroups: MissingPackGroup[]
-  missingModelGroups: MissingModelGroup[]
-  missingMediaGroups: MissingMediaGroup[]
-  swapNodeGroups: SwapNodeGroup[]
 }
 
 function isSingleLeafGroup(

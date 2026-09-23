@@ -42,10 +42,6 @@ export const FIRST_RUN_COACH_IDS = {
   sink: 'first-run-sink'
 } as const
 
-export type CoachId =
-  | (typeof COACH_IDS)[keyof typeof COACH_IDS]
-  | (typeof FIRST_RUN_COACH_IDS)[keyof typeof FIRST_RUN_COACH_IDS]
-
 interface StepBase {
   /**
    * Derives the step's translation keys:
@@ -63,6 +59,10 @@ interface LandingStep extends StepBase {
   kind: 'landing'
   image?: string
 }
+
+export type CoachId =
+  | (typeof COACH_IDS)[keyof typeof COACH_IDS]
+  | (typeof FIRST_RUN_COACH_IDS)[keyof typeof FIRST_RUN_COACH_IDS]
 
 /** Spotlights a target, or centres itself when the step names none. */
 export interface SpotlightStep extends StepBase {

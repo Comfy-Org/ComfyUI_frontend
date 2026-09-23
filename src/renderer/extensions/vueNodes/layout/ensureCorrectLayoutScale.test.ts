@@ -17,6 +17,8 @@ import { ensureCorrectLayoutScale } from './ensureCorrectLayoutScale'
 import { toRerouteId } from '@/types'
 import type { Reroute } from '@/lib/litegraph/src/Reroute'
 
+type MockNode = ReturnType<typeof createNode>
+
 function createNode(id: string, x: number, y: number, w: number, h: number) {
   return {
     id,
@@ -33,8 +35,6 @@ function createNode(id: string, x: number, y: number, w: number, h: number) {
     }
   }
 }
-
-type MockNode = ReturnType<typeof createNode>
 
 function createMockGraph(nodes: MockNode[], extra: LGraphExtra = {}): LGraph {
   const graph = fromPartial<LGraph>({

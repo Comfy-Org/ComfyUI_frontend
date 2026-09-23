@@ -17,6 +17,24 @@ import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput
 import { isSubgraphInput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
+/**
+ * Module-local, not accessors: a getter-only property on the prototype would
+ * collide with the base ctor's `Object.assign` for any serialized slot that
+ * happens to carry the same key.
+ */
+function indexOf(slot: NodeInputSlot): number {
+  return slot.node.inputs.indexOf(slot)
+}
+
+function linkIdOf(slot: NodeInputSlot): LinkId | null {
+  return linkOf(slot)?.id ?? null
+}
+
+function linkOf(slot: NodeInputSlot): LLink | undefined {
+  const { graph } = slot.node
+  return graph ? inputLink(graph, slot.node.id, indexOf(slot)) : undefined
+}
+
 export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
   alwaysVisible?: boolean
 
@@ -112,22 +130,4 @@ export class NodeInputSlot extends NodeSlot implements INodeInputSlot {
       widget: this.widget
     }
   }
-}
-
-/**
- * Module-local, not accessors: a getter-only property on the prototype would
- * collide with the base ctor's `Object.assign` for any serialized slot that
- * happens to carry the same key.
- */
-function indexOf(slot: NodeInputSlot): number {
-  return slot.node.inputs.indexOf(slot)
-}
-
-function linkIdOf(slot: NodeInputSlot): LinkId | null {
-  return linkOf(slot)?.id ?? null
-}
-
-function linkOf(slot: NodeInputSlot): LLink | undefined {
-  const { graph } = slot.node
-  return graph ? inputLink(graph, slot.node.id, indexOf(slot)) : undefined
 }

@@ -6,30 +6,15 @@ import type { AssistantMessage, ToolPart } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
 
 /**
- * A file attached to a user turn. `ref` is the uploaded input-namespace
- * filename that resolves the preview; on a persisted row this is the only
- * name the server ever saw, so `name` and `ref` are the same string.
+ * A persisted user row's text/attachment/workflow-reference/workflow-target
+ * fields, resolved from `row.content` and ready for the caller to record
+ * onto its per-turn maps and `latestWorkflowId`.
  */
-export interface UserAttachment {
-  name: string
-  previewUrl?: string
-  ref?: string
-}
-
-export interface NormalizedAgentTranscript {
-  /** Includes placeholders for turns without assistant text. */
-  messages: AssistantMessage[]
-  userTexts: Map<TurnId, string>
-  userAttachments: Map<TurnId, UserAttachment[]>
-  userWorkflowReferences: Map<TurnId, WorkflowReference[]>
-  latestWorkflowId?: string
-  rowIds: Set<string>
-  /** Tracks turns with assistant rows, including rows that produce no parts. */
-  assistantTurnIds: Set<TurnId>
-  pending?: {
-    messageId: TurnId
-    message: AssistantMessage
-  }
+interface UserRowUpdate {
+  text: string
+  attachments?: UserAttachment[]
+  workflowReferences?: WorkflowReference[]
+  workflowId?: string
 }
 
 function attachmentRefNames(value: unknown): string[] {
@@ -277,18 +262,6 @@ function applyAssistantRow(
   return { messageId: row.id as TurnId, message }
 }
 
-/**
- * A persisted user row's text/attachment/workflow-reference/workflow-target
- * fields, resolved from `row.content` and ready for the caller to record
- * onto its per-turn maps and `latestWorkflowId`.
- */
-interface UserRowUpdate {
-  text: string
-  attachments?: UserAttachment[]
-  workflowReferences?: WorkflowReference[]
-  workflowId?: string
-}
-
 function applyUserRow(row: AgentMessages[number], text: string): UserRowUpdate {
   const referenceUpdate = parseUserWorkflowReferences(
     text,
@@ -348,6 +321,33 @@ function recordAssistantRow(
   const rowPending = applyAssistantRow(row, message, text)
   assistants.set(turnId, message)
   return rowPending
+}
+
+/**
+ * A file attached to a user turn. `ref` is the uploaded input-namespace
+ * filename that resolves the preview; on a persisted row this is the only
+ * name the server ever saw, so `name` and `ref` are the same string.
+ */
+export interface UserAttachment {
+  name: string
+  previewUrl?: string
+  ref?: string
+}
+
+export interface NormalizedAgentTranscript {
+  /** Includes placeholders for turns without assistant text. */
+  messages: AssistantMessage[]
+  userTexts: Map<TurnId, string>
+  userAttachments: Map<TurnId, UserAttachment[]>
+  userWorkflowReferences: Map<TurnId, WorkflowReference[]>
+  latestWorkflowId?: string
+  rowIds: Set<string>
+  /** Tracks turns with assistant rows, including rows that produce no parts. */
+  assistantTurnIds: Set<TurnId>
+  pending?: {
+    messageId: TurnId
+    message: AssistantMessage
+  }
 }
 
 export function normalizeAgentTranscript(

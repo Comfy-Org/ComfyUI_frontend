@@ -11,15 +11,6 @@ type CapabilityRevisionListener = (revision: number) => void
 
 const listeners = new Set<CapabilityRevisionListener>()
 
-export function onCapabilityRevision(
-  listener: CapabilityRevisionListener
-): () => void {
-  listeners.add(listener)
-  return () => {
-    listeners.delete(listener)
-  }
-}
-
 function isMutationResponse(response: AxiosResponse | undefined): boolean {
   const method = response?.config.method
   return (
@@ -39,6 +30,15 @@ function readCapabilityRevision(
   if (typeof value !== 'string' && typeof value !== 'number') return null
   const revision = Number(value)
   return Number.isSafeInteger(revision) && revision > 0 ? revision : null
+}
+
+export function onCapabilityRevision(
+  listener: CapabilityRevisionListener
+): () => void {
+  listeners.add(listener)
+  return () => {
+    listeners.delete(listener)
+  }
 }
 
 /**

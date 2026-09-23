@@ -7,13 +7,47 @@
  * Can be reused in any canvas-based project without modification.
  */
 
+interface RenderStyle {
+  mode: RenderMode
+  connectionWidth: number
+  borderWidth?: number
+  arrowShape?: ArrowShape
+  showArrows?: boolean
+  lowQuality?: boolean
+  // Center marker properties
+  showCenterMarker?: boolean
+  centerMarkerShape?: 'circle' | 'arrow'
+  highQuality?: boolean
+}
+
+interface RenderColors {
+  default: string
+  byType: Record<string, string>
+  highlighted: string
+}
+interface DragLinkData {
+  /** Fixed end - the slot being dragged from */
+  fixedPoint: Point
+  fixedDirection: Direction
+  /** Moving end - follows mouse */
+  dragPoint: Point
+  dragDirection?: Direction
+  /** Visual properties */
+  color?: string
+  type?: string
+  disabled?: boolean
+  /** Whether dragging from input (reverse direction) */
+  fromInput?: boolean
+}
 export interface Point {
   x: number
   y: number
 }
 
 export type Direction = 'left' | 'right' | 'up' | 'down' | 'none'
+
 export type RenderMode = 'spline' | 'straight' | 'linear'
+
 export type ArrowShape = 'triangle' | 'circle' | 'square'
 
 export interface LinkRenderData {
@@ -38,25 +72,6 @@ export interface LinkRenderData {
   centerAngle?: number
 }
 
-interface RenderStyle {
-  mode: RenderMode
-  connectionWidth: number
-  borderWidth?: number
-  arrowShape?: ArrowShape
-  showArrows?: boolean
-  lowQuality?: boolean
-  // Center marker properties
-  showCenterMarker?: boolean
-  centerMarkerShape?: 'circle' | 'arrow'
-  highQuality?: boolean
-}
-
-interface RenderColors {
-  default: string
-  byType: Record<string, string>
-  highlighted: string
-}
-
 export interface RenderContext {
   style: RenderStyle
   colors: RenderColors
@@ -68,21 +83,6 @@ export interface RenderContext {
   }
   scale?: number // Canvas scale for quality adjustments
   highlightedIds?: Set<string>
-}
-
-interface DragLinkData {
-  /** Fixed end - the slot being dragged from */
-  fixedPoint: Point
-  fixedDirection: Direction
-  /** Moving end - follows mouse */
-  dragPoint: Point
-  dragDirection?: Direction
-  /** Visual properties */
-  color?: string
-  type?: string
-  disabled?: boolean
-  /** Whether dragging from input (reverse direction) */
-  fromInput?: boolean
 }
 
 export class CanvasPathRenderer {

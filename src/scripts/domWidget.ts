@@ -16,6 +16,15 @@ import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { generateUUID } from '@/utils/formatUtil'
 
+/**
+ * Additional props that can be passed to component widgets.
+ * These are in addition to the standard props that are always provided:
+ * - modelValue: The widget's value (handled by v-model)
+ * - widget: Reference to the widget instance
+ * - onUpdate:modelValue: The update handler for v-model
+ */
+type ComponentWidgetCustomProps = Record<string, unknown>
+
 export interface BaseDOMWidget<
   V extends object | string = object | string
 > extends IBaseWidget<V, string, DOMWidgetOptions<V>> {
@@ -51,15 +60,6 @@ export interface DOMWidget<
    */
   inputEl?: T
 }
-
-/**
- * Additional props that can be passed to component widgets.
- * These are in addition to the standard props that are always provided:
- * - modelValue: The widget's value (handled by v-model)
- * - widget: Reference to the widget instance
- * - onUpdate:modelValue: The update handler for v-model
- */
-type ComponentWidgetCustomProps = Record<string, unknown>
 
 /**
  * Standard props that are handled separately by DomWidget.vue and should be

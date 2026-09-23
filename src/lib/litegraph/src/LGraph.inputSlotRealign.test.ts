@@ -48,6 +48,12 @@ class SourceNode extends LGraphNode {
 
 const SUBGRAPH_ID = 'ab111111-1111-4111-8111-111111111111'
 
+interface WorkflowOptions {
+  duplicate?: boolean
+  insideSubgraph?: boolean
+  withSubgraphDefinition?: boolean
+}
+
 function shiftedNodesAndLinks(
   sourceId: number,
   targetId: number,
@@ -242,12 +248,6 @@ function subgraphInputFanoutWithRejectedDuplicate(): ExportedSubgraph {
     }
   ]
   return subgraph
-}
-
-interface WorkflowOptions {
-  duplicate?: boolean
-  insideSubgraph?: boolean
-  withSubgraphDefinition?: boolean
 }
 
 function savedWorkflow({
@@ -481,25 +481,6 @@ class DroppedInputTargetNode extends LGraphNode {
 
 const RENAMED_DEFINITION_ORDER = ['in_a', 'in_b', 'in_c_v2']
 
-class RenamedInputTargetNode extends LGraphNode {
-  constructor(title?: string) {
-    super(title ?? 'RenamedInputTarget')
-    for (const name of RENAMED_DEFINITION_ORDER) this.addInput(name, 'number')
-  }
-
-  override configure(data: ISerialisedNode): void {
-    super.configure(data)
-    for (const input of this.inputs) {
-      if (input.name === 'in_c') input.name = 'in_c_v2'
-    }
-    this.inputs.sort(
-      (a, b) =>
-        RENAMED_DEFINITION_ORDER.indexOf(a.name) -
-        RENAMED_DEFINITION_ORDER.indexOf(b.name)
-    )
-  }
-}
-
 function unmatchedInputNameWorkflow(nodeType: string): SerialisableGraph {
   return {
     id: 'ab000000-0000-4000-8000-000000000004',
@@ -579,6 +560,25 @@ function unmatchedInputLinkState(graph: LGraph) {
     reloadedGraphLinkIds: [...reloaded.links.keys()],
     reloadedInputLinkIds: reloadedTarget.inputs.map(
       (_, slot) => reloadedTarget.getInputLink(slot)?.id
+    )
+  }
+}
+
+class RenamedInputTargetNode extends LGraphNode {
+  constructor(title?: string) {
+    super(title ?? 'RenamedInputTarget')
+    for (const name of RENAMED_DEFINITION_ORDER) this.addInput(name, 'number')
+  }
+
+  override configure(data: ISerialisedNode): void {
+    super.configure(data)
+    for (const input of this.inputs) {
+      if (input.name === 'in_c') input.name = 'in_c_v2'
+    }
+    this.inputs.sort(
+      (a, b) =>
+        RENAMED_DEFINITION_ORDER.indexOf(a.name) -
+        RENAMED_DEFINITION_ORDER.indexOf(b.name)
     )
   }
 }

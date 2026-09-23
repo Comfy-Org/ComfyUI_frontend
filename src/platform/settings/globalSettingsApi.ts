@@ -14,16 +14,6 @@ import { isCloud } from '@/platform/distribution/types'
 import { api } from '@/scripts/api'
 import type { AuthHeader } from '@/types/authTypes'
 
-export class GlobalSettingsApiError extends Error {
-  constructor(
-    message: string,
-    readonly status?: number
-  ) {
-    super(message)
-    this.name = 'GlobalSettingsApiError'
-  }
-}
-
 function globalSettingsUrl(key?: GlobalSettingKey): string {
   const path = `/global-settings${key ? `/${encodeURIComponent(key)}` : ''}`
   return isCloud ? api.apiURL(path) : `${getComfyApiBaseUrl()}/api${path}`
@@ -87,4 +77,14 @@ export async function setGlobalSetting(
     await shouldRemintCloudRequest()
   )
   return storedSetting(response)
+}
+
+export class GlobalSettingsApiError extends Error {
+  constructor(
+    message: string,
+    readonly status?: number
+  ) {
+    super(message)
+    this.name = 'GlobalSettingsApiError'
+  }
 }

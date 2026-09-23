@@ -2,6 +2,14 @@ import type { SubscriptionTier } from '@comfyorg/ingest-types'
 
 import type { WorkspaceRole } from '@/platform/workspace/api/workspaceApi'
 
+interface AgentPaywallPresentationInput {
+  distribution: 'cloud' | 'local'
+  role: WorkspaceRole | undefined
+  tier: SubscriptionTier | null
+  canTopUp: boolean
+  canSubscribeSelfServe: boolean
+}
+
 export type AgentPaywallAction = 'addCredits' | 'subscribe' | 'upgrade'
 
 export type AgentPaywallPresentation =
@@ -11,14 +19,6 @@ export type AgentPaywallPresentation =
   | { kind: 'salesManaged' }
   | { kind: 'local' }
   | { kind: 'unavailable' }
-
-interface AgentPaywallPresentationInput {
-  distribution: 'cloud' | 'local'
-  role: WorkspaceRole | undefined
-  tier: SubscriptionTier | null
-  canTopUp: boolean
-  canSubscribeSelfServe: boolean
-}
 
 export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
   kind: 'unavailable'

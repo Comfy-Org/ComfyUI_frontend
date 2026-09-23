@@ -59,16 +59,113 @@ const FIELD_NAME_FOR: Record<OrbitHandleType, CameraInfoFieldName> = {
   distance: 'mode.distance'
 }
 
-export interface CameraInfoViewportOptions extends Load3DOptions {
-  onHandleDrag?: (fieldName: CameraInfoFieldName, value: number) => void
-}
-
 interface DragState {
   type: DragHandleType
   pointerId: number
 }
 
 type PointerPosition = Pick<PointerEvent, 'clientX' | 'clientY'>
+
+interface OrbitDragResult {
+  fieldName: CameraInfoFieldName
+  value: number
+  nextState: CameraInfoState
+}
+
+function computeNextState(
+  type: DragHandleType,
+  state: CameraInfoState,
+  point: THREE.Vector3
+): OrbitDragResult {
+  if (type === 'roll') {
+    const cameraPos = computeSubjectTransform(state).position
+    const value = pointToRollAngle(
+      { x: point.x, y: point.y, z: point.z },
+      state.target,
+      { x: cameraPos.x, y: cameraPos.y, z: cameraPos.z }
+    )
+    return {
+      fieldName: 'roll',
+      value,
+      nextState: { ...state, roll: value }
+    }
+  }
+  const fieldName = FIELD_NAME_FOR[type]
+  if (type === 'yaw') {
+    const value = pointToYawAngle(point, state.target)
+    return {
+      fieldName,
+      value,
+      nextState: { ...state, orbit: { ...state.orbit, yaw: value } }
+    }
+  }
+  if (type === 'pitch') {
+    const value = pointToPitchAngle(point, state.target, state.orbit.yaw)
+    return {
+      fieldName,
+      value,
+      nextState: { ...state, orbit: { ...state.orbit, pitch: value } }
+    }
+  }
+  const value = pointToDistance(
+    point,
+    state.target,
+    state.orbit.yaw,
+    state.orbit.pitch
+  )
+  return {
+    fieldName,
+    value,
+    nextState: { ...state, orbit: { ...state.orbit, distance: value } }
+  }
+}
+
+function targetApplies(mode: CameraInfoMode): boolean {
+  return mode === 'orbit' || mode === 'look_at'
+}
+
+function cameraTranslateApplies(mode: CameraInfoMode): boolean {
+  return mode === 'look_at' || mode === 'quaternion'
+}
+
+function cameraRotateApplies(mode: CameraInfoMode): boolean {
+  return mode === 'quaternion'
+}
+
+function rollApplies(mode: CameraInfoMode): boolean {
+  return mode === 'orbit' || mode === 'look_at'
+}
+
+function nextStateForCameraDrag(
+  state: CameraInfoState,
+  transform: CameraHandleTransform,
+  mode: CameraHandleMode
+): CameraInfoState {
+  const { position, quaternion } = transform
+  if (mode === 'translate') {
+    if (state.mode === 'look_at') {
+      return { ...state, lookAt: { position: { ...position } } }
+    }
+    if (state.mode === 'quaternion') {
+      return {
+        ...state,
+        quaternion: { ...state.quaternion, position: { ...position } }
+      }
+    }
+    return state
+  }
+  if (state.mode === 'quaternion') {
+    return {
+      ...state,
+      quaternion: { ...state.quaternion, quat: { ...quaternion } }
+    }
+  }
+  return state
+}
+
+export interface CameraInfoViewportOptions extends Load3DOptions {
+  onHandleDrag?: (fieldName: CameraInfoFieldName, value: number) => void
+}
 
 export class CameraInfoViewport {
   readonly viewport: Viewport3d
@@ -638,101 +735,4 @@ export class CameraInfoViewport {
       cam.updateProjectionMatrix()
     }
   }
-}
-
-interface OrbitDragResult {
-  fieldName: CameraInfoFieldName
-  value: number
-  nextState: CameraInfoState
-}
-
-function computeNextState(
-  type: DragHandleType,
-  state: CameraInfoState,
-  point: THREE.Vector3
-): OrbitDragResult {
-  if (type === 'roll') {
-    const cameraPos = computeSubjectTransform(state).position
-    const value = pointToRollAngle(
-      { x: point.x, y: point.y, z: point.z },
-      state.target,
-      { x: cameraPos.x, y: cameraPos.y, z: cameraPos.z }
-    )
-    return {
-      fieldName: 'roll',
-      value,
-      nextState: { ...state, roll: value }
-    }
-  }
-  const fieldName = FIELD_NAME_FOR[type]
-  if (type === 'yaw') {
-    const value = pointToYawAngle(point, state.target)
-    return {
-      fieldName,
-      value,
-      nextState: { ...state, orbit: { ...state.orbit, yaw: value } }
-    }
-  }
-  if (type === 'pitch') {
-    const value = pointToPitchAngle(point, state.target, state.orbit.yaw)
-    return {
-      fieldName,
-      value,
-      nextState: { ...state, orbit: { ...state.orbit, pitch: value } }
-    }
-  }
-  const value = pointToDistance(
-    point,
-    state.target,
-    state.orbit.yaw,
-    state.orbit.pitch
-  )
-  return {
-    fieldName,
-    value,
-    nextState: { ...state, orbit: { ...state.orbit, distance: value } }
-  }
-}
-
-function targetApplies(mode: CameraInfoMode): boolean {
-  return mode === 'orbit' || mode === 'look_at'
-}
-
-function cameraTranslateApplies(mode: CameraInfoMode): boolean {
-  return mode === 'look_at' || mode === 'quaternion'
-}
-
-function cameraRotateApplies(mode: CameraInfoMode): boolean {
-  return mode === 'quaternion'
-}
-
-function rollApplies(mode: CameraInfoMode): boolean {
-  return mode === 'orbit' || mode === 'look_at'
-}
-
-function nextStateForCameraDrag(
-  state: CameraInfoState,
-  transform: CameraHandleTransform,
-  mode: CameraHandleMode
-): CameraInfoState {
-  const { position, quaternion } = transform
-  if (mode === 'translate') {
-    if (state.mode === 'look_at') {
-      return { ...state, lookAt: { position: { ...position } } }
-    }
-    if (state.mode === 'quaternion') {
-      return {
-        ...state,
-        quaternion: { ...state.quaternion, position: { ...position } }
-      }
-    }
-    return state
-  }
-  if (state.mode === 'quaternion') {
-    return {
-      ...state,
-      quaternion: { ...state.quaternion, quat: { ...quaternion } }
-    }
-  }
-  return state
 }

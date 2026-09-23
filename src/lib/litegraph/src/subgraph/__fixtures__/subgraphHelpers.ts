@@ -36,6 +36,63 @@ const FIXTURE_UUID_PREFIX = '00000000-0000-4000-8000-'
 
 let fixtureUuidSequence = 1
 
+interface TestSubgraphOptions {
+  rootGraph?: LGraph
+  rootGraphId?: UUID
+  id?: UUID
+  name?: string
+  nodeCount?: number
+  inputCount?: number
+  outputCount?: number
+  inputs?: Array<{ name: string; type: ISlotType }>
+  outputs?: Array<{ name: string; type: ISlotType }>
+}
+
+interface TestSubgraphNodeOptions {
+  parentGraph?: LGraph | Subgraph
+  id?: SerializedNodeId
+  pos?: [number, number]
+  size?: [number, number]
+}
+
+interface BoundaryLinkedSubgraphOptions {
+  rootGraph?: LGraph
+  hostId?: SerializedNodeId
+  interiorId?: SerializedNodeId
+  boundaryName?: string
+  inputName?: string
+  hostTitle?: string
+  interiorType?: string
+}
+
+interface NestedSubgraphOptions {
+  depth?: number
+  nodesPerLevel?: number
+  inputsPerSubgraph?: number
+  outputsPerSubgraph?: number
+}
+
+interface SubgraphStructureExpectation {
+  inputCount?: number
+  outputCount?: number
+  nodeCount?: number
+  name?: string
+  hasInputNode?: boolean
+  hasOutputNode?: boolean
+}
+
+interface CapturedEvent<T = unknown> {
+  type: string
+  detail: T
+  timestamp: number
+}
+
+function nextFixtureUuid(): UUID {
+  const suffix = fixtureUuidSequence.toString(16).padStart(12, '0')
+  fixtureUuidSequence += 1
+  return `${FIXTURE_UUID_PREFIX}${suffix}`
+}
+
 class FixtureStringConcatenateNode extends LGraphNode {
   constructor() {
     super('StringConcatenate')
@@ -56,15 +113,26 @@ class FixtureTestNode extends LGraphNode {
   }
 }
 
+export interface BoundaryLinkedSubgraphFixture {
+  rootGraph: LGraph
+  subgraph: Subgraph
+  host: SubgraphNode
+  interior: LGraphNode
+}
+
+/** Return type for createEventCapture with typed getEventsByType */
+export interface EventCapture<TEventMap extends object> {
+  events: CapturedEvent<TEventMap[keyof TEventMap]>[]
+  clear: () => void
+  cleanup: () => void
+  getEventsByType: <K extends keyof TEventMap & string>(
+    type: K
+  ) => CapturedEvent<TEventMap[K]>[]
+}
+
 export function cleanupComplexPromotionFixtureNodeType(): void {
   if (!(FIXTURE_STRING_CONCAT_TYPE in LiteGraph.registered_node_types)) return
   LiteGraph.unregisterNodeType(FIXTURE_STRING_CONCAT_TYPE)
-}
-
-function nextFixtureUuid(): UUID {
-  const suffix = fixtureUuidSequence.toString(16).padStart(12, '0')
-  fixtureUuidSequence += 1
-  return `${FIXTURE_UUID_PREFIX}${suffix}`
 }
 
 export function resetSubgraphFixtureState(): void {
@@ -115,74 +183,6 @@ export function createTestRootGraph(id: UUID = nextFixtureUuid()): LGraph {
   const graph = new LGraph()
   graph.id = id
   return graph
-}
-
-interface TestSubgraphOptions {
-  rootGraph?: LGraph
-  rootGraphId?: UUID
-  id?: UUID
-  name?: string
-  nodeCount?: number
-  inputCount?: number
-  outputCount?: number
-  inputs?: Array<{ name: string; type: ISlotType }>
-  outputs?: Array<{ name: string; type: ISlotType }>
-}
-
-interface TestSubgraphNodeOptions {
-  parentGraph?: LGraph | Subgraph
-  id?: SerializedNodeId
-  pos?: [number, number]
-  size?: [number, number]
-}
-
-interface BoundaryLinkedSubgraphOptions {
-  rootGraph?: LGraph
-  hostId?: SerializedNodeId
-  interiorId?: SerializedNodeId
-  boundaryName?: string
-  inputName?: string
-  hostTitle?: string
-  interiorType?: string
-}
-
-export interface BoundaryLinkedSubgraphFixture {
-  rootGraph: LGraph
-  subgraph: Subgraph
-  host: SubgraphNode
-  interior: LGraphNode
-}
-
-interface NestedSubgraphOptions {
-  depth?: number
-  nodesPerLevel?: number
-  inputsPerSubgraph?: number
-  outputsPerSubgraph?: number
-}
-
-interface SubgraphStructureExpectation {
-  inputCount?: number
-  outputCount?: number
-  nodeCount?: number
-  name?: string
-  hasInputNode?: boolean
-  hasOutputNode?: boolean
-}
-
-interface CapturedEvent<T = unknown> {
-  type: string
-  detail: T
-  timestamp: number
-}
-
-/** Return type for createEventCapture with typed getEventsByType */
-export interface EventCapture<TEventMap extends object> {
-  events: CapturedEvent<TEventMap[keyof TEventMap]>[]
-  clear: () => void
-  cleanup: () => void
-  getEventsByType: <K extends keyof TEventMap & string>(
-    type: K
-  ) => CapturedEvent<TEventMap[K]>[]
 }
 
 /**

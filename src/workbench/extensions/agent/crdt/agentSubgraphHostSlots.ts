@@ -18,6 +18,20 @@ import { allSubgraphDefinitions } from './agentSubgraphDefinitions'
  * widget, so this module resolves both from it.
  */
 
+/**
+ * Declared input names that appear more than once. A repeated name cannot be
+ * resolved to a single host slot, so callers treat it as undeclared.
+ */
+function ambiguousInputNames(definition: ExportedSubgraph): Set<string> {
+  const seen = new Set<string>()
+  const ambiguous = new Set<string>()
+  for (const input of definition.inputs ?? []) {
+    if (seen.has(input.name)) ambiguous.add(input.name)
+    seen.add(input.name)
+  }
+  return ambiguous
+}
+
 export type SubgraphDefinitionIndex = ReadonlyMap<string, ExportedSubgraph>
 
 /**
@@ -36,61 +50,11 @@ export function indexSubgraphDefinitions(
 }
 
 /**
- * Declared input names that appear more than once. A repeated name cannot be
- * resolved to a single host slot, so callers treat it as undeclared.
- */
-function ambiguousInputNames(definition: ExportedSubgraph): Set<string> {
-  const seen = new Set<string>()
-  const ambiguous = new Set<string>()
-  for (const input of definition.inputs ?? []) {
-    if (seen.has(input.name)) ambiguous.add(input.name)
-    seen.add(input.name)
-  }
-  return ambiguous
-}
-
-/**
  * Mirrors comfy-cli `_MAX_NESTED_PROMOTION_DEPTH`: how many nested subgraph
  * instances a promoted input may be chased through before it is treated as
  * unpromoted. Also bounds cyclic definition references.
  */
 const MAX_NESTED_PROMOTION_DEPTH = 32
-
-/**
- * Names of the subgraph inputs that surface a widget on the host, in host
- * slot order. This is the order cmp's positional `__widgets_opaque` array
- * follows, and it must match the rule comfy-cli `promoted_inputs()` and
- * `SubgraphNode._resolveInputWidget` share: an input is promoted when one of
- * its links lands on
- *
- * - an interior plain node input that carries a `widget` reference, or
- * - a nested subgraph instance (node `type` found in `index`) whose
- *   same-named input is itself promoted, resolved recursively through
- *   `_resolveNestedPromotedSource`.
- *
- * A nested instance whose definition is missing from `index`, or whose chain
- * exceeds the depth cap, counts as unpromoted. So does an input whose chain
- * leads back to itself: a cyclic definition reference can never reach a real
- * widget, and the walk stops the first time it meets an input it is already
- * resolving instead of chasing the cycle to the depth cap. Each (definition,
- * input) pair is resolved once per call, so a fan-out of nested instances
- * costs linear, not exponential, work.
- */
-export function promotedWidgetNames(
-  definition: ExportedSubgraph,
-  index: SubgraphDefinitionIndex
-): string[] {
-  const lookups = new Map<ExportedSubgraph, DefinitionLookups>()
-  // A name declared twice cannot be mapped to one host slot (`hostSlotIndex`
-  // rejects it), so it must not be reported as a settable promoted widget.
-  const ambiguous = ambiguousInputNames(definition)
-  return (definition.inputs ?? []).flatMap((input, inputIndex) =>
-    !ambiguous.has(input.name) &&
-    isPromoted(definition, inputIndex, index, lookups)
-      ? [input.name]
-      : []
-  )
-}
 
 interface DefinitionLookups {
   linksById: ReadonlyMap<number, NonNullable<ExportedSubgraph['links']>[number]>
@@ -184,6 +148,42 @@ function isPromoted(
     MAX_NESTED_PROMOTION_DEPTH,
     ({ definition, inputIndex }) => definition.inputs?.[inputIndex],
     (target) => expandPromotionTarget(target, index, lookups)
+  )
+}
+
+/**
+ * Names of the subgraph inputs that surface a widget on the host, in host
+ * slot order. This is the order cmp's positional `__widgets_opaque` array
+ * follows, and it must match the rule comfy-cli `promoted_inputs()` and
+ * `SubgraphNode._resolveInputWidget` share: an input is promoted when one of
+ * its links lands on
+ *
+ * - an interior plain node input that carries a `widget` reference, or
+ * - a nested subgraph instance (node `type` found in `index`) whose
+ *   same-named input is itself promoted, resolved recursively through
+ *   `_resolveNestedPromotedSource`.
+ *
+ * A nested instance whose definition is missing from `index`, or whose chain
+ * exceeds the depth cap, counts as unpromoted. So does an input whose chain
+ * leads back to itself: a cyclic definition reference can never reach a real
+ * widget, and the walk stops the first time it meets an input it is already
+ * resolving instead of chasing the cycle to the depth cap. Each (definition,
+ * input) pair is resolved once per call, so a fan-out of nested instances
+ * costs linear, not exponential, work.
+ */
+export function promotedWidgetNames(
+  definition: ExportedSubgraph,
+  index: SubgraphDefinitionIndex
+): string[] {
+  const lookups = new Map<ExportedSubgraph, DefinitionLookups>()
+  // A name declared twice cannot be mapped to one host slot (`hostSlotIndex`
+  // rejects it), so it must not be reported as a settable promoted widget.
+  const ambiguous = ambiguousInputNames(definition)
+  return (definition.inputs ?? []).flatMap((input, inputIndex) =>
+    !ambiguous.has(input.name) &&
+    isPromoted(definition, inputIndex, index, lookups)
+      ? [input.name]
+      : []
   )
 }
 

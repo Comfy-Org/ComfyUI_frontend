@@ -29,6 +29,27 @@ function _findInMetadata(
   return null
 }
 
+export enum ResourceState {
+  Uninitialized,
+  Loading,
+  Loaded
+}
+
+/**
+ * Resolves the preview image for a model: embedded metadata thumbnail when
+ * loaded, otherwise the server-rendered `.webp` preview. The preview endpoint
+ * reads a rendered thumbnail off local disk, which is unavailable on Cloud
+ * (model bytes live in object storage), so Cloud resolves to no preview.
+ */
+export function getModelPreviewUrl(model: ComfyModelDef): string {
+  if (model.image) return model.image
+  if (isCloud) return ''
+  const extension = model.file_name.split('.').pop()
+  const filename = model.file_name.replace(`.${extension}`, '.webp')
+  const encodedFilename = encodeURIComponent(filename).replace(/%2F/g, '/')
+  return `/api/experiment/models/preview/${encodeURIComponent(model.directory)}/${model.path_index}/${encodedFilename}`
+}
+
 /** Defines and holds metadata for a model */
 export class ComfyModelDef {
   /** Path to the model */
@@ -156,27 +177,6 @@ export class ComfyModelDef {
       console.error('Error loading model metadata', this.file_name, this, error)
     }
   }
-}
-
-export enum ResourceState {
-  Uninitialized,
-  Loading,
-  Loaded
-}
-
-/**
- * Resolves the preview image for a model: embedded metadata thumbnail when
- * loaded, otherwise the server-rendered `.webp` preview. The preview endpoint
- * reads a rendered thumbnail off local disk, which is unavailable on Cloud
- * (model bytes live in object storage), so Cloud resolves to no preview.
- */
-export function getModelPreviewUrl(model: ComfyModelDef): string {
-  if (model.image) return model.image
-  if (isCloud) return ''
-  const extension = model.file_name.split('.').pop()
-  const filename = model.file_name.replace(`.${extension}`, '.webp')
-  const encodedFilename = encodeURIComponent(filename).replace(/%2F/g, '/')
-  return `/api/experiment/models/preview/${encodeURIComponent(model.directory)}/${model.path_index}/${encodedFilename}`
 }
 
 /**

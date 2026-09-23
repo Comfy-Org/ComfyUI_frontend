@@ -8,6 +8,26 @@ import { widgetId } from '@/types/widgetId'
 
 const foreignBehavior = Symbol('foreignBehavior')
 
+function createNodeWithWidgets(values: Record<string, number>) {
+  const graph = new LGraph()
+  const node = new LGraphNode('test')
+  graph.add(node)
+  for (const [name, value] of Object.entries(values)) {
+    node.addWidget('number', name, value, () => undefined, {})
+  }
+  return { node, widgets: [...node.widgets!] }
+}
+
+function storedOrder(node: LGraphNode): string[] {
+  return useWidgetValueStore()
+    .getNodeWidgets(node.graph!.rootGraph.id, node.id)
+    .map((widget) => widget.name)
+}
+
+function storedValue(widget: IBaseWidget) {
+  return useWidgetValueStore().getWidget(widget.widgetId!)?.value
+}
+
 class ForeignWidget implements IBaseWidget {
   [symbol: symbol]: boolean
   #drawResult = 'drawn'
@@ -64,26 +84,6 @@ class ForeignWidget implements IBaseWidget {
   onClick() {
     this.foreignClicks++
   }
-}
-
-function createNodeWithWidgets(values: Record<string, number>) {
-  const graph = new LGraph()
-  const node = new LGraphNode('test')
-  graph.add(node)
-  for (const [name, value] of Object.entries(values)) {
-    node.addWidget('number', name, value, () => undefined, {})
-  }
-  return { node, widgets: [...node.widgets!] }
-}
-
-function storedOrder(node: LGraphNode): string[] {
-  return useWidgetValueStore()
-    .getNodeWidgets(node.graph!.rootGraph.id, node.id)
-    .map((widget) => widget.name)
-}
-
-function storedValue(widget: IBaseWidget) {
-  return useWidgetValueStore().getWidget(widget.widgetId!)?.value
 }
 
 /** Node packs rebuild `node.widgets` by writing to the array directly. */

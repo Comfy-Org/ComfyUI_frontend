@@ -47,36 +47,6 @@ interface SubgraphNormalizationReservations {
   rerouteIds: Set<number>
 }
 
-export function normalizeSubgraphDefinitions(
-  subgraphs: ExportedSubgraph[],
-  reservations: SubgraphNormalizationReservations,
-  state: LGraphState,
-  rootNodes?: ISerialisedNode[]
-): DeduplicationResult {
-  const normalizedIds = normalizeSubgraphDefinitionIds(subgraphs, rootNodes)
-  const clonedSubgraphs =
-    firstById(normalizedIds.subgraphs, (subgraph) => subgraph.id, 'subgraph') ??
-    []
-  const clonedRootNodes = normalizedIds.rootNodes
-
-  for (const [index, subgraph] of clonedSubgraphs.entries()) {
-    dropSameOwnerDuplicates(subgraph)
-    clonedSubgraphs[index] = normalizeConfiguredTopology(subgraph)
-  }
-
-  deduplicateClonedSubgraphNodeIds(
-    clonedSubgraphs,
-    reservations.nodeIds,
-    state,
-    clonedRootNodes
-  )
-  deduplicateSubgraphGroupIds(clonedSubgraphs, reservations.groupIds, state)
-  deduplicateSubgraphLinkIds(clonedSubgraphs, reservations.linkIds, state)
-  deduplicateSubgraphRerouteIds(clonedSubgraphs, reservations.rerouteIds, state)
-
-  return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
-}
-
 interface NestedSubgraphDefinitions<Subgraph> {
   definitions?: { subgraphs?: Subgraph[] }
 }
@@ -101,46 +71,6 @@ function flattenSubgraphDefinitions<
     }
   }
   return flattened
-}
-
-export function normalizeSubgraphDefinitionIds<
-  Subgraph extends NestedSubgraphDefinitions<Subgraph> & {
-    id: string
-    nodes?: { type: string }[]
-  },
-  Node extends { type: string }
->(
-  subgraphs: Subgraph[],
-  rootNodes?: Node[]
-): DeduplicationResult<Subgraph, Node> {
-  const clonedSubgraphs = flattenSubgraphDefinitions(structuredClone(subgraphs))
-  const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
-  const ids = new Set(clonedSubgraphs.map(({ id }) => id))
-  const remapped = new Map<string, string>()
-
-  for (const subgraph of clonedSubgraphs) {
-    if (isUuidShapedSubgraphId(subgraph.id)) continue
-    let id = remapped.get(subgraph.id)
-    if (!id) {
-      do id = createUuidv4()
-      while (ids.has(id))
-      remapped.set(subgraph.id, id)
-      ids.add(id)
-      console.warn(
-        `LiteGraph: replaced legacy subgraph ID ${subgraph.id} with ${id}`
-      )
-    }
-    subgraph.id = id
-  }
-
-  for (const node of [
-    ...(clonedRootNodes ?? []),
-    ...clonedSubgraphs.flatMap(({ nodes }) => nodes ?? [])
-  ]) {
-    node.type = remapped.get(node.type) ?? node.type
-  }
-
-  return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
 }
 
 function dropSameOwnerDuplicates(subgraph: ExportedSubgraph): void {
@@ -189,35 +119,6 @@ function firstById<T, Id>(
     )
     return false
   })
-}
-
-/**
- * Dedupes node IDs across serialized subgraph definitions to prevent widget
- * store key collisions, and patches any root-level legacy proxyWidgets that
- * reference the remapped inner IDs. Returns deep clones; inputs are not
- * mutated. `state.lastNodeId` is advanced.
- *
- * `GraphCanvas.vue` also keys Vue node instances by bare `NodeId`, so
- * collisions could reuse a component across graph changes instead of
- * remounting it.
- */
-export function deduplicateSubgraphNodeIds(
-  subgraphs: ExportedSubgraph[],
-  reservedNodeIds: Set<number>,
-  state: LGraphState,
-  rootNodes?: ISerialisedNode[]
-): DeduplicationResult {
-  const clonedSubgraphs = structuredClone(subgraphs)
-  const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
-
-  deduplicateClonedSubgraphNodeIds(
-    clonedSubgraphs,
-    new Set([...reservedNodeIds].map(toNodeId)),
-    state,
-    clonedRootNodes
-  )
-
-  return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
 }
 
 function deduplicateClonedSubgraphNodeIds(
@@ -355,6 +256,195 @@ function patchPromotedWidgets(
   }
 }
 
+/**
+ * Remaps duplicate reroute IDs to unique values, updating `usedRerouteIds`
+ * and `state.lastRerouteId` as new IDs are allocated.
+ * @returns A map of old ID → new ID for reroutes that were remapped.
+ */
+function remapRerouteIds(
+  subgraph: ExportedSubgraph,
+  usedRerouteIds: Set<number>,
+  state: LGraphState
+): Map<number, number> {
+  return remapNumericIds(
+    subgraph.reroutes ?? [],
+    usedRerouteIds,
+    () => mintRerouteId(state),
+    (id) => observeRerouteId(state, toRerouteId(id)),
+    'reroute'
+  )
+}
+
+function remapNumericIds(
+  items: { id: number }[],
+  usedIds: Set<number>,
+  nextId: () => number,
+  reserveId: (id: number) => void,
+  entity: 'group' | 'link' | 'reroute'
+): Map<number, number> {
+  const remapped = new Map<number, number>()
+
+  for (const item of items) {
+    const oldId = item.id
+    if (usedIds.has(oldId)) {
+      const newId = findNextAvailableId(usedIds, nextId)
+      remapped.set(oldId, newId)
+      item.id = newId
+      usedIds.add(newId)
+      console.warn(
+        `LiteGraph: duplicate subgraph ${entity} ID ${oldId} remapped to ${newId}`
+      )
+    } else {
+      usedIds.add(oldId)
+      reserveId(oldId)
+    }
+  }
+
+  return remapped
+}
+
+/** Patches every reference to a remapped reroute ID within a subgraph. */
+function patchRerouteReferences(
+  subgraph: ExportedSubgraph,
+  remapped: Map<number, number>
+): void {
+  for (const reroute of subgraph.reroutes ?? []) {
+    if (reroute.parentId === undefined) continue
+    const newParentId = remapped.get(reroute.parentId)
+    if (newParentId !== undefined) reroute.parentId = newParentId
+  }
+  for (const link of [
+    ...(subgraph.links ?? []),
+    ...(subgraph.floatingLinks ?? [])
+  ]) {
+    if (link.parentId === undefined) continue
+    const newParentId = remapped.get(link.parentId)
+    if (newParentId !== undefined) link.parentId = toRerouteId(newParentId)
+  }
+}
+
+/** Patches legacy proxyWidgets in root-level SubgraphNode instances. */
+function patchProxyWidgets(
+  rootNodes: ISerialisedNode[],
+  subgraphIdSet: Set<string>,
+  remapBySubgraph: Map<string, Map<NodeId, SerializedNodeId>>
+): void {
+  for (const node of rootNodes) {
+    if (!subgraphIdSet.has(node.type)) continue
+    const remappedIds = remapBySubgraph.get(node.type)
+    if (!remappedIds) continue
+
+    const proxyWidgets = node.properties?.proxyWidgets
+    if (!Array.isArray(proxyWidgets)) continue
+
+    for (const entry of proxyWidgets) {
+      if (!Array.isArray(entry)) continue
+      const oldId = toNodeId(entry[0])
+      const newId = remappedIds.get(oldId)
+      if (newId !== undefined) entry[0] = String(newId)
+    }
+  }
+}
+
+export function normalizeSubgraphDefinitions(
+  subgraphs: ExportedSubgraph[],
+  reservations: SubgraphNormalizationReservations,
+  state: LGraphState,
+  rootNodes?: ISerialisedNode[]
+): DeduplicationResult {
+  const normalizedIds = normalizeSubgraphDefinitionIds(subgraphs, rootNodes)
+  const clonedSubgraphs =
+    firstById(normalizedIds.subgraphs, (subgraph) => subgraph.id, 'subgraph') ??
+    []
+  const clonedRootNodes = normalizedIds.rootNodes
+
+  for (const [index, subgraph] of clonedSubgraphs.entries()) {
+    dropSameOwnerDuplicates(subgraph)
+    clonedSubgraphs[index] = normalizeConfiguredTopology(subgraph)
+  }
+
+  deduplicateClonedSubgraphNodeIds(
+    clonedSubgraphs,
+    reservations.nodeIds,
+    state,
+    clonedRootNodes
+  )
+  deduplicateSubgraphGroupIds(clonedSubgraphs, reservations.groupIds, state)
+  deduplicateSubgraphLinkIds(clonedSubgraphs, reservations.linkIds, state)
+  deduplicateSubgraphRerouteIds(clonedSubgraphs, reservations.rerouteIds, state)
+
+  return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
+}
+
+export function normalizeSubgraphDefinitionIds<
+  Subgraph extends NestedSubgraphDefinitions<Subgraph> & {
+    id: string
+    nodes?: { type: string }[]
+  },
+  Node extends { type: string }
+>(
+  subgraphs: Subgraph[],
+  rootNodes?: Node[]
+): DeduplicationResult<Subgraph, Node> {
+  const clonedSubgraphs = flattenSubgraphDefinitions(structuredClone(subgraphs))
+  const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
+  const ids = new Set(clonedSubgraphs.map(({ id }) => id))
+  const remapped = new Map<string, string>()
+
+  for (const subgraph of clonedSubgraphs) {
+    if (isUuidShapedSubgraphId(subgraph.id)) continue
+    let id = remapped.get(subgraph.id)
+    if (!id) {
+      do id = createUuidv4()
+      while (ids.has(id))
+      remapped.set(subgraph.id, id)
+      ids.add(id)
+      console.warn(
+        `LiteGraph: replaced legacy subgraph ID ${subgraph.id} with ${id}`
+      )
+    }
+    subgraph.id = id
+  }
+
+  for (const node of [
+    ...(clonedRootNodes ?? []),
+    ...clonedSubgraphs.flatMap(({ nodes }) => nodes ?? [])
+  ]) {
+    node.type = remapped.get(node.type) ?? node.type
+  }
+
+  return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
+}
+
+/**
+ * Dedupes node IDs across serialized subgraph definitions to prevent widget
+ * store key collisions, and patches any root-level legacy proxyWidgets that
+ * reference the remapped inner IDs. Returns deep clones; inputs are not
+ * mutated. `state.lastNodeId` is advanced.
+ *
+ * `GraphCanvas.vue` also keys Vue node instances by bare `NodeId`, so
+ * collisions could reuse a component across graph changes instead of
+ * remounting it.
+ */
+export function deduplicateSubgraphNodeIds(
+  subgraphs: ExportedSubgraph[],
+  reservedNodeIds: Set<number>,
+  state: LGraphState,
+  rootNodes?: ISerialisedNode[]
+): DeduplicationResult {
+  const clonedSubgraphs = structuredClone(subgraphs)
+  const clonedRootNodes = rootNodes ? structuredClone(rootNodes) : undefined
+
+  deduplicateClonedSubgraphNodeIds(
+    clonedSubgraphs,
+    new Set([...reservedNodeIds].map(toNodeId)),
+    state,
+    clonedRootNodes
+  )
+
+  return { subgraphs: clonedSubgraphs, rootNodes: clonedRootNodes }
+}
+
 export function collectReservedGroupIds(
   graph: Pick<LGraph, 'groups' | 'subgraphs'>,
   serializedGroups: ISerialisedGroup[] = []
@@ -458,73 +548,6 @@ export function deduplicateSubgraphRerouteIds(
 }
 
 /**
- * Remaps duplicate reroute IDs to unique values, updating `usedRerouteIds`
- * and `state.lastRerouteId` as new IDs are allocated.
- * @returns A map of old ID → new ID for reroutes that were remapped.
- */
-function remapRerouteIds(
-  subgraph: ExportedSubgraph,
-  usedRerouteIds: Set<number>,
-  state: LGraphState
-): Map<number, number> {
-  return remapNumericIds(
-    subgraph.reroutes ?? [],
-    usedRerouteIds,
-    () => mintRerouteId(state),
-    (id) => observeRerouteId(state, toRerouteId(id)),
-    'reroute'
-  )
-}
-
-function remapNumericIds(
-  items: { id: number }[],
-  usedIds: Set<number>,
-  nextId: () => number,
-  reserveId: (id: number) => void,
-  entity: 'group' | 'link' | 'reroute'
-): Map<number, number> {
-  const remapped = new Map<number, number>()
-
-  for (const item of items) {
-    const oldId = item.id
-    if (usedIds.has(oldId)) {
-      const newId = findNextAvailableId(usedIds, nextId)
-      remapped.set(oldId, newId)
-      item.id = newId
-      usedIds.add(newId)
-      console.warn(
-        `LiteGraph: duplicate subgraph ${entity} ID ${oldId} remapped to ${newId}`
-      )
-    } else {
-      usedIds.add(oldId)
-      reserveId(oldId)
-    }
-  }
-
-  return remapped
-}
-
-/** Patches every reference to a remapped reroute ID within a subgraph. */
-function patchRerouteReferences(
-  subgraph: ExportedSubgraph,
-  remapped: Map<number, number>
-): void {
-  for (const reroute of subgraph.reroutes ?? []) {
-    if (reroute.parentId === undefined) continue
-    const newParentId = remapped.get(reroute.parentId)
-    if (newParentId !== undefined) reroute.parentId = newParentId
-  }
-  for (const link of [
-    ...(subgraph.links ?? []),
-    ...(subgraph.floatingLinks ?? [])
-  ]) {
-    if (link.parentId === undefined) continue
-    const newParentId = remapped.get(link.parentId)
-    if (newParentId !== undefined) link.parentId = toRerouteId(newParentId)
-  }
-}
-
-/**
  * Topologically sorts subgraph definitions so that leaf subgraphs (those
  * that no other subgraph depends on) are configured first. This ensures
  * that when a SubgraphNode is configured, the subgraph definition it
@@ -579,27 +602,4 @@ export function topologicalSortSubgraphs(
   if (sorted.length !== subgraphs.length) return subgraphs
 
   return sorted
-}
-
-/** Patches legacy proxyWidgets in root-level SubgraphNode instances. */
-function patchProxyWidgets(
-  rootNodes: ISerialisedNode[],
-  subgraphIdSet: Set<string>,
-  remapBySubgraph: Map<string, Map<NodeId, SerializedNodeId>>
-): void {
-  for (const node of rootNodes) {
-    if (!subgraphIdSet.has(node.type)) continue
-    const remappedIds = remapBySubgraph.get(node.type)
-    if (!remappedIds) continue
-
-    const proxyWidgets = node.properties?.proxyWidgets
-    if (!Array.isArray(proxyWidgets)) continue
-
-    for (const entry of proxyWidgets) {
-      if (!Array.isArray(entry)) continue
-      const oldId = toNodeId(entry[0])
-      const newId = remappedIds.get(oldId)
-      if (newId !== undefined) entry[0] = String(newId)
-    }
-  }
 }

@@ -11,11 +11,6 @@ import { wireLog } from './crdtLog'
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
 
-/** A document update after the follower bridge has classified its provenance. */
-export interface ClassifiedDocUpdate extends DocUpdate {
-  catchUp: boolean
-}
-
 /**
  * Outbound frames are advisory: the follower's correctness never depends on one
  * arriving. A transport that cannot carry a frame reports `false`; one that
@@ -41,6 +36,11 @@ function trySend(send: () => boolean): boolean {
     wireLog.warn('frame_send_failed', 'outbound doc frame dropped', error)
     return false
   }
+}
+
+/** A document update after the follower bridge has classified its provenance. */
+export interface ClassifiedDocUpdate extends DocUpdate {
+  catchUp: boolean
 }
 
 /**

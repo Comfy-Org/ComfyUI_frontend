@@ -6,14 +6,14 @@ import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { getOutputKey } from '@/platform/assets/utils/outputKeyUtil'
 
+type UseOutputStacksOptions = {
+  assets: Ref<AssetItem[]>
+}
+
 export type OutputStackListItem = {
   key: string
   asset: AssetItem
   isChild?: boolean
-}
-
-type UseOutputStacksOptions = {
-  assets: Ref<AssetItem[]>
 }
 
 export function useOutputStacks({ assets }: UseOutputStacksOptions) {

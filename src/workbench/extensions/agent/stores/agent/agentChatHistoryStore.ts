@@ -2,6 +2,12 @@ import { useLocalStorage, useTimestamp } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
+function startOfLocalDay(now: number): number {
+  const date = new Date(now)
+  date.setHours(0, 0, 0, 0)
+  return date.getTime()
+}
+
 export interface ChatSession {
   id: string
   title: string
@@ -13,12 +19,6 @@ export interface HistoryGroups {
   today: ChatSession[]
   yesterday: ChatSession[]
   earlier: ChatSession[]
-}
-
-function startOfLocalDay(now: number): number {
-  const date = new Date(now)
-  date.setHours(0, 0, 0, 0)
-  return date.getTime()
 }
 
 export function groupSessionsByRecency(

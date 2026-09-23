@@ -37,6 +37,103 @@ import { applyTextReplacements } from '@/utils/searchAndReplace'
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
 
 const replacePropertyName = 'Run widget replace on values'
+function getConfig(this: LGraphNode, widgetName: string) {
+  const { nodeData } = this.constructor
+  return (
+    nodeData?.input?.required?.[widgetName] ??
+    nodeData?.input?.optional?.[widgetName]
+  )
+}
+
+function getWidgetType(config: InputSpec) {
+  // Special handling for COMBO so we restrict links based on the entries
+  let type = config[0]
+  if (type instanceof Array) {
+    type = 'COMBO'
+  }
+  return { type }
+}
+
+export function getWidgetConfig(
+  slot: INodeInputSlot | INodeOutputSlot
+): InputSpec {
+  return slot.widget?.[CONFIG] ?? slot.widget?.[GET_CONFIG]?.() ?? ['*', {}]
+}
+
+/**
+ * Convert a widget to an input slot.
+ * @deprecated Widget to socket conversion is no longer necessary, as they co-exist now.
+ * @param node The node to convert the widget to an input slot for.
+ * @param widget The widget to convert to an input slot.
+ * @returns The input slot that was converted from the widget or undefined if the widget is not found.
+ */
+export function convertToInput(
+  node: LGraphNode,
+  widget: IBaseWidget
+): INodeInputSlot | undefined {
+  console.warn(
+    'Please remove call to convertToInput. Widget to socket conversion is no longer necessary, as they co-exist now.'
+  )
+  return node.inputs.find((slot) => slot.widget?.name === widget.name)
+}
+
+export function setWidgetConfig(slot: INodeInputSlot, config?: InputSpec) {
+  if (!slot.widget) return
+  if (config) {
+    slot.widget[GET_CONFIG] = () => config
+  } else {
+    delete slot.widget
+  }
+
+  if (!(slot instanceof NodeSlot)) return
+  const { node } = slot
+  if (!node.graph) return
+  const link = node.getInputLink(node.inputs.indexOf(slot))
+  if (!link) return
+  const originNode = node.graph.getNodeById(link.origin_id)
+  if (!originNode || !isPrimitiveNode(originNode)) return
+  if (config) {
+    originNode.recreateWidget()
+  } else if (!app.configuringGraph) {
+    originNode.disconnectOutput(0)
+    originNode.onLastDisconnect()
+  }
+}
+
+export function mergeIfValid(
+  output: INodeOutputSlot | INodeInputSlot,
+  config2: InputSpec,
+  forceUpdate?: boolean,
+  recreateWidget?: () => IBaseWidget | undefined | void,
+  config1?: InputSpec
+): { customConfig: InputSpec[1] } {
+  if (!config1) {
+    config1 = getWidgetConfig(output)
+  }
+
+  const customSpec = mergeInputSpec(config1, config2)
+
+  if (customSpec || forceUpdate) {
+    if (customSpec) {
+      // @ts-expect-error fixme ts strict error
+      output.widget[CONFIG] = customSpec
+    }
+
+    const widget = recreateWidget?.()
+    // When deleting a node this can be null
+    if (widget) {
+      const { min, max } = widget.options
+      if (typeof widget.value === 'number') {
+        if (min != null && widget.value < min) widget.value = min
+        if (max != null && widget.value > max) widget.value = max
+      }
+      widget.callback?.(widget.value)
+    }
+  }
+
+  return { customConfig: customSpec?.[1] ?? {} }
+}
+
 export class PrimitiveNode extends LGraphNode {
   controlValues?: WidgetValue[]
   lastType?: string
@@ -475,103 +572,6 @@ export class PrimitiveNode extends LGraphNode {
 
     this._removeWidgets()
   }
-}
-
-export function getWidgetConfig(
-  slot: INodeInputSlot | INodeOutputSlot
-): InputSpec {
-  return slot.widget?.[CONFIG] ?? slot.widget?.[GET_CONFIG]?.() ?? ['*', {}]
-}
-
-function getConfig(this: LGraphNode, widgetName: string) {
-  const { nodeData } = this.constructor
-  return (
-    nodeData?.input?.required?.[widgetName] ??
-    nodeData?.input?.optional?.[widgetName]
-  )
-}
-
-/**
- * Convert a widget to an input slot.
- * @deprecated Widget to socket conversion is no longer necessary, as they co-exist now.
- * @param node The node to convert the widget to an input slot for.
- * @param widget The widget to convert to an input slot.
- * @returns The input slot that was converted from the widget or undefined if the widget is not found.
- */
-export function convertToInput(
-  node: LGraphNode,
-  widget: IBaseWidget
-): INodeInputSlot | undefined {
-  console.warn(
-    'Please remove call to convertToInput. Widget to socket conversion is no longer necessary, as they co-exist now.'
-  )
-  return node.inputs.find((slot) => slot.widget?.name === widget.name)
-}
-
-function getWidgetType(config: InputSpec) {
-  // Special handling for COMBO so we restrict links based on the entries
-  let type = config[0]
-  if (type instanceof Array) {
-    type = 'COMBO'
-  }
-  return { type }
-}
-
-export function setWidgetConfig(slot: INodeInputSlot, config?: InputSpec) {
-  if (!slot.widget) return
-  if (config) {
-    slot.widget[GET_CONFIG] = () => config
-  } else {
-    delete slot.widget
-  }
-
-  if (!(slot instanceof NodeSlot)) return
-  const { node } = slot
-  if (!node.graph) return
-  const link = node.getInputLink(node.inputs.indexOf(slot))
-  if (!link) return
-  const originNode = node.graph.getNodeById(link.origin_id)
-  if (!originNode || !isPrimitiveNode(originNode)) return
-  if (config) {
-    originNode.recreateWidget()
-  } else if (!app.configuringGraph) {
-    originNode.disconnectOutput(0)
-    originNode.onLastDisconnect()
-  }
-}
-
-export function mergeIfValid(
-  output: INodeOutputSlot | INodeInputSlot,
-  config2: InputSpec,
-  forceUpdate?: boolean,
-  recreateWidget?: () => IBaseWidget | undefined | void,
-  config1?: InputSpec
-): { customConfig: InputSpec[1] } {
-  if (!config1) {
-    config1 = getWidgetConfig(output)
-  }
-
-  const customSpec = mergeInputSpec(config1, config2)
-
-  if (customSpec || forceUpdate) {
-    if (customSpec) {
-      // @ts-expect-error fixme ts strict error
-      output.widget[CONFIG] = customSpec
-    }
-
-    const widget = recreateWidget?.()
-    // When deleting a node this can be null
-    if (widget) {
-      const { min, max } = widget.options
-      if (typeof widget.value === 'number') {
-        if (min != null && widget.value < min) widget.value = min
-        if (max != null && widget.value > max) widget.value = max
-      }
-      widget.callback?.(widget.value)
-    }
-  }
-
-  return { customConfig: customSpec?.[1] ?? {} }
 }
 
 app.registerExtension({

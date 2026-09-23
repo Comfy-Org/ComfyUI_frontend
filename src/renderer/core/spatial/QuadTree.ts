@@ -7,13 +7,6 @@ import type {
   SpatialIndexDebugInfo
 } from '@/types/spatialIndex'
 
-export interface Bounds {
-  x: number
-  y: number
-  width: number
-  height: number
-}
-
 interface QuadTreeItem<T> {
   id: string
   bounds: Bounds
@@ -216,6 +209,13 @@ class QuadNode<T> {
       children: this.children?.map((child) => child.getDebugInfo())
     }
   }
+}
+
+export interface Bounds {
+  x: number
+  y: number
+  width: number
+  height: number
 }
 
 export class QuadTree<T> {

@@ -43,6 +43,11 @@ export const TIER_PRICING: Record<
 
 const MONTHS_PER_YEAR = 12
 
+interface TierFeatures {
+  customLoRAs: boolean
+  maxMembers: number
+}
+
 // Annual plans grant the whole year up front (catalog `*-annual` credit_grant
 // is 12x the monthly grant), so a yearly cycle shows the year's total.
 export function amountForBillingCycle(
@@ -50,11 +55,6 @@ export function amountForBillingCycle(
   isYearly: boolean
 ): number {
   return isYearly ? monthlyAmount * MONTHS_PER_YEAR : monthlyAmount
-}
-
-interface TierFeatures {
-  customLoRAs: boolean
-  maxMembers: number
 }
 
 const TIER_FEATURES: Record<TierKey, TierFeatures> = {

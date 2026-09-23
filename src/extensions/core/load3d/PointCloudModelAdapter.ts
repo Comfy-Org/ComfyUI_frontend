@@ -28,47 +28,6 @@ const POINT_CLOUD_CAPABILITIES: ModelAdapterCapabilities = {
   fitTargetSize: 5
 }
 
-export class PointCloudModelAdapter implements ModelAdapter {
-  readonly kind = 'pointCloud' as const
-  readonly extensions = ['ply'] as const
-  readonly capabilities = POINT_CLOUD_CAPABILITIES
-
-  private readonly plyLoader = new PLYLoader()
-  private readonly fastPlyLoader = new FastPLYLoader()
-
-  async load(
-    ctx: ModelLoadContext,
-    path: string,
-    filename: string,
-    fetchBytes?: () => Promise<ArrayBuffer>
-  ): Promise<ModelLoadResult | null> {
-    const arrayBuffer = await (fetchBytes?.() ?? fetchModelData(path, filename))
-    const isASCII = isPLYAsciiFormat(arrayBuffer)
-
-    const plyGeometry =
-      isASCII && getPLYEngine() === 'fastply'
-        ? this.fastPlyLoader.parse(arrayBuffer)
-        : (this.plyLoader.setPath(path), this.plyLoader.parse(arrayBuffer))
-
-    ctx.setOriginalModel(plyGeometry)
-    plyGeometry.computeVertexNormals()
-
-    const hasVertexColors = plyGeometry.hasAttribute('color')
-    const hasFaces = (plyGeometry.index?.count ?? 0) > 0
-
-    const object =
-      ctx.materialMode === 'pointCloud' || !hasFaces
-        ? buildPointsGroup(ctx, plyGeometry, hasVertexColors)
-        : buildMeshGroup(ctx, plyGeometry, hasVertexColors)
-
-    const capabilities = hasFaces
-      ? POINT_CLOUD_CAPABILITIES
-      : { ...POINT_CLOUD_CAPABILITIES, materialModes: ['pointCloud'] as const }
-
-    return { object, capabilities }
-  }
-}
-
 function buildPointsGroup(
   ctx: ModelLoadContext,
   geometry: THREE.BufferGeometry,
@@ -168,4 +127,45 @@ export function buildPointCloudForMaterialMode(
   }
 
   return group
+}
+
+export class PointCloudModelAdapter implements ModelAdapter {
+  readonly kind = 'pointCloud' as const
+  readonly extensions = ['ply'] as const
+  readonly capabilities = POINT_CLOUD_CAPABILITIES
+
+  private readonly plyLoader = new PLYLoader()
+  private readonly fastPlyLoader = new FastPLYLoader()
+
+  async load(
+    ctx: ModelLoadContext,
+    path: string,
+    filename: string,
+    fetchBytes?: () => Promise<ArrayBuffer>
+  ): Promise<ModelLoadResult | null> {
+    const arrayBuffer = await (fetchBytes?.() ?? fetchModelData(path, filename))
+    const isASCII = isPLYAsciiFormat(arrayBuffer)
+
+    const plyGeometry =
+      isASCII && getPLYEngine() === 'fastply'
+        ? this.fastPlyLoader.parse(arrayBuffer)
+        : (this.plyLoader.setPath(path), this.plyLoader.parse(arrayBuffer))
+
+    ctx.setOriginalModel(plyGeometry)
+    plyGeometry.computeVertexNormals()
+
+    const hasVertexColors = plyGeometry.hasAttribute('color')
+    const hasFaces = (plyGeometry.index?.count ?? 0) > 0
+
+    const object =
+      ctx.materialMode === 'pointCloud' || !hasFaces
+        ? buildPointsGroup(ctx, plyGeometry, hasVertexColors)
+        : buildMeshGroup(ctx, plyGeometry, hasVertexColors)
+
+    const capabilities = hasFaces
+      ? POINT_CLOUD_CAPABILITIES
+      : { ...POINT_CLOUD_CAPABILITIES, materialModes: ['pointCloud'] as const }
+
+    return { object, capabilities }
+  }
 }

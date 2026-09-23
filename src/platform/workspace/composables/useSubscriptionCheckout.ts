@@ -55,21 +55,6 @@ import {
 import { trackWorkspaceCheckoutStarted } from '@/platform/workspace/utils/workspaceCheckoutTelemetry'
 
 type CheckoutStep = 'pricing' | 'preview' | 'success'
-export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
-
-export type SubscriptionCheckoutSelection =
-  | {
-      planMode: 'personal'
-      tierKey: CheckoutTierKey
-      billingCycle: BillingCycle
-    }
-  | {
-      planMode: 'team'
-      stop: TeamPlanSelection
-      billingCycle: BillingCycle
-      isChange?: boolean
-    }
-
 interface SelectedTeamCheckout {
   stop: TeamPlanSelection
   checkoutType: SubscriptionCheckoutType
@@ -116,6 +101,21 @@ function parseBillingPortalUrl(url: unknown): URL | null {
  *  user consented to. Caught by the surrounding try/catch and surfaced
  *  through the same toast as any other subscribe failure. */
 class ReactivationAmountChangedError extends Error {}
+
+export type CheckoutTierKey = Exclude<TierKey, 'free' | 'founder'>
+
+export type SubscriptionCheckoutSelection =
+  | {
+      planMode: 'personal'
+      tierKey: CheckoutTierKey
+      billingCycle: BillingCycle
+    }
+  | {
+      planMode: 'team'
+      stop: TeamPlanSelection
+      billingCycle: BillingCycle
+      isChange?: boolean
+    }
 
 export function findPlanSlug(
   plans: Plan[],

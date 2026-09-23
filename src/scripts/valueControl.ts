@@ -41,14 +41,6 @@ export function nextValueForLinkedTarget(params: {
 const SAFE_INTEGER_MAX = 1125899906842624
 const SAFE_INTEGER_MIN = -1125899906842624
 
-export function isValueControlWidget(widget: IBaseWidget): boolean {
-  return (
-    (widget as Record<symbol, unknown>)[IS_CONTROL_WIDGET] === true &&
-    typeof widget.beforeQueued === 'function' &&
-    typeof widget.afterQueued === 'function'
-  )
-}
-
 function buildComboFilter(
   filter: string | undefined,
   nodeId?: unknown
@@ -70,20 +62,6 @@ function buildComboFilter(
 
   const lower = filter.toLocaleLowerCase()
   return (item: string) => item.toLocaleLowerCase().includes(lower)
-}
-
-export function computeNextControlledValue(
-  target: IBaseWidget,
-  mode: ValueControlMode,
-  options: { comboFilter?: string; nodeId?: unknown } = {}
-): IBaseWidget['value'] | undefined {
-  if (mode === 'fixed') return undefined
-
-  if (isComboWidget(target)) {
-    return computeNextComboValue(target, mode, options)
-  }
-
-  return computeNextNumberValue(target, mode)
 }
 
 function computeNextComboValue(
@@ -162,4 +140,26 @@ function computeNextNumberValue(
   }
 
   return Math.min(Math.max(next, min), max)
+}
+
+export function isValueControlWidget(widget: IBaseWidget): boolean {
+  return (
+    (widget as Record<symbol, unknown>)[IS_CONTROL_WIDGET] === true &&
+    typeof widget.beforeQueued === 'function' &&
+    typeof widget.afterQueued === 'function'
+  )
+}
+
+export function computeNextControlledValue(
+  target: IBaseWidget,
+  mode: ValueControlMode,
+  options: { comboFilter?: string; nodeId?: unknown } = {}
+): IBaseWidget['value'] | undefined {
+  if (mode === 'fixed') return undefined
+
+  if (isComboWidget(target)) {
+    return computeNextComboValue(target, mode, options)
+  }
+
+  return computeNextNumberValue(target, mode)
 }

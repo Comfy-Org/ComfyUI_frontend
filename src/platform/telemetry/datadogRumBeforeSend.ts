@@ -25,23 +25,6 @@ type RumErrorOrigin =
   | { origin: 'extension'; extension: string }
   | { origin: 'third_party' }
 
-export function classifyRumErrorOrigin(stack?: string): RumErrorOrigin {
-  if (!stack) return { origin: 'third_party' }
-
-  for (const line of stack.split('\n')) {
-    const extensionFolder = /\/extensions\/([^/?#]+)\//.exec(line)?.[1]
-    if (extensionFolder) {
-      return FIRST_PARTY_EXTENSION_FOLDERS.has(extensionFolder)
-        ? { origin: 'first_party' }
-        : { origin: 'extension', extension: extensionFolder }
-    }
-
-    if (line.includes('/assets/')) return { origin: 'first_party' }
-  }
-
-  return { origin: 'third_party' }
-}
-
 function fingerprintFirebasePendingPromise(event: RumErrorEvent): void {
   if (event.error.message.endsWith(FIREBASE_PENDING_PROMISE_ASSERTION)) {
     event.error.fingerprint = FIREBASE_PENDING_PROMISE_FINGERPRINT
@@ -104,6 +87,23 @@ function tagRumErrorOrigin(event: RumErrorEvent): void {
   } catch {
     return
   }
+}
+
+export function classifyRumErrorOrigin(stack?: string): RumErrorOrigin {
+  if (!stack) return { origin: 'third_party' }
+
+  for (const line of stack.split('\n')) {
+    const extensionFolder = /\/extensions\/([^/?#]+)\//.exec(line)?.[1]
+    if (extensionFolder) {
+      return FIRST_PARTY_EXTENSION_FOLDERS.has(extensionFolder)
+        ? { origin: 'first_party' }
+        : { origin: 'extension', extension: extensionFolder }
+    }
+
+    if (line.includes('/assets/')) return { origin: 'first_party' }
+  }
+
+  return { origin: 'third_party' }
 }
 
 export const rumBeforeSend: RumBeforeSend = (event) => {

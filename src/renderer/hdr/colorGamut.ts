@@ -105,22 +105,6 @@ function invert(m: Mat3): Mat3 {
 const SRGB_TO_XYZ = rgbToXyz(CHROMATICITIES.sRGB)
 const XYZ_TO_SRGB = invert(SRGB_TO_XYZ)
 
-export function gamutToSrgbMatrix(gamut: GamutName): Mat3 {
-  if (gamut === 'sRGB') return IDENTITY
-  return multiply(XYZ_TO_SRGB, rgbToXyz(CHROMATICITIES[gamut]))
-}
-
-export interface ChromaticityCoords {
-  redX: number
-  redY: number
-  greenX: number
-  greenY: number
-  blueX: number
-  blueY: number
-  whiteX: number
-  whiteY: number
-}
-
 function matchesGamut(c: ChromaticityCoords, gamut: GamutName): boolean {
   const ref = CHROMATICITIES[gamut]
   const tol = 0.01
@@ -134,6 +118,22 @@ function matchesGamut(c: ChromaticityCoords, gamut: GamutName): boolean {
     Math.abs(c.whiteX - ref.white[0]) < tol &&
     Math.abs(c.whiteY - ref.white[1]) < tol
   )
+}
+
+export interface ChromaticityCoords {
+  redX: number
+  redY: number
+  greenX: number
+  greenY: number
+  blueX: number
+  blueY: number
+  whiteX: number
+  whiteY: number
+}
+
+export function gamutToSrgbMatrix(gamut: GamutName): Mat3 {
+  if (gamut === 'sRGB') return IDENTITY
+  return multiply(XYZ_TO_SRGB, rgbToXyz(CHROMATICITIES[gamut]))
 }
 
 export function detectGamutFromChromaticities(

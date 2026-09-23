@@ -9,6 +9,13 @@ import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { getFirebaseConfig } from '@/config/firebase'
 import { remoteConfigState } from '@/platform/remoteConfig/remoteConfig'
 
+function loadedFirebaseConfig() {
+  if (remoteConfigState.value === 'unloaded') {
+    throw new FirebaseBeforeRemoteConfigError()
+  }
+  return getFirebaseConfig()
+}
+
 class FirebaseBeforeRemoteConfigError extends Error {
   constructor() {
     super(
@@ -16,13 +23,6 @@ class FirebaseBeforeRemoteConfigError extends Error {
     )
     this.name = 'FirebaseBeforeRemoteConfigError'
   }
-}
-
-function loadedFirebaseConfig() {
-  if (remoteConfigState.value === 'unloaded') {
-    throw new FirebaseBeforeRemoteConfigError()
-  }
-  return getFirebaseConfig()
 }
 
 /**

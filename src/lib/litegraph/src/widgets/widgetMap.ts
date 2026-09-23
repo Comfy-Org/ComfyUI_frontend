@@ -174,34 +174,6 @@ function adoptConcreteWidget<C extends BaseWidget>(
   return adopted
 }
 
-/**
- * Convert a widget POJO to a proper widget instance.
- * @param widget The POJO to convert.
- * @param node The node the widget belongs to.
- * @param wrapLegacyWidgets Whether to wrap legacy widgets in a `LegacyWidget` instance.
- * @returns A concrete widget instance.
- */
-export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
-  widget: TWidget,
-  node: LGraphNode,
-  wrapLegacyWidgets?: true
-): WidgetTypeMap[TWidget['type']]
-export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
-  widget: TWidget,
-  node: LGraphNode,
-  wrapLegacyWidgets: false
-): WidgetTypeMap[TWidget['type']] | undefined
-export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
-  widget: TWidget,
-  node: LGraphNode,
-  wrapLegacyWidgets = true
-): WidgetTypeMap[TWidget['type']] | undefined {
-  const concrete = instantiateConcreteWidget(widget, node, wrapLegacyWidgets)
-  return concrete && wrapLegacyWidgets
-    ? adoptConcreteWidget(widget, concrete)
-    : concrete
-}
-
 function instantiateConcreteWidget<TWidget extends IWidget | IBaseWidget>(
   widget: TWidget,
   node: LGraphNode,
@@ -277,6 +249,33 @@ function instantiateConcreteWidget<TWidget extends IWidget | IBaseWidget>(
       if (wrapLegacyWidgets) return toWidgetClass(LegacyWidget, widget, node)
     }
   }
+}
+/**
+ * Convert a widget POJO to a proper widget instance.
+ * @param widget The POJO to convert.
+ * @param node The node the widget belongs to.
+ * @param wrapLegacyWidgets Whether to wrap legacy widgets in a `LegacyWidget` instance.
+ * @returns A concrete widget instance.
+ */
+export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
+  widget: TWidget,
+  node: LGraphNode,
+  wrapLegacyWidgets?: true
+): WidgetTypeMap[TWidget['type']]
+export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
+  widget: TWidget,
+  node: LGraphNode,
+  wrapLegacyWidgets: false
+): WidgetTypeMap[TWidget['type']] | undefined
+export function toConcreteWidget<TWidget extends IWidget | IBaseWidget>(
+  widget: TWidget,
+  node: LGraphNode,
+  wrapLegacyWidgets = true
+): WidgetTypeMap[TWidget['type']] | undefined {
+  const concrete = instantiateConcreteWidget(widget, node, wrapLegacyWidgets)
+  return concrete && wrapLegacyWidgets
+    ? adoptConcreteWidget(widget, concrete)
+    : concrete
 }
 
 // #region Type Guards

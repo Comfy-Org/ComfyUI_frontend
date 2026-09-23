@@ -24,11 +24,6 @@ interface SlotDragSource {
   movingExistingOutput?: boolean
 }
 
-export interface SlotDropCandidate {
-  layout: SlotLayout
-  compatible: boolean
-}
-
 interface PointerPosition {
   client: Point
   canvas: Point
@@ -41,6 +36,11 @@ interface SlotDragState {
   pointer: PointerPosition
   candidate: SlotDropCandidate | null
   compatible: Map<string, boolean>
+}
+
+export interface SlotDropCandidate {
+  layout: SlotLayout
+  compatible: boolean
 }
 
 const state = reactive<SlotDragState>({

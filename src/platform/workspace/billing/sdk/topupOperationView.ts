@@ -20,6 +20,15 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 
+function topupFailureError(failure: TopupFailure): WorkspaceApiError {
+  const serverCode = 'serverCode' in failure ? failure.serverCode : undefined
+  return new WorkspaceApiError(
+    t('credits.topUp.unknownError'),
+    'httpStatus' in failure ? failure.httpStatus : undefined,
+    serverCode === undefined ? failure.code : unwrapServerCode(serverCode)
+  )
+}
+
 export interface TopupOperationView {
   readonly opId: string
   readonly status: 'pending' | 'reconciliation_needed'
@@ -82,15 +91,6 @@ export function projectTopupOperation(
         ? declineDetail(state.declineReason ?? 'authentication_failed')
         : null
   }
-}
-
-function topupFailureError(failure: TopupFailure): WorkspaceApiError {
-  const serverCode = 'serverCode' in failure ? failure.serverCode : undefined
-  return new WorkspaceApiError(
-    t('credits.topUp.unknownError'),
-    'httpStatus' in failure ? failure.httpStatus : undefined,
-    serverCode === undefined ? failure.code : unwrapServerCode(serverCode)
-  )
 }
 
 /**

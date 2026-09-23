@@ -12,6 +12,35 @@ const assignedInputViews = new WeakMap<
   WeakMap<INodeInputSlot, INodeInputSlot>
 >()
 
+function isArrayIndex(property: string | symbol): property is string {
+  if (typeof property !== 'string') return false
+  const index = Number(property)
+  return (
+    Number.isInteger(index) &&
+    index >= 0 &&
+    index < 2 ** 32 - 1 &&
+    String(index) === property
+  )
+}
+
+function isInputSlot(value: unknown): value is INodeInputSlot {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'name' in value &&
+    'type' in value
+  )
+}
+
+function isOutputSlot(value: unknown): value is INodeOutputSlot {
+  return (
+    value !== null &&
+    typeof value === 'object' &&
+    'name' in value &&
+    'type' in value
+  )
+}
+
 export function createInputSlotView(
   node: LGraphNode,
   inputs: INodeInputSlot[]
@@ -52,33 +81,4 @@ export function resolveInputSlotView(
   input: INodeInputSlot
 ): INodeInputSlot {
   return assignedInputViews.get(inputs)?.get(input) ?? input
-}
-
-function isArrayIndex(property: string | symbol): property is string {
-  if (typeof property !== 'string') return false
-  const index = Number(property)
-  return (
-    Number.isInteger(index) &&
-    index >= 0 &&
-    index < 2 ** 32 - 1 &&
-    String(index) === property
-  )
-}
-
-function isInputSlot(value: unknown): value is INodeInputSlot {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    'name' in value &&
-    'type' in value
-  )
-}
-
-function isOutputSlot(value: unknown): value is INodeOutputSlot {
-  return (
-    value !== null &&
-    typeof value === 'object' &&
-    'name' in value &&
-    'type' in value
-  )
 }

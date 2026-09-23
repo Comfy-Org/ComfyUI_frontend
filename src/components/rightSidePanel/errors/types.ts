@@ -1,6 +1,18 @@
 import type { ResolvedErrorMessage } from '@/platform/errorCatalog/types'
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 
+interface ErrorGroupBase extends Omit<ResolvedErrorMessage, 'displayTitle'> {
+  /** Stable structural key used for rendering, collapse state, and cache identity. */
+  groupKey: string
+  /** Human-friendly title resolved for UI display. */
+  displayTitle: string
+  count: number
+  priority: number
+  severity: ErrorGroupSeverity
+  /** Derived per render: a diagnostic from the last failed run was absorbed into this group. */
+  blockedLastRun: boolean
+}
+
 export interface ErrorItem extends ResolvedErrorMessage {
   /** Raw source/API-compatible message. */
   message: string
@@ -21,18 +33,6 @@ export interface ErrorCardData {
 }
 
 export type ErrorGroupSeverity = 'error' | 'missing'
-
-interface ErrorGroupBase extends Omit<ResolvedErrorMessage, 'displayTitle'> {
-  /** Stable structural key used for rendering, collapse state, and cache identity. */
-  groupKey: string
-  /** Human-friendly title resolved for UI display. */
-  displayTitle: string
-  count: number
-  priority: number
-  severity: ErrorGroupSeverity
-  /** Derived per render: a diagnostic from the last failed run was absorbed into this group. */
-  blockedLastRun: boolean
-}
 
 export type ErrorGroup =
   | (ErrorGroupBase & {

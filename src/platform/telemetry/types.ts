@@ -29,6 +29,143 @@ import type { AppMode } from '@/utils/appMode'
 
 export type { AuthMethod }
 
+interface ExecutionOutcomeBaseMetadata extends WorkflowExecutionIntent {
+  startTime: number
+  submissionAcceptedAt?: number
+  executionStartedAt?: number
+  endTime: number
+  workflowContext?: WorkflowExecutionContext
+}
+
+type ShareFlowStep =
+  | 'dialog_opened'
+  | 'save_prompted'
+  | 'link_created'
+  | 'link_copied'
+interface EcommerceItemMetadata {
+  item_name: string
+  item_category: string
+  item_variant?: string
+  price: number
+  quantity: number
+}
+
+interface EcommerceMetadata {
+  currency: string
+  value: number
+  items: EcommerceItemMetadata[]
+}
+
+export type { AuthErrorMetadata, AuthFlowAction }
+
+type BillingFailureCategory =
+  | 'validation'
+  | 'network'
+  | 'api_rejected'
+  | 'provider_decline'
+  | 'redirect'
+  | 'poll_timeout'
+  | 'reconciliation_needed'
+  | 'stale_operation'
+  | 'rendering'
+  | 'unknown'
+
+type BillingErrorCode =
+  | 'downgrade_not_allowed'
+  | 'member_removal_failed'
+  | 'missing_checkout_response'
+  | 'missing_payment_method_url'
+  | 'payment_popup_blocked'
+  | 'reactivation_not_confirmed'
+  | 'reactivation_amount_changed'
+
+type BillingStarted = {
+  stage: 'started'
+  outcome: 'pending'
+}
+
+type BillingSucceeded = {
+  stage: 'succeeded'
+  outcome: 'success'
+}
+
+type BillingFailed = BillingFailure & {
+  stage: 'failed'
+  outcome: 'failure'
+}
+
+type BillingTimedOut = {
+  stage: 'timeout'
+  outcome: 'failure'
+  failure_category: 'poll_timeout'
+}
+
+type SubscriptionCheckoutBillingEvent = {
+  operation: 'subscription_checkout'
+  billing_op_id?: string
+  tier?: SubscriptionCheckoutTier
+  cycle?: BillingCycle
+  checkout_type?: SubscriptionCheckoutType
+  payment_intent_source?: PaymentIntentSource
+  /**
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event.
+   */
+  duration_ms?: number
+} & (BillingStarted | BillingSucceeded | BillingFailed)
+
+type BillingOperationBillingEvent = {
+  operation: 'operation'
+  /** Absent when the initiating call itself failed, before the backend returned one to poll. */
+  billing_op_id?: string
+  operation_type: 'subscription' | 'topup' | 'cancel'
+  tier?: SubscriptionCheckoutTier
+  cycle?: BillingCycle
+  checkout_type?: SubscriptionCheckoutType
+  payment_intent_source?: PaymentIntentSource
+  /**
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event, including the
+   * initiating API call's latency (not just the poll-observation window).
+   * On `timeout` this is how long the client watched, not the operation's
+   * true duration.
+   */
+  duration_ms?: number
+} & (BillingStarted | BillingSucceeded | BillingFailed | BillingTimedOut)
+
+type ResubscribeBillingEvent = {
+  operation: 'resubscribe'
+  source: ResubscribeClickMetadata['source']
+  payment_intent_source?: PaymentIntentSource
+} & (BillingStarted | BillingSucceeded | BillingFailed)
+
+type TopupBillingEvent = {
+  operation: 'topup'
+  billing_op_id?: string
+  /**
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event.
+   */
+  duration_ms?: number
+} & (BillingStarted | BillingSucceeded | BillingFailed)
+
+type DowngradeToPersonalBillingEvent = {
+  operation: 'downgrade_to_personal'
+  member_removal_count: number
+  member_removal_failures: number
+  target_tier?: TierKey
+  /**
+   * Client-observed end-to-end wall time from this attempt's canonical
+   * `started` event through to this terminal event.
+   */
+  duration_ms?: number
+} & (BillingStarted | BillingSucceeded | BillingFailed)
+
+type BillingTelemetryEventNameFor<T extends BillingTelemetryEvent> =
+  T extends BillingTelemetryEvent
+    ? `billing.${T['operation']}.${T['stage']}`
+    : never
+
 export type PaymentIntentSource =
   | 'subscription_required'
   | 'out_of_credits'
@@ -46,6 +183,7 @@ export type PaymentIntentSource =
   | 'free_tier_quota'
 
 export type SubscriptionCheckoutType = 'new' | 'change'
+
 export type SubscriptionCheckoutTier = TierKey | 'team'
 
 /**
@@ -62,8 +200,6 @@ export interface AuthMetadata {
   utm_medium?: string
   utm_campaign?: string
 }
-
-export type { AuthErrorMetadata, AuthFlowAction }
 
 export type UnifiedAuthRetryFailureReason =
   | 'missing_bearer'
@@ -297,14 +433,6 @@ export type WorkflowExecutionFailureReason =
   | 'execution_failed'
   | 'execution_interrupted'
 
-interface ExecutionOutcomeBaseMetadata extends WorkflowExecutionIntent {
-  startTime: number
-  submissionAcceptedAt?: number
-  executionStartedAt?: number
-  endTime: number
-  workflowContext?: WorkflowExecutionContext
-}
-
 export type ExecutionOutcomeMetadata = ExecutionOutcomeBaseMetadata &
   (
     | {
@@ -398,12 +526,6 @@ export interface DefaultViewSetMetadata {
   default_view: 'app' | 'graph'
 }
 
-type ShareFlowStep =
-  | 'dialog_opened'
-  | 'save_prompted'
-  | 'link_created'
-  | 'link_copied'
-
 export interface ShareFlowMetadata {
   step: ShareFlowStep
   source?: 'app_mode' | 'graph_mode'
@@ -443,21 +565,18 @@ export interface TemplateLibraryClosedMetadata {
   template_selected: boolean
   time_spent_seconds: number
 }
-
 /**
  * Page visibility metadata
  */
 export interface PageVisibilityMetadata {
   visibility_state: 'visible' | 'hidden'
 }
-
 /**
  * Tab count metadata
  */
 export interface TabCountMetadata {
   tab_count: number
 }
-
 /**
  * Shell layout snapshot, sent once per session when the app is ready
  */
@@ -471,7 +590,6 @@ export interface ShellLayoutMetadata {
   bottom_panel_open: boolean
   open_workflow_tabs: number
 }
-
 /**
  * Settings change metadata
  */
@@ -480,14 +598,12 @@ export interface SettingChangedMetadata {
   previous_value?: unknown
   new_value?: unknown
 }
-
 /**
  * Node search metadata
  */
 export interface NodeSearchMetadata {
   query: string
 }
-
 /**
  * Search query metadata. One event per debounced query change across
  * each search surface.
@@ -576,26 +692,32 @@ export type AgentPanelCloseSource =
   | 'close_button'
   | 'workflow_switch'
   | 'topbar_button'
+
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
   source: 'restored' | 'topbar_button' | 'automatic_consent'
 }
+
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
   open_duration_ms: number | null
 }
+
 export interface AgentEntryButtonClickedMetadata extends Record<
   string,
   unknown
 > {
   resulting_state: 'opened' | 'closed'
 }
+
 export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
   node_tag_count: number
 }
+
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
 }
+
 export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
   target: 'active_tab_switch' | 'active_tab_open'
@@ -772,20 +894,6 @@ export interface BeginCheckoutMetadata
   payment_intent_source?: PaymentIntentSource
 }
 
-interface EcommerceItemMetadata {
-  item_name: string
-  item_category: string
-  item_variant?: string
-  price: number
-  quantity: number
-}
-
-interface EcommerceMetadata {
-  currency: string
-  value: number
-  items: EcommerceItemMetadata[]
-}
-
 export interface SubscriptionSuccessMetadata extends Record<string, unknown> {
   user_id?: string
   checkout_attempt_id?: string
@@ -821,113 +929,10 @@ export interface WorkspaceInviteFailedMetadata extends Record<string, unknown> {
   failed_count: number
 }
 
-type BillingFailureCategory =
-  | 'validation'
-  | 'network'
-  | 'api_rejected'
-  | 'provider_decline'
-  | 'redirect'
-  | 'poll_timeout'
-  | 'reconciliation_needed'
-  | 'stale_operation'
-  | 'rendering'
-  | 'unknown'
-
-type BillingErrorCode =
-  | 'downgrade_not_allowed'
-  | 'member_removal_failed'
-  | 'missing_checkout_response'
-  | 'missing_payment_method_url'
-  | 'payment_popup_blocked'
-  | 'reactivation_not_confirmed'
-  | 'reactivation_amount_changed'
-
 export interface BillingFailure {
   failure_category: BillingFailureCategory
   error_code?: BillingErrorCode
 }
-
-type BillingStarted = {
-  stage: 'started'
-  outcome: 'pending'
-}
-
-type BillingSucceeded = {
-  stage: 'succeeded'
-  outcome: 'success'
-}
-
-type BillingFailed = BillingFailure & {
-  stage: 'failed'
-  outcome: 'failure'
-}
-
-type BillingTimedOut = {
-  stage: 'timeout'
-  outcome: 'failure'
-  failure_category: 'poll_timeout'
-}
-
-type SubscriptionCheckoutBillingEvent = {
-  operation: 'subscription_checkout'
-  billing_op_id?: string
-  tier?: SubscriptionCheckoutTier
-  cycle?: BillingCycle
-  checkout_type?: SubscriptionCheckoutType
-  payment_intent_source?: PaymentIntentSource
-  /**
-   * Client-observed end-to-end wall time from this attempt's canonical
-   * `started` event through to this terminal event.
-   */
-  duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
-
-type BillingOperationBillingEvent = {
-  operation: 'operation'
-  /** Absent when the initiating call itself failed, before the backend returned one to poll. */
-  billing_op_id?: string
-  operation_type: 'subscription' | 'topup' | 'cancel'
-  tier?: SubscriptionCheckoutTier
-  cycle?: BillingCycle
-  checkout_type?: SubscriptionCheckoutType
-  payment_intent_source?: PaymentIntentSource
-  /**
-   * Client-observed end-to-end wall time from this attempt's canonical
-   * `started` event through to this terminal event, including the
-   * initiating API call's latency (not just the poll-observation window).
-   * On `timeout` this is how long the client watched, not the operation's
-   * true duration.
-   */
-  duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed | BillingTimedOut)
-
-type ResubscribeBillingEvent = {
-  operation: 'resubscribe'
-  source: ResubscribeClickMetadata['source']
-  payment_intent_source?: PaymentIntentSource
-} & (BillingStarted | BillingSucceeded | BillingFailed)
-
-type TopupBillingEvent = {
-  operation: 'topup'
-  billing_op_id?: string
-  /**
-   * Client-observed end-to-end wall time from this attempt's canonical
-   * `started` event through to this terminal event.
-   */
-  duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
-
-type DowngradeToPersonalBillingEvent = {
-  operation: 'downgrade_to_personal'
-  member_removal_count: number
-  member_removal_failures: number
-  target_tier?: TierKey
-  /**
-   * Client-observed end-to-end wall time from this attempt's canonical
-   * `started` event through to this terminal event.
-   */
-  duration_ms?: number
-} & (BillingStarted | BillingSucceeded | BillingFailed)
 
 export type BillingTelemetryEvent =
   | SubscriptionCheckoutBillingEvent
@@ -935,11 +940,6 @@ export type BillingTelemetryEvent =
   | ResubscribeBillingEvent
   | TopupBillingEvent
   | DowngradeToPersonalBillingEvent
-
-type BillingTelemetryEventNameFor<T extends BillingTelemetryEvent> =
-  T extends BillingTelemetryEvent
-    ? `billing.${T['operation']}.${T['stage']}`
-    : never
 
 export type BillingTelemetryEventName =
   BillingTelemetryEventNameFor<BillingTelemetryEvent>
@@ -1001,6 +1001,57 @@ export function getBillingTelemetryEventPayload(event: BillingTelemetryEvent) {
  */
 export const CHECKOUT_JOURNEY_SCHEMA_VERSION = 1
 
+type CheckoutElementPhase = 'init' | 'mount' | 'update'
+/** Which Stripe element in the shared group the observation came from. */
+type CheckoutElementKind = 'payment' | 'address'
+type CheckoutSubmitPhase = 'validation' | 'token_creation'
+/**
+ * The frozen arm assignment. A resolved assignment always carries an arm; an
+ * unavailable one never does, so an unknown assignment cannot masquerade as a
+ * resolved `control`. Encoded as a discriminated union so the invariant is a
+ * compile-time guarantee rather than a convention.
+ */
+type CheckoutJourneyAssignment =
+  | { assignment_status: 'resolved'; assigned_arm: CheckoutJourneyArm }
+  | { assignment_status: 'unavailable'; assigned_arm?: never }
+type CheckoutJourneyEntered = { phase: 'entered' }
+type CheckoutJourneyPreviewReady = {
+  phase: 'preview_ready'
+  preview_revision?: string
+}
+type CheckoutJourneyPreviewFailed = {
+  phase: 'preview_failed'
+  failure_category: BillingFailureCategory
+  error_code?: BillingErrorCode
+  preview_revision?: string
+}
+type CheckoutJourneyPaymentElementReady = {
+  phase: 'payment_element_ready'
+  element: CheckoutElementKind
+}
+
+type CheckoutJourneyPaymentElementFailed = {
+  phase: 'payment_element_failed'
+  element: CheckoutElementKind
+  element_phase: CheckoutElementPhase
+  error_code?: string
+}
+
+type CheckoutJourneyPaymentSubmitAttempted = {
+  phase: 'payment_submit_attempted'
+}
+
+type CheckoutJourneyPaymentSubmitFailed = {
+  phase: 'payment_submit_failed'
+  submit_phase: CheckoutSubmitPhase
+  error_code?: string
+}
+type CheckoutJourneySubmitted = { phase: 'submitted' }
+type CheckoutJourneyOperationLinked = {
+  phase: 'operation_linked'
+  billing_op_id: string
+}
+type CheckoutJourneyPhase = CheckoutJourneyPhaseEvent['phase']
 export type CheckoutJourneyArm = 'control' | 'treatment'
 export type CheckoutAssignmentStatus = 'resolved' | 'unavailable'
 export type CheckoutUiMode = 'embedded' | 'hosted' | 'unknown'
@@ -1017,20 +1068,6 @@ export type CheckoutEntrySource =
   | 'settings_billing'
   | 'other'
   | 'unknown'
-type CheckoutElementPhase = 'init' | 'mount' | 'update'
-/** Which Stripe element in the shared group the observation came from. */
-type CheckoutElementKind = 'payment' | 'address'
-type CheckoutSubmitPhase = 'validation' | 'token_creation'
-
-/**
- * The frozen arm assignment. A resolved assignment always carries an arm; an
- * unavailable one never does, so an unknown assignment cannot masquerade as a
- * resolved `control`. Encoded as a discriminated union so the invariant is a
- * compile-time guarantee rather than a convention.
- */
-type CheckoutJourneyAssignment =
-  | { assignment_status: 'resolved'; assigned_arm: CheckoutJourneyArm }
-  | { assignment_status: 'unavailable'; assigned_arm?: never }
 
 /**
  * Non-sensitive entry context frozen at journey creation and replayed on every
@@ -1046,41 +1083,6 @@ export type CheckoutJourneyContext = {
   billing_op_id?: string
 } & CheckoutJourneyAssignment
 
-type CheckoutJourneyEntered = { phase: 'entered' }
-type CheckoutJourneyPreviewReady = {
-  phase: 'preview_ready'
-  preview_revision?: string
-}
-type CheckoutJourneyPreviewFailed = {
-  phase: 'preview_failed'
-  failure_category: BillingFailureCategory
-  error_code?: BillingErrorCode
-  preview_revision?: string
-}
-type CheckoutJourneyPaymentElementReady = {
-  phase: 'payment_element_ready'
-  element: CheckoutElementKind
-}
-type CheckoutJourneyPaymentElementFailed = {
-  phase: 'payment_element_failed'
-  element: CheckoutElementKind
-  element_phase: CheckoutElementPhase
-  error_code?: string
-}
-type CheckoutJourneyPaymentSubmitAttempted = {
-  phase: 'payment_submit_attempted'
-}
-type CheckoutJourneyPaymentSubmitFailed = {
-  phase: 'payment_submit_failed'
-  submit_phase: CheckoutSubmitPhase
-  error_code?: string
-}
-type CheckoutJourneySubmitted = { phase: 'submitted' }
-type CheckoutJourneyOperationLinked = {
-  phase: 'operation_linked'
-  billing_op_id: string
-}
-
 export type CheckoutJourneyPhaseEvent =
   | CheckoutJourneyEntered
   | CheckoutJourneyPreviewReady
@@ -1091,8 +1093,6 @@ export type CheckoutJourneyPhaseEvent =
   | CheckoutJourneyPaymentSubmitFailed
   | CheckoutJourneySubmitted
   | CheckoutJourneyOperationLinked
-
-type CheckoutJourneyPhase = CheckoutJourneyPhaseEvent['phase']
 
 export type CheckoutJourneyTelemetryEvent = CheckoutJourneyContext &
   CheckoutJourneyPhaseEvent
@@ -1118,45 +1118,6 @@ export const CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE: Record<
   payment_submit_failed: 'billing.checkout.payment_submit_failed',
   submitted: 'billing.checkout.submitted',
   operation_linked: 'billing.checkout.operation_linked'
-}
-
-export function getCheckoutJourneyTelemetryEventName(
-  event: CheckoutJourneyTelemetryEvent
-): CheckoutJourneyTelemetryEventName {
-  return CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE[event.phase]
-}
-
-export function getCheckoutJourneyTelemetryEventPayload(
-  event: CheckoutJourneyTelemetryEvent
-) {
-  return {
-    schema_version: CHECKOUT_JOURNEY_SCHEMA_VERSION,
-    phase: event.phase,
-    checkout_journey_id: event.checkout_journey_id,
-    checkout_entered_at: event.checkout_entered_at,
-    assignment_status: event.assignment_status,
-    entry_flow: event.entry_flow,
-    entry_source: event.entry_source,
-    ...(event.assigned_arm !== undefined && {
-      assigned_arm: event.assigned_arm
-    }),
-    ...(event.ui_mode !== undefined && { ui_mode: event.ui_mode }),
-    ...(event.billing_op_id !== undefined && {
-      billing_op_id: event.billing_op_id
-    }),
-    ...('preview_revision' in event &&
-      event.preview_revision !== undefined && {
-        preview_revision: event.preview_revision
-      }),
-    ...('failure_category' in event && {
-      failure_category: event.failure_category
-    }),
-    ...('error_code' in event &&
-      event.error_code !== undefined && { error_code: event.error_code }),
-    ...('element' in event && { element: event.element }),
-    ...('element_phase' in event && { element_phase: event.element_phase }),
-    ...('submit_phase' in event && { submit_phase: event.submit_phase })
-  }
 }
 
 type CheckoutJourneyTelemetryEventPayload = ReturnType<
@@ -1324,6 +1285,45 @@ export interface TelemetryProvider {
  * to registered providers using optional chaining.
  */
 export type TelemetryDispatcher = Required<TelemetryProvider>
+
+export function getCheckoutJourneyTelemetryEventName(
+  event: CheckoutJourneyTelemetryEvent
+): CheckoutJourneyTelemetryEventName {
+  return CHECKOUT_JOURNEY_EVENT_NAME_BY_PHASE[event.phase]
+}
+
+export function getCheckoutJourneyTelemetryEventPayload(
+  event: CheckoutJourneyTelemetryEvent
+) {
+  return {
+    schema_version: CHECKOUT_JOURNEY_SCHEMA_VERSION,
+    phase: event.phase,
+    checkout_journey_id: event.checkout_journey_id,
+    checkout_entered_at: event.checkout_entered_at,
+    assignment_status: event.assignment_status,
+    entry_flow: event.entry_flow,
+    entry_source: event.entry_source,
+    ...(event.assigned_arm !== undefined && {
+      assigned_arm: event.assigned_arm
+    }),
+    ...(event.ui_mode !== undefined && { ui_mode: event.ui_mode }),
+    ...(event.billing_op_id !== undefined && {
+      billing_op_id: event.billing_op_id
+    }),
+    ...('preview_revision' in event &&
+      event.preview_revision !== undefined && {
+        preview_revision: event.preview_revision
+      }),
+    ...('failure_category' in event && {
+      failure_category: event.failure_category
+    }),
+    ...('error_code' in event &&
+      event.error_code !== undefined && { error_code: event.error_code }),
+    ...('element' in event && { element: event.element }),
+    ...('element_phase' in event && { element_phase: event.element_phase }),
+    ...('submit_phase' in event && { submit_phase: event.submit_phase })
+  }
+}
 
 /**
  * Telemetry event constants
@@ -1520,15 +1520,6 @@ const executionTriggerSources = [
 
 export type ExecutionTriggerSource = (typeof executionTriggerSources)[number]
 
-export function normalizeExecutionTriggerSource(
-  value: unknown
-): ExecutionTriggerSource {
-  return (
-    executionTriggerSources.find((triggerSource) => triggerSource === value) ??
-    'unknown'
-  )
-}
-
 /**
  * Union type for all possible telemetry event properties
  */
@@ -1579,3 +1570,12 @@ export type TelemetryEventProperties =
   | BillingTelemetryEvent
   | CheckoutJourneyTelemetryEventPayload
   | FetchTimeoutMetadata
+
+export function normalizeExecutionTriggerSource(
+  value: unknown
+): ExecutionTriggerSource {
+  return (
+    executionTriggerSources.find((triggerSource) => triggerSource === value) ??
+    'unknown'
+  )
+}

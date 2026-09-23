@@ -33,14 +33,6 @@ import { toNodeId } from '@/types/nodeId'
 
 const GRAPH_ID = 'aa000000-0000-4000-8000-000000000000'
 
-class DummyNode extends LGraphNode {
-  constructor() {
-    super('dummy')
-    this.addInput('in', 'number')
-    this.addOutput('out', 'number')
-  }
-}
-
 function serialisedNode(
   id: number,
   title: string,
@@ -126,6 +118,14 @@ function mergePayload(): SerialisableGraph {
       }
     ]
   })
+}
+
+class DummyNode extends LGraphNode {
+  constructor() {
+    super('dummy')
+    this.addInput('in', 'number')
+    this.addOutput('out', 'number')
+  }
 }
 
 beforeEach(() => {

@@ -18,6 +18,19 @@ import type {
 } from '@/platform/workspace/api/workspaceApi'
 import UnifiedPricingTable from '@/platform/workspace/components/UnifiedPricingTable.vue'
 
+interface MockSubscription {
+  tier: SubscriptionTier | null
+  isCancelled?: boolean
+  duration?: string
+  scheduledChange?: ScheduledPlanChange
+}
+
+interface MockTeamStop {
+  id: string
+  credits_monthly: number
+  stop_usd: number
+}
+
 function apiPlan(
   tier: Plan['tier'],
   duration: Plan['duration'],
@@ -37,19 +50,6 @@ function apiPlan(
     slug: `${tier.toLowerCase()}-${duration.toLowerCase()}`,
     tier
   }
-}
-
-interface MockSubscription {
-  tier: SubscriptionTier | null
-  isCancelled?: boolean
-  duration?: string
-  scheduledChange?: ScheduledPlanChange
-}
-
-interface MockTeamStop {
-  id: string
-  credits_monthly: number
-  stop_usd: number
 }
 
 const mockSubscription = ref<MockSubscription | null>(null)

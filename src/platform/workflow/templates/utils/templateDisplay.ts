@@ -57,11 +57,6 @@ function toSlug(provider: string): string {
   )
 }
 
-export function getProviderIconClass(provider: string): string | null {
-  const slug = toSlug(provider)
-  return AVAILABLE_ICON_SLUGS.has(slug) ? `icon-mask-[comfy--${slug}]` : null
-}
-
 export interface ProviderBadge {
   provider: string
   iconClass: string | null
@@ -71,6 +66,11 @@ export interface ProviderBadge {
 export interface ProviderBadges {
   visible: ProviderBadge[]
   extraProviders: string[]
+}
+
+export function getProviderIconClass(provider: string): string | null {
+  const slug = toSlug(provider)
+  return AVAILABLE_ICON_SLUGS.has(slug) ? `icon-mask-[comfy--${slug}]` : null
 }
 
 /** Badges shown before the rest collapse into a "+N" chip. */

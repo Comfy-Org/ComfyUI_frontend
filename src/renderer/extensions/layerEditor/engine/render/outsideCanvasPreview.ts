@@ -6,12 +6,6 @@ import type { Bitmap } from './place'
 
 const CLIPPED_LAYER_PREVIEW_OPACITY = 0.4
 
-export interface OutsideCanvasPreviewLayer {
-  bitmap: Bitmap
-  opacity: number
-  transform: Transform
-}
-
 interface CanvasSize {
   w: number
   h: number
@@ -28,6 +22,12 @@ function extendsOutsideCanvas(
     bounds.x + bounds.w > canvas.w ||
     bounds.y + bounds.h > canvas.h
   )
+}
+
+export interface OutsideCanvasPreviewLayer {
+  bitmap: Bitmap
+  opacity: number
+  transform: Transform
 }
 
 export function drawOutsideCanvasPreview(

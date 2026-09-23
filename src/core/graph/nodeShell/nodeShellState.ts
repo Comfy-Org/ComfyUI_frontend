@@ -20,6 +20,43 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { TitleMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeState } from '@/types/nodeState'
 
+function canTransferNodeState(
+  node: LGraphNode,
+  replacement: LGraphNode
+): boolean {
+  return (
+    node.id === replacement.id &&
+    replacement._graphScope === undefined &&
+    node._graphScope !== undefined &&
+    useNodeDataStore().ownsNode(node._graphScope, node._state)
+  )
+}
+
+function transferNodeState(node: LGraphNode, replacement: LGraphNode): void {
+  const registeredState = node._state
+  const detachedState = { ...registeredState }
+  const { graphId: _graphId, id: _id, ...replacementState } = replacement._state
+  Object.assign(registeredState, {
+    bgcolor: undefined,
+    boxcolor: undefined,
+    color: undefined,
+    lastSerialization: undefined,
+    resizable: undefined,
+    shape: undefined,
+    showAdvanced: undefined,
+    titleMode: undefined,
+    ...replacementState
+  } satisfies {
+    [K in Exclude<keyof NodeState, 'graphId' | 'id'>]-?:
+      | NodeState[K]
+      | undefined
+  })
+  replacement._state = registeredState
+  replacement._graphScope = node._graphScope
+  node._state = detachedState
+  node._graphScope = undefined
+}
+
 /**
  * Wraps a node's `inputs` array with a rehydration view — e.g.
  * {@link createInputSlotView} — that upgrades plain input-slot writes into
@@ -138,43 +175,6 @@ export function unregisterNodeState(node: LGraphNode): void {
     'unregisterNodeState: node state not found in bucket (identity drift)',
     { nodeId: node.id, rootGraphId: graphScope.rootGraphId }
   )
-}
-
-function canTransferNodeState(
-  node: LGraphNode,
-  replacement: LGraphNode
-): boolean {
-  return (
-    node.id === replacement.id &&
-    replacement._graphScope === undefined &&
-    node._graphScope !== undefined &&
-    useNodeDataStore().ownsNode(node._graphScope, node._state)
-  )
-}
-
-function transferNodeState(node: LGraphNode, replacement: LGraphNode): void {
-  const registeredState = node._state
-  const detachedState = { ...registeredState }
-  const { graphId: _graphId, id: _id, ...replacementState } = replacement._state
-  Object.assign(registeredState, {
-    bgcolor: undefined,
-    boxcolor: undefined,
-    color: undefined,
-    lastSerialization: undefined,
-    resizable: undefined,
-    shape: undefined,
-    showAdvanced: undefined,
-    titleMode: undefined,
-    ...replacementState
-  } satisfies {
-    [K in Exclude<keyof NodeState, 'graphId' | 'id'>]-?:
-      | NodeState[K]
-      | undefined
-  })
-  replacement._state = registeredState
-  replacement._graphScope = node._graphScope
-  node._state = detachedState
-  node._graphScope = undefined
 }
 
 /**

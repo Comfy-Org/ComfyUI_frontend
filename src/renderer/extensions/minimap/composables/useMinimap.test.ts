@@ -48,18 +48,6 @@ const GRAPH_SCOPE = {
   owningGraphId: toOwningGraphId(GRAPH_ID)
 }
 
-function registerMockLink(id: number, targetNodeId: string) {
-  useLinkStore().registerLink(GRAPH_SCOPE, {
-    id: toLinkId(id),
-    graphId: GRAPH_SCOPE.owningGraphId,
-    originNodeId: toNodeId('node1'),
-    originSlot: 0,
-    targetNodeId: toNodeId(targetNodeId),
-    targetSlot: 0,
-    type: '*'
-  })
-}
-
 interface MockCanvas {
   graph: MockGraph
   canvas: {
@@ -77,6 +65,18 @@ interface MockCanvas {
 
 interface MockContainerElement {
   getBoundingClientRect: Mock
+}
+
+function registerMockLink(id: number, targetNodeId: string) {
+  useLinkStore().registerLink(GRAPH_SCOPE, {
+    id: toLinkId(id),
+    graphId: GRAPH_SCOPE.owningGraphId,
+    originNodeId: toNodeId('node1'),
+    originSlot: 0,
+    targetNodeId: toNodeId(targetNodeId),
+    targetSlot: 0,
+    type: '*'
+  })
 }
 
 const flushPromises = () => new Promise((resolve) => setTimeout(resolve, 0))

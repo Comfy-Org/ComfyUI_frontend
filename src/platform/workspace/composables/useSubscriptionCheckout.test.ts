@@ -42,6 +42,32 @@ beforeEach(() => {
   stubFirebaseAuthHarness()
 })
 
+type QuoteFields = Readonly<
+  Pick<
+    PreviewSubscribeResponse,
+    'cost_today_cents' | 'amount_due_cents' | 'currency'
+  >
+>
+
+interface ReactivationPreviewPlanInput {
+  slug: string
+  tier: PreviewSubscribeResponse['new_plan']['tier']
+  duration: PreviewSubscribeResponse['new_plan']['duration']
+  priceCents: number
+  creditsCents: number
+  periodEnd: string
+}
+
+interface ReactivationPreviewInput {
+  effectiveAt: string
+  costTodayCents: number
+  costNextPeriodCents: number
+  creditsTodayCents: number
+  creditsNextPeriodCents: number
+  currentPlan: ReactivationPreviewPlanInput
+  newPlan: ReactivationPreviewPlanInput
+}
+
 function makeStandardYearly(): Plan {
   return {
     slug: 'standard-yearly',
@@ -82,32 +108,6 @@ function allPlans(): Plan[] {
 
 function errorWithCode(code: string, message = 'error') {
   return Object.assign(new Error(message), { code })
-}
-
-type QuoteFields = Readonly<
-  Pick<
-    PreviewSubscribeResponse,
-    'cost_today_cents' | 'amount_due_cents' | 'currency'
-  >
->
-
-interface ReactivationPreviewPlanInput {
-  slug: string
-  tier: PreviewSubscribeResponse['new_plan']['tier']
-  duration: PreviewSubscribeResponse['new_plan']['duration']
-  priceCents: number
-  creditsCents: number
-  periodEnd: string
-}
-
-interface ReactivationPreviewInput {
-  effectiveAt: string
-  costTodayCents: number
-  costNextPeriodCents: number
-  creditsTodayCents: number
-  creditsNextPeriodCents: number
-  currentPlan: ReactivationPreviewPlanInput
-  newPlan: ReactivationPreviewPlanInput
 }
 
 function makeReactivationAuthorityPreview({
@@ -258,6 +258,13 @@ interface SubscriptionRailStub {
 }
 
 /**
+ * The rail hands back the production record, so the stub uses it rather than a
+ * widened copy — a fixture cannot then encode a state the real projection
+ * could never produce.
+ */
+type RailOperation = BillingOperationRecordView
+
+/**
  * A rail that holds nothing unless the row says otherwise. `getOperation` is
  * never optional on the real rail, and a rail that answers `undefined` for an
  * operation the legacy transport issued is the case the 404 fallback turns on.
@@ -271,13 +278,6 @@ function railStub(
     ...overrides
   }
 }
-
-/**
- * The rail hands back the production record, so the stub uses it rather than a
- * widened copy — a fixture cannot then encode a state the real projection
- * could never produce.
- */
-type RailOperation = BillingOperationRecordView
 
 async function previewSubscribe(...args: unknown[]) {
   const response = await mockPreviewSubscribe(...args)

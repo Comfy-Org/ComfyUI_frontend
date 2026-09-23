@@ -5,6 +5,26 @@ import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
 import type { ViewHelper } from 'three/examples/jsm/helpers/ViewHelper'
 import type { GLTF } from 'three/examples/jsm/loaders/GLTFLoader'
 
+interface CameraQuaternion {
+  x: number
+  y: number
+  z: number
+  w: number
+}
+interface CameraFrustum {
+  left: number
+  right: number
+  top: number
+  bottom: number
+}
+type CustomUpConfig =
+  | { hasCustomUp?: false }
+  | { hasCustomUp: true; useCustomUp: boolean }
+interface BaseManager {
+  init(): void
+  dispose(): void
+  reset(): void
+}
 export type MaterialMode =
   | 'original'
   | 'pointCloud'
@@ -12,24 +32,14 @@ export type MaterialMode =
   | 'wireframe'
   | 'depth'
   | 'clay'
+
 export type UpDirection = 'original' | '-x' | '+x' | '-y' | '+y' | '-z' | '+z'
+
 export type CameraType = 'perspective' | 'orthographic'
+
 export type BackgroundRenderModeType = 'tiled' | 'panorama'
+
 export type LoadFolder = 'temp' | 'output'
-
-interface CameraQuaternion {
-  x: number
-  y: number
-  z: number
-  w: number
-}
-
-interface CameraFrustum {
-  left: number
-  right: number
-  top: number
-  bottom: number
-}
 
 export interface CameraState {
   position: THREE.Vector3
@@ -85,10 +95,6 @@ export type StoredModelConfig = Omit<Partial<ModelConfig>, 'gizmo'> & {
   gizmo?: Partial<GizmoConfig>
 }
 
-type CustomUpConfig =
-  | { hasCustomUp?: false }
-  | { hasCustomUp: true; useCustomUp: boolean }
-
 export type CameraConfig = {
   cameraType: CameraType
   fov: number
@@ -136,12 +142,6 @@ export interface CaptureResult {
   scene: string
   mask: string
   normal: string
-}
-
-interface BaseManager {
-  init(): void
-  dispose(): void
-  reset(): void
 }
 
 export interface AnimationItem {

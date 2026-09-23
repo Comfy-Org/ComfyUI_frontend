@@ -33,12 +33,6 @@ vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://platform.test'
 }))
 
-class NoopResizeObserver implements ResizeObserver {
-  observe = vi.fn()
-  unobserve = vi.fn()
-  disconnect = vi.fn()
-}
-
 function renderContent(events: ActivityEvent[] = []) {
   const i18n = createI18n({
     legacy: false,
@@ -49,6 +43,12 @@ function renderContent(events: ActivityEvent[] = []) {
     props: { search: '', events },
     global: { plugins: [i18n] }
   })
+}
+
+class NoopResizeObserver implements ResizeObserver {
+  observe = vi.fn()
+  unobserve = vi.fn()
+  disconnect = vi.fn()
 }
 
 const creditedRow: ActivityEvent = {

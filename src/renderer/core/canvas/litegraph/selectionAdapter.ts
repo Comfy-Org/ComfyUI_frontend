@@ -30,6 +30,13 @@ type SelectableItem =
   | SubgraphInputNode
   | SubgraphOutputNode
 
+function applyGraphSelection(
+  graph: LGraphCanvas['graph'],
+  command: SelectionCommand
+): void {
+  if (!graph) return
+  useSelectionStore().apply(graphScopeOf(graph), command)
+}
 export function selectableKeyOf(item: SelectableItem): SelectableKey
 export function selectableKeyOf(item: Positionable): SelectableKey | undefined
 export function selectableKeyOf(item: Positionable): SelectableKey | undefined {
@@ -92,14 +99,6 @@ export function releaseCanvasSelection(canvas: LGraphCanvas): void {
 
 export function clearGraphSelection(graph: LGraphCanvas['graph']): void {
   applyGraphSelection(graph, { type: 'selection.clear' })
-}
-
-function applyGraphSelection(
-  graph: LGraphCanvas['graph'],
-  command: SelectionCommand
-): void {
-  if (!graph) return
-  useSelectionStore().apply(graphScopeOf(graph), command)
 }
 
 export function ownsSelectable(

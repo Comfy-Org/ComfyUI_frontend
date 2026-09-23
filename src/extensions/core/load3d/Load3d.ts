@@ -25,16 +25,6 @@ import type {
 } from './interfaces'
 import { computeLetterboxedViewport, isLoad3dActive } from './load3dViewport'
 
-export type Load3dDeps = Viewport3dDeps & {
-  hdriManager: HDRIManager
-  loaderManager: LoaderManager
-  modelManager: SceneModelManager
-  recordingManager: RecordingManager
-  animationManager: AnimationManager
-  gizmoManager: GizmoManager
-  adapterRef: AdapterRef
-}
-
 function positionThumbnailCamera(
   camera: THREE.PerspectiveCamera,
   model: THREE.Object3D
@@ -699,6 +689,16 @@ class Load3d extends Viewport3d {
     this.animationManager.dispose()
     this.gizmoManager.dispose()
   }
+}
+
+export type Load3dDeps = Viewport3dDeps & {
+  hdriManager: HDRIManager
+  loaderManager: LoaderManager
+  modelManager: SceneModelManager
+  recordingManager: RecordingManager
+  animationManager: AnimationManager
+  gizmoManager: GizmoManager
+  adapterRef: AdapterRef
 }
 
 export default Load3d

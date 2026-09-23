@@ -14,6 +14,10 @@ await import('./customWidgets')
 const extension = extensions.getExtension('Comfy.CustomWidgets')
 const TEST_CUSTOM_COMBO_TYPE = 'test/CustomComboCopyPaste'
 
+function findWidget(node: LGraphNode, name: string) {
+  return node.widgets?.find((widget) => widget.name === name)
+}
+
 class TestCustomComboNode extends LGraphNode {
   static override title = 'CustomCombo'
 
@@ -25,10 +29,6 @@ class TestCustomComboNode extends LGraphNode {
       values: [] as string[]
     })
   }
-}
-
-function findWidget(node: LGraphNode, name: string) {
-  return node.widgets?.find((widget) => widget.name === name)
 }
 
 describe('CustomCombo copy/paste', () => {

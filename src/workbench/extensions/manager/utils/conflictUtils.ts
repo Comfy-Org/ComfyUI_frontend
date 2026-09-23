@@ -17,6 +17,21 @@ import {
 import { checkVersionCompatibility } from '@/workbench/extensions/manager/utils/versionUtil'
 
 /**
+ * Normalized compatibility inputs for a single package, produced by each call
+ * site from its own source shape. Banned/pending are pre-derived booleans
+ * (see {@link deriveStatusFlags}) since the two callers read status from
+ * different source shapes (Node vs NodeVersion).
+ */
+export interface CompatibilityInput {
+  supported_os?: RegistryOS[]
+  supported_accelerators?: RegistryAccelerator[]
+  supported_comfyui_version?: string
+  supported_comfyui_frontend_version?: string
+  isBanned: boolean
+  isPending: boolean
+}
+
+/**
  * Checks for banned package status conflicts.
  */
 export function createBannedConflict(
@@ -63,21 +78,6 @@ export function deriveStatusFlags(status?: string): {
       status === 'NodeStatusBanned' || status === 'NodeVersionStatusBanned',
     isPending: status === 'NodeVersionStatusPending'
   }
-}
-
-/**
- * Normalized compatibility inputs for a single package, produced by each call
- * site from its own source shape. Banned/pending are pre-derived booleans
- * (see {@link deriveStatusFlags}) since the two callers read status from
- * different source shapes (Node vs NodeVersion).
- */
-export interface CompatibilityInput {
-  supported_os?: RegistryOS[]
-  supported_accelerators?: RegistryAccelerator[]
-  supported_comfyui_version?: string
-  supported_comfyui_frontend_version?: string
-  isBanned: boolean
-  isPending: boolean
 }
 
 /**

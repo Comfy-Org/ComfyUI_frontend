@@ -63,6 +63,11 @@ type OriginalCallbacks = {
 
 const originalCallbacks = new WeakMap<LGraphNode, OriginalCallbacks>()
 
+interface PendingScanControl {
+  cancel: () => void
+  finish: () => void
+}
+
 function getRemovedNodeExecutionId(graph: LGraph, nodeId: NodeId): string {
   const rootGraph = app.rootGraphOrUndefined
   if (!rootGraph) return String(nodeId)
@@ -427,11 +432,6 @@ async function runAddedNodeScan(
   } finally {
     await Promise.allSettled(pendingVerifications)
   }
-}
-
-interface PendingScanControl {
-  cancel: () => void
-  finish: () => void
 }
 
 function signalAborted(signal: AbortSignal): boolean {

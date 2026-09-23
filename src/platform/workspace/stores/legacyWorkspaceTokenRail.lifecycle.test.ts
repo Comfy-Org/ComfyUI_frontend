@@ -33,6 +33,8 @@ const expiresInMs = 3600 * 1000
 const recoveryCooldownMs = 5000
 const retryBackoffTotalMs = 1000 + 2000 + 4000
 
+type SessionKey = 'CURRENT_WORKSPACE' | 'TOKEN' | 'EXPIRES_AT' | 'OWNER_UID'
+
 function tokenResponse(
   overrides: Record<string, unknown> = {},
   workspaceId = workspace.id
@@ -85,8 +87,6 @@ function createRail() {
   const rail = createLegacyWorkspaceTokenRail(deps)
   return { rail, deps, identity }
 }
-
-type SessionKey = 'CURRENT_WORKSPACE' | 'TOKEN' | 'EXPIRES_AT' | 'OWNER_UID'
 const sessionKeys: readonly SessionKey[] = [
   'CURRENT_WORKSPACE',
   'TOKEN',

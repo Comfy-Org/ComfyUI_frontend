@@ -29,57 +29,9 @@ import type {
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
 
-export class AgentApiError extends Error {
-  readonly status: number
-  readonly body: unknown
-  readonly retryAfterSeconds?: number
-
-  constructor(
-    message: string,
-    status: number,
-    body: unknown,
-    retryAfterSeconds?: number
-  ) {
-    super(message)
-    this.name = 'AgentApiError'
-    this.status = status
-    this.body = body
-    this.retryAfterSeconds = retryAfterSeconds
-  }
-}
-
-export type OpenTabsSnapshot = Pick<
-  AgentPostMessageRequest,
-  'open_tabs' | 'current_tab'
->
-
 // TEMPORARY: current_tab_unbound isn't in the generated ingest-types yet (cloud#10068 unmerged); delete this augmentation and use AgentPostMessageRequest directly once push-ingest-types-to-frontend lands it.
 type AgentPostMessageRequestWithUnboundFlag = AgentPostMessageRequest & {
   current_tab_unbound?: boolean
-}
-
-/** An omitted `version` makes this content authoritative for the backend CAS. */
-export interface DraftSnapshot {
-  content: Record<string, unknown>
-  version?: number
-}
-
-export interface PostMessageInput {
-  content: string
-  workflowId?: string
-  selection?: Record<string, unknown>
-  attachments?: string[]
-  workflowReferences?: AgentPostMessageRequest['workflow_references']
-  tabs?: OpenTabsSnapshot
-  draft?: DraftSnapshot
-  /**
-   * The turn's target tab has no cloud id yet (a fresh, unsaved tab) - see
-   * AgentPostMessageRequest['current_tab_unbound']. Tells the server this is
-   * a selected-but-unbound tab rather than no tab at all, so it mints a
-   * workflow for it instead of falling back to the thread's previous one and
-   * presenting the turn to the model as having no workflow selected.
-   */
-  currentTabUnbound?: boolean
 }
 
 interface IngestErrorBody {
@@ -113,6 +65,54 @@ function getErrorMessage(body: unknown, fallback: string): string {
       : plain.data.error.message
   }
   return isIngestErrorBody(body) ? body.error.message : fallback
+}
+
+export type OpenTabsSnapshot = Pick<
+  AgentPostMessageRequest,
+  'open_tabs' | 'current_tab'
+>
+
+/** An omitted `version` makes this content authoritative for the backend CAS. */
+export interface DraftSnapshot {
+  content: Record<string, unknown>
+  version?: number
+}
+
+export interface PostMessageInput {
+  content: string
+  workflowId?: string
+  selection?: Record<string, unknown>
+  attachments?: string[]
+  workflowReferences?: AgentPostMessageRequest['workflow_references']
+  tabs?: OpenTabsSnapshot
+  draft?: DraftSnapshot
+  /**
+   * The turn's target tab has no cloud id yet (a fresh, unsaved tab) - see
+   * AgentPostMessageRequest['current_tab_unbound']. Tells the server this is
+   * a selected-but-unbound tab rather than no tab at all, so it mints a
+   * workflow for it instead of falling back to the thread's previous one and
+   * presenting the turn to the model as having no workflow selected.
+   */
+  currentTabUnbound?: boolean
+}
+
+export class AgentApiError extends Error {
+  readonly status: number
+  readonly body: unknown
+  readonly retryAfterSeconds?: number
+
+  constructor(
+    message: string,
+    status: number,
+    body: unknown,
+    retryAfterSeconds?: number
+  ) {
+    super(message)
+    this.name = 'AgentApiError'
+    this.status = status
+    this.body = body
+    this.retryAfterSeconds = retryAfterSeconds
+  }
 }
 
 const DAY_NAME = 'Mon|Tue|Wed|Thu|Fri|Sat|Sun'
@@ -320,6 +320,8 @@ function asDelaySeconds(seconds: number): number | undefined {
   return Number.isSafeInteger(seconds) && seconds >= 0 ? seconds : undefined
 }
 
+export type AgentRestClient = ReturnType<typeof createAgentRestClient>
+
 export function createAgentRestClient() {
   async function toApiError(response: Response): Promise<AgentApiError> {
     const body = parseErrorBody(await response.text())
@@ -488,5 +490,3 @@ export function createAgentRestClient() {
     uploadImage
   }
 }
-
-export type AgentRestClient = ReturnType<typeof createAgentRestClient>

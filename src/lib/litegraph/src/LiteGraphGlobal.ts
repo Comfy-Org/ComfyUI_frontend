@@ -31,6 +31,9 @@ import {
 } from './types/globalEnums'
 import { createUuidv4 } from '@/utils/uuid'
 
+type SlotTypeDefaultNode = string | SlotTypeDefaultNodeOpts
+
+type SlotTypeDefault = SlotTypeDefaultNode | SlotTypeDefaultNode[]
 export interface SlotTypeDefaultNodeOpts {
   node?: string
   title?: string
@@ -39,9 +42,6 @@ export interface SlotTypeDefaultNodeOpts {
   outputs?: [string, string][]
   json?: Parameters<LGraphNode['configure']>[0]
 }
-
-type SlotTypeDefaultNode = string | SlotTypeDefaultNodeOpts
-type SlotTypeDefault = SlotTypeDefaultNode | SlotTypeDefaultNode[]
 
 /**
  * The Global Scope. It contains all the registered node classes.

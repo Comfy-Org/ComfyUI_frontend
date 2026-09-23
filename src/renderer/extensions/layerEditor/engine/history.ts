@@ -21,6 +21,11 @@ export interface Command {
   contentRefs?(): string[]
 }
 
+export interface HistoryOptions {
+  byteBudget?: number
+  minSteps?: number
+}
+
 export class CommandGroup implements Command {
   readonly children: Command[] = []
   constructor(readonly label: string) {}
@@ -45,11 +50,6 @@ export class CommandGroup implements Command {
   get empty(): boolean {
     return this.children.length === 0
   }
-}
-
-export interface HistoryOptions {
-  byteBudget?: number
-  minSteps?: number
 }
 
 export class History {

@@ -22,6 +22,20 @@ const MAX_RAW_MESSAGE_LENGTH = 500
 const MARKUP_DOCUMENT = /^<[a-z!/]/i
 
 /**
+ * Parse JSON when possible, otherwise surface the raw text. A blank or
+ * whitespace-only body yields `undefined` so callers fall through to a
+ * status-derived fallback.
+ */
+function parseJsonOrText(text: string): unknown {
+  if (text.trim() === '') return undefined
+  try {
+    return JSON.parse(text)
+  } catch {
+    return text
+  }
+}
+
+/**
  * Coerce an already-parsed error body into the canonical
  * `ErrorResponse { code, message, details? }` shape.
  *
@@ -60,20 +74,6 @@ export function errorResponseFromBody(
       : fallbackMessage
   const details = isPlainObject(record.details) ? record.details : undefined
   return details !== undefined ? { code, message, details } : { code, message }
-}
-
-/**
- * Parse JSON when possible, otherwise surface the raw text. A blank or
- * whitespace-only body yields `undefined` so callers fall through to a
- * status-derived fallback.
- */
-function parseJsonOrText(text: string): unknown {
-  if (text.trim() === '') return undefined
-  try {
-    return JSON.parse(text)
-  } catch {
-    return text
-  }
 }
 
 /**

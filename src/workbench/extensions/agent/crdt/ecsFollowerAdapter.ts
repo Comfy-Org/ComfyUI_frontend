@@ -62,6 +62,27 @@ export interface LocalIntent {
 
 const NO_LOCAL_INTENT: LocalIntent = { pendingDeletes: () => new Set() }
 
+interface TargetSession {
+  readonly workflowId: string
+  readonly follower: FollowerDoc
+  readonly nodes: Y.Map<Y.Map<unknown>>
+  readonly links: Y.Map<unknown>
+  readonly mutations: GraphMutations
+  readonly nodeActions: Map<string, NodeRootAction>
+  readonly changedWidgets: Map<string, Set<string>>
+  readonly replacedWidgetMaps: Set<string>
+  readonly replacedOpaqueWidgets: Set<string>
+  readonly changedNodeFields: Set<string>
+  readonly changedLinks: Set<string>
+  /** Drift keys already surfaced via `reportError` for this session. */
+  readonly reportedErrors: Set<string>
+  readonly frameQueue: DocUpdate[]
+  onNodesChanged: (events: Y.YEvent<Y.AbstractType<unknown>>[]) => void
+  onLinksChanged: (event: Y.YMapEvent<unknown>) => void
+  reconcileNextFrame: boolean
+  applying: boolean
+}
+
 function plain(value: unknown): unknown {
   if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
   return structuredClone(value)
@@ -349,27 +370,6 @@ function frameContext(update: DocUpdate): RemoteMutationContext {
     opId: opIds?.at(-1) ?? 'replay',
     ...(opIds && opIds.length > 0 && { opIds })
   }
-}
-
-interface TargetSession {
-  readonly workflowId: string
-  readonly follower: FollowerDoc
-  readonly nodes: Y.Map<Y.Map<unknown>>
-  readonly links: Y.Map<unknown>
-  readonly mutations: GraphMutations
-  readonly nodeActions: Map<string, NodeRootAction>
-  readonly changedWidgets: Map<string, Set<string>>
-  readonly replacedWidgetMaps: Set<string>
-  readonly replacedOpaqueWidgets: Set<string>
-  readonly changedNodeFields: Set<string>
-  readonly changedLinks: Set<string>
-  /** Drift keys already surfaced via `reportError` for this session. */
-  readonly reportedErrors: Set<string>
-  readonly frameQueue: DocUpdate[]
-  onNodesChanged: (events: Y.YEvent<Y.AbstractType<unknown>>[]) => void
-  onLinksChanged: (event: Y.YMapEvent<unknown>) => void
-  reconcileNextFrame: boolean
-  applying: boolean
 }
 
 /**

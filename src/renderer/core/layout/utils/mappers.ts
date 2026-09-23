@@ -6,13 +6,6 @@ import type { GroupLayout, NodeLayout } from '@/renderer/core/layout/types'
 import { parseNodeId, toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
-/**
- * Stored geometry: one `[x, y, width, height]` tuple. Position, size and bounds
- * are views of it rather than fields of their own, so they cannot disagree, and
- * a whole-tuple replace is the write a CRDT register wants.
- */
-export type StoredRect = [x: number, y: number, width: number, height: number]
-
 type StoredNode = {
   id: NodeId
   rect: StoredRect
@@ -20,9 +13,27 @@ type StoredNode = {
   visible: boolean
 }
 
+/**
+ * Stored geometry: one `[x, y, width, height]` tuple. Position, size and bounds
+ * are views of it rather than fields of their own, so they cannot disagree, and
+ * a whole-tuple replace is the write a CRDT register wants.
+ */
+export type StoredRect = [x: number, y: number, width: number, height: number]
+
 export type NodeLayoutMap = Y.Map<StoredNode[keyof StoredNode]>
 
 const DEFAULT_NODE_RECT: StoredRect = [0, 0, 100, 50]
+
+type StoredGroup = {
+  id: GroupId
+  rect: StoredRect
+}
+
+function yNodeRect(ynode: NodeLayoutMap): Readonly<StoredRect> {
+  return (ynode.get('rect') as StoredRect | undefined) ?? DEFAULT_NODE_RECT
+}
+
+export type GroupLayoutMap = Y.Map<StoredGroup[keyof StoredGroup]>
 
 export function layoutToYNode(layout: NodeLayout): NodeLayoutMap {
   const ynode = new Y.Map<StoredNode[keyof StoredNode]>()
@@ -38,10 +49,6 @@ export function layoutToYNode(layout: NodeLayout): NodeLayoutMap {
   return ynode
 }
 
-function yNodeRect(ynode: NodeLayoutMap): Readonly<StoredRect> {
-  return (ynode.get('rect') as StoredRect | undefined) ?? DEFAULT_NODE_RECT
-}
-
 export function yNodeToLayout(ynode: NodeLayoutMap): NodeLayout {
   const [x, y, width, height] = yNodeRect(ynode)
   return {
@@ -53,13 +60,6 @@ export function yNodeToLayout(ynode: NodeLayoutMap): NodeLayout {
     visible: (ynode.get('visible') ?? true) as boolean
   }
 }
-
-type StoredGroup = {
-  id: GroupId
-  rect: StoredRect
-}
-
-export type GroupLayoutMap = Y.Map<StoredGroup[keyof StoredGroup]>
 
 const DEFAULT_GROUP_RECT: StoredRect = [0, 0, 140, 80]
 

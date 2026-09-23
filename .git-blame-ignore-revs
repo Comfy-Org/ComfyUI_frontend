@@ -34,3 +34,6 @@ aa5125cef6966d9086f0ff4f254721e08419f571
 
 # Add org prefix for team in CODEOWNERS (#12590) (rewrote all 38 routing lines)
 1e01c7128b67e2f8a8ff4fceb70a755a72902d9a
+
+# Apply sort-modules ordering across TypeScript sources
+7f700e5638f6b8b09bd1f7ab05f09bac633317e8

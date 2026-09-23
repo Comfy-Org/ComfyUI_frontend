@@ -4,12 +4,6 @@ import { toLocalFrame } from '../tools/transformMath'
 
 export const PICK_OPACITY_THRESHOLD = 0.25
 
-export type AlphaSampler = (
-  canvas: HTMLCanvasElement,
-  x: number,
-  y: number
-) => number
-
 function defaultAlphaSampler(
   canvas: HTMLCanvasElement,
   x: number,
@@ -55,6 +49,12 @@ function boxAlphaAt(node: SceneNode, pt: Vec2): number {
   const local = toLocalFrame(t, pt)
   return Math.abs(local.x) <= t.w / 2 && Math.abs(local.y) <= t.h / 2 ? 1 : 0
 }
+
+export type AlphaSampler = (
+  canvas: HTMLCanvasElement,
+  x: number,
+  y: number
+) => number
 
 export function layerOpacityAt(
   node: SceneNode,

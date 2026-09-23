@@ -47,6 +47,88 @@ interface FilteredItems {
   unknown: Set<Positionable>
 }
 
+interface BoundaryLinks {
+  boundaryLinks: LLink[]
+  boundaryFloatingLinks: LLink[]
+  internalLinks: LLink[]
+  boundaryInputLinks: LLink[]
+  boundaryOutputLinks: LLink[]
+}
+
+function mapReroutes(
+  link: SerialisableLLink,
+  reroutes: Map<RerouteId, Reroute>
+) {
+  let child: SerialisableLLink | Reroute = link
+  let nextReroute =
+    child.parentId === undefined
+      ? undefined
+      : reroutes.get(toRerouteId(child.parentId))
+
+  while (child.parentId !== undefined && nextReroute) {
+    child = nextReroute
+    nextReroute =
+      child.parentId === undefined
+        ? undefined
+        : reroutes.get(toRerouteId(child.parentId))
+  }
+
+  const lastId = child.parentId
+  child.parentId = undefined
+  return lastId
+}
+
+function findLiveSubgraphIds(
+  rootGraph: LGraph,
+  removedNode: SubgraphNode
+): Set<SubgraphId> {
+  const liveIds = new Set<SubgraphId>()
+  const toVisit: GraphOrSubgraph[] = [rootGraph]
+
+  while (toVisit.length > 0) {
+    const graph = toVisit.shift()!
+    for (const node of graph._nodes) {
+      if (node === removedNode || !node.isSubgraphNode()) continue
+      if (liveIds.has(node.subgraph.id)) continue
+      liveIds.add(node.subgraph.id)
+      toVisit.push(node.subgraph)
+    }
+  }
+
+  return liveIds
+}
+
+function collectSubgraphsPostOrder(
+  subgraph: Subgraph,
+  visitedIds: Set<SubgraphId>,
+  result: Subgraph[]
+): void {
+  if (visitedIds.has(subgraph.id)) return
+  visitedIds.add(subgraph.id)
+
+  for (const node of subgraph._nodes) {
+    if (node.isSubgraphNode()) {
+      collectSubgraphsPostOrder(node.subgraph, visitedIds, result)
+    }
+  }
+
+  result.push(subgraph)
+}
+
+function reorderInPlace(arr: unknown[], indices: readonly number[]): void {
+  arr.splice(0, arr.length, ...indices.flatMap((i) => arr[i] ?? []))
+}
+
+function* indexedLinks<S>(
+  slots: readonly S[],
+  resolve: (slot: S) => Iterable<LLink | undefined>
+): Generator<readonly [number, LLink]> {
+  for (const [index, slot] of slots.entries()) {
+    for (const link of resolve(slot)) {
+      if (link) yield [index, link] as const
+    }
+  }
+}
 export function splitPositionables(
   items: Iterable<Positionable>
 ): FilteredItems {
@@ -89,14 +171,6 @@ export function splitPositionables(
     subgraphOutputNodes,
     unknown
   }
-}
-
-interface BoundaryLinks {
-  boundaryLinks: LLink[]
-  boundaryFloatingLinks: LLink[]
-  internalLinks: LLink[]
-  boundaryInputLinks: LLink[]
-  boundaryOutputLinks: LLink[]
 }
 
 export function getBoundaryLinks(
@@ -290,28 +364,6 @@ export function groupResolvedByOutput(
   }
 
   return groupedByOutput
-}
-function mapReroutes(
-  link: SerialisableLLink,
-  reroutes: Map<RerouteId, Reroute>
-) {
-  let child: SerialisableLLink | Reroute = link
-  let nextReroute =
-    child.parentId === undefined
-      ? undefined
-      : reroutes.get(toRerouteId(child.parentId))
-
-  while (child.parentId !== undefined && nextReroute) {
-    child = nextReroute
-    nextReroute =
-      child.parentId === undefined
-        ? undefined
-        : reroutes.get(toRerouteId(child.parentId))
-  }
-
-  const lastId = child.parentId
-  child.parentId = undefined
-  return lastId
 }
 
 export function mapSubgraphInputsAndLinks(
@@ -517,43 +569,6 @@ export function findUsedSubgraphIds(
   return usedSubgraphIds
 }
 
-function findLiveSubgraphIds(
-  rootGraph: LGraph,
-  removedNode: SubgraphNode
-): Set<SubgraphId> {
-  const liveIds = new Set<SubgraphId>()
-  const toVisit: GraphOrSubgraph[] = [rootGraph]
-
-  while (toVisit.length > 0) {
-    const graph = toVisit.shift()!
-    for (const node of graph._nodes) {
-      if (node === removedNode || !node.isSubgraphNode()) continue
-      if (liveIds.has(node.subgraph.id)) continue
-      liveIds.add(node.subgraph.id)
-      toVisit.push(node.subgraph)
-    }
-  }
-
-  return liveIds
-}
-
-function collectSubgraphsPostOrder(
-  subgraph: Subgraph,
-  visitedIds: Set<SubgraphId>,
-  result: Subgraph[]
-): void {
-  if (visitedIds.has(subgraph.id)) return
-  visitedIds.add(subgraph.id)
-
-  for (const node of subgraph._nodes) {
-    if (node.isSubgraphNode()) {
-      collectSubgraphsPostOrder(node.subgraph, visitedIds, result)
-    }
-  }
-
-  result.push(subgraph)
-}
-
 export function findReleasableSubgraphs(
   rootGraph: LGraph,
   removedNode: SubgraphNode
@@ -575,21 +590,6 @@ export function findOrphanedSubgraphs(
       orphaned.set(subgraph.id, subgraph)
   }
   return [...orphaned.values()]
-}
-
-function reorderInPlace(arr: unknown[], indices: readonly number[]): void {
-  arr.splice(0, arr.length, ...indices.flatMap((i) => arr[i] ?? []))
-}
-
-function* indexedLinks<S>(
-  slots: readonly S[],
-  resolve: (slot: S) => Iterable<LLink | undefined>
-): Generator<readonly [number, LLink]> {
-  for (const [index, slot] of slots.entries()) {
-    for (const link of resolve(slot)) {
-      if (link) yield [index, link] as const
-    }
-  }
 }
 
 export function reorderSubgraphInputs(

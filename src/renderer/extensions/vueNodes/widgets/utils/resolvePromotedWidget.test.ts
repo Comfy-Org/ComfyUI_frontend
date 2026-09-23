@@ -4,19 +4,19 @@ import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { resolveWidgetFromHostNode } from '@/renderer/extensions/vueNodes/widgets/utils/resolvePromotedWidget'
 
-class TestNode extends LGraphNode {
-  constructor(widgets: IBaseWidget[]) {
-    super('TestNode')
-    this.widgets = widgets
-  }
-}
-
 function createWidget(name: string): IBaseWidget {
   return {
     name,
     type: 'text',
     y: 0,
     options: {}
+  }
+}
+
+class TestNode extends LGraphNode {
+  constructor(widgets: IBaseWidget[]) {
+    super('TestNode')
+    this.widgets = widgets
   }
 }
 

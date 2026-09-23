@@ -25,17 +25,6 @@ import type * as Y from 'yjs'
 
 import { assert } from '@/base/assert'
 
-/** Thrown by {@link assertReadableSchema}; carries the version actually found. */
-export class FollowerSchemaError extends Error {
-  constructor(
-    readonly found: unknown,
-    message: string
-  ) {
-    super(message)
-    this.name = 'FollowerSchemaError'
-  }
-}
-
 /**
  * Fail closed unless the merged doc declares exactly the schema version this
  * build was written against.
@@ -71,4 +60,15 @@ export function assertReadableSchema(doc: Y.Doc): void {
     // below is what actually closes the gate, in every environment.
   }
   throw new FollowerSchemaError(found, message)
+}
+
+/** Thrown by {@link assertReadableSchema}; carries the version actually found. */
+export class FollowerSchemaError extends Error {
+  constructor(
+    readonly found: unknown,
+    message: string
+  ) {
+    super(message)
+    this.name = 'FollowerSchemaError'
+  }
 }

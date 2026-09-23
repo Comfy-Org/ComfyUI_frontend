@@ -17,6 +17,28 @@ beforeAll(() => {
   registerBuiltinTools()
 })
 
+function probeToolContext(editor: Editor): ToolContext {
+  let captured: ToolContext | null = null
+  registerTool({
+    id: 'probe',
+    create: (ctx) => {
+      captured = ctx
+      return {
+        id: 'probe',
+        control: defaultControl(),
+        onButtonPress: () => {},
+        onMotion: () => {},
+        onButtonRelease: () => {},
+        onHover: () => {},
+        cursorFor: () => 'default',
+        drawOverlay: () => {}
+      }
+    }
+  })
+  editor.setTool('probe')
+  return captured!
+}
+
 class FakeCompositor implements Compositor {
   canvas: HTMLCanvasElement | null = null
   readbackSize = { w: 1, h: 1 }
@@ -50,28 +72,6 @@ class FakeCompositor implements Compositor {
     return this.canvas
   }
   dispose() {}
-}
-
-function probeToolContext(editor: Editor): ToolContext {
-  let captured: ToolContext | null = null
-  registerTool({
-    id: 'probe',
-    create: (ctx) => {
-      captured = ctx
-      return {
-        id: 'probe',
-        control: defaultControl(),
-        onButtonPress: () => {},
-        onMotion: () => {},
-        onButtonRelease: () => {},
-        onHover: () => {},
-        cursorFor: () => 'default',
-        drawOverlay: () => {}
-      }
-    }
-  })
-  editor.setTool('probe')
-  return captured!
 }
 
 const ev = { pressure: 0.5, shiftKey: false } as unknown as PointerEvent

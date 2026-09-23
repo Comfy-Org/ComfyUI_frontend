@@ -294,16 +294,6 @@ const dynamicInputs: Record<
   COMFY_MATCHTYPE_V3: applyMatchType
 }
 
-export function applyDynamicInputs(
-  node: LGraphNode,
-  inputSpec: InputSpecV2
-): boolean {
-  if (!(inputSpec.type in dynamicInputs)) return false
-  //TODO: move parsing/validation of inputSpec here?
-  dynamicInputs[inputSpec.type](node, inputSpec)
-  return true
-}
-
 function changeOutputType(
   node: LGraphNode,
   slot: number,
@@ -512,23 +502,17 @@ function addAutogrowGroup(
   node.graph?.setDirtyCanvas(true, true)
 }
 
-const ORDINAL_REGEX = /\d+$/
-
-/**
- * Whether `key` -- an autogrow input name's segment after the group
- * prefix -- is a member of an autogrow group: matched against an explicit
- * `names` list when the group defines one, or (absent that) required to
- * end in a numeric ordinal. The one membership rule a live autogrow
- * registration (`resolveAutogrowOrdinal` below) and a node type's own
- * static schema (`nodeDefAutogrowGroupOf` in `graphMutations.ts`) must
- * agree on, so it is shared rather than reimplemented at each call site.
- */
-export function isAutogrowGroupMember(
-  key: string,
-  names: readonly string[] | undefined
+export function applyDynamicInputs(
+  node: LGraphNode,
+  inputSpec: InputSpecV2
 ): boolean {
-  return names ? names.includes(key) : ORDINAL_REGEX.test(key)
+  if (!(inputSpec.type in dynamicInputs)) return false
+  //TODO: move parsing/validation of inputSpec here?
+  dynamicInputs[inputSpec.type](node, inputSpec)
+  return true
 }
+
+const ORDINAL_REGEX = /\d+$/
 
 function resolveAutogrowOrdinal(
   inputName: string,
@@ -542,6 +526,7 @@ function resolveAutogrowOrdinal(
   const match = name.match(ORDINAL_REGEX)
   return match ? parseInt(match[0]) : undefined
 }
+
 function autogrowInputConnected(index: number, node: AutogrowNode) {
   const input = node.inputs.at(index)
   if (!input) return
@@ -559,46 +544,8 @@ function autogrowInputConnected(index: number, node: AutogrowNode) {
     return
   addAutogrowGroup(ordinal + 1, groupName, node)
 }
-
 function hasAutogrowGroups(node: LGraphNode): node is AutogrowNode {
   return !!node.comfyDynamic?.autogrow
-}
-
-/**
- * The live autogrow group `name` belongs to, from the node's own
- * `comfyDynamic.autogrow` registration -- real provenance from
- * `applyAutogrow`/`addAutogrowGroup`, rather than inferred from the name's
- * shape. Confirms membership with `resolveAutogrowOrdinal`, the same check
- * growth and shrink use, so a name that merely starts with a group's prefix
- * without resolving to one of its members doesn't false-match. Undefined
- * when the node has no autogrow groups, or `name` isn't a member of any of
- * them.
- */
-export function liveAutogrowGroupOf(
-  node: LGraphNode,
-  name: string
-): string | undefined {
-  if (!hasAutogrowGroups(node)) return undefined
-  for (const groupName of Object.keys(node.comfyDynamic.autogrow)) {
-    if (!name.startsWith(`${groupName}.`)) continue
-    if (resolveAutogrowOrdinal(name, groupName, node) !== undefined) {
-      return groupName
-    }
-  }
-  return undefined
-}
-
-export function reconcileAutogrowInputs(node: LGraphNode): void {
-  if (!node.comfyDynamic?.autogrow) return
-  withComfyAutogrow(node)
-  for (const groupName of Object.keys(node.comfyDynamic.autogrow)) {
-    const slot = node.inputs.findLastIndex(
-      (input, index) =>
-        input.name.slice(0, input.name.lastIndexOf('.')) === groupName &&
-        node.getInputLink(index)
-    )
-    if (slot !== -1) autogrowInputConnected(slot, node)
-  }
 }
 
 function autogrowInputDisconnected(index: number, node: AutogrowNode) {
@@ -766,6 +713,7 @@ function withComfyAutogrow(node: LGraphNode): asserts node is AutogrowNode {
     }
   )
 }
+
 function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
   withComfyAutogrow(node)
 
@@ -792,4 +740,56 @@ function applyAutogrow(node: LGraphNode, inputSpecV2: InputSpecV2) {
   }
   for (let i = 0; i === 0 || i < min + 1; i++)
     addAutogrowGroup(i, inputSpecV2.name, node)
+}
+
+/**
+ * Whether `key` -- an autogrow input name's segment after the group
+ * prefix -- is a member of an autogrow group: matched against an explicit
+ * `names` list when the group defines one, or (absent that) required to
+ * end in a numeric ordinal. The one membership rule a live autogrow
+ * registration (`resolveAutogrowOrdinal` below) and a node type's own
+ * static schema (`nodeDefAutogrowGroupOf` in `graphMutations.ts`) must
+ * agree on, so it is shared rather than reimplemented at each call site.
+ */
+export function isAutogrowGroupMember(
+  key: string,
+  names: readonly string[] | undefined
+): boolean {
+  return names ? names.includes(key) : ORDINAL_REGEX.test(key)
+}
+
+/**
+ * The live autogrow group `name` belongs to, from the node's own
+ * `comfyDynamic.autogrow` registration -- real provenance from
+ * `applyAutogrow`/`addAutogrowGroup`, rather than inferred from the name's
+ * shape. Confirms membership with `resolveAutogrowOrdinal`, the same check
+ * growth and shrink use, so a name that merely starts with a group's prefix
+ * without resolving to one of its members doesn't false-match. Undefined
+ * when the node has no autogrow groups, or `name` isn't a member of any of
+ * them.
+ */
+export function liveAutogrowGroupOf(
+  node: LGraphNode,
+  name: string
+): string | undefined {
+  if (!hasAutogrowGroups(node)) return undefined
+  for (const groupName of Object.keys(node.comfyDynamic.autogrow)) {
+    if (!name.startsWith(`${groupName}.`)) continue
+    if (resolveAutogrowOrdinal(name, groupName, node) !== undefined) {
+      return groupName
+    }
+  }
+  return undefined
+}
+export function reconcileAutogrowInputs(node: LGraphNode): void {
+  if (!node.comfyDynamic?.autogrow) return
+  withComfyAutogrow(node)
+  for (const groupName of Object.keys(node.comfyDynamic.autogrow)) {
+    const slot = node.inputs.findLastIndex(
+      (input, index) =>
+        input.name.slice(0, input.name.lastIndexOf('.')) === groupName &&
+        node.getInputLink(index)
+    )
+    if (slot !== -1) autogrowInputConnected(slot, node)
+  }
 }

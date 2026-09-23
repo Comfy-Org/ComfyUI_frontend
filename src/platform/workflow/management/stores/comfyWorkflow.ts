@@ -14,13 +14,13 @@ import type { AppMode } from '@/utils/appMode'
 import type { WidgetId } from '@/types/widgetId'
 import { generateUUID } from '@/utils/formatUtil'
 
+type LinearInputId = WidgetId | NodeLocatorId | SerializedNodeId
+
+type LinearOutputNodeId = SerializedNodeId
 export interface InputWidgetConfig {
   height?: number
   description?: string
 }
-
-type LinearInputId = WidgetId | NodeLocatorId | SerializedNodeId
-type LinearOutputNodeId = SerializedNodeId
 export type LinearInput = [LinearInputId, string, InputWidgetConfig?]
 
 export interface LinearData {
@@ -32,6 +32,15 @@ export interface PendingWarnings {
   missingNodeTypes?: MissingNodeType[]
   missingModelCandidates?: MissingModelCandidate[]
   missingMediaCandidates?: MissingMediaCandidate[]
+}
+
+export interface LoadedComfyWorkflow extends ComfyWorkflow {
+  isLoaded: true
+  originalContent: string
+  content: string
+  changeTracker: ChangeTracker
+  initialState: ComfyWorkflowJSON
+  activeState: ComfyWorkflowJSON
 }
 
 export class ComfyWorkflow extends UserFile {
@@ -214,13 +223,4 @@ export class ComfyWorkflow extends UserFile {
       return null
     }
   }
-}
-
-export interface LoadedComfyWorkflow extends ComfyWorkflow {
-  isLoaded: true
-  originalContent: string
-  content: string
-  changeTracker: ChangeTracker
-  initialState: ComfyWorkflowJSON
-  activeState: ComfyWorkflowJSON
 }

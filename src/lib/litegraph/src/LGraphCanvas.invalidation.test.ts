@@ -12,6 +12,42 @@ interface DirtyRequest {
   changedBackground: boolean
 }
 
+function createCanvas(): {
+  canvas: LGraphCanvas
+  graph: LGraph
+} {
+  const canvasElement = document.createElement('canvas')
+  canvasElement.width = 800
+  canvasElement.height = 600
+  const foregroundContext = createMockCanvasRenderingContext2D()
+  Object.defineProperty(foregroundContext, 'canvas', { value: canvasElement })
+  foregroundContext.drawImage = vi.fn()
+  canvasElement.getContext = vi.fn().mockReturnValue(foregroundContext)
+  canvasElement.getBoundingClientRect = vi.fn().mockReturnValue({
+    left: 0,
+    top: 0,
+    right: 800,
+    bottom: 600,
+    width: 800,
+    height: 600,
+    x: 0,
+    y: 0,
+    toJSON: () => ({})
+  })
+
+  const graph = new LGraph()
+  const canvas = new LGraphCanvas(canvasElement, graph, {
+    skip_render: true,
+    skip_events: true
+  })
+  const backgroundContext = createMockCanvasRenderingContext2D()
+  Object.defineProperty(backgroundContext, 'canvas', {
+    value: canvas.bgcanvas
+  })
+  canvas.bgctx = backgroundContext
+  return { canvas, graph }
+}
+
 class InvalidationProbe {
   readonly requests: DirtyRequest[] = []
   readonly drawSequence: ('background' | 'foreground')[] = []
@@ -61,42 +97,6 @@ class InvalidationProbe {
     this.canvas.dirty_canvas = false
     this.canvas.dirty_bgcanvas = false
   }
-}
-
-function createCanvas(): {
-  canvas: LGraphCanvas
-  graph: LGraph
-} {
-  const canvasElement = document.createElement('canvas')
-  canvasElement.width = 800
-  canvasElement.height = 600
-  const foregroundContext = createMockCanvasRenderingContext2D()
-  Object.defineProperty(foregroundContext, 'canvas', { value: canvasElement })
-  foregroundContext.drawImage = vi.fn()
-  canvasElement.getContext = vi.fn().mockReturnValue(foregroundContext)
-  canvasElement.getBoundingClientRect = vi.fn().mockReturnValue({
-    left: 0,
-    top: 0,
-    right: 800,
-    bottom: 600,
-    width: 800,
-    height: 600,
-    x: 0,
-    y: 0,
-    toJSON: () => ({})
-  })
-
-  const graph = new LGraph()
-  const canvas = new LGraphCanvas(canvasElement, graph, {
-    skip_render: true,
-    skip_events: true
-  })
-  const backgroundContext = createMockCanvasRenderingContext2D()
-  Object.defineProperty(backgroundContext, 'canvas', {
-    value: canvas.bgcanvas
-  })
-  canvas.bgctx = backgroundContext
-  return { canvas, graph }
 }
 
 describe('LGraphCanvas invalidation scheduling baseline', () => {

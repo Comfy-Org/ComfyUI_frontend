@@ -12,6 +12,13 @@ import type { WidgetId } from '@/types/widgetId'
 
 const TRACKPAD_DETECTION_THRESHOLD = 50
 
+interface PromotedMultilineWidgetContext {
+  subgraphNode: LGraphNode
+  input: INodeInputSlot
+  widgetId: WidgetId
+  sourceWidget: Readonly<IBaseWidget>
+}
+
 /** Creates the `<textarea>` element backing a `customtext` multiline widget. */
 export function createMultilineInputElement(
   value: string,
@@ -106,13 +113,6 @@ export function bindMultilineTextareaWidget(
   widget.onRemove = useChainCallback(widget.onRemove, () => {
     controller.abort()
   })
-}
-
-interface PromotedMultilineWidgetContext {
-  subgraphNode: LGraphNode
-  input: INodeInputSlot
-  widgetId: WidgetId
-  sourceWidget: Readonly<IBaseWidget>
 }
 
 /**

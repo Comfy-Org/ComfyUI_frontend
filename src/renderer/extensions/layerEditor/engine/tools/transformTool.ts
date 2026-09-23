@@ -56,12 +56,6 @@ type Drag =
       bases: Map<string, Transform>
     }
 
-export interface TransformToolApi {
-  apply(): boolean
-  cancel(): boolean
-  isDirty(): boolean
-}
-
 function sameTransform(a: Transform, b: Transform): boolean {
   return (
     a.x === b.x &&
@@ -74,10 +68,6 @@ function sameTransform(a: Transform, b: Transform): boolean {
 
 function sameIds(a: string[], b: string[]): boolean {
   return a.length === b.length && a.every((x, i) => x === b[i])
-}
-
-export function canTransformNode(node: SceneNode | null): node is SceneNode {
-  return !!node && TRANSFORMABLE_KINDS.has(node.kind) && !node.locks.position
 }
 
 function computeGizmo(targets: SceneNode[]): Transform {
@@ -483,6 +473,16 @@ class TransformTool implements Tool, TransformToolApi {
     if (changed) this.ctx.requestRender()
     return changed
   }
+}
+
+export interface TransformToolApi {
+  apply(): boolean
+  cancel(): boolean
+  isDirty(): boolean
+}
+
+export function canTransformNode(node: SceneNode | null): node is SceneNode {
+  return !!node && TRANSFORMABLE_KINDS.has(node.kind) && !node.locks.position
 }
 
 export function isTransformTool(

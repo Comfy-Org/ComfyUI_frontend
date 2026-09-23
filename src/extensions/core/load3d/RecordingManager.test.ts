@@ -24,6 +24,28 @@ beforeEach(() => {
 type DataAvailableHandler = (event: { data: Blob }) => void
 type StopHandler = () => void
 
+function makeMockEventManager() {
+  return {
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    emitEvent: vi.fn()
+  } satisfies EventManagerInterface
+}
+
+function makeStream(): MediaStream {
+  const tracks: { stop: ReturnType<typeof vi.fn> }[] = [{ stop: vi.fn() }]
+  return {
+    getTracks: () => tracks
+  } as unknown as MediaStream
+}
+
+function makeSourceCanvas(): HTMLCanvasElement {
+  const canvas = document.createElement('canvas')
+  canvas.width = 800
+  canvas.height = 600
+  return canvas
+}
+
 class MockMediaRecorder {
   static instances: MockMediaRecorder[] = []
   ondataavailable: DataAvailableHandler | null = null
@@ -45,28 +67,6 @@ class MockMediaRecorder {
   pushChunk(blob: Blob) {
     this.ondataavailable?.({ data: blob })
   }
-}
-
-function makeMockEventManager() {
-  return {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    emitEvent: vi.fn()
-  } satisfies EventManagerInterface
-}
-
-function makeStream(): MediaStream {
-  const tracks: { stop: ReturnType<typeof vi.fn> }[] = [{ stop: vi.fn() }]
-  return {
-    getTracks: () => tracks
-  } as unknown as MediaStream
-}
-
-function makeSourceCanvas(): HTMLCanvasElement {
-  const canvas = document.createElement('canvas')
-  canvas.width = 800
-  canvas.height = 600
-  return canvas
 }
 
 describe('RecordingManager', () => {

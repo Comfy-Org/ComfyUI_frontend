@@ -2,6 +2,19 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { createStandaloneAgentEventSource } from './standaloneAgentEventSource'
 
+function sourceHarness(endpoint = '/api/agent/events') {
+  const sockets: FakeSocket[] = []
+  const source = createStandaloneAgentEventSource({
+    endpoint,
+    createSocket(url) {
+      const socket = new FakeSocket(url)
+      sockets.push(socket)
+      return socket as unknown as WebSocket
+    }
+  })
+  return { source, sockets }
+}
+
 class FakeSocket extends EventTarget {
   readyState: number = WebSocket.CONNECTING
   readonly url: string
@@ -35,19 +48,6 @@ class FakeSocket extends EventTarget {
     this.readyState = WebSocket.CLOSED
     this.dispatchEvent(new Event('close'))
   }
-}
-
-function sourceHarness(endpoint = '/api/agent/events') {
-  const sockets: FakeSocket[] = []
-  const source = createStandaloneAgentEventSource({
-    endpoint,
-    createSocket(url) {
-      const socket = new FakeSocket(url)
-      sockets.push(socket)
-      return socket as unknown as WebSocket
-    }
-  })
-  return { source, sockets }
 }
 
 describe('createStandaloneAgentEventSource', () => {

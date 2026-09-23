@@ -26,8 +26,6 @@ interface UserEntry {
   workflowReferences?: WorkflowReference[]
 }
 
-export type ConversationEntry = UserEntry | AssistantMessage
-
 interface BackgroundTurn {
   messageId: TurnId
   message: AssistantMessage
@@ -35,6 +33,8 @@ interface BackgroundTurn {
   userText: string | undefined
   settled: boolean
 }
+
+export type ConversationEntry = UserEntry | AssistantMessage
 
 export const useAgentConversationStore = defineStore(
   'agentConversation',

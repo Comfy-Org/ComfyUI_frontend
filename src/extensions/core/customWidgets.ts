@@ -11,10 +11,6 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { applyFirstWidgetValueToGraph } from './widgetValuePropagation'
 import { widgetId } from '@/types/widgetId'
 
-function applyToGraph(this: LGraphNode, extraLinks: LLink[] = []) {
-  applyFirstWidgetValueToGraph(this, extraLinks)
-}
-
 /**
  * `node.resolveInput` only exists on the `ExecutableNodeDTO` used while
  * building the API prompt (see `executionUtil.ts`), not on `LGraphNode`
@@ -26,6 +22,10 @@ type LinkedInputResolver = {
   resolveInput: (
     slot: number
   ) => { widgetInfo?: { value: unknown } } | undefined
+}
+
+function applyToGraph(this: LGraphNode, extraLinks: LLink[] = []) {
+  applyFirstWidgetValueToGraph(this, extraLinks)
 }
 
 function hasLinkedInputResolver(

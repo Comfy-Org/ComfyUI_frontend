@@ -84,6 +84,10 @@ function isPendingCheckout(
   return isSelection(value.selection)
 }
 
+export type PollableOperationStatus =
+  | BillingOpStatusResponse['status']
+  | 'timeout'
+
 export function savePendingSubscriptionCheckout(
   checkout: PendingSubscriptionCheckout
 ): void {
@@ -124,10 +128,6 @@ export function clearPendingSubscriptionCheckout(operationId?: string): void {
     return
   }
 }
-
-export type PollableOperationStatus =
-  | BillingOpStatusResponse['status']
-  | 'timeout'
 
 // A client-side `timeout` is this tab giving up, not the server finishing: an
 // operation awaiting bank authentication stays pending for hours. Dropping the

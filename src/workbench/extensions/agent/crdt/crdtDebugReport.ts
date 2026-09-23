@@ -167,26 +167,7 @@ export const EMPTY_REPORT_IDENTIFIERS: ReportIdentifiers = {
   backendUrl: 'unknown'
 }
 
-export interface CrdtDebugReportInput {
-  crdt: CrdtDebugSnapshot
-  events: readonly DevEvent[]
-  /**
-   * IDs for finding this session in Datadog/logs. The real caller
-   * (`CrdtDevPanel.vue`) always supplies this; optional here only so a
-   * synthetic input (a test) is not forced to construct every field.
-   */
-  identifiers?: ReportIdentifiers
-  /** Which sensitive sources the tester agreed to include. */
-  sources?: ReportSources
-  /** Whatever the tester typed into "what did you expect instead?". */
-  testerNote?: string
-  /** Merge-lab results the tester was looking at, if any. */
-  mergeTrace?: readonly MergeTraceEntry[]
-  /** Serialized active workflow, when the caller can supply one. */
-  workflow?: unknown
-  workflowError?: string
-  agentMessages?: readonly AssistantMessage[]
-}
+type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>
 
 async function attempt<T>(label: string, load: () => Promise<T>) {
   let timeout: ReturnType<typeof setTimeout> | undefined
@@ -275,7 +256,26 @@ function truncateReport(text: string): string {
   return `${text.slice(0, safeHeadLength)}${marker}${text.slice(safeTailStart)}`
 }
 
-type SystemStats = Awaited<ReturnType<typeof api.getSystemStats>>
+export interface CrdtDebugReportInput {
+  crdt: CrdtDebugSnapshot
+  events: readonly DevEvent[]
+  /**
+   * IDs for finding this session in Datadog/logs. The real caller
+   * (`CrdtDevPanel.vue`) always supplies this; optional here only so a
+   * synthetic input (a test) is not forced to construct every field.
+   */
+  identifiers?: ReportIdentifiers
+  /** Which sensitive sources the tester agreed to include. */
+  sources?: ReportSources
+  /** Whatever the tester typed into "what did you expect instead?". */
+  testerNote?: string
+  /** Merge-lab results the tester was looking at, if any. */
+  mergeTrace?: readonly MergeTraceEntry[]
+  /** Serialized active workflow, when the caller can supply one. */
+  workflow?: unknown
+  workflowError?: string
+  agentMessages?: readonly AssistantMessage[]
+}
 
 /**
  * A value is anything not starting with `-`; only a leading dash makes a token
@@ -292,6 +292,13 @@ const PRIVATE_VALUE_PATTERN =
 const BEARER_VALUE_PATTERN = /^(\s*bearer\s+)\S+\s*$/i
 const SECRET_VALUE_PATTERN =
   /((?:["']?)(?:token|secret|password|passwd|credential|api[-_]?key|apikey|authorization|auth|bearer|session|cookie|private)(?:["']?)\s*[:=]\s*)(?:bearer\s+)?(?:(['"])(?:\\[\s\S]|(?!\2)[\s\S])*\2|[^\s,;]+)/gi
+
+type RetainedToolCall = Pick<
+  ToolPart,
+  'callId' | 'name' | 'state' | 'ok' | 'durationMs'
+> & {
+  turnId: AssistantMessage['id']
+}
 
 function redactPrivateValue(value: string): string {
   if (PRIVATE_VALUE_PATTERN.test(value)) return REDACTED
@@ -472,13 +479,6 @@ function serializeWorkflow(
     }
   }
   return { status: 'collected', section: fence('json', serialized) }
-}
-
-type RetainedToolCall = Pick<
-  ToolPart,
-  'callId' | 'name' | 'state' | 'ok' | 'durationMs'
-> & {
-  turnId: AssistantMessage['id']
 }
 
 function fitToolCalls(calls: readonly RetainedToolCall[], context: string) {

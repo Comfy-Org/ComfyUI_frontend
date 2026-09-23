@@ -37,6 +37,8 @@ const i18n = createI18n({
   fallbackWarn: false
 })
 
+type SubmittedPayload = [string[], WorkspacePendingInvite[]]
+
 function pendingInviteFor(email: string): WorkspacePendingInvite {
   return {
     id: `inv-${email}`,
@@ -68,8 +70,6 @@ function emailInput() {
 function submitButton() {
   return screen.getByRole('button', { name: 'Send invites' })
 }
-
-type SubmittedPayload = [string[], WorkspacePendingInvite[]]
 
 function submittedPayloads(
   emitted: () => Record<string, unknown[] | undefined>

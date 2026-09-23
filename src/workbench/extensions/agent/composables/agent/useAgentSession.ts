@@ -27,16 +27,6 @@ import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflo
 import type { WorkflowReference } from '../../types/workflowReference'
 import { serializeWorkflowReferences } from '../../utils/workflowReferenceText'
 
-export interface AgentEventSource {
-  subscribe(listener: (raw: unknown) => void): () => void
-  onStatus?(listener: (live: boolean) => void): () => void
-}
-
-export interface SessionNotice {
-  level: 'error'
-  text: string
-}
-
 interface SentAttachment {
   ref: string
   name: string
@@ -46,6 +36,21 @@ interface SentAttachment {
 interface SentTag {
   id: string
   title: string
+}
+
+type PromptEditState =
+  | { phase: 'idle' }
+  | { phase: 'stopping'; turnId: TurnId }
+  | { phase: 'ready'; turnId: TurnId }
+
+export interface AgentEventSource {
+  subscribe(listener: (raw: unknown) => void): () => void
+  onStatus?(listener: (live: boolean) => void): () => void
+}
+
+export interface SessionNotice {
+  level: 'error'
+  text: string
 }
 
 export interface WorkflowTurnContext {
@@ -60,11 +65,6 @@ export interface WorkflowTurnContext {
  * which workflow owns the turn.
  */
 export type TurnOrigin = { tabPath: string } | null
-
-type PromptEditState =
-  | { phase: 'idle' }
-  | { phase: 'stopping'; turnId: TurnId }
-  | { phase: 'ready'; turnId: TurnId }
 
 export interface AgentSessionDeps {
   rest: AgentRestClient

@@ -16,6 +16,18 @@ import { toError } from '@/utils/errorUtil'
  */
 export const REPORTED_ERROR_PREFIX = '[Reported error]: '
 
+interface DeliveryState {
+  sentry: boolean
+  datadog: boolean
+  desktop: boolean
+}
+
+interface PendingReport {
+  error: Error
+  options: ReportErrorOptions
+  delivered: DeliveryState
+}
+
 export interface ReportErrorOptions {
   /**
    * Stable machine-readable slug for this failure mode. Lands as the
@@ -31,18 +43,6 @@ export interface ReportErrorOptions {
    * `assert()`, which logs before any reporter is registered.
    */
   logToConsole?: boolean
-}
-
-interface DeliveryState {
-  sentry: boolean
-  datadog: boolean
-  desktop: boolean
-}
-
-interface PendingReport {
-  error: Error
-  options: ReportErrorOptions
-  delivered: DeliveryState
 }
 
 const NO_DELIVERY: DeliveryState = {
@@ -229,6 +229,16 @@ function hasLiveSink(): boolean {
   }
 }
 
+function logReport(
+  cause: unknown,
+  options: ReportErrorOptions,
+  suffix = ''
+): void {
+  if (options.logToConsole === false) return
+  const log = options.level === 'warning' ? console.warn : console.error
+  log(`${REPORTED_ERROR_PREFIX}${options.errorType}${suffix}`, cause)
+}
+
 /**
  * Drains reports buffered before a sink came up. Safe to call repeatedly;
  * a no-op while every sink is still inert.
@@ -254,16 +264,6 @@ export function flushErrorReports(): void {
       console.error('[reportError] failed to flush', reporterFailure, error)
     }
   }
-}
-
-function logReport(
-  cause: unknown,
-  options: ReportErrorOptions,
-  suffix = ''
-): void {
-  if (options.logToConsole === false) return
-  const log = options.level === 'warning' ? console.warn : console.error
-  log(`${REPORTED_ERROR_PREFIX}${options.errorType}${suffix}`, cause)
 }
 
 /**

@@ -41,32 +41,14 @@ interface RgthreeLifecycleCounters {
   sizeComponentReads: number
 }
 
-export interface RgthreeLifecycleCanvas {
-  drawNode(node: LGraphNode, context: CleanExtensionDrawContext): unknown
-}
-
-export interface RgthreeLifecycleHost {
-  events: EventTarget
-  setDirty(foreground: boolean, background: boolean): void
-}
-
 type CanvasPrototype = Pick<RgthreeLifecycleCanvas, 'drawNode'>
+
 type DrawNode = RgthreeLifecycleCanvas['drawNode']
 
 interface DrawNodeWrapperState {
   disposed: boolean
   previous: DrawNode
 }
-
-export class RgthreeLabelFixtureNode extends LGraphNode {}
-
-export interface RgthreeLifecycleInstallation {
-  readonly counters: RgthreeLifecycleCounters
-  readonly identity: typeof RGTHREE_LIFECYCLE_FIXTURE_IDENTITY
-  readonly wrapperDepth: number
-  dispose(): void
-}
-
 interface ActiveInstallation extends RgthreeLifecycleInstallation {
   disposed: boolean
 }
@@ -76,6 +58,24 @@ interface RgthreeLifecycleRegistry {
   wrapperDepths: WeakMap<CanvasPrototype, number>
   wrapperStates: WeakMap<DrawNode, DrawNodeWrapperState>
 }
+
+export interface RgthreeLifecycleCanvas {
+  drawNode(node: LGraphNode, context: CleanExtensionDrawContext): unknown
+}
+
+export interface RgthreeLifecycleHost {
+  events: EventTarget
+  setDirty(foreground: boolean, background: boolean): void
+}
+
+export interface RgthreeLifecycleInstallation {
+  readonly counters: RgthreeLifecycleCounters
+  readonly identity: typeof RGTHREE_LIFECYCLE_FIXTURE_IDENTITY
+  readonly wrapperDepth: number
+  dispose(): void
+}
+
+export class RgthreeLabelFixtureNode extends LGraphNode {}
 
 const registryKey = Symbol.for('comfy.rgthree-lifecycle-compat.registry')
 
@@ -93,12 +93,6 @@ function getRegistry(): RgthreeLifecycleRegistry {
   return registry
 }
 
-export function getRgthreePrototypeWrapperDepth(
-  prototype: CanvasPrototype
-): number {
-  return getRegistry().wrapperDepths.get(prototype) ?? 0
-}
-
 function resolveRgthreeLifecycleDrawNode(drawNode: DrawNode): DrawNode {
   let resolved = drawNode
   let state = getRegistry().wrapperStates.get(resolved)
@@ -107,6 +101,12 @@ function resolveRgthreeLifecycleDrawNode(drawNode: DrawNode): DrawNode {
     state = getRegistry().wrapperStates.get(resolved)
   }
   return resolved
+}
+
+export function getRgthreePrototypeWrapperDepth(
+  prototype: CanvasPrototype
+): number {
+  return getRegistry().wrapperDepths.get(prototype) ?? 0
 }
 
 export function disposeRgthreeLifecycleDrawNodeWrapper(

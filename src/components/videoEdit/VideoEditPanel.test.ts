@@ -54,13 +54,13 @@ const i18n = createI18n({
   }
 })
 
+type PanelProps = ComponentProps<typeof VideoEditPanel>
+
 function stub(testId: string) {
   return defineComponent({
     setup: () => () => h('div', { 'data-testid': testId })
   })
 }
-
-type PanelProps = ComponentProps<typeof VideoEditPanel>
 
 function renderPanel(props: Partial<PanelProps> = {}) {
   return render(VideoEditPanel, {

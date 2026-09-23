@@ -13,55 +13,26 @@ import { widgetId } from '@/types/widgetId'
 
 import { runMintPortsBuffered } from './mintPortWiring'
 
-function isScalarValue(value: WidgetValue): boolean {
-  return (
-    value === null || ['boolean', 'number', 'string'].includes(typeof value)
-  )
-}
-
-export function owningGraph(
-  rootGraph: LGraph,
-  scope: GraphScope
-): LGraph | null {
-  if (rootGraph.id !== scope.rootGraphId) return null
-  return String(scope.owningGraphId) === String(scope.rootGraphId)
-    ? rootGraph
-    : (rootGraph.subgraphs.get(scope.owningGraphId) ?? null)
-}
-
-export type LiveWidgetProjectionResult =
-  | { status: 'skipped' }
-  | { status: 'applied'; resolvedValue: WidgetValue }
-  | { status: 'rolledBack'; resolvedValue: WidgetValue }
-
 interface LiveWidgetProjectionDeps {
   getRootGraph(): LGraph | undefined
   getCanvas(): LGraphCanvas | undefined
   markDirty(): void
 }
 
-export function rebindLiveWidgetState(
-  rootGraph: LGraph | undefined,
-  scope: GraphScope,
-  nodeId: NodeId,
-  name: string
-): void {
-  if (!rootGraph) return
-  const widget = owningGraph(rootGraph, scope)
-    ?.getNodeById(nodeId)
-    ?.widgets?.find((candidate) => candidate.name === name)
-  const state = useWidgetValueStore().getWidget(
-    widgetId(scope.rootGraphId, nodeId, name)
-  )
-  if (
-    widget &&
-    state &&
-    'bindRegisteredState' in widget &&
-    typeof widget.bindRegisteredState === 'function'
-  ) {
-    widget.type = state.type
-    widget.bindRegisteredState(nodeId)
+interface WidgetSnapshot {
+  widget: IBaseWidget
+  value: WidgetValue
+  property?: {
+    name: string
+    existed: boolean
+    value: WidgetValue
   }
+}
+
+function isScalarValue(value: WidgetValue): boolean {
+  return (
+    value === null || ['boolean', 'number', 'string'].includes(typeof value)
+  )
 }
 
 function skipped(): LiveWidgetProjectionResult {
@@ -79,16 +50,6 @@ function setBackingProperty(
   node.properties[property] = value
   if (node.onPropertyChanged?.(property, value, previousValue) === false) {
     node.properties[property] = previousValue
-  }
-}
-
-interface WidgetSnapshot {
-  widget: IBaseWidget
-  value: WidgetValue
-  property?: {
-    name: string
-    existed: boolean
-    value: WidgetValue
   }
 }
 
@@ -178,6 +139,45 @@ function restoreRecordedWidgets(
     }
   }
   return rollbackError
+}
+
+export type LiveWidgetProjectionResult =
+  | { status: 'skipped' }
+  | { status: 'applied'; resolvedValue: WidgetValue }
+  | { status: 'rolledBack'; resolvedValue: WidgetValue }
+
+export function owningGraph(
+  rootGraph: LGraph,
+  scope: GraphScope
+): LGraph | null {
+  if (rootGraph.id !== scope.rootGraphId) return null
+  return String(scope.owningGraphId) === String(scope.rootGraphId)
+    ? rootGraph
+    : (rootGraph.subgraphs.get(scope.owningGraphId) ?? null)
+}
+
+export function rebindLiveWidgetState(
+  rootGraph: LGraph | undefined,
+  scope: GraphScope,
+  nodeId: NodeId,
+  name: string
+): void {
+  if (!rootGraph) return
+  const widget = owningGraph(rootGraph, scope)
+    ?.getNodeById(nodeId)
+    ?.widgets?.find((candidate) => candidate.name === name)
+  const state = useWidgetValueStore().getWidget(
+    widgetId(scope.rootGraphId, nodeId, name)
+  )
+  if (
+    widget &&
+    state &&
+    'bindRegisteredState' in widget &&
+    typeof widget.bindRegisteredState === 'function'
+  ) {
+    widget.type = state.type
+    widget.bindRegisteredState(nodeId)
+  }
 }
 
 export function applyLiveWidgetValue(

@@ -37,6 +37,32 @@ type PricingBadgeSources =
   | { kind: 'api-node'; label: string }
   | { kind: 'subgraph'; apiNodeCount: number; singleLabel: string }
 
+function badgeTextVisible(
+  nodeDef: NodeDefBadgeSources | null,
+  badgeMode: NodeBadgeMode
+): boolean {
+  return !(
+    badgeMode === NodeBadgeMode.None ||
+    (nodeDef?.isCoreNode && badgeMode === NodeBadgeMode.HideBuiltIn)
+  )
+}
+
+function computeCreditsText(pricing: PricingBadgeSources): string {
+  switch (pricing.kind) {
+    case 'none':
+      return ''
+    case 'api-node':
+      return pricing.label
+    case 'subgraph':
+      if (pricing.apiNodeCount > 1) {
+        return t('nodeBadge.partnerNodesCount', {
+          count: pricing.apiNodeCount
+        })
+      }
+      return pricing.apiNodeCount === 1 ? pricing.singleLabel : ''
+  }
+}
+
 /**
  * The domain state a node's badges are computed from. Plain data so
  * {@link computeBadges} stays pure — {@link nodeBadges}' computed
@@ -52,16 +78,6 @@ export interface BadgeSources {
   }
   colors: { fgColor: string; bgColor: string; creditsBgColor: string }
   pricing: PricingBadgeSources
-}
-
-function badgeTextVisible(
-  nodeDef: NodeDefBadgeSources | null,
-  badgeMode: NodeBadgeMode
-): boolean {
-  return !(
-    badgeMode === NodeBadgeMode.None ||
-    (nodeDef?.isCoreNode && badgeMode === NodeBadgeMode.HideBuiltIn)
-  )
 }
 
 /** Projects a node's core and credits badge rows from their sources. */
@@ -100,22 +116,6 @@ export function computeBadges(sources: BadgeSources): BadgeData[] {
     })
   }
   return rows
-}
-
-function computeCreditsText(pricing: PricingBadgeSources): string {
-  switch (pricing.kind) {
-    case 'none':
-      return ''
-    case 'api-node':
-      return pricing.label
-    case 'subgraph':
-      if (pricing.apiNodeCount > 1) {
-        return t('nodeBadge.partnerNodesCount', {
-          count: pricing.apiNodeCount
-        })
-      }
-      return pricing.apiNodeCount === 1 ? pricing.singleLabel : ''
-  }
 }
 
 const CREDITS_BASE_BG_COLOR = '#8D6932'
@@ -240,6 +240,12 @@ function gatherSources(node: LGraphNode): BadgeSources {
 
 const badgeComputeds = new WeakMap<LGraphNode, ComputedRef<BadgeData[]>>()
 
+interface CreditsBadgeEntry {
+  nodeId: NodeId
+  price: string
+  title: string
+}
+
 /**
  * A node's derived badge rows, memoized per node instance and recomputed
  * when a source changes. Entries die with their nodes; there is no
@@ -261,12 +267,6 @@ export function nodeBadges(node: LGraphNode): readonly BadgeData[] {
     badgeComputeds.set(node, rows)
   }
   return rows.value
-}
-
-interface CreditsBadgeEntry {
-  nodeId: NodeId
-  price: string
-  title: string
 }
 
 const creditsComputeds = new WeakMap<LGraph, ComputedRef<CreditsBadgeEntry[]>>()

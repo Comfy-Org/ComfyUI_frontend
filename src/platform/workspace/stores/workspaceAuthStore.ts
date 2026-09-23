@@ -48,16 +48,16 @@ export const UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS = 15_000
 // long-lived session cannot grow the context Map unbounded.
 const ISSUED_TOKEN_CONTEXT_GRACE_MS = 5 * 60 * 1000
 
+// Exhaustive switch and locale-shaped return: an unmapped code and a renamed
+// key are both compile errors here.
+type WorkspaceAuthErrorMessageKey =
+  `workspaceAuth.errors.${keyof (typeof enMessages)['workspaceAuth']['errors']}`
+
 function isSessionErrorCode(
   code: string | undefined
 ): code is SessionErrorCode {
   return code !== undefined && code in SESSION_ERROR_CODES
 }
-
-// Exhaustive switch and locale-shaped return: an unmapped code and a renamed
-// key are both compile errors here.
-type WorkspaceAuthErrorMessageKey =
-  `workspaceAuth.errors.${keyof (typeof enMessages)['workspaceAuth']['errors']}`
 
 function sessionErrorMessageKey(
   code: SessionErrorCode

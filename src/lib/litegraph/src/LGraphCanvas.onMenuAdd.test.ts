@@ -9,13 +9,7 @@ import {
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
 
-class TestNode extends LGraphNode {
-  static override type = 'TestNode'
-
-  constructor(title?: string) {
-    super(title ?? 'TestNode')
-  }
-}
+type MenuEntry = IContextMenuValue<string>
 
 function makeNodeClass(title: string) {
   class N extends TestNode {
@@ -50,7 +44,13 @@ function createCanvas(graph: LGraph): LGraphCanvas {
   return new LGraphCanvas(el, graph, { skip_render: true })
 }
 
-type MenuEntry = IContextMenuValue<string>
+class TestNode extends LGraphNode {
+  static override type = 'TestNode'
+
+  constructor(title?: string) {
+    super(title ?? 'TestNode')
+  }
+}
 
 describe('LGraphCanvas.onMenuAdd category sorting', () => {
   let graph: LGraph

@@ -19,49 +19,6 @@ interface PerformTeamSubscriptionCheckoutOptions {
 }
 
 /**
- * Direct team-plan checkout for the marketing `/cloud/subscribe?tier=team` deep
- * link: subscribes to the per-credit Team plan at the chosen slider stop and
- * sends the user straight to the Stripe payment page.
- *
- * Mirrors `performSubscriptionCheckout` (personal) but routes through the
- * workspace billing endpoint (`POST /api/billing/subscribe`), because the
- * per-credit Team plan lives there and the backend lets any workspace — personal
- * included — subscribe to it. The slug encodes the cadence; the stop id is
- * validated and priced server-side.
- *
- * Caller guards on `isCloud`, owns loading state, and wraps error handling. A
- * `needs_payment_method` response is a full-page redirect to Stripe; the other
- * statuses land back in the app, which polls the billing op to completion.
- */
-export async function performTeamSubscriptionCheckout(
-  teamCreditStopId: string,
-  billingCycle: BillingCycle,
-  options: PerformTeamSubscriptionCheckoutOptions = {}
-): Promise<void> {
-  if (!isCloud) return
-
-  try {
-    await initiateTeamSubscriptionCheckout(
-      teamCreditStopId,
-      billingCycle,
-      options
-    )
-  } catch (error) {
-    useTelemetry()?.trackBillingEvent({
-      operation: 'subscription_checkout',
-      stage: 'failed',
-      outcome: 'failure',
-      tier: 'team',
-      cycle: billingCycle,
-      checkout_type: 'new',
-      payment_intent_source: options.paymentIntentSource,
-      failure_category: categorizeBillingApiError(error)
-    })
-    throw error
-  }
-}
-
-/**
  * The subscribe on whichever rail is on. The SDK settles the operation before
  * it returns, so `subscribed` here means the same thing the legacy `pending`
  * statuses mean once their poller finishes. `unavailable` is the backend gate
@@ -114,4 +71,47 @@ async function initiateTeamSubscriptionCheckout(
   }
 
   globalThis.location.href = '/'
+}
+
+/**
+ * Direct team-plan checkout for the marketing `/cloud/subscribe?tier=team` deep
+ * link: subscribes to the per-credit Team plan at the chosen slider stop and
+ * sends the user straight to the Stripe payment page.
+ *
+ * Mirrors `performSubscriptionCheckout` (personal) but routes through the
+ * workspace billing endpoint (`POST /api/billing/subscribe`), because the
+ * per-credit Team plan lives there and the backend lets any workspace — personal
+ * included — subscribe to it. The slug encodes the cadence; the stop id is
+ * validated and priced server-side.
+ *
+ * Caller guards on `isCloud`, owns loading state, and wraps error handling. A
+ * `needs_payment_method` response is a full-page redirect to Stripe; the other
+ * statuses land back in the app, which polls the billing op to completion.
+ */
+export async function performTeamSubscriptionCheckout(
+  teamCreditStopId: string,
+  billingCycle: BillingCycle,
+  options: PerformTeamSubscriptionCheckoutOptions = {}
+): Promise<void> {
+  if (!isCloud) return
+
+  try {
+    await initiateTeamSubscriptionCheckout(
+      teamCreditStopId,
+      billingCycle,
+      options
+    )
+  } catch (error) {
+    useTelemetry()?.trackBillingEvent({
+      operation: 'subscription_checkout',
+      stage: 'failed',
+      outcome: 'failure',
+      tier: 'team',
+      cycle: billingCycle,
+      checkout_type: 'new',
+      payment_intent_source: options.paymentIntentSource,
+      failure_category: categorizeBillingApiError(error)
+    })
+    throw error
+  }
 }

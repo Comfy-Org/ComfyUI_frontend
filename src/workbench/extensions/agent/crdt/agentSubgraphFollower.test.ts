@@ -68,16 +68,6 @@ const CATALOG: WidgetCatalog = {
   }
 }
 
-function operation(id: string, version: number, payload: GraphOperation): Op {
-  return {
-    op_id: id,
-    actor: 'agent:test',
-    base_version: version,
-    stamp: [version, 'agent:test'],
-    ...payload
-  }
-}
-
 interface FixtureOptions {
   /** Declare a second input `extra` ahead of `value` in the definition. */
   extraInput?: boolean
@@ -103,6 +93,16 @@ interface FixtureOptions {
    * (the "no active graph scope" failure the adapter must survive).
    */
   scope?: { blocked: boolean }
+}
+
+function operation(id: string, version: number, payload: GraphOperation): Op {
+  return {
+    op_id: id,
+    actor: 'agent:test',
+    base_version: version,
+    stamp: [version, 'agent:test'],
+    ...payload
+  }
 }
 
 function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {

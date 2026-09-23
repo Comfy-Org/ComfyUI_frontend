@@ -15,17 +15,6 @@ interface UploadResult {
   url?: string
 }
 
-export interface UseAttachmentOptions {
-  upload: (file: File, signal: AbortSignal) => Promise<UploadResult>
-  uploadTimeoutMs?: number
-  maxBytes?: (file: File) => number
-  onError?: (message: string) => void
-  onUploaded?: () => void
-  stage: (attachment: ComposerAttachment) => void
-  update: (id: string, patch: Partial<ComposerAttachment>) => void
-  remove: (id: string) => void
-}
-
 // A fetch upload reports no transfer progress, so the deadline is sized from a
 // floor throughput instead of being keyed off a stall.
 function uploadDeadlineMs(file: File): number {
@@ -52,6 +41,17 @@ async function withDeadline<T>(
   } finally {
     clearTimeout(timer)
   }
+}
+
+export interface UseAttachmentOptions {
+  upload: (file: File, signal: AbortSignal) => Promise<UploadResult>
+  uploadTimeoutMs?: number
+  maxBytes?: (file: File) => number
+  onError?: (message: string) => void
+  onUploaded?: () => void
+  stage: (attachment: ComposerAttachment) => void
+  update: (id: string, patch: Partial<ComposerAttachment>) => void
+  remove: (id: string) => void
 }
 
 let stagedCount = 0

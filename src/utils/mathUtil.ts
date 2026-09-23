@@ -3,6 +3,9 @@ import { clamp } from 'es-toolkit/math'
 import type { ReadOnlyRect } from '@/lib/litegraph/src/interfaces'
 import type { Bounds } from '@/renderer/core/layout/types'
 
+/** Simple 2D point or size as [x, y] or [width, height] */
+type Vec2 = readonly [number, number]
+
 /** A rectangle's viewport edges: the DOMRect subset, so a DOMRect is directly assignable. */
 export type RectEdges = Pick<DOMRect, 'left' | 'top' | 'right' | 'bottom'>
 
@@ -43,9 +46,6 @@ export function denormalize(
 ): number {
   return min + normalized * (max - min)
 }
-
-/** Simple 2D point or size as [x, y] or [width, height] */
-type Vec2 = readonly [number, number]
 
 /** `value` wrapped into `[0, length)`. Unlike `%`, negatives wrap to the end. */
 export const wrapIndex = (value: number, length: number): number =>

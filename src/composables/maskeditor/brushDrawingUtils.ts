@@ -4,6 +4,8 @@ import { hexToRgb, parseToRgb } from '@/utils/colorUtil'
 import { BrushShape } from '@/extensions/core/maskeditor/types'
 import type { Point } from '@/extensions/core/maskeditor/types'
 
+type MaskColor = { r: number; g: number; b: number }
+
 export type DirtyRect = {
   minX: number
   minY: number
@@ -11,43 +13,13 @@ export type DirtyRect = {
   maxY: number
 }
 
-type MaskColor = { r: number; g: number; b: number }
-
 const brushTextureCache = new QuickLRU<string, HTMLCanvasElement>({
   maxSize: 20
 })
 
-export function resetDirtyRect(): DirtyRect {
-  return { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
-}
-
-export function updateDirtyRect(
-  rect: DirtyRect,
-  x: number,
-  y: number,
-  radius: number
-): DirtyRect {
-  const padding = 2
-  return {
-    minX: Math.min(rect.minX, x - radius - padding),
-    minY: Math.min(rect.minY, y - radius - padding),
-    maxX: Math.max(rect.maxX, x + radius + padding),
-    maxY: Math.max(rect.maxY, y + radius + padding)
-  }
-}
-
 function formatRgba(hex: string, alpha: number): string {
   const { r, g, b } = hexToRgb(hex)
   return `rgba(${r}, ${g}, ${b}, ${alpha})`
-}
-
-export function premultiplyData(data: Uint8ClampedArray): void {
-  for (let i = 0; i < data.length; i += 4) {
-    const a = data[i + 3] / 255
-    data[i] = Math.round(data[i] * a)
-    data[i + 1] = Math.round(data[i + 1] * a)
-    data[i + 2] = Math.round(data[i + 2] * a)
-  }
 }
 
 function drawShapeOnContext(
@@ -152,6 +124,34 @@ function getCachedBrushTexture(
   tempCtx.putImageData(imageData, 0, 0)
   brushTextureCache.set(cacheKey, tempCanvas)
   return tempCanvas
+}
+
+export function resetDirtyRect(): DirtyRect {
+  return { minX: Infinity, minY: Infinity, maxX: -Infinity, maxY: -Infinity }
+}
+
+export function updateDirtyRect(
+  rect: DirtyRect,
+  x: number,
+  y: number,
+  radius: number
+): DirtyRect {
+  const padding = 2
+  return {
+    minX: Math.min(rect.minX, x - radius - padding),
+    minY: Math.min(rect.minY, y - radius - padding),
+    maxX: Math.max(rect.maxX, x + radius + padding),
+    maxY: Math.max(rect.maxY, y + radius + padding)
+  }
+}
+
+export function premultiplyData(data: Uint8ClampedArray): void {
+  for (let i = 0; i < data.length; i += 4) {
+    const a = data[i + 3] / 255
+    data[i] = Math.round(data[i] * a)
+    data[i + 1] = Math.round(data[i + 1] * a)
+    data[i + 2] = Math.round(data[i + 2] * a)
+  }
 }
 
 export function drawRgbShape(

@@ -34,6 +34,13 @@ import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { zeroUuid } from '@/utils/uuid'
 
+interface StubPathMethods {
+  moveTo: Path2D['moveTo']
+  lineTo: Path2D['lineTo']
+  bezierCurveTo: Path2D['bezierCurveTo']
+  quadraticCurveTo: Path2D['quadraticCurveTo']
+}
+
 /** Creates a node shell state with minimal required fields. */
 export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
   return {
@@ -47,33 +54,6 @@ export function createNodeState(overrides: Partial<NodeState> = {}): NodeState {
     type: 'TestNode',
     ...overrides,
     properties: overrides.properties ?? {}
-  }
-}
-
-interface StubPathMethods {
-  moveTo: Path2D['moveTo']
-  lineTo: Path2D['lineTo']
-  bezierCurveTo: Path2D['bezierCurveTo']
-  quadraticCurveTo: Path2D['quadraticCurveTo']
-}
-
-export class StubPath2D implements StubPathMethods {
-  calls: Array<{ method: string; args: unknown[] }> = []
-
-  moveTo(...args: unknown[]): void {
-    this.calls.push({ method: 'moveTo', args })
-  }
-
-  lineTo(...args: unknown[]): void {
-    this.calls.push({ method: 'lineTo', args })
-  }
-
-  bezierCurveTo(...args: unknown[]): void {
-    this.calls.push({ method: 'bezierCurveTo', args })
-  }
-
-  quadraticCurveTo(...args: unknown[]): void {
-    this.calls.push({ method: 'quadraticCurveTo', args })
   }
 }
 
@@ -442,6 +422,7 @@ export function createMockLinks(links: LLink[]): LGraph['links'] {
   }
   return Object.assign(map, record)
 }
+
 export function reloadSerializedGraph(
   serialized: ISerialisedGraph | SerialisableGraph,
   graphFactory: () => LGraph
@@ -454,7 +435,6 @@ export function reloadSerializedGraph(
   reloaded.configure(payload)
   return reloaded
 }
-
 /**
  * Creates a link between two nodes by directly mutating graph state,
  * bypassing the layout store integration in connect().
@@ -497,4 +477,24 @@ export function createTestCanvas(
     height: 600
   })
   return new LGraphCanvas(element, graph, { skip_render: true })
+}
+
+export class StubPath2D implements StubPathMethods {
+  calls: Array<{ method: string; args: unknown[] }> = []
+
+  moveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'moveTo', args })
+  }
+
+  lineTo(...args: unknown[]): void {
+    this.calls.push({ method: 'lineTo', args })
+  }
+
+  bezierCurveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'bezierCurveTo', args })
+  }
+
+  quadraticCurveTo(...args: unknown[]): void {
+    this.calls.push({ method: 'quadraticCurveTo', args })
+  }
 }

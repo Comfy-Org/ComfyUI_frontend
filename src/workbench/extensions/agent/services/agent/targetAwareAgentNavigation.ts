@@ -1,27 +1,3 @@
-export type AgentTargetNavigationErrorCode =
-  | 'missing_target'
-  | 'closed_target'
-  | 'activation_failed'
-  | 'missing_node'
-
-export class AgentTargetNavigationError extends Error {
-  readonly recoverable = true
-
-  constructor(
-    readonly code: AgentTargetNavigationErrorCode,
-    readonly workflowId: string,
-    readonly locatorId?: string
-  ) {
-    super(`Agent navigation failed: ${code}`)
-    this.name = 'AgentTargetNavigationError'
-  }
-}
-
-export interface AgentGraphReference {
-  workflowId: string
-  locatorId: string
-}
-
 interface TargetAwareAgentNavigationDependencies<Tab, Node> {
   tabForWorkflow(workflowId: string): Tab | undefined
   isOpen(tab: Tab): boolean
@@ -29,6 +5,17 @@ interface TargetAwareAgentNavigationDependencies<Tab, Node> {
   activeTab(): Tab | undefined
   resolveIn(tab: Tab, locatorId: string): Node | undefined
   focus(node: Node): void | Promise<void>
+}
+
+export type AgentTargetNavigationErrorCode =
+  | 'missing_target'
+  | 'closed_target'
+  | 'activation_failed'
+  | 'missing_node'
+
+export interface AgentGraphReference {
+  workflowId: string
+  locatorId: string
 }
 
 export function createTargetAwareAgentNavigation<Tab, Node>(
@@ -83,4 +70,17 @@ export function createTargetAwareAgentNavigation<Tab, Node>(
   }
 
   return { navigate }
+}
+
+export class AgentTargetNavigationError extends Error {
+  readonly recoverable = true
+
+  constructor(
+    readonly code: AgentTargetNavigationErrorCode,
+    readonly workflowId: string,
+    readonly locatorId?: string
+  ) {
+    super(`Agent navigation failed: ${code}`)
+    this.name = 'AgentTargetNavigationError'
+  }
 }

@@ -102,27 +102,6 @@ const logger = log.getLogger('LayoutStore')
 
 type ScopedLayoutKey = string & { readonly __brand: 'ScopedLayoutKey' }
 
-/** Yjs surfaces its own keys as raw strings; brand them back on the way in. */
-function toScopedLayoutKey(key: string): ScopedLayoutKey {
-  return key as ScopedLayoutKey
-}
-
-function makeScopedLayoutKey(
-  graphId: UUID,
-  localId: number | string
-): ScopedLayoutKey {
-  return toScopedLayoutKey(graphId + ':' + localId)
-}
-
-/** A UUID never contains `:`, so the first one always ends the graph id. */
-function parseLayoutKey(key: string): { graphId: UUID; localId: string } {
-  const separatorIndex = key.indexOf(':')
-  return {
-    graphId: key.slice(0, separatorIndex),
-    localId: key.slice(separatorIndex + 1)
-  }
-}
-
 interface RerouteData {
   id: RerouteId
   position: Point
@@ -144,6 +123,32 @@ interface SlotOffsetSnapshot {
   byDirection: Record<SlotDirection, Map<SlotIndex, Point>>
 }
 
+type LayoutListenerScope = 'geometry' | 'global' | 'node'
+
+type LayoutListener =
+  | ((change: LayoutChange) => void)
+  | ((graphIds: ReadonlySet<UUID>) => void)
+
+/** Yjs surfaces its own keys as raw strings; brand them back on the way in. */
+function toScopedLayoutKey(key: string): ScopedLayoutKey {
+  return key as ScopedLayoutKey
+}
+
+function makeScopedLayoutKey(
+  graphId: UUID,
+  localId: number | string
+): ScopedLayoutKey {
+  return toScopedLayoutKey(graphId + ':' + localId)
+}
+
+/** A UUID never contains `:`, so the first one always ends the graph id. */
+function parseLayoutKey(key: string): { graphId: UUID; localId: string } {
+  const separatorIndex = key.indexOf(':')
+  return {
+    graphId: key.slice(0, separatorIndex),
+    localId: key.slice(separatorIndex + 1)
+  }
+}
 function isSlotOffsetSnapshotEqual(
   current: SlotOffsetSnapshot,
   next: SlotOffsetSnapshot
@@ -161,11 +166,6 @@ function isSlotOffsetSnapshotEqual(
   }
   return true
 }
-
-type LayoutListenerScope = 'geometry' | 'global' | 'node'
-type LayoutListener =
-  | ((change: LayoutChange) => void)
-  | ((graphIds: ReadonlySet<UUID>) => void)
 
 class LayoutStoreImpl {
   private static readonly REROUTE_DEFAULTS: RerouteData = {

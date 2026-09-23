@@ -24,13 +24,18 @@ const zOutputs = z
   })
   .passthrough()
 
-export type NodeExecutionOutput = z.infer<typeof zOutputs>
-
-export type NodeOutputWith<T extends Record<string, unknown>> =
-  NodeExecutionOutput & T
-
 type NodeId = z.infer<typeof zNodeId>
 
+interface ExecutionWsMessageBase {
+  prompt_id: JobId
+  timestamp: number
+}
+
+type AssetTaskStatus = 'created' | 'running' | 'completed' | 'failed'
+
+export type NodeExecutionOutput = z.infer<typeof zOutputs>
+export type NodeOutputWith<T extends Record<string, unknown>> =
+  NodeExecutionOutput & T
 export type StatusWsMessageStatus = PromptInfo
 export interface StatusWsMessage {
   status?: StatusWsMessageStatus | null
@@ -66,10 +71,6 @@ export interface ExecutedWsMessage extends ExecutingWsMessage {
   display_node: NodeId
   output: NodeExecutionOutput
   merge?: boolean
-}
-interface ExecutionWsMessageBase {
-  prompt_id: JobId
-  timestamp: number
 }
 export type ExecutionStartWsMessage = ExecutionWsMessageBase
 export type ExecutionSuccessWsMessage = ExecutionWsMessageBase
@@ -117,7 +118,6 @@ export interface LogsRawResponse {
   entries: LogEntry[]
 }
 export type FeatureFlagsWsMessage = Record<string, unknown>
-type AssetTaskStatus = 'created' | 'running' | 'completed' | 'failed'
 export interface AssetDownloadWsMessage {
   task_id: string
   asset_name: string

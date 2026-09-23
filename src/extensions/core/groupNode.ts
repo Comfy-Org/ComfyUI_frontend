@@ -30,6 +30,38 @@ import { mergeIfValid } from './widgetInputs'
  */
 const GROUP = Symbol()
 
+type SlotLinks = Partial<Record<number, GroupNodeLink>>
+
+type LinksFromMap = Partial<
+  Record<number, Partial<Record<number, GroupNodeLink[]>>>
+>
+type LinksToMap = Partial<Record<number, SlotLinks>>
+type ExternalFromMap = Partial<
+  Record<number, Partial<Record<number, string | number>>>
+>
+interface GroupNodeConfigEntry {
+  input?: Record<string, { name?: string; visible?: boolean }>
+  output?: Record<number, { name?: string; visible?: boolean }>
+}
+interface GroupNodeData extends Partial<
+  Pick<
+    ISerialisedNode,
+    'type' | 'title' | 'inputs' | 'outputs' | 'widgets_values'
+  >
+> {
+  index?: number
+}
+
+interface GroupNodeDef {
+  input: {
+    required: Record<string, unknown>
+    optional?: Record<string, unknown>
+  }
+  output: unknown[]
+  output_name: string[]
+  output_is_list: boolean[]
+}
+
 /**
  * Stamp the group-node marker onto the registered node type so instances created
  * during load can be detected by {@link GroupNodeHandler.isGroupNode}. This is
@@ -41,6 +73,11 @@ function markGroupNodeType(typeName: string, config: GroupNodeConfig): void {
     | LGraphNodeConstructor
     | undefined
   if (ctor?.nodeData) ctor.nodeData[GROUP] = config
+}
+
+function groupConfigOf(node: LGraphNode): GroupNodeConfig | undefined {
+  const config = node.constructor.nodeData?.[GROUP]
+  return config instanceof GroupNodeConfig ? config : undefined
 }
 
 /**
@@ -55,44 +92,12 @@ export type GroupNodeLink = [
   sourceNodeId: SerializedNodeId,
   type: ISlotType
 ]
-type SlotLinks = Partial<Record<number, GroupNodeLink>>
-type LinksFromMap = Partial<
-  Record<number, Partial<Record<number, GroupNodeLink[]>>>
->
-type LinksToMap = Partial<Record<number, SlotLinks>>
-type ExternalFromMap = Partial<
-  Record<number, Partial<Record<number, string | number>>>
->
-
-interface GroupNodeConfigEntry {
-  input?: Record<string, { name?: string; visible?: boolean }>
-  output?: Record<number, { name?: string; visible?: boolean }>
-}
-
-interface GroupNodeData extends Partial<
-  Pick<
-    ISerialisedNode,
-    'type' | 'title' | 'inputs' | 'outputs' | 'widgets_values'
-  >
-> {
-  index?: number
-}
 
 export interface GroupNodeWorkflowData {
   external?: (number | string)[][]
   links: GroupNodeLink[]
   nodes: GroupNodeData[]
   config?: Record<number, GroupNodeConfigEntry>
-}
-
-interface GroupNodeDef {
-  input: {
-    required: Record<string, unknown>
-    optional?: Record<string, unknown>
-  }
-  output: unknown[]
-  output_name: string[]
-  output_is_list: boolean[]
 }
 
 export class GroupNodeConfig {
@@ -952,11 +957,6 @@ export class GroupNodeHandler {
   static isGroupNode(node: LGraphNode) {
     return groupConfigOf(node) !== undefined
   }
-}
-
-function groupConfigOf(node: LGraphNode): GroupNodeConfig | undefined {
-  const config = node.constructor.nodeData?.[GROUP]
-  return config instanceof GroupNodeConfig ? config : undefined
 }
 
 export const replaceLegacySeparators = (nodes: ComfyNode[]): void => {

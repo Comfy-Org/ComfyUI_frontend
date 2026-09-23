@@ -22,6 +22,13 @@ interface ComposerDraft extends PromptSnapshot {
   attachments: ComposerAttachment[]
 }
 
+interface SubmittedDraft {
+  attachments: ComposerAttachment[]
+  nodes: SelectedNode[]
+  target: ComfyWorkflow
+  prompt: ComposerPrompt
+}
+
 /**
  * `insertComposerReference` (composerPrompt.ts) pads an empty `text` with a
  * literal space on first insert. Once the last reference is removed, that
@@ -33,13 +40,6 @@ function resetTextWhenReferencesCleared(
   references: ComposerReference[]
 ): string {
   return references.length === 0 && text.trim() === '' ? '' : text
-}
-
-interface SubmittedDraft {
-  attachments: ComposerAttachment[]
-  nodes: SelectedNode[]
-  target: ComfyWorkflow
-  prompt: ComposerPrompt
 }
 
 export const useAgentComposerStore = defineStore('agentComposer', () => {

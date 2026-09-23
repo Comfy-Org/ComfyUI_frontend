@@ -75,6 +75,50 @@ export interface MintPortWiring {
 const activeWirings = new Set<MintPortWiring>()
 const bufferedEnqueues: Array<Array<() => void>> = []
 
+/**
+ * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
+ * own `widgets_values_named` minus non-value widgets (FE-1904: the doc host's
+ * sidecar projection accepts only the pinned catalog's `widget_order` names;
+ * control widgets like a `button` serialize a named entry but are not in
+ * `widget_order`, and any extra key is an opaque server-side 500).
+ *
+ * A frontend-only class (`isVirtualNode`: Note, MarkdownNote, PrimitiveNode,
+ * Get/Set nodes from node packs, subgraph blueprint hosts) has no catalog
+ * entry. The applier rejects a name-keyed record for such a class
+ * (`uncatalogued_widget_write`) but stores a positional array opaquely, so
+ * those keep the positional form `serialize()` already produced.
+ */
+function serializeForMint(node: LGraphNode): WorkflowNode | null {
+  let serialized: Record<string, unknown>
+  try {
+    serialized = node.serialize() as unknown as Record<string, unknown>
+  } catch {
+    return null
+  }
+  delete serialized.__incarnation
+  const named = serialized.widgets_values_named
+  if (named != null && typeof named === 'object') {
+    if (!node.isVirtualNode)
+      serialized.widgets_values = valueWidgetsOnly(node, named)
+    delete serialized.widgets_values_named
+  }
+  return serialized as unknown as WorkflowNode
+}
+
+function valueWidgetsOnly(
+  node: LGraphNode,
+  named: object
+): Record<string, unknown> {
+  const filtered: Record<string, unknown> = {}
+  for (const [name, value] of Object.entries(named)) {
+    const widget = node.widgets?.find((candidate) => candidate.name === name)
+    if (widget && widget.type !== 'button' && widget.serialize !== false) {
+      filtered[name] = value
+    }
+  }
+  return filtered
+}
+
 export function runMintPortsBuffered<T>(fn: () => T): T {
   const pending: Array<() => void> = []
   bufferedEnqueues.push(pending)
@@ -120,50 +164,6 @@ export function runMintPortsIntentionalClear<T>(clear: () => T): T {
       ? clear()
       : wirings[index].runIntentionalClear(() => run(index + 1))
   return run(0)
-}
-
-/**
- * Serialized save-format node. `widgets_values` is NAME-KEYED via the node's
- * own `widgets_values_named` minus non-value widgets (FE-1904: the doc host's
- * sidecar projection accepts only the pinned catalog's `widget_order` names;
- * control widgets like a `button` serialize a named entry but are not in
- * `widget_order`, and any extra key is an opaque server-side 500).
- *
- * A frontend-only class (`isVirtualNode`: Note, MarkdownNote, PrimitiveNode,
- * Get/Set nodes from node packs, subgraph blueprint hosts) has no catalog
- * entry. The applier rejects a name-keyed record for such a class
- * (`uncatalogued_widget_write`) but stores a positional array opaquely, so
- * those keep the positional form `serialize()` already produced.
- */
-function serializeForMint(node: LGraphNode): WorkflowNode | null {
-  let serialized: Record<string, unknown>
-  try {
-    serialized = node.serialize() as unknown as Record<string, unknown>
-  } catch {
-    return null
-  }
-  delete serialized.__incarnation
-  const named = serialized.widgets_values_named
-  if (named != null && typeof named === 'object') {
-    if (!node.isVirtualNode)
-      serialized.widgets_values = valueWidgetsOnly(node, named)
-    delete serialized.widgets_values_named
-  }
-  return serialized as unknown as WorkflowNode
-}
-
-function valueWidgetsOnly(
-  node: LGraphNode,
-  named: object
-): Record<string, unknown> {
-  const filtered: Record<string, unknown> = {}
-  for (const [name, value] of Object.entries(named)) {
-    const widget = node.widgets?.find((candidate) => candidate.name === name)
-    if (widget && widget.type !== 'button' && widget.serialize !== false) {
-      filtered[name] = value
-    }
-  }
-  return filtered
 }
 
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {

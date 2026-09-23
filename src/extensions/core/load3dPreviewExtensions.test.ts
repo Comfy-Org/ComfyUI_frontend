@@ -104,6 +104,11 @@ interface FakeLoad3d {
   currentLoadGeneration: number
 }
 
+interface FakeWidget {
+  name: string
+  value: unknown
+}
+
 function makeLoad3dMock(): FakeLoad3d {
   return {
     whenLoadIdle: vi.fn().mockResolvedValue(undefined),
@@ -118,11 +123,6 @@ function makeLoad3dMock(): FakeLoad3d {
     cameraManager: { perspectiveCamera: { fov: 75 } },
     currentLoadGeneration: 0
   }
-}
-
-interface FakeWidget {
-  name: string
-  value: unknown
 }
 
 function makePreviewNode(

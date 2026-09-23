@@ -11,6 +11,10 @@ type ProgressStates = Readonly<
 >
 type ProgressState = ProgressStates[NodeLocatorId]
 
+function progressValue(state: ProgressState | undefined) {
+  return state?.state === 'running' ? state.value / state.max : undefined
+}
+
 export interface NodeProgressCanvasSync {
   dispose: () => void
   sync: (
@@ -18,10 +22,6 @@ export interface NodeProgressCanvasSync {
     canvas: LGraphCanvas | null,
     graph: LGraph | null
   ) => void
-}
-
-function progressValue(state: ProgressState | undefined) {
-  return state?.state === 'running' ? state.value / state.max : undefined
 }
 
 export function createNodeProgressCanvasSync(

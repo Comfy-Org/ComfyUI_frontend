@@ -92,6 +92,16 @@ interface CustomDialogComponentProps {
   footerClass?: HTMLAttributes['class']
 }
 
+interface UpdateDialogOptions {
+  key: string
+  contentProps?: Partial<DialogInstance['contentProps']>
+  dialogComponentProps?: Partial<DialogComponentProps>
+}
+
+function notifyRemoved(dialog: DialogInstance | undefined) {
+  dialog?.dialogComponentProps.onRemoved?.()
+}
+
 export type DialogComponentProps = Record<string, unknown> &
   CustomDialogComponentProps
 
@@ -129,16 +139,6 @@ export interface ShowDialogOptions<
    * @default 1
    */
   priority?: number
-}
-
-interface UpdateDialogOptions {
-  key: string
-  contentProps?: Partial<DialogInstance['contentProps']>
-  dialogComponentProps?: Partial<DialogComponentProps>
-}
-
-function notifyRemoved(dialog: DialogInstance | undefined) {
-  dialog?.dialogComponentProps.onRemoved?.()
 }
 
 export const useDialogStore = defineStore('dialog', () => {

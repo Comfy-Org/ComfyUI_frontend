@@ -14,13 +14,6 @@ interface AssetRecord {
   user_metadata?: Record<string, unknown>
 }
 
-/**
- * Whether the backend can serve asset preview/thumbnail data.
- */
-export function isAssetPreviewSupported(): boolean {
-  return useFeatureFlags().flags.assetsEnabled
-}
-
 async function fetchAssets(
   params: Record<string, string>
 ): Promise<AssetRecord[]> {
@@ -29,6 +22,22 @@ async function fetchAssets(
   if (!res.ok) return []
   const data = await res.json()
   return data.assets ?? []
+}
+
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result as string)
+    reader.onerror = reject
+    reader.readAsDataURL(blob)
+  })
+}
+
+/**
+ * Whether the backend can serve asset preview/thumbnail data.
+ */
+export function isAssetPreviewSupported(): boolean {
+  return useFeatureFlags().flags.assetsEnabled
 }
 
 export function resolvePreviewUrl(asset: AssetRecord): string {
@@ -90,13 +99,4 @@ export async function persistThumbnail(
   } catch {
     // Non-critical — client still shows the rendered thumbnail
   }
-}
-
-function blobToDataUrl(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result as string)
-    reader.onerror = reject
-    reader.readAsDataURL(blob)
-  })
 }

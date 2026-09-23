@@ -187,24 +187,20 @@ import {
 
 export const ANIM_PREVIEW_WIDGET = '$$comfy_animation_preview'
 
+type Clipspace = {
+  widgets?: Pick<IBaseWidget, 'type' | 'name' | 'value'>[] | null
+  imgs?: HTMLImageElement[] | null
+  original_imgs?: HTMLImageElement[] | null
+  images?: ResultItem[] | null
+  selectedIndex: number
+  img_paste_mode: string
+  paintedIndex: number
+  combinedIndex?: number
+}
+
 function isMeshModelFile(file: File): boolean {
   const name = file.name.toLowerCase()
   return SUPPORTED_MESH_EXTENSIONS.has(name.slice(name.lastIndexOf('.')))
-}
-
-export function sanitizeNodeName(string: string) {
-  const entityMap = {
-    '&': '',
-    '<': '',
-    '>': '',
-    '"': '',
-    "'": '',
-    '`': '',
-    '=': ''
-  }
-  return string.replace(/[&<>"'`=]/g, function fromEntityMap(s) {
-    return entityMap[s as keyof typeof entityMap]
-  })
 }
 
 function syncPromotedComboHostOptions(rootGraph: LGraph): void {
@@ -233,26 +229,6 @@ function syncPromotedComboHostOptions(rootGraph: LGraph): void {
       state.options = { ...sourceWidget.options }
     }
   })
-}
-
-type Clipspace = {
-  widgets?: Pick<IBaseWidget, 'type' | 'name' | 'value'>[] | null
-  imgs?: HTMLImageElement[] | null
-  original_imgs?: HTMLImageElement[] | null
-  images?: ResultItem[] | null
-  selectedIndex: number
-  img_paste_mode: string
-  paintedIndex: number
-  combinedIndex?: number
-}
-
-/**
- * Optional inputs to {@link ComfyApp.queuePrompt}. `intent` is telemetry
- * attribution only and never affects what gets executed.
- */
-export interface QueuePromptOptions {
-  queueNodeIds?: NodeExecutionId[]
-  intent?: WorkflowQueueIntent
 }
 
 function createNodeOutputsMutationView(
@@ -293,6 +269,30 @@ function createNodeOutputsMutationView(
       if (deleted && existed) commit(String(property), undefined)
       return deleted
     }
+  })
+}
+
+/**
+ * Optional inputs to {@link ComfyApp.queuePrompt}. `intent` is telemetry
+ * attribution only and never affects what gets executed.
+ */
+export interface QueuePromptOptions {
+  queueNodeIds?: NodeExecutionId[]
+  intent?: WorkflowQueueIntent
+}
+
+export function sanitizeNodeName(string: string) {
+  const entityMap = {
+    '&': '',
+    '<': '',
+    '>': '',
+    '"': '',
+    "'": '',
+    '`': '',
+    '=': ''
+  }
+  return string.replace(/[&<>"'`=]/g, function fromEntityMap(s) {
+    return entityMap[s as keyof typeof entityMap]
   })
 }
 

@@ -3,17 +3,21 @@ import { TransformControls } from 'three/examples/jsm/controls/TransformControls
 
 import type { DraggingChangeListener } from './types'
 
+type ChangeListener = (
+  transform: CameraHandleTransform,
+  mode: CameraHandleMode
+) => void
+
+function spaceFor(mode: CameraHandleMode): 'world' | 'local' {
+  return mode === 'translate' ? 'world' : 'local'
+}
+
 export type CameraHandleMode = 'translate' | 'rotate'
 
 export interface CameraHandleTransform {
   position: THREE.Vector3Like
   quaternion: { x: number; y: number; z: number; w: number }
 }
-
-type ChangeListener = (
-  transform: CameraHandleTransform,
-  mode: CameraHandleMode
-) => void
 
 export class CameraHandle {
   private readonly proxy: THREE.Object3D
@@ -142,8 +146,4 @@ export class CameraHandle {
       this.mode
     )
   }
-}
-
-function spaceFor(mode: CameraHandleMode): 'world' | 'local' {
-  return mode === 'translate' ? 'world' : 'local'
 }

@@ -50,13 +50,6 @@ vi.mock(import('@/platform/telemetry'))
 
 const PROBE_NODE_TYPE = 'test/insert-workflow-probe'
 
-class InsertWorkflowProbeNode extends LGraphNode {
-  constructor() {
-    super('Insert Workflow Probe')
-    this.addWidget('number', 'value', 0, () => {})
-  }
-}
-
 function serialisedNode(id: number, widgetValue: number): ISerialisedNode {
   return {
     id,
@@ -91,6 +84,13 @@ function stubWorkflow(initialState: SerialisableGraph): ComfyWorkflow {
   return {
     load: vi.fn().mockResolvedValue({ initialState })
   } as unknown as ComfyWorkflow
+}
+
+class InsertWorkflowProbeNode extends LGraphNode {
+  constructor() {
+    super('Insert Workflow Probe')
+    this.addWidget('number', 'value', 0, () => {})
+  }
 }
 
 beforeEach(() => {

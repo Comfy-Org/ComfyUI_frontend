@@ -225,6 +225,19 @@ async function enrichWithJobAssets(
   })
 }
 
+export function getAssetOutputCount(
+  asset: Pick<AssetItem, 'user_metadata'>
+): number {
+  const count = asset.user_metadata?.outputCount
+  return typeof count === 'number' && count > 0 ? count : 1
+}
+
+export function getTotalAssetOutputCount(
+  assets: Pick<AssetItem, 'user_metadata'>[]
+): number {
+  return assets.reduce((sum, asset) => sum + getAssetOutputCount(asset), 0)
+}
+
 export async function resolveOutputAssetItems(
   metadata: OutputAssetMetadata,
   { createdAt, excludeOutputKey }: ResolveOutputAssetItemsOptions = {}

@@ -37,15 +37,15 @@ const zAssetContextSchema = z.object({
   outputCount: z.number().positive().optional() // Only for output context
 })
 
-// Export the inferred types
-export type AssetMeta = z.infer<typeof zMediaAssetDisplayItemSchema>
-export type AssetContext = z.infer<typeof zAssetContextSchema>
-
 // Injection key for MediaAsset provide/inject pattern
 interface MediaAssetProviderValue {
   asset: Ref<AssetMeta | undefined>
   context: Ref<AssetContext>
 }
+// Export the inferred types
+export type AssetMeta = z.infer<typeof zMediaAssetDisplayItemSchema>
+
+export type AssetContext = z.infer<typeof zAssetContextSchema>
 
 export const MediaAssetKey: InjectionKey<MediaAssetProviderValue> =
   Symbol('mediaAsset')

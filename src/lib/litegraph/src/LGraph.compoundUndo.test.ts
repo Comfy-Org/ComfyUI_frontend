@@ -44,6 +44,19 @@ import { createUuidv4 } from '@/utils/uuid'
 
 const NODE_TYPE = 'test/compound-undo'
 
+interface CompoundGraph {
+  graph: LGraph
+  sourceId: NodeId
+  /** The node under test: links in and out, a reroute, widgets, geometry. */
+  middleId: NodeId
+  sinkId: NodeId
+  /** Link Source.out[0] -> Middle.in[0]; the one carrying the reroute. */
+  inboundLinkId: LinkId
+  /** Link Middle.out[0] -> Sink.in[0]. */
+  outboundLinkId: LinkId
+  rerouteId: RerouteId
+}
+
 /** A node with an input, an output and two serialised widgets. */
 class CompoundNode extends LGraphNode {
   static override title = 'CompoundUndoNode'
@@ -56,19 +69,6 @@ class CompoundNode extends LGraphNode {
     this.addWidget('number', 'steps', 20, () => {}, {})
     this.addWidget('text', 'prompt', 'default prompt', () => {}, {})
   }
-}
-
-interface CompoundGraph {
-  graph: LGraph
-  sourceId: NodeId
-  /** The node under test: links in and out, a reroute, widgets, geometry. */
-  middleId: NodeId
-  sinkId: NodeId
-  /** Link Source.out[0] -> Middle.in[0]; the one carrying the reroute. */
-  inboundLinkId: LinkId
-  /** Link Middle.out[0] -> Sink.in[0]. */
-  outboundLinkId: LinkId
-  rerouteId: RerouteId
 }
 
 const MIDDLE_POS: [number, number] = [321, 654]

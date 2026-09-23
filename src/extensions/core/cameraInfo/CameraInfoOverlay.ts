@@ -11,6 +11,23 @@ const SUBJECT_CAMERA_NEAR = 0.1
 const SUBJECT_CAMERA_FAR = 1000
 const ORTHO_FRUSTUM_HALF = 1
 
+function cloneState(state: CameraInfoState): CameraInfoState {
+  return {
+    mode: state.mode,
+    target: { ...state.target },
+    roll: state.roll,
+    fov: state.fov,
+    zoom: state.zoom,
+    cameraType: state.cameraType,
+    orbit: { ...state.orbit },
+    lookAt: { position: { ...state.lookAt.position } },
+    quaternion: {
+      position: { ...state.quaternion.position },
+      quat: { ...state.quaternion.quat }
+    }
+  }
+}
+
 export class CameraInfoOverlay implements SceneOverlay {
   private scene: THREE.Scene | null = null
   private state: CameraInfoState
@@ -188,22 +205,5 @@ export class CameraInfoOverlay implements SceneOverlay {
   private refreshHelperVisibility(): void {
     if (!this.cameraHelper) return
     this.cameraHelper.visible = this.renderCamera !== this.subjectCamera
-  }
-}
-
-function cloneState(state: CameraInfoState): CameraInfoState {
-  return {
-    mode: state.mode,
-    target: { ...state.target },
-    roll: state.roll,
-    fov: state.fov,
-    zoom: state.zoom,
-    cameraType: state.cameraType,
-    orbit: { ...state.orbit },
-    lookAt: { position: { ...state.lookAt.position } },
-    quaternion: {
-      position: { ...state.quaternion.position },
-      quat: { ...state.quaternion.quat }
-    }
   }
 }

@@ -18,6 +18,57 @@ interface TransformSettlingOptions {
 }
 
 /**
+ * Calls `onDrag` on each pointermove while a pointer is held down.
+ */
+function usePointerDrag(
+  target: MaybeRefOrGetter<HTMLElement | null | undefined>,
+  onDrag: () => void,
+  eventOptions: AddEventListenerOptions
+) {
+  /** Number of active pointers (supports multi-touch correctly). */
+  const pointerCount = ref(0)
+
+  useEventListener(
+    target,
+    'pointerdown',
+    (e: PointerEvent) => {
+      // Only primary (0) and middle (1) buttons trigger canvas pan.
+      if (e.button === 0 || isMiddleButtonEvent(e)) pointerCount.value++
+    },
+    eventOptions
+  )
+
+  useEventListener(
+    target,
+    'pointermove',
+    () => {
+      if (pointerCount.value > 0) onDrag()
+    },
+    eventOptions
+  )
+
+  // Listen on window so the release is caught even if the pointer
+  // leaves the canvas before the button is released.
+  useEventListener(
+    window,
+    'pointerup',
+    () => {
+      if (pointerCount.value > 0) pointerCount.value--
+    },
+    eventOptions
+  )
+
+  useEventListener(
+    window,
+    'pointercancel',
+    () => {
+      if (pointerCount.value > 0) pointerCount.value--
+    },
+    eventOptions
+  )
+}
+
+/**
  * Tracks when canvas transforms (zoom or pan) are actively changing vs settled.
  *
  * This composable helps optimize rendering quality during transform interactions.
@@ -69,55 +120,4 @@ export function useTransformSettling(
   return {
     isTransforming
   }
-}
-
-/**
- * Calls `onDrag` on each pointermove while a pointer is held down.
- */
-function usePointerDrag(
-  target: MaybeRefOrGetter<HTMLElement | null | undefined>,
-  onDrag: () => void,
-  eventOptions: AddEventListenerOptions
-) {
-  /** Number of active pointers (supports multi-touch correctly). */
-  const pointerCount = ref(0)
-
-  useEventListener(
-    target,
-    'pointerdown',
-    (e: PointerEvent) => {
-      // Only primary (0) and middle (1) buttons trigger canvas pan.
-      if (e.button === 0 || isMiddleButtonEvent(e)) pointerCount.value++
-    },
-    eventOptions
-  )
-
-  useEventListener(
-    target,
-    'pointermove',
-    () => {
-      if (pointerCount.value > 0) onDrag()
-    },
-    eventOptions
-  )
-
-  // Listen on window so the release is caught even if the pointer
-  // leaves the canvas before the button is released.
-  useEventListener(
-    window,
-    'pointerup',
-    () => {
-      if (pointerCount.value > 0) pointerCount.value--
-    },
-    eventOptions
-  )
-
-  useEventListener(
-    window,
-    'pointercancel',
-    () => {
-      if (pointerCount.value > 0) pointerCount.value--
-    },
-    eventOptions
-  )
 }

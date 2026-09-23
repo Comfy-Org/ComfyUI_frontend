@@ -9,13 +9,6 @@ import { useAuthStore } from '@/stores/authStore'
 import type { components, operations } from '@/types/comfyRegistryTypes'
 import { isAbortError } from '@/utils/typeGuardUtil'
 
-export enum EventType {
-  CREDIT_ADDED = 'credit_added',
-  ACCOUNT_CREATED = 'account_created',
-  API_USAGE_STARTED = 'api_usage_started',
-  API_USAGE_COMPLETED = 'api_usage_completed'
-}
-
 type CustomerEventsResponse =
   operations['GetCustomerEvents']['responses']['200']['content']['application/json']
 
@@ -23,6 +16,13 @@ type CustomerEventsResponseQuery =
   operations['GetCustomerEvents']['parameters']['query']
 
 export type AuditLog = components['schemas']['AuditLog']
+
+export enum EventType {
+  CREDIT_ADDED = 'credit_added',
+  ACCOUNT_CREATED = 'account_created',
+  API_USAGE_STARTED = 'api_usage_started',
+  API_USAGE_COMPLETED = 'api_usage_completed'
+}
 
 const customerApiClient = axios.create({
   baseURL: getComfyApiBaseUrl(),

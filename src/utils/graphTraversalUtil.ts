@@ -23,8 +23,99 @@ import { isSubgraphIoNode } from './typeGuardUtil'
 type RuntimeGraphNode = Omit<LGraphNode, 'isSubgraphNode'> &
   Partial<Pick<LGraphNode, 'isSubgraphNode'>>
 
+/**
+ * Options for traverseNodesDepthFirst function
+ */
+interface TraverseNodesOptions<T> {
+  /** Function called for each node during traversal */
+  visitor?: (node: LGraphNode, context: T) => T
+  /** Initial context value */
+  initialContext?: T
+  /** Whether to traverse into subgraph nodes (default: true) */
+  expandSubgraphs?: boolean
+}
+
+/**
+ * Options for collectFromNodes function
+ */
+interface CollectFromNodesOptions<T, C> {
+  /** Function that returns data to collect for each node */
+  collector?: (node: LGraphNode, context: C) => T | null
+  /** Function that builds context for child nodes */
+  contextBuilder?: (node: LGraphNode, parentContext: C) => C
+  /** Initial context value */
+  initialContext?: C
+  /** Whether to traverse into subgraph nodes (default: true) */
+  expandSubgraphs?: boolean
+}
+
 function isSubgraphNode(node: RuntimeGraphNode): node is SubgraphNode {
   return node.isSubgraphNode?.call(node) ?? false
+}
+
+function parseNodeIdPath(path: string[]): NodeId[] | null {
+  const nodeIds = path.map(parseNodeId)
+  return nodeIds.every((nodeId): nodeId is NodeId => nodeId !== null)
+    ? nodeIds
+    : null
+}
+
+function createExecutionIdFromPath(
+  parentPath: string,
+  nodeId: NodeId
+): NodeExecutionId | null {
+  const parentNodeIds = parseNodeIdPath(parentPath.split(':'))
+  if (!parentNodeIds) return null
+
+  return createNodeExecutionId([...parentNodeIds, nodeId])
+}
+
+function mapUnvisitedNodes<T>(
+  graph: LGraph | Subgraph,
+  mapFn: (node: LGraphNode) => T | undefined,
+  visited: Set<string>
+): T[] {
+  const results: T[] = []
+
+  visitGraphNodes(graph, (node) => {
+    if (isSubgraphNode(node)) {
+      const subgraphId = node.subgraph.id
+      if (!visited.has(subgraphId)) {
+        visited.add(subgraphId)
+        results.push(...mapUnvisitedNodes(node.subgraph, mapFn, visited))
+      }
+    }
+
+    const result = mapFn(node)
+    if (result !== undefined) {
+      results.push(result)
+    }
+  })
+
+  return results
+}
+
+function getCandidateActivityExecutionId(candidate: {
+  nodeId?: string | number | null | undefined
+  sourceExecutionId?: string | number | null | undefined
+}): string | null {
+  const executionId = candidate.sourceExecutionId ?? candidate.nodeId
+  return executionId == null ? null : String(executionId)
+}
+
+function findPartialExecutionPathToGraph(
+  target: LGraph,
+  root: LGraph
+): string | undefined {
+  for (const node of root.nodes) {
+    if (!node.isSubgraphNode()) continue
+
+    if (node.subgraph === target) return node.id
+
+    const subpath = findPartialExecutionPathToGraph(target, node.subgraph)
+    if (subpath !== undefined) return node.id + ':' + subpath
+  }
+  return undefined
 }
 
 /**
@@ -45,23 +136,6 @@ export function locatorIdFromState(
   rootGraphId: UUID | undefined
 ): NodeLocatorId | null {
   return createNodeLocatorId(subgraphIdFromState(state, rootGraphId), state.id)
-}
-
-function parseNodeIdPath(path: string[]): NodeId[] | null {
-  const nodeIds = path.map(parseNodeId)
-  return nodeIds.every((nodeId): nodeId is NodeId => nodeId !== null)
-    ? nodeIds
-    : null
-}
-
-function createExecutionIdFromPath(
-  parentPath: string,
-  nodeId: NodeId
-): NodeExecutionId | null {
-  const parentNodeIds = parseNodeIdPath(parentPath.split(':'))
-  if (!parentNodeIds) return null
-
-  return createNodeExecutionId([...parentNodeIds, nodeId])
 }
 
 /**
@@ -202,31 +276,6 @@ export function mapUniqueNodes<T>(
   mapFn: (node: LGraphNode) => T | undefined
 ): T[] {
   return mapUnvisitedNodes(graph, mapFn, new Set([graph.id]))
-}
-
-function mapUnvisitedNodes<T>(
-  graph: LGraph | Subgraph,
-  mapFn: (node: LGraphNode) => T | undefined,
-  visited: Set<string>
-): T[] {
-  const results: T[] = []
-
-  visitGraphNodes(graph, (node) => {
-    if (isSubgraphNode(node)) {
-      const subgraphId = node.subgraph.id
-      if (!visited.has(subgraphId)) {
-        visited.add(subgraphId)
-        results.push(...mapUnvisitedNodes(node.subgraph, mapFn, visited))
-      }
-    }
-
-    const result = mapFn(node)
-    if (result !== undefined) {
-      results.push(result)
-    }
-  })
-
-  return results
 }
 
 /**
@@ -524,14 +573,6 @@ export function isExecutionPathActive(
   return isAncestorPathActive(rootGraph, executionId)
 }
 
-function getCandidateActivityExecutionId(candidate: {
-  nodeId?: string | number | null | undefined
-  sourceExecutionId?: string | number | null | undefined
-}): string | null {
-  const executionId = candidate.sourceExecutionId ?? candidate.nodeId
-  return executionId == null ? null : String(executionId)
-}
-
 export function isCandidateScopeActive(
   rootGraph: LGraph | null | undefined,
   candidate: {
@@ -761,18 +802,6 @@ export function getAllNonIoNodesInSubgraph(subgraph: Subgraph): LGraphNode[] {
 }
 
 /**
- * Options for traverseNodesDepthFirst function
- */
-interface TraverseNodesOptions<T> {
-  /** Function called for each node during traversal */
-  visitor?: (node: LGraphNode, context: T) => T
-  /** Initial context value */
-  initialContext?: T
-  /** Whether to traverse into subgraph nodes (default: true) */
-  expandSubgraphs?: boolean
-}
-
-/**
  * Performs depth-first traversal of nodes and their subgraphs.
  * Generic visitor pattern that can be used for various node processing tasks.
  *
@@ -835,20 +864,6 @@ export function reduceAllNodes<T>(
     result = reducer(result, node)
   })
   return result
-}
-
-/**
- * Options for collectFromNodes function
- */
-interface CollectFromNodesOptions<T, C> {
-  /** Function that returns data to collect for each node */
-  collector?: (node: LGraphNode, context: C) => T | null
-  /** Function that builds context for child nodes */
-  contextBuilder?: (node: LGraphNode, parentContext: C) => C
-  /** Initial context value */
-  initialContext?: C
-  /** Whether to traverse into subgraph nodes (default: true) */
-  expandSubgraphs?: boolean
 }
 
 /**
@@ -942,21 +957,6 @@ export function getActiveGraphNodeIds(
     }
   }
   return ids
-}
-
-function findPartialExecutionPathToGraph(
-  target: LGraph,
-  root: LGraph
-): string | undefined {
-  for (const node of root.nodes) {
-    if (!node.isSubgraphNode()) continue
-
-    if (node.subgraph === target) return node.id
-
-    const subpath = findPartialExecutionPathToGraph(target, node.subgraph)
-    if (subpath !== undefined) return node.id + ':' + subpath
-  }
-  return undefined
 }
 
 export function resolveInputSourceNode(

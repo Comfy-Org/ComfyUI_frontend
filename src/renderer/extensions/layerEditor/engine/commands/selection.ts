@@ -4,6 +4,12 @@ import { Dirty } from '../history'
 import type { Command, Direction } from '../history'
 import type { ChannelData } from '../node'
 
+function applySelectionSnapshot(doc: Document, s: SelectionSnapshot): void {
+  doc.channels = doc.channels.filter((ch) => ch.role !== 'selection')
+  if (s.channel) doc.channels.push({ ...s.channel })
+  doc.selectionId = s.channel ? s.selectionId : undefined
+}
+
 export interface SelectionSnapshot {
   channel: ChannelData | null
   selectionId: string | undefined
@@ -20,12 +26,6 @@ export function snapshotSelection(doc: Document): SelectionSnapshot {
       : null,
     selectionId: channel ? channel.id : undefined
   }
-}
-
-function applySelectionSnapshot(doc: Document, s: SelectionSnapshot): void {
-  doc.channels = doc.channels.filter((ch) => ch.role !== 'selection')
-  if (s.channel) doc.channels.push({ ...s.channel })
-  doc.selectionId = s.channel ? s.selectionId : undefined
 }
 
 export class SetSelectionCommand implements Command {

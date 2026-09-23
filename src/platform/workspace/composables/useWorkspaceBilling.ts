@@ -124,6 +124,11 @@ async function resyncQuietly(refresh: () => Promise<unknown>): Promise<void> {
 /** The SDK rail refusing an action, distinct from any value it could return. */
 const DECLINED = Symbol('subscription rail declined')
 
+interface SeatCapacity {
+  maxSeats: number
+  occupiedSeats: number
+}
+
 function previewSubscribeInputFrom(
   planSlug: string,
   options: PreviewSubscribeOptions = {}
@@ -137,11 +142,6 @@ function previewSubscribeInputFrom(
       ? {}
       : { teamCreditStopId: options.teamCreditStopId })
   }
-}
-
-interface SeatCapacity {
-  maxSeats: number
-  occupiedSeats: number
 }
 
 function seatCapacityFrom(status: BillingStatusResponse): SeatCapacity | null {

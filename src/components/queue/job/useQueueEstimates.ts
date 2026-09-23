@@ -8,6 +8,8 @@ import type { JobState } from '@/types/queue'
 type QueueStore = ReturnType<typeof useQueueStore>
 type ExecutionStore = ReturnType<typeof useExecutionStore>
 
+type EstimateRange = [number, number]
+
 export type UseQueueEstimatesOptions = {
   queueStore: QueueStore
   executionStore: ExecutionStore
@@ -17,8 +19,6 @@ export type UseQueueEstimatesOptions = {
   jobsAhead: ComputedRef<number | null>
   nowTs: Ref<number>
 }
-
-type EstimateRange = [number, number]
 
 export const formatElapsedTime = (ms: number): string => {
   const totalSec = Math.max(0, Math.floor(ms / 1000))

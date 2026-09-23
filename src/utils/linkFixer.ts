@@ -38,6 +38,11 @@ import type {
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
 
+enum IoDirection {
+  INPUT,
+  OUTPUT
+}
+
 type FixableSerialisedGraph = Omit<ISerialisedGraph, 'links'> & {
   links: (SerialisedLLinkArray | null)[]
 }
@@ -48,11 +53,6 @@ interface BadLinksData<T = FixableSerialisedGraph | LGraph> {
   graph: T
   patched: number
   deleted: number
-}
-
-enum IoDirection {
-  INPUT,
-  OUTPUT
 }
 
 function isLiveGraph(graph: FixableSerialisedGraph | LGraph): graph is LGraph {

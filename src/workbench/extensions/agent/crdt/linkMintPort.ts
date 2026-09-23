@@ -13,6 +13,27 @@ import type { GraphOperation } from './graphOperations'
 import { shouldMint } from './mintGate'
 import type { MintSession } from './mintSession'
 
+interface LinkEventFeed {
+  /** Fires after a successful `registerLink` or `replaceLink`. */
+  onPlaced(
+    listener: (scope: LinkScopeView, topology: LinkTopologyView) => void
+  ): () => void
+  /** Fires after `deleteLink` removes a registered topology. */
+  onDeleted(
+    listener: (scope: LinkScopeView, topology: LinkTopologyView) => void
+  ): () => void
+}
+
+interface SeveranceEntry {
+  linkId: WireNodeId
+  /** The gate was open at severance: unconsumed means a real divergence. */
+  mintable: boolean
+}
+
+function isRootScope(scope: LinkScopeView): boolean {
+  return scope.owningGraphId === scope.rootGraphId
+}
+
 /** The structural slice of the store's GraphScope this port reads. */
 export interface LinkScopeView {
   rootGraphId: string
@@ -31,17 +52,6 @@ export interface LinkTopologyView {
   targetNodeId: string | number
   targetSlot: number
   type: string | number
-}
-
-interface LinkEventFeed {
-  /** Fires after a successful `registerLink` or `replaceLink`. */
-  onPlaced(
-    listener: (scope: LinkScopeView, topology: LinkTopologyView) => void
-  ): () => void
-  /** Fires after `deleteLink` removes a registered topology. */
-  onDeleted(
-    listener: (scope: LinkScopeView, topology: LinkTopologyView) => void
-  ): () => void
 }
 
 /**
@@ -70,16 +80,6 @@ export interface LinkMintPortDeps {
 export interface LinkMintPort {
   severances: SeveranceLog
   detach(): void
-}
-
-interface SeveranceEntry {
-  linkId: WireNodeId
-  /** The gate was open at severance: unconsumed means a real divergence. */
-  mintable: boolean
-}
-
-function isRootScope(scope: LinkScopeView): boolean {
-  return scope.owningGraphId === scope.rootGraphId
 }
 
 export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {

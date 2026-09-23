@@ -12,6 +12,18 @@ export type SelectableKey = `${SelectableKind}:${string}` & {
   readonly __brand: 'SelectableKey'
 }
 
+export type SelectionCommand =
+  | {
+      readonly type: 'selection.replace'
+      readonly keys: readonly SelectableKey[]
+    }
+  | { readonly type: 'selection.add'; readonly key: SelectableKey }
+  | {
+      readonly type: 'selection.remove'
+      readonly key: SelectableKey
+    }
+  | { readonly type: 'selection.clear' }
+
 export function toSelectableKey(
   ...[kind, id]:
     | [kind: 'node' | 'io', id: NodeId]
@@ -28,15 +40,3 @@ export function parseSelectableKey(key: SelectableKey): {
   const [kind, id] = key.split(/:(.*)/s, 2)
   return { kind: selectableKindSchema.parse(kind), id }
 }
-
-export type SelectionCommand =
-  | {
-      readonly type: 'selection.replace'
-      readonly keys: readonly SelectableKey[]
-    }
-  | { readonly type: 'selection.add'; readonly key: SelectableKey }
-  | {
-      readonly type: 'selection.remove'
-      readonly key: SelectableKey
-    }
-  | { readonly type: 'selection.clear' }

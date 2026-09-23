@@ -165,6 +165,21 @@ interface FakeWidget {
   serializeValue?: () => Promise<unknown>
 }
 
+interface FakeLoad3d {
+  whenLoadIdle: () => Promise<void>
+  setCameraFromMatrices: ReturnType<typeof vi.fn>
+  setBackgroundImage: ReturnType<typeof vi.fn>
+  setCameraState: ReturnType<typeof vi.fn>
+  getCameraState: ReturnType<typeof vi.fn>
+  getCurrentCameraType: ReturnType<typeof vi.fn>
+  getModelInfo: ReturnType<typeof vi.fn>
+  applyModelTransform: ReturnType<typeof vi.fn>
+  isSplatModel: ReturnType<typeof vi.fn>
+  forceRender: ReturnType<typeof vi.fn>
+  cameraManager: { perspectiveCamera: { fov: number } }
+  currentLoadGeneration: number
+}
+
 function makePreview3DNode(
   overrides: Partial<{
     comfyClass: string
@@ -217,21 +232,6 @@ function makeLoad3DNode(
     ],
     properties: overrides.properties ?? {}
   } as unknown as LGraphNode
-}
-
-interface FakeLoad3d {
-  whenLoadIdle: () => Promise<void>
-  setCameraFromMatrices: ReturnType<typeof vi.fn>
-  setBackgroundImage: ReturnType<typeof vi.fn>
-  setCameraState: ReturnType<typeof vi.fn>
-  getCameraState: ReturnType<typeof vi.fn>
-  getCurrentCameraType: ReturnType<typeof vi.fn>
-  getModelInfo: ReturnType<typeof vi.fn>
-  applyModelTransform: ReturnType<typeof vi.fn>
-  isSplatModel: ReturnType<typeof vi.fn>
-  forceRender: ReturnType<typeof vi.fn>
-  cameraManager: { perspectiveCamera: { fov: number } }
-  currentLoadGeneration: number
 }
 
 function makeLoad3dMock(): FakeLoad3d {

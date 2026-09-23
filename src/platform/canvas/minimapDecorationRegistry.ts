@@ -13,6 +13,11 @@ interface MinimapNodeDecoration {
   readonly enter?: 'pop'
 }
 
+interface RegisteredLayer {
+  readonly rows: Map<string, ResolvedMinimapNodeDecoration>
+  disposed: boolean
+}
+
 export interface MinimapDecorationLayer {
   replace(rows: readonly MinimapNodeDecoration[]): void
   dispose(): void
@@ -20,11 +25,6 @@ export interface MinimapDecorationLayer {
 
 export interface ResolvedMinimapNodeDecoration extends MinimapNodeDecoration {
   readonly enteredAt?: number
-}
-
-interface RegisteredLayer {
-  readonly rows: Map<string, ResolvedMinimapNodeDecoration>
-  disposed: boolean
 }
 
 const layers = new Map<string, RegisteredLayer>()

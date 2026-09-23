@@ -48,6 +48,29 @@ const CATALOG: WidgetCatalog = {
   }
 }
 
+function widgetsOf(node: LGraphNode) {
+  assert(node.widgets, 'test node registers widgets', { title: node.title })
+  return node.widgets
+}
+
+function promptOf(node: LGraphNode) {
+  const prompt = widgetsOf(node).find((w) => w.name === 'prompt')
+  assert(prompt, 'test node registers a prompt widget')
+  return prompt
+}
+
+/** What `showTextPreview` appends during a generation; nothing removes it. */
+function addProgressText(node: LGraphNode) {
+  node.addCustomWidget({
+    name: '$$node-text-preview',
+    type: 'progressText',
+    value: RUNNING_STATUS,
+    options: {},
+    serialize: false,
+    y: 0
+  })
+}
+
 /** The widget set a live Flux2ImageNode registers, in litegraph order. */
 class TestFlux2Image extends LGraphNode {
   static override title = 'Flux.2 Image'
@@ -73,29 +96,6 @@ class TestFlux2Image extends LGraphNode {
     this.addOutput('IMAGE', 'IMAGE')
     this.serialize_widgets = true
   }
-}
-
-function widgetsOf(node: LGraphNode) {
-  assert(node.widgets, 'test node registers widgets', { title: node.title })
-  return node.widgets
-}
-
-function promptOf(node: LGraphNode) {
-  const prompt = widgetsOf(node).find((w) => w.name === 'prompt')
-  assert(prompt, 'test node registers a prompt widget')
-  return prompt
-}
-
-/** What `showTextPreview` appends during a generation; nothing removes it. */
-function addProgressText(node: LGraphNode) {
-  node.addCustomWidget({
-    name: '$$node-text-preview',
-    type: 'progressText',
-    value: RUNNING_STATUS,
-    options: {},
-    serialize: false,
-    y: 0
-  })
 }
 
 const layout = { createNode: vi.fn(), deleteNodes: vi.fn() }

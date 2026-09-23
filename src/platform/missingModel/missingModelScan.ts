@@ -34,23 +34,35 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import { resolveComboValues } from '@/utils/litegraphUtil'
 import { getParentExecutionIds } from '@/types/nodeIdentification'
 
-export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
-  models?: ModelFile[]
-}
-
 type DeferredVerification = (
   signal?: AbortSignal
 ) => Promise<boolean | undefined>
+
+export type MissingModelWorkflowData = FlattenableWorkflowGraph & {
+  models?: ModelFile[]
+}
 
 const pendingVerifications = new WeakMap<
   MissingModelCandidate,
   DeferredVerification
 >()
 
-export function hasPendingVerification(
-  candidate: MissingModelCandidate
-): boolean {
-  return pendingVerifications.has(candidate)
+interface ModelWidgetScanTarget {
+  executionId: NodeExecutionId
+  nodeType: string
+  candidateWidgetName: string
+  definitionWidgetName: string
+  sourceExecutionId?: NodeExecutionId
+  promotedSources?: PromotedWidgetExecutionSource[]
+  valueWidget: IBaseWidget
+  definitionWidget: IBaseWidget
+  embeddedModels?: ModelFile[]
+}
+
+type NodeWithEmbeddedModels = {
+  properties?: {
+    models?: ModelFile[]
+  }
 }
 
 function copyCandidate(
@@ -107,22 +119,10 @@ function isInactiveMode(mode: number | undefined): boolean {
   return mode === LGraphEventMode.NEVER || mode === LGraphEventMode.BYPASS
 }
 
-interface ModelWidgetScanTarget {
-  executionId: NodeExecutionId
-  nodeType: string
-  candidateWidgetName: string
-  definitionWidgetName: string
-  sourceExecutionId?: NodeExecutionId
-  promotedSources?: PromotedWidgetExecutionSource[]
-  valueWidget: IBaseWidget
-  definitionWidget: IBaseWidget
-  embeddedModels?: ModelFile[]
-}
-
-type NodeWithEmbeddedModels = {
-  properties?: {
-    models?: ModelFile[]
-  }
+export function hasPendingVerification(
+  candidate: MissingModelCandidate
+): boolean {
+  return pendingVerifications.has(candidate)
 }
 
 // Full set of model file extensions used for scanning candidate widgets.
@@ -139,88 +139,9 @@ export const MODEL_FILE_EXTENSIONS = new Set([
   '.gguf'
 ])
 
-export function isModelFileName(name: string): boolean {
-  const lower = name.toLowerCase()
-  return Array.from(MODEL_FILE_EXTENSIONS).some((ext) => lower.endsWith(ext))
-}
-
-/**
- * Scan COMBO and asset widgets on configured graph nodes for model-like values.
- * Must be called after `graph.configure()` so widget name/value mappings are accurate.
- *
- * `isMissing` resolves immediately from static combo options and stays
- * `undefined` for asset-supported nodes and loading remote combos.
- */
-export function scanAllModelCandidates(
-  rootGraph: LGraph,
-  isAssetSupported: (nodeType: string, widgetName: string) => boolean,
-  getDirectory?: (nodeType: string) => string | undefined
-): MissingModelCandidate[] {
-  const allNodes = collectAllNodes(rootGraph)
-  const candidates: MissingModelCandidate[] = []
-
-  for (const node of allNodes) {
-    if (isInactiveMode(node.mode)) continue
-
-    candidates.push(
-      ...scanNodeModelCandidates(
-        rootGraph,
-        node,
-        isAssetSupported,
-        getDirectory
-      )
-    )
-  }
-
-  return candidates
-}
-
-/** Scan a single node's widgets for missing model candidates (OSS immediate resolution). */
-export function scanNodeModelCandidates(
-  rootGraph: LGraph,
-  node: LGraphNode,
-  isAssetSupported: (nodeType: string, widgetName: string) => boolean,
-  getDirectory?: (nodeType: string) => string | undefined
-): MissingModelCandidate[] {
-  const isSubgraphNode =
-    typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
-  const widgets = isSubgraphNode
-    ? promotedInputWidgets(node)
-    : (node.widgets ?? [])
-  if (!widgets.length) return []
-
-  const executionId = getExecutionIdByNode(rootGraph, node)
-  if (!executionId) return []
-
-  const candidates: MissingModelCandidate[] = []
-
-  for (const widget of widgets) {
-    const target = getModelWidgetScanTarget(
-      rootGraph,
-      node,
-      widget,
-      executionId
-    )
-    if (!target) continue
-
-    let candidate: MissingModelCandidate | null = null
-
-    if (isAssetScanTarget(target)) {
-      candidate = scanAssetWidget(target, getDirectory)
-    } else if (isComboScanTarget(target)) {
-      candidate = scanComboWidget(target, isAssetSupported, getDirectory)
-    }
-
-    if (!candidate) continue
-    if (target.promotedSources) {
-      candidate.promotedSources = target.promotedSources
-    }
-    candidates.push(
-      enrichCandidateFromNodeProperties(candidate, target.embeddedModels)
-    )
-  }
-
-  return candidates
+interface AssetVerifier {
+  updateModelsForNodeType: (nodeType: string) => Promise<void>
+  getAssets: (nodeType: string) => AssetItem[] | undefined
 }
 
 function getModelWidgetScanTarget(
@@ -384,6 +305,148 @@ async function untilSettledOrAborted(
   }
 }
 
+function collectEmbeddedModels(
+  allNodes: ReturnType<typeof flattenWorkflowNodes>,
+  graphData: MissingModelWorkflowData
+): ModelFile[] {
+  const result: ModelFile[] = []
+  const nodesById = new Map(allNodes.map((node) => [String(node.id), node]))
+
+  for (const node of allNodes) {
+    if (!isNodeAndAncestorsActive(node, nodesById)) continue
+
+    const selected = getSelectedModelsMetadata(node)
+    if (!selected?.length) continue
+
+    result.push(...selected)
+  }
+
+  if (graphData.models?.length) result.push(...graphData.models)
+
+  return result
+}
+
+function isNodeAndAncestorsActive(
+  node: ReturnType<typeof flattenWorkflowNodes>[number],
+  nodesById: ReadonlyMap<
+    string,
+    ReturnType<typeof flattenWorkflowNodes>[number]
+  >
+): boolean {
+  if (isInactiveMode(node.mode)) return false
+
+  for (const ancestorId of getParentExecutionIds(String(node.id))) {
+    const ancestor = nodesById.get(ancestorId)
+    if (isInactiveMode(ancestor?.mode)) return false
+  }
+
+  return true
+}
+
+function normalizePath(path: string): string {
+  return path.replace(/\\/g, '/')
+}
+
+function isAssetInstalled(
+  candidate: MissingModelCandidate,
+  assets: AssetItem[]
+): boolean {
+  if (candidate.hash && candidate.hashType) {
+    const candidateHash = `${candidate.hashType}:${candidate.hash}`
+    if (assets.some((a) => a.hash === candidateHash)) return true
+  }
+
+  const normalizedName = normalizePath(candidate.name)
+  return assets.some((a) => {
+    const f = normalizePath(getAssetFilename(a))
+    return f === normalizedName || f.endsWith('/' + normalizedName)
+  })
+}
+
+export function isModelFileName(name: string): boolean {
+  const lower = name.toLowerCase()
+  return Array.from(MODEL_FILE_EXTENSIONS).some((ext) => lower.endsWith(ext))
+}
+
+/**
+ * Scan COMBO and asset widgets on configured graph nodes for model-like values.
+ * Must be called after `graph.configure()` so widget name/value mappings are accurate.
+ *
+ * `isMissing` resolves immediately from static combo options and stays
+ * `undefined` for asset-supported nodes and loading remote combos.
+ */
+export function scanAllModelCandidates(
+  rootGraph: LGraph,
+  isAssetSupported: (nodeType: string, widgetName: string) => boolean,
+  getDirectory?: (nodeType: string) => string | undefined
+): MissingModelCandidate[] {
+  const allNodes = collectAllNodes(rootGraph)
+  const candidates: MissingModelCandidate[] = []
+
+  for (const node of allNodes) {
+    if (isInactiveMode(node.mode)) continue
+
+    candidates.push(
+      ...scanNodeModelCandidates(
+        rootGraph,
+        node,
+        isAssetSupported,
+        getDirectory
+      )
+    )
+  }
+
+  return candidates
+}
+
+/** Scan a single node's widgets for missing model candidates (OSS immediate resolution). */
+export function scanNodeModelCandidates(
+  rootGraph: LGraph,
+  node: LGraphNode,
+  isAssetSupported: (nodeType: string, widgetName: string) => boolean,
+  getDirectory?: (nodeType: string) => string | undefined
+): MissingModelCandidate[] {
+  const isSubgraphNode =
+    typeof node.isSubgraphNode === 'function' && node.isSubgraphNode()
+  const widgets = isSubgraphNode
+    ? promotedInputWidgets(node)
+    : (node.widgets ?? [])
+  if (!widgets.length) return []
+
+  const executionId = getExecutionIdByNode(rootGraph, node)
+  if (!executionId) return []
+
+  const candidates: MissingModelCandidate[] = []
+
+  for (const widget of widgets) {
+    const target = getModelWidgetScanTarget(
+      rootGraph,
+      node,
+      widget,
+      executionId
+    )
+    if (!target) continue
+
+    let candidate: MissingModelCandidate | null = null
+
+    if (isAssetScanTarget(target)) {
+      candidate = scanAssetWidget(target, getDirectory)
+    } else if (isComboScanTarget(target)) {
+      candidate = scanComboWidget(target, isAssetSupported, getDirectory)
+    }
+
+    if (!candidate) continue
+    if (target.promotedSources) {
+      candidate.promotedSources = target.promotedSources
+    }
+    candidates.push(
+      enrichCandidateFromNodeProperties(candidate, target.embeddedModels)
+    )
+  }
+
+  return candidates
+}
+
 export function enrichWithEmbeddedMetadata(
   candidates: readonly MissingModelCandidate[],
   graphData: MissingModelWorkflowData
@@ -430,49 +493,6 @@ export function enrichWithEmbeddedMetadata(
   }
 
   return enriched
-}
-
-function collectEmbeddedModels(
-  allNodes: ReturnType<typeof flattenWorkflowNodes>,
-  graphData: MissingModelWorkflowData
-): ModelFile[] {
-  const result: ModelFile[] = []
-  const nodesById = new Map(allNodes.map((node) => [String(node.id), node]))
-
-  for (const node of allNodes) {
-    if (!isNodeAndAncestorsActive(node, nodesById)) continue
-
-    const selected = getSelectedModelsMetadata(node)
-    if (!selected?.length) continue
-
-    result.push(...selected)
-  }
-
-  if (graphData.models?.length) result.push(...graphData.models)
-
-  return result
-}
-
-function isNodeAndAncestorsActive(
-  node: ReturnType<typeof flattenWorkflowNodes>[number],
-  nodesById: ReadonlyMap<
-    string,
-    ReturnType<typeof flattenWorkflowNodes>[number]
-  >
-): boolean {
-  if (isInactiveMode(node.mode)) return false
-
-  for (const ancestorId of getParentExecutionIds(String(node.id))) {
-    const ancestor = nodesById.get(ancestorId)
-    if (isInactiveMode(ancestor?.mode)) return false
-  }
-
-  return true
-}
-
-interface AssetVerifier {
-  updateModelsForNodeType: (nodeType: string) => Promise<void>
-  getAssets: (nodeType: string) => AssetItem[] | undefined
 }
 
 export async function verifyAssetSupportedCandidates(
@@ -531,26 +551,6 @@ export async function verifyAssetSupportedCandidates(
     const assets = store.getAssets(c.nodeType) ?? []
     c.isMissing = !isAssetInstalled(c, assets)
   }
-}
-
-function normalizePath(path: string): string {
-  return path.replace(/\\/g, '/')
-}
-
-function isAssetInstalled(
-  candidate: MissingModelCandidate,
-  assets: AssetItem[]
-): boolean {
-  if (candidate.hash && candidate.hashType) {
-    const candidateHash = `${candidate.hashType}:${candidate.hash}`
-    if (assets.some((a) => a.hash === candidateHash)) return true
-  }
-
-  const normalizedName = normalizePath(candidate.name)
-  return assets.some((a) => {
-    const f = normalizePath(getAssetFilename(a))
-    return f === normalizedName || f.endsWith('/' + normalizedName)
-  })
 }
 
 export function groupCandidatesByName(

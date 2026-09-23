@@ -5,6 +5,10 @@
 
 import type { AssetSortOption } from '../types/filterTypes'
 
+function getDisplayName(item: SortableItem): string {
+  return item.label ?? item.name
+}
+
 /**
  * Minimal interface for sortable items
  * Works with both AssetItem and FormDropdownItem
@@ -13,10 +17,6 @@ export interface SortableItem {
   name: string
   label?: string
   created_at?: string | null
-}
-
-function getDisplayName(item: SortableItem): string {
-  return item.label ?? item.name
 }
 
 /**

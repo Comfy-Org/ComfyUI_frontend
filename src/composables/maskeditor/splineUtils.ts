@@ -1,5 +1,13 @@
 import type { Point } from '@/extensions/core/maskeditor/types'
 
+function add(p1: Point, p2: Point): Point {
+  return { x: p1.x + p2.x, y: p1.y + p2.y }
+}
+
+function mul(p: Point, s: number): Point {
+  return { x: p.x * s, y: p.y * s }
+}
+
 /**
  * Evaluates a Catmull-Rom spline at parameter t between p1 and p2
  * @param p0 Previous control point
@@ -56,14 +64,6 @@ export function catmullRomSpline(
   const C = interp(B1, B2, t1, t2, tInterp)
 
   return C
-}
-
-function add(p1: Point, p2: Point): Point {
-  return { x: p1.x + p2.x, y: p1.y + p2.y }
-}
-
-function mul(p: Point, s: number): Point {
-  return { x: p.x * s, y: p.y * s }
 }
 
 /**

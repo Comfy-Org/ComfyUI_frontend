@@ -62,6 +62,8 @@ const SEED_WORKFLOW: WorkflowJSON = {
   links: []
 }
 
+type ProjectedNodes = Record<string, { widgets?: Record<string, unknown> }>
+
 function seedDoc() {
   return mint(SEED_WORKFLOW, CATALOG)
 }
@@ -108,8 +110,6 @@ function deferredResetDoc(): WireOp {
     workflow: { nodes: [], links: [] }
   }
 }
-
-type ProjectedNodes = Record<string, { widgets?: Record<string, unknown> }>
 
 function nodesOf(doc: ReturnType<typeof seedDoc>): ProjectedNodes {
   return readGraph(doc).nodes as ProjectedNodes

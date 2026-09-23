@@ -49,6 +49,87 @@ const linkByTopology = new WeakMap<LinkTopology, LLink>()
 
 let topologyFacadeDescriptors: PropertyDescriptorMap | undefined
 
+interface BaseResolvedConnection {
+  link: LLink
+  /** The node on the input side of the link (owns {@link input}) */
+  inputNode?: LGraphNode
+  /** The input the link is connected to (mutually exclusive with {@link subgraphOutput}) */
+  input?: INodeInputSlot
+  /** The node on the output side of the link (owns {@link output}) */
+  outputNode?: LGraphNode
+  /** The output the link is connected to (mutually exclusive with {@link subgraphInput}) */
+  output?: INodeOutputSlot
+  /** The subgraph output the link is connected to (mutually exclusive with {@link input}) */
+  subgraphOutput?: SubgraphOutput
+  /** The subgraph input the link is connected to (mutually exclusive with {@link output}) */
+  subgraphInput?: SubgraphInput
+}
+
+interface ResolvedNormalInput {
+  inputNode: LGraphNode | undefined
+  input: INodeInputSlot | undefined
+  subgraphOutput?: undefined
+}
+
+interface ResolvedNormalOutput {
+  outputNode: LGraphNode | undefined
+  output: INodeOutputSlot | undefined
+  subgraphInput?: undefined
+}
+
+interface ResolvedSubgraphInput {
+  inputNode?: undefined
+  /** The actual input slot the link is connected to (mutually exclusive with {@link subgraphOutput}) */
+  input?: undefined
+  subgraphOutput: SubgraphOutput
+}
+
+interface ResolvedSubgraphOutput {
+  outputNode?: undefined
+  output?: undefined
+  subgraphInput: SubgraphInput
+}
+
+type BasicReadonlyNetwork = Pick<
+  ReadonlyLinkNetwork,
+  'getNodeById' | 'links' | 'getLink' | 'inputNode' | 'outputNode'
+>
+
+function defineEnumerableTopologyFacade(link: LLink): void {
+  topologyFacadeDescriptors ??= [
+    'id',
+    'type',
+    'origin_id',
+    'origin_slot',
+    'target_id',
+    'target_slot',
+    'parentId'
+  ].reduce<PropertyDescriptorMap>((descriptors, key) => {
+    const descriptor = Object.getOwnPropertyDescriptor(LLink.prototype, key)
+    if (descriptor) descriptors[key] = { ...descriptor, enumerable: true }
+    return descriptors
+  }, {})
+  Object.defineProperties(link, topologyFacadeDescriptors)
+}
+
+function adoptLinkTopology(
+  link: LLink,
+  scope: GraphScope,
+  registered: LinkTopology
+): void {
+  link._state = registered
+  link._graphScope = scope
+  linkByTopology.set(toRaw(registered), link)
+}
+
+// Resolved connection union; eliminates subgraph in/out as a possibility
+export type ResolvedConnection = BaseResolvedConnection &
+  (
+    | (ResolvedSubgraphInput & ResolvedNormalOutput)
+    | (ResolvedNormalInput & ResolvedSubgraphOutput)
+    | (ResolvedNormalInput & ResolvedNormalOutput)
+  )
+
 export function resolveLinkTopology(topology: LinkTopology): LLink | undefined {
   return linkByTopology.get(toRaw(topology))
 }
@@ -100,76 +181,111 @@ export function materializeLinkAdapter(
   return link
 }
 
-function defineEnumerableTopologyFacade(link: LLink): void {
-  topologyFacadeDescriptors ??= [
-    'id',
-    'type',
-    'origin_id',
-    'origin_slot',
-    'target_id',
-    'target_slot',
-    'parentId'
-  ].reduce<PropertyDescriptorMap>((descriptors, key) => {
-    const descriptor = Object.getOwnPropertyDescriptor(LLink.prototype, key)
-    if (descriptor) descriptors[key] = { ...descriptor, enumerable: true }
-    return descriptors
-  }, {})
-  Object.defineProperties(link, topologyFacadeDescriptors)
+/**
+ * Finds the floating links attached to a slot. A floating link has exactly
+ * one assigned endpoint, so its attachment is fully encoded in its own
+ * origin/target fields; nothing is stored on the slot.
+ * @param network The network whose floating links to search
+ * @param side Which side of the slot's node the links attach to
+ * @param nodeId The node (or subgraph IO node id) owning the slot
+ * @param slot The slot index
+ */
+export function slotFloatingLinks(
+  network: Pick<ReadonlyLinkNetwork, 'floatingLinks'>,
+  side: 'input' | 'output',
+  nodeId: NodeId,
+  slot: number
+): LLink[] {
+  const result: LLink[] = []
+  for (const link of network.floatingLinks.values()) {
+    const attached =
+      side === 'input'
+        ? link.target_id === nodeId && link.target_slot === slot
+        : link.origin_id === nodeId && link.origin_slot === slot
+    if (attached) result.push(link)
+  }
+  return result
 }
 
-// Resolved connection union; eliminates subgraph in/out as a possibility
-export type ResolvedConnection = BaseResolvedConnection &
-  (
-    | (ResolvedSubgraphInput & ResolvedNormalOutput)
-    | (ResolvedNormalInput & ResolvedSubgraphOutput)
-    | (ResolvedNormalInput & ResolvedNormalOutput)
-  )
-
-interface BaseResolvedConnection {
+/**
+ * Registers a link's topology into {@link useLinkStore} and adopts the
+ * store's reactive proxy as {@link LLink._state}, so the store and the link
+ * always agree and field writes are tracked.  Call this at every site that
+ * adds a link to a graph's link map (or floating link map).
+ *
+ * {@link LLink._graphScope} is only set when the store keeps this link's state:
+ * a link that loses a first-wins id collision stays detached, so its writes
+ * and removal cannot corrupt the winner's registration.
+ * @param graph The graph (or subgraph) the link belongs to
+ * @param link The link to register
+ */
+export function registerLinkTopology(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
   link: LLink
-  /** The node on the input side of the link (owns {@link input}) */
-  inputNode?: LGraphNode
-  /** The input the link is connected to (mutually exclusive with {@link subgraphOutput}) */
-  input?: INodeInputSlot
-  /** The node on the output side of the link (owns {@link output}) */
-  outputNode?: LGraphNode
-  /** The output the link is connected to (mutually exclusive with {@link subgraphInput}) */
-  output?: INodeOutputSlot
-  /** The subgraph output the link is connected to (mutually exclusive with {@link input}) */
-  subgraphOutput?: SubgraphOutput
-  /** The subgraph input the link is connected to (mutually exclusive with {@link output}) */
-  subgraphInput?: SubgraphInput
+): boolean {
+  if (link.id === toLinkId(-1)) return false
+  const scope = graphScopeOf(graph)
+  const registered = useLinkStore().registerLink(scope, link._state)
+  if (!registered) return false
+  adoptLinkTopology(link, scope, registered)
+  return true
 }
 
-interface ResolvedNormalInput {
-  inputNode: LGraphNode | undefined
-  input: INodeInputSlot | undefined
-  subgraphOutput?: undefined
+export function replaceLinkTopology(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  incumbent: LLink | undefined,
+  replacement: LLink
+): boolean {
+  if (replacement.id === toLinkId(-1)) return false
+  const scope = graphScopeOf(graph)
+  const registered = useLinkStore().replaceLink(
+    scope,
+    incumbent?._state,
+    replacement._state
+  )
+  if (!registered) return false
+  if (incumbent) {
+    if (incumbent._graphScope) {
+      useLinkPresentationStore().take(incumbent._graphScope, incumbent.id)
+    }
+    linkByTopology.delete(toRaw(incumbent._state))
+    incumbent._graphScope = undefined
+  }
+  adoptLinkTopology(replacement, scope, registered)
+  return true
 }
 
-interface ResolvedNormalOutput {
-  outputNode: LGraphNode | undefined
-  output: INodeOutputSlot | undefined
-  subgraphInput?: undefined
+/**
+ * Removes a link's topology from {@link useLinkStore} and detaches the link.
+ * No-op for links that never won registration ({@link LLink._graphScope} unset),
+ * so a first-wins collision loser cannot remove the winner's entry.
+ * @param link The link to unregister
+ */
+export function unregisterLinkTopology(link: LLink): void {
+  if (!link._graphScope) return
+  if (useLinkStore().deleteLink(link._graphScope, link._state)) {
+    useLinkPresentationStore().take(link._graphScope, link.id)
+  }
+  linkByTopology.delete(toRaw(link._state))
+  link._graphScope = undefined
 }
 
-interface ResolvedSubgraphInput {
-  inputNode?: undefined
-  /** The actual input slot the link is connected to (mutually exclusive with {@link subgraphOutput}) */
-  input?: undefined
-  subgraphOutput: SubgraphOutput
+/**
+ * Unregisters every link and floating link a graph owns. Used when a graph's
+ * links leave the store without a whole-bucket wipe: subgraph-definition
+ * removal, and clearing a graph that shares its bucket with other graphs.
+ * @param graph The graph whose links should be unregistered
+ */
+export function unregisterAllLinkTopologies(
+  graph: Pick<LGraph, 'links' | 'floatingLinks'>
+): void {
+  for (const link of [
+    ...graph.links.values(),
+    ...graph.floatingLinks.values()
+  ]) {
+    unregisterLinkTopology(link)
+  }
 }
-
-interface ResolvedSubgraphOutput {
-  outputNode?: undefined
-  output?: undefined
-  subgraphInput: SubgraphInput
-}
-
-type BasicReadonlyNetwork = Pick<
-  ReadonlyLinkNetwork,
-  'getNodeById' | 'links' | 'getLink' | 'inputNode' | 'outputNode'
->
 
 // this is the class in charge of storing link information
 export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
@@ -663,121 +779,5 @@ export class LLink implements LinkSegment, Serialisable<SerialisableLLink> {
     }
     if (this.parentId !== undefined) copy.parentId = this.parentId
     return copy
-  }
-}
-
-/**
- * Finds the floating links attached to a slot. A floating link has exactly
- * one assigned endpoint, so its attachment is fully encoded in its own
- * origin/target fields; nothing is stored on the slot.
- * @param network The network whose floating links to search
- * @param side Which side of the slot's node the links attach to
- * @param nodeId The node (or subgraph IO node id) owning the slot
- * @param slot The slot index
- */
-export function slotFloatingLinks(
-  network: Pick<ReadonlyLinkNetwork, 'floatingLinks'>,
-  side: 'input' | 'output',
-  nodeId: NodeId,
-  slot: number
-): LLink[] {
-  const result: LLink[] = []
-  for (const link of network.floatingLinks.values()) {
-    const attached =
-      side === 'input'
-        ? link.target_id === nodeId && link.target_slot === slot
-        : link.origin_id === nodeId && link.origin_slot === slot
-    if (attached) result.push(link)
-  }
-  return result
-}
-
-/**
- * Registers a link's topology into {@link useLinkStore} and adopts the
- * store's reactive proxy as {@link LLink._state}, so the store and the link
- * always agree and field writes are tracked.  Call this at every site that
- * adds a link to a graph's link map (or floating link map).
- *
- * {@link LLink._graphScope} is only set when the store keeps this link's state:
- * a link that loses a first-wins id collision stays detached, so its writes
- * and removal cannot corrupt the winner's registration.
- * @param graph The graph (or subgraph) the link belongs to
- * @param link The link to register
- */
-export function registerLinkTopology(
-  graph: Pick<LGraph, 'rootGraph' | 'id'>,
-  link: LLink
-): boolean {
-  if (link.id === toLinkId(-1)) return false
-  const scope = graphScopeOf(graph)
-  const registered = useLinkStore().registerLink(scope, link._state)
-  if (!registered) return false
-  adoptLinkTopology(link, scope, registered)
-  return true
-}
-
-export function replaceLinkTopology(
-  graph: Pick<LGraph, 'rootGraph' | 'id'>,
-  incumbent: LLink | undefined,
-  replacement: LLink
-): boolean {
-  if (replacement.id === toLinkId(-1)) return false
-  const scope = graphScopeOf(graph)
-  const registered = useLinkStore().replaceLink(
-    scope,
-    incumbent?._state,
-    replacement._state
-  )
-  if (!registered) return false
-  if (incumbent) {
-    if (incumbent._graphScope) {
-      useLinkPresentationStore().take(incumbent._graphScope, incumbent.id)
-    }
-    linkByTopology.delete(toRaw(incumbent._state))
-    incumbent._graphScope = undefined
-  }
-  adoptLinkTopology(replacement, scope, registered)
-  return true
-}
-
-function adoptLinkTopology(
-  link: LLink,
-  scope: GraphScope,
-  registered: LinkTopology
-): void {
-  link._state = registered
-  link._graphScope = scope
-  linkByTopology.set(toRaw(registered), link)
-}
-
-/**
- * Removes a link's topology from {@link useLinkStore} and detaches the link.
- * No-op for links that never won registration ({@link LLink._graphScope} unset),
- * so a first-wins collision loser cannot remove the winner's entry.
- * @param link The link to unregister
- */
-export function unregisterLinkTopology(link: LLink): void {
-  if (!link._graphScope) return
-  if (useLinkStore().deleteLink(link._graphScope, link._state)) {
-    useLinkPresentationStore().take(link._graphScope, link.id)
-  }
-  linkByTopology.delete(toRaw(link._state))
-  link._graphScope = undefined
-}
-
-/**
- * Unregisters every link and floating link a graph owns. Used when a graph's
- * links leave the store without a whole-bucket wipe: subgraph-definition
- * removal, and clearing a graph that shares its bucket with other graphs.
- * @param graph The graph whose links should be unregistered
- */
-export function unregisterAllLinkTopologies(
-  graph: Pick<LGraph, 'links' | 'floatingLinks'>
-): void {
-  for (const link of [
-    ...graph.links.values(),
-    ...graph.floatingLinks.values()
-  ]) {
-    unregisterLinkTopology(link)
   }
 }

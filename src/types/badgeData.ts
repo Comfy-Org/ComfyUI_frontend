@@ -1,18 +1,18 @@
 /** The display order shared by badge renderers. */
 export const CORE_PART_ORDER = ['id', 'lifecycle', 'source'] as const
 
-export type CoreBadgePart = (typeof CORE_PART_ORDER)[number]
-
-export interface CoreBadgeData {
-  kind: 'core'
-  part: CoreBadgePart
+interface CreditsBadgeData {
+  kind: 'credits'
   text: string
   bgColor?: string
   fgColor?: string
 }
 
-interface CreditsBadgeData {
-  kind: 'credits'
+export type CoreBadgePart = (typeof CORE_PART_ORDER)[number]
+
+export interface CoreBadgeData {
+  kind: 'core'
+  part: CoreBadgePart
   text: string
   bgColor?: string
   fgColor?: string

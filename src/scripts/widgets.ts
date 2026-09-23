@@ -100,6 +100,12 @@ export function updateControlWidgetLabel(widget: IBaseWidget) {
 
 const HAS_EXECUTED = Symbol()
 
+interface ValueControlWidgetOptions {
+  addFilterList?: boolean
+  controlAfterGenerateName?: string
+  controlFilterListName?: string
+}
+
 export function addValueControlWidget(
   node: LGraphNode,
   targetWidget: IBaseWidget,
@@ -122,12 +128,6 @@ export function addValueControlWidget(
     inputData
   )
   return widgets[0]
-}
-
-interface ValueControlWidgetOptions {
-  addFilterList?: boolean
-  controlAfterGenerateName?: string
-  controlFilterListName?: string
 }
 
 export function addValueControlWidgets(

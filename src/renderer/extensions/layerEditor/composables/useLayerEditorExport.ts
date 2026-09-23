@@ -15,10 +15,6 @@ function exportTimestamp(d: Date): string {
   return `${date}-${time}`
 }
 
-export function psdExportFilename(d: Date): string {
-  return `comfyui-layers-${exportTimestamp(d)}.psd`
-}
-
 function readbackCanvas(session: LayerEditorSession): HTMLCanvasElement {
   const img = session.compositor.readback()
   const canvas = document.createElement('canvas')
@@ -28,6 +24,10 @@ function readbackCanvas(session: LayerEditorSession): HTMLCanvasElement {
   if (!ctx) throw new Error('2d context unavailable')
   ctx.putImageData(img, 0, 0)
   return canvas
+}
+
+export function psdExportFilename(d: Date): string {
+  return `comfyui-layers-${exportTimestamp(d)}.psd`
 }
 
 export async function buildSessionPsdBlob(

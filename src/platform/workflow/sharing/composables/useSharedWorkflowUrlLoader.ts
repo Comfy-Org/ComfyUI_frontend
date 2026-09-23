@@ -20,19 +20,19 @@ import { app } from '@/scripts/app'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 
-export type SharedWorkflowUrlLoadStatus =
-  | 'not-present'
-  | 'loaded'
-  | 'loaded-without-assets'
-  | 'cancelled'
-  | 'failed'
-
 type DialogResult =
   | { action: 'copy-and-open'; payload: SharedWorkflowPayload }
   | { action: 'open-only'; payload: SharedWorkflowPayload }
   | { action: 'cancel' }
 
 type OpeningAction = Exclude<DialogResult['action'], 'cancel'>
+
+export type SharedWorkflowUrlLoadStatus =
+  | 'not-present'
+  | 'loaded'
+  | 'loaded-without-assets'
+  | 'cancelled'
+  | 'failed'
 
 const OPEN_SHARED_WORKFLOW_DIALOG_KEY = 'open-shared-workflow'
 

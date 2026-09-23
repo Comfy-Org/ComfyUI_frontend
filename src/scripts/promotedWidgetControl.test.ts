@@ -12,6 +12,23 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { IS_CONTROL_WIDGET } from './controlWidgetMarker'
 import { applyPromotedWidgetControl } from './promotedWidgetControl'
 
+function promotedSeedValue(host: SubgraphNode): unknown {
+  const input = host.inputs.find((input) => input.name === 'seed')
+  if (!input?.widgetId) throw new Error('seed was not promoted')
+  return useWidgetValueStore().getWidget(input.widgetId)?.value
+}
+
+function createPromotedSeedHost(controlMode: string): SubgraphNode {
+  const subgraph = createTestSubgraph()
+  const seedNode = new SeedNode(controlMode)
+  subgraph.add(seedNode)
+  const host = createTestSubgraphNode(subgraph)
+  const seedWidget = seedNode.widgets!.find((w) => w.name === 'seed')!
+  const result = promoteValueWidgetViaSubgraphInput(host, seedNode, seedWidget)
+  if (!result.ok) throw new Error(`promotion failed: ${result.reason}`)
+  return host
+}
+
 class SeedNode extends LGraphNode {
   constructor(controlMode: string) {
     super('SeedNode')
@@ -35,23 +52,6 @@ class SeedNode extends LGraphNode {
     control.afterQueued = () => {}
     seed.linkedWidgets = [control]
   }
-}
-
-function promotedSeedValue(host: SubgraphNode): unknown {
-  const input = host.inputs.find((input) => input.name === 'seed')
-  if (!input?.widgetId) throw new Error('seed was not promoted')
-  return useWidgetValueStore().getWidget(input.widgetId)?.value
-}
-
-function createPromotedSeedHost(controlMode: string): SubgraphNode {
-  const subgraph = createTestSubgraph()
-  const seedNode = new SeedNode(controlMode)
-  subgraph.add(seedNode)
-  const host = createTestSubgraphNode(subgraph)
-  const seedWidget = seedNode.widgets!.find((w) => w.name === 'seed')!
-  const result = promoteValueWidgetViaSubgraphInput(host, seedNode, seedWidget)
-  if (!result.ok) throw new Error(`promotion failed: ${result.reason}`)
-  return host
 }
 
 describe('applyPromotedWidgetControl', () => {

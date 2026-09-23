@@ -83,6 +83,54 @@ function closeWidgetDirtySuppression(): void {
   useWidgetValueStore().endLocalDirtyTrackingSuppression()
 }
 
+async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
+  const agentPanelStore = useAgentPanelStore()
+  const settle = (): void => {
+    agentPanelStore.gateSettled = true
+  }
+  try {
+    const [
+      { createPostHogFlagSource, FLAG_SETTLE_TIMEOUT_MS },
+      { default: posthog }
+    ] = await Promise.all([
+      import('@/workbench/extensions/agent/utils/postHogFlagSource'),
+      import('posthog-js')
+    ])
+    const source = createPostHogFlagSource(posthog)
+    const sync = (): void => {
+      const forceInDev = import.meta.env.MODE === 'development'
+      agentPanelStore.enabled = forceInDev || source.isEnabled()
+      loadConsentIfEligible()
+      if (!agentPanelStore.enabled) {
+        const nodeSelectionStore = useAgentNodeSelectionStore()
+        if (nodeSelectionStore.isLoadingWorkflow)
+          nodeSelectionStore.finishWorkflowLoad()
+      }
+    }
+    source.onChange?.(() => {
+      sync()
+      settle()
+    })
+    sync()
+    if (import.meta.env.MODE === 'development') settle()
+    else setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
+  } catch (error) {
+    settle()
+    reportError(error, {
+      errorType: 'agent_flag_gate_load_failure',
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'agent',
+        operation: 'load',
+        outcome: 'failed',
+        feature_flag: 'agent_panel',
+        feature_flag_state: 'unknown',
+        project_context: 'application_bootstrap'
+      }
+    })
+  }
+}
+
 export function registerAgentPanelExtension(): void {
   if (registered) return
   registered = true
@@ -241,52 +289,4 @@ export function registerAgentPanelExtension(): void {
       return setupFlagGate(loadConsentIfEligible)
     }
   })
-}
-
-async function setupFlagGate(loadConsentIfEligible: () => void): Promise<void> {
-  const agentPanelStore = useAgentPanelStore()
-  const settle = (): void => {
-    agentPanelStore.gateSettled = true
-  }
-  try {
-    const [
-      { createPostHogFlagSource, FLAG_SETTLE_TIMEOUT_MS },
-      { default: posthog }
-    ] = await Promise.all([
-      import('@/workbench/extensions/agent/utils/postHogFlagSource'),
-      import('posthog-js')
-    ])
-    const source = createPostHogFlagSource(posthog)
-    const sync = (): void => {
-      const forceInDev = import.meta.env.MODE === 'development'
-      agentPanelStore.enabled = forceInDev || source.isEnabled()
-      loadConsentIfEligible()
-      if (!agentPanelStore.enabled) {
-        const nodeSelectionStore = useAgentNodeSelectionStore()
-        if (nodeSelectionStore.isLoadingWorkflow)
-          nodeSelectionStore.finishWorkflowLoad()
-      }
-    }
-    source.onChange?.(() => {
-      sync()
-      settle()
-    })
-    sync()
-    if (import.meta.env.MODE === 'development') settle()
-    else setTimeout(settle, FLAG_SETTLE_TIMEOUT_MS)
-  } catch (error) {
-    settle()
-    reportError(error, {
-      errorType: 'agent_flag_gate_load_failure',
-      tags: {
-        failure_kind: 'caught_unexpected',
-        feature_area: 'agent',
-        operation: 'load',
-        outcome: 'failed',
-        feature_flag: 'agent_panel',
-        feature_flag_state: 'unknown',
-        project_context: 'application_bootstrap'
-      }
-    })
-  }
 }

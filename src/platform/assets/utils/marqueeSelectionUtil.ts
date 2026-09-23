@@ -1,5 +1,14 @@
 import type { RectEdges } from '@/utils/mathUtil'
 
+function rectsIntersect(a: RectEdges, b: RectEdges): boolean {
+  return !(
+    a.right < b.left ||
+    a.left > b.right ||
+    a.bottom < b.top ||
+    a.top > b.bottom
+  )
+}
+
 export interface MarqueeCard {
   id: string
   rect: RectEdges
@@ -15,15 +24,6 @@ export function normalizeMarqueeRect(
     right: Math.max(start.x, end.x),
     bottom: Math.max(start.y, end.y)
   }
-}
-
-function rectsIntersect(a: RectEdges, b: RectEdges): boolean {
-  return !(
-    a.right < b.left ||
-    a.left > b.right ||
-    a.bottom < b.top ||
-    a.top > b.bottom
-  )
 }
 
 /**

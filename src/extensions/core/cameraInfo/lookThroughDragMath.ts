@@ -23,11 +23,6 @@ interface FieldUpdate {
   value: number
 }
 
-export interface LookThroughResult {
-  nextState: CameraInfoState
-  updates: FieldUpdate[]
-}
-
 function directionToSpherical(dir: THREE.Vector3): {
   azimuth: number
   elevation: number
@@ -150,21 +145,6 @@ function rotateQuaternion(
   }
 }
 
-export function rotateSubjectByDrag(
-  state: CameraInfoState,
-  yawDelta: number,
-  pitchDelta: number
-): LookThroughResult | null {
-  switch (state.mode) {
-    case 'orbit':
-      return rotateOrbit(state, yawDelta, pitchDelta)
-    case 'look_at':
-      return rotateLookAt(state, yawDelta, pitchDelta)
-    case 'quaternion':
-      return rotateQuaternion(state, yawDelta, pitchDelta)
-  }
-}
-
 function dollyOrbit(state: CameraInfoState, deltaY: number): LookThroughResult {
   const factor = Math.exp(deltaY * DOLLY_EXP_SENSITIVITY)
   const distance = clamp(
@@ -252,6 +232,26 @@ function dollyZoom(state: CameraInfoState, deltaY: number): LookThroughResult {
   return {
     nextState: { ...state, zoom },
     updates: [{ fieldName: 'zoom', value: zoom }]
+  }
+}
+
+export interface LookThroughResult {
+  nextState: CameraInfoState
+  updates: FieldUpdate[]
+}
+
+export function rotateSubjectByDrag(
+  state: CameraInfoState,
+  yawDelta: number,
+  pitchDelta: number
+): LookThroughResult | null {
+  switch (state.mode) {
+    case 'orbit':
+      return rotateOrbit(state, yawDelta, pitchDelta)
+    case 'look_at':
+      return rotateLookAt(state, yawDelta, pitchDelta)
+    case 'quaternion':
+      return rotateQuaternion(state, yawDelta, pitchDelta)
   }
 }
 

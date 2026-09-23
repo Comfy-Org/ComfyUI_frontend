@@ -36,6 +36,13 @@ import { toNodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { attachMintPortWiring } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
+/** Structural stand-in for the two LGraphNode members the wiring reads. */
+interface FakeGraphNode {
+  id?: unknown
+  serialize?: () => unknown
+  widgets?: { name: string; type: string; serialize?: boolean }[]
+}
+
 function createNodeOp(graphId: string, id: string) {
   return {
     type: 'createNode' as const,
@@ -67,13 +74,6 @@ function deleteNodeOp(graphId: string, id: string) {
     timestamp: Date.now(),
     source: LayoutSource.Canvas
   }
-}
-
-/** Structural stand-in for the two LGraphNode members the wiring reads. */
-interface FakeGraphNode {
-  id?: unknown
-  serialize?: () => unknown
-  widgets?: { name: string; type: string; serialize?: boolean }[]
 }
 
 async function realDelivery(): Promise<void> {

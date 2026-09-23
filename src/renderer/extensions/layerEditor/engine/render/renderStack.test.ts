@@ -71,6 +71,10 @@ function doc(children: SceneNode[]): Document {
   }
 }
 
+function deps(compositor: Compositor): RenderDeps {
+  return { content: new DefaultContentStore(), compositor }
+}
+
 class FakeCompositor implements Compositor {
   composites: Array<{
     inputs: CompositeInput[]
@@ -119,10 +123,6 @@ class FakeCompositor implements Compositor {
     return null
   }
   dispose() {}
-}
-
-function deps(compositor: Compositor): RenderDeps {
-  return { content: new DefaultContentStore(), compositor }
 }
 
 describe('renderDocument', () => {

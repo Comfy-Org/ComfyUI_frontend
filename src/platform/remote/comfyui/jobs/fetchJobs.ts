@@ -33,18 +33,8 @@ interface FetchJobsRawResult {
   hasMore: boolean
 }
 
-class JobsApiError extends Error {}
-
 interface FetchJobsOptions {
   throwOnError?: boolean
-}
-
-export interface FetchHistoryPageResult {
-  jobs: JobListItem[]
-  total: number
-  offset: number
-  limit: number
-  hasMore: boolean
 }
 
 /**
@@ -78,6 +68,16 @@ async function fetchJobsRaw(
     console.error('[Jobs API] Error fetching jobs:', error)
     return { jobs: [], total: 0, offset, limit: maxItems, hasMore: false }
   }
+}
+
+class JobsApiError extends Error {}
+
+export interface FetchHistoryPageResult {
+  jobs: JobListItem[]
+  total: number
+  offset: number
+  limit: number
+  hasMore: boolean
 }
 
 // Large offset to ensure running/pending jobs sort above history

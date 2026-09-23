@@ -33,13 +33,6 @@ let workflowStorageState: WorkflowStorageState = {
 }
 const pendingPersistenceFlushes = new Set<() => void>()
 
-export function registerWorkflowPersistenceFlush(
-  flush: () => void
-): () => void {
-  pendingPersistenceFlushes.add(flush)
-  return () => pendingPersistenceFlushes.delete(flush)
-}
-
 function flushPendingWorkflowPersistence(): void {
   for (const flush of pendingPersistenceFlushes) {
     try {
@@ -50,29 +43,10 @@ function flushPendingWorkflowPersistence(): void {
   }
 }
 
-export function isStorageAvailable(): boolean {
-  return (
-    workflowStorageState.status === 'ready' &&
-    workflowStorageState.availability === 'available'
-  )
-}
-
-export function markStorageUnavailable(): void {
-  workflowStorageState =
-    workflowStorageState.status === 'transitioning'
-      ? { ...workflowStorageState, resumeAvailability: 'unavailable' }
-      : { status: 'ready', availability: 'unavailable' }
-}
-
 function isStorageReadable(): boolean {
   return workflowStorageState.status === 'transitioning'
     ? workflowStorageState.resumeAvailability === 'available'
     : workflowStorageState.availability === 'available'
-}
-
-/** @internal Test-only: do not call from production code paths. */
-export function resetStorageAvailable(): void {
-  workflowStorageState = { status: 'ready', availability: 'available' }
 }
 
 function isQuotaExceeded(error: unknown): boolean {
@@ -95,6 +69,146 @@ function isValidIndex(value: unknown): value is DraftIndexV2 {
     typeof obj.entries === 'object' &&
     obj.entries !== null
   )
+}
+
+/**
+ * Searches sessionStorage for a pointer matching the target workspaceId
+ * when the exact clientId key has no entry (e.g. clientId changed after reload).
+ * Migrates the found pointer to the new clientId key.
+ */
+function findAndMigratePointer<T extends { workspaceId: string }>(
+  newKey: string,
+  prefix: string,
+  targetWorkspaceId: string,
+  isValid: (value: unknown) => value is T
+): T | null {
+  for (let i = 0; i < sessionStorage.length; i++) {
+    const storageKey = sessionStorage.key(i)
+    if (!storageKey?.startsWith(prefix) || storageKey === newKey) continue
+
+    const json = sessionStorage.getItem(storageKey)
+    if (!json) continue
+
+    try {
+      const pointer: unknown = JSON.parse(json)
+      if (isValid(pointer) && pointer.workspaceId === targetWorkspaceId) {
+        sessionStorage.setItem(newKey, json)
+        sessionStorage.removeItem(storageKey)
+        return pointer
+      }
+    } catch {
+      continue
+    }
+  }
+  return null
+}
+
+/**
+ * Reads a session pointer by clientId with workspace-based fallback.
+ * Validates workspace on exact match and removes stale cross-workspace pointers.
+ * If no valid entry exists, searches for any pointer matching the target
+ * workspaceId and migrates it to the new key.
+ */
+function readSessionPointer<T extends { workspaceId: string }>(
+  key: string,
+  prefix: string,
+  targetWorkspaceId: string | undefined,
+  isValid: (value: unknown) => value is T
+): T | null {
+  try {
+    const json = sessionStorage.getItem(key)
+    if (json) {
+      const pointer: unknown = JSON.parse(json)
+      if (!isValid(pointer)) {
+        sessionStorage.removeItem(key)
+      } else if (
+        targetWorkspaceId &&
+        pointer.workspaceId !== targetWorkspaceId
+      ) {
+        sessionStorage.removeItem(key)
+      } else {
+        return pointer
+      }
+    }
+
+    if (targetWorkspaceId) {
+      return findAndMigratePointer(key, prefix, targetWorkspaceId, isValid)
+    }
+
+    return null
+  } catch {
+    return null
+  }
+}
+
+function hasWorkspaceId(obj: Record<string, unknown>): boolean {
+  return typeof obj.workspaceId === 'string'
+}
+
+function isValidActivePathPointer(value: unknown): value is ActivePathPointer {
+  if (typeof value !== 'object' || value === null) return false
+  const obj = value as Record<string, unknown>
+  return hasWorkspaceId(obj) && typeof obj.path === 'string'
+}
+
+function isValidOpenPathsPointer(value: unknown): value is OpenPathsPointer {
+  if (typeof value !== 'object' || value === null) return false
+  const obj = value as Record<string, unknown>
+  return (
+    hasWorkspaceId(obj) &&
+    Array.isArray(obj.paths) &&
+    typeof obj.activeIndex === 'number'
+  )
+}
+
+function readLocalPointer<T>(
+  key: string,
+  validate: (value: unknown) => value is T
+): T | null {
+  try {
+    const json = localStorage.getItem(key)
+    if (!json) return null
+    const parsed = JSON.parse(json)
+    return validate(parsed) ? parsed : null
+  } catch {
+    return null
+  }
+}
+
+function writeStorage(storage: Storage, key: string, value: string): void {
+  if (!isStorageAvailable()) return
+
+  try {
+    storage.setItem(key, value)
+  } catch {
+    // Best effort — silently degrade when storage is full or unavailable
+  }
+}
+
+export function registerWorkflowPersistenceFlush(
+  flush: () => void
+): () => void {
+  pendingPersistenceFlushes.add(flush)
+  return () => pendingPersistenceFlushes.delete(flush)
+}
+
+export function isStorageAvailable(): boolean {
+  return (
+    workflowStorageState.status === 'ready' &&
+    workflowStorageState.availability === 'available'
+  )
+}
+
+export function markStorageUnavailable(): void {
+  workflowStorageState =
+    workflowStorageState.status === 'transitioning'
+      ? { ...workflowStorageState, resumeAvailability: 'unavailable' }
+      : { status: 'ready', availability: 'unavailable' }
+}
+
+/** @internal Test-only: do not call from production code paths. */
+export function resetStorageAvailable(): void {
+  workflowStorageState = { status: 'ready', availability: 'available' }
 }
 
 /**
@@ -238,76 +352,6 @@ export function deleteOrphanPayloads(
 }
 
 /**
- * Searches sessionStorage for a pointer matching the target workspaceId
- * when the exact clientId key has no entry (e.g. clientId changed after reload).
- * Migrates the found pointer to the new clientId key.
- */
-function findAndMigratePointer<T extends { workspaceId: string }>(
-  newKey: string,
-  prefix: string,
-  targetWorkspaceId: string,
-  isValid: (value: unknown) => value is T
-): T | null {
-  for (let i = 0; i < sessionStorage.length; i++) {
-    const storageKey = sessionStorage.key(i)
-    if (!storageKey?.startsWith(prefix) || storageKey === newKey) continue
-
-    const json = sessionStorage.getItem(storageKey)
-    if (!json) continue
-
-    try {
-      const pointer: unknown = JSON.parse(json)
-      if (isValid(pointer) && pointer.workspaceId === targetWorkspaceId) {
-        sessionStorage.setItem(newKey, json)
-        sessionStorage.removeItem(storageKey)
-        return pointer
-      }
-    } catch {
-      continue
-    }
-  }
-  return null
-}
-
-/**
- * Reads a session pointer by clientId with workspace-based fallback.
- * Validates workspace on exact match and removes stale cross-workspace pointers.
- * If no valid entry exists, searches for any pointer matching the target
- * workspaceId and migrates it to the new key.
- */
-function readSessionPointer<T extends { workspaceId: string }>(
-  key: string,
-  prefix: string,
-  targetWorkspaceId: string | undefined,
-  isValid: (value: unknown) => value is T
-): T | null {
-  try {
-    const json = sessionStorage.getItem(key)
-    if (json) {
-      const pointer: unknown = JSON.parse(json)
-      if (!isValid(pointer)) {
-        sessionStorage.removeItem(key)
-      } else if (
-        targetWorkspaceId &&
-        pointer.workspaceId !== targetWorkspaceId
-      ) {
-        sessionStorage.removeItem(key)
-      } else {
-        return pointer
-      }
-    }
-
-    if (targetWorkspaceId) {
-      return findAndMigratePointer(key, prefix, targetWorkspaceId, isValid)
-    }
-
-    return null
-  } catch {
-    return null
-  }
-}
-
-/**
  * Reads the active path pointer from sessionStorage.
  * Falls back to workspace-based search when clientId changes after reload,
  * then to localStorage when sessionStorage is empty (browser restart).
@@ -399,50 +443,6 @@ export function writeOpenPaths(
     StorageKeys.lastOpenPaths(pointer.workspaceId),
     json
   )
-}
-
-function hasWorkspaceId(obj: Record<string, unknown>): boolean {
-  return typeof obj.workspaceId === 'string'
-}
-
-function isValidActivePathPointer(value: unknown): value is ActivePathPointer {
-  if (typeof value !== 'object' || value === null) return false
-  const obj = value as Record<string, unknown>
-  return hasWorkspaceId(obj) && typeof obj.path === 'string'
-}
-
-function isValidOpenPathsPointer(value: unknown): value is OpenPathsPointer {
-  if (typeof value !== 'object' || value === null) return false
-  const obj = value as Record<string, unknown>
-  return (
-    hasWorkspaceId(obj) &&
-    Array.isArray(obj.paths) &&
-    typeof obj.activeIndex === 'number'
-  )
-}
-
-function readLocalPointer<T>(
-  key: string,
-  validate: (value: unknown) => value is T
-): T | null {
-  try {
-    const json = localStorage.getItem(key)
-    if (!json) return null
-    const parsed = JSON.parse(json)
-    return validate(parsed) ? parsed : null
-  } catch {
-    return null
-  }
-}
-
-function writeStorage(storage: Storage, key: string, value: string): void {
-  if (!isStorageAvailable()) return
-
-  try {
-    storage.setItem(key, value)
-  } catch {
-    // Best effort — silently degrade when storage is full or unavailable
-  }
 }
 
 const legacyLocalRestoreKeys = [

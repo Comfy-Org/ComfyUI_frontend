@@ -18,6 +18,15 @@ vi.mock(import('./ReplyAssetGroup.vue'), () => ({
 
 setupInlinePromptEditorDom()
 
+function renderComposer() {
+  const store = useAgentComposerStore()
+  render(Composer, {
+    props: { hasWorkflowTarget: true, editableWorkflowId: 'target-A' },
+    global: { plugins: [i18n], directives: { tooltip: () => {} } }
+  })
+  return { store, editor: screen.getByRole('textbox') }
+}
+
 // jsdom lacks ClipboardItem; user-event provides the clipboard itself.
 class TestClipboardItem {
   constructor(
@@ -35,15 +44,6 @@ class TestClipboardItem {
     const value = await this.data[type]
     return typeof value === 'string' ? new Blob([value], { type }) : value
   }
-}
-
-function renderComposer() {
-  const store = useAgentComposerStore()
-  render(Composer, {
-    props: { hasWorkflowTarget: true, editableWorkflowId: 'target-A' },
-    global: { plugins: [i18n], directives: { tooltip: () => {} } }
-  })
-  return { store, editor: screen.getByRole('textbox') }
 }
 
 describe('sent message workflow clipboard', () => {

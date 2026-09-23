@@ -143,6 +143,12 @@ function consumeQueryParam(): void {
 
 applyQueryOverride()
 
+function readStoredEnabled(): string | null {
+  if (cachedStoredEnabled === null)
+    cachedStoredEnabled = readStorage(ENABLED_KEY)
+  return cachedStoredEnabled
+}
+
 /**
  * Whether the CRDT debug instrument (panel + console tracing) is available.
  *
@@ -162,12 +168,6 @@ export function isCrdtDebugEnabled(): boolean {
           : import.meta.env.DEV
   }
   return cachedEnabled
-}
-
-function readStoredEnabled(): string | null {
-  if (cachedStoredEnabled === null)
-    cachedStoredEnabled = readStorage(ENABLED_KEY)
-  return cachedStoredEnabled
 }
 
 export function setCrdtDebugEnabled(enabled: boolean): void {

@@ -23,29 +23,6 @@ import type {
 } from '../api/workspaceApi'
 import { WorkspaceApiError, workspaceApi } from '../api/workspaceApi'
 
-export interface WorkspaceMember {
-  id: string
-  name: string
-  email: string
-  joinDate: Date
-  role: 'owner' | 'member'
-  isOriginalOwner: boolean
-  creditsUsedThisMonth?: number
-  monthlyCreditLimit?: number | null
-}
-
-export interface WorkspacePendingInvite {
-  id: string
-  email: string
-  inviteDate: Date
-  expiryDate: Date
-  /**
-   * Invite token for building shareable invite links.
-   * Absent/empty for expired invites (the backend omits it).
-   */
-  token?: string
-}
-
 type SubscriptionPlan = string | null
 
 interface WorkspaceState extends WorkspaceWithRole {
@@ -116,16 +93,6 @@ function createWorkspaceStateFromCredential(
   })
 }
 
-export function sortWorkspaces<T extends WorkspaceWithRole>(list: T[]): T[] {
-  return [...list].sort((a, b) => {
-    if (a.type === 'personal') return -1
-    if (b.type === 'personal') return 1
-    const dateA = a.role === 'owner' ? a.created_at : a.joined_at
-    const dateB = b.role === 'owner' ? b.created_at : b.joined_at
-    return dateA.localeCompare(dateB)
-  })
-}
-
 function getLastWorkspaceId(): string | null {
   try {
     return localStorage.getItem(WORKSPACE_STORAGE_KEYS.LAST_WORKSPACE_ID)
@@ -148,6 +115,39 @@ function clearLastWorkspaceId(): void {
   } catch {
     console.warn('Failed to clear last workspace ID from localStorage')
   }
+}
+
+export interface WorkspaceMember {
+  id: string
+  name: string
+  email: string
+  joinDate: Date
+  role: 'owner' | 'member'
+  isOriginalOwner: boolean
+  creditsUsedThisMonth?: number
+  monthlyCreditLimit?: number | null
+}
+
+export interface WorkspacePendingInvite {
+  id: string
+  email: string
+  inviteDate: Date
+  expiryDate: Date
+  /**
+   * Invite token for building shareable invite links.
+   * Absent/empty for expired invites (the backend omits it).
+   */
+  token?: string
+}
+
+export function sortWorkspaces<T extends WorkspaceWithRole>(list: T[]): T[] {
+  return [...list].sort((a, b) => {
+    if (a.type === 'personal') return -1
+    if (b.type === 'personal') return 1
+    const dateA = a.role === 'owner' ? a.created_at : a.joined_at
+    const dateB = b.role === 'owner' ? b.created_at : b.joined_at
+    return dateA.localeCompare(dateB)
+  })
 }
 
 const MAX_OWNED_WORKSPACES = 10

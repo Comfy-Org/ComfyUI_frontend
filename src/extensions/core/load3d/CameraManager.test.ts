@@ -5,6 +5,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { CameraManager } from './CameraManager'
 import type { CameraState, EventManagerInterface } from './interfaces'
 
+type ControlsListener = () => void
+
 function makeMockEventManager() {
   return {
     addEventListener: vi.fn(),
@@ -12,8 +14,6 @@ function makeMockEventManager() {
     emitEvent: vi.fn()
   } satisfies EventManagerInterface
 }
-
-type ControlsListener = () => void
 
 function makeControlsStub() {
   const listeners: Record<string, ControlsListener[]> = {}

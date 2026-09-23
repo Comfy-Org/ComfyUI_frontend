@@ -39,15 +39,6 @@ function createTestWidget(
   )
 }
 
-class MutableTypeWidget extends BaseWidget<IBaseWidget<number>> {
-  drawWidget(
-    _ctx: CanvasRenderingContext2D,
-    _options: DrawWidgetOptions
-  ): void {}
-
-  onClick(_options: WidgetEventOptions): void {}
-}
-
 function createMutableTypeWidget(
   node: LGraphNode,
   name = 'typeChangedWidget'
@@ -62,6 +53,15 @@ function createMutableTypeWidget(
     },
     node
   )
+}
+
+class MutableTypeWidget extends BaseWidget<IBaseWidget<number>> {
+  drawWidget(
+    _ctx: CanvasRenderingContext2D,
+    _options: DrawWidgetOptions
+  ): void {}
+
+  onClick(_options: WidgetEventOptions): void {}
 }
 
 describe('BaseWidget store integration', () => {

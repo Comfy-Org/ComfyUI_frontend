@@ -17,22 +17,6 @@ let cachedUnifiedFlags:
   | undefined
 
 /**
- * Single gate for the reactive guard: a cloud build with `unified_cloud_auth`
- * ON. Memoizes the feature-flag accessor so the hot `fetchApi` path does not
- * build a fresh reactive proxy per request (the cached getter still reflects
- * live flag changes), and is reused at every cloud request seam so the gate
- * cannot be forgotten on a new call site.
- */
-export async function shouldRemintCloudRequest(): Promise<boolean> {
-  if (!isCloud) return false
-  if (!cachedUnifiedFlags) {
-    const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
-    cachedUnifiedFlags = useFeatureFlags().flags
-  }
-  return cachedUnifiedFlags.unifiedCloudAuthEnabled
-}
-
-/**
  * Re-mints the unified Cloud JWT once from the current Firebase identity and
  * returns the fresh token, or `null` when there is nothing to retry with: no
  * active unified session, or the re-mint failed. A permanent auth failure is
@@ -93,6 +77,33 @@ function fetchRequestHeaders(
   return input instanceof Request ? new Headers(input.headers) : new Headers()
 }
 
+function isRetriableUnauthorized(
+  error: unknown
+): error is AxiosError & { config: InternalAxiosRequestConfig } {
+  if (!axios.isAxiosError(error)) return false
+  const config = error.config
+  if (!config || config.__unifiedRetried || config.__skipUnifiedRemint) {
+    return false
+  }
+  return error.response?.status === 401
+}
+
+/**
+ * Single gate for the reactive guard: a cloud build with `unified_cloud_auth`
+ * ON. Memoizes the feature-flag accessor so the hot `fetchApi` path does not
+ * build a fresh reactive proxy per request (the cached getter still reflects
+ * live flag changes), and is reused at every cloud request seam so the gate
+ * cannot be forgotten on a new call site.
+ */
+export async function shouldRemintCloudRequest(): Promise<boolean> {
+  if (!isCloud) return false
+  if (!cachedUnifiedFlags) {
+    const { useFeatureFlags } = await import('@/composables/useFeatureFlags')
+    cachedUnifiedFlags = useFeatureFlags().flags
+  }
+  return cachedUnifiedFlags.unifiedCloudAuthEnabled
+}
+
 /**
  * Issues a `fetch` and, on a `401`, re-mints the unified Cloud JWT once and
  * retries the request exactly once with the fresh token. A persistent `401`
@@ -150,17 +161,6 @@ export async function fetchWithUnifiedRemint(
     trackRetry('fetch', 'failed', undefined, 'retry_request_failed')
     throw error
   }
-}
-
-function isRetriableUnauthorized(
-  error: unknown
-): error is AxiosError & { config: InternalAxiosRequestConfig } {
-  if (!axios.isAxiosError(error)) return false
-  const config = error.config
-  if (!config || config.__unifiedRetried || config.__skipUnifiedRemint) {
-    return false
-  }
-  return error.response?.status === 401
 }
 
 /**

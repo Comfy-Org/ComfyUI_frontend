@@ -24,6 +24,21 @@ type ActiveView = 'active' | 'pending'
 type SortField = 'inviteDate' | 'expiryDate' | 'role'
 type SortDirection = 'asc' | 'desc'
 
+type InviteSortField = 'inviteDate' | 'expiryDate'
+
+// Pending invites carry no role, so the members' 'role' sort has no equivalent
+// here and falls back to the invite date.
+function toInviteSortField(sortField: SortField): InviteSortField {
+  return sortField === 'expiryDate' ? 'expiryDate' : 'inviteDate'
+}
+
+function getInviteDate(
+  invite: WorkspacePendingInvite,
+  field: InviteSortField
+): Date | undefined {
+  return invite[field]
+}
+
 export function sortMembers(
   members: WorkspaceMember[],
   currentUserEmail: string | null,
@@ -65,14 +80,6 @@ export function filterBySearch<T extends { email: string; name?: string }>(
   )
 }
 
-type InviteSortField = 'inviteDate' | 'expiryDate'
-
-// Pending invites carry no role, so the members' 'role' sort has no equivalent
-// here and falls back to the invite date.
-function toInviteSortField(sortField: SortField): InviteSortField {
-  return sortField === 'expiryDate' ? 'expiryDate' : 'inviteDate'
-}
-
 export function sortPendingInvites(
   invites: WorkspacePendingInvite[],
   sortField: SortField,
@@ -87,13 +94,6 @@ export function sortPendingInvites(
     const bValue = bDate.getTime()
     return sortDirection === 'asc' ? aValue - bValue : bValue - aValue
   })
-}
-
-function getInviteDate(
-  invite: WorkspacePendingInvite,
-  field: InviteSortField
-): Date | undefined {
-  return invite[field]
 }
 
 export function useMembersPanel() {

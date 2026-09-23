@@ -9,6 +9,16 @@ import type { UUID } from '@/utils/uuid'
 
 import { evaluateMathExpression } from '@/lib/litegraph/src/utils/mathParser'
 
+function isDOMBackedWidget(widget: Readonly<IBaseWidget>): boolean {
+  if ('isDOMWidget' in widget && typeof widget.isDOMWidget === 'boolean') {
+    return widget.isDOMWidget
+  }
+  return (
+    ('element' in widget && !!widget.element) ||
+    ('component' in widget && !!widget.component)
+  )
+}
+
 /**
  * The step value for numeric widgets.
  * Use {@link IWidgetOptions.step2} if available, otherwise fallback to
@@ -67,16 +77,6 @@ export function getWidgetIds(
   return widgets
     .map((widget) => widget.widgetId)
     .filter((id): id is WidgetId => id !== undefined)
-}
-
-function isDOMBackedWidget(widget: Readonly<IBaseWidget>): boolean {
-  if ('isDOMWidget' in widget && typeof widget.isDOMWidget === 'boolean') {
-    return widget.isDOMWidget
-  }
-  return (
-    ('element' in widget && !!widget.element) ||
-    ('component' in widget && !!widget.component)
-  )
 }
 
 export function deriveWidgetRenderState(

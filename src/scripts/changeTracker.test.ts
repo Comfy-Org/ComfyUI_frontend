@@ -75,6 +75,9 @@ import { ChangeTracker } from '@/scripts/changeTracker'
 let nodeIdCounter = 0
 let workflowPathCounter = 0
 
+type ExportedSubgraphWithNodes = ExportedSubgraph &
+  Required<Pick<ExportedSubgraph, 'nodes'>>
+
 function createState(nodeCount = 0): ComfyWorkflowJSON {
   const nodes: ComfyWorkflowJSON['nodes'] = Array.from(
     { length: nodeCount },
@@ -159,9 +162,6 @@ async function createSubgraphState(
 
   return await requireValidWorkflow(rootGraph.serialize())
 }
-
-type ExportedSubgraphWithNodes = ExportedSubgraph &
-  Required<Pick<ExportedSubgraph, 'nodes'>>
 
 function isExportedSubgraph(
   value: unknown

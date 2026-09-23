@@ -17,6 +17,11 @@ import { FollowerDoc } from './followerDoc'
 import { createGraphMutations } from './graphMutations'
 import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 
+function widgetsOf(node: LGraphNode) {
+  assert(node.widgets, 'test node registers widgets', { title: node.title })
+  return node.widgets
+}
+
 class TestSource extends LGraphNode {
   static override title = 'Test Source'
   constructor() {
@@ -36,11 +41,6 @@ class TestNote extends LGraphNode {
     this.addWidget('markdown', 'text', '', () => {}, { multiline: true })
     this.serialize_widgets = true
   }
-}
-
-function widgetsOf(node: LGraphNode) {
-  assert(node.widgets, 'test node registers widgets', { title: node.title })
-  return node.widgets
 }
 
 const WORKFLOW_ID = 'wf-a'

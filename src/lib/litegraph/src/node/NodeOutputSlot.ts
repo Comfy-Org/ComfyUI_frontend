@@ -17,6 +17,24 @@ import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput
 import { isSubgraphOutput } from '@/lib/litegraph/src/subgraph/subgraphUtils'
 import { warnDeprecated } from '@/lib/litegraph/src/utils/feedback'
 
+/**
+ * Module-local, not accessors: a getter-only property on the prototype would
+ * collide with the base ctor's `Object.assign` for any serialized slot that
+ * happens to carry the same key.
+ */
+function indexOf(slot: NodeOutputSlot): number {
+  return slot.node.outputs.indexOf(slot)
+}
+
+function linkIdsOf(slot: NodeOutputSlot): LinkId[] {
+  return linksOf(slot).map((link) => link.id)
+}
+
+function linksOf(slot: NodeOutputSlot): LLink[] {
+  const { graph } = slot.node
+  return graph ? outputLinks(graph, slot.node.id, indexOf(slot)) : []
+}
+
 export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
   _data?: unknown
   slot_index?: number
@@ -163,22 +181,4 @@ export class NodeOutputSlot extends NodeSlot implements INodeOutputSlot {
       slot_index: this.slot_index
     }
   }
-}
-
-/**
- * Module-local, not accessors: a getter-only property on the prototype would
- * collide with the base ctor's `Object.assign` for any serialized slot that
- * happens to carry the same key.
- */
-function indexOf(slot: NodeOutputSlot): number {
-  return slot.node.outputs.indexOf(slot)
-}
-
-function linkIdsOf(slot: NodeOutputSlot): LinkId[] {
-  return linksOf(slot).map((link) => link.id)
-}
-
-function linksOf(slot: NodeOutputSlot): LLink[] {
-  const { graph } = slot.node
-  return graph ? outputLinks(graph, slot.node.id, indexOf(slot)) : []
 }

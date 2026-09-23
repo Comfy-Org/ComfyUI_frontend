@@ -17,6 +17,21 @@ import { NodeSlotType } from '../types/globalEnums'
  * store is the source of truth, and floating links are never included.
  */
 
+interface InputReplacement {
+  input: INodeInputSlot
+  link: LLink
+  slot: number
+}
+
+export interface InputLayoutSnapshot {
+  inputs: readonly INodeInputSlot[]
+  links: ReadonlyMap<INodeInputSlot, LLink>
+}
+
+export type InputReplacementResult =
+  | { ok: true; replacements: InputReplacement[] }
+  | { ok: false; error: EndpointUpdateError }
+
 /** True when a link targets the input slot. */
 export function inputHasLink(
   graph: Pick<LGraph, 'rootGraph' | 'id'>,
@@ -82,21 +97,6 @@ export function outputLinks(
   }
   return links
 }
-
-export interface InputLayoutSnapshot {
-  inputs: readonly INodeInputSlot[]
-  links: ReadonlyMap<INodeInputSlot, LLink>
-}
-
-interface InputReplacement {
-  input: INodeInputSlot
-  link: LLink
-  slot: number
-}
-
-export type InputReplacementResult =
-  | { ok: true; replacements: InputReplacement[] }
-  | { ok: false; error: EndpointUpdateError }
 
 export function finalizeInputLinkRemoval(
   node: LGraphNode,

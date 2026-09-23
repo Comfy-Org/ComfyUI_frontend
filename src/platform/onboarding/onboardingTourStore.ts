@@ -28,20 +28,6 @@ import { useTourTriggers } from './useTourTriggers'
 
 const DEFER_TIMEOUT_MS = 8000
 
-/**
- * How the last run of a tour ended. Whatever follows a tour has to know which
- * ending it is following: "a tour ran" cannot tell a tour walked to the end
- * apart from one the user waved away on step 1, or one a missing target tore
- * down.
- */
-export type TourEnding =
-  | { tour: EntryPath; outcome: 'completed' }
-  | {
-      tour: EntryPath
-      outcome: 'skipped'
-      skipReason: OnboardingTourSkipReason
-    }
-
 /** Empty when a runtime resolver fails, so one bad graph costs only its own tour. */
 async function resolveDefinition(
   definition: TourDefinition
@@ -55,6 +41,20 @@ async function resolveDefinition(
     return { steps: [], reason: 'resolver_failed' }
   }
 }
+
+/**
+ * How the last run of a tour ended. Whatever follows a tour has to know which
+ * ending it is following: "a tour ran" cannot tell a tour walked to the end
+ * apart from one the user waved away on step 1, or one a missing target tore
+ * down.
+ */
+export type TourEnding =
+  | { tour: EntryPath; outcome: 'completed' }
+  | {
+      tour: EntryPath
+      outcome: 'skipped'
+      skipReason: OnboardingTourSkipReason
+    }
 
 /**
  * The tour state machine: which tour starts and when, which steps run, and the

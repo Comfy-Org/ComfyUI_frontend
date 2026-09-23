@@ -1,14 +1,14 @@
 import type { TierKey } from '@/platform/cloud/subscription/constants/tierPricing'
 
-export type BillingCycle = 'monthly' | 'yearly'
-
 type RankedTierKey = Exclude<TierKey, 'founder' | 'free'>
-type RankedPlanKey = `${BillingCycle}-${RankedTierKey}`
 
+type RankedPlanKey = `${BillingCycle}-${RankedTierKey}`
 interface PlanDescriptor {
   tierKey: TierKey
   billingCycle: BillingCycle
 }
+
+export type BillingCycle = 'monthly' | 'yearly'
 
 const PLAN_ORDER: RankedPlanKey[] = [
   'yearly-pro',

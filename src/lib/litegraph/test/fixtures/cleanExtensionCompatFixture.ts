@@ -15,6 +15,10 @@ const CLEAN_EXTENSION_FIXTURE_IDENTITY = Object.freeze({
     'ComfyUI-KJNodes@3f20054214fec9f9234fd3841ae6f1e4287948f6'
 })
 
+interface ActiveInstallation extends CleanExtensionInstallation {
+  disposed: boolean
+}
+
 export type CleanExtensionMode =
   | 'loaded-inactive'
   | 'label'
@@ -62,14 +66,61 @@ export interface CleanExtensionInstallation {
   dispose(): void
 }
 
-interface ActiveInstallation extends CleanExtensionInstallation {
-  disposed: boolean
-}
-
 const activeInstallations = new WeakMap<
   CleanExtensionHost,
   ActiveInstallation
 >()
+
+function createCounters(): CleanExtensionCounters {
+  return {
+    registrations: 0,
+    wrapperCalls: 0,
+    forwardedCoreDraws: 0,
+    labelHookCalls: 0,
+    labelMeasurements: 0,
+    rerouteHookCalls: 0,
+    dirtyTimerTicks: 0,
+    dirtyRequests: 0,
+    listenerCalls: 0,
+    inputLinkReads: 0,
+    outputLinksReads: 0,
+    outputLinkViewAllocations: 0,
+    graphLinkReads: 0,
+    positionComponentReads: 0,
+    sizeComponentReads: 0
+  }
+}
+
+function sweepNodeFacades(
+  node: LGraphNode,
+  graph: LGraph | null,
+  counters: CleanExtensionCounters,
+  outputViews: WeakMap<object, object>
+): void {
+  void node.pos[0]
+  void node.pos[1]
+  void node.size[0]
+  void node.size[1]
+  counters.positionComponentReads += 2
+  counters.sizeComponentReads += 2
+
+  for (const input of node.inputs) {
+    const linkId = input.link
+    counters.inputLinkReads++
+    if (linkId != null && graph?.links[linkId]) counters.graphLinkReads++
+  }
+  for (const output of node.outputs) {
+    const linkIds = output.links
+    counters.outputLinksReads++
+    if (linkIds && outputViews.get(output) !== linkIds) {
+      outputViews.set(output, linkIds)
+      counters.outputLinkViewAllocations++
+    }
+    for (const linkId of linkIds ?? []) {
+      if (graph?.links[linkId]) counters.graphLinkReads++
+    }
+  }
+}
 
 export function installCleanExtensionFixture(
   host: CleanExtensionHost,
@@ -147,55 +198,4 @@ export function installCleanExtensionFixture(
   }
   activeInstallations.set(host, installation)
   return installation
-}
-
-function createCounters(): CleanExtensionCounters {
-  return {
-    registrations: 0,
-    wrapperCalls: 0,
-    forwardedCoreDraws: 0,
-    labelHookCalls: 0,
-    labelMeasurements: 0,
-    rerouteHookCalls: 0,
-    dirtyTimerTicks: 0,
-    dirtyRequests: 0,
-    listenerCalls: 0,
-    inputLinkReads: 0,
-    outputLinksReads: 0,
-    outputLinkViewAllocations: 0,
-    graphLinkReads: 0,
-    positionComponentReads: 0,
-    sizeComponentReads: 0
-  }
-}
-
-function sweepNodeFacades(
-  node: LGraphNode,
-  graph: LGraph | null,
-  counters: CleanExtensionCounters,
-  outputViews: WeakMap<object, object>
-): void {
-  void node.pos[0]
-  void node.pos[1]
-  void node.size[0]
-  void node.size[1]
-  counters.positionComponentReads += 2
-  counters.sizeComponentReads += 2
-
-  for (const input of node.inputs) {
-    const linkId = input.link
-    counters.inputLinkReads++
-    if (linkId != null && graph?.links[linkId]) counters.graphLinkReads++
-  }
-  for (const output of node.outputs) {
-    const linkIds = output.links
-    counters.outputLinksReads++
-    if (linkIds && outputViews.get(output) !== linkIds) {
-      outputViews.set(output, linkIds)
-      counters.outputLinkViewAllocations++
-    }
-    for (const linkId of linkIds ?? []) {
-      if (graph?.links[linkId]) counters.graphLinkReads++
-    }
-  }
 }

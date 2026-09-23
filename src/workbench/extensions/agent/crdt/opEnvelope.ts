@@ -16,17 +16,6 @@ import type { GraphOperation } from './graphOperations'
 export const WIRE_MAX_OPS_PER_BATCH = 256
 export const WIRE_MAX_BATCH_BYTES = 4 * 1024 * 1024
 
-export interface MintContext {
-  actor: Actor
-  /** Doc version the ops are minted against (`base_version` on every op). */
-  baseVersion: number
-}
-
-/** uuid4 hex: 32 lowercase `[0-9a-f]` chars (vocabulary §8.2). */
-export function mintOpId(): string {
-  return createUuidv4().replaceAll('-', '')
-}
-
 function withEnvelope<T extends GraphOperation>(
   operation: T,
   { actor, baseVersion }: MintContext
@@ -40,6 +29,25 @@ function withEnvelope<T extends GraphOperation>(
   }
 }
 
+function isBatchable(op: Op): boolean {
+  return (BATCHABLE_OPS as readonly string[]).includes(op.op)
+}
+
+function wireSize(op: Op): number {
+  return new TextEncoder().encode(JSON.stringify(op)).length
+}
+
+export interface MintContext {
+  actor: Actor
+  /** Doc version the ops are minted against (`base_version` on every op). */
+  baseVersion: number
+}
+
+/** uuid4 hex: 32 lowercase `[0-9a-f]` chars (vocabulary §8.2). */
+export function mintOpId(): string {
+  return createUuidv4().replaceAll('-', '')
+}
+
 /**
  * Attach wire identity to every operation. `op_id` is minted exactly once
  * here — a retry re-sends the SAME minted ops (the sender never re-mints;
@@ -50,14 +58,6 @@ export function mintWireOps(
   context: MintContext
 ): Op[] {
   return operations.map((operation) => withEnvelope(operation, context))
-}
-
-function isBatchable(op: Op): boolean {
-  return (BATCHABLE_OPS as readonly string[]).includes(op.op)
-}
-
-function wireSize(op: Op): number {
-  return new TextEncoder().encode(JSON.stringify(op)).length
 }
 
 /**

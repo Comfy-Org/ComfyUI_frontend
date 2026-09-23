@@ -6,6 +6,14 @@ import type { NodeId } from '@/types/nodeId'
 
 import type { ResolvedMinimapNodeDecoration } from '@/platform/canvas/minimapDecorationRegistry'
 
+interface MinimapRenderSettings {
+  nodeColors: boolean
+  showLinks: boolean
+  showGroups: boolean
+  renderBypass: boolean
+  renderError: boolean
+}
+
 /**
  * Minimal interface for what the minimap needs from the canvas
  */
@@ -32,14 +40,6 @@ export interface MinimapRenderContext {
   height: number
   decorations?: readonly ResolvedMinimapNodeDecoration[]
   now?: number
-}
-
-interface MinimapRenderSettings {
-  nodeColors: boolean
-  showLinks: boolean
-  showGroups: boolean
-  renderBypass: boolean
-  renderError: boolean
 }
 
 export interface MinimapBounds {

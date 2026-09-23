@@ -30,30 +30,15 @@ interface IOffsetWorkaround {
   safeOffsetY: number
 }
 
-/** All properties added when converting a pointer event to a CanvasPointerEvent (via {@link LGraphCanvas.adjustMouseEvent}). */
-export type CanvasPointerExtensions = ICanvasPosition &
-  IDeltaPosition &
-  IOffsetWorkaround
-
 interface LegacyMouseEvent {
   /** @deprecated Part of DragAndScale mouse API - incomplete / not maintained */
   dragging?: boolean
   click_time?: number
 }
 
-/** PointerEvent with canvasX/Y and deltaX/Y properties */
-export interface CanvasPointerEvent extends PointerEvent, CanvasMouseEvent {}
-
 /** MouseEvent with canvasX/Y and deltaX/Y properties */
 interface CanvasMouseEvent
   extends MouseEvent, Readonly<CanvasPointerExtensions>, LegacyMouseEvent {}
-
-export type CanvasEventDetail =
-  | GenericEventDetail
-  | GroupDoubleClickEventDetail
-  | NodeDoubleClickEventDetail
-  | EmptyDoubleClickEventDetail
-  | EmptyReleaseEventDetail
 
 interface GenericEventDetail {
   subType: 'before-change' | 'after-change'
@@ -81,3 +66,18 @@ interface NodeDoubleClickEventDetail extends OriginalEvent {
   subType: 'node-double-click'
   node: LGraphNode
 }
+
+/** All properties added when converting a pointer event to a CanvasPointerEvent (via {@link LGraphCanvas.adjustMouseEvent}). */
+export type CanvasPointerExtensions = ICanvasPosition &
+  IDeltaPosition &
+  IOffsetWorkaround
+
+/** PointerEvent with canvasX/Y and deltaX/Y properties */
+export interface CanvasPointerEvent extends PointerEvent, CanvasMouseEvent {}
+
+export type CanvasEventDetail =
+  | GenericEventDetail
+  | GroupDoubleClickEventDetail
+  | NodeDoubleClickEventDetail
+  | EmptyDoubleClickEventDetail
+  | EmptyReleaseEventDetail

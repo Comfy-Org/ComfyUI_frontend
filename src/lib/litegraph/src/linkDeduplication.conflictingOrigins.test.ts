@@ -28,24 +28,16 @@ vi.mock<unknown>(import('@/platform/telemetry'), () => ({
   })
 }))
 
-class DupTestNode extends LGraphNode {
-  constructor(title?: string) {
-    super(title ?? 'DupTestNode')
-    this.addInput('input_0', 'number')
-    this.addOutput('output_0', 'number')
-  }
+interface SerializedLinkFields {
+  origin_id: NodeId
+  target_id: NodeId
+  target_slot: number
 }
 
 function configureConflictingOrigins() {
   const graph = new LGraph()
   graph.configure(structuredClone(conflictingOriginLinksRoot))
   return graph
-}
-
-interface SerializedLinkFields {
-  origin_id: NodeId
-  target_id: NodeId
-  target_slot: number
 }
 
 function linkFieldsOf(
@@ -78,6 +70,14 @@ function linksIntoTargetSlot(
     ({ target_id, target_slot }) =>
       target_id === targetId && target_slot === targetSlot
   )
+}
+
+class DupTestNode extends LGraphNode {
+  constructor(title?: string) {
+    super(title ?? 'DupTestNode')
+    this.addInput('input_0', 'number')
+    this.addOutput('output_0', 'number')
+  }
 }
 
 describe('normalizeConfiguredTopology with conflicting origins (#15577)', () => {

@@ -2,6 +2,19 @@ import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/w
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 /**
+ * Type guard to check if metadata is OutputAssetMetadata
+ */
+function isOutputAssetMetadata(
+  metadata: Record<string, unknown> | undefined
+): metadata is OutputAssetMetadata {
+  return (
+    !!metadata &&
+    typeof metadata.jobId === 'string' &&
+    typeof metadata.subfolder === 'string'
+  )
+}
+
+/**
  * Metadata for output assets from queue store
  * Extends Record<string, unknown> for compatibility with AssetItem schema
  */
@@ -15,19 +28,6 @@ export interface OutputAssetMetadata extends Record<string, unknown> {
   outputCount?: number
   allOutputs?: AugmentedResultItem[]
   assetId?: string
-}
-
-/**
- * Type guard to check if metadata is OutputAssetMetadata
- */
-function isOutputAssetMetadata(
-  metadata: Record<string, unknown> | undefined
-): metadata is OutputAssetMetadata {
-  return (
-    !!metadata &&
-    typeof metadata.jobId === 'string' &&
-    typeof metadata.subfolder === 'string'
-  )
 }
 
 /**

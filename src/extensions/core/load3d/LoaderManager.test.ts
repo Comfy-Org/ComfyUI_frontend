@@ -17,14 +17,6 @@ import type {
 } from './ModelAdapter'
 import { fetchModelData } from './ModelAdapter'
 
-function makeEventManagerStub() {
-  return {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    emitEvent: vi.fn()
-  }
-}
-
 type ModelManagerStub = {
   clearModel: ReturnType<typeof vi.fn>
   setupModel: ReturnType<typeof vi.fn>
@@ -34,6 +26,14 @@ type ModelManagerStub = {
   materialMode: MaterialMode
   originalFileName: string | null
   originalURL: string | null
+}
+
+function makeEventManagerStub() {
+  return {
+    addEventListener: vi.fn(),
+    removeEventListener: vi.fn(),
+    emitEvent: vi.fn()
+  }
 }
 
 const STUB_CAPS = {} as ModelAdapterCapabilities

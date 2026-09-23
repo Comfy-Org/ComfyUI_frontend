@@ -16,29 +16,6 @@ const BASE64_SINGLE_PADDING_END = /[AEIMQUYcgkosw048]=$/
 const BASE64_DOUBLE_PADDING_END = /[AQgw]==$/
 const utf8 = new TextEncoder()
 
-export interface DocOp {
-  op_id: string
-  actor: string
-  [key: string]: unknown
-}
-
-export interface DocUpdate {
-  workflowId: string
-  seq: number
-  update: Uint8Array
-  actor?: string
-  /** Accepted semantic op identities folded into this effect frame (DQ-9). */
-  opIds?: string[]
-}
-
-export interface DocSubscribed {
-  workflowId: string
-  ok: boolean
-  seq?: number
-  code?: string
-  message?: string
-}
-
 interface DocOpFailure {
   index: number
   /** Absent when the relay cannot map the failing index to an op id. */
@@ -64,44 +41,6 @@ interface DocAwareness {
   actor: string
   state?: Record<string, unknown>
   expiresAt?: number
-}
-
-/**
- * Host→follower lineage break: the document was re-minted, so updates from
- * before this frame do NOT compose with what comes after. Deliberately
- * payload-less — the fresh state arrives through the ordinary subscribe
- * catch-up path, never a second snapshot channel.
- */
-export interface DocReset {
-  workflowId: string
-  seq: number
-  actor?: string
-}
-
-export type ServerDocFrame =
-  | { type: 'doc_update'; data: DocUpdate }
-  | { type: 'doc_subscribed'; data: DocSubscribed }
-  | { type: 'doc_ops_result'; data: DocOpsResult }
-  | { type: 'doc_reset'; data: DocReset }
-  | { type: 'awareness'; data: DocAwareness }
-
-/** A frame as it travels the wire, before {@link parseServerDocFrame} reads it. */
-export interface DocFrameTransport {
-  /**
-   * Best-effort send. Returns `true` when the frame left the transport and
-   * `false` when the transport cannot currently carry it (socket not OPEN).
-   *
-   * It MUST NOT throw. "The socket is not connected yet" is a normal,
-   * recoverable state of a follower that mounted while `createSocket` was still
-   * awaiting its auth token — not an exception. Throwing here aborted the
-   * `watch(..., { immediate: true })` subscribe (leaving the follower
-   * permanently inert) and aborted `onBeforeUnmount` before `client.destroy()`
-   * (leaking listeners and a live projector). Callers reconcile intent against
-   * the returned boolean instead.
-   */
-  send(frame: string): boolean
-  addEventListener(type: string, listener: EventListener): void
-  removeEventListener(type: string, listener: EventListener): void
 }
 
 interface WireData {
@@ -141,12 +80,6 @@ function decodeBase64(value: string): Uint8Array | null {
   } catch {
     return null
   }
-}
-
-export function encodeBase64(value: Uint8Array): string {
-  let binary = ''
-  for (const byte of value) binary += String.fromCharCode(byte)
-  return btoa(binary)
 }
 
 function parseWireData(value: unknown): WireData | null {
@@ -267,6 +200,73 @@ function encodedJsonSize(value: Record<string, unknown>): number | null {
   } catch {
     return null
   }
+}
+
+export interface DocOp {
+  op_id: string
+  actor: string
+  [key: string]: unknown
+}
+
+export interface DocUpdate {
+  workflowId: string
+  seq: number
+  update: Uint8Array
+  actor?: string
+  /** Accepted semantic op identities folded into this effect frame (DQ-9). */
+  opIds?: string[]
+}
+
+export interface DocSubscribed {
+  workflowId: string
+  ok: boolean
+  seq?: number
+  code?: string
+  message?: string
+}
+
+/**
+ * Host→follower lineage break: the document was re-minted, so updates from
+ * before this frame do NOT compose with what comes after. Deliberately
+ * payload-less — the fresh state arrives through the ordinary subscribe
+ * catch-up path, never a second snapshot channel.
+ */
+export interface DocReset {
+  workflowId: string
+  seq: number
+  actor?: string
+}
+
+export type ServerDocFrame =
+  | { type: 'doc_update'; data: DocUpdate }
+  | { type: 'doc_subscribed'; data: DocSubscribed }
+  | { type: 'doc_ops_result'; data: DocOpsResult }
+  | { type: 'doc_reset'; data: DocReset }
+  | { type: 'awareness'; data: DocAwareness }
+
+/** A frame as it travels the wire, before {@link parseServerDocFrame} reads it. */
+export interface DocFrameTransport {
+  /**
+   * Best-effort send. Returns `true` when the frame left the transport and
+   * `false` when the transport cannot currently carry it (socket not OPEN).
+   *
+   * It MUST NOT throw. "The socket is not connected yet" is a normal,
+   * recoverable state of a follower that mounted while `createSocket` was still
+   * awaiting its auth token — not an exception. Throwing here aborted the
+   * `watch(..., { immediate: true })` subscribe (leaving the follower
+   * permanently inert) and aborted `onBeforeUnmount` before `client.destroy()`
+   * (leaking listeners and a live projector). Callers reconcile intent against
+   * the returned boolean instead.
+   */
+  send(frame: string): boolean
+  addEventListener(type: string, listener: EventListener): void
+  removeEventListener(type: string, listener: EventListener): void
+}
+
+export function encodeBase64(value: Uint8Array): string {
+  let binary = ''
+  for (const byte of value) binary += String.fromCharCode(byte)
+  return btoa(binary)
 }
 
 export function parseServerDocFrame(value: unknown): ServerDocFrame | null {

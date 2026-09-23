@@ -8,21 +8,6 @@ import {
 let queue: Promise<unknown> = Promise.resolve()
 const MODEL_LOAD_TIMEOUT_MS = 15_000
 
-/**
- * Render a model to a thumbnail data URL offscreen, without opening the
- * viewer. Runs one generation at a time to bound live WebGL contexts and
- * persists the result through the asset API so other surfaces pick it up.
- * Resolves null when the model cannot be rendered.
- */
-export function generateModelThumbnail(
-  modelUrl: string,
-  assetName: string
-): Promise<string | null> {
-  const run = queue.then(() => renderThumbnail(modelUrl, assetName))
-  queue = run.catch(() => null)
-  return run
-}
-
 async function renderThumbnail(
   modelUrl: string,
   assetName: string
@@ -51,4 +36,19 @@ async function renderThumbnail(
   } catch {
     return null
   }
+}
+
+/**
+ * Render a model to a thumbnail data URL offscreen, without opening the
+ * viewer. Runs one generation at a time to bound live WebGL contexts and
+ * persists the result through the asset API so other surfaces pick it up.
+ * Resolves null when the model cannot be rendered.
+ */
+export function generateModelThumbnail(
+  modelUrl: string,
+  assetName: string
+): Promise<string | null> {
+  const run = queue.then(() => renderThumbnail(modelUrl, assetName))
+  queue = run.catch(() => null)
+  return run
 }

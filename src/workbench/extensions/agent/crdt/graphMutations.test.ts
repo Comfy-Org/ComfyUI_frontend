@@ -55,6 +55,8 @@ const context: RemoteMutationContext = {
   opId: 'op-1'
 }
 
+type LiveWidget = WidgetStateInit & { name: string }
+
 function node(id: number, widgets_values: Record<string, unknown> = {}) {
   return {
     id,
@@ -87,8 +89,6 @@ function mockNodeDef(overrides: Partial<ComfyNodeDef> = {}): ComfyNodeDef {
     ...overrides
   }
 }
-
-type LiveWidget = WidgetStateInit & { name: string }
 
 const samplerWidgets: readonly LiveWidget[] = [
   { name: 'steps', type: 'number', value: 20, options: { min: 1, max: 100 } },

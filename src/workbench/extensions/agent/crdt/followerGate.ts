@@ -26,32 +26,6 @@ import { reportError } from '@/platform/telemetry/reportError'
 export const FOLLOWER_STORAGE_KEY = 'Comfy.Agent.CrdtFollower'
 export const FOLLOWER_QUERY_PARAM = 'agentCrdtFollower'
 
-export interface FollowerGateInput {
-  /** `import.meta.env.VITE_AGENT_CRDT_FOLLOWER` (build-time). */
-  buildFlag: string | undefined
-  /** `window.location.search`, including the leading `?` or empty. */
-  search: string
-  /** `window.localStorage`, or null when storage is unavailable. */
-  storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null
-}
-
-export function resolveFollowerEnabled(input: FollowerGateInput): boolean {
-  const param = new URLSearchParams(input.search).get(FOLLOWER_QUERY_PARAM)
-
-  if (param === '1' || param === 'true') {
-    trySet(input.storage, 'true')
-    return true
-  }
-  if (param === '0' || param === 'false') {
-    tryRemove(input.storage)
-    return false
-  }
-
-  if (tryGet(input.storage) === 'true') return true
-
-  return input.buildFlag === 'true'
-}
-
 function tryGet(storage: FollowerGateInput['storage']): string | null {
   try {
     return storage?.getItem(FOLLOWER_STORAGE_KEY) ?? null
@@ -84,4 +58,30 @@ function tryRemove(storage: FollowerGateInput['storage']): void {
     })
     // Storage denied: nothing was persisted, so nothing to clear.
   }
+}
+
+export interface FollowerGateInput {
+  /** `import.meta.env.VITE_AGENT_CRDT_FOLLOWER` (build-time). */
+  buildFlag: string | undefined
+  /** `window.location.search`, including the leading `?` or empty. */
+  search: string
+  /** `window.localStorage`, or null when storage is unavailable. */
+  storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> | null
+}
+
+export function resolveFollowerEnabled(input: FollowerGateInput): boolean {
+  const param = new URLSearchParams(input.search).get(FOLLOWER_QUERY_PARAM)
+
+  if (param === '1' || param === 'true') {
+    trySet(input.storage, 'true')
+    return true
+  }
+  if (param === '0' || param === 'false') {
+    tryRemove(input.storage)
+    return false
+  }
+
+  if (tryGet(input.storage) === 'true') return true
+
+  return input.buildFlag === 'true'
 }

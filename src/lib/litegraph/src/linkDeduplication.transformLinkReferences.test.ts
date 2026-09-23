@@ -33,6 +33,12 @@ const TARGET_ID = 3
 const SURVIVOR_LINK_ID = 1
 const DUPLICATE_LINK_ID = 2
 
+interface LocationCase {
+  name: string
+  attach: (graph: Graph, originId: number) => void
+  read: (graph: Graph, originId: number) => number[]
+}
+
 /** Origin node id for the duplicate link: same node in "replace", a different node in "remove". */
 function duplicateOriginId(mode: Mode): number {
   return mode === 'replace' ? SURVIVOR_ORIGIN_ID : 2
@@ -120,12 +126,6 @@ function buildGraph(
 
   attachExtraLocation(graph, originId)
   return graph
-}
-
-interface LocationCase {
-  name: string
-  attach: (graph: Graph, originId: number) => void
-  read: (graph: Graph, originId: number) => number[]
 }
 
 const locations: LocationCase[] = [

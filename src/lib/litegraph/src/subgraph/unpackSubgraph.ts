@@ -9,18 +9,6 @@ import { LGraphNode } from '../LGraphNode'
 import { LiteGraph } from '../litegraph'
 import type { ISerialisedNode } from '../types/serialisation'
 
-export type UnpackedTargetInput =
-  | {
-      kind: 'input'
-      input: INodeInputSlot
-      subgraphInputId?: UUID
-    }
-  | {
-      kind: 'subgraph'
-      id: UUID
-    }
-  | { kind: 'unresolved' }
-
 function inputSlotMarker(
   input: Pick<INodeInputSlot, 'name' | 'type'>,
   markerProperty: string
@@ -145,16 +133,6 @@ function createNodeForUnpack(nodeInfo: ISerialisedNode) {
   return placeholder
 }
 
-export function findUnavailableSubgraphNodeType(
-  nodes: Iterable<LGraphNode>
-): string | undefined {
-  for (const node of nodes) {
-    if (!Object.hasOwn(LiteGraph.registered_node_types, node.type)) {
-      return node.type
-    }
-  }
-}
-
 function stripSerializedLinks(nodeInfo: ISerialisedNode) {
   for (const input of nodeInfo.inputs ?? []) input.link = null
   for (const output of nodeInfo.outputs ?? []) output.links = []
@@ -180,6 +158,28 @@ function configuredInputSlots(
     Reflect.deleteProperty(input, markerProperty)
   }
   return configuredSlots
+}
+
+export type UnpackedTargetInput =
+  | {
+      kind: 'input'
+      input: INodeInputSlot
+      subgraphInputId?: UUID
+    }
+  | {
+      kind: 'subgraph'
+      id: UUID
+    }
+  | { kind: 'unresolved' }
+
+export function findUnavailableSubgraphNodeType(
+  nodes: Iterable<LGraphNode>
+): string | undefined {
+  for (const node of nodes) {
+    if (!Object.hasOwn(LiteGraph.registered_node_types, node.type)) {
+      return node.type
+    }
+  }
 }
 
 export function materializeSubgraphNodes({

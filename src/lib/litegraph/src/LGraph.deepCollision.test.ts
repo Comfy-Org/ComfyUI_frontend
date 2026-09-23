@@ -48,16 +48,6 @@ const COLLIDING_NODE_IDS = [7, 8]
 /** Every scope below claims link 1, reroute 1 and group 1. */
 const COLLIDING_ENTITY_ID = 1
 
-class DummyNode extends LGraphNode {
-  constructor() {
-    super('dummy')
-    this.addInput('in', 'number')
-    this.addOutput('out', 'number')
-    this.addWidget('number', 'seed', 0, () => {})
-    this.addWidget('string', 'prompt', '', () => {})
-  }
-}
-
 /**
  * `title` records which scope and which original ID a node came from, so a
  * remapped reference can be traced back to the entity it used to name.
@@ -232,6 +222,16 @@ function scopesOf(graph: LGraph): { name: string; graph: LGraph | Subgraph }[] {
     { name: 'B', graph: graph.subgraphs.get(DEF_B)! },
     { name: 'C', graph: graph.subgraphs.get(DEF_C)! }
   ]
+}
+
+class DummyNode extends LGraphNode {
+  constructor() {
+    super('dummy')
+    this.addInput('in', 'number')
+    this.addOutput('out', 'number')
+    this.addWidget('number', 'seed', 0, () => {})
+    this.addWidget('string', 'prompt', '', () => {})
+  }
 }
 
 beforeEach(() => {

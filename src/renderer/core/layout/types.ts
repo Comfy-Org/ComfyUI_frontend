@@ -11,11 +11,64 @@ import type { RerouteId } from '@/types/rerouteId'
 import type { SlotDirection, SlotIndex } from '@/types/slotId'
 import type { UUID } from '@/utils/uuid'
 
-// Enum for layout source types
-export enum LayoutSource {
-  Canvas = 'canvas',
-  Vue = 'vue',
-  AgentRemote = 'agent-remote'
+/**
+ * Meta-only base for all operations - contains common fields
+ */
+interface OperationMeta {
+  /** Timestamp for ordering operations */
+  timestamp: number
+  /** Actor who performed the operation (for CRDT) */
+  actor?: string
+  /** Originating semantic op identity when applied by a remote follower. */
+  opId?: string
+  /** Source system that initiated the operation */
+  source: LayoutSource
+  graphId: UUID
+  /** Operation type discriminator */
+  type: OperationType
+}
+
+type NodeOpBase = OperationMeta & { nodeId: NodeId }
+
+type RerouteOpBase = OperationMeta & { rerouteId: RerouteId }
+
+/**
+ * Operation type discriminator for type narrowing
+ */
+type OperationType =
+  | 'moveNode'
+  | 'resizeNode'
+  | 'setNodeZIndex'
+  | 'createNode'
+  | 'deleteNode'
+  | 'batchUpdateBounds'
+  | 'createReroute'
+  | 'deleteReroute'
+  | 'moveReroute'
+  | 'createGroup'
+  | 'setGroupBounds'
+  | 'deleteGroup'
+  | 'clearGraph'
+
+type GroupOpBase = OperationMeta & {
+  groupId: GroupId
+}
+
+export type { LinkId }
+export type { NodeId }
+export type { RerouteId }
+
+interface CreateGroupOperation extends GroupOpBase {
+  type: 'createGroup'
+  layout: GroupLayout
+}
+
+interface DeleteGroupOperation extends GroupOpBase {
+  type: 'deleteGroup'
+}
+
+interface ClearGraphOperation extends OperationMeta {
+  type: 'clearGraph'
 }
 
 // Basic geometric types
@@ -41,10 +94,6 @@ export interface NodeBoundsUpdate {
   bounds: Bounds
 }
 
-export type { LinkId }
-export type { NodeId }
-export type { RerouteId }
-
 // Layout data structures
 export interface NodeLayout {
   id: NodeId
@@ -69,7 +118,6 @@ export interface SlotOffset {
   type: SlotDirection
   position: Point
 }
-
 export type SlotOffsetMode = 'expanded' | 'collapsed'
 
 export interface LinkLayout {
@@ -109,44 +157,6 @@ export interface RerouteLayout {
   radius: number
   bounds: Bounds
 }
-
-/**
- * Meta-only base for all operations - contains common fields
- */
-interface OperationMeta {
-  /** Timestamp for ordering operations */
-  timestamp: number
-  /** Actor who performed the operation (for CRDT) */
-  actor?: string
-  /** Originating semantic op identity when applied by a remote follower. */
-  opId?: string
-  /** Source system that initiated the operation */
-  source: LayoutSource
-  graphId: UUID
-  /** Operation type discriminator */
-  type: OperationType
-}
-
-type NodeOpBase = OperationMeta & { nodeId: NodeId }
-type RerouteOpBase = OperationMeta & { rerouteId: RerouteId }
-
-/**
- * Operation type discriminator for type narrowing
- */
-type OperationType =
-  | 'moveNode'
-  | 'resizeNode'
-  | 'setNodeZIndex'
-  | 'createNode'
-  | 'deleteNode'
-  | 'batchUpdateBounds'
-  | 'createReroute'
-  | 'deleteReroute'
-  | 'moveReroute'
-  | 'createGroup'
-  | 'setGroupBounds'
-  | 'deleteGroup'
-  | 'clearGraph'
 
 /**
  * Move node operation
@@ -239,15 +249,6 @@ export interface MoveRerouteOperation extends RerouteOpBase {
   position: Point
 }
 
-type GroupOpBase = OperationMeta & {
-  groupId: GroupId
-}
-
-interface CreateGroupOperation extends GroupOpBase {
-  type: 'createGroup'
-  layout: GroupLayout
-}
-
 /**
  * Groups move and resize as one Rectangle, so a single bounds operation keeps
  * position and size from ever being written apart.
@@ -256,14 +257,6 @@ export interface SetGroupBoundsOperation extends GroupOpBase {
   type: 'setGroupBounds'
   position: Point
   size: Size
-}
-
-interface DeleteGroupOperation extends GroupOpBase {
-  type: 'deleteGroup'
-}
-
-interface ClearGraphOperation extends OperationMeta {
-  type: 'clearGraph'
 }
 
 /**
@@ -291,4 +284,11 @@ export interface LayoutChange {
   timestamp: number
   source: LayoutSource
   operation: LayoutOperation
+}
+
+// Enum for layout source types
+export enum LayoutSource {
+  Canvas = 'canvas',
+  Vue = 'vue',
+  AgentRemote = 'agent-remote'
 }

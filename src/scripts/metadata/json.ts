@@ -2,6 +2,10 @@ import { isObject } from 'es-toolkit/compat'
 
 import { parseJsonWithNonFinite } from '@/utils/jsonUtil'
 
+function isApiJson(data: unknown) {
+  return isObject(data) && Object.values(data).every((v) => v.class_type)
+}
+
 export function getDataFromJSON(
   file: File
 ): Promise<Record<string, object> | undefined> {
@@ -33,8 +37,4 @@ export function getDataFromJSON(
     reader.onabort = () => resolve(undefined)
     reader.readAsText(file)
   })
-}
-
-function isApiJson(data: unknown) {
-  return isObject(data) && Object.values(data).every((v) => v.class_type)
 }

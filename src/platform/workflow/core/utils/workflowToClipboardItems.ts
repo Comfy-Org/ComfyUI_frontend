@@ -11,23 +11,6 @@ type LegacyWorkflowGraph = Omit<ISerialisedGraph, 'links'> & {
   links?: ISerialisedGraph['links']
 }
 
-export function workflowToClipboardItems(
-  workflow: LegacyWorkflowGraph | SerialisableGraph
-): ClipboardItems {
-  const graph = structuredClone(workflow)
-
-  return {
-    nodes: graph.nodes ?? [],
-    groups: (graph.groups ?? []).map((group) => ({
-      ...group,
-      id: group.id
-    })),
-    reroutes: getReroutes(graph),
-    links: getLinks(graph),
-    subgraphs: flattenSubgraphs(graph.definitions?.subgraphs ?? [])
-  }
-}
-
 function getLinks(
   graph: LegacyWorkflowGraph | SerialisableGraph
 ): SerialisableLLink[] {
@@ -87,4 +70,21 @@ function flattenSubgraphs(definitions: ExportedSubgraph[]): ExportedSubgraph[] {
 
   definitions.forEach(visit)
   return result
+}
+
+export function workflowToClipboardItems(
+  workflow: LegacyWorkflowGraph | SerialisableGraph
+): ClipboardItems {
+  const graph = structuredClone(workflow)
+
+  return {
+    nodes: graph.nodes ?? [],
+    groups: (graph.groups ?? []).map((group) => ({
+      ...group,
+      id: group.id
+    })),
+    reroutes: getReroutes(graph),
+    links: getLinks(graph),
+    subgraphs: flattenSubgraphs(graph.definitions?.subgraphs ?? [])
+  }
 }

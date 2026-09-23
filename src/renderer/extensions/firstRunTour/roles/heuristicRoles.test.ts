@@ -11,10 +11,6 @@ import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 
 import { heuristicRoles } from './heuristicRoles'
 
-class OutputNode extends LGraphNode {
-  static override nodeData = { output_node: true }
-}
-
 function addNode(
   graph: LGraph | Subgraph,
   type: string,
@@ -97,6 +93,10 @@ function addExposedPrompt(root: LGraph, portName: string) {
   const slot = text.addInput('text', 'STRING', { widget: { name: 'text' } })
   subgraph.inputNode.slots[0].connect(slot, text)
   return text
+}
+
+class OutputNode extends LGraphNode {
+  static override nodeData = { output_node: true }
 }
 
 describe('heuristicRoles', () => {

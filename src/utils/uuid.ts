@@ -7,14 +7,6 @@ export const zeroUuid = '00000000-0000-0000-0000-000000000000'
 /** Pre-allocated storage for uuid random values. */
 const randomStorage = new Uint32Array(31)
 
-/** Thrown by {@link createUuidv4} when no Web Crypto implementation is available. */
-export class UuidGenerationError extends Error {
-  constructor(message: string) {
-    super(message)
-    this.name = 'UuidGenerationError'
-  }
-}
-
 function getWebCrypto(): Crypto | undefined {
   return globalThis.crypto
 }
@@ -52,4 +44,12 @@ export function createUuidv4(): UUID {
 export function ensureNonZeroUuid(entity: { id: UUID }): UUID {
   if (entity.id === zeroUuid) entity.id = createUuidv4()
   return entity.id
+}
+
+/** Thrown by {@link createUuidv4} when no Web Crypto implementation is available. */
+export class UuidGenerationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'UuidGenerationError'
+  }
 }

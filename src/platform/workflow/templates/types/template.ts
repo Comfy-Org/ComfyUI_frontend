@@ -69,14 +69,6 @@ export interface TemplateInfo {
   logos?: LogoInfo[]
 }
 
-export enum TemplateIncludeOnDistributionEnum {
-  Cloud = 'cloud',
-  Local = 'local',
-  Desktop = 'desktop',
-  Mac = 'mac',
-  Windows = 'windows'
-}
-
 export interface WorkflowTemplates {
   moduleName: string
   templates: TemplateInfo[]
@@ -95,3 +87,11 @@ export interface TemplateGroup {
 }
 
 export type TemplateTypeFilter = 'all' | 'nodeGraph' | 'apps'
+
+export enum TemplateIncludeOnDistributionEnum {
+  Cloud = 'cloud',
+  Local = 'local',
+  Desktop = 'desktop',
+  Mac = 'mac',
+  Windows = 'windows'
+}

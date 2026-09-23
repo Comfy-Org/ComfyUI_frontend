@@ -29,6 +29,10 @@ const TEST_CUSTOM_COMBO_TYPE = 'test/CustomComboSubgraphPromotion'
 const TEST_CUSTOM_COMBO_UNCONVERTED_TYPE =
   'test/CustomComboUnconvertedSubgraphPromotion'
 
+function findWidget(node: LGraphNode, name: string) {
+  return node.widgets?.find((widget) => widget.name === name)
+}
+
 class TestCustomComboNode extends LGraphNode {
   static override title = 'CustomCombo'
 
@@ -64,10 +68,6 @@ class TestCustomComboNodeWithoutInput extends LGraphNode {
       values: [] as string[]
     })
   }
-}
-
-function findWidget(node: LGraphNode, name: string) {
-  return node.widgets?.find((widget) => widget.name === name)
 }
 
 describe('CustomCombo index widget after subgraph promotion', () => {

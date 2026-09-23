@@ -7,17 +7,14 @@ import { getFromAvifFile } from './metadata/avif'
 import { getFromFlacFile } from './metadata/flac'
 import { getFromPngFile } from './metadata/png'
 
-// Original functions left in for backwards compatibility
-export function getPngMetadata(file: File): Promise<Record<string, string>> {
-  return getFromPngFile(file)
+interface NodeConnection {
+  node: LGraphNode
+  index: number
 }
 
-export function getFlacMetadata(file: File): Promise<Record<string, string>> {
-  return getFromFlacFile(file)
-}
-
-export function getAvifMetadata(file: File): Promise<Record<string, string>> {
-  return getFromAvifFile(file)
+interface LoraEntry {
+  name: string
+  weight: number
 }
 
 function parseExifData(exifData: Uint8Array) {
@@ -69,6 +66,19 @@ function parseExifData(exifData: Uint8Array) {
   // Parse the first IFD
   const ifdData = parseIFD(ifdOffset)
   return ifdData
+}
+
+// Original functions left in for backwards compatibility
+export function getPngMetadata(file: File): Promise<Record<string, string>> {
+  return getFromPngFile(file)
+}
+
+export function getFlacMetadata(file: File): Promise<Record<string, string>> {
+  return getFromFlacFile(file)
+}
+
+export function getAvifMetadata(file: File): Promise<Record<string, string>> {
+  return getFromAvifFile(file)
 }
 
 export function getWebpMetadata(file: File) {
@@ -161,16 +171,6 @@ export function getLatentMetadata(
     const slice = file.slice(0, 1024 * 1024 * 4)
     reader.readAsArrayBuffer(slice)
   })
-}
-
-interface NodeConnection {
-  node: LGraphNode
-  index: number
-}
-
-interface LoraEntry {
-  name: string
-  weight: number
 }
 
 const A1111_NEGATIVE_PROMPT_PREFIX = '\nNegative prompt:'

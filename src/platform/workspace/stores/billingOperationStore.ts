@@ -71,30 +71,6 @@ type OperationStatus =
   | 'timeout'
   | 'reconciliation_needed'
 
-export interface StartOperationMetadata {
-  tier?: SubscriptionCheckoutTier
-  cycle?: BillingCycle
-  checkoutType?: SubscriptionCheckoutType
-  paymentIntentSource?: PaymentIntentSource
-  suppressProcessingToast?: boolean
-  autoHandleRequiresAction?: boolean
-  downgradeToPersonal?: {
-    memberRemovalCount: number
-    memberRemovalFailures: number
-    targetTier?: TierKey
-    startedAt: number
-  }
-  /**
-   * The timestamp the caller used for its own canonical `started` telemetry
-   * event (i.e. before the initiating subscribe/top-up/cancel API call), so
-   * `duration_ms` on the poller's terminal events spans the full emitted
-   * lifecycle instead of just the poll-observation window. Defaults to
-   * `Date.now()` (poll-start time) when the caller has no such timestamp,
-   * e.g. recovering a pending operation on page load.
-   */
-  attemptStartedAt?: number
-}
-
 interface BillingOperation {
   opId: string
   type: OperationType
@@ -139,6 +115,30 @@ interface FailureRecovery {
   readonly action?: BillingRecoveryAction
   // The contract's authority on whether starting another operation can succeed.
   readonly retryable?: boolean
+}
+
+export interface StartOperationMetadata {
+  tier?: SubscriptionCheckoutTier
+  cycle?: BillingCycle
+  checkoutType?: SubscriptionCheckoutType
+  paymentIntentSource?: PaymentIntentSource
+  suppressProcessingToast?: boolean
+  autoHandleRequiresAction?: boolean
+  downgradeToPersonal?: {
+    memberRemovalCount: number
+    memberRemovalFailures: number
+    targetTier?: TierKey
+    startedAt: number
+  }
+  /**
+   * The timestamp the caller used for its own canonical `started` telemetry
+   * event (i.e. before the initiating subscribe/top-up/cancel API call), so
+   * `duration_ms` on the poller's terminal events spans the full emitted
+   * lifecycle instead of just the poll-observation window. Defaults to
+   * `Date.now()` (poll-start time) when the caller has no such timestamp,
+   * e.g. recovering a pending operation on page load.
+   */
+  attemptStartedAt?: number
 }
 
 export const useBillingOperationStore = defineStore('billingOperation', () => {

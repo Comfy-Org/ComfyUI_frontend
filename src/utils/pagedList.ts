@@ -1,69 +1,14 @@
 import { computed, onScopeDispose, ref, toValue } from 'vue'
 import type { MaybeRef } from 'vue'
 
-export interface PagedList<T> {
-  hasMore: Readonly<MaybeRef<boolean>>
-  invalidate: (items?: string[]) => Promise<void>
-  isLoading: Readonly<MaybeRef<boolean>>
-  items: Readonly<MaybeRef<T[]>>
-  loadMore: () => Promise<void>
-  loadNew: () => Promise<void>
-}
-
-export class WrappedList<T, U> implements PagedList<U> {
-  readonly items: MaybeRef<U[]>
-  constructor(
-    private readonly childList: PagedList<T>,
-    private readonly transform: (items: readonly T[]) => U[]
-  ) {
-    this.items = computed(() => this.transform(toValue(this.childList.items)))
-  }
-  get hasMore() {
-    return this.childList.hasMore
-  }
-  async invalidate(stale?: string[]) {
-    await this.childList.invalidate(stale)
-  }
-  get isLoading() {
-    return this.childList.isLoading
-  }
-  async loadMore() {
-    await this.childList.loadMore()
-  }
-  async loadNew() {
-    await this.childList.loadNew()
-  }
-}
-
 interface CacheEntry<T> {
   list: PagedList<T>
   refCount: number
 }
+
 type Cache<T> = Map<string, CacheEntry<T>>
 
-export interface SharedPagedListState<TParams, TItem> {
-  readonly cache: Cache<TItem>
-  readonly factory: (params: TParams) => PagedList<TItem>
-  readonly paramKeyFn: (params: TParams) => string
-  readonly itemKeyFn: (item: TItem) => unknown
-}
-
-export function getPagedList<TParams, TItem>(
-  params: TParams,
-  state: SharedPagedListState<TParams, TItem>
-): PagedList<TItem> {
-  const key = state.paramKeyFn(params)
-  const entry = state.cache.get(key) ?? {
-    list: state.factory(params),
-    refCount: 0
-  }
-  state.cache.set(key, entry)
-  entry.refCount++
-
-  onScopeDispose(() => --entry.refCount || state.cache.delete(key))
-  return new SharedPagedList(entry.list, state.cache, state.itemKeyFn)
-}
-
+type Runner = (signal: AbortSignal) => Promise<void>
 class SharedPagedList<T> implements PagedList<T> {
   constructor(
     private readonly childList: PagedList<T>,
@@ -107,7 +52,62 @@ class SharedPagedList<T> implements PagedList<T> {
   }
 }
 
-type Runner = (signal: AbortSignal) => Promise<void>
+export interface PagedList<T> {
+  hasMore: Readonly<MaybeRef<boolean>>
+  invalidate: (items?: string[]) => Promise<void>
+  isLoading: Readonly<MaybeRef<boolean>>
+  items: Readonly<MaybeRef<T[]>>
+  loadMore: () => Promise<void>
+  loadNew: () => Promise<void>
+}
+
+export interface SharedPagedListState<TParams, TItem> {
+  readonly cache: Cache<TItem>
+  readonly factory: (params: TParams) => PagedList<TItem>
+  readonly paramKeyFn: (params: TParams) => string
+  readonly itemKeyFn: (item: TItem) => unknown
+}
+
+export function getPagedList<TParams, TItem>(
+  params: TParams,
+  state: SharedPagedListState<TParams, TItem>
+): PagedList<TItem> {
+  const key = state.paramKeyFn(params)
+  const entry = state.cache.get(key) ?? {
+    list: state.factory(params),
+    refCount: 0
+  }
+  state.cache.set(key, entry)
+  entry.refCount++
+
+  onScopeDispose(() => --entry.refCount || state.cache.delete(key))
+  return new SharedPagedList(entry.list, state.cache, state.itemKeyFn)
+}
+
+export class WrappedList<T, U> implements PagedList<U> {
+  readonly items: MaybeRef<U[]>
+  constructor(
+    private readonly childList: PagedList<T>,
+    private readonly transform: (items: readonly T[]) => U[]
+  ) {
+    this.items = computed(() => this.transform(toValue(this.childList.items)))
+  }
+  get hasMore() {
+    return this.childList.hasMore
+  }
+  async invalidate(stale?: string[]) {
+    await this.childList.invalidate(stale)
+  }
+  get isLoading() {
+    return this.childList.isLoading
+  }
+  async loadMore() {
+    await this.childList.loadMore()
+  }
+  async loadNew() {
+    await this.childList.loadNew()
+  }
+}
 const PREEMPT_KIND: unique symbol = Symbol()
 type Kind = string | typeof PREEMPT_KIND
 interface Task {

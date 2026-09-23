@@ -15,28 +15,6 @@ export interface ReplyAsset {
 
 const ASSET_KINDS = new Set<MediaType>(['image', 'video', 'audio', '3D'])
 
-export function classifyAssetUrl(
-  href: string,
-  baseUrl = window.location.origin
-): ReplyAsset | null {
-  let url: URL
-  try {
-    url = new URL(href, baseUrl)
-  } catch {
-    return null
-  }
-  let filename = url.searchParams.get('filename')
-  try {
-    filename ??= decodeURIComponent(url.pathname.split('/').at(-1) ?? '')
-  } catch {
-    return null
-  }
-  if (!filename) return null
-  const kind = getMediaTypeFromFilename(filename)
-  if (!ASSET_KINDS.has(kind)) return null
-  return { url: href, filename, kind: kind as ReplyAssetKind }
-}
-
 type InlineToken = { type: string; href?: string; text?: string }
 
 interface InlineScan {
@@ -72,6 +50,28 @@ function selectAssets(scan: InlineScan): ReplyAsset[] | null {
   const { assets, sawImageSyntax } = scan
   if (assets.length > 1 || sawImageSyntax) return assets
   return assets[0].kind === 'image' ? null : assets
+}
+
+export function classifyAssetUrl(
+  href: string,
+  baseUrl = window.location.origin
+): ReplyAsset | null {
+  let url: URL
+  try {
+    url = new URL(href, baseUrl)
+  } catch {
+    return null
+  }
+  let filename = url.searchParams.get('filename')
+  try {
+    filename ??= decodeURIComponent(url.pathname.split('/').at(-1) ?? '')
+  } catch {
+    return null
+  }
+  if (!filename) return null
+  const kind = getMediaTypeFromFilename(filename)
+  if (!ASSET_KINDS.has(kind)) return null
+  return { url: href, filename, kind: kind as ReplyAssetKind }
 }
 
 /* A block is an asset block only when every inline token is a media link. */

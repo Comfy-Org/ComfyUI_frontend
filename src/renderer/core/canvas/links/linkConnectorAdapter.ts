@@ -12,6 +12,23 @@ import { isSubgraph } from '@/utils/typeGuardUtil'
 // Keep one adapter per graph so rendering and interaction share state.
 const adapterByGraph = new WeakMap<LGraph, LinkConnectorAdapter>()
 
+/** Convenience creator using the current app canvas graph. */
+export function createLinkConnectorAdapter(): LinkConnectorAdapter | null {
+  const canvas = useCanvasStore().canvas
+  const graph = canvas?.graph
+  if (!graph) return null
+  const connector = canvas.linkConnector
+
+  const adapter = adapterByGraph.get(graph)
+  if (adapter && adapter.linkConnector === connector) {
+    return adapter
+  }
+
+  const newAdapter = new LinkConnectorAdapter(graph, connector)
+  adapterByGraph.set(graph, newAdapter)
+  return newAdapter
+}
+
 /**
  * Renderer‑agnostic adapter around LiteGraph's LinkConnector.
  *
@@ -158,21 +175,4 @@ export class LinkConnectorAdapter {
   reset(): void {
     this.linkConnector.reset()
   }
-}
-
-/** Convenience creator using the current app canvas graph. */
-export function createLinkConnectorAdapter(): LinkConnectorAdapter | null {
-  const canvas = useCanvasStore().canvas
-  const graph = canvas?.graph
-  if (!graph) return null
-  const connector = canvas.linkConnector
-
-  const adapter = adapterByGraph.get(graph)
-  if (adapter && adapter.linkConnector === connector) {
-    return adapter
-  }
-
-  const newAdapter = new LinkConnectorAdapter(graph, connector)
-  adapterByGraph.set(graph, newAdapter)
-  return newAdapter
 }

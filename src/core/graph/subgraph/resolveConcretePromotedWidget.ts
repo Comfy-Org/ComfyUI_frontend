@@ -33,6 +33,59 @@ function isNodeActive(node: LGraphNode): boolean {
   )
 }
 
+function traversePromotedWidgetChain(
+  hostNode: SubgraphNode,
+  nodeId: NodeId,
+  widgetName: string
+): PromotedWidgetResolutionResult {
+  const visitedByHost = new WeakMap<SubgraphNode, Set<string>>()
+  let currentHost = hostNode
+  let currentNodeId = nodeId
+  let currentWidgetName = widgetName
+  const nodePath: NodeId[] = []
+
+  for (let depth = 0; depth < MAX_PROMOTED_WIDGET_CHAIN_DEPTH; depth++) {
+    const key = `${currentNodeId}:${currentWidgetName}`
+    const visited = visitedByHost.get(currentHost) ?? new Set<string>()
+    if (visited.has(key)) {
+      return { status: 'failure', failure: 'cycle' }
+    }
+    visited.add(key)
+    visitedByHost.set(currentHost, visited)
+
+    const sourceNode = currentHost.subgraph.getNodeById(currentNodeId)
+    if (!sourceNode) {
+      return { status: 'failure', failure: 'missing-node' }
+    }
+    nodePath.push(sourceNode.id)
+
+    if (sourceNode.isSubgraphNode()) {
+      const target = resolveSubgraphInputTarget(sourceNode, currentWidgetName)
+      if (!target) {
+        return { status: 'failure', failure: 'missing-widget' }
+      }
+      currentHost = sourceNode
+      currentNodeId = target.nodeId
+      currentWidgetName = target.widgetName
+      continue
+    }
+
+    const sourceWidget = sourceNode.widgets?.find(
+      (entry) => entry.name === currentWidgetName
+    )
+    if (!sourceWidget) {
+      return { status: 'failure', failure: 'missing-widget' }
+    }
+
+    return {
+      status: 'resolved',
+      resolved: { node: sourceNode, nodePath, widget: sourceWidget }
+    }
+  }
+
+  return { status: 'failure', failure: 'max-depth-exceeded' }
+}
+
 export function resolveActivePromotedWidgetConsumers(
   hostNode: LGraphNode,
   inputName: string
@@ -140,59 +193,6 @@ export function hasActivePromotedWidgetConsumer(
       return { hasWidget, nested }
     }
   )
-}
-
-function traversePromotedWidgetChain(
-  hostNode: SubgraphNode,
-  nodeId: NodeId,
-  widgetName: string
-): PromotedWidgetResolutionResult {
-  const visitedByHost = new WeakMap<SubgraphNode, Set<string>>()
-  let currentHost = hostNode
-  let currentNodeId = nodeId
-  let currentWidgetName = widgetName
-  const nodePath: NodeId[] = []
-
-  for (let depth = 0; depth < MAX_PROMOTED_WIDGET_CHAIN_DEPTH; depth++) {
-    const key = `${currentNodeId}:${currentWidgetName}`
-    const visited = visitedByHost.get(currentHost) ?? new Set<string>()
-    if (visited.has(key)) {
-      return { status: 'failure', failure: 'cycle' }
-    }
-    visited.add(key)
-    visitedByHost.set(currentHost, visited)
-
-    const sourceNode = currentHost.subgraph.getNodeById(currentNodeId)
-    if (!sourceNode) {
-      return { status: 'failure', failure: 'missing-node' }
-    }
-    nodePath.push(sourceNode.id)
-
-    if (sourceNode.isSubgraphNode()) {
-      const target = resolveSubgraphInputTarget(sourceNode, currentWidgetName)
-      if (!target) {
-        return { status: 'failure', failure: 'missing-widget' }
-      }
-      currentHost = sourceNode
-      currentNodeId = target.nodeId
-      currentWidgetName = target.widgetName
-      continue
-    }
-
-    const sourceWidget = sourceNode.widgets?.find(
-      (entry) => entry.name === currentWidgetName
-    )
-    if (!sourceWidget) {
-      return { status: 'failure', failure: 'missing-widget' }
-    }
-
-    return {
-      status: 'resolved',
-      resolved: { node: sourceNode, nodePath, widget: sourceWidget }
-    }
-  }
-
-  return { status: 'failure', failure: 'max-depth-exceeded' }
 }
 
 export function resolveConcretePromotedWidget(

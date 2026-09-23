@@ -14,16 +14,6 @@ import { LGraphEventMode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { Subgraph } from './Subgraph'
 import type { SubgraphNode } from './SubgraphNode'
 
-export type ExecutionId = string
-
-/**
- * Interface describing the data transfer objects used when compiling a graph for execution.
- */
-export type ExecutableLGraphNode = Omit<
-  ExecutableNodeDTO,
-  'graph' | 'node' | 'subgraphNode'
->
-
 /**
  * The end result of resolving a DTO input.
  * When a widget value is returned, {@link widgetInfo} is present and {@link origin_slot} is `-1`.
@@ -38,6 +28,16 @@ type ResolvedInput = {
   /** Boxed widget value (e.g. for widgets). If this box is `undefined`, then an input link is connected, and widget values from the subgraph node are ignored. */
   widgetInfo?: { value: unknown }
 }
+
+export type ExecutionId = string
+
+/**
+ * Interface describing the data transfer objects used when compiling a graph for execution.
+ */
+export type ExecutableLGraphNode = Omit<
+  ExecutableNodeDTO,
+  'graph' | 'node' | 'subgraphNode'
+>
 
 /**
  * Concrete implementation of {@link ExecutableLGraphNode}.
