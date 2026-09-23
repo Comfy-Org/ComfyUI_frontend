@@ -21,35 +21,42 @@ import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 /**
- * Repro: the in-app agent reports a turn as done, but the canvas ends up with
- * zero nodes.
+ * Regression test for PM-1343: the in-app agent used to report a turn as
+ * done while the canvas ended up with zero nodes.
  *
  * IF a doc's `meta.schema_version` ever becomes unreadable, the CRDT
  * follower's read-time schema gate (`assertReadableSchema`, KA-11) fails
- * closed, and `LayoutFollowerBridge` latches that read gate for the ENTIRE
- * document lineage — not just the one bad frame — so every later
- * same-lineage update is silently dropped too, with no `doc_reset` ever
- * following an ordinary tool call. The agent's own turn still completes and
- * reports success over the (unrelated) chat channel, because nothing in that
- * latch tells the backend the browser stopped projecting. Net effect: "agent
- * says done" + "canvas has zero nodes".
+ * closed. `LayoutFollowerBridge.onDocUpdate` used to latch that failure for
+ * the ENTIRE document lineage — not just the one bad frame — so every later
+ * same-lineage update, including a schema-version repair, was silently
+ * dropped too, with no `doc_reset` ever following an ordinary tool call. The
+ * agent's own turn still completed and reported success over the (unrelated)
+ * chat channel, because nothing in that latch told the backend the browser
+ * stopped projecting. Net effect: "agent says done" + "canvas has zero
+ * nodes".
  *
- * The trigger is unproven: tracing every doc-creation path in the `cloud`
- * repo, all of them go through the shared package's `mint()`, which
- * unconditionally sets `meta.schema_version` — there is no known code path
- * that mints a doc without one. Candidates for how it could still happen are
- * a legacy row, a stale `dochost` deploy, or a wire defect. This repro
- * simulates the missing version with the test-only `corruptSchemaVersion()`
- * helper below; it does not reproduce a proven real-world trigger.
+ * `LayoutFollowerBridge` now re-checks the schema on every merged frame
+ * instead of only the first, so a later same-lineage frame that restores a
+ * readable `meta.schema_version` (the repair below) un-latches the gate, and
+ * the `add_node` that follows it merges and projects normally.
+ *
+ * The trigger for the schema becoming unreadable in the first place is
+ * unproven: tracing every doc-creation path in the `cloud` repo, all of them
+ * go through the shared package's `mint()`, which unconditionally sets
+ * `meta.schema_version` — there is no known code path that mints a doc
+ * without one. Candidates for how it could still happen are a legacy row, a
+ * stale `dochost` deploy, or a wire defect. This test simulates the missing
+ * version with the test-only `corruptSchemaVersion()` helper below; it does
+ * not reproduce a proven real-world trigger for that part.
  *
  * This spec drives the real agent panel against a fake doc host (`HostDoc`,
  * the same one `agentConversationFixture`/PM-1260's sibling repro use): the
  * first catch-up frame is corrupted to omit `meta.schema_version`, a
  * schema-version repair and an `add_node` tool call are then sent as their
  * own later frames on the same lineage, and the host applies that op to its
- * own authoritative document — but the node never reaches the live canvas
- * the user is looking at, because the latch drops the repair and the op
- * alike.
+ * own authoritative document — and the node now reaches the live canvas the
+ * user is looking at, because the repair frame un-latches the gate before the
+ * `add_node` frame arrives.
  */
 
 const WORKFLOW_ID = 'a3f6a3d2-7e3b-4b8a-9c1e-6e2a1c9f0a12'
@@ -74,10 +81,10 @@ const COMPOSER_LABEL = createI18n({
 }).global.t('agent.placeholder')
 
 test.describe(
-  'Agent canvas stays empty after an unreadable doc schema',
+  'Agent canvas recovers after an unreadable doc schema is repaired',
   { tag: ['@cloud', '@agent'] },
   () => {
-    test('a node the agent reports adding never reaches the canvas once the schema gate trips', async ({
+    test('a node the agent reports adding reaches the canvas once the schema repair un-latches the gate', async ({
       page
     }) => {
       test.setTimeout(60_000)
@@ -150,10 +157,10 @@ test.describe(
           send(host.subscribed())
           send(host.catchUp(state_vector_b64))
           // Sent as its own later-seq frame -- not folded silently into a
-          // later apply()'s delta -- so a fix that stops the latch from
-          // outliving the one bad frame is actually exercised: this repair
-          // alone must be enough for the gate to pass again before the
-          // add_node frame below arrives.
+          // later apply()'s delta -- so the fix that stops the latch from
+          // outliving one bad frame is exercised for real: this repair alone
+          // is enough for the gate to pass again before the add_node frame
+          // below arrives.
           send(host.repairSchemaVersion())
         })
       })
@@ -301,32 +308,12 @@ test.describe(
       )
       await expect(panel.getByRole('button', { name: /^Worked/ })).toBeVisible()
 
-      // Visual proof: the agent reports success while the specific node it
-      // claims to have added is still absent from the canvas. Captured
-      // explicitly (in addition to Playwright's own on-failure
-      // screenshot/trace/video) so it survives independent of the final
-      // assertion below. Scoped to the one node under test, not a blanket
-      // "canvas is empty" check -- other projects (e.g. `cloud`, which boots
-      // with the legacy default graph's 7 pre-existing nodes) legitimately
-      // have nodes on canvas already.
-      await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toHaveCount(
-        0
-      )
-      await page.screenshot({
-        path: 'test-results/agent-zero-nodes-on-unreadable-schema.png'
-      })
-
-      // The known defect: the agent said it added the note, and the op is on
-      // the host's own record (asserted above) -- both it and the earlier
-      // schema-version repair were sent as their own frames -- but the
-      // schema-gate latch outlives the one bad catch-up frame, so the canvas
-      // the user is looking at never gets either. Once a fix stops the latch
-      // from outliving that one frame (or stops it from tripping on an
-      // unreadable version at all), the repair frame clears the gate before
-      // add_node arrives and this assertion starts passing -- which is what
-      // `test.fail()` is for: keep CI green while the defect exists, and flip
-      // it red the day a fix lands, as the prompt to delete this call.
-      test.fail()
+      // The fix under test: the agent said it added the note, and the op is
+      // on the host's own record (asserted above) -- both it and the earlier
+      // schema-version repair were sent as their own frames. The repair
+      // un-latches the schema gate before the add_node frame arrives, so the
+      // node reaches the canvas the user is looking at instead of being
+      // silently dropped alongside it.
       await expect(vueNodes.getNodeLocator(String(ADDED_NODE_ID))).toBeVisible()
     })
   }
