@@ -6,6 +6,7 @@ import { agentTest } from '@e2e/fixtures/agentPanelFixture'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
+import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const test = mergeTests(agentTest, workflowSelectionTest)
 
@@ -199,6 +200,41 @@ test.describe(
         }),
         contentType: 'image/png'
       })
+
+      // Simulate the original unsaved tab disappearing before the user
+      // follows its chat reference. It is no longer open, cloud-listed, or
+      // locally persisted, so navigation must recover the Agent draft rather
+      // than silently fail or open the currently selected workflow.
+      await page.route('**/api/workflows?*', (route) =>
+        route.fulfill(
+          jsonRoute({
+            data: [],
+            pagination: {
+              offset: 0,
+              limit: 100,
+              total: 0,
+              has_more: false
+            }
+          })
+        )
+      )
+      await page.route('**/api/userdata?*', (route) =>
+        route.fulfill(jsonRoute([]))
+      )
+      await page.route('**/api/agent/draft?*', (route) =>
+        route.fulfill(
+          jsonRoute({
+            content: {
+              version: 0.4,
+              last_node_id: 0,
+              last_link_id: 0,
+              nodes: [],
+              links: []
+            },
+            version: 1
+          })
+        )
+      )
       await open.click()
       await expect(new Topbar(page).getActiveTab()).toHaveText(
         'Unsaved Workflow'
@@ -209,6 +245,12 @@ test.describe(
       )
       await expect(chip).toBeVisible()
       expect(workflowSelection.postedMessages).toHaveLength(1)
+      await testInfo.attach('recovered-workflow-reference', {
+        body: await page.screenshot({
+          path: testInfo.outputPath('recovered-workflow-reference.png')
+        }),
+        contentType: 'image/png'
+      })
 
       await open.focus()
       await open.press('Tab')
