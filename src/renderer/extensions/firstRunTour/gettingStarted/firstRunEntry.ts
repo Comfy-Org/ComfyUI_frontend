@@ -10,6 +10,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 import { useNewUserService } from '@/services/useNewUserService'
@@ -136,7 +137,9 @@ export const useFirstRunEntry = createSharedComposable(() => {
     try {
       await settingStore.set('Comfy.TutorialCompleted', true)
     } catch (error) {
-      console.error('Failed to persist Comfy.TutorialCompleted', error)
+      reportError(error, {
+        errorType: 'first_run_tutorial_flag_write_failure'
+      })
     }
   }
 

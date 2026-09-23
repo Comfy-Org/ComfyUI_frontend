@@ -2,6 +2,9 @@ import { useStorage } from '@vueuse/core'
 import { computed, ref, toValue } from 'vue'
 import type { MaybeRefOrGetter } from 'vue'
 
+import { useTelemetry } from '@/platform/telemetry'
+import type { AgentOnboardingNotShownReason } from '@/platform/telemetry/types'
+
 export interface CoachStep {
   target: string
   title: string
@@ -38,6 +41,26 @@ export function adoptSharedOnboardingFlag(scopedKey: string): void {
   }
 }
 
+export function hasSeenOnboarding(scopedKey: string): boolean {
+  try {
+    return localStorage.getItem(scopedKey) === 'true'
+  } catch {
+    return false
+  }
+}
+
+const reportedNotShown = new Set<string>()
+/** Once per scope and reason for the session, like the tour engine's `not_started`. */
+export function reportOnboardingNotShown(
+  reason: AgentOnboardingNotShownReason,
+  scope: string | undefined
+): void {
+  const key = `${scope ?? ''}:${reason}`
+  if (reportedNotShown.has(key)) return
+  reportedNotShown.add(key)
+  useTelemetry()?.trackAgentOnboardingNotShown({ reason })
+}
+
 export function useOnboarding(
   steps: MaybeRefOrGetter<CoachStep[]>,
   storageKey = SHARED_ONBOARDING_KEY
@@ -58,5 +81,5 @@ export function useOnboarding(
     else index.value += 1
   }
 
-  return { active, index, step, isLast, next, finish }
+  return { active, seen, index, step, isLast, next, finish }
 }

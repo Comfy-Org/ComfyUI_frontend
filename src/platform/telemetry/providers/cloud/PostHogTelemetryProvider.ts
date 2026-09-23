@@ -18,6 +18,8 @@ import type {
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentPanelClosedMetadata,
+  AgentConsentNotOfferedMetadata,
+  AgentOnboardingNotShownMetadata,
   AgentPanelOpenedMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
@@ -692,6 +694,16 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentPanelOpened(metadata: AgentPanelOpenedMetadata): void {
     this.trackEvent(TelemetryEvents.AGENT_PANEL_OPENED, metadata)
+  }
+
+  trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_CONSENT_NOT_OFFERED, metadata)
+  }
+
+  trackAgentOnboardingNotShown(
+    metadata: AgentOnboardingNotShownMetadata
+  ): void {
+    this.trackEvent(TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN, metadata)
   }
 
   trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {

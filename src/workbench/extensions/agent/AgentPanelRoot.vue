@@ -18,6 +18,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
+import type { AgentOnboardingNotShownReason } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LiveAutogrowGroupAnswer } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
@@ -64,6 +65,8 @@ import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   adoptSharedOnboardingFlag,
+  hasSeenOnboarding,
+  reportOnboardingNotShown,
   scopedOnboardingKey
 } from './composables/agent/useOnboarding'
 
@@ -273,6 +276,19 @@ watch(
   { immediate: true }
 )
 const { activeTour } = storeToRefs(useOnboardingTourStore())
+watch(
+  (): AgentOnboardingNotShownReason | null => {
+    const key = onboardingKey.value
+    if (!consentAccepted.value || !key || hasSeenOnboarding(key)) return null
+    if (canvasStore.linearMode) return 'app_mode'
+    if (activeTour.value !== null) return 'tour_active'
+    return null
+  },
+  (reason) => {
+    if (reason) reportOnboardingNotShown(reason, onboardingKey.value ?? '')
+  },
+  { immediate: true }
+)
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>

@@ -5,6 +5,8 @@ import type {
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentPanelClosedMetadata,
+  AgentConsentNotOfferedMetadata,
+  AgentOnboardingNotShownMetadata,
   AgentPanelOpenedMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
@@ -357,6 +359,20 @@ export class TelemetryRegistry implements TelemetryDispatcher {
 
   trackAgentPanelOpened(metadata: AgentPanelOpenedMetadata): void {
     this.dispatch((provider) => provider.trackAgentPanelOpened?.(metadata))
+  }
+
+  trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
+    this.dispatch((provider) =>
+      provider.trackAgentConsentNotOffered?.(metadata)
+    )
+  }
+
+  trackAgentOnboardingNotShown(
+    metadata: AgentOnboardingNotShownMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentOnboardingNotShown?.(metadata)
+    )
   }
 
   trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {

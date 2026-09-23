@@ -6,6 +6,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
 
@@ -63,6 +64,9 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 vi.mock<unknown>(import('../tour/useFirstRunTourController'), () => ({
   useFirstRunTourController: () => ({ beginTour: mocks.beginTour })
 }))
@@ -652,5 +656,17 @@ describe('useFirstRunEntry', () => {
       'Comfy.TutorialCompleted',
       true
     )
+  })
+
+  it('reports a tutorial flag write that fails instead of swallowing it', async () => {
+    const entry = useFirstRunEntry()
+    vi.mocked(useSettingStore().set).mockRejectedValue(new Error('503'))
+    vi.mocked(reportError).mockClear()
+
+    await entry.dismissGettingStarted()
+
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+      errorType: 'first_run_tutorial_flag_write_failure'
+    })
   })
 })

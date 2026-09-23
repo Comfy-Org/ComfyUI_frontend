@@ -5,9 +5,16 @@ import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
+import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
 
 import OnboardingCoach from './OnboardingCoach.vue'
+
+vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const KEY = 'coach-test'
 const STEPS: CoachStep[] = [
@@ -246,6 +253,83 @@ describe('OnboardingCoach', () => {
 
     unmount()
     expect(overlay.active).toBe(false)
+  })
+
+  it('reports an already-seen tour once per key however often it remounts', async () => {
+    const storageKey = 'coach-seen-test'
+    localStorage.setItem(storageKey, 'true')
+    const notShown = vi.mocked(useTelemetry()!.trackAgentOnboardingNotShown)
+    notShown.mockClear()
+
+    render(OnboardingCoach, {
+      props: { steps: STEPS, storageKey },
+      global: { plugins: [i18n] }
+    }).unmount()
+    render(OnboardingCoach, {
+      props: { steps: STEPS, storageKey },
+      global: { plugins: [i18n] }
+    })
+
+    expect(notShown).toHaveBeenCalledExactlyOnceWith({ reason: 'already_seen' })
+  })
+
+  it('reports a target that never mounts once the grace period passes, once', async () => {
+    vi.useFakeTimers()
+    try {
+      const notShown = vi.mocked(useTelemetry()!.trackAgentOnboardingNotShown)
+      notShown.mockClear()
+      vi.mocked(reportError).mockClear()
+      render(OnboardingCoach, {
+        props: {
+          steps: [{ ...STEPS[0], target: '#never-mounts' }],
+          storageKey: 'coach-missing-test'
+        },
+        global: { plugins: [i18n] }
+      })
+
+      await vi.advanceTimersByTimeAsync(7_999)
+      expect(reportError).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(1)
+      expect(notShown).toHaveBeenCalledExactlyOnceWith({
+        reason: 'target_missing'
+      })
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'agent_onboarding_target_missing'
+        })
+      )
+
+      await vi.advanceTimersByTimeAsync(8_000)
+      expect(reportError).toHaveBeenCalledOnce()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('stays quiet when the target arrives inside the grace period', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.mocked(reportError).mockClear()
+      render(OnboardingCoach, {
+        props: {
+          steps: [{ ...STEPS[0], target: '#arrives-late' }],
+          storageKey: 'coach-late-ok-test'
+        },
+        global: { plugins: [i18n] }
+      })
+      await vi.advanceTimersByTimeAsync(5_000)
+      const target = document.createElement('div')
+      target.id = 'arrives-late'
+      document.body.appendChild(target)
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(reportError).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('waits for a late target without letting Escape complete an unseen tour', async () => {
