@@ -27,8 +27,8 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import {
-  createNodeExecutionId,
-  createNodeLocatorId
+  createLeafNodeExecutionId,
+  createLeafNodeLocatorId
 } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
@@ -336,9 +336,11 @@ function widgetNodeLocatorId(
     if (sourceLocator) return sourceLocator
   }
   if (!bareWidgetId) return undefined
-  return createNodeLocatorId(
-    subgraphIdFromState(ctx.nodeData, ctx.rootGraphId),
-    bareWidgetId
+  return (
+    createLeafNodeLocatorId(
+      subgraphIdFromState(ctx.nodeData, ctx.rootGraphId),
+      bareWidgetId
+    ) ?? undefined
   )
 }
 
@@ -490,7 +492,7 @@ export function computeProcessedWidgets({
   const nodeExecId =
     isGraphReady && rootGraph
       ? executionIdFromState(rootGraph, nodeData)
-      : createNodeExecutionId([nodeData.id])
+      : createLeafNodeExecutionId(nodeData.id)
   if (!nodeExecId) return []
 
   const hostNode = getHostNode(rootGraph, nodeData)

@@ -34,6 +34,7 @@ import {
 import type { AccountIdentity } from '../core/identity.js'
 import { brandIdentity } from '../core/identity.js'
 import { isFirebaseAuthErrorLike } from '../firebaseAuthError.js'
+import { fetchFirebaseConfig } from './configSource.js'
 
 export interface FirebaseIdentityAppConfig {
   readonly options: FirebaseOptions | (() => FirebaseOptions)
@@ -205,4 +206,70 @@ export function createFirebaseIdentity(
     },
     signOut: () => signOut(auth())
   }
+}
+
+export interface ResolveFirebaseIdentityOptions {
+  /** The Cloud origin whose `/api/features` names this app's Firebase project. */
+  readonly cloudBaseUrl: string
+  /** Named app: never contend with a default app another script creates. */
+  readonly appName: string
+  readonly persistence?: Dependencies['persistence']
+  readonly timeoutMs?: number
+}
+
+/**
+ * The single entry a host needs to go from a Cloud origin to a ready
+ * identity: fetch `/api/features`, construct the app, and force `Auth` to
+ * resolve now rather than on whichever caller first touches the identity, so
+ * a config that fails the SDK's own checks (a bad key, a project mismatch on
+ * `appName`) surfaces here instead of downstream. Settles `undefined` on any
+ * failure along the way and never rejects, so a caller always gets either a
+ * ready identity or a definite absence.
+ *
+ * Memoized per `appName`/`cloudBaseUrl` pair while a fetch is in flight or
+ * has produced a ready identity, so every caller with the same pair shares
+ * one fetch and one identity, and two pairs (two hosts, or two Cloud origins
+ * in one process, as this package's own tests run) never share a result. An
+ * unsuccessful settle evicts its entry, so a later call re-fetches rather
+ * than replaying the same absence for the module's lifetime.
+ */
+const identityResolutions = new Map<
+  string,
+  Promise<FirebaseIdentity | undefined>
+>()
+
+export function resolveFirebaseIdentity(
+  options: ResolveFirebaseIdentityOptions
+): Promise<FirebaseIdentity | undefined> {
+  const { cloudBaseUrl, appName, persistence, timeoutMs } = options
+  const key = `${appName} ${cloudBaseUrl}`
+  let resolution = identityResolutions.get(key)
+  if (!resolution) {
+    resolution = fetchFirebaseConfig(cloudBaseUrl, { timeoutMs }).then(
+      (runtimeOptions) => {
+        if (!runtimeOptions) return undefined
+        try {
+          const identity = createFirebaseIdentity({
+            options: runtimeOptions,
+            appName,
+            persistence
+          })
+          identity.initialize()
+          return identity
+        } catch {
+          return undefined
+        }
+      }
+    )
+    // Evict on an unsuccessful settle so a transient failure does not wedge
+    // sign-in for the module's lifetime. Callers already hold this promise
+    // directly, not a map lookup, so deleting it here never orphans one.
+    void resolution.then((identity) => {
+      if (!identity && identityResolutions.get(key) === resolution) {
+        identityResolutions.delete(key)
+      }
+    })
+    identityResolutions.set(key, resolution)
+  }
+  return resolution
 }

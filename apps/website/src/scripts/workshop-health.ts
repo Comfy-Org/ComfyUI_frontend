@@ -32,6 +32,21 @@ function health(event: WorkshopAnalyticsEvent): ServiceHealth {
     : 'failure'
 }
 
+function failureType(event: WorkshopAnalyticsEvent): string | undefined {
+  if (event.name === 'run_validation_failed') return 'validation'
+  if (event.name === 'delivery_finished') {
+    if (event.properties.status !== 'failed') return
+    return event.properties.reason ?? 'delivery_error'
+  }
+  if (event.name !== 'run_finished' || event.properties.status !== 'failed')
+    return
+  return (
+    event.properties.router_error_type ??
+    event.properties.exception_name ??
+    event.properties.reason
+  )
+}
+
 const HEALTH_FIELDS = new Set([
   'model_slug',
   'router_id',
@@ -39,7 +54,6 @@ const HEALTH_FIELDS = new Set([
   'modality',
   'request_id',
   'duration_ms',
-  'reason',
   'failure_stage',
   'http_status',
   'router_error_type',
@@ -60,6 +74,7 @@ export function workshopHealthLog(event: WorkshopAnalyticsEvent) {
   )
     return
   const properties = event.properties
+  const type = failureType(event)
   return {
     ...Object.fromEntries(
       Object.entries(properties).filter(([key]) => HEALTH_FIELDS.has(key))
@@ -68,7 +83,10 @@ export function workshopHealthLog(event: WorkshopAnalyticsEvent) {
     telemetry_version: 1,
     event_name: event.name,
     service_health: health(event),
-    reason: 'reason' in properties ? properties.reason : 'none',
+    ...('reason' in properties && properties.reason
+      ? { reason: properties.reason }
+      : {}),
+    ...(type ? { failure_type: type } : {}),
     ...('attempt_id' in properties
       ? { client_attempt_id: properties.attempt_id }
       : {}),
