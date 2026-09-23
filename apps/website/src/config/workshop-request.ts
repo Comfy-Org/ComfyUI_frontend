@@ -110,6 +110,15 @@ export async function prepareWorkshopRouterInput(
     return nativeBody
   }
   const schema = schemaForModel({ fields: [], form: formForContract(contract) })
+  const formErrors = contract.creator ? validateForm(schema, values) : {}
+  if (Object.keys(formErrors).length)
+    throw new WorkshopRouterError(
+      'validation',
+      null,
+      formErrors,
+      undefined,
+      'input_preparation'
+    )
   values = await resolveWorkshopUrlInputs(
     schema,
     values,
@@ -118,9 +127,6 @@ export async function prepareWorkshopRouterInput(
     contract.rehostUrlInputs === true
   )
   if (contract.creator) {
-    const errors = validateForm(schema, values)
-    if (Object.keys(errors).length)
-      throw new WorkshopRouterError('validation', null, errors)
     const body = {
       ...contract.defaultInput,
       ...(await prepareWorkshopCreatorRequest(

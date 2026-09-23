@@ -64,7 +64,7 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
     await testRouter.push('/?settings=plan-credits&keep=1')
 
     const { loadSettingsFromUrl } = mountSettingsUrlLoader()
-    loadSettingsFromUrl()
+    await loadSettingsFromUrl()
 
     expect(mockShowSettings).toHaveBeenCalledExactlyOnceWith('workspace')
     await vi.waitFor(() =>
@@ -83,7 +83,7 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
     await testRouter.push('/')
 
     const { loadSettingsFromUrl } = mountSettingsUrlLoader()
-    loadSettingsFromUrl()
+    await loadSettingsFromUrl()
 
     expect(mockShowSettings).toHaveBeenCalledExactlyOnceWith('workspace')
     await vi.waitFor(() =>
@@ -96,7 +96,7 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
     await testRouter.push('/?settings=plan-credits')
     await testRouter.push('/')
     const firstMount = mountSettingsUrlLoader()
-    firstMount.loadSettingsFromUrl()
+    await firstMount.loadSettingsFromUrl()
     await vi.waitFor(() =>
       expect(testRouter.currentRoute.value.fullPath).toBe('/')
     )
@@ -104,7 +104,7 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
     mockShowSettings.mockClear()
 
     await testRouter.push('/')
-    mountSettingsUrlLoader().loadSettingsFromUrl()
+    await mountSettingsUrlLoader().loadSettingsFromUrl()
 
     expect(mockShowSettings).not.toHaveBeenCalled()
   })
@@ -113,7 +113,7 @@ describe('useSettingsUrlLoader with real preserved-query boundaries', () => {
     await testRouter.push('/?settings=garbage')
 
     const { loadSettingsFromUrl } = mountSettingsUrlLoader()
-    loadSettingsFromUrl()
+    await loadSettingsFromUrl()
 
     expect(mockShowSettings).not.toHaveBeenCalled()
     await vi.waitFor(() =>
