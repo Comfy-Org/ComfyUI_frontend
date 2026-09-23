@@ -6,6 +6,9 @@ import { computed, effectScope } from 'vue'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { useTelemetry } from '@/platform/telemetry'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { BillingStatusResponse } from '@/platform/workspace/api/workspaceApi'
 import type { BillingReadRail } from '@/platform/workspace/composables/useBillingReadRail'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -97,29 +100,11 @@ Object.defineProperty(globalThis, 'localStorage', {
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => mockTelemetry)
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: vi.fn(() => ({
-    wrapWithErrorHandlingAsync: vi.fn(
-      (fn, errorHandler) =>
-        async (...args: Parameters<typeof fn>) => {
-          try {
-            return await fn(...args)
-          } catch (error) {
-            if (errorHandler) {
-              errorHandler(error)
-            }
-            throw error
-          }
-        }
-    )
-  }))
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -134,13 +119,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: {
-    getBillingStatus: mockGetBillingStatus
-  },
-  // What a failed rail read throws; only its message reaches the wrapper.
-  WorkspaceApiError: class extends Error {}
-}))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
 /** Null is the legacy client; a rail is what the SDK store would hand back. */
 const railState = vi.hoisted(() => ({
@@ -212,6 +191,33 @@ const statusReadPaths = [
 global.fetch = vi.fn()
 
 beforeEach(() => {
+  useErrorHandling().wrapWithErrorHandlingAsync =
+    (action, errorHandler) =>
+    async (...args) => {
+      try {
+        return await action(...args)
+      } catch (error) {
+        errorHandler?.(error)
+        throw error
+      }
+    }
+  vi.mocked(workspaceApi.getBillingStatus).mockImplementation(
+    mockGetBillingStatus
+  )
+  const telemetry = useTelemetry()
+  if (!telemetry) throw new Error('Expected telemetry mock')
+  vi.mocked(telemetry.trackSubscription).mockImplementation(
+    mockTelemetry.trackSubscription
+  )
+  vi.mocked(telemetry.trackMonthlySubscriptionSucceeded).mockImplementation(
+    mockTelemetry.trackMonthlySubscriptionSucceeded
+  )
+  vi.mocked(telemetry.trackMonthlySubscriptionCancelled).mockImplementation(
+    mockTelemetry.trackMonthlySubscriptionCancelled
+  )
+  vi.mocked(telemetry.trackBillingEvent).mockImplementation(
+    mockTelemetry.trackBillingEvent
+  )
   Object.assign(useAuthStore(), { isInitialized: true, userId: 'user-123' })
   vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
     mockGetAuthHeader

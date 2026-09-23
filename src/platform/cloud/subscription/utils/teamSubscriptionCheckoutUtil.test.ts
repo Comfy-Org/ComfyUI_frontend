@@ -2,12 +2,10 @@ import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { SubscriptionRail } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 
-const { mockIsCloud, mockSubscribe } = vi.hoisted(() => ({
-  mockIsCloud: { value: true },
-  mockSubscribe: vi.fn()
-}))
+const mockIsCloud = vi.hoisted(() => ({ value: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -17,20 +15,10 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://app.test'
 }))
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: { subscribe: mockSubscribe },
-  WorkspaceApiError: class WorkspaceApiError extends Error {
-    constructor(
-      message: string,
-      public readonly status?: number,
-      public readonly code?: string
-    ) {
-      super(message)
-      this.name = 'WorkspaceApiError'
-    }
-  }
-}))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/platform/telemetry'))
+
+const mockSubscribe = vi.mocked(workspaceApi.subscribe)
 
 const { mockRailSubscribe, railState } = vi.hoisted(() => ({
   mockRailSubscribe: vi.fn<SubscriptionRail['subscribe']>(),

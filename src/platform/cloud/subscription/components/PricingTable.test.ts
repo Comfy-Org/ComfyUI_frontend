@@ -6,6 +6,8 @@ import { computed, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import { useTelemetry } from '@/platform/telemetry'
 import PricingTable from '@/platform/cloud/subscription/components/PricingTable.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -63,49 +65,11 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true
 })
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: computed(
-      () => mockCanAccessSubscriptionFeatures.value
-    ),
-    isFreeTier: computed(() => mockSubscriptionTier.value === 'FREE'),
-    tier: computed(() => mockSubscriptionTier.value),
-    subscription: computed(() =>
-      mockSubscriptionTier.value
-        ? {
-            isActive: mockCanAccessSubscriptionFeatures.value,
-            tier: mockSubscriptionTier.value,
-            duration: mockSubscriptionDuration.value,
-            planSlug: null,
-            renewalDate: null,
-            endDate: null,
-            isCancelled: false,
-            hasFunds: true
-          }
-        : null
-    )
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandlingAsync: vi.fn(
-      (fn, errorHandler) =>
-        async (...args: unknown[]) => {
-          try {
-            return await fn(...args)
-          } catch (error) {
-            if (errorHandler) {
-              errorHandler(error)
-            }
-            throw error
-          }
-        }
-    )
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -213,6 +177,39 @@ function renderComponent() {
 const onChooseTeamWorkspace = vi.fn()
 
 beforeEach(() => {
+  useErrorHandling().wrapWithErrorHandlingAsync =
+    (action, errorHandler) =>
+    async (...args) => {
+      try {
+        return await action(...args)
+      } catch (error) {
+        errorHandler?.(error)
+        throw error
+      }
+    }
+  const billing = useBillingContext()
+  Object.assign(billing, {
+    canAccessSubscriptionFeatures: computed(
+      () => mockCanAccessSubscriptionFeatures.value
+    ),
+    isFreeTier: computed(() => mockSubscriptionTier.value === 'FREE'),
+    tier: computed(() => mockSubscriptionTier.value),
+    subscription: computed(() =>
+      mockSubscriptionTier.value
+        ? {
+            isActive: mockCanAccessSubscriptionFeatures.value,
+            tier: mockSubscriptionTier.value,
+            duration: mockSubscriptionDuration.value,
+            planSlug: null,
+            renewalDate: null,
+            endDate: null,
+            isCancelled: false,
+            hasFunds: true
+          }
+        : null
+    )
+  })
+  vi.mocked(useBillingContext).mockReturnValue(billing)
   Object.assign(useAuthStore(), { userId: 'user-123' })
   vi.mocked(useAuthStore().getFirebaseAuthHeader).mockImplementation(
     mockGetAuthHeader

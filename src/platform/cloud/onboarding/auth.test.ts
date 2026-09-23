@@ -1,15 +1,12 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, test, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
 import { getSurveyCompletedStatus } from './auth'
 
-const fetchApi = vi.fn()
+vi.mock(import('@/scripts/api'))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fetchApi: (...args: unknown[]) => fetchApi(...args)
-  }
-}))
+const fetchApi = vi.mocked(api.fetchApi)
 
 vi.mock(import('@sentry/vue'), () => ({
   addBreadcrumb: vi.fn(),

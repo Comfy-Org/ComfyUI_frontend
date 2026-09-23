@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { TelemetryEvents } from '@/platform/telemetry/types'
+import { useTelemetry as sharedUseTelemetry } from '@/platform/telemetry'
 import type {
   BootstrapCompleteMetadata,
   TelemetryDispatcher
@@ -36,7 +37,7 @@ vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   datadogRum: { addAction, addTiming, setViewLoadingTime }
 }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({ useTelemetry }))
+vi.mock(import('@/platform/telemetry'))
 
 describe('bootstrapTracer', () => {
   beforeEach(() => {
@@ -47,6 +48,14 @@ describe('bootstrapTracer', () => {
     trackBootstrapComplete.mockReset()
     useTelemetry.mockReset()
     useTelemetry.mockImplementation(() => ({ trackBootstrapComplete }))
+    const telemetry = sharedUseTelemetry()
+    if (!telemetry) throw new Error('Expected telemetry mock')
+    vi.mocked(telemetry.trackBootstrapComplete).mockImplementation(
+      trackBootstrapComplete
+    )
+    vi.mocked(sharedUseTelemetry).mockImplementation(() =>
+      useTelemetry() ? telemetry : null
+    )
   })
 
   it('records a phase under its own name, not a doubled prefix', async () => {

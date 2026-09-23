@@ -32,9 +32,7 @@ vi.mock(import('@/utils/graphTraversalUtil'), () => ({
   })
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: { rootGraph: {} }
-}))
+vi.mock(import('@/scripts/app'))
 
 import { getExecutionContext } from './getExecutionContext'
 

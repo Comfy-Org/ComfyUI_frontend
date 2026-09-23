@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+
 const hoisted = vi.hoisted(() => {
   const analytics = {
     identify: vi.fn().mockResolvedValue(undefined),
@@ -50,14 +52,7 @@ vi.mock<unknown>(import('@customerio/cdp-analytics-browser'), () => ({
   InAppPlugin: hoisted.inAppPlugin
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    userEmail: hoisted.userEmail,
-    resolvedUserInfo: hoisted.resolvedUserInfo,
-    onUserResolved: hoisted.onUserResolved,
-    onUserLogout: hoisted.onUserLogout
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 import { i18n } from '@/i18n'
 
@@ -89,6 +84,12 @@ function createDeferred() {
 
 describe('CustomerIoTelemetryProvider', () => {
   beforeEach(() => {
+    Object.assign(useCurrentUser(), {
+      userEmail: hoisted.userEmail,
+      resolvedUserInfo: hoisted.resolvedUserInfo,
+      onUserResolved: hoisted.onUserResolved,
+      onUserLogout: hoisted.onUserLogout
+    })
     hoisted.resetCallbacks()
     hoisted.load.mockReturnValue(hoisted.analytics)
     hoisted.analytics.identify.mockResolvedValue(undefined)

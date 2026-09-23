@@ -1,4 +1,3 @@
-import type { ComfyApp } from '@/scripts/app'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -285,8 +284,5 @@ describe('useSessionCookie', () => {
   })
 })
 
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))
 vi.mock(import('firebase/auth'))

@@ -3,6 +3,8 @@ import { useBillingCapabilities } from '@/platform/workspace/composables/useBill
 import { useDialogService } from '@/services/dialogService'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useRoute, useRouter } from 'vue-router'
+import type { LocationQuery } from 'vue-router'
 
 import { useTelemetry } from '@/platform/telemetry'
 
@@ -19,19 +21,10 @@ vi.mock(
   () => preservedQueryMocks
 )
 
-const mockRouteQuery = vi.hoisted(() => ({
-  value: {} as Record<string, string>
-}))
+let mockRouteQuery: { value: LocationQuery }
 const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
-vi.mock<unknown>(import('vue-router'), () => ({
-  useRoute: () => ({
-    query: mockRouteQuery.value
-  }),
-  useRouter: () => ({
-    replace: mockRouterReplace
-  })
-}))
+vi.mock(import('vue-router'))
 
 vi.mock(import('@/services/dialogService'))
 
@@ -41,6 +34,17 @@ vi.mock(import('@/platform/telemetry'))
 
 describe('useTopUpUrlLoader', () => {
   beforeEach(() => {
+    const query = useRoute().query
+    mockRouteQuery = {
+      get value() {
+        return query
+      },
+      set value(value) {
+        for (const key of Object.keys(query)) delete query[key]
+        Object.assign(query, value)
+      }
+    }
+    vi.mocked(useRouter().replace).mockImplementation(mockRouterReplace)
     mockRouteQuery.value = {}
     preservedQueryMocks.mergePreservedQueryIntoQuery.mockReturnValue(null)
   })

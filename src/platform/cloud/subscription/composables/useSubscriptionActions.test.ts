@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useSubscriptionActions } from '@/platform/cloud/subscription/composables/useSubscriptionActions'
+import { useTelemetry } from '@/platform/telemetry'
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
 
 const mockExecute = vi.fn<ReturnType<typeof useCommandStore>['execute']>(
@@ -37,15 +38,7 @@ const {
   mockTrackAddApiCreditButtonClicked: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () =>
-    mockIsCloud.value
-      ? {
-          trackHelpResourceClicked: mockTrackHelpResourceClicked,
-          trackAddApiCreditButtonClicked: mockTrackAddApiCreditButtonClicked
-        }
-      : null
-}))
+vi.mock(import('@/platform/telemetry'))
 
 // Mock window.open
 const mockOpen = vi.fn()
@@ -55,6 +48,17 @@ Object.defineProperty(window, 'open', {
 })
 
 beforeEach(() => {
+  const telemetry = useTelemetry()
+  if (!telemetry) throw new Error('Expected telemetry mock')
+  vi.mocked(telemetry.trackHelpResourceClicked).mockImplementation(
+    mockTrackHelpResourceClicked
+  )
+  vi.mocked(telemetry.trackAddApiCreditButtonClicked).mockImplementation(
+    mockTrackAddApiCreditButtonClicked
+  )
+  vi.mocked(useTelemetry).mockImplementation(() =>
+    mockIsCloud.value ? telemetry : null
+  )
   vi.mocked(useToastStore().add).mockImplementation(mockToastAdd)
   vi.mocked(useCommandStore().execute).mockImplementation(mockExecute)
 })

@@ -11,8 +11,10 @@ import { computed } from 'vue'
 import { useTelemetry } from '@/platform/telemetry'
 
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useDialogService } from '@/services/dialogService'
 import type { SubscriptionInfo } from '@/composables/billing/types'
 import type {
   BillingSubscriptionStatus,
@@ -52,12 +54,7 @@ const mockSubscriptionStatus = vi.hoisted(() => ({
   value: null as BillingSubscriptionStatus | null
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    showLayoutDialog: mockShowLayoutDialog,
-    showTeamWorkspacesDialog: mockShowTeamWorkspacesDialog
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock(import('@/composables/billing/useBillingRouting'))
 
@@ -74,21 +71,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    isFreeTier: mockIsFreeTier,
-    isLegacyTeamPlan: mockIsLegacyTeamPlan,
-    isTeamPlan: mockIsTeamPlan,
-    currentPlanSlug: mockCurrentPlanSlug,
-    tier: mockTier,
-    fetchPlans: mockFetchPlans,
-    fetchStatus: mockFetchStatus,
-    teamCreditStops: mockTeamCreditStops,
-    currentTeamCreditStop: mockCurrentTeamCreditStop,
-    subscription: mockSubscription,
-    subscriptionStatus: mockSubscriptionStatus
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -125,6 +108,27 @@ function expectRekaPricingDialogProps(
 }
 
 beforeEach(() => {
+  vi.mocked(useDialogService().showLayoutDialog).mockImplementation(
+    mockShowLayoutDialog
+  )
+  vi.mocked(useDialogService().showTeamWorkspacesDialog).mockImplementation(
+    mockShowTeamWorkspacesDialog
+  )
+  const billing = useBillingContext()
+  Object.assign(billing, {
+    isFreeTier: mockIsFreeTier,
+    isLegacyTeamPlan: mockIsLegacyTeamPlan,
+    isTeamPlan: mockIsTeamPlan,
+    currentPlanSlug: mockCurrentPlanSlug,
+    tier: mockTier,
+    fetchPlans: mockFetchPlans,
+    fetchStatus: mockFetchStatus,
+    teamCreditStops: mockTeamCreditStops,
+    currentTeamCreditStop: mockCurrentTeamCreditStop,
+    subscription: mockSubscription,
+    subscriptionStatus: mockSubscriptionStatus
+  })
+  vi.mocked(useBillingContext).mockReturnValue(billing)
   Object.assign(useAuthStore(), { userId: 'user-1' })
   vi.mocked(useDialogStore().closeDialog).mockImplementation(mockCloseDialog)
 

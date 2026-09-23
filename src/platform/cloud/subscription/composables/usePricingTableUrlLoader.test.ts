@@ -3,6 +3,8 @@ import { computed, ref } from 'vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useRoute, useRouter } from 'vue-router'
+import type { LocationQuery } from 'vue-router'
 
 import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
 
@@ -19,29 +21,18 @@ vi.mock(
   () => preservedQueryMocks
 )
 
-const mockRouteQuery = vi.hoisted(() => ({
-  value: {} as Record<string, string>
-}))
+let mockRouteQuery: { value: LocationQuery }
 const mockRouterReplace = vi.hoisted(() => vi.fn(async () => undefined))
 
-vi.mock<unknown>(import('vue-router'), () => ({
-  useRoute: () => ({
-    query: mockRouteQuery.value
-  }),
-  useRouter: () => ({
-    replace: mockRouterReplace
-  })
-}))
+vi.mock(import('vue-router'))
 
 const mockShowPricingTable = vi.hoisted(() => vi.fn())
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({
-      showPricingTable: mockShowPricingTable
-    })
-  })
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 const mockPermissions = vi.hoisted(() => ({
@@ -53,15 +44,7 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 
 const mockCanOpenPricingSurface = vi.hoisted(() => ({ value: true }))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: mockPermissions,
-      canOpenPricingSurface: mockCanOpenPricingSurface
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
@@ -83,6 +66,29 @@ const TEAM_CREDIT_STOPS = {
 
 describe('usePricingTableUrlLoader', () => {
   beforeEach(() => {
+    const query = useRoute().query
+    mockRouteQuery = {
+      get value() {
+        return query
+      },
+      set value(value) {
+        for (const key of Object.keys(query)) delete query[key]
+        Object.assign(query, value)
+      }
+    }
+    vi.mocked(useRouter().replace).mockImplementation(mockRouterReplace)
+    vi.mocked(useSubscriptionDialog().showPricingTable).mockImplementation(
+      mockShowPricingTable
+    )
+    const workspaceUI = useWorkspaceUI()
+    const defaultPermissions = workspaceUI.permissions.value
+    workspaceUI.permissions = computed(() => ({
+      ...defaultPermissions,
+      ...mockPermissions.value
+    }))
+    workspaceUI.canOpenPricingSurface = computed(
+      () => mockCanOpenPricingSurface.value
+    )
     const billing = useBillingContext()
     billing.teamCreditStops = computed(() => mockTeamCreditStops.value)
     vi.mocked(useBillingContext).mockReturnValue(billing)

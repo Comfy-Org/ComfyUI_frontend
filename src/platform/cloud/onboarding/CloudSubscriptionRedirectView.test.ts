@@ -5,6 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { TeamCreditStops } from '@/platform/workspace/api/workspaceApi'
 
 import CloudSubscriptionRedirectView from './CloudSubscriptionRedirectView.vue'
@@ -27,23 +28,13 @@ vi.mock<unknown>(import('vue-router'), () => ({
 // Firebase / subscription mocks
 vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandlingAsync:
-      <T extends (...args: never[]) => unknown>(fn: T) =>
-      (...args: Parameters<T>) =>
-        fn(...args)
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
 const mockShowPricingTable = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ showPricingTable: mockShowPricingTable })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 const legacyCheckoutMocks = vi.hoisted(() => ({
@@ -134,6 +125,9 @@ const mountView = async (query: Record<string, unknown>) => {
 
 describe('CloudSubscriptionRedirectView', () => {
   beforeEach(() => {
+    vi.mocked(useSubscriptionDialog().showPricingTable).mockImplementation(
+      mockShowPricingTable
+    )
     mockQuery = {}
     installBillingContextFixture()
   })

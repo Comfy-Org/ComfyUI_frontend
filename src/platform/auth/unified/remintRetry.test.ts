@@ -5,30 +5,20 @@ import axios, { AxiosError } from 'axios'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 
 import {
   attachUnifiedRemintInterceptor,
   fetchWithUnifiedRemint
 } from '@/platform/auth/unified/remintRetry'
 
-const { mockRemint, flagState } = vi.hoisted(() => ({
-  mockRemint: vi.fn(),
-  flagState: { unifiedCloudAuthEnabled: true }
-}))
+const mockRemint = vi.hoisted(() => vi.fn())
 
 vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('firebase/auth'))
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get unifiedCloudAuthEnabled() {
-        return flagState.unifiedCloudAuthEnabled
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 // The axios interceptor gates on shouldRemintCloudRequest(), which is a no-op
 // off-cloud; the unit env is not a cloud build, so force it on.
@@ -49,7 +39,7 @@ describe('fetchWithUnifiedRemint', () => {
   let mockFetch: ReturnType<typeof vi.fn>
 
   beforeEach(() => {
-    flagState.unifiedCloudAuthEnabled = true
+    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
     mockFetch = vi.fn()
     vi.stubGlobal('fetch', mockFetch)
   })
@@ -308,7 +298,7 @@ describe('fetchWithUnifiedRemint', () => {
 
 describe('attachUnifiedRemintInterceptor', () => {
   beforeEach(() => {
-    flagState.unifiedCloudAuthEnabled = true
+    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
   })
 
   // A custom axios adapter is responsible for its own status handling (axios
@@ -393,7 +383,7 @@ describe('attachUnifiedRemintInterceptor', () => {
   })
 
   it('does not re-mint when the flag is OFF (AC3)', async () => {
-    flagState.unifiedCloudAuthEnabled = false
+    vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = false
     const { client, adapter } = makeClient([401])
 
     await expect(

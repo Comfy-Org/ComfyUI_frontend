@@ -6,6 +6,8 @@ import { computed, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { mockBillingContext } from '@/utils/__tests__/mockBillingContext'
+import { useTelemetry } from '@/platform/telemetry'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import SubscribeToRun from './SubscribeToRun.vue'
 
@@ -14,24 +16,13 @@ const mockIsMdOrLarger = ref(true)
 
 vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock<unknown>(
-  import('@/platform/workspace/composables/useWorkspaceUI'),
-  () => ({
-    useWorkspaceUI: () => ({
-      permissions: computed(() => ({
-        canManageSubscription: mockCanManageSubscription.value
-      }))
-    })
-  })
-)
+vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
 }))
 
-vi.mock(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => null
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@vueuse/core'), () => ({
   breakpointsTailwind: { md: 768 },
@@ -61,6 +52,11 @@ const i18n = createI18n({
 })
 
 function renderButton() {
+  useWorkspaceUI().permissions = computed(() => ({
+    ...useWorkspaceUI().permissions.value,
+    canManageSubscription: mockCanManageSubscription.value
+  }))
+  vi.mocked(useTelemetry).mockReturnValue(null)
   mockBillingContext()
   const user = userEvent.setup()
   const result = render(SubscribeToRun, {

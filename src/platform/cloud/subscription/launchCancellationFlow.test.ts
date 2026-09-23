@@ -1,6 +1,8 @@
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTelemetry } from '@/platform/telemetry'
 
 import type { SubscriptionInfo } from '@/composables/billing/types'
@@ -23,18 +25,9 @@ const mocks = vi.hoisted(() => ({
   prepare: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    type: mocks.billingType,
-    tier: mocks.tier,
-    subscription: mocks.subscription,
-    cancelSubscription: mocks.cancelSubscription
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/cloud/churnkey/churnkeyClient'), () => ({
   prepareChurnkey: mocks.prepare
@@ -51,6 +44,15 @@ function session(
 }
 
 beforeEach(() => {
+  const billing = useBillingContext()
+  Object.assign(billing, {
+    type: computed(() => mocks.billingType.value),
+    tier: computed(() => mocks.tier.value),
+    subscription: computed(() => mocks.subscription.value),
+    cancelSubscription: mocks.cancelSubscription
+  })
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+
   vi.spyOn(
     useTeamWorkspaceStore(),
     'activeWorkspaceId',

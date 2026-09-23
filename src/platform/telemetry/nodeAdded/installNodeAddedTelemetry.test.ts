@@ -4,15 +4,14 @@ import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEven
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { ChangeTracker } from '@/scripts/changeTracker'
+import { useTelemetry } from '..'
 
 import { installNodeAddedTelemetry } from './installNodeAddedTelemetry'
 import { withNodeAddSource } from './nodeAddSource'
 
 const trackNodeAdded = vi.fn()
 
-vi.mock<unknown>(import('..'), () => ({
-  useTelemetry: () => ({ trackNodeAdded })
-}))
+vi.mock(import('..'))
 
 function fakeGraph(): LGraph {
   return {
@@ -30,6 +29,9 @@ function addNode(graph: LGraph, type: string) {
 describe('installNodeAddedTelemetry', () => {
   beforeEach(() => {
     ChangeTracker.isLoadingGraph = false
+    const telemetry = useTelemetry()
+    if (!telemetry) throw new Error('Expected telemetry mock')
+    vi.mocked(telemetry.trackNodeAdded).mockImplementation(trackNodeAdded)
   })
 
   afterEach(() => {

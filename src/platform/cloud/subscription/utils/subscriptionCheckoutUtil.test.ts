@@ -2,6 +2,7 @@ import { useAuthStore } from '@/stores/authStore'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { PENDING_SUBSCRIPTION_CHECKOUT_STORAGE_KEY } from '@/platform/cloud/subscription/utils/subscriptionCheckoutTracker'
+import { useTelemetry } from '@/platform/telemetry'
 import { performSubscriptionCheckout } from './subscriptionCheckoutUtil'
 
 const {
@@ -64,9 +65,7 @@ Object.defineProperty(globalThis, 'localStorage', {
   writable: true
 })
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => mockTelemetry)
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -84,6 +83,17 @@ vi.mock<unknown>(
 global.fetch = vi.fn()
 
 type Distribution = 'desktop' | 'localhost' | 'cloud'
+
+beforeEach(() => {
+  const telemetry = useTelemetry()
+  if (!telemetry) throw new Error('Expected telemetry mock')
+  vi.mocked(telemetry.trackBeginCheckout).mockImplementation(
+    mockTelemetry.trackBeginCheckout
+  )
+  vi.mocked(telemetry.trackBillingEvent).mockImplementation(
+    mockTelemetry.trackBillingEvent
+  )
+})
 
 const setDistribution = (distribution: Distribution) => {
   ;(

@@ -7,7 +7,12 @@ import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { BalanceInfo, SubscriptionInfo } from '@/composables/billing/types'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useErrorHandling } from '@/composables/useErrorHandling'
 import CreditsTile from '@/platform/cloud/subscription/components/CreditsTile.vue'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
+import { useTelemetry } from '@/platform/telemetry'
 import type { TeamCreditStopSummary } from '@/platform/workspace/api/workspaceApi'
 
 type Balance = Pick<
@@ -45,69 +50,21 @@ const state = vi.hoisted(() => ({
   toastErrorHandler: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/composables/useErrorHandling'), () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandlingAsync:
-      <TArgs extends unknown[], TReturn>(
-        action: (...args: TArgs) => Promise<TReturn> | TReturn
-      ) =>
-      async (...args: TArgs): Promise<TReturn | undefined> => {
-        try {
-          return await action(...args)
-        } catch (e) {
-          state.toastErrorHandler(e)
-        }
-      }
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    balance: computed(() => state.balance),
-    subscription: computed(() => state.subscription),
-    canAccessSubscriptionFeatures: computed(
-      () => state.canAccessSubscriptionFeatures
-    ),
-    isFreeTier: computed(() => state.isFreeTier),
-    isTeamPlan: computed(() => state.isTeamPlan),
-    tier: computed(() => state.tier),
-    currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
-    isLoading: computed(() => state.isLoading),
-    type: computed(() => state.type),
-    fetchBalance: state.fetchBalance,
-    fetchStatus: state.fetchStatus
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({ showPricingTable: state.showPricingTable })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscription'),
-  () => ({
-    useSubscription: () => ({
-      isYearlySubscription: computed(() => state.personalIsYearly)
-    })
-  })
-)
+vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
 vi.mock(import('@/services/dialogService'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () =>
-    state.telemetryUnavailable
-      ? null
-      : {
-          trackAddApiCreditButtonClicked: state.trackAddApiCreditButtonClicked,
-          trackApiCreditTopupSucceeded: state.trackApiCreditTopupSucceeded
-        }
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(import('@/services/customerEventsService'), () => ({
   useCustomerEventsService: () => ({
@@ -200,6 +157,49 @@ function createDeferred() {
 
 describe('CreditsTile', () => {
   beforeEach(() => {
+    useErrorHandling().wrapWithErrorHandlingAsync =
+      (action) =>
+      async (...args) => {
+        try {
+          return await action(...args)
+        } catch (error) {
+          state.toastErrorHandler(error)
+        }
+      }
+    const billing = useBillingContext()
+    Object.assign(billing, {
+      balance: computed(() => state.balance),
+      subscription: computed(() => state.subscription),
+      canAccessSubscriptionFeatures: computed(
+        () => state.canAccessSubscriptionFeatures
+      ),
+      isFreeTier: computed(() => state.isFreeTier),
+      isTeamPlan: computed(() => state.isTeamPlan),
+      tier: computed(() => state.tier),
+      currentTeamCreditStop: computed(() => state.currentTeamCreditStop),
+      isLoading: computed(() => state.isLoading),
+      type: computed(() => state.type),
+      fetchBalance: state.fetchBalance,
+      fetchStatus: state.fetchStatus
+    })
+    vi.mocked(useBillingContext).mockReturnValue(billing)
+    useSubscription().isYearlySubscription = computed(
+      () => state.personalIsYearly
+    )
+    vi.mocked(useSubscriptionDialog().showPricingTable).mockImplementation(
+      state.showPricingTable
+    )
+    const telemetry = useTelemetry()
+    if (!telemetry) throw new Error('Expected telemetry mock')
+    vi.mocked(telemetry.trackAddApiCreditButtonClicked).mockImplementation(
+      state.trackAddApiCreditButtonClicked
+    )
+    vi.mocked(telemetry.trackApiCreditTopupSucceeded).mockImplementation(
+      state.trackApiCreditTopupSucceeded
+    )
+    vi.mocked(useTelemetry).mockImplementation(() =>
+      state.telemetryUnavailable ? null : telemetry
+    )
     state.balance = null
     state.subscription = null
     state.personalIsYearly = false

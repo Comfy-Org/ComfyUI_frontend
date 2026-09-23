@@ -1,18 +1,14 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { MockedFunction } from 'vitest'
 
-import type { Plan } from '@/platform/workspace/api/workspaceApi'
+import type {
+  Plan,
+  workspaceApi as realWorkspaceApi
+} from '@/platform/workspace/api/workspaceApi'
 
-const { mockGetBillingPlans } = vi.hoisted(() => ({
-  mockGetBillingPlans: vi.fn()
-}))
+let mockGetBillingPlans: MockedFunction<typeof realWorkspaceApi.getBillingPlans>
 
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: {
-    getBillingPlans: mockGetBillingPlans
-  },
-  // What a failed rail read throws; only its message reaches `error.value`.
-  WorkspaceApiError: class extends Error {}
-}))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
 /** Null is the legacy client; a rail is what the SDK store would hand back. */
 const railState = vi.hoisted(() => ({
@@ -48,8 +44,11 @@ const importUseBillingPlans = async () => {
 describe('useBillingPlans', () => {
   let consoleErrorSpy: ReturnType<typeof vi.spyOn>
 
-  beforeEach(() => {
+  beforeEach(async () => {
     vi.resetModules()
+    const { workspaceApi } =
+      await import('@/platform/workspace/api/workspaceApi')
+    mockGetBillingPlans = vi.mocked(workspaceApi.getBillingPlans)
     railState.rail = null
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
   })

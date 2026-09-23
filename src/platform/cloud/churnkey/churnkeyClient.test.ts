@@ -2,6 +2,7 @@ import type { ChurnkeyAuthResponse } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { ChurnkeyInitConfig } from './types'
 
 const mocks = vi.hoisted(() => ({
@@ -12,13 +13,8 @@ const mocks = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
-vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
-
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: {
-    getChurnkeyAuth: mocks.getChurnkeyAuth
-  }
-}))
+vi.mock(import('@/i18n'))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
 import { prepareChurnkey } from './churnkeyClient'
 
@@ -39,6 +35,9 @@ function capturedConfig(): ChurnkeyInitConfig {
 describe('churnkeyClient', () => {
   beforeEach(() => {
     vi.mocked(useFeatureFlags().flags).churnkeyAppId = 'app_test'
+    vi.mocked(workspaceApi.getChurnkeyAuth).mockImplementation(
+      mocks.getChurnkeyAuth
+    )
     mocks.getChurnkeyAuth.mockResolvedValue(authResponse())
     window.churnkey = {
       init: mocks.init,
