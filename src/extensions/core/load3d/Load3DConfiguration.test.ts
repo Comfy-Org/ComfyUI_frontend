@@ -302,7 +302,7 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
       loadFolder: 'output'
     })
     await flush()
-    expect(vi.mocked(load3d.emitModelReady)).toHaveBeenCalledTimes(1)
+    expect(load3d.emitModelReady).toHaveBeenCalledTimes(1)
   })
 
   it('configureForSaveMesh also emits modelReady once the load resolves', async () => {
@@ -310,7 +310,7 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     const config = new Load3DConfiguration(load3d)
     config.configureForSaveMesh('output', 'model.glb')
     await flush()
-    expect(vi.mocked(load3d.emitModelReady)).toHaveBeenCalledTimes(1)
+    expect(load3d.emitModelReady).toHaveBeenCalledTimes(1)
   })
 
   it('does not publish effects for a load superseded by clear', async () => {
