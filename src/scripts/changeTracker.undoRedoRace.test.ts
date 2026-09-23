@@ -5,6 +5,7 @@ import { markRaw, ref } from 'vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { ComfyApi } from '@/scripts/api'
+import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import type { ComfyApp } from '@/scripts/app'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
@@ -74,9 +75,15 @@ function nodeTypesOf(state: ComfyWorkflowJSON): string[] {
   return state.nodes.map((graphNode) => graphNode.type)
 }
 
+/**
+ * The assertion bridges the known zod/litegraph divergence, at the seam
+ * `captureCanvasState` already casts across. Authoring the fixture as
+ * `ISerialisedGraph` needs a second hand-synced copy of every workflow, the
+ * history queues being `ComfyWorkflowJSON`; their drifting apart is the bug.
+ */
 function putOnCanvas(state: ComfyWorkflowJSON) {
   vi.mocked(app.rootGraph.serialize).mockReturnValue(
-    structuredClone(state) as never
+    structuredClone(state) as ISerialisedGraph
   )
 }
 
