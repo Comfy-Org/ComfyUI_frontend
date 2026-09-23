@@ -121,8 +121,8 @@ import {
   createLiveWidgetProjection,
   owningGraph
 } from './crdt/liveWidgetProjection'
-import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { sharedPendingDeleteRetentionStore } from './crdt/pendingDeleteRetentionStore'
+import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
