@@ -16,6 +16,7 @@ import { useAuthStore } from '@/stores/authStore'
 import type { PartnerNodeInfo } from '@/composables/node/usePartnerNodesInGraph'
 
 type PartnerRunGate = 'sign-in' | 'none'
+type ApiKeyAuthStore = ReturnType<typeof useApiKeyAuthStore>
 
 /**
  * A gate block has no server backstop, so every one is reported. The gate only
@@ -24,7 +25,8 @@ type PartnerRunGate = 'sign-in' | 'none'
  */
 function reportGateBlocked(
   trigger: 'run-button' | 'auto-queue',
-  partnerNodes: PartnerNodeInfo[]
+  partnerNodes: PartnerNodeInfo[],
+  apiKeyStore: ApiKeyAuthStore
 ) {
   reportError(new Error(`Partner run gate blocked ${trigger}`), {
     errorType: 'partner_run_gate_blocked',
@@ -32,7 +34,7 @@ function reportGateBlocked(
     tags: {
       trigger,
       hasFirebaseSession: firebaseIdentity.currentUser() !== null,
-      hasStoredApiKey: Boolean(useApiKeyAuthStore().getApiKey()),
+      hasStoredApiKey: Boolean(apiKeyStore.getApiKey()),
       partnerNodeCount: partnerNodes.length
     },
     context: { partnerNodeTypes: partnerNodes.map((n) => n.nodeName) }
@@ -43,8 +45,7 @@ function reportGateBlocked(
  * A signed-in user reads as logged-out until Firebase resolves and a stored
  * API key validates; never gate on that transient state.
  */
-function isAuthResolving(): boolean {
-  const apiKeyStore = useApiKeyAuthStore()
+function isAuthResolving(apiKeyStore: ApiKeyAuthStore): boolean {
   return (
     !useAuthStore().isInitialized ||
     (Boolean(apiKeyStore.getApiKey()) && !apiKeyStore.isAuthenticated)
@@ -60,12 +61,13 @@ function isAuthResolving(): boolean {
 export function partnerRunGateBlocksAutoQueue(): boolean {
   if (isCloud) return false
   if (!useFeatureFlags().flags.partnerRunGateEnabled) return false
-  if (isAuthResolving()) return false
+  const apiKeyStore = useApiKeyAuthStore()
+  if (isAuthResolving(apiKeyStore)) return false
   const { isLoggedIn } = useCurrentUser()
   if (isLoggedIn.value) return false
   const partnerNodes = scanPartnerNodesInGraph()
   if (partnerNodes.length === 0) return false
-  reportGateBlocked('auto-queue', partnerNodes)
+  reportGateBlocked('auto-queue', partnerNodes, apiKeyStore)
   return true
 }
 
@@ -85,10 +87,11 @@ export const usePartnerNodesRunGate = createSharedComposable(() => {
   const { partnerNodes, hasPartnerNodes } = usePartnerNodesInGraph()
   const { isLoggedIn } = useCurrentUser()
   const { flags } = useFeatureFlags()
+  const apiKeyStore = useApiKeyAuthStore()
 
   const gate = computed<PartnerRunGate>(() =>
     flags.partnerRunGateEnabled &&
-    !isAuthResolving() &&
+    !isAuthResolving(apiKeyStore) &&
     hasPartnerNodes.value &&
     !isLoggedIn.value
       ? 'sign-in'
@@ -99,7 +102,7 @@ export const usePartnerNodesRunGate = createSharedComposable(() => {
     gate,
     (value) => {
       if (value !== 'sign-in') return
-      reportGateBlocked('run-button', partnerNodes.value)
+      reportGateBlocked('run-button', partnerNodes.value, apiKeyStore)
     },
     { immediate: true }
   )
