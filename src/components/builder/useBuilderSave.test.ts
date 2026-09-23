@@ -31,6 +31,11 @@ vi.mock(import('@/services/dialogService'))
 vi.mock(import('@/components/dialog/confirm/confirmDialog'))
 
 vi.mock<unknown>(import('@/i18n'), () => ({
+  i18n: {
+    global: {
+      locale: { value: 'en' }
+    }
+  },
   t: (key: string, params?: Record<string, string>) => {
     if (params) return `${key}:${JSON.stringify(params)}`
     return key
