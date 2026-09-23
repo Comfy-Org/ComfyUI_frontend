@@ -33,12 +33,18 @@ const { t } = useI18n()
       >
         {{ part.target }}
       </code>
-      <!-- The reason is the model's own prose. i18n interpolation runs with
-           escapeParameter, which would render its quotes and angle brackets as
-           HTML entities, so it is rendered as its own text node. -->
-      <p v-if="part.reason" class="m-0 wrap-break-word text-muted-foreground">
-        {{ t('agent.permissionAsk.reasonLabel') }} {{ part.reason }}
-      </p>
+      <!-- The reason is the model's own prose, passed as a slot rather than
+           a string parameter: parameters are HTML-escaped (escapeParameter),
+           which rendered its quotes as &quot;, while slot content is an
+           ordinary text node. The locale still owns the whole sentence. -->
+      <i18n-t
+        v-if="part.reason"
+        keypath="agent.permissionAsk.reason"
+        tag="p"
+        class="m-0 wrap-break-word text-muted-foreground"
+      >
+        <template #reason>{{ part.reason }}</template>
+      </i18n-t>
     </div>
 
     <div class="flex h-6 w-full justify-end gap-2">
