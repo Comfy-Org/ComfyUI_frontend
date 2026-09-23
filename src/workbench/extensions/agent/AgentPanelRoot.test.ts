@@ -7,7 +7,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
@@ -22,14 +22,18 @@ import { setupInlinePromptEditorDom } from './components/agent/composer/inlinePr
 setupInlinePromptEditorDom()
 
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type { LGraphNode, Subgraph } from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useTelemetry } from '@/platform/telemetry'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { app } from '@/scripts/app'
@@ -44,9 +48,14 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { reportError } from '@/platform/telemetry/reportError'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import {
+  saveSelection,
+  savedSelectionKeys,
+  setCanvasSelection
+} from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
+  createMockCanvasRenderingContext2D,
   createMockLoadedWorkflow,
   createMockChangeTracker,
   createMockLGraphNode
@@ -101,7 +110,12 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
 const appMock = vi.hoisted(() => {
   const graph = {
     nodes: [] as unknown[],
+    _nodes: [] as LGraph['_nodes'],
+    _nodes_by_id: {} as LGraph['_nodes_by_id'],
     arrange: vi.fn(),
+    add: vi.fn(),
+    remove: vi.fn(),
+    setDirtyCanvas: vi.fn(),
     serialize: () => ({ version: 0.4, nodes: graph.nodes }),
     getNodeById: (id: string | number) =>
       graph.nodes.find(
@@ -112,23 +126,22 @@ const appMock = vi.hoisted(() => {
           String(node.id) === String(id)
       ) ?? null
   }
+  Object.assign(graph, { rootGraph: graph })
   return {
     loadGraphData: vi.fn(),
     graph,
     rootGraph: graph,
     isGraphReady: false,
     canvas: undefined as
+      | LGraphCanvas
       | {
           graph: {
             nodes: unknown[]
-            getNodeById: (id: string) => unknown | null
+            getNodeById: (id: string) => unknown
           }
           selectedItems: Set<LGraphNode>
           selectItems: ReturnType<typeof vi.fn>
           deselect: (node: LGraphNode) => void
-          multi_select: boolean
-          allow_dragnodes: boolean
-          selectOnly: boolean
           canvas: HTMLCanvasElement
         }
       | undefined
@@ -145,57 +158,17 @@ let workflowStore: ReturnType<typeof useWorkflowStore>
 let canvasStore: ReturnType<typeof useCanvasStore>
 let executionErrors: Mocked<ReturnType<typeof useExecutionErrorStore>>
 
-const workflowService = vi.hoisted(() => ({
-  saveWorkflow: vi.fn(async (tab: { isModified: boolean }) => {
-    tab.isModified = false
-    return true
-  }),
-  saveWorkflowAs: vi.fn(
-    async (tab: ComfyWorkflow, options?: { filename?: string }) => {
-      if (options?.filename) {
-        await workflowStore.renameWorkflow(
-          tab,
-          `${tab.directory}/${options.filename}.json`
-        )
-      }
-      Object.assign(tab, { isTemporary: false })
-      tab.isModified = false
-      return true
-    }
-  ),
-  closeWorkflow: vi.fn(async (tab: ComfyWorkflow) => {
-    if (workflowStore.activeWorkflow?.path === tab.path) {
-      const replacement = workflowStore.openWorkflows.find(
-        (candidate) => candidate.path !== tab.path
-      )
-      workflowStore.activeWorkflow = replacement
-        ? await replacement.load()
-        : null
-    }
-    await workflowStore.closeWorkflow(tab)
-    return true
-  }),
-  openWorkflow: vi.fn(async (tab: { path: string }) => {
-    const known = workflowStore.getWorkflowByPath(tab.path)
-    if (known) {
-      workflowStore.openWorkflowsInBackground({ right: [tab.path] })
-      workflowStore.activeWorkflow = await known.load()
-    }
-    return true
-  })
-}))
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
+const workflowService = vi.mocked(useWorkflowService())
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => workflowService
-  })
-)
-
-vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
-  isLGraphNode: (item: unknown) =>
-    (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
-}))
+vi.mock<unknown>(import('@/utils/litegraphUtil'), async () => {
+  const { LGraphNode } = await import('@/lib/litegraph/src/litegraph')
+  return {
+    isLGraphNode: (item: unknown): item is LGraphNode =>
+      item instanceof LGraphNode ||
+      (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
+  }
+})
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -203,19 +176,10 @@ const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 
 vi.mock(import('@vueuse/core'), { spy: true })
 
-const telemetry = vi.hoisted(() => ({
-  trackAgentMessageFeedback: vi.fn(),
-  trackAgentWorkflowApplied: vi.fn(),
-  trackAgentMessageSent: vi.fn(),
-  trackAgentNodeTagged: vi.fn(),
-  trackAgentAttachButtonClicked: vi.fn(),
-  trackAgentCloseButtonClicked: vi.fn(),
-  trackAgentPanelOpened: vi.fn(),
-  trackAgentPanelClosed: vi.fn()
-}))
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => telemetry
-}))
+vi.mock(import('@/platform/telemetry'))
+const telemetryProvider = useTelemetry()
+assert.exists(telemetryProvider)
+const telemetry = vi.mocked(telemetryProvider)
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
@@ -241,6 +205,7 @@ const paywallCapabilities = vi.hoisted(() => ({
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null
 }))
+const paywallHasFunds = ref(false)
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -267,10 +232,20 @@ const mintPortWiringDeps = vi.hoisted(() => ({
   current: null as MintPortWiringDeps | null
 }))
 vi.mock(import('./crdt/mintPortWiring'), { spy: true })
-vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
+
+// The mock replaces the real `attachMintPortWiring` body entirely. It only
+// captures `deps` for assertions below — it must NOT reproduce any of that
+// body's own behaviour (e.g. the doc-bound probe registration), or a test
+// against the reimplementation could stay green while the real one breaks.
+// The doc-bound probe's registration/disposal is covered directly against
+// the real `attachMintPortWiring` in `mintPortWiring.test.ts`.
+function stubAttachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   mintPortWiringDeps.current = deps
-  return fromPartial<MintPortWiring>({ detach: vi.fn() })
-})
+  return fromPartial<MintPortWiring>({
+    detach: vi.fn()
+  })
+}
+vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
 
 import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
@@ -306,6 +281,9 @@ beforeEach(() => {
   )
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
+      subscription: computed(() =>
+        fromPartial({ hasFunds: paywallHasFunds.value })
+      ),
       tier: computed(() => paywallBilling.tier)
     })
   )
@@ -323,6 +301,41 @@ beforeEach(() => {
   )
   workflowStore = useWorkflowStore()
   canvasStore = useCanvasStore()
+  workflowService.saveWorkflow.mockImplementation(async (tab) => {
+    tab.isModified = false
+    return true
+  })
+  workflowService.saveWorkflowAs.mockImplementation(async (tab, options) => {
+    if (options?.filename) {
+      await workflowStore.renameWorkflow(
+        tab,
+        `${tab.directory}/${options.filename}.json`
+      )
+    }
+    Object.assign(tab, { isTemporary: false })
+    tab.isModified = false
+    return true
+  })
+  workflowService.closeWorkflow.mockImplementation(async (tab) => {
+    if (workflowStore.activeWorkflow?.path === tab.path) {
+      const replacement = workflowStore.openWorkflows.find(
+        (candidate) => candidate.path !== tab.path
+      )
+      workflowStore.activeWorkflow = replacement
+        ? await replacement.load()
+        : null
+    }
+    await workflowStore.closeWorkflow(tab)
+    return true
+  })
+  workflowService.openWorkflow.mockImplementation(async (tab) => {
+    const known = workflowStore.getWorkflowByPath(tab.path)
+    if (known) {
+      workflowStore.openWorkflowsInBackground({ right: [tab.path] })
+      workflowStore.activeWorkflow = await known.load()
+    }
+    return true
+  })
   executionErrors = vi.mocked(useExecutionErrorStore())
   executionErrors.showErrorOverlay.mockImplementation(() => {})
   vi.useRealTimers()
@@ -340,15 +353,13 @@ beforeEach(() => {
   setCanvasSelection([])
   canvasStore.currentGraph = null
   appMock.graph.nodes = []
+  appMock.isGraphReady = false
   appMock.graph.arrange.mockClear()
   Object.assign(appMock.rootGraph, { subgraphs: new Map(), id: undefined })
   appMock.isGraphReady = false
   appMock.canvas = undefined
   mintPortWiringDeps.current = null
-  vi.mocked(attachMintPortWiring).mockImplementation((deps) => {
-    mintPortWiringDeps.current = deps
-    return fromPartial<MintPortWiring>({ detach: vi.fn() })
-  })
+  vi.mocked(attachMintPortWiring).mockImplementation(stubAttachMintPortWiring)
   workflowService.saveWorkflow.mockClear()
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
@@ -371,6 +382,7 @@ beforeEach(() => {
   paywallCapabilities.isReady = true
   paywallCapabilities.hasResolvedCapabilities = true
   paywallBilling.tier = 'STANDARD'
+  paywallHasFunds.value = false
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -645,6 +657,25 @@ describe('AgentPanelRoot paywall actions', () => {
     )
   })
 
+  it('dismisses the paywall after billing confirms funds are available', async () => {
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+
+    paywallHasFunds.value = true
+
+    await vi.waitFor(() =>
+      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
+    )
+  })
+
   it('hides purchase actions from a Team member without billing permissions', async () => {
     paywallWorkspace.role = 'member'
     paywallCapabilities.canTopUp = false
@@ -913,9 +944,6 @@ function setupNodeSelectionCanvas() {
     deselect,
     deselectAll,
     animateToBounds: vi.fn(),
-    multi_select: false,
-    allow_dragnodes: true,
-    selectOnly: false,
     canvas: canvasElement
   }
   appMock.canvas = canvas
@@ -969,6 +997,42 @@ function showRootGraph(
   canvasStore.currentGraph = fromPartial(graph)
 }
 
+function setupOwnedSelectionCanvas() {
+  const rootGraph = new LGraph()
+  const subgraph = createTestSubgraph({ rootGraph, id: SUBGRAPH_UUID })
+  rootGraph.subgraphs.set(subgraph.id, subgraph)
+  const rootNode = new LGraphNode('Root node')
+  rootNode.id = toNodeId(3)
+  rootGraph.add(rootNode)
+  const subgraphNode = new LGraphNode('KSampler')
+  subgraphNode.id = toNodeId(12)
+  subgraph.add(subgraphNode)
+
+  const canvasElement = document.createElement('canvas')
+  canvasElement.getContext = vi
+    .fn()
+    .mockReturnValue(createMockCanvasRenderingContext2D())
+  canvasElement.getBoundingClientRect = vi
+    .fn()
+    .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })
+  const canvas = new LGraphCanvas(canvasElement, rootGraph, {
+    skip_render: true
+  })
+  canvas.onSelectionChange = () => syncFakeSelection()
+
+  appMock.graph.nodes = rootGraph.nodes
+  Object.assign(appMock.rootGraph, { subgraphs: rootGraph.subgraphs })
+  appMock.canvas = canvas
+  canvasStore.canvas = canvas
+  viewGraph(canvas, subgraph)
+  return { canvas, rootGraph, subgraph, rootNode, subgraphNode }
+}
+
+function viewGraph(canvas: LGraphCanvas, graph: LGraph): void {
+  canvas.setGraph(graph)
+  canvasStore.currentGraph = graph
+}
+
 function renderCanvasNodeButtons(
   nodes: LGraphNode[],
   onClick: (node: LGraphNode) => void
@@ -1007,7 +1071,7 @@ async function enterNodeSelectionMode(): Promise<void> {
 async function startVueNodeSelection() {
   const state = setupNodeSelectionCanvas()
   const selectClickedNode = vi.fn((node: LGraphNode) => {
-    if (!state.canvas.multi_select) state.selectedItems.clear()
+    if (!useAgentNodeSelectionStore().isActive) state.selectedItems.clear()
     if (state.selectedItems.has(node)) state.selectedItems.delete(node)
     else state.selectedItems.add(node)
     syncFakeSelection()
@@ -1613,16 +1677,15 @@ describe('AgentPanelRoot attach flow', () => {
 
       dispatchDrag(target, 'dragenter', dragData)
       await nextTick()
-      expect(screen.getByRole('status')).toHaveTextContent(
-        'Drag and drop assets here'
-      )
+      const dropTarget = screen.getByRole('status')
+      expect(dropTarget).toHaveTextContent('Drag and drop assets here')
 
       expect(dispatchDrag(target, 'dragover', dragData)).toBe(true)
 
       const claimed = dispatchDrag(target, 'drop', dragData)
       expect(claimed).toBe(true)
       await nextTick()
-      expect(screen.queryByRole('status')).not.toBeInTheDocument()
+      expect(dropTarget).not.toBeInTheDocument()
 
       expect(
         within(await screen.findByTestId('composer-asset-section')).getByText(
@@ -2711,7 +2774,7 @@ describe('AgentPanelRoot lifecycle', () => {
       screen.getByRole('button', { name: i18n.global.t('agent.close') })
     )
 
-    expect(selection.canvas.multi_select).toBe(false)
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
     expect(telemetry.trackAgentCloseButtonClicked).toHaveBeenCalled()
     expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'close_button',
@@ -2727,7 +2790,7 @@ describe('AgentPanelRoot lifecycle', () => {
 
     selection.unmount()
 
-    expect(selection.canvas.multi_select).toBe(false)
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
@@ -2812,11 +2875,12 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   function makeTab(id?: string): LoadedComfyWorkflow {
-    const tab = addTab('workflows/current.json', {
-      ...(id === undefined
+    const tab = addTab(
+      'workflows/current.json',
+      id === undefined
         ? {}
-        : { activeState: fromPartial<ComfyWorkflowJSON>({ id }) })
-    })
+        : { activeState: fromPartial<ComfyWorkflowJSON>({ id }) }
+    )
     workflowStore.activeWorkflow = tab
     if (id !== undefined) useAgentWorkflowTabBindingStore().bind(id, tab.path)
     return tab
@@ -2857,6 +2921,9 @@ describe('AgentPanelRoot workflow binding', () => {
         if (url.includes('/messages')) return json(200, [])
         if (url.includes('/agent/threads')) {
           return json(200, agentThreadList(threads))
+        }
+        if (url.includes('/assets')) {
+          return json(200, { assets: [], total: 0, has_more: false })
         }
         if (url.includes('/workflows')) {
           const workflows =
@@ -4117,6 +4184,32 @@ describe('AgentPanelRoot workflow binding', () => {
 
       draft: { content: { id: 'wf-42' } }
     })
+  })
+
+  it('keeps an explicitly detached workflow after a remount', async () => {
+    makeTab('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42')
+    const panel = renderWithSelectedTarget()
+
+    await sendFromComposer('attached turn')
+    expect(bodies[0]).toHaveProperty('workflow_id', 'wf-42')
+    ws.emit('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1'
+    })
+    await screen.findByRole('button', { name: 'Send' })
+    useAgentPanelStore().setWorkflowTarget(null)
+
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.type(textbox, 'still detached')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    expect(
+      await screen.findByPlaceholderText(i18n.global.t('agent.searchWorkflows'))
+    ).toHaveFocus()
+    expect(bodies).toHaveLength(1)
   })
 
   it('re-attaches by picking a row so the next send carries the workflow again', async () => {
@@ -6641,9 +6734,8 @@ describe('AgentPanelRoot workflow binding', () => {
   it('merges an off-view subgraph reference with the current root selection', async () => {
     makeTab()
     mockMessagesEndpoint('wf-42')
-    const state = setupNodeSelectionCanvas()
-    const subgraphNode = nestSelectionCanvasInSubgraph(state)
-    state.nodes[1].id = toNodeId('shared')
+    const { canvas, rootGraph, rootNode, subgraphNode } =
+      setupOwnedSelectionCanvas()
 
     renderWithSelectedTarget()
     useAgentPanelStore().isOpen = true
@@ -6651,24 +6743,50 @@ describe('AgentPanelRoot workflow binding', () => {
     await openMentionPicker()
     await userEvent.click(await screen.findByText('KSampler'))
 
-    const rootNode: LGraphNode = createMockLGraphNode({
-      isNodeFake: true,
-      id: 'shared',
-      title: 'Root node',
-      boundingRect: {}
-    })
-    appMock.graph.nodes = [subgraphNode, rootNode]
-    showRootGraph(state, [rootNode])
-    state.selectedItems.clear()
-    state.selectedItems.add(rootNode)
+    viewGraph(canvas, rootGraph)
+    canvas.select(rootNode)
     syncFakeSelection()
-    state.selectItems.mockClear()
+    const selectItems = vi.spyOn(canvas, 'selectItems')
     await nextTick()
 
     await enterNodeSelectionMode()
 
-    expect(state.selectItems).toHaveBeenCalledWith([rootNode, state.nodes[1]])
-    expect([...state.selectedItems]).toEqual([rootNode, state.nodes[1]])
+    expect(selectItems).toHaveBeenCalledWith([rootNode, subgraphNode])
+    expect([...canvas.selectedItems]).toEqual([rootNode])
+    expect(subgraphNode.selected).toBeFalsy()
+    expect(screen.getByText('Root node')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+  })
+
+  it('keeps every staged reference and the incoming graph saved selection when the viewed graph is replaced while picking', async () => {
+    makeTab()
+    mockMessagesEndpoint('wf-42')
+    const { canvas, rootGraph, subgraph, rootNode, subgraphNode } =
+      setupOwnedSelectionCanvas()
+
+    renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
+
+    viewGraph(canvas, rootGraph)
+    canvas.select(rootNode)
+    syncFakeSelection()
+    await nextTick()
+    await enterNodeSelectionMode()
+    expect(screen.getByText('Root node')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+    saveSelection(subgraph, subgraphNode)
+
+    viewGraph(canvas, subgraph)
+    syncFakeSelection()
+    await nextTick()
+
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(canvas.selectedItems.size).toBe(0)
+    expect(savedSelectionKeys(rootGraph)).toEqual([])
+    expect(savedSelectionKeys(subgraph)).toEqual(['node:12'])
     expect(screen.getByText('Root node')).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
@@ -6925,7 +7043,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
     const state = setupNodeSelectionCanvas()
     const selectLegacyNode = (node: LGraphNode) => {
-      if (!state.canvas.multi_select) state.selectedItems.clear()
+      if (!useAgentNodeSelectionStore().isActive) state.selectedItems.clear()
       state.selectedItems.add(node)
       syncFakeSelection()
     }
@@ -7010,9 +7128,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const bodies = mockMessagesEndpoint('wf-42')
     const selection = await startVueNodeSelection()
 
-    expect(selection.canvas.multi_select).toBe(true)
-    expect(selection.canvas.allow_dragnodes).toBe(false)
-    expect(selection.canvas.selectOnly).toBe(true)
+    expect(useAgentNodeSelectionStore().isActive).toBe(true)
     expect(selection.focus).toHaveBeenCalledOnce()
     expect(selection.selectClickedNode).toHaveBeenCalledTimes(2)
     expect(await screen.findByText('VAE Decode')).toBeInTheDocument()
@@ -7020,9 +7136,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await sendFromComposer('explain this')
 
-    expect(selection.canvas.multi_select).toBe(false)
-    expect(selection.canvas.allow_dragnodes).toBe(true)
-    expect(selection.canvas.selectOnly).toBe(false)
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
     expect(bodies[0]).toMatchObject({
       selection: { node_ids: ['9', '12'] }
     })
@@ -7038,9 +7152,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
 
     expect(useAgentNodeSelectionStore().isActive).toBe(false)
-    expect(selection.canvas.multi_select).toBe(false)
-    expect(selection.canvas.allow_dragnodes).toBe(true)
-    expect(selection.canvas.selectOnly).toBe(false)
     expect(canvasStore.selectedItems).toEqual([])
     expect([...selection.selectedItems]).toEqual([])
     expect(screen.getByText('VAE Decode')).toBeInTheDocument()
@@ -7060,7 +7171,7 @@ describe('AgentPanelRoot workflow binding', () => {
     canvasStore.currentGraph = fromPartial(nextGraph)
     await nextTick()
 
-    expect(selection.canvas.multi_select).toBe(false)
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
@@ -7074,16 +7185,13 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
 
     expect(useAgentNodeSelectionStore().isActive).toBe(false)
-    expect(selection.canvas.multi_select).toBe(false)
-    expect(selection.canvas.allow_dragnodes).toBe(true)
-    expect(selection.canvas.selectOnly).toBe(false)
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
   it('keeps node selection active when the active workflow is renamed', async () => {
     makeTab()
     mockMessagesEndpoint('wf-42')
-    const selection = await startVueNodeSelection()
+    await startVueNodeSelection()
 
     const active = workflowStore.activeWorkflow
     if (!active) throw new Error('expected an active workflow')
@@ -7092,9 +7200,20 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
 
     expect(useAgentNodeSelectionStore().isActive).toBe(true)
-    expect(selection.canvas.multi_select).toBe(true)
-    expect(selection.canvas.allow_dragnodes).toBe(false)
-    expect(selection.canvas.selectOnly).toBe(true)
+  })
+
+  it('ends node selection when the target workflow changes', async () => {
+    makeTab()
+    mockMessagesEndpoint('wf-42')
+    const selection = await startVueNodeSelection()
+
+    useAgentPanelStore().setWorkflowTarget(
+      fromPartial<ComfyWorkflow>(addTab('workflows/other.json'))
+    )
+    await nextTick()
+
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
   it('keeps each workflow node selection separate after a graph load', async () => {
@@ -7153,12 +7272,9 @@ describe('AgentPanelRoot workflow binding', () => {
         nodes: [{ id: 12, title: 'KSampler' }],
         getNodeById: () => null
       },
-      selectedItems: new Set(),
+      selectedItems: new Set<LGraphNode>(),
       selectItems: vi.fn(),
       deselect: vi.fn(),
-      multi_select: false,
-      allow_dragnodes: true,
-      selectOnly: false,
       canvas: document.createElement('canvas')
     }
 
@@ -7189,6 +7305,36 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
     await nextTick()
     expect(app.loadGraphData).not.toHaveBeenCalled()
+  })
+
+  it('wires getGraph() to the live root graph, following a graph swap', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('hello')
+
+    appMock.isGraphReady = true
+    Object.assign(appMock.rootGraph, { id: 'graph-a' })
+    expect(mintPortWiringDeps.current?.getGraph()?.id).toBe('graph-a')
+
+    // A workflow switch rebuilds the canvas against a new root graph without
+    // touching agentPanelStore.enabled or isBoundWorkflowActive, so the mint
+    // port wiring's own doc-bound predicate (covered directly against the
+    // real `attachMintPortWiring` in `mintPortWiring.test.ts`) has to read
+    // this live graph at mint time to follow the swap.
+    Object.assign(appMock.rootGraph, { id: 'graph-b' })
+
+    expect(mintPortWiringDeps.current?.getGraph()?.id).toBe('graph-b')
+  })
+
+  it('wires getGraph() to null before the graph is ready', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    await renderAndSend('hello')
+
+    Object.assign(appMock.rootGraph, { id: 'graph-a' })
+    appMock.isGraphReady = false
+
+    expect(mintPortWiringDeps.current?.getGraph()).toBeNull()
   })
 
   it("reports the bound workflow's own stored root graph id once bound", async () => {

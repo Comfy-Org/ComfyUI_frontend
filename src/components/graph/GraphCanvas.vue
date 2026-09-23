@@ -74,6 +74,7 @@
   <TransformPane
     v-if="shouldRenderVueNodes && comfyApp.canvas && comfyAppReady"
     :canvas="comfyApp.canvas"
+    :inert="agentNodeSelectionStore.isActive"
     @wheel.capture="canvasInteractions.forwardEventToCanvas"
     @pointerdown.capture="forwardPointerDownPanEvent"
     @pointerup.capture="forwardPointerUpPanEvent"
@@ -302,6 +303,7 @@ watch(
         forEachNode(graph.rootGraph, (node) => {
           for (const widget of node.widgets ?? []) {
             widget.syncLiveVisibilityOptions?.()
+            widget.syncLiveDisabled?.()
           }
         })
       }

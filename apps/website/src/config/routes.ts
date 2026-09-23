@@ -157,8 +157,6 @@ export function getRoutes(locale: Locale = 'en'): Routes {
 export const externalLinks = {
   affiliateApplicationForm: 'https://forms.gle/RS8L2ttcuGap4Q1v6',
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
-  routerApiKeys:
-    'https://platform.comfy.org/profile/api-keys?onboarding=router',
   blog: 'https://blog.comfy.org/',
   cloud: 'https://cloud.comfy.org',
   cloudLogin: 'https://cloud.comfy.org/cloud/login',
@@ -218,3 +216,18 @@ export const externalLinks = {
   x: 'https://x.com/ComfyUI',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const
+
+/**
+ * The platform creates a key on arrival and shows this product's onboarding.
+ * `model` is the website's model page id (`/models/<slug>`), not the Router id.
+ */
+type ApiKeysOnboarding =
+  | { onboarding: 'router' | 'comfy_api' }
+  | { onboarding: 'models'; model?: string }
+
+export function apiKeysLink(from: ApiKeysOnboarding): string {
+  const url = new URL(externalLinks.apiKeys)
+  url.searchParams.set('onboarding', from.onboarding)
+  if ('model' in from && from.model) url.searchParams.set('model', from.model)
+  return url.href
+}

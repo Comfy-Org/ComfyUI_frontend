@@ -3,7 +3,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../i18n/translations'
 import GlassCard from '../common/GlassCard.vue'
-import InlineCodeText from '../common/InlineCodeText.vue'
 import SectionHeader from '../common/SectionHeader.vue'
 import VideoPlayer from '../common/VideoPlayer.vue'
 import type { VideoTrack } from '../common/VideoPlayer.vue'
@@ -35,33 +34,18 @@ const {
   heading,
   eyebrow,
   locale = 'en',
-  rows,
-  titleClass
+  rows
 } = defineProps<{
-  heading?: string
+  heading: string
   eyebrow?: string
   locale?: Locale
   rows: readonly FeatureRow[]
-  titleClass?: string
 }>()
-
-// Rows alternate which side the media sits on from lg up.
-function textOrder(index: number): string {
-  return index % 2 === 0 ? 'lg:order-1' : 'lg:order-2'
-}
-
-function mediaOrder(index: number): string {
-  return index % 2 === 0 ? 'lg:order-2' : 'lg:order-1'
-}
-
-function mediaLabel(row: FeatureRow): string {
-  return row.media.alt ?? row.title
-}
 </script>
 
 <template>
   <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
-    <SectionHeader v-if="heading" :label="eyebrow" max-width="xl">
+    <SectionHeader :label="eyebrow" max-width="xl">
       {{ heading }}
     </SectionHeader>
 
@@ -69,7 +53,7 @@ function mediaLabel(row: FeatureRow): string {
       <slot name="media" />
     </div>
 
-    <div :class="cn('flex flex-col gap-4 lg:gap-6', heading && 'mt-16')">
+    <div class="mt-16 flex flex-col gap-4 lg:gap-6">
       <GlassCard
         v-for="(row, i) in rows"
         :key="row.id"
@@ -80,22 +64,15 @@ function mediaLabel(row: FeatureRow): string {
           :class="
             cn(
               'order-2 flex flex-col justify-center gap-4 p-6 lg:flex-1 lg:p-12',
-              textOrder(i)
+              i % 2 === 0 ? 'lg:order-1' : 'lg:order-2'
             )
           "
         >
-          <h3
-            :class="
-              cn(
-                'text-2xl font-light text-primary-comfy-canvas lg:text-3xl',
-                titleClass
-              )
-            "
-          >
+          <h3 class="text-2xl font-light text-primary-comfy-canvas lg:text-3xl">
             {{ row.title }}
           </h3>
-          <p class="text-sm text-pretty text-smoke-700 lg:text-base">
-            <InlineCodeText :text="row.description" />
+          <p class="text-sm text-smoke-700 lg:text-base">
+            {{ row.description }}
           </p>
         </div>
 
@@ -105,14 +82,14 @@ function mediaLabel(row: FeatureRow): string {
           :class="
             cn(
               'relative order-1 aspect-620/364 w-full lg:w-155 lg:shrink-0',
-              mediaOrder(i)
+              i % 2 === 0 ? 'lg:order-2' : 'lg:order-1'
             )
           "
         >
           <img
             v-if="row.media.type === 'image'"
             :src="row.media.src"
-            :alt="mediaLabel(row)"
+            :alt="row.media.alt ?? row.title"
             loading="lazy"
             decoding="async"
             :class="
@@ -125,7 +102,7 @@ function mediaLabel(row: FeatureRow): string {
           <VideoPlayer
             v-else
             :locale="locale"
-            :aria-label="mediaLabel(row)"
+            :aria-label="row.media.alt ?? row.title"
             :src="row.media.src"
             :poster="row.media.poster"
             :tracks="row.media.tracks"

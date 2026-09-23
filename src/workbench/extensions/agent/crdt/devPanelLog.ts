@@ -237,7 +237,7 @@ function sanitizeDetail(
   value: unknown,
   depth = 0,
   ancestors: readonly object[] = [],
-  key: string | undefined = undefined
+  key?: string
 ): unknown {
   if (depth > MAX_SANITIZE_DEPTH) return REDACTED
   if (ArrayBuffer.isView(value)) {
