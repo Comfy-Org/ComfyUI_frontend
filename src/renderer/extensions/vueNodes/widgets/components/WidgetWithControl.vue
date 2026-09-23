@@ -1,5 +1,5 @@
 <script setup lang="ts" generic="T extends WidgetValue">
-import { defineAsyncComponent, ref, watch } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
 import Popover from '@/components/ui/Popover.vue'
@@ -14,16 +14,17 @@ const ValueControlPopover = defineAsyncComponent(
   () => import('./ValueControlPopover.vue')
 )
 
-const props = defineProps<{
+const { widget } = defineProps<{
   widget: SimplifiedControlWidget<T>
   component: Component
 }>()
 
 const modelValue = defineModel<T>()
 
-const controlModel = ref(props.widget.controlWidget.value)
-
-watch(controlModel, props.widget.controlWidget.update)
+const controlModel = computed({
+  get: () => widget.controlWidget.value,
+  set: widget.controlWidget.update
+})
 </script>
 <template>
   <div class="relative grid grid-cols-subgrid">

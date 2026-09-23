@@ -4,6 +4,7 @@ import { reactive, unref, shallowRef } from 'vue'
 
 import { partnerRunGateBlocksAutoQueue } from '@/composables/billing/usePartnerNodesRunGate'
 import { useCanvasPositionConversion } from '@/composables/element/useCanvasPositionConversion'
+import { runWidgetControl } from '@/core/graph/widgets/control/widgetControlSystem'
 
 import { promotedInputSource } from '@/core/graph/subgraph/promotedInputWidget'
 import { resolveConcretePromotedWidget } from '@/core/graph/subgraph/resolveConcretePromotedWidget'
@@ -160,7 +161,6 @@ import { PromptExecutionError, api } from './api'
 import type { ComfyApi } from './api'
 import { defaultGraph } from './defaultGraph'
 import { importA1111 } from './pnginfo'
-import { applyPromotedWidgetControl } from './promotedWidgetControl'
 import { $el, ComfyUI } from './ui'
 import { ComfyAppMenu } from './ui/menu/index'
 import { clone } from './utils'
@@ -1870,14 +1870,17 @@ export class ComfyApp {
             }
           }
 
+          const widgetControlMode = useSettingStore().get(
+            'Comfy.WidgetControlMode'
+          )
           // Allow widgets to run callbacks before a prompt has been queued
           // e.g. random seed before every gen
           forEachNode(this.rootGraph, (node) => {
             for (const widget of node.widgets ?? []) {
               widget.beforeQueued?.({ isPartialExecution })
             }
-            applyPromotedWidgetControl(node, 'beforeQueued')
           })
+          runWidgetControl(this.rootGraph, 'before', widgetControlMode)
 
           // Capture workflow and mode before await — both may change if the
           // user switches tabs or toggles app/graph mode while the request is
@@ -2087,9 +2090,12 @@ export class ComfyApp {
           executeWidgetsCallback(queuedNodes, 'afterQueued', {
             isPartialExecution
           })
-          for (const node of queuedNodes) {
-            applyPromotedWidgetControl(node, 'afterQueued')
-          }
+          runWidgetControl(
+            this.rootGraph,
+            'after',
+            widgetControlMode,
+            isPartialExecution ? new Set(queueNodeIds.map(String)) : undefined
+          )
           useFreeTierQuota().trackRun()
           this.canvas.draw(true, true)
           await this.ui.queue.update()
