@@ -23,9 +23,9 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import { recordDevEvent } from './devPanelLog'
-import type { BatchOutcome } from './opSender'
 import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
+import type { BatchOutcome, OpSenderDeps } from './opSender'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -52,9 +52,7 @@ const bridgeState = vi.hoisted(() => {
 
 const clientState = vi.hoisted(() => ({
   destroy: vi.fn(),
-  sendOps: vi.fn(
-    (_workflowId: string, _tab: string, _ops: Array<{ op_id: string }>) => true
-  ),
+  sendOps: vi.fn<OpSenderDeps['sendOps']>(() => true),
   transport: null as DocFrameTransport | null
 }))
 
