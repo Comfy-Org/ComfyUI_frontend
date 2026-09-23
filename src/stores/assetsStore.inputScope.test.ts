@@ -1,19 +1,11 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { toValue } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { api } from '@/scripts/api'
 
-const featureFlags = vi.hoisted(() => ({ assetsEnabled: true }))
-
-vi.mock(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () =>
-    fromPartial({
-      get flags() {
-        return { assetsEnabled: featureFlags.assetsEnabled }
-      }
-    })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
@@ -69,8 +61,8 @@ function servePagesByScope() {
 }
 
 beforeEach(() => {
-  featureFlags.assetsEnabled = true
-  fetchApiMock.mockResolvedValue(page([]))
+  vi.mocked(useFeatureFlags().flags).assetsEnabled = true
+  fetchApiMock.mockImplementation(async () => page([]))
   vi.stubGlobal(
     'fetch',
     vi.fn(async () => new Response(JSON.stringify([])))
@@ -89,16 +81,16 @@ describe('assetsStore input asset scope', () => {
     )
   })
 
-  it('keeps a public-inclusive input list for widget lookups', async () => {
+  it('keeps public assets in the widget-facing input list', async () => {
+    servePagesByScope()
     const store = useAssetsStore()
 
     await vi.waitFor(() =>
-      expect(assetRequests()).toContainEqual({
-        tags: 'input',
-        includePublic: 'true'
-      })
+      expect(toValue(store.inputAssets.items).map(({ id }) => id)).toEqual([
+        'public-template-input'
+      ])
     )
-    expect(store.importedAssets).not.toBe(store.inputAssets)
+    expect(toValue(store.importedAssets.items)).toEqual([])
   })
 
   it('refetches the Imported list on mutation even when it shares nothing with the public-inclusive list', async () => {
@@ -131,7 +123,7 @@ describe('assetsStore input asset scope', () => {
 
   describe('when assets are disabled', () => {
     beforeEach(() => {
-      featureFlags.assetsEnabled = false
+      vi.mocked(useFeatureFlags().flags).assetsEnabled = false
     })
 
     it('refreshes the shared local list once', async () => {
