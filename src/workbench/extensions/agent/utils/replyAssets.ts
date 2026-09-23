@@ -48,7 +48,12 @@ export function resolveAgentAssetUrl(
 ): string {
   let url: URL
   try {
-    url = new URL(href)
+    // A scheme-relative reference (`//localhost:8188/view?…`) is absolute in
+    // everything but its scheme, which it takes from the page. A path-relative
+    // one throws here and is returned unchanged: it is already the page's own.
+    url = new URL(
+      href.startsWith('//') ? `${new URL(origin).protocol}${href}` : href
+    )
   } catch {
     return href
   }
@@ -78,38 +83,55 @@ interface SrcsetCandidate {
  */
 function srcsetCandidates(value: string): SrcsetCandidate[] {
   const candidates: SrcsetCandidate[] = []
-  let position = 0
+  let position = skipSrcsetSeparators(value, 0)
   while (position < value.length) {
-    while (
-      position < value.length &&
-      (SRCSET_SPACE.test(value[position]) || value[position] === ',')
-    )
-      position++
-    if (position >= value.length) break
-
-    const urlStart = position
-    while (position < value.length && !SRCSET_SPACE.test(value[position]))
-      position++
-    let url = value.slice(urlStart, position)
-    let descriptor = ''
-    if (url.endsWith(',')) {
-      url = url.replace(/,+$/, '')
-    } else {
-      const descriptorStart = position
-      let depth = 0
-      while (position < value.length) {
-        const c = value[position]
-        if (c === '(') depth++
-        else if (c === ')') depth = Math.max(0, depth - 1)
-        else if (c === ',' && depth === 0) break
-        position++
-      }
-      descriptor = value.slice(descriptorStart, position).trim()
-      position++
-    }
+    const [rawUrl, afterUrl] = readSrcsetUrl(value, position)
+    const closesCandidate = rawUrl.endsWith(',')
+    const [descriptor, next] = closesCandidate
+      ? ['', afterUrl]
+      : readSrcsetDescriptor(value, afterUrl)
+    const url = closesCandidate ? rawUrl.replace(/,+$/, '') : rawUrl
     if (url) candidates.push({ url, descriptor })
+    position = skipSrcsetSeparators(value, next)
   }
   return candidates
+}
+
+function isSrcsetSpace(c: string): boolean {
+  return SRCSET_SPACE.test(c)
+}
+
+/** Whitespace and stray commas between candidates. */
+function skipSrcsetSeparators(value: string, position: number): number {
+  while (
+    position < value.length &&
+    (isSrcsetSpace(value[position]) || value[position] === ',')
+  )
+    position++
+  return position
+}
+
+/** A candidate URL runs until whitespace, commas included. */
+function readSrcsetUrl(value: string, position: number): [string, number] {
+  const start = position
+  while (position < value.length && !isSrcsetSpace(value[position])) position++
+  return [value.slice(start, position), position]
+}
+
+/** Descriptors run until a comma outside parentheses, which they consume. */
+function readSrcsetDescriptor(
+  value: string,
+  position: number
+): [string, number] {
+  const start = position
+  let depth = 0
+  for (; position < value.length; position++) {
+    const c = value[position]
+    if (c === ',' && depth === 0) break
+    if (c === '(') depth++
+    else if (c === ')' && depth > 0) depth--
+  }
+  return [value.slice(start, position).trim(), position + 1]
 }
 
 /** Resolve every candidate of a `srcset`, keeping each one's descriptor. */

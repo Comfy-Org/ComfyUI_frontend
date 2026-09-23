@@ -58,6 +58,19 @@ describe('resolveAgentAssetUrl', () => {
     )
   })
 
+  // Scheme-relative: absolute in everything but its scheme, so `new URL()`
+  // alone throws on it and the loopback host would survive.
+  it('re-homes a scheme-relative loopback URL onto the page origin', () => {
+    expect(
+      resolveAgentAssetUrl('//localhost:8188/view?filename=a.png', PANEL)
+    ).toBe(`${PANEL}/view?filename=a.png`)
+  })
+
+  it('leaves a scheme-relative remote URL alone', () => {
+    const remote = '//cdn.example.com/view?filename=a.png'
+    expect(resolveAgentAssetUrl(remote, PANEL)).toBe(remote)
+  })
+
   it('leaves a genuinely remote ComfyUI host alone', () => {
     const remote = 'http://gpu-box.lan:8188/view?filename=a.png'
     expect(resolveAgentAssetUrl(remote, PANEL)).toBe(remote)
