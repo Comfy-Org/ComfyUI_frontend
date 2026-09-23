@@ -216,6 +216,14 @@ export function useAgentWorkflowSelection({
     if (!workflowSelection.value) void refreshCloudWorkflowIds()
   }
 
+  async function closeRecoveredWorkflow(
+    target: ComfyWorkflow | null,
+    recovered: boolean
+  ): Promise<void> {
+    if (recovered && target !== null)
+      await workflowService.closeWorkflow(target, { warnIfUnsaved: false })
+  }
+
   async function onWorkflowRestored(
     workflowId: string | undefined,
     isSessionCurrent: () => boolean

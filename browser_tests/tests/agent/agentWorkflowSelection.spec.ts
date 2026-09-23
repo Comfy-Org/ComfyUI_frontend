@@ -226,9 +226,21 @@ test.describe(
           jsonRoute({
             content: {
               version: 0.4,
-              last_node_id: 0,
+              last_node_id: 7,
               last_link_id: 0,
-              nodes: [],
+              nodes: [
+                {
+                  id: 7,
+                  type: 'KSampler',
+                  title: 'Recovered Draft Marker',
+                  pos: [0, 0],
+                  size: [320, 300],
+                  flags: {},
+                  order: 0,
+                  mode: 0,
+                  properties: {}
+                }
+              ],
               links: []
             },
             version: 1

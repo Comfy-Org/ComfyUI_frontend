@@ -1056,20 +1056,20 @@ async function onOpenApprovalWorkflow(
 }
 
 let referenceNavigationGeneration = 0
+
 async function onNavigateToReferenceWorkflow(
   workflowId: string,
   workflowName: string
 ): Promise<void> {
   const generation = ++referenceNavigationGeneration
   const isCurrent = () => generation === referenceNavigationGeneration
-  let recovered = false
   let target: ComfyWorkflow | null = null
+  let recoveredTarget: ComfyWorkflow | null = null
   async function closeRecovered(): Promise<void> {
-    if (!recovered || target === null) return
-    const recoveredTarget = target
-    recovered = false
-    target = null
-    await workflowService.closeWorkflow(recoveredTarget, {
+    if (recoveredTarget === null) return
+    const target = recoveredTarget
+    recoveredTarget = null
+    await workflowService.closeWorkflow(target, {
       warnIfUnsaved: false
     })
   }
@@ -1085,7 +1085,7 @@ async function onNavigateToReferenceWorkflow(
     }
     if (target === null) {
       target = await recoverWorkflow(workflowId, workflowName)
-      recovered = target !== null
+      recoveredTarget = target
     }
     if (!isCurrent()) {
       await closeRecovered()
