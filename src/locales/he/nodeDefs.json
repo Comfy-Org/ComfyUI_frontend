@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "חלץ ערך של מפתח מאובייקט ה-JSON התקין הראשון בטקסט, כולל בלוקי קוד של Markdown.",
     "display_name": "חילוץ טקסט מ-JSON",
     "inputs": {
       "json_string": {

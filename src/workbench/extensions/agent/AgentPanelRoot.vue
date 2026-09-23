@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import './agentPanel.css'
 
+import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
 import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
@@ -18,6 +19,7 @@ import { useI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { LiveAutogrowGroupAnswer } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -25,11 +27,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import {
-  fetchDroppedAsset,
-  getDroppedAsset,
-  hasVideoType
-} from '@/utils/eventUtils'
+import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -55,8 +53,10 @@ import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import type { RootGraphId } from '@/types/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
 import { parseNodeId } from '@/types/nodeId'
+import { parseNodeLocatorId } from '@/types/nodeIdentification'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
@@ -118,7 +118,11 @@ import {
   resolveDebugPanelEnabled
 } from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
-import { createLiveWidgetProjection } from './crdt/liveWidgetProjection'
+import {
+  createLiveWidgetProjection,
+  owningGraph
+} from './crdt/liveWidgetProjection'
+import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -129,7 +133,13 @@ const { t } = useI18n()
 const toast = useToastStore()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
-const { tier: subscriptionTier } = useBillingContext()
+const { subscription, tier: subscriptionTier } = useBillingContext()
+const conversationStore = useAgentConversationStore()
+watch(
+  () => subscription.value?.hasFunds,
+  (hasFunds) => conversationStore.setPaywallsResolved(hasFunds === true),
+  { immediate: true }
+)
 const { canTopUp, canSubscribeSelfServe, hasResolvedCapabilities } =
   useBillingCapabilities()
 const paywallPresentation = computed(() => {
@@ -179,6 +189,7 @@ const workflowResolver = useAgentWorkflowResolver({
 })
 const {
   refreshCloudWorkflowIds,
+  forgetCloudWorkflowId,
   cloudIdFor,
   boundOrOpenWorkflowFor,
   storedWorkflowFor,
@@ -353,7 +364,25 @@ const graphMutations = (workflowId: string) => {
         return { x, y, width, height }
       }
     },
-    liveWidgets
+    liveWidgets,
+    liveNodes: {
+      autogrowGroupOf(scope, nodeId, name): LiveAutogrowGroupAnswer {
+        const rootGraph = app.rootGraphOrUndefined
+        const node = rootGraph
+          ? owningGraph(rootGraph, scope)?.getNodeById(nodeId)
+          : undefined
+        // Unmounted / background workflow: the node itself can't be asked,
+        // so this carries no opinion -- `resolveAutogrowGroup` falls back to
+        // remembered provenance, then the node type's own static definition,
+        // and only then the name-shape heuristic, instead of treating this
+        // as "not a member".
+        if (!node) return { kind: 'unavailable' }
+        const group = liveAutogrowGroupOf(node, name)
+        return group === undefined
+          ? { kind: 'notMember' }
+          : { kind: 'member', group }
+      }
+    }
   })
   graphMutationsByWorkflow.set(workflowId, mutations)
   return mutations
@@ -403,7 +432,16 @@ const {
   isTracking: () => canReferenceNodes.value && agentNodeSelectionStore.isActive,
   isPaused: () => agentNodeSelectionStore.isLoadingWorkflow,
   scope: () => selectedTarget.value?.path ?? null,
-  dismissedSignature: dismissedSelectionSignature
+  dismissedSignature: dismissedSelectionSignature,
+  retainStagedNode: (node) => {
+    const locator = parseNodeLocatorId(selectedNodeKey(node))
+    if (!locator) return false
+    const viewedSubgraphUuid =
+      canvasStore.currentGraph?.isRootGraph === false
+        ? canvasStore.currentGraph.id
+        : null
+    return locator.subgraphUuid !== viewedSubgraphUuid
+  }
 })
 
 let nodeReferenceWorkflow = selectionTags.value.length
@@ -571,6 +609,7 @@ const {
     prepare: async () => {
       await refreshCloudWorkflowIds()
     },
+    disowned: forgetCloudWorkflowId,
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
     draft: targetWorkflowDraft
@@ -621,21 +660,31 @@ const {
     onReset: graphActivity.resetWorkflow
   }
 )
+// The bound document's serialized root graph id, independent of what is
+// currently on the canvas: `beforeLoadNewGraph` persists the outgoing
+// workflow's `activeState` before the shared renderer graph is rewritten, so
+// this stays the bound workflow's own root id through a tab switch instead of
+// tracking whichever graph the switch is loading.
+function boundRootGraphId(): RootGraphId | null {
+  const bound = boundWorkflowId.value
+  if (bound === null) return null
+  const id = boundOrOpenWorkflowFor(bound)?.activeState?.id
+  return id === undefined ? null : toRootGraphId(id)
+}
 const mintPortWiring = attachMintPortWiring({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
   layoutChanges: (listener) => layoutStore.onChange(listener),
   localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
-  getGraph: () => (app.isGraphReady ? app.rootGraph : null)
+  getGraph: () => (app.isGraphReady ? app.rootGraph : null),
+  boundRootGraphId
 })
 const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,
   isCrdtDebugEnabled()
 )
-const { activeTurnId: conversationTurnId } = storeToRefs(
-  useAgentConversationStore()
-)
+const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 
 // The resumed turn's own workflow outlives a panel remount (the session
 // binds it at ack; only newChat/loadThread reset it), while the active tab
@@ -952,7 +1001,10 @@ const { submit: onSend } = useAgentDraftSubmission({
       attachment_count: attachments.length,
       node_tag_count: nodes.length
     })
-    return sendMessage(text, attachments, nodes, references)
+    const selectionWorkflow = selectedTarget.value
+    return sendMessage(text, attachments, nodes, references, () =>
+      selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined
+    )
   },
   stop: stopTurn
 })
@@ -995,8 +1047,6 @@ let assetDragDepth = 0
 provide('agentAssetDragActive', readonly(assetDragActive))
 let selectingNodes = false
 let nodeSelectionCanvas: LGraphCanvas | undefined
-let restoreAllowDragNodes: boolean | undefined
-let restoreSelectOnly: boolean | undefined
 
 watch(
   () => canvasStore.selectedItems,
@@ -1013,19 +1063,11 @@ watch(
 
 function exitNodeSelectionMode(): void {
   const canvas = nodeSelectionCanvas
-  if (canvas) {
-    canvas.multi_select = false
-    canvas.allow_dragnodes = restoreAllowDragNodes ?? true
-    canvas.selectOnly = restoreSelectOnly ?? false
-  }
   nodeSelectionCanvas = undefined
-  restoreAllowDragNodes = undefined
-  restoreSelectOnly = undefined
   selectingNodes = false
   if (agentNodeSelectionStore.isActive) agentNodeSelectionStore.exit()
   if (canvas) {
     canvas.deselectAll()
-    canvasStore.updateSelectedItems()
   }
 }
 
@@ -1054,7 +1096,8 @@ watch(
   () => canvasStore.currentGraph,
   () => {
     if (!agentNodeSelectionStore.isLoadingWorkflow) exitNodeSelectionMode()
-  }
+  },
+  { flush: 'sync' }
 )
 
 function onSelectNodes(): void {
@@ -1074,13 +1117,7 @@ function onSelectNodes(): void {
   }
   if (merged.size) {
     canvas.selectItems([...merged.values()])
-    canvasStore.updateSelectedItems()
   }
-  restoreAllowDragNodes = canvas.allow_dragnodes
-  restoreSelectOnly = canvas.selectOnly
-  canvas.allow_dragnodes = false
-  canvas.selectOnly = true
-  canvas.multi_select = true
   nodeSelectionCanvas = canvas
   selectingNodes = true
   agentNodeSelectionStore.enter()
@@ -1090,29 +1127,33 @@ function onSelectNodes(): void {
 }
 
 const assetsStore = useAssetsStore()
+let inputAssetRefresh: Promise<unknown> = Promise.resolve()
 
 const attachment = useAttachment({
-  upload: async (file) => {
-    const uploaded = await rest.uploadImage(file, file.name)
-    // The library caches input assets; without this refresh a just-uploaded
-    // file is neither listed in the Assets tab nor mentionable this session.
-    void assetsStore.inputAssets.loadNew()
+  upload: async (file, signal) => {
+    const uploaded = await rest.uploadImage(file, file.name, signal)
+    const filename = uploaded.name ?? file.name
     return {
-      ref: uploaded.name,
+      ref: filename,
       url: api.apiURL(
-        `/view?filename=${encodeURIComponent(uploaded.name)}&type=input`
+        `/view?filename=${encodeURIComponent(filename)}&type=input`
       )
     }
   },
-  maxBytes: (file) => {
-    const serverLimit = api.getServerFeature(
-      'max_upload_size',
-      MAX_ATTACHMENT_BYTES
-    )
-    return hasVideoType(file)
-      ? serverLimit
-      : Math.min(MAX_ATTACHMENT_BYTES, serverLimit)
+  // The library caches input assets; without this refresh a just-uploaded file
+  // is neither listed in the Assets tab nor mentionable this session. One run
+  // per settled batch, chained, because the query queue coalesces an
+  // overlapping refresh into the in-flight one instead of scheduling a
+  // trailing pass.
+  onUploaded: () => {
+    inputAssetRefresh = inputAssetRefresh
+      .then(() => assetsStore.inputAssets.loadNew())
+      .catch(() => undefined)
   },
+  maxBytes: () =>
+    api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
+      'max_upload_size'
+    ) ?? MAX_ATTACHMENT_BYTES,
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
   onError: (message) =>
@@ -1121,6 +1162,8 @@ const attachment = useAttachment({
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment
 })
+
+onBeforeUnmount(() => attachment.cancelAllUploads())
 
 function onAttach(): void {
   exitNodeSelectionMode()
@@ -1208,11 +1251,11 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
     return
   }
 
-  const file = await attachment.addDeferredFile(asset.name, async () => {
+  const result = await attachment.addDeferredFile(asset.name, async () => {
     const file = await fetchDroppedAsset(asset)
     return file && isAgentAttachable(file) ? file : undefined
   })
-  if (!file)
+  if (result === 'unsupported')
     toast.add({
       severity: 'warn',
       detail: t('agent.assetNotAttachable'),

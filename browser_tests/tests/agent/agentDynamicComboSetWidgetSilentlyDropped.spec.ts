@@ -7,6 +7,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
+import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 import type {
   AgentRunModePreference,
   AgentTurnAccepted
@@ -22,6 +23,7 @@ import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { mintWireOps } from '@/workbench/extensions/agent/crdt/opEnvelope'
 
 /**
  * Regression: `setWidgetValue` in
@@ -116,7 +118,7 @@ test.describe(
   'Agent set_widget on a dynamic-combo widget',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
-    test('reveals the nested sub-widget the option declares, live on canvas', async ({
+    test('keeps applying visible edits after rejecting an unknown dotted widget', async ({
       page
     }) => {
       test.setTimeout(60_000)
@@ -237,6 +239,30 @@ test.describe(
 
       await expect(vueNodes.getNodeLocator(String(NODE_ID))).toBeVisible()
 
+      await test.step('reject unsupported dotted widget without damaging the projection', async () => {
+        const operation: GraphOperation = {
+          op: 'set_widget',
+          node_id: NODE_ID,
+          widget: 'mode.skin_detail',
+          value: 90
+        }
+        const ops = mintWireOps([operation], {
+          actor: 'agent:test:turn',
+          baseVersion: 1
+        })
+
+        const rejected = host.applyWire(ops)
+
+        expect(rejected.outcomes).toEqual([
+          expect.objectContaining({
+            outcome: 'rejected',
+            reason: expect.objectContaining({ code: 'unknown_widget' })
+          })
+        ])
+        expect(rejected.update).toBeNull()
+        expect(host.projection().nodes[0].widgets_values).toEqual(['creative'])
+      })
+
       await test.step("agent sets mode to 'faithful' over the CRDT doc", async () => {
         hostSocket.send(
           host.apply([
@@ -259,6 +285,11 @@ test.describe(
         .getNodeLocator(String(NODE_ID))
         .getByRole('spinbutton', { name: 'mode.skin_detail' })
       await expect(skinDetailField).toBeVisible()
+      await expect(
+        vueNodes.getNodeLocator(String(NODE_ID)).getByText('faithful', {
+          exact: true
+        })
+      ).toBeVisible()
     })
   }
 )

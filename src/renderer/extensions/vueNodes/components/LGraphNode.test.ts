@@ -10,6 +10,7 @@ import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import { computed, nextTick, ref } from 'vue'
+import type { PropType } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
@@ -19,21 +20,21 @@ import {
 } from '@/lib/litegraph/src/types/globalEnums'
 import type { LGraphNode as LiteGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { NodeState } from '@/types/nodeState'
+import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 import LGraphNode from '@/renderer/extensions/vueNodes/components/LGraphNode.vue'
+import type NodeWidgets from '@/renderer/extensions/vueNodes/components/NodeWidgets.vue'
 import { useVueElementTracking } from '@/renderer/extensions/vueNodes/composables/useVueNodeResizeTracking'
+import type { ResizeCallbackPayload } from '@/renderer/extensions/vueNodes/interactions/resize/useNodeResize'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { app } from '@/scripts/app'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
-import { resizeNodeLayout } from '@/renderer/core/layout/operations/graphLayoutAttachment'
 
-interface ResizeResult {
-  size: { width: number; height: number }
-  position?: { x: number; y: number }
-}
-
-type ResizeCallback = (result: ResizeResult, element: HTMLElement) => void
+type ResizeCallback = (
+  result: ResizeCallbackPayload,
+  element: HTMLElement
+) => void
 
 const mockData = vi.hoisted(() => ({
   mockExecuting: false,
@@ -41,26 +42,14 @@ const mockData = vi.hoisted(() => ({
   resizeCallback: null as ResizeCallback | null
 }))
 
-vi.mock(import('@/utils/graphTraversalUtil'), { spy: true })
+vi.mock(import('@/utils/graphTraversalUtil'))
 vi.mocked(getNodeByLocatorId).mockImplementation(() =>
   fromAny<LiteGraphNode, unknown>(
     mockData.mockLgraphNode ?? { isSubgraphNode: () => false }
   )
 )
 
-vi.mock<unknown>(
-  import('@/renderer/core/layout/transform/useTransformState'),
-  () => {
-    return {
-      useTransformState: () => ({
-        screenToCanvas: vi.fn(),
-        canvasToScreen: vi.fn(),
-        camera: { z: 1 },
-        isNodeInViewport: vi.fn()
-      })
-    }
-  }
-)
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'),
@@ -177,9 +166,19 @@ function renderLGraphNode(props: ComponentProps<typeof LGraphNode>) {
         NodeHeader: true,
         NodeSlots: true,
         NodeWidgets: {
-          props: ['nodeData', 'widgetIds'],
+          props: {
+            nodeData: Object as PropType<NodeState>,
+            processedWidgetModel: {
+              type: Object as PropType<
+                NonNullable<
+                  ComponentProps<typeof NodeWidgets>['processedWidgetModel']
+                >
+              >,
+              required: true
+            }
+          },
           template:
-            '<div data-testid="node-widgets">{{ widgetIds.join(",") }}</div>'
+            '<div data-testid="node-widgets">{{ processedWidgetModel.processedWidgets.map((widget) => widget.widgetId).join(",") }}</div>'
         },
         NodeContent: {
           template: '<div data-testid="node-content" />'

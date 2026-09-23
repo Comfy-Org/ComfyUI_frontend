@@ -20,6 +20,7 @@ import {
 import GitHubStarBadge from '../GitHubStarBadge.vue'
 import HeaderMainDesktop from './HeaderMainDesktop.vue'
 import HeaderMainMobile from './HeaderMainMobile.vue'
+import LogoContextMenu from './LogoContextMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 
 const {
@@ -97,26 +98,28 @@ const ctaButtons = computed(() =>
     class="sticky top-0 z-50 flex items-center justify-between gap-4 bg-primary-comfy-ink px-6 py-5 lg:gap-4 lg:px-[clamp(0.25rem,4vw,5rem)] lg:py-8"
     aria-label="Main navigation"
   >
-    <a
-      :href="routes.home"
-      class="inline-grid h-10 shrink-0 grid-cols-1 grid-rows-1 transition-[width]"
-      aria-label="Comfy home"
-    >
-      <img
-        src="/icons/logomark.svg"
-        alt="Comfy"
-        class="col-span-full row-span-full h-8"
-      />
-      <div
-        class="relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width] 2xl:w-36"
+    <LogoContextMenu :locale>
+      <a
+        :href="routes.home"
+        class="inline-grid h-10 shrink-0 grid-cols-1 grid-rows-1 transition-[width]"
+        aria-label="Comfy home"
       >
         <img
-          src="/icons/logo.svg"
+          src="/icons/logomark.svg"
           alt="Comfy"
-          class="absolute top-0 left-0 h-10 w-36 max-w-none object-contain object-left"
+          class="col-span-full row-span-full h-8"
         />
-      </div>
-    </a>
+        <div
+          class="relative col-span-full row-span-full h-10 w-0 overflow-clip transition-[width] 2xl:w-36"
+        >
+          <img
+            src="/icons/logo.svg"
+            alt="Comfy"
+            class="absolute top-0 left-0 h-10 w-36 max-w-none object-contain object-left"
+          />
+        </div>
+      </a>
+    </LogoContextMenu>
 
     <!-- Desktop nav links -->
     <HeaderMainDesktop

@@ -12,7 +12,7 @@ const KSAMPLER_NODE_ID = '3'
 
 test.describe(
   'Agent workflow tab switch run submission',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: EDITED_CASE })
 
