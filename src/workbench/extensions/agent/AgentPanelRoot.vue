@@ -82,6 +82,7 @@ import type {
 } from './schemas/agentApiSchema'
 import type { ChatSession } from './stores/agent/agentChatHistoryStore'
 import type { ConversationEntry } from './stores/agent/agentConversationStore'
+import { useAgentConversationStore } from './stores/agent/agentConversationStore'
 import type {
   TurnOrigin,
   WorkflowTurnContext
@@ -119,7 +120,13 @@ const { t } = useI18n()
 const toast = useToastStore()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
-const { tier: subscriptionTier } = useBillingContext()
+const { subscription, tier: subscriptionTier } = useBillingContext()
+const conversationStore = useAgentConversationStore()
+watch(
+  () => subscription.value?.hasFunds,
+  (hasFunds) => conversationStore.setPaywallsResolved(hasFunds === true),
+  { immediate: true }
+)
 const {
   canTopUp,
   canSubscribeSelfServe,
