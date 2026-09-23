@@ -422,6 +422,11 @@ describe('api.fetchApi', () => {
         { status: 'fulfilled', value: { status: 200 } }
       ])
       expect(fetchCall).toBe(2)
+      // The original fetch's timer must not outlive the 401 it was guarding:
+      // it would otherwise still fire at t=60s (mid re-mint) even though the
+      // retry it triggered ultimately succeeds.
+      expect(trackFetchTimeout).not.toHaveBeenCalled()
+      expect(addBreadcrumb).not.toHaveBeenCalled()
     })
   })
 })

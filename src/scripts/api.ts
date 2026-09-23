@@ -636,6 +636,12 @@ export class ComfyApi extends EventTarget {
     let retryTimeoutId: ReturnType<typeof setTimeout> | undefined
     const freshRetrySignal = timeout
       ? () => {
+          // The original fetch already returned (the 401 that triggered this
+          // retry) -- end its timeout lifecycle now so it cannot fire the
+          // timeout telemetry/abort for a request that already resolved.
+          // Only the fresh timer armed below guards the retry window.
+          if (timeoutId !== undefined) clearTimeout(timeoutId)
+
           const retryController = new AbortController()
           retryTimeoutId = setTimeout(() => {
             const method = (requestOptions.method ?? 'GET').toUpperCase()
