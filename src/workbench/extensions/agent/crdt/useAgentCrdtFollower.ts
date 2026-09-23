@@ -292,6 +292,26 @@ function connectEffectPresent(
   return connectEndpointsMatch(link, op) && link.type === op.link_type
 }
 
+/**
+ * Op kinds `docEffectPresent` has no effect-presence check for yet: `null`
+ * leaves a parked entry parked rather than guessing.
+ */
+type UnprojectedOp = Extract<
+  Op,
+  {
+    op: 'disconnect' | 'define_subgraph' | 'insert_workflow' | 'set_node_field'
+  }
+>
+const UNPROJECTED_OP_KINDS = new Set<Op['op']>([
+  'disconnect',
+  'define_subgraph',
+  'insert_workflow',
+  'set_node_field'
+])
+function isUnprojectedOp(op: Op): op is UnprojectedOp {
+  return UNPROJECTED_OP_KINDS.has(op.op)
+}
+
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   graphMutations: MutationsForTarget,
@@ -827,6 +847,7 @@ function startAgentCrdtFollower(
    * never arrived (ADR-CRDT-RECONCILE-0035 (a)).
    */
   function docEffectPresent(op: Op): boolean | null {
+    if (isUnprojectedOp(op)) return null
     const doc = bridge.follower.doc
     switch (op.op) {
       case 'add_node':
@@ -841,13 +862,6 @@ function startAgentCrdtFollower(
         return null
       case 'clear':
         // Never parked as delivery_unknown, so this check never runs for it.
-        return null
-      case 'disconnect':
-      case 'define_subgraph':
-      case 'insert_workflow':
-      case 'set_node_field':
-        // No effect-presence check implemented for these kinds yet: `null`
-        // leaves a parked entry parked rather than guessing.
         return null
       default: {
         const exhaustive: never = op
