@@ -121,16 +121,27 @@ export function createAgentEventTransport(
   // 'streaming' pending canvas catch-up. Each has its own bounded timer so a
   // part that never gets a `notifyCanvasCaughtUp` call still settles.
   const pendingCanvasSync = new Map<ToolPart, ReturnType<typeof setTimeout>>()
-  // PM-1575: the outcome count as of each tool part's first frame (its
-  // `running` frame, or its terminal frame when no `running` frame preceded
-  // it) -- i.e. before that tool could plausibly have produced a matching
-  // doc_update. `resolveToolCallState` compares this against the CURRENT
-  // count when the terminal frame lands: on a healthy doc host the matching
-  // update often applies *while the tool runs*, so `notifyCanvasCaughtUp`
-  // fires (a no-op, since nothing is pending yet) before there is anything
-  // to defer. Without this, that catch-up signal is lost and the part waits
-  // out the full STALE_AFTER_MS fallback instead of settling immediately.
+  // PM-1575: the outcome count as of the last time some tool part actually
+  // claimed a canvas catch-up (see `claimCanvasSyncOutcome` below), starting
+  // at this transport's own creation. `canvasSyncBaseline` below hands each
+  // NEW tool part this shared watermark rather than a fresh
+  // `getCanvasSyncOutcomeCount()` read, because that read is worthless when a
+  // tool call's first-ever frame is already its terminal one (the common
+  // case -- recorded conversations never send a `running` frame at all,
+  // see the file header): capturing the baseline and checking it happen in
+  // the same synchronous call, so a fresh read is trivially equal to itself
+  // regardless of whether a `doc_update` already landed moments earlier. The
+  // watermark instead stays stale across that no-op `notifyCanvasCaughtUp()`
+  // call, so the next part created can see the count has moved since the
+  // watermark was last claimed and settle immediately.
+  let canvasSyncOutcomeWatermark = getCanvasSyncOutcomeCount()
+  // The outcome-count watermark handed to each tool part when it is first
+  // seen (see `canvasSyncOutcomeWatermark` above).
   const canvasSyncBaseline = new Map<ToolPart, number>()
+
+  function claimCanvasSyncOutcome(): void {
+    canvasSyncOutcomeWatermark = getCanvasSyncOutcomeCount()
+  }
 
   function clearPendingCanvasSyncTimer(part: ToolPart): void {
     const timer = pendingCanvasSync.get(part)
@@ -147,6 +158,7 @@ export function createAgentEventTransport(
     if (pendingCanvasSync.size === 0) return
     for (const part of [...pendingCanvasSync.keys()])
       settlePendingCanvasSync(part)
+    claimCanvasSyncOutcome()
     emit(snapshotMessage(message))
   }
 
@@ -203,9 +215,12 @@ export function createAgentEventTransport(
       shouldAwaitCanvasSync()
     ) {
       if (baseline !== undefined && getCanvasSyncOutcomeCount() > baseline) {
-        // The matching doc_update already applied while the tool was still
-        // running -- see `canvasSyncBaseline` above. Nothing left to wait on.
+        // The matching doc_update already applied -- either while the tool
+        // was still running, or before this tool call's first frame ever
+        // reached the transport -- see `canvasSyncBaseline` above. Nothing
+        // left to wait on.
         part.state = 'done'
+        claimCanvasSyncOutcome()
       } else {
         pendingCanvasSync.set(
           part,
@@ -237,7 +252,7 @@ export function createAgentEventTransport(
       }
       tools.set(data.tool_call_id, part)
       message.parts.push(part)
-      canvasSyncBaseline.set(part, getCanvasSyncOutcomeCount())
+      canvasSyncBaseline.set(part, canvasSyncOutcomeWatermark)
     }
     part.name = data.tool_name
     if (data.status !== 'running') {
