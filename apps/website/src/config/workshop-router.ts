@@ -384,5 +384,7 @@ export async function runSynchronousWorkshopRouter(
     options.signal.throwIfAborted()
     if (error instanceof WorkshopRouterError) throw error
     return throwRunFailure(error, context, state.requestId)
+  } finally {
+    context.controller.abort()
   }
 }

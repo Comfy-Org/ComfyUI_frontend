@@ -369,6 +369,13 @@ export async function runWorkshopRouter(
         advance(active, context)
       )
     }
+    if (state.phase === 'synchronous')
+      return await runSynchronousWorkshopRouter(options, context)
+    return {
+      outputs: state.outputs,
+      requestId: state.requestId,
+      deadlineCollections: 0
+    }
   } catch (error) {
     const requestId = runRequestId(state)
     if (options.signal.aborted && requestId)
@@ -376,12 +383,7 @@ export async function runWorkshopRouter(
     options.signal.throwIfAborted()
     if (error instanceof WorkshopRouterError) throw error
     return throwRunFailure(error, context, requestId)
-  }
-  if (state.phase === 'synchronous')
-    return runSynchronousWorkshopRouter(options, context)
-  return {
-    outputs: state.outputs,
-    requestId: state.requestId,
-    deadlineCollections: 0
+  } finally {
+    context.controller.abort()
   }
 }

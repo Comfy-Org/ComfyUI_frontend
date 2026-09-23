@@ -100,6 +100,7 @@ export async function discoverOutputMimes(
     return discovered
   } finally {
     clearTimeout(timeout)
+    controller.abort()
   }
 }
 

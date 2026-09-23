@@ -332,18 +332,19 @@ describe('Workshop health', () => {
   ])(
     'classifies a delivery failure as $expected without Router metadata',
     ({ reason, expected }) => {
-      expect(
-        workshopHealthLog({
-          name: 'delivery_finished',
-          properties: {
-            ...run,
-            duration_ms: 1,
-            output_kind: 'image',
-            status: 'failed',
-            reason
-          }
-        })
-      ).toMatchObject({ failure_type: expected })
+      const record = workshopHealthLog({
+        name: 'delivery_finished',
+        properties: {
+          ...run,
+          duration_ms: 1,
+          output_kind: 'image',
+          status: 'failed',
+          reason
+        }
+      })
+
+      expect(record).toMatchObject({ failure_type: expected })
+      if (reason === undefined) expect(record).not.toHaveProperty('reason')
     }
   )
 

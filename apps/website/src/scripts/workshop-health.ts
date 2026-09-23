@@ -74,7 +74,6 @@ const HEALTH_FIELDS = new Set([
   'modality',
   'request_id',
   'duration_ms',
-  'reason',
   'failure_stage',
   'http_status',
   'router_error_type',

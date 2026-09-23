@@ -135,13 +135,18 @@ describe('queued Router delivery', () => {
 
   it('runs when Safari lacks the static AbortSignal helpers', async () => {
     const calls = stubFetch(admitted(), result())
+    const controller = new AbortController()
 
     const rendered = await withoutStaticAbortSignalHelpers(() =>
-      settle(runWorkshopRouter(options()))
+      runWorkshopRouter(options(controller.signal))
     )
 
     expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
     expect(calls).toHaveBeenCalledTimes(2)
+    expect(
+      calls.mock.calls.every(([, init]) => init?.signal?.aborted === true)
+    ).toBe(true)
+    expect(controller.signal.aborted).toBe(false)
   })
 
   it('keeps collecting the same run when the connection drops mid-generation', async () => {
