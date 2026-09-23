@@ -118,7 +118,15 @@ export function createAgentEventTransport(
   let openText: TextPart | null = null
   let openThinking: ThinkingPart | null = null
   let openThinkingStartedAt = 0
-  const tools = new Map<string, ToolPart>()
+  // Seeded from any tool parts already on `message` (a hydrated pending row
+  // restores its tool_calls before this transport exists) so the next live
+  // `agent_tool_call` for an already-restored call updates that part in
+  // place instead of pushing a duplicate.
+  const tools = new Map<string, ToolPart>(
+    message.parts
+      .filter((part): part is ToolPart => part.type === 'tool')
+      .map((part) => [part.callId, part])
+  )
   let settled = false
   let lastTabTargetKey: string | undefined
   // Tool parts whose frame reported done but whose displayed state is held at

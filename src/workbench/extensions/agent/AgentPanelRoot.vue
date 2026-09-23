@@ -19,6 +19,7 @@ import { useI18n } from 'vue-i18n'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
 import { useSettingStore } from '@/platform/settings/settingStore'
+import type { LiveAutogrowGroupAnswer } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -116,7 +117,11 @@ import {
   resolveDebugPanelEnabled
 } from './crdt/crdtDebugGate'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
-import { createLiveWidgetProjection } from './crdt/liveWidgetProjection'
+import {
+  createLiveWidgetProjection,
+  owningGraph
+} from './crdt/liveWidgetProjection'
+import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -127,7 +132,13 @@ const { t } = useI18n()
 const toast = useToastStore()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
-const { tier: subscriptionTier } = useBillingContext()
+const { subscription, tier: subscriptionTier } = useBillingContext()
+const conversationStore = useAgentConversationStore()
+watch(
+  () => subscription.value?.hasFunds,
+  (hasFunds) => conversationStore.setPaywallsResolved(hasFunds === true),
+  { immediate: true }
+)
 const { canTopUp, canSubscribeSelfServe, hasResolvedCapabilities } =
   useBillingCapabilities()
 const paywallPresentation = computed(() => {
@@ -352,7 +363,25 @@ const graphMutations = (workflowId: string) => {
         return { x, y, width, height }
       }
     },
-    liveWidgets
+    liveWidgets,
+    liveNodes: {
+      autogrowGroupOf(scope, nodeId, name): LiveAutogrowGroupAnswer {
+        const rootGraph = app.rootGraphOrUndefined
+        const node = rootGraph
+          ? owningGraph(rootGraph, scope)?.getNodeById(nodeId)
+          : undefined
+        // Unmounted / background workflow: the node itself can't be asked,
+        // so this carries no opinion -- `resolveAutogrowGroup` falls back to
+        // remembered provenance, then the node type's own static definition,
+        // and only then the name-shape heuristic, instead of treating this
+        // as "not a member".
+        if (!node) return { kind: 'unavailable' }
+        const group = liveAutogrowGroupOf(node, name)
+        return group === undefined
+          ? { kind: 'notMember' }
+          : { kind: 'member', group }
+      }
+    }
   })
   graphMutationsByWorkflow.set(workflowId, mutations)
   return mutations
@@ -645,8 +674,7 @@ const isCrdtDevPanelEnabled = resolveDebugPanelEnabled(
   agentPanelStore.enabled,
   isCrdtDebugEnabled()
 )
-const agentConversationStore = useAgentConversationStore()
-const { activeTurnId: conversationTurnId } = storeToRefs(agentConversationStore)
+const { activeTurnId: conversationTurnId } = storeToRefs(conversationStore)
 
 // PM-1575: a chat tool-call's own `status` says nothing about whether its
 // effect has actually reached the canvas -- the CRDT doc_update travels a
@@ -678,7 +706,7 @@ const { activeTurnId: conversationTurnId } = storeToRefs(agentConversationStore)
 // agentEventTransport.ts's file header -- read that unrelated catch-up as
 // its own matching update and settle to 'done' immediately, defeating the
 // wait this gate exists for.
-agentConversationStore.setCanvasSyncGate(
+conversationStore.setCanvasSyncGate(
   () => crdtStatus.value.connected,
   () => crdtStatus.value.outcomes.appliedLive
 )
@@ -690,8 +718,7 @@ watch(
     // counts from 0 again -- so toggling the panel mid-turn can drive this
     // DOWN, not just up. A decrease is not a catch-up: nothing was applied,
     // so it must not release parts that are still genuinely waiting.
-    if (applied > previouslyApplied)
-      agentConversationStore.notifyCanvasCaughtUp()
+    if (applied > previouslyApplied) conversationStore.notifyCanvasCaughtUp()
   }
 )
 
@@ -895,7 +922,7 @@ onBeforeUnmount(() => {
   // thing standing between the old (now torn-down) follower's gate and a
   // turn resumed in the meantime reading it -- reset to the always-safe
   // default instead of leaving whatever this instance last set.
-  agentConversationStore.setCanvasSyncGate(
+  conversationStore.setCanvasSyncGate(
     () => false,
     () => 0
   )

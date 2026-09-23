@@ -72,12 +72,6 @@ const i18n = createI18n({
   }
 })
 
-const noResultsPlaceholderStub = {
-  props: ['buttonLabel'],
-  emits: ['action'],
-  template: '<button @click="$emit(\'action\')">{{ buttonLabel }}</button>'
-}
-
 function renderTab({ hasResults = true }: { hasResults?: boolean } = {}) {
   const user = userEvent.setup()
   const result = render(AppsSidebarTab, {
@@ -86,8 +80,7 @@ function renderTab({ hasResults = true }: { hasResults?: boolean } = {}) {
       stubs: {
         BaseWorkflowsSidebarTab: {
           template: `<div><slot name="header-actions" :has-results="${hasResults}" /><slot name="empty-state" /></div>`
-        },
-        NoResultsPlaceholder: noResultsPlaceholderStub
+        }
       }
     }
   })
@@ -112,9 +105,7 @@ function renderTabWithRealBase() {
             '<div><slot name="alt-title" /><slot name="tool-buttons" /><slot name="header" /><slot name="body" /></div>'
         },
         SidebarTopArea: { template: '<div><slot /></div>' },
-        SearchInput: { template: '<input />', methods: { focus() {} } },
-        TreeExplorer: { template: '<div data-testid="tree-explorer" />' },
-        NoResultsPlaceholder: noResultsPlaceholderStub
+        TreeExplorer: { template: '<div data-testid="tree-explorer" />' }
       }
     }
   })
