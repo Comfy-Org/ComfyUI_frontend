@@ -981,7 +981,7 @@ export class LiteGraphGlobal {
   ): void {
     for (const i in origin) {
       // copy class properties
-      // eslint-disable-next-line no-prototype-builtins
+      // oxlint-disable-next-line no-prototype-builtins
       if (target.hasOwnProperty(i)) continue
       target[i] = origin[i]
     }
@@ -993,11 +993,11 @@ export class LiteGraphGlobal {
       // copy prototype properties
       for (const i in originProto) {
         // only enumerable
-        // eslint-disable-next-line no-prototype-builtins
+        // oxlint-disable-next-line no-prototype-builtins
         if (!originProto.hasOwnProperty(i)) continue
 
         // avoid overwriting existing ones
-        // eslint-disable-next-line no-prototype-builtins
+        // oxlint-disable-next-line no-prototype-builtins
         if (targetProto.hasOwnProperty(i)) continue
 
         // Use Object.getOwnPropertyDescriptor to copy getters/setters properly

@@ -20,7 +20,7 @@ const hostNode = { id: 'host' }
 const locatorNode = { id: 'inner' }
 
 const mocks = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // oxlint-disable-next-line typescript/no-require-imports
   const { ref: createRef } = require('vue')
   const mocks: {
     getNodeByLocatorId: ReturnType<typeof vi.fn>
@@ -54,7 +54,7 @@ vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
 }))
 
 vi.mock<unknown>(import('@/composables/video/useVideoSourceUrl'), () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // oxlint-disable-next-line typescript/no-require-imports
   const { ref: createRef } = require('vue')
   return {
     useVideoSourceUrl: (node: { value: unknown }) => {
@@ -70,7 +70,7 @@ vi.mock<unknown>(import('@/composables/video/useVideoSourceUrl'), () => {
 })
 
 vi.mock<unknown>(import('@/composables/video/useVideoFilmstrip'), () => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  // oxlint-disable-next-line typescript/no-require-imports
   const { ref: createRef } = require('vue')
   return {
     DEFAULT_VIDEO_FPS: 20,

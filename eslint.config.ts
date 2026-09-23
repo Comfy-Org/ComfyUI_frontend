@@ -282,7 +282,6 @@ export default defineConfig([
       '@typescript-eslint/consistent-type-imports': 'error',
       'import-x/no-useless-path-segments': 'error',
       'import-x/no-relative-packages': 'error',
-      'import-x/no-named-as-default': 'error',
       'unused-imports/no-unused-imports': 'error',
       'vue/no-v-html': 'off',
       // Prohibit dark-theme: and dark: prefixes
@@ -364,15 +363,6 @@ export default defineConfig([
   {
     files: ['**/*.test.ts'],
     rules: {
-      'no-restricted-properties': [
-        'error',
-        {
-          object: 'vi',
-          property: 'doMock',
-          message:
-            'Use vi.mock() with vi.hoisted() instead of vi.doMock(). See docs/testing/vitest-patterns.md'
-        }
-      ],
       // Tests routinely define stub and harness components side-by-side with
       // the system under test and stub emits for documentation only — these
       // production-SFC rules are noise in a test file.
@@ -468,6 +458,7 @@ export default defineConfig([
       'import-x/export': 'off',
       'import-x/namespace': 'off',
       'import-x/no-duplicates': 'off',
+      'import-x/no-named-as-default': 'off',
       'import-x/consistent-type-specifier-style': 'off'
     }
   },

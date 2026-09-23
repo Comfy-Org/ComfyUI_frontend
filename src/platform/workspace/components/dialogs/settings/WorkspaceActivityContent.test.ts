@@ -11,7 +11,7 @@ import type { ActivityEvent } from '@/platform/workspace/composables/useWorkspac
 import WorkspaceActivityContent from './WorkspaceActivityContent.vue'
 
 const { mockWorkspaceRole } = vi.hoisted(() => {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports, @typescript-eslint/consistent-type-imports
+  // oxlint-disable-next-line typescript/no-require-imports, typescript/consistent-type-imports
   const { ref } = require('vue') as typeof import('vue')
   return {
     mockWorkspaceRole: ref<'owner' | 'member'>('owner')
