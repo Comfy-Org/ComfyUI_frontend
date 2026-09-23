@@ -1,99 +1,78 @@
-// @ts-check
 import { markdownTable } from 'markdown-table'
 import { existsSync } from 'node:fs'
-import { readdir } from 'node:fs/promises'
+import { readFile, readdir } from 'node:fs/promises'
 import path from 'node:path'
 import prettyBytes from 'pretty-bytes'
 
-import { getCategoryMetadata } from './bundle-categories.js'
+import { getCategoryMetadata } from './bundle-categories'
+import { bundleSizeSchema } from './bundle-size'
+import type { BundleSize, SizeMetrics } from './bundle-size'
+import { isMainModule } from './isMainModule'
 
-/**
- * @typedef {Object} SizeMetrics
- * @property {number} size
- * @property {number} gzip
- * @property {number} brotli
- */
+type BundleStatus =
+  | 'added'
+  | 'removed'
+  | 'increased'
+  | 'decreased'
+  | 'unchanged'
 
-/**
- * @typedef {Object} SizeResult
- * @property {number} size
- * @property {number} gzip
- * @property {number} brotli
- */
+interface BundleDiff {
+  fileName: string
+  curr: BundleSize | undefined
+  prev: BundleSize | undefined
+  diff: SizeMetrics
+  status: BundleStatus
+}
 
-/**
- * @typedef {SizeResult & { file: string, category?: string }} BundleResult
- */
+type CountSummary = Record<BundleStatus, number>
 
-/**
- * @typedef {'added' | 'removed' | 'increased' | 'decreased' | 'unchanged'} BundleStatus
- */
+interface MetricsComparison {
+  current: SizeMetrics
+  baseline: SizeMetrics
+  diff: SizeMetrics
+}
 
-/**
- * @typedef {Object} BundleDiff
- * @property {string} fileName
- * @property {BundleResult | undefined} curr
- * @property {BundleResult | undefined} prev
- * @property {SizeMetrics} diff
- * @property {BundleStatus} status
- */
+interface CategoryReport {
+  name: string
+  description: string | undefined
+  order: number
+  metrics: MetricsComparison
+  counts: CountSummary
+  bundles: BundleDiff[]
+}
 
-/**
- * @typedef {Object} CountSummary
- * @property {number} added
- * @property {number} removed
- * @property {number} increased
- * @property {number} decreased
- * @property {number} unchanged
- */
+export interface BundleReport {
+  categories: CategoryReport[]
+  overall: {
+    currentBundles: number
+    baselineBundles: number
+    metrics: MetricsComparison
+    counts: CountSummary
+  }
+  hasBaseline: boolean
+}
 
-/**
- * @typedef {Object} CategoryReport
- * @property {string} name
- * @property {string | undefined} description
- * @property {number} order
- * @property {{ current: SizeMetrics, baseline: SizeMetrics, diff: SizeMetrics }} metrics
- * @property {CountSummary} counts
- * @property {BundleDiff[]} bundles
- */
-
-/**
- * @typedef {Object} BundleReport
- * @property {CategoryReport[]} categories
- * @property {{ currentBundles: number, baselineBundles: number, metrics: { current: SizeMetrics, baseline: SizeMetrics, diff: SizeMetrics }, counts: CountSummary }} overall
- * @property {boolean} hasBaseline
- */
-
-const currDir = path.resolve('temp/size')
-const prevDir = path.resolve('temp/size-prev')
-
-void run()
-
-/**
- * Main entry for generating the size report
- */
-async function run() {
+if (isMainModule(import.meta.url)) {
+  const currDir = path.resolve('temp/size')
   if (!existsSync(currDir)) {
     console.error('Error: temp/size directory does not exist')
     console.error('Please run "pnpm size:collect" first')
     process.exit(1)
   }
 
-  const report = await buildBundleReport()
-  const output = renderReport(report)
-  process.stdout.write(output)
+  const report = await buildBundleReport(
+    currDir,
+    path.resolve('temp/size-prev')
+  )
+  process.stdout.write(renderReport(report))
 }
 
-/**
- * Build bundle comparison data from current and baseline artifacts
- * @returns {Promise<BundleReport>}
- */
-async function buildBundleReport() {
-  /**
-   * @param {string[]} files
-   * @returns {string[]}
-   */
-  const filterFiles = (files) => files.filter((file) => file.endsWith('.json'))
+export async function buildBundleReport(
+  currDir: string,
+  prevDir: string
+): Promise<BundleReport> {
+  const filterFiles = (files: string[]) =>
+    files.filter((file) => file.endsWith('.json'))
 
   const currFiles = filterFiles(await readdir(currDir))
   const baselineFiles = existsSync(prevDir)
@@ -101,8 +80,7 @@ async function buildBundleReport() {
     : []
   const fileList = new Set([...currFiles, ...baselineFiles])
 
-  /** @type {Map<string, CategoryReport>} */
-  const categories = new Map()
+  const categories = new Map<string, CategoryReport>()
 
   const overall = {
     currentBundles: 0,
@@ -119,8 +97,8 @@ async function buildBundleReport() {
     const currPath = path.resolve(currDir, file)
     const prevPath = path.resolve(prevDir, file)
 
-    const curr = await importJSON(currPath)
-    const prev = await importJSON(prevPath)
+    const curr = await readBundleSize(currPath)
+    const prev = await readBundleSize(prevPath)
     const fileName = curr?.file || prev?.file
     if (!fileName) continue
 
@@ -169,12 +147,7 @@ async function buildBundleReport() {
   }
 }
 
-/**
- * Render the complete report in markdown
- * @param {BundleReport} report
- * @returns {string}
- */
-function renderReport(report) {
+export function renderReport(report: BundleReport): string {
   const parts = [renderCompactHeader(report)]
 
   if (report.categories.length > 0) {
@@ -189,12 +162,7 @@ function renderReport(report) {
   )
 }
 
-/**
- * Render compact single-line header with key metrics
- * @param {BundleReport} report
- * @returns {string}
- */
-function renderCompactHeader(report) {
+function renderCompactHeader(report: BundleReport): string {
   const { overall, hasBaseline } = report
 
   const gzipSize = prettyBytes(overall.metrics.current.gzip)
@@ -207,12 +175,7 @@ function renderCompactHeader(report) {
   return header
 }
 
-/**
- * Render overall summary bullets
- * @param {BundleReport} report
- * @returns {string}
- */
-function renderSummary(report) {
+function renderSummary(report: BundleReport): string {
   const { overall, hasBaseline } = report
   const lines = ['**Summary**']
 
@@ -250,7 +213,7 @@ function renderSummary(report) {
     bundleStats.push(`${overall.baselineBundles} baseline`)
   }
 
-  const statusParts = []
+  const statusParts: string[] = []
   if (overall.counts.added) statusParts.push(`${overall.counts.added} added`)
   if (overall.counts.removed)
     statusParts.push(`${overall.counts.removed} removed`)
@@ -274,12 +237,7 @@ function renderSummary(report) {
   return lines.join('\n')
 }
 
-/**
- * Render a compact category glance line
- * @param {BundleReport} report
- * @returns {string}
- */
-function renderCategoryGlance(report) {
+function renderCategoryGlance(report: BundleReport): string {
   const { categories, hasBaseline } = report
   const relevant = categories.filter(
     (category) =>
@@ -316,12 +274,7 @@ function renderCategoryGlance(report) {
   return `**Category Glance**\n${parts.join(' · ')}`
 }
 
-/**
- * Render per-category detail tables wrapped in collapsible sections
- * @param {BundleReport} report
- * @returns {string}
- */
-function renderCategoryDetails(report) {
+function renderCategoryDetails(report: BundleReport): string {
   const lines = ['<details>', '<summary>Details</summary>', '']
 
   lines.push(renderSummary(report))
@@ -346,13 +299,10 @@ function renderCategoryDetails(report) {
   return lines.join('\n')
 }
 
-/**
- * Render a single category block with its table
- * @param {CategoryReport} category
- * @param {boolean} hasBaseline
- * @returns {string}
- */
-function renderCategoryBlock(category, hasBaseline) {
+function renderCategoryBlock(
+  category: CategoryReport,
+  hasBaseline: boolean
+): string {
   const lines = ['<details>']
   const currentStr = prettyBytes(category.metrics.current.size)
   const summaryParts = [`<summary>${category.name} — ${currentStr}`]
@@ -420,7 +370,7 @@ function renderCategoryBlock(category, hasBaseline) {
     lines.push('')
   }
 
-  const statusParts = []
+  const statusParts: string[] = []
   if (category.counts.added) statusParts.push(`${category.counts.added} added`)
   if (category.counts.removed)
     statusParts.push(`${category.counts.removed} removed`)
@@ -439,38 +389,31 @@ function renderCategoryBlock(category, hasBaseline) {
   return lines.join('\n')
 }
 
-/**
- * Ensure a category entry exists in the map
- * @param {Map<string, CategoryReport>} categories
- * @param {string} categoryName
- * @returns {CategoryReport}
- */
-function ensureCategoryEntry(categories, categoryName) {
-  if (!categories.has(categoryName)) {
-    const meta = getCategoryMetadata(categoryName)
-    categories.set(categoryName, {
-      name: categoryName,
-      description: meta?.description,
-      order: meta?.order ?? 99,
-      metrics: {
-        current: createMetrics(),
-        baseline: createMetrics(),
-        diff: createMetrics()
-      },
-      counts: createCounts(),
-      bundles: []
-    })
+function ensureCategoryEntry(
+  categories: Map<string, CategoryReport>,
+  categoryName: string
+): CategoryReport {
+  const existing = categories.get(categoryName)
+  if (existing) return existing
+
+  const meta = getCategoryMetadata(categoryName)
+  const created: CategoryReport = {
+    name: categoryName,
+    description: meta?.description,
+    order: meta?.order ?? 99,
+    metrics: {
+      current: createMetrics(),
+      baseline: createMetrics(),
+      diff: createMetrics()
+    },
+    counts: createCounts(),
+    bundles: []
   }
-  // @ts-expect-error - ensured by check above
-  return categories.get(categoryName)
+  categories.set(categoryName, created)
+  return created
 }
 
-/**
- * Convert bundle result to metrics
- * @param {BundleResult | undefined} bundle
- * @returns {SizeMetrics}
- */
-function toMetrics(bundle) {
+function toMetrics(bundle: BundleSize | undefined): SizeMetrics {
   if (!bundle) return createMetrics()
   return {
     size: bundle.size,
@@ -479,32 +422,20 @@ function toMetrics(bundle) {
   }
 }
 
-/**
- * Create an empty metrics object
- * @returns {SizeMetrics}
- */
-function createMetrics() {
+function createMetrics(): SizeMetrics {
   return { size: 0, gzip: 0, brotli: 0 }
 }
 
-/**
- * Add source metrics into target metrics
- * @param {SizeMetrics} target
- * @param {SizeMetrics} source
- */
-function addMetrics(target, source) {
+function addMetrics(target: SizeMetrics, source: SizeMetrics) {
   target.size += source.size
   target.gzip += source.gzip
   target.brotli += source.brotli
 }
 
-/**
- * Subtract baseline metrics from current metrics
- * @param {SizeMetrics} current
- * @param {SizeMetrics} baseline
- * @returns {SizeMetrics}
- */
-function subtractMetrics(current, baseline) {
+function subtractMetrics(
+  current: SizeMetrics,
+  baseline: SizeMetrics
+): SizeMetrics {
   return {
     size: current.size - baseline.size,
     gzip: current.gzip - baseline.gzip,
@@ -512,31 +443,19 @@ function subtractMetrics(current, baseline) {
   }
 }
 
-/**
- * Create an empty counts object
- * @returns {CountSummary}
- */
-function createCounts() {
+function createCounts(): CountSummary {
   return { added: 0, removed: 0, increased: 0, decreased: 0, unchanged: 0 }
 }
 
-/**
- * Increment status counters
- * @param {CountSummary} counts
- * @param {BundleStatus} status
- */
-function incrementStatus(counts, status) {
+function incrementStatus(counts: CountSummary, status: BundleStatus) {
   counts[status] += 1
 }
 
-/**
- * Determine bundle status for reporting
- * @param {BundleResult | undefined} curr
- * @param {BundleResult | undefined} prev
- * @param {number} sizeDiff
- * @returns {BundleStatus}
- */
-function getStatus(curr, prev, sizeDiff) {
+function getStatus(
+  curr: BundleSize | undefined,
+  prev: BundleSize | undefined,
+  sizeDiff: number
+): BundleStatus {
   if (curr && prev) {
     if (sizeDiff > 0) return 'increased'
     if (sizeDiff < 0) return 'decreased'
@@ -547,12 +466,7 @@ function getStatus(curr, prev, sizeDiff) {
   return 'unchanged'
 }
 
-/**
- * Format file label with status hints
- * @param {BundleDiff} bundle
- * @returns {string}
- */
-function formatFileLabel(bundle) {
+function formatFileLabel(bundle: BundleDiff): string {
   if (bundle.status === 'added') {
     return `**${bundle.fileName}** _(new)_`
   }
@@ -562,22 +476,12 @@ function formatFileLabel(bundle) {
   return bundle.fileName
 }
 
-/**
- * Format size for table output
- * @param {number | undefined} value
- * @returns {string}
- */
-function formatSize(value) {
+function formatSize(value: number | undefined): string {
   if (value === undefined) return '—'
   return prettyBytes(value)
 }
 
-/**
- * Format a diff with an indicator emoji
- * @param {number} diff
- * @returns {string}
- */
-function formatDiffIndicator(diff) {
+function formatDiffIndicator(diff: number): string {
   if (diff > 0) {
     return `:red_circle: +${prettyBytes(diff)}`
   }
@@ -587,13 +491,9 @@ function formatDiffIndicator(diff) {
   return ':white_circle: 0 B'
 }
 
-/**
- * Import JSON data if it exists
- * @template T
- * @param {string} filePath
- * @returns {Promise<T | undefined>}
- */
-async function importJSON(filePath) {
+async function readBundleSize(
+  filePath: string
+): Promise<BundleSize | undefined> {
   if (!existsSync(filePath)) return undefined
-  return (await import(filePath, { with: { type: 'json' } })).default
+  return bundleSizeSchema.parse(JSON.parse(await readFile(filePath, 'utf-8')))
 }

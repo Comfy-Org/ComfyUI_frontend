@@ -151,7 +151,7 @@ describe('useFrontendVersionMismatchWarning', () => {
     expect(result.shouldShowWarning.value).toBe(true)
     expect(result.hasVersionMismatch.value).toBe(true)
 
-    void result.dismissWarning()
+    result.dismissWarning()
     expect(mockDismissWarning).toHaveBeenCalled()
   })
 
