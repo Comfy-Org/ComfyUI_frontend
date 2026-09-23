@@ -51,8 +51,6 @@ const state = vi.hoisted(() => {
   }
 })
 
-const nonActiveBillingStatuses: BillingStatus[] = ['payment_failed', 'paused']
-
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
@@ -419,7 +417,7 @@ describe('CurrentUserPopoverWorkspace', () => {
     })
   })
 
-  it.for(nonActiveBillingStatuses)(
+  it.for(['payment_failed', 'paused'] as const)(
     'keeps Manage plan available for an existing %s subscription',
     (billingStatus) => {
       state.billingStatus = billingStatus

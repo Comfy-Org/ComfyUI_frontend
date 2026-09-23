@@ -8,15 +8,6 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
-const mocks = vi.hoisted(() => ({
-  billing: null as {
-    canAccessSubscriptionFeatures: { value: boolean }
-    isTeamPlan: { value: boolean }
-    billingStatus: { value: BillingStatus | null }
-    subscription: { value: Pick<SubscriptionInfo, 'hasFunds'> | null }
-  } | null
-}))
-
 vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
@@ -36,7 +27,7 @@ describe('useBillingBanner', () => {
     return banner
   }
 
-  beforeEach(() => {
+  function setupBilling() {
     const billing = {
       canAccessSubscriptionFeatures: ref(true),
       isTeamPlan: ref(true),
@@ -45,7 +36,6 @@ describe('useBillingBanner', () => {
         hasFunds: true
       })
     }
-    mocks.billing = billing
     const billingContext = useBillingContext()
     billingContext.canAccessSubscriptionFeatures = computed(
       () => billing.canAccessSubscriptionFeatures.value
@@ -68,6 +58,10 @@ describe('useBillingBanner', () => {
         : null
     )
     vi.mocked(useBillingContext).mockReturnValue(billingContext)
+    return billing
+  }
+
+  beforeEach(() => {
     const workspaceUI = vi.mocked(useWorkspaceUI())
     const defaultPermissions = workspaceUI.permissions.value
     workspaceUI.permissions = computed(() => ({
@@ -78,11 +72,6 @@ describe('useBillingBanner', () => {
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
     vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
     scope = effectScope()
-    const b = mocks.billing
-    b.canAccessSubscriptionFeatures.value = true
-    b.isTeamPlan.value = true
-    b.billingStatus.value = 'paid'
-    b.subscription.value = { hasFunds: true }
   })
 
   afterEach(() => scope.stop())
@@ -90,10 +79,10 @@ describe('useBillingBanner', () => {
   it('suppresses the banner entirely when billing control is rolled back', async () => {
     vi.mocked(useFeatureFlags().flags).billingControlEnabled = true
 
-    const b = mocks.billing!
+    const billing = setupBilling()
     const { kind } = useBillingBanner()
 
-    b.subscription.value = { hasFunds: false }
+    billing.subscription.value = { hasFunds: false }
     await nextTick()
     expect(kind.value).toBe('outOfCredits')
 
@@ -103,10 +92,10 @@ describe('useBillingBanner', () => {
   })
 
   it('re-shows the out-of-credits banner after a top-up and a later exhaustion', async () => {
-    const b = mocks.billing!
+    const billing = setupBilling()
     const { kind, dismiss } = useBillingBanner()
 
-    b.subscription.value = { hasFunds: false }
+    billing.subscription.value = { hasFunds: false }
     await nextTick()
     expect(kind.value).toBe('outOfCredits')
 
@@ -114,17 +103,17 @@ describe('useBillingBanner', () => {
     await nextTick()
     expect(kind.value).toBeNull()
 
-    b.subscription.value = { hasFunds: true }
+    billing.subscription.value = { hasFunds: true }
     await nextTick()
-    b.subscription.value = { hasFunds: false }
+    billing.subscription.value = { hasFunds: false }
     await nextTick()
     expect(kind.value).toBe('outOfCredits')
   })
 
   it('refreshes status and balance on focus while payment recovery is visible', async () => {
-    const b = mocks.billing!
+    const billing = setupBilling()
     useBillingBanner()
-    b.billingStatus.value = 'payment_failed'
+    billing.billingStatus.value = 'payment_failed'
 
     window.dispatchEvent(new Event('focus'))
     await nextTick()
@@ -136,9 +125,9 @@ describe('useBillingBanner', () => {
   it('does not refresh payment recovery on focus when the flag is off', async () => {
     vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = true
 
-    const b = mocks.billing!
+    const billing = setupBilling()
     useBillingBanner()
-    b.billingStatus.value = 'payment_failed'
+    billing.billingStatus.value = 'payment_failed'
     vi.mocked(useFeatureFlags().flags).v1PaymentRecovery = false
 
     window.dispatchEvent(new Event('focus'))
