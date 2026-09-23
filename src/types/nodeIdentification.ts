@@ -113,6 +113,32 @@ export function createNodeLocatorId(
 
   return `${subgraphUuid}:${nodeId}` as NodeLocatorId
 }
+
+/**
+ * Create a `NodeLocatorId` from components, tolerating a colon inside a
+ * root-graph local id.
+ *
+ * `createNodeLocatorId` rejects a colon in `localNodeId` because colon is
+ * the delimiter between the subgraph UUID and the local id. That is the
+ * right contract for a node that really lives in a subgraph, but it is too
+ * strict for a root-graph node (no `subgraphUuid`) whose raw id itself
+ * contains colons for reasons that have nothing to do with locator-id
+ * encoding (comfy-multi-player's `insert_workflow` remapped ids, e.g.
+ * `insert:<opId>:root:node:<originalId>`, PM-1580). There is no subgraph
+ * UUID to disambiguate such an id from, so nothing is lost by keeping it
+ * whole rather than rejecting it outright.
+ */
+export function createLeafNodeLocatorId(
+  subgraphUuid: string | null,
+  localNodeId: SerializedNodeId
+): NodeLocatorId | null {
+  const strictNodeId = requireNodeIdSegment(localNodeId)
+  if (strictNodeId) return createNodeLocatorId(subgraphUuid, strictNodeId)
+  if (subgraphUuid) return null
+
+  const bareNodeId = parseNodeId(localNodeId)
+  return bareNodeId ? (String(bareNodeId) as NodeLocatorId) : null
+}
 /**
  * Parse a NodeExecutionId into its component node IDs
  * @param id The NodeExecutionId to parse
@@ -145,6 +171,30 @@ export function createNodeExecutionId(
   return nodeIdSegments
     ? nodeExecutionIdFromString(nodeIdSegments.join(':'))
     : null
+}
+
+/**
+ * Create a `NodeExecutionId` for a single, already-local node id, tolerating
+ * a colon inside it.
+ *
+ * `createNodeExecutionId` treats every array element as one path SEGMENT and
+ * rejects a colon inside any of them, because colon is the separator between
+ * segments once they are joined. That is the right contract for a real
+ * multi-segment path, but it is too strict for the single-id, no-ancestor
+ * case some callers hit: a node materialized at the root graph can have a
+ * raw id that itself contains colons for reasons that have nothing to do
+ * with subgraph-path encoding (comfy-multi-player's `insert_workflow`
+ * remapped ids, e.g. `insert:<opId>:root:node:<originalId>`, PM-1580).
+ * There is no ancestor segment to disambiguate such an id from, so nothing
+ * is lost by keeping it whole rather than rejecting it outright.
+ */
+export function createLeafNodeExecutionId(
+  nodeId: SerializedNodeId
+): NodeExecutionId | null {
+  const strict = createNodeExecutionId([nodeId])
+  if (strict) return strict
+  const bare = parseNodeId(nodeId)
+  return bare ? (bare as unknown as NodeExecutionId) : null
 }
 
 export function tryNormalizeNodeExecutionId(
