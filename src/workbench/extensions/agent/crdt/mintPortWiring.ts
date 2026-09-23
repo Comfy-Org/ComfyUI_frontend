@@ -248,7 +248,6 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
     rootGraphId,
-    serializeNode,
     enqueue
   })
 
@@ -278,12 +277,12 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const detachNodeFlagActions = nodeDataStore.$onAction(
     ({ name, args, after }) => {
       if (name !== 'setNodeFlags') return
-      const [graphScope, nodeId, , context] = args
+      const [graphScope, nodeId, flags, context] = args
       if (isRemoteMutationContext(context)) return
       after((changed) => {
         if (!changed) return
         for (const listener of flagsListeners)
-          listener({ graphId: graphScope.owningGraphId, nodeId })
+          listener({ graphId: graphScope.owningGraphId, nodeId, flags })
       })
     }
   )

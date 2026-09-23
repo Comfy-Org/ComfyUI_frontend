@@ -17,7 +17,7 @@ const NODE_ID = 7
 
 /** The doc host's pinned catalog: server classes only. */
 const CATALOG: WidgetCatalog = {
-  types: { LoadImage: { widget_order: [] } }
+  types: { LoadImage: { widget_order: ['image'] } }
 }
 
 /**
@@ -100,31 +100,47 @@ describe('node flag write-back', () => {
     {
       flag: 'collapsed',
       toggle: (node: LGraphNode) => node.collapse(),
-      expected: { collapsed: true }
+      field: 'flags.collapsed' as const,
+      value: true
     },
     {
       flag: 'pinned',
       toggle: (node: LGraphNode) => node.pin(true),
-      expected: { pinned: true }
+      field: 'flags.pinned' as const,
+      value: true
     }
   ])(
-    'mints a local $flag toggle back into the document',
-    ({ toggle, expected }) => {
+    'mints a local $flag toggle back into the document as set_node_field',
+    ({ toggle, field, value }) => {
       toggle(liveNode())
 
       expect(minted).toEqual([
         {
-          op: 'add_node',
+          op: 'set_node_field',
           node_id: toNodeId(NODE_ID),
-          class_type: 'LoadImage',
-          pos: [10, 20],
-          node: expect.objectContaining({
-            flags: expect.objectContaining(expected)
-          })
+          field,
+          value
         }
       ])
     }
   )
+
+  it('mints flags.collapsed=false (not the whole node) when un-collapsing', () => {
+    const node = liveNode()
+    node.collapse()
+    minted.length = 0
+
+    node.collapse()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_node_field',
+        node_id: toNodeId(NODE_ID),
+        field: 'flags.collapsed',
+        value: false
+      }
+    ])
+  })
 
   it('leaves the toggle in the document, so a reconcile reads it back', () => {
     liveNode().collapse()
@@ -141,6 +157,40 @@ describe('node flag write-back', () => {
       (node) => String(node.id) === String(NODE_ID)
     )
     expect(reconciled?.flags).toEqual({ collapsed: true })
+    doc.destroy()
+  })
+
+  it('a concurrent remote widget write survives a local flag toggle (no whole-node clobber)', () => {
+    liveNode()
+
+    const doc = mint({ nodes: [docNode()], links: [] }, CATALOG)
+    const remoteWidgetWrite = mintWireOps(
+      [
+        {
+          op: 'set_widget',
+          node_id: NODE_ID,
+          widget: 'image',
+          value: 'remote.png',
+          old: null
+        }
+      ],
+      { actor: 'human:other:tab', baseVersion: 1 }
+    )
+    applyOps(doc, remoteWidgetWrite, CATALOG)
+
+    graphNodes.get(String(NODE_ID))?.collapse()
+    const { outcomes } = applyOps(
+      doc,
+      mintWireOps(minted, { actor: 'human:user:tab', baseVersion: 2 }),
+      CATALOG
+    )
+
+    expect(outcomes).toEqual([expect.objectContaining({ outcome: 'applied' })])
+    const reconciled = project(doc, CATALOG).nodes.find(
+      (node) => String(node.id) === String(NODE_ID)
+    )
+    expect(reconciled?.flags).toEqual({ collapsed: true })
+    expect(reconciled?.widgets_values).toEqual(['remote.png'])
     doc.destroy()
   })
 
