@@ -1,12 +1,11 @@
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { effectScope } from 'vue'
+import { computed, effectScope } from 'vue'
 
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLayoutMutations } from '@/renderer/core/layout/operations/layoutMutations'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useNodeEventHandlers as createNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
@@ -17,10 +16,17 @@ const ROOT_GRAPH_ID = vi.hoisted<UUID>(() => 'root-graph')
 const graphNode = createMockLGraphNode({
   id: toNodeId('node-1'),
   selected: false,
-  flags: { pinned: false },
-  collapse: vi.fn(),
-  isSubgraphNode: () => false
+  flags: { pinned: false }
 })
+
+vi.mock<unknown>(
+  import('@/renderer/core/canvas/useCanvasInteractions'),
+  () => ({
+    useCanvasInteractions: vi.fn(() => ({
+      shouldHandleNodePointerEvents: computed(() => true) // Default to allowing pointer events
+    }))
+  })
+)
 
 vi.mock<unknown>(
   import('@/renderer/core/layout/operations/layoutMutations'),
@@ -241,62 +247,6 @@ describe('useNodeEventHandlers', () => {
       handleNodeSelect(event, testNodeId)
 
       expect(mockLayoutMutations.setNodeOrder).not.toHaveBeenCalled()
-    })
-  })
-
-  describe('while picking nodes for the agent', () => {
-    beforeEach(() => {
-      useAgentNodeSelectionStore().isActive = true
-      mockNode.selected = false
-      mockNode.flags.pinned = false
-    })
-
-    it('still selects the clicked node', () => {
-      const { handleNodeSelect } = useNodeEventHandlers()
-      const { canvas } = useCanvasStore()
-
-      handleNodeSelect(new PointerEvent('pointerdown'), testNodeId)
-
-      expect(canvas?.select).toHaveBeenCalledWith(mockNode)
-    })
-
-    it('keeps the node order unchanged on select and on pointer-up toggle', () => {
-      const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
-        useNodeEventHandlers()
-
-      handleNodeSelect(new PointerEvent('pointerdown'), testNodeId)
-      toggleNodeSelectionAfterPointerUp(testNodeId, false)
-      toggleNodeSelectionAfterPointerUp(testNodeId, true)
-
-      expect(mockLayoutMutations.setNodeOrder).not.toHaveBeenCalled()
-    })
-
-    it('leaves the title unchanged', () => {
-      const { handleNodeTitleUpdate } = useNodeEventHandlers()
-
-      handleNodeTitleUpdate(testNodeId, 'Renamed while picking')
-
-      expect(mockNode.title).toBe('Test Node')
-    })
-
-    it('does not collapse the node', () => {
-      const { handleNodeCollapse } = useNodeEventHandlers()
-
-      handleNodeCollapse(testNodeId, true)
-
-      expect(mockNode.collapse).not.toHaveBeenCalled()
-    })
-
-    it('ignores right-click selection', () => {
-      const { handleNodeRightClick } = useNodeEventHandlers()
-      const { canvas } = useCanvasStore()
-
-      handleNodeRightClick(
-        new PointerEvent('pointerdown', { button: 2 }),
-        testNodeId
-      )
-
-      expect(canvas?.select).not.toHaveBeenCalled()
     })
   })
 

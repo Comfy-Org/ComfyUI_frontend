@@ -8,8 +8,6 @@ import {
 import { isCanvasGestureWheel } from '@/base/wheelGestures'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { resolvePickingPolicy } from '@/renderer/core/canvas/interaction/pickingPolicy'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 /**
  * Composable for handling canvas interactions from Vue components.
@@ -18,30 +16,16 @@ import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 export function useCanvasInteractions() {
   const settingStore = useSettingStore()
   const canvasStore = useCanvasStore()
-  const agentNodeSelectionStore = useAgentNodeSelectionStore()
 
   const isStandardNavMode = computed(
     () => settingStore.get('Comfy.Canvas.NavigationMode') === 'standard'
-  )
-
-  const pickingPolicy = computed(() =>
-    resolvePickingPolicy({
-      readOnly: canvasStore.isReadOnly,
-      picking: agentNodeSelectionStore.isActive
-    })
   )
 
   /**
    * Whether Vue node components should handle pointer events.
    * Returns false when canvas is in read-only/panning mode (e.g., space key held for panning).
    */
-  const shouldHandleNodePointerEvents = computed(
-    () => pickingPolicy.value.canSelectNodes
-  )
-
-  const canEditNodes = computed(() => pickingPolicy.value.canEditNodes)
-
-  const canFocusWidgets = computed(() => pickingPolicy.value.canFocusWidgets)
+  const shouldHandleNodePointerEvents = computed(() => !canvasStore.isReadOnly)
 
   /**
    * Returns true if the wheel event target is inside an element that should
@@ -172,8 +156,6 @@ export function useCanvasInteractions() {
     handlePointerMove,
     handlePointerUp,
     forwardEventToCanvas,
-    shouldHandleNodePointerEvents,
-    canEditNodes,
-    canFocusWidgets
+    shouldHandleNodePointerEvents
   }
 }

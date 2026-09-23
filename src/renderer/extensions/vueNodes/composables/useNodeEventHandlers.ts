@@ -19,8 +19,7 @@ import type { NodeId } from '@/types/nodeId'
 function useNodeEventHandlersIndividual() {
   const canvasStore = useCanvasStore()
   const { bringNodeToFront } = useNodeZIndex()
-  const { shouldHandleNodePointerEvents, canEditNodes } =
-    useCanvasInteractions()
+  const { shouldHandleNodePointerEvents } = useCanvasInteractions()
 
   function getNode(nodeId: NodeId) {
     return canvasStore.currentGraph?.getNodeById(nodeId) ?? undefined
@@ -55,7 +54,7 @@ function useNodeEventHandlersIndividual() {
 
     // Bring node to front when clicked (similar to LiteGraph behavior)
     // Skip if node is pinned to avoid unwanted movement
-    if (!node.flags.pinned && canEditNodes.value) {
+    if (!node.flags.pinned) {
       bringNodeToFront(nodeId)
     }
   }
@@ -65,7 +64,7 @@ function useNodeEventHandlersIndividual() {
    * Uses LiteGraph's native collapse method for proper state management
    */
   function handleNodeCollapse(nodeId: NodeId, collapsed: boolean) {
-    if (!canEditNodes.value) return
+    if (!shouldHandleNodePointerEvents.value) return
 
     const node = getNode(nodeId)
     if (!node) return
@@ -82,7 +81,7 @@ function useNodeEventHandlersIndividual() {
    * Updates the title in LiteGraph for persistence across sessions
    */
   function handleNodeTitleUpdate(nodeId: NodeId, newTitle: string) {
-    if (!canEditNodes.value) return
+    if (!shouldHandleNodePointerEvents.value) return
 
     const node = getNode(nodeId)
     if (!node) return
@@ -101,7 +100,7 @@ function useNodeEventHandlersIndividual() {
    * Integrates with LiteGraph's context menu system
    */
   function handleNodeRightClick(event: PointerEvent, nodeId: NodeId) {
-    if (!canEditNodes.value) return
+    if (!shouldHandleNodePointerEvents.value) return
 
     if (!canvasStore.canvas) return
 
@@ -135,7 +134,7 @@ function useNodeEventHandlersIndividual() {
       canvasStore.canvas.deselectAll()
       canvasStore.canvas.select(node)
       // Bring node to front when selected (unless pinned)
-      if (!node.flags.pinned && canEditNodes.value) {
+      if (!node.flags.pinned) {
         bringNodeToFront(nodeId)
       }
       return
@@ -146,7 +145,7 @@ function useNodeEventHandlersIndividual() {
     } else {
       canvasStore.canvas.select(node)
       // Bring node to front when selected (unless pinned)
-      if (!node.flags.pinned && canEditNodes.value) {
+      if (!node.flags.pinned) {
         bringNodeToFront(nodeId)
       }
     }

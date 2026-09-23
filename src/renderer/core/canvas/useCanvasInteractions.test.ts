@@ -4,7 +4,6 @@ import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 function createMockLGraphCanvas(
   read_only = true,
@@ -75,54 +74,6 @@ describe('useCanvasInteractions', () => {
       expect(canvasElement.dispatchEvent).not.toHaveBeenCalled()
     }
   )
-
-  describe('node policy', () => {
-    it.for([
-      {
-        picking: false,
-        readOnly: false,
-        shouldHandleNodePointerEvents: true,
-        canEditNodes: true,
-        canFocusWidgets: true
-      },
-      {
-        picking: true,
-        readOnly: false,
-        shouldHandleNodePointerEvents: true,
-        canEditNodes: false,
-        canFocusWidgets: false
-      },
-      {
-        picking: false,
-        readOnly: true,
-        shouldHandleNodePointerEvents: false,
-        canEditNodes: false,
-        canFocusWidgets: true
-      },
-      {
-        picking: true,
-        readOnly: true,
-        shouldHandleNodePointerEvents: false,
-        canEditNodes: false,
-        canFocusWidgets: false
-      }
-    ])(
-      'picking=$picking readOnly=$readOnly selects nodes: $shouldHandleNodePointerEvents, edits nodes: $canEditNodes, focuses widgets: $canFocusWidgets',
-      (row) => {
-        useAgentNodeSelectionStore().isActive = row.picking
-        useCanvasStore().isReadOnly = row.readOnly
-
-        const { shouldHandleNodePointerEvents, canEditNodes, canFocusWidgets } =
-          useCanvasInteractions()
-
-        expect(shouldHandleNodePointerEvents.value).toBe(
-          row.shouldHandleNodePointerEvents
-        )
-        expect(canEditNodes.value).toBe(row.canEditNodes)
-        expect(canFocusWidgets.value).toBe(row.canFocusWidgets)
-      }
-    )
-  })
 
   describe('pointer handlers', () => {
     it('should intercept left mouse events when canvas is read_only to enable space+drag navigation', () => {
