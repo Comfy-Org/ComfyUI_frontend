@@ -235,6 +235,10 @@ function isPiniaModule(
 ): boolean {
   if (PINIA_MODULES.has(specifier)) return true
   let resolved = resolveLocalModule(specifier, importer)
+  if (!resolved) {
+    resolutionCache.clear()
+    resolved = resolveLocalModule(specifier, importer)
+  }
   if (!resolved) return false
   let stat = statSync(resolved, { throwIfNoEntry: false })
   if (!stat) {
