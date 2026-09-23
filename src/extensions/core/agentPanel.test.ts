@@ -128,6 +128,12 @@ vi.mock(import('posthog-js'), () => ({
 const flush = (): Promise<void> =>
   new Promise((resolve) => setTimeout(resolve, 0))
 
+const notOffered = async () =>
+  vi.mocked(
+    (await import('@/platform/telemetry')).useTelemetry()!
+      .trackAgentConsentNotOffered
+  )
+
 async function loadEntryAndSetup(): Promise<void> {
   const { registerAgentPanelExtension } = await import('./agentPanel')
   registerAgentPanelExtension()
@@ -492,13 +498,6 @@ describe('AgentPanel extension flag gate', () => {
   })
 
   describe('reports why the automatic offer stayed silent', () => {
-    // resetModules gives the extension its own telemetry instance per test.
-    const notOffered = async () =>
-      vi.mocked(
-        (await import('@/platform/telemetry')).useTelemetry()!
-          .trackAgentConsentNotOffered
-      )
-
     it.for([
       {
         reason: 'first_run_screen',
@@ -516,12 +515,6 @@ describe('AgentPanel extension flag gate', () => {
         reason: 'workspace_switching',
         arrange: () => {
           Object.assign(workspaceStore, { isSwitching: true })
-        }
-      },
-      {
-        reason: 'load_failed',
-        arrange: () => {
-          vi.mocked(consentStore.load).mockRejectedValue(new Error('offline'))
         }
       },
       {
@@ -613,8 +606,32 @@ describe('AgentPanel extension flag gate', () => {
 
     it('reports nothing until the account and workspace are both known', async () => {
       mocks.flagEnabled = true
+      activeTour.value = 'appMode'
       Object.assign(consentStore, { accepted: false, isChecking: false })
       Object.assign(workspaceStore, { activeWorkspaceId: null })
+
+      await loadEntryAndSetup()
+      await flush()
+
+      expect(await notOffered()).not.toHaveBeenCalled()
+    })
+
+    it('says nothing to a user whose one-shot offer already happened', async () => {
+      mocks.flagEnabled = true
+      activeTour.value = 'appMode'
+      localStorage.setItem(AUTO_SHOWN_KEY, 'true')
+      Object.assign(consentStore, { accepted: false, isChecking: false })
+
+      await loadEntryAndSetup()
+      mocks.flagListener?.()
+      await flush()
+
+      expect(await notOffered()).not.toHaveBeenCalled()
+    })
+
+    it('stays quiet when a failed consent read leaves acceptance unknown', async () => {
+      mocks.flagEnabled = true
+      Object.assign(consentStore, { accepted: false, isChecking: false })
       vi.mocked(consentStore.load).mockRejectedValue(new Error('offline'))
 
       await loadEntryAndSetup()
@@ -752,10 +769,9 @@ describe('AgentPanel extension flag gate', () => {
       await flush()
 
       expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
-      expect(
-        (await import('@/platform/telemetry')).useTelemetry()!
-          .trackAgentConsentNotOffered
-      ).toHaveBeenCalledWith({ reason: 'storage_unavailable' })
+      expect(await notOffered()).toHaveBeenCalledExactlyOnceWith({
+        reason: 'storage_unavailable'
+      })
     }
   )
 

@@ -306,7 +306,7 @@ describe('OnboardingCoach', () => {
       })
       expect(
         useTelemetry()!.trackAgentOnboardingNotShown
-      ).toHaveBeenCalledExactlyOnceWith({ reason: 'target_missing' })
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'target_missing', step: 1 })
     })
 
     it('reports a target once per session however often the panel remounts', async () => {

@@ -2,7 +2,7 @@
 import './agentPanel.css'
 
 import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
-import { useClipboard, useStorage } from '@vueuse/core'
+import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
   computed,
@@ -64,8 +64,8 @@ import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStor
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
-  SHARED_ONBOARDING_KEY,
   adoptSharedOnboardingFlag,
+  hasSeenCoach,
   reportCoachDeferred,
   scopedOnboardingKey
 } from './composables/agent/useOnboarding'
@@ -289,18 +289,11 @@ const coachDeferredBy = computed(() =>
       ? 'tour_active'
       : null
 )
-const coachSeen = useStorage(
-  () => onboardingKey.value ?? SHARED_ONBOARDING_KEY,
-  false,
-  undefined,
-  { writeDefaults: false }
-)
 watch(
-  () =>
-    consentAccepted.value && !coachSeen.value ? coachDeferredBy.value : null,
-  (reason) => {
-    if (reason && onboardingKey.value)
-      reportCoachDeferred(reason, onboardingKey.value)
+  [consentAccepted, onboardingKey, coachDeferredBy],
+  ([accepted, key, reason]) => {
+    if (accepted && key && reason && !hasSeenCoach(key))
+      reportCoachDeferred(reason, key)
   },
   { immediate: true }
 )

@@ -14,7 +14,7 @@ export interface CoachStep {
   toolbarTarget?: string
 }
 
-export const SHARED_ONBOARDING_KEY = 'Comfy.AgentPanel.onboarded'
+const SHARED_ONBOARDING_KEY = 'Comfy.AgentPanel.onboarded'
 
 export function scopedOnboardingKey(
   userId: string | undefined,
@@ -47,7 +47,10 @@ const reportedMissingTargets = new Set<string>()
 export function reportMissingCoachTarget(target: string, step: number): void {
   if (reportedMissingTargets.has(target)) return
   reportedMissingTargets.add(target)
-  useTelemetry()?.trackAgentOnboardingNotShown({ reason: 'target_missing' })
+  useTelemetry()?.trackAgentOnboardingNotShown({
+    reason: 'target_missing',
+    step
+  })
   reportError(new Error('Agent coach target never mounted'), {
     errorType: 'failure_locating_agent_coach_target',
     level: 'warning',
@@ -55,8 +58,15 @@ export function reportMissingCoachTarget(target: string, step: number): void {
   })
 }
 
+export function hasSeenCoach(scopedKey: string): boolean {
+  try {
+    return localStorage.getItem(scopedKey) === 'true'
+  } catch {
+    return false
+  }
+}
+
 const reportedDeferrals = new Set<string>()
-/** Once per scope and reason per session, like the tour engine's `not_started`. */
 export function reportCoachDeferred(
   reason: Exclude<AgentOnboardingNotShownReason, 'target_missing'>,
   scope: string

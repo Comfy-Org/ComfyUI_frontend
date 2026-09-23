@@ -525,9 +525,6 @@ describe('AgentPanelRoot onboarding', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
-    expect(
-      telemetry.trackAgentOnboardingNotShown
-    ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
     await userEvent.type(screen.getByRole('textbox'), 'Explain this app')
     expect(screen.getByRole('textbox')).toHaveTextContent('Explain this app')
     expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
@@ -570,8 +567,43 @@ describe('AgentPanelRoot onboarding', () => {
     }
   })
 
+  it('reports a coach held back by App Mode', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-app'
+    })
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(
+      telemetry.trackAgentOnboardingNotShown
+    ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
+  })
+
+  it('reports the deferral once the workspace resolves after mount', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-late'
+    })
+
+    await vi.waitFor(() =>
+      expect(
+        telemetry.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
+    )
+  })
+
   it('says nothing about App Mode to a user who already finished the tour', async () => {
-    localStorage.setItem(SCOPED_KEY, 'true')
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-seen'
+    })
+    localStorage.setItem(
+      'Comfy.AgentPanel.onboarded.account-a.workspace-seen',
+      'true'
+    )
     canvasStore.linearMode = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 

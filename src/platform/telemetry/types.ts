@@ -583,7 +583,6 @@ export type AgentConsentNotOfferedReason =
   | 'first_run_screen'
   | 'tour_active'
   | 'boot_undecided'
-  | 'load_failed'
   | 'workspace_switching'
   | 'storage_unavailable'
 export interface AgentConsentNotOfferedMetadata extends Record<
@@ -601,6 +600,7 @@ export interface AgentOnboardingNotShownMetadata extends Record<
   unknown
 > {
   reason: AgentOnboardingNotShownReason
+  step?: number
 }
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource

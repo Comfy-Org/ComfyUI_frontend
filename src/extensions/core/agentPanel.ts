@@ -34,6 +34,14 @@ function writeAutoShown(key: string, shown: boolean): boolean {
   }
 }
 
+function wasAutoShown(key: string): boolean {
+  try {
+    return localStorage.getItem(key) === 'true'
+  } catch {
+    return false
+  }
+}
+
 function prepareAutoShow(
   key: string
 ): 'ready' | 'already_offered' | 'storage_unavailable' {
@@ -174,12 +182,15 @@ export function registerAgentPanelExtension(): void {
             ? 'tour_active'
             : null
 
-      // Keyed like the one-shot offer, so each workspace reports its own.
       const reportedWithheld = new Set<string>()
       const withholdOffer = (reason: AgentConsentNotOfferedReason): void => {
         const userId = resolvedUserInfo.value?.id
         const workspaceId = workspaceStore.activeWorkspaceId
         if (!userId || !workspaceId) return
+        if (
+          wasAutoShown(`${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`)
+        )
+          return
         const key = `${userId}.${workspaceId}:${reason}`
         if (reportedWithheld.has(key)) return
         reportedWithheld.add(key)
@@ -257,7 +268,6 @@ export function registerAgentPanelExtension(): void {
             if (!isAccepted) offerWhenStartupDecided()
           })
           .catch((error: unknown) => {
-            withholdOffer('load_failed')
             reportError(error, {
               errorType: 'agent_consent_setting_load_failure'
             })
