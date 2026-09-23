@@ -133,7 +133,6 @@ test.describe(
           await typing
           await resync
 
-          test.fail()
           await expect(field).toHaveValue(`a photo of a pier${appended}`)
         })
       })
