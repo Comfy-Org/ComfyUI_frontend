@@ -24,6 +24,21 @@ const run: WorkshopRunAnalytics = {
 }
 
 describe('Workshop health', () => {
+  it('preserves declared field names for validation diagnostics', () => {
+    expect(
+      workshopHealthLog({
+        name: 'run_validation_failed',
+        properties: {
+          model_slug: run.model_slug,
+          field_error_names: ['first_frame'],
+          field_error_codes: ['required']
+        }
+      })
+    ).toMatchObject({
+      field_error_names: ['first_frame'],
+      field_error_codes: ['required']
+    })
+  })
   it.for([
     { reason: 'response' as const, expected: 'failure' },
     { reason: 'upload' as const, expected: 'failure' },
