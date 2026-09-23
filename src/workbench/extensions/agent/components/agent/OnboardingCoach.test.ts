@@ -133,6 +133,26 @@ describe('OnboardingCoach', () => {
     }
   )
 
+  it('returns to the previous card without completing the tour', async () => {
+    const user = userEvent.setup()
+    mount()
+
+    await screen.findByRole('dialog', { name: STEPS[0].title })
+    expect(screen.queryByRole('button', { name: 'Back' })).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'Next' }))
+    expect(
+      await screen.findByRole('dialog', { name: STEPS[1].title })
+    ).toBeVisible()
+    await user.click(screen.getByRole('button', { name: 'Back' }))
+
+    expect(
+      await screen.findByRole('dialog', { name: STEPS[0].title })
+    ).toBeVisible()
+    expect(screen.queryByRole('button', { name: 'Back' })).toBeNull()
+    expect(localStorage.getItem(KEY)).toBe('false')
+  })
+
   it('dismisses on Escape without forwarding it to the graph or blocking later keys', async () => {
     const user = userEvent.setup()
     const escaped = vi.fn()

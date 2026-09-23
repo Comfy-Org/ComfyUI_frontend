@@ -9,6 +9,50 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 
 test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
+  test('returns to the previous card without completing the tour', async ({
+    page,
+    agentFlagEnabled
+  }) => {
+    await bootAgentApp(page, agentFlagEnabled, {
+      onboardingCompleted: false
+    })
+    await page
+      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
+      .click()
+
+    const firstCard = page.getByRole('dialog', {
+      name: enMessages.agent.coachTitle
+    })
+    await expect(firstCard).toBeVisible()
+    await expect(
+      firstCard.getByRole('button', {
+        name: enMessages.onboardingCoachmarks.back
+      })
+    ).toHaveCount(0)
+    await firstCard.getByRole('button', { name: enMessages.g.next }).click()
+
+    const secondCard = page.getByRole('dialog', {
+      name: enMessages.agent.coachWorkflowTitle
+    })
+    await expect(secondCard).toBeVisible()
+    await secondCard
+      .getByRole('button', {
+        name: enMessages.onboardingCoachmarks.back
+      })
+      .click()
+
+    await expect(firstCard).toBeVisible()
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          localStorage.getItem(
+            'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
+          )
+        )
+      )
+      .toBe('false')
+  })
+
   test('walks all four accessible cards and persists completion', async ({
     page,
     agentFlagEnabled

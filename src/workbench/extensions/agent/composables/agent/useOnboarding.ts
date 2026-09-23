@@ -107,5 +107,10 @@ export function useOnboarding(
     else index.value += 1
   }
 
-  return { active, index, step, isLast, next, finish }
+  function previous(): void {
+    if (!active.value || index.value === 0) return
+    index.value -= 1
+  }
+
+  return { active, index, step, isLast, next, previous, finish }
 }

@@ -29,7 +29,7 @@ const { steps, storageKey } = defineProps<{
   storageKey?: string
 }>()
 
-const { active, index, step, isLast, next, finish } = useOnboarding(
+const { active, index, step, isLast, next, previous, finish } = useOnboarding(
   () => steps,
   storageKey
 )
@@ -222,6 +222,13 @@ useEventListener(
               </p>
             </div>
             <div class="flex justify-end gap-3">
+              <Button
+                v-if="index > 0"
+                variant="textonly"
+                size="md"
+                @click="previous"
+                >{{ $t('onboardingCoachmarks.back') }}</Button
+              >
               <Button variant="secondary" size="md" @click="finish">{{
                 $t('agent.skip')
               }}</Button>
