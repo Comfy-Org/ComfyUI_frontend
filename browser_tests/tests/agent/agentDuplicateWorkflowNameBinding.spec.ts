@@ -18,6 +18,7 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
 const BINDING_KEY = 'Comfy.Agent.WorkflowTabBindings'
+const PERSISTED_BINDING_KEY = 'Comfy.Agent.WorkflowTabBindings.v2'
 const THREAD_KEY = 'Comfy.Agent.ThreadId'
 const PORTRAIT_PATH = 'workflows/Portrait.json'
 const TARGET_ID = 'a81718a4-02ae-41e6-ae85-000000000001'
@@ -156,6 +157,23 @@ test(
     expect(
       await page.evaluate((key) => localStorage.getItem(key), BINDING_KEY)
     ).toBe(JSON.stringify({ [TARGET_ID]: PORTRAIT_PATH }))
+    await expect
+      .poll(() =>
+        page.evaluate(
+          ([key, workflowId]) => {
+            const stored: unknown = JSON.parse(
+              localStorage.getItem(key) ?? 'null'
+            )
+            return (
+              typeof stored === 'object' &&
+              stored !== null &&
+              Object.hasOwn(stored, workflowId)
+            )
+          },
+          [PERSISTED_BINDING_KEY, TARGET_ID] as const
+        )
+      )
+      .toBe(true)
 
     await page
       .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
@@ -173,9 +191,21 @@ test(
     ).toBeVisible()
     await expect
       .poll(() =>
-        page.evaluate((key) => localStorage.getItem(key), BINDING_KEY)
+        page.evaluate(
+          ([key, workflowId]) => {
+            const stored: unknown = JSON.parse(
+              localStorage.getItem(key) ?? 'null'
+            )
+            return (
+              typeof stored === 'object' &&
+              stored !== null &&
+              Object.hasOwn(stored, workflowId)
+            )
+          },
+          [PERSISTED_BINDING_KEY, TARGET_ID] as const
+        )
       )
-      .toBe('{}')
+      .toBe(false)
     await expect(topbar.getActiveTab()).toContainText('Portrait')
 
     await testInfo.attach('duplicate-name-portrait-tab', {
