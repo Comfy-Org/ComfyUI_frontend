@@ -140,6 +140,7 @@ import {
 import type { UnpackedTargetInput } from './subgraph/unpackSubgraph'
 import {
   findUnresolvableSubgraphLink,
+  findOrphanedSubgraphs,
   findReleasableSubgraphs,
   findUsedSubgraphIds,
   getBoundaryLinks,
@@ -234,6 +235,8 @@ export interface GraphRemoveOptions {
    * Same-id replacement state is left intact.
    */
   preserveCanonicalState?: boolean
+  /** Keep the subgraph definitions the node references; the caller re-creates the node elsewhere in the same root graph. */
+  preserveSubgraphDefinitions?: boolean
 }
 
 export interface LGraphExtra extends Dictionary<unknown> {
@@ -1495,7 +1498,7 @@ export class LGraph
       }
     }
 
-    if (node.isSubgraphNode()) {
+    if (node.isSubgraphNode() && !options.preserveSubgraphDefinitions) {
       this.releaseSubgraphs(findReleasableSubgraphs(this.rootGraph, node))
     }
 
@@ -2216,11 +2219,18 @@ export class LGraph
         resolved.inputNode
       )
 
-    for (const node of nodes) this.remove(node)
+    for (const node of nodes)
+      this.remove(node, { preserveSubgraphDefinitions: true })
     for (const reroute of reroutes) this.removeReroute(reroute.id)
     for (const group of groups) this.remove(group)
 
-    const subgraph = this.createSubgraph(data)
+    let subgraph: Subgraph
+    try {
+      subgraph = this.createSubgraph(data)
+    } catch (error) {
+      this.releaseSubgraphs(findOrphanedSubgraphs(this.rootGraph, nodes))
+      throw error
+    }
     for (const node of subgraph.nodes) node.onGraphConfigured?.()
     for (const node of subgraph.nodes) node.onAfterGraphConfigured?.()
 
