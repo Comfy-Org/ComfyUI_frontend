@@ -570,7 +570,7 @@ describe('AgentPanelRoot onboarding', () => {
         screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
       ).not.toBeInTheDocument()
       expect(
-        telemetry.trackAgentOnboardingNotShown
+        getTelemetryMock().trackAgentOnboardingNotShown
       ).toHaveBeenCalledExactlyOnceWith({ reason: 'tour_active' })
     } finally {
       firstRunHolds.value = false
@@ -593,14 +593,18 @@ describe('AgentPanelRoot onboarding', () => {
       ).not.toBeInTheDocument()
     )
 
-    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+    expect(
+      getTelemetryMock().trackAgentOnboardingNotShown
+    ).not.toHaveBeenCalled()
   })
 
   it('reports the deferral once the workspace resolves after mount', async () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
     canvasStore.linearMode = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+    expect(
+      getTelemetryMock().trackAgentOnboardingNotShown
+    ).not.toHaveBeenCalled()
 
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: 'workspace-late'
@@ -608,7 +612,7 @@ describe('AgentPanelRoot onboarding', () => {
 
     await vi.waitFor(() =>
       expect(
-        telemetry.trackAgentOnboardingNotShown
+        getTelemetryMock().trackAgentOnboardingNotShown
       ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
     )
   })
@@ -622,7 +626,7 @@ describe('AgentPanelRoot onboarding', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(
-      telemetry.trackAgentOnboardingNotShown
+      getTelemetryMock().trackAgentOnboardingNotShown
     ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
   })
 
@@ -637,7 +641,9 @@ describe('AgentPanelRoot onboarding', () => {
     canvasStore.linearMode = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+    expect(
+      getTelemetryMock().trackAgentOnboardingNotShown
+    ).not.toHaveBeenCalled()
   })
 
   it('walks through the four cards and leaves the composer usable after Done', async () => {
