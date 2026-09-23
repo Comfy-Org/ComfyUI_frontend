@@ -3506,8 +3506,17 @@ describe('AgentPanelRoot workflow binding', () => {
   // `doc_subscribed` frame, so the follower never connects; with the wrong
   // gate, a mutating tool call's own successful frame was held at
   // 'streaming' forever, since nothing was ever going to call
-  // `notifyCanvasCaughtUp()` to release it. Once settled, the tool's own row
-  // flips from its spinner to "Ran N tool call(s)".
+  // `notifyCanvasCaughtUp()` to release it.
+  //
+  // core/1.54 predates the `AgentMessage.vue` "composing" status row (main's
+  // `agent.working` / "Working..." indicator, shown once every part has
+  // settled but the turn is still streaming) -- that's an unrelated,
+  // unbackported UI redesign, not this bug fix, so this branch's
+  // `AgentMessage.vue` has no such row at all (see PR discussion). Here the
+  // settle is only observable through `ToolCallGroup.vue`'s own trigger,
+  // which renders the settled "Ran N tool calls" label -- rather than
+  // sitting stuck on the spinner glyph -- the moment the tool call's part
+  // flips from 'streaming' to 'done'.
   it('settles a mutating tool call immediately when no CRDT doc subscription is connected', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
@@ -3524,7 +3533,9 @@ describe('AgentPanelRoot workflow binding', () => {
     })
 
     expect(
-      await screen.findByRole('button', { name: /^Ran/ })
+      await screen.findByRole('button', {
+        name: 'Ran 1 tool call for 0.1 seconds'
+      })
     ).toBeInTheDocument()
   })
 
