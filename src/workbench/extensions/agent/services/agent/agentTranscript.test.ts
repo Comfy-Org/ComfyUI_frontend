@@ -203,6 +203,328 @@ describe('normalizeAgentTranscript', () => {
     }
   )
 
+  it('restores persisted tool calls as ToolPart entries ahead of the reply text', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      tool_calls: [
+        {
+          id: 'call-1',
+          tool_name: 'search_nodes',
+          status: 'ok',
+          duration_ms: 420
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: true,
+        durationMs: 420
+      },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('prefers tool_call_id over id when deriving callId, matching what live frames key on', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      tool_calls: [
+        {
+          id: 'audit-row-uuid-1',
+          tool_call_id: 'provider-call-1',
+          tool_name: 'search_nodes',
+          status: 'ok'
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'provider-call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: true
+      },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('falls back to id for callId when a row was recorded before tool_call_id existed', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      tool_calls: [
+        { id: 'audit-row-uuid-1', tool_name: 'search_nodes', status: 'ok' }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toContainEqual(
+      expect.objectContaining({ callId: 'audit-row-uuid-1' })
+    )
+  })
+
+  it('omits tool parts entirely when a message carries no tool_calls', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('restores multiple tool calls per message in order', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      tool_calls: [
+        { id: 'call-1', tool_name: 'search_nodes', status: 'ok' },
+        { id: 'call-2', tool_name: 'add_node', status: 'error' }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: true
+      },
+      {
+        type: 'tool',
+        callId: 'call-2',
+        name: 'add_node',
+        state: 'done',
+        ok: false
+      },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('clamps a restored pending/running tool call to done+ok:false with no live transport', () => {
+    const message = row(1, 'assistant', 'turn-a', '', 'row-1')
+    message.content = {
+      tool_calls: [
+        { id: 'call-1', tool_name: 'search_nodes', status: 'running' }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: false
+      }
+    ])
+  })
+
+  it('keeps a pending/running tool call streaming when its row is the live run_approval ask', () => {
+    const message = row(1, 'assistant', 'turn-a', '', 'row-1')
+    message.status = 'streaming'
+    message.content = {
+      tool_calls: [
+        { id: 'call-1', tool_name: 'search_nodes', status: 'running' }
+      ]
+    }
+    message.pending_ask = {
+      message_id: 'row-1',
+      ask_id: 'ask-1',
+      kind: 'run_approval',
+      prompt: 'Run it?',
+      options: [],
+      min_selections: 1,
+      max_selections: 1,
+      allow_other: false
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toContainEqual({
+      type: 'tool',
+      callId: 'call-1',
+      name: 'search_nodes',
+      state: 'streaming'
+    })
+    expect(transcript.pending?.messageId).toBe('row-1')
+  })
+
+  it.for(['success', 'failed', 'cancelled', 'timeout', 'unrecognized'])(
+    'maps terminal tool-call status %s through the broadened vocabulary',
+    (status) => {
+      const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+      message.content = {
+        text: 'Done',
+        tool_calls: [{ id: 'call-1', tool_name: 'search_nodes', status }]
+      }
+
+      const transcript = normalizeAgentTranscript([message])
+
+      expect(transcript.messages[0].parts).toContainEqual({
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: status === 'success'
+      })
+    }
+  )
+
+  it.for([NaN, Infinity, -Infinity, -1])(
+    'rejects a non-finite or negative durationMs (%s)',
+    (durationMs) => {
+      const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+      message.content = {
+        text: 'Done',
+        tool_calls: [
+          {
+            id: 'call-1',
+            tool_name: 'search_nodes',
+            status: 'ok',
+            duration_ms: durationMs
+          }
+        ]
+      }
+
+      const transcript = normalizeAgentTranscript([message])
+
+      expect(transcript.messages[0].parts).toContainEqual({
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: true
+      })
+    }
+  )
+
+  it('dedupes a repeated callId within one row, keeping the last entry at the first position', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      tool_calls: [
+        { id: 'call-1', tool_name: 'search_nodes', status: 'running' },
+        { id: 'call-2', tool_name: 'add_node', status: 'ok' },
+        {
+          id: 'call-1',
+          tool_name: 'search_nodes',
+          status: 'ok',
+          duration_ms: 420
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: true,
+        durationMs: 420
+      },
+      {
+        type: 'tool',
+        callId: 'call-2',
+        name: 'add_node',
+        state: 'done',
+        ok: true
+      },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it.for([
+    { tool_calls: 'not-an-array' },
+    { tool_calls: [null, 17, 'a-string'] },
+    { tool_calls: [{ tool_name: 'no_id', status: 'ok' }] },
+    { tool_calls: [{ id: 'call-1', status: 'ok' }] },
+    { tool_calls: [] }
+  ])('ignores malformed tool_calls metadata: $tool_calls', (content) => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = { text: 'Done', ...content }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('dedupes a repeated callId across two assistant rows of the same turn', () => {
+    const first = row(1, 'assistant', 'turn-a', '', 'row-1')
+    first.content = {
+      tool_calls: [{ id: 'call-1', tool_name: 'search_nodes', status: 'ok' }]
+    }
+    const second = row(2, 'assistant', 'turn-a', 'Done', 'row-2')
+    second.content = {
+      text: 'Done',
+      tool_calls: [
+        {
+          id: 'call-1',
+          tool_name: 'search_nodes',
+          status: 'error',
+          duration_ms: 900
+        }
+      ]
+    }
+
+    const transcript = normalizeAgentTranscript([first, second])
+
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: true
+      },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
+  it('renders a persisted tool call with no status field as a failure, not a dropped entry', () => {
+    const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
+    message.content = {
+      text: 'Done',
+      tool_calls: [{ id: 'call-1', tool_name: 'search_nodes' }]
+    }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.messages[0].parts).toEqual([
+      {
+        type: 'tool',
+        callId: 'call-1',
+        name: 'search_nodes',
+        state: 'done',
+        ok: false
+      },
+      { type: 'text', text: 'Done', state: 'done' }
+    ])
+  })
+
   it('restores available and unavailable references without changing the latest workflow target', () => {
     const first = row(1, 'user', 'turn-a', 'Compare these', 'row-1')
     first.workflow_id = 'wf-target-a'
