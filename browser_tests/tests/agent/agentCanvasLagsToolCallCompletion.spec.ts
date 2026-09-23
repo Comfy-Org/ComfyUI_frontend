@@ -5,7 +5,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import type { WorkflowListResponse } from '@comfyorg/ingest-types'
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import type { UserDataFullInfo } from '@/schemas/apiSchema'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
@@ -91,7 +91,7 @@ const CATALOG: WidgetCatalog = {
 }
 const SEED: WorkflowJSON = { nodes: [], links: [] }
 
-const OPEN_AGENT_LABEL = enMessages.agent.entryButton
+const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
 const SEND_LABEL = enMessages.agent.send
 const COMPOSER_LABEL = createI18n({
   legacy: false,
@@ -299,7 +299,9 @@ async function driveThroughToolCallDone(
       class_type: 'MarkdownNote'
     }
   ])
-  expect(Object.keys(host.graph().nodes)).toContain(String(ADDED_NODE_ID))
+  expect(host.projection().nodes.map((n) => String(n.id))).toContain(
+    String(ADDED_NODE_ID)
+  )
 
   // The inverted ordering: the doc_update broadcast reaches this client
   // while the tool is still (from the chat frames' perspective) running --
