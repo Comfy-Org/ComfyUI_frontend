@@ -1,4 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+
+import { api } from '@/scripts/api'
 
 import { useWorkflowTemplatesStore } from './workflowTemplatesStore'
 
@@ -31,4 +33,22 @@ describe('workflowTemplatesStore', () => {
       expect(store.resolveCategoryId(requested)).toBe(expected)
     }
   )
+
+  it('preserves a loaded extension category ID', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json({}))
+    )
+    vi.spyOn(api, 'getWorkflowTemplates').mockResolvedValue({
+      'custom-module': ['example']
+    })
+    vi.spyOn(api, 'getCoreWorkflowTemplates').mockResolvedValue([])
+    const store = useWorkflowTemplatesStore()
+
+    await store.loadWorkflowTemplates()
+
+    expect(store.resolveCategoryId('extension-custom-module')).toBe(
+      'extension-custom-module'
+    )
+  })
 })
