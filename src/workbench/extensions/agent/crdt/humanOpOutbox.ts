@@ -34,7 +34,7 @@ import type { Op } from '@comfyorg/comfy-multi-player'
 import type { BatchOutcome } from './opSender'
 
 /** Lifecycle of one outbox entry. All transitions are explicit caller calls. */
-export type OutboxEntryState =
+type OutboxEntryState =
   /** Minted and handed to the sender; no terminal outcome yet. */
   | 'queued'
   /** Retired without a host verdict; safe to replay toward its workflow. */
@@ -63,7 +63,7 @@ export interface OutboxStore {
   clear(key: string): void
 }
 
-export interface SettleSummary {
+interface SettleSummary {
   /** Members the host applied or already held; removed from the outbox. */
   readonly removed: number
   /** Members the host rejected; retained, never replayable. */
