@@ -9137,6 +9137,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "مقدار یک کلید را از نخستین شیء معتبر JSON در متن، شامل بلوک‌های کد Markdown، استخراج می‌کند.",
     "display_name": "استخراج رشته از JSON",
     "inputs": {
       "json_string": {

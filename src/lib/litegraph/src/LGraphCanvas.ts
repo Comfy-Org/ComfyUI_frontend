@@ -4765,7 +4765,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     items?: Positionable[],
     add_to_current_selection?: boolean
   ): void {
-    const itemsToSelect = Array.from(items ?? this.positionableItems).filter(
+    const itemsToSelect = [...(items ?? this.positionableItems)].filter(
       (item) => ownsSelectable(this, item)
     )
     if (itemsToSelect.length === 0 && items?.length) return
