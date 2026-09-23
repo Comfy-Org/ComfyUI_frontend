@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createMemoryHistory, createRouter, useRouter } from 'vue-router'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 import { useUrlActionLoaders } from './useUrlActionLoaders'
 
@@ -21,7 +22,6 @@ const mocks = vi.hoisted(() => ({
   loadSettings: vi.fn(),
   loadAssets: vi.fn(async () => undefined),
   loadPaymentReturn: vi.fn(async () => undefined),
-  resumePendingPricingFlow: vi.fn(async () => undefined),
   useWorkspace: vi.fn(),
   useInvite: vi.fn(),
   useCreateWorkspace: vi.fn(),
@@ -29,8 +29,7 @@ const mocks = vi.hoisted(() => ({
   useTopUp: vi.fn(),
   useSettings: vi.fn(),
   useAssets: vi.fn(),
-  usePaymentReturn: vi.fn(),
-  useSubscriptionDialog: vi.fn()
+  usePaymentReturn: vi.fn()
 }))
 mocks.useWorkspace.mockImplementation(() => ({
   loadWorkspaceFromUrl: mocks.loadWorkspace
@@ -55,9 +54,6 @@ mocks.useAssets.mockImplementation(() => ({
 }))
 mocks.usePaymentReturn.mockImplementation(() => ({
   loadPaymentReturnFromUrl: mocks.loadPaymentReturn
-}))
-mocks.useSubscriptionDialog.mockImplementation(() => ({
-  resumePendingPricingFlow: mocks.resumePendingPricingFlow
 }))
 
 // A real router rather than a stub: several assertions are the URL a reader
@@ -106,8 +102,7 @@ vi.mock(
   () => ({ usePaymentReturnUrlLoader: mocks.usePaymentReturn })
 )
 vi.mock(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({ useSubscriptionDialog: mocks.useSubscriptionDialog })
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mocks.reportError
@@ -139,9 +134,6 @@ describe('useUrlActionLoaders', () => {
     }))
     mocks.usePaymentReturn.mockImplementation(() => ({
       loadPaymentReturnFromUrl: mocks.loadPaymentReturn
-    }))
-    mocks.useSubscriptionDialog.mockImplementation(() => ({
-      resumePendingPricingFlow: mocks.resumePendingPricingFlow
     }))
     vi.mocked(useRouter).mockReturnValue(router)
     await router.replace({ path: '/', query: {} })
@@ -220,7 +212,7 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.useSettings).not.toHaveBeenCalled()
     expect(mocks.useAssets).not.toHaveBeenCalled()
     expect(mocks.usePaymentReturn).not.toHaveBeenCalled()
-    expect(mocks.useSubscriptionDialog).not.toHaveBeenCalled()
+    expect(useSubscriptionDialog).not.toHaveBeenCalled()
     expect(mocks.loadWorkspace).not.toHaveBeenCalled()
     expect(mocks.loadInvite).not.toHaveBeenCalled()
     expect(mocks.loadCreateWorkspace).not.toHaveBeenCalled()
@@ -229,7 +221,9 @@ describe('useUrlActionLoaders', () => {
     expect(mocks.loadSettings).not.toHaveBeenCalled()
     expect(mocks.loadAssets).not.toHaveBeenCalled()
     expect(mocks.loadPaymentReturn).not.toHaveBeenCalled()
-    expect(mocks.resumePendingPricingFlow).not.toHaveBeenCalled()
+    expect(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).not.toHaveBeenCalled()
   })
 
   it('runs all loaders on Cloud', async () => {
@@ -308,33 +302,42 @@ describe('useUrlActionLoaders', () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()
 
-    expect(mocks.resumePendingPricingFlow).not.toHaveBeenCalled()
+    expect(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).not.toHaveBeenCalled()
   })
 
   it('recovers an interrupted checkout after handling the payment return', async () => {
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await runUrlActionLoaders()
 
-    expect(mocks.resumePendingPricingFlow).toHaveBeenCalledOnce()
     expect(
-      mocks.resumePendingPricingFlow.mock.invocationCallOrder[0]
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).toHaveBeenCalledOnce()
+    expect(
+      vi.mocked(useSubscriptionDialog().resumePendingPricingFlow).mock
+        .invocationCallOrder[0]
     ).toBeGreaterThan(mocks.loadPaymentReturn.mock.invocationCallOrder[0])
   })
 
   it('resolves without waiting for checkout recovery to settle', async () => {
-    mocks.resumePendingPricingFlow.mockImplementationOnce(
-      () => new Promise<undefined>(() => {})
-    )
+    vi.mocked(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).mockImplementationOnce(() => new Promise<undefined>(() => {}))
 
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await expect(runUrlActionLoaders()).resolves.toBeUndefined()
 
-    expect(mocks.resumePendingPricingFlow).toHaveBeenCalledOnce()
+    expect(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).toHaveBeenCalledOnce()
   })
 
   it('reports a checkout-recovery failure instead of rejecting unhandled', async () => {
     const failure = new Error('boom')
-    mocks.resumePendingPricingFlow.mockRejectedValueOnce(failure)
+    vi.mocked(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).mockRejectedValueOnce(failure)
 
     const { runUrlActionLoaders } = useUrlActionLoaders()
     await expect(runUrlActionLoaders()).resolves.toBeUndefined()
@@ -379,6 +382,8 @@ describe('useUrlActionLoaders', () => {
     await expect(runUrlActionLoaders()).resolves.toBeUndefined()
 
     expect(mocks.loadPaymentReturn).toHaveBeenCalledOnce()
-    expect(mocks.resumePendingPricingFlow).toHaveBeenCalledOnce()
+    expect(
+      useSubscriptionDialog().resumePendingPricingFlow
+    ).toHaveBeenCalledOnce()
   })
 })
