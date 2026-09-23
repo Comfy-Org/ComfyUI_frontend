@@ -22,6 +22,7 @@ import {
   LLink,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import {
   createTestSubgraph,
   createTestSubgraphData,
@@ -197,7 +198,10 @@ function remoteMutations(scope: GraphScope) {
   })
 }
 
-function nodePayload(id: number, type = 'dummy'): WorkflowNode {
+function nodePayload(
+  id: number,
+  type = 'dummy'
+): WorkflowNode & ISerialisedNode {
   return {
     id,
     type,
