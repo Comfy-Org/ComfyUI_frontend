@@ -4,7 +4,11 @@ import {
   mint,
   nodesMap
 } from '@comfyorg/comfy-multi-player'
-import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import type {
+  Op,
+  WidgetCatalog,
+  WorkflowNode
+} from '@comfyorg/comfy-multi-player'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -18,7 +22,6 @@ import {
   LLink,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
-import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import {
   createTestSubgraph,
   createTestSubgraphData,
@@ -194,7 +197,7 @@ function remoteMutations(scope: GraphScope) {
   })
 }
 
-function nodePayload(id: number, type = 'dummy'): ISerialisedNode {
+function nodePayload(id: number, type = 'dummy'): WorkflowNode {
   return {
     id,
     type,
