@@ -92,10 +92,28 @@ function isRootScope(scope: LinkScopeView): boolean {
   return scope.owningGraphId === scope.rootGraphId
 }
 
+/**
+ * Collapses a burst of identical drops into one signal: a tab switch emits a
+ * change per link, and each would otherwise report separately.
+ */
+function createOncePerTickReporter(): (
+  key: string,
+  report: () => void
+) => void {
+  const reported = new Set<string>()
+  return (key, report) => {
+    if (reported.has(key)) return
+    reported.add(key)
+    queueMicrotask(() => reported.delete(key))
+    report()
+  }
+}
+
 export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   const severancesByNode = new Map<string, SeveranceEntry[]>()
   const consumedLinkIds = new Set<string>()
   let sweepScheduled = false
+  const reportInactiveLinkOnce = createOncePerTickReporter()
 
   function gateOpen(): boolean {
     return shouldMint({
@@ -127,9 +145,13 @@ export function attachLinkMintPort(deps: LinkMintPortDeps): LinkMintPort {
   function onPlaced(scope: LinkScopeView, topology: LinkTopologyView): void {
     if (!gateOpen()) return
     if (!isForActivatedDocument(scope)) {
-      surfaceUnrepresentable(
-        'connect on a graph the activated document does not own',
-        topology.id
+      reportInactiveLinkOnce(
+        `connect:${scope.rootGraphId}:${deps.activeRootGraphId()}`,
+        () =>
+          surfaceUnrepresentable(
+            'connect on a graph the activated document does not own',
+            topology.id
+          )
       )
       return
     }

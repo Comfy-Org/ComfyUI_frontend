@@ -74,10 +74,12 @@ export function attachWidgetMintPort(deps: WidgetMintPortDeps): WidgetMintPort {
     const subgraphNodePath =
       root === null ? null : deps.resolveInteriorPath(set.graphId)
     if (subgraphNodePath === null || subgraphNodePath.length === 0) {
-      // The doc no longer matches the local graph; observable, never silent
-      // (the surfacing-honesty principle).
+      // Observable, never silent (the surfacing-honesty principle). `root ===
+      // null` is a load handoff in progress, not a diverged doc - say so.
       console.error(
-        '[agent-crdt] set_widget with an unresolvable owner not minted; the bound doc diverges from the local graph',
+        root === null
+          ? '[agent-crdt] set_widget with no activated document (load handoff in progress); not minted'
+          : '[agent-crdt] set_widget with an unresolvable owner not minted; the bound doc diverges from the local graph',
         `${set.graphId}:${String(set.nodeId)}:${set.name}`
       )
       return

@@ -431,6 +431,10 @@ describe('attachLayoutMintPort', () => {
       expect(minted).toHaveLength(1)
     })
 
+    // ACTIVATED/OTHER stand in for real UUIDs seen in a 2026-09-22
+    // cloud-frontend-staging Sentry report (27ca8666-fa2b-4ef9-99bc-e005182fadc6 /
+    // 84826d7d-1b25-4cfb-9d59-2747a4b09a19); the guard is a plain string
+    // comparison, so the placeholders exercise the same path.
     it.for(['createNode', 'deleteNode', 'clearGraph'] as const)(
       'drops a root-scoped %s naming a graph the activated document does not own',
       (type) => {
@@ -448,23 +452,6 @@ describe('attachLayoutMintPort', () => {
         )
       }
     )
-
-    it('refuses a createNode targeting a foreign graph (real cloud-frontend-staging Sentry data)', () => {
-      // Real UUIDs from a 2026-09-22 cloud-frontend-staging Sentry report, not synthetic test data.
-      const BOUND_ROOT = toRootGraphId('27ca8666-fa2b-4ef9-99bc-e005182fadc6')
-      const FOREIGN = toRootGraphId('84826d7d-1b25-4cfb-9d59-2747a4b09a19')
-      activeRootGraphId = BOUND_ROOT
-
-      deliver(rootScoped('createNode', FOREIGN))
-
-      expect(minted).toEqual([])
-      expect(reportError).toHaveBeenCalledWith(
-        expect.any(Error),
-        expect.objectContaining({
-          errorType: 'agent_crdt_op_for_inactive_document'
-        })
-      )
-    })
 
     it('reports a repeated foreign-graph drop once per tick', () => {
       activeRootGraphId = ACTIVATED

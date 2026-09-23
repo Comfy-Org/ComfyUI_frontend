@@ -691,6 +691,8 @@ export const useWorkflowService = () => {
    * reads as "the agent quietly stopped seeing my edits".
    */
   const activateLoadedDocument = async (): Promise<void> => {
+    // Exempt from the invariant above: `rootGraphInternal` is set once at
+    // app setup, before any load path can reach here, so this never fires.
     if (!app.isGraphReady) return
     const documentId = useWorkspaceStore().workflow.activeWorkflow?.documentId
     if (!documentId) {
