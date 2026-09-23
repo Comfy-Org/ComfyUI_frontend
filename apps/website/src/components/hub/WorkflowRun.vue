@@ -5,6 +5,7 @@ import type {
 } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import type { HubPortSummary } from '../../lib/hub/workflow-detail'
+import type { WorkflowReach } from '../../lib/hub/workflow-reach'
 import ModelDetail from '../workshop/ModelDetail.vue'
 import WorkflowAbout from './WorkflowAbout.vue'
 
@@ -22,6 +23,7 @@ const {
   cloudUrl: string
   runsHere: boolean
   description: string | undefined
+  reach: WorkflowReach | undefined
   tutorialUrl: string | undefined
   samples: readonly string[]
   models: readonly { name: string; model: WorkshopModel | undefined }[]

@@ -3,6 +3,7 @@ import type { WorkshopModel } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import type { HubPortSummary } from '../../lib/hub/workflow-detail'
+import type { WorkflowReach } from '../../lib/hub/workflow-reach'
 import WorkflowActions from './WorkflowActions.vue'
 import WorkflowFacts from './WorkflowFacts.vue'
 import WorkflowGraph from './WorkflowGraph.vue'
@@ -12,6 +13,7 @@ const {
   cloudUrl,
   runsHere,
   description,
+  reach,
   tutorialUrl,
   models,
   samples,
@@ -27,6 +29,7 @@ const {
   runsHere: boolean
   /** What the workflow does, in the template author's own words. */
   description: string | undefined
+  reach: WorkflowReach | undefined
   tutorialUrl: string | undefined
   /** The template's own pictures, hung in the nodes that hold them. */
   samples: readonly string[]
@@ -75,6 +78,7 @@ const sectionTitle =
         <WorkflowActions
           :cloud-url="cloudUrl"
           :download-url="graphUrl"
+          :reach
           :tutorial-url="tutorialUrl"
           stacked
           :locale

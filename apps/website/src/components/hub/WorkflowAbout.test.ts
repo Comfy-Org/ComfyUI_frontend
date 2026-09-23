@@ -8,6 +8,7 @@ const props = {
   cloudUrl: 'https://cloud.test/?template=x',
   runsHere: true,
   description: 'Turns a photo into a poster.',
+  reach: 'cloud' as const,
   tutorialUrl: undefined,
   samples: [],
   models: [{ name: 'Nano Banana 2', model: undefined }],
@@ -46,5 +47,18 @@ describe('WorkflowAbout', () => {
         'workflow-actions'
       )
     ).toBeNull()
+  })
+
+  // Opening a workflow in Cloud promises a run, and Cloud cannot keep that
+  // promise for one whose packs it does not carry. That one leads with the
+  // copy into a workspace where it can be deployed instead.
+  it('offers the copy rather than Cloud when Cloud cannot run it', () => {
+    render(WorkflowAbout, { props: { ...props, reach: 'endpoint' as const } })
+
+    expect(
+      within(screen.getByTestId('workflow-actions'))
+        .getAllByRole('link')
+        .map((link) => link.dataset.testid)
+    ).toEqual(['workflow-copy-api', 'workflow-download'])
   })
 })

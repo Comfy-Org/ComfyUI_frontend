@@ -24,6 +24,7 @@ import {
   summarisePorts
 } from '../../../lib/hub/workflow-detail'
 import { workflowDisplayTitle } from '../../../lib/hub/workflow-title'
+import { workflowReach } from '../../../lib/hub/workflow-reach'
 import { t } from '../../../i18n/translations'
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 
@@ -89,6 +90,11 @@ const title = workflowDisplayTitle(template)
 
 const cloudUrl = `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.name)}`
 
+// Opening a workflow in Comfy Cloud promises a run, and Cloud cannot keep
+// that promise for the few whose packs it does not carry. Those lead with the
+// copy into a workspace where they can be deployed instead.
+const reach = workflowReach(template.name, page.runsInline)
+
 // A page that runs a model has to say what a run costs, on either page.
 const price = operations.find((operation) => operation.price)?.price
 
@@ -143,6 +149,7 @@ const sectionTitle =
           cloudUrl={cloudUrl}
           runsHere={operations.length > 0}
           description={details.description}
+          reach={reach}
           tutorialUrl={details.tutorialUrl}
           samples={template.thumbnails}
           models={runsOn}
@@ -183,6 +190,7 @@ const sectionTitle =
           cloudUrl={cloudUrl}
           runsHere={false}
           description={details.description}
+          reach={reach}
           tutorialUrl={details.tutorialUrl}
           samples={template.thumbnails}
           models={runsOn}

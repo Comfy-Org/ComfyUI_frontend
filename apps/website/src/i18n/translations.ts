@@ -10756,6 +10756,15 @@ Enterprise`
   'workshop.v2.workflow.zoomIn': { en: 'Zoom in', 'zh-CN': '放大' },
   'workshop.v2.workflow.zoomOut': { en: 'Zoom out', 'zh-CN': '缩小' },
   'workshop.v2.workflow.zoomReset': { en: 'Reset', 'zh-CN': '重置' },
+  'workshop.v2.workflow.copyApi': {
+    en: 'Copy to Comfy API',
+    'zh-CN': '复制到 Comfy API'
+  },
+  'workshop.v2.workflow.copyApiNote': {
+    en: 'Copies the workflow, its model and its custom nodes to your own Comfy API workspace, where you can deploy it.',
+    'zh-CN':
+      '将工作流及其模型和自定义节点复制到你自己的 Comfy API 工作区，你可以在那里部署它。'
+  },
   'workshop.v2.workflow.openCloud': {
     en: 'Open in Comfy Cloud',
     'zh-CN': '在 Comfy Cloud 中打开'
