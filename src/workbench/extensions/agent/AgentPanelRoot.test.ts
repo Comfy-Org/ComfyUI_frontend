@@ -4099,6 +4099,35 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(activity.editingTabPath).toBe('workflows/current.json')
   })
 
+  // PM-1575 regression: the canvas-sync gate was wired to
+  // `agentPanelStore.enabled` (the panel feature flag), not to whether a CRDT
+  // doc subscription is actually connected. This suite -- like
+  // agentPanel.spec.ts and most of this file -- never sends a
+  // `doc_subscribed` frame, so the follower never connects; with the wrong
+  // gate, a mutating tool call's own successful frame was held at
+  // 'streaming' forever, since nothing was ever going to call
+  // `notifyCanvasCaughtUp()` to release it. The composing "Working..."
+  // status (every part settled, turn still streaming) never appeared.
+  it('settles a mutating tool call immediately when no CRDT doc subscription is connected', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add a node')
+
+    ws.emit('agent_tool_call', {
+      tool_call_id: 'call-add-node',
+      tool_name: 'add_node',
+      status: 'success',
+      duration_ms: 90,
+      thread_id: 'th-1',
+      message_id: 'm-1'
+    })
+
+    expect(
+      await screen.findByText(i18n.global.t('agent.working'))
+    ).toBeInTheDocument()
+  })
+
   it('moves the spinner to the tab the agent creates mid-turn', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
