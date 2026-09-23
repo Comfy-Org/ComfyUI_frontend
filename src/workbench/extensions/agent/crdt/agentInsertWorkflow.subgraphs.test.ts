@@ -9,15 +9,13 @@
  * instances of one definition in a single op, and coexistence with a
  * pre-existing instance.
  *
- * RED — the last test below ("materializes a subgraph instance nested inside
- * another subgraph...") is expected to fail against
- * `@comfyorg/comfy-multi-player@0.3.5`.
- *
- * An interior node that is ITSELF a subgraph instance (a subgraph nested
- * inside another subgraph, as opposed to two sibling definitions) does not
- * currently materialize through this pipeline — its `type` still names the
- * un-remapped blueprint definition id, which nothing registers on the live
- * side, so it falls back to a plain, widget-less node. Root-caused to
+ * The last test below ("materializes a subgraph instance nested inside
+ * another subgraph...") pins the nested-subgraph-instance `insert_workflow`
+ * gap: an interior node that is ITSELF a subgraph instance (a subgraph
+ * nested inside another subgraph, as opposed to two sibling definitions)
+ * used to not materialize through this pipeline — its `type` still named the
+ * un-remapped blueprint definition id, which nothing registered on the live
+ * side, so it fell back to a plain, widget-less node. Root-caused to
  * `remapInsertedWorkflowIds()` (`comfy-multi-player`'s `src/remap.ts`):
  * litegraph's own serializer never nests a definition inside another
  * definition's own `definitions.subgraphs` (`LGraph.asSerialisable`'s
@@ -25,9 +23,9 @@
  * into ONE top-level list), but the remapper only resolved an interior
  * node's `type` against a scope keyed for that JSON-nesting shape — so a
  * FLAT SIBLING reference (what litegraph actually emits) was left
- * un-remapped. The fix belongs upstream (comfy-multi-player PR #253) and
- * this test goes green when the dependency is bumped past the release that
- * carries it.
+ * un-remapped. Fixed upstream in comfy-multi-player PR #253, released as
+ * `@comfyorg/comfy-multi-player@0.3.6` and pinned in this repo — this test
+ * now runs as a plain regression test rather than `it.fails`.
  */
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type {
@@ -583,7 +581,7 @@ describe('insert_workflow materializes subgraphs correctly', () => {
     })
   })
 
-  it.fails('materializes a subgraph instance nested inside another subgraph, with its widget visible', () => {
+  it('materializes a subgraph instance nested inside another subgraph, with its widget visible', () => {
     const graph = new LGraph()
     onTestFinished(enableSubgraphNodeCreation(graph))
 
