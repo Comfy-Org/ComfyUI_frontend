@@ -32,8 +32,10 @@ remain follow-up work"). It decides only what those records leave open.
   only a host `doc_reset` may replace the follower doc. This ADR treats a
   repeat delivery of the same reset as a no-op and decides what happens to
   local-only state and pending intent across that lineage boundary.
-- **[CRDT-PENDING-0030](https://github.com/Comfy-Org/ComfyUI_frontend/blob/fix/s3opt6-dispatch-wiring/docs/adr/CRDT-PENDING-0030-pending-op-reverts-undo-optimistic-canvas-state.md)**
-  is stacked work open on #16309, not yet landed on `main`. It decides that a
+- **CRDT-PENDING-0030** is stacked work open on
+  [#16309](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16309), not yet
+  landed on `main`, so it has no file under `docs/adr/` on this branch to
+  link to; see that PR for the ADR text. It decides that a
   host-rejected `add_node` is reverted off the canvas and that `unconfirmed`
   (delivery unknown) does not itself trigger a revert. This ADR decides what
   happens to an entry `unconfirmed` leaves open: it parks as
