@@ -28,7 +28,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 }))
 
 vi.mock(import('@/scripts/api'))
-const fetchApi = vi.mocked(api.fetchApi)
 
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
@@ -100,7 +99,7 @@ describe('useAgentConsent', () => {
     vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValue({
       Authorization: 'Bearer account-a-token'
     })
-    fetchApi.mockReset()
+    vi.mocked(api.fetchApi).mockReset()
     fetchWithUnifiedRemint.mockReset()
     fetchWithUnifiedRemint.mockResolvedValue(settingResponse(false))
     reportError.mockReset()

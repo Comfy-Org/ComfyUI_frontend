@@ -38,10 +38,11 @@ vi.mock(import('@/scripts/utils'), () => ({
 }))
 
 vi.mock(import('@/services/dialogService'))
-const dialogService = vi.mocked(useDialogService())
 
 function resolveSmallLayoutDialog(
-  options: Parameters<typeof dialogService.showSmallLayoutDialog>[0],
+  options: Parameters<
+    ReturnType<typeof useDialogService>['showSmallLayoutDialog']
+  >[0],
   result: boolean
 ) {
   const props = options.props
@@ -52,7 +53,9 @@ function resolveSmallLayoutDialog(
 }
 
 function closeSmallLayoutDialog(
-  options: Parameters<typeof dialogService.showSmallLayoutDialog>[0]
+  options: Parameters<
+    ReturnType<typeof useDialogService>['showSmallLayoutDialog']
+  >[0]
 ) {
   const props = options.dialogComponentProps
   if (props && 'onClose' in props && typeof props.onClose === 'function') {
@@ -72,10 +75,10 @@ vi.mock<unknown>(import('@/platform/keybindings/keybindingService'), () => ({
 vi.mock(import('@/i18n'))
 
 beforeEach(() => {
-  dialogService.confirm.mockResolvedValue(true)
-  dialogService.prompt.mockResolvedValue('test-preset')
-  dialogService.showSmallLayoutDialog.mockImplementation((options) =>
-    resolveSmallLayoutDialog(options, true)
+  vi.mocked(useDialogService()).confirm.mockResolvedValue(true)
+  vi.mocked(useDialogService()).prompt.mockResolvedValue('test-preset')
+  vi.mocked(useDialogService()).showSmallLayoutDialog.mockImplementation(
+    (options) => resolveSmallLayoutDialog(options, true)
   )
   vi.mocked(useDialogStore().closeDialog).mockImplementation(() => undefined)
   useDialogStore().dialogStack = []
@@ -202,7 +205,7 @@ describe('useKeybindingPresetService', () => {
     })
 
     it('does nothing when user cancels confirmation', async () => {
-      dialogService.confirm.mockResolvedValueOnce(false)
+      vi.mocked(useDialogService()).confirm.mockResolvedValueOnce(false)
 
       const service = await getPresetService()
       await service.deletePreset('vim')
@@ -461,7 +464,9 @@ describe('useKeybindingPresetService', () => {
         })
       )
 
-      dialogService.showSmallLayoutDialog.mockImplementationOnce((options) =>
+      vi.mocked(
+        useDialogService()
+      ).showSmallLayoutDialog.mockImplementationOnce((options) =>
         resolveSmallLayoutDialog(options, false)
       )
 
@@ -528,7 +533,9 @@ describe('useKeybindingPresetService', () => {
         })
       )
 
-      dialogService.showSmallLayoutDialog.mockImplementationOnce((options) =>
+      vi.mocked(
+        useDialogService()
+      ).showSmallLayoutDialog.mockImplementationOnce((options) =>
         closeSmallLayoutDialog(options)
       )
 
@@ -554,7 +561,9 @@ describe('useKeybindingPresetService', () => {
       const service = await getPresetService()
       await service.switchPreset('vim')
 
-      expect(dialogService.showSmallLayoutDialog).not.toHaveBeenCalled()
+      expect(
+        vi.mocked(useDialogService()).showSmallLayoutDialog
+      ).not.toHaveBeenCalled()
       expect(store.currentPresetName).toBe('vim')
     })
 
@@ -584,7 +593,7 @@ describe('useKeybindingPresetService', () => {
       const service = await getPresetService()
       await service.switchPreset('vim')
 
-      expect(dialogService.prompt).toHaveBeenCalled()
+      expect(vi.mocked(useDialogService()).prompt).toHaveBeenCalled()
       expect(store.currentPresetName).toBe('vim')
     })
 
@@ -597,7 +606,7 @@ describe('useKeybindingPresetService', () => {
       )
 
       // promptAndSaveNewPreset returns false (user cancels prompt)
-      dialogService.prompt.mockResolvedValueOnce(null)
+      vi.mocked(useDialogService()).prompt.mockResolvedValueOnce(null)
 
       const service = await getPresetService()
       await service.switchPreset('vim')
@@ -621,7 +630,9 @@ describe('useKeybindingPresetService', () => {
       )
 
       // Dialog returns false (discard)
-      dialogService.showSmallLayoutDialog.mockImplementationOnce((options) =>
+      vi.mocked(
+        useDialogService()
+      ).showSmallLayoutDialog.mockImplementationOnce((options) =>
         resolveSmallLayoutDialog(options, false)
       )
 
@@ -635,7 +646,7 @@ describe('useKeybindingPresetService', () => {
 
   describe('promptAndSaveNewPreset', () => {
     it('returns false when user cancels prompt', async () => {
-      dialogService.prompt.mockResolvedValueOnce(null)
+      vi.mocked(useDialogService()).prompt.mockResolvedValueOnce(null)
 
       const service = await getPresetService()
       const result = await service.promptAndSaveNewPreset()
@@ -644,7 +655,7 @@ describe('useKeybindingPresetService', () => {
     })
 
     it('returns false when user enters empty name', async () => {
-      dialogService.prompt.mockResolvedValueOnce('   ')
+      vi.mocked(useDialogService()).prompt.mockResolvedValueOnce('   ')
 
       const service = await getPresetService()
       const result = await service.promptAndSaveNewPreset()
@@ -677,7 +688,7 @@ describe('useKeybindingPresetService', () => {
       const result = await service.promptAndSaveNewPreset()
 
       expect(result).toBe(true)
-      expect(dialogService.confirm).toHaveBeenCalled()
+      expect(vi.mocked(useDialogService()).confirm).toHaveBeenCalled()
       expect(mockApi.storeUserData).toHaveBeenCalledWith(
         'keybindings/test-preset.json',
         expect.any(String),
@@ -689,7 +700,7 @@ describe('useKeybindingPresetService', () => {
       mockApi.listUserDataFullInfo.mockResolvedValueOnce([
         { path: 'test-preset.json', size: 100, modified: 123 }
       ])
-      dialogService.confirm.mockResolvedValueOnce(false)
+      vi.mocked(useDialogService()).confirm.mockResolvedValueOnce(false)
 
       const service = await getPresetService()
       const result = await service.promptAndSaveNewPreset()

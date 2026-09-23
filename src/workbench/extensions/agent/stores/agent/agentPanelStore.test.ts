@@ -4,9 +4,6 @@ import { nextTick } from 'vue'
 import { useTelemetry } from '@/platform/telemetry'
 
 vi.mock(import('@/platform/telemetry'))
-const telemetryProvider = useTelemetry()
-assert.exists(telemetryProvider)
-const telemetry = vi.mocked(telemetryProvider)
 
 import { useAgentPanelStore } from './agentPanelStore'
 
@@ -16,6 +13,12 @@ function useConsentedAgentPanelStore() {
   const store = useAgentPanelStore()
   store.consentAccepted = true
   return store
+}
+
+function getTelemetryMock() {
+  const telemetry = useTelemetry()
+  assert.exists(telemetry)
+  return vi.mocked(telemetry)
 }
 
 describe('agentPanelStore engagement telemetry', () => {
@@ -30,17 +33,17 @@ describe('agentPanelStore engagement telemetry', () => {
 
     expect(store.isOpen).toBe(true)
     await nextTick()
-    expect(telemetry.trackAgentPanelOpened).not.toHaveBeenCalled()
+    expect(getTelemetryMock().trackAgentPanelOpened).not.toHaveBeenCalled()
 
     store.enabled = true
     await nextTick()
-    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledWith({
+    expect(getTelemetryMock().trackAgentPanelOpened).toHaveBeenCalledWith({
       source: 'restored'
     })
 
     vi.advanceTimersByTime(3000)
     store.close('close_button')
-    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
+    expect(getTelemetryMock().trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'close_button',
       open_duration_ms: 3000
     })
@@ -54,8 +57,8 @@ describe('agentPanelStore engagement telemetry', () => {
     store.toggle()
     await nextTick()
 
-    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledTimes(1)
-    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledWith({
+    expect(getTelemetryMock().trackAgentPanelOpened).toHaveBeenCalledTimes(1)
+    expect(getTelemetryMock().trackAgentPanelOpened).toHaveBeenCalledWith({
       source: 'topbar_button'
     })
   })
@@ -76,12 +79,12 @@ describe('agentPanelStore engagement telemetry', () => {
     vi.advanceTimersByTime(3000)
     store.close('close_button')
 
-    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
+    expect(getTelemetryMock().trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'close_button',
       open_duration_ms: 3000
     })
-    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledTimes(2)
-    expect(telemetry.trackAgentPanelOpened).toHaveBeenLastCalledWith({
+    expect(getTelemetryMock().trackAgentPanelOpened).toHaveBeenCalledTimes(2)
+    expect(getTelemetryMock().trackAgentPanelOpened).toHaveBeenLastCalledWith({
       source: 'restored'
     })
   })
@@ -95,7 +98,9 @@ describe('agentPanelStore engagement telemetry', () => {
     store.open('automatic_consent')
 
     expect(store.isVisible).toBe(true)
-    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledExactlyOnceWith({
+    expect(
+      getTelemetryMock().trackAgentPanelOpened
+    ).toHaveBeenCalledExactlyOnceWith({
       source: 'automatic_consent'
     })
   })
@@ -105,7 +110,7 @@ describe('agentPanelStore engagement telemetry', () => {
     useAgentPanelStore()
 
     await nextTick()
-    expect(telemetry.trackAgentPanelOpened).not.toHaveBeenCalled()
+    expect(getTelemetryMock().trackAgentPanelOpened).not.toHaveBeenCalled()
   })
 
   it('suppresses a restored open intent that has no consent', async () => {
@@ -116,7 +121,7 @@ describe('agentPanelStore engagement telemetry', () => {
 
     expect(store.isOpen).toBe(true)
     expect(store.isVisible).toBe(false)
-    expect(telemetry.trackAgentPanelOpened).not.toHaveBeenCalled()
+    expect(getTelemetryMock().trackAgentPanelOpened).not.toHaveBeenCalled()
 
     store.suppressRestoredOpen()
     expect(store.isOpen).toBe(false)
@@ -127,14 +132,14 @@ describe('agentPanelStore engagement telemetry', () => {
 
     store.toggle()
     expect(store.isOpen).toBe(true)
-    expect(telemetry.trackAgentPanelOpened).toHaveBeenCalledWith({
+    expect(getTelemetryMock().trackAgentPanelOpened).toHaveBeenCalledWith({
       source: 'topbar_button'
     })
 
     vi.advanceTimersByTime(5000)
     store.close('close_button')
     expect(store.isOpen).toBe(false)
-    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
+    expect(getTelemetryMock().trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'close_button',
       open_duration_ms: 5000
     })
@@ -146,7 +151,7 @@ describe('agentPanelStore engagement telemetry', () => {
     store.toggle()
     vi.advanceTimersByTime(250)
     store.toggle()
-    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
+    expect(getTelemetryMock().trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'topbar_button',
       open_duration_ms: 250
     })
@@ -157,7 +162,7 @@ describe('agentPanelStore engagement telemetry', () => {
 
     store.isOpen = true
     store.close('close_button')
-    expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
+    expect(getTelemetryMock().trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'close_button',
       open_duration_ms: null
     })
@@ -168,7 +173,7 @@ describe('agentPanelStore engagement telemetry', () => {
 
     store.close('close_button')
     store.close('close_button')
-    expect(telemetry.trackAgentPanelClosed).not.toHaveBeenCalled()
+    expect(getTelemetryMock().trackAgentPanelClosed).not.toHaveBeenCalled()
   })
 })
 
