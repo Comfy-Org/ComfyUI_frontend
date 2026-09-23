@@ -27,9 +27,9 @@ import {
 import { reportError } from '@/platform/telemetry/reportError'
 // Mirrors the production bridge in AgentPanelRoot.vue, which takes the same
 // exemption to drive the real layout store.
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { LayoutSource } from '@/renderer/core/layout/types'
 import { useExecutionOrderStore } from '@/stores/executionOrderStore'
 import { useLinkStore } from '@/stores/linkStore'

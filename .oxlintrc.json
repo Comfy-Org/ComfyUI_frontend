@@ -31,7 +31,9 @@
   "extends": ["./scripts/primevue-import-allowlist.json"],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
+    "comfy/no-relative-packages": "error",
     "comfy/no-render-in-watch-effect": "error",
+    "comfy/no-useless-path-segments": "error",
     "no-array-constructor": "error",
     "no-case-declarations": "error",
     "no-console": [
@@ -193,6 +195,71 @@
       "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
       "rules": {
         "comfy/no-dom-in-computed": "warn"
+      }
+    },
+    {
+      "files": [
+        "src/base/**/*.{ts,vue}",
+        "src/platform/**/*.{ts,vue}",
+        "src/workbench/**/*.{ts,vue}",
+        "src/world/**/*.{ts,vue}"
+      ],
+      "rules": {
+        "comfy/no-restricted-paths": [
+          "error",
+          {
+            "zones": [
+              {
+                "target": "src/base",
+                "from": ["src/platform", "src/workbench", "src/renderer"],
+                "message": "base/ cannot import from upper layers (violates layer architecture: base → platform → workbench → renderer)"
+              },
+              {
+                "target": "src/platform",
+                "from": ["src/workbench", "src/renderer"],
+                "message": "platform/ cannot import from upper layers (violates layer architecture: base → platform → workbench → renderer)"
+              },
+              {
+                "target": "src/workbench",
+                "from": "src/renderer",
+                "message": "workbench/ cannot import from renderer/ (violates layer architecture: base → platform → workbench → renderer)"
+              },
+              {
+                "target": "src/world",
+                "from": "src/lib/litegraph",
+                "message": "src/world/ must remain free of litegraph dependencies. The world layer owns canonical entity identity and must not depend on litegraph types or values."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/lib/**/*.{ts,vue}"],
+      "rules": {
+        "comfy/no-restricted-paths": [
+          "warn",
+          {
+            "zones": [
+              {
+                "target": "src/lib",
+                "from": [
+                  "src/components",
+                  "src/composables",
+                  "src/extensions",
+                  "src/platform",
+                  "src/renderer",
+                  "src/services",
+                  "src/stores",
+                  "src/views",
+                  "src/workbench",
+                  "src/world"
+                ],
+                "message": "src/lib/ is vendored leaf code and cannot import from app layers (violates layer architecture: lib → base → platform → workbench → renderer). Invert the dependency: have the app layer pass what it needs in, or move the shared type down into src/lib/ or src/base/."
+              }
+            ]
+          }
+        ]
       }
     },
     {

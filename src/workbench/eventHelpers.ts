@@ -1,4 +1,4 @@
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 /**
  * Utility functions for handling workbench events

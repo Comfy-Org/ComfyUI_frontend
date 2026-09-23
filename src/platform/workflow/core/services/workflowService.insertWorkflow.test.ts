@@ -36,7 +36,7 @@ vi.mock<unknown>(import('@/services/litegraphService'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // eslint-disable-line import-x/no-restricted-paths
+  import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // oxlint-disable-line comfy/no-restricted-paths
 
   () => ({
     useWorkflowThumbnail: () => ({

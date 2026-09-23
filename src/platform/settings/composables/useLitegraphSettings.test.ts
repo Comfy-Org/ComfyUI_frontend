@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
 
 import { useLitegraphSettings } from './useLitegraphSettings'
 

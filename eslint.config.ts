@@ -217,8 +217,6 @@ export default defineConfig([
       '@typescript-eslint/no-unused-vars': 'off',
       '@typescript-eslint/prefer-as-const': 'off',
       '@typescript-eslint/consistent-type-imports': 'error',
-      'import-x/no-useless-path-segments': 'error',
-      'import-x/no-relative-packages': 'error',
       'vue/no-v-html': 'off',
       // Prohibit dark-theme: and dark: prefixes
       'vue/no-restricted-class': ['error', '/^dark(-theme)?:/'],
@@ -372,91 +370,6 @@ export default defineConfig([
       'import-x/no-duplicates': 'off',
       'import-x/no-named-as-default': 'off',
       'import-x/consistent-type-specifier-style': 'off'
-    }
-  },
-
-  // Layer architecture boundary enforcement
-  // Layers (bottom to top): base → platform → workbench → renderer
-  // Each layer may only import from layers below it.
-  // Existing violations are suppressed with eslint-disable comments.
-  {
-    files: [
-      'src/base/**/*.{ts,vue}',
-      'src/platform/**/*.{ts,vue}',
-      'src/workbench/**/*.{ts,vue}',
-      'src/world/**/*.{ts,vue}'
-    ],
-    rules: {
-      'import-x/no-restricted-paths': [
-        'error',
-        {
-          zones: [
-            {
-              target: './src/base/**',
-              from: [
-                './src/platform/**',
-                './src/workbench/**',
-                './src/renderer/**'
-              ],
-              message:
-                'base/ cannot import from upper layers (violates layer architecture: base → platform → workbench → renderer)'
-            },
-            {
-              target: './src/platform/**',
-              from: ['./src/workbench/**', './src/renderer/**'],
-              message:
-                'platform/ cannot import from upper layers (violates layer architecture: base → platform → workbench → renderer)'
-            },
-            {
-              target: './src/workbench/**',
-              from: './src/renderer/**',
-              message:
-                'workbench/ cannot import from renderer/ (violates layer architecture: base → platform → workbench → renderer)'
-            },
-            {
-              target: './src/world/**',
-              from: './src/lib/litegraph/**',
-              message:
-                'src/world/ must remain free of litegraph dependencies. The world layer owns canonical entity identity and must not depend on litegraph types or values.'
-            }
-          ]
-        }
-      ]
-    }
-  },
-
-  // src/lib/ holds vendored leaf libraries (litegraph). They may import from
-  // src/lib/ and from the shared base utilities, but never from an app layer —
-  // a vendored library depending on the app that vendors it is a dependency
-  // inversion. Reported as a warning while the pre-existing violations are
-  // worked off; see the tracking issue before promoting this to 'error'.
-  {
-    files: ['src/lib/**/*.{ts,vue}'],
-    rules: {
-      'import-x/no-restricted-paths': [
-        'warn',
-        {
-          zones: [
-            {
-              target: './src/lib/**',
-              from: [
-                './src/components/**',
-                './src/composables/**',
-                './src/extensions/**',
-                './src/platform/**',
-                './src/renderer/**',
-                './src/services/**',
-                './src/stores/**',
-                './src/views/**',
-                './src/workbench/**',
-                './src/world/**'
-              ],
-              message:
-                'src/lib/ is vendored leaf code and cannot import from app layers (violates layer architecture: lib → base → platform → workbench → renderer). Invert the dependency: have the app layer pass what it needs in, or move the shared type down into src/lib/ or src/base/.'
-            }
-          ]
-        }
-      ]
     }
   },
 

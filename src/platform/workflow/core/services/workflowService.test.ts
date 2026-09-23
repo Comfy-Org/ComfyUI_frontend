@@ -1,6 +1,6 @@
 import { useDialogService } from '@/services/dialogService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
+import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // oxlint-disable-line comfy/no-restricted-paths
 import { useWorkflowDraftStoreV2 } from '@/platform/workflow/persistence/stores/workflowDraftStoreV2'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 
@@ -99,7 +99,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 }))
 
 vi.mock<unknown>(
-  import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // eslint-disable-line import-x/no-restricted-paths
+  import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // oxlint-disable-line comfy/no-restricted-paths
 
   () => ({
     useWorkflowThumbnail: () => ({

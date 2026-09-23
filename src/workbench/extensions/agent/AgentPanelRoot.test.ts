@@ -42,7 +42,7 @@ import { getFilenameDetails } from '@/utils/formatUtil'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { reportError } from '@/platform/telemetry/reportError'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'

@@ -10,14 +10,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createGraphMutations } from './graphMutations'
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { LayoutSource } from '@/renderer/core/layout/types'
 // Test-only: builds a node with the real renderer-owned widget constructor
 // so the fixture's `image` widget carries the same preview-rendering
 // callback a production LoadImage node does.
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useImageUploadWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useImageUploadWidget'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import type { GraphScope } from '@/types/graphScopeId'
