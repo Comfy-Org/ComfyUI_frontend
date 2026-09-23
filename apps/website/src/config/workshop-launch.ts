@@ -9,7 +9,7 @@ import type { TranslationKey } from '../i18n/translations'
  * The outcome names are the spec's, not the registry's: a card says the job,
  * and the workflow it points at is an implementation detail of that job.
  */
-export interface LaunchWorkflow {
+interface LaunchWorkflow {
   /** The registry template this outcome is served by. */
   readonly template: string
   readonly outcome: string
@@ -166,9 +166,7 @@ export const LAUNCH_CATEGORIES: readonly LaunchCategory[] = [
 
 const BY_TEMPLATE = new Map(
   LAUNCH_CATEGORIES.flatMap((category) =>
-    category.workflows.map(
-      (workflow) => [workflow.template, { category, workflow }] as const
-    )
+    category.workflows.map((workflow) => [workflow.template, workflow] as const)
   )
 )
 
@@ -178,11 +176,5 @@ export function launchesHere(templateName: string): boolean {
 
 /** The name the spec gives the job, which is what a card says. */
 export function launchOutcome(templateName: string): string | undefined {
-  return BY_TEMPLATE.get(templateName)?.workflow.outcome
-}
-
-export function launchCategoryOf(
-  templateName: string
-): LaunchCategory | undefined {
-  return BY_TEMPLATE.get(templateName)?.category
+  return BY_TEMPLATE.get(templateName)?.outcome
 }
