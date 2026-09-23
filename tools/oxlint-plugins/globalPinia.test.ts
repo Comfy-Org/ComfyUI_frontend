@@ -68,6 +68,7 @@ writeFileSync(
   `import { defineStore } from 'pinia'
 export const useDeletedStore = defineStore('deleted', () => ({}))`
 )
+const createdStore = path.join(directory, 'src/createdStore.ts')
 afterAll(() => rmSync(directory, { recursive: true, force: true }))
 
 const ruleTester = new RuleTester({
@@ -174,6 +175,26 @@ vi.spyOn(pinia, 'defineStore')`,
       /Do not mock Pinia/
     )
   ]
+})
+
+describe.sequential('failed module resolution freshness', () => {
+  ruleTester.run('caches a failed module resolution', useGlobalPinia, {
+    valid: [{ filename, code: `vi.mock('./createdStore')` }],
+    invalid: []
+  })
+
+  it('creates the unresolved module', () => {
+    writeFileSync(
+      createdStore,
+      `import { defineStore } from 'pinia'
+export const useCreatedStore = defineStore('created', () => ({}))`
+    )
+  })
+
+  ruleTester.run('refreshes a failed module resolution', useGlobalPinia, {
+    valid: [],
+    invalid: [invalid(`vi.mock('./createdStore')`, /Do not mock Pinia/)]
+  })
 })
 
 describe.sequential('module cache freshness', () => {
