@@ -663,6 +663,7 @@ describe('usePaste', () => {
 
   it.for([
     { name: 'null payload', data: null },
+    { name: 'empty object', data: {} },
     { name: 'malformed node', data: { nodes: [{ type: 'KSampler' }] } }
   ])('falls back for malformed Comfy metadata: $name', async ({ data }) => {
     const encoded = btoa(JSON.stringify(data))
@@ -679,6 +680,28 @@ describe('usePaste', () => {
     )
 
     await vi.waitFor(() => {
+      expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+    })
+  })
+
+  it('falls back when Comfy metadata is not valid JSON', async () => {
+    const parseError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    onTestFinished(() => parseError.mockRestore())
+    const html = `<div data-comfy-metadata="${btoa('{')}"></div>`
+
+    usePaste()
+
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/html', html)
+    dataTransfer.setData('text/plain', 'some text')
+
+    document.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    )
+
+    await vi.waitFor(() => {
+      expect(parseError).toHaveBeenCalledOnce()
       expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
       expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
     })
