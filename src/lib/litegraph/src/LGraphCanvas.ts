@@ -29,7 +29,8 @@ import {
   ownsSelectable,
   releaseCanvasSelection,
   selectableKeyOf,
-  setCanvasItemSelected
+  setCanvasItemSelected,
+  syncNodeLinkHighlights
 } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -53,12 +54,7 @@ import { detachSerialisedLinks } from './linkDeduplication'
 import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
-import {
-  inputHasLink,
-  inputLinkId,
-  outputLinkIds,
-  outputLinks
-} from './node/slotLinks'
+import { inputHasLink, outputLinks } from './node/slotLinks'
 import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
@@ -1846,11 +1842,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   clear(): void {
     releaseCanvasSelection(this)
     applyCanvasSelection(this, { type: 'selection.clear' })
-    this.#resetTransientState()
+    this.resetTransientState()
     this.onClear?.()
   }
 
-  #resetTransientState(): void {
+  private resetTransientState(): void {
     this.frame = 0
     this.last_draw_time = 0
     this.render_time = 0
@@ -1904,7 +1900,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.dispatch('litegraph:set-graph', { newGraph, oldGraph: graph })
     clearGraphSelection(graph)
-    this.#resetTransientState()
+    this.resetTransientState()
   }
 
   openSubgraph(subgraph: Subgraph, fromNode: SubgraphNode): void {
@@ -2456,7 +2452,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     if (this.selectOnly) {
-      this.#processSelectOnlyPrimaryButton(e, node)
+      this.processSelectOnlyPrimaryButton(e, node)
       return
     }
 
@@ -2677,7 +2673,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !pointer.onDrag &&
       this.allow_dragcanvas
     ) {
-      this.#setupCanvasDrag(e, pointer)
+      this.setupCanvasDrag(e, pointer)
     }
   }
 
@@ -2685,7 +2681,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * Pointer primary button processing while the canvas is select-only.
    * A node press can only select; anything else is an empty-canvas press.
    */
-  #processSelectOnlyPrimaryButton(
+  private processSelectOnlyPrimaryButton(
     e: CanvasPointerEvent,
     node: LGraphNode | undefined
   ): void {
@@ -2694,11 +2690,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (node && (this.allow_interaction || node.flags.allow_interaction)) {
       pointer.onClick = () => this.processSelect(node, e)
     } else if (this.allow_dragcanvas) {
-      this.#setupCanvasDrag(e, pointer)
+      this.setupCanvasDrag(e, pointer)
     }
   }
 
-  #setupCanvasDrag(e: CanvasPointerEvent, pointer: CanvasPointer): void {
+  private setupCanvasDrag(e: CanvasPointerEvent, pointer: CanvasPointer): void {
     // allow dragging canvas based on leftMouseClickBehavior or read-only mode
     if (LiteGraph.leftMouseClickBehavior === 'panning') {
       pointer.onClick = () => this.processSelect(null, e)
@@ -4608,7 +4604,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param item The canvas item to add to the selection.
    */
   select<TPositionable extends Positionable = LGraphNode>(
-    item: TPositionable
+    item: TPositionable,
+    {
+      selectGroupChildren = this.groupSelectChildren
+    }: { selectGroupChildren?: boolean } = {}
   ): void {
     if (!ownsSelectable(this, item)) return
     if (this.selectOnly && !(item instanceof LGraphNode)) return
@@ -4618,8 +4617,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (item instanceof LGraphGroup) {
       item.recomputeInsideNodes()
-      if (this.groupSelectChildren) {
-        this.#traverseGroupChildren(
+      if (selectGroupChildren) {
+        this.traverseGroupChildren(
           item,
           (child) => {
             if (!child.selected || !this.selectedItems.has(child)) {
@@ -4640,22 +4639,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.onNodeSelected?.(item)
 
-    // Highlight links
-    const { graph: highlightGraph } = this
-    if (highlightGraph) {
-      for (const [i] of item.inputs.entries()) {
-        const linkId = inputLinkId(highlightGraph, item.id, i)
-        if (linkId == null) continue
-        this.highlighted_links[linkId] = true
-      }
-    }
-    if (highlightGraph) {
-      for (const id of item.outputs.flatMap((_, i) =>
-        outputLinkIds(highlightGraph, item.id, i)
-      )) {
-        this.highlighted_links[id] = true
-      }
-    }
+    syncNodeLinkHighlights(this, item)
   }
 
   /**
@@ -4675,7 +4659,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     setCanvasItemSelected(this, item, false)
 
     if (item instanceof LGraphGroup && this.groupSelectChildren) {
-      this.#traverseGroupChildren(
+      this.traverseGroupChildren(
         item,
         (child) => {
           if (child.selected || this.selectedItems.has(child)) {
@@ -4695,28 +4679,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.onNodeDeselected?.(item)
 
-    // Should be moved to top of function, and throw if null
-    const { graph } = this
-    if (!graph) return
-
-    // Clear link highlight
-    for (const [i] of item.inputs.entries()) {
-      const linkId = inputLinkId(graph, item.id, i)
-      if (linkId == null) continue
-
-      const node = LLink.getOriginNode(graph, linkId)
-      if (node && this.selectedItems.has(node)) continue
-
-      delete this.highlighted_links[linkId]
-    }
-    for (const id of item.outputs.flatMap((_, i) =>
-      outputLinkIds(graph, item.id, i)
-    )) {
-      const node = LLink.getTargetNode(graph, id)
-      if (node && this.selectedItems.has(node)) continue
-
-      delete this.highlighted_links[id]
-    }
+    syncNodeLinkHighlights(this, item)
   }
 
   /**
@@ -4725,7 +4688,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * non-group children.  Always recurses into nested groups regardless of
    * their current selection state.
    */
-  #traverseGroupChildren(
+  private traverseGroupChildren(
     group: LGraphGroup,
     groupAction: (child: LGraphGroup) => void,
     leafAction: (child: Positionable) => void
@@ -4842,21 +4805,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.highlighted_links = {}
 
     if (kept instanceof LGraphNode) {
-      // Handle old object lookup
       if (oldNode) this.selected_nodes[oldNode.id] = oldNode
-
-      // Highlight links
-      const { graph: rehighlightGraph } = this
-      for (const [i] of kept.inputs.entries()) {
-        const linkId = inputLinkId(rehighlightGraph, kept.id, i)
-        if (linkId == null) continue
-        this.highlighted_links[linkId] = true
-      }
-      for (const id of kept.outputs.flatMap((_, i) =>
-        outputLinkIds(rehighlightGraph, kept.id, i)
-      )) {
-        this.highlighted_links[id] = true
-      }
+      syncNodeLinkHighlights(this, kept)
     }
 
     // Only set selectionChanged if selection actually changed

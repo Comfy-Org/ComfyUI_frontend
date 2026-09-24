@@ -34,30 +34,65 @@ const extraFileExtensions = ['.vue']
 // Only utilities that resolve a theme token are checked, so a class like
 // `text-danger` with no `--color-danger` fails lint while custom CSS hooks
 // (`side-bar-button`, `lg-node`, PrimeIcons `pi-*`) stay allowed.
-const tailwindTokenUtilityPrefixes = [
-  'text',
+const tailwindTokenUtilityPrefixPattern = [
+  'accent',
+  'animate',
   'bg',
   'border',
-  'ring',
-  'inset-ring',
-  'outline',
-  'shadow',
-  'inset-shadow',
-  'fill',
-  'stroke',
-  'decoration',
-  'accent',
   'caret',
+  'decoration',
   'divide',
-  'placeholder',
-  'from',
-  'via',
-  'to',
+  'fill',
   'font',
+  'from',
+  'inset-ring',
+  'inset-shadow',
+  'outline',
+  'placeholder',
+  'ring',
   'rounded',
-  'animate'
-]
-const nonTokenUtilityClassPattern = `^(?!(?:.*:)?!?(?:${tailwindTokenUtilityPrefixes.join('|')})-)`
+  'shadow',
+  'stroke',
+  'text',
+  'to',
+  'via'
+].join('|')
+const nonTokenUtilityClassPattern = `^(?!(?:.*:)?!?(?:${tailwindTokenUtilityPrefixPattern})-)`
+
+const themeColorUtilityPattern = [
+  'accent',
+  'bg',
+  'border(?:-[trblsexy])?',
+  'caret',
+  'decoration',
+  'divide',
+  'fill',
+  'from',
+  'inset-ring',
+  'inset-shadow',
+  'outline',
+  'placeholder',
+  'ring',
+  'shadow',
+  'stroke',
+  'text',
+  'to',
+  'via'
+].join('|')
+const specializedThemeTokenPattern = [
+  'button-',
+  'comfy-',
+  'component-',
+  'dialog-',
+  'input-surface(?:/|$)',
+  'interface-',
+  'modal-',
+  'nav-',
+  'node-',
+  'text-(?:primary|secondary)(?:/|$)',
+  'video-'
+].join('|')
+const specializedThemeClassPattern = `^(?:.*:)?!?(?:${themeColorUtilityPattern})-(?:${specializedThemeTokenPattern})`
 
 const commonGlobals = {
   ...globals.browser,
@@ -229,6 +264,24 @@ export default defineConfig([
         { collapse: false }
       ],
       'better-tailwindcss/no-deprecated-classes': 'error'
+    }
+  },
+  {
+    name: 'design-system/core-ui-theme-tokens',
+    files: ['src/components/ui/**/*.{ts,vue}'],
+    rules: {
+      'better-tailwindcss/no-restricted-classes': [
+        'error',
+        {
+          restrict: [
+            {
+              pattern: specializedThemeClassPattern,
+              message:
+                'Generic UI components must use core semantic theme tokens instead of specialized tokens.'
+            }
+          ]
+        }
+      ]
     }
   },
   {
