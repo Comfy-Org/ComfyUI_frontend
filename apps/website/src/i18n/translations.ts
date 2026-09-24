@@ -10536,6 +10536,51 @@ Enterprise`
     'zh-CN': '模板作者：{author}'
   },
   'workshop.workflow.makeYours': { en: 'Make it yours', 'zh-CN': '开始创作' },
+  'workshop.workflow.sections': {
+    en: 'Workflow sections',
+    'zh-CN': '工作流栏目'
+  },
+  'workshop.workflow.inside': {
+    en: 'Inside the workflow',
+    'zh-CN': '查看工作流内部'
+  },
+  'workshop.workflow.previewHint': {
+    en: 'A read-only preview of the source template. Open it in Cloud to explore the nodes and make changes.',
+    'zh-CN': '源模板的只读预览。在 Cloud 中打开，即可查看节点并进行修改。'
+  },
+  'workshop.workflow.fullPreview': {
+    en: 'Open full-size workflow preview',
+    'zh-CN': '打开完整尺寸的工作流预览'
+  },
+  'workshop.workflow.apiHint': {
+    en: 'This request uses the same inputs and defaults as the Playground. Keep the request and Idempotency-Key unchanged when retrying. A new key starts a new run in your Cloud workspace.',
+    'zh-CN':
+      '此请求使用与体验区相同的输入和默认值。重试时请保持请求和 Idempotency-Key 不变。使用新密钥会在你的 Cloud 工作区中开始一次新运行。'
+  },
+  'workshop.workflow.apiUploads': {
+    en: 'Upload media first',
+    'zh-CN': '先上传媒体'
+  },
+  'workshop.workflow.apiUploadGrant': {
+    en: 'Request POST /customers/storage with purpose "workshop_workflow", file_name, content_type and size_bytes using the same account and workspace credential.',
+    'zh-CN':
+      '使用同一账号和工作区凭证向 POST /customers/storage 发送请求，提供 purpose "workshop_workflow"、file_name、content_type 和 size_bytes。'
+  },
+  'workshop.workflow.apiUploadPut': {
+    en: 'PUT the file bytes to upload_url with exactly the returned workflow_upload.uploadHeaders. Send no account credential to that URL.',
+    'zh-CN':
+      '将文件字节 PUT 到 upload_url，严格使用返回的 workflow_upload.uploadHeaders。不要向该 URL 发送账号凭证。'
+  },
+  'workshop.workflow.apiUploadFinalize': {
+    en: 'GET workflow_upload.accessUrl with your credential to finalize the upload. Replace each https://upload.invalid/ placeholder with its workflow_upload.inputUrl.',
+    'zh-CN':
+      '使用凭证 GET workflow_upload.accessUrl 以完成上传。将每个 https://upload.invalid/ 占位值替换为对应的 workflow_upload.inputUrl。'
+  },
+  'workshop.workflow.apiPoll': {
+    en: 'The API returns 202 with a run ID and statusUrl. GET that statusUrl with your credential to follow execution and retrieve the selected output URLs. Their refreshUrl renews access while the file is retained; it does not start another run.',
+    'zh-CN':
+      'API 返回 202、运行 ID 和 statusUrl。使用凭证 GET statusUrl 以查看执行状态并获取选定的输出 URL。文件保留期间可通过 refreshUrl 更新访问链接，不会开始新运行。'
+  },
   'workshop.workflow.exampleHint': {
     en: 'An example from this template.',
     'zh-CN': '此模板的示例。'
@@ -10547,6 +10592,116 @@ Enterprise`
   'workshop.workflow.cloudBilling': {
     en: 'Runs in your Cloud workspace. Your plan and compute credits apply.',
     'zh-CN': '在你的 Cloud 工作区中运行，使用你的套餐和计算积分。'
+  },
+  'workshop.output.refreshLink': {
+    en: 'Refresh download link',
+    'zh-CN': '刷新下载链接'
+  },
+  'workshop.workflow.preparing': {
+    en: 'Preparing inputs…',
+    'zh-CN': '正在准备输入…'
+  },
+  'workshop.workflow.submitting': { en: 'Submitting…', 'zh-CN': '正在提交…' },
+  'workshop.workflow.confirming': {
+    en: 'Confirming submission…',
+    'zh-CN': '正在确认提交…'
+  },
+  'workshop.workflow.starting': {
+    en: 'Starting Cloud compute…',
+    'zh-CN': '正在启动 Cloud 计算资源…'
+  },
+  'workshop.workflow.queued': { en: 'Queued', 'zh-CN': '排队中' },
+  'workshop.workflow.cancelling': {
+    en: 'Waiting for cancellation…',
+    'zh-CN': '正在等待取消确认…'
+  },
+  'workshop.workflow.delivering': {
+    en: 'Preparing outputs…',
+    'zh-CN': '正在准备输出…'
+  },
+  'workshop.workflow.failed': {
+    en: 'This run failed. Review your inputs before running again.',
+    'zh-CN': '运行失败。请检查输入后重试。'
+  },
+  'workshop.workflow.interrupted': {
+    en: 'Connection interrupted',
+    'zh-CN': '连接中断'
+  },
+  'workshop.workflow.resume': {
+    en: 'Reconnect to this run',
+    'zh-CN': '重新连接此运行'
+  },
+  'workshop.workflow.resumeHint': {
+    en: 'You can return to this page to follow the same run. Leaving the page does not cancel it.',
+    'zh-CN': '你可以返回此页面查看同一次运行。离开页面不会取消运行。'
+  },
+  'workshop.workflow.inputSize': {
+    en: 'Use files up to 25 MiB each, with at most 50 MiB of inputs per run.',
+    'zh-CN': '单个文件不得超过 25 MiB，每次运行的输入总大小不得超过 50 MiB。'
+  },
+  'workshop.workflow.signInAgain': {
+    en: 'Sign in again to reconnect to this run.',
+    'zh-CN': '请重新登录以连接此运行。'
+  },
+  'workshop.workflow.accessDenied': {
+    en: 'This account no longer has access to this workspace. Check your workspace selection.',
+    'zh-CN': '此账号已无法访问该工作区。请检查所选工作区。'
+  },
+  'workshop.workflow.definitionChanged': {
+    en: 'This workflow has changed. Reload the page before starting a new run.',
+    'zh-CN': '工作流已更新。开始新运行前请重新加载页面。'
+  },
+  'workshop.workflow.runMissing': {
+    en: 'This run is not available in the current account and workspace.',
+    'zh-CN': '当前账号和工作区无法访问此运行。'
+  },
+  'workshop.workflow.planRequired': {
+    en: 'Your workspace needs a Cloud plan to run this workflow.',
+    'zh-CN': '你的工作区需要 Cloud 套餐才能运行此工作流。'
+  },
+  'workshop.workflow.paused': {
+    en: 'New workflow runs are temporarily paused. Existing runs can still be followed or cancelled.',
+    'zh-CN': '新工作流运行已暂时停用。你仍可查看或取消已有运行。'
+  },
+  'workshop.workflow.mediaUnavailable': {
+    en: 'An input upload is incomplete or no longer available. Check your files and try again.',
+    'zh-CN': '输入文件尚未上传完成或已不可用。请检查文件后重试。'
+  },
+  'workshop.workflow.deliveryFailed': {
+    en: 'The run finished, but some outputs could not be delivered. Retry delivery to retrieve them from this run.',
+    'zh-CN': '运行已完成，但部分输出未能送达。重试获取此运行的输出即可。'
+  },
+  'workshop.workflow.retryDelivery': {
+    en: 'Retry output delivery',
+    'zh-CN': '重试获取输出'
+  },
+  'workshop.workflow.storageFailed': {
+    en: 'Your browser could not save this run for recovery. Allow site storage, then try again.',
+    'zh-CN': '浏览器无法保存运行恢复信息。请允许此网站使用存储，然后重试。'
+  },
+  'workshop.workflow.connectionLost': {
+    en: 'The run could not be checked. Reconnect to recover its current status.',
+    'zh-CN': '无法查看运行状态。请重新连接以获取最新状态。'
+  },
+  'workshop.workflow.history': {
+    en: 'My runs in this workspace',
+    'zh-CN': '我在此工作区的运行'
+  },
+  'workshop.workflow.historyFailed': {
+    en: 'Run history could not be loaded.',
+    'zh-CN': '无法加载运行历史。'
+  },
+  'workshop.workflow.historyEmpty': {
+    en: 'No runs yet.',
+    'zh-CN': '暂无运行。'
+  },
+  'workshop.workflow.refreshHistory': {
+    en: 'Refresh history',
+    'zh-CN': '刷新历史'
+  },
+  'workshop.workflow.moreHistory': {
+    en: 'Show more runs',
+    'zh-CN': '显示更多运行'
   },
   'workshop.workflow.browserUnavailable': {
     en: 'Running workflows from this page is not available yet.',

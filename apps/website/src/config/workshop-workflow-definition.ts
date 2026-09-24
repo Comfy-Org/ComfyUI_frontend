@@ -10,7 +10,15 @@ import {
 export const workshopTemplateSchema = z.object({
   id: z.string().regex(/^[a-zA-Z0-9._-]+$/),
   author: z.string().min(1),
-  models: z.array(z.string().min(1))
+  models: z.array(z.string().min(1)),
+  previewUrl: z
+    .string()
+    .regex(/^\/workflows\/prepared\/[a-z0-9-]+\.svg$/)
+    .optional(),
+  downloadUrl: z
+    .string()
+    .regex(/^\/workflows\/prepared\/[a-z0-9-]+\.json$/)
+    .optional()
 })
 
 export const workshopWorkflowDefinitionSchema = z.object({

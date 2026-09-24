@@ -1,20 +1,55 @@
 <script setup lang="ts">
-import { defineAsyncComponent, h, shallowRef } from 'vue'
+import { defineAsyncComponent, h, shallowRef, watch } from 'vue'
 import type { FunctionalComponent } from 'vue'
 
 import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
+import { useWorkshopSession } from '../../config/workshop-session-state'
 import { t } from '../../i18n/translations'
 import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
 
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
 
-const { slug } = defineProps<{
+const { slug, workflowId } = defineProps<{
   slug?: string
+  workflowId?: string
 }>()
 
 const loadingLabel = t('workshop.load.pending', 'en')
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const recoveringWorkflow = shallowRef(false)
+const savedWorkflow = shallowRef(false)
+const { session } = useWorkshopSession()
+watch(
+  [
+    () => workflowId,
+    () => session.value?.uid,
+    () => session.value?.workspace.id
+  ],
+  async ([id, uid, workspaceId], _, onCleanup) => {
+    savedWorkflow.value = false
+    let current = true
+    onCleanup(() => {
+      current = false
+    })
+    if (!id || !uid || !workspaceId) return
+    try {
+      const { workflowStorage } =
+        await import('../../config/workshop-workflow-storage')
+      if (current)
+        savedWorkflow.value = Boolean(
+          workflowStorage(
+            sessionStorage,
+            JSON.stringify([uid, workspaceId]),
+            id
+          ).read()
+        )
+    } catch {
+      return
+    }
+  },
+  { immediate: true }
+)
 
 const Loading: FunctionalComponent = () =>
   h(WorkshopLoading, { label: loadingLabel, 'data-testid': 'models-loading' })
@@ -60,7 +95,13 @@ function createContent() {
         const { model, ...page } = await fetchModelsPage(slug)
         if (model.routerId === undefined) {
           const { default: WorkflowPage } = await import('./WorkflowPage.vue')
-          return () => h(WorkflowPage, { model })
+          return () =>
+            h(WorkflowPage, {
+              model,
+              onRecovery: (active: boolean) => {
+                recoveringWorkflow.value = active
+              }
+            })
         }
         const { default: ModelPage } = await import('./ModelPage.vue')
         return () => h(ModelPage, { page: { ...page, model } })
@@ -103,6 +144,8 @@ const Content = shallowRef(createContent())
   <WorkshopGate
     :keep-mounted="Boolean(slug)"
     :allowed="!slug?.startsWith('workflows/') || workflowsEnabled"
+    :retain-granted="recoveringWorkflow"
+    :allow-recovery="savedWorkflow"
   >
     <component :is="Content" />
     <template #loading>
