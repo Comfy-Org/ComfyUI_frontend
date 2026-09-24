@@ -49,6 +49,33 @@ describe('resolveAgentIdentity (#17469)', () => {
     expect(identity.onFailure).not.toHaveBeenCalled()
   })
 
+  // The socket usually opens while the mount-time lookup is still in flight;
+  // that edge must not be lost, or a failed first lookup is never retried.
+  it('retries after the backoff when the socket opened during a lookup that then failed', async () => {
+    vi.useFakeTimers()
+    let failFirst!: (error: Error) => void
+    const getIdentity = vi
+      .fn<() => Promise<{ userId: string }>>()
+      .mockImplementationOnce(
+        () =>
+          new Promise((_, reject) => {
+            failFirst = reject
+          })
+      )
+      .mockResolvedValue({ userId: 'local-user' })
+
+    const identity = harness(getIdentity)
+    identity.connect()
+    failFirst(new Error('agent still starting'))
+    await flush()
+    expect(getIdentity).toHaveBeenCalledTimes(1)
+
+    await vi.advanceTimersByTimeAsync(AGENT_IDENTITY_RETRY_BASE_MS)
+
+    expect(getIdentity).toHaveBeenCalledTimes(2)
+    expect(identity.userId.value).toBe('local-user')
+  })
+
   it('reports a failed lookup and retries it on the next connected edge once the backoff has passed', async () => {
     vi.useFakeTimers()
     const failure = new Error('identity route down')

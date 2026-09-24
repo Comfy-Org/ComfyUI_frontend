@@ -5367,7 +5367,7 @@
     "workflowReferenceUnavailableReason": "This referenced workflow is no longer available or you do not have access to it.",
     "removeWorkflowReference": "Remove {name} reference",
     "targetNavigationUnavailable": "This workflow target is no longer available.",
-    "targetNotResolved": "This workflow isn't in your saved workflows yet, so the agent can't tell which one to edit. Try again in a moment.",
+    "targetNotResolved": "The agent can't tell which saved workflow this tab is. If it was just saved, try again in a moment; if another saved workflow has the same name, rename one of them.",
     "runModeTriggerAutoLimit": "Auto (limited)",
     "runModeTriggerAutoLimitTooltip": "Ask when credit limit is reached",
     "showMore": "Show more",

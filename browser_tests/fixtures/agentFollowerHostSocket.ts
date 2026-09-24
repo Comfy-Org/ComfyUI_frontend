@@ -9,10 +9,12 @@ import type { AgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApi
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
 import type { HostDoc, HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
+import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { isValidDocOpsBatch, parseWireOps } from '@e2e/fixtures/agentWireFrame'
 import type { ParsedWireBatch } from '@e2e/fixtures/agentWireFrame'
 
 const SUBSCRIBE_TIMEOUT = 15_000
+const COMFY_SOCKET_SID = '7d1f2e3a-4b5c-4d6e-8f90-1a2b3c4d5e6f'
 
 /**
  * How the fake host treats a `doc_ops` batch the page mints for a human edit:
@@ -68,7 +70,13 @@ function parseClientDocFrame(
   }
 }
 
-/** Routed `/ws` host shared by black-box Agent follower fixtures. */
+/**
+ * Routed agent socket (`/api/agent/events`) host shared by black-box Agent
+ * follower fixtures. It plays the agent: it answers the follower's doc frames
+ * and pushes agent events and doc frames down the same socket. There is no
+ * `status` frame on the agent socket; the follower subscribes on every socket
+ * open. ComfyUI's `/ws` gets a separate quiet stub (see `install`).
+ */
 export class AgentFollowerHostSocket {
   private refuseReason: string | null = null
 
@@ -86,23 +94,29 @@ export class AgentFollowerHostSocket {
     private readonly page: Page,
     private readonly workflowId: string,
     private readonly host: HostDoc,
-    private readonly socketSid: string,
     private readonly humanOpsHost: HumanOpsHost = 'hold'
   ) {}
 
   async install(): Promise<void> {
+    // ComfyUI's `/ws` stays isolated from the backend, as it always was for
+    // these fixtures: a quiet socket that reports an idle queue and a FIXED
+    // client id. The app keys its session-scoped workflow tabs by that id, so
+    // a real server's fresh id per connect would lose the open tabs across a
+    // page reload. It carries no agent or doc frames.
     await this.page.routeWebSocket(/\/ws/, (socket) => {
-      this.socket = socket
-      socket.onMessage((raw) => this.onClientFrame(raw))
       socket.send(
         JSON.stringify({
           type: 'status',
           data: {
             status: { exec_info: { queue_remaining: 0 } },
-            sid: this.socketSid
+            sid: COMFY_SOCKET_SID
           }
         })
       )
+    })
+    await this.page.routeWebSocket(AGENT_SOCKET_URL, (socket) => {
+      this.socket = socket
+      socket.onMessage((raw) => this.onClientFrame(raw))
     })
   }
 
@@ -113,7 +127,8 @@ export class AgentFollowerHostSocket {
     } else if (!parseAgentWsEvent(frame).success) {
       throw new Error(`agent event ${frame.type} is not a valid agent event`)
     }
-    if (!this.socket) throw new Error('the app has not opened /ws yet')
+    if (!this.socket)
+      throw new Error('the panel has not opened the agent socket yet')
     this.socket.send(JSON.stringify(frame))
   }
 
@@ -240,7 +255,8 @@ export class AgentFollowerHostSocket {
   }
 
   async disconnect(): Promise<void> {
-    if (!this.socket) throw new Error('the app has not opened /ws yet')
+    if (!this.socket)
+      throw new Error('the panel has not opened the agent socket yet')
     await this.socket.close()
   }
 
