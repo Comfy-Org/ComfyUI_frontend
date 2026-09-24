@@ -43,9 +43,7 @@ async function onKeydown(event: KeyboardEvent) {
 </script>
 
 <template>
-  <div
-    class="flex max-w-full items-center gap-2.5 rounded-2xl border border-transparency-white-t8 bg-primary-comfy-ink/90 py-1.5 pr-1.5 pl-4 backdrop-blur-sm"
-  >
+  <div class="flex max-w-full min-w-0 items-center gap-2.5">
     <span class="text-[15px] font-semibold text-primary-warm-white">
       {{
         tc('cinematic.stage.shot', locale).replace(
@@ -84,7 +82,6 @@ async function onKeydown(event: KeyboardEvent) {
     <span class="truncate text-sm text-primary-warm-gray">
       {{ modelName }} · {{ current.aspect }}
     </span>
-    <span class="h-5 w-px bg-transparency-white-t8" aria-hidden="true" />
     <a
       v-if="current.status === 'done'"
       :href="current.output.url"

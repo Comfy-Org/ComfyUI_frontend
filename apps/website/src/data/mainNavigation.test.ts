@@ -5,7 +5,7 @@ import { getMainNavigation } from './mainNavigation'
 
 describe('getMainNavigation', () => {
   it.for(['en', 'zh-CN', 'ja'] as const)(
-    'gates both Models navigation entries for %s',
+    'gates the Models and Cinematic Studio entries for %s',
     (locale) => {
       const links = (enabled: boolean) =>
         getMainNavigation(locale, enabled).flatMap((item) =>
@@ -16,7 +16,9 @@ describe('getMainNavigation', () => {
             : [item.href]
         )
       expect(links(false)).not.toContain('/models')
+      expect(links(false)).not.toContain('/cinematic-studio')
       expect(links(true).filter((href) => href === '/models')).toHaveLength(2)
+      expect(links(true)).toContain('/cinematic-studio')
     }
   )
   it('includes a Products entry linking to Enterprise Managed Builds', () => {

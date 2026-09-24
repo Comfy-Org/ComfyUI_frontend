@@ -9520,6 +9520,16 @@ Enterprise`
   // Workshop – header account + nav
   'nav.workshop': { en: 'Models', 'zh-CN': '模型' },
   'nav.comfyWorkshop': { en: 'Browse Models', 'zh-CN': '浏览模型' },
+  'nav.cinematicStudio': { en: 'Cinematic Studio', 'zh-CN': '电影工作室' },
+  'workshop.model.cinematicTitle': {
+    en: 'Direct this model in Cinematic Studio',
+    'zh-CN': '在电影工作室中导演这个模型'
+  },
+  'workshop.model.cinematicBody': {
+    en: 'Camera, light and grade as controls, and switch to other image models any time.',
+    'zh-CN': '用摄影机、光线与调色作为控件，并可随时切换到其他图像模型。'
+  },
+  'workshop.model.cinematicCta': { en: 'Open studio', 'zh-CN': '打开工作室' },
   'nav.signIn': { en: 'Sign in', 'zh-CN': '登录' },
   'nav.signOut': { en: 'Log out', 'zh-CN': '退出登录' },
   'nav.accountMenu': { en: 'Account menu', 'zh-CN': '账户菜单' },

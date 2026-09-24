@@ -2,6 +2,7 @@ import { useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, readonly, shallowRef, watch } from 'vue'
 
 import type { WorkshopModelDetail } from '../config/models-catalogue'
+import { fetchModelsPage } from '../config/models-page-data'
 import { router_render } from '../config/router-render'
 import {
   refreshWorkshopCredits,
@@ -14,7 +15,7 @@ import { useWorkshopSession } from '../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../config/workshop-snippets'
 import { createWorkshopUrlUploader } from '../config/workshop-url-upload'
 import type { AspectRatio } from '../lib/workshop/cinematic-studio/catalog'
-import { canRunModel, studioGate } from '../lib/workshop/cinematic-studio/gate'
+import { studioGate } from '../lib/workshop/cinematic-studio/gate'
 import type { Reel, ReelEvent } from '../lib/workshop/cinematic-studio/reel'
 import {
   EMPTY_REEL,
@@ -24,6 +25,7 @@ import {
 import { useWorkshopAuthFlag, useWorkshopEnabled } from '../scripts/posthog'
 
 interface ShotRequest {
+  readonly modelSlug: string
   readonly prompt: string
   readonly aspect: AspectRatio
   readonly resolutionPixels: number
@@ -33,9 +35,10 @@ interface ShotRequest {
 
 /**
  * Runs a shot as one Router request per take, through the same render path,
- * credentials and credit gate as the rest of the model page.
+ * credentials and credit gate as a model page. Models load lazily from their
+ * page data, so the studio never ships the catalogue to the client.
  */
-export function useCinematicStudioRun(model: WorkshopModelDetail) {
+export function useCinematicStudioRun(modelCount: number) {
   const { user, session, sessionFailure, settled, ensureFresh } =
     useWorkshopSession()
   const { balance } = useWorkshopCredits()
@@ -55,7 +58,7 @@ export function useCinematicStudioRun(model: WorkshopModelDetail) {
       runEnabled:
         workshopEnabled.value &&
         import.meta.env.PUBLIC_WORKSHOP_ROUTER_RUN === '1',
-      modelRunnable: canRunModel(model),
+      modelRunnable: modelCount > 0,
       mounted: mounted.value,
       authAvailable: authEnabled.value && !sessionFailure.value,
       sessionSettled: settled.value && !(user.value && !session.value),
@@ -66,6 +69,16 @@ export function useCinematicStudioRun(model: WorkshopModelDetail) {
         balance.value.credits <= 0
     })
   )
+
+  const models = new Map<string, Promise<WorkshopModelDetail>>()
+  function loadModel(slug: string): Promise<WorkshopModelDetail> {
+    const cached = models.get(slug)
+    if (cached) return cached
+    const loading = fetchModelsPage(slug).then((page) => page.model)
+    loading.catch(() => models.delete(slug))
+    models.set(slug, loading)
+    return loading
+  }
 
   let controller: AbortController | undefined
 
@@ -83,6 +96,7 @@ export function useCinematicStudioRun(model: WorkshopModelDetail) {
 
   async function renderTake(
     id: string,
+    model: WorkshopModelDetail,
     request: ShotRequest,
     startedFor: WorkshopSession,
     signal: AbortSignal
@@ -140,15 +154,23 @@ export function useCinematicStudioRun(model: WorkshopModelDetail) {
       type: 'shotStarted',
       ids,
       prompt: request.prompt,
-      modelSlug: model.slug,
+      modelSlug: request.modelSlug,
       aspect: request.aspect
     })
     const attempt = new AbortController()
     controller = attempt
     try {
+      const model = await loadModel(request.modelSlug)
       await Promise.all(
-        ids.map((id) => renderTake(id, request, startedFor, attempt.signal))
+        ids.map((id) =>
+          renderTake(id, model, request, startedFor, attempt.signal)
+        )
       )
+    } catch {
+      if (!attempt.signal.aborted)
+        ids.forEach((id) =>
+          dispatch({ type: 'takeFailed', id, reason: 'unavailable' })
+        )
     } finally {
       if (controller === attempt) controller = undefined
       void refreshWorkshopCredits({ force: true })

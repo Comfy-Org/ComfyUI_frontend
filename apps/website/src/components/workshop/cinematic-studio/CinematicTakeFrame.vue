@@ -23,7 +23,7 @@ function statusText(take: Take) {
 <template>
   <figure
     class="relative flex max-w-5xl items-center justify-center overflow-hidden rounded-md bg-transparency-white-t4"
-    :style="framedStyle(current.aspect, '70vh')"
+    :style="framedStyle(current.aspect, '58svh')"
   >
     <img
       v-if="current.status === 'done'"

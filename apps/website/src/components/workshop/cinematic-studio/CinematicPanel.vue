@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ChevronRight } from '@lucide/vue'
+import { ChevronDown, ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -18,8 +18,10 @@ import type { PromptSegment } from '../../../lib/workshop/cinematic-studio/promp
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import CinematicDirectionGrid from './CinematicDirectionGrid.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
+import CinematicMenu from './CinematicMenu.vue'
 import CinematicOptionIcon from './CinematicOptionIcon.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
 import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
@@ -27,6 +29,7 @@ import CinematicSceneField from './CinematicSceneField.vue'
 import type { PickerKey } from './picker-key'
 
 const {
+  models,
   promptSegments,
   gate,
   workspaceName,
@@ -34,6 +37,7 @@ const {
   openPicker,
   locale = 'en'
 } = defineProps<{
+  models: readonly CinematicModel[]
   promptSegments: readonly PromptSegment[]
   gate: StudioGate
   workspaceName?: string
@@ -48,6 +52,7 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
+const modelSlug = defineModel<string>('model', { required: true })
 const scene = defineModel<string>('scene', { required: true })
 const enhance = defineModel<boolean>('enhance', { required: true })
 const direction = defineModel<Direction>('direction', { required: true })
@@ -57,6 +62,17 @@ const takes = defineModel<number>('takes', { required: true })
 const cast = defineModel<File | undefined>('cast')
 const palette = defineModel<File | undefined>('palette')
 
+const modelOptions = computed(() =>
+  models.map((model) => ({
+    id: model.slug,
+    label: model.name,
+    meta: model.provider,
+    logo: model.logo
+  }))
+)
+const model = computed(() =>
+  models.find((candidate) => candidate.slug === modelSlug.value)
+)
 const cameraBody = computed(() => directionOption('body', direction.value))
 const cameraSpecs = computed(() =>
   cameraGroups
@@ -84,6 +100,29 @@ const cardClass =
       {{ t('workshop.input.title', locale) }}
     </header>
     <div class="flex flex-col divide-y divide-transparency-white-t8">
+      <section class="flex flex-col gap-2.5 p-5">
+        <h2 :class="labelClass">
+          {{ tc('cinematic.model.heading', locale) }}
+        </h2>
+        <CinematicMenu
+          v-model="modelSlug"
+          :options="modelOptions"
+          :heading="tc('cinematic.model.heading', locale)"
+          :trigger-class="cn(cardClass, 'h-12 gap-3 px-3')"
+        >
+          <img v-if="model" :src="model.logo" alt="" class="size-5" />
+          <span class="flex-1 text-sm font-semibold text-primary-warm-white">
+            {{ model?.name }}
+          </span>
+          <span class="text-xs text-primary-warm-gray">
+            {{ model?.provider }}
+          </span>
+          <ChevronDown
+            class="size-4 text-primary-warm-gray"
+            aria-hidden="true"
+          />
+        </CinematicMenu>
+      </section>
       <CinematicSceneField
         v-model:scene="scene"
         v-model:enhance="enhance"
@@ -186,7 +225,7 @@ const cardClass =
         :workspace-name="workspaceName"
         :rendering
         :can-generate="canGenerate"
-        :takes
+        wide
         :locale
         @generate="emit('generate')"
         @cancel="emit('cancel')"

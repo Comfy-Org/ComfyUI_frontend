@@ -89,29 +89,26 @@ describe('Models page entry', () => {
   })
 })
 
-describe('Models page playground', () => {
+describe('Models page Cinematic Studio banner', () => {
   it.for([
     {
       slug: 'byteplus--seedream-4-5--generate-images',
-      shown: 'cinematic',
-      hidden: 'playground-input'
+      href: '/cinematic-studio?model=byteplus--seedream-4-5--generate-images'
     },
-    { slug: modelSlug, shown: 'playground-input', hidden: 'cinematic' }
-  ])(
-    'opens $slug on its $shown playground',
-    async ({ slug, shown, hidden }) => {
-      vi.stubGlobal(
-        'fetch',
-        vi
-          .fn<typeof fetch>()
-          .mockResolvedValue(Response.json(await prepareModelPage(slug)))
-      )
-      enabled.value = true
-      render(ModelsPage, { props: { slug } })
+    { slug: modelSlug, href: null }
+  ])('links $slug to the studio: $href', async ({ slug, href }) => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn<typeof fetch>()
+        .mockResolvedValue(Response.json(await prepareModelPage(slug)))
+    )
+    enabled.value = true
+    render(ModelsPage, { props: { slug } })
 
-      expect(await screen.findByTestId(shown)).toBeTruthy()
-      expect(screen.getByTestId('model-tabs')).toBeTruthy()
-      expect(screen.queryByTestId(hidden)).toBeNull()
-    }
-  )
+    await screen.findByTestId('model-hero')
+    expect(
+      screen.queryByTestId('cinematic-banner')?.getAttribute('href') ?? null
+    ).toBe(href)
+  })
 })

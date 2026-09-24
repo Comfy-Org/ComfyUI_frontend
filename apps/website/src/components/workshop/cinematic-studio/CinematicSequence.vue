@@ -25,13 +25,8 @@ const startsShot = (index: number) =>
 <template>
   <nav
     :aria-label="tc('cinematic.stage.sequence', locale)"
-    class="flex h-20 shrink-0 items-center gap-3 overflow-x-auto border-t border-transparency-white-t8 px-4 sm:h-24 sm:px-5"
+    class="flex max-w-full items-center gap-2 overflow-x-auto p-1"
   >
-    <span
-      class="mr-2 shrink-0 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
-    >
-      {{ tc('cinematic.stage.sequence', locale) }}
-    </span>
     <button
       v-for="(take, index) in takes"
       :key="take.id"
@@ -44,8 +39,8 @@ const startsShot = (index: number) =>
       "
       :class="
         cn(
-          'h-14 shrink-0 overflow-hidden rounded-sm bg-transparency-white-t8 transition-opacity',
-          startsShot(index) && 'ml-3',
+          'h-9 shrink-0 overflow-hidden rounded-sm bg-transparency-white-t8 transition-opacity',
+          startsShot(index) && 'ml-2',
           take.id === currentId
             ? 'opacity-100 outline-2 outline-offset-2 outline-primary-warm-white'
             : 'opacity-50 hover:opacity-100'

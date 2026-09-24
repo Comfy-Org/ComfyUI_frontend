@@ -1,0 +1,93 @@
+import { computed, onMounted, ref, shallowRef } from 'vue'
+
+import type {
+  AspectRatio,
+  Direction,
+  DirectionPart,
+  Resolution
+} from '../lib/workshop/cinematic-studio/catalog'
+import {
+  DEFAULT_DIRECTION,
+  RESOLUTIONS
+} from '../lib/workshop/cinematic-studio/catalog'
+import type { CinematicModel } from '../lib/workshop/cinematic-studio/models'
+import {
+  cinematicPrompt,
+  cinematicPromptSegments
+} from '../lib/workshop/cinematic-studio/prompt'
+import type { StarterShot } from '../lib/workshop/cinematic-studio/starters'
+import { useCinematicStudioRun } from './useCinematicStudioRun'
+
+/** The shot being directed, shared by every Cinematic Studio layout. */
+export function useCinematicShot(models: readonly CinematicModel[]) {
+  const studio = useCinematicStudioRun(models.length)
+
+  const modelSlug = ref(models[0]?.slug ?? '')
+  const scene = ref('')
+  const enhance = ref(true)
+  const direction = ref<Direction>(DEFAULT_DIRECTION)
+  const aspect = ref<AspectRatio>('21:9')
+  const resolution = ref<Resolution>('2K')
+  const takes = ref(1)
+  const cast = shallowRef<File>()
+  const palette = shallowRef<File>()
+
+  onMounted(() => {
+    const requested = new URLSearchParams(window.location.search).get('model')
+    if (requested && models.some((model) => model.slug === requested))
+      modelSlug.value = requested
+  })
+
+  const brief = computed(() => ({
+    scene: scene.value,
+    direction: direction.value,
+    enhance: enhance.value,
+    cast: !!cast.value,
+    palette: !!palette.value
+  }))
+  const promptSegments = computed(() => cinematicPromptSegments(brief.value))
+  const references = computed(() =>
+    [cast.value, palette.value].filter((file): file is File => !!file)
+  )
+
+  function choose(part: DirectionPart, id: string) {
+    direction.value = { ...direction.value, [part]: id }
+  }
+
+  function start(shot: StarterShot) {
+    scene.value = shot.scene
+    direction.value = shot.direction
+    aspect.value = shot.aspect
+  }
+
+  function generate() {
+    void studio.generate({
+      modelSlug: modelSlug.value,
+      prompt: cinematicPrompt(brief.value),
+      aspect: aspect.value,
+      resolutionPixels:
+        RESOLUTIONS.find((option) => option.id === resolution.value)?.pixels ??
+        2048,
+      takes: takes.value,
+      references: references.value
+    })
+  }
+
+  return {
+    studio,
+    modelSlug,
+    scene,
+    enhance,
+    direction,
+    aspect,
+    resolution,
+    takes,
+    cast,
+    palette,
+    promptSegments,
+    references,
+    choose,
+    start,
+    generate
+  }
+}

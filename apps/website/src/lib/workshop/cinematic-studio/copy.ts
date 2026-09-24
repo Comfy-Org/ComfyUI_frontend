@@ -6,6 +6,18 @@ import type { Locale, LocalizedText } from '../../../i18n/translations'
  * not add to every other page's script budget.
  */
 const copy = {
+  'cinematic.ux.heading': {
+    en: 'Layout to review',
+    'zh-CN': '评审布局'
+  },
+  'cinematic.ux.composer': {
+    en: 'E · Bottom composer',
+    'zh-CN': 'E · 底部输入栏'
+  },
+  'cinematic.ux.panel': {
+    en: 'D · Side panel',
+    'zh-CN': 'D · 侧边面板'
+  },
   'cinematic.panel.label': {
     en: 'Shot settings',
     'zh-CN': '镜头设置'
@@ -13,6 +25,91 @@ const copy = {
   'cinematic.section.output': {
     en: 'Format',
     'zh-CN': '画幅'
+  },
+  'cinematic.section.direction': {
+    en: 'Direction',
+    'zh-CN': '导演'
+  },
+  'cinematic.scene.fullPrompt': {
+    en: 'View full prompt',
+    'zh-CN': '查看完整提示词'
+  },
+  'cinematic.scene.edit': {
+    en: 'Edit scene',
+    'zh-CN': '编辑场景'
+  },
+  'cinematic.reference.optional': {
+    en: 'Optional',
+    'zh-CN': '可选'
+  },
+  'cinematic.stage.emptyTitle': {
+    en: 'Your first shot appears here',
+    'zh-CN': '你的第一个镜头会显示在这里'
+  },
+  'cinematic.stage.emptyBody': {
+    en: 'Write a scene, set the direction, then Generate.',
+    'zh-CN': '写下场景，设置导演选项，然后点击生成。'
+  },
+  'cinematic.title': {
+    en: 'Cinematic Studio',
+    'zh-CN': '电影工作室'
+  },
+  'cinematic.beta': {
+    en: 'Beta',
+    'zh-CN': '测试版'
+  },
+  'cinematic.tagline': {
+    en: 'Direct a shot, run it on any image model',
+    'zh-CN': '导演一个镜头，用任意图像模型运行'
+  },
+  'cinematic.meta.description': {
+    en: 'Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router.',
+    'zh-CN':
+      '导演电影感静帧：选择摄影机、景别、光线、胶片与调色，然后通过 Comfy Router 运行任意图像模型。'
+  },
+  'cinematic.unavailable.title': {
+    en: 'Cinematic Studio is not open yet',
+    'zh-CN': '电影工作室尚未开放'
+  },
+  'cinematic.unavailable.link': {
+    en: 'Browse models',
+    'zh-CN': '浏览模型'
+  },
+  'cinematic.model.heading': {
+    en: 'Model · via Comfy Router',
+    'zh-CN': '模型 · 通过 Comfy Router'
+  },
+  'cinematic.composer.label': {
+    en: 'Direct the shot',
+    'zh-CN': '导演镜头'
+  },
+  'cinematic.composer.references': {
+    en: 'Add a reference image',
+    'zh-CN': '添加参考图'
+  },
+  'cinematic.composer.format': {
+    en: 'Format',
+    'zh-CN': '画幅'
+  },
+  'cinematic.firstRun.title': {
+    en: 'Direct a shot',
+    'zh-CN': '导演一个镜头'
+  },
+  'cinematic.firstRun.body': {
+    en: 'Describe the moment. Pick the camera, the light and the look. Switch models any time.',
+    'zh-CN': '描述这一刻。选择摄影机、光线与风格。随时切换模型。'
+  },
+  'cinematic.firstRun.desert': {
+    en: 'Lone rider crossing dunes at dawn',
+    'zh-CN': '黎明时分独自穿越沙丘的骑手'
+  },
+  'cinematic.firstRun.portrait': {
+    en: 'Old fisherman on an overcast pier',
+    'zh-CN': '阴天码头上的老渔夫'
+  },
+  'cinematic.firstRun.train': {
+    en: 'Night train window at blue hour',
+    'zh-CN': '蓝调时刻的夜车车窗'
   },
   'cinematic.section.scene': {
     en: 'Scene',
@@ -22,10 +119,6 @@ const copy = {
     en: 'Camera',
     'zh-CN': '摄影机'
   },
-  'cinematic.section.direction': {
-    en: 'Direction',
-    'zh-CN': '导演'
-  },
   'cinematic.section.references': {
     en: 'References',
     'zh-CN': '参考'
@@ -33,14 +126,6 @@ const copy = {
   'cinematic.scene.placeholder': {
     en: 'Describe the moment. Who, where, what is happening.',
     'zh-CN': '描述这一刻：谁、在哪里、发生了什么。'
-  },
-  'cinematic.scene.fullPrompt': {
-    en: 'View full prompt',
-    'zh-CN': '查看完整提示词'
-  },
-  'cinematic.scene.edit': {
-    en: 'Edit scene',
-    'zh-CN': '编辑场景'
   },
   'cinematic.scene.enhance': {
     en: 'AI prompt',
@@ -334,10 +419,6 @@ const copy = {
     en: 'Vertical',
     'zh-CN': '竖屏'
   },
-  'cinematic.reference.optional': {
-    en: 'Optional',
-    'zh-CN': '可选'
-  },
   'cinematic.reference.cast': {
     en: 'Character',
     'zh-CN': '角色'
@@ -394,10 +475,6 @@ const copy = {
     en: 'Generate',
     'zh-CN': '生成'
   },
-  'cinematic.output.takeCount': {
-    en: '{count} take | {count} takes',
-    'zh-CN': '{count} 条'
-  },
   'cinematic.output.cancel': {
     en: 'Cancel',
     'zh-CN': '取消'
@@ -409,14 +486,6 @@ const copy = {
   'cinematic.stage.label': {
     en: 'Shots',
     'zh-CN': '镜头'
-  },
-  'cinematic.stage.emptyTitle': {
-    en: 'Your first shot appears here',
-    'zh-CN': '你的第一个镜头会显示在这里'
-  },
-  'cinematic.stage.emptyBody': {
-    en: 'Write a scene, set the direction, then Generate.',
-    'zh-CN': '写下场景，设置导演选项，然后点击生成。'
   },
   'cinematic.stage.rendering': {
     en: 'Rendering…',
@@ -449,19 +518,4 @@ export type CinematicCopyKey = keyof typeof copy
 export function tc(key: CinematicCopyKey, locale: Locale = 'en'): string {
   const entry: LocalizedText = copy[key]
   return entry[locale] ?? entry.en
-}
-
-export function tcPlural(
-  key: CinematicCopyKey,
-  count: number,
-  locale: Locale = 'en'
-): string {
-  const entry: LocalizedText = copy[key]
-  const message = entry[locale] ?? entry.en
-  const forms = message.split('|')
-  const form =
-    new Intl.PluralRules(entry[locale] ? locale : 'en').select(count) === 'one'
-      ? forms[0]
-      : forms[forms.length - 1]
-  return form.trim().replace('{count}', String(count))
 }
