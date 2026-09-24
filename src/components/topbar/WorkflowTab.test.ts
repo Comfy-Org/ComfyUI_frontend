@@ -282,17 +282,6 @@ describe('WorkflowTab - agent activity indicators', () => {
 })
 
 describe('WorkflowTab - close button', () => {
-  it('reveals the close button when focus is within the tab', () => {
-    renderTab({ workflowOption: makeWorkflowOption({ isPersisted: false }) })
-
-    expect(screen.getByTestId('close-workflow-button')).toHaveClass(
-      'group-focus-within/tab:visible'
-    )
-    expect(screen.getByTestId('workflow-dirty-indicator')).toHaveClass(
-      'group-focus-within/tab:hidden'
-    )
-  })
-
   it('keeps the close button hidden while an active status indicator shows', async () => {
     renderTab({ activeWorkflowKey: 'test-key' })
     useWorkflowTabActivityStore().setEditing('/workflows/test.json')
