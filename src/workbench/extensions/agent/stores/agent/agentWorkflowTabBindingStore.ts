@@ -35,6 +35,17 @@ function isPersistedBinding(value: unknown): value is PersistedBinding {
   )
 }
 
+// Storage access throws outright when site data is blocked or the page is a
+// sandboxed iframe. This store is constructed during canvas setup, so an
+// unhandled throw here takes the whole canvas down with it.
+function hasStoredBindings(): boolean {
+  try {
+    return localStorage.getItem(STORAGE_KEY) !== null
+  } catch {
+    return false
+  }
+}
+
 function readLegacyBindings(now: number): PersistedBindings {
   try {
     const parsed: unknown = JSON.parse(
@@ -92,10 +103,10 @@ export const useAgentWorkflowTabBindingStore = defineStore(
   'agentWorkflowTabBinding',
   () => {
     const now = Date.now()
-    const hasStoredBindings = localStorage.getItem(STORAGE_KEY) !== null
+    const stored = hasStoredBindings()
     const tabByWorkflow = useLocalStorage<PersistedBindings>(STORAGE_KEY, {})
     tabByWorkflow.value = liveBindings(
-      hasStoredBindings ? tabByWorkflow.value : readLegacyBindings(now),
+      stored ? tabByWorkflow.value : readLegacyBindings(now),
       now
     )
 
@@ -177,6 +188,10 @@ export const useAgentWorkflowTabBindingStore = defineStore(
     // never mounted and so has no change tracker behind `activeState`.
     function archiveClosedDraft(workflowId: string, tab: ComfyWorkflow): void {
       if (!tab.isTemporary) return
+      // An empty graph is worth nothing to recover, and `onAgentActiveTab`
+      // mints exactly that and binds it — archiving it would overwrite the
+      // real snapshot already held under the same workflow id.
+      if (tab.activeState?.nodes.length === 0) return
       const content =
         tab.activeState === null ? tab.content : JSON.stringify(tab.activeState)
       if (content === null || content.length === 0) return

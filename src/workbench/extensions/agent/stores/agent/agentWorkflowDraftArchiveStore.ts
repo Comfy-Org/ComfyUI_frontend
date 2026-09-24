@@ -281,6 +281,7 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
       )
       index = evict(workspaceId, index, overBudget(index, workflowId, bytes))
 
+      const replaced = readPayload(workspaceId, workflowId)
       let freed = 0
       let outcome = writePayload(workspaceId, workflowId, draft.content)
       while (outcome === 'over-quota' && freed < bytes) {
@@ -302,12 +303,20 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
         ...index,
         [workflowId]: { filename: draft.filename, archivedAt: now, bytes }
       }
-      if (!writeIndex(workspaceId, updated)) {
-        evict(workspaceId, index, [workflowId])
-        return false
+      if (writeIndex(workspaceId, updated)) {
+        sweepOrphanPayloads(workspaceId, updated)
+        return true
       }
-      sweepOrphanPayloads(workspaceId, updated)
-      return true
+
+      // The payload key was already overwritten, so without putting the old
+      // graph back a failed index write loses both copies. Restoring it keeps
+      // whatever the still-stored index promises.
+      if (
+        replaced === null ||
+        writePayload(workspaceId, workflowId, replaced) !== 'stored'
+      )
+        evict(workspaceId, index, [workflowId])
+      return false
     }
 
     function discard(workflowId: string): void {

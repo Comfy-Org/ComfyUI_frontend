@@ -488,6 +488,54 @@ describe('agentWorkflowTabBindingStore', () => {
     ).toMatchObject({ id: DRAFT_GRAPH_ID })
   })
 
+  // The store is built during canvas setup now, so a throw here takes the
+  // canvas with it — site data can be blocked, or the page sandboxed.
+  it('initializes when localStorage refuses to be read', () => {
+    const getItem = localStorage.getItem.bind(localStorage)
+    const spy = vi
+      .spyOn(localStorage, 'getItem')
+      .mockImplementation((key: string) => {
+        if (key === STORAGE_KEY)
+          throw new DOMException('denied', 'SecurityError')
+        return getItem(key)
+      })
+    onTestFinished(() => spy.mockRestore())
+
+    const store = useAgentWorkflowTabBindingStore()
+
+    expect(store.tabPathFor('wf-1')).toBeUndefined()
+  })
+
+  // onAgentActiveTab mints a blank tab and binds it to the same workflow id,
+  // so archiving it on close would overwrite the real recovered graph.
+  it('does not archive an empty graph over a workflow it already holds', async () => {
+    const workflows = useWorkflowStore()
+    const archive = useAgentWorkflowDraftArchiveStore()
+    archive.archive('wf-minted', {
+      filename: 'Agent draft.json',
+      content: JSON.stringify({ ...blankGraph, id: DRAFT_GRAPH_ID })
+    })
+    const blank = workflows.createTemporary('Agent blank.json', {
+      ...blankGraph,
+      nodes: [],
+      id: OTHER_GRAPH_ID
+    })
+    Object.defineProperty(blank, 'activeState', {
+      value: { ...blankGraph, nodes: [], id: OTHER_GRAPH_ID },
+      configurable: true
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-minted', blank.path)
+    workflows.openWorkflowsInBackground({ right: [blank.path] })
+    await nextTick()
+
+    await workflows.closeWorkflow(blank)
+    await nextTick()
+
+    expect(
+      JSON.parse(archive.read('wf-minted')?.content ?? 'null')
+    ).toMatchObject({ id: DRAFT_GRAPH_ID })
+  })
+
   it('does not archive a bound tab that is still saved on the server', async () => {
     const path = 'workflows/Saved.json'
     seedBindings({
