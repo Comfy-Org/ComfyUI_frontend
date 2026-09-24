@@ -138,8 +138,10 @@ test.describe('Wan Animate 2 page — interactions', () => {
 
     const hasFaqNode = await page.evaluate(() =>
       Array.from(
-        document.querySelectorAll('script[type="application/ld+json"]')
-      ).some((s) => s.textContent.includes('FAQPage'))
+        document.querySelectorAll<HTMLScriptElement>(
+          'script[type="application/ld+json"]'
+        )
+      ).some((s) => s.text.includes('FAQPage'))
     )
     expect(hasFaqNode).toBe(false)
   })

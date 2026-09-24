@@ -344,12 +344,11 @@ export async function runRecord(
   }
   if (!distribution) throw new Error('Selected distribution is unavailable')
 
-  const branch = runCommand('git', ['branch', '--show-current'], {
+  const branchResult = runCommand('git', ['branch', '--show-current'], {
     cwd: process.cwd(),
     stdio: 'pipe'
   })
-    .stdout.toString()
-    .trim()
+  const branch = branchResult.error ? '' : branchResult.stdout.toString().trim()
   info([
     `The app you're testing is your local checkout (branch ${branch || 'unknown'}). ` +
       'The environment choice only picks which backend it talks to.'

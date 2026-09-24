@@ -222,8 +222,8 @@ test.describe('MiniMax H3 page — interactions', () => {
           'script[type="application/ld+json"]'
         )
       )
-      const match = scripts.find((s) => s.textContent.includes('FAQPage'))
-      return match?.textContent ?? null
+      const match = scripts.find((s) => s.text.includes('FAQPage'))
+      return match?.text ?? null
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
     const graph = JSON.parse(faqJsonLd!)['@graph'] as {
@@ -246,7 +246,7 @@ test.describe('MiniMax H3 page — interactions', () => {
       )
       return scripts.flatMap((s) => {
         try {
-          const parsed = JSON.parse(s.textContent) as {
+          const parsed = JSON.parse(s.text) as {
             '@graph'?: { '@type': string }[]
           }
           return (parsed['@graph'] ?? []).map((node) => node['@type'])
