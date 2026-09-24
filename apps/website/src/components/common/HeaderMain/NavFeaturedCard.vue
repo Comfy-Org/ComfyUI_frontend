@@ -13,7 +13,21 @@ defineProps<{ featured: NavFeatured }>()
       :aria-label="featured.cta.ariaLabel"
       class="group/pill-trigger relative block"
     >
+      <video
+        v-if="featured.videoSrc"
+        class="aspect-4/3 w-62 max-w-none rounded-xl object-cover"
+        :src="featured.videoSrc"
+        :poster="featured.imageSrc"
+        :aria-label="featured.imageAlt"
+        width="744"
+        height="558"
+        autoplay
+        loop
+        muted
+        playsinline
+      />
       <img
+        v-else
         class="aspect-4/3 w-62 max-w-none rounded-xl"
         :src="featured.imageSrc"
         :alt="featured.imageAlt ?? ''"

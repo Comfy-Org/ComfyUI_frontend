@@ -4349,20 +4349,20 @@ Enterprise`
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'NEW RELEASE: MINIMAX H3',
-    'zh-CN': '全新发布：MiniMax H3'
+    en: 'NEW RELEASE: GEMINI OMNI 1.1 FLASH',
+    'zh-CN': '全新发布：Gemini Omni 1.1 Flash'
   },
   'nav.featuredProductsAlt': {
-    en: 'MiniMax H3 feature image',
-    'zh-CN': 'MiniMax H3 精选图片'
+    en: 'Gemini Omni 1.1 Flash video: cavemen meet the future',
+    'zh-CN': 'Gemini Omni 1.1 Flash 视频：穴居人遇见未来'
   },
   'nav.featuredProductsCta': {
     en: 'EXPLORE NOW',
     'zh-CN': '立即探索'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Explore the MiniMax H3 release',
-    'zh-CN': '探索 MiniMax H3 版本'
+    en: 'Explore the Gemini Omni 1.1 Flash release',
+    'zh-CN': '探索 Gemini Omni 1.1 Flash 版本'
   },
   'nav.featuredCommunityTitle': {
     en: 'Sky Replacement',

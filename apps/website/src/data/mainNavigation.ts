@@ -16,6 +16,7 @@ export type NavColumn = {
 
 export type NavFeatured = {
   imageSrc: string
+  videoSrc?: string
   imageAlt?: string
   title: string
   cta: {
@@ -70,13 +71,14 @@ export function getMainNavigation(
       label: t('nav.products', locale),
       badge: 'new',
       featured: {
-        imageSrc: 'https://media.comfy.org/website/nav/minimax-card.webp',
+        imageSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webp',
+        videoSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webm',
         imageAlt: t('nav.featuredProductsAlt', locale),
         title: t('nav.featuredProductsTitle', locale),
         cta: {
           label: t('nav.featuredProductsCta', locale),
           ariaLabel: t('nav.featuredProductsCtaAria', locale),
-          href: routes.minimax
+          href: routes.geminiOmni
         }
       },
       columns: [
