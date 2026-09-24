@@ -223,7 +223,7 @@ interface FrontendApiCalls {
   autoQueueGraphChanged: never
   promptQueueing: { requestId: number; batchCount: number; number?: number }
   promptRejected: {
-    response: PromptResponse
+    response: PromptFailureResponse
     status?: number
   }
   promptQueued: {
