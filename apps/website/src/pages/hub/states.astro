@@ -1,0 +1,19 @@
+---
+import HubRunStates from '../../components/hub/HubRunStates.vue'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+
+// A reference sheet, not a route a visitor is meant to find: a run costs
+// credits and most of its states cannot be reached on purpose, so this is
+// where the design is looked at and argued over.
+---
+
+<BaseLayout
+  inHub
+  title="Run states"
+  description="Every state the Hub's output panel can be in, drawn against nothing."
+  noindex
+>
+  <main class="mx-auto max-w-10xl px-6 py-16 lg:px-8 lg:py-24">
+    <HubRunStates client:load />
+  </main>
+</BaseLayout>

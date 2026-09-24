@@ -21,12 +21,17 @@ import NavColumn from './NavColumn.vue'
 import NavFeaturedCard from './NavFeaturedCard.vue'
 import NewBadge from './NewBadge.vue'
 
-const { locale = 'en', workshopInBuild = false } = defineProps<{
+const {
+  locale = 'en',
+  workshopInBuild = false,
+  inHub = false
+} = defineProps<{
   locale?: Locale
   workshopInBuild?: boolean
+  inHub?: boolean
 }>()
 const mainNavigation = computed(() =>
-  getMainNavigation(locale, workshopInBuild)
+  getMainNavigation(locale, workshopInBuild, inHub)
 )
 const currentPath = useCurrentPath()
 

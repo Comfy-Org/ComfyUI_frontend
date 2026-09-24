@@ -1,6 +1,31 @@
 type Locale = 'en' | 'zh-CN' | 'ja'
 
 const translations = {
+  'workshop.assets.title': { en: 'Your assets', 'zh-CN': '你的素材' },
+  'workshop.assets.seeAll': {
+    en: 'See all in Cloud',
+    'zh-CN': '在云端查看全部'
+  },
+  'workshop.assets.open': {
+    en: 'Open saved asset',
+    'zh-CN': '打开已保存的素材'
+  },
+  'workshop.assets.generating': { en: 'Generating…', 'zh-CN': '正在生成…' },
+  'workshop.assets.loadingMedia': {
+    en: 'Loading asset…',
+    'zh-CN': '正在加载素材…'
+  },
+  'workshop.assets.loadError': {
+    en: 'Could not load your assets.',
+    'zh-CN': '无法加载你的素材。'
+  },
+  'workshop.assets.previous': { en: 'Previous asset', 'zh-CN': '上一个素材' },
+  'workshop.assets.next': { en: 'Next asset', 'zh-CN': '下一个素材' },
+  'workshop.assets.go': { en: 'Show asset {n}', 'zh-CN': '显示第 {n} 个素材' },
+  'workshop.assets.cancelError': {
+    en: 'Could not request cancellation. Your generation may still be running.',
+    'zh-CN': '无法请求取消。生成可能仍在进行。'
+  },
   'home.workshop.heading': {
     en: 'Run any model, from one place',
     'zh-CN': '在同一个地方运行任何模型'
@@ -9519,6 +9544,7 @@ Enterprise`
 
   // Workshop – header account + nav
   'nav.workshop': { en: 'Models', 'zh-CN': '模型' },
+  'nav.hub': { en: 'Hub', 'zh-CN': 'Hub' },
   'nav.comfyWorkshop': { en: 'Browse Models', 'zh-CN': '浏览模型' },
   'nav.signIn': { en: 'Sign in', 'zh-CN': '登录' },
   'nav.signOut': { en: 'Log out', 'zh-CN': '退出登录' },
@@ -10584,6 +10610,77 @@ Enterprise`
   'workshop.hub.models': { en: 'Model', 'zh-CN': '模型' },
   'workshop.hub.categories': { en: 'CATEGORIES', 'zh-CN': '分类' },
   'workshop.hub.docs': { en: 'Read docs', 'zh-CN': '阅读文档' },
+
+  'workshop.outcome.animateCharacters': {
+    en: 'Animate characters',
+    'zh-CN': '让角色动起来'
+  },
+  'workshop.outcome.productShots': {
+    en: 'Create product photos & ads',
+    'zh-CN': '制作产品图与广告'
+  },
+  'workshop.outcome.upscaleRestore': {
+    en: 'Upscale & restore',
+    'zh-CN': '放大与修复'
+  },
+  'workshop.outcome.cleanUp': {
+    en: 'Edit & clean up photos',
+    'zh-CN': '修图与清理'
+  },
+  'workshop.outcome.relightRestyle': {
+    en: 'Relight & restyle',
+    'zh-CN': '重新打光与换风格'
+  },
+  'workshop.outcome.firstLastFrame': {
+    en: 'First & last frame',
+    'zh-CN': '首尾帧'
+  },
+  'workshop.outcome.recutVideo': {
+    en: 'Recut & extend video',
+    'zh-CN': '视频剪辑与延长'
+  },
+  'workshop.outcome.fromAReference': {
+    en: 'Generate from a reference',
+    'zh-CN': '基于参考生成'
+  },
+  'workshop.outcome.guidedGeneration': {
+    en: 'Guided generation',
+    'zh-CN': '可控生成'
+  },
+  'workshop.outcome.logosAndVectors': {
+    en: 'Logos & vectors',
+    'zh-CN': '标志与矢量图'
+  },
+  'workshop.outcome.modelFromAPhoto': {
+    en: 'Make a 3D model from a photo',
+    'zh-CN': '照片生成 3D 模型'
+  },
+  'workshop.outcome.voices': { en: 'Voices & speech', 'zh-CN': '人声与配音' },
+  'workshop.outcome.musicAndSound': {
+    en: 'Music & sound',
+    'zh-CN': '音乐与音效'
+  },
+  'workshop.outcome.seeAll': { en: 'See all {n}', 'zh-CN': '查看全部 {n} 个' },
+  'workshop.launch.videos': {
+    en: 'Create & edit videos',
+    'zh-CN': '创建与编辑视频'
+  },
+  'workshop.launch.characters': {
+    en: 'Animate characters',
+    'zh-CN': '让角色动起来'
+  },
+  'workshop.launch.product': {
+    en: 'Create product photos & ads',
+    'zh-CN': '产品照片与广告'
+  },
+  'workshop.launch.upscale': {
+    en: 'Upscale & restore',
+    'zh-CN': '放大与修复'
+  },
+  'workshop.launch.cleanup': {
+    en: 'Edit & clean up photos',
+    'zh-CN': '修图与清理'
+  },
   'workshop.error.creditsTitle': {
     en: 'Not enough credits',
     'zh-CN': '积分不足'
@@ -10952,6 +11049,10 @@ Enterprise`
     'zh-CN':
       '更新到 v0.34.5 或更高版本，在节点库中搜索 Comfy Cloud，然后连线使用。'
   },
+  'workshop.v2.kind.workflow': { en: 'Workflow', 'zh-CN': '工作流' },
+  'workshop.v2.kind.model': { en: 'Model', 'zh-CN': '模型' },
+  'workshop.field.play': { en: 'Play', 'zh-CN': '播放' },
+  'workshop.field.pause': { en: 'Pause', 'zh-CN': '暂停' },
   'footer.cloudNodes': {
     en: 'Comfy Cloud Nodes',
     'zh-CN': 'Comfy Cloud 节点'
@@ -10969,10 +11070,18 @@ export type LocalizedText = { en: string; 'zh-CN': string } & Partial<
 
 // Returns the message plus the locale it actually came from, which is 'en'
 // whenever the requested locale has no translation for the key.
-function resolve(key: TranslationKey, locale: Locale): [string, Locale] {
-  const entry = translations[key] as LocalizedText
+function from(entry: LocalizedText, locale: Locale): [string, Locale] {
   const message = entry[locale]
   return message === undefined ? [entry.en, 'en'] : [message, locale]
+}
+
+/** One entry's message, for a table that keys its own copy. */
+export function localize(entry: LocalizedText, locale: Locale): string {
+  return from(entry, locale)[0]
+}
+
+function resolve(key: TranslationKey, locale: Locale): [string, Locale] {
+  return from(translations[key], locale)
 }
 
 export function t(key: TranslationKey, locale: Locale = 'en'): string {

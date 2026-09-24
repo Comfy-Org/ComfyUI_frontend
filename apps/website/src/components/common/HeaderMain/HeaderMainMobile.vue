@@ -17,13 +17,18 @@ import SheetTrigger from '@/components/ui/sheet/SheetTrigger.vue'
 import Button from '@/components/ui/button/Button.vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
-const { locale = 'en', workshopInBuild = false } = defineProps<{
+const {
+  locale = 'en',
+  workshopInBuild = false,
+  inHub = false
+} = defineProps<{
   locale?: Locale
   workshopInBuild?: boolean
+  inHub?: boolean
 }>()
 const routes = getRoutes(locale)
 const mainNavigation = computed(() =>
-  getMainNavigation(locale, workshopInBuild)
+  getMainNavigation(locale, workshopInBuild, inHub)
 )
 
 const isOpen = ref(false)

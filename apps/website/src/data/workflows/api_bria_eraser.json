@@ -1,0 +1,46 @@
+{
+  "2": {
+    "inputs": {
+      "image": "vintage_girl_yellow_apple.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "4": {
+    "inputs": {
+      "filename_prefix": "Bria_Eraser",
+      "format": "png",
+      "images": ["15", 0],
+      "format.bit_depth": "8-bit",
+      "format.input_color_space": "sRGB"
+    },
+    "class_type": "SaveImageAdvanced",
+    "_meta": {
+      "title": "Save Image (Advanced)"
+    }
+  },
+  "15": {
+    "inputs": {
+      "mask_type": "manual",
+      "moderation": "false",
+      "image": ["2", 0],
+      "mask": ["workshop-mask", 0]
+    },
+    "class_type": "BriaEraser",
+    "_meta": {
+      "title": "Bria Eraser"
+    }
+  },
+  "workshop-mask": {
+    "class_type": "LoadImageMask",
+    "inputs": {
+      "image": "",
+      "channel": "red"
+    },
+    "_meta": {
+      "title": "Edit mask (white = edit)"
+    }
+  }
+}

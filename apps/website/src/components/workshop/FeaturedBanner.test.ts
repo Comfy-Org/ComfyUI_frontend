@@ -4,6 +4,7 @@ import { nextTick } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
+import { modelSlides } from '../../lib/workshop/featured-slides'
 import FeaturedBanner from './FeaturedBanner.vue'
 import {
   setAllIntersecting,
@@ -61,7 +62,9 @@ describe('FeaturedBanner', () => {
   })
 
   it('leads with the first model and links the whole slide to its page', () => {
-    render(FeaturedBanner, { props: { models: [base, kling] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')
     expect(screen.getByText('Text to Image')).toBeTruthy()
     expect(screen.getByTestId('featured-slide-link').getAttribute('href')).toBe(
@@ -73,7 +76,10 @@ describe('FeaturedBanner', () => {
     render(FeaturedBanner, {
       props: {
         locale: 'zh-CN',
-        models: [{ ...kling, name: 'Kling Image to Video' }]
+        slides: modelSlides(
+          [{ ...kling, name: 'Kling Image to Video' }],
+          'zh-CN'
+        )
       }
     })
 
@@ -83,7 +89,9 @@ describe('FeaturedBanner', () => {
 
   it('shows the model a pagination bar names', async () => {
     const user = userEvent.setup()
-    render(FeaturedBanner, { props: { models: [base, kling] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
 
     await user.click(screen.getByRole('button', { name: 'Kling' }))
 
@@ -104,7 +112,9 @@ describe('FeaturedBanner', () => {
       provider: 'Magnific',
       routerId: 'magnific/upscale'
     }
-    render(FeaturedBanner, { props: { models: [base, undocumented] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, undocumented], 'en') }
+    })
 
     const docs = screen.getByTestId('featured-docs-link')
     expect(docs.getAttribute('href')).toBe(
@@ -117,7 +127,7 @@ describe('FeaturedBanner', () => {
   })
 
   it('drops the pagination when there is nothing to page through', () => {
-    render(FeaturedBanner, { props: { models: [base] } })
+    render(FeaturedBanner, { props: { slides: modelSlides([base], 'en') } })
     expect(screen.queryByTestId('featured-pagination')).toBeNull()
   })
 
@@ -125,18 +135,21 @@ describe('FeaturedBanner', () => {
     const user = userEvent.setup()
     render(FeaturedBanner, {
       props: {
-        models: [
-          {
-            ...kling,
-            thumbnailUrl: '/video.mp4',
-            thumbnail: { url: '/video.mp4', kind: 'video' }
-          },
-          {
-            ...base,
-            thumbnailUrl: '/image.webp',
-            thumbnail: { url: '/image.webp', kind: 'image' }
-          }
-        ]
+        slides: modelSlides(
+          [
+            {
+              ...kling,
+              thumbnailUrl: '/video.mp4',
+              thumbnail: { url: '/video.mp4', kind: 'video' }
+            },
+            {
+              ...base,
+              thumbnailUrl: '/image.webp',
+              thumbnail: { url: '/image.webp', kind: 'image' }
+            }
+          ],
+          'en'
+        )
       }
     })
     await setAllIntersecting(true)
@@ -150,7 +163,9 @@ describe('FeaturedBanner', () => {
 
   it('advances to the next slide on the autoplay cadence', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    render(FeaturedBanner, { props: { models: [base, kling] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
 
     await advanceAutoplay()
 
@@ -160,7 +175,9 @@ describe('FeaturedBanner', () => {
   it('pauses while hovered and resumes after the pointer leaves', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
     const user = setupAutoplayUser()
-    render(FeaturedBanner, { props: { models: [base, kling] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
     await nextTick()
 
     await user.hover(screen.getByTestId('section-featured'))
@@ -175,7 +192,9 @@ describe('FeaturedBanner', () => {
   it('pauses while a keyboard visitor is focused within the banner', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
     const user = setupAutoplayUser()
-    render(FeaturedBanner, { props: { models: [base, kling] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
     await nextTick()
 
     await user.tab()
@@ -187,7 +206,9 @@ describe('FeaturedBanner', () => {
   it('does not autoplay when reduced motion is preferred', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
     motion.reduced = true
-    render(FeaturedBanner, { props: { models: [base, kling] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
 
     await advanceAutoplay(AUTOPLAY_MS * 2)
 
@@ -196,7 +217,9 @@ describe('FeaturedBanner', () => {
 
   it('freezes rotation offscreen and in a hidden tab, then resumes where it stopped', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: false })
-    render(FeaturedBanner, { props: { models: [base, kling] } })
+    render(FeaturedBanner, {
+      props: { slides: modelSlides([base, kling], 'en') }
+    })
     await setAllIntersecting(false)
     await vi.advanceTimersByTimeAsync(AUTOPLAY_MS)
     expect(screen.getByRole('heading', { level: 2 }).textContent).toBe('Flux')

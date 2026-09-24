@@ -23,6 +23,7 @@ import type { Locale } from '../../i18n/translations'
 import { subscribeToWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { runWorkshopRouter } from '../../config/workshop-router-queue'
 import { WorkshopRouterError } from '../../config/workshop-router-errors'
+import { listWorkshopGenerations } from '../../config/workshop-generation-assets'
 import { workshopContract } from '../../config/workshop-contract-catalog'
 import { getAuthoredRouterWorkshopModelDetail as getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import {
@@ -48,9 +49,9 @@ import { workshopHealthLog } from '../../scripts/workshop-health'
 vi.mock(import('../../config/workshop-session-state'))
 vi.mock(import('../../scripts/posthog'))
 
-vi.mock(import('../../config/workshop-router-queue'), () => ({
-  runWorkshopRouter: vi.fn()
-}))
+vi.mock(import('../../config/workshop-router-queue'), { spy: true })
+
+vi.mock(import('../../config/workshop-generation-assets'), { spy: true })
 
 vi.mock(import('../../config/workshop-output-download'), () => ({
   downloadOutput: vi.fn().mockResolvedValue(true)
@@ -233,6 +234,72 @@ describe('ModelDetail', () => {
     })
   })
 
+  it('enables durable saving and lets navigation detach without asking to cancel', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', '1')
+    auth.session.value = credential
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [] })
+    vi.mocked(runWorkshopRouter).mockReturnValue(
+      Promise.withResolvers<typeof routerResult>().promise
+    )
+    const { unmount } = mountDetail({ model: runnable })
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+    const run = vi.mocked(runWorkshopRouter).mock.calls[0][0]
+    expect(run.comfy_save_asset).toBe(true)
+    expect(workshopRunInFlight.value).toBe(false)
+    expect(
+      window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
+    ).toBe(true)
+    unmount()
+    expect(run.signal.aborted).toBe(true)
+    expect(run.signal.reason.message).not.toBe('Generation cancelled by user')
+  })
+
+  it('aborts the old history read and discards its result after a workspace switch', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', '1')
+    auth.session.value = credential
+    const oldPage =
+      Promise.withResolvers<
+        Awaited<ReturnType<typeof listWorkshopGenerations>>
+      >()
+    vi.mocked(listWorkshopGenerations)
+      .mockReturnValueOnce(oldPage.promise)
+      .mockResolvedValue({ requests: [] })
+    mountDetail({ model: runnable })
+    await vi.waitFor(() =>
+      expect(listWorkshopGenerations).toHaveBeenCalledOnce()
+    )
+    const oldSignal = vi.mocked(listWorkshopGenerations).mock.calls[0][1]
+    auth.session.value = {
+      ...credential,
+      workspace: { ...credential.workspace, id: 'workspace-2' }
+    }
+    vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValue({
+      status: 'ok',
+      session: auth.session.value
+    })
+    await nextTick()
+    expect(oldSignal.aborted).toBe(true)
+    oldPage.resolve({
+      requests: [
+        {
+          request_id: '18655193-3f73-4abf-b49c-1c6a058355bc',
+          provider: 'private-old-provider',
+          model: 'old-model',
+          created_at: '2026-09-20T12:00:00Z',
+          status: 'COMPLETED',
+          asset_save_status: 'failed',
+          asset_outputs: []
+        }
+      ]
+    })
+    await vi.waitFor(() =>
+      expect(listWorkshopGenerations).toHaveBeenCalledTimes(2)
+    )
+    expect(screen.queryByText('private-old-provider/old-model')).toBeNull()
+  })
+
   it('links a documented provider in a new tab', () => {
     mountDetail({
       model: {
@@ -316,6 +383,47 @@ describe('ModelDetail', () => {
       expect(screen.getByRole('img', { name: 'saved.webp' })).toBeTruthy()
     }
   )
+
+  // The endpoint action on a workflow page is a link to #api in another
+  // island, so the address bar is the only thing the two share.
+  describe('the API panel asked for through the address bar', () => {
+    const goTo = (hash: string) =>
+      window.history.replaceState(
+        null,
+        '',
+        `${window.location.pathname}${hash}`
+      )
+
+    const selected = (name: string) =>
+      screen.getByRole('tab', { name }).getAttribute('aria-selected')
+
+    it('opens on a link followed into the page, once mounted', async () => {
+      goTo('#api')
+      mountDetail({ model: runnable })
+      await nextTick()
+
+      expect(selected('API')).toBe('true')
+      expect(selected('Playground')).toBe('false')
+    })
+
+    // Holding the fragment after the reader leaves would make the next
+    // request the address already satisfies, and the link would do nothing.
+    it('lets a reader ask for it again after going back to the playground', async () => {
+      goTo('#api')
+      mountDetail({ model: runnable })
+      await nextTick()
+      const visitor = user()
+
+      await visitor.click(screen.getByRole('tab', { name: 'Playground' }))
+      expect(window.location.hash).toBe('')
+
+      goTo('#api')
+      window.dispatchEvent(new HashChangeEvent('hashchange'))
+      await nextTick()
+
+      expect(selected('API')).toBe('true')
+    })
+  })
 
   it('prevents generation while the feature is hidden', async () => {
     auth.session.value = credential
@@ -931,7 +1039,7 @@ describe('ModelDetail', () => {
     expect(runWorkshopRouter).not.toHaveBeenCalled()
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
-    ).toBe('cancelled')
+    ).toBe('idle')
   })
 
   it.for([
@@ -1351,7 +1459,7 @@ describe('ModelDetail', () => {
     )
     expect(
       screen.getByTestId('playground-output').getAttribute('data-state')
-    ).toBe('cancelled')
+    ).toBe('idle')
     expect(leaving()).toBe(true)
   })
 
@@ -1668,23 +1776,53 @@ describe('ModelDetail', () => {
       await vi.waitFor(() => expect(refreshWorkshopCredits).toHaveBeenCalled())
       expect(
         screen.getByTestId('playground-output').getAttribute('data-state')
-      ).toBe('cancelled')
+      ).toBe('idle')
       expect(screen.queryByTestId('router-request-id')).toBeNull()
       const outcomes = vi
         .mocked(captureWorkshopEvent)
         .mock.calls.map(([event]) => event)
         .filter((event) => event.name === 'run_finished')
-      expect(outcomes).toEqual([
-        {
-          name: 'run_finished',
-          properties: expect.objectContaining({
-            status: 'cancelled',
-            workspace_id: credential.workspace.id
-          })
-        }
-      ])
+      expect(outcomes).toEqual([])
     }
   )
+
+  it.for([
+    {
+      case: 'a run that ended in a word keeps saying it',
+      outcome: () =>
+        vi
+          .mocked(runWorkshopRouter)
+          .mockRejectedValue(new WorkshopRouterError('provider')),
+      ended: 'failed',
+      after: 'failed'
+    },
+    {
+      case: 'a picture leaves with the workspace it was made in',
+      outcome: () =>
+        vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult),
+      ended: 'succeeded',
+      after: 'idle'
+    }
+  ])('after a workspace change, $case', async ({ outcome, ended, after }) => {
+    auth.session.value = credential
+    outcome()
+    mountDetail({ model: runnable })
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe(ended)
+    )
+    auth.session.value = {
+      ...credential,
+      workspace: { ...credential.workspace, id: 'other-workspace' }
+    }
+    await nextTick()
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe(after)
+  })
 
   it('finishes an active render while the gate hides the page on revocation', async () => {
     auth.session.value = credential

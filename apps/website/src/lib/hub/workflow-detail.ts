@@ -1,33 +1,22 @@
-import type {
-  GeneratedExample,
-  GeneratedField,
-  Modality,
-  WorkshopModelDetail
-} from '../../config/models-catalogue'
+import type { WorkshopModel } from '../../config/models-catalogue'
+import { workshopModels } from '../../config/workshop-browse-content'
 import hubTemplateDetails from '../../data/hubTemplateDetails.json'
 import hubTemplates from '../../data/hubTemplates.json'
-import { tagDisplayName } from './tag-aliases'
-import type { HubTemplate } from './types'
+import { modelIdentity, modelName } from './model-identity'
+import { launchesHere } from '../../config/workshop-launch'
+import { runsHere } from './runs-here'
+import type { WorkflowReach } from './workflow-reach'
+import { workflowReach } from './workflow-reach'
+import { partnerModelFor } from './template-use-case'
+import type { HubTemplate, HubTemplateDetails } from './types'
+import { hubTemplateDetailsSchema, hubTemplatesSchema } from './types'
 
-interface HubIoPort {
-  readonly nodeType?: string
-  readonly mediaType?: string
-  readonly file?: string
-}
+type HubTemplateDetail = HubTemplateDetails[string]
 
-interface HubTemplateDetails {
-  readonly description?: string
-  readonly tutorialUrl?: string
-  readonly requiresCustomNodes?: readonly string[]
-  readonly inputs?: readonly HubIoPort[]
-  readonly outputs?: readonly HubIoPort[]
-}
-
-interface HubWorkflowStats {
-  readonly rating: string
-  readonly ratings: number
-  readonly avgSeconds: number
-  readonly creditsPerRun: number
+/** A model the workflow names, linked only where the catalogue carries it. */
+interface HubWorkflowModelRef {
+  readonly name: string
+  readonly model: WorkshopModel | undefined
 }
 
 interface HubIoRow {
@@ -35,278 +24,173 @@ interface HubIoRow {
   readonly type: string
 }
 
+/**
+ * The model page a workflow opens, named after the model rather than the one
+ * operation the join happened to land on.
+ */
+interface HubWorkflowDestination {
+  readonly key: string
+  readonly slug: string
+  readonly name: string
+}
+
 export interface HubWorkflowPage {
   readonly template: HubTemplate
   readonly mediaType: string
-  readonly details: HubTemplateDetails
-  readonly model: WorkshopModelDetail
-  readonly stats: HubWorkflowStats
+  readonly details: HubTemplateDetail
+  readonly runsOn: readonly HubWorkflowModelRef[]
+  /** The one model page this workflow can open without guessing. */
+  readonly destination: HubWorkflowDestination | undefined
+  /**
+   * Whether the page can run it inline, as a form and a Run button. Naming a
+   * model is not enough: the graph around it has to be one the Router can
+   * serve, with nothing to load and nothing to install. Everything else runs
+   * on Cloud and the page offers the way there instead.
+   */
+  readonly runsInline: boolean
+  readonly callsPartnerModel: boolean
+  readonly customNodes: readonly string[]
+  /** Bytes of weights to download before it runs. Zero for partner workflows. */
+  readonly weightsBytes: number
   readonly inputs: readonly HubIoRow[]
   readonly outputs: readonly HubIoRow[]
   readonly related: readonly HubTemplate[]
+  readonly downloadUrl: string
 }
 
-export const hubWorkflowPath = (name: string) => `/models/workflows/${name}/`
-
-const templates = hubTemplates as HubTemplate[]
-const details = hubTemplateDetails as Record<string, HubTemplateDetails>
+const templates = hubTemplatesSchema
+  .parse(hubTemplates)
+  .filter((template) => launchesHere(template.name))
+const details: HubTemplateDetails =
+  hubTemplateDetailsSchema.parse(hubTemplateDetails)
 
 export function listHubWorkflows(): readonly HubTemplate[] {
   return templates
 }
 
-const FILE_INPUTS: Record<
-  string,
-  { accept: 'image' | 'video' | 'audio'; label: string } | undefined
-> = {
-  LoadImage: { accept: 'image', label: 'Image' },
-  LoadVideo: { accept: 'video', label: 'Video' },
-  VHS_LoadVideo: { accept: 'video', label: 'Video' },
-  LoadAudio: { accept: 'audio', label: 'Audio' }
-}
-
-const MEDIA_TO_MODALITY: Record<string, Modality> = {
-  image: 'image',
-  video: 'video',
-  audio: 'audio',
-  '3d': '3d'
-}
-
-const BASE_CREDITS: Record<string, number> = {
-  image: 6,
-  video: 40,
-  audio: 8,
-  '3d': 20
-}
-const BASE_SECONDS: Record<string, number> = {
-  image: 4,
-  video: 38,
-  audio: 9,
-  '3d': 22
-}
-
-function seedFor(name: string): number {
-  let seed = 0
-  for (const char of name) seed = (seed * 31 + char.charCodeAt(0)) % 1_000_003
-  return seed
-}
-
-function fileFields(inputs: readonly HubIoPort[]): GeneratedField[] {
-  const counts = new Map<string, number>()
-  return inputs.flatMap((input) => {
-    const spec = FILE_INPUTS[input.nodeType ?? '']
-    if (!spec) return []
-    const index = (counts.get(spec.accept) ?? 0) + 1
-    counts.set(spec.accept, index)
-    const suffix = index > 1 ? ` ${index}` : ''
-    return [
-      {
-        kind: 'file' as const,
-        name: `${spec.accept}${index > 1 ? `_${index}` : ''}`,
-        label: `${spec.label}${suffix}`,
-        hint: `${spec.label} loaded by the workflow's ${input.nodeType} node.`,
-        accept: spec.accept,
-        required: true
-      }
-    ]
-  })
-}
-
-function optionFields(mediaType: string): GeneratedField[] {
-  const shared: GeneratedField[] = [
-    {
-      kind: 'select',
-      name: 'aspect_ratio',
-      label: 'Aspect ratio',
-      options: ['auto', '1:1', '16:9', '9:16', '4:3'],
-      default: 'auto'
-    }
-  ]
-  if (mediaType === 'video') {
-    return [
-      ...shared,
-      {
-        kind: 'select',
-        name: 'resolution',
-        label: 'Resolution',
-        options: ['480p', '720p', '1080p'],
-        default: '720p'
-      },
-      {
-        kind: 'number',
-        name: 'duration',
-        label: 'Duration',
-        hint: 'Seconds of video to generate.',
-        min: 2,
-        max: 10,
-        step: 1,
-        default: 5
-      }
-    ]
-  }
-  if (mediaType === 'image') {
-    return [
-      ...shared,
-      {
-        kind: 'select',
-        name: 'resolution',
-        label: 'Resolution',
-        options: ['1K', '2K'],
-        default: '1K'
-      },
-      {
-        kind: 'select',
-        name: 'output_format',
-        label: 'Output format',
-        options: ['PNG', 'JPEG', 'WEBP'],
-        default: 'PNG'
-      },
-      {
-        kind: 'number',
-        name: 'n',
-        label: 'Number of images',
-        hint: '1-4 per run',
-        min: 1,
-        max: 4,
-        step: 1,
-        default: 1
-      }
-    ]
-  }
-  return []
-}
-
-// The index's mediaType describes the thumbnail; what the workflow produces
-// is its first output.
+// The index's mediaType describes the thumbnail; what the workflow produces is
+// its first declared output.
 function outputMediaType(
   template: HubTemplate,
-  detail: HubTemplateDetails
+  detail: HubTemplateDetail
 ): string {
   return detail.outputs?.[0]?.mediaType ?? template.mediaType
 }
 
-function fieldsFor(
-  template: HubTemplate,
-  detail: HubTemplateDetails
-): GeneratedField[] {
-  return [
-    {
-      kind: 'text',
-      name: 'prompt',
-      label: 'Prompt',
-      hint: 'Type # to reference inputs.',
-      multiline: true,
-      required: true
-    },
-    ...fileFields(detail.inputs ?? []),
-    ...optionFields(outputMediaType(template, detail)),
-    {
-      kind: 'number',
-      name: 'seed',
-      label: 'Seed',
-      hint: 'Seed to use for generation.',
-      min: 0,
-      max: 999_999,
-      step: 1,
-      default: 42
+// A graph can load three images through three LoadImage nodes, and three rows
+// reading "LoadImage" say nothing about which is which.
+function portRows(
+  ports: readonly { nodeType?: string; mediaType?: string }[] | undefined
+): HubIoRow[] {
+  const seen = new Map<string, number>()
+  return (ports ?? []).map((port) => {
+    const base = port.nodeType ?? port.mediaType ?? 'node'
+    const nth = (seen.get(base) ?? 0) + 1
+    seen.set(base, nth)
+    return {
+      name: nth > 1 ? `${base} ${nth}` : base,
+      type: port.mediaType ?? 'file'
     }
-  ]
+  })
 }
 
-const IO_TYPES: Record<GeneratedField['kind'], string> = {
-  text: 'string',
-  file: 'file',
-  select: 'enum',
-  number: 'int',
-  toggle: 'bool'
+const normalize = (value: string) =>
+  value.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+function modelRefs(
+  template: HubTemplate,
+  models: readonly WorkshopModel[]
+): HubWorkflowModelRef[] {
+  // Some registry rows name the maker alongside the model, so `Runs on` reads
+  // `Google` and then `Nano Banana 2` as though the graph called two of them.
+  const makers = new Set(
+    models.flatMap((model) =>
+      model.provider ? [normalize(model.provider)] : []
+    )
+  )
+  return [...new Set(template.models)]
+    .map((name) => ({
+      name,
+      model: models.find((model) => normalize(model.name) === normalize(name))
+    }))
+    .filter((ref) => ref.model || !makers.has(normalize(ref.name)))
 }
 
-const OUTPUT_TYPES: Record<string, string> = {
-  image: 'png',
-  video: 'mp4',
-  audio: 'mp3',
-  '3d': 'glb'
-}
-
-function examplesFor(template: HubTemplate): GeneratedExample[] {
-  return template.thumbnails.map((thumbnailUrl, index) => ({
-    name: `${template.name}-${index + 1}`,
-    title: template.title,
-    description: details[template.name]?.description ?? '',
-    tags: template.tags.map(tagDisplayName),
-    thumbnailUrl,
-    values: {}
-  }))
-}
-
-export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
-  const template = templates.find((t) => t.name === name)
-  if (!template) return undefined
-  const detail = details[name] ?? {}
-  const seed = seedFor(name)
-  const mediaType = outputMediaType(template, detail)
-  const creditsPerRun = (BASE_CREDITS[mediaType] ?? 6) + (seed % 4)
-  const fields = fieldsFor(template, detail)
-  const stats: HubWorkflowStats = {
-    rating: (4.5 + (seed % 5) / 10).toFixed(1),
-    ratings: Math.max(3, Math.round(template.usage / 200)),
-    avgSeconds: (BASE_SECONDS[mediaType] ?? 6) + (seed % 7),
-    creditsPerRun
-  }
-  const model: WorkshopModelDetail = {
-    slug: template.name,
-    name: template.title,
-    workflowCount: 1,
-    href: hubWorkflowPath(template.name),
-    routerId: `hub/${template.name}`,
-    provider: template.username || 'ComfyUI',
-    modality: MEDIA_TO_MODALITY[mediaType],
-    capabilities: template.tags.map(tagDisplayName),
-    creditsPerRun,
-    thumbnailUrl: template.thumbnails[0],
-    fields,
-    defaults: {},
-    examples: examplesFor(template)
-  }
-  const declaredOutputs = detail.outputs?.length
-    ? detail.outputs
-    : [{ mediaType }]
-  const outputs: HubIoRow[] = [
-    ...declaredOutputs.map((port, index) => ({
-      name:
-        index === 0
-          ? (port.mediaType ?? 'output')
-          : `${port.mediaType ?? 'output'}_${index + 1}`,
-      type: OUTPUT_TYPES[port.mediaType ?? ''] ?? 'file'
-    })),
-    { name: 'seed', type: 'int' },
-    { name: 'latency_ms', type: 'int' }
-  ]
-  // Node graphs that share ground with this one: a tag or a model in common.
-  const related = templates
+// Workflows sharing ground with this one: a tag or a model in common.
+function relatedTo(template: HubTemplate): readonly HubTemplate[] {
+  return templates
     .filter(
       (other) =>
         other.name !== template.name &&
-        !other.isApp &&
         (other.tags.some((tag) => template.tags.includes(tag)) ||
           other.models.some((model) => template.models.includes(model)))
     )
     .sort((a, b) => b.usage - a.usage)
     .slice(0, 8)
+}
+
+/** Weights to download before it runs, rounded to what a reader decides on. */
+/** What a reader brings or takes away, counted by medium rather than by node. */
+export interface HubPortSummary {
+  readonly media: string
+  readonly count: number
+}
+
+export function summarisePorts(
+  rows: readonly HubIoRow[]
+): readonly HubPortSummary[] {
+  const counts = new Map<string, number>()
+  for (const row of rows) counts.set(row.type, (counts.get(row.type) ?? 0) + 1)
+  return [...counts].map(([media, count]) => ({ media, count }))
+}
+
+function destinationFor(
+  template: HubTemplate
+): HubWorkflowDestination | undefined {
+  const model = partnerModelFor(template, workshopModels)
+  return model
+    ? {
+        key: modelIdentity(model.slug),
+        slug: model.slug,
+        name: modelName(model, workshopModels)
+      }
+    : undefined
+}
+
+export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
+  const template = templates.find((entry) => entry.name === name)
+  if (!template) return undefined
+  const detail: HubTemplateDetail = details[name] ?? {}
   return {
     template,
-    mediaType,
+    mediaType: outputMediaType(template, detail),
     details: detail,
-    model,
-    stats,
-    inputs: fields.map((field) => ({
-      name: field.name,
-      type:
-        field.kind === 'number' && (field.step === 'any' || field.step < 1)
-          ? 'float'
-          : IO_TYPES[field.kind]
-    })),
-    outputs,
-    related
+    runsOn: modelRefs(template, workshopModels),
+    destination: destinationFor(template),
+    runsInline: runsHere(template),
+    callsPartnerModel: template.tags.includes('API'),
+    customNodes: detail.requiresCustomNodes ?? [],
+    weightsBytes: detail.size ?? 0,
+    inputs: portRows(detail.inputs),
+    outputs: portRows(
+      detail.outputs?.length
+        ? detail.outputs
+        : [{ mediaType: outputMediaType(template, detail) }]
+    ),
+    related: relatedTo(template),
+    downloadUrl: `https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/${encodeURIComponent(template.name)}.json`
   }
+}
+
+/**
+ * One workflow of each kind, so the reference tool can take a reader to a
+ * page that genuinely is that kind rather than dress one up as another. What
+ * a kind changes — whether a playground exists at all, what the badge says —
+ * is decided when the page is built, so only a real page of it is honest.
+ */
+export function workflowByReach(): Partial<Record<WorkflowReach, string>> {
+  const found: Partial<Record<WorkflowReach, string>> = {}
+  for (const template of templates)
+    found[workflowReach(template.name, runsHere(template))] ??= template.name
+  return found
 }

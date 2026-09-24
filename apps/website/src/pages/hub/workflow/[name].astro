@@ -1,0 +1,263 @@
+---
+import HubCardSection from '../../../components/hub/HubCardSection.astro'
+import CatalogueBackLink from '../../../components/workshop/CatalogueBackLink.vue'
+import HubPageHeader from '../../../components/hub/HubPageHeader.vue'
+import WorkflowAbout from '../../../components/hub/WorkflowAbout.vue'
+import WorkflowRun from '../../../components/hub/WorkflowRun.vue'
+import WorkflowRunForm from '../../../components/hub/WorkflowRunForm.vue'
+import WorkflowRunStates from '../../../components/hub/WorkflowRunStates.vue'
+import WorkflowApiTab from '../../../components/hub/WorkflowApiTab.vue'
+import WorkflowTabs from '../../../components/hub/WorkflowTabs.vue'
+import CrossViewPlayground from '../../../components/hub/crossview/CrossViewPlayground.vue'
+import { catalogSearch, useCaseFor } from '../../../config/models-catalogue'
+import {
+  namesUseCase,
+  useCaseForTemplate
+} from '../../../lib/hub/template-use-case'
+import { displayModelName } from '../../../lib/hub/model-identity'
+import { useCaseLabelKey } from '../../../lib/workshop/use-case-label'
+import { workshopModels } from '../../../config/workshop-browse-content'
+import { WORKSHOP_CLOUD_BASE_URL } from '../../../config/workshop-env'
+import { estimateWorkshopNodePrice } from '../../../config/workshop-node-pricing'
+import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
+import { workflowFields } from '../../../config/workflow-fields'
+import { workflowGraphSchema } from '../../../config/workflow-execution'
+
+import { pricedOperations, relatedCardViews } from '../../../lib/hub/page-data'
+import { tagDisplayName, usefulTags } from '../../../lib/hub/tag-aliases'
+import {
+  getHubWorkflowPage,
+  listHubWorkflows,
+  summarisePorts,
+  workflowByReach
+} from '../../../lib/hub/workflow-detail'
+import { workflowDisplayTitle } from '../../../lib/hub/workflow-title'
+import { workflowReach } from '../../../lib/hub/workflow-reach'
+import { tHub } from '../../../i18n/hub'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+
+export function getStaticPaths() {
+  return listHubWorkflows().map((template) => ({
+    params: { name: template.name }
+  }))
+}
+
+const { name } = Astro.params
+const page = name ? getHubWorkflowPage(name) : undefined
+if (!page) return Astro.redirect('/hub/')
+
+const { template, details, runsOn, related } = page
+
+// The graph the run sends. It is resolved here so the page ships only its own,
+// and the island receives the workflow rather than the whole set.
+const graphs = import.meta.glob<unknown>('../../../data/workflows/*.json', {
+  eager: true,
+  import: 'default'
+})
+const runnableGraph = graphs[`../../../data/workflows/${template.name}.json`]
+const fields = workflowFields(template.name)
+// The CrossView Warp prototype brings its own playground and backend; see
+// components/hub/crossview/.
+const crossView = template.name === 'crossview_warp_h3'
+const runForm =
+  fields && runnableGraph
+    ? { fields, graph: workflowGraphSchema.parse(runnableGraph) }
+    : undefined
+// One of the thirty has no server of its own yet, and its first run has to
+// wake one. That wait is told differently, so the page says which it is.
+const coldStart =
+  template.name ===
+  'template_ltx2_3_obscura_remova_lora_remove_object_from_video'
+
+const author = template.username || 'ComfyUI'
+// A workflow this page can serve is one call to a model we carry, and there
+// the page hands the reader the playground rather than a file to take
+// elsewhere. Naming a model is not enough: a graph can reach one and still
+// need custom nodes or weights around it, and that one runs on Cloud.
+const runnable =
+  page.runsInline && page.destination
+    ? getRouterWorkshopModelDetail(page.destination.slug)
+    : undefined
+const operations = runnable
+  ? (
+      await pricedOperations([runnable], (model) =>
+        estimateWorkshopNodePrice(model, useCaseFor(model))
+      )
+    ).map((row) => ({
+      slug: row.model.slug,
+      task: row.task,
+      price: row.price,
+      detail: runnable
+    }))
+  : []
+
+// A model page is headed by the provider that answers for the model. The
+// thing that answers for a workflow is the model it runs on, which is also
+// the mark its card carries, so the two headers read the same way.
+const runsOnModel = runnable ?? runsOn.find((ref) => ref.model)?.model
+const useCase = useCaseForTemplate(template, workshopModels)
+
+const title = workflowDisplayTitle(template)
+
+const cloudUrl = `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.name)}`
+
+// Opening a workflow in Comfy Cloud promises a run, and Cloud cannot keep
+// that promise for the few whose packs it does not carry. Those lead with the
+// copy into a workspace where they can be deployed instead.
+const reach = workflowReach(template.name, page.runsInline)
+const reachExamples = workflowByReach()
+
+// A workflow that reaches neither a model nor its own bindings would open on
+// an empty Playground. None does; the build stops rather than ship one.
+if (!runnable && !runForm && !crossView)
+  throw new Error(
+    `${template.name} has no run form and no catalogue model behind it.`
+  )
+
+// A page that runs a model has to say what a run costs, on either page.
+const price = operations.find((operation) => operation.price)?.price
+
+const relatedViews = relatedCardViews(related.slice(0, 4), workshopModels)
+
+const tags = usefulTags(template.tags)
+  .filter((tag) => !namesUseCase(tag, useCase))
+  .map((tag) => ({
+    label: tagDisplayName(tag),
+    href: `/hub/?q=${encodeURIComponent(tagDisplayName(tag))}`
+  }))
+---
+
+<BaseLayout
+  inHub
+  title={`${title} - Comfy`}
+  description={details.description ?? title}
+  ogImage={template.thumbnails[0]}
+  noindex
+>
+  <main class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-16">
+    <CatalogueBackLink
+      catalogue="/hub/"
+      fallback={tHub('workshop.v2.workflow.back')}
+      class="mb-8"
+      client:load
+    />
+
+    <HubPageHeader
+      eyebrow={
+        runsOnModel ? displayModelName(runsOnModel, workshopModels) : author
+      }
+      eyebrowHref={
+        page.destination
+          ? `/hub/model/${page.destination.key}/`
+          : runsOnModel?.href
+      }
+      useCase={useCase ? tHub(useCaseLabelKey[useCase]) : undefined}
+      useCaseHref={useCase ? `/hub/${catalogSearch({ useCase })}` : undefined}
+      title={title}
+      summary={details.description}
+      price={price}
+      tags={tags}
+      client:load
+    />
+
+    {runnable ? (
+      <section id="api" class="mb-16" data-testid="workflow-run-section">
+        <WorkflowRun
+          model={runnable}
+          graphUrl={page.downloadUrl}
+          cloudUrl={cloudUrl}
+          reach={reach}
+          tutorialUrl={details.tutorialUrl}
+          samples={template.thumbnails}
+          models={runsOn}
+          author={author}
+          usage={template.usage}
+          produces={summarisePorts(page.outputs)}
+          openWeights={details.openSource ?? false}
+          added={template.date}
+          client:load
+        />
+      </section>
+    ) : crossView ? (
+      <div class="mb-16" data-testid="workflow-crossview">
+        <WorkflowTabs client:load>
+          <div slot="playground">
+            <CrossViewPlayground client:only="vue" />
+          </div>
+          <div slot="details">
+            <WorkflowAbout
+              graphUrl="/hub/crossview/crossview-generate.workflow.json"
+              cloudUrl={cloudUrl}
+              reach={reach}
+              tutorialUrl={details.tutorialUrl}
+              samples={template.thumbnails}
+              models={runsOn}
+              author={author}
+              usage={template.usage}
+              produces={summarisePorts(page.outputs)}
+              openWeights={details.openSource ?? false}
+              added={template.date}
+              client:load
+            />
+          </div>
+        </WorkflowTabs>
+      </div>
+    ) : (
+      runForm && <div class="mb-16" data-testid="workflow-on-cloud">
+        <WorkflowTabs runs={reach !== 'endpoint'} client:load>
+          {reach !== 'endpoint' && <div slot="playground">
+            <WorkflowRunForm
+              fields={runForm.fields}
+              graph={runForm.graph}
+              slug={template.name}
+              sample={template.thumbnails[0]}
+              coldStart={coldStart}
+              client:load
+            />
+          </div>}
+          <div slot="api">
+            <WorkflowApiTab
+              fields={runForm.fields}
+              graph={runForm.graph}
+              slug={template.name}
+              ownDeployment={reach === 'endpoint'}
+              client:load
+            />
+          </div>
+          <div slot="details">
+            <WorkflowAbout
+              graphUrl={page.downloadUrl}
+              cloudUrl={cloudUrl}
+              reach={reach}
+              tutorialUrl={details.tutorialUrl}
+              samples={template.thumbnails}
+              models={runsOn}
+              author={author}
+              usage={template.usage}
+              produces={summarisePorts(page.outputs)}
+              openWeights={details.openSource ?? false}
+              added={template.date}
+              client:load
+            />
+          </div>
+        </WorkflowTabs>
+      </div>
+    )}
+
+    {relatedViews.length > 0 && (
+      <HubCardSection
+        heading={tHub('workshop.v2.workflow.related')}
+        views={relatedViews}
+        actionLabel={tHub('workshop.v2.browseAllWorkflows')}
+        actionHref="/hub/"
+        testid="workflow-related"
+      />
+    )}
+
+    <WorkflowRunStates
+      examples={reachExamples}
+      hasPanel={!runnable && !!runForm && reach !== 'endpoint'}
+      client:load
+    />
+  </main>
+</BaseLayout>

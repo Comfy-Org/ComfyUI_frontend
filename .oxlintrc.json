@@ -227,7 +227,8 @@
       "files": ["**/*.spec.ts"],
       "excludeFiles": [
         "browser_tests/tests/**/*.spec.ts",
-        "apps/*/e2e/**/*.spec.ts"
+        "apps/*/e2e/**/*.spec.ts",
+        "apps/*/e2e-assets/**/*.spec.ts"
       ],
       "rules": {
         "comfy/no-misplaced-spec-files": "error"

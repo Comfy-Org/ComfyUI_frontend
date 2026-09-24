@@ -49,7 +49,7 @@ const pillClass =
     data-testid="workshop-model-card"
   >
     <div
-      class="relative aspect-4/3 overflow-hidden rounded-[1.75rem] bg-hub-surface"
+      class="relative aspect-4/3 overflow-hidden rounded-3.5xl bg-hub-surface"
     >
       <!-- Only the hub mixes graphs, apps and models in one grid, so only
         there does a card have to say which it is. -->
@@ -146,7 +146,7 @@ const pillClass =
       </span>
     </div>
 
-    <div class="flex flex-col gap-2 px-3">
+    <div class="flex flex-col gap-3 px-3">
       <div class="flex min-w-0 items-center gap-2 text-content-secondary">
         <!-- With the mark over the thumbnail, repeating it here would say the
             same thing twice. -->

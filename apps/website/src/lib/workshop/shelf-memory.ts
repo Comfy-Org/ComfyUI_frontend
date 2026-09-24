@@ -1,7 +1,9 @@
-import type { UseCase } from '../../config/models-catalogue'
-import { USE_CASES } from '../../config/models-catalogue'
-
-export type Shelf = UseCase | 'all' | 'other'
+/**
+ * A shelf key, or `all` for the catalogue entire and `other` for what no shelf
+ * claimed. Which keys are shelves depends on the half the reader was in, so
+ * the memory keeps the key and the page it returns to resolves it.
+ */
+export type Shelf = string
 
 const KEY = 'comfy-models-shelf'
 
@@ -22,6 +24,23 @@ export function rememberShelf(shelf: Shelf, modelHref: string): void {
   }
 }
 
+// Only a plain left click is this navigation. A new tab, or a click the
+// browser handles some other way, leaves this page where it is, so recording a
+// return from it would answer a question nobody asked.
+export function rememberShelfOnClick(
+  event: MouseEvent,
+  shelf: Shelf,
+  modelHref: string
+): void {
+  const handledElsewhere =
+    event.button !== 0 ||
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey
+  if (!handledElsewhere) rememberShelf(shelf, modelHref)
+}
+
 // The intent belongs to one navigation. Matching the destination prevents an
 // old shelf from leaking onto a shared link; consuming it prevents a reload or
 // an unrelated later visit from reusing it.
@@ -40,10 +59,7 @@ export function lastShelf(modelPath: string): Shelf | undefined {
 }
 
 function asShelf(value: unknown): Shelf | undefined {
-  if (value === 'all' || value === 'other') return value
-  return typeof value === 'string'
-    ? USE_CASES.find((useCase) => useCase === value)
-    : undefined
+  return typeof value === 'string' && value !== '' ? value : undefined
 }
 
 function isShelfReturn(value: unknown): value is ShelfReturn {

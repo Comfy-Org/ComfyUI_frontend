@@ -71,3 +71,14 @@ downloaded for Chromium on September 7, 2026. Its
 [source file](https://fonts.gstatic.com/s/inter/v20/UcC73FwrK3iLTeHuS_nVMrMxCp50SjIa1ZL7.woff2)
 has SHA-256 `3100e775e8616cd2611beecfa23a4263d7037586789b43f035236a2e6fbd4c62`.
 The SIL Open Font License is in `assets/Inter-OFL.txt`.
+
+## Saved generation recovery profile
+
+`pnpm --filter @comfyorg/website test:generation-assets` uses
+`playwright-assets.config.ts` and the existing isolated account/network fixtures.
+Build first with the variables above plus `PUBLIC_WORKSHOP_SAVE_ASSETS=1`.
+Run with an unused `WEBSITE_E2E_PORT`; `CI=true` refuses to reuse an unrelated
+preview server. The test submits once, leaves through the Models menu and returns
+to the saved image and asset ID, asserting that navigation never sends cancel.
+All external requests are mocked. The normal profile keeps saving disabled to
+continue covering the pre-rollout behavior.

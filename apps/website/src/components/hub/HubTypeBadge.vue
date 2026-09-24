@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import IconApps from './IconApps.vue'
 import IconModel from './IconModel.vue'
 import IconWorkflow from './IconWorkflow.vue'
 
-// The All tab mixes node graphs, apps and models in one grid, so each card
-// says which of the three it is with the same icon its tab carries.
-type Kind = 'nodeGraph' | 'comfyApp' | 'model'
+// One grid holds models and workflows, and the two kinds carry different
+// promises, so a card says which it is before it is clicked.
+type Kind = 'workflow' | 'model'
 
 const { kind, locale = 'en' } = defineProps<{
   kind: Kind
@@ -15,34 +14,31 @@ const { kind, locale = 'en' } = defineProps<{
 }>()
 
 const icons: Record<Kind, typeof IconWorkflow> = {
-  nodeGraph: IconWorkflow,
-  comfyApp: IconApps,
+  workflow: IconWorkflow,
   model: IconModel
 }
 
 const labels: Record<Kind, TranslationKey> = {
-  nodeGraph: 'workshop.hub.kind.graph',
-  comfyApp: 'workshop.hub.kind.app',
-  model: 'workshop.hub.kind.models'
+  workflow: 'workshop.v2.kind.workflow',
+  model: 'workshop.v2.kind.model'
 }
 </script>
 
 <template>
-  <!-- The icon alone does not say "app" or "graph", so hovering the card opens
-    the badge into its name. -->
   <span
-    class="absolute top-4 left-4 z-10 inline-flex h-7 min-w-7 items-center justify-center rounded-lg bg-black/40 px-1.5 text-white backdrop-blur-md"
+    class="pointer-events-none absolute top-4 left-4 z-20 inline-flex h-7 min-w-7 items-center justify-center rounded-lg bg-black/45 px-1.5 text-2xs/4 font-semibold tracking-wide text-white uppercase backdrop-blur-md"
     data-testid="hub-type-badge"
     :data-kind="kind"
   >
-    <component :is="icons[kind]" class="size-4 shrink-0" />
+    <component :is="icons[kind]" class="size-3.5 shrink-0" />
+    <!-- The word opens to its own width rather than to a guessed one. -->
     <span
-      class="grid grid-cols-[0fr] transition-[grid-template-columns] duration-300 ease-out group-focus-within:grid-cols-[1fr] group-hover:grid-cols-[1fr]"
+      class="grid grid-cols-closed items-center overflow-hidden group-focus-within:grid-cols-open group-hover:grid-cols-open motion-safe:transition-[grid-template-columns] motion-safe:duration-200 motion-safe:ease-out"
     >
-      <span class="overflow-hidden">
-        <span class="pl-1.5 text-2xs/none whitespace-nowrap">
-          {{ t(labels[kind], locale) }}
-        </span>
+      <span
+        class="flex min-w-0 items-center ps-1.5 leading-none whitespace-nowrap"
+      >
+        {{ t(labels[kind], locale) }}
       </span>
     </span>
   </span>

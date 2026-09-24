@@ -26,11 +26,18 @@ import Button from '@/components/ui/button/Button.vue'
 const {
   locale = 'en',
   githubStars = '',
-  workshopInBuild = false
+  workshopInBuild = false,
+  pageOwnsPrimaryAction = false,
+  inHub = false
 } = defineProps<{
   locale?: Locale
   githubStars?: string
   workshopInBuild?: boolean
+  /** This page is the V2 catalogue, which the nav names after itself. */
+  inHub?: boolean
+  /** The page below has its own primary action, so the nav drops its own
+    rather than competing with it. */
+  pageOwnsPrimaryAction?: boolean
 }>()
 const routes = getRoutes(locale)
 const workshopAuthEnabled = useWorkshopAuthFlag()
@@ -66,22 +73,24 @@ watch(
   { immediate: true }
 )
 
-const ctaButtons = [
-  {
-    full: t('nav.downloadLocal', locale),
-    short: t('nav.ctaDesktopCore', locale),
-    ariaLabel: t('nav.downloadLocal', locale),
-    href: routes.download,
-    primary: false
-  },
-  {
-    full: t('nav.launchCloud', locale),
-    short: t('nav.ctaCloudCore', locale),
-    ariaLabel: t('nav.launchCloud', locale),
-    href: externalLinks.cloudCta('nav_try_cloud'),
-    primary: true
-  }
-]
+const ctaButtons = computed(() =>
+  [
+    {
+      full: t('nav.downloadLocal', locale),
+      short: t('nav.ctaDesktopCore', locale),
+      ariaLabel: t('nav.downloadLocal', locale),
+      href: routes.download,
+      primary: false
+    },
+    {
+      full: t('nav.launchCloud', locale),
+      short: t('nav.ctaCloudCore', locale),
+      ariaLabel: t('nav.launchCloud', locale),
+      href: externalLinks.cloudCta('nav_try_cloud'),
+      primary: true
+    }
+  ].filter((cta) => !(cta.primary && pageOwnsPrimaryAction))
+)
 </script>
 
 <template>
@@ -116,6 +125,7 @@ const ctaButtons = [
     <HeaderMainDesktop
       :locale
       :workshop-in-build="showWorkshop"
+      :in-hub
       :class="showWorkshop ? 'hidden xl:block' : 'hidden lg:block'"
     />
     <div
@@ -124,7 +134,7 @@ const ctaButtons = [
       :class="showWorkshop ? 'xl:hidden' : 'lg:hidden'"
     >
       <HeaderAccount v-if="showAccount" :locale="locale" />
-      <HeaderMainMobile :locale :workshop-in-build="showWorkshop" />
+      <HeaderMainMobile :locale :workshop-in-build="showWorkshop" :in-hub />
     </div>
 
     <!-- Desktop CTA buttons -->

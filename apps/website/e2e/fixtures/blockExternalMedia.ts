@@ -12,6 +12,7 @@ function assetPath(relativePath: string) {
 
 const IMAGE_PLACEHOLDER = assetPath('../assets/placeholder-1x1.webp')
 const VIDEO_PLACEHOLDER = assetPath('../assets/placeholder.webm')
+const TEMPLATE_GRAPH = assetPath('../assets/workflow-template.json')
 const INTER_FONT = readFileSync(
   assetPath('../assets/inter-latin.woff2')
 ).toString('base64')
@@ -29,17 +30,21 @@ const EMBED_HOSTS = new Set([
 ])
 const SCRIPT_HOSTS = new Set(['js-na2.hsforms.net'])
 const MEDIA_PATTERNS = [
-  /^https:\/\/(?:media|comfy-hub-assets)\.comfy\.org\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
-  /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/main\/templates\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
-  /^https:\/\/cdn\.jsdelivr\.net\/gh\/Comfy-Org\/workflow_templates@(?:main|[0-9a-f]{40})\/(?:input|output|templates)\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
+  /^https:\/\/(?:media|comfy-hub-assets)\.comfy\.org\/.*\.(?:webp|webm|mp4|mp3|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
+  /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/main\/templates\/.*\.(?:webp|webm|mp4|mp3|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
+  /^https:\/\/cdn\.jsdelivr\.net\/gh\/Comfy-Org\/workflow_templates@(?:main|[0-9a-f]{40})\/(?:input|output|templates)\/.*\.(?:webp|webm|mp4|mp3|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
   /^https:\/\/assets\.sync\.so\/docs\/example-(?:audio\.wav|video\.mp4)$/i
 ]
+// The workflow page draws the published template, so the graph it draws in a
+// test is a stub of one rather than whatever main holds today.
+const TEMPLATE_GRAPH_PATTERN =
+  /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/main\/templates\/[^/]+\.json(?:\?.*)?$/i
 const NODE_IMAGE_HOSTS = new Set([
   'avatars.githubusercontent.com',
   'raw.githubusercontent.com'
 ])
 const VIDEO_PATTERN = /\.(webm|mp4)(\?|$)/i
-const AUDIO_PATTERN = /\.wav(\?|$)/i
+const AUDIO_PATTERN = /\.(?:wav|mp3)(\?|$)/i
 const SUBTITLE_PATTERN = /\.vtt(\?|$)/i
 
 async function fulfillMedia(route: Route) {
@@ -112,6 +117,11 @@ const EXTERNAL_ROUTE_RULES: readonly ExternalRouteRule[] = [
     matches: (_route, url) =>
       MEDIA_PATTERNS.some((pattern) => pattern.test(url.href)),
     handle: fulfillMedia
+  },
+  {
+    matches: (_route, url) => TEMPLATE_GRAPH_PATTERN.test(url.href),
+    handle: (route) =>
+      route.fulfill({ path: TEMPLATE_GRAPH, contentType: 'application/json' })
   },
   {
     matches: isNodeImage,

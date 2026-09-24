@@ -1,0 +1,286 @@
+{
+  "9": {
+    "inputs": {
+      "filename_prefix": "Flux2",
+      "images": ["62:8", 0]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "Save Image"
+    }
+  },
+  "46": {
+    "inputs": {
+      "image": "image_flux2_input_Illustration.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "42": {
+    "inputs": {
+      "image": "image_flux2_input_ref_image.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Load Image"
+    }
+  },
+  "62:48": {
+    "inputs": {
+      "steps": ["62:94", 0],
+      "width": ["62:66", 0],
+      "height": ["62:66", 1]
+    },
+    "class_type": "Flux2Scheduler",
+    "_meta": {
+      "title": "Flux2Scheduler"
+    }
+  },
+  "62:22": {
+    "inputs": {
+      "model": ["62:93", 0],
+      "conditioning": ["62:39", 0]
+    },
+    "class_type": "BasicGuider",
+    "_meta": {
+      "title": "Basic Guider"
+    }
+  },
+  "62:10": {
+    "inputs": {
+      "vae_name": "flux2-vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "Load VAE"
+    }
+  },
+  "62:40": {
+    "inputs": {
+      "pixels": ["62:41", 0],
+      "vae": ["62:10", 0]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "62:44": {
+    "inputs": {
+      "pixels": ["62:45", 0],
+      "vae": ["62:10", 0]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAE Encode"
+    }
+  },
+  "62:41": {
+    "inputs": {
+      "upscale_method": "area",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": ["46", 0]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "Scale Image to Total Pixels"
+    }
+  },
+  "62:26": {
+    "inputs": {
+      "guidance": 4,
+      "conditioning": ["62:6", 0]
+    },
+    "class_type": "FluxGuidance",
+    "_meta": {
+      "title": "FluxGuidance"
+    }
+  },
+  "62:8": {
+    "inputs": {
+      "samples": ["62:13", 0],
+      "vae": ["62:10", 0]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAE Decode"
+    }
+  },
+  "62:13": {
+    "inputs": {
+      "noise": ["62:25", 0],
+      "guider": ["62:22", 0],
+      "sampler": ["62:16", 0],
+      "sigmas": ["62:48", 0],
+      "latent_image": ["62:47", 0]
+    },
+    "class_type": "SamplerCustomAdvanced",
+    "_meta": {
+      "title": "SamplerCustomAdvanced"
+    }
+  },
+  "62:16": {
+    "inputs": {
+      "sampler_name": "euler"
+    },
+    "class_type": "KSamplerSelect",
+    "_meta": {
+      "title": "KSamplerSelect"
+    }
+  },
+  "62:43": {
+    "inputs": {
+      "conditioning": ["62:26", 0],
+      "latent": ["62:44", 0]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "Set Reference Latent"
+    }
+  },
+  "62:39": {
+    "inputs": {
+      "conditioning": ["62:43", 0],
+      "latent": ["62:40", 0]
+    },
+    "class_type": "ReferenceLatent",
+    "_meta": {
+      "title": "Set Reference Latent"
+    }
+  },
+  "62:12": {
+    "inputs": {
+      "unet_name": "flux2_dev_fp8mixed.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "Load Diffusion Model"
+    }
+  },
+  "62:6": {
+    "inputs": {
+      "text": "Apply the design from Reference Image 1 onto objects in Reference Image 2.\n",
+      "clip": ["62:38", 0]
+    },
+    "class_type": "CLIPTextEncode",
+    "_meta": {
+      "title": "CLIP Text Encode (Positive Prompt)"
+    }
+  },
+  "62:25": {
+    "inputs": {
+      "noise_seed": 315616751694460
+    },
+    "class_type": "RandomNoise",
+    "_meta": {
+      "title": "RandomNoise"
+    }
+  },
+  "62:45": {
+    "inputs": {
+      "upscale_method": "area",
+      "megapixels": 1,
+      "resolution_steps": 1,
+      "image": ["42", 0]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "Scale Image to Total Pixels"
+    }
+  },
+  "62:66": {
+    "inputs": {
+      "image": ["62:45", 0]
+    },
+    "class_type": "GetImageSize",
+    "_meta": {
+      "title": "Get Image Size"
+    }
+  },
+  "62:47": {
+    "inputs": {
+      "batch_size": 1,
+      "width": ["62:66", 0],
+      "height": ["62:66", 1]
+    },
+    "class_type": "EmptyFlux2LatentImage",
+    "_meta": {
+      "title": "Empty Flux 2 Latent"
+    }
+  },
+  "62:38": {
+    "inputs": {
+      "clip_name": "mistral_3_small_flux2_fp8.safetensors",
+      "type": "flux2",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "Load CLIP"
+    }
+  },
+  "62:88": {
+    "inputs": {
+      "lora_name": "Flux2TurboComfyv2.safetensors",
+      "strength_model": 1,
+      "model": ["62:12", 0]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "Load LoRA"
+    }
+  },
+  "62:90": {
+    "inputs": {
+      "value": 20
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Step"
+    }
+  },
+  "62:92": {
+    "inputs": {
+      "value": 8
+    },
+    "class_type": "PrimitiveInt",
+    "_meta": {
+      "title": "Step"
+    }
+  },
+  "62:93": {
+    "inputs": {
+      "switch": ["62:95", 0],
+      "on_false": ["62:12", 0],
+      "on_true": ["62:88", 0]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Switch (Model)"
+    }
+  },
+  "62:94": {
+    "inputs": {
+      "switch": ["62:95", 0],
+      "on_false": ["62:90", 0],
+      "on_true": ["62:92", 0]
+    },
+    "class_type": "ComfySwitchNode",
+    "_meta": {
+      "title": "Switch (Step)"
+    }
+  },
+  "62:95": {
+    "inputs": {
+      "value": false
+    },
+    "class_type": "PrimitiveBoolean",
+    "_meta": {
+      "title": "Enable 8steps LoRA"
+    }
+  }
+}

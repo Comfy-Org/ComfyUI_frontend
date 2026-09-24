@@ -1,5 +1,9 @@
 import { models } from './models'
-import { isLegacyWorkshopRoute, isWorkshopRoute } from './workshop-release'
+import {
+  isLegacyWorkshopRoute,
+  isHubRoute,
+  isWorkshopRoute
+} from './workshop-release'
 
 const LOCALES = ['en', 'zh-CN'] as const
 const DEFAULT_LOCALE = 'en'
@@ -45,7 +49,8 @@ function normalizePathname(pathname: string): string {
 }
 
 export function isNoindexPathname(pathname: string): boolean {
-  return NOINDEX_PATHNAMES.has(normalizePathname(pathname))
+  const normalized = normalizePathname(pathname)
+  return NOINDEX_PATHNAMES.has(normalized) || isHubRoute(normalized)
 }
 
 export function isExcludedFromSitemap(page: string): boolean {

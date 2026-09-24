@@ -12,6 +12,16 @@ export function isWorkshopRoute(pattern: string): boolean {
   return isLegacyWorkshopRoute(pathname) || pathname.startsWith('/models/')
 }
 
+/**
+ * The V2 catalogue proposal. It lives in its own tree so the Workshop gate does
+ * not delete it, and it stays out of the sitemap because it is something to
+ * click through, not somewhere to land from a search.
+ */
+export function isHubRoute(pattern: string): boolean {
+  const pathname = pattern.replace(/\/$/, '')
+  return pathname === '/hub' || pathname.startsWith('/hub/')
+}
+
 export function isLegacyWorkshopRoute(pattern: string): boolean {
   const pathname = pattern.replace(/\/$/, '')
   return pathname === '/workshop' || pathname.startsWith('/workshop/')

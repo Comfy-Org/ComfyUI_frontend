@@ -3,6 +3,7 @@ import { Download, ExternalLink, Play } from '@lucide/vue'
 import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
 import {
   computed,
+  onMounted,
   onScopeDispose,
   onUnmounted,
   ref,
@@ -19,6 +20,11 @@ import { useWorkshopDelivery } from '../../composables/useWorkshopDelivery'
 import { sameFormValues } from '../../lib/workshop/form-values'
 import { validateWorkshopMediaInputs } from '../../config/workshop-media-validation'
 import { leaveForSignIn } from '../../config/workshop-return'
+import {
+  apiPanelRequested,
+  releaseApiPanelHash
+} from '../../config/workshop-api-anchor'
+import { usePersonalWorkspace } from '../../composables/usePersonalWorkspace'
 import { useSignInHref } from '../../composables/useSignInHref'
 import { useTablist } from '../../composables/useTablist'
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
@@ -80,6 +86,8 @@ import PlaygroundOutput from './PlaygroundOutput.vue'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
 import ModelSupport from './ModelSupport.vue'
+import SavedAssetsStrip from './SavedAssetsStrip.vue'
+import { WORKSHOP_USER_CANCEL } from '../../config/workshop-router-queue'
 
 const {
   model,
@@ -89,9 +97,6 @@ const {
   model: WorkshopModelDetail
   locale?: Locale
   clone?: { href: string }
-  /** Names the form's groups as numbered steps and keeps the result in view
-   * while they are filled in. The workflow pages ask for it; a model page has
-   * a shorter form that reads fine as one list. */
 }>()
 
 const slots = useSlots()
@@ -114,11 +119,36 @@ const { onKeydown: onTabKeydown } = useTablist(
   activeSection
 )
 
+// The endpoint action sits in another island, so it asks through the address
+// bar. The server has no address to read, so the fragment is applied on mount
+// rather than during setup, and the tabs render the same on both sides.
+onMounted(() => {
+  if (apiPanelRequested()) activeSection.value = 'api'
+})
+
+useEventListener(
+  () => globalThis.window,
+  'hashchange',
+  () => {
+    if (apiPanelRequested()) activeSection.value = 'api'
+  }
+)
+
+// Leaving the panel gives the fragment back, so asking for it again is a
+// change of address and the endpoint action keeps working.
+watch(activeSection, (section) => {
+  if (section !== 'api') releaseApiPanelHash()
+})
+
 const initialPageState = initialWorkshopPageState(model)
 const examples = initialPageState.examples
 // A workflow page describes one workflow, so the model's other examples would
 // be beside the point there.
 const showsExamples = computed(() => !slots.details && examples.length > 0)
+
+// The docs describe the model. A workflow page borrows this shell but is not
+// one, so the link would send its reader somewhere they did not ask to go.
+const showsDocs = computed(() => !slots.details && docsHref)
 const firstExample = initialPageState.firstExample
 const activeExample = ref<PlaygroundExample | undefined>(
   initialPageState.activeExample
@@ -202,6 +232,7 @@ const runState = ref<RunState>(
     ? { status: 'example', output: exampleOutput(firstExample) }
     : IDLE
 )
+const savesAssets = import.meta.env.PUBLIC_WORKSHOP_SAVE_ASSETS === '1'
 const runs = ref<RunRecord[]>([])
 const earlier = computed(() => runs.value.slice(1))
 const attachments = computed(() =>
@@ -211,7 +242,7 @@ const attachments = computed(() =>
 )
 const revealed = ref(false)
 
-const { user, session, sessionFailure, settled, ensureFresh, remint } =
+const { user, session, sessionFailure, settled, ensureFresh } =
   useWorkshopSession()
 const { balance } = useWorkshopCredits()
 const workshopEnabled = useWorkshopEnabled()
@@ -290,7 +321,7 @@ watch(
 // standing one costs the idle page its place in the back/forward cache.
 // globalThis.window, not window: on the server the island has neither.
 useEventListener(
-  () => (isRunning.value ? globalThis.window : undefined),
+  () => (isRunning.value && !savesAssets ? globalThis.window : undefined),
   'beforeunload',
   (event: BeforeUnloadEvent) => event.preventDefault()
 )
@@ -299,7 +330,7 @@ useEventListener(
 // listener: declining restores the prior entry without unmounting this island;
 // accepting lets Astro finish the traversal and cancel the run on unmount.
 useEventListener(
-  () => (isRunning.value ? globalThis.window : undefined),
+  () => (isRunning.value && !savesAssets ? globalThis.window : undefined),
   'popstate',
   (event: PopStateEvent) => {
     if (restoringTraversal) {
@@ -330,7 +361,7 @@ useEventListener(
 // reach the guards above.
 const leavingTo = ref<string>()
 useEventListener(
-  () => (isRunning.value ? globalThis.document : undefined),
+  () => (isRunning.value && !savesAssets ? globalThis.document : undefined),
   'click',
   (event: MouseEvent) => {
     const href = linkLeavingPage(event, location)
@@ -344,7 +375,7 @@ function leaveForLink() {
   const href = leavingTo.value
   leavingTo.value = undefined
   if (!href) return
-  cancelRun()
+  stopObserving()
   location.assign(href)
 }
 
@@ -352,7 +383,7 @@ function leaveForLink() {
 // beforeunload guard owns its confirmation. An approved traversal is the one
 // exception: it was already confirmed in the capture-phase popstate handler.
 useEventListener(
-  () => (isRunning.value ? globalThis.document : undefined),
+  () => (isRunning.value && !savesAssets ? globalThis.document : undefined),
   'astro:before-preparation',
   (event: Event) => {
     const navigationType = Reflect.get(event, 'navigationType')
@@ -384,14 +415,14 @@ const now = useTimestamp({ interval: 1000 })
 // The header is its own island and switching workspace is not a navigation,
 // so none of the guards above see it. This is how it learns there is a run.
 watch(isRunning, (running) =>
-  reportWorkshopRun(running ? cancelRun : undefined)
+  reportWorkshopRun(running && !savesAssets ? cancelRun : undefined)
 )
 onScopeDispose(() => reportWorkshopRun(undefined))
 
 function cancelRun() {
   delivery.cancel()
   if (activeRun) {
-    activeRun.controller.abort()
+    activeRun.controller.abort(WORKSHOP_USER_CANCEL)
     captureWorkshopEvent({
       name: 'run_finished',
       properties: {
@@ -406,28 +437,58 @@ function cancelRun() {
   runState.value = transition(runState.value, { type: 'cancel' })
 }
 
-const personalSwitchPending = ref(false)
-const personalSwitchError = ref(false)
-
-async function switchToPersonal() {
-  if (personalSwitchPending.value) return
-  personalSwitchPending.value = true
-  personalSwitchError.value = false
-  try {
-    const result = await remint(undefined, {
-      preserveCredentialOnTransientFailure: true
-    })
-    if (result?.status === 'ok') await refreshWorkshopCredits({ force: true })
-    else if (result?.status === 'error') personalSwitchError.value = true
-  } catch {
-    personalSwitchError.value = true
-  } finally {
-    personalSwitchPending.value = false
-  }
+function stopObserving() {
+  activeRun?.controller.abort()
+  activeRun = undefined
+  runState.value = IDLE
+  reportWorkshopRun(undefined)
 }
 
+function clearSessionOutputs() {
+  const ended = runState.value
+  stopObserving()
+  pendingRequest = undefined
+  releaseRouterOutputs(
+    runs.value.flatMap((run) => [run.output, ...run.attachments])
+  )
+  runs.value = []
+  requestId.value = null
+  // The pictures went with the workspace being left, but a run that ended in
+  // nothing but a word keeps saying it rather than blanking mid-sentence.
+  if (ended.status === 'failed' || ended.status === 'cancelled')
+    runState.value = ended
+}
+
+async function historyToken(): Promise<string> {
+  const owner = session.value
+  const result = await ensureFresh()
+  if (
+    !owner ||
+    result?.status !== 'ok' ||
+    result.session.uid !== owner.uid ||
+    result.session.workspace.id !== owner.workspace.id ||
+    session.value?.uid !== owner.uid ||
+    session.value?.workspace.id !== owner.workspace.id
+  )
+    throw new WorkshopRouterError('unavailable')
+  return result.session.token
+}
+
+onMounted(() => {
+  if (!savesAssets) return
+  const id = new URL(window.location.href).searchParams.get('request_id')
+  if (id && /^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(id))
+    requestId.value = id
+})
+
+const {
+  switching: personalSwitchPending,
+  failed: personalSwitchError,
+  switchToPersonal
+} = usePersonalWorkspace()
+
 onUnmounted(() => {
-  cancelRun()
+  stopObserving()
   releaseRouterOutputs(
     runs.value.flatMap((run) => [run.output, ...run.attachments])
   )
@@ -435,13 +496,13 @@ onUnmounted(() => {
 watch(
   () => session.value?.uid,
   (uid, previous) => {
-    if (uid !== previous) cancelRun()
+    if (previous !== undefined && uid !== previous) clearSessionOutputs()
   }
 )
 watch(
   () => session.value?.workspace.id,
   (workspace, previous) => {
-    if (workspace !== previous) cancelRun()
+    if (previous !== undefined && workspace !== previous) clearSessionOutputs()
   }
 )
 
@@ -498,6 +559,7 @@ async function renderRun(
     {},
     {
       model,
+      comfy_save_asset: savesAssets,
       form: { schema: schema.value, values: values.value },
       signal: attempt.controller.signal,
       token: async () => (await freshCredentialFor(startedFor, attempt)).token,
@@ -512,7 +574,13 @@ async function renderRun(
       },
       idempotencyKey: (body) => idempotencyKeyFor(startedFor, body),
       onRequestId: (id) => {
-        if (runIsActive(attempt)) requestId.value = id
+        if (!runIsActive(attempt)) return
+        requestId.value = id
+        if (savesAssets && id) {
+          const url = new URL(window.location.href)
+          url.searchParams.set('request_id', id)
+          window.history.replaceState(window.history.state, '', url)
+        }
       }
     }
   )
@@ -732,7 +800,7 @@ function useInCode() {
         </button>
       </div>
       <a
-        v-if="docsHref"
+        v-if="showsDocs"
         :href="docsHref"
         target="_blank"
         rel="noopener noreferrer"
@@ -743,6 +811,12 @@ function useInCode() {
         <ExternalLink class="size-4" aria-hidden="true" />
       </a>
     </div>
+
+    <!-- A page that stands for several operations of one model hands that
+      choice back here, under the view it applies to rather than above it. On
+      the playground the choice belongs to the form it rewrites, so it travels
+      inside the Input panel instead. -->
+    <slot v-if="activeSection !== 'playground'" name="operations" />
 
     <section
       v-if="activeSection === 'playground'"
@@ -775,6 +849,14 @@ function useInCode() {
             {{ t('workshop.form.nativeJson', locale) }}
           </button>
         </header>
+
+        <div
+          v-if="$slots.operations"
+          class="border-b border-transparency-white-t8 px-5 py-4"
+          data-testid="playground-operations"
+        >
+          <slot name="operations" />
+        </div>
 
         <!-- Loading an example rewrites every field at once, so the form
           settles in instead of snapping. -->
@@ -809,7 +891,7 @@ function useInCode() {
         <!-- Run follows the form down the page, so a long list of inputs never
           pushes it past the bottom of a laptop screen. -->
         <div
-          class="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
+          class="mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 p-3"
         >
           <Button
             v-if="gate === 'signedOut'"
@@ -829,7 +911,7 @@ function useInCode() {
                the wrong wallet visible before it happens. -->
           <template v-else-if="gate === 'noCredits'">
             <p
-              class="mb-2 text-sm font-bold text-content-secondary"
+              class="mb-2 text-center text-sm font-bold text-content-secondary"
               data-testid="gate-note"
             >
               {{
@@ -850,7 +932,10 @@ function useInCode() {
             </Button>
           </template>
           <template v-else-if="gate === 'memberNoCredits'">
-            <div class="mb-2 flex flex-col gap-1" data-testid="gate-note">
+            <div
+              class="mb-2 flex flex-col gap-1 text-center"
+              data-testid="gate-note"
+            >
               <p class="text-sm font-bold text-content-secondary">
                 {{ t('workshop.error.creditsTitle', locale) }}
               </p>
@@ -955,7 +1040,7 @@ function useInCode() {
           class="flex flex-col gap-1"
         >
           <p
-            v-if="runState.status === 'succeeded'"
+            v-if="runState.status === 'succeeded' && !savesAssets"
             class="text-xs text-primary-warm-gray"
             data-testid="output-expires"
           >
@@ -980,6 +1065,15 @@ function useInCode() {
             />
           </div>
         </div>
+
+        <SavedAssetsStrip
+          v-if="savesAssets && session"
+          :key="JSON.stringify([session.uid, session.workspace.id])"
+          :model-id="model.routerId"
+          :active-request-id="requestId"
+          :token="historyToken"
+          :locale
+        />
 
         <!-- Once the result is in view, taking the workflow home is the other
           thing to do with it, and it should not shout over the run's own

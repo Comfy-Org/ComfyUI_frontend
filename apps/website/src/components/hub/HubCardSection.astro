@@ -1,0 +1,51 @@
+---
+import { ArrowRight } from '@lucide/vue'
+
+import type { CardView } from '../../lib/hub/catalogue-card'
+import CatalogueCard from './CatalogueCard.vue'
+
+// A row of cards under a heading, in the shape the live model page uses: the
+// name of the row at full size, and the way past it on the same line rather
+// than trailing underneath.
+interface Props {
+  heading: string
+  note?: string
+  views: readonly CardView[]
+  actionLabel?: string
+  actionHref?: string
+  testid: string
+}
+
+const { heading, note, views, actionLabel, actionHref, testid } = Astro.props
+---
+
+<section
+  class="mt-24 border-t border-transparency-white-t8 pt-12"
+  data-testid={testid}
+>
+  <!-- Side by side once there is room for both; stacked on a phone, where the
+    heading would otherwise be squeezed into a three-line column. -->
+  <div
+    class="mb-6 flex flex-col gap-3 sm:flex-row sm:items-baseline sm:justify-between sm:gap-4"
+  >
+    <div class="flex flex-col gap-2">
+      <h2 class="text-2xl font-bold text-primary-comfy-canvas">{heading}</h2>
+      {note && <p class="max-w-xl text-sm text-content-muted">{note}</p>}
+    </div>
+    {actionLabel && actionHref && <a
+      href={actionHref}
+      class="inline-flex shrink-0 items-center gap-2 text-sm font-bold tracking-wider text-primary-comfy-yellow uppercase hover:underline"
+      data-testid={`${testid}-browse-all`}
+    >
+      {actionLabel}
+      <ArrowRight class="size-4 shrink-0" aria-hidden="true" />
+    </a>}
+  </div>
+  <ul
+    class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+  >
+    {views.map((view) => <li>
+      <CatalogueCard view={view} />
+    </li>)}
+  </ul>
+</section>

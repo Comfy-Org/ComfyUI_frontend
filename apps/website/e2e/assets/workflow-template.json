@@ -1,0 +1,19 @@
+{
+  "nodes": [
+    {
+      "id": 1,
+      "type": "LoadImage",
+      "pos": [40, 60],
+      "size": [220, 110],
+      "outputs": [{ "name": "IMAGE", "type": "IMAGE" }]
+    },
+    {
+      "id": 2,
+      "type": "SaveVideo",
+      "pos": [380, 60],
+      "size": [220, 110],
+      "inputs": [{ "name": "images", "type": "IMAGE" }]
+    }
+  ],
+  "links": [[1, 1, 0, 2, 0, "IMAGE"]]
+}

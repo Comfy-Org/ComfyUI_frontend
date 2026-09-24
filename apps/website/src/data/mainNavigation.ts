@@ -41,16 +41,20 @@ export type NavItem =
       featured?: never
     }
 
+const HUB_PATH = '/hub/'
+
 export function getMainNavigation(
   locale: Locale,
-  workshopInBuild = false
+  workshopInBuild = false,
+  /** The V2 catalogue, which goes by its own name and answers elsewhere. */
+  inHub = false
 ): NavItem[] {
   const routes = getRoutes(locale)
   const modelsEntry: NavItem[] = workshopInBuild
     ? [
         {
-          label: t('nav.workshop', locale),
-          href: routes.workshop,
+          label: t(inHub ? 'nav.hub' : 'nav.workshop', locale),
+          href: inHub ? HUB_PATH : routes.workshop,
           badge: 'new'
         }
       ]

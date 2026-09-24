@@ -911,14 +911,14 @@ export class CameraWidget {
       img.onerror = () => {
         if (this.disposed) return
         this.planeMat.map = null
-        this.planeMat.color.set(0xe93d82)
+        this.planeMat.color.set(this.pal.cardFront)
         this.planeMat.needsUpdate = true
       }
 
       img.src = url
     } else {
       this.planeMat.map = null
-      this.planeMat.color.set(0x3a3a4a)
+      this.planeMat.color.set(this.pal.cardFront)
       this.planeMat.needsUpdate = true
       this.imagePlane.scale.set(1, 1, 1)
       this.imageFrame.scale.set(1, 1, 1)

@@ -35,7 +35,12 @@ watch(
 </script>
 
 <template>
-  <WorkshopHero v-if="!inSection" subtitle-key="workshop.hero.subtitle" :locale>
+  <WorkshopHero
+    v-if="!inSection"
+    :eyebrow="t('workshop.hero.eyebrow', locale)"
+    :heading="t('workshop.hero.heading', locale)"
+    :subtitle="t('workshop.hero.subtitle', locale)"
+  >
     <template #aside>
       <button
         type="button"

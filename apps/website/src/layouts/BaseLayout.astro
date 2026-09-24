@@ -39,6 +39,10 @@ interface Props {
   mainEntityId?: string
   extraJsonLd?: (JsonLdNode | null | undefined)[]
   minimal?: boolean
+  /** The page has its own primary action, so the nav drops its own. */
+  ownsPrimaryAction?: boolean
+  /** The V2 catalogue, which the nav names after itself. */
+  inHub?: boolean
 }
 
 const {
@@ -51,7 +55,9 @@ const {
   breadcrumbs,
   mainEntityId,
   extraJsonLd,
-  minimal = false
+  minimal = false,
+  ownsPrimaryAction = false,
+  inHub = false
 } = Astro.props
 
 const keywordsContent =
@@ -266,6 +272,8 @@ const structuredData = shouldNoindex
         locale={locale}
         github-stars={githubStars}
         workshop-in-build={isWorkshopInBuild()}
+        page-owns-primary-action={ownsPrimaryAction}
+        in-hub={inHub}
         client:load
       />
     )}

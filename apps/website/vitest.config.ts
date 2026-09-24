@@ -51,7 +51,12 @@ export default defineConfig({
         // workshop-firebase.test.ts, while popup/listener wiring is exercised
         // through consumers that mock this module. SDK-owned branches are not
         // meaningful patch-coverage targets here.
-        'src/config/workshop-firebase.ts'
+        'src/config/workshop-firebase.ts',
+        // Astro resolves these imports; Vitest cannot, so the files never run
+        // here and the coverage provider parses them as plain JavaScript and
+        // throws on the TypeScript it finds, taking the whole report with it.
+        'src/utils/loadStories.ts',
+        'src/scripts/posthog.ts'
       ]
     }
   }

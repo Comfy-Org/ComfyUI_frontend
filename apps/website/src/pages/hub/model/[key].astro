@@ -1,0 +1,108 @@
+---
+import HubCardSection from '../../../components/hub/HubCardSection.astro'
+import CatalogueBackLink from '../../../components/workshop/CatalogueBackLink.vue'
+import HubPageHeader from '../../../components/hub/HubPageHeader.vue'
+import ModelRun from '../../../components/hub/ModelRun.vue'
+import { catalogSearch, useCaseFor } from '../../../config/models-catalogue'
+import { useCaseLabelKey } from '../../../lib/workshop/use-case-label'
+import { workshopModels } from '../../../config/workshop-browse-content'
+import { estimateWorkshopNodePrice } from '../../../config/workshop-node-pricing'
+import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
+import { getModelGroupPage, listModelGroups } from '../../../lib/hub/model-page'
+import { pricedOperations, relatedCardViews } from '../../../lib/hub/page-data'
+import { tHub } from '../../../i18n/hub'
+import BaseLayout from '../../../layouts/BaseLayout.astro'
+
+export function getStaticPaths() {
+  return listModelGroups().map((entry) => ({ params: { key: entry.key } }))
+}
+
+const { key } = Astro.params
+const page = key ? getModelGroupPage(key) : undefined
+if (!page) return Astro.redirect('/hub/')
+
+const {
+  name,
+  displayName,
+  provider,
+  operations,
+  uses,
+  operationsFromWorkflows
+} = page
+
+const operationRows = await pricedOperations(operations, (model) =>
+  estimateWorkshopNodePrice(model, useCaseFor(model))
+)
+
+// The playground itself, not a link to it: a model page that cannot run the
+// model is a page about a capability rather than the capability.
+const runnable = operationRows.flatMap((row) => {
+  const detail = getRouterWorkshopModelDetail(row.model.slug)
+  return detail
+    ? [{ slug: row.model.slug, task: row.task, price: row.price, detail }]
+    : []
+})
+
+const madeWith = [...operationsFromWorkflows, ...uses]
+const madeWithViews = relatedCardViews(madeWith.slice(0, 8), workshopModels)
+
+const price = runnable.find((operation) => operation.price)?.price
+
+// The registry lists a model once per operation, and the page collapses them,
+// so what it is for and what it says about itself come from the first row.
+const lead = operations[0]
+const useCase = lead ? useCaseFor(lead) : undefined
+const tags = [...new Set(operations.flatMap((model) => model.capabilities))]
+  .slice(0, 8)
+  .map((tag) => ({ label: tag, href: `/hub/?q=${encodeURIComponent(tag)}` }))
+---
+
+<BaseLayout
+  inHub
+  title={`${displayName} - Comfy`}
+  description={`${displayName} and the workflows built on it.`}
+  noindex
+>
+  <main class="mx-auto max-w-10xl px-6 py-10 lg:px-8 lg:py-16">
+    <CatalogueBackLink
+      catalogue="/hub/"
+      fallback={tHub('workshop.v2.workflow.back')}
+      class="mb-8"
+      client:load
+    />
+
+    <HubPageHeader
+      eyebrow={provider ?? tHub('workshop.card.partnerNode')}
+      useCase={useCase ? tHub(useCaseLabelKey[useCase]) : undefined}
+      useCaseHref={useCase ? `/hub/${catalogSearch({ useCase })}` : undefined}
+      title={displayName}
+      summary={lead?.summary}
+      price={price}
+      tags={tags}
+      client:load
+    />
+
+    {runnable.length > 0 ? (
+      <section class="mb-16">
+        <ModelRun operations={runnable} client:load />
+      </section>
+    ) : (
+      <section class="mb-16" data-testid="model-unrunnable">
+        <p class="text-sm text-content-muted">
+          {tHub('workshop.v2.model.noRun')}
+        </p>
+      </section>
+    )}
+
+    {madeWith.length > 0 && (
+      <HubCardSection
+        heading={tHub('workshop.v2.model.workflows')}
+        note={tHub('workshop.v2.model.workflowsNote')}
+        views={madeWithViews}
+        actionLabel={tHub('workshop.v2.browseAllWorkflows')}
+        actionHref={`/hub/?model=${encodeURIComponent(name)}`}
+        testid="model-workflows"
+      />
+    )}
+  </main>
+</BaseLayout>

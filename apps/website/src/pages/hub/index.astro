@@ -1,0 +1,37 @@
+---
+import CatalogueBrowse from '../../components/hub/CatalogueBrowse.vue'
+import { workshopModels } from '../../config/workshop-browse-content'
+import hubTemplates from '../../data/hubTemplates.json'
+import { browseEntries } from '../../lib/hub/browse-payload'
+import { facetedTemplates } from '../../lib/hub/page-data'
+import { launchesHere } from '../../config/workshop-launch'
+import { tHub } from '../../i18n/hub'
+import BaseLayout from '../../layouts/BaseLayout.astro'
+
+// A V2 proposal, not a shipped route: the live catalogue is untouched while
+// this one is argued over.
+
+// Everything resolves here. The island receives card-sized records, so the
+// model list and the template index never reach the browser.
+// The workflows half is the launch list from the Phase 2 spec: five
+// categories of six, chosen editorially rather than by what the Router can
+// serve inline. Most of them run on Cloud, so a card opens onto the workflow
+// rather than onto a form.
+const entries = browseEntries(
+  facetedTemplates(hubTemplates, workshopModels).filter((template) =>
+    launchesHere(template.name)
+  ),
+  workshopModels
+)
+---
+
+<BaseLayout
+  inHub
+  title={tHub('workshop.v2.meta.title')}
+  description={tHub('workshop.v2.meta.description')}
+  noindex
+>
+  <main class="mx-auto max-w-10xl px-6 py-16 lg:px-8 lg:py-24">
+    <CatalogueBrowse entries={entries} client:load />
+  </main>
+</BaseLayout>
