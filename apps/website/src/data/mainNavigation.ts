@@ -65,7 +65,7 @@ export function getMainNavigation(
         {
           label: t('nav.cinematicStudio', locale),
           href: routes.cinematicStudio,
-          badge: 'new'
+          badge: 'beta'
         }
       ]
     : []

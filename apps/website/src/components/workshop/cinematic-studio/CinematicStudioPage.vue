@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { LayoutTemplate } from '@lucide/vue'
+import { Ellipsis } from '@lucide/vue'
 import { computed, onMounted, ref } from 'vue'
 
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
@@ -50,7 +50,7 @@ function pickLayout(id: string) {
       trigger-class="fixed right-3 bottom-56 z-40 size-8 justify-center rounded-full border border-transparency-white-t20 bg-primary-comfy-ink-light text-primary-comfy-canvas shadow-lg hover:text-primary-warm-white lg:right-5 lg:bottom-5"
       @update:model-value="pickLayout"
     >
-      <LayoutTemplate class="size-3.5" aria-hidden="true" />
+      <Ellipsis class="size-4" aria-hidden="true" />
     </CinematicMenu>
     <template #fallback>
       <div
