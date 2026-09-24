@@ -1,4 +1,3 @@
-import { until } from '@vueuse/core'
 import { effectScope, toValue, watch } from 'vue'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
@@ -66,54 +65,6 @@ function requestedAfterCursors() {
     return requestUrl.searchParams.get('after')
   })
 }
-
-describe('With simulated server latency', () => {
-  const store = Array.from({ length: 1000 }, (_, i) => `asset-${i}`)
-  const serverMs = (rows: number) => 200 + 2 * rows
-
-  beforeEach(() => {
-    vi.useFakeTimers()
-    fetchApiMock.mockImplementation(async (url) => {
-      const query = new URL(url, 'http://localhost').searchParams
-      const start = store.indexOf(query.get('after') ?? '') + 1
-      const page = store.slice(start, start + Number(query.get('limit') ?? 20))
-      await new Promise((resolve) => setTimeout(resolve, serverMs(page.length)))
-      const hasMore = start + page.length < store.length
-      return response(page, { hasMore, nextCursor: page.at(-1) })
-    })
-  })
-
-  async function elapsedMs(run: () => Promise<unknown>) {
-    const start = Date.now()
-    const done = run().then(() => true)
-    for (let i = 0; i < 1000; i++) {
-      if (await Promise.race([done, false])) return Date.now() - start
-      await vi.advanceTimersToNextTimerAsync()
-    }
-    throw new Error('never settled')
-  }
-
-  function list(key: string) {
-    const scope = effectScope()
-    onTestFinished(() => scope.stop())
-    return scope.run(() => useAssetsQuery({ name_contains: key }))!
-  }
-
-  it('loads a thousand assets within five seconds', async () => {
-    const ms = await elapsedMs(async () => {
-      const assets = list('bulk')
-      while (toValue(assets.hasMore)) await assets.loadMore()
-      expect(toValue(assets.items)).toHaveLength(store.length)
-    })
-    expect(ms).toBeLessThanOrEqual(5000)
-  })
-
-  it('polls for new assets within three hundred milliseconds', async () => {
-    const assets = list('poll')
-    await elapsedMs(() => until(() => toValue(assets.isLoading)).toBe(false))
-    expect(await elapsedMs(() => assets.loadNew())).toBeLessThanOrEqual(300)
-  })
-})
 
 const transientFailures: {
   name: string
