@@ -8,10 +8,11 @@
  * `LayoutFollowerBridge.onDocReset` filters any reset whose `workflowId`
  * disagrees with its own `sentWorkflowId`, which `unsubscribe()` already
  * cleared), and how `pendingCorrelation.ts`'s reactivation continuity rule
- * and subscribe-generation barrier behave against the real bridge's own
- * subscribe/unsubscribe/ack sequencing once a resubscribe's ack arrives. The
- * backend dependency and protocol gap this leaves open are recorded in
- * ADR-CRDT-RECONCILE-0035, not here.
+ * behaves against the real bridge's own subscribe/unsubscribe/ack sequencing
+ * once a resubscribe's ack arrives. Round 7: an ack never settles a parked
+ * entry by itself, so there is no barrier left to protect from a duplicate —
+ * see the tests below. The backend dependency and protocol gap this leaves
+ * open are recorded in ADR-CRDT-RECONCILE-0035, not here.
  */
 import { mint } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
@@ -289,7 +290,7 @@ describe('useAgentCrdtFollower — lineage break through the real bridge/transpo
     await nextTick()
   })
 
-  it('C3(i)/(iii): a resubscribe ack matching the projected watermark establishes continuity, and a duplicate ack is not a second barrier', async () => {
+  it('C3(i)/(iii): a resubscribe ack matching the projected watermark establishes continuity, and a duplicate ack forces the same reconcile again, harmlessly (round 7)', async () => {
     const isTargetActive = ref(true)
     mountFollower('wf-1', isTargetActive)
 
@@ -319,8 +320,11 @@ describe('useAgentCrdtFollower — lineage break through the real bridge/transpo
     })
     expect(adapterState.reconcileFromDoc).toHaveBeenCalledWith('wf-1', 1)
 
-    // A duplicate/delayed-retry ack for the SAME resubscribe (same
-    // generation) must not act as a second barrier.
+    // Round 7: the wire carries no echoed subscribe identity, so this
+    // frontend no longer tries to detect a duplicate/delayed-retry ack for
+    // the SAME resubscribe — it just runs the same already-current reconcile
+    // again. That is harmless: the reconcile and the presence pass it feeds
+    // are both idempotent, and there is no barrier left to protect.
     adapterState.reconcileFromDoc.mockClear()
     transport().deliver('doc_subscribed', {
       v: 1,
@@ -328,7 +332,7 @@ describe('useAgentCrdtFollower — lineage break through the real bridge/transpo
       ok: true,
       seq: 1
     })
-    expect(adapterState.reconcileFromDoc).not.toHaveBeenCalled()
+    expect(adapterState.reconcileFromDoc).toHaveBeenCalledWith('wf-1', 1)
   })
 
   it('C3(ii): an ack whose seq diverges after reactivation skips the forced reconcile and no longer destructively invalidates the ledger (round 6)', async () => {

@@ -197,6 +197,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 import { SUBSCRIBE_ACK_TIMEOUT_MS } from './agentCrdtDocLifecycle'
 import {
   ALREADY_CURRENT_RETRY_INTERVAL_MS,
+  LEDGER_SETTLE_TIMEOUT_MS,
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS,
   useAgentCrdtFollower
@@ -1835,6 +1836,57 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('ADR-CRDT-RECONCILE-0035 (a), round 7: a parked set_widget settles only when the target widget already holds the op value', async () => {
+    vi.useFakeTimers()
+    const { recordDevEvent } = await import('./devPanelLog')
+    const { unmount, enqueue } = mountFollower('wf-1')
+
+    enqueue([{ op: 'set_widget', node_id: 5, widget: 'seed', value: 42 }])
+    await Promise.resolve()
+    const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
+
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'delivery_unknown',
+      opIds: [opId]
+    })
+
+    // The widget's current value differs from the op's: never an
+    // unconditional clear.
+    const mismatched = new Y.Doc()
+    mismatched.getMap('nodes').set(
+      '5',
+      new Y.Map<unknown>([
+        ['type', 'Test'],
+        ['widgets', new Y.Map([['seed', 7]])]
+      ])
+    )
+    bridge().follower.doc = mismatched
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: true })
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'cleared' })
+    )
+
+    // The widget's current value now equals the op's: settles applied.
+    const matched = new Y.Doc()
+    matched.getMap('nodes').set(
+      '5',
+      new Y.Map<unknown>([
+        ['type', 'Test'],
+        ['widgets', new Y.Map([['seed', 42]])]
+      ])
+    )
+    bridge().follower.doc = matched
+    dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 3, catchUp: true })
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'cleared',
+      opIds: [opId]
+    })
+    unmount()
+  })
+
   it('F2: an already-current ack keeps a parked entry until the forced reconcile commits, then repairs the live graph before settling it, retried by its own timer on a quiet channel', async () => {
     const fakeGraph = fromPartial<MaterializableGraph>({
       rootGraph: { subgraphs: new Map() },
@@ -1965,7 +2017,7 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('F8: an add_node whose parked id resolves to a different doc type is reported as a collision, not cleared', async () => {
+  it('F8: an add_node whose parked id resolves to a different doc type is reported as a collision, never reverted, notified unresolved by the terminal path', async () => {
     const { recordDevEvent } = await import('./devPanelLog')
     const { unmount, enqueue } = mountFollower('wf-1')
 
@@ -1994,20 +2046,34 @@ describe('useAgentCrdtFollower', () => {
     bridge().follower.doc = doc
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: true })
 
+    // The collision is reported the instant it's read, regardless of when
+    // (or whether) the entry itself is ever resolved.
     expect(telemetryState.reportError).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'agent_crdt_node_id_collision',
       context: { nodeId: '5', opType: 'Test', docType: 'SomethingElse' }
     })
+    // ADR-CRDT-RECONCILE-0035 (a), round 8: absence never reverts, for any
+    // kind — the entry stays parked until an explicit host rejection, a
+    // lineage break, or destruction. The bounded ledger terminal path's
+    // deadline is absolute from park time and unaffected by this frame.
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'reverted' })
+    )
+
+    vi.advanceTimersByTime(LEDGER_SETTLE_TIMEOUT_MS)
     expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
-      type: 'reverted',
-      reason: 'diverged',
-      opIds: [opId],
-      ops: expect.anything()
+      type: 'unresolved',
+      opIds: [opId]
     })
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'reverted' })
+    )
     unmount()
   })
 
-  it('F8: a connect whose link id resolves to different endpoints is not treated as delivered', async () => {
+  it('F8: a connect whose link id resolves to different endpoints stays parked, notified unresolved by the terminal path', async () => {
     const { recordDevEvent } = await import('./devPanelLog')
     const { unmount, enqueue } = mountFollower('wf-1')
 
@@ -2038,16 +2104,20 @@ describe('useAgentCrdtFollower', () => {
     bridge().follower.doc = doc
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: true })
 
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'reverted' })
+    )
+
+    vi.advanceTimersByTime(LEDGER_SETTLE_TIMEOUT_MS)
     expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
-      type: 'reverted',
-      reason: 'diverged',
-      opIds: [opId],
-      ops: expect.anything()
+      type: 'unresolved',
+      opIds: [opId]
     })
     unmount()
   })
 
-  it('F9: a connect whose link id resolves to the same endpoints but a different semantic type is not treated as delivered', async () => {
+  it('F9: a connect whose link id resolves to the same endpoints but a different semantic type stays parked, notified unresolved by the terminal path', async () => {
     const { recordDevEvent } = await import('./devPanelLog')
     const { unmount, enqueue } = mountFollower('wf-1')
 
@@ -2078,11 +2148,15 @@ describe('useAgentCrdtFollower', () => {
     bridge().follower.doc = doc
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 2, catchUp: true })
 
+    expect(recordDevEvent).not.toHaveBeenCalledWith(
+      'pending_ops',
+      expect.objectContaining({ type: 'reverted' })
+    )
+
+    vi.advanceTimersByTime(LEDGER_SETTLE_TIMEOUT_MS)
     expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
-      type: 'reverted',
-      reason: 'diverged',
-      opIds: [opId],
-      ops: expect.anything()
+      type: 'unresolved',
+      opIds: [opId]
     })
     unmount()
   })
@@ -2773,13 +2847,14 @@ describe('useAgentCrdtFollower', () => {
         unmount()
       })
 
-      it('reverts once an ordinary later catch-up (e.g. after the connection recovers) still finds it absent', async () => {
-        // Round 6 disables revert-on-absence for exactly the ONE catch-up a
-        // continuity-unproven reactivation implies; every catch-up after
-        // that reverts on absence as usual, including one driven by a later
-        // resubscribe once the connection recovers.
+      it('stays parked, never reverted by any ordinary catch-up (e.g. after the connection recovers) that still finds it absent', async () => {
+        // ADR-CRDT-RECONCILE-0035 (a), round 7: absence never settles an
+        // entry by itself, reactivation or not. It is only ever reverted by
+        // the bounded ledger terminal path or an explicit host rejection —
+        // see `pendingOpTracker.test.ts`'s terminal-path suite for those.
         vi.useFakeTimers()
-        const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+        const { unmount, isTargetActive, enqueue, pendingAddType } =
+          mountWriter('wf-1')
         const opId = await parkThenReactivate(isTargetActive, enqueue)
 
         bridge().follower.doc = new Y.Doc()
@@ -2801,10 +2876,11 @@ describe('useAgentCrdtFollower', () => {
           catchUp: true
         })
 
-        expect(recordDevEvent).toHaveBeenCalledWith(
+        expect(recordDevEvent).not.toHaveBeenCalledWith(
           'pending_ops',
           expect.objectContaining({ type: 'reverted', opIds: [opId] })
         )
+        expect(pendingAddType()?.('5')).toBe('Test')
         unmount()
       })
     })

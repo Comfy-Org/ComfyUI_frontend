@@ -5,7 +5,10 @@ import { reportError } from '@/platform/telemetry/reportError'
 
 import type { BatchOutcome } from './opSender'
 import type { PendingOpTrackerEvent } from './pendingOpTracker'
-import { createPendingOpTracker } from './pendingOpTracker'
+import {
+  LEDGER_SETTLE_TIMEOUT_MS,
+  createPendingOpTracker
+} from './pendingOpTracker'
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -665,7 +668,11 @@ describe('createPendingOpTracker', () => {
       expect(events.at(-1)).toEqual({ type: 'cleared', opIds: ['op-1'] })
     })
 
-    it('reverts a parked add_node whose node id never reached the doc', () => {
+    it('leaves a parked add_node whose node id never reached the doc parked, never reverted', () => {
+      // ADR-CRDT-RECONCILE-0035 (a), round 8 (DrJKL, review 5298630064):
+      // absence never reverts, for any kind — only an explicit host
+      // rejection, a lineage break, or destruction moves it out of
+      // `delivery_unknown` again.
       const op = addNode('op-1', 1)
       tracker.onBatchMinted([op])
       tracker.onBatchTransmitted([op])
@@ -674,19 +681,16 @@ describe('createPendingOpTracker', () => {
 
       tracker.resolveDeliveryUnknown(() => false)
 
-      expect(tracker.entries()).toEqual([])
-      expect(events.at(-1)).toEqual({
-        type: 'reverted',
-        reason: 'diverged',
-        opIds: ['op-1'],
-        ops: [op]
-      })
+      expect(tracker.entries()).toEqual([
+        { opId: 'op-1', state: 'delivery_unknown', shadow: op }
+      ])
+      expect(events.some((event) => event.type === 'reverted')).toBe(false)
     })
 
-    it('reverts a parked delete_node the doc still shows (the effect never happened), without claiming an undo', () => {
+    it('leaves a parked delete_node the doc still shows parked, since absence — not presence — is its success condition', () => {
       // The caller's `effectPresent` already negates its own doc lookup for
       // `delete_node` (present === "the node is gone"), so `false` here
-      // means the delete never took.
+      // means the delete never took (yet) — round 8: that is not a revert.
       const op = deleteNode('op-1', 1)
       tracker.onBatchMinted([op])
       tracker.onBatchTransmitted([op])
@@ -694,13 +698,10 @@ describe('createPendingOpTracker', () => {
       tracker.onBatchSettled(unacknowledged([op]))
 
       tracker.resolveDeliveryUnknown(() => false)
-      expect(tracker.entries()).toEqual([])
-      expect(events.at(-1)).toEqual({
-        type: 'reverted',
-        reason: 'diverged',
-        opIds: ['op-1'],
-        ops: [op]
-      })
+      expect(tracker.entries()).toEqual([
+        { opId: 'op-1', state: 'delivery_unknown', shadow: op }
+      ])
+      expect(events.some((event) => event.type === 'reverted')).toBe(false)
     })
 
     it('clears a parked delete_node once the doc shows it gone', () => {
@@ -726,7 +727,24 @@ describe('createPendingOpTracker', () => {
       expect(tracker.entries()).toEqual([])
     })
 
-    it('always clears a parked set_widget once a catch-up runs, without consulting the check', () => {
+    it('clears a parked set_widget whose target value matches the op', () => {
+      const op = setWidget('op-1', 1)
+      tracker.onBatchMinted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchSettled(unacknowledged([op]))
+
+      tracker.resolveDeliveryUnknown(() => true)
+
+      expect(tracker.entries()).toEqual([])
+      expect(events.at(-1)).toEqual({ type: 'cleared', opIds: ['op-1'] })
+    })
+
+    it('leaves a parked set_widget whose target value differs parked, never clearing unconditionally', () => {
+      // ADR-CRDT-RECONCILE-0035 (a): last-writer-wins does not make an
+      // arbitrary document value proof that THIS op landed, so set_widget is
+      // checked like every other kind now — and round 8: a mismatch never
+      // reverts either, it just stays parked.
       const op = setWidget('op-1', 1)
       tracker.onBatchMinted([op])
       tracker.onBatchTransmitted([op])
@@ -735,8 +753,9 @@ describe('createPendingOpTracker', () => {
 
       tracker.resolveDeliveryUnknown(() => false)
 
-      expect(tracker.entries()).toEqual([])
-      expect(events.at(-1)).toEqual({ type: 'cleared', opIds: ['op-1'] })
+      expect(tracker.entries()).toEqual([
+        { opId: 'op-1', state: 'delivery_unknown', shadow: op }
+      ])
     })
 
     it('leaves an unresolvable check (null) parked for the next catch-up', () => {
@@ -772,6 +791,107 @@ describe('createPendingOpTracker', () => {
       expect(tracker.entries()).toEqual([
         { opId: 'op-1', state: 'applied', shadow: op }
       ])
+    })
+  })
+
+  describe('ADR-CRDT-RECONCILE-0035 (a), round 8: bounded ledger terminal path is non-destructive', () => {
+    function parkAddNode(opId: string, nodeId: number): Op {
+      const op = addNode(opId, nodeId)
+      tracker.onBatchMinted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchSettled(unacknowledged([op]))
+      return op
+    }
+
+    it('notifies unresolved once the deadline elapses, without reverting or dropping the entry', () => {
+      const op = parkAddNode('op-1', 1)
+
+      vi.advanceTimersByTime(LEDGER_SETTLE_TIMEOUT_MS)
+
+      expect(events.at(-1)).toEqual({ type: 'unresolved', opIds: ['op-1'] })
+      expect(events.some((event) => event.type === 'reverted')).toBe(false)
+      // Still held, still delivery_unknown: a late echo or explicit
+      // rejection can still resolve it.
+      expect(tracker.entries()).toEqual([
+        { opId: 'op-1', state: 'delivery_unknown', shadow: op }
+      ])
+    })
+
+    it('a same-lineage frame within the bound does not extend or shorten the deadline', () => {
+      parkAddNode('op-1', 1)
+
+      vi.advanceTimersByTime(LEDGER_SETTLE_TIMEOUT_MS - 1)
+      // A same-lineage frame runs, still finds it absent, and stays parked —
+      // round 8: this must not push the deadline further out.
+      tracker.resolveDeliveryUnknown(() => false)
+      vi.advanceTimersByTime(1)
+
+      expect(events.at(-1)).toEqual({ type: 'unresolved', opIds: ['op-1'] })
+    })
+
+    it('a doc_reset since parking routes to the existing lineage-break handling, never the unresolved notification', () => {
+      parkAddNode('op-1', 1)
+
+      tracker.reset()
+      vi.advanceTimersByTime(LEDGER_SETTLE_TIMEOUT_MS)
+
+      expect(events.some((event) => event.type === 'unresolved')).toBe(false)
+    })
+
+    it('an explicit host rejection after the deadline has already fired still reverts normally', () => {
+      const op = parkAddNode('op-1', 1)
+      vi.advanceTimersByTime(LEDGER_SETTLE_TIMEOUT_MS)
+      expect(events.at(-1)?.type).toBe('unresolved')
+
+      tracker.onBatchSettled(
+        acknowledged([op], {
+          ok: false,
+          applied: [],
+          skipped: [],
+          failure: { op_id: 'op-1', code: 'rejected' }
+        })
+      )
+
+      expect(events.at(-1)).toEqual({
+        type: 'reverted',
+        reason: 'failed',
+        opIds: ['op-1'],
+        ops: [op]
+      })
+      expect(tracker.entries()).toEqual([])
+    })
+  })
+
+  describe('ADR-CRDT-RECONCILE-0035 (a), round 8: destruction abandons still-parked entries', () => {
+    it('destroy() drops every parked entry as abandoned (no revert, no toast) and drops everything else silently', () => {
+      const parkedOp = addNode('op-1', 1)
+      tracker.onBatchMinted([parkedOp])
+      tracker.onBatchTransmitted([parkedOp])
+      tracker.onBatchTransmitted([parkedOp])
+      tracker.onBatchSettled(unacknowledged([parkedOp]))
+      tracker.onBatchMinted([addNode('op-2', 2)])
+
+      tracker.destroy()
+
+      expect(events).toContainEqual({ type: 'abandoned', opIds: ['op-1'] })
+      expect(events).toContainEqual({ type: 'reset', opIds: ['op-2'] })
+      expect(events.some((event) => event.type === 'reverted')).toBe(false)
+      expect(tracker.entries()).toEqual([])
+    })
+
+    it('destroy() cancels a parked entry deadline so it never fires afterward', () => {
+      const op = addNode('op-1', 1)
+      tracker.onBatchMinted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchTransmitted([op])
+      tracker.onBatchSettled(unacknowledged([op]))
+
+      tracker.destroy()
+      events.length = 0
+      vi.advanceTimersByTime(LEDGER_SETTLE_TIMEOUT_MS * 2)
+
+      expect(events).toEqual([])
     })
   })
 
