@@ -16,9 +16,11 @@
  * are un-exported to satisfy knip, and dropping them took their members out of
  * the set, which made the harness reject correct conversions.
  */
+import console from 'node:console'
 import { readFileSync, readdirSync, realpathSync, writeFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import process from 'node:process'
+import { fileURLToPath, URL } from 'node:url'
 
 import ts from 'typescript'
 
@@ -131,7 +133,7 @@ if (
 ) {
   const directory = sourceDirectory()
   const names = [...deriveApiMembers(directory)].sort((a, b) =>
-    a.localeCompare(b)
+    a < b ? -1 : a > b ? 1 : 0
   )
   const header = readFileSync(join(directory, 'apiSurface.ts'), 'utf8').split(
     'export const API_MEMBERS'
