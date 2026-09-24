@@ -90,6 +90,7 @@ function failureFor(response: Response): RunFailure {
 }
 
 export interface RouterRunOptions {
+  readonly comfy_save_asset?: boolean
   readonly contract: WorkshopContract
   readonly body: Readonly<Record<string, unknown>>
   readonly token: string

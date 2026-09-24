@@ -17,10 +17,12 @@
     "src/**/*",
     "e2e/**/*",
     "acceptance/**/*",
+    "e2e-assets/**/*",
     "scripts/**/*",
     "astro.config.ts",
     "playwright.config.ts",
     "playwright.acceptance.config.ts",
+    "playwright-assets.config.ts",
     "vitest.config.ts"
   ],
   "exclude": ["src/**/*.stories.ts"],
