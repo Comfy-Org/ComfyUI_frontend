@@ -113,8 +113,7 @@ export function getMainNavigation(
             },
             {
               label: t('nav.comfyCli', locale),
-              href: routes.cli,
-              badge: 'new'
+              href: routes.cli
             },
             // TODO: no page yet — re-enable when landing pages ship
             // { label: t('nav.appMode', locale), href: '#' },
