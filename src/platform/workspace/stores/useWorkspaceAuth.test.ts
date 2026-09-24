@@ -12,6 +12,7 @@ import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import {
   UNIFIED_IDENTITY_SETTLE_TIMEOUT_MS,
@@ -80,6 +81,7 @@ vi.mock<unknown>(import('@/platform/auth/session/useSessionCookie'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({
   workspaceApiUrl: (route: string) => `https://api.example.com/api${route}`
@@ -3099,6 +3101,12 @@ describe('useWorkspaceAuthStore', () => {
           outcome: 'permanent_failure',
           retry_count: 0
         })
+        expect(reportError).toHaveBeenCalledWith(
+          expect.any(Error),
+          expect.objectContaining({
+            errorType: 'unified_auth_refresh_permanent_failure'
+          })
+        )
         expect(unifiedToken.value).toBeNull()
       }
     )
@@ -3337,6 +3345,15 @@ describe('useWorkspaceAuthStore', () => {
         outcome: 'retries_exhausted',
         retry_count: 3
       })
+      // A RUM action cannot raise a Sentry alert, so the moment the cookie
+      // rail dies must also reach the error tracker (FE-1595).
+      expect(reportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          errorType: 'unified_auth_refresh_retries_exhausted',
+          tags: expect.objectContaining({ retry_count: 3 })
+        })
+      )
       expect(
         unifiedToken.value,
         'a still-valid token keeps serving while there is time on it'
