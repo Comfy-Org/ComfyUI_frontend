@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { Download } from '@lucide/vue'
+import { nextTick } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -20,6 +21,25 @@ const {
 }>()
 
 const emit = defineEmits<{ select: [id: string] }>()
+
+const STEPS: Readonly<Record<string, number>> = {
+  ArrowRight: 1,
+  ArrowDown: 1,
+  ArrowLeft: -1,
+  ArrowUp: -1
+}
+
+async function onKeydown(event: KeyboardEvent) {
+  const step = STEPS[event.key]
+  const group = event.currentTarget
+  if (!step || !(group instanceof HTMLElement)) return
+  event.preventDefault()
+  const index = siblings.findIndex((take) => take.id === current.id)
+  const next = (index + step + siblings.length) % siblings.length
+  emit('select', siblings[next].id)
+  await nextTick()
+  group.querySelectorAll<HTMLElement>('[role="radio"]')[next]?.focus()
+}
 </script>
 
 <template>
@@ -39,6 +59,7 @@ const emit = defineEmits<{ select: [id: string] }>()
       role="radiogroup"
       :aria-label="tc('cinematic.stage.takes', locale)"
       class="flex gap-1"
+      @keydown="onKeydown"
     >
       <button
         v-for="take in siblings"
@@ -46,6 +67,7 @@ const emit = defineEmits<{ select: [id: string] }>()
         type="button"
         role="radio"
         :aria-checked="take.id === current.id"
+        :tabindex="take.id === current.id ? 0 : -1"
         :class="
           cn(
             'grid size-6 place-items-center rounded-md text-xs font-medium',

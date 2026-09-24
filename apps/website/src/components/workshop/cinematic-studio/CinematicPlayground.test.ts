@@ -118,6 +118,35 @@ describe('CinematicPlayground', () => {
     )
   })
 
+  it('moves between takes with the arrow keys', async () => {
+    vi.mocked(router_render).mockImplementation(async () => ({
+      slug: model.slug,
+      routerId: model.routerId,
+      expectedKind: 'image',
+      requestId: 'request-1',
+      deadlineCollections: 0,
+      outputs: [{ kind: 'image', url: 'blob:shot', fileName: 'shot.png' }]
+    }))
+    const user = renderStudio()
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(screen.getByRole('button', { name: 'More takes' }))
+    await user.click(generateButton())
+
+    const takeA = await screen.findByRole('radio', { name: 'A' })
+    expect(takeA).toHaveAttribute('tabindex', '0')
+    expect(screen.getByRole('radio', { name: 'B' })).toHaveAttribute(
+      'tabindex',
+      '-1'
+    )
+
+    takeA.focus()
+    await user.keyboard('{ArrowRight}')
+
+    const takeB = screen.getByRole('radio', { name: 'B' })
+    expect(takeB).toBeChecked()
+    expect(takeB).toHaveFocus()
+  })
+
   it('reports a failed take in the stage', async () => {
     vi.mocked(router_render).mockRejectedValue(
       new WorkshopRouterError('provider')
