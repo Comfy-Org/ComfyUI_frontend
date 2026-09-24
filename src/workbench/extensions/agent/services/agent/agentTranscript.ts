@@ -1,5 +1,8 @@
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
-import { zPersistedToolCallSummary } from '../../schemas/agentApiSchema'
+import {
+  toTurnId,
+  zPersistedToolCallSummary
+} from '../../schemas/agentApiSchema'
 import type { WorkflowReference } from '../../types/workflowReference'
 import { parseWorkflowReferences } from '../../utils/workflowReferenceText'
 import type { AssistantMessage, ToolPart } from './agentMessageParts'
@@ -273,7 +276,7 @@ function applyAssistantRow(
   if (!message.streaming) return undefined
 
   if (runApproval) message.parts.push({ type: 'runApproval', ...runApproval })
-  return { messageId: row.id as TurnId, message }
+  return { messageId: toTurnId(row.id), message }
 }
 
 /**
