@@ -58,8 +58,13 @@ const errorKey: Record<FieldErrorCode, TranslationKey> = {
   uploadFailed: 'workshop.form.uploadFailed',
   fileUnreadable: 'workshop.form.fileUnreadable',
   incompatible: 'workshop.form.incompatible',
+  imageAspectRatioOutOfRange: 'workshop.form.imageAspectRatioOutOfRange',
+  imageLayerDecompositionUnsupported:
+    'workshop.form.imageLayerDecompositionUnsupported',
+  imageUnreadable: 'workshop.form.imageUnreadable',
   videoTooLong: 'workshop.form.videoTooLong',
   videoWidthOutOfRange: 'workshop.form.videoWidthOutOfRange',
+  videoHdrUnsupported: 'workshop.form.videoHdrUnsupported',
   videoUnreadable: 'workshop.form.videoUnreadable',
   rejected: 'workshop.form.rejected'
 }
@@ -92,8 +97,14 @@ function messageForError(error: FieldErrorCode): string {
   return t(errorKey[error], locale, {
     limit: formatWorkshopUploadLimit(uploadLimit(), locale),
     seconds: field.presentation?.maxVideoDurationSeconds ?? '',
-    minimum: field.presentation?.videoWidthPixels?.minimum ?? '',
-    maximum: field.presentation?.videoWidthPixels?.maximum ?? ''
+    minimum:
+      field.presentation?.imageAspectRatio?.minimum ??
+      field.presentation?.videoWidthPixels?.minimum ??
+      '',
+    maximum:
+      field.presentation?.imageAspectRatio?.maximum ??
+      field.presentation?.videoWidthPixels?.maximum ??
+      ''
   })
 }
 

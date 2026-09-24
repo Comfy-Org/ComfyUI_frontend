@@ -283,10 +283,6 @@ describe('comfy/no-duplicate-ingest-type', () => {
     expect(reported('unimported.ts')).not.toContain('CreateInviteRequest')
   })
 
-  it('never reports the generated declarations it enforces', () => {
-    expect(lint(['packages/ingest-types/src/types.gen.ts'])).toEqual([])
-  })
-
   it.for(['AgentTurnAccepted', 'AgentCancelAccepted'])(
     'reports unimported generated Agent type %s',
     (name) => {

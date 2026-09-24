@@ -1,5 +1,6 @@
 import type {
   AddCreditsClickMetadata,
+  AgentAttachButtonClickedMetadata,
   AgentConsentNotOfferedMetadata,
   AgentConsentResolvedMetadata,
   AgentConsentShownMetadata,
@@ -11,6 +12,12 @@ import type {
   AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
+  AgentRunApprovalResolvedMetadata,
+  AgentRunApprovalShownMetadata,
+  AgentRunModeChangedMetadata,
+  AgentStopClickedMetadata,
+  AgentThreadStartedMetadata,
+  AgentWorkflowBoundMetadata,
   AgentWorkflowAppliedMetadata,
   AuthErrorMetadata,
   AuthMetadata,
@@ -404,12 +411,44 @@ export class TelemetryRegistry implements TelemetryDispatcher {
     this.dispatch((provider) => provider.trackAgentNodeTagged?.(metadata))
   }
 
-  trackAgentAttachButtonClicked(): void {
-    this.dispatch((provider) => provider.trackAgentAttachButtonClicked?.())
+  trackAgentAttachButtonClicked(
+    metadata: AgentAttachButtonClickedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentAttachButtonClicked?.(metadata)
+    )
   }
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.dispatch((provider) => provider.trackAgentWorkflowApplied?.(metadata))
+  }
+
+  trackAgentStopClicked(metadata: AgentStopClickedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentStopClicked?.(metadata))
+  }
+
+  trackAgentWorkflowBound(metadata: AgentWorkflowBoundMetadata): void {
+    this.dispatch((provider) => provider.trackAgentWorkflowBound?.(metadata))
+  }
+
+  trackAgentRunApprovalShown(metadata: AgentRunApprovalShownMetadata): void {
+    this.dispatch((provider) => provider.trackAgentRunApprovalShown?.(metadata))
+  }
+
+  trackAgentRunApprovalResolved(
+    metadata: AgentRunApprovalResolvedMetadata
+  ): void {
+    this.dispatch((provider) =>
+      provider.trackAgentRunApprovalResolved?.(metadata)
+    )
+  }
+
+  trackAgentRunModeChanged(metadata: AgentRunModeChangedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentRunModeChanged?.(metadata))
+  }
+
+  trackAgentThreadStarted(metadata: AgentThreadStartedMetadata): void {
+    this.dispatch((provider) => provider.trackAgentThreadStarted?.(metadata))
   }
 
   trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
