@@ -281,6 +281,13 @@ export class VueNodeHelpers {
     }
   }
 
+  async setInputNumberValue(widget: Locator, value: string): Promise<void> {
+    const { input } = this.getInputNumberControls(widget)
+    await input.fill(value)
+    await input.blur()
+    await expect(input).toHaveValue(value)
+  }
+
   /**
    * Locator for the Enter Subgraph footer button.
    */
