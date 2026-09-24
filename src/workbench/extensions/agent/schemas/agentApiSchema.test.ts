@@ -301,37 +301,6 @@ describe('agentApiSchema contract subtleties', () => {
     })
   })
 
-  it('parses the permission ask with its typed target context', () => {
-    const parsed = zAgentWsEvent.parse({
-      type: 'agent_ask',
-      data: {
-        thread_id: 'th-1',
-        message_id: 'message-1',
-        ask_id: 'turn-1:call-1',
-        kind: 'permission',
-        context: {
-          request_id: '0123456789abcdef',
-          target_kind: 'path',
-          target: 'C:\\Users\\me\\models',
-          reason: 'List the checkpoints'
-        },
-        prompt: 'Allow the agent to reach the folder C:\\Users\\me\\models?',
-        options: [
-          { id: 'allow', label: 'Allow' },
-          { id: 'deny', label: 'Deny' }
-        ],
-        min_selections: 1,
-        max_selections: 1,
-        allow_other: false
-      }
-    })
-
-    expect(parsed.data).toMatchObject({
-      kind: 'permission',
-      context: { target_kind: 'path', target: 'C:\\Users\\me\\models' }
-    })
-  })
-
   it.for([
     { label: 'omitted', context: undefined },
     { label: 'null', context: null }
@@ -378,11 +347,7 @@ describe('agentApiSchema contract subtleties', () => {
       kind: null,
       context: {
         workflow_id: null,
-        workflow_name: null,
-        request_id: null,
-        target_kind: null,
-        target: null,
-        reason: null
+        workflow_name: null
       },
       prompt: 'Which model should I use?',
       options: [{ id: 'sdxl', label: 'SDXL', description: null }],

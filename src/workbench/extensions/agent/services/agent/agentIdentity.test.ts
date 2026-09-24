@@ -1,13 +1,13 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import {
-  STANDALONE_IDENTITY_RETRY_BASE_MS,
-  STANDALONE_IDENTITY_RETRY_MAX_MS,
-  resolveStandaloneIdentity
-} from './standaloneIdentity'
+  AGENT_IDENTITY_RETRY_BASE_MS,
+  AGENT_IDENTITY_RETRY_MAX_MS,
+  resolveAgentIdentity
+} from './agentIdentity'
 
 function harness(getIdentity: () => Promise<{ userId: string }>): ReturnType<
-  typeof resolveStandaloneIdentity
+  typeof resolveAgentIdentity
 > & {
   connect: () => void
   onFailure: ReturnType<typeof vi.fn>
@@ -16,7 +16,7 @@ function harness(getIdentity: () => Promise<{ userId: string }>): ReturnType<
   const connected = new Set<() => void>()
   const unsubscribe = vi.fn()
   const onFailure = vi.fn()
-  const identity = resolveStandaloneIdentity({
+  const identity = resolveAgentIdentity({
     getIdentity,
     onConnected(listener) {
       connected.add(listener)
@@ -37,7 +37,7 @@ async function flush(): Promise<void> {
   await vi.advanceTimersByTimeAsync(0)
 }
 
-describe('resolveStandaloneIdentity (#17469)', () => {
+describe('resolveAgentIdentity (#17469)', () => {
   it('takes the identity from the first successful lookup', async () => {
     vi.useFakeTimers()
     const getIdentity = vi.fn(async () => ({ userId: 'local-user' }))
@@ -62,7 +62,7 @@ describe('resolveStandaloneIdentity (#17469)', () => {
     expect(identity.onFailure).toHaveBeenCalledWith(failure)
     expect(identity.userId.value).toBeNull()
 
-    await vi.advanceTimersByTimeAsync(STANDALONE_IDENTITY_RETRY_BASE_MS)
+    await vi.advanceTimersByTimeAsync(AGENT_IDENTITY_RETRY_BASE_MS)
     // Nothing retries on its own: the edge is the trigger.
     expect(getIdentity).toHaveBeenCalledTimes(1)
 
@@ -85,7 +85,7 @@ describe('resolveStandaloneIdentity (#17469)', () => {
 
     identity.connect()
     identity.connect()
-    await vi.advanceTimersByTimeAsync(STANDALONE_IDENTITY_RETRY_BASE_MS - 1)
+    await vi.advanceTimersByTimeAsync(AGENT_IDENTITY_RETRY_BASE_MS - 1)
     expect(getIdentity).toHaveBeenCalledTimes(1)
 
     await vi.advanceTimersByTimeAsync(1)
@@ -104,11 +104,11 @@ describe('resolveStandaloneIdentity (#17469)', () => {
 
     const waits = [1, 2, 4, 8, 16, 32, 64].map((factor) =>
       Math.min(
-        STANDALONE_IDENTITY_RETRY_BASE_MS * factor,
-        STANDALONE_IDENTITY_RETRY_MAX_MS
+        AGENT_IDENTITY_RETRY_BASE_MS * factor,
+        AGENT_IDENTITY_RETRY_MAX_MS
       )
     )
-    expect(waits.at(-1)).toBe(STANDALONE_IDENTITY_RETRY_MAX_MS)
+    expect(waits.at(-1)).toBe(AGENT_IDENTITY_RETRY_MAX_MS)
     for (const [index, wait] of waits.entries()) {
       identity.connect()
       await vi.advanceTimersByTimeAsync(wait - 1)
@@ -134,7 +134,7 @@ describe('resolveStandaloneIdentity (#17469)', () => {
     await flush()
     failing.connect()
     failing.stop()
-    await vi.advanceTimersByTimeAsync(STANDALONE_IDENTITY_RETRY_MAX_MS)
+    await vi.advanceTimersByTimeAsync(AGENT_IDENTITY_RETRY_MAX_MS)
 
     expect(failing.unsubscribe).toHaveBeenCalledTimes(1)
     expect(getIdentity).toHaveBeenCalledTimes(1)

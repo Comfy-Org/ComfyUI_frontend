@@ -150,7 +150,7 @@ describe('toAskPart ask_user', () => {
     )
   })
 
-  it('still maps run approvals and permission asks', () => {
+  it('still maps run approvals, and no kind outside the contract', () => {
     expect(
       toAskPart(
         askUser({
@@ -171,24 +171,17 @@ describe('toAskPart ask_user', () => {
           context: { target_kind: 'host', target: 'example.org' }
         })
       )
-    ).toMatchObject({ type: 'permissionAsk', target: 'example.org' })
+    ).toBeUndefined()
   })
 })
 
 describe('isAskPart', () => {
   it('recognises every ask card and nothing else', () => {
     expect(
-      (
-        [
-          'runApproval',
-          'permissionAsk',
-          'askUser',
-          'text',
-          'tool',
-          'paywall'
-        ] as const
-      ).map((type) => isAskPart(fromPartial<MessagePart>({ type })))
-    ).toEqual([true, true, true, false, false, false])
+      (['runApproval', 'askUser', 'text', 'tool', 'paywall'] as const).map(
+        (type) => isAskPart(fromPartial<MessagePart>({ type }))
+      )
+    ).toEqual([true, true, false, false, false])
   })
 })
 

@@ -1,19 +1,19 @@
 /**
- * The standalone doc transport rides the SAME socket as the chat stream, the
- * way the cloud transport rides ComfyUI's one socket. It must forward outbound
+ * The doc transport rides the SAME socket as the chat stream, so following a
+ * workflow never reconnects the chat. It must forward outbound
  * frames verbatim and surface inbound document frames as events, while leaving
  * chat frames to the chat listeners.
  */
 import { describe, expect, it, vi } from 'vitest'
 
-import type { StandaloneAgentEventSource } from '../services/agent/standaloneAgentEventSource'
-import { createStandaloneDocFrameTransport } from './standaloneDocFrameTransport'
+import type { AgentEventSocket } from '../services/agent/agentEventSource'
+import { createAgentDocFrameTransport } from './agentDocFrameTransport'
 
 function fakeSource() {
   const listeners = new Set<(raw: unknown) => void>()
   const statusListeners = new Set<(live: boolean) => void>()
   const send = vi.fn((_frame: string) => true)
-  const source: StandaloneAgentEventSource = {
+  const source: AgentEventSocket = {
     subscribe(listener) {
       listeners.add(listener)
       return () => listeners.delete(listener)
@@ -37,10 +37,10 @@ function fakeSource() {
   }
 }
 
-describe('createStandaloneDocFrameTransport', () => {
+describe('createAgentDocFrameTransport', () => {
   it('sends outbound doc frames on the shared socket verbatim', () => {
     const fake = fakeSource()
-    const transport = createStandaloneDocFrameTransport(fake.source)
+    const transport = createAgentDocFrameTransport(fake.source)
 
     expect(transport.send('{"type":"doc_subscribe","data":{}}')).toBe(true)
     expect(fake.send).toHaveBeenCalledWith('{"type":"doc_subscribe","data":{}}')
@@ -49,7 +49,7 @@ describe('createStandaloneDocFrameTransport', () => {
   it('reports the socket state instead of throwing', () => {
     const fake = fakeSource()
     fake.send.mockReturnValue(false)
-    const transport = createStandaloneDocFrameTransport(fake.source)
+    const transport = createAgentDocFrameTransport(fake.source)
 
     expect(() => transport.send('{}')).not.toThrow()
     expect(transport.send('{}')).toBe(false)
@@ -57,7 +57,7 @@ describe('createStandaloneDocFrameTransport', () => {
 
   it('surfaces an inbound doc_update as an event carrying its data', () => {
     const fake = fakeSource()
-    const transport = createStandaloneDocFrameTransport(fake.source)
+    const transport = createAgentDocFrameTransport(fake.source)
     const seen = vi.fn()
     transport.addEventListener('doc_update', (event) =>
       seen((event as CustomEvent).detail)
@@ -77,7 +77,7 @@ describe('createStandaloneDocFrameTransport', () => {
 
   it('does not surface chat frames to doc listeners', () => {
     const fake = fakeSource()
-    const transport = createStandaloneDocFrameTransport(fake.source)
+    const transport = createAgentDocFrameTransport(fake.source)
     const seen = vi.fn()
     transport.addEventListener('doc_update', seen)
 
@@ -92,7 +92,7 @@ describe('createStandaloneDocFrameTransport', () => {
     // events; those never fire for the agent socket, so this transport has
     // to say when ITS socket opened.
     const fake = fakeSource()
-    const transport = createStandaloneDocFrameTransport(fake.source)
+    const transport = createAgentDocFrameTransport(fake.source)
     const connected = vi.fn()
     transport.onConnected(connected)
 
@@ -108,7 +108,7 @@ describe('createStandaloneDocFrameTransport', () => {
 
   it('stops listening once destroyed', () => {
     const fake = fakeSource()
-    const transport = createStandaloneDocFrameTransport(fake.source)
+    const transport = createAgentDocFrameTransport(fake.source)
     transport.addEventListener('doc_update', vi.fn())
     expect(fake.listenerCount()).toBe(1)
 

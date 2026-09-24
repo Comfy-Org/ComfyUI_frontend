@@ -294,59 +294,6 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
-  it('restores a pending permission ask as the live turn and drops it once resolved', () => {
-    const store = useAgentConversationStore()
-    store.setThreadId('th')
-    store.hydrate([
-      historyRow(1, 'user', 'turn-1', 'Check example.org', 'user-message-1'),
-      zAgentMessages.parse([
-        {
-          id: 'assistant-message-1',
-          thread_id: 'th',
-          seq: 2,
-          role: 'assistant',
-          status: 'streaming',
-          turn_id: 'turn-1',
-          pending_ask: {
-            message_id: 'assistant-message-1',
-            ask_id: 'turn-1:call-1',
-            kind: 'permission',
-            context: {
-              request_id: '0123456789abcdef',
-              target_kind: 'host',
-              target: 'example.org',
-              reason: 'Fetch the page you linked'
-            },
-            prompt: 'Allow the agent to connect to example.org?',
-            options: [
-              { id: 'allow', label: 'Allow' },
-              { id: 'deny', label: 'Deny' }
-            ],
-            min_selections: 1,
-            max_selections: 1,
-            allow_other: false
-          }
-        }
-      ])[0]
-    ])
-
-    expect(store.activeTurnId).toBe('assistant-message-1')
-    expect(store.isStreaming).toBe(true)
-    expect(store.messages[0].parts).toContainEqual({
-      type: 'permissionAsk',
-      askId: 'turn-1:call-1',
-      requestId: '0123456789abcdef',
-      targetKind: 'host',
-      target: 'example.org',
-      reason: 'Fetch the page you linked'
-    })
-
-    store.ingest(askResolved('assistant-message-1', 'turn-1:call-1'))
-
-    expect(store.messages[0].parts).toEqual([])
-    expect(store.isStreaming).toBe(true)
-  })
-
   it('recordFailedSend renders [user, assistant(notice)] and leaves the turn idle', () => {
     const store = useAgentConversationStore()
     store.recordFailedSend('local-error-1' as TurnId, 'boom', 'send failed')

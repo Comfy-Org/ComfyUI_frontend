@@ -158,30 +158,6 @@ const runApproval = (id: string, askId = 'turn-1:call-1') =>
       allow_other: false
     }
   })
-const permissionAsk = (id: string, askId = 'turn-1:call-1') =>
-  wire({
-    type: 'agent_ask',
-    data: {
-      thread_id: 'th-1',
-      message_id: id,
-      ask_id: askId,
-      kind: 'permission',
-      context: {
-        request_id: '0123456789abcdef',
-        target_kind: 'host',
-        target: 'example.org',
-        reason: 'Fetch the page you linked'
-      },
-      prompt: 'Allow the agent to connect to example.org?',
-      options: [
-        { id: 'allow', label: 'Allow' },
-        { id: 'deny', label: 'Deny' }
-      ],
-      min_selections: 1,
-      max_selections: 1,
-      allow_other: false
-    }
-  })
 const askUser = (id: string, askId = 'turn-1:call-1') =>
   wire({
     type: 'agent_ask',
@@ -529,38 +505,6 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(
       useAgentConversationStore().messages[0].parts.some(
         (part) => part.type === 'runApproval'
-      )
-    ).toBe(false)
-  })
-
-  it('answers a permission ask once with allow and drops it on resolution', async () => {
-    const answerAsk = vi.fn(
-      async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
-    )
-    const { source, emit } = fakeEvents()
-    const session = useAgentSession({
-      rest: fakeRest({ answerAsk }),
-      events: source
-    })
-    session.start()
-    await session.sendMessage('check example.org')
-    emit(permissionAsk('msg-1'))
-
-    await Promise.all([
-      session.answerAsk('turn-1:call-1', { selected: ['allow'] }),
-      session.answerAsk('turn-1:call-1', { selected: ['allow'] })
-    ])
-    expect(answerAsk).toHaveBeenCalledTimes(1)
-    expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', {
-      selected: ['allow']
-    })
-    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
-
-    emit(askResolved('msg-1'))
-    expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(false)
-    expect(
-      useAgentConversationStore().messages[0].parts.some(
-        (part) => part.type === 'permissionAsk'
       )
     ).toBe(false)
   })

@@ -5224,13 +5224,6 @@
       "cancel": "Cancel",
       "run": "Run"
     },
-    "permissionAsk": {
-      "leadPath": "The agent wants to reach a folder on this computer:",
-      "leadHost": "The agent wants to connect to a website:",
-      "reason": "Why: {reason}",
-      "deny": "Deny",
-      "allow": "Allow"
-    },
     "askUnavailable": "The agent asked a question this panel cannot show. Stop the turn to continue.",
     "askUser": {
       "chooseUpTo": "Choose up to {max}",

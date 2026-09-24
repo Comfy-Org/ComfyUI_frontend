@@ -2,45 +2,44 @@ import { readonly, ref } from 'vue'
 import type { Ref } from 'vue'
 
 /**
- * Standalone only: the identity the AGENT authenticated this client as.
+ * The identity the AGENT authenticated this client as, from
+ * `GET /api/agent/identity` on every backend.
  *
- * Attribution on `POST /doc/ops` is server-derived, and a batch whose ops
- * claim a different actor is refused with 403. In the cloud the panel's
- * session user matches what ingest forwards, so the claim agrees. Standalone
- * bootstraps a fixed local user that the panel cannot see, so it fell back to
- * "anonymous" and EVERY canvas edit was rejected — silently, which is why the
- * agent kept reporting an empty canvas no matter what was on screen.
+ * Every canvas op carries an actor, `human:<user_id>:<tab>`, and the agent
+ * refuses a batch whose actor is not the writer it authenticated — silently,
+ * from the user's side, so the agent keeps reporting an empty canvas. The
+ * panel never derives that id itself (a signed-in account's id in the backend
+ * is not necessarily its Firebase uid); it asks the backend that enforces it.
  *
- * Asking the agent avoids hardcoding its bootstrap constant here. Null until
- * it answers; the follower stays inactive until then. One lookup at mount is
- * not enough: a transient failure (the agent still starting, the socket not
- * yet up) left the id null for the page's life and the canvas never synced.
- * So the lookup is retried on the standalone socket's next CONNECTED edge —
+ * Null until it answers; the follower stays inactive until then. One lookup at
+ * mount is not enough: a transient failure (the agent still starting, the
+ * socket not yet up) left the id null for the page's life and the canvas never
+ * synced. So the lookup is retried on the agent socket's next CONNECTED edge —
  * the same signal the follower resubscribes on, and the earliest sign the
  * agent is reachable again — behind an exponential backoff so a hard failure
  * does not spin while a flapping socket keeps announcing itself. An edge that
  * lands inside the backoff window is deferred to the end of the window, never
  * dropped, so a single reconnect is always enough once the window has passed.
  */
-export const STANDALONE_IDENTITY_RETRY_BASE_MS = 1_000
-export const STANDALONE_IDENTITY_RETRY_MAX_MS = 30_000
+export const AGENT_IDENTITY_RETRY_BASE_MS = 1_000
+export const AGENT_IDENTITY_RETRY_MAX_MS = 30_000
 
-export interface StandaloneIdentityDeps {
+export interface AgentIdentityDeps {
   getIdentity(): Promise<{ userId: string }>
-  /** The standalone socket's connected edges. Returns the unsubscribe. */
+  /** The agent socket's connected edges. Returns the unsubscribe. */
   onConnected(listener: () => void): () => void
   /** Every failed lookup, so a broken identity route is surfaced, not swallowed. */
   onFailure(error: unknown): void
 }
 
-export interface StandaloneIdentity {
+export interface ResolvedAgentIdentity {
   userId: Readonly<Ref<string | null>>
   stop(): void
 }
 
-export function resolveStandaloneIdentity(
-  deps: StandaloneIdentityDeps
-): StandaloneIdentity {
+export function resolveAgentIdentity(
+  deps: AgentIdentityDeps
+): ResolvedAgentIdentity {
   const userId = ref<string | null>(null)
   let inFlight = false
   let stopped = false
@@ -58,8 +57,8 @@ export function resolveStandaloneIdentity(
       retryNotBefore =
         Date.now() +
         Math.min(
-          STANDALONE_IDENTITY_RETRY_BASE_MS * 2 ** (failures - 1),
-          STANDALONE_IDENTITY_RETRY_MAX_MS
+          AGENT_IDENTITY_RETRY_BASE_MS * 2 ** (failures - 1),
+          AGENT_IDENTITY_RETRY_MAX_MS
         )
       deps.onFailure(error)
     } finally {

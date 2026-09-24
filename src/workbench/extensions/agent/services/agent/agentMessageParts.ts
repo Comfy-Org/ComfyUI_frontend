@@ -54,15 +54,6 @@ export interface RunApprovalPart {
   workflowName?: string
 }
 
-export interface PermissionAskPart {
-  type: 'permissionAsk'
-  askId: string
-  requestId?: string
-  targetKind: 'path' | 'host'
-  target: string
-  reason?: string
-}
-
 export interface AskUserOption {
   id: string
   label: string
@@ -80,14 +71,10 @@ export interface AskUserPart {
   allowOther: boolean
 }
 
-export type AskPart = RunApprovalPart | PermissionAskPart | AskUserPart
+export type AskPart = RunApprovalPart | AskUserPart
 
 export function isAskPart(part: MessagePart): part is AskPart {
-  return (
-    part.type === 'runApproval' ||
-    part.type === 'permissionAsk' ||
-    part.type === 'askUser'
-  )
+  return part.type === 'runApproval' || part.type === 'askUser'
 }
 
 type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
@@ -164,21 +151,6 @@ function toAskUserPart(ask: AskInput): AskUserPart | undefined {
   }
 }
 
-function toPermissionAskPart({
-  ask_id: askId,
-  context
-}: AskInput): PermissionAskPart | undefined {
-  if (!context?.target_kind || !context.target) return undefined
-  return {
-    type: 'permissionAsk',
-    askId,
-    requestId: context.request_id || undefined,
-    targetKind: context.target_kind,
-    target: context.target,
-    reason: context.reason?.trim() || undefined
-  }
-}
-
 /**
  * The card for an ask, by its explicit kind. An unknown or missing kind maps to
  * nothing: a privileged ask that lost its discriminator must not render as a
@@ -193,8 +165,6 @@ export function toAskPart(ask: AskInput): AskPart | undefined {
         workflowId: ask.context?.workflow_id || undefined,
         workflowName: ask.context?.workflow_name || undefined
       }
-    case 'permission':
-      return toPermissionAskPart(ask)
     case 'ask_user':
       return toAskUserPart(ask)
     default:
@@ -234,7 +204,6 @@ export type MessagePart =
   | NoticePart
   | TabLinkPart
   | RunApprovalPart
-  | PermissionAskPart
   | AskUserPart
   | PaywallPart
 

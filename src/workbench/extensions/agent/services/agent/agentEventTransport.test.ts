@@ -123,35 +123,6 @@ function runApproval(askId = 'turn-1:call-1'): AgentChatEvent {
   })
 }
 
-function permissionAsk(
-  askId = 'turn-1:call-2',
-  context: Record<string, string> = {
-    request_id: '0123456789abcdef',
-    target_kind: 'path',
-    target: 'C:\\Users\\me\\models',
-    reason: 'List the checkpoints you mentioned'
-  }
-): AgentChatEvent {
-  return zAgentWsEvent.parse({
-    type: 'agent_ask',
-    data: {
-      thread_id: 't',
-      message_id: 'm',
-      ask_id: askId,
-      kind: 'permission',
-      context,
-      prompt: 'Allow the agent to reach the folder C:\\Users\\me\\models?',
-      options: [
-        { id: 'allow', label: 'Allow' },
-        { id: 'deny', label: 'Deny' }
-      ],
-      min_selections: 1,
-      max_selections: 1,
-      allow_other: false
-    }
-  })
-}
-
 function askUser(askId = 'turn-1:call-3'): AgentChatEvent {
   return zAgentWsEvent.parse({
     type: 'agent_ask',
@@ -458,52 +429,6 @@ describe('agentEventTransport run approval', () => {
       )
     ).toEqual(['ask-2'])
     expect(message.streaming).toBe(true)
-  })
-})
-
-describe('agentEventTransport permission ask', () => {
-  it('places the permission card at the decision point in transcript order', () => {
-    const message = drive([delta('before'), permissionAsk(), delta('after')])
-
-    expect(message.parts).toEqual([
-      { type: 'text', text: 'before', state: 'done' },
-      {
-        type: 'permissionAsk',
-        askId: 'turn-1:call-2',
-        requestId: '0123456789abcdef',
-        targetKind: 'path',
-        target: 'C:\\Users\\me\\models',
-        reason: 'List the checkpoints you mentioned'
-      },
-      { type: 'text', text: 'after', state: 'streaming' }
-    ])
-  })
-
-  it('removes the permission card, and only it, when its ask resolves', () => {
-    const message = drive([
-      runApproval('ask-1'),
-      permissionAsk('ask-2'),
-      askResolved('ask-2')
-    ])
-
-    expect(message.parts.map((part) => part.type)).toEqual(['runApproval'])
-    expect(message.streaming).toBe(true)
-  })
-
-  it('shows a notice instead of a permission ask without a target', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
-    const message = drive([
-      permissionAsk('ask-1', { request_id: 'abc', target_kind: 'host' })
-    ])
-
-    expect(message.parts).toEqual([
-      {
-        type: 'notice',
-        level: 'warning',
-        text: 'The agent asked a question this panel cannot show. Stop the turn to continue.'
-      }
-    ])
-    expect(warn).toHaveBeenCalledOnce()
   })
 })
 

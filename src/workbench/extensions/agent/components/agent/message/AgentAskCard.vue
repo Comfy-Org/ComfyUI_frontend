@@ -4,7 +4,6 @@ import type {
   AskPart
 } from '../../../services/agent/agentMessageParts'
 import AskUserCard from './AskUserCard.vue'
-import PermissionAskCard from './PermissionAskCard.vue'
 import RunApprovalCard from './RunApprovalCard.vue'
 
 const { part, answering = false } = defineProps<{
@@ -29,14 +28,6 @@ const emit = defineEmits<{
     @open-workflow="
       (workflowId, workflowName) =>
         emit('openWorkflow', workflowId, workflowName)
-    "
-  />
-  <PermissionAskCard
-    v-else-if="part.type === 'permissionAsk'"
-    :part
-    :answering
-    @answer="
-      (askId, selection) => emit('answer', askId, { selected: [selection] })
     "
   />
   <AskUserCard
