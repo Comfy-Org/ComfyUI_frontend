@@ -4349,8 +4349,8 @@ Enterprise`
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'NEW RELEASE: GEMINI OMNI 1.1 FLASH',
-    'zh-CN': '全新发布：Gemini Omni 1.1 Flash'
+    en: 'GEMINI OMNI 1.1 FLASH',
+    'zh-CN': 'Gemini Omni 1.1 Flash'
   },
   'nav.featuredProductsAlt': {
     en: 'Gemini Omni 1.1 Flash video: cavemen meet the future',
