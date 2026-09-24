@@ -3,6 +3,7 @@ import { createScriptLoader } from '@comfyorg/shared-frontend-utils/loadExternal
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
+import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { toError } from '@/utils/errorUtil'
 
@@ -10,7 +11,7 @@ import type {
   ChurnkeyHandlerResult,
   ChurnkeyInit,
   ChurnkeyInitConfig,
-  ChurnkeySessionResults
+  ChurnkeySessionOutcome
 } from './types'
 
 const EMBED_SCRIPT_URL = 'https://assets.churnkey.co/js/app.js'
@@ -41,7 +42,7 @@ export interface ChurnkeyShowOptions {
 }
 
 export interface ChurnkeySession {
-  show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionResults>
+  show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionOutcome>
 }
 
 function rejectUnsupportedOffer(): Promise<never> {
@@ -55,10 +56,12 @@ function createSession(
   auth: ChurnkeyAuthResponse,
   configuredAppId: string
 ): ChurnkeySession {
+  const offerSubscriptionId = auth.offer_subscription_id
   return {
     show: (options) =>
-      new Promise<ChurnkeySessionResults>((resolve, reject) => {
+      new Promise<ChurnkeySessionOutcome>((resolve, reject) => {
         let settled = false
+        let discountApplied = false
         let pendingCancellation: Promise<ChurnkeyHandlerResult> | null = null
 
         function settle(fn: () => void) {
@@ -75,6 +78,11 @@ function createSession(
           provider: 'stripe',
           mode: auth.mode,
           handleCancel: (_customer, surveyResponse, freeformFeedback) => {
+            if (discountApplied) {
+              return Promise.reject(
+                new Error(t('subscription.cancelDialog.discountApplied'))
+              )
+            }
             pendingCancellation = options.handleCancel(
               surveyResponse,
               freeformFeedback
@@ -82,18 +90,28 @@ function createSession(
             return pendingCancellation
           },
           handlePause: rejectUnsupportedOffer,
-          handleDiscount: rejectUnsupportedOffer,
+          ...(offerSubscriptionId
+            ? {
+                subscriptionId: offerSubscriptionId,
+                onDiscount: () => {
+                  if (!settled) discountApplied = true
+                }
+              }
+            : { handleDiscount: rejectUnsupportedOffer }),
           handleTrialExtension: rejectUnsupportedOffer,
           handlePlanChange: rejectUnsupportedOffer,
           handleRebate: rejectUnsupportedOffer,
           handleRedirect: rejectUnsupportedOffer,
           onClose: (results) => {
+            const outcome: ChurnkeySessionOutcome = discountApplied
+              ? { type: 'discount-applied' }
+              : { type: results.aborted === true ? 'abandoned' : 'closed' }
             if (!pendingCancellation) {
-              settle(() => resolve(results))
+              settle(() => resolve(outcome))
               return
             }
             void pendingCancellation.then(
-              () => settle(() => resolve(results)),
+              () => settle(() => resolve(outcome)),
               (error) => settle(() => reject(toError(error)))
             )
           },
@@ -101,7 +119,15 @@ function createSession(
             if (settled) return
             settled = true
             window.churnkey?.hide?.()
-            reject(churnkeyError(error, type))
+            if (discountApplied) {
+              resolve({ type: 'discount-applied' })
+              reportError(error, {
+                errorType: 'error_displaying_churnkey_after_discount',
+                context: { churnkeyErrorType: type }
+              })
+            } else {
+              reject(churnkeyError(error, type))
+            }
             queueMicrotask(() => window.churnkey?.clearState?.())
           }
         }

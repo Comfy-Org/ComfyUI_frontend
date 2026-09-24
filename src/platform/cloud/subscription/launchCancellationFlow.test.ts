@@ -5,13 +5,14 @@ import { computed } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 
 import type { BillingType, SubscriptionInfo } from '@/composables/billing/types'
 import type {
   ChurnkeySession,
   ChurnkeyShowOptions
 } from '@/platform/cloud/churnkey/churnkeyClient'
-import type { ChurnkeySessionResults } from '@/platform/cloud/churnkey/types'
+import type { ChurnkeySessionOutcome } from '@/platform/cloud/churnkey/types'
 import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
 
 const mocks = vi.hoisted(
@@ -43,11 +44,12 @@ vi.mock(import('@/platform/cloud/churnkey/churnkeyClient'), () => ({
 }))
 
 vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/reportError'))
 
 import { launchCancellationFlow } from './launchCancellationFlow'
 
 function session(
-  show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionResults>
+  show: (options: ChurnkeyShowOptions) => Promise<ChurnkeySessionOutcome>
 ): ChurnkeySession {
   return { show }
 }
@@ -99,6 +101,56 @@ describe('launchCancellationFlow', () => {
     mocks.billingRail = 'stripe'
   })
 
+  it('refreshes billing after a discount without canceling or recording abandonment', async () => {
+    mocks.prepare.mockResolvedValue(
+      session(async () => ({ type: 'discount-applied' }))
+    )
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
+    expect(useBillingContext().cancelSubscription).not.toHaveBeenCalled()
+    expect(showFallback).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()?.trackSubscriptionCancellation
+    ).toHaveBeenCalledExactlyOnceWith(
+      'flow_opened',
+      expect.objectContaining({ source: 'cancel_plan_menu' })
+    )
+  })
+
+  it('does not reopen cancellation when billing refresh fails after a discount', async () => {
+    const error = new Error('refresh offline')
+    vi.mocked(useBillingContext().fetchStatus).mockRejectedValue(error)
+    mocks.prepare.mockResolvedValue(
+      session(async () => ({ type: 'discount-applied' }))
+    )
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(showFallback).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(error, {
+      errorType: 'error_refreshing_billing_after_churnkey_discount'
+    })
+  })
+
+  it('does not refresh a different workspace after a discount', async () => {
+    mocks.prepare.mockResolvedValue(
+      session(async () => {
+        mocks.activeWorkspaceId = 'workspace-2'
+        return { type: 'discount-applied' }
+      })
+    )
+    const showFallback = vi.fn()
+
+    await launchCancellationFlow({ showFallback })
+
+    expect(useBillingContext().fetchStatus).not.toHaveBeenCalled()
+    expect(showFallback).not.toHaveBeenCalled()
+  })
+
   it('uses the native dialog for legacy billing', async () => {
     mocks.billingType.value = 'legacy'
     const showFallback = vi.fn()
@@ -133,7 +185,7 @@ describe('launchCancellationFlow', () => {
     mocks.prepare.mockResolvedValue(
       session(async (options) => {
         await options.handleCancel('Too expensive')
-        return { aborted: false }
+        return { type: 'closed' }
       })
     )
     const showFallback = vi.fn()
@@ -166,7 +218,9 @@ describe('launchCancellationFlow', () => {
   })
 
   it('tracks an abandoned flow when the user closes the embed', async () => {
-    mocks.prepare.mockResolvedValue(session(async () => ({ aborted: true })))
+    mocks.prepare.mockResolvedValue(
+      session(async () => ({ type: 'abandoned' }))
+    )
 
     await launchCancellationFlow({ showFallback: vi.fn() })
 
@@ -226,7 +280,7 @@ describe('launchCancellationFlow', () => {
     mocks.prepare.mockResolvedValue(
       session(async (options) => {
         await options.handleCancel('Too expensive')
-        return { aborted: true }
+        return { type: 'abandoned' }
       })
     )
     const showFallback = vi.fn()
@@ -246,7 +300,7 @@ describe('launchCancellationFlow', () => {
 
   it('stops when the active workspace changes during preparation', async () => {
     let finishPreparation: ((value: ChurnkeySession) => void) | undefined
-    const show = vi.fn().mockResolvedValue({ aborted: true })
+    const show = vi.fn().mockResolvedValue({ type: 'abandoned' })
     mocks.prepare.mockReturnValue(
       new Promise((resolve) => {
         finishPreparation = resolve
@@ -275,7 +329,7 @@ describe('launchCancellationFlow', () => {
           cancellationError = error
           throw error
         }
-        return { aborted: false }
+        return { type: 'closed' }
       })
     )
     const showFallback = vi.fn()

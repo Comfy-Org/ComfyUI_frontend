@@ -2881,7 +2881,8 @@
       "confirmCancel": "Cancel subscription",
       "failed": "Failed to cancel subscription",
       "workspaceChanged": "Your active workspace changed. Switch back and try again.",
-      "offerUnavailable": "This option isn't available. Please choose another option."
+      "offerUnavailable": "This option isn't available. Please choose another option.",
+      "discountApplied": "Your discount has been applied, so this subscription wasn't canceled. Close this window to see your updated plan."
     },
     "downgrade": {
       "title": "Change to {plan} plan?",
