@@ -12,7 +12,8 @@
       "pending": "Finish signing in from the pop-up window.",
       "signingIn": "Signing you in…",
       "insecureContextWarning": "This connection is insecure (HTTP) - your credentials may be intercepted by attackers if you proceed to login.",
-      "unavailable": "Sign-in is unavailable: this deployment has no identity configuration.",
+      "unavailable": "Sign-in is unavailable right now.",
+      "retryAvailability": "Try again",
       "sessionError": "You are signed in, but your workspace session could not be started. Retry, or sign in again with another account.",
       "retry": "Retry session"
     },

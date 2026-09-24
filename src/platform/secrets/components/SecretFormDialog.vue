@@ -148,7 +148,7 @@
             </small>
           </div>
 
-          <span v-if="apiError" class="text-destructive text-sm">
+          <span v-if="apiError" class="text-sm text-destructive-background">
             {{ apiError }}
           </span>
 

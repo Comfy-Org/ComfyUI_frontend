@@ -44,6 +44,7 @@ export function useComposer(options: UseComposerOptions) {
 
   function insert(text: string): void {
     store.setText(draft.value ? `${draft.value} ${text}` : text)
+    store.markSuggestedPrompt()
   }
 
   return {

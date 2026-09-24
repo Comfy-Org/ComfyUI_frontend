@@ -21,9 +21,11 @@ import SubscriptionView from '@/views/SubscriptionView.vue'
 /** The values this surface and the session it sits under read; a test-family key stands in for a deployment's. */
 vi.mock(import('@/config/env'), () => ({
   BILLING_WEB_ENV: 'test' as const,
-  CLOUD_BASE_URL: 'https://testcloud.comfy.org',
-  FIREBASE_OPTIONS: undefined,
-  STRIPE_PUBLISHABLE_KEY: 'pk_test_example'
+  CLOUD_BASE_URL: 'https://testcloud.comfy.org'
+}))
+
+vi.mock(import('@/config/stripeKey'), () => ({
+  awaitBillingWebStripeKey: () => Promise.resolve('pk_test_example')
 }))
 
 const challengeMocks = vi.hoisted(() => ({
@@ -32,8 +34,10 @@ const challengeMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/session/stripeChallengePort'), () => ({
-  createStripeChallengePort: (key: string) => {
-    challengeMocks.createPort(key)
+  createDeferredStripeChallengePort: (
+    getKey: () => string | undefined | Promise<string | undefined>
+  ) => {
+    void Promise.resolve(getKey()).then((key) => challengeMocks.createPort(key))
     return { handleNextAction: challengeMocks.handleNextAction }
   }
 }))

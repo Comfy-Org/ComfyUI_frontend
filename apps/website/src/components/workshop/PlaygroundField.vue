@@ -59,6 +59,7 @@ const errorKey: Record<FieldErrorCode, TranslationKey> = {
   fileUnreadable: 'workshop.form.fileUnreadable',
   incompatible: 'workshop.form.incompatible',
   videoTooLong: 'workshop.form.videoTooLong',
+  videoWidthOutOfRange: 'workshop.form.videoWidthOutOfRange',
   videoUnreadable: 'workshop.form.videoUnreadable',
   rejected: 'workshop.form.rejected'
 }
@@ -80,25 +81,44 @@ const fieldError = computed(() =>
     ? validateForm([field], values.value)[field.name]
     : errors[field.name]
 )
+
+function localizedError(error: FieldErrorCode): string {
+  if (error === 'incompatible' && field.hint) return field.hint
+  return t(errorKey[error], locale)
+}
+
+function uploadLimit(): number {
+  if (field.kind === 'file') return field.maxBytes ?? MAX_UPLOAD_BYTES
+  return urlUploadField(field)?.maxBytes ?? MAX_UPLOAD_BYTES
+}
+
+function videoDurationLimit(): string {
+  return String(field.presentation?.maxVideoDurationSeconds ?? '')
+}
+
+function videoWidthMinimum(): string {
+  return String(field.presentation?.videoWidthPixels?.minimum ?? '')
+}
+
+function videoWidthMaximum(): string {
+  return String(field.presentation?.videoWidthPixels?.maximum ?? '')
+}
+
+function messageForError(error: FieldErrorCode): string {
+  const replacements: Record<string, string> = {
+    limit: formatWorkshopUploadLimit(uploadLimit(), locale),
+    seconds: videoDurationLimit(),
+    minimum: videoWidthMinimum(),
+    maximum: videoWidthMaximum()
+  }
+  return Object.entries(replacements).reduce(
+    (message, [name, value]) => message.replace(`{${name}}`, value),
+    localizedError(error)
+  )
+}
+
 const errorMessage = computed(() =>
-  fieldError.value
-    ? (fieldError.value === 'incompatible' && field.hint
-        ? field.hint
-        : t(errorKey[fieldError.value], locale)
-      )
-        .replace(
-          '{limit}',
-          formatWorkshopUploadLimit(
-            (field.kind === 'file' ? field : urlUploadField(field))?.maxBytes ??
-              MAX_UPLOAD_BYTES,
-            locale
-          )
-        )
-        .replace(
-          '{seconds}',
-          String(field.presentation?.maxVideoDurationSeconds ?? '')
-        )
-    : ''
+  fieldError.value ? messageForError(fieldError.value) : ''
 )
 const invalid = () => fieldError.value !== undefined
 const describedBy = computed(

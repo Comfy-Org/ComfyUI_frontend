@@ -6811,12 +6811,12 @@ Enterprise`
   // Launches page (/launches) — subscribe banner
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
   'launches.banner.text': {
-    en: 'Now turn your agent into a creative technologist.',
-    'zh-CN': '现在，让你的智能体成为创意技术专家。'
+    en: 'One API for frontier media models.',
+    'zh-CN': '一个 API，调用前沿媒体模型。'
   },
   'launches.banner.cta': {
-    en: 'Start Comfy MCP',
-    'zh-CN': '启动 Comfy MCP'
+    en: 'Try Comfy Router',
+    'zh-CN': '试用 Comfy Router'
   },
 
   // Launches page (/launches) — closing CTA
@@ -10093,9 +10093,13 @@ Enterprise`
     en: 'Use a video that is {seconds} seconds or shorter.',
     'zh-CN': '请使用时长不超过 {seconds} 秒的视频。'
   },
+  'workshop.form.videoWidthOutOfRange': {
+    en: 'Use a video between {minimum} and {maximum} pixels wide.',
+    'zh-CN': '请使用宽度在 {minimum} 到 {maximum} 像素之间的视频。'
+  },
   'workshop.form.videoUnreadable': {
-    en: 'Could not read the video duration. Select a playable video or use an accessible video link.',
-    'zh-CN': '无法读取视频时长。请选择可播放的视频或使用可访问的视频链接。'
+    en: 'Could not read the video details. Select a playable video or use an accessible video link.',
+    'zh-CN': '无法读取视频详情。请选择可播放的视频或使用可访问的视频链接。'
   },
   'workshop.form.draftRestoreFailed': {
     en: 'We could not restore all of your saved inputs. Check the form and pick your files again.',

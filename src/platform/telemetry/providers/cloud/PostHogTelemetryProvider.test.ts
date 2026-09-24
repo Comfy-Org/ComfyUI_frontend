@@ -405,6 +405,49 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures the agent activation funnel events with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentConsentShown({ trigger: 'first_load' })
+      provider.trackAgentConsentResolved({ decision: 'accepted' })
+      provider.trackAgentOnboardingShown()
+      provider.trackAgentOnboardingStep({ step: 4, action: 'finish' })
+
+      expect(hoisted.mockCapture.mock.calls).toEqual([
+        [TelemetryEvents.AGENT_CONSENT_SHOWN, { trigger: 'first_load' }],
+        [TelemetryEvents.AGENT_CONSENT_RESOLVED, { decision: 'accepted' }],
+        [TelemetryEvents.AGENT_ONBOARDING_SHOWN, {}],
+        [TelemetryEvents.AGENT_ONBOARDING_STEP, { step: 4, action: 'finish' }]
+      ])
+    })
+
+    it('captures the agent message with its thread, workflow and origin', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentMessageSent({
+        attachment_count: 1,
+        node_tag_count: 2,
+        thread_id: 'thread-1',
+        workflow_id: 'workflow-1',
+        client_message_id: 'client-message-1',
+        input_method: 'suggestion'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_MESSAGE_SENT,
+        {
+          attachment_count: 1,
+          node_tag_count: 2,
+          thread_id: 'thread-1',
+          workflow_id: 'workflow-1',
+          client_message_id: 'client-message-1',
+          input_method: 'suggestion'
+        }
+      )
+    })
+
     it('captures link dedup drop events with metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -597,6 +640,34 @@ describe('PostHogTelemetryProvider', () => {
           current_tier: 'standard',
           ...extra
         })
+      }
+    )
+
+    it.for([
+      {
+        event: TelemetryEvents.AGENT_CONSENT_NOT_OFFERED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentConsentNotOffered({ reason: 'tour_active' }),
+        properties: { reason: 'tour_active' }
+      },
+      {
+        event: TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentOnboardingNotShown({
+            reason: 'target_missing',
+            step: 2
+          }),
+        properties: { reason: 'target_missing', step: 2 }
+      }
+    ])(
+      'captures $event with its reason',
+      async ({ event, track, properties }) => {
+        const provider = createProvider()
+        await vi.dynamicImportSettled()
+
+        track(provider)
+
+        expect(hoisted.mockCapture).toHaveBeenCalledWith(event, properties)
       }
     )
 
@@ -1026,6 +1097,50 @@ describe('PostHogTelemetryProvider', () => {
         TelemetryEvents.USER_LOGGED_IN,
         {}
       )
+    })
+
+    it('captures a close_button agent panel close through the normal queue', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentPanelClosed({
+        source: 'close_button',
+        open_duration_ms: 5000
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_PANEL_CLOSED,
+        { source: 'close_button', open_duration_ms: 5000 }
+      )
+    })
+
+    it('captures a pagehide agent panel close with an immediate sendBeacon send', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentPanelClosed({
+        source: 'pagehide',
+        open_duration_ms: 5000
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_PANEL_CLOSED,
+        { source: 'pagehide', open_duration_ms: 5000 },
+        { transport: 'sendBeacon', send_instantly: true }
+      )
+    })
+
+    it('drops a pagehide agent panel close before PostHog has initialized', async () => {
+      const provider = createProvider()
+
+      provider.trackAgentPanelClosed({
+        source: 'pagehide',
+        open_duration_ms: 5000
+      })
+
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockCapture).not.toHaveBeenCalled()
     })
   })
 
