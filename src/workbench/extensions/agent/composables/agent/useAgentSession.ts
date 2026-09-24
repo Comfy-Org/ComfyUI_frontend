@@ -51,15 +51,20 @@ interface SentTag {
 export interface WorkflowTurnContext {
   id?: string
   tabPath: string
+  /** `ComfyWorkflow.instanceId` of the tab this turn belongs to. */
+  instanceId: string
+  isTemporary: boolean
 }
 
 /**
  * Workflow lookup context: omitted resolves the currently selected target,
- * `null` pins the absence of a target, and `{ tabPath }` pins its identity.
- * A send captures this before preparation so later selections cannot change
- * which workflow owns the turn.
+ * `null` pins the absence of a target, and `{ tabPath, instanceId }` pins its
+ * identity. A send captures this before preparation so later selections cannot
+ * change which workflow owns the turn. The instance, not the path, is the
+ * identity: a tab that closes mid-send can be replaced by another tab at the
+ * same path, and that replacement is a different turn target.
  */
-export type TurnOrigin = { tabPath: string } | null
+export type TurnOrigin = { tabPath: string; instanceId: string } | null
 
 type PromptEditState =
   | { phase: 'idle' }
@@ -495,7 +500,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const threadAtSend = conversationStore.threadId ?? 'new'
     const originContext = workflow?.current()
     const origin: TurnOrigin =
-      originContext === undefined ? null : { tabPath: originContext.tabPath }
+      originContext === undefined
+        ? null
+        : {
+            tabPath: originContext.tabPath,
+            instanceId: originContext.instanceId
+          }
     let sentContext: WorkflowTurnContext | undefined
     try {
       await prepareWorkflow()
@@ -530,12 +540,20 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  /**
+   * A turn belongs to the tab instance that started it. An id-less origin is
+   * protected too: an unsaved tab that closes during prepare() leaves nothing
+   * to attribute the turn to, and a tab reopened at the same path is a
+   * different instance, not the same target.
+   */
   function workflowTargetChanged(
     origin: WorkflowTurnContext | undefined,
     current: WorkflowTurnContext | undefined
   ): boolean {
-    if (origin?.id === undefined) return false
-    return current?.id !== origin.id
+    if (origin === undefined) return false
+    if (current === undefined) return true
+    if (current.instanceId !== origin.instanceId) return true
+    return origin.id !== undefined && current.id !== origin.id
   }
 
   async function sendMessage(
