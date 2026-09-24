@@ -72,6 +72,7 @@ import {
 } from './composables/agent/useOnboarding'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
+import { agentBoundWorkflowIdKey } from './components/agent/agentBoundWorkflowId'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
 import OnboardingCoach from './components/agent/OnboardingCoach.vue'
 import {
@@ -561,6 +562,7 @@ const editableWorkflowId = computed(() => {
   const target = selectedTarget.value
   return target ? cloudIdFor(target) : undefined
 })
+provide(agentBoundWorkflowIdKey, editableWorkflowId)
 
 const workflowTabs = computed<ActiveTab[]>(() =>
   workflowStore.openWorkflows.map((tab) => ({
