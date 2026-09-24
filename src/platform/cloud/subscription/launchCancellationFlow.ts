@@ -4,6 +4,7 @@ import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
 import { getSubscriptionCancellationMetadata } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { getErrorMessage } from '@/utils/errorUtil'
 
@@ -82,6 +83,11 @@ export async function launchCancellationFlow({
         await billing.fetchStatus().catch((error) => {
           reportError(error, {
             errorType: 'error_refreshing_billing_after_churnkey_discount'
+          })
+          useToastStore().add({
+            severity: 'warn',
+            summary: t('subscription.cancelDialog.discountRefreshFailed'),
+            life: 8000
           })
         })
       }

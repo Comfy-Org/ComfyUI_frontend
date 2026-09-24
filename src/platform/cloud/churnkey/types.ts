@@ -19,11 +19,22 @@ type ChurnkeyUnsupportedHandler = (
   ...args: unknown[]
 ) => Promise<ChurnkeyHandlerResult>
 
-export interface ChurnkeyInitConfig {
+export type ChurnkeyOfferConfig =
+  | {
+      subscriptionId: string
+      onDiscount: (customer: unknown, coupon: unknown) => void
+      handleDiscount?: never
+    }
+  | {
+      subscriptionId?: never
+      onDiscount?: never
+      handleDiscount: ChurnkeyUnsupportedHandler
+    }
+
+export type ChurnkeyInitConfig = ChurnkeyOfferConfig & {
   appId: string
   authHash: string
   customerId: string
-  subscriptionId?: string
   provider: 'stripe'
   mode: ChurnkeyMode
   handleCancel: (
@@ -32,12 +43,10 @@ export interface ChurnkeyInitConfig {
     freeformFeedback?: string | null
   ) => Promise<ChurnkeyHandlerResult>
   handlePause: ChurnkeyUnsupportedHandler
-  handleDiscount?: ChurnkeyUnsupportedHandler
   handleTrialExtension: ChurnkeyUnsupportedHandler
   handlePlanChange: ChurnkeyUnsupportedHandler
   handleRebate: ChurnkeyUnsupportedHandler
   handleRedirect: ChurnkeyUnsupportedHandler
-  onDiscount?: (customer: unknown, coupon: unknown) => void
   onClose: (results: ChurnkeyCloseResults) => void
   onError: (error: unknown, type?: string) => void
 }

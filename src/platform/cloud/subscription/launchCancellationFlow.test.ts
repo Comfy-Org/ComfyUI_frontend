@@ -1,3 +1,4 @@
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mock } from 'vitest'
@@ -120,7 +121,7 @@ describe('launchCancellationFlow', () => {
     )
   })
 
-  it('does not reopen cancellation when billing refresh fails after a discount', async () => {
+  it('tells the user without reopening cancellation when billing refresh fails after a discount', async () => {
     const error = new Error('refresh offline')
     vi.mocked(useBillingContext().fetchStatus).mockRejectedValue(error)
     mocks.prepare.mockResolvedValue(
@@ -134,6 +135,12 @@ describe('launchCancellationFlow', () => {
     expect(reportError).toHaveBeenCalledWith(error, {
       errorType: 'error_refreshing_billing_after_churnkey_discount'
     })
+    expect(useToastStore().add).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        severity: 'warn',
+        summary: 'subscription.cancelDialog.discountRefreshFailed'
+      })
+    )
   })
 
   it('does not refresh a different workspace after a discount', async () => {

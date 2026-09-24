@@ -4,7 +4,11 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { reportError } from '@/platform/telemetry/reportError'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
-import type { ChurnkeyInit, ChurnkeyInitConfig } from './types'
+import type {
+  ChurnkeyHandlerResult,
+  ChurnkeyInit,
+  ChurnkeyInitConfig
+} from './types'
 
 const mocks = vi.hoisted(() => ({
   init: vi.fn<ChurnkeyInit>(),
@@ -25,6 +29,11 @@ function authResponse(): ChurnkeyAuthResponse {
     auth_hash: 'signed-hash',
     mode: 'test'
   }
+}
+
+interface CancellationControls {
+  resolve: (result: ChurnkeyHandlerResult) => void
+  reject: (error: Error) => void
 }
 
 function capturedConfig(): ChurnkeyInitConfig {
@@ -141,6 +150,58 @@ describe('churnkeyClient', () => {
     await expect(showPromise).resolves.toEqual({ type: 'discount-applied' })
     expect(handleCancel).not.toHaveBeenCalled()
   })
+
+  it.for([
+    {
+      cancellation: 'succeeds',
+      settle: (cancel: CancellationControls) =>
+        cancel.resolve({ message: 'Canceled' }),
+      outcome: { resolves: { type: 'closed' } }
+    },
+    {
+      cancellation: 'fails',
+      settle: (cancel: CancellationControls) =>
+        cancel.reject(new Error('Cancellation failed')),
+      outcome: { rejects: 'Cancellation failed' }
+    }
+  ] as const)(
+    'reports the cancellation, not a discount, when a discount lands after cancellation starts and cancellation $cancellation',
+    async ({ settle, outcome }) => {
+      vi.mocked(workspaceApi.getChurnkeyAuth).mockResolvedValue({
+        ...authResponse(),
+        offer_subscription_id: 'sub_offer_1'
+      })
+      const session = await prepareChurnkey()
+      assert.exists(session)
+      let cancel: CancellationControls | undefined
+      const handleCancel = vi.fn(
+        () =>
+          new Promise<ChurnkeyHandlerResult>((resolve, reject) => {
+            cancel = { resolve, reject }
+          })
+      )
+      const showPromise = session.show({ handleCancel })
+      const config = capturedConfig()
+
+      const firstCancel = config.handleCancel({}, 'too_expensive')
+      config.onDiscount?.({}, {})
+      const repeatedCancel = config.handleCancel({}, 'too_expensive')
+      config.onClose({})
+      assert.exists(cancel)
+      settle(cancel)
+
+      if ('resolves' in outcome) {
+        await expect(showPromise).resolves.toEqual(outcome.resolves)
+      } else {
+        await expect(showPromise).rejects.toThrow(outcome.rejects)
+      }
+      expect(repeatedCancel).toBe(firstCancel)
+      expect(handleCancel).toHaveBeenCalledOnce()
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        errorType: 'error_applying_churnkey_discount_during_cancellation'
+      })
+    }
+  )
 
   it.for([
     { ending: 'close', reports: [] },
