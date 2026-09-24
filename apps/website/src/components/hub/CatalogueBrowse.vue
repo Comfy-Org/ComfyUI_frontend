@@ -362,19 +362,22 @@ const heading = computed(() => {
           :locale
         />
 
-        <CatalogueModelFilter
+        <!-- Both menus hang off a root that draws no element of its own, so
+          the class that steps them aside has to go on a wrapper. -->
+        <div
           v-if="modelFilter && type === 'workflow'"
-          v-model="usesModel"
-          :models="modelsInTab"
-          :locale
-        />
+          :class="cn('shrink-0', searching && 'max-sm:hidden')"
+        >
+          <CatalogueModelFilter
+            v-model="usesModel"
+            :models="modelsInTab"
+            :locale
+          />
+        </div>
 
-        <CatalogueSort
-          v-model:order="order"
-          :orders="ORDERS"
-          :locale
-          :class="cn(searching && 'max-sm:hidden')"
-        />
+        <div :class="cn('shrink-0', searching && 'max-sm:hidden')">
+          <CatalogueSort v-model:order="order" :orders="ORDERS" :locale />
+        </div>
       </div>
     </div>
 
