@@ -454,6 +454,86 @@ const events: readonly ComfyEvent[] = [
     ctaLabel: { en: 'RSVP', 'zh-CN': '报名' }
   },
   {
+    id: 'machine-cinema-wip-salon',
+    category: 'meetup',
+    organizer: 'partner',
+    // TODO: date, time, and location are a best guess (luma.com is
+    // unreachable from this session) — confirm against
+    // https://luma.com/machine-tclv before merging.
+    coords: { lat: 37.7749, lng: -122.4194 },
+    title: {
+      en: 'Machine Cinema: Work in Progress Salon',
+      'zh-CN': 'Machine Cinema：作品进程沙龙'
+    },
+    description: {
+      en: 'Comfy joins Machine Cinema for a Work in Progress Salon, where AI creators share in-progress projects with fellow creators and take audience Q&A.',
+      'zh-CN':
+        'Comfy 将参加 Machine Cinema 举办的作品进程沙龙，AI 创作者们在此分享正在进行中的项目，并接受观众提问。'
+    },
+    location: { en: 'San Francisco, CA', 'zh-CN': '美国加州旧金山' },
+    dateLabel: {
+      en: 'October 8, 2026 · 6-9 PM PT',
+      'zh-CN': '2026年10月8日 · 下午6点至9点（PT）'
+    },
+    startDateTime: '2026-10-08T18:00:00-07:00',
+    endDateTime: '2026-10-08T21:00:00-07:00',
+    link: {
+      href: {
+        en: 'https://luma.com/machine-tclv?lm_source=embed',
+        'zh-CN': 'https://luma.com/machine-tclv?lm_source=embed'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' },
+    // TODO: temporarily self-hosted under public/images/events because this
+    // session has no upload access to media.comfy.org; migrate to the CDN
+    // and switch to eventImage() when available.
+    media: {
+      type: 'image',
+      src: '/images/events/machine-cinema-wip-salon.png',
+      alt: {
+        en: 'Machine Cinema: Work in Progress Salon poster',
+        'zh-CN': 'Machine Cinema：作品进程沙龙海报'
+      }
+    }
+  },
+  {
+    id: 'model-jam-sept-30',
+    category: 'livestream',
+    organizer: 'comfy',
+    // TODO: start time is a best guess (matches the usual 10AM PT slot for
+    // Comfy livestreams) — the YouTube live page is unreachable from this
+    // session to confirm the exact scheduled time.
+    title: {
+      en: 'Model Jam: Latest Video & Image Model Releases',
+      'zh-CN': 'Model Jam：最新视频与图像模型发布'
+    },
+    description: {
+      en: 'Comfy Creatives Rob, Chris, Julien, and Paul join host Allyson to jam on the latest video and image model releases.',
+      'zh-CN':
+        'Comfy Creatives 团队的 Rob、Chris、Julien 与 Paul 做客本场直播，与主持人 Allyson 一起体验最新的视频与图像模型发布。'
+    },
+    location: { en: 'Online', 'zh-CN': '线上' },
+    dateLabel: {
+      en: 'September 30, 2026 · 10AM PT',
+      'zh-CN': '2026年9月30日 · 上午10点（PT）'
+    },
+    startDateTime: '2026-09-30T10:00:00-07:00',
+    liveVideoId: '7V7Aazicx-s',
+    // TODO: temporarily self-hosted under public/images/events (a frame
+    // extracted from the promo clip) because this session has no upload
+    // access to media.comfy.org; migrate to the CDN and switch to
+    // eventImage() when available.
+    media: {
+      type: 'image',
+      src: '/images/events/model-jam-sept-30-still.jpg',
+      alt: {
+        en: 'Model Jam: Latest Video & Image Model Releases livestream',
+        'zh-CN': 'Model Jam：最新视频与图像模型发布直播'
+      }
+    }
+  },
+  {
     id: 'la-august-meetup',
     category: 'meetup',
     organizer: 'community',
