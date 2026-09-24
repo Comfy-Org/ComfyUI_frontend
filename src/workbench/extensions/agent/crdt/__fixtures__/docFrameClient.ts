@@ -32,6 +32,7 @@ interface DocOpsResultWireData extends DocSubscribedWireData {
 
 interface DocResetWireData extends CommonWireData {
   seq?: unknown
+  lineage_seq?: unknown
   actor?: unknown
 }
 
@@ -61,7 +62,12 @@ export function docOpsResultFrame(data: DocOpsResultWireData = {}) {
 }
 
 export function docResetFrame(data: DocResetWireData = {}) {
-  return serverFrame('doc_reset', { seq: 1, actor: 'system:mint', ...data })
+  return serverFrame('doc_reset', {
+    seq: 1,
+    lineage_seq: 1,
+    actor: 'system:mint',
+    ...data
+  })
 }
 
 export function awarenessFrame(data: AwarenessWireData = {}) {

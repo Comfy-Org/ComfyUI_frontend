@@ -690,11 +690,11 @@ export class AgentConversationHarness {
     for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
   }
 
-  deleteNodeOnHost(nodeId: string, removedLinkIds: number[]): void {
+  deleteNodeOnHost(nodeId: number, removedLinkIds: number[]): void {
     this.host.apply([
       {
         op: 'delete_node',
-        node_id: Number(nodeId),
+        node_id: nodeId,
         removed_links: removedLinkIds
       }
     ])

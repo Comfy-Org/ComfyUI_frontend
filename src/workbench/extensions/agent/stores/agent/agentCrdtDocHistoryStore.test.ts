@@ -73,6 +73,10 @@ describe('agentCrdtDocHistoryStore', () => {
     ).not.toThrow()
     expect(history.isAvailable()).toBe(false)
     expect(reportError).toHaveBeenCalledOnce()
+    expect(history.currentLineage('wf')).toBe('initial')
+    expect(history.everSeen('wf', 'initial')).toEqual(new Set())
+    expect(() => history.reset('wf', 1)).not.toThrow()
+    expect(reportError).toHaveBeenCalledOnce()
     history.$dispose()
   })
 

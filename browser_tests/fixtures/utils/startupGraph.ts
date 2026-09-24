@@ -8,7 +8,7 @@ type LoadGraphDataHost = Pick<ComfyApp, 'loadGraphData'>
 type LoadGraphDataArgs = Parameters<ComfyApp['loadGraphData']>
 
 /**
- * Replaces the starter template for each startup graph load on this page.
+ * Replaces the first startup graph load on this page.
  */
 export async function installStartupGraph(
   page: Page,

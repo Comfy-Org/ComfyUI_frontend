@@ -1386,7 +1386,7 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('excludes a node the doc has ever held even across an unmount and remount, so a remote delete observed while unmounted is not resurrected', () => {
+    it('excludes a previously observed node after remount when the current doc no longer contains it', () => {
       const fakeGraph = graphWithNodes(toNodeId(1))
       const first = mountFollower('wf-1', true, () => fakeGraph)
       bridge().follower.doc.getMap = () => ({ toJSON: () => ({ '1': {} }) })

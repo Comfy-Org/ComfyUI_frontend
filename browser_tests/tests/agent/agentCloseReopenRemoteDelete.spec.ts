@@ -38,8 +38,18 @@ test.describe(
         await expect(
           agentConversation.topbar.getWorkflowTab(savedName)
         ).toHaveCount(0)
-        await comfyPage.waitForAppReady()
-        agentConversation.deleteNodeOnHost(deletedNodeId, deletedNodeLinkIds)
+        await expect
+          .poll(
+            () =>
+              agentConversation
+                .clientDocFrames()
+                .filter((frame) => frame.type === 'doc_unsubscribe').length
+          )
+          .toBeGreaterThan(0)
+        agentConversation.deleteNodeOnHost(
+          Number(deletedNodeId),
+          deletedNodeLinkIds
+        )
       })
 
       await test.step('reopen from persistence and receive host catch-up', async () => {

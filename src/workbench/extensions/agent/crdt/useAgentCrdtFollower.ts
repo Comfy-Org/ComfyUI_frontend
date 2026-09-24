@@ -532,7 +532,7 @@ function startAgentCrdtFollower(
     })
     historyLineages.set(
       reset.workflowId,
-      docHistory.reset(reset.workflowId, reset.seq)
+      docHistory.reset(reset.workflowId, reset.lineageSeq ?? reset.seq)
     )
   }
   const onDocReset: EventListener = (event) => {

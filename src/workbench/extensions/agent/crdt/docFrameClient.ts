@@ -75,6 +75,7 @@ interface DocAwareness {
 export interface DocReset {
   workflowId: string
   seq: number
+  lineageSeq?: number
   actor?: string
 }
 
@@ -108,6 +109,7 @@ interface WireData {
   v?: unknown
   workflow_id?: unknown
   seq?: unknown
+  lineage_seq?: unknown
   update_b64?: unknown
   actor?: unknown
   op_ids?: unknown
@@ -352,6 +354,7 @@ export function parseServerDocFrame(value: unknown): ServerDocFrame | null {
       data: {
         workflowId: data.workflow_id,
         seq: data.seq,
+        lineageSeq: isSequence(data.lineage_seq) ? data.lineage_seq : data.seq,
         ...(actor !== undefined && { actor })
       }
     }

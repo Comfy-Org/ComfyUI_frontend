@@ -2022,7 +2022,7 @@ describe('EcsFollowerAdapter integration', () => {
       ).toBeUndefined()
     })
 
-    it('composes the real classifier and doc-history store with a freshly recreated adapter across a remount, so a genuine remote delete is swept but a hand-added node and its incident link survive', () => {
+    it('composes the classifier and history store across adapter recreation', () => {
       const docHistory = useAgentCrdtDocHistoryStore()
       const lineage = docHistory.reset('wf', 1)
 
