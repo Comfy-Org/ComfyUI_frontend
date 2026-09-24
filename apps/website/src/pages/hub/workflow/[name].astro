@@ -8,6 +8,7 @@ import WorkflowRunForm from '../../../components/hub/WorkflowRunForm.vue'
 import WorkflowRunStates from '../../../components/hub/WorkflowRunStates.vue'
 import WorkflowApiTab from '../../../components/hub/WorkflowApiTab.vue'
 import WorkflowTabs from '../../../components/hub/WorkflowTabs.vue'
+import CrossViewPlayground from '../../../components/hub/crossview/CrossViewPlayground.vue'
 import { catalogSearch, useCaseFor } from '../../../config/models-catalogue'
 import {
   namesUseCase,
@@ -55,6 +56,9 @@ const graphs = import.meta.glob<unknown>('../../../data/workflows/*.json', {
 })
 const runnableGraph = graphs[`../../../data/workflows/${template.name}.json`]
 const fields = workflowFields(template.name)
+// The CrossView Warp prototype brings its own playground and backend; see
+// components/hub/crossview/.
+const crossView = template.name === 'crossview_warp_h3'
 const runForm =
   fields && runnableGraph
     ? { fields, graph: workflowGraphSchema.parse(runnableGraph) }
@@ -105,7 +109,7 @@ const reachExamples = workflowByReach()
 
 // A workflow that reaches neither a model nor its own bindings would open on
 // an empty Playground. None does; the build stops rather than ship one.
-if (!runnable && !runForm)
+if (!runnable && !runForm && !crossView)
   throw new Error(
     `${template.name} has no run form and no catalogue model behind it.`
   )
@@ -174,6 +178,30 @@ const tags = usefulTags(template.tags)
           client:load
         />
       </section>
+    ) : crossView ? (
+      <div class="mb-16" data-testid="workflow-crossview">
+        <WorkflowTabs client:load>
+          <div slot="playground">
+            <CrossViewPlayground client:only="vue" />
+          </div>
+          <div slot="details">
+            <WorkflowAbout
+              graphUrl="/hub/crossview/crossview-generate.workflow.json"
+              cloudUrl={cloudUrl}
+              reach={reach}
+              tutorialUrl={details.tutorialUrl}
+              samples={template.thumbnails}
+              models={runsOn}
+              author={author}
+              usage={template.usage}
+              produces={summarisePorts(page.outputs)}
+              openWeights={details.openSource ?? false}
+              added={template.date}
+              client:load
+            />
+          </div>
+        </WorkflowTabs>
+      </div>
     ) : (
       runForm && <div class="mb-16" data-testid="workflow-on-cloud">
         <WorkflowTabs runs={reach !== 'endpoint'} client:load>
