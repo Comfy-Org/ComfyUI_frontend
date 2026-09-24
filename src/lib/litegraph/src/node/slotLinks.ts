@@ -66,6 +66,20 @@ export function outputLinkIds(
   return ids.sort((a, b) => a - b)
 }
 
+export function nodeLinkIds(
+  graph: Pick<LGraph, 'rootGraph' | 'id'>,
+  node: Pick<LGraphNode, 'id' | 'inputs' | 'outputs'>
+): LinkId[] {
+  const inputIds = node.inputs.flatMap((_, slot) => {
+    const id = inputLinkId(graph, node.id, slot)
+    return id === undefined ? [] : [id]
+  })
+  const outputIds = node.outputs.flatMap((_, slot) =>
+    outputLinkIds(graph, node.id, slot)
+  )
+  return [...inputIds, ...outputIds]
+}
+
 /**
  * Snapshot of the links leaving an output slot, resolved in the owning
  * graph. Safe to disconnect links while iterating the result.

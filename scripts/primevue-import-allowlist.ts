@@ -91,7 +91,6 @@ export const primeVueImportAllowlist = [
   'src/components/topbar/TopbarBadge.vue',
   'src/components/topbar/WorkflowOverflowMenu.vue',
   'src/components/topbar/WorkflowTabPopover.vue',
-  'src/components/topbar/WorkflowTabs.vue',
   'src/components/ui/Popover.vue',
   'src/composables/tree/useTreeFolderOperations.ts',
   'src/composables/useCopyToClipboard.ts',

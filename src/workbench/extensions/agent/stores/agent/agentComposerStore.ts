@@ -210,8 +210,8 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   function setNodeScope(scope: string | null): void {
     if (scope === nodeScope.value) return
     nodeScope.value = scope
-    resetPromptHistory()
     if (nodes.value.length === 0) return
+    resetPromptHistory()
     const references = prompt.value.references.filter(
       (item) => item.kind !== 'node'
     )
