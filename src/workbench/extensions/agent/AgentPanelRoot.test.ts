@@ -2904,7 +2904,7 @@ describe('AgentPanelRoot feedback capture', () => {
 })
 
 describe('AgentPanelRoot run approval telemetry', () => {
-  it('tracks one shown event and one committed resolution', async () => {
+  it('keeps the timer for a terminal decision after workflow inspection', async () => {
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.includes('/asks/') && init?.method === 'POST')
         return json(200, { status: 'answered' })
@@ -2926,6 +2926,9 @@ describe('AgentPanelRoot run approval telemetry', () => {
     telemetry.trackAgentRunApprovalResolved.mockClear()
     let currentTime = 1_000
     const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)
+    const workflow = addTab('workflows/Portrait workflow.json')
+    workflowStore.activeWorkflow = workflow
+    useAgentWorkflowTabBindingStore().bind('workflow-1', workflow.path)
 
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const store = useAgentConversationStore()
@@ -2966,15 +2969,24 @@ describe('AgentPanelRoot run approval telemetry', () => {
       workflow_id: 'workflow-1'
     })
 
+    currentTime = 1_150
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Portrait workflow' })
+    )
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentRunApprovalResolved).toHaveBeenCalledWith({
+        decision: 'open_workflow',
+        time_to_decide_ms: 150
+      })
+    )
+
     currentTime = 1_275
     await userEvent.click(screen.getByRole('button', { name: 'Run' }))
     await vi.waitFor(() =>
-      expect(
-        telemetry.trackAgentRunApprovalResolved
-      ).toHaveBeenCalledExactlyOnceWith({
-        decision: 'run',
-        time_to_decide_ms: 275
-      })
+      expect(telemetry.trackAgentRunApprovalResolved.mock.calls).toEqual([
+        [{ decision: 'open_workflow', time_to_decide_ms: 150 }],
+        [{ decision: 'run', time_to_decide_ms: 275 }]
+      ])
     )
     expect(
       fetchMock.mock.calls.filter(

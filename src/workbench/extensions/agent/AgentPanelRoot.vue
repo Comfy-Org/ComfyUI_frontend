@@ -1012,7 +1012,7 @@ function trackApprovalResolved(
 ): void {
   const shownAt = approvalShownAt.get(askId)
   if (shownAt === undefined) return
-  approvalShownAt.delete(askId)
+  if (decision !== 'open_workflow') approvalShownAt.delete(askId)
   useTelemetry()?.trackAgentRunApprovalResolved({
     decision,
     time_to_decide_ms: Math.max(0, Date.now() - shownAt)
