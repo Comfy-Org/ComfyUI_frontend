@@ -973,6 +973,21 @@ describe('useFeatureFlags', () => {
       expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(expected)
     })
 
+    it.for(['true', 'false', 1])(
+      'is off when the server sends the malformed value %j',
+      (wireValue) => {
+        remoteConfigState.value = 'authenticated'
+        vi.mocked(api.getServerFeature).mockImplementation(
+          (path, defaultValue) =>
+            path === ServerFeatureFlag.UNIFIED_WEB_SESSION
+              ? wireValue
+              : defaultValue
+        )
+
+        expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)
+      }
+    )
+
     it('honours the ff: localStorage dev override', () => {
       remoteConfigState.value = 'authenticated'
       localStorage.setItem(

@@ -261,10 +261,9 @@ export function useFeatureFlags() {
     get unifiedWebSessionEnabled() {
       if (!isCloud) return false
 
-      return resolveFlag(
+      return resolveStrictBooleanFlag(
         ServerFeatureFlag.UNIFIED_WEB_SESSION,
-        remoteConfig.value.unified_web_session,
-        false
+        remoteConfig.value.unified_web_session
       )
     },
     get billingControlEnabled() {
