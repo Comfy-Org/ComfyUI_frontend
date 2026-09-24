@@ -1,4 +1,4 @@
-import type { BrowserContext, TestInfo } from '@playwright/test'
+import type { BrowserContext, TestDetails, TestInfo } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { SESSION_PATH, SessionTab } from '@e2e/fixtures/helpers/SessionTab'
@@ -10,11 +10,10 @@ import type {
 } from '@e2e/fixtures/utils/crossOriginSessionConfig'
 import {
   allowedOrigins,
-  isComfyHost,
-  isProductionHost,
   mappedOrigins,
   missingSessionEnv,
-  parseCrossOriginSessionEnv
+  parseCrossOriginSessionEnv,
+  refusedComfyEgress
 } from '@e2e/fixtures/utils/crossOriginSessionConfig'
 import type { NetworkPolicy } from '@e2e/fixtures/utils/networkPolicy'
 
@@ -73,33 +72,30 @@ async function installSessionRouting(
       await route.fulfill({ response, headers })
       return
     }
-    if (isProductionHost(url.hostname)) {
+    const refused = refusedComfyEgress(url, networkPolicy.origins)
+    if (refused) {
       networkPolicy.unexpected.add(
-        `Production ${request.method()} ${url.origin}${url.pathname}`
+        `${refused} ${request.method()} ${url.origin}${url.pathname}`
       )
       await route.abort('blockedbyclient')
       return
     }
-    if (isComfyHost(url.hostname)) networkPolicy.origins.add(url.origin)
     await route.fallback()
   })
 }
 
-export function sessionEndpoint(cloud: SessionTab): string {
-  return `${cloud.origin}${SESSION_PATH}`
+export function blockedBy(description: string): TestDetails {
+  return { annotation: { type: 'blocked-by', description } }
 }
 
-/** An untrusted page on a PR preview name, served blank by the harness. */
-export async function openPreviewPage(
-  context: BrowserContext,
-  previewOrigin = 'https://pr-1.testenvs.comfy.org'
-): Promise<SessionTab> {
-  await context.route(`${previewOrigin}/**`, (route) =>
-    route.fulfill({ contentType: 'text/html', body: '<!doctype html>' })
+export function expectStepsWritten(): never {
+  throw new Error(
+    'This row has no steps yet. Write them before turning test.fixme into test.'
   )
-  const preview = new SessionTab(await context.newPage(), previewOrigin)
-  await preview.goto('/')
-  return preview
+}
+
+function sessionEndpoint(cloud: SessionTab): string {
+  return `${cloud.origin}${SESSION_PATH}`
 }
 
 export async function signInOnCloud(
@@ -222,25 +218,3 @@ export const crossOriginSessionFixture = base.extend<
     )
   }
 })
-
-/**
- * What a credentialed fetch from `tab` gets back: the body when the browser
- * lets the page read it, `unreadable` when CORS or the network refuses.
- */
-export function credentialedFetch(
-  tab: SessionTab,
-  url: string,
-  method = 'GET'
-): Promise<string> {
-  return tab.page.evaluate(
-    async ({ url, method }) => {
-      try {
-        const response = await fetch(url, { method, credentials: 'include' })
-        return `${response.status} ${await response.text()}`
-      } catch {
-        return 'unreadable'
-      }
-    },
-    { url, method }
-  )
-}

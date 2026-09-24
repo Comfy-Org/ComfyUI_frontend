@@ -4,7 +4,8 @@ import {
   allowedOrigins,
   mappedOrigins,
   missingSessionEnv,
-  parseCrossOriginSessionEnv
+  parseCrossOriginSessionEnv,
+  refusedComfyEgress
 } from '@e2e/fixtures/utils/crossOriginSessionConfig'
 
 describe('parseCrossOriginSessionEnv', () => {
@@ -74,6 +75,28 @@ describe('session env helpers', () => {
       'https://testcloud.comfy.org',
       'https://www.comfy.org'
     ])
+  })
+
+  it.for([
+    ['https://cloud.comfy.org/api/features', 'Production'],
+    ['https://api.comfy.org/nodes', 'Production'],
+    ['https://docs.comfy.org/', 'Unlisted comfy.org'],
+    ['https://comfy.org/', 'Unlisted comfy.org'],
+    ['https://testapi.comfy.org/', 'Unlisted comfy.org'],
+    ['https://testcloud.comfy.org/api/auth/session', undefined],
+    ['https://www.comfy.org/pricing', undefined],
+    ['https://example.com/', undefined]
+  ] as const)('refuses %s as %s', ([url, reason]) => {
+    expect(refusedComfyEgress(new URL(url), allowedOrigins(env))).toBe(reason)
+  })
+
+  it('refuses production even when it is allowed', () => {
+    expect(
+      refusedComfyEgress(
+        new URL('https://cloud.comfy.org/'),
+        new Set(['https://cloud.comfy.org'])
+      )
+    ).toBe('Production')
   })
 
   it('names the variables a test still needs', () => {

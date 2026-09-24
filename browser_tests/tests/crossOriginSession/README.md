@@ -32,25 +32,35 @@ needs a secure origin, so plain http under a `comfy.org` name does not work.
 
 ## Environment
 
-Put these in `.env` (loaded automatically) or inject them with `op run`. Never
-commit credentials. Production hosts are rejected, and a request to one fails
-the test.
+Put these in `.env` (`playwright.session.config.ts` loads it) or inject them
+with `op run`. Never commit credentials. Production hosts are rejected as
+variables, and a request to one is blocked and fails the test, even when listed
+in `SESSION_E2E_EXTRA_ORIGINS`.
 
-| Variable                        | Example                             | Needed by                            |
-| ------------------------------- | ----------------------------------- | ------------------------------------ |
-| `SESSION_E2E_CLOUD_URL`         | `https://testcloud.comfy.org`       | Cloud tab                            |
-| `SESSION_E2E_WEBSITE_URL`       | `https://www.comfy.org`             | Website tab; must be on test's list  |
-| `SESSION_E2E_WEBSITE_UPSTREAM`  | `http://localhost:4321`             | Website tab                          |
-| `SESSION_E2E_BILLING_URL`       | `https://testbilling.comfy.org`     | billing-web tab                      |
-| `SESSION_E2E_BILLING_UPSTREAM`  | `http://localhost:5174`             | Optional: serve billing-web locally  |
-| `SESSION_E2E_PLATFORM_URL`      | test platform origin                | Platform tab                         |
-| `SESSION_E2E_EMAIL`             | a dedicated test-env account        | Signed-in tests                      |
-| `SESSION_E2E_PASSWORD`          |                                     | Signed-in tests                      |
-| `SESSION_E2E_TEAM_WORKSPACE_ID` | a team workspace the account owns   | Workspace tests                      |
-| `SESSION_E2E_EXTRA_ORIGINS`     | `https://challenges.cloudflare.com` | Third-party origins a run must reach |
+| Variable                        | Example                           | Needed by                           |
+| ------------------------------- | --------------------------------- | ----------------------------------- |
+| `SESSION_E2E_CLOUD_URL`         | `https://testcloud.comfy.org`     | Cloud tab                           |
+| `SESSION_E2E_WEBSITE_URL`       | `https://www.comfy.org`           | Website tab; must be on test's list |
+| `SESSION_E2E_WEBSITE_UPSTREAM`  | `http://localhost:4321`           | Website tab                         |
+| `SESSION_E2E_BILLING_URL`       | `https://testbilling.comfy.org`   | billing-web tab                     |
+| `SESSION_E2E_BILLING_UPSTREAM`  | `http://localhost:5174`           | Optional: serve billing-web locally |
+| `SESSION_E2E_PLATFORM_URL`      | test platform origin              | Platform tab                        |
+| `SESSION_E2E_EMAIL`             | a dedicated test-env account      | Signed-in tests                     |
+| `SESSION_E2E_PASSWORD`          |                                   | Signed-in tests                     |
+| `SESSION_E2E_TEAM_WORKSPACE_ID` | a team workspace the account owns | Workspace tests                     |
+| `SESSION_E2E_EXTRA_ORIGINS`     | `https://testapi.comfy.org`       | Other origins a run must reach      |
 
 A test whose variables are missing is skipped with the names it needs.
-Unlisted third-party requests are aborted and attached as `blocked-egress.json`.
+
+Egress fails closed. A `comfy.org` origin is reachable only when it is one of
+the `SESSION_E2E_*_URL` values or in `SESSION_E2E_EXTRA_ORIGINS`; any other
+`comfy.org` request is aborted as `Unlisted comfy.org`, and unlisted
+third-party requests are aborted too. Both are attached as
+`blocked-egress.json`; only `Production` entries fail the test. The website
+built with `PUBLIC_WORKSHOP_CLOUD_ENV=test` calls the Router at
+`https://testapi.comfy.org` besides `testcloud.comfy.org`, so add that to
+`SESSION_E2E_EXTRA_ORIGINS` when a run needs the Router. Check
+`blocked-egress.json` for anything else a run was refused.
 
 ## Flag on and flag off
 
@@ -79,10 +89,11 @@ that the Firebase recorder saw the sign-in.
 
 ## Test ids
 
-Every other row calls `test.fixme(true, reason)` first, naming the tickets and
-backend slices it waits for, then sketches the steps against the API contract in
-TDD section 9. Finish the steps and drop the `fixme` once the blockers are live
-on testcloud. Ids are stable; keep them.
+Every other row is a definition-level `test.fixme` with no body, so it skips
+before any fixture runs. Its `blocked-by` annotation names the tickets and
+backend slices it waits for. Write the steps against the API contract in TDD
+section 9 and turn it into a `test` once the blockers are live on testcloud.
+Ids are stable; keep them.
 
 - `E2E-01`..`E2E-09`: the section 17 end-to-end rows, including flag off.
 - `FS-xx`: the failure sequences, numbered in TDD order. FS-03, FS-04, FS-05,
@@ -93,5 +104,5 @@ on testcloud. Ids are stable; keep them.
 Helpers: `tab.firebaseCalls` and `tab.sessionCalls` record requests per tab
 (`expectNone(label)` once the tab has settled), `tab.sockets.waitForSocket()` and
 `waitForClose()` observe a socket closing, `tab.nextWorkspaceId()` reads the
-`X-Comfy-Workspace-ID` of the next API request, and `openPreviewPage()` opens a
-blank page on a PR preview name.
+`X-Comfy-Workspace-ID` of the next API request, and `signInOnCloud()` signs in
+through the Cloud login page.

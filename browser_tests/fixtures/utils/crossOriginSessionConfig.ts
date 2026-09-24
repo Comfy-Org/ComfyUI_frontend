@@ -12,12 +12,26 @@ export const FIREBASE_AUTH_ORIGINS = [
   'https://securetoken.googleapis.com'
 ] as const
 
-export function isComfyHost(hostname: string): boolean {
+function isComfyHost(hostname: string): boolean {
   return hostname === 'comfy.org' || hostname.endsWith('.comfy.org')
 }
 
-export function isProductionHost(hostname: string): boolean {
+function isProductionHost(hostname: string): boolean {
   return PRODUCTION_HOSTS.has(hostname)
+}
+
+/**
+ * Why a comfy.org request must not leave the browser: production is refused
+ * even when configured, any other comfy.org origin unless it is allowed.
+ */
+export function refusedComfyEgress(
+  url: URL,
+  allowed: ReadonlySet<string>
+): 'Production' | 'Unlisted comfy.org' | undefined {
+  if (isProductionHost(url.hostname)) return 'Production'
+  if (isComfyHost(url.hostname) && !allowed.has(url.origin))
+    return 'Unlisted comfy.org'
+  return undefined
 }
 
 const origin = z

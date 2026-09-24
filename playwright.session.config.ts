@@ -1,6 +1,9 @@
 import { defineConfig, devices } from '@playwright/test'
+import { config as dotenvConfig } from 'dotenv'
 
 import type { CrossOriginSessionOptions } from './browser_tests/fixtures/utils/crossOriginSessionConfig'
+
+dotenvConfig()
 
 export default defineConfig<CrossOriginSessionOptions>({
   testDir: './browser_tests/tests/crossOriginSession',
