@@ -5,6 +5,7 @@ import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { serializeRouterInput } from './workshop-request'
 import { parseRouterResponse, releaseRouterOutputs } from './workshop-response'
 import type { RunFailure, RunOutput } from './workshop-run'
+import type { FieldErrors } from './workshop-playground'
 import {
   WorkshopRouterError,
   workshopResponseDetails
@@ -104,6 +105,30 @@ function failureFor(
   if (bodyComplete && workshopContentPolicyBody(body)) return 'policy'
   if (response.status === 400 || response.status === 422) return 'validation'
   return 'provider'
+}
+
+function providerFieldErrors(
+  contract: WorkshopContract,
+  body: string,
+  bodyComplete: boolean
+): FieldErrors {
+  if (!bodyComplete || contract.id !== 'kling/kling-v3-omni' || !body.trim())
+    return {}
+  try {
+    const payload: unknown = JSON.parse(body)
+    if (payload === null || typeof payload !== 'object') return {}
+    const data = Reflect.get(payload, 'data')
+    if (data === null || typeof data !== 'object') return {}
+    if (
+      Reflect.get(data, 'task_status') !== 'failed' ||
+      Reflect.get(data, 'task_status_msg') !==
+        'VideoNormalize failed, HDR video is not supported'
+    )
+      return {}
+    return { video_url: 'videoHdrUnsupported' }
+  } catch {
+    return {}
+  }
 }
 
 export interface RouterRunOptions {
@@ -252,10 +277,17 @@ export async function settleRouterResponse(
   try {
     if (!response.ok) {
       const details = await failureDetails(response)
+      const fieldErrors = providerFieldErrors(
+        options.contract,
+        details.response.body,
+        details.bodyComplete
+      )
       throw new WorkshopRouterError(
-        failureFor(response, details.response.body, details.bodyComplete),
+        Object.keys(fieldErrors).length
+          ? 'validation'
+          : failureFor(response, details.response.body, details.bodyComplete),
         requestId,
-        {},
+        fieldErrors,
         details.response,
         'request',
         details.cause === undefined ? undefined : { cause: details.cause }

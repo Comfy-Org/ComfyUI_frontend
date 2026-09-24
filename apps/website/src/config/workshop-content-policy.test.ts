@@ -67,6 +67,10 @@ describe('Workshop content-policy attribution', () => {
 
   it.for([
     {
+      name: 'xAI validation error',
+      payload: { code: 'invalid-argument', error: 'Unsupported resolution.' }
+    },
+    {
       name: 'moderation service outage',
       payload: {
         code: 'ModerationServiceUnavailable',

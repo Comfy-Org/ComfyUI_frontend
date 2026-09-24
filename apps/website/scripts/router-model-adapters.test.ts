@@ -98,6 +98,38 @@ describe('Seedream layer-separation input adapter', () => {
   })
 })
 
+describe('Grok reference-video input adapter', () => {
+  it('restricts only reference requests to 720p', () => {
+    const contract = workshopContractSchema.parse(
+      contracts.find((item) => item.id === 'xai/grok-imagine-video-1.5')
+    )
+    const reference = {
+      prompt: 'Animate this reference',
+      reference_images: [{ url: 'https://example.com/reference.png' }]
+    }
+
+    expect(
+      validateWorkshopInput(
+        { ...reference, resolution: '1080p' },
+        contract.inputSchema
+      )
+    ).toBe(false)
+    expect(
+      validateWorkshopInput(
+        { ...reference, resolution: '720p' },
+        contract.inputSchema
+      )
+    ).toBe(true)
+    expect(validateWorkshopInput(reference, contract.inputSchema)).toBe(true)
+    expect(
+      validateWorkshopInput(
+        { prompt: 'A landscape', resolution: '1080p' },
+        contract.inputSchema
+      )
+    ).toBe(true)
+  })
+})
+
 describe('Bria generation response adapter', () => {
   it('accepts a completed image whose optional echoed refined prompt is null', async () => {
     if (source.output.format === 'binary' || !source.output.schema)

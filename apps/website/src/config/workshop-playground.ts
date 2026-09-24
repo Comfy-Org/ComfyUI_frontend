@@ -116,6 +116,7 @@ export type FieldErrorCode =
   | 'incompatible'
   | 'videoTooLong'
   | 'videoWidthOutOfRange'
+  | 'videoHdrUnsupported'
   | 'videoUnreadable'
   | 'rejected'
 export type FieldErrors = Readonly<Record<string, FieldErrorCode>>

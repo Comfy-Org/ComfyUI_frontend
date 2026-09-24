@@ -165,4 +165,12 @@ describe('sibling page modes', () => {
       })
     }
   )
+
+  it.for(['edit', 'reference-video'])(
+    'warns that Kling %s inputs must use SDR video',
+    (mode) => {
+      const form = formFor('kling/kling-v3-omni', { mode })
+      expect(form.inputs.video_url.help).toContain('HDR video is not supported')
+    }
+  )
 })

@@ -317,6 +317,36 @@ describe('queued Router delivery', () => {
     )
   })
 
+  it('attributes a Kling HDR refusal to the source video field', async () => {
+    const contract = workshopContract('kling/kling-v3-omni')
+    assert.exists(contract)
+    stubFetch(
+      admitted(),
+      Response.json(
+        {
+          code: 0,
+          data: {
+            task_status: 'failed',
+            task_status_msg: 'VideoNormalize failed, HDR video is not supported'
+          }
+        },
+        {
+          status: 502,
+          headers: { 'X-Comfy-Error-Type': 'provider_error' }
+        }
+      )
+    )
+
+    await expect(
+      settle(runWorkshopRouter({ ...options(), contract }))
+    ).rejects.toMatchObject({
+      reason: 'validation',
+      fieldErrors: { video_url: 'videoHdrUnsupported' },
+      response: { status: 502, errorType: 'provider_error' },
+      requestSettlement: 'terminal'
+    })
+  })
+
   it('reports a stored provider moderation payload as a terminal policy refusal', async () => {
     stubFetch(
       admitted(),

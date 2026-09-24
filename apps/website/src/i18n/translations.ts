@@ -10097,6 +10097,10 @@ Enterprise`
     en: 'Use a video between {minimum} and {maximum} pixels wide.',
     'zh-CN': '请使用宽度在 {minimum} 到 {maximum} 像素之间的视频。'
   },
+  'workshop.form.videoHdrUnsupported': {
+    en: 'HDR video is not supported. Convert this video to SDR and try again.',
+    'zh-CN': '不支持 HDR 视频。请将此视频转换为 SDR 后重试。'
+  },
   'workshop.form.videoUnreadable': {
     en: 'Could not read the video details. Select a playable video or use an accessible video link.',
     'zh-CN': '无法读取视频详情。请选择可播放的视频或使用可访问的视频链接。'

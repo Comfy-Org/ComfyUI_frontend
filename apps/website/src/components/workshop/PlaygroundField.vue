@@ -60,6 +60,7 @@ const errorKey: Record<FieldErrorCode, TranslationKey> = {
   incompatible: 'workshop.form.incompatible',
   videoTooLong: 'workshop.form.videoTooLong',
   videoWidthOutOfRange: 'workshop.form.videoWidthOutOfRange',
+  videoHdrUnsupported: 'workshop.form.videoHdrUnsupported',
   videoUnreadable: 'workshop.form.videoUnreadable',
   rejected: 'workshop.form.rejected'
 }
