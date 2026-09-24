@@ -200,6 +200,54 @@ describe('GroupNodeConfig.processInputSlots', () => {
 
     expect(inputMap).toEqual({ model: 0, latent_image: 1 })
   })
+
+  it('falls back to the positional slot index when the synthesized input name matches no real input name (e.g. Reroute)', () => {
+    // A Reroute's def is keyed by type (e.g. 'MODEL'), but its real slot is
+    // unnamed (`addInput('', '*')`), so the name lookup always misses.
+    const config = new GroupNodeConfig('group', {
+      nodes: [{ index: 0, type: 'Reroute' }],
+      links: [],
+      external: []
+    })
+    const inputMap: Record<string, number> = {}
+    const link: GroupNodeLink = [null, 0, 0, 0, 0, 'MODEL']
+
+    config.processInputSlots(
+      { MODEL: ['MODEL', {}] },
+      fromPartial({ index: 0, type: 'Reroute', inputs: [{ name: '' }] }),
+      ['MODEL'],
+      { 0: link },
+      inputMap,
+      {}
+    )
+
+    // Recognized as internally linked via the positional fallback, so it's
+    // skipped rather than wrongly exposed as an external group input.
+    expect(inputMap).toEqual({})
+  })
+})
+
+describe('GroupNodeConfig.processWidgetInputs', () => {
+  it('keeps a forceInput combo as a slot, never a widget', () => {
+    const config = new GroupNodeConfig('group', {
+      nodes: [{ index: 0, type: 'KSampler' }],
+      links: [],
+      external: []
+    })
+
+    const { slots, converted } = config.processWidgetInputs(
+      {
+        sampler_name: [['euler', 'ddim'], { forceInput: true }],
+        steps: ['INT', {}]
+      },
+      { index: 0, type: 'KSampler' },
+      ['sampler_name', 'steps'],
+      {}
+    )
+
+    expect(slots).toEqual(['sampler_name'])
+    expect(converted.size).toBe(0)
+  })
 })
 
 describe('GroupNodeConfig.processConvertedWidgets', () => {
@@ -214,7 +262,6 @@ describe('GroupNodeConfig.processConvertedWidgets', () => {
     config.processConvertedWidgets(
       { seed: ['INT'], steps: ['INT'], cfg: ['FLOAT'] },
       { index: 0, type: 'KSampler' },
-      [],
       new Map([
         [10, 'cfg'],
         [2, 'steps'],
@@ -226,6 +273,32 @@ describe('GroupNodeConfig.processConvertedWidgets', () => {
     )
 
     expect(inputMap).toEqual({ seed: 0, steps: 1, cfg: 2 })
+  })
+
+  it('resolves a converted widget link by its own serialized slot index, not its position among converted widgets', () => {
+    const config = new GroupNodeConfig('group', {
+      nodes: [{ index: 0, type: 'KSampler' }],
+      links: [],
+      external: []
+    })
+    const inputMap: Record<string, number> = {}
+    const link: GroupNodeLink = [null, 0, 0, 0, 0, 'INT']
+
+    config.processConvertedWidgets(
+      { b: ['INT'] },
+      { index: 0, type: 'KSampler' },
+      // The converted widget's real slot index is 5 (the map key), which
+      // doesn't equal `slots.length + i` for any plausible `slots` this
+      // node could have had.
+      new Map([[5, 'b']]),
+      { 5: link },
+      inputMap,
+      {}
+    )
+
+    // Recognized as internally linked by its real slot index, so it's
+    // skipped rather than wrongly exposed as an external group input.
+    expect(inputMap).toEqual({})
   })
 })
 
@@ -682,6 +755,26 @@ describe('GroupNodeHandler.convertToNodes', () => {
     outerNode.configure(outerNodeInfo)
     app.rootGraph.add(outerNode)
 
+    // Every asserted value in this fixture (steps, cfg, sampler_name,
+    // scheduler, denoise, filename_prefix) happens to equal that widget's
+    // own node-def default, so the test can't tell a real copy from the
+    // value simply being left untouched. Overwrite the *live* outer widget
+    // values - as if the user had edited them on canvas after the group
+    // was created - to values that differ from both the node-def defaults
+    // and the fixture's original recorded values, so only a real copy can
+    // produce a match.
+    const setOuterWidget = (name: string, value: string | number) => {
+      const widget = outerNode.widgets?.find((w) => w.name === name)
+      if (!widget) throw new Error(`Outer widget '${name}' not found`)
+      widget.value = value
+    }
+    setOuterWidget('steps', 999)
+    setOuterWidget('cfg', 4.5)
+    setOuterWidget('sampler_name', 'dpmpp_2m')
+    setOuterWidget('scheduler', 'karras')
+    setOuterWidget('denoise', 0.42)
+    setOuterWidget('filename_prefix', 'edited_prefix')
+
     const handler = GroupNodeHandler.getHandler(outerNode)
     if (!handler) throw new Error('No GroupNodeHandler for outer node')
 
@@ -694,14 +787,14 @@ describe('GroupNodeHandler.convertToNodes', () => {
 
     expect(widgetValues(ksampler)).toMatchObject({
       seed: 156680208700286,
-      steps: 20,
-      cfg: 8,
-      sampler_name: 'euler',
-      scheduler: 'normal',
-      denoise: 1
+      steps: 999,
+      cfg: 4.5,
+      sampler_name: 'dpmpp_2m',
+      scheduler: 'karras',
+      denoise: 0.42
     })
     expect(widgetValues(saveImage)).toMatchObject({
-      filename_prefix: 'ComfyUI'
+      filename_prefix: 'edited_prefix'
     })
   })
 })

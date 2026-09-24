@@ -418,8 +418,21 @@ export class GroupNodeConfig {
         Array.isArray(inputSpec) &&
         inputSpec.length >= 1 &&
         (typeof inputSpec[0] === 'string' || Array.isArray(inputSpec[0]))
+      // A `forceInput` spec is always a socket, even for a type (e.g. a
+      // combo) that would otherwise materialize as a widget — matches the
+      // rule `litegraphService.addInputSocket`/`addInputWidget` apply when
+      // actually building the node.
+      const specOptions =
+        Array.isArray(inputSpec) &&
+        typeof inputSpec[1] === 'object' &&
+        inputSpec[1] !== null
+          ? inputSpec[1]
+          : {}
+      const isForcedInput =
+        'forceInput' in specOptions && specOptions.forceInput === true
       if (
         isValidSpec &&
+        !isForcedInput &&
         useWidgetStore().inputIsWidget(inputSpec as InputSpec)
       ) {
         const convertedIndex =
@@ -527,10 +540,16 @@ export class GroupNodeConfig {
       // the *filtered* `slots` list). Look the real slot index up by name so
       // an internally-linked input isn't matched against a different slot's
       // link (or missed/misread entirely) and either wrongly hidden or
-      // wrongly exposed on the group node.
-      const slotIndex = node.inputs?.findIndex((inp) => inp.name === inputName)
-      const link =
-        slotIndex != null && slotIndex >= 0 ? linksTo[slotIndex] : undefined
+      // wrongly exposed on the group node. A synthesized def can key its
+      // input by type rather than by slot name (e.g. Reroute, whose actual
+      // slot name is always ''), so fall back to the old positional index
+      // when the name lookup misses.
+      const namedSlotIndex = node.inputs?.findIndex(
+        (inp) => inp.name === inputName
+      )
+      const slotIndex =
+        namedSlotIndex != null && namedSlotIndex >= 0 ? namedSlotIndex : i
+      const link = linksTo[slotIndex]
       if (link) {
         this.checkPrimitiveConnection(link, inputName, inputs)
         // This input is linked so we can skip it
@@ -558,20 +577,21 @@ export class GroupNodeConfig {
   processConvertedWidgets(
     inputs: Record<string, unknown>,
     node: GroupNodeData,
-    slots: string[],
     converted: Map<number, string>,
     linksTo: SlotLinks,
     inputMap: Record<string, number>,
     seenInputs: Record<string, number>
   ) {
-    // Add converted widgets sorted into their index order (ordered as they were converted) so link ids match up
-    const convertedSlots = [...converted.keys()]
-      .sort((a, b) => a - b)
-      .map((k) => converted.get(k))
-    for (let i = 0; i < convertedSlots.length; i++) {
-      const inputName = convertedSlots[i]
+    // Process converted widgets sorted into their index order (ordered as
+    // they were converted) so link ids match up. `converted`'s keys are
+    // this node's real serialized input-slot indices (set by the
+    // `findIndex` in processWidgetInputs), so use that key - not this
+    // widget's position among converted widgets - to look its link up in
+    // `linksTo`, which is also keyed by real slot index.
+    const convertedEntries = [...converted.entries()].sort(([a], [b]) => a - b)
+    for (const [slotIndex, inputName] of convertedEntries) {
       if (!inputName) continue
-      const link = linksTo[slots.length + i]
+      const link = linksTo[slotIndex]
       if (link) {
         this.checkPrimitiveConnection(
           link,
@@ -640,7 +660,6 @@ export class GroupNodeConfig {
       this.processConvertedWidgets(
         inputs,
         node,
-        slots,
         converted,
         linksTo,
         inputMap,
@@ -899,20 +918,24 @@ export class GroupNodeHandler {
             consumedOuterWidgetIndices
           )
           if (widgetIndex === -1) continue
-          consumedOuterWidgetIndices.add(widgetIndex)
 
-          // Populate the main and any linked widgets
+          // An index is only marked consumed once its value is actually
+          // copied, so a bail below (a missing inner widget, or fewer outer
+          // widgets than this PrimitiveNode has) can't permanently burn an
+          // index another inner node legitimately needs.
           if (innerNodeData.type === 'PrimitiveNode') {
             for (let j = 0; j < newNode.widgets.length; j++) {
-              consumedOuterWidgetIndices.add(widgetIndex + j)
               const srcWidget = node.widgets?.[widgetIndex + j]
-              if (srcWidget) newNode.widgets[j].value = srcWidget.value
+              if (!srcWidget) continue
+              consumedOuterWidgetIndices.add(widgetIndex + j)
+              newNode.widgets[j].value = srcWidget.value
             }
           } else {
             const outerWidget = node.widgets?.[widgetIndex]
             const newWidget = newNode.widgets.find((w) => w.name === oldName)
             if (!newWidget || !outerWidget) continue
 
+            consumedOuterWidgetIndices.add(widgetIndex)
             newWidget.value = outerWidget.value
             const linkedWidgets = outerWidget.linkedWidgets ?? []
             for (let w = 0; w < linkedWidgets.length; w++) {
