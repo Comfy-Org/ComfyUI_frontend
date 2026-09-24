@@ -235,9 +235,12 @@ describe('createPromotedDomWidget', () => {
   it('keeps promoted markdown clone hosts editable', () => {
     const root = document.createElement('div')
     root.classList.add('comfy-markdown')
+    const preview = document.createElement('div')
+    preview.classList.add('preview')
+    preview.textContent = 'first'
     const textarea = document.createElement('textarea')
     textarea.value = 'first'
-    root.append(textarea)
+    root.append(preview, textarea)
     let interiorValue = 'first'
     const source = new DOMWidgetImpl<HTMLElement, string>({
       node: subgraphNode(),
@@ -249,6 +252,7 @@ describe('createPromotedDomWidget', () => {
         setValue: (value: string) => {
           interiorValue = value
           textarea.value = value
+          preview.textContent = value
         }
       }
     })
@@ -275,11 +279,13 @@ describe('createPromotedDomWidget', () => {
       'edited on host'
     )
 
-    source.value = 'from interior'
-    expect(cloneTextarea?.value).toBe('from interior')
-
     cloneTextarea!.dispatchEvent(new Event('blur'))
     expect(clone.classList.contains('editing')).toBe(false)
+    expect(clone.querySelector('.preview')?.textContent).toBe('edited on host')
+
+    source.value = 'from interior'
+    expect(cloneTextarea?.value).toBe('from interior')
+    expect(clone.querySelector('.preview')?.textContent).toBe('from interior')
   })
 
   it('reuses the interior component for component-backed widgets', () => {

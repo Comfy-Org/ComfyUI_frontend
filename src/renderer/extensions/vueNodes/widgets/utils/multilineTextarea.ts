@@ -284,9 +284,13 @@ export function createPromotedDomWidget(
   const element = sourceWidget.element.cloneNode(true) as HTMLElement
   const isValueBearing = 'value' in element
   const cloneTextarea = element.querySelector('textarea')
+  let refreshClonePreview: (() => void) | undefined
   const reflectValueToElement = (value: string) => {
     if (isValueBearing) (element as HTMLInputElement).value = value
-    else if (cloneTextarea) cloneTextarea.value = value
+    else if (cloneTextarea) {
+      cloneTextarea.value = value
+      refreshClonePreview?.()
+    }
   }
   reflectValueToElement(sourceWidget.value as string)
 
@@ -335,6 +339,18 @@ export function createPromotedDomWidget(
   // and every other host.
   if (element.classList.contains('comfy-markdown') && cloneTextarea) {
     const { signal } = inputListenerController
+    // The cloned rendered view is static; rebuild it from the source's
+    // children while keeping the live textarea, so previews track edits
+    // made in any view.
+    const refreshPreview = () => {
+      if (element.classList.contains('editing')) return
+      const rebuilt = sourceWidget.element.cloneNode(true) as HTMLElement
+      const staleTextarea = rebuilt.querySelector('textarea')
+      if (staleTextarea) rebuilt.replaceChild(cloneTextarea, staleTextarea)
+      else rebuilt.append(cloneTextarea)
+      element.replaceChildren(...rebuilt.childNodes)
+    }
+    refreshClonePreview = refreshPreview
     element.addEventListener(
       'dblclick',
       () => {
@@ -345,7 +361,10 @@ export function createPromotedDomWidget(
     )
     cloneTextarea.addEventListener(
       'blur',
-      () => element.classList.remove('editing'),
+      () => {
+        element.classList.remove('editing')
+        refreshPreview()
+      },
       { signal }
     )
     element.addEventListener('keydown', (event) => event.stopPropagation(), {
