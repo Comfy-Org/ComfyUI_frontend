@@ -8,24 +8,6 @@
  * types promoted together, subgraph-instance id collisions, several
  * instances of one definition in a single op, and coexistence with a
  * pre-existing instance.
- *
- * The last test below ("materializes a subgraph instance nested inside
- * another subgraph...") pins the nested-subgraph-instance `insert_workflow`
- * gap: an interior node that is ITSELF a subgraph instance (a subgraph
- * nested inside another subgraph, as opposed to two sibling definitions)
- * used to not materialize through this pipeline — its `type` still named the
- * un-remapped blueprint definition id, which nothing registered on the live
- * side, so it fell back to a plain, widget-less node. Root-caused to
- * `remapInsertedWorkflowIds()` (`comfy-multi-player`'s `src/remap.ts`):
- * litegraph's own serializer never nests a definition inside another
- * definition's own `definitions.subgraphs` (`LGraph.asSerialisable`'s
- * `findUsedSubgraphIds` always flattens every used subgraph, however deep,
- * into ONE top-level list), but the remapper only resolved an interior
- * node's `type` against a scope keyed for that JSON-nesting shape — so a
- * FLAT SIBLING reference (what litegraph actually emits) was left
- * un-remapped. Fixed upstream in comfy-multi-player PR #253, released as
- * `@comfyorg/comfy-multi-player@0.3.6` and pinned in this repo — this test
- * now runs as a plain regression test rather than `it.fails`.
  */
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type {
@@ -585,23 +567,18 @@ describe('insert_workflow materializes subgraphs correctly', () => {
     const graph = new LGraph()
     onTestFinished(enableSubgraphNodeCreation(graph))
 
-    // Definition B: a plain leaf definition with one widget-bearing node.
     const blueprintGraph = new LGraph()
     const subgraphB = createTestSubgraph({
       rootGraph: blueprintGraph,
       inputs: [{ name: 'value', type: 'NUMBER' }]
     })
     blueprintGraph.subgraphs.set(subgraphB.id, subgraphB)
-    const leafB = LiteGraph.createNode('number-widget')!
+    const leafB = LiteGraph.createNode('number-widget')
+    if (!leafB) throw new Error('Failed to create number-widget node')
     leafB.id = toNodeId(90)
     subgraphB.add(leafB)
     subgraphB.inputNode.slots[0].connect(leafB.inputs[0], leafB)
 
-    // Definition A: its ONLY interior node is an INSTANCE of B, not a sibling
-    // definition — this is the nested-subgraph-instance shape, distinct from
-    // "materializes two distinct subgraph definitions carried by the same
-    // insert_workflow op" above, which wires two independent host instances
-    // at the ROOT rather than one host nested inside another definition.
     const subgraphA = createTestSubgraph({ rootGraph: blueprintGraph })
     blueprintGraph.subgraphs.set(subgraphA.id, subgraphA)
     const interiorHostB = createTestSubgraphNode(subgraphB, {
@@ -611,7 +588,6 @@ describe('insert_workflow materializes subgraphs correctly', () => {
     interiorHostB.widgets[0].value = 42
     subgraphA.add(interiorHostB)
 
-    // The root graph carries one instance of A.
     const hostA = createTestSubgraphNode(subgraphA, { id: 1 })
     blueprintGraph.add(hostA)
 
