@@ -694,6 +694,7 @@ export class AgentConversationHarness {
     return widgets?.[widget]
   }
 
+  /** How many minted human ops a `hold` host has not judged yet. */
   heldHumanOpCount(): number {
     return this.hostSocket.heldClientOps().length
   }

@@ -183,10 +183,11 @@ export class AgentFollowerHostSocket {
   }
 
   /**
-   * Every human op a `hold` host is still sitting on, oldest first. A test
-   * that holds a batch to control WHEN it reaches the document (e.g. after a
-   * competing write has claimed the same register) applies these itself,
-   * through `HostDoc.applyWire`.
+   * Every human op a `hold` host is still sitting on, oldest first, for a
+   * test inspecting the backlog. To let one of them REACH the document (e.g.
+   * after a competing write has claimed the same register), call
+   * {@link releaseHeldClientOps} rather than applying these directly: the
+   * applier alone skips the relay gate and records no outcome.
    */
   heldClientOps(): WireOpEnvelope[] {
     return this.heldBatches.flat()
