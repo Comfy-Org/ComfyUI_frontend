@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import type { HTMLAttributes } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import TagRemoveButton from './TagRemoveButton.vue'
 import { tagVariants } from './tag.variants'
 import type { TagVariants } from './tag.variants'
 
@@ -11,36 +12,59 @@ const {
   shape = 'square',
   state = 'default',
   removable = false,
+  removeLabel,
+  removeTooltip,
+  interactive = false,
   class: className
 } = defineProps<{
   label: string
   shape?: TagVariants['shape']
   state?: TagVariants['state']
   removable?: boolean
-  class?: string
+  removeLabel?: string
+  removeTooltip?: string
+  interactive?: boolean
+  class?: HTMLAttributes['class']
 }>()
 
 const emit = defineEmits<{
   remove: [event: Event]
 }>()
 
-const tagClass = computed(() =>
-  cn(tagVariants({ shape, state, removable }), className)
-)
+function handleKeydown(event: KeyboardEvent): void {
+  if (event.target !== event.currentTarget) return
+  if (!interactive) return
+  if (event.key === 'Enter' || event.key === ' ') event.preventDefault()
+  if (event.key === 'Enter' && event.currentTarget instanceof HTMLElement)
+    event.currentTarget.click()
+}
+
+function handleKeyup(event: KeyboardEvent): void {
+  if (event.target !== event.currentTarget) return
+  if (!interactive || event.key !== ' ') return
+  event.preventDefault()
+  if (event.currentTarget instanceof HTMLElement) event.currentTarget.click()
+}
 </script>
 
 <template>
-  <span :class="tagClass">
+  <span
+    :role="interactive ? 'button' : undefined"
+    :tabindex="interactive ? 0 : undefined"
+    :class="
+      cn(tagVariants({ shape, state, removable, interactive }), className)
+    "
+    @keydown="handleKeydown"
+    @keyup="handleKeyup"
+  >
     <slot name="icon" />
-    <span class="truncate">{{ label }}</span>
-    <button
+    <span class="min-w-0 truncate">{{ label }}</span>
+    <slot />
+    <TagRemoveButton
       v-if="removable"
-      type="button"
-      :aria-label="$t('g.remove')"
-      class="inline-flex shrink-0 cursor-pointer items-center justify-center rounded-full p-0.5 hover:bg-white/10"
+      :label="removeLabel ?? $t('g.remove')"
+      :tooltip="removeTooltip"
       @click.stop="emit('remove', $event)"
-    >
-      <i class="icon-[lucide--x] size-3" aria-hidden="true" />
-    </button>
+    />
   </span>
 </template>

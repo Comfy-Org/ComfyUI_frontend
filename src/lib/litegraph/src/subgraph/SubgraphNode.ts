@@ -979,7 +979,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
 
   override serializeFromStoreState(state: NodeState): ISerialisedNode {
     const serialized = super.serializeFromStoreState(state)
-    const serializedProperties = { ...(serialized.properties ?? {}) }
+    const serializedProperties = { ...serialized.properties }
     const rootGraphId = this.rootGraph.id
     const hostLocator = tryGetPreviewExposureHostLocator(this)
 
