@@ -48,6 +48,18 @@ const PASTE_SENTINEL = '.'
 const ADD_WORKFLOW_SENTINEL = '__add-workflow__'
 const CUSTOM_DISTRIBUTION_SENTINEL = 'custom'
 
+export type PrCheckoutOutcome = {
+  requestedBranch: string
+  requestedHead: string
+  effectiveBranch: string
+  effectiveHead: string
+  mode: 'verified' | 'explicit-fallback'
+}
+
+export type PrCheckoutOptions = {
+  allowExplicitFallback?: boolean
+}
+
 /**
  * Ctrl+D closes stdin for good, leaving every later prompt unanswerable, so
  * callers are told whether stdin survived the paste.
@@ -143,10 +155,73 @@ function answered<T>(value: T | symbol): T {
   return value
 }
 
-async function preparePrCheckout(
+type CommandResult = ReturnType<typeof runCommand>
+
+function commandFailure(
+  result: CommandResult,
+  label: string
+): Error | undefined {
+  if (result.error) return new Error(`${label} failed: ${result.error.message}`)
+  if (result.status !== 0) {
+    return new Error(`${label} exited with status ${result.status}`)
+  }
+  return undefined
+}
+
+function commandOutput(
+  result: CommandResult,
+  label: string,
+  required: boolean
+): string {
+  const failure = commandFailure(result, label)
+  if (failure) throw failure
+  const output = result.stdout?.toString().trim() ?? ''
+  if (required && !output) throw new Error(`${label} returned no output`)
+  return output
+}
+
+function checkoutRevision(projectRoot: string): {
+  branch: string
+  head: string
+} {
+  const branch = commandOutput(
+    runCommand('git', ['branch', '--show-current'], {
+      cwd: projectRoot,
+      stdio: 'pipe'
+    }),
+    'git branch --show-current',
+    true
+  )
+  const head = commandOutput(
+    runCommand('git', ['rev-parse', 'HEAD'], {
+      cwd: projectRoot,
+      stdio: 'pipe'
+    }),
+    'git rev-parse HEAD',
+    true
+  )
+  return { branch, head }
+}
+
+function checkoutIsDirty(projectRoot: string): boolean {
+  return Boolean(
+    commandOutput(
+      runCommand('git', ['status', '--porcelain'], {
+        cwd: projectRoot,
+        stdio: 'pipe'
+      }),
+      'git status --porcelain',
+      false
+    )
+  )
+}
+
+export async function preparePrCheckout(
   pr: string,
-  projectRoot: string
-): Promise<void> {
+  projectRoot: string,
+  options: PrCheckoutOptions = {}
+): Promise<PrCheckoutOutcome> {
+  const allowExplicitFallback = options.allowExplicitFallback ?? false
   const details = runCommand(
     'gh',
     [
@@ -154,48 +229,81 @@ async function preparePrCheckout(
       'view',
       pr,
       '--json',
-      'headRefName,title,state',
+      'headRefName,headRefOid,title,state',
       '-q',
-      '[.headRefName,.title,.state] | @tsv'
+      '[.headRefName,.headRefOid,.title,.state] | @tsv'
     ],
     { cwd: projectRoot, stdio: 'pipe' }
   )
-  if (details.error || details.status !== 0) {
-    warn(`Could not look up PR #${pr}. Continuing on the current checkout.`)
-    info([`Install or sign in to gh, then run: gh pr checkout ${pr}`])
-    return
+
+  const fallback = async (
+    reason: string,
+    requestedBranch = '',
+    requestedHead = ''
+  ): Promise<PrCheckoutOutcome> => {
+    if (!allowExplicitFallback) {
+      throw new Error(`PR #${pr} checkout was not verified: ${reason}`)
+    }
+    const continueWithoutPr = await confirm({
+      message: `PR #${pr} could not be verified. Continue on the current checkout without it?`
+    })
+    if (isCancel(continueWithoutPr) || !continueWithoutPr) {
+      throw new Error(`PR #${pr} checkout was not verified: ${reason}`)
+    }
+
+    const effectiveRevision = checkoutRevision(projectRoot)
+    warn(`Continuing without verified PR #${pr}: ${reason}`)
+    return {
+      requestedBranch,
+      requestedHead,
+      effectiveBranch: effectiveRevision.branch,
+      effectiveHead: effectiveRevision.head,
+      mode: 'explicit-fallback'
+    }
   }
 
-  const [prBranch, title] = details.stdout.toString().trim().split('\t')
-  if (!prBranch || !title) {
-    warn(`Could not read PR #${pr}. Continuing on the current checkout.`)
-    return
-  }
-  const currentBranch = runCommand('git', ['branch', '--show-current'], {
-    cwd: projectRoot,
-    stdio: 'pipe'
-  })
-    .stdout.toString()
-    .trim()
-  const dirty =
-    runCommand('git', ['status', '--porcelain'], {
-      cwd: projectRoot,
-      stdio: 'pipe'
-    })
-      .stdout.toString()
-      .trim().length > 0
-  const action = decidePrCheckout(currentBranch, prBranch, dirty)
-  if (action === 'already-on-branch') {
-    pass(`Your checkout already has the code for PR #${pr}`, prBranch)
-    return
-  }
-  if (action === 'refuse-dirty') {
-    warn(
-      `PR #${pr} targets "${prBranch}", but this checkout has unsaved changes. ` +
-        `I won't switch and risk losing them. Continuing on "${currentBranch}".`
+  if (details.error || details.status !== 0) {
+    return fallback(
+      details.error?.message ??
+        `gh pr view exited with status ${details.status}`
     )
-    info([`Save or commit your changes, then run: gh pr checkout ${pr}`])
-    return
+  }
+
+  const detailsOutput = details.stdout?.toString().trim() ?? ''
+  if (!detailsOutput) {
+    return fallback('gh pr view returned no head revision data')
+  }
+  const [prBranch, prHead, title] = detailsOutput.split('\t')
+  if (!prBranch || !prHead || !title) {
+    return fallback('gh pr view returned incomplete head revision data')
+  }
+  const currentRevision = checkoutRevision(projectRoot)
+  const currentBranch = currentRevision.branch
+  const currentHead = currentRevision.head
+  const dirty = checkoutIsDirty(projectRoot)
+  if (currentBranch === prBranch && currentHead === prHead) {
+    pass(`Your checkout already has the code for PR #${pr}`, prBranch)
+    return {
+      requestedBranch: prBranch,
+      requestedHead: prHead,
+      effectiveBranch: currentBranch,
+      effectiveHead: currentHead,
+      mode: 'verified'
+    }
+  }
+
+  const action =
+    currentBranch === prBranch && currentHead !== prHead
+      ? dirty
+        ? 'refuse-dirty'
+        : 'offer-switch'
+      : decidePrCheckout(currentBranch, prBranch, dirty)
+  if (action === 'refuse-dirty') {
+    return fallback(
+      `checkout "${currentBranch}" has unsaved changes; refusing to switch to "${prBranch}"`,
+      prBranch,
+      prHead
+    )
   }
 
   info([
@@ -206,20 +314,44 @@ async function preparePrCheckout(
     message: `Switch to the code for PR #${pr}?`
   })
   if (isCancel(shouldSwitch) || !shouldSwitch) {
-    warn(`Continuing on "${currentBranch}" instead of PR #${pr}.`)
-    info([`To switch later, run: gh pr checkout ${pr}`])
-    return
+    return fallback(
+      `switch to PR branch "${prBranch}" was not confirmed`,
+      prBranch,
+      prHead
+    )
   }
   const checkout = runCommand('gh', ['pr', 'checkout', pr], {
     cwd: projectRoot,
     stdio: 'pipe'
   })
   if (checkout.error || checkout.status !== 0) {
-    warn(`Could not switch to PR #${pr}. Continuing on "${currentBranch}".`)
-    info([`Try manually: gh pr checkout ${pr}`])
-    return
+    return fallback(
+      checkout.error?.message ??
+        `gh pr checkout exited with status ${checkout.status}`,
+      prBranch,
+      prHead
+    )
+  }
+
+  const effectiveRevision = checkoutRevision(projectRoot)
+  const effectiveBranch = effectiveRevision.branch
+  const effectiveHead = effectiveRevision.head
+  if (effectiveBranch !== prBranch || effectiveHead !== prHead) {
+    return fallback(
+      `effective checkout ${effectiveBranch || '(detached)'}@${effectiveHead || '(unknown)'} ` +
+        `does not match ${prBranch}@${prHead}`,
+      prBranch,
+      prHead
+    )
   }
   pass(`Switched to the code for PR #${pr}`, prBranch)
+  return {
+    requestedBranch: prBranch,
+    requestedHead: prHead,
+    effectiveBranch,
+    effectiveHead,
+    mode: 'verified'
+  }
 }
 
 export async function runRecord(
@@ -271,11 +403,18 @@ export async function runRecord(
     let root: string
     try {
       root = findProjectRoot()
-    } catch {
-      warn(`Could not find the checkout for PR #${prefill.pr}. Continuing.`)
-      root = process.cwd()
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'could not locate the project root'
+      const failure = `Could not find the checkout for PR #${prefill.pr}: ${message}`
+      fail(failure)
+      throw new Error(failure)
     }
-    await preparePrCheckout(prefill.pr, root)
+    await preparePrCheckout(prefill.pr, root, {
+      allowExplicitFallback: Boolean(process.stdin.isTTY)
+    })
   }
 
   stepHeader(1, 7, 'Target Distribution')
