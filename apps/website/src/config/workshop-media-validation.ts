@@ -118,19 +118,24 @@ function validateVideoMetadata(
     throw validationError(field.name, 'videoWidthOutOfRange')
 }
 
+function hasMediaConstraint(field: FieldSchema): boolean {
+  const presentation = field.presentation
+  if (!presentation) return false
+  return (
+    presentation.maxVideoDurationSeconds !== undefined ||
+    presentation.videoWidthPixels !== undefined ||
+    presentation.imageAspectRatio !== undefined
+  )
+}
+
 function constrainedMediaValues(
   field: FieldSchema,
   values: FormValues
 ): readonly FieldValue[] {
-  const presentation = field.presentation
-  if (
-    presentation?.maxVideoDurationSeconds === undefined &&
-    presentation?.videoWidthPixels === undefined &&
-    presentation?.imageAspectRatio === undefined
-  )
-    return []
+  if (!hasMediaConstraint(field)) return []
   const value = values[field.name]
-  if (value === undefined || value === '') return []
+  if (value === undefined) return []
+  if (value === '') return []
   return Array.isArray(value) ? value : [value]
 }
 

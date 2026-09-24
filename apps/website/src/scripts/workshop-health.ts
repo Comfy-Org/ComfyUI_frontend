@@ -16,28 +16,41 @@ function isAccountRefusal(failure: FailedRun): boolean {
   )
 }
 
-function isActionableInputIssue(failure: FailedRun): boolean {
-  if (
+function hasFieldErrors(failure: FailedRun): boolean {
+  return Boolean(
+    failure.field_error_names?.length && failure.field_error_codes?.length
+  )
+}
+
+function hasRouterOutcome(failure: FailedRun): boolean {
+  return [
+    failure.request_id,
+    failure.http_status,
+    failure.router_error_type
+  ].some((value) => value !== undefined)
+}
+
+function hasOnlyFieldError(failure: FailedRun, code: string): boolean {
+  return (
+    hasFieldErrors(failure) &&
+    failure.field_error_codes?.every((fieldCode) => fieldCode === code) === true
+  )
+}
+
+function isLayerDecompositionInputIssue(failure: FailedRun): boolean {
+  return (
     failure.reason === 'validation' &&
-    failure.field_error_names?.length &&
-    failure.field_error_codes?.length &&
-    failure.field_error_codes.every(
-      (code) => code === 'imageLayerDecompositionUnsupported'
-    )
+    hasOnlyFieldError(failure, 'imageLayerDecompositionUnsupported')
   )
-    return true
-  if (
-    [failure.request_id, failure.http_status, failure.router_error_type].some(
-      (value) => value !== undefined
-    )
-  )
-    return false
-  if (!failure.field_error_names?.length || !failure.field_error_codes?.length)
-    return false
+}
+
+function isActionableInputIssue(failure: FailedRun): boolean {
+  if (isLayerDecompositionInputIssue(failure)) return true
+  if (hasRouterOutcome(failure)) return false
+  if (!hasFieldErrors(failure)) return false
   if (failure.reason === 'validation') return true
   return (
-    failure.reason === 'client' &&
-    failure.field_error_codes.every((code) => code === 'fileUnreadable')
+    failure.reason === 'client' && hasOnlyFieldError(failure, 'fileUnreadable')
   )
 }
 
