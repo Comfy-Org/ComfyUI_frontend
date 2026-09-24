@@ -363,6 +363,40 @@ describe('CinematicStudio', () => {
     expect(signals[0].aborted).toBe(true)
   })
 
+  it('asks before a link leaves a take that is still rendering', async () => {
+    const signals: AbortSignal[] = []
+    vi.mocked(router_render).mockImplementation(
+      (_slug, _parameters, options) =>
+        new Promise(() => {
+          if (options.signal) signals.push(options.signal)
+        })
+    )
+    const assign = vi
+      .spyOn(window.location, 'assign')
+      .mockImplementation(() => {})
+    const user = renderStudio()
+    const away = document.body.appendChild(document.createElement('a'))
+    away.href = '/pricing'
+    away.textContent = 'Pricing'
+
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+    await user.click(away)
+    const dialog = await screen.findByRole('dialog', {
+      name: t('workshop.run.leaveTitle')
+    })
+    await user.click(
+      within(dialog).getByRole('button', {
+        name: t('workshop.run.leaveAnyway')
+      })
+    )
+
+    expect(signals[0].aborted).toBe(true)
+    expect(assign).toHaveBeenCalledWith(`${location.origin}/pricing`)
+    away.remove()
+    assign.mockRestore()
+  })
+
   it('moves between takes with the arrow keys', async () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()
