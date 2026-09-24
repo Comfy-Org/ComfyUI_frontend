@@ -528,12 +528,7 @@ function targetWorkflowTurnContext(
     id: cloudIdFor(target),
     tabPath: target.path,
     isTemporary: target.isTemporary,
-    hasOrigin: origin !== undefined,
-    // Standalone has no ingest workflow list: the tab binding is the only way
-    // a tab resolves, so an unbound saved tab must still be sent (tab-only)
-    // or it can never acquire the workflow adoption would give it — and the
-    // agent mints a fresh one on every message instead.
-    bindingIsAuthoritative: !hasCloudWorkflowIndex()
+    hasOrigin: origin !== undefined
   })
 }
 
