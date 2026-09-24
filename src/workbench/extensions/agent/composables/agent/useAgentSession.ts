@@ -3,10 +3,6 @@ import { computed, onScopeDispose, ref, watch } from 'vue'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
-import {
-  forwardsComfyCredential,
-  hasCloudWorkflowIndex
-} from '@/workbench/extensions/agent/agentDistribution'
 import type {
   AgentActiveTabData,
   AgentTurnAccepted,
@@ -155,25 +151,26 @@ export function useAgentSession(deps: AgentSessionDeps) {
     answeringAskIds.value = next
   }
 
-  if (forwardsComfyCredential()) {
-    let refreshTimer: ReturnType<typeof setInterval> | undefined
-    const stopCredentialRefresh = (): void => {
-      clearInterval(refreshTimer)
-      refreshTimer = undefined
-    }
-    watch(
-      () => conversationStore.isStreaming,
-      (streaming) => {
-        stopCredentialRefresh()
-        if (!streaming) return
-        refreshTimer = setInterval(() => {
-          rest.refreshCredential().catch(() => undefined)
-        }, CREDENTIAL_REFRESH_INTERVAL_MS)
-      },
-      { immediate: true }
-    )
-    onScopeDispose(stopCredentialRefresh, true)
+  // A turn can outlive the auth token it started with; while one streams, the
+  // user's header is re-presented so the local agent always holds a current
+  // credential. One cheap request every few minutes, unused by the cloud.
+  let refreshTimer: ReturnType<typeof setInterval> | undefined
+  const stopCredentialRefresh = (): void => {
+    clearInterval(refreshTimer)
+    refreshTimer = undefined
   }
+  watch(
+    () => conversationStore.isStreaming,
+    (streaming) => {
+      stopCredentialRefresh()
+      if (!streaming) return
+      refreshTimer = setInterval(() => {
+        rest.refreshCredential().catch(() => undefined)
+      }, CREDENTIAL_REFRESH_INTERVAL_MS)
+    },
+    { immediate: true }
+  )
+  onScopeDispose(stopCredentialRefresh, true)
 
   function nextLocalErrorId(): TurnId {
     return toTurnId(`local-error-${createUuidv4()}`)
@@ -360,10 +357,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     draft: DraftSnapshot | undefined
   ): boolean {
     if (draft === undefined) return false
-    if (threadId === 'new' || wfContext?.id !== undefined) return true
-    // Without a cloud index an unbound tab has no id to send; its draft is how
-    // the local agent mints the workflow the session then adopts onto it.
-    return wfContext !== undefined && !hasCloudWorkflowIndex()
+    return threadId === 'new' || wfContext?.id !== undefined
   }
 
   function acceptTurn(

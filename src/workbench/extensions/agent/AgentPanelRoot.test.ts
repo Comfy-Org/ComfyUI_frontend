@@ -287,6 +287,11 @@ import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
 
 beforeEach(() => {
+  // The panel runs signed in: every agent request carries the user's auth
+  // header and a send is gated on having one. Signed-out cases say so.
+  vi.spyOn(useAuthStore(), 'getUserAuthHeader').mockResolvedValue({
+    Authorization: 'Bearer id-token'
+  })
   useCurrentUser().isLoggedIn = computed(() => true)
   useCurrentUser().userDisplayName = computed(() => 'Jo Rivera')
   useCurrentUser().resolvedUserInfo = computed(() => ({
@@ -6954,31 +6959,41 @@ describe('AgentPanelRoot in the standalone agent harness', () => {
     )
     ws.clear()
     useAgentPanelStore().enabled = true
-    useAuthStore().currentUser = fromPartial<User>({ uid: 'user-1' })
-    vi.mocked(useAuthStore().getIdToken).mockResolvedValue('id-token')
     vi.mocked(useDialogService().showSignInDialog).mockReset()
   })
 
-  function stubLocalAgent(workflowId: string) {
+  function stubLocalAgent(
+    workflowId: string,
+    index: { id: string; name: string }[] = []
+  ) {
     const bodies: Record<string, unknown>[] = []
-    const comfyTokens: (string | null)[] = []
+    const authHeaders: (string | null)[] = []
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.includes('/messages') && init?.method === 'POST') {
         bodies.push(JSON.parse(String(init.body)))
-        comfyTokens.push(new Headers(init.headers).get('X-Comfy-Token'))
+        authHeaders.push(new Headers(init.headers).get('Authorization'))
         return json(202, ack(workflowId))
       }
       if (url.includes('/messages')) return json(200, [])
       if (url.includes('/agent/threads')) return json(200, agentThreadList())
-      if (url.includes('/workflows')) return json(404, { error: 'not found' })
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: index,
+          pagination: {
+            offset: 0,
+            limit: 100,
+            total: index.length,
+            has_more: false
+          }
+        })
       return new Response('{}', { status: 200 })
     })
     vi.stubGlobal('fetch', fetchMock)
-    return { bodies, comfyTokens, fetchMock }
+    return { bodies, authHeaders, fetchMock }
   }
 
   it('asks a signed-out user to sign in instead of sending, keeping the draft', async () => {
-    useAuthStore().currentUser = null
+    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
     vi.mocked(useDialogService().showSignInDialog).mockResolvedValue(false)
     const tab = addTab('workflows/current.json', { isTemporary: true })
     workflowStore.activeWorkflow = tab
@@ -6998,53 +7013,45 @@ describe('AgentPanelRoot in the standalone agent harness', () => {
     expect(bodies).toHaveLength(0)
   })
 
-  it.for([
-    { label: 'an unsaved tab', isTemporary: true },
-    { label: 'a saved local file', isTemporary: false }
-  ])(
-    'sends from $label without the cloud index or a save, then binds the minted workflow',
-    async ({ isTemporary }) => {
-      const activeState = fromPartial<ComfyWorkflowJSON>({
-        nodes: [{ id: 1, type: 'LoadImage' }],
-        links: []
-      })
-      const tab = addTab('workflows/Unsaved Workflow (6).json', {
-        isTemporary,
-        activeState
-      })
-      workflowStore.activeWorkflow = tab
-      const { bodies, comfyTokens, fetchMock } = stubLocalAgent('wf-minted')
-      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+  // The local agent serves the saved-workflow index over ComfyUI's workflows
+  // directory, so a saved local file resolves exactly as a cloud one does.
+  it('sends a saved local file under the id the local workflow index gives it', async () => {
+    const activeState = fromPartial<ComfyWorkflowJSON>({
+      nodes: [{ id: 1, type: 'LoadImage' }],
+      links: []
+    })
+    const tab = addTab('workflows/Portrait.json', {
+      isTemporary: false,
+      activeState
+    })
+    workflowStore.activeWorkflow = tab
+    const { bodies, authHeaders, fetchMock } = stubLocalAgent('wf-portrait', [
+      { id: 'wf-portrait', name: 'Portrait' }
+    ])
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-      await userEvent.click(screen.getByRole('textbox'))
-      await userEvent.paste('build here')
-      await userEvent.keyboard('{Enter}')
-      await userEvent.click(
-        await screen.findByRole('menuitemradio', {
-          name: 'Unsaved Workflow (6)'
-        })
-      )
-      await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
-      await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await userEvent.click(screen.getByRole('textbox'))
+    await userEvent.paste('build here')
+    await userEvent.keyboard('{Enter}')
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'Portrait' })
+    )
+    await vi.waitFor(() => expect(screen.queryByRole('menu')).toBeNull())
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
-      await vi.waitFor(() => expect(bodies).toHaveLength(1))
-      expect(bodies[0]).toMatchObject({
-        content: 'build here',
-        draft: { content: activeState }
-      })
-      expect(bodies[0]).not.toHaveProperty('workflow_id')
-      expect(comfyTokens).toEqual(['id-token'])
-      await vi.waitFor(() =>
-        expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-minted')).toBe(
-          tab.path
-        )
-      )
-      expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
-      expect(
-        fetchMock.mock.calls.some(([url]) => url.includes('/workflows'))
-      ).toBe(false)
-    }
-  )
+    await vi.waitFor(() => expect(bodies).toHaveLength(1))
+    expect(bodies[0]).toMatchObject({
+      content: 'build here',
+      workflow_id: 'wf-portrait',
+      draft: { content: activeState }
+    })
+    // The local agent reads the user's credential the way ingest does.
+    expect(authHeaders).toEqual(['Bearer id-token'])
+    expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
+    expect(
+      fetchMock.mock.calls.some(([url]) => url.includes('/workflows'))
+    ).toBe(true)
+  })
 })
 
 describe('AgentPanelRoot standalone agent (#17469)', () => {

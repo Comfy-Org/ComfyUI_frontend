@@ -14,6 +14,12 @@ import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
 vi.mock(import('@/platform/telemetry'))
+// The transport's auth header is not what these tests are about, and the real
+// auth store's module graph is slow to load in a test.
+vi.mock(import('../../services/agent/agentAuth'), () => ({
+  withAgentAuth: async (init: RequestInit) => init,
+  ensureSignedIn: async () => true
+}))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))

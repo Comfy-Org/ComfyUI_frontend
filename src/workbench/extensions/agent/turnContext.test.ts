@@ -20,34 +20,20 @@ describe('turnContextFor', () => {
         id: 'wf-1',
         tabPath: 'workflows/a.json',
         isTemporary: false,
-        hasOrigin: true,
-        bindingIsAuthoritative: false
+        hasOrigin: true
       })
     ).toEqual({ id: 'wf-1', tabPath: 'workflows/a.json' })
   })
 
-  it('withholds the context for an unresolved saved tab when a cloud list is authoritative', () => {
+  it('withholds the context for an unresolved saved tab until the saved-workflow index names it', () => {
     expect(
       turnContextFor({
         id: undefined,
         tabPath: 'workflows/a.json',
         isTemporary: false,
-        hasOrigin: true,
-        bindingIsAuthoritative: false
+        hasOrigin: true
       })
     ).toBeUndefined()
-  })
-
-  it('sends a tab-only context for an unresolved saved tab when the binding is authoritative', () => {
-    expect(
-      turnContextFor({
-        id: undefined,
-        tabPath: 'workflows/a.json',
-        isTemporary: false,
-        hasOrigin: true,
-        bindingIsAuthoritative: true
-      })
-    ).toEqual({ tabPath: 'workflows/a.json' })
   })
 
   it('always sends a tab-only context for a temporary tab', () => {
@@ -56,8 +42,7 @@ describe('turnContextFor', () => {
         id: undefined,
         tabPath: 'workflows/temp.json',
         isTemporary: true,
-        hasOrigin: true,
-        bindingIsAuthoritative: false
+        hasOrigin: true
       })
     ).toEqual({ tabPath: 'workflows/temp.json' })
   })
