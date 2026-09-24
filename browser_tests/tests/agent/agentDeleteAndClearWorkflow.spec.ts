@@ -110,6 +110,13 @@ test.describe(
           const entry = agentConversation.conversation.turns[0].response[index]
           if (entry.kind !== 'graph_ops') return
           if (!entry.ops.some((op) => op.op === 'clear')) return
+          // The seed workflow is empty, so the only node on screen at this
+          // point is the one the turn's own earlier add_node frame placed.
+          // hostSocket.send() does not wait for the page to receive and apply
+          // that frame before this callback runs, so without this wait the
+          // scope drop below can land before the add does, rejecting it too
+          // and leaving nothing on screen to prove the clear's rejection with.
+          await expect(agentConversation.vueNodes.nodes).not.toHaveCount(0)
           // The workflow tab binding drives production `getScope()`
           // (AgentPanelRoot.vue): dropping it here reproduces the exact race
           // this PR fixes without touching the doc or sending another frame.
