@@ -46,7 +46,9 @@ remain follow-up work"). It decides only what those records leave open.
   `delivery_unknown` and settles from per-kind document presence, an
   explicit host rejection, or a bounded ledger terminal path — never from a
   `doc_subscribed` acknowledgement alone — by a type-correlated rule that
-  reverts only when the document does not hold the entry's id. See
+  never reverts on absence: an id-matched entry that reads as absent stays
+  parked until an explicit host rejection or the ledger's own bounded
+  terminal path resolves it. See
   "Dependency contract" below for the revert, terminal-state and
   ledger-ownership semantics this record relies on, summarized so this ADR is
   reviewable while #16309 is still open.
@@ -92,9 +94,11 @@ Summarized from the linked ADR text above, since it is not yet on `main`:
 
 This ADR's (a) builds directly on the terminal-state and identity rules
 above: `delivery_unknown` is this record's extension of "`unconfirmed` does
-not itself trigger a revert" to the parked-and-later-resolved case, and the
-revert-only-when-absent rule in (a) is the same identity-safe shape as
-CRDT-PENDING-0030's "leaves it alone" rule for a reused id.
+not itself trigger a revert" to the parked-and-later-resolved case, and (a)'s
+own never-revert-on-absence rule is the same protective shape as
+CRDT-PENDING-0030's "leaves it alone" rule for a reused id — both act only on
+positive evidence (an explicit rejection, or an identity match), never on
+absence.
 
 ## Context
 
@@ -144,9 +148,13 @@ for what it has never been told about. Concretely:
 ### (a) Rejected and unresolved human ops: the ledger, longer-lived, plus bounded settlement
 
 The pending-op tracker (CRDT-PENDING-0030) is the ledger of record; this ADR
-does not re-decide its revert-and-toast mechanics. It adds one state,
-`delivery_unknown`, for parked entries, and decides the following deltas,
-landed in PR A:
+does not re-decide its revert-and-toast mechanics. It adds `delivery_unknown`
+for parked entries, plus two settlement outcomes for the cases an explicit
+host rejection never resolves: `unresolved` (the ledger's own bounded
+terminal path, non-destructive) and `abandoned` (target-session/document
+destruction, also non-destructive). It decides the following deltas as a
+proposed revision for the implementation carrier (PR A, and where noted PR
+A1) to adopt — not yet reflected in that implementation:
 
 - **The ledger is owned per bound workflow/document, not per follower
   mount.** #16309's ledger resets on tab deactivation, which is not enough on
@@ -164,9 +172,15 @@ landed in PR A:
   queue to remain detached after a document closes, so "workflow close" is
   not a safe clearing boundary: pending entries and their identities survive
   a detached session so a late result can still correlate against them. Only
-  the document object's destroy clears the registry entry, reverting any
-  entries still parked at that point with the standard rejected-operation
-  notification, since no later frame can arrive to settle them. This lands
+  the document object's destroy clears the registry entry. Destruction proves
+  only that the client is abandoning correlation for that lineage, not that
+  the host rejected anything still parked — so any entry still parked at
+  that point settles as an explicit `abandoned` outcome: no revert, no
+  rejected-operation notification, consistent with the dependency contract
+  above, where only an explicit host rejection triggers revert-and-notify
+  compensation. No later frame can arrive to settle these entries any other
+  way, which is exactly why destruction, not an inferred rejection, is the
+  correct terminal outcome for them. This lands
   in two steps: PR A keeps the ledger inside the follower and closes only the
   tab-deactivation gap; PR A1 hoists its ownership to workflow/document scope
   and to the destruction boundary, and this ADR's guarantee does not hold
@@ -200,12 +214,25 @@ landed in PR A:
   resubscribe finds the state vector already current and no further frame
   follows) and again on every subsequent same-lineage frame, until resolved;
   (ii) an explicit host rejection; (iii) the bounded ledger terminal path
-  below, for an entry that outlives both of the above in a quiet document.
-  Absence never settles an entry by itself. Once the backend echoes subscribe
+  below, for an entry that outlives both of the above within its own
+  lifetime.
+
+  Absence never _reverts_ an entry — not on an ordinary frame, not on a
+  continuity-unknown reactivation (see below), and not at the terminal
+  path's expiry. Absence _settles_ an entry only when absence is that
+  entry's own success condition: `delete_node` settles `applied` when the id
+  is absent. `add_node`, `connect` and `set_widget` settle only on presence
+  (`set_widget` on value equality); when one of those instead reads as
+  absent (or unequal), the entry simply stays parked as `delivery_unknown` —
+  it is never reverted on that basis. The only source that reverts an entry
+  is an explicit host rejection, per the dependency contract above; the
+  bounded ledger terminal path below settles a parked entry that outlives
+  everything else, but to a non-destructive outcome, never a revert. Once the backend echoes subscribe
   identity on `doc_subscribed` (named as a dependency in Sequencing below),
   an acknowledgement identified as belonging to the current subscribe may be
   used as a catch-up barrier in its own right; that wire change has not
   landed, so this ADR does not rely on one.
+
 - **Per-kind resolution**, evaluated against the document per source (i)
   above: `add_node`, the node id is present and the document node's type
   equals the ledger entry's minted type; `delete_node`, the id is absent;
@@ -213,70 +240,90 @@ landed in PR A:
   widget's current value equals the op's value — never an unconditional
   clear, since last-writer-wins does not make an arbitrary document value
   proof that this op landed; `clear` is not parked. A present-and-matching
-  check (or absence, for `delete_node`) settles the entry as applied. An
-  `add_node` read as absent reverts the node — **the revert removes a node
-  only when the document does not hold its id**, so it can never delete an
-  authoritative node; other kinds toast only on revert. Present-but-
-  different-type is an id collision, handled as (c) handles it. Nothing is
-  re-enqueued. (On a reactivation whose continuity with the last projected
-  state is unknown, revert-on-absence is deferred rather than applied
-  immediately — see the reactivation-continuity rule below.)
-- **The bounded ledger terminal path resolves a parked entry when the
-  document goes quiet.** CRDT-FOLLOWER-0035's ack-timeout retry times an
+  check (or absence, for `delete_node`) settles the entry as `applied`. An
+  `add_node`, `connect` or `set_widget` entry that instead reads as absent
+  (or unequal, for `set_widget`) is left parked as `delivery_unknown` — it is
+  never reverted on that basis, on this frame or any later one; the only
+  thing that reverts a minted node, link or widget change is an explicit
+  host rejection (see the dependency contract above), and that holds for
+  every kind alike. Present-but-different-type is an id collision, handled
+  as (c) handles it. Nothing is re-enqueued.
+- **The pending ledger's own bounded terminal path settles a parked entry to
+  a non-destructive `unresolved` outcome once its lifetime elapses — it
+  never reverts.** CRDT-FOLLOWER-0035's ack-timeout retry times an
   _unanswered_ `doc_subscribe`; a successful `doc_subscribed` disarms that
   timer entirely, and even the terminal give-up state on that timer only
   reports and latches `connected: false` with no pending-ledger settlement
   hook — it was never a path that can expire a `delivery_unknown` entry, and
   citing it as one was wrong. The pending ledger instead owns its own bounded
-  terminal path: each parked entry carries a settle deadline,
-  `LEDGER_SETTLE_TIMEOUT_MS`, a named constant on the order of the existing
-  subscribe retry bound; its exact value is an implementation detail, not
-  decided here. When the deadline elapses, the entry reverts with the
-  standard rejected-operation notification only if all three hold: (a) no
-  `doc_reset` (lineage change) has been observed since the entry was parked;
-  (b) the local document has reached at least the highest `seq` any
-  `doc_subscribed` acknowledgement has reported since the entry was parked —
-  the max over acknowledgements, which is duplicate-safe because a duplicate
-  repeats a `seq` already seen, never a lower one; and (c) no same-lineage
-  document frame has arrived within the bound, i.e. the document is
-  quiescent. A frame arriving before the deadline restarts it; presence
-  observed on any frame settles the entry first, ahead of the deadline, per
-  the per-kind rule above. The residual risk is explicit: a remint the
-  client missed while the tab was inactive produces no wire signal at all,
-  so this terminal path can falsely revert exactly that one case. The
-  backend lineage/generation token named below removes that residual
-  entirely and stays a listed dependency; until it lands, the terminal path
-  is a bounded fallback, not a proof of absence.
-- **On a reactivation, a changed `seq` keeps parked entries parked; it does
-  not prove they are absent.** A resubscribe that follows a paused
-  (tab-inactive) subscription checks continuity: the resume's `seq` equal to
-  what this client last projected means the document did not change while
-  away, so the per-kind resolution above runs unchanged, including
-  revert-on-absence. A different `seq` is ordinary same-lineage progress —
+  terminal path: each parked entry carries an absolute per-entry lifetime,
+  `LEDGER_SETTLE_TIMEOUT_MS`, counted from the moment the entry is parked;
+  its exact value is an implementation detail, not decided here. That
+  lifetime is never extended by traffic: an idle-timeout shape, where an
+  unrelated same-lineage frame resets the deadline, would let frequent
+  unrelated activity keep a lost op ambiguous forever, so the deadline is
+  scheduled once, at park time, against a fixed clock, and no later frame
+  moves it.
+
+  There is no other precondition on the deadline firing. An earlier draft of
+  this rule also required a max-acknowledged-`seq` precondition and a
+  quiescence (no-frame-arrived-within-the-bound) requirement before the
+  deadline could fire; both are removed. The `seq` precondition treated an
+  unidentified `doc_subscribed` acknowledgement's `seq` as proof the local
+  document had caught up to a specific subscribe, but the wire carries no
+  echoed subscribe or request identity (see above): a duplicate old
+  acknowledgement can repeat a lower `seq` while the newer, real catch-up
+  frame that would have resolved the entry safely is lost in transit,
+  leaving the stale `seq` as false proof of causality and destructively
+  reverting an operation the host had, in fact, applied. Quiescence has the
+  same defect from the other direction: nothing on the wire establishes that
+  a quiet document is _this_ lineage's settled state rather than a gap in
+  delivery. Until the backend echoes subscribe identity or a lineage/
+  generation token (both named as dependencies in Sequencing below), no
+  signal available today can prove a parked entry is truly gone, so the only
+  safe outcome the deadline may produce is a non-destructive one.
+
+  When the lifetime elapses, the entry settles to a terminal outcome,
+  `unresolved`: the local optimistic projection is retained exactly as it
+  stands — no revert, and no rejected-operation notification. Instead, a
+  distinct unconfirmed-edit notification tells the user this edit could not
+  be confirmed as synced. The entry's identity stays registered after
+  settling `unresolved`: a late echo or an explicit host response arriving
+  afterward can still move it to `applied`, or to `reverted` on an explicit
+  host rejection, until a lineage break (`doc_reset`) or the document's own
+  destruction clears the registry entry per the ledger-lifetime rule above.
+  Presence observed on any frame before the lifetime elapses still settles
+  the entry first, per the per-kind rule above; the lifetime only governs
+  what happens when nothing has. Unknown delivery is therefore bounded in
+  **time** — it always becomes a visible terminal outcome within
+  `LEDGER_SETTLE_TIMEOUT_MS` of being parked — but it is not resolved in
+  **truth**: the backend lineage/generation token and the echoed subscribe
+  identity, both named as dependencies in Sequencing below, are what would
+  let this terminal outcome become a truthful revert instead of a standing
+  `unresolved` state.
+
+- **On a reactivation, a changed `seq` keeps parked entries parked; it is
+  ordinary same-lineage progress, not proof of anything about them.** A
+  resubscribe that follows a paused (tab-inactive) subscription checks
+  continuity: the resume's `seq` equal to what this client last projected
+  means the document did not change while away, so the per-kind resolution
+  above runs unchanged. A different `seq` is ordinary same-lineage progress —
   another actor's edit, or one of this session's own parked entries taking
-  effect while the tab was inactive — and does not by itself prove any
-  parked effect is absent: reverting on that basis alone can strip the local
-  projection of an add the authoritative document already contains. The
-  per-kind document check above still runs in that case (presence, and
-  matching type for `add_node`, still resolves the entry as applied,
-  regardless of continuity), but an entry the check reads as absent is
-  **not** reverted immediately. It stays parked as `delivery_unknown` and is
-  resolved instead by whichever of the three settlement sources above comes
-  first: the next same-lineage `doc_update`, an explicit host rejection, or
-  the bounded ledger terminal path. Reverting on absence at a reactivation
-  whose continuity is unknown would need proof that the snapshot being
-  checked belongs to this ledger's own lineage and not a document the host
-  silently reminted under the same workflow id while the tab was away —
-  that proof is the same backend lineage/generation token named above, and
-  destructive invalidation on a bare `seq` mismatch stays gated on it, not
-  decided by this frontend-only PR. Outside a reactivation, a `seq` mismatch
-  is left alone as before: the natural catch-up frame resolves things
-  through the per-kind rules above, revert-on-absence included, since there
-  is no continuity question to begin with. This is accepted as incomplete:
-  without the backend token, some entries may sit parked longer than a
-  resolved reactivation would need, until a later frame, an explicit
-  rejection, or the terminal path resolves them — tracked as a followup, not
-  resolved here.
+  effect while the tab was inactive. The per-kind document check above still
+  runs in that case (presence, and matching type for `add_node`, still
+  resolves the entry as `applied`, regardless of continuity); since absence
+  never reverts on any frame (see above), a mismatched `seq` raises no
+  separate destructive question of its own — an entry the check cannot yet
+  resolve as `applied` simply stays parked as `delivery_unknown`, resolved by
+  whichever of the three settlement sources above comes first: the next
+  same-lineage `doc_update`, an explicit host rejection, or the ledger's own
+  non-destructive `unresolved` outcome once its bounded lifetime elapses.
+  Outside a reactivation, a `seq` mismatch is handled the same way: the
+  natural catch-up frame resolves things through the per-kind presence rules
+  above, with no revert-on-absence to gate. This is accepted as incomplete
+  only in timing, not in safety: without the backend lineage/generation
+  token named above, some entries may sit parked longer than a resolved
+  reactivation would need — tracked as a followup, not resolved here.
 - **Per-frame order is fixed: resolve, apply, clear.** For each
   authoritative frame the follower (1) resolves parked entries against the
   document state the frame produces and marks them terminal, (2) applies the
@@ -299,31 +346,41 @@ landed in PR A:
 
 For #18063's shape (a `delete_node` still queued when the tab switches) this
 means: the delete is parked, (b) keeps the node out of the reconcile upsert
-while it is parked, and if the host still holds the node once the per-kind
-document check (or, failing that, the bounded ledger terminal path) settles
-the entry, the delete reverts and the toast fires.
+while it is parked, and it settles `applied` once the per-kind document
+check finds the node absent. If the host still holds the node — the delete
+never took effect — the entry stays parked as `delivery_unknown`: it clears
+only on an explicit host rejection, which reverts the local delete and fires
+the standard rejected-operation toast, or, failing that, on the ledger's own
+bounded terminal path, which settles it `unresolved` with the
+unconfirmed-edit notification instead and keeps the local optimistic delete
+in place.
 
 ### Durable guarantee vs. interim mechanism
 
 Four behavior requirements are durable and should outlive any one mechanism
 below: an unresolved human intent is never silently discarded by a reconcile;
-a host rejection is reported; an outcome whose delivery is unknown settles by
-per-kind document presence, an explicit rejection, or a bounded ledger
-terminal path — never by an acknowledgement alone, and never left ambiguous
-indefinitely; and any collision the available provenance can identify is
-reported, with the document winning. Provenance today is op-identity-based
+a host rejection is reported; an outcome whose delivery is unknown becomes a
+visible terminal outcome within a bounded time — `applied` or `reverted` when
+per-kind document presence or an explicit host rejection resolves it,
+otherwise a non-destructive `unresolved` outcome once the ledger's own
+bounded terminal path elapses — never settled by an acknowledgement alone,
+and never ambiguous indefinitely _in time_, though truthful resolution (a
+real revert instead of a standing `unresolved`) still depends on
+backend-supplied identity that has not landed; and any collision the
+available provenance can identify is reported, with the document winning.
+Provenance today is op-identity-based
 (the ledger's `add_node` entry for a node id, in a state the host can have
 echoed): a same-type, same-id replacement under an add that never reached the
 ledger converges silently, without a report — the negative consequence
 recorded below.
 
-| Requirement                                                                                                                                                                                                                                                                  | A                     | A1                    | B                                                  | C                                   |
-| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------- | --------------------- | -------------------------------------------------- | ----------------------------------- |
-| Unresolved intent survives a reconcile (queued/in-flight never discarded)                                                                                                                                                                                                    | tab-deactivation only | + panel close/reopen  | + lineage-aware `removeMissing`/orphan sweep       | —                                   |
-| A host rejection is reported                                                                                                                                                                                                                                                 | yes                   | yes                   | yes                                                | —                                   |
-| Delivery-unknown settles via per-kind document presence, an explicit rejection, or the bounded ledger terminal path (never an acknowledgement alone; revert-on-absence deferred at a reactivation until continuity, an explicit rejection, or the terminal path resolves it) | yes                   | yes                   | yes                                                | —                                   |
-| An identifiable collision is reported, not resolved silently                                                                                                                                                                                                                 | incremental path only | incremental path only | + full-reconcile path, once the known-id set lands | —                                   |
-| Blueprint definitions reach the document                                                                                                                                                                                                                                     | —                     | —                     | —                                                  | pending (PR C; no external blocker) |
+| Requirement                                                                                                                                                                                                                                                                                                                                                  | A                     | A1                    | B                                                  | C                                   |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------- | --------------------- | -------------------------------------------------- | ----------------------------------- |
+| Unresolved intent survives a reconcile (queued/in-flight never discarded)                                                                                                                                                                                                                                                                                    | tab-deactivation only | + panel close/reopen  | + lineage-aware `removeMissing`/orphan sweep       | —                                   |
+| A host rejection is reported                                                                                                                                                                                                                                                                                                                                 | yes                   | yes                   | yes                                                | —                                   |
+| Delivery-unknown becomes a visible terminal outcome within a bounded time: `applied` via per-kind document presence, `reverted` only via an explicit host rejection, or the ledger's own non-destructive `unresolved` outcome once its bounded lifetime elapses (never via an acknowledgement alone; absence never reverts, on any frame or at reactivation) | yes                   | yes                   | yes                                                | —                                   |
+| An identifiable collision is reported, not resolved silently                                                                                                                                                                                                                                                                                                 | incremental path only | incremental path only | + full-reconcile path, once the known-id set lands | —                                   |
+| Blueprint definitions reach the document                                                                                                                                                                                                                                                                                                                     | —                     | —                     | —                                                  | pending (PR C; no external blocker) |
 
 A blank cell means that slice does not change the requirement's status from
 the slice before it; "—" means the slice does not touch that requirement.
@@ -379,7 +436,10 @@ held.
 The adapter treats an `add` action whose node id is already registered in the
 store as the echo of an own add (`reconcileNode`, not `addNode`) only when the
 ledger holds an `add_node` for that node id, **of the same type**, in a state
-the host can have seen: `inflight`, `applied` or `delivery_unknown`. A
+the host can have seen: `inflight`, `applied`, `delivery_unknown` or
+`unresolved` — a late echo against an `unresolved` entry is exactly the case
+the terminal path's own registry retention (see (a) above) exists to still
+resolve correctly, as `applied` rather than a fresh collision. A
 `queued` or `unprocessed` entry has never reached the host and cannot have
 produced an echo, so an incoming add under its id is a collision
 (`agent_crdt_node_id_collision`). **This classification is not yet run in the
@@ -517,15 +577,18 @@ recorded here.
   state at first bind, or an explicit prompt.
 - The known-id set and the longer-lived ledger add state that must reset on
   every lineage break; a missed reset retains stale state.
-- Parking `delivery_unknown` entries delays the toast for a batch the host
-  actually rejected while the tab was away, until one of the three
-  settlement sources in (a) resolves it. At a reactivation whose continuity
-  is unknown, an absent-looking entry stays parked rather than reverting
-  immediately, so that delay can extend until the next same-lineage
-  `doc_update`, an explicit rejection, or the bounded ledger terminal path —
-  a deliberate trade against ever reverting an effect the document actually
-  holds, at the cost of the terminal path's own residual false-revert risk
-  when a remint is missed while the tab is inactive.
+- Parking `delivery_unknown` entries delays the rejected-operation toast for
+  a batch the host actually rejected while the tab was away, until the
+  explicit rejection itself arrives or, failing that, until the ledger's own
+  bounded terminal path elapses and shows the milder unconfirmed-edit
+  notification instead — a deliberate trade of a slower, sometimes
+  wrong-shaped notification against ever reverting an effect the document
+  actually holds. An entry that settles `unresolved` and is only later
+  confirmed rejected surfaces the standard rejected-operation notification at
+  that point, so the same edit can present two different notifications in
+  sequence; an entry that settles `unresolved` and is never confirmed either
+  way stays a standing, user-visible unconfirmed edit until a lineage break
+  or destruction clears it.
 - Seq-based clearing, like effect clearing, trusts an `applied` list that
   counts `lww-dropped` and `no-op`; until the host frame carries per-op
   outcomes some divergence stays unreported.
