@@ -3,7 +3,15 @@ import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { isImageResult } from '@/utils/resultItem'
 
-function resultItemUrlParams(item: AugmentedResultItem): URLSearchParams {
+export interface MediaUrlSource {
+  filename: string
+  subfolder: string
+  type?: string
+  format?: string
+  frame_rate?: number
+}
+
+function resultItemUrlParams(item: MediaUrlSource): URLSearchParams {
   const params = new URLSearchParams()
   params.set('filename', item.filename)
   params.set('type', item.type ?? '')
@@ -11,6 +19,10 @@ function resultItemUrlParams(item: AugmentedResultItem): URLSearchParams {
   if (item.format) params.set('format', item.format)
   if (item.frame_rate) params.set('frame_rate', item.frame_rate.toString())
   return params
+}
+
+export function vhsAdvancedPreviewUrl(source: MediaUrlSource): string {
+  return api.apiURL('/viewvideo?' + resultItemUrlParams(source))
 }
 
 export function resultItemUrl(item: AugmentedResultItem): string {
@@ -30,7 +42,7 @@ export function resultItemPreviewUrl(item: AugmentedResultItem): string {
 export function resultItemVhsAdvancedPreviewUrl(
   item: AugmentedResultItem
 ): string {
-  return api.apiURL('/viewvideo?' + resultItemUrlParams(item))
+  return vhsAdvancedPreviewUrl(item)
 }
 
 export function resultItemUrlWithTimestamp(item: AugmentedResultItem): string {

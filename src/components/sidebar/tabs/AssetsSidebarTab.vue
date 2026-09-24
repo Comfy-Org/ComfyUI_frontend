@@ -230,7 +230,10 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
-import { getAssetFileUrl } from '@/platform/assets/utils/assetUrlUtil'
+import {
+  getAssetFileUrl,
+  getAssetSubfolder
+} from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
@@ -243,6 +246,7 @@ import {
 } from '@/utils/formatUtil'
 import type { LightboxItem } from '@/types/lightboxItem'
 import { fileLightboxItem } from '@/utils/lightboxItem'
+import { vhsAdvancedPreviewUrl } from '@/utils/resultItemUrl'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -459,7 +463,15 @@ watch(galleryActiveIndex, (index) => {
 
 const galleryItems = computed<LightboxItem[]>(() =>
   previewableVisibleAssets.value.map((asset) =>
-    fileLightboxItem(asset.preview_url || '', asset.name)
+    fileLightboxItem(
+      asset.preview_url || '',
+      asset.name,
+      vhsAdvancedPreviewUrl({
+        filename: asset.name,
+        subfolder: getAssetSubfolder(asset),
+        type: 'output'
+      })
+    )
   )
 )
 

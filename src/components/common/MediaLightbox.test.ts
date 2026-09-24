@@ -26,26 +26,6 @@ const i18n = createI18n({
 })
 
 describe('MediaLightbox', () => {
-  const mockComfyImage = {
-    name: 'ComfyImage',
-    template: '<div class="mock-comfy-image" data-testid="comfy-image"></div>',
-    props: ['src', 'contain', 'alt']
-  }
-
-  const mockLightboxVideo = {
-    name: 'LightboxVideo',
-    template:
-      '<div class="mock-lightbox-video" data-testid="lightbox-video"></div>',
-    props: ['url', 'mimeType', 'advancedPreviewUrl']
-  }
-
-  const mockLightboxAudio = {
-    name: 'LightboxAudio',
-    template:
-      '<div class="mock-lightbox-audio" data-testid="lightbox-audio"></div>',
-    props: ['url']
-  }
-
   const mockGalleryItems: LightboxItem[] = [
     { kind: 'image', url: 'image1.jpg', alt: 'image1.jpg' },
     { kind: 'image', url: 'image2.jpg', alt: 'image2.jpg' },
@@ -67,11 +47,6 @@ describe('MediaLightbox', () => {
     const { rerender, container } = render(MediaLightbox, {
       global: {
         plugins: [i18n],
-        components: {
-          ComfyImage: mockComfyImage,
-          LightboxVideo: mockLightboxVideo,
-          LightboxAudio: mockLightboxAudio
-        },
         stubs
       },
       props: {

@@ -14,7 +14,11 @@ import {
   resultItemVhsAdvancedPreviewUrl
 } from '@/utils/resultItemUrl'
 
-export function fileLightboxItem(url: string, filename: string): LightboxItem {
+export function fileLightboxItem(
+  url: string,
+  filename: string,
+  advancedPreviewUrl?: string
+): LightboxItem {
   switch (getMediaTypeFromFilename(filename)) {
     case 'image':
       return { kind: 'image', url, alt: filename }
@@ -22,7 +26,8 @@ export function fileLightboxItem(url: string, filename: string): LightboxItem {
       return {
         kind: 'video',
         url,
-        mimeType: htmlVideoTypeForFilename(filename)
+        mimeType: htmlVideoTypeForFilename(filename),
+        advancedPreviewUrl
       }
     case 'audio':
       return { kind: 'audio', url }
