@@ -11,12 +11,3 @@
 export function isAgentStandalone(): boolean {
   return import.meta.env.VITE_AGENT_STANDALONE === 'true'
 }
-
-/**
- * Whether agent requests carry the signed-in Comfy account's credential. The
- * local agent makes its model and CLI calls as that account, so sending needs
- * a credential and a running turn re-sends it before it expires.
- */
-export function forwardsComfyCredential(): boolean {
-  return isAgentStandalone()
-}

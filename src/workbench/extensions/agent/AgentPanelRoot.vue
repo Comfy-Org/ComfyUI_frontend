@@ -100,8 +100,8 @@ import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
-import { ensureComfyCredential } from './services/agent/comfyCredential'
-import { forwardsComfyCredential, isAgentStandalone } from './agentDistribution'
+import { ensureSignedIn } from './services/agent/agentAuth'
+import { isAgentStandalone } from './agentDistribution'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
@@ -1044,10 +1044,9 @@ const { submit: onSend } = useAgentDraftSubmission({
     exit: exitNodeSelectionMode
   },
   send: async (text, attachments, nodes, references) => {
-    // The local agent acts as the signed-in Comfy account, so a signed-out
-    // user is asked to sign in rather than sending a turn that cannot run.
-    if (forwardsComfyCredential() && !(await ensureComfyCredential()))
-      return false
+    // A turn runs as the signed-in Comfy account, so a signed-out user is
+    // asked to sign in rather than sending a turn that cannot run.
+    if (!(await ensureSignedIn())) return false
     useTelemetry()?.trackAgentMessageSent({
       attachment_count: attachments.length,
       node_tag_count: nodes.length

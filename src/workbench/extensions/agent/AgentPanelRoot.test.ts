@@ -287,6 +287,11 @@ import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
 
 beforeEach(() => {
+  // The panel runs signed in: every agent request carries the user's auth
+  // header and a send is gated on having one. Signed-out cases say so.
+  vi.spyOn(useAuthStore(), 'getUserAuthHeader').mockResolvedValue({
+    Authorization: 'Bearer id-token'
+  })
   useCurrentUser().isLoggedIn = computed(() => true)
   useCurrentUser().userDisplayName = computed(() => 'Jo Rivera')
   useCurrentUser().resolvedUserInfo = computed(() => ({
@@ -6954,8 +6959,6 @@ describe('AgentPanelRoot in the standalone agent harness', () => {
     )
     ws.clear()
     useAgentPanelStore().enabled = true
-    useAuthStore().currentUser = fromPartial<User>({ uid: 'user-1' })
-    vi.mocked(useAuthStore().getIdToken).mockResolvedValue('id-token')
     vi.mocked(useDialogService().showSignInDialog).mockReset()
   })
 
@@ -6964,11 +6967,11 @@ describe('AgentPanelRoot in the standalone agent harness', () => {
     index: { id: string; name: string }[] = []
   ) {
     const bodies: Record<string, unknown>[] = []
-    const comfyTokens: (string | null)[] = []
+    const authHeaders: (string | null)[] = []
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.includes('/messages') && init?.method === 'POST') {
         bodies.push(JSON.parse(String(init.body)))
-        comfyTokens.push(new Headers(init.headers).get('X-Comfy-Token'))
+        authHeaders.push(new Headers(init.headers).get('Authorization'))
         return json(202, ack(workflowId))
       }
       if (url.includes('/messages')) return json(200, [])
@@ -6986,11 +6989,11 @@ describe('AgentPanelRoot in the standalone agent harness', () => {
       return new Response('{}', { status: 200 })
     })
     vi.stubGlobal('fetch', fetchMock)
-    return { bodies, comfyTokens, fetchMock }
+    return { bodies, authHeaders, fetchMock }
   }
 
   it('asks a signed-out user to sign in instead of sending, keeping the draft', async () => {
-    useAuthStore().currentUser = null
+    vi.mocked(useAuthStore().getUserAuthHeader).mockResolvedValue(null)
     vi.mocked(useDialogService().showSignInDialog).mockResolvedValue(false)
     const tab = addTab('workflows/current.json', { isTemporary: true })
     workflowStore.activeWorkflow = tab
@@ -7022,7 +7025,7 @@ describe('AgentPanelRoot in the standalone agent harness', () => {
       activeState
     })
     workflowStore.activeWorkflow = tab
-    const { bodies, fetchMock } = stubLocalAgent('wf-portrait', [
+    const { bodies, authHeaders, fetchMock } = stubLocalAgent('wf-portrait', [
       { id: 'wf-portrait', name: 'Portrait' }
     ])
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
@@ -7042,6 +7045,8 @@ describe('AgentPanelRoot in the standalone agent harness', () => {
       workflow_id: 'wf-portrait',
       draft: { content: activeState }
     })
+    // The local agent reads the user's credential the way ingest does.
+    expect(authHeaders).toEqual(['Bearer id-token'])
     expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
     expect(
       fetchMock.mock.calls.some(([url]) => url.includes('/workflows'))

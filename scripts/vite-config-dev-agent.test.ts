@@ -58,7 +58,7 @@ describe('dev agent comfy credential', () => {
       VITE_REMOTE_DEV: 'true'
     })
     expect(stdout).toBe(
-      '{"headers":{"Authorization":"Bearer test-session-token","X-Comfy-Token":"comfyui-test-key"}}'
+      '{"headers":{"X-Comfy-Agent-Session":"test-session-token","X-API-KEY":"comfyui-test-key"}}'
     )
   })
 
@@ -70,12 +70,21 @@ describe('dev agent comfy credential', () => {
     expect(stdout).not.toContain('0.0.0.0')
   })
 
+  it('presents a non-key token as the bearer, the way ingest reads it', async () => {
+    const { stdout } = await importConfig('http://127.0.0.1:8095', {
+      DEV_AGENT_COMFY_TOKEN: 'a-firebase-jwt'
+    })
+    expect(stdout).toBe(
+      '{"headers":{"X-Comfy-Agent-Session":"test-session-token","Authorization":"Bearer a-firebase-jwt"}}'
+    )
+  })
+
   it('omits the comfy header when the token is unset', async () => {
     const { stdout } = await importConfig('http://127.0.0.1:8095', {
       DEV_AGENT_COMFY_TOKEN: undefined
     })
     expect(stdout).toBe(
-      '{"headers":{"Authorization":"Bearer test-session-token"}}'
+      '{"headers":{"X-Comfy-Agent-Session":"test-session-token"}}'
     )
   })
 })
