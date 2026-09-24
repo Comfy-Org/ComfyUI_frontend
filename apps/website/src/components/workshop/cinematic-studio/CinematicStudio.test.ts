@@ -192,9 +192,10 @@ describe('CinematicStudio', () => {
     renderStudio([])
 
     expect(generateButton()).toBeDisabled()
-    expect(
-      screen.getByText(tc('cinematic.output.unavailable'))
-    ).toBeInTheDocument()
+    expect(generateButton()).toHaveAttribute(
+      'aria-description',
+      tc('cinematic.output.unavailable')
+    )
   })
 
   it('asks a signed-out visitor to sign in instead of generating', async () => {
@@ -363,6 +364,23 @@ describe('CinematicStudio', () => {
     expect(parameters?.prompt).toContain(
       'Keep the character from reference image 1.'
     )
+  })
+
+  it('renders sample frames in demo mode without calling the Router', async () => {
+    window.history.replaceState(null, '', '/cinematic-studio?demo=1')
+    signedIn.value = undefined
+    const user = renderStudio()
+
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+
+    const frame = await screen.findByAltText(
+      /A diner at dawn/,
+      {},
+      { timeout: 3000 }
+    )
+    expect(frame.getAttribute('src')).toMatch(/^\/images\/cinematic-studio\//)
+    expect(router_render).not.toHaveBeenCalled()
   })
 
   describe('layout switch', () => {

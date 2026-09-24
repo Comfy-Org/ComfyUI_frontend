@@ -1,5 +1,13 @@
 <script setup lang="ts">
 import { ArrowRight } from '@lucide/vue'
+import {
+  TooltipContent,
+  TooltipPortal,
+  TooltipProvider,
+  TooltipRoot,
+  TooltipTrigger
+} from 'reka-ui'
+import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -31,73 +39,83 @@ const {
 const emit = defineEmits<{ generate: []; cancel: [] }>()
 
 const signInHref = useSignInHref(locale)
+
+const note = computed(() => {
+  const workspace = () => workspaceName ?? ''
+  if (gate === 'noCredits')
+    return t('workshop.error.noCreditsCloud', locale).replace(
+      '{workspace}',
+      workspace
+    )
+  if (gate === 'memberNoCredits')
+    return t('workshop.error.memberNoCredits', locale).replace(
+      '{workspace}',
+      workspace
+    )
+  if (gate === 'unavailable') return tc('cinematic.output.unavailable', locale)
+  return undefined
+})
+const buttonClass = computed(() =>
+  wide ? 'w-full rounded-full px-5' : 'rounded-full px-5'
+)
 </script>
 
 <template>
-  <div
-    :class="
-      cn(
-        'flex gap-3',
-        wide ? 'flex-col-reverse *:w-full' : 'items-center justify-end'
-      )
-    "
-  >
-    <p
-      v-if="gate === 'unavailable'"
-      class="max-w-64 text-xs text-primary-warm-gray"
-    >
-      {{ tc('cinematic.output.unavailable', locale) }}
+  <div :class="cn('flex flex-col gap-2.5', !wide && 'items-end')">
+    <p v-if="wide && note" class="text-xs text-content-secondary">
+      {{ note }}
     </p>
     <Button
       v-if="gate === 'signedOut'"
       as="a"
       :href="signInHref"
-      class="rounded-full px-5"
+      :class="buttonClass"
       @click="leaveForSignIn($event, signInHref)"
     >
       {{ t('workshop.run.signIn', locale) }}
     </Button>
-    <template v-else-if="gate === 'noCredits'">
-      <p class="max-w-64 text-xs text-content-secondary">
-        {{
-          t('workshop.error.noCreditsCloud', locale).replace(
-            '{workspace}',
-            () => workspaceName ?? ''
-          )
-        }}
-      </p>
-      <Button class="rounded-full px-5" @click="requestWorkshopBuyCredits">
-        {{ t('workshop.run.buyCredits', locale) }}
-      </Button>
-    </template>
-    <p
-      v-else-if="gate === 'memberNoCredits'"
-      class="max-w-64 text-xs text-content-secondary"
-    >
-      {{
-        t('workshop.error.memberNoCredits', locale).replace(
-          '{workspace}',
-          () => workspaceName ?? ''
-        )
-      }}
-    </p>
     <Button
       v-else-if="rendering"
       variant="outline"
-      class="rounded-full px-5"
+      :class="buttonClass"
       @click="emit('cancel')"
     >
       {{ tc('cinematic.output.cancel', locale) }}
     </Button>
-    <Button
-      v-else
-      class="rounded-full pr-4 pl-5"
-      :disabled="!canGenerate"
-      data-testid="cinematic-generate"
-      @click="emit('generate')"
-    >
-      {{ tc('cinematic.output.generate', locale) }}
-      <ArrowRight aria-hidden="true" />
-    </Button>
+    <TooltipProvider v-else :delay-duration="150">
+      <TooltipRoot :disabled="wide || !note">
+        <TooltipTrigger as-child>
+          <Button
+            v-if="gate === 'noCredits'"
+            :class="buttonClass"
+            :aria-description="note"
+            @click="requestWorkshopBuyCredits"
+          >
+            {{ t('workshop.run.buyCredits', locale) }}
+          </Button>
+          <span v-else :class="cn('inline-flex', wide && 'w-full')">
+            <Button
+              :class="cn(buttonClass, 'pr-4 pl-5')"
+              :disabled="!canGenerate"
+              :aria-description="note"
+              data-testid="cinematic-generate"
+              @click="emit('generate')"
+            >
+              {{ tc('cinematic.output.generate', locale) }}
+              <ArrowRight aria-hidden="true" />
+            </Button>
+          </span>
+        </TooltipTrigger>
+        <TooltipPortal>
+          <TooltipContent
+            side="top"
+            :side-offset="8"
+            class="z-60 max-w-64 rounded-xl border border-transparency-white-t8 bg-primary-comfy-ink-light px-3 py-2 text-xs/relaxed text-primary-comfy-canvas shadow-lg"
+          >
+            {{ note }}
+          </TooltipContent>
+        </TooltipPortal>
+      </TooltipRoot>
+    </TooltipProvider>
   </div>
 </template>

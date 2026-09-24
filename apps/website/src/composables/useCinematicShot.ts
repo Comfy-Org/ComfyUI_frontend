@@ -16,11 +16,14 @@ import {
   cinematicPromptSegments
 } from '../lib/workshop/cinematic-studio/prompt'
 import type { StarterShot } from '../lib/workshop/cinematic-studio/starters'
+import { isCinematicDemo, useCinematicDemoRun } from './useCinematicDemoRun'
 import { useCinematicStudioRun } from './useCinematicStudioRun'
 
 /** The shot being directed, shared by every Cinematic Studio layout. */
 export function useCinematicShot(models: readonly CinematicModel[]) {
-  const studio = useCinematicStudioRun(models.length)
+  const studio = isCinematicDemo()
+    ? useCinematicDemoRun()
+    : useCinematicStudioRun(models.length)
 
   const modelSlug = ref(models[0]?.slug ?? '')
   const scene = ref('')
