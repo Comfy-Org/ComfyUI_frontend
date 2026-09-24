@@ -409,6 +409,7 @@ export class MultiAutogrowRealignHarness {
     await expect(
       this.topbar.getTab(0).and(this.topbar.getActiveTab())
     ).toBeVisible()
+    await this.topbar.dismissWorkflowPopover()
     await expect.poll(() => this.hostSocket.subscribeCount()).toBe(2)
   }
 

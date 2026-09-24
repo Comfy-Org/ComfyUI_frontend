@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 export class Topbar {
@@ -130,10 +131,10 @@ export class Topbar {
   }
 
   async dismissWorkflowPopover() {
-    await this.page
-      .locator('.workflow-popover-fade')
-      .waitFor({ state: 'hidden', timeout: 5000 })
-      .catch(() => {})
+    await this.page.mouse.move(0, 0)
+    await expect(
+      this.page.locator('.workflow-popover-fade').filter({ visible: true })
+    ).toHaveCount(0)
   }
 
   async openTopbarMenu() {
