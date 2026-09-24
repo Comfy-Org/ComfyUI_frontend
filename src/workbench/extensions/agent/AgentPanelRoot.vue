@@ -1202,12 +1202,13 @@ const { submit: onSend } = useAgentDraftSubmission({
       // gets that far still reports here, so the funnel counts the attempt.
       reportPendingSend()
     }
-  },
-  stop: stopTurn
+  }
 })
 
+// The session owns the acknowledgement boundary: a stop that lands before the
+// POST acks is remembered there and committed at ack (see stopPendingAck).
 function onStop(method: AgentStopMethod): void {
-  if (!composerStore.requestSubmissionStop(method)) void stopTurn(method)
+  void stopTurn(method)
 }
 
 function onRenameChat(title: string): void {

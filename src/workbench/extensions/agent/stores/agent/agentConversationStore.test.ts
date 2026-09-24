@@ -542,8 +542,10 @@ describe('useAgentConversationStore', () => {
     expect(store.recordApprovalShown('ask-1', 2_000)).toBe(false)
     expect(store.approvalShownAt('ask-1')).toBe(1_000)
 
-    // Re-affirming the same thread (remount hydration) keeps the shown state.
+    // Remount hydration of the same thread keeps the shown state: a replayed
+    // approval card must not re-emit or restart the decision timer.
     store.setThreadId('th')
+    store.hydrate([])
     expect(store.approvalShownAt('ask-1')).toBe(1_000)
     expect(store.recordApprovalShown('ask-1', 3_000)).toBe(false)
 

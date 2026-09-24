@@ -1,10 +1,7 @@
 import { watch } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 
-import type {
-  AgentInputMethod,
-  AgentStopMethod
-} from '@/platform/telemetry/types'
+import type { AgentInputMethod } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
@@ -31,7 +28,6 @@ interface UseAgentDraftSubmissionOptions {
     references: WorkflowReference[],
     meta: SubmissionMeta
   ) => Promise<boolean>
-  stop: (method?: AgentStopMethod) => Promise<void>
 }
 
 /**
@@ -116,11 +112,7 @@ export function useAgentDraftSubmission(
       sentReferences,
       { clientMessageId: uuidv4(), inputMethod }
     )
-    const pendingStop =
-      composer.submission?.id === submissionId ? composer.submission.stop : null
     composer.settleSubmission(submissionId, sent)
-    if (sent && pendingStop !== null)
-      await options.stop(pendingStop.method ?? undefined)
   }
 
   return { submit }

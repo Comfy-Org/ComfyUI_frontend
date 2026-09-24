@@ -126,6 +126,21 @@ let sessionGeneration = 0
 let rememberedWorkflowId: string | null = null
 const turnStartedAt = new Map<TurnId, number>()
 
+/**
+ * Module-level like `turnStartedAt`: a POST outlives the panel that sent it,
+ * so a stop clicked from a remounted panel before the acknowledgement must
+ * reach the continuation that acks. One owner: armed while a send is in
+ * flight, consumed exactly once at ack.
+ */
+let sendInFlight = false
+let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
+
+function consumeStopPendingAck() {
+  const pending = stopPendingAck
+  stopPendingAck = null
+  return pending
+}
+
 function parseAdmissionError(error: unknown) {
   if (!(error instanceof AgentApiError)) return undefined
   const parsed = zAgentAdmissionError.safeParse(error.body)
@@ -635,6 +650,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     promptEditState.value = { phase: 'idle' }
     sending.value = true
+    sendInFlight = true
     stopPendingAck = null
     try {
       return await performSend(
@@ -646,16 +662,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
     } finally {
       sending.value = false
+      sendInFlight = false
     }
-  }
-
-  /** A stop requested before the turn's POST acks, consumed once at ack. */
-  let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
-
-  function consumeStopPendingAck() {
-    const pending = stopPendingAck
-    stopPendingAck = null
-    return pending
   }
 
   function captureStopMetadata(
@@ -704,7 +712,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
       // The POST has not acked yet; remember the intent and cancel on ack.
-      if (sending.value) stopPendingAck = { method }
+      // sendInFlight, not this instance's sending: the panel that posted may
+      // have been remounted, and the stop arrives through the new instance.
+      if (sendInFlight) stopPendingAck = { method }
       return
     }
     if (isStoppingTurn(turnId)) return

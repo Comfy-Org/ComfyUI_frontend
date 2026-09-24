@@ -1,10 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
-import type {
-  AgentInputMethod,
-  AgentStopMethod
-} from '@/platform/telemetry/types'
+import type { AgentInputMethod } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
@@ -82,8 +79,6 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   const submission = shallowRef<{
     id: number
     phase: 'pending' | 'failed'
-    /** A stop requested while pending, with the method that raised it. */
-    stop: { method: AgentStopMethod | null } | null
     revision: number
     origin: AgentInputMethod
     snapshot: SubmittedDraft
@@ -360,19 +355,11 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     submission.value = {
       id,
       phase: 'pending',
-      stop: null,
       revision,
       origin,
       snapshot
     }
     return id
-  }
-
-  function requestSubmissionStop(method: AgentStopMethod): boolean {
-    const pending = submission.value
-    if (pending?.phase !== 'pending') return false
-    submission.value = { ...pending, stop: { method } }
-    return true
   }
 
   function settleSubmission(id: number, sent: boolean): void {
@@ -428,7 +415,6 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     removeAttachment,
     releaseUnusedAssets,
     startSubmission,
-    requestSubmissionStop,
     settleSubmission,
     takeFailedSubmission,
     invalidateSubmission
