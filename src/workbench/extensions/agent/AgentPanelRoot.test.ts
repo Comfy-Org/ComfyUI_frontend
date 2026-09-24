@@ -950,9 +950,9 @@ describe('AgentPanelRoot paywall telemetry', () => {
   beforeEach(() => {
     ws.clear()
     openAccountPrecondition.mockClear()
-    telemetry.trackAgentPaywallShown.mockClear()
-    telemetry.trackAgentPaywallCtaClicked.mockClear()
-    telemetry.trackAddApiCreditButtonClicked.mockClear()
+    vi.mocked(useTelemetry())!.trackAgentPaywallShown.mockClear()
+    vi.mocked(useTelemetry())!.trackAgentPaywallCtaClicked.mockClear()
+    vi.mocked(useTelemetry())!.trackAddApiCreditButtonClicked.mockClear()
 
     canTopUp = ref(true)
     canSubscribeSelfServe = ref(true)
@@ -1030,7 +1030,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
       showPaywall()
 
       await waitFor(() =>
-        expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledWith({
+        expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledWith({
           reason
         })
       )
@@ -1041,14 +1041,14 @@ describe('AgentPanelRoot paywall telemetry', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     await screen.findByRole('textbox')
 
-    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+    expect(useTelemetry()!.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
   it('does not report the same paywall again after the panel is closed and reopened', async () => {
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     showPaywall()
     await waitFor(() =>
-      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
     )
 
     panel.unmount()
@@ -1056,14 +1056,14 @@ describe('AgentPanelRoot paywall telemetry', () => {
     await screen.findByRole('textbox')
     await nextTick()
 
-    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
   })
 
   it('reports a paywall raised after the panel is closed and reopened', async () => {
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     showPaywall('msg-paywall-1')
     await waitFor(() =>
-      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
     )
 
     panel.unmount()
@@ -1072,7 +1072,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
     showPaywall('msg-paywall-2')
 
     await waitFor(() =>
-      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
+      expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
     )
   })
 
@@ -1080,7 +1080,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     showPaywall()
     await waitFor(() =>
-      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
     )
 
     tier.value = 'PRO'
@@ -1091,20 +1091,20 @@ describe('AgentPanelRoot paywall telemetry', () => {
     await nextTick()
     await nextTick()
 
-    expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+    expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
   })
 
   it('reports a second paywall later in the conversation', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     showPaywall('msg-paywall-1')
     await waitFor(() =>
-      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(1)
     )
 
     showPaywall('msg-paywall-2')
 
     await waitFor(() =>
-      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
+      expect(useTelemetry()!.trackAgentPaywallShown).toHaveBeenCalledTimes(2)
     )
   })
 
@@ -1117,13 +1117,15 @@ describe('AgentPanelRoot paywall telemetry', () => {
     showPaywall()
     await nextTick()
     await nextTick()
-    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+    expect(useTelemetry()!.trackAgentPaywallShown).not.toHaveBeenCalled()
 
     hasResolvedCapabilities.value = true
     snapshotAuthoritative.value = true
 
     await waitFor(() =>
-      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledExactlyOnceWith({
+      expect(
+        useTelemetry()!.trackAgentPaywallShown
+      ).toHaveBeenCalledExactlyOnceWith({
         reason: 'subscription_inactive'
       })
     )
@@ -1139,7 +1141,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
     showPaywall()
     await nextTick()
     await nextTick()
-    expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
+    expect(useTelemetry()!.trackAgentPaywallShown).not.toHaveBeenCalled()
 
     canTopUp.value = false
     canSubscribeSelfServe.value = true
@@ -1147,7 +1149,9 @@ describe('AgentPanelRoot paywall telemetry', () => {
     snapshotAuthoritative.value = true
 
     await waitFor(() =>
-      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledExactlyOnceWith({
+      expect(
+        useTelemetry()!.trackAgentPaywallShown
+      ).toHaveBeenCalledExactlyOnceWith({
         reason: 'subscription_inactive'
       })
     )
@@ -1163,7 +1167,9 @@ describe('AgentPanelRoot paywall telemetry', () => {
     showPaywall()
 
     await waitFor(() =>
-      expect(telemetry.trackAgentPaywallShown).toHaveBeenCalledExactlyOnceWith({
+      expect(
+        useTelemetry()!.trackAgentPaywallShown
+      ).toHaveBeenCalledExactlyOnceWith({
         reason: 'unknown'
       })
     )
@@ -1179,7 +1185,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
     await userEvent.click(await screen.findByRole('button', { name: button }))
 
     expect(
-      telemetry.trackAgentPaywallCtaClicked
+      useTelemetry()!.trackAgentPaywallCtaClicked
     ).toHaveBeenCalledExactlyOnceWith({ cta })
   })
 
@@ -1193,7 +1199,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
     )
 
     expect(
-      telemetry.trackAgentPaywallCtaClicked
+      useTelemetry()!.trackAgentPaywallCtaClicked
     ).toHaveBeenCalledExactlyOnceWith({ cta: 'subscribe' })
   })
 
@@ -1206,7 +1212,7 @@ describe('AgentPanelRoot paywall telemetry', () => {
     )
 
     expect(
-      telemetry.trackAddApiCreditButtonClicked
+      useTelemetry()!.trackAddApiCreditButtonClicked
     ).toHaveBeenCalledExactlyOnceWith({ source: 'agent_paywall' })
   })
 
@@ -1219,7 +1225,9 @@ describe('AgentPanelRoot paywall telemetry', () => {
       await screen.findByRole('button', { name: 'Subscribe' })
     )
 
-    expect(telemetry.trackAddApiCreditButtonClicked).not.toHaveBeenCalled()
+    expect(
+      useTelemetry()!.trackAddApiCreditButtonClicked
+    ).not.toHaveBeenCalled()
   })
 })
 
