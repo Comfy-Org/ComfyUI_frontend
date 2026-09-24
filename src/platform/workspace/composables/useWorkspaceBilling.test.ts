@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 import type {
@@ -946,16 +947,33 @@ describe('useWorkspaceBilling', () => {
       }
     )
 
+    // A pop-up blocker refuses this page, not one destination, so a refused
+    // tab ends the attempt: no further portal session is minted for a
+    // window that would be refused too, and the customer is told why.
     it.for([
-      ['the legacy client', false, 'https://billing.example/portal'],
-      ['the SDK rail', true, 'https://billing.example/sdk-portal']
-    ] as const)(
-      'attempts %s when the hosted tab is blocked',
-      async ([, railEnabled, fallbackUrl]) => {
-        const openSpy = vi.fn(() => null)
-        vi.stubGlobal('open', openSpy)
-        vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')
-        localStorage.setItem('ff:hosted_billing_destination', '"billing_web"')
+      {
+        name: 'the hosted tab on the legacy client',
+        hosted: true,
+        railEnabled: false
+      },
+      {
+        name: 'the hosted tab on the SDK rail',
+        hosted: true,
+        railEnabled: true
+      },
+      { name: 'the SDK rail portal', hosted: false, railEnabled: true },
+      { name: 'the legacy portal', hosted: false, railEnabled: false }
+    ])(
+      'tells the customer when $name is blocked and mints no second portal session',
+      async ({ hosted, railEnabled }) => {
+        vi.stubGlobal(
+          'open',
+          vi.fn(() => null)
+        )
+        if (hosted) {
+          vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')
+          localStorage.setItem('ff:hosted_billing_destination', '"billing_web"')
+        }
         mockRail.enabled = railEnabled
         mockRail.openPaymentPortal.mockResolvedValue({
           status: 'ok',
@@ -965,37 +983,21 @@ describe('useWorkspaceBilling', () => {
           url: 'https://billing.example/portal'
         })
 
-        const billing = setupBilling()
-        await billing.manageSubscription()
+        await setupBilling().manageSubscription()
 
-        expect(openSpy).toHaveBeenCalledWith('', '_blank')
-        expect(openSpy).toHaveBeenCalledWith(fallbackUrl, '_blank')
+        const portalSessions =
+          mockRail.openPaymentPortal.mock.calls.length +
+          mockWorkspaceApi.getPaymentPortalUrl.mock.calls.length
+        expect(portalSessions).toBe(hosted ? 0 : 1)
+        expect(useToastStore().messagesToAdd).toEqual([
+          expect.objectContaining({
+            severity: 'warn',
+            detail:
+              "Couldn't open the billing page. Allow pop-ups for this site and try again."
+          })
+        ])
       }
     )
-
-    it('reaches the legacy portal when the hosted tab and the rail are both blocked', async () => {
-      const openSpy = vi.fn(() => null)
-      vi.stubGlobal('open', openSpy)
-      vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')
-      localStorage.setItem('ff:hosted_billing_destination', '"billing_web"')
-      mockRail.enabled = true
-      mockRail.openPaymentPortal.mockResolvedValue({
-        status: 'ok',
-        value: 'https://billing.example/sdk-portal'
-      })
-      mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
-        url: 'https://billing.example/portal'
-      })
-
-      const billing = setupBilling()
-      await billing.manageSubscription()
-
-      expect(mockWorkspaceApi.getPaymentPortalUrl).toHaveBeenCalledTimes(1)
-      expect(openSpy).toHaveBeenLastCalledWith(
-        'https://billing.example/portal',
-        '_blank'
-      )
-    })
 
     it('clears a failure from the previous attempt when the hosted route opens', async () => {
       vi.stubGlobal(

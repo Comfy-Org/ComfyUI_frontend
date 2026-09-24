@@ -303,7 +303,7 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     expect(portalRequests).toHaveLength(0)
   })
 
-  test('falls back to the legacy portal when the hosted payment-methods tab is blocked', async ({
+  test('tells the customer and mints no portal session when the hosted payment-methods tab is blocked', async ({
     page
   }) => {
     test.setTimeout(60_000)
@@ -316,7 +316,29 @@ test.describe('Hosted billing destination (FE-2218)', { tag: '@cloud' }, () => {
     const content = await openPlanAndCredits(page)
     await content.getByRole('button', { name: 'Billing & invoices' }).click()
 
-    await expect.poll(() => openedUrl(page)).toBe(PROVIDER_PORTAL_URL)
+    await expect(
+      page.getByText(
+        "Couldn't open the billing page. Allow pop-ups for this site and try again."
+      )
+    ).toBeVisible()
+    expect(portalRequests).toHaveLength(0)
+  })
+
+  test('tells the customer when the provider portal is blocked', async ({
+    page
+  }) => {
+    test.setTimeout(60_000)
+    const { portalRequests } = await mockCloudBoot(page)
+    await bootApp(page, { blockPopups: true })
+
+    const content = await openPlanAndCredits(page)
+    await content.getByRole('button', { name: 'Billing & invoices' }).click()
+
+    await expect(
+      page.getByText(
+        "Couldn't open the billing page. Allow pop-ups for this site and try again."
+      )
+    ).toBeVisible()
     expect(portalRequests).toHaveLength(1)
   })
 
