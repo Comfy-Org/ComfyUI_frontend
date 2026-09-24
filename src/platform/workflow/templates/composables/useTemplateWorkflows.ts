@@ -226,6 +226,11 @@ export function useTemplateWorkflows() {
       if (loadedWorkflow === false) return 'graph-failed'
 
       updateTemplateEducation(template?.isPartnerNode, loadedWorkflow)
+      // Counted here rather than at the call site: only this path means the
+      // template reached the canvas. A failed load never showed the user the
+      // compacted-vs-exploded layout the survey asks about, so it must not
+      // push them toward the eligibility threshold.
+      trackFeatureUsed()
       return 'loaded'
     } catch (error) {
       reportTemplateError(error)
@@ -265,12 +270,7 @@ export function useTemplateWorkflows() {
       })
 
       dialogStore.closeDialog()
-      const result = await loadTemplateGraph(data, workflowName)
-      // Count only templates that reached the canvas. A load that failed never
-      // showed the user the compacted-vs-exploded layout the survey asks about,
-      // so it must not push them toward the eligibility threshold.
-      if (result === 'loaded') trackFeatureUsed()
-      return result
+      return await loadTemplateGraph(data, workflowName)
     } catch (error) {
       if (!controller.signal.aborted) reportTemplateError(error)
       return 'not-started'
