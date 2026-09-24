@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { SlidersHorizontal, X } from '@lucide/vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, ref } from 'vue'
 
 import type { WorkflowReach } from '../../lib/hub/workflow-reach'
-import { previewScene, previewingStates } from '../../lib/hub/run-preview'
+import { previewScene } from '../../lib/hub/run-preview'
 import { RUN_SCENES } from '../../lib/hub/run-scenes'
 
-// A reference tool, not part of the page: it sits in the corner, out of the
-// way of the thing being looked at, and opens only where `?states` asked for
-// it. Which kind a workflow is decides how its page is built, so that handle
+// A reference tool, not part of the page: it sits closed in the corner, out
+// of the way of the thing being looked at, and opens when it is asked to.
+// Which kind a workflow is decides how its page is built, so that handle
 // walks to a page that genuinely is that kind; the state of a run is the
 // panel's own, so that one is handed straight to it.
 const { examples, hasPanel = false } = defineProps<{
@@ -24,12 +24,7 @@ const REACH_NAMES: Record<WorkflowReach, string> = {
   endpoint: 'Needs a server of its own'
 }
 
-const shown = ref(false)
 const open = ref(false)
-
-onMounted(() => {
-  shown.value = previewingStates()
-})
 
 const kinds = computed(() =>
   (Object.keys(REACH_NAMES) as WorkflowReach[])
@@ -37,7 +32,7 @@ const kinds = computed(() =>
     .map((reach) => ({
       reach,
       name: REACH_NAMES[reach],
-      href: `/hub/workflow/${examples[reach]}/?states`
+      href: `/hub/workflow/${examples[reach]}/`
     }))
 )
 
@@ -58,7 +53,6 @@ const field =
 
 <template>
   <div
-    v-if="shown"
     class="fixed right-4 bottom-4 z-50 flex flex-col items-end gap-2"
     data-testid="workflow-run-states"
   >

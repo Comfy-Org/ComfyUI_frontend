@@ -8,8 +8,3 @@ import type { RunScene } from './run-scenes'
  * on the page, so the state they share lives here rather than in either.
  */
 export const previewScene = shallowRef<RunScene>()
-
-/** `?states` is the whole of what turns the tool on. */
-export function previewingStates(): boolean {
-  return new URLSearchParams(window.location.search).has('states')
-}

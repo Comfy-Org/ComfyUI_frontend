@@ -9,13 +9,12 @@ import WorkflowRunStates from './WorkflowRunStates.vue'
 
 const EXAMPLES = { cloud: 'a-cloud-one', endpoint: 'an-endpoint-one' }
 
-const openAt = async (search: string) => {
-  window.history.replaceState({}, '', `/hub/workflow/x/${search}`)
+const open = async () => {
   render(WorkflowRunStates, { props: { examples: EXAMPLES, hasPanel: true } })
   await nextTick()
-  const toggle = screen.queryByTestId('workflow-run-states-toggle')
-  if (toggle) await userEvent.setup().click(toggle)
-  return toggle
+  await userEvent
+    .setup()
+    .click(screen.getByTestId('workflow-run-states-toggle'))
 }
 
 afterEach(() => {
@@ -23,31 +22,34 @@ afterEach(() => {
 })
 
 describe('WorkflowRunStates', () => {
-  // A visitor must never meet it. Asking for it in the address is the whole
-  // of what turns it on.
-  it('stays out of the way until the address asks for it', async () => {
-    expect(await openAt('')).toBeNull()
+  // It is a tool, not a panel: it waits closed in the corner until asked.
+  it('shows nothing but its own handle until it is opened', async () => {
+    render(WorkflowRunStates, { props: { examples: EXAMPLES, hasPanel: true } })
+    await nextTick()
+
+    expect(screen.getByTestId('workflow-run-states-toggle')).toBeTruthy()
+    expect(screen.queryByTestId('workflow-run-states-scene')).toBeNull()
   })
 
   // Which kind a workflow is decides how its page is built, so the tool walks
   // to a page that is that kind rather than pretending one is another.
   it('offers only the kinds the catalogue actually holds', async () => {
-    await openAt('?states')
+    await open()
     const kinds = within(screen.getByTestId('workflow-run-states-kind'))
 
     expect(
       kinds.getByRole('option', { name: 'Runs on Cloud' }).getAttribute('value')
-    ).toBe('/hub/workflow/a-cloud-one/?states')
+    ).toBe('/hub/workflow/a-cloud-one/')
     expect(
       kinds
         .getByRole('option', { name: 'Needs a server of its own' })
         .getAttribute('value')
-    ).toBe('/hub/workflow/an-endpoint-one/?states')
+    ).toBe('/hub/workflow/an-endpoint-one/')
     expect(kinds.queryByRole('option', { name: /Runs here/ })).toBeNull()
   })
 
   it('hands a chosen state to the panel, and takes it back', async () => {
-    await openAt('?states')
+    await open()
     const user = userEvent.setup()
     const states = screen.getByTestId('workflow-run-states-scene')
 

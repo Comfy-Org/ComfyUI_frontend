@@ -2,6 +2,8 @@
 import { ChevronLeft } from '@lucide/vue'
 import { computed, onMounted, ref, watch } from 'vue'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { Locale } from '../../i18n/translations'
 import type { HubKey } from '../../i18n/hub'
 import { tHub } from '../../i18n/hub'
@@ -63,6 +65,10 @@ const usesModel = ref('')
 // was built from, so the listing holds exactly what the row was showing.
 const outcome = ref<WorkshopOutcome | undefined>()
 const shown = ref(PAGE)
+
+// Whether the search field has taken the row on a phone, where there is no
+// space for it beside the tabs.
+const searching = ref(false)
 
 const ORDERS: readonly OrderOption[] = [
   { value: 'popular', label: 'workshop.v2.sort.popular' },
@@ -338,7 +344,11 @@ const heading = computed(() => {
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
       data-testid="catalogue-header-controls"
     >
-      <CatalogueTypeFilter v-model="type" :locale />
+      <CatalogueTypeFilter
+        v-model="type"
+        :locale
+        :class="cn(searching && 'max-sm:hidden')"
+      />
 
       <!-- The type says what is in the list; the search and the order narrow
         and rank what it chose, so they group together away from it. -->
@@ -347,6 +357,7 @@ const heading = computed(() => {
       >
         <CatalogueSearch
           v-model="query"
+          v-model:open="searching"
           :placeholder="searchPlaceholder"
           :locale
         />
@@ -358,7 +369,12 @@ const heading = computed(() => {
           :locale
         />
 
-        <CatalogueSort v-model:order="order" :orders="ORDERS" :locale />
+        <CatalogueSort
+          v-model:order="order"
+          :orders="ORDERS"
+          :locale
+          :class="cn(searching && 'max-sm:hidden')"
+        />
       </div>
     </div>
 
