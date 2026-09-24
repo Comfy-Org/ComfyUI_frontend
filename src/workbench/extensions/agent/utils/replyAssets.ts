@@ -5,7 +5,14 @@ import type { MediaType } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 import { htmlVideoTypeForFilename } from '@/utils/resultItem'
 
-type ReplyAssetKind = Extract<MediaType, 'image' | 'video' | 'audio' | '3D'>
+const ASSET_KINDS = [
+  'image',
+  'video',
+  'audio',
+  '3D'
+] as const satisfies readonly MediaType[]
+
+type ReplyAssetKind = (typeof ASSET_KINDS)[number]
 
 export interface ReplyAsset {
   url: string
@@ -14,7 +21,9 @@ export interface ReplyAsset {
   label?: string
 }
 
-const ASSET_KINDS = new Set<MediaType>(['image', 'video', 'audio', '3D'])
+function isReplyAssetKind(kind: MediaType): kind is ReplyAssetKind {
+  return ASSET_KINDS.some((assetKind) => assetKind === kind)
+}
 
 export function classifyAssetUrl(
   href: string,
@@ -34,8 +43,8 @@ export function classifyAssetUrl(
   }
   if (!filename) return null
   const kind = getMediaTypeFromFilename(filename)
-  if (!ASSET_KINDS.has(kind)) return null
-  return { url: href, filename, kind: kind as ReplyAssetKind }
+  if (!isReplyAssetKind(kind)) return null
+  return { url: href, filename, kind }
 }
 
 type InlineToken = { type: string; href?: string; text?: string }

@@ -140,7 +140,17 @@ describe('replyAssetLightboxItem', () => {
     })
   })
 
-  it('renders 3D assets as unsupported rather than guessing a player', () => {
+  it('maps audio assets to their url alone', () => {
+    expect(
+      replyAssetLightboxItem({
+        url: 'https://x/y?filename=a.flac',
+        filename: 'a.flac',
+        kind: 'audio'
+      })
+    ).toEqual({ kind: 'audio', url: 'https://x/y?filename=a.flac' })
+  })
+
+  it('maps 3D assets to an unsupported item', () => {
     expect(
       replyAssetLightboxItem({
         url: 'https://x/y?filename=a.glb',
