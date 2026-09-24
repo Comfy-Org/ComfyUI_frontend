@@ -16,11 +16,12 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 const INDEX_KEY = 'Comfy.Workflow.AgentDraftArchiveIndex.v1:personal'
 const PAYLOAD_PREFIX = 'Comfy.Workflow.AgentDraftArchive.v1:personal:'
 const DAY_MS = 24 * 60 * 60 * 1000
-const MAX_ARCHIVED_DRAFTS = 16
+const MAX_ARCHIVED_DRAFTS = 8
+const MAX_PAYLOAD_BYTES = 500_000
 
 function storedIndex(): Record<
   string,
-  { filename: string; archivedAt: number }
+  { filename: string; archivedAt: number; bytes: number }
 > {
   return JSON.parse(localStorage.getItem(INDEX_KEY) ?? '{}')
 }
@@ -98,7 +99,8 @@ describe('agentWorkflowDraftArchiveStore', () => {
       JSON.stringify({
         'wf-old': {
           filename: 'wf-old.json',
-          archivedAt: Date.now() - ageDays * DAY_MS
+          archivedAt: Date.now() - ageDays * DAY_MS,
+          bytes: 18
         }
       })
     )
@@ -139,18 +141,70 @@ describe('agentWorkflowDraftArchiveStore', () => {
     expect(archive.read('wf-newer')).toMatchObject(draft('wf-newer'))
   })
 
-  it('reports and gives up rather than indexing a graph it could not store', () => {
+  // Freeing the whole archive to fit one graph would destroy every other
+  // thread's recovery data, and still fail when the pressure is elsewhere.
+  it('gives up without emptying the archive for a graph it cannot store', () => {
     const archive = useAgentWorkflowDraftArchiveStore()
-    archive.archive('wf-old', draft('wf-old'))
+    archiveAt(archive, 'wf-oldest', 1)
+    archiveAt(archive, 'wf-newer', 1)
     rejectWrites((key) => key.startsWith(`${PAYLOAD_PREFIX}wf-new`))
 
     expect(archive.archive('wf-new', draft('wf-new'))).toBe(false)
+
     expect(archive.read('wf-new')).toBeNull()
-    expect(storedIndex()).toEqual({})
+    expect(archive.read('wf-newer')).toMatchObject(draft('wf-newer'))
     expect(vi.mocked(reportError)).toHaveBeenCalledWith(
       expect.any(Error),
-      expect.objectContaining({ errorType: 'storage_quota_exhausted' })
+      expect.objectContaining({
+        errorType: 'storage_quota_exhausted',
+        context: expect.objectContaining({ reason: 'quota_exhausted' })
+      })
     )
+  })
+
+  // The archive shares ~5MB with workflowDraftStoreV2, whose own quota path
+  // ends in markStorageUnavailable() and stops persisting unsaved work.
+  it('refuses an oversized graph outright instead of evicting for it', () => {
+    const archive = useAgentWorkflowDraftArchiveStore()
+    archive.archive('wf-keep', draft('wf-keep'))
+
+    const oversized = {
+      filename: 'huge.json',
+      content: 'x'.repeat(MAX_PAYLOAD_BYTES + 1)
+    }
+    expect(archive.archive('wf-huge', oversized)).toBe(false)
+
+    expect(archive.read('wf-huge')).toBeNull()
+    expect(archive.read('wf-keep')).toMatchObject(draft('wf-keep'))
+    expect(vi.mocked(reportError)).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        context: expect.objectContaining({ reason: 'payload_too_large' })
+      })
+    )
+  })
+
+  it('evicts older graphs to stay under the total byte budget', () => {
+    const archive = useAgentWorkflowDraftArchiveStore()
+    const big = (id: string) => ({
+      filename: `${id}.json`,
+      content: `${id}${'y'.repeat(MAX_PAYLOAD_BYTES - id.length)}`
+    })
+    ;['wf-a', 'wf-b', 'wf-c'].forEach((id) => {
+      vi.setSystemTime(Date.now() + 60_000)
+      archive.archive(id, big(id))
+    })
+
+    vi.setSystemTime(Date.now() + 60_000)
+    expect(archive.archive('wf-d', big('wf-d'))).toBe(true)
+
+    expect(archive.read('wf-a')).toBeNull()
+    expect(archive.read('wf-d')).not.toBeNull()
+    const totalBytes = Object.values(storedIndex()).reduce(
+      (sum, entry) => sum + entry.bytes,
+      0
+    )
+    expect(totalBytes).toBeLessThanOrEqual(1_500_000)
   })
 
   // A non-quota rejection is not capacity pressure, so evicting against it

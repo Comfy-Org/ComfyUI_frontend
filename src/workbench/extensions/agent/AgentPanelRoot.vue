@@ -886,8 +886,9 @@ async function onNavigateToReferenceWorkflow(
   }
   try {
     let target = openWorkflowFor(workflowId)
+    let indexRefreshed = true
     if (target === null) {
-      await Promise.all([
+      ;[indexRefreshed] = await Promise.all([
         refreshCloudWorkflowIds(),
         workflowStore.syncWorkflows()
       ])
@@ -896,17 +897,22 @@ async function onNavigateToReferenceWorkflow(
       if (!isCurrent()) return
       target = storedWorkflowFor(workflowId)
     }
-    if (target === null) {
+    if (target === null && indexRefreshed) {
       const recovery = await recoverWorkflowFor(workflowId)
       recovered = recovery !== null
       minted = recovery?.minted === true ? recovery.workflow : null
       target = recovery?.workflow ?? null
+      if (!isCurrent()) {
+        await abandonUnopenedRecovery()
+        return
+      }
     }
     if (target === null || !(await workflowService.openWorkflow(target))) {
       await abandonUnopenedRecovery()
       if (isCurrent()) warnWorkflowUnavailable()
       return
     }
+    minted = null
     bindingStore.bind(workflowId, target.path)
     if (recovered) forgetRecoveredWorkflow(workflowId)
   } catch {

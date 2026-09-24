@@ -9,22 +9,31 @@ import {
 } from '@/platform/workflow/persistence/base/storageKeys'
 
 /**
- * Both bounds exist to cap the origin budget, not because a thread stops
- * wanting its graph — these entries compete with `workflowDraftStoreV2`'s 32
- * live drafts for the same ~5MB. Past either bound recovery simply misses and
- * the chat reports the workflow unavailable, exactly as it did before this
- * archive existed. The TTL matches the agent binding TTL for consistency
- * within the subsystem. Recency is the close time rather than the read time,
- * so what survives is what the user had open most recently.
+ * These bounds exist to cap the origin budget, not because a thread stops
+ * wanting its graph. The archive is a second copy of workflow data sharing
+ * ~5MB with `workflowDraftStoreV2`'s live drafts, and unlike those it holds
+ * graphs for tabs that are already closed, so nothing else would ever reclaim
+ * them. Capping total bytes is what keeps the archive from starving the draft
+ * store, whose own quota path ends in `markStorageUnavailable()` and stops
+ * persisting unsaved work for the rest of the session.
+ *
+ * Past any bound recovery simply misses and the chat reports the workflow
+ * unavailable, exactly as it did before this archive existed. The TTL matches
+ * the agent binding TTL for consistency within the subsystem. Recency is the
+ * close time rather than the read time, so what survives is what the user had
+ * open most recently.
  */
 const ARCHIVE_TTL_MS = 30 * 24 * 60 * 60 * 1000
-const MAX_ARCHIVED_DRAFTS = 16
+const MAX_ARCHIVED_DRAFTS = 8
+const MAX_ARCHIVE_BYTES = 1_500_000
+const MAX_PAYLOAD_BYTES = 500_000
 
 type WriteOutcome = 'stored' | 'over-quota' | 'refused'
 
 interface ArchiveEntry {
   filename: string
   archivedAt: number
+  bytes: number
 }
 
 type ArchiveIndex = Record<string, ArchiveEntry>
@@ -35,8 +44,12 @@ export interface ArchivedWorkflowDraft extends ArchiveEntry {
 
 function isArchiveEntry(value: unknown): value is ArchiveEntry {
   if (typeof value !== 'object' || value === null) return false
-  const { filename, archivedAt } = value as Record<string, unknown>
-  return typeof filename === 'string' && typeof archivedAt === 'number'
+  const { filename, archivedAt, bytes } = value as Record<string, unknown>
+  return (
+    typeof filename === 'string' &&
+    typeof archivedAt === 'number' &&
+    typeof bytes === 'number'
+  )
 }
 
 function parseIndex(raw: string | null): ArchiveIndex {
@@ -57,10 +70,43 @@ function isLive(entry: ArchiveEntry, now: number): boolean {
   return entry.archivedAt + ARCHIVE_TTL_MS >= now
 }
 
-function oldestFirst(index: ArchiveIndex): string[] {
+function oldestFirst(index: ArchiveIndex, except?: string): string[] {
   return Object.entries(index)
     .sort(([, a], [, b]) => a.archivedAt - b.archivedAt)
-    .map(([workflowId]) => workflowId)
+    .flatMap(([workflowId]) => (workflowId === except ? [] : [workflowId]))
+}
+
+function byteLength(content: string): number {
+  return new TextEncoder().encode(content).length
+}
+
+/**
+ * The entries that must go before `incoming` fits under both the count and the
+ * byte budget, oldest first. The workflow being archived is never a candidate:
+ * its payload key is about to be overwritten, so dropping it frees nothing.
+ */
+function overBudget(
+  index: ArchiveIndex,
+  workflowId: string,
+  incoming: number
+): string[] {
+  const entries = Object.entries(index)
+  const replaced = Object.hasOwn(index, workflowId)
+    ? index[workflowId].bytes
+    : 0
+  let count = entries.length + (replaced > 0 ? 0 : 1)
+  let bytes =
+    entries.reduce((total, [, entry]) => total + entry.bytes, 0) -
+    replaced +
+    incoming
+  const evicted: string[] = []
+  for (const candidate of oldestFirst(index, workflowId)) {
+    if (count <= MAX_ARCHIVED_DRAFTS && bytes <= MAX_ARCHIVE_BYTES) break
+    evicted.push(candidate)
+    count -= 1
+    bytes -= index[candidate].bytes
+  }
+  return evicted
 }
 
 function isQuotaExceeded(error: unknown): boolean {
@@ -158,18 +204,17 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
       return remaining
     }
 
-    function reportQuotaExhausted(content: string): void {
-      reportError(
-        new Error('localStorage quota exhausted archiving agent draft'),
-        {
-          errorType: 'storage_quota_exhausted',
-          level: 'warning',
-          tags: { store: 'agentWorkflowDraftArchive' },
-          context: {
-            contentBytes: new TextEncoder().encode(content).length
-          }
-        }
-      )
+    function reportArchiveRefused(
+      reason: 'quota_exhausted' | 'payload_too_large',
+      workflowId: string,
+      bytes: number
+    ): void {
+      reportError(new Error(`agent draft archive refused: ${reason}`), {
+        errorType: 'storage_quota_exhausted',
+        level: 'warning',
+        tags: { store: 'agentWorkflowDraftArchive' },
+        context: { reason, workflowId, contentBytes: bytes }
+      })
     }
 
     /**
@@ -201,21 +246,29 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
 
     /**
      * Archives `content` under `workflowId`, dropping expired entries and then
-     * the oldest graphs until the write fits. Returns `false` once eviction is
-     * exhausted or storage refuses the write outright, leaving a smaller
-     * archive rather than an index promising payloads it no longer has.
+     * the oldest graphs until the incoming one fits the count and byte budgets.
+     * Returns `false` when the graph is too large to archive at all or storage
+     * refuses the write, leaving a smaller archive rather than an index
+     * promising payloads it no longer has.
      *
-     * Only a quota rejection evicts: any other refusal would clear the archive
-     * without freeing what is actually blocking. The previous copy of this
-     * workflow is never removed up front either — the write overwrites that
-     * key anyway, so removing it early would only turn a failed write into a
-     * lost snapshot.
+     * A browser quota rejection means the whole origin is full, not that this
+     * archive is over budget, so it frees at most about what the incoming
+     * graph needs. Evicting the rest would destroy every other thread's
+     * recovery data to store one graph — and still fail if the pressure is
+     * coming from elsewhere. The previous copy of this workflow is never
+     * removed up front either: the write overwrites that key anyway, so
+     * removing it early would only turn a failed write into a lost snapshot.
      */
     function archive(
       workflowId: string,
       draft: { filename: string; content: string }
     ): boolean {
       if (!persistenceEnabled()) return false
+      const bytes = byteLength(draft.content)
+      if (bytes > MAX_PAYLOAD_BYTES) {
+        reportArchiveRefused('payload_too_large', workflowId, bytes)
+        return false
+      }
       const workspaceId = getWorkspaceId()
       const now = Date.now()
       const stored = readIndex(workspaceId)
@@ -226,30 +279,20 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
           id !== workflowId && !isLive(entry, now) ? [id] : []
         )
       )
-      const capacity =
-        MAX_ARCHIVED_DRAFTS - (Object.hasOwn(index, workflowId) ? 0 : 1)
-      const replaceable = () =>
-        oldestFirst(index).filter((id) => id !== workflowId)
-      index = evict(
-        workspaceId,
-        index,
-        replaceable().slice(
-          0,
-          Math.max(0, Object.keys(index).length - capacity)
-        )
-      )
+      index = evict(workspaceId, index, overBudget(index, workflowId, bytes))
 
+      let freed = 0
       let outcome = writePayload(workspaceId, workflowId, draft.content)
-      while (outcome === 'over-quota') {
-        const oldest = replaceable().at(0)
-        if (oldest === undefined) {
-          reportQuotaExhausted(draft.content)
-          break
-        }
+      while (outcome === 'over-quota' && freed < bytes) {
+        const oldest = oldestFirst(index, workflowId).at(0)
+        if (oldest === undefined) break
+        freed += index[oldest].bytes
         index = evict(workspaceId, index, [oldest])
         outcome = writePayload(workspaceId, workflowId, draft.content)
       }
       if (outcome !== 'stored') {
+        if (outcome === 'over-quota')
+          reportArchiveRefused('quota_exhausted', workflowId, bytes)
         writeIndex(workspaceId, index)
         sweepOrphanPayloads(workspaceId, index)
         return false
@@ -257,7 +300,7 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
 
       const updated: ArchiveIndex = {
         ...index,
-        [workflowId]: { filename: draft.filename, archivedAt: now }
+        [workflowId]: { filename: draft.filename, archivedAt: now, bytes }
       }
       if (!writeIndex(workspaceId, updated)) {
         evict(workspaceId, index, [workflowId])

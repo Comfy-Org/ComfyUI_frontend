@@ -202,7 +202,7 @@ export function useAgentWorkflowSelection({
       isSessionCurrent() &&
       canRestoreWorkflow.value
     if (workflowId === undefined) return
-    await refreshCloudWorkflowIds()
+    const indexRefreshed = await refreshCloudWorkflowIds()
     if (!isCurrent()) return
     let resolved = boundOrOpenWorkflowFor(workflowId)
     if (resolved === null) {
@@ -212,8 +212,13 @@ export function useAgentWorkflowSelection({
       if (!isCurrent()) return
       resolved = storedWorkflowFor(workflowId)
     }
+    // Recovery only ever holds graphs that were never saved, so "nothing
+    // resolved" has to be authoritative before it can mean "never saved".
+    // A failed index refresh leaves it unproven.
     const recovery =
-      resolved === null ? await recoverWorkflowFor(workflowId) : null
+      resolved === null && indexRefreshed
+        ? await recoverWorkflowFor(workflowId)
+        : null
     const target = resolved ?? recovery?.workflow ?? null
     let minted = recovery?.minted === true ? recovery.workflow : null
     // Only ever discards a tab this call created and the user has not seen.
@@ -243,6 +248,7 @@ export function useAgentWorkflowSelection({
         warnWorkflowUnavailable()
         return
       }
+      minted = null
       // The thread keeps its tab even when the user has moved on, so coming
       // back to it finds the graph rather than starting the hunt again.
       bindingStore.bind(workflowId, target.path)

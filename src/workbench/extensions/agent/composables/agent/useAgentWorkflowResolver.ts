@@ -185,20 +185,24 @@ export function useAgentWorkflowResolver({
   ): Promise<RecoveredWorkflow | null> {
     const archived = draftArchive.read(workflowId)
     if (archived === null) return null
-    let invalidReason = 'archived graph is not a workflow'
-    const graph = await validateComfyWorkflow(
-      parseArchivedGraph(archived.content),
-      (reason) => {
-        invalidReason = reason
-      }
-    )
+    const parsed = parseArchivedGraph(archived.content)
+    if (parsed === null) {
+      draftArchive.discard(workflowId)
+      return null
+    }
+    let invalidReason = 'archived graph failed workflow validation'
+    const graph = await validateComfyWorkflow(parsed, (reason) => {
+      invalidReason = reason
+    })
     if (graph === null) {
+      // Kept, not discarded: `Comfy.Validation.Workflows` is off by default
+      // and `loadGraphData` falls back to the unvalidated graph, so a schema
+      // miss here is not proof the user's only copy is worthless.
       reportError(new Error(invalidReason), {
         errorType: 'agent_archived_workflow_draft_invalid',
         level: 'warning',
         context: { workflowId, filename: archived.filename }
       })
-      draftArchive.discard(workflowId)
       return null
     }
     const existing = alreadyRecovered(graph)

@@ -452,18 +452,30 @@ describe('Agent unsaved workflow recovery', () => {
     expect(workflows.workflows).toEqual([])
   })
 
-  it.for(['not json', '{"nodes":[]}'])(
-    'discards an archived graph it cannot load back (%s)',
-    async (content) => {
-      const { resolver, draftArchive, workflows } = setup([])
-      draftArchive.archive('cloud-broken', {
-        filename: 'Agent draft.json',
-        content
-      })
+  it('discards an archived graph that is not even JSON', async () => {
+    const { resolver, draftArchive, workflows } = setup([])
+    draftArchive.archive('cloud-broken', {
+      filename: 'Agent draft.json',
+      content: 'not json'
+    })
 
-      expect(await resolver.recoverWorkflowFor('cloud-broken')).toBeNull()
-      expect(draftArchive.read('cloud-broken')).toBeNull()
-      expect(workflows.workflows).toEqual([])
-    }
-  )
+    expect(await resolver.recoverWorkflowFor('cloud-broken')).toBeNull()
+    expect(draftArchive.read('cloud-broken')).toBeNull()
+    expect(workflows.workflows).toEqual([])
+  })
+
+  // Workflow validation is off by default and `loadGraphData` falls back to
+  // the unvalidated graph, so a schema miss is not grounds for deleting the
+  // user's only remaining copy.
+  it('keeps an archived graph that only fails schema validation', async () => {
+    const { resolver, draftArchive, workflows } = setup([])
+    draftArchive.archive('cloud-unschema', {
+      filename: 'Agent draft.json',
+      content: '{"nodes":[]}'
+    })
+
+    expect(await resolver.recoverWorkflowFor('cloud-unschema')).toBeNull()
+    expect(draftArchive.read('cloud-unschema')).not.toBeNull()
+    expect(workflows.workflows).toEqual([])
+  })
 })
