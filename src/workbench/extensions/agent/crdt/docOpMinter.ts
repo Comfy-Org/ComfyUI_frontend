@@ -300,7 +300,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       operation: {
         op: 'delete_node',
         node_id: event.node.id,
-        removed_links: event.removedLinkIds
+        removed_links: [...event.removedLinkIds]
       }
     })
   }
@@ -350,7 +350,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     }
     schedule({
       kind: 'op',
-      operation: { op: 'clear', removed_nodes: event.nodeIds }
+      operation: { op: 'clear', removed_nodes: [...event.nodeIds] }
     })
   }
 

@@ -8,6 +8,7 @@
  * marks itself `load`, the CRDT applier marks its writes `agent-remote`, and
  * every other caller is `local` by default.
  */
+import { reportError } from '@/platform/telemetry/reportError'
 import type { LinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
 
@@ -23,11 +24,11 @@ export type GraphIntent =
       type: 'remove_node'
       graph: LGraph
       node: LGraphNode
-      removedLinkIds: LinkId[]
+      removedLinkIds: readonly LinkId[]
     }
   | { type: 'connect'; graph: LGraph; link: LLink }
   | { type: 'disconnect'; graph: LGraph; link: LLink }
-  | { type: 'clear'; graphId: string; nodeIds: NodeId[] }
+  | { type: 'clear'; graphId: string; nodeIds: readonly NodeId[] }
   | {
       type: 'set_widget'
       graphId: string
@@ -83,5 +84,14 @@ export function emitGraphIntent(intent: GraphIntent): void {
     return
   }
   const event: GraphIntentEvent = { ...intent, source: activeSource }
-  for (const listener of listeners) listener(event)
+  for (const listener of listeners) {
+    try {
+      listener(event)
+    } catch (error) {
+      reportError(error, {
+        errorType: 'graph_intent_listener_failed',
+        context: { intent: intent.type, source: activeSource }
+      })
+    }
+  }
 }
