@@ -6,6 +6,8 @@
     "components.d.ts",
     "coverage/*",
     "dist/*",
+    "packages/ingest-types/src/types.gen.ts",
+    "packages/ingest-types/src/zod.gen.ts",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
     "scripts/registry-census/detection-proof/**",
@@ -27,6 +29,7 @@
   "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
+    "comfy/no-js-private-class-members": "error",
     "comfy/no-render-in-watch-effect": "error",
     "no-async-promise-executor": "off",
     "no-console": [
@@ -82,8 +85,8 @@
     "vitest/no-standalone-expect": "off",
     "vitest/valid-title": "off",
     "vitest/require-to-throw-message": "off",
-    "typescript/no-this-alias": "off",
-    "typescript/no-useless-default-assignment": "off",
+    "typescript/no-this-alias": "error",
+    "typescript/no-useless-default-assignment": "error",
     "typescript/no-unnecessary-boolean-literal-compare": "error",
     "typescript/no-unnecessary-condition": "error",
     "typescript/no-unnecessary-parameter-property-assignment": "error",
@@ -113,15 +116,15 @@
         "suite": "for"
       }
     ],
-    "unicorn/no-new-array": "off",
-    "unicorn/no-single-promise-in-promise-methods": "off",
-    "unicorn/no-useless-fallback-in-spread": "off",
-    "unicorn/no-useless-spread": "off",
+    "unicorn/no-new-array": "error",
+    "unicorn/no-single-promise-in-promise-methods": "error",
+    "unicorn/no-useless-fallback-in-spread": "error",
+    "unicorn/no-useless-spread": "error",
     "typescript/await-thenable": "off",
     "typescript/no-base-to-string": "off",
-    "typescript/no-duplicate-type-constituents": "off",
-    "typescript/no-for-in-array": "off",
-    "typescript/no-meaningless-void-operator": "off",
+    "typescript/no-duplicate-type-constituents": "error",
+    "typescript/no-for-in-array": "error",
+    "typescript/no-meaningless-void-operator": "error",
     "typescript/no-redundant-type-constituents": "off",
     "typescript/restrict-template-expressions": "off",
     "typescript/unbound-method": "off",
@@ -170,6 +173,26 @@
       "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
       "rules": {
         "comfy/no-dom-in-computed": "warn"
+      }
+    },
+    {
+      "files": [
+        "src/composables/graph/**/*.{ts,vue}",
+        "src/lib/litegraph/src/**/*.{ts,vue}",
+        "src/renderer/core/canvas/**/*.{ts,vue}",
+        "src/renderer/extensions/vueNodes/**/*.{ts,vue}"
+      ],
+      "excludeFiles": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "src/lib/litegraph/src/CurveEditor.ts",
+        "src/lib/litegraph/src/LGraph.ts",
+        "src/lib/litegraph/src/LGraphCanvas.ts",
+        "src/lib/litegraph/src/LGraphNode.ts",
+        "src/renderer/core/canvas/litegraph/selectionAdapter.ts"
+      ],
+      "rules": {
+        "comfy/no-direct-selection-write": "error"
       }
     },
     {

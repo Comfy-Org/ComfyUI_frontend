@@ -20,7 +20,7 @@ const RESULT_QUERY = 'product=comfyui&return_to=comfyui_workspace'
 const RESULT_PATH = `/v1/result?${RESULT_QUERY}&plan=creator_monthly`
 
 vi.mock(import('@/session/stripeChallengePort'), () => ({
-  createStripeChallengePort: () => ({
+  createDeferredStripeChallengePort: () => ({
     handleNextAction: () => Promise.resolve({})
   })
 }))

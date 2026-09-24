@@ -143,6 +143,18 @@ describe('keybindingService - Escape key handling', () => {
     }
   )
 
+  it('does not throw when Escape fires with a non-Element target (e.g. document, in Safari when nothing has focus)', async () => {
+    const event = createKeyboardEvent('Escape', {
+      target: document as unknown as Element
+    })
+
+    await expect(keybindingService.keybindHandler(event)).resolves.not.toThrow()
+
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
+      'Comfy.Graph.ExitSubgraph'
+    )
+  })
+
   describe('registered Escape override', () => {
     it('suppresses ExitSubgraph when a registered override handles the event', async () => {
       const override = vi.fn().mockReturnValue(true)

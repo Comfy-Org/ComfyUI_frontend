@@ -25,6 +25,7 @@ export function useKeybindingService() {
 
   function executeCanvasKeybinding(event: KeyboardEvent): boolean {
     if (event.type !== 'keydown' || event.repeat) return false
+    if (isModalOpen(dialogStore.dialogStack.length)) return false
 
     const keybinding = getExecutableKeybinding(KeyComboImpl.fromEvent(event))
     if (keybinding?.targetElementId !== 'graph-canvas-container') return false
@@ -43,8 +44,12 @@ export function useKeybindingService() {
 
     const target = event.composedPath()[0] as HTMLElement
     // Let the active menu own Escape without also triggering the global shortcut.
+    // `target` is usually the focused element, but when nothing has focus some
+    // browsers (e.g. Safari) target the event at `document` instead of
+    // `document.body`, which has no `closest` method.
     if (
       event.key === 'Escape' &&
+      target instanceof Element &&
       target.closest('[role="menu"], [role="menubar"]')
     ) {
       return

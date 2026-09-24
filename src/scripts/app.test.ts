@@ -21,9 +21,7 @@ import {
   LGraphNode,
   LiteGraph
 } from '@/lib/litegraph/src/litegraph'
-import { KeybindingImpl } from '@/platform/keybindings/keybinding'
-import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
-import { useCommandStore } from '@/stores/commandStore'
+import * as keybindingServiceModule from '@/platform/keybindings/keybindingService'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import type {
   ComfyApiWorkflow,
@@ -42,7 +40,7 @@ import type { NodeReplacement } from '@/platform/nodeReplacement/types'
 import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { NodeError } from '@/platform/remote/comfyui/types'
 import { ComfyApp, app as singletonApp } from './app'
-import { createNode } from '@/utils/litegraphUtil'
+import { createNode, isSelectOnly } from '@/utils/litegraphUtil'
 import {
   pasteAudioNode,
   pasteAudioNodes,
@@ -129,6 +127,7 @@ vi.mock(import('@/utils/litegraphUtil'), () => ({
   isImageNode: fromAny(vi.fn()),
   isVideoNode: fromAny(vi.fn()),
   isAudioNode: fromAny(vi.fn()),
+  isSelectOnly: vi.fn(() => false),
   executeWidgetsCallback: vi.fn()
 }))
 
@@ -3235,6 +3234,27 @@ describe('ComfyApp', () => {
       }
     })
 
+    it('claims but ignores a drop while the canvas is select-only', async () => {
+      app.canvas = fromPartial<LGraphCanvas>({
+        ...createMockCanvas(),
+        graph_mouse: [0, 0],
+        adjustMouseEvent: vi.fn()
+      })
+      vi.mocked(isSelectOnly).mockReturnValue(true)
+      const onDragDrop = vi.fn()
+      app.dragOverNode = fromPartial({ onDragDrop })
+      app['addDropHandler']()
+
+      const event = new DragEvent('drop')
+      const preventDefault = vi.spyOn(event, 'preventDefault')
+      document.dispatchEvent(event)
+      await Promise.resolve()
+
+      expect(preventDefault).toHaveBeenCalled()
+      expect(app.dragOverNode).toBeNull()
+      expect(onDragDrop).not.toHaveBeenCalled()
+    })
+
     it.for([
       {
         drop: 'an asset card',
@@ -3290,17 +3310,11 @@ describe('ComfyApp', () => {
     })
 
     it('routes canvas keydown through the keybinding service before litegraph', () => {
-      const run = vi.fn()
-      useCommandStore().registerCommand({
-        id: 'Test.Registered',
-        function: run
-      })
-      useKeybindingStore().addUserKeybinding(
-        new KeybindingImpl({
-          commandId: 'Test.Registered',
-          combo: { key: 'F9' },
-          targetElementId: 'graph-canvas-container'
-        })
+      const executeCanvasKeybinding = vi.fn(() => true)
+      vi.spyOn(keybindingServiceModule, 'useKeybindingService').mockReturnValue(
+        fromPartial<
+          ReturnType<typeof keybindingServiceModule.useKeybindingService>
+        >({ executeCanvasKeybinding })
       )
       ;(
         app as unknown as { addProcessKeyHandler(): void }
@@ -3316,9 +3330,39 @@ describe('ComfyApp', () => {
 
       LGraphCanvas.prototype.processKey.call(canvas, event)
 
-      expect(run).toHaveBeenCalledOnce()
+      expect(executeCanvasKeybinding).toHaveBeenCalledWith(event)
       expect(change).toHaveBeenCalledOnce()
-      expect(event.defaultPrevented).toBe(true)
+    })
+
+    it('falls through to litegraph when the keybinding service declines the event', () => {
+      const executeCanvasKeybinding = vi.fn(() => false)
+      vi.spyOn(keybindingServiceModule, 'useKeybindingService').mockReturnValue(
+        fromPartial<
+          ReturnType<typeof keybindingServiceModule.useKeybindingService>
+        >({ executeCanvasKeybinding })
+      )
+      const processKey = vi.fn(function (this: LGraphCanvas) {
+        this.graph?.change()
+      })
+      LGraphCanvas.prototype.processKey = processKey
+      ;(
+        app as unknown as { addProcessKeyHandler(): void }
+      ).addProcessKeyHandler()
+
+      const graph = new LGraph()
+      const change = vi.spyOn(graph, 'change')
+      const canvas = fromPartial<LGraphCanvas>({ graph, selected_nodes: {} })
+      const event = new KeyboardEvent('keydown', {
+        key: 'F9',
+        cancelable: true
+      })
+
+      LGraphCanvas.prototype.processKey.call(canvas, event)
+
+      expect(executeCanvasKeybinding).toHaveBeenCalledWith(event)
+      expect(processKey).toHaveBeenCalledWith(event)
+      expect(change).toHaveBeenCalledOnce()
+      expect(event.defaultPrevented).toBe(false)
     })
   })
 })
