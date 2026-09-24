@@ -127,7 +127,8 @@ import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { markAppReady, notifyWorkflowLoaded } from '@/platform/nodeApi/appReady'
 import {
   deliverPreview,
-  notifyDefsRefreshed
+  notifyDefsRefreshed,
+  provideGraphLoadingState
 } from '@/platform/nodeApi/defsRegistry'
 import { mayRun } from '@/platform/nodeApi/queueGuard'
 import { installUnplacedLinkBridge } from '@/renderer/core/canvas/unplacedLinkBridge'
@@ -1957,7 +1958,14 @@ export class ComfyApp implements IComfyApp {
             delete api.apiKey
             if (!res.prompt_id) {
               rejectedCount++
-              api.dispatchCustomEvent('promptRejected', { response: res })
+              api.dispatchCustomEvent('promptRejected', {
+                response: {
+                  error: 'Prompt rejected',
+                  ...(res.node_errors === undefined
+                    ? {}
+                    : { node_errors: res.node_errors })
+                }
+              })
               telemetry?.trackExecutionOutcome({
                 startTime,
                 endTime: responseReceivedAt,
@@ -2861,14 +2869,22 @@ export class ComfyApp implements IComfyApp {
 
   clientPosToCanvasPos(pos: Vector2): Vector2 {
     if (!this.positionConversion) {
-      throw new Error('clientPosToCanvasPos called before setup')
+      reportError(new Error('Canvas position conversion unavailable'), {
+        errorType: 'canvas_position_conversion_unavailable',
+        context: { direction: 'client_to_canvas' }
+      })
+      return pos
     }
     return this.positionConversion.clientPosToCanvasPos(pos)
   }
 
   canvasPosToClientPos(pos: Vector2): Vector2 {
     if (!this.positionConversion) {
-      throw new Error('canvasPosToClientPos called before setup')
+      reportError(new Error('Canvas position conversion unavailable'), {
+        errorType: 'canvas_position_conversion_unavailable',
+        context: { direction: 'canvas_to_client' }
+      })
+      return pos
     }
     return this.positionConversion.canvasPosToClientPos(pos)
   }

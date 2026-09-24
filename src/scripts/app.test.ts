@@ -137,8 +137,7 @@ const {
   mockRefreshMissingModelPipeline,
   mockImportA1111,
   mockWorkflowService,
-  mockValidateWorkflow,
-  mockReportError
+  mockValidateWorkflow
 } = vi.hoisted(() => ({
   mockExtensionService: {
     loadExtensions: vi.fn(),
@@ -147,7 +146,6 @@ const {
   },
   mockRefreshMissingModelPipeline: vi.fn(),
   mockImportA1111: vi.fn<typeof importA1111>(),
-  mockReportError: vi.fn(),
   mockWorkflowService: {
     beforeLoadNewGraph: vi.fn<WorkflowService['beforeLoadNewGraph']>(),
     afterLoadNewGraph: vi.fn<WorkflowService['afterLoadNewGraph']>(),
@@ -168,10 +166,6 @@ vi.mock(
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
 vi.mock(import('@/utils/createNode'), { spy: true })
-
-vi.mock(import('@/platform/telemetry/reportError'), () => ({
-  reportError: mockReportError
-}))
 
 vi.mock(import('@/composables/usePaste'), () => ({
   pasteAudioNode: vi.fn(),
@@ -1853,8 +1847,8 @@ describe('ComfyApp', () => {
         workflow: createWorkflowGraphData()
       })
       vi.spyOn(api, 'queuePrompt')
-        .mockResolvedValueOnce({ prompt_id: 'job-1', error: '' })
-        .mockResolvedValueOnce({ prompt_id: 'job-2', error: '' })
+        .mockResolvedValueOnce({ prompt_id: 'job-1' })
+        .mockResolvedValueOnce({ prompt_id: 'job-2' })
 
       await expect(app.queuePrompt(-1, 2)).resolves.toBe(true)
 
@@ -1896,13 +1890,12 @@ describe('ComfyApp', () => {
         throw error
       })
       vi.spyOn(api, 'queuePrompt').mockResolvedValue({
-        prompt_id: 'job-1',
-        error: ''
+        prompt_id: 'job-1'
       })
 
       await expect(app.queuePrompt(0)).resolves.toBe(true)
 
-      expect(mockReportError).toHaveBeenCalledExactlyOnceWith(error, {
+      expect(vi.mocked(reportError)).toHaveBeenCalledExactlyOnceWith(error, {
         errorType: 'queue_job_metadata_store_failed'
       })
     })
