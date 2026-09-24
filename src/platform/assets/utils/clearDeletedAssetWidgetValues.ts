@@ -27,7 +27,9 @@ export function clearDeletedAssetWidgetValues(
   deletedValues: ReadonlySet<string>
 ): void {
   if (deletedValues.size === 0) return
-  for (const node of findNodesReferencingValues(rootGraph, deletedValues)) {
+  for (const node of findNodesReferencingValues(rootGraph, deletedValues, {
+    includeSubgraphNodes: true
+  })) {
     if (!node.widgets) continue
     for (const widget of node.widgets) {
       if (typeof widget.value !== 'string') continue

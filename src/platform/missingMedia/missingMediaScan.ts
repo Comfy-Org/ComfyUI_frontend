@@ -106,7 +106,7 @@ function resolveMediaMissingState(
   )
 }
 
-/** Scan a single node for missing media candidates (OSS immediate resolution). */
+/** Scan media; includeTemp is only for known deletions, not verification. */
 export function scanNodeMediaCandidates(
   rootGraph: LGraph,
   node: LGraphNode,
