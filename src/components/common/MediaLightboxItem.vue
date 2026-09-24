@@ -5,7 +5,6 @@
 </template>
 
 <script setup lang="ts">
-import type { Component } from 'vue'
 import { computed } from 'vue'
 
 import ComfyImage from '@/components/common/ComfyImage.vue'
@@ -23,10 +22,22 @@ const RETAINED_VIDEO_COUNT = 3
 const RETAINED_COMPONENT = 'LightboxVideo'
 const IMAGE_CLASS = 'size-auto max-h-[90vh] max-w-[90vw] object-contain'
 
-const rendered = computed<{
-  is: Component
-  props: Record<string, unknown>
-}>(() => {
+type Rendered =
+  | { is: typeof ComfyImage; props: InstanceType<typeof ComfyImage>['$props'] }
+  | {
+      is: typeof LightboxVideo
+      props: InstanceType<typeof LightboxVideo>['$props']
+    }
+  | {
+      is: typeof LightboxAudio
+      props: InstanceType<typeof LightboxAudio>['$props']
+    }
+  | {
+      is: typeof LightboxText
+      props: InstanceType<typeof LightboxText>['$props']
+    }
+
+const rendered = computed<Rendered>(() => {
   switch (item.kind) {
     case 'image':
       return {

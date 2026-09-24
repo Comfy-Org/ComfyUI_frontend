@@ -46,7 +46,7 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
 
     // Falling back to the first item is only right within the clicked job;
     // across jobs it would open a different job's media.
-    if (requestedIndex === -1 && previewUrl && !fromClickedJob) return
+    if (requestedIndex === -1 && previewOutput && !fromClickedJob) return
 
     galleryItems.value = entries.map(({ item: lightboxItem }) => lightboxItem)
     galleryActiveIndex.value = requestedIndex === -1 ? 0 : requestedIndex

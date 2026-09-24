@@ -379,6 +379,50 @@ describe('useNodePointerInteractions', () => {
     expect(layoutStore.isDraggingVueNodes.value).toBe(false)
   })
 
+  it('ignores a cancel from a contact that never owned the drag', () => {
+    const { pointerHandlers } = useNodePointerInteractions(testNodeState)
+    const { handleDrag, endDrag } = useNodeDrag()
+    const { handleNodeSelect } = useNodeEventHandlers()
+
+    pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { pointerId: 1 })
+    )
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        pointerId: 1,
+        clientX: 140,
+        clientY: 140,
+        buttons: 1
+      })
+    )
+
+    pointerHandlers.onPointercancel(
+      createPointerEvent('pointercancel', { pointerId: 2 })
+    )
+    vi.mocked(handleNodeSelect).mockClear()
+    vi.mocked(handleDrag).mockClear()
+
+    expect(endDrag).not.toHaveBeenCalled()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(true)
+
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        pointerId: 1,
+        clientX: 180,
+        clientY: 180,
+        buttons: 1
+      })
+    )
+
+    expect(handleDrag).toHaveBeenCalled()
+    expect(handleNodeSelect).not.toHaveBeenCalled()
+
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { pointerId: 1 })
+    )
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+  })
+
   it('carries a drag that was started without a pointerdown, as alt+clone does', () => {
     const { pointerHandlers } = useNodePointerInteractions(testNodeState)
     const { handleDrag, endDrag } = useNodeDrag()

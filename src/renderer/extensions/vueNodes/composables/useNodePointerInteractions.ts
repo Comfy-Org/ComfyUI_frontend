@@ -187,6 +187,7 @@ export function useNodePointerInteractions(
   }
 
   function onPointercancel(event: PointerEvent) {
+    if (!ownsSequence(event)) return
     if (nodePointerSequenceId === event.pointerId) endPointerSequence()
     if (!layoutStore.isDraggingVueNodes.value) return
     safeDragEnd(event)
