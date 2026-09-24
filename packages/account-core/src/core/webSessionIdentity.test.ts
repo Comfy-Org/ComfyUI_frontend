@@ -37,7 +37,7 @@ function createFakeScheduler() {
 
 function fakeRememberedLogin(
   userId: string | null,
-  getProof: () => Promise<string> = async () => 'remembered-proof'
+  getProof: () => Promise<string | null> = async () => 'remembered-proof'
 ) {
   return {
     currentUserId: vi.fn(async () => userId),
@@ -236,35 +236,66 @@ describe('network errors', () => {
   })
 })
 
+function failingPosts(times: number, log: string[]) {
+  let remaining = times
+  return (endpointFetch: typeof fetch): typeof fetch =>
+    async (input, init) => {
+      log.push(init?.method ?? 'GET')
+      if (init?.method !== 'POST' || remaining === 0) {
+        return endpointFetch(input, init)
+      }
+      remaining -= 1
+      throw new TypeError('Failed to fetch')
+    }
+}
+
 describe('silent restore', () => {
-  it('runs at most once: a restore lost to the network is not repeated', async () => {
-    const posts: string[] = []
-    const { endpoint, scheduler, reports, identity } = bootIdentity({
+  it('retries a restore lost to the network until it succeeds', async () => {
+    const log: string[] = []
+    const login = fakeRememberedLogin('user-1')
+    const { scheduler, reports, identity } = bootIdentity({
+      state: { kind: 'dead', code: 'no_session' },
+      login,
+      fetchImpl: failingPosts(2, log)
+    })
+    expect(summarize(await nextRest(identity))).toBe('retry_wait')
+    expect(scheduler.delays()).toEqual([1000])
+
+    scheduler.fireNext()
+    expect(summarize(await nextRest(identity))).toBe('retry_wait')
+    expect(scheduler.delays()).toEqual([2000])
+
+    scheduler.fireNext()
+
+    expect(summarize(await nextRest(identity))).toBe('signed_in:user-1')
+    expect(log).toEqual(['GET', 'POST', 'GET', 'POST', 'GET', 'POST', 'GET'])
+    expect(reports).toEqual([{ outcome: 'restored', origin: ORIGIN }])
+    expect(login.signOutLocally).not.toHaveBeenCalled()
+  })
+
+  it('re-reads before restoring again, so a lost POST that landed is not repeated', async () => {
+    const log: string[] = []
+    const { scheduler, identity } = bootIdentity({
       state: { kind: 'dead', code: 'no_session' },
       login: fakeRememberedLogin('user-1'),
       fetchImpl: (endpointFetch) => async (input, init) => {
-        if (init?.method !== 'POST') return endpointFetch(input, init)
-        posts.push(String(input))
-        throw new TypeError('Failed to fetch')
+        log.push(init?.method ?? 'GET')
+        const response = await endpointFetch(input, init)
+        if (init?.method === 'POST') throw new TypeError('Failed to fetch')
+        return response
       }
     })
     expect(summarize(await nextRest(identity))).toBe('retry_wait')
 
     scheduler.fireNext()
 
-    expect(summarize(await nextRest(identity))).toBe(
-      'signed_out:restore_failed'
-    )
-    expect(posts).toHaveLength(1)
-    expect(requestLog(endpoint)).toEqual(['GET', 'GET'])
-    expect(reports).toEqual([{ outcome: 'restore_failed', origin: ORIGIN }])
+    expect(summarize(await nextRest(identity))).toBe('signed_in:user-1')
+    expect(log).toEqual(['GET', 'POST', 'GET'])
   })
 
-  it('settles signed out when the remembered login cannot produce proof', async () => {
-    const login = fakeRememberedLogin('user-1', async () => {
-      throw new Error('login expired')
-    })
-    const { endpoint, identity } = bootIdentity({
+  it('settles signed out when the remembered login has no usable proof', async () => {
+    const login = fakeRememberedLogin('user-1', async () => null)
+    const { endpoint, reports, identity } = bootIdentity({
       state: { kind: 'dead', code: 'no_session' },
       login
     })
@@ -273,6 +304,25 @@ describe('silent restore', () => {
       'signed_out:restore_failed'
     )
     expect(requestLog(endpoint)).toEqual(['GET'])
+    expect(reports).toEqual([{ outcome: 'restore_failed', origin: ORIGIN }])
+    expect(login.signOutLocally).not.toHaveBeenCalled()
+  })
+
+  it('treats a proof that throws as transient and restores on retry', async () => {
+    const login = fakeRememberedLogin('user-1')
+    login.getProof.mockRejectedValueOnce(new Error('provider offline'))
+    const { endpoint, scheduler, identity } = bootIdentity({
+      state: { kind: 'dead', code: 'no_session' },
+      login
+    })
+    expect(summarize(await nextRest(identity))).toBe('retry_wait')
+    expect(requestLog(endpoint)).toEqual(['GET'])
+
+    scheduler.fireNext()
+
+    expect(summarize(await nextRest(identity))).toBe('signed_in:user-1')
+    expect(requestLog(endpoint)).toEqual(['GET', 'GET', 'POST', 'GET'])
+    expect(login.signOutLocally).not.toHaveBeenCalled()
   })
 
   it.for([
@@ -300,16 +350,16 @@ describe('silent restore', () => {
     {
       code: 'SESSION_UNAVAILABLE',
       retryable: true,
-      state: { phase: 'retry_wait', failures: 1, restoreSpent: true },
+      state: { phase: 'retry_wait', failures: 1 },
       effects: [{ type: 'schedule_retry', failures: 1 }]
     }
   ] satisfies (Pick<WebSessionFailure, 'code' | 'retryable'> &
     ReturnType<typeof transitionWebSessionIdentity>)[])(
-    'a restore answered $code never restores again',
+    'a restore answered $code settles or waits, never restoring in place',
     ({ code, retryable, state, effects }) => {
       expect(
         transitionWebSessionIdentity(
-          { phase: 'restoring' },
+          { phase: 'restoring', failures: 0 },
           {
             type: 'restore_answered',
             result: { status: 'error', code, retryable },

@@ -14,7 +14,8 @@ import { createWebSession, readWebSession } from './webSession.js'
 export interface RememberedLogin {
   /** The Comfy user id of the login this browser remembers, or null. */
   currentUserId: () => Promise<string | null>
-  getProof: () => Promise<string>
+  /** Null when the provider has no usable login; a throw is transient. */
+  getProof: () => Promise<string | null>
   signOutLocally: () => Promise<void>
 }
 
@@ -40,11 +41,9 @@ export type WebSessionIdentityState =
   | { readonly phase: 'idle' }
   | { readonly phase: 'api_key' }
   | {
-      readonly phase: 'reading' | 'retry_wait'
+      readonly phase: 'reading' | 'retry_wait' | 'restoring'
       readonly failures: number
-      readonly restoreSpent: boolean
     }
-  | { readonly phase: 'restoring' }
   | { readonly phase: 'signed_in'; readonly session: WebSession }
   | { readonly phase: 'signed_out'; readonly outcome: SignedOutOutcome }
 
@@ -55,7 +54,7 @@ export type WebSessionIdentityEvent =
       readonly result: WebSessionResult
       readonly rememberedUserId: string | null
     }
-  | { readonly type: 'proof_unavailable' }
+  | { readonly type: 'proof_missing' | 'proof_errored' }
   | { readonly type: 'retry_due' }
 
 export type WebSessionIdentityEffect =
@@ -101,12 +100,9 @@ function settleSignedOut(
   }
 }
 
-function waitToRetry(
-  failures: number,
-  restoreSpent: boolean
-): WebSessionIdentityTransition {
+function waitToRetry(failures: number): WebSessionIdentityTransition {
   return {
-    state: { phase: 'retry_wait', failures, restoreSpent },
+    state: { phase: 'retry_wait', failures },
     effects: [{ type: 'schedule_retry', failures }]
   }
 }
@@ -116,29 +112,32 @@ function isNoLiveSession(failure: WebSessionFailure): boolean {
 }
 
 function applyReadAnswered(
-  { failures, restoreSpent }: { failures: number; restoreSpent: boolean },
+  failures: number,
   result: WebSessionResult,
   rememberedUserId: string | null
 ): WebSessionIdentityTransition {
   if (result.status === 'ok') {
     return settleSignedIn(result.session, rememberedUserId, 'signed_in')
   }
-  if (result.retryable) return waitToRetry(failures + 1, restoreSpent)
+  if (result.retryable) return waitToRetry(failures + 1)
   if (result.code === 'SESSION_REVOKED') return settleSignedOut('revoked')
   if (!isNoLiveSession(result)) return settleSignedOut('signed_out')
-  if (restoreSpent) return settleSignedOut('restore_failed')
   if (rememberedUserId === null) return settleSignedOut('signed_out')
-  return { state: { phase: 'restoring' }, effects: [{ type: 'restore' }] }
+  return {
+    state: { phase: 'restoring', failures },
+    effects: [{ type: 'restore' }]
+  }
 }
 
 function applyRestoreAnswered(
+  failures: number,
   result: WebSessionResult,
   rememberedUserId: string | null
 ): WebSessionIdentityTransition {
   if (result.status === 'ok') {
     return settleSignedIn(result.session, rememberedUserId, 'restored')
   }
-  if (result.retryable) return waitToRetry(1, true)
+  if (result.retryable) return waitToRetry(failures + 1)
   if (result.code === 'SESSION_REVOKED') return settleSignedOut('revoked')
   return settleSignedOut('restore_failed')
 }
@@ -153,21 +152,33 @@ export function transitionWebSessionIdentity(
     case 'boot':
       return state.phase === 'idle'
         ? {
-            state: { phase: 'reading', failures: 0, restoreSpent: false },
+            state: { phase: 'reading', failures: 0 },
             effects: [read]
           }
         : unchanged
     case 'read_answered':
       return state.phase === 'reading'
-        ? applyReadAnswered(state, event.result, event.rememberedUserId)
+        ? applyReadAnswered(
+            state.failures,
+            event.result,
+            event.rememberedUserId
+          )
         : unchanged
     case 'restore_answered':
       return state.phase === 'restoring'
-        ? applyRestoreAnswered(event.result, event.rememberedUserId)
+        ? applyRestoreAnswered(
+            state.failures,
+            event.result,
+            event.rememberedUserId
+          )
         : unchanged
-    case 'proof_unavailable':
+    case 'proof_missing':
       return state.phase === 'restoring'
         ? settleSignedOut('restore_failed')
+        : unchanged
+    case 'proof_errored':
+      return state.phase === 'restoring'
+        ? waitToRetry(state.failures + 1)
         : unchanged
     case 'retry_due':
       return state.phase === 'retry_wait'
@@ -251,12 +262,18 @@ function createAccountIdentity(
     if (started === generation) dispatch({ type, result, rememberedUserId })
   }
 
-  function restore(started: number): void {
-    answer(started, 'restore_answered', () =>
-      createWebSession(options.session, login.getProof)
-    ).catch(() => {
-      if (started === generation) dispatch({ type: 'proof_unavailable' })
-    })
+  async function restore(started: number): Promise<void> {
+    const proof = await login.getProof().then(
+      (value) => ({ value }),
+      () => undefined
+    )
+    if (started !== generation) return
+    if (proof === undefined) return dispatch({ type: 'proof_errored' })
+    const { value } = proof
+    if (value === null) return dispatch({ type: 'proof_missing' })
+    await answer(started, 'restore_answered', () =>
+      createWebSession(options.session, async () => value)
+    )
   }
 
   function run(effect: WebSessionIdentityEffect): void {
@@ -267,7 +284,7 @@ function createAccountIdentity(
         )
         return
       case 'restore':
-        restore(generation)
+        void restore(generation)
         return
       case 'schedule_retry':
         cancelRetry = schedule(
