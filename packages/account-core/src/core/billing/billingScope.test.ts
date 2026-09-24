@@ -68,7 +68,7 @@ function fakeSession(initial: SessionSnapshot) {
     source: sessionBillingScopeSource(fake),
     moveTo(next: SessionSnapshot) {
       snapshot = next
-      for (const listener of [...listeners]) listener(snapshot)
+      for (const listener of Array.from(listeners)) listener(snapshot)
     }
   }
 }
@@ -88,7 +88,7 @@ function fakeScopeSource(initial: BillingScope | undefined) {
     source,
     moveTo(next: BillingScope | undefined) {
       scope = next
-      for (const listener of [...listeners]) listener()
+      for (const listener of Array.from(listeners)) listener()
     }
   }
 }

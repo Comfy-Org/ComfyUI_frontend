@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApiUrl } from '@/platform/workspace/api/workspaceApiUrl'
@@ -13,6 +14,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useBillingSdkStore } from './billingSdkStore'
 import {
   fakeBillingSdk,
+  failedOperation,
   failedTopup,
   pendingTopup,
   pendingSubscription,
@@ -89,6 +91,7 @@ beforeEach(() => {
   stubAccountIdentityPort()
   flagState.embeddedCheckoutEnabled = false
   flagState.hostedBillingDestination = 'stripe'
+  remoteConfig.value = {}
   harness = fakeBillingSdk()
   mockCreateBillingSdk.mockImplementation((sdkOptions) => {
     options = sdkOptions
@@ -360,6 +363,62 @@ describe('useBillingSdkStore', () => {
     }
   )
 
+  it('prefers the server-configured publishable key over the build-time one', async () => {
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_build_time')
+    remoteConfig.value = { stripe_publishable_key: 'pk_server' }
+    mockLoadStripe.mockResolvedValue({})
+    useBillingSdkStore()
+
+    await options.challengePort()
+
+    expect(mockLoadStripe).toHaveBeenCalledWith('pk_server')
+  })
+
+  it('falls back to the build-time key when the server has none configured', async () => {
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_build_time')
+    remoteConfig.value = {}
+    mockLoadStripe.mockResolvedValue({})
+    useBillingSdkStore()
+
+    await options.challengePort()
+
+    expect(mockLoadStripe).toHaveBeenCalledWith('pk_build_time')
+  })
+
+  it.for(['', 42] as const)(
+    'treats a malformed server key (%j) as absent',
+    async (malformed) => {
+      vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_build_time')
+      remoteConfig.value = {
+        stripe_publishable_key: malformed as unknown as string
+      }
+      mockLoadStripe.mockResolvedValue({})
+      useBillingSdkStore()
+
+      await options.challengePort()
+
+      expect(mockLoadStripe).toHaveBeenCalledWith('pk_build_time')
+    }
+  )
+
+  it('reports checkout unavailable when neither source configures a key', () => {
+    flagState.embeddedCheckoutEnabled = true
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', undefined)
+    remoteConfig.value = {}
+    useBillingSdkStore()
+
+    expect(options.embeddedCheckoutAvailable()).toBe(false)
+  })
+
+  it('reports checkout available on the server key alone, with no build-time key', () => {
+    flagState.embeddedCheckoutEnabled = true
+    vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', undefined)
+    remoteConfig.value = { stripe_publishable_key: 'pk_server' }
+    useBillingSdkStore()
+
+    expect(options.embeddedCheckoutAvailable()).toBe(true)
+  })
+
   it('polls every pending operation when the tab returns', () => {
     useBillingSdkStore()
 
@@ -513,6 +572,73 @@ describe('useBillingSdkStore subscription commands', () => {
     })
     expect(mockReconcileSubscription).toHaveBeenCalledOnce()
     expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
+  })
+
+  function reattachedSubscribe() {
+    options.onTelemetry({
+      name: 'billing.operation.started',
+      billing_op_id: 'op-1',
+      operation_type: 'subscription',
+      presentation: 'hosted',
+      resumed: true
+    })
+  }
+
+  it('finishes a reattached subscribe the way the poller did', async () => {
+    useBillingSdkStore()
+
+    reattachedSubscribe()
+    harness.publish(settledOperation('succeeded', 'subscription'))
+
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toContainEqual(
+        expect.objectContaining({
+          severity: 'success',
+          summary: 'Subscription updated successfully'
+        })
+      )
+    )
+    expect(mockReconcileSubscription).toHaveBeenCalledOnce()
+    expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
+  })
+
+  it('reports the failure of a reattached subscribe', () => {
+    useBillingSdkStore()
+
+    reattachedSubscribe()
+    harness.publish(failedOperation('subscription'))
+
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        summary: 'Subscription update failed'
+      })
+    )
+  })
+
+  it('reports a reattached subscribe that timed out, without reconciling', () => {
+    useBillingSdkStore()
+
+    reattachedSubscribe()
+    harness.publish(settledOperation('timed_out', 'subscription'))
+
+    expect(useToastStore().messagesToAdd).toContainEqual(
+      expect.objectContaining({
+        severity: 'error',
+        summary: 'Subscription verification timed out'
+      })
+    )
+    expect(mockReconcileSubscription).not.toHaveBeenCalled()
+  })
+
+  it('leaves a subscribe it issued to the checkout that issued it', async () => {
+    useBillingSdkStore()
+
+    harness.publish(settledOperation('succeeded', 'subscription'))
+    await nextTick()
+
+    expect(mockReconcileSubscription).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toEqual([])
   })
 
   it('hands back the quote without refreshing anything', async () => {

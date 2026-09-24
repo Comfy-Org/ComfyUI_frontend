@@ -13,12 +13,7 @@ import {
   remoteConfigState
 } from './remoteConfig'
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fetchApi: vi.fn(),
-    apiURL: vi.fn((route: string) => `/ComfyUI/api${route}`)
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('refreshRemoteConfig', () => {
   const mockConfig = { feature1: true, feature2: 'value' }

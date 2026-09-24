@@ -148,6 +148,7 @@ const mockTrackExport = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     deleteItem: vi.fn(),
+    fetchApi: vi.fn(() => Promise.resolve(new Response())),
     apiURL: vi.fn((path: string) => `http://localhost:8188/api${path}`),
     internalURL: vi.fn((path: string) => `http://localhost:8188${path}`),
     addEventListener: vi.fn(),
@@ -647,6 +648,34 @@ describe('useMediaAssetActions', () => {
       )
       expect(mockCreateAssetExport).not.toHaveBeenCalled()
       expect(mockTrackExport).not.toHaveBeenCalled()
+    })
+
+    it('fetches a cloud download through the workspace-authenticated client', async () => {
+      mockIsCloud.value = true
+      mockGetOutputAssetMetadata.mockReturnValue({
+        jobId: 'job1',
+        outputCount: 1
+      })
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([
+        createMockAsset({
+          id: 'team-owned',
+          name: 'team-owned.glb',
+          tags: ['output'],
+          user_metadata: { jobId: 'job1', outputCount: 1 }
+        })
+      ])
+
+      const contentUrl = 'http://localhost:8188/api/assets/team-owned/content'
+      expect(mockDownloadFileAsBlob).toHaveBeenCalledWith(
+        contentUrl,
+        expect.objectContaining({ fetch: expect.any(Function) })
+      )
+
+      const { fetch: authedFetch } = mockDownloadFileAsBlob.mock.calls[0][1]
+      await authedFetch(contentUrl)
+      expect(api.fetchApi).toHaveBeenCalledWith(contentUrl)
     })
 
     it('preserves successful OSS downloads when another file fails', async () => {
@@ -1388,6 +1417,29 @@ describe('useMediaAssetActions', () => {
       })
 
       unmount()
+    })
+
+    it('deletes OSS output history without calling the asset endpoint', async () => {
+      mockIsCloud.value = false
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'job-1' })
+      vi.mocked(api.deleteItem).mockResolvedValue(undefined)
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({
+        id: 'asset-1',
+        name: 'output.png',
+        tags: ['output'],
+        user_metadata: { jobId: 'job-1' }
+      })
+
+      await expect(actions.deleteAssets(asset)).resolves.toBe(true)
+
+      expect(api.deleteItem).toHaveBeenCalledWith('history', 'job-1')
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
     })
   })
 
