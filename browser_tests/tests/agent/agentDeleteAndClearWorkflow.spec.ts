@@ -2,6 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import type { WorkspaceStore } from '@e2e/types/globals'
 
 // Pinia store instance access, the pattern
 // `browser_tests/tests/vueNodes/widgets/flux2ImagePromptRerun.spec.ts` uses:
@@ -117,20 +118,22 @@ test.describe(
           // scope drop below can land before the add does, rejecting it too
           // and leaving nothing on screen to prove the clear's rejection with.
           await expect(agentConversation.vueNodes.nodes).not.toHaveCount(0)
-          // The workflow tab binding drives production `getScope()`
-          // (AgentPanelRoot.vue): dropping it here reproduces the exact race
-          // this PR fixes without touching the doc or sending another frame.
+          // Removing both resolution paths reproduces a real closed-tab race:
+          // the binding is gone and the workflow is no longer open, so the
+          // clear frame cannot resolve a graph scope.
           tabPath = await dropWorkflowScope(page, workflowId)
+          await agentConversation.topbar.closeWorkflowTab('Unsaved Workflow')
         })
-        await agentConversation.waitForTurnComplete()
-
-        // The clear batch was rejected for lack of scope: the seed workflow's
-        // nodes are still on screen.
-        await expect(agentConversation.vueNodes.nodes).not.toHaveCount(0)
-
         if (tabPath === undefined)
           throw new Error('the clear frame never armed the scope drop')
-        await restoreWorkflowScope(page, workflowId, tabPath)
+        const replacementPath = await page.evaluate(
+          () =>
+            (window.app!.extensionManager as WorkspaceStore).workflow
+              .activeWorkflow?.path
+        )
+        if (replacementPath === undefined)
+          throw new Error('closing the target did not create a replacement tab')
+        await restoreWorkflowScope(page, workflowId, replacementPath)
 
         // The self-driven retry clears the canvas on its own; nothing sends
         // another frame after this point.
