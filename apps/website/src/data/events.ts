@@ -517,18 +517,18 @@ const events: readonly ComfyEvent[] = [
     },
     location: { en: 'Online', 'zh-CN': '线上' },
     dateLabel: {
-      en: 'September 30, 2026 · 10AM PT',
-      'zh-CN': '2026年9月30日 · 上午10点（PT）'
+      en: 'October 7, 2026 · 10AM PT',
+      'zh-CN': '2026年10月7日 · 上午10点（PT）'
     },
-    startDateTime: '2026-09-30T10:00:00-07:00',
+    startDateTime: '2026-10-07T10:00:00-07:00',
     liveVideoId: '7V7Aazicx-s',
-    // TODO: temporarily self-hosted under public/images/events (a frame
-    // extracted from the promo clip) because this session has no upload
-    // access to media.comfy.org; migrate to the CDN and switch to
-    // eventImage() when available.
+    // TODO: temporarily self-hosted under public/images/events (the official
+    // event card) because this session has no upload access to
+    // media.comfy.org; migrate to the CDN and switch to eventImage() when
+    // available.
     media: {
       type: 'image',
-      src: '/images/events/model-jam-sept-30-still.jpg',
+      src: '/images/events/model-jam-oct-7-still.jpg',
       alt: {
         en: 'Model Jam: Latest Video & Image Model Releases livestream',
         'zh-CN': 'Model Jam：最新视频与图像模型发布直播'
