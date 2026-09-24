@@ -166,24 +166,25 @@ async function preparePrCheckout(
     return
   }
 
-  const [prBranch, title] = details.stdout.toString().trim().split('\t')
+  const [prBranch, title] = details.stdout?.toString().trim().split('\t') ?? []
   if (!prBranch || !title) {
     warn(`Could not read PR #${pr}. Continuing on the current checkout.`)
     return
   }
-  const currentBranch = runCommand('git', ['branch', '--show-current'], {
-    cwd: projectRoot,
-    stdio: 'pipe'
-  })
-    .stdout.toString()
-    .trim()
-  const dirty =
-    runCommand('git', ['status', '--porcelain'], {
+  const currentBranch =
+    runCommand('git', ['branch', '--show-current'], {
       cwd: projectRoot,
       stdio: 'pipe'
     })
-      .stdout.toString()
-      .trim().length > 0
+      .stdout?.toString()
+      .trim() ?? ''
+  const dirty =
+    (runCommand('git', ['status', '--porcelain'], {
+      cwd: projectRoot,
+      stdio: 'pipe'
+    })
+      .stdout?.toString()
+      .trim().length ?? 0) > 0
   const action = decidePrCheckout(currentBranch, prBranch, dirty)
   if (action === 'already-on-branch') {
     pass(`Your checkout already has the code for PR #${pr}`, prBranch)
@@ -348,7 +349,7 @@ export async function runRecord(
     cwd: process.cwd(),
     stdio: 'pipe'
   })
-  const branch = branchResult.error ? '' : branchResult.stdout.toString().trim()
+  const branch = branchResult.stdout?.toString().trim() ?? ''
   info([
     `The app you're testing is your local checkout (branch ${branch || 'unknown'}). ` +
       'The environment choice only picks which backend it talks to.'
@@ -385,7 +386,7 @@ export async function runRecord(
     s.stop('Dependency installation failed')
     fail(
       'pnpm install failed',
-      install.error?.message ?? install.stderr.toString()
+      install.error?.message ?? install.stderr?.toString() ?? ''
     )
     process.exit(1)
   }
