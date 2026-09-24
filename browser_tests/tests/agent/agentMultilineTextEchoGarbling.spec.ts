@@ -46,17 +46,19 @@ test.describe(
        * workflow the binding outlives the turn - `shouldMint` consults only
        * the product flag, the doc binding and teardown, never whether a turn
        * is running - so `widgetMintPort` mints a `set_widget` op off the
-       * `widgetValueStore` `setValue` seam on every keystroke. A user typing
-       * into an agent-created widget while the agent sits idle is still
-       * driving a write/echo round trip per character, which is why "the
-       * agent turn looked over" does not rule out a CRDT race.
+       * `widgetValueStore` `setValue` seam. A user typing into an
+       * agent-created widget while the agent sits idle is still driving a
+       * write/echo round trip, which is why "the agent turn looked over"
+       * does not rule out a CRDT race.
        *
        * One keystroke, deliberately. A second would have to be pressed while
        * the first echo was still in flight - `judgeHumanOps` records its
        * outcome before it sends the update frame, so no host-side signal can
        * say the echo has landed - and racing the two is the very defect the
-       * `hold` test below pins. That the minting is per keystroke rather than
-       * once is pinned there too, by the held-op count.
+       * `hold` test below pins. That a mint happens per keystroke rather than
+       * once is not this test's to prove: `widgetMintPort.test.ts` pins one
+       * op per `setValue`, and `WidgetTextarea.test.ts` pins the emit per
+       * input event.
        */
       test('a keystroke after the turn still round-trips through the CRDT host', async ({
         agentConversation
@@ -161,6 +163,15 @@ test.describe(
         // release below is unambiguously an echo of the older keystroke.
         await expect.poll(() => agentConversation.heldHumanOpCount()).toBe(1)
         expect(agentConversation.releaseHeldHumanOps()).toBe(1)
+
+        // The echo really is STALE, which is what the title claims and what
+        // the barrier below cannot show. `applyWire` reaches the host's doc
+        // synchronously, and no client-side fix can move it, so this holds
+        // whether or not the defect is fixed - and the widget it names is
+        // still a keystroke behind the live one asserted above.
+        expect(
+          agentConversation.hostWidgetValue(TEXT_NODE_ID, TEXT_WIDGET)
+        ).toBe(`${head}X${tail}`)
 
         // Z must not be typed until the echo has been applied, or it would be
         // clobbered along with Y and no scatter would form. The barrier is a
