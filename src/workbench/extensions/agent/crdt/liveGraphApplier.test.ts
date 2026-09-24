@@ -63,11 +63,11 @@ function sourceNode(id: number, extra: Record<string, unknown> = {}) {
   }
 }
 
-function sinkNode(id: number) {
+function sinkNode(id: number, pos: [number, number] = [400, 0]) {
   return {
     id,
     type: 'TestSink',
-    pos: [400, 0],
+    pos,
     size: [200, 100],
     inputs: [{ name: 'image', type: 'IMAGE', link: null }]
   }
@@ -220,6 +220,37 @@ describe('LiveGraphApplier', () => {
       expect.anything(),
       expect.objectContaining({ errorType: 'agent_graph_link_unresolved' })
     )
+  })
+
+  it('parks a far offscreen batch beside existing content and leaves updated nodes where they are', () => {
+    const viewport = { x: 0, y: 0, width: 1000, height: 1000 }
+    const { graph, doc, applier, applyEdit } = setup(
+      { nodes: [sourceNode(1)], links: [] },
+      { viewportBounds: () => viewport }
+    )
+    applier.syncFromDoc(doc, CONTEXT)
+    const existing = graph.getNodeById(toNodeId(1))
+    if (!existing) throw new Error('node 1 was not created')
+    const positionOf = (id: number) => [
+      ...(graph.getNodeById(toNodeId(id))?.pos ?? [])
+    ]
+
+    applyEdit(() => {
+      nodesMap(doc).get('1')?.set('title', 'renamed')
+      nodesMap(doc).set(
+        '2',
+        new Y.Map<unknown>(Object.entries(sourceNode(2, { pos: [9000, 9000] })))
+      )
+      nodesMap(doc).set(
+        '3',
+        new Y.Map<unknown>(Object.entries(sinkNode(3, [9400, 9000])))
+      )
+    })
+
+    expect(existing.title).toBe('renamed')
+    expect(positionOf(1)).toEqual([0, 0])
+    expect(positionOf(2)).toEqual([280, 0])
+    expect(positionOf(3)).toEqual([680, 0])
   })
 
   it('scopes every write to the remote actor', () => {

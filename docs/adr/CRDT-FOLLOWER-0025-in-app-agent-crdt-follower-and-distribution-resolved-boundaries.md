@@ -4,99 +4,179 @@ Date: 2026-08-21
 
 ## Status
 
-Proposed
+Accepted (2026-09-24)
 
-<!-- [Proposed | Accepted | Rejected | Deprecated | Superseded by [ADR-IDENTIFIER](IDENTIFIER-title.md)] -->
+Revised 2026-09-24 by
+[FE-2504](https://linear.app/comfyorg/issue/FE-2504/agentcrdt-remove-store-first-remote-apply-and-every-reconciliation).
+The original 2026-08-21 text decided "stores, not litegraph" as the follower's
+state seam, and the 2026-09-18 amendment blessed `graphMutations` as durable.
+Both are withdrawn; the store-first apply and every reconciliation layer built
+on it were deleted. The distribution-boundary decision, the one-way follower
+invariant, the human write path, and the product gate map are unchanged and
+carried forward below.
 
 ## Context
 
-The In-App Agent runs server-side and needs to read a user's live workflow and write
-graph changes back into the canvas. On the frontend this arrives as a Yjs document
-update produced by a single authoritative writer (the agent's doc-host, running the
-shared `@comfyorg/comfy-multi-player` applier). The frontend's job is to **follow**:
-integrate that update into frontend state and re-render. It does not author semantic
-operations in V1.
+The In-App Agent runs server-side and needs to read a user's live workflow and
+write graph changes back into the canvas. The agent's doc-host runs the single
+authoritative applier (`applyOps` in `@comfyorg/comfy-multi-player`) over a
+shared Yjs document, and broadcasts the resulting update to every subscriber.
+The frontend's job is to **follow**: integrate that update into the live graph
+and re-render. Human canvas edits reach the document only as stamped semantic
+`doc_ops` toward that host applier, never as raw Yjs writes.
 
-The POC (originally branch `poc/fe-crdt-follower`, now mounted with the
-flag-gated agent panel) ships an interim follower that diffs the
-semantic Y.Doc into a `GraphMutation[]` and applies them to `app.graph` through a
-`LitegraphMutator` (`src/workbench/extensions/agent/crdt/`). That path renders, but it
-writes the imperative litegraph layer that the store migration
-([#14246](https://github.com/Comfy-Org/ComfyUI_frontend/pull/14246) and the
-`layoutStore` pattern from [CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)) is replacing,
-and it introduces a second semantic model parallel to the frontend domain stores. It is
-a disposable stopgap, not the durable seam.
+The frontend is delivered to four product surfaces — **Cloud** (`agent.comfy.org`
+and cloud PR previews), **Desktop** (Comfy-Desktop Electron), **Local** (ComfyUI
+on the user's own machine — a real product surface, not a dev rig), and
+**Dev/ephemeral** (a Vite dev server against a selected backend). The build
+models this in `src/platform/distribution/types.ts`
+(`Distribution = 'desktop' | 'localhost' | 'cloud'`, `DISTRIBUTION`, `isCloud`,
+`isDesktop`), resolved by `vite.config.mts` into the compile-time
+`__DISTRIBUTION__` define.
 
-This ADR records two coupled decisions the follower work depends on:
+The follower **apply** path has no product-specific graph semantics — every
+surface receives the same host-made `doc_update` and applies it the same way.
+Only the boundaries around it differ: the transport endpoint (Cloud reaches
+the agent through same-origin ingest; Local and Desktop connect directly to
+the agent binary) and authentication (every surface uses the unified chain in
+`authStore.getAuthHeader()`; Cloud ingest additionally enforces M2M
+server-side). The model provider is never a distribution fork.
 
-1. **What the follower writes into** (the state seam), and
-2. **How one codebase serves four product surfaces** without forking follower semantics.
+### What went wrong with the first seam
 
-The frontend is delivered to four product surfaces — **Cloud** (`agent.comfy.org` and
-cloud PR previews), **Desktop** (Comfy-Desktop Electron), **Local** (ComfyUI on the
-user's own machine — a real product surface, not a dev rig), and **Dev/ephemeral** (a
-Vite dev server against a selected backend). The build models this in
-`src/platform/distribution/types.ts` (`Distribution = 'desktop' | 'localhost' | 'cloud'`,
-`DISTRIBUTION`, `isCloud`, `isDesktop`), resolved by `vite.config.mts` into the
-compile-time `__DISTRIBUTION__` define. Existing code already branches on these constants
-(for example `isCloud` in
-`src/platform/workflow/persistence/composables/useWorkflowPersistenceV2.ts`, `isDesktop`
-in `src/views/GraphView.vue`).
+The first durable follower (`ecsFollowerAdapter` + `graphMutations`, landed
+2026-09) wrote remote state into the Pinia domain stores (`nodeDataStore`,
+`linkStore`, `widgetValueStore`, `layoutStore`) and expected litegraph to adopt
+it afterwards through a materializer. The stores were chosen because the
+store migration was replacing the imperative litegraph layer, and because the
+applier "runs identically in the Node sidecar" ([#16652](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16652)):
+if the frontend and a headless sidecar share one store-shaped model, the
+same apply code serves both.
 
-The follower **apply** path has no product-specific graph semantics — every surface
-receives the same host-made `doc_update` and applies the same Yjs update. Only the
-boundaries around it differ: the transport endpoint (Cloud reaches the agent through
-same-origin ingest; Local and Desktop connect directly to the agent binary; ingest is a
-cloud-only relay that does not exist locally), and authentication (every surface uses the
-unified chain in `authStore.getAuthHeader()`; Cloud ingest additionally enforces M2M
-server-side). The model provider is never a distribution fork — every surface reaches the
-model remotely through the comfy-api proxy.
+That premise was false in two ways. The sidecar never needed frontend stores:
+it runs the same `applyOps` the host runs, over the same Y.Doc, and has no
+canvas to project onto. And in the browser the stores were never the source of
+truth for the canvas — `LGraph`/`LGraphNode`/`LLink` still owned node
+identity, slot arrays, link tables, widget instances, undo, `isModified`, and
+every extension callback. Writing the stores first created a second model that
+the live graph then had to be reconciled with, and every reconciliation
+(snapshot diff, `updateNodeSlots`/`replaceNodeSlots` slot merges, the
+`preserveCanonicalState` successor swap in `LGraph.remove`, a
+`materializeLinkAdapter` on `LLink`, `RemoteMutationContext` on every store
+action, locally-dirty widget tracking) was a patch over one more way the two
+models had drifted. The visible symptoms were duplicated nodes after a tab
+switch, links stranded at slot `-1`, resurrected human deletes, and echoes of
+the user's own edits re-recorded as local changes.
 
 ## Decision
 
-**Follower state seam.** The durable follower merges remote Y.Doc updates directly into
-the yjs-backed frontend domain stores (the `layoutStore` pattern extended to the semantic
-stores); the canvas re-renders reactively from store state. No projector, no
-snapshot-diff, no `LitegraphMutator` in the end state.
+**Follower state seam.** The frontend follower is an adapter that replays the
+host's already-applied document onto the live graph through litegraph's graph
+API, carrying provenance. There is exactly one applier, and it is not in the
+frontend.
 
-- litegraph is a **render target / compatibility boundary**, not the state seam. State
-  lives in the stores; litegraph is painted from them.
-- **Layout stays its own frontend-owned Y.Doc** ([CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)).
-  `pos`, pan/zoom, live drags, and groups do not go in the shared semantic doc; the two
-  docs are composed, not merged.
-- **The follower never writes the shared doc.** Raw Yjs updates flow host to follower
-  one-way only.
-- The op stamp `[base_version, actor, op_id]` is load-bearing for the eventual
-  human-write / merge path and is not replaced by any store command layer's own IDs.
-- The applier is the single shared package `@comfyorg/comfy-multi-player`, pinned by SHA.
-  There must be no second applier implementation in the frontend.
-- ~~V1 is follow-only and needs no public graph-mutations API; the "internal API" is the
-  Yjs binding into the domain stores. The human write-back path (canvas edit to op to
-  host) is a later, separate step.~~ **Amended 2026-08-22 — see the Amendment section
-  below: the human write path co-ships with the follower.** The "no public
-  graph-mutations API" half stands; the sequencing half does not.
+- **`applyOps` in `@comfyorg/comfy-multi-player` is the shared applier.** The
+  frontend imports it (pinned by SHA) for the human write leg's local
+  bookkeeping only; op-to-doc semantics and conflict resolution are never
+  reimplemented here.
+- **The follower writes the graph API, not the stores.** Per delivered frame,
+  `DocChangeCollector` records which document nodes, widgets, and links changed;
+  `LiveGraphApplier` turns that into `graph.add`, `graph.remove`,
+  `node.configure`, `origin.connect(...)`, `graph.removeLink`, and widget
+  `setValue` calls on the live `LGraph`. The Pinia stores update as they do
+  for a human edit: as a consequence of the graph API, through the same
+  litegraph callbacks. No store action takes a remote-context parameter.
+- **Provenance is call-carried.** Every remote write runs inside
+  `withGraphIntentSource('agent-remote', ...)` (`src/lib/litegraph/src/graphIntents.ts`)
+  and `layoutStore.withActor(actor, ...)`. `LGraph.add/remove/_addLink/_removeLink/clear`
+  and the widget value seam announce `GraphIntent` events tagged with that
+  source; `docOpMinter` mints `doc_ops` only from `local` intents. Layout
+  operations recorded while the applier writes are stamped with the remote
+  actor instead of this session's, so layout listeners can tell a remote
+  insertion from a local one. `LayoutSource.AgentRemote` remains the
+  designated source for those operations; minting no longer keys on layout
+  source, so nothing is gated on it today.
+- **No echo, by construction.** The host echoes every applied `doc_ops` batch
+  as a `doc_update` stamped with the sender's actor. `useAgentCrdtFollower`
+  drops a non-catch-up frame whose `actor` equals its own
+  (`human:<user>:<tab>`) before it reaches the applier, and settles the
+  optimistic overlay for that workflow. The live graph already holds the edit;
+  applying the echo would only re-run the change tracker. The no-echo
+  acceptance criterion of the original text is met by this entry-point check
+  plus the `agent-remote` source on everything the applier does write.
+- **One frame is one change.** The applier brackets each frame in the
+  canvas's `emitBeforeChange`/`emitAfterChange`, so a remote batch is one undo
+  entry and flips `isModified` once, exactly like a multi-step human edit.
+- **Catch-up is additive, never reconciling.** On subscribe, tab return, or a
+  sequence gap the host resends the document; `LiveGraphApplier.syncFromDoc`
+  creates or updates every document node and link and removes nothing. A live
+  node the document lacks is a local addition whose mint is in flight. A
+  document node whose delete op is still pending on this client
+  (`opSender.pendingOps()`, exposed to the projection as `LocalIntent`) is
+  skipped so catch-up cannot resurrect it. A `doc_reset` clears the graph
+  (`graph.clear()` under the remote source) and replays.
+- **Layout stays its own frontend-owned Y.Doc**
+  ([CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)).
+  `pos`, pan/zoom, live drags, and groups do not go in the shared semantic doc.
+  The applier sets `node.pos` once at insertion (after batch placement,
+  [CRDT-PLACEMENT-0035](CRDT-PLACEMENT-0035-agent-inserted-nodes-land-near-existing-content.md))
+  and excludes `pos`/`size` from later field sync.
+- **The follower never writes the shared doc.** Raw Yjs updates flow host to
+  follower one-way only. Human edits go up as `doc_ops` through `opSender`;
+  `op_id` is minted once and never regenerated on retry.
+- **`LGraph`, `LGraphNode`, `LLink`, and the shared stores stay
+  agent-unaware.** The only litegraph-side additions the agent relies on are
+  `graphIntents.ts` (a generic provenance-tagged mutation announcement) and
+  the `crdt-disjoint` id allocation policy. Anything that only the follower
+  would call does not belong on those classes or stores.
 
-This supersedes the ADR-009-style `LitegraphMutator`/snapshot-diff/semantic-projector
-direction recorded in the workspace; that code remains only as the interim POC behind the
-product gate described below.
+```text
+ human canvas edit ──▶ graph API ──▶ GraphIntent(local) ──▶ docOpMinter ──▶ doc_ops ──▶ host applyOps
+                                                                                            │
+                                            ┌── own actor? drop, settle overlay ◀── doc_update ◀──┘
+                                            │
+ host doc_update ──▶ followerDoc ──▶ DocChangeCollector ──▶ LiveGraphApplier ──▶ graph API
+                                                            (agent-remote source,   │
+                                                             remote layout actor)   ▼
+                                                                          stores + canvas follow
+```
 
-**Distribution boundaries.** Keep one branch and one follower implementation, with
-surface differences isolated behind a small distribution-resolved boundary (rejecting
-both separate per-surface branches and distribution checks scattered through the follower
-core). Introduce a narrow agent connection/configuration seam **when direct-to-agent
-product wiring is implemented** — it resolves the agent HTTP/WS base URL (an
-`AGENT_BASE_URL`-style value), whether the route is same-origin through cloud ingest or
-direct to the local/Desktop agent binary, and credentials by delegating to
-`authStore.getAuthHeader()`. Use `DISTRIBUTION`/`isCloud`/`isDesktop` **inside that
-boundary only**; do not scatter distribution checks through the CRDT apply seam, domain
-stores, or rendering, and never reduce auth to `isCloud` (Local and Desktop are
-authenticated product surfaces). Dev-only Vite proxy/credential behavior stays in Vite
-config and is never treated as Local product behavior.
+### Rejected alternatives
 
-Today the POC follower rides the centralized ComfyUI `api` transport (`api.socket` in
-`src/scripts/api.ts`), which is already distribution-resolved, so no `AGENT_BASE_URL` is
-wired yet; this ADR records the seam as the shape to introduce when the follower stops
-riding `api.socket` and connects to the agent directly.
+- **Store-first apply with litegraph adoption** (the 2026-08-21 decision and
+  its 2026-09-18 amendment). Rejected for the reasons in Context: it creates a
+  second model of the graph and an unbounded reconciliation surface. The
+  premise that store-first code is shared with a Node sidecar was false; the
+  sidecar shares `applyOps`, not the frontend stores.
+- **Snapshot-diff into `GraphMutation[]` via a `LitegraphMutator`** (the
+  original POC). Rejected earlier and still rejected: it reverse-engineered
+  intent from serialized snapshots instead of reading the document's own
+  change set.
+- **Dedupe echoes by `op_id` set instead of actor string.** Would tolerate a
+  future host that coalesces several actors' ops into one update, but the
+  host stamps one actor per update today and `op_id`s are not yet carried on
+  `doc_update`. Revisit if the wire changes.
+- **Whole-graph replace as the mutation primitive.** Clobbers concurrent agent
+  edits mid-turn and kills op-log replay.
+
+**Distribution boundaries.** Keep one branch and one follower implementation,
+with surface differences isolated behind a small distribution-resolved boundary
+(rejecting both separate per-surface branches and distribution checks scattered
+through the follower core). Introduce a narrow agent connection/configuration
+seam **when direct-to-agent product wiring is implemented** — it resolves the
+agent HTTP/WS base URL (an `AGENT_BASE_URL`-style value), whether the route is
+same-origin through cloud ingest or direct to the local/Desktop agent binary,
+and credentials by delegating to `authStore.getAuthHeader()`. Use
+`DISTRIBUTION`/`isCloud`/`isDesktop` **inside that boundary only**; do not
+scatter distribution checks through the CRDT apply seam or rendering, and never
+reduce auth to `isCloud` (Local and Desktop are authenticated product
+surfaces). Dev-only Vite proxy/credential behavior stays in Vite config and is
+never treated as Local product behavior.
+
+Today the follower rides the centralized ComfyUI `api` transport (`api.socket`
+in `src/scripts/api.ts`), which is already distribution-resolved, so no
+`AGENT_BASE_URL` is wired yet; this ADR records the seam as the shape to
+introduce when the follower stops riding `api.socket`.
 
 ```text
                          compile-time __DISTRIBUTION__
@@ -110,7 +190,7 @@ riding `api.socket` and connects to the agent directly.
               endpoint + route + unified auth ◄─────┘
                           │
                           ▼   host → follower only
-              shared follower APPLY / store / render path
+              shared follower APPLY (graph API) / render path
                           │
                           ▼
                         canvas
@@ -119,144 +199,93 @@ riding `api.socket` and connects to the agent directly.
 ```
 
 **Enforcement.** Guard the seams with the centralized `assert(cond, msg)` from
-`src/base/assert.ts` (DEV throws, prod reports to Sentry); the message must name the
-broken invariant and link this ADR (for example: "breaks CRDT follower invariant:
-followers never write the shared doc — see FOLLOWER"). A `.agents/checks/` profile should
-flag direct shared-doc mutation, peer raw-update ingestion, optimistic-overlay-as-update,
-layout fields written into the shared semantic doc, and `op_id` regeneration. Keep the
-op-layer package DOM/litegraph-free via the import-graph guard.
+`src/base/assert.ts` (DEV throws, prod reports to Sentry); the message must
+name the broken invariant and link this ADR. The `.agents/checks/follower-boundary.md`
+profile flags direct shared-doc mutation, follower-side store writes, a second
+applier, reconciliation passes, `op_id` regeneration, and layout fields in the
+semantic doc. Keep the op-layer package DOM/litegraph-free via the import-graph
+guard.
 
 ## Consequences
 
 ### Positive
 
-- The follower writes into the same store layer the codebase is migrating to, so it does
-  not hard-code a seam onto litegraph, the layer being deleted.
-- One shared apply/store/render path means shared fixes, hardening, schema changes, and
-  tests protect all four surfaces at once.
-- Distribution conditionals stay auditable in one configuration layer instead of becoming
-  a core-version × surface-version matrix.
-- Build-time distribution supports dead-code elimination; if endpoint selection must
-  change post-build, the same seam can consume validated runtime config without touching
-  the follower core.
+- One model of the graph. The live `LGraph` is the canvas's source of truth
+  for both human and remote edits; the stores derive from it the same way in
+  both cases, so there is nothing to reconcile.
+- Remote edits get undo, `isModified`, extension callbacks
+  (`onAdded`, `onRemoved`, `onConnectionsChange`, `onConfigure`,
+  `onWidgetChanged`), autogrow, and slot realignment for free, because they
+  run the same code a human edit runs.
+- Litegraph and the stores carry no agent-specific hooks; the agent extension
+  is deletable without touching them.
+- One shared apply/render path means shared fixes and tests protect all four
+  surfaces at once; distribution conditionals stay auditable in one layer.
 
 ### Negative
 
-- The end-state follower depends on the semantic domain stores becoming Yjs-backed; only
-  `layoutStore` is Yjs-backed today, so the real dependency is extending that pattern per
-  store. The product gate below controls follower lifetime, independently of the
-  renderer migration.
-- The largest risk is accidental cloud coupling in the existing same-origin `/ws`
-  transport: if ingest-specific paths, M2M assumptions, or Vite proxy behavior leak past
-  the seam, Local/Desktop can pass contract tests while failing as products. Boundary
-  tests plus at least one browser-observable E2E per shipping topology are required.
-- No-echo (an agent-applied change must not round-trip as a local edit) is **not** a
-  solved property today: the ambient `LayoutSource.External` guard is defeated by the
-  unconditional `setSource(LayoutSource.Canvas)` in `LGraphNode`'s `pos` setter. Treat
-  call-carried provenance (`applyRemote(update, { source, actor })`) as an acceptance
-  criterion of the seam, and do not ship a human write-back path before a test that drives
-  a real `LGraphNode.pos` asserts the recorded source.
+- The follower depends on litegraph's graph API staying a complete mutation
+  funnel. A new mutation path that bypasses `LGraph.add/remove/_addLink/_removeLink`
+  or the widget value seam is invisible to both the minter and the applier's
+  provenance scope; the graph-intent funnel is now load-bearing.
+- Provenance is ambient (a synchronous innermost-wins scope), not a parameter.
+  Asynchronous work started inside an `agent-remote` scope and completed later
+  is attributed `local`. The applier does no asynchronous work today.
+- Echo detection keys on the actor string. Two tabs of one user are two actors
+  (`tabId` is part of the actor), so a second tab applies the first tab's edits
+  as remote, which is correct; but a host that ever coalesces actors would
+  defeat the check.
+- Widget "locally dirty" protection was removed with the store-first layer and
+  nothing replaces it: a catch-up `syncFromDoc` overwrites a live widget value
+  with the document's while a human edit's op is still in flight. If that
+  window matters in practice, the fix is in `LiveGraphApplier.syncFromDoc`
+  (skip widgets with pending own `set_widget` ops), not in the store.
+- The largest distribution risk is unchanged: accidental cloud coupling in the
+  same-origin `/ws` transport. Boundary tests plus at least one
+  browser-observable E2E per shipping topology are required.
 
-## Amendment (2026-08-22) — the human write path co-ships with the follower
+## Human write path (amended 2026-08-22, unchanged by the 2026-09-24 revision)
 
-The original text scoped V1 as follow-only, with the human write-back path as a later,
-separate step. That sequencing is superseded: concurrent human+agent co-editing of one
-shared doc is the product goal, so the write path ships with the follower, not after it.
-This is a sequencing amendment, not an architecture change — every contract above is
-unchanged, and the server side of the write path (the `doc_ops` ingress, actor
-validation, batch caps, sole applier, and echo broadcast) already exists.
+Concurrent human+agent co-editing of one shared doc is the product goal, so the
+write path ships with the follower. The frontend adds, all on the critical
+path:
 
-What the frontend adds, all on the V1 critical path:
+1. **Mutation-to-op minting** — `docOpMinter` listens to `GraphIntent` events
+   with `source === 'local'` and mints semantic ops stamped
+   `[base_version, actor, op_id]`; `op_id` is minted once and never regenerated
+   on retry.
+2. **`doc_ops` sender** — `opSender` sends stamped ops with `base_version`
+   tracking; retries re-send the same op. A paused tab parks batches rather
+   than dropping them ([CRDT-WRITE-0035](CRDT-WRITE-0035-hold-pending-human-ops-across-tab-suspension.md)).
+3. **Optimistic overlay** — pending local ops are presentation-only, cleared on
+   _effect_ (the echoed `doc_update`, which the follower recognises by actor),
+   never encoded as a Yjs update or merged into the shared doc.
+4. **Echo-attribution guard** — the own-actor drop at the follower entry plus
+   `agent-remote` provenance on everything the applier writes.
 
-1. **Mutation-to-op minting** — a canvas edit mints a semantic op stamped
-   `[base_version, actor, op_id]`; `op_id` is minted once and never regenerated on retry.
-2. **`doc_ops` sender** — stamped semantic ops go up on the `doc_ops` frame with
-   `base_version` tracking; retries re-send the same op, never re-mint it.
-3. **Optimistic overlay** — pending local ops render from a presentation-only shadow,
-   cleared on _effect_ (the echoed `doc_update`), not on ack; never encoded as a Yjs
-   update, never merged into the shared doc.
-4. **Echo-attribution guard** — call-carried provenance
-   (`applyRemote(update, { source, actor })`) so the editor's own echo is not re-recorded
-   as a local edit. Already an acceptance criterion above; it is now the gating item on
-   the critical path rather than a precondition for deferred work.
-
-The follower boundary is unchanged: raw Yjs updates still flow host to follower one-way
-only, and the follower still never writes the shared doc. Human edits reach the doc via
-semantic `doc_ops` toward the host's sole applier — never via raw Yjs writes — so the
-write path and the follower invariant coexist by design. Whole-graph replace as the
-mutation primitive (client re-sends the full graph, server diffs and re-mints ops)
-remains rejected: it clobbers concurrent agent edits mid-turn and kills op-log replay.
-
-## Notes
-
-This ADR mirrors two cross-repo workspace decisions (ADR-010 follower direction, ADR-011
-one-branch distribution strategy) into the repository they govern, per the project's
-per-repo governance rule. It relates to [CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)
-(CRDT layout) and [ECS-0008](ECS-0008-entity-component-system.md) (whose unified `World` was
-dropped in favor of dedicated Pinia stores). Linear FE-1330 tracks the store-migration
-dependency.
-
-## Addendum (2026-08-21): spike classification of the follower files
-
-The follower code on this branch splits into a durable core and a disposable spike
-(workspace ADR-013 records the full rationale):
-
-- **Keep (durable, may receive further tests/E2E):** `docFrameClient`, `followerDoc`,
-  `docSchema` + `schemaGuard`, `layoutFollowerBridge`,
-  and the `useAgentCrdtFollower` orchestrator shell.
-- **Dispose (spike-only, no further investment):** `semanticProjector`, `diffSnapshots`,
-  `graphMutations`, `litegraphMutator`, and `followerSeam.integration.test.ts`. These are
-  the interim SUBGRAPH-PROMOTION-0009-lineage render path and are deleted when the
-  apply-remote-update→store adapter lands. Coverage or review findings on these files
-  route to the store-adapter work, not to polishing the spike.
-
-## Amendment (2026-09-18): `graphMutations` is the store adapter's mutation layer
-
-The store adapter anticipated above landed as `ecsFollowerAdapter`, and
-`semanticProjector`, `diffSnapshots`, and `litegraphMutator` were deleted with
-the spike. `graphMutations` was not: the adapter applies every doc node, link,
-and widget entry through its validated `prepare`/`commit` batch, so it is
-durable and lives beside the adapter in `src/workbench/extensions/agent/crdt/`.
-Its doc-entry handling is Agent-boundary policy: a catch-up reconcile of a live
-node patches widget values and titles in place rather than re-creating the
-node. `LGraph`, the shared stores, and `LiteGraphGlobal` stay unaware of the
-Agent. This supersedes the 2026-08-21 "Dispose" classification for
-`graphMutations`; the other Dispose entries are already gone.
-
-## Amendment (2026-09-12): product gate and developer diagnostics
+## Product gate and developer diagnostics (amended 2026-09-12)
 
 The runtime product flag, not a build flag, controls follower transport. The
 source of truth is `agentPanelStore.enabled`, also consumed by the docked panel
-and human-operation mint wiring. `useAgentCrdtFollower` observes that store:
-disabled means no client, bridge, adapter, subscription or operation sender;
-enablement starts one scoped follower; revocation synchronously disposes it,
-including listeners, retries and graph watchers. Re-enabling starts a new
-lifetime against the current workflow. Ordinary reconnects and sequence gaps
-within an enabled lifetime retain their existing state-vector recovery behavior.
-
-### Current gate map
+and the doc-op minter. `useAgentCrdtFollower` observes that store: disabled
+means no client, applier, subscription or operation sender; enablement starts
+one scoped follower; revocation synchronously disposes it, including listeners,
+retries and graph watchers. Re-enabling starts a new lifetime against the
+current workflow.
 
 ```text
 PostHog agent-in-app-experience ─┐
 existing development override ──┴─> agentPanelStore.enabled
                                       ├─> docked panel mount
                                       ├─> follower lifetime / transport
-                                      └─> human-operation mint admission
+                                      └─> doc-op minting
 
 crdtDebug URL / saved choice ─> diagnostics resolver ─┐
 agentPanelStore.enabled ──────────────────────────────┴─> debug panel
 
-host document updates ─> follower ─> frontend stores / canvas
+host document updates ─> follower ─> live graph API ─> stores / canvas
 human semantic operations ─> host applier (never raw shared-doc writes)
 ```
-
-`src/extensions/core/agentPanel.ts` currently obtains the product flag from
-`utils/postHogFlagSource.ts`. It retains the existing development-mode override
-and settles the panel gate separately from flag enablement. The general
-`useFeatureFlags` pipeline exists, but is not yet the agent flag's source on
-main. [The pending feature-pipeline migration](https://github.com/Comfy-Org/ComfyUI_frontend/pull/16208)
-changes that producer; the follower continues to consume the same store rather
-than adding a second PostHog or server-feature reader.
 
 | Surface       | Product transport control                               | Diagnostics                                              |
 | ------------- | ------------------------------------------------------- | -------------------------------------------------------- |
@@ -266,21 +295,35 @@ than adding a second PostHog or server-feature reader.
 | Dev/ephemeral | Same store, including the existing development override | URL-controlled; existing development default retained    |
 
 `?crdtDebug=1` enables diagnostics on allowed hosts; `?crdtDebug=0` disables
-them. The existing persisted preference and log-level controls are unchanged.
-Diagnostics cannot enable follower transport, and disabling diagnostics does
-not disable product transport. `window.__agentCrdtPoc` is no longer installed;
-the debug panel consumes a read-only snapshot callback.
+them. Diagnostics cannot enable follower transport, and disabling diagnostics
+does not disable product transport. The debug panel consumes a read-only
+snapshot callback; the `doc_update` dev event carries an `echo` flag for frames
+dropped as own echoes.
 
-The legacy `followerGate.ts` resolver remains unused by production callers.
-`agentCrdtFollower`, `Comfy.Agent.CrdtFollower`, and
-`VITE_AGENT_CRDT_FOLLOWER` are not product controls. The historical
-`dev:cloud:crdt` script still sets the latter, but it does not select transport
-enablement. This map supersedes the earlier env-gate descriptions in this ADR.
+This frontend gate is not a server authorization boundary. No Local or Desktop
+transport is claimed operational solely because its feature gate is enabled.
 
-This frontend gate is not a server authorization boundary. Endpoint selection,
-unified authentication, remote model access, and the one-way shared-document
-follower invariant above remain unchanged. No Local or Desktop transport is
-claimed operational solely because its feature gate is enabled.
+## Notes
+
+This ADR mirrors two cross-repo workspace decisions (ADR-010 follower
+direction, ADR-011 one-branch distribution strategy) into the repository they
+govern. It relates to [CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)
+and [ECS-0008](ECS-0008-entity-component-system.md). Linear FE-1330 tracked
+the store-migration dependency the original text had; that dependency no
+longer exists.
+
+[PM-1293](https://linear.app/comfyorg/issue/PM-1293) proposed a competing
+redesign of widget ownership and node replacement at the agent/litegraph seam,
+built on the store-first layer. FE-2504 resolves it by removing the seam that
+redesign would have reshaped; the widget-in-flight gap it identified survives
+as the locally-dirty consequence above.
+
+Files under `src/workbench/extensions/agent/crdt/` that carry this decision:
+`docFrameClient`, `followerDoc`, `schemaGuard`, `docChangeCollector`,
+`liveGraphApplier`, `agentCrdtProjection`, `docOpMinter`, `opSender`,
+`opCoalescer`, `batchPlacement`, `layoutFollowerBridge`, and the
+`useAgentCrdtFollower` orchestrator. `ecsFollowerAdapter`, `graphMutations`,
+`agentNodeMaterializer`, `pendingOpLedger`, and `followerGate` were deleted.
 
 ### Glossary
 
@@ -290,3 +333,5 @@ claimed operational solely because its feature gate is enabled.
 - **CRDT:** conflict-free replicated data type; here, the host-produced Yjs document.
 - **Distribution:** the build's cloud, desktop or localhost endpoint/configuration category,
   not a rollout decision.
+- **Provenance:** the `GraphIntentSource` (`local` | `agent-remote` | `load`) and layout actor
+  under which a graph-API call runs.

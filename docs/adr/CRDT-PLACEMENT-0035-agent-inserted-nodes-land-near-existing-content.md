@@ -6,15 +6,21 @@ Date: 2026-09-19
 
 Proposed
 
+Amended 2026-09-24 by
+[FE-2504](https://linear.app/comfyorg/issue/FE-2504/agentcrdt-remove-store-first-remote-apply-and-every-reconciliation):
+the trigger, offset, and pure decision function are unchanged; the seam moved
+from `graphMutations`' prepare/commit batch and its `SemanticPlacementPort` to
+`LiveGraphApplier.#placeBatch`, which runs after each frame's nodes are created
+on the live graph.
+
 ## Context
 
 The in-app agent inserts nodes through the CRDT follower: the server emits
 `add_node` operations whose `pos` values are computed remotely — for a
-workflow template, from the template's own baked-in absolute layout.
-`prepareNode()` in `src/workbench/extensions/agent/crdt/graphMutations.ts`
-forwards `payload.pos` into the layout port verbatim. Nothing between the wire
-and the layout store considers what is already on the canvas or where the user
-is looking.
+workflow template, from the template's own baked-in absolute layout. The
+follower creates the live node at the document's `pos` verbatim. Nothing
+between the wire and the canvas considers what is already there or where the
+user is looking.
 
 When the canvas already has content (a LoadImage node the user just placed),
 an inserted template can therefore land thousands of pixels away from
@@ -30,25 +36,22 @@ Forces that constrain where a fix can live:
   server-side improvement is worth pursuing in the service that computes
   `pos` — but the frontend cannot rely on every writer, every version, doing
   so. A client-side invariant is correct regardless of what the server sends.
-- **The layer rule.** `graphMutations.ts` lives in `src/workbench/`, and the
-  layered architecture (`eslint.config.ts`, `import-x/no-restricted-paths`)
-  forbids workbench importing from `src/renderer/` — which is where geometry
-  lives: node bounds in `layoutStore`, the visible area on the canvas's
-  `DragAndScale`. The module already handles this exact tension with a port:
-  `GraphMutationsDeps.layout` is a renderer-owned `SemanticLayoutMutationPort`
-  implemented at the composition root (`AgentPanelRoot.vue`), so the workbench
-  module stays renderer-free while renderer-owned effects happen.
-- **Post-insert layout is already local-first.** The mint port
-  (`layoutMintPort.ts`) mints only `createNode`/`deleteNode`/`clearGraph` —
-  node moves are never minted — and the follower adapter excludes `pos` from
-  in-place resync (`RESYNCED_NODE_FIELDS`). A node's doc coordinates matter
-  once, at insertion; afterwards each client owns its local geometry. Any fix
-  that adjusts placement locally is therefore consistent with the system's
-  existing convergence model, not a new kind of divergence.
-- **Batches are visible at one choke point.** `createGraphMutations` prepares
-  a whole batch before committing it, so a batch-wide decision (one shared
-  offset) has a natural home; nothing downstream sees per-node placement
-  decisions.
+- **The layer rule.** The follower lives in `src/workbench/`, and the layered
+  architecture (`eslint.config.ts`, `import-x/no-restricted-paths`) forbids
+  workbench importing from `src/renderer/` — which is where the viewport lives
+  (the canvas's `DragAndScale`). Node geometry is readable from the live
+  `LGraphNode` (`pos`, `size`) without crossing that line; the viewport is
+  supplied through a dependency implemented at the composition root
+  (`AgentPanelRoot.vue`).
+- **Post-insert layout is already local-first.** Node moves are never minted
+  into the document, and the applier excludes `pos`/`size` from in-place field
+  sync (`SYNCED_NODE_FIELDS`). A node's doc coordinates matter once, at
+  insertion; afterwards each client owns its local geometry. Any fix that
+  adjusts placement locally is therefore consistent with the system's existing
+  convergence model, not a new kind of divergence.
+- **Batches are visible at one choke point.** `LiveGraphApplier.applyChanges`
+  handles one delivered frame and knows which nodes it created, so a
+  batch-wide decision (one shared offset) has a natural home.
 
 ## Decision
 
@@ -58,58 +61,35 @@ already has.** Concretely:
 
 ### Seam
 
-Extend `GraphMutationsDeps` with a second renderer-owned port alongside
-`layout`, implemented where `layout` is implemented today
-(`AgentPanelRoot.vue`) and injected the same way:
-
-```typescript
-interface SemanticPlacementPort {
-  /** Requested bounds of a node already in the scope, from the layout store. */
-  nodeBounds(scope: GraphScope, nodeId: NodeId): PlacementRect | null
-  /**
-   * Visible area in canvas coordinates when the displayed graph is the
-   * scope's owning graph; null otherwise (background workflow, subgraph
-   * editing, no canvas mounted).
-   */
-  viewportBounds(scope: GraphScope): PlacementRect | null
-}
-```
-
-The port is a required member of `GraphMutationsDeps`, never optional: an
-optional port would degrade to a silent never-repositions at any construction
-site that forgot it, and the compiler is the cheapest place to catch that.
-
-`viewportBounds` takes the scope because `ds.visible_area` is expressed in the
-_displayed_ graph's coordinates: an apply can target a background workflow
-(cross-workflow pending) or run while the user is inside a subgraph, and in
-both cases the visible rectangle says nothing about where the batch lands.
-The viewport participates only when the displayed graph is the target scope's
-owning graph; otherwise the port returns null and the bounding-box condition
-alone decides.
+`LiveGraphApplierDeps.viewportBounds()` is a renderer-owned callback implemented
+in `AgentPanelRoot.vue`: it returns the canvas's `ds.visible_area` in canvas
+coordinates when the displayed graph is the root graph the follower is bound
+to, and `null` otherwise (no canvas mounted, or the user is inside a subgraph,
+where the visible rectangle says nothing about where a root-graph batch
+lands). The viewport participates only when known; otherwise the bounding-box
+condition alone decides.
 
 All decision logic is a pure function in workbench
 (`src/workbench/extensions/agent/crdt/batchPlacement.ts`): given the existing
-nodes' rects, the viewport rect (nullable), and the incoming batch's requested
-rects, it returns a single `{ dx, dy }` or `null`. `createGraphMutations`
-applies it between `prepare()` and `commit()`, and the eligibility filter is
-the mutation's **queued origin, not its prepared kind**: only mutations queued
-as `addNode` — the wire `add_node` op — are repositioned. Prepared kind is not
-a safe proxy: a `reconcileNodeFields` for a node that is not yet live also
-_prepares_ as an add (that is exactly what a resync produces when it
-materializes a subgraph host onto the canvas), and resyncs run on the first
-frame of every session and after any failed batch. Repositioning those would
-move content whose coordinates are authoritative catch-up state, not a fresh
-insertion. The queued origin is carried on the prepared mutation so the filter
-is explicit. The offset is computed once for the batch and translates every
-eligible node's `layout.position` and its state's serialized `pos` (the
-materializer configures the live node from `lastSerialization`, which would
-otherwise re-apply the raw coordinates over the adopted layout entry); it
-then flows through the existing `layout.createNode` command unchanged.
+nodes' rects, the viewport rect (nullable), and the incoming batch's rects, it
+returns a single `{ dx, dy }` or `null`. `LiveGraphApplier.#placeBatch` calls
+it after a frame's nodes and links are on the graph, with "existing" being
+every live node the frame did not create and "incoming" the nodes it did. The
+offset is applied by assigning `node.pos` inside the same remote-provenance
+scope as the rest of the frame, so the layout store records the move under the
+remote actor and nothing mints it back.
+
+Eligibility is "created by this pass". A node the frame only updated, or
+recreated because its document `type` changed, is not moved. Catch-up
+(`syncFromDoc`) uses the same `#placeBatch` for the nodes it creates: a client
+that returns to a tab and finds nodes inserted while it was away places them
+exactly as it would have had it received them live. A fresh client replaying
+the whole document onto an empty canvas has no existing content and receives
+no offset.
 
 ### Batch granularity
 
-A batch is one applied doc frame (`applyQueuedFrame` →
-`session.mutations.batch(...)`). On the wire, one agent tool call's operations
+A batch is one applied doc frame. On the wire, one agent tool call's operations
 travel together as a single `graph_ops` event and apply as a single frame —
 verified against the recorded conversation corpus: a batched tool call
 carries its multiple `add_node` ops in one `graph_ops` event
@@ -164,10 +144,10 @@ that only unambiguously lost content moves; they are named constants in
 
 ### What is deliberately not done
 
-The shared document is untouched. Offset positions enter through
-`layout.createNode` with `source: AgentRemote`, which the mint gate already
-refuses to re-mint, so there is no echo, no wire change, and no protocol
-change. The doc keeps the server's coordinates.
+The shared document is untouched. The offset is a `node.pos` assignment inside
+the frame's `agent-remote` provenance scope; the doc-op minter mints from
+`local` graph intents only and never from moves, so there is no echo, no wire
+change, and no protocol change. The doc keeps the server's coordinates.
 
 ### Alternatives considered
 
@@ -178,13 +158,13 @@ change. The doc keeps the server's coordinates.
   and the client invariant stays correct under any server behavior. The
   frontend change does not mask that work; it is the half only the client
   can do.
-- **Renderer-layer post-processing after materialization.** Repositioning
-  after nodes are committed and drawn means visible double-placement, and a
-  second stream of move operations whose provenance is wrong: a local-actor
-  move _would_ mint back into the doc, precisely what remote applies must
-  not do. It also splits placement across two modules.
-- **Importing renderer geometry directly in `graphMutations.ts`.** Forbidden
-  by the layer rule; the rule is why the port seam exists at all.
+- **Renderer-layer post-processing after the frame.** Repositioning after
+  the frame's provenance scope has closed and the canvas has drawn means
+  visible double-placement, and a second stream of move operations whose
+  provenance is wrong: a local-actor move is attributed to the human. It also
+  splits placement across two modules.
+- **Importing renderer geometry directly in the applier.** Forbidden by the
+  layer rule; the rule is why `viewportBounds` is an injected dependency.
 - **Minting corrected positions back into the doc.** Breaks the follower's
   "remote applies never re-mint" invariant, and two clients would race to
   correct the same batch with different answers.
@@ -215,29 +195,27 @@ change. The doc keeps the server's coordinates.
   pre-existing content to anchor to, so it sees the original scattered
   layout. The durable cure for the document itself is the server-side
   follow-up.
-- A failed batch commits nothing and arms a full resync, and resyncs
-  materialize nodes at their doc coordinates through the reconcile path — so
-  an insert recovered by resync never receives an offset, and content already
-  offset locally is unaffected only because reconcile never rewrites layout.
-  Accepted: resyncs are the follower's authoritative recovery mechanism and
-  must not be second-guessed by placement heuristics.
+- Catch-up places the nodes it creates against whatever is live at that
+  moment, so a client that receives an insert live and one that receives it on
+  tab return can offset the same batch differently if their canvases differed.
+  Accepted: post-insert geometry is already local-first.
 - The gap and gutter values are heuristics. Chosen conservative so only
   clearly-lost content moves; a legitimate placement between 0 and 600 px of
   gap is never touched, and anything visible on screen is never touched.
-- Existing-node bounds come from requested geometry in the layout store,
-  which can lag rendered size (see the measurement amendment in
+- Existing-node bounds are the live nodes' `pos`/`size`, which for a node
+  created earlier in the same frame is its configured size before first
+  render (see the measurement amendment in
   [ADR-CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md));
   the error is bounded and the gutter absorbs it.
 
 ## Notes
 
-- The offset is applied to the _requested_ position inside the existing
-  `createNode` command, before it reaches the layout store — no new
-  `LayoutOperation` kind, consistent with the command contract of
+- The offset is a `pos` assignment on a node that already exists, so it
+  reaches the layout store as an ordinary `moveNode` operation stamped with the
+  remote actor — no new `LayoutOperation` kind, consistent with the command
+  contract of
   [ADR-CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md).
 - The follower boundary this decision lives inside is described by
   [ADR-CRDT-FOLLOWER-0025](CRDT-FOLLOWER-0025-in-app-agent-crdt-follower-and-distribution-resolved-boundaries.md).
-- Regression coverage exists ahead of the fix: a unit test in
-  `graphMutations.test.ts` and an e2e spec
-  (`browser_tests/tests/agent/agentTemplatePlacement.spec.ts`) currently
-  marked `it.fails` / `test.fail()`, to be flipped when this lands.
+- The decision function is covered by `batchPlacement.test.ts`; its wiring
+  through the applier by `liveGraphApplier.test.ts`.
