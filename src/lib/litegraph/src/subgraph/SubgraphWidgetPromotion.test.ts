@@ -891,21 +891,53 @@ describe('SubgraphWidgetPromotion', () => {
       expect(promotedWidgetStateByName(outerHost, 'seed').value).toBe(42)
     })
 
-    it('writes serialize and disabled assignments back through the projection', () => {
+    it('keeps serialize and disabled assignments through the projection across arrangement', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }]
       })
-      const { node } = createNodeWithWidget('Test Node', 'number', 42, 'number')
+      const { node, widget } = createNodeWithWidget(
+        'Test Node',
+        'number',
+        42,
+        'number'
+      )
+      widget.disabled = false
       const host = setupPromotedWidget(subgraph, node)
 
       const projected = host.widgets[0]
       expect(projected).toBeDefined()
       projected.disabled = true
       projected.serialize = false
+      host.arrange()
 
       const state = promotedWidgetStates(host)[0]
       expect(state.disabled).toBe(true)
       expect(state.serialize).toBe(false)
+      expect(widget.disabled).toBe(true)
+    })
+
+    it('keeps a synchronized interior label propagating across rebinds', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'seed', type: 'INT' }]
+      })
+      const interiorNode = new LGraphNode('Interior')
+      const input = interiorNode.addInput('value', 'INT')
+      input.widget = { name: 'value' }
+      interiorNode.addOutput('out', 'INT')
+      const widget = interiorNode.addWidget('number', 'value', 0, () => {})
+      widget.label = 'Interior Label'
+      subgraph.add(interiorNode)
+      subgraph.inputNode.slots[0].connect(interiorNode.inputs[0], interiorNode)
+      const host = createTestSubgraphNode(subgraph)
+
+      host.arrange()
+      expect(host.inputs[0].label).toBe('Interior Label')
+
+      host.rebuildInputWidgetBindings()
+
+      widget.label = 'Interior Label v2'
+      host.arrange()
+      expect(host.inputs[0].label).toBe('Interior Label v2')
     })
   })
 

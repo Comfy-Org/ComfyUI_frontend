@@ -5,7 +5,8 @@ import type { WidgetId } from '@/types/widgetId'
 
 export function createPromotedWidgetStoreProjection(
   input: INodeInputSlot,
-  id: WidgetId
+  id: WidgetId,
+  resolveInterior?: () => IBaseWidget | undefined
 ): IBaseWidget {
   const store = useWidgetValueStore()
   const widget: IBaseWidget = {
@@ -46,6 +47,10 @@ export function createPromotedWidgetStoreProjection(
     set disabled(next) {
       const state = store.getWidget(id)
       if (state) state.disabled = next
+      // The interior is authoritative: syncPromotedWidgetState copies its
+      // disabled back, so a host-only write would be reversed on arrange().
+      const interior = resolveInterior?.()
+      if (interior && interior !== widget) interior.disabled = next
     },
     get value() {
       return store.getWidget(id)?.value

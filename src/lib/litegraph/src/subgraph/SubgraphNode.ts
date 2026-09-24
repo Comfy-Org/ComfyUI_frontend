@@ -308,7 +308,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const id = input.widgetId
     if (!id) return
 
-    const widget = createPromotedWidgetStoreProjection(input, id)
+    const widget = createPromotedWidgetStoreProjection(input, id, () =>
+      this._resolveInteriorWidget(input.name)
+    )
     const rec = input as PromotedHostInput
     let hostWidget: IBaseWidget = widget
     if (widget.type === 'button') {
@@ -698,14 +700,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     input.widget.name = subgraphInput.name
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
-    // At bind time a host label differing from the subgraph definition can
-    // only come from serialized instance data; workflows saved before
-    // _labelCustomized existed carry a custom label without the flag.
+    // A label differing from both the subgraph definition and the interior
+    // widget is serialized instance data: workflows saved before
+    // _labelCustomized existed carry a custom label without the flag. A
+    // synced label matches the interior label and stays synchronized.
     const boundInput = input as PromotedHostInput
     if (
       !boundInput._labelCustomized &&
       input.label != null &&
-      input.label !== subgraphInput.label
+      input.label !== subgraphInput.label &&
+      input.label !== interiorWidget.label
     )
       boundInput._labelCustomized = true
 
