@@ -890,6 +890,23 @@ describe('SubgraphWidgetPromotion', () => {
       outerHost.syncPromotedWidgetState()
       expect(promotedWidgetStateByName(outerHost, 'seed').value).toBe(42)
     })
+
+    it('writes serialize and disabled assignments back through the projection', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node } = createNodeWithWidget('Test Node', 'number', 42, 'number')
+      const host = setupPromotedWidget(subgraph, node)
+
+      const projected = host.widgets[0]
+      expect(projected).toBeDefined()
+      projected.disabled = true
+      projected.serialize = false
+
+      const state = promotedWidgetStates(host)[0]
+      expect(state.disabled).toBe(true)
+      expect(state.serialize).toBe(false)
+    })
   })
 
   describe('Tooltip Promotion', () => {

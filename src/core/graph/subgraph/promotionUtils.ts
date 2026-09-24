@@ -2,7 +2,10 @@ import cloneDeep from 'es-toolkit/compat/cloneDeep'
 import { addBreadcrumb } from '@sentry/vue'
 import type { PromotedWidgetSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 import { t } from '@/i18n'
-import type { IContextMenuValue } from '@/lib/litegraph/src/litegraph'
+import type {
+  IContextMenuValue,
+  INodeInputSlot
+} from '@/lib/litegraph/src/litegraph'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { SubgraphNode } from '@/lib/litegraph/src/subgraph/SubgraphNode'
 import type { LinkId } from '@/types/linkId'
@@ -20,6 +23,7 @@ import {
   getPreviewExposureHostLocator,
   usePreviewExposureStore
 } from '@/stores/previewExposureStore'
+import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
@@ -28,6 +32,7 @@ import { widgetId } from '@/types/widgetId'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 
 type PartialNode = Pick<LGraphNode, 'title' | 'id' | 'type'>
+type FallbackSourceSlot = INodeInputSlot & { _createdByPromotion?: boolean }
 type RuntimeWidget = Omit<IBaseWidget, 'options'> &
   Partial<Pick<IBaseWidget, 'options'>>
 
@@ -290,9 +295,17 @@ export function promoteValueWidgetViaSubgraphInput(
   if (!sourceSlot) {
     if (sourceNode.inputs.some((input) => input.name === sourceWidgetName))
       return { ok: false, reason: 'missingSourceSlot' }
-    sourceSlot = sourceNode.addInput(sourceWidgetName, sourceWidget.type, {
-      widget: { name: sourceWidgetName }
-    })
+    // The UI widget type (e.g. number) is not the connection type the backend
+    // declares (e.g. INT); take the slot type from the input spec so upstream
+    // links validate.
+    const fallbackSlot = sourceNode.addInput(
+      sourceWidgetName,
+      useNodeDefStore().getInputSpecForWidget(sourceNode, sourceWidgetName)
+        ?.type ?? '*',
+      { widget: { name: sourceWidgetName } }
+    )
+    ;(fallbackSlot as FallbackSourceSlot)._createdByPromotion = true
+    sourceSlot = fallbackSlot
     createdSourceSlot = true
   }
 
@@ -492,6 +505,16 @@ export function demoteWidget(
         )
         continue
       }
+    }
+  }
+  if (node instanceof LGraphNode) {
+    const sourceSlot = node.getSlotFromWidget(widget)
+    if (sourceSlot && (sourceSlot as FallbackSourceSlot)._createdByPromotion) {
+      const slotIndex = node.inputs.indexOf(sourceSlot)
+      // The backend node does not declare this input; keep it only while
+      // another promotion still links it.
+      if (slotIndex !== -1 && !node.isInputConnected(slotIndex))
+        node.removeInput(slotIndex)
     }
   }
   refreshPromotedWidgetRendering(parents)

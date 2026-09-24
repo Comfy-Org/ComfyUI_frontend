@@ -698,6 +698,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     input.widget.name = subgraphInput.name
     if (inputWidget) Object.setPrototypeOf(input.widget, inputWidget)
 
+    // At bind time a host label differing from the subgraph definition can
+    // only come from serialized instance data; workflows saved before
+    // _labelCustomized existed carry a custom label without the flag.
+    const boundInput = input as PromotedHostInput
+    if (
+      !boundInput._labelCustomized &&
+      input.label != null &&
+      input.label !== subgraphInput.label
+    )
+      boundInput._labelCustomized = true
+
     if (this.id === UNASSIGNED_NODE_ID) {
       // Registering now would key the store under a construction-time id
       // shared by every not-yet-added SubgraphNode (e.g. a clipboard clone

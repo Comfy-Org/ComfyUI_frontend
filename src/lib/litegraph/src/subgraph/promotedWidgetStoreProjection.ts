@@ -36,8 +36,16 @@ export function createPromotedWidgetStoreProjection(
     get serialize() {
       return store.getWidget(id)?.serialize
     },
+    set serialize(next) {
+      const state = store.getWidget(id)
+      if (state) state.serialize = next
+    },
     get disabled() {
       return store.getWidget(id)?.disabled
+    },
+    set disabled(next) {
+      const state = store.getWidget(id)
+      if (state) state.disabled = next
     },
     get value() {
       return store.getWidget(id)?.value
