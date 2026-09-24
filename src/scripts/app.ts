@@ -1030,7 +1030,10 @@ export class ComfyApp {
     await installSecureNodesHost({
       workflowSnapshot: () => {
         if (!this.isGraphReady) {
-          throw new Error('workflow is not ready')
+          reportError(new Error('Workflow snapshot requested before setup'), {
+            errorType: 'secure_nodes_workflow_not_ready'
+          })
+          return null
         }
         return this.rootGraph.serialize()
       }
