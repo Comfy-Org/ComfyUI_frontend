@@ -27,6 +27,14 @@ async function trackWebSocket(
       server.onMessage((message) => {
         ws.send(message)
       })
+    } else {
+      // A closed route is not a socket to send on: until the client
+      // reconnects, getters wait for the next one. Only registered when there
+      // is no server, because onClose disables Playwright's default close
+      // forwarding between the page and the server.
+      ws.onClose(() => {
+        if (current === ws) current = undefined
+      })
     }
     current = ws
     const pending = [...waiters]
