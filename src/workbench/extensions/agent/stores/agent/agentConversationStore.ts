@@ -51,6 +51,15 @@ export const useAgentConversationStore = defineStore(
     let transport: AgentEventTransport | null = null
     let liveMessage: AssistantMessage | null = null
     const backgroundTurns = new Map<string, BackgroundTurn>()
+    // The map itself is not reactive; this mirrors how many stashed turns are
+    // still running, for anything that must outlive a thread switch.
+    const unsettledBackgroundTurns = ref(0)
+    function syncBackgroundTurns(): void {
+      let unsettled = 0
+      for (const entry of backgroundTurns.values())
+        if (!entry.settled) unsettled++
+      unsettledBackgroundTurns.value = unsettled
+    }
     let hydratedMessageIds = new Set<string>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
     const activeIndex = ref(-1)
@@ -149,6 +158,7 @@ export const useAgentConversationStore = defineStore(
       if (event.type === 'agent_message_done') {
         entry.transport.settle()
         entry.settled = true
+        syncBackgroundTurns()
         return
       }
       entry.transport.ingest(event)
@@ -173,6 +183,7 @@ export const useAgentConversationStore = defineStore(
         userText: userTexts.value.get(liveMessage.id),
         settled: false
       })
+      syncBackgroundTurns()
       clearActive()
     }
 
@@ -181,6 +192,7 @@ export const useAgentConversationStore = defineStore(
       const entry = backgroundTurns.get(threadId.value)
       if (!entry) return
       backgroundTurns.delete(threadId.value)
+      syncBackgroundTurns()
       // The stash keys a turn by its message_id while hydrate() re-keys the same
       // turn by the server's turn_id; row.id bridges the two. Matching turns by
       // identity, not by shared user text, is what stops a repeated prompt from
@@ -229,6 +241,7 @@ export const useAgentConversationStore = defineStore(
         if (entry.messageId !== turnId) continue
         entry.transport.settle()
         backgroundTurns.delete(key)
+        syncBackgroundTurns()
         return
       }
     }
@@ -236,6 +249,7 @@ export const useAgentConversationStore = defineStore(
     function dropBackgroundTurns(): void {
       for (const entry of backgroundTurns.values()) entry.transport.settle()
       backgroundTurns.clear()
+      syncBackgroundTurns()
     }
 
     function clearActive(): void {
@@ -313,6 +327,10 @@ export const useAgentConversationStore = defineStore(
       activeIndex.value >= 0 ? messages.value[activeIndex.value] : null
     )
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
+    // The displayed turn, or one stashed by a thread switch that still runs.
+    const hasUnfinishedTurn = computed(
+      () => isStreaming.value || unsettledBackgroundTurns.value > 0
+    )
     const status = computed<ConversationStatus>(() => {
       const message = activeMessage.value
       if (!message?.streaming) return 'idle'
@@ -325,6 +343,7 @@ export const useAgentConversationStore = defineStore(
       activeTurnId,
       threadId,
       isStreaming,
+      hasUnfinishedTurn,
       status,
       latestWorkflowId,
       recordUser,

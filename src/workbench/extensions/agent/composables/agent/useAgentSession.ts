@@ -157,8 +157,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
     answeringAskIds.value = next
   }
 
-  // A turn can outlive the auth token it started with; while one streams, the
-  // user's header is re-presented so the local agent always holds a current
+  // A turn can outlive the auth token it started with; while one runs — the
+  // displayed turn or one a thread switch moved to the background — the user's
+  // header is re-presented so the local agent always holds a current
   // credential. One cheap request every few minutes, unused by the cloud.
   let refreshTimer: ReturnType<typeof setInterval> | undefined
   const stopCredentialRefresh = (): void => {
@@ -166,10 +167,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     refreshTimer = undefined
   }
   watch(
-    () => conversationStore.isStreaming,
-    (streaming) => {
+    () => conversationStore.hasUnfinishedTurn,
+    (running) => {
       stopCredentialRefresh()
-      if (!streaming) return
+      if (!running) return
       refreshTimer = setInterval(() => {
         rest.refreshCredential().catch(() => undefined)
       }, CREDENTIAL_REFRESH_INTERVAL_MS)
