@@ -2008,6 +2008,7 @@
     "removeAll": "Tümünü kaldır",
     "removeAllKeybindingsMessage": "Bu komut için tüm kısayol tuşları kaldırılacak",
     "removeAllKeybindingsTitle": "Tüm kısayol tuşları kaldırılsın mı?",
+    "removeFilter": "{label} filtresini kaldır",
     "removeImage": "Görüntüyü kaldır",
     "removeKeybinding": "Kısayol tuşunu kaldır",
     "removeTag": "Etiketi kaldır",
@@ -2222,8 +2223,10 @@
     "star": "Yıldız"
   },
   "imageCompare": {
+    "afterAlt": "Sonraki görüntü",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "Önceki görüntü",
     "noImages": "Karşılaştırılacak görsel yok"
   },
   "imageCrop": {
@@ -2758,6 +2761,9 @@
     "installationQueue": "Yükleme Kuyruğu",
     "installingDependencies": "Bağımlılıklar yükleniyor...",
     "lastUpdated": "Son Güncelleme",
+    "latestActive": "En Son Etkin",
+    "latestInstallable": "En Son Yüklenebilir",
+    "latestStableVersion": "En son kararlı",
     "latestVersion": "En Son",
     "legacyManagerSearchTip": "ComfyUI-Manager'ı mı arıyorsunuz? Eski yönetici arayüzünü etkinleştirmek için ComfyUI'yi --enable-manager-legacy-ui bayrağı ile başlatabilirsiniz.",
     "legacyManagerUI": "Eski Arayüzü Kullan",
@@ -2779,10 +2785,13 @@
       "updatesAvailable": "Güncellemeler Mevcut"
     },
     "nightlyVersion": "Gecelik",
+    "noActiveVersions": "Bu paketin Etkin sürümü yok.",
+    "noActiveVersionsFlagged": "Bu paketin Etkin sürümü yok. Manager güvenlik ayarlarına tabi olarak yükleme talep etmek için İşaretli bir sürüm seçin.",
     "noDescription": "Açıklama yok",
     "noNodesFound": "Düğüm bulunamadı",
     "noNodesFoundDescription": "Paketin düğümleri ya ayrıştırılamadı ya da paket yalnızca bir ön uç uzantısı ve herhangi bir düğüme sahip değil.",
     "noResultsFound": "Aramanızla eşleşen sonuç bulunamadı.",
+    "noUpdateVersion": "Seçilen güncelleme seçeneği için kullanılabilir sürüm yok.",
     "nodePack": "Düğüm Paketi",
     "nodePackInfo": "Düğüm Paketi Bilgisi",
     "notAvailable": "Mevcut Değil",
@@ -2790,9 +2799,11 @@
       "nodeIdRequired": "Kurulum için Düğüm Kimliği gereklidir"
     },
     "packsSelected": "paket seçildi",
+    "queueWaitingToContinue": "Görevler beklemede. Devam etmek için yeniden deneyin.",
     "repository": "Depo",
     "restartToApplyChanges": "Değişiklikleri uygulamak için lütfen ComfyUI'yi yeniden başlatın",
     "restartingBackend": "Değişiklikleri uygulamak için arka uç yeniden başlatılıyor...",
+    "retryQueueStart": "Yeniden dene",
     "searchPlaceholder": "Ara",
     "selectVersion": "Sürüm Seç",
     "selected": "Seçildi",
@@ -2833,9 +2844,15 @@
     },
     "update": "Güncelle",
     "updateAll": "Tümünü Güncelle",
+    "updateFailed": "Paket sürümü değiştirilemedi. Lütfen tekrar deneyin.",
+    "updateLatestActiveTooltip": "En son Etkin sürüme geçin (varsayılan).",
+    "updateLatestInstallableTooltip": "İşaretli ve Bekleyen sürümler dâhil olmak üzere en son yüklenebilir sürüme geçin. Manager güvenlik ayarları yine geçerlidir.",
+    "updateOptions": "Güncelleme seçenekleri",
     "updateSelected": "Seçilenleri Güncelle",
+    "updateVersionInstalled": "{version} sürümü zaten yüklü.",
     "updatingAllPacks": "Tüm paketler güncelleniyor",
-    "version": "Sürüm"
+    "version": "Sürüm",
+    "versionLoadFailed": "Sürümler yüklenemedi. Bu seçiciyi kapatın ve tekrar deneyin."
   },
   "maskEditor": {
     "activateLayer": "Katmanı Aktifleştir",
@@ -4794,6 +4811,7 @@
     },
     "clearAllFilters": "Tüm filtreleri temizle",
     "error": {
+      "loading": "Şablon açılamadı. Lütfen tekrar deneyin.",
       "templateNotFound": "\"{templateName}\" şablonu bulunamadı"
     },
     "filtersApplied": "{count} filtre uygulandı | {count} filtre uygulandı",
@@ -5074,6 +5092,7 @@
   },
   "workspace": {
     "addedToWorkspace": "Şu çalışma alanına eklendiniz:",
+    "deepLinkStayed": "Bu çalışma alanı açılamadı. Hâlâ {workspaceName} içindesiniz.",
     "inviteAccepted": "Davet kabul edildi",
     "inviteFailed": "Davet kabul edilemedi",
     "switchFailed": "Çalışma alanı değiştirilemedi. Lütfen tekrar deneyin.",

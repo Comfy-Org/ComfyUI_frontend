@@ -10,20 +10,20 @@ import type {
   VideoEditFeature,
   VideoEditValue
 } from '@/lib/litegraph/src/types/widgets'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { Bounds } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 import WidgetVideoEdit from './WidgetVideoEdit.vue'
 
 const hostNode = { id: 'host' }
-const locatorNode = { id: 'inner' }
 
 const mocks = vi.hoisted(() => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { ref: createRef } = require('vue')
   const mocks: {
-    getNodeByLocatorId: ReturnType<typeof vi.fn>
     resolvedSource: unknown
     sourceStatus: Ref<MediaSrcStatus>
     filmstripLoading: Ref<boolean>
@@ -31,7 +31,6 @@ const mocks = vi.hoisted(() => {
     onError: ReturnType<typeof vi.fn>
     retry: ReturnType<typeof vi.fn>
   } = {
-    getNodeByLocatorId: vi.fn(),
     resolvedSource: undefined,
     sourceStatus: createRef('loading'),
     filmstripLoading: createRef(false),
@@ -49,9 +48,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
-  getNodeByLocatorId: mocks.getNodeByLocatorId
-}))
+vi.mock(import('@/utils/graphTraversalUtil'))
 
 vi.mock<unknown>(import('@/composables/video/useVideoSourceUrl'), () => {
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -184,21 +181,23 @@ describe('WidgetVideoEdit', () => {
   it('resolves the source from the host node when no locator is present', () => {
     renderWidget()
 
-    expect(mocks.getNodeByLocatorId).not.toHaveBeenCalled()
+    expect(getNodeByLocatorId).not.toHaveBeenCalled()
     expect(mocks.resolvedSource).toBe(hostNode)
   })
 
   it('resolves a promoted widget through its node locator id', () => {
-    mocks.getNodeByLocatorId.mockReturnValue(locatorNode)
+    const locatorNode = new LGraphNode('inner')
+    locatorNode.id = toNodeId('inner')
+    vi.mocked(getNodeByLocatorId).mockReturnValue(locatorNode)
 
     renderWidget(createWidget({}, { nodeLocatorId: 'sub:42' }))
 
-    expect(mocks.getNodeByLocatorId).toHaveBeenCalledWith({}, 'sub:42')
+    expect(getNodeByLocatorId).toHaveBeenCalledWith({}, 'sub:42')
     expect(mocks.resolvedSource).toBe(locatorNode)
   })
 
   it('falls back to the host node when the locator resolves to nothing', () => {
-    mocks.getNodeByLocatorId.mockReturnValue(null)
+    vi.mocked(getNodeByLocatorId).mockReturnValue(null)
 
     renderWidget(createWidget({}, { nodeLocatorId: 'sub:42' }))
 
