@@ -104,7 +104,7 @@ function bindProjection(graph: LGraph, host: Y.Doc) {
         actor: 'agent:test',
         opIds
       })
-    ).not.toBeNull()
+    ).toMatchObject({ applied: true })
   }
   const hostApplies = (op: Op) => {
     const before = Y.encodeStateVector(host)

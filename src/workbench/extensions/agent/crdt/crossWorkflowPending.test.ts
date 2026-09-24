@@ -57,10 +57,13 @@ const clientState = vi.hoisted(() => ({
 const projectionState = vi.hoisted(() => ({
   bind: vi.fn(),
   unbind: vi.fn(),
-  applyFrame: vi.fn(() => null),
+  applyFrame: vi.fn(() => ({
+    applied: false as const,
+    nodes: { added: [], removed: [] }
+  })),
   syncFromDoc: vi.fn(() => []),
   clearForReset: vi.fn(),
-  discardPending: vi.fn(),
+  discardPending: vi.fn(() => ({ added: [], removed: [] })),
   destroy: vi.fn()
 }))
 

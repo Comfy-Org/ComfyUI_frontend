@@ -145,7 +145,7 @@ describe('pasting a subgraph blueprint through insert_workflow', () => {
     follower.applyRemoteUpdate(seed)
     expect(
       projection.applyFrame({ workflowId: 'workflow', seq: 1, update: seed })
-    ).not.toBeNull()
+    ).toMatchObject({ applied: true })
 
     const op = insertOp(blueprint())
     const vector = Y.encodeStateVector(hostDoc)
@@ -162,7 +162,7 @@ describe('pasting a subgraph blueprint through insert_workflow', () => {
         actor: 'agent:test',
         opIds: [op.op_id]
       })
-    ).not.toBeNull()
+    ).toMatchObject({ applied: true })
 
     const instance = graph.nodes.find(
       (node): node is SubgraphNode => node instanceof SubgraphNode

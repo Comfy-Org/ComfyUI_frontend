@@ -134,7 +134,7 @@ function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
         actor: 'agent:comfy:host',
         opIds: []
       })
-    ).not.toBeNull()
+    ).toMatchObject({ applied: true })
   }
   deliver(Y.encodeStateAsUpdate(host))
   projection.syncFromDoc(WORKFLOW_ID)

@@ -7,6 +7,7 @@ import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
 import { LiveGraphApplier } from './liveGraphApplier'
 import type {
+  FrameChanges,
   LiveGraphApplierDeps,
   RemoteApplyContext
 } from './liveGraphApplier'
@@ -25,6 +26,28 @@ export interface LocalIntent {
 
 const NO_LOCAL_INTENT: LocalIntent = {
   pendingEdits: () => NO_PENDING_LOCAL_EDITS
+}
+
+/** Document node entries one frame added and removed. */
+export interface DocNodeDelta {
+  added: readonly string[]
+  removed: readonly string[]
+}
+
+export type FrameOutcome =
+  | { applied: false; nodes: DocNodeDelta }
+  | { applied: true; nodes: DocNodeDelta; createdNodeIds: NodeId[] }
+
+const EMPTY_DELTA: DocNodeDelta = { added: [], removed: [] }
+
+function docNodeDelta(changes: FrameChanges): DocNodeDelta {
+  const added: string[] = []
+  const removed: string[] = []
+  for (const [id, change] of changes.nodes) {
+    if (change === 'add') added.push(id)
+    else if (change === 'delete') removed.push(id)
+  }
+  return { added, removed }
 }
 
 /**
@@ -61,21 +84,22 @@ export class AgentCrdtProjection {
 
   /**
    * Applies one delivered frame's changes to the live graph. Without a graph
-   * the changes stay collected for the sync that runs once one appears.
-   * @returns ids of nodes the frame created live, or `null` when the frame
-   * addressed a workflow this projection is not bound to or found no graph.
+   * the frame is only consumed: `syncFromDoc` rebuilds from the whole document
+   * once one appears, so nothing is lost by taking the changes now.
    */
-  applyFrame(update: DocUpdate): NodeId[] | null {
+  applyFrame(update: DocUpdate): FrameOutcome {
     const target = this.targets.get(update.workflowId)
-    if (!target || !this.getGraph()) return null
+    if (!target) return { applied: false, nodes: EMPTY_DELTA }
     const changes = target.collector.take()
+    const nodes = docNodeDelta(changes)
+    if (!this.getGraph()) return { applied: false, nodes }
     const { createdNodeIds } = this.applier.applyChanges(
       target.follower.doc,
       changes,
       frameContext(update)
     )
     this.reportMaterialized(update.workflowId, createdNodeIds)
-    return createdNodeIds
+    return { applied: true, nodes, createdNodeIds }
   }
 
   /**
@@ -103,8 +127,10 @@ export class AgentCrdtProjection {
     this.applier.clear(context)
   }
 
-  discardPending(workflowId: string): void {
-    this.targets.get(workflowId)?.collector.discard()
+  /** Drops a frame the graph already holds, reporting what it changed in the document. */
+  discardPending(workflowId: string): DocNodeDelta {
+    const target = this.targets.get(workflowId)
+    return target ? docNodeDelta(target.collector.take()) : EMPTY_DELTA
   }
 
   destroy(): void {

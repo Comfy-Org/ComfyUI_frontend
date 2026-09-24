@@ -106,7 +106,7 @@ function bindFollower(
         actor: 'agent:comfy:host',
         opIds: []
       })
-    ).not.toBeNull()
+    ).toMatchObject({ applied: true })
   }
   projection.bind(WORKFLOW_ID, follower)
   deliver(Y.encodeStateAsUpdate(host))

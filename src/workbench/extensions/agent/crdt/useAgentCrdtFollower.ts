@@ -8,7 +8,6 @@ import {
   watch
 } from 'vue'
 import type { Ref } from 'vue'
-import * as Y from 'yjs'
 
 import type { Op } from '@comfyorg/comfy-multi-player'
 
@@ -26,6 +25,7 @@ import {
   SUBSCRIBE_CATCHUP_GRACE_MS
 } from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
+import type { DocNodeDelta } from './agentCrdtProjection'
 import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
@@ -104,23 +104,6 @@ function liveAddedNodeIds(
   })
 }
 
-function updateNodeIds(update: Uint8Array): NodeId[] {
-  try {
-    return Y.decodeUpdate(update).structs.flatMap((struct) => {
-      if (!(struct instanceof Y.Item)) return []
-      if (
-        String(struct.parent) !== 'nodes' ||
-        typeof struct.parentSub !== 'string'
-      )
-        return []
-      const nodeId = parseNodeId(struct.parentSub)
-      return nodeId ? [nodeId] : []
-    })
-  } catch {
-    return []
-  }
-}
-
 function emitPendingMaterializations(
   workflowId: string,
   actor: string | undefined,
@@ -136,28 +119,28 @@ function emitPendingMaterializations(
 
 function notifyAgentMaterialization(
   update: ClassifiedDocUpdate,
-  added: readonly string[],
+  nodes: DocNodeDelta,
   materialized: readonly NodeId[],
   graph: LGraph | null,
   pendingLiveNodeIds: Set<NodeId>,
   events: AgentCrdtFollowerEvents
 ): void {
+  for (const id of nodes.removed) {
+    const nodeId = parseNodeId(id)
+    if (nodeId) pendingLiveNodeIds.delete(nodeId)
+  }
   const isLiveAgentUpdate =
     !update.catchUp && update.actor?.startsWith('agent:') === true
   if (isLiveAgentUpdate) {
-    if (update.update instanceof Uint8Array) {
-      for (const nodeId of updateNodeIds(update.update))
-        pendingLiveNodeIds.add(nodeId)
-    }
     for (const nodeId of materialized) pendingLiveNodeIds.add(nodeId)
-    for (const id of added) {
+    for (const id of nodes.added) {
       const nodeId = parseNodeId(id)
       if (nodeId) pendingLiveNodeIds.add(nodeId)
     }
   }
   const available = new Set([
     ...materialized,
-    ...liveAddedNodeIds(added, graph)
+    ...liveAddedNodeIds(nodes.added, graph)
   ])
   emitPendingMaterializations(
     update.workflowId,
@@ -395,21 +378,7 @@ function startAgentCrdtFollower(
   })
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
-  // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
-  // exactly which nodes each doc_update added/removed. Rebuilt from zero on
-  // doc_reset (remint) because the lineage broke.
-  let knownDocNodeIds: Set<string> = new Set()
   const pendingLiveNodeIds = new Set<NodeId>()
-  const currentDocNodeIds = (): Set<string> => {
-    try {
-      const doc = bridge.follower.doc as unknown as {
-        getMap: (k: string) => { toJSON: () => Record<string, unknown> }
-      }
-      return new Set(Object.keys(doc.getMap('nodes').toJSON()))
-    } catch {
-      return new Set()
-    }
-  }
   const syncAndReportPending = (workflowId: string): void => {
     const materialized = projection.syncFromDoc(workflowId)
     emitPendingMaterializations(
@@ -427,19 +396,6 @@ function startAgentCrdtFollower(
   }
   const isCurrentWorkflow = (workflowId: unknown): workflowId is string =>
     isTargetActive.value && workflowId === subscribedWorkflowId.value
-  const trackNodeChanges = (): string[] => {
-    const ids = currentDocNodeIds()
-    const added = [...ids].filter((id) => !knownDocNodeIds.has(id))
-    const removed = [...knownDocNodeIds].filter((id) => !ids.has(id))
-    if (added.length > 0 || removed.length > 0)
-      recordDevEvent('doc_nodes_changed', { added, removed })
-    for (const id of removed) {
-      const nodeId = parseNodeId(id)
-      if (nodeId) pendingLiveNodeIds.delete(nodeId)
-    }
-    knownDocNodeIds = ids
-    return added
-  }
   /**
    * The host echoes this tab's own ops back as a `doc_update`. The graph
    * already holds that edit (the intent was minted from it), so the frame is
@@ -449,16 +405,21 @@ function startAgentCrdtFollower(
    */
   const isOwnEcho = (update: ClassifiedDocUpdate): boolean =>
     !update.catchUp && update.actor === ownActor()
-  const applyFrame = (update: ClassifiedDocUpdate): NodeId[] => {
+  const applyFrame = (
+    update: ClassifiedDocUpdate
+  ): { created: NodeId[]; nodes: DocNodeDelta } => {
     if (isOwnEcho(update)) {
-      projection.discardPending(update.workflowId)
+      const nodes = projection.discardPending(update.workflowId)
       incrementOutcome('skipped')
-      return []
+      return { created: [], nodes }
     }
-    const created = projection.applyFrame(update)
-    incrementOutcome(created ? 'applied' : 'skipped')
-    if (created && !update.catchUp) incrementOutcome('appliedLive')
-    return created ?? []
+    const outcome = projection.applyFrame(update)
+    incrementOutcome(outcome.applied ? 'applied' : 'skipped')
+    if (outcome.applied && !update.catchUp) incrementOutcome('appliedLive')
+    return {
+      created: outcome.applied ? outcome.createdNodeIds : [],
+      nodes: outcome.nodes
+    }
   }
 
   const onSubscribed: EventListener = (event) => {
@@ -491,7 +452,7 @@ function startAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const materialized = applyFrame(update)
+    const { created, nodes } = applyFrame(update)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -499,17 +460,12 @@ function startAgentCrdtFollower(
       echo: isOwnEcho(update),
       bytes: update.update instanceof Uint8Array ? update.update.length : null
     })
-    const added = trackNodeChanges()
-    if (!update.actor?.startsWith('agent:')) {
-      const liveDocIds = currentDocNodeIds()
-      for (const nodeId of pendingLiveNodeIds) {
-        if (!liveDocIds.has(nodeId)) pendingLiveNodeIds.delete(nodeId)
-      }
-    }
+    if (nodes.added.length > 0 || nodes.removed.length > 0)
+      recordDevEvent('doc_nodes_changed', nodes)
     notifyAgentMaterialization(
       update,
-      added,
-      materialized,
+      nodes,
+      created,
       getGraph(),
       pendingLiveNodeIds,
       events
@@ -549,7 +505,6 @@ function startAgentCrdtFollower(
     updatesApplied.value = 0
     lastFrameType.value = event.type
     lifecycle.clearStaleProbe()
-    knownDocNodeIds = new Set()
     pendingLiveNodeIds.clear()
     acknowledgedOps = []
     recordDevEvent(
@@ -765,7 +720,6 @@ function startAgentCrdtFollower(
       const justActivated = active && previous?.[1] === false
       lifecycle.clearForRetarget()
       connected.value = false
-      knownDocNodeIds = new Set()
       pendingLiveNodeIds.clear()
       if (!active) {
         deactivateTarget(next, previous?.[0] ?? null)

@@ -21,6 +21,7 @@ import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
+import type { DocNodeDelta, FrameOutcome } from './agentCrdtProjection'
 import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
@@ -55,18 +56,32 @@ const clientState = vi.hoisted(() => ({
   transport: null as DocFrameTransport | null
 }))
 
-const projectionState = vi.hoisted(() => ({
-  intent: null as {
-    pendingEdits(workflowId: string): PendingLocalEdits
-  } | null,
-  bind: vi.fn(),
-  unbind: vi.fn(),
-  applyFrame: vi.fn((_update: unknown): NodeId[] | null => []),
-  syncFromDoc: vi.fn((_workflowId: string): NodeId[] => []),
-  clearForReset: vi.fn(),
-  discardPending: vi.fn(),
-  destroy: vi.fn()
-}))
+const projectionState = vi.hoisted(() => {
+  const NO_NODES: DocNodeDelta = { added: [], removed: [] }
+  const notApplied = (nodes: DocNodeDelta = NO_NODES): FrameOutcome => ({
+    applied: false,
+    nodes
+  })
+  const applied = (
+    createdNodeIds: NodeId[] = [],
+    nodes: DocNodeDelta = NO_NODES
+  ): FrameOutcome => ({ applied: true, nodes, createdNodeIds })
+  return {
+    NO_NODES,
+    notApplied,
+    applied,
+    intent: null as {
+      pendingEdits(workflowId: string): PendingLocalEdits
+    } | null,
+    bind: vi.fn(),
+    unbind: vi.fn(),
+    applyFrame: vi.fn((_update: unknown): FrameOutcome => applied()),
+    syncFromDoc: vi.fn((_workflowId: string): NodeId[] => []),
+    clearForReset: vi.fn(),
+    discardPending: vi.fn((_workflowId: string): DocNodeDelta => NO_NODES),
+    destroy: vi.fn()
+  }
+})
 
 const telemetryState = vi.hoisted(() => ({
   reportError: vi.fn<typeof reportErrorFn>()
@@ -237,7 +252,9 @@ describe('useAgentCrdtFollower', () => {
     sessionStorage.clear()
     bridgeState.current = null
     clientState.transport = null
-    projectionState.applyFrame.mockReset().mockReturnValue([])
+    projectionState.applyFrame
+      .mockReset()
+      .mockReturnValue(projectionState.applied())
     projectionState.syncFromDoc.mockReset().mockReturnValue([])
   })
 
@@ -781,7 +798,9 @@ describe('useAgentCrdtFollower', () => {
     })
 
     it('counts skipped, not applied, when the adapter has no bound session for the frame', () => {
-      projectionState.applyFrame.mockReturnValueOnce(null)
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied()
+      )
       const { unmount, status } = mountFollower('wf-1')
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 7 })
@@ -924,7 +943,9 @@ describe('useAgentCrdtFollower', () => {
     })
 
     it('counts a frame the projection had no binding for as skipped', () => {
-      projectionState.applyFrame.mockReturnValueOnce(null)
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied()
+      )
       const { unmount, status } = mountFollower('wf-1', true, () => fakeGraph)
 
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
@@ -956,9 +977,9 @@ describe('useAgentCrdtFollower', () => {
       const { unmount } = mountFollower('wf-1', true, () => graph.value, {
         onMaterialized
       })
-      bridge().follower.doc = {
-        getMap: () => ({ toJSON: () => ({ '3': {} }) })
-      }
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied({ added: ['3'], removed: [] })
+      )
 
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
@@ -1039,7 +1060,9 @@ describe('useAgentCrdtFollower', () => {
 
     it('reports only live agent materializations, not reconnect catch-up', () => {
       const onMaterialized = vi.fn()
-      projectionState.applyFrame.mockReturnValue([toNodeId(1)])
+      projectionState.applyFrame.mockReturnValue(
+        projectionState.applied([toNodeId(1)])
+      )
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph, {
         onMaterialized
       })
@@ -1076,36 +1099,34 @@ describe('useAgentCrdtFollower', () => {
 
     it('retains a live add until a dependency makes the node visible', () => {
       const onMaterialized = vi.fn()
+      const liveNodeIds = new Set<NodeId>()
       const graph = fromPartial<LGraph>({
-        getNodeById: (id: NodeId) => (id === toNodeId(3) ? {} : null)
+        getNodeById: (id: NodeId) => (liveNodeIds.has(id) ? {} : null)
       })
       const { unmount } = mountFollower('wf-1', true, () => graph, {
         onMaterialized
       })
-      let nodes: Record<string, unknown> = {}
-      bridge().follower.doc = {
-        getMap: () => ({ toJSON: () => nodes })
-      }
-      const source = new Y.Doc()
-      source.getMap('nodes').set('3', { type: 'KSampler' })
 
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([], { added: ['3'], removed: [] })
+      )
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
         seq: 5,
         actor: 'agent:thread:turn',
-        catchUp: false,
-        update: Y.encodeStateAsUpdate(source)
+        catchUp: false
       })
       expect(onMaterialized).not.toHaveBeenCalled()
 
-      nodes = { '3': {} }
-      projectionState.applyFrame.mockReturnValue([toNodeId(3)])
+      liveNodeIds.add(toNodeId(3))
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([toNodeId(3)])
+      )
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
         seq: 4,
         actor: 'host:catch-up',
-        catchUp: true,
-        update: new Uint8Array()
+        catchUp: true
       })
 
       expect(onMaterialized).toHaveBeenCalledExactlyOnceWith({
@@ -1122,25 +1143,22 @@ describe('useAgentCrdtFollower', () => {
       const readyGraph = fromPartial<LGraph>({
         getNodeById: (id: NodeId) => (id === toNodeId(3) ? {} : null)
       })
-      let nodes: Record<string, unknown> = {}
       const { unmount } = mountFollower('wf-1', true, () => graph.value, {
         onMaterialized
       })
-      bridge().follower.doc = {
-        getMap: () => ({ toJSON: () => nodes })
-      }
 
-      const source = new Y.Doc()
-      source.getMap('nodes').set('3', { type: 'KSampler' })
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied({ added: ['3'], removed: [] })
+      )
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
         seq: 9,
         actor: 'agent:thread:turn',
-        catchUp: false,
-        update: Y.encodeStateAsUpdate(source)
+        catchUp: false
       })
-      // The add never enters the observable document set because projection is
-      // still waiting on a dependency; a later delete must still retire it.
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.notApplied({ added: [], removed: ['3'] })
+      )
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
         seq: 10,
@@ -1149,8 +1167,9 @@ describe('useAgentCrdtFollower', () => {
       })
 
       graph.value = readyGraph
-      nodes = { '3': {} }
-      projectionState.applyFrame.mockReturnValue([toNodeId(3)])
+      projectionState.applyFrame.mockReturnValueOnce(
+        projectionState.applied([toNodeId(3)], { added: ['3'], removed: [] })
+      )
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
         seq: 11,

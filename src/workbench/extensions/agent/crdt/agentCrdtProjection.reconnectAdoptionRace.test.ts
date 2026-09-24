@@ -159,7 +159,7 @@ describe('AgentCrdtProjection keeps a hand-wired autogrow link connected', () =>
           actor: 'agent:comfy:host',
           opIds: []
         })
-      ).not.toBeNull()
+      ).toMatchObject({ applied: true })
     }
     /** The host applies real ops and the follower applies the echo, as
      * `AgentFollowerHostSocket` does in the Playwright fixture. */
@@ -187,7 +187,7 @@ describe('AgentCrdtProjection keeps a hand-wired autogrow link connected', () =>
           actor: 'agent:comfy:host',
           opIds: [opId]
         })
-      ).not.toBeNull()
+      ).toMatchObject({ applied: true })
     }
 
     // First agent turn: materializing the seeded connect grows the group's
