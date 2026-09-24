@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { AgentStopClickedMetadata } from '@/platform/telemetry/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
@@ -400,6 +401,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function recordTurnStarted(turnId: TurnId, startsThread: boolean): void {
+    turnStartedAt.set(turnId, Date.now())
+    if (startsThread && pendingThreadSource.value !== null) {
+      onThreadStarted?.(pendingThreadSource.value)
+      pendingThreadSource.value = null
+    }
+  }
+
   function acceptTurn(
     ack: AgentTurnAccepted,
     text: string,
@@ -433,16 +442,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       workflowReferences
     )
     conversationStore.startTurn(turnId)
-    turnStartedAt.set(turnId, Date.now())
-    if (startsThread && pendingThreadSource.value !== null) {
-      onThreadStarted?.(pendingThreadSource.value)
-      pendingThreadSource.value = null
-    }
+    recordTurnStarted(turnId, startsThread)
     if (wasStopRequestedWhileSending()) {
       stopRequestedWhileSending.value = false
       const method = stopMethodWhileSending.value
-      stopMethodWhileSending.value = null
-      void stopTurn(method ?? undefined)
+      stopMethodWhileSending.value = undefined
+      void stopTurn(method)
     }
   }
 
@@ -588,8 +593,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   const stopRequestedWhileSending = ref(false)
-  const stopMethodWhileSending = ref<'button' | 'escape' | null>(null)
+  const stopMethodWhileSending = ref<'button' | 'escape'>()
   const wasStopRequestedWhileSending = () => stopRequestedWhileSending.value
+
+  function captureStopMetadata(
+    turnId: TurnId,
+    method: 'button' | 'escape' | undefined
+  ): AgentStopClickedMetadata | null {
+    const startedAt = turnStartedAt.get(turnId)
+    if (method === undefined || startedAt === undefined) return null
+    return {
+      method,
+      turn_id: turnId,
+      turn_elapsed_ms: Math.max(0, Date.now() - startedAt)
+    }
+  }
 
   async function stopTurn(method?: 'button' | 'escape'): Promise<void> {
     const threadId = conversationStore.threadId
@@ -598,20 +616,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // The POST has not acked yet; remember the intent and cancel on ack.
       if (sending.value) {
         stopRequestedWhileSending.value = true
-        stopMethodWhileSending.value = method ?? null
+        stopMethodWhileSending.value = method
       }
       return
     }
     promptEditState.value = { phase: 'stopping', turnId }
-    const startedAt = turnStartedAt.get(turnId)
-    const stopMetadata =
-      method !== undefined && startedAt !== undefined
-        ? {
-            method,
-            turn_id: turnId,
-            turn_elapsed_ms: Math.max(0, Date.now() - startedAt)
-          }
-        : null
+    const stopMetadata = captureStopMetadata(turnId, method)
     try {
       await rest.cancelMessage(threadId, turnId)
       if (stopMetadata !== null)

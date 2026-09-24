@@ -932,31 +932,52 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.editableTurnId.value).toBeNull()
   })
 
-  it('(d3) stopTurn before the POST acknowledgement cancels the acknowledged turn once', async () => {
-    let resolvePost: ((ack: AgentTurnAccepted) => void) | undefined
-    const postMessage = vi.fn(
-      () =>
-        new Promise<AgentTurnAccepted>((resolve) => {
-          resolvePost = resolve
-        })
-    )
-    const cancelMessage = vi.fn<
-      (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
-    >(async () => ({ status: 'cancelling' }))
-    const rest = fakeRest({ postMessage, cancelMessage })
-    const session = useAgentSession({ rest, events: fakeEvents().source })
-    session.start()
+  it.for([
+    { method: undefined, expectedStops: [] },
+    {
+      method: 'button' as const,
+      expectedStops: [
+        { method: 'button', turn_id: 'msg-1', turn_elapsed_ms: 0 }
+      ]
+    },
+    {
+      method: 'escape' as const,
+      expectedStops: [
+        { method: 'escape', turn_id: 'msg-1', turn_elapsed_ms: 0 }
+      ]
+    }
+  ])(
+    '(d3) preserves a $method stop before the POST acknowledgement',
+    async ({ method, expectedStops }) => {
+      vi.spyOn(Date, 'now').mockReturnValue(1_000)
+      let resolvePost: ((ack: AgentTurnAccepted) => void) | undefined
+      const postMessage = vi.fn(
+        () =>
+          new Promise<AgentTurnAccepted>((resolve) => {
+            resolvePost = resolve
+          })
+      )
+      const cancelMessage = vi.fn<
+        (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
+      >(async () => ({ status: 'cancelling' }))
+      const rest = fakeRest({ postMessage, cancelMessage })
+      const session = useAgentSession({ rest, events: fakeEvents().source })
+      session.start()
 
-    const sending = session.sendMessage('go')
-    await session.stopTurn()
-    expect(cancelMessage).not.toHaveBeenCalled()
+      const sending = session.sendMessage('go')
+      await session.stopTurn(method)
+      expect(cancelMessage).not.toHaveBeenCalled()
 
-    resolvePost?.({ thread_id: 'th-1', message_id: 'msg-1' })
-    await sending
+      resolvePost?.({ thread_id: 'th-1', message_id: 'msg-1' })
+      await sending
 
-    expect(cancelMessage).toHaveBeenCalledTimes(1)
-    expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
-  })
+      expect(cancelMessage).toHaveBeenCalledTimes(1)
+      expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
+      expect(
+        telemetry.trackAgentStopClicked.mock.calls.map(([metadata]) => metadata)
+      ).toEqual(expectedStops)
+    }
+  )
 
   it('(g) onStatus(false) aborts the active turn; onStatus(true) is inert', async () => {
     const rest = fakeRest()
