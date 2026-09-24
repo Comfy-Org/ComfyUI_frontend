@@ -19,12 +19,12 @@ const loadingLabel = t('workshop.load.pending', 'en')
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
 const recoveringWorkflow = shallowRef(false)
 const savedWorkflow = shallowRef(false)
-const { session } = useWorkshopSession()
+const session = workflowId ? useWorkshopSession().session : undefined
 watch(
   [
     () => workflowId,
-    () => session.value?.uid,
-    () => session.value?.workspace.id
+    () => session?.value?.uid,
+    () => session?.value?.workspace.id
   ],
   async ([id, uid, workspaceId], _, onCleanup) => {
     savedWorkflow.value = false
