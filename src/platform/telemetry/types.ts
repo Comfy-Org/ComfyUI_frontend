@@ -457,6 +457,7 @@ export interface TemplateLibraryClosedMetadata {
  */
 export interface PageVisibilityMetadata {
   visibility_state: 'visible' | 'hidden'
+  agent_panel_open: boolean
 }
 
 /**
@@ -584,6 +585,7 @@ export type AgentPanelCloseSource =
   | 'close_button'
   | 'workflow_switch'
   | 'topbar_button'
+  | 'pagehide'
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
   source: 'restored' | 'topbar_button' | 'automatic_consent'
 }

@@ -75,6 +75,7 @@ import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
+import { getPageVisibilityMetadata } from '@/workbench/extensions/agent/utils/getPageVisibilityMetadata'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
@@ -313,9 +314,11 @@ const onGraphReady = () => {
     // Set up page visibility tracking (cloud only)
     if (isCloud && telemetry) {
       useEventListener(document, 'visibilitychange', () => {
-        telemetry.trackPageVisibilityChanged({
-          visibility_state: document.visibilityState as 'visible' | 'hidden'
-        })
+        telemetry.trackPageVisibilityChanged(
+          getPageVisibilityMetadata(
+            document.visibilityState as 'visible' | 'hidden'
+          )
+        )
       })
     }
 
