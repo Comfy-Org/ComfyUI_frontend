@@ -14,6 +14,7 @@ import { graphScopeOf } from '@/types/graphScopeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { FollowerDoc } from './followerDoc'
+import { NO_PENDING_LOCAL_EDITS } from './pendingLocalEdits'
 
 class TestSource extends LGraphNode {
   static override title = 'Test Source'
@@ -81,10 +82,19 @@ function nodeIds(graph: LGraph) {
  * unbind, bind again over the same doc, sync the live graph from the whole
  * doc, and deliver the host's catch-up for the follower's state vector.
  */
-function bindFollower(graph: LGraph, saved: ISerialisedGraph) {
+function bindFollower(
+  graph: LGraph,
+  saved: ISerialisedGraph,
+  pendingAddedNodeIds: ReadonlySet<string> = new Set()
+) {
   const host = mint(toWorkflowJson(saved), CATALOG)
   const follower = new FollowerDoc()
-  const projection = new AgentCrdtProjection(() => graph)
+  const projection = new AgentCrdtProjection(() => graph, undefined, {
+    pendingEdits: () => ({
+      ...NO_PENDING_LOCAL_EDITS,
+      addedNodeIds: pendingAddedNodeIds
+    })
+  })
   let seq = 0
   const deliver = (update: Uint8Array): void => {
     follower.applyRemoteUpdate(update)
@@ -151,26 +161,37 @@ beforeEach(() => {
 })
 
 describe('AgentCrdtProjection after a tab return', () => {
-  it('keeps a node the user added whose add_node never reached the doc', () => {
-    const { graph, source } = buildLiveGraph()
-    const { tabReturn, destroy } = bindFollower(
-      graph,
-      structuredClone(graph.serialize())
-    )
-    const added = createRegisteredNode('TestSource')
-    graph.add(added)
-    added.pos = [300, 20]
-    expect(nodeIds(graph).live).toEqual([String(source.id), String(added.id)])
+  it.for([
+    { name: 'keeps', pending: true },
+    { name: 'removes', pending: false }
+  ])(
+    '$name a node the user added whose add_node has not reached the doc when the add is $pending',
+    ({ pending }) => {
+      const { graph, source } = buildLiveGraph()
+      const saved = structuredClone(graph.serialize())
+      const added = createRegisteredNode('TestSource')
+      graph.add(added)
+      added.pos = [300, 20]
+      const { tabReturn, destroy } = bindFollower(
+        graph,
+        saved,
+        pending ? new Set([String(added.id)]) : new Set()
+      )
+      expect(nodeIds(graph).live).toEqual([String(source.id), String(added.id)])
 
-    tabReturn()
+      tabReturn()
 
-    expect(nodeIds(graph)).toEqual({
-      live: [String(source.id), String(added.id)],
-      records: [String(source.id), String(added.id)],
-      serialized: [String(source.id), String(added.id)]
-    })
-    destroy()
-  })
+      const expected = pending
+        ? [String(source.id), String(added.id)]
+        : [String(source.id)]
+      expect(nodeIds(graph)).toEqual({
+        live: expected,
+        records: expected,
+        serialized: expected
+      })
+      destroy()
+    }
+  )
 
   it.for([
     {

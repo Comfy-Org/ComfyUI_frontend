@@ -22,6 +22,7 @@ import { toNodeId } from '@/types/nodeId'
 import { DocChangeCollector } from './docChangeCollector'
 import { LiveGraphApplier } from './liveGraphApplier'
 import type { LiveGraphApplierDeps } from './liveGraphApplier'
+import { NO_PENDING_LOCAL_EDITS, widgetKey } from './pendingLocalEdits'
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
@@ -167,23 +168,89 @@ describe('LiveGraphApplier', () => {
     )
   })
 
-  it('never deletes on a full sync and leaves nodes with a pending local delete alone', () => {
-    const { graph, doc, applier } = setup({
-      nodes: [sourceNode(1), sourceNode(2)],
-      links: []
+  describe('full sync reconciles the live graph to the document', () => {
+    function reconcileSetup() {
+      const { graph, doc, applier } = setup({
+        nodes: [sourceNode(1), sourceNode(2), sinkNode(3)],
+        links: [[40, 1, 0, 3, 0, 'IMAGE']]
+      })
+      applier.syncFromDoc(doc, CONTEXT)
+      const node = (id: number) => {
+        const found = graph.getNodeById(toNodeId(id))
+        if (!found) throw new Error(`node ${id} was not created`)
+        return found
+      }
+      const addLocalNode = () => {
+        const local = LiteGraph.createNode('TestSource')
+        if (!local) throw new Error('TestSource not registered')
+        graph.add(local)
+        return local
+      }
+      return { graph, doc, applier, node, addLocalNode }
+    }
+    const liveNodeIds = (graph: LGraph) => graph._nodes.map((n) => n.id)
+
+    it('removes nodes and links the document lacks and re-creates a locally deleted document node', () => {
+      const { graph, doc, applier, node, addLocalNode } = reconcileSetup()
+      addLocalNode()
+      node(1).disconnectOutput(0)
+      node(2).connect(0, node(3), 0)
+      graph.remove(node(2))
+
+      const result = applier.syncFromDoc(doc, CONTEXT)
+
+      expect(result.createdNodeIds).toEqual([toNodeId(2)])
+      expect(liveNodeIds(graph)).toEqual([
+        toNodeId(1),
+        toNodeId(3),
+        toNodeId(2)
+      ])
+      expect([...graph.links.keys()]).toEqual([toLinkId(40)])
     })
-    applier.syncFromDoc(doc, CONTEXT)
-    const local = LiteGraph.createNode('TestSource')
-    if (!local) throw new Error('TestSource not registered')
-    graph.add(local)
-    const deletedLocally = graph.getNodeById(toNodeId(2))
-    if (!deletedLocally) throw new Error('node 2 was not created')
-    graph.remove(deletedLocally)
 
-    const result = applier.syncFromDoc(doc, CONTEXT, new Set(['2']))
+    it('spares a pending local add and a pending local delete', () => {
+      const { graph, doc, applier, node, addLocalNode } = reconcileSetup()
+      const local = addLocalNode()
+      graph.remove(node(2))
 
-    expect(result.createdNodeIds).toEqual([])
-    expect(graph._nodes.map((node) => node.id)).toEqual([toNodeId(1), local.id])
+      const result = applier.syncFromDoc(doc, CONTEXT, {
+        ...NO_PENDING_LOCAL_EDITS,
+        addedNodeIds: new Set([String(local.id)]),
+        deletedNodeIds: new Set(['2'])
+      })
+
+      expect(result.createdNodeIds).toEqual([])
+      expect(liveNodeIds(graph)).toEqual([toNodeId(1), toNodeId(3), local.id])
+    })
+
+    it('keeps a pending local widget value and overwrites the rest', () => {
+      const { doc, applier, node } = reconcileSetup()
+      node(1).widgets![0].value = 30
+      node(2).widgets![0].value = 30
+
+      applier.syncFromDoc(doc, CONTEXT, {
+        ...NO_PENDING_LOCAL_EDITS,
+        widgetKeys: new Set([widgetKey(1, 'steps')])
+      })
+
+      expect(node(1).widgets![0].value).toBe(30)
+      expect(node(2).widgets![0].value).toBe(20)
+    })
+
+    it('spares a pending local disconnect and a pending local connect', () => {
+      const { graph, doc, applier, node } = reconcileSetup()
+      node(1).disconnectOutput(0)
+      const localLink = node(2).connect(0, node(3), 0)
+      if (!localLink) throw new Error('local connect failed')
+
+      applier.syncFromDoc(doc, CONTEXT, {
+        ...NO_PENDING_LOCAL_EDITS,
+        linkIds: new Set([toLinkId(40), localLink.id])
+      })
+
+      expect([...graph.links.keys()]).toEqual([localLink.id])
+      expect(node(3).inputs[0]?.link).toBe(localLink.id)
+    })
   })
 
   it('mints a later local link above every document link id', () => {

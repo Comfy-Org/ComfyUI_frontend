@@ -114,8 +114,9 @@ function snapshot(graph: LGraph) {
 
 /**
  * Binds a fresh follower session to the doc minted from the graph's own
- * save and delivers the whole doc as the catch-up frame, the way a return
- * to a previously bound workflow tab does.
+ * save and delivers the whole doc as the catch-up frame followed by the
+ * full sync, the way a return to a previously bound workflow tab does.
+ * Later host edits arrive as incremental frames only.
  */
 function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
   const host = mint(toWorkflowJson(saved), CATALOG)
@@ -134,9 +135,9 @@ function bindAndCatchUp(graph: LGraph, saved: ISerialisedGraph) {
         opIds: []
       })
     ).not.toBeNull()
-    projection.syncFromDoc(WORKFLOW_ID)
   }
   deliver(Y.encodeStateAsUpdate(host))
+  projection.syncFromDoc(WORKFLOW_ID)
   const hostEdit = (edit: () => void) => {
     const before = Y.encodeStateVector(host)
     host.transact(edit)
@@ -226,7 +227,7 @@ describe('AgentCrdtProjection catch-up over a live graph', () => {
     destroy()
   })
 
-  it('keeps a local node whose add never reached the doc during a later remote reconcile', () => {
+  it('keeps a local node whose add has not reached the doc through a later incremental frame', () => {
     const { graph } = buildLiveGraph()
     const { host, hostEdit, destroy } = bindAndCatchUp(
       graph,

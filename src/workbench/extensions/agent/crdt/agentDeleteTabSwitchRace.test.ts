@@ -34,6 +34,7 @@ import type { GraphOperation } from './graphOperations'
 import { mintWireOps } from './opEnvelope'
 import type { BatchOutcome, OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
+import { collectPendingLocalEdits } from './pendingLocalEdits'
 
 class DummyNode extends LGraphNode {
   constructor() {
@@ -110,14 +111,12 @@ function setupRaceUntilReturn() {
     () => graph,
     {},
     {
-      pendingDeletes: (workflowId) =>
-        new Set(
+      pendingEdits: (workflowId) =>
+        collectPendingLocalEdits(
           sender
             .pendingOps()
             .filter((batch) => batch.workflowId === workflowId)
             .flatMap((batch) => batch.ops)
-            .filter((op) => op.op === 'delete_node')
-            .map((op) => String(op.node_id))
         )
     }
   )

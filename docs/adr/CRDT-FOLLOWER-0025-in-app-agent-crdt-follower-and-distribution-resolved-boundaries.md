@@ -107,14 +107,19 @@ frontend.
 - **One frame is one change.** The applier brackets each frame in the
   canvas's `emitBeforeChange`/`emitAfterChange`, so a remote batch is one undo
   entry and flips `isModified` once, exactly like a multi-step human edit.
-- **Catch-up is additive, never reconciling.** On subscribe, tab return, or a
-  sequence gap the host resends the document; `LiveGraphApplier.syncFromDoc`
-  creates or updates every document node and link and removes nothing. A live
-  node the document lacks is a local addition whose mint is in flight. A
-  document node whose delete op is still pending on this client
-  (`opSender.pendingOps()`, exposed to the projection as `LocalIntent`) is
-  skipped so catch-up cannot resurrect it. A `doc_reset` clears the graph
-  (`graph.clear()` under the remote source) and replays.
+- **Catch-up makes the live graph match the document, sparing the local
+  human's in-flight edits.** On subscribe, tab return, or a sequence gap the
+  host resends the document; `LiveGraphApplier.syncFromDoc` creates or updates
+  every document node and link and removes the live nodes and links the
+  document lacks. The only exceptions are the local human's own ops the
+  document has not reflected yet (`PendingLocalEdits`: in-flight batches from
+  `opSender.pendingOps()` plus acknowledged ops whose echo frame has not
+  arrived, exposed to the projection as `LocalIntent`). A pending add keeps its
+  node, a pending delete stays deleted, a pending widget write keeps its value,
+  and a pending connect or disconnect keeps its link state, so the
+  result-to-effect window can neither resurrect nor undo a human edit. A
+  `doc_reset` clears the graph (`graph.clear()` under the remote source) and
+  replays.
 - **Layout stays its own frontend-owned Y.Doc**
   ([CRDT-LAYOUT-0003](CRDT-LAYOUT-0003-crdt-layout-intent-and-local-measurement.md)).
   `pos`, pan/zoom, live drags, and groups do not go in the shared semantic doc.

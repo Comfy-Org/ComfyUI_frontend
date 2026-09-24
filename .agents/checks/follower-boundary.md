@@ -64,11 +64,13 @@ Flag:
   whose only caller is the follower. `src/lib/litegraph` and `src/stores` must not mention
   the agent, the follower, or remote apply (except `idAllocation.ts`'s `crdt-disjoint`
   policy and the generic `graphIntents.ts` funnel).
-- **A reconciliation pass** — any code that diffs a snapshot of the live graph against the
-  document or the stores and patches one to match the other (`reconcile*`, `resync*`,
-  snapshot-diff, slot-array merge). The applier reads the document's own change set
-  (`DocChangeCollector`) and, for catch-up, `syncFromDoc` adds and updates only; it never
-  deletes, merges, or "corrects" live state.
+- **A store-level reconciliation pass** — any code that diffs a snapshot of the stores
+  against the live graph or the document and patches one to match the other
+  (`reconcile*`, `resync*`, snapshot-diff, slot-array merge). The applier reads the
+  document's own change set (`DocChangeCollector`) for incremental frames. For catch-up,
+  `syncFromDoc` drives the live graph to the document through the graph API: it adds,
+  updates, and removes graph entities, sparing only the local human's pending edits
+  (`PendingLocalEdits`). It never patches stores or "corrects" store state directly.
 - **Remote writes outside the provenance scope** — a graph-API call for a remote change
   that runs outside `withGraphIntentSource('agent-remote', ...)` / `withRemoteActor`, or
   asynchronous work started inside that scope and finished later (it will be attributed

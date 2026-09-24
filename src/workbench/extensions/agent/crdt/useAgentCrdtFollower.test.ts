@@ -24,6 +24,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
+import type { PendingLocalEdits } from './pendingLocalEdits'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -56,7 +57,7 @@ const clientState = vi.hoisted(() => ({
 
 const projectionState = vi.hoisted(() => ({
   intent: null as {
-    pendingDeletes(workflowId: string): ReadonlySet<string>
+    pendingEdits(workflowId: string): PendingLocalEdits
   } | null,
   bind: vi.fn(),
   unbind: vi.fn(),
@@ -114,7 +115,7 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
       _getGraph: unknown,
       _deps: unknown,
       intent: {
-        pendingDeletes(workflowId: string): ReadonlySet<string>
+        pendingEdits(workflowId: string): PendingLocalEdits
       }
     ) {
       projectionState.intent = intent
@@ -1679,23 +1680,27 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('keeps a human delete pending for the reconcile until the doc no longer holds the node', async () => {
+    it('keeps a human delete pending for the full sync until the doc no longer holds the node', async () => {
       const { unmount, enqueue } = mountWriter('wf-1')
       const intent = projectionState.intent!
-      let docNodes: Record<string, unknown> = { '1': {} }
-      bridge().follower.doc.getMap = () => ({ toJSON: () => docNodes })
+      const doc = new Y.Doc()
+      doc.getMap('nodes').set('1', new Y.Map())
+      bridge().follower.doc = doc
+      const pendingDeletes = (workflowId: string) => [
+        ...intent.pendingEdits(workflowId).deletedNodeIds
+      ]
 
       enqueue([deleteNode('1')])
-      expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
-      expect([...intent.pendingDeletes('wf-2')]).toEqual([])
+      expect(pendingDeletes('wf-1')).toEqual(['1'])
+      expect(pendingDeletes('wf-2')).toEqual([])
 
       await Promise.resolve()
       ackSent(0)
       expect(await settledStates()).toEqual(['acknowledged'])
-      expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
+      expect(pendingDeletes('wf-1')).toEqual(['1'])
 
-      docNodes = {}
-      expect([...intent.pendingDeletes('wf-1')]).toEqual([])
+      doc.getMap('nodes').delete('1')
+      expect(pendingDeletes('wf-1')).toEqual([])
       unmount()
     })
 

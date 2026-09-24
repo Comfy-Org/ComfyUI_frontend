@@ -35,6 +35,8 @@ import {
 } from './agentSubgraphDefinitions'
 import type { PlacementRect } from './batchPlacement'
 import { placementOffset } from './batchPlacement'
+import type { PendingLocalEdits } from './pendingLocalEdits'
+import { NO_PENDING_LOCAL_EDITS, widgetKey } from './pendingLocalEdits'
 
 export type NodeChange = 'add' | 'update' | 'delete'
 
@@ -320,41 +322,78 @@ export class LiveGraphApplier {
   }
 
   /**
-   * Brings the live graph up to the whole document: every document node and
-   * link is created or updated. Nothing is removed; the document is the
-   * source of truth for what exists, and a live node the document lacks is a
-   * local addition whose mint is still in flight. Nodes in `skipNodeIds`
-   * (locally deleted, delete op not yet folded into the document) are left
-   * alone so the pass cannot resurrect them.
+   * Makes the live graph agree with the whole document: every document node
+   * and link is created or updated, and every live node or link the document
+   * lacks is removed. The local human's `pending` edits are the one exception
+   * in both directions, so the pass can neither resurrect a node whose delete
+   * is still in flight nor drop a node, link, or widget value whose op is.
    */
   syncFromDoc(
     doc: Y.Doc,
     context: RemoteApplyContext,
-    skipNodeIds: ReadonlySet<string> = new Set()
+    pending: PendingLocalEdits = NO_PENDING_LOCAL_EDITS
   ): ApplyResult {
     const graph = this.#deps.getGraph()
     if (!graph) return { createdNodeIds: [] }
     return this.#write(graph, context, () => {
       const created: NodeId[] = []
       this.#registerDefinitions(graph, doc)
+      this.#removeAbsentNodes(graph, doc, pending, context)
       nodesMap(doc).forEach((_, id) => {
-        if (skipNodeIds.has(id)) return
+        if (pending.deletedNodeIds.has(id)) return
         this.#try(context, () => {
-          if (this.#upsertNode(graph, doc, id) === 'created')
+          if (
+            this.#upsertNode(graph, doc, id, pending.widgetKeys) === 'created'
+          )
             created.push(toNodeId(id))
         })
       })
+      this.#removeAbsentLinks(graph, doc, pending, context)
       const linkKeys = [...linksMap(doc).keys()].filter((key) => {
         const link = readDocLink(doc, key)
         return (
           !link ||
-          (!skipNodeIds.has(link.origin) && !skipNodeIds.has(link.target))
+          (!pending.deletedNodeIds.has(link.origin) &&
+            !pending.deletedNodeIds.has(link.target) &&
+            !pending.linkIds.has(link.id))
         )
       })
       this.#applyLinks(graph, doc, linkKeys, context)
       this.#placeBatch(graph, created)
       return { createdNodeIds: created }
     })
+  }
+
+  #removeAbsentNodes(
+    graph: LGraph,
+    doc: Y.Doc,
+    pending: PendingLocalEdits,
+    context: RemoteApplyContext
+  ): void {
+    const docNodes = nodesMap(doc)
+    const absent = graph._nodes.filter((node) => {
+      const id = String(node.id)
+      return !docNodes.has(id) && !pending.addedNodeIds.has(id)
+    })
+    for (const node of absent) this.#try(context, () => graph.remove(node))
+  }
+
+  #removeAbsentLinks(
+    graph: LGraph,
+    doc: Y.Doc,
+    pending: PendingLocalEdits,
+    context: RemoteApplyContext
+  ): void {
+    const docLinks = linksMap(doc)
+    const absent = Array.from(graph.links.values()).filter(
+      (link) =>
+        !docLinks.has(String(link.id)) &&
+        !pending.linkIds.has(link.id) &&
+        !pending.addedNodeIds.has(String(link.origin_id)) &&
+        !pending.addedNodeIds.has(String(link.target_id))
+    )
+    for (const link of absent)
+      this.#try(context, () => graph.removeLink(link.id))
   }
 
   /** Empties the live graph, as a document reset replaces everything. */
@@ -438,14 +477,15 @@ export class LiveGraphApplier {
   #upsertNode(
     graph: LGraph,
     doc: Y.Doc,
-    id: string
+    id: string,
+    pendingWidgetKeys: ReadonlySet<string> = new Set()
   ): 'created' | 'recreated' | 'updated' | 'skipped' {
     const docNode = readDocNode(doc, id)
     if (!docNode) return 'skipped'
     const live = graph.getNodeById(toNodeId(id))
     if (live && live.type === docNode.type) {
       this.#applyFields(live, docNode)
-      this.#applyWidgets(live, docNode.widgets)
+      this.#applyWidgets(live, docNode.widgets, pendingWidgetKeys)
       return 'updated'
     }
     if (live) graph.remove(live)
@@ -540,7 +580,11 @@ export class LiveGraphApplier {
     )
   }
 
-  #applyWidgets(node: LGraphNode, widgets: DocNode['widgets']): void {
+  #applyWidgets(
+    node: LGraphNode,
+    widgets: DocNode['widgets'],
+    pendingWidgetKeys: ReadonlySet<string> = new Set()
+  ): void {
     if (widgets === undefined) return
     if (node.isSubgraphNode()) {
       this.#applyHostWidgets(node, widgets)
@@ -554,6 +598,7 @@ export class LiveGraphApplier {
       : Object.entries(widgets)
     for (const [name, value] of entries) {
       if (value === undefined || !isWidgetValue(value)) continue
+      if (pendingWidgetKeys.has(widgetKey(node.id, name))) continue
       const widget = node.widgets?.find((candidate) => candidate.name === name)
       if (!widget) {
         this.#reportOnce(

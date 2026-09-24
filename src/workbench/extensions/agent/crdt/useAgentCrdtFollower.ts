@@ -10,6 +10,8 @@ import {
 import type { Ref } from 'vue'
 import * as Y from 'yjs'
 
+import type { Op } from '@comfyorg/comfy-multi-player'
+
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
@@ -39,6 +41,8 @@ import type {
 import { createOpCoalescer } from './opCoalescer'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
+import type { PendingLocalEdits } from './pendingLocalEdits'
+import { collectPendingLocalEdits, docReflects } from './pendingLocalEdits'
 
 export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
@@ -311,10 +315,10 @@ function startAgentCrdtFollower(
   )
   const tabId = createUuidv4()
   const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
-  // Doc node ids whose human delete the host has applied but whose effect
-  // frame has not yet removed them from the doc. Kept pending for the
-  // reconcile so the result-to-effect window cannot resurrect them.
-  const confirmedDeletes = new Set<string>()
+  // Human ops the host has applied but whose effect frame has not yet reached
+  // the doc. Still pending for a full sync, so the result-to-effect window
+  // can neither resurrect a deleted node nor drop an added one.
+  let acknowledgedOps: Op[] = []
   const sender = createOpSender({
     sendOps: (target, tab, ops) => client.sendOps(target, tab, ops),
     onOpsResult(listener) {
@@ -343,30 +347,24 @@ function startAgentCrdtFollower(
     onBatchSettled: (outcome) => {
       if (outcome.state === 'acknowledged') {
         const applied = new Set(outcome.result.applied)
-        for (const op of outcome.ops) {
-          if (op.op === 'delete_node' && applied.has(op.op_id))
-            confirmedDeletes.add(String(op.node_id))
-        }
+        acknowledgedOps.push(
+          ...outcome.ops.filter((op) => applied.has(op.op_id))
+        )
       }
       recordDevEvent('human_ops_settled', outcome)
     }
   })
-  const pendingHumanDeletes = (workflowId: string): ReadonlySet<string> => {
-    const docNodeIds = currentDocNodeIds()
-    for (const id of confirmedDeletes) {
-      if (!docNodeIds.has(id)) confirmedDeletes.delete(id)
-    }
-    const pending = new Set(confirmedDeletes)
-    for (const batch of sender.pendingOps()) {
-      if (batch.workflowId !== workflowId) continue
-      for (const op of batch.ops) {
-        if (op.op === 'delete_node') pending.add(String(op.node_id))
-      }
-    }
-    return pending
+  const pendingHumanEdits = (workflowId: string): PendingLocalEdits => {
+    const doc = bridge.follower.doc
+    acknowledgedOps = acknowledgedOps.filter((op) => !docReflects(doc, op))
+    const inFlight = sender
+      .pendingOps()
+      .filter((batch) => batch.workflowId === workflowId)
+      .flatMap((batch) => batch.ops)
+    return collectPendingLocalEdits([...acknowledgedOps, ...inFlight])
   }
   const projection = new AgentCrdtProjection(getGraph, applierDeps, {
-    pendingDeletes: pendingHumanDeletes
+    pendingEdits: pendingHumanEdits
   })
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
@@ -526,7 +524,7 @@ function startAgentCrdtFollower(
     lifecycle.clearStaleProbe()
     knownDocNodeIds = new Set()
     pendingLiveNodeIds.clear()
-    confirmedDeletes.clear()
+    acknowledgedOps = []
     recordDevEvent(
       'doc_reset',
       event instanceof CustomEvent ? (event.detail ?? null) : null
@@ -547,7 +545,7 @@ function startAgentCrdtFollower(
       workflowId === subscribedWorkflowId.value
     ) {
       updatesApplied.value = 0
-      confirmedDeletes.clear()
+      acknowledgedOps = []
       projection.discardPending(workflowId)
       projection.bind(workflowId, bridge.follower)
     }

@@ -10,6 +10,8 @@ import type {
   LiveGraphApplierDeps,
   RemoteApplyContext
 } from './liveGraphApplier'
+import type { PendingLocalEdits } from './pendingLocalEdits'
+import { NO_PENDING_LOCAL_EDITS } from './pendingLocalEdits'
 
 interface BoundTarget {
   follower: FollowerDoc
@@ -17,11 +19,13 @@ interface BoundTarget {
 }
 
 export interface LocalIntent {
-  /** Doc node ids whose local delete has not yet left the document. */
-  pendingDeletes(workflowId: string): ReadonlySet<string>
+  /** The local human's edits the document has not yet reflected. */
+  pendingEdits(workflowId: string): PendingLocalEdits
 }
 
-const NO_LOCAL_INTENT: LocalIntent = { pendingDeletes: () => new Set() }
+const NO_LOCAL_INTENT: LocalIntent = {
+  pendingEdits: () => NO_PENDING_LOCAL_EDITS
+}
 
 /**
  * Projects a follower document onto the live graph through the graph API.
@@ -56,13 +60,14 @@ export class AgentCrdtProjection {
   }
 
   /**
-   * Applies one delivered frame's changes to the live graph.
+   * Applies one delivered frame's changes to the live graph. Without a graph
+   * the changes stay collected for the sync that runs once one appears.
    * @returns ids of nodes the frame created live, or `null` when the frame
-   * addressed a workflow this projection is not bound to.
+   * addressed a workflow this projection is not bound to or found no graph.
    */
   applyFrame(update: DocUpdate): NodeId[] | null {
     const target = this.targets.get(update.workflowId)
-    if (!target) return null
+    if (!target || !this.getGraph()) return null
     const changes = target.collector.take()
     const { createdNodeIds } = this.applier.applyChanges(
       target.follower.doc,
@@ -86,7 +91,7 @@ export class AgentCrdtProjection {
     const { createdNodeIds } = this.applier.syncFromDoc(
       target.follower.doc,
       { actor: 'agent-sync', opIds: [] },
-      this.intent.pendingDeletes(workflowId)
+      this.intent.pendingEdits(workflowId)
     )
     this.reportMaterialized(workflowId, createdNodeIds)
     return createdNodeIds
