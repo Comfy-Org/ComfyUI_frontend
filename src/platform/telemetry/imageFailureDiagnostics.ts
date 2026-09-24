@@ -67,15 +67,20 @@ function filenameKind(url: URL): ImageLoadFailureMetadata['filename_kind'] {
 /**
  * Resolves if the page starts going away, so a pending probe cannot hold the
  * report hostage. Never resolves otherwise — it only ever loses the race.
+ *
+ * The caller aborts `signal` once the race settles. Without that the listener
+ * outlives every probe that wins, and this runs on *every* failed image —
+ * including those past the probe cap, where a node retrying a missing file can
+ * produce hundreds in one session.
  */
-function abandonOnUnload(): Promise<
-  Pick<ImageLoadFailureMetadata, 'probe_outcome'>
-> {
+function abandonOnUnload(
+  signal: AbortSignal
+): Promise<Pick<ImageLoadFailureMetadata, 'probe_outcome'>> {
   return new Promise((resolve) => {
     window.addEventListener(
       'pagehide',
       () => resolve({ probe_outcome: 'probe_abandoned' }),
-      { once: true }
+      { once: true, signal }
     )
   })
 }
@@ -172,8 +177,17 @@ export async function describeImageLoadFailure(
   // The report is emitted after the probe resolves, so a page unload mid-probe
   // would drop the event — the diagnostic would cost us the very failure it
   // describes. Losing the status is survivable; losing the report is not.
-  return {
-    ...shape,
-    ...(await Promise.race([probeStatus(src), abandonOnUnload()]))
+  const settled = new AbortController()
+  try {
+    return {
+      ...shape,
+      ...(await Promise.race([
+        probeStatus(src),
+        abandonOnUnload(settled.signal)
+      ]))
+    }
+  } finally {
+    // Drops the pagehide listener whichever side won.
+    settled.abort()
   }
 }
