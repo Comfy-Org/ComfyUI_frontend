@@ -176,13 +176,6 @@ export interface SetNodeZIndexOperation extends NodeOpBase {
  */
 export interface CreateNodeOperation extends NodeOpBase {
   type: 'createNode'
-  /**
-   * Graph that directly contains the node (root or subgraph); equal to
-   * `graphId` for a root-scoped node. Every production emitter sets it. Left
-   * optional here, not required, because a large body of pre-existing
-   * layout-store test fixtures construct root-scoped operations without it.
-   */
-  ownerGraphId?: UUID
   layout: NodeLayout
 }
 
@@ -191,13 +184,6 @@ export interface CreateNodeOperation extends NodeOpBase {
  */
 export interface DeleteNodeOperation extends NodeOpBase {
   type: 'deleteNode'
-  /**
-   * Graph that directly contained the node (root or subgraph); equal to
-   * `graphId` for a root-scoped node. Every production emitter sets it. Left
-   * optional here, not required, because a large body of pre-existing
-   * layout-store test fixtures construct root-scoped operations without it.
-   */
-  ownerGraphId?: UUID
 }
 
 /**
