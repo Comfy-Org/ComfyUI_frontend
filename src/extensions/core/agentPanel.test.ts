@@ -722,7 +722,7 @@ describe('AgentPanel extension flag gate', () => {
     mocks.flagEnabled = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_onAccept, hooks) => {
+      async (_trigger, _onAccept, hooks) => {
         openDialog()
         await flush()
         if (hooks?.canShow?.() === false) return
@@ -787,7 +787,7 @@ describe('AgentPanel extension flag gate', () => {
     mocks.flagEnabled = true
     Object.assign(consentStore, { accepted: false, isChecking: false })
     vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-      async (_onAccept, hooks) => {
+      async (_trigger, _onAccept, hooks) => {
         firstRunTookScreen.value = true
         if (hooks?.canShow?.() === false) return
         hooks?.onShown?.()
@@ -918,7 +918,7 @@ describe('AgentPanel extension flag gate', () => {
       mocks.flagEnabled = true
       Object.assign(consentStore, { accepted: false, isChecking: false })
       vi.mocked(useAgentConsent().withConsent).mockImplementationOnce(
-        async (_onAccept, hooks) => {
+        async (_trigger, _onAccept, hooks) => {
           hooks?.onShown?.()
           openDialog(CONSENT_DIALOG_KEY)
           await flush()
