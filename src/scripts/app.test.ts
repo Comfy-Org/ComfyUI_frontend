@@ -7,7 +7,7 @@ import { useSettingStore } from '@/platform/settings/settingStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
+import { nextTick, ref } from 'vue'
 
 vi.mock(import('@vueuse/router'), () => ({ useRouteHash: () => ref('') }))
 
@@ -274,6 +274,7 @@ describe('ComfyApp', () => {
     vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValue(
       'workspace-token'
     )
+    vi.spyOn(api, 'syncApiNodeCredential').mockResolvedValue(false)
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: 'workspace-a',
       workspaceTransitionGeneration: 0
@@ -829,8 +830,49 @@ describe('ComfyApp', () => {
       finishSwitch()
       await expect(submission).resolves.toBe(true)
 
-      expect(useAuthStore().getWorkspaceAuthToken).toHaveBeenCalledOnce()
+      expect(useAuthStore().getWorkspaceAuthToken).toHaveBeenCalledTimes(2)
       expect(queuePrompt).toHaveBeenCalledOnce()
+    })
+
+    it('resolves a fresh workspace token immediately before each prompt in a batch', async () => {
+      prepareEmptyPromptQueue()
+      vi.mocked(useAuthStore().getWorkspaceAuthToken)
+        .mockResolvedValueOnce('preflight-token')
+        .mockResolvedValueOnce('prompt-token-1')
+        .mockResolvedValueOnce('prompt-token-2')
+      const submittedTokens: Array<string | undefined> = []
+      vi.spyOn(api, 'queuePrompt').mockImplementation(() => {
+        submittedTokens.push(api.authToken)
+        return Promise.resolve({
+          prompt_id: `job-${submittedTokens.length}`,
+          error: ''
+        })
+      })
+
+      await expect(app.queuePrompt(0, 2)).resolves.toBe(true)
+
+      expect(submittedTokens).toEqual(['prompt-token-1', 'prompt-token-2'])
+      expect(useAuthStore().getWorkspaceAuthToken).toHaveBeenCalledTimes(3)
+      expect(api.syncApiNodeCredential).toHaveBeenNthCalledWith(
+        1,
+        'prompt-token-1'
+      )
+      expect(api.syncApiNodeCredential).toHaveBeenNthCalledWith(
+        2,
+        'prompt-token-2'
+      )
+    })
+
+    it('clears prompt credentials when submission fails', async () => {
+      prepareEmptyPromptQueue()
+      vi.spyOn(api, 'queuePrompt').mockRejectedValueOnce(
+        new Error('submission failed')
+      )
+
+      await expect(app.queuePrompt(0)).resolves.toBe(true)
+
+      expect(api.authToken).toBeUndefined()
+      expect(api.apiKey).toBeUndefined()
     })
 
     it('does not submit when an in-progress workspace switch fails', async () => {
@@ -949,6 +991,31 @@ describe('ComfyApp', () => {
       expect(showDialog).toHaveBeenCalledOnce()
     })
 
+    it('does not submit a prompt when the account changes while the credential synchronizes', async () => {
+      prepareEmptyPromptQueue()
+      useAuthStore().currentUser = fromPartial({ uid: 'account-a' })
+      let finishCredentialSync: () => void = () => {}
+      vi.mocked(api.syncApiNodeCredential).mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            finishCredentialSync = () => resolve(false)
+          })
+      )
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      const submission = app.queuePrompt(0)
+      await vi.waitFor(() =>
+        expect(api.syncApiNodeCredential).toHaveBeenCalledOnce()
+      )
+      useAuthStore().currentUser = fromPartial({ uid: 'account-b' })
+      finishCredentialSync()
+
+      await expect(submission).resolves.toBe(false)
+      expect(queuePrompt).not.toHaveBeenCalled()
+      expect(showDialog).toHaveBeenCalledOnce()
+    })
+
     it('does not fall back to an API key when workspace authentication fails', async () => {
       prepareEmptyPromptQueue()
       vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValueOnce(
@@ -977,6 +1044,24 @@ describe('ComfyApp', () => {
       const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
 
       await expect(app.queuePrompt(0)).resolves.toBe(false)
+      expect(queuePrompt).not.toHaveBeenCalled()
+      expect(showDialog).toHaveBeenCalledOnce()
+    })
+
+    it('does not fall back to the API key when a workspaceless Firebase session has no token', async () => {
+      prepareEmptyPromptQueue()
+      useAuthStore().currentUser = fromPartial({ uid: 'firebase-user' })
+      Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+      Object.assign(useApiKeyAuthStore(), { isAuthenticated: true })
+      vi.mocked(useApiKeyAuthStore().getApiKey).mockReturnValue('api-key')
+      vi.mocked(useAuthStore().getWorkspaceAuthToken).mockResolvedValue(
+        undefined
+      )
+      const queuePrompt = vi.spyOn(api, 'queuePrompt')
+      const showDialog = vi.spyOn(useDialogStore(), 'showDialog')
+
+      await expect(app.queuePrompt(0)).resolves.toBe(false)
+
       expect(queuePrompt).not.toHaveBeenCalled()
       expect(showDialog).toHaveBeenCalledOnce()
     })
@@ -1623,6 +1708,35 @@ describe('ComfyApp', () => {
 
       await expect(firstQueue).resolves.toBe(true)
       expect(useExecutionErrorStore().lastNodeErrors).toBeNull()
+    })
+  })
+
+  describe('local API-node credential synchronization', () => {
+    it('pushes the effective token after capability negotiation and token refresh', async () => {
+      useAuthStore().currentUser = fromPartial({ uid: 'firebase-user' })
+      const addEventListener = vi.spyOn(api, 'addEventListener')
+      vi.spyOn(api, 'init').mockResolvedValue(undefined)
+      Reflect.apply(Reflect.get(app, 'addApiUpdateHandlers'), app, [])
+      const featureFlagsHandler = addEventListener.mock.calls.find(
+        ([event]) => event === 'feature_flags'
+      )?.[1] as EventListener | undefined
+
+      featureFlagsHandler?.(new CustomEvent('feature_flags'))
+      await vi.waitFor(() =>
+        expect(api.syncApiNodeCredential).toHaveBeenCalledWith(
+          'workspace-token'
+        )
+      )
+
+      vi.mocked(api.syncApiNodeCredential).mockClear()
+      useAuthStore().tokenRefreshTrigger++
+      await nextTick()
+
+      await vi.waitFor(() =>
+        expect(api.syncApiNodeCredential).toHaveBeenCalledWith(
+          'workspace-token'
+        )
+      )
     })
   })
 

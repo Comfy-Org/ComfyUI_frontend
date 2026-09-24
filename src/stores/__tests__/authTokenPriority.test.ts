@@ -2,6 +2,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
+import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants'
 import type { User } from 'firebase/auth'
 import * as firebaseAuth from 'firebase/auth'
 import type { Mock } from 'vitest'
@@ -274,7 +275,7 @@ describe('auth token priority chain', () => {
       ).toHaveBeenCalledWith('workspace-123')
       expect(
         vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken)
-      ).toHaveBeenCalledWith('workspace-123')
+      ).toHaveBeenCalledWith('workspace-123', TOKEN_REFRESH_BUFFER_MS)
     })
 
     it('waits for workspace initialization before queue authentication', async () => {
@@ -303,7 +304,7 @@ describe('auth token priority chain', () => {
       ).toHaveBeenCalledOnce()
       expect(
         vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken)
-      ).toHaveBeenCalledWith('workspace-123')
+      ).toHaveBeenCalledWith('workspace-123', TOKEN_REFRESH_BUFFER_MS)
     })
 
     it('waits for an in-flight workspace selection before queue authentication', async () => {
@@ -364,7 +365,7 @@ describe('auth token priority chain', () => {
       ).toHaveBeenCalledOnce()
       expect(
         vi.mocked(useWorkspaceAuthStore().ensureWorkspaceToken)
-      ).toHaveBeenCalledWith('workspace-123')
+      ).toHaveBeenCalledWith('workspace-123', TOKEN_REFRESH_BUFFER_MS)
     })
   })
 

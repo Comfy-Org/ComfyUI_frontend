@@ -35,6 +35,7 @@ export type StatusWsMessageStatus = PromptInfo
 export interface StatusWsMessage {
   status?: StatusWsMessageStatus | null
   sid?: string | null
+  credential_key?: string | null
 }
 export interface ProgressWsMessage {
   value: number

@@ -15,6 +15,7 @@ import { storeToRefs } from 'pinia'
 import { get } from 'es-toolkit/compat'
 import { trimEnd } from 'es-toolkit'
 import { ref } from 'vue'
+import { z } from 'zod'
 
 import defaultClientFeatureFlags from '@/config/clientFeatureFlags.json' with { type: 'json' }
 import {
@@ -140,6 +141,29 @@ interface QueuePromptRequestBody {
 }
 
 const FETCH_RESPONSE_HEADERS_TIMEOUT_MS = 60_000
+const API_NODE_CREDENTIAL_KEY_PREFIX = 'Comfy.ApiNode.CredentialKey:'
+const API_NODE_CREDENTIAL_SEQUENCE_PREFIX = 'Comfy.ApiNode.CredentialSeq:'
+
+const WS_CREDENTIAL_AUTH_MESSAGE = 'credential_auth'
+
+// The reconnect handshake runs before feature negotiation, so the advertised
+// identifier is not yet known when it is needed. Accept only a server whose
+// identifier is the one the handshake sends.
+const zApiNodeCredentialCapability = z.object({
+  version: z.literal(1),
+  endpoint: z.string().startsWith('/api/'),
+  websocket_auth_message: z.literal(WS_CREDENTIAL_AUTH_MESSAGE)
+})
+
+type ApiNodeCredentialCapability = z.infer<typeof zApiNodeCredentialCapability>
+
+interface CredentialSyncSession {
+  clientId: string
+  credentialKey: string
+  token: string | null
+  generation: number
+  writeSequence: number
+}
 
 interface FetchApiOptions extends RequestInit {
   timeoutMs?: number | null
@@ -499,6 +523,31 @@ export class ComfyApi extends EventTarget {
    * The API key for the comfy org account if the user logged in via API key.
    */
   apiKey?: string
+  /**
+   * Per-WebSocket secret used to update the local API-node credential
+   * registry and bind prompts to this client. Never sent in URLs or prompt
+   * bodies.
+   */
+  private credentialKey?: string
+  private preparedCredentialClientId?: string
+  private preparedCredentialKey?: string
+  private syncedCredentialToken?: string | null
+  private credentialSyncInFlight?: {
+    clientId: string
+    credentialKey: string
+    token: string | null
+    promise: Promise<boolean>
+  }
+  private credentialSyncGeneration = 0
+  /**
+   * Monotonic write number sent with every credential update. Two updates can
+   * be in flight at once — a token refresh and the clear issued on logout do
+   * not wait for each other — so arrival order does not imply issue order.
+   * The backend stores the sequence it accepted and rejects any write that is
+   * not greater, which is what stops a late old-token write from overwriting
+   * a newer clear.
+   */
+  private credentialWriteSequence = 0
 
   constructor() {
     super()
@@ -521,6 +570,209 @@ export class ComfyApi extends EventTarget {
 
   fileURL(route: string): string {
     return this.api_base + route
+  }
+
+  private getStoredCredentialKey(clientId: string): string | undefined {
+    try {
+      return (
+        sessionStorage.getItem(
+          `${API_NODE_CREDENTIAL_KEY_PREFIX}${clientId}`
+        ) ?? undefined
+      )
+    } catch {
+      return undefined
+    }
+  }
+
+  private storeCredentialKey(clientId: string, credentialKey: string): void {
+    try {
+      sessionStorage.setItem(
+        `${API_NODE_CREDENTIAL_KEY_PREFIX}${clientId}`,
+        credentialKey
+      )
+    } catch {
+      console.warn('Failed to persist local API-node credential session')
+    }
+  }
+
+  /**
+   * Allocates the next write number for this client session, resuming the
+   * count a reload would otherwise restart. The backend keeps a session's
+   * registry entry while a prompt is still bound to it, so a page reload can
+   * re-present the stored credential key to a backend that still remembers
+   * the last sequence it accepted; restarting at 1 there would make every
+   * further update look stale and lock the session out of refreshing.
+   */
+  private nextCredentialWriteSequence(clientId: string): number {
+    let resumed = 0
+    try {
+      const stored = Number(
+        sessionStorage.getItem(
+          `${API_NODE_CREDENTIAL_SEQUENCE_PREFIX}${clientId}`
+        )
+      )
+      if (Number.isSafeInteger(stored) && stored > 0) resumed = stored
+    } catch {
+      // sessionStorage can be unavailable in privacy-restricted contexts.
+    }
+
+    const next = Math.max(this.credentialWriteSequence, resumed) + 1
+    this.credentialWriteSequence = next
+    try {
+      sessionStorage.setItem(
+        `${API_NODE_CREDENTIAL_SEQUENCE_PREFIX}${clientId}`,
+        String(next)
+      )
+    } catch {
+      // Writes still order correctly within this page; only a reload would
+      // restart the count.
+    }
+    return next
+  }
+
+  private clearCredentialKey(clientId?: string): void {
+    if (clientId) {
+      try {
+        sessionStorage.removeItem(
+          `${API_NODE_CREDENTIAL_KEY_PREFIX}${clientId}`
+        )
+        sessionStorage.removeItem(
+          `${API_NODE_CREDENTIAL_SEQUENCE_PREFIX}${clientId}`
+        )
+      } catch {
+        // sessionStorage can be unavailable in privacy-restricted contexts.
+      }
+    }
+    this.credentialKey = undefined
+    this.forgetPreparedCredential()
+    this.credentialSyncInFlight = undefined
+    this.credentialSyncGeneration++
+  }
+
+  private getApiNodeCredentialCapability():
+    | ApiNodeCredentialCapability
+    | undefined {
+    const parsed = zApiNodeCredentialCapability.safeParse(
+      this.getServerFeature('comfy_api_credentials')
+    )
+    return parsed.success ? parsed.data : undefined
+  }
+
+  private hasPreparedCredential(
+    clientId: string,
+    credentialKey: string,
+    token: string | null
+  ): boolean {
+    return (
+      this.preparedCredentialClientId === clientId &&
+      this.preparedCredentialKey === credentialKey &&
+      this.syncedCredentialToken === token
+    )
+  }
+
+  private matchingSyncInFlight(
+    clientId: string,
+    credentialKey: string,
+    token: string | null
+  ) {
+    const inFlight = this.credentialSyncInFlight
+    return inFlight?.clientId === clientId &&
+      inFlight.credentialKey === credentialKey &&
+      inFlight.token === token
+      ? inFlight
+      : undefined
+  }
+
+  private forgetPreparedCredential(): void {
+    this.preparedCredentialClientId = undefined
+    this.preparedCredentialKey = undefined
+    this.syncedCredentialToken = undefined
+  }
+
+  private async pushCredentialToken(
+    session: CredentialSyncSession,
+    endpoint: string
+  ): Promise<boolean> {
+    const { clientId, credentialKey, token, generation, writeSequence } =
+      session
+    try {
+      const response = await this.fetchApi(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Comfy-Client-Id': clientId,
+          'X-Comfy-Credential-Key': credentialKey
+        },
+        body: JSON.stringify({
+          auth_token_comfy_org: token,
+          write_sequence: writeSequence
+        }),
+        timeoutMs: 5000
+      })
+      if (!response.ok) return this.discardSupersededSync(generation)
+    } catch {
+      return this.discardSupersededSync(generation)
+    }
+
+    // The identity may have rotated while the request was in flight; a late
+    // success must not mark the current client as holding the old token.
+    if (
+      generation !== this.credentialSyncGeneration ||
+      clientId !== this.clientId ||
+      credentialKey !== this.credentialKey
+    ) {
+      return this.discardSupersededSync(generation)
+    }
+
+    this.preparedCredentialClientId = clientId
+    this.preparedCredentialKey = credentialKey
+    this.syncedCredentialToken = token
+    return true
+  }
+
+  private discardSupersededSync(generation: number): false {
+    if (generation === this.credentialSyncGeneration) {
+      this.forgetPreparedCredential()
+    }
+    return false
+  }
+
+  /**
+   * Pushes the latest effective bearer token into a capable local ComfyUI.
+   * Returns false for older servers and transient failures so prompt
+   * submission can safely fall back to its credential snapshot.
+   */
+  async syncApiNodeCredential(token: string | null): Promise<boolean> {
+    const capability = this.getApiNodeCredentialCapability()
+    const clientId = this.clientId
+    const credentialKey = this.credentialKey
+    if (!capability || !clientId || !credentialKey) {
+      this.forgetPreparedCredential()
+      return false
+    }
+
+    if (this.hasPreparedCredential(clientId, credentialKey, token)) return true
+
+    const inFlight = this.matchingSyncInFlight(clientId, credentialKey, token)
+    if (inFlight) return inFlight.promise
+
+    const session: CredentialSyncSession = {
+      clientId,
+      credentialKey,
+      token,
+      generation: ++this.credentialSyncGeneration,
+      writeSequence: this.nextCredentialWriteSequence(clientId)
+    }
+    const promise = this.pushCredentialToken(session, capability.endpoint)
+    const pending = { clientId, credentialKey, token, promise }
+    this.credentialSyncInFlight = pending
+    try {
+      return await promise
+    } finally {
+      if (this.credentialSyncInFlight === pending) {
+        this.credentialSyncInFlight = undefined
+      }
+    }
   }
 
   /**
@@ -821,6 +1073,32 @@ export class ComfyApi extends EventTarget {
   }
 
   /**
+   * A protected client id must prove ownership before the backend enters its
+   * normal message loop. Old backends never issue a credential key, so they
+   * continue to receive feature_flags as the first message.
+   */
+  private openSocketHandshake(
+    socket: WebSocket,
+    credentialKey: string | undefined
+  ): void {
+    if (credentialKey) {
+      socket.send(
+        JSON.stringify({
+          type: WS_CREDENTIAL_AUTH_MESSAGE,
+          data: { credential_key: credentialKey }
+        })
+      )
+    }
+
+    socket.send(
+      JSON.stringify({
+        type: 'feature_flags',
+        data: this.getClientFeatureFlags()
+      })
+    )
+  }
+
+  /**
    * Poll status  for colab and other things that don't support websockets.
    */
   private _pollQueue() {
@@ -847,6 +1125,9 @@ export class ComfyApi extends EventTarget {
 
     let opened = false
     const existingSession = window.name
+    const reconnectCredentialKey = existingSession
+      ? this.getStoredCredentialKey(existingSession)
+      : undefined
 
     // Build WebSocket URL with query parameters
     const params = new URLSearchParams()
@@ -890,14 +1171,7 @@ export class ComfyApi extends EventTarget {
 
     socket.addEventListener('open', () => {
       opened = true
-
-      // Send feature flags as the first message
-      socket.send(
-        JSON.stringify({
-          type: 'feature_flags',
-          data: this.getClientFeatureFlags()
-        })
-      )
+      this.openSocketHandshake(socket, reconnectCredentialKey)
 
       if (isReconnect) {
         this.dispatchCustomEvent('reconnected')
@@ -1031,6 +1305,10 @@ export class ComfyApi extends EventTarget {
                 this.clientId = clientId
                 window.name = clientId // use window name so it isn't reused when duplicating tabs
                 sessionStorage.setItem('clientId', clientId) // store in session storage so duplicate tab can load correct workflow
+                if (msg.data.credential_key) {
+                  this.credentialKey = msg.data.credential_key
+                  this.storeCredentialKey(clientId, msg.data.credential_key)
+                }
               }
               this.dispatchCustomEvent('status', msg.data.status ?? null)
               break
@@ -1098,6 +1376,7 @@ export class ComfyApi extends EventTarget {
    */
   async resetSocket(): Promise<void> {
     const previous = this.socket
+    const previousClientId = this.clientId ?? window.name
     // Detach before closing so the previous socket's close handler sees it is
     // no longer the active socket and does not start a competing reconnect.
     this.socket = null
@@ -1105,6 +1384,7 @@ export class ComfyApi extends EventTarget {
     // from window.name (mirrored in session storage), not this.clientId, so the
     // next connect must not inherit the prior account's id.
     this.clientId = undefined
+    this.clearCredentialKey(previousClientId || undefined)
     window.name = ''
     sessionStorage.removeItem('clientId')
     if (previous && previous.readyState !== WebSocket.CLOSED) {
@@ -1224,10 +1504,27 @@ export class ComfyApi extends EventTarget {
       body.number = number
     }
 
+    const preparedCredentialKey = this.preparedCredentialKey
+    // The credential the server holds must still be the token this prompt was
+    // built with; a rotation between the sync and here would bind the prompt to
+    // the previous account.
+    const credentialHeaders: Record<string, string> =
+      this.authToken &&
+      this.syncedCredentialToken === this.authToken &&
+      this.preparedCredentialClientId === body.client_id &&
+      preparedCredentialKey !== undefined &&
+      preparedCredentialKey === this.credentialKey
+        ? {
+            'X-Comfy-Client-Id': body.client_id,
+            'X-Comfy-Credential-Key': preparedCredentialKey
+          }
+        : {}
+
     const res = await this.fetchApi('/prompt', {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        ...credentialHeaders
       },
       body: JSON.stringify(body)
     })
