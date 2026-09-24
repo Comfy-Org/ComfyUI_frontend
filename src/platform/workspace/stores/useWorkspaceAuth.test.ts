@@ -3107,7 +3107,7 @@ describe('useWorkspaceAuthStore', () => {
         expect(reportError).toHaveBeenCalledWith(
           expect.any(Error),
           expect.objectContaining({
-            errorType: 'unified_auth_refresh_permanent_failure',
+            errorType: 'failure_refreshing_unified_auth_permanent',
             tags: { failure_code: code, retry_count: 0 },
             // The toast path owns the console line for this failure.
             logToConsole: false
@@ -3356,7 +3356,7 @@ describe('useWorkspaceAuthStore', () => {
       expect(reportError).toHaveBeenCalledWith(
         expect.any(Error),
         expect.objectContaining({
-          errorType: 'unified_auth_refresh_retries_exhausted',
+          errorType: 'failure_refreshing_unified_auth_retries_exhausted',
           tags: expect.objectContaining({ retry_count: 3 })
         })
       )

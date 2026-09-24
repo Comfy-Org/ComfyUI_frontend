@@ -282,7 +282,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
           'Unified token refresh failed; retries exhausted, the session ends at expiry unless a reactive re-mint lands first'
         ),
         {
-          errorType: 'unified_auth_refresh_retries_exhausted',
+          errorType: 'failure_refreshing_unified_auth_retries_exhausted',
           tags: { retry_count: unifiedScheduledRetryCount }
         }
       )
@@ -303,7 +303,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     reportError(
       new Error(`Unified token refresh failed permanently: ${code}`),
       {
-        errorType: 'unified_auth_refresh_permanent_failure',
+        errorType: 'failure_refreshing_unified_auth_permanent',
         tags: { failure_code: code, retry_count: unifiedScheduledRetryCount },
         // `surfaceUnifiedPermanentFailure` below already writes the console
         // line via `surfacePermanentAuthError`; without this the same failure
