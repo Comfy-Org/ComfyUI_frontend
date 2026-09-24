@@ -283,8 +283,10 @@ export function createPromotedDomWidget(
   // owns a clone instead.
   const element = sourceWidget.element.cloneNode(true) as HTMLElement
   const isValueBearing = 'value' in element
+  const cloneTextarea = element.querySelector('textarea')
   const reflectValueToElement = (value: string) => {
     if (isValueBearing) (element as HTMLInputElement).value = value
+    else if (cloneTextarea) cloneTextarea.value = value
   }
   reflectValueToElement(sourceWidget.value as string)
 
@@ -327,6 +329,34 @@ export function createPromotedDomWidget(
       },
       { signal: inputListenerController.signal }
     )
+  // The clone carries no listeners from the source. For markdown roots,
+  // replay the editing affordances on the clone and push its textarea edits
+  // through the source value, whose callback sync updates the source element
+  // and every other host.
+  if (element.classList.contains('comfy-markdown') && cloneTextarea) {
+    const { signal } = inputListenerController
+    element.addEventListener(
+      'dblclick',
+      () => {
+        element.classList.add('editing')
+        cloneTextarea.focus()
+      },
+      { signal }
+    )
+    cloneTextarea.addEventListener(
+      'blur',
+      () => element.classList.remove('editing'),
+      { signal }
+    )
+    element.addEventListener('keydown', (event) => event.stopPropagation(), {
+      signal
+    })
+    const pushCloneEdits = () => {
+      sourceWidget.value = cloneTextarea.value
+    }
+    cloneTextarea.addEventListener('input', pushCloneEdits, { signal })
+    cloneTextarea.addEventListener('change', pushCloneEdits, { signal })
+  }
   // Setter-driven changes (a button assigning its value) fire no input event;
   // chain the same sync onto the interior callback the setter calls.
   const releaseSourceSync = addSourceCallbackSync(sourceWidget, syncToHost)

@@ -232,6 +232,56 @@ describe('createPromotedDomWidget', () => {
     expect(useWidgetValueStore().getWidget(idB)?.value).toBe('from host b')
   })
 
+  it('keeps promoted markdown clone hosts editable', () => {
+    const root = document.createElement('div')
+    root.classList.add('comfy-markdown')
+    const textarea = document.createElement('textarea')
+    textarea.value = 'first'
+    root.append(textarea)
+    let interiorValue = 'first'
+    const source = new DOMWidgetImpl<HTMLElement, string>({
+      node: subgraphNode(),
+      name: 'preview',
+      type: 'MARKDOWN',
+      element: root,
+      options: {
+        getValue: () => interiorValue,
+        setValue: (value: string) => {
+          interiorValue = value
+          textarea.value = value
+        }
+      }
+    })
+    useWidgetValueStore().registerWidget(WIDGET_ID, {
+      type: 'MARKDOWN',
+      value: 'first',
+      options: {}
+    })
+
+    const widget = promoteDom(source)
+    const clone = widget.element
+    expect(clone).not.toBe(root)
+
+    const cloneTextarea = clone.querySelector('textarea')
+    expect(cloneTextarea?.value).toBe('first')
+
+    clone.dispatchEvent(new MouseEvent('dblclick'))
+    expect(clone.classList.contains('editing')).toBe(true)
+
+    cloneTextarea!.value = 'edited on host'
+    cloneTextarea!.dispatchEvent(new Event('input', { bubbles: true }))
+    expect(source.value).toBe('edited on host')
+    expect(useWidgetValueStore().getWidget(WIDGET_ID)?.value).toBe(
+      'edited on host'
+    )
+
+    source.value = 'from interior'
+    expect(cloneTextarea?.value).toBe('from interior')
+
+    cloneTextarea!.dispatchEvent(new Event('blur'))
+    expect(clone.classList.contains('editing')).toBe(false)
+  })
+
   it('reuses the interior component for component-backed widgets', () => {
     const component = { name: 'WidgetTextPreview' }
     const source = fromAny<IBaseWidget, unknown>({
