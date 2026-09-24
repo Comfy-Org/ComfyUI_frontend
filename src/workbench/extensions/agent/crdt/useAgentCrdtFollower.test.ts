@@ -13,7 +13,6 @@ import type { Ref } from 'vue'
 import * as Y from 'yjs'
 
 import { render } from '@testing-library/vue'
-import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { GraphMutations } from './graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'

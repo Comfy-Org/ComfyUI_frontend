@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
@@ -25,11 +26,13 @@ describe('DEFAULT_MODEL_CAPABILITIES', () => {
 describe('fetchModelData', () => {
   it('returns the arrayBuffer on a successful response', async () => {
     const buf = new ArrayBuffer(8)
-    vi.mocked(api.fetchApi).mockResolvedValue({
-      ok: true,
-      status: 200,
-      arrayBuffer: vi.fn().mockResolvedValue(buf)
-    } as unknown as Response)
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      fromAny<Response, unknown>({
+        ok: true,
+        status: 200,
+        arrayBuffer: vi.fn().mockResolvedValue(buf)
+      })
+    )
 
     const result = await fetchModelData('api/view?...&filename=', 'model.glb')
 
@@ -37,10 +40,12 @@ describe('fetchModelData', () => {
   })
 
   it('throws with status code when the response is not ok', async () => {
-    vi.mocked(api.fetchApi).mockResolvedValue({
-      ok: false,
-      status: 404
-    } as unknown as Response)
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      fromAny<Response, unknown>({
+        ok: false,
+        status: 404
+      })
+    )
 
     await expect(
       fetchModelData('api/view?type=input&subfolder=&filename=', 'missing.glb')
@@ -48,10 +53,12 @@ describe('fetchModelData', () => {
   })
 
   it('strips the leading api/ prefix and encodes the filename', async () => {
-    vi.mocked(api.fetchApi).mockResolvedValue({
-      ok: true,
-      arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
-    } as unknown as Response)
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      fromAny<Response, unknown>({
+        ok: true,
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
+      })
+    )
 
     await fetchModelData(
       'api/view?type=input&subfolder=&filename=',
@@ -64,10 +71,12 @@ describe('fetchModelData', () => {
   })
 
   it('prepends a single slash when the path has no api/ prefix', async () => {
-    vi.mocked(api.fetchApi).mockResolvedValue({
-      ok: true,
-      arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
-    } as unknown as Response)
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      fromAny<Response, unknown>({
+        ok: true,
+        arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(0))
+      })
+    )
 
     await fetchModelData('custom?filename=', 'scene.splat')
 

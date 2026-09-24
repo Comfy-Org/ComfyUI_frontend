@@ -9,6 +9,7 @@
  * instances of one definition in a single op, and coexistence with a
  * pre-existing instance.
  */
+import { fromAny } from '@total-typescript/shoehorn'
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type {
   InsertWorkflowOp,
@@ -123,7 +124,7 @@ function setWidgetOp(
   value: unknown,
   valueIndex: number
 ): Op {
-  return {
+  return fromAny<Op, unknown>({
     op_id: opId.padEnd(32, '0'),
     actor: 'agent:test',
     base_version: seq,
@@ -133,7 +134,7 @@ function setWidgetOp(
     widget,
     value,
     promoted: { value_index: valueIndex, host_widgets_values: [value] }
-  } as unknown as Op
+  })
 }
 
 function bindProjection(workflowId: string, graph: LGraph) {
@@ -188,7 +189,7 @@ function serializeBlueprint(graph: LGraph): InsertWorkflowOp['workflow'] {
  * narrow accessor rather than asserting at every call site.
  */
 function promotedWidgetValues(node: SubgraphNode): Record<string, unknown> {
-  return node.widgets_values as unknown as Record<string, unknown>
+  return fromAny<Record<string, unknown>, unknown>(node.widgets_values)
 }
 
 describe('insert_workflow materializes subgraphs correctly', () => {

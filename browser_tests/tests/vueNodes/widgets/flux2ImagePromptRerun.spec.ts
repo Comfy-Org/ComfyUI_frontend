@@ -73,14 +73,18 @@ function readPromptWidget(comfyPage: ComfyPage) {
       (n) => n.type === 'Flux2ImageNode'
     )
     if (!node) throw new Error('Flux2ImageNode is not on the graph')
-    const root = document.getElementById('vue-app') as unknown as {
-      __vue_app__: {
-        config: {
-          globalProperties: { $pinia: { _s: Map<string, unknown> } }
+    const root = document.getElementById('vue-app')
+    if (!root) throw new Error('Vue app root is not mounted')
+    const vueApp = (
+      root as HTMLElement & {
+        __vue_app__: {
+          config: {
+            globalProperties: { $pinia: { _s: Map<string, unknown> } }
+          }
         }
       }
-    }
-    const store = root.__vue_app__.config.globalProperties.$pinia._s.get(
+    ).__vue_app__
+    const store = vueApp.config.globalProperties.$pinia._s.get(
       'widgetValue'
     ) as {
       getNodeWidgetIds: (graphId: string, nodeId: number | string) => string[]

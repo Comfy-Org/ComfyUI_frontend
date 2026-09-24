@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useDialogService } from '@/services/dialogService'
 import { useSubgraphNavigationStore } from '@/stores/subgraphNavigationStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore' // eslint-disable-line import-x/no-restricted-paths
@@ -2048,9 +2049,12 @@ describe('useWorkflowService', () => {
       beforeEach(() => {
         // Runtime fixture, not a compiler-error assertion: reproduce the state
         // the LoadedComfyWorkflow cast claims is impossible.
-        const tracker = existingWorkflow.changeTracker as unknown as {
-          activeState: ComfyWorkflowJSON | null
-        }
+        const tracker = fromAny<
+          {
+            activeState: ComfyWorkflowJSON | null
+          },
+          unknown
+        >(existingWorkflow.changeTracker)
         tracker.activeState = null
       })
 

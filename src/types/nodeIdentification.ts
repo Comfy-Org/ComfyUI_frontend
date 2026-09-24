@@ -194,7 +194,7 @@ export function createLeafNodeExecutionId(
   const strict = createNodeExecutionId([nodeId])
   if (strict) return strict
   const bare = parseNodeId(nodeId)
-  return bare ? (bare as unknown as NodeExecutionId) : null
+  return bare ? (String(bare) as NodeExecutionId) : null
 }
 
 export function tryNormalizeNodeExecutionId(

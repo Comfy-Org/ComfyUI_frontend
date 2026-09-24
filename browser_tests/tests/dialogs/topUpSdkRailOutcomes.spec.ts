@@ -164,7 +164,8 @@ async function setupTopUp(
     },
     hostedOpens: () =>
       page.evaluate(() => [
-        ...(window as unknown as { __hostedOpens: string[] }).__hostedOpens
+        ...((window as Window & { __hostedOpens?: string[] }).__hostedOpens ??
+          [])
       ])
   }
 }

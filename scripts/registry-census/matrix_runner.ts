@@ -5,6 +5,7 @@
  * $MATRIX_OUT/<pack>.json for cross-branch diffing.
  */
 import { createTestingPinia } from '@pinia/testing'
+import { fromAny } from '@total-typescript/shoehorn'
 import { setActivePinia } from 'pinia'
 import fs from 'node:fs'
 import { vi } from 'vitest'
@@ -456,9 +457,9 @@ export async function runPack(
   // ---- the user-operation battery ---------------------------------------
   await op('load', () =>
     graph.configure(
-      structuredClone(defaultWorkflow) as unknown as Parameters<
-        typeof graph.configure
-      >[0]
+      fromAny<Parameters<typeof graph.configure>[0], unknown>(
+        structuredClone(defaultWorkflow)
+      )
     )
   )
   // Harness self-check: if the default workflow did not materialize, the

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -47,12 +48,12 @@ function buildResponse(
   body: unknown,
   init: { ok?: boolean; status?: number } = {}
 ): Response {
-  return {
+  return fromAny<Response, unknown>({
     ok: init.ok ?? true,
     status: init.status ?? 200,
     json: vi.fn().mockResolvedValue(body),
     text: vi.fn().mockResolvedValue(JSON.stringify(body))
-  } as unknown as Response
+  })
 }
 
 function buildAssetListResponse(

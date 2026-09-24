@@ -3274,7 +3274,7 @@ describe('ComfyApp', () => {
         vi.mocked(reportError).mockImplementation(() => {})
         const noFiles = Promise.resolve<File[]>([])
         vi.mocked(extractFilesFromDragEvent).mockReturnValue(noFiles)
-        ;(app as unknown as { addDropHandler(): void }).addDropHandler()
+        fromAny<{ addDropHandler(): void }, unknown>(app).addDropHandler()
 
         const dataTransfer = new DataTransfer()
         dataTransfer.setData(mime, 'https://example.com/content')

@@ -38,9 +38,12 @@ const hoisted = vi.hoisted(() => {
     has_toolkit_nodes: true,
     toolkit_node_names: ['LoadImage']
   }
-  const refs = {
-    tier: null as unknown as Ref<SubscriptionInfo['tier']>,
-    remoteConfig: null as unknown as Ref<RemoteConfig>
+  const refs: {
+    tier: Pick<Ref<SubscriptionInfo['tier']>, 'value'>
+    remoteConfig: Pick<Ref<RemoteConfig>, 'value'>
+  } = {
+    tier: { value: null },
+    remoteConfig: { value: {} }
   }
 
   return {

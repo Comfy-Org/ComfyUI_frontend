@@ -1,4 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { nextTick } from 'vue'
 import {
   assert,
@@ -198,7 +198,7 @@ describe('useCanvasStore', () => {
         graph,
         selectedItems: new Set()
       }
-      store.canvas = fakeCanvas as unknown as LGraphCanvas
+      store.canvas = fromAny<LGraphCanvas, unknown>(fakeCanvas)
       await nextTick()
       expect(store.rootGraphId).toBe(graph.id)
 

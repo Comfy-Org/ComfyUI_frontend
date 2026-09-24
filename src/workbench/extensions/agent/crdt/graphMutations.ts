@@ -754,9 +754,13 @@ function prepareNode(
     mode: Number.isInteger(mode) ? mode : 0,
     properties: cloneRecord(payload.properties) as NodeState['properties'],
     lastSerialization: structuredClone({
+      pos: [x, y],
+      size: [width, height],
+      order: 0,
+      mode: 0,
       ...payload,
       flags
-    }) as unknown as ISerialisedNode,
+    } satisfies ISerialisedNode),
     ...resolveNodeColors(payload, incumbent),
     ...resolveNodeDisplayFlags(payload)
   }

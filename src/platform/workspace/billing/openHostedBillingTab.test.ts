@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const mockHostedBillingRoute = vi.hoisted(() => vi.fn())
@@ -51,7 +52,7 @@ const BILLING_WEB_ROUTE = {
 }
 
 function fakeTab(): Window {
-  return { opener: undefined, location: { href: '' } } as unknown as Window
+  return fromAny<Window, unknown>({ opener: undefined, location: { href: '' } })
 }
 
 describe('openHostedBillingTab', () => {

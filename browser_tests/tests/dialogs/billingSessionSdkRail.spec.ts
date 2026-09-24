@@ -245,8 +245,8 @@ async function recordTotalCreditStates(page: Page) {
 
 function totalCreditStates(page: Page): Promise<string[]> {
   return page.evaluate(() => [
-    ...(window as unknown as { __totalCreditStates: string[] })
-      .__totalCreditStates
+    ...((window as Window & { __totalCreditStates?: string[] })
+      .__totalCreditStates ?? [])
   ])
 }
 

@@ -26,6 +26,7 @@ import {
 import type { MintPortWiring, MintableGraph } from './mintPortWiring'
 
 const ROOT_ID = 'root-uuid'
+type MintSnapshot = ISerialisedNode & { __incarnation?: string }
 
 /** The doc host's pinned catalog: server classes only. */
 const CATALOG: WidgetCatalog = {
@@ -77,7 +78,7 @@ describe('attachMintPortWiring', () => {
     }
   }
 
-  function graphNode(id: number, snapshot?: ISerialisedNode): LGraphNode {
+  function graphNode(id: number, snapshot?: MintSnapshot): LGraphNode {
     const node = new LGraphNode('Test')
     node.id = toNodeId(id)
     if (snapshot) vi.spyOn(node, 'serialize').mockReturnValue(snapshot)
@@ -380,7 +381,16 @@ describe('attachMintPortWiring', () => {
           node_id: toNodeId(7),
           class_type: type,
           pos: [10, 20],
-          node: { id: 7, type, widgets_values: widgetsValues }
+          node: {
+            id: 7,
+            type,
+            pos: [10, 20],
+            size: [270, 100],
+            flags: {},
+            order: 0,
+            mode: 0,
+            widgets_values: widgetsValues
+          }
         }
       ])
       const doc = mint({ nodes: [], links: [] }, CATALOG)

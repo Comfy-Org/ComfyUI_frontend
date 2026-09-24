@@ -182,13 +182,12 @@ function projectDefinitionEntry(
 function projectSubgraphDefinition(
   source: Y.Map<unknown>,
   excludedDefinitionIds: ReadonlySet<string>
-): ExportedSubgraph {
-  const definition = Object.fromEntries(
+): unknown {
+  return Object.fromEntries(
     [...source.entries()].flatMap(([key, value]) =>
       projectDefinitionEntry(source, key, value, excludedDefinitionIds)
     )
   )
-  return definition as unknown as ExportedSubgraph
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

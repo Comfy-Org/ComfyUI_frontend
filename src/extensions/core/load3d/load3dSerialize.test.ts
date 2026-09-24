@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, toRaw, watch } from 'vue'
@@ -8,6 +9,7 @@ import type {
   CameraType,
   Model3DTransform
 } from '@/extensions/core/load3d/interfaces'
+import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { NodeProperty } from '@/types/nodeState'
 
 function makeNode(props: Record<string, NodeProperty | undefined> = {}) {
@@ -103,7 +105,7 @@ describe('snapshotLoad3dState', () => {
       const props = reactive<Record<string, unknown>>({
         'Camera Config': { cameraType: 'perspective', fov: 75, state: null }
       })
-      const node = { properties: props } as unknown as LGraphNode
+      const node = fromAny<LGraphNode, unknown>({ properties: props })
       let triggers = 0
       watch(
         () => props['Camera Config'],
@@ -125,7 +127,7 @@ describe('snapshotLoad3dState', () => {
 
     it('creates Camera Config without notifying watchers when it is absent', async () => {
       const props = reactive<Record<string, unknown>>({})
-      const node = { properties: props } as unknown as LGraphNode
+      const node = fromAny<LGraphNode, unknown>({ properties: props })
       let triggers = 0
       watch(
         () => props['Camera Config'],
