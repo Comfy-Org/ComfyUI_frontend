@@ -238,7 +238,7 @@
                   {{ planDateDisplay }}
                 </div>
                 <p
-                  v-if="isEnterprisePlan && isSubscriptionEnded"
+                  v-if="isEndedEnterprise"
                   class="m-0 text-sm text-text-secondary"
                 >
                   {{ $t('subscription.inactiveEnterpriseDescription') }}
@@ -325,7 +325,7 @@
           <div class="w-full lg:max-w-md">
             <CreditsTile
               :zero-state="showZeroState"
-              :inactive-plan="showInactiveTeamSubscription"
+              :inactive-plan="showInactiveTeamSubscription || isEndedEnterprise"
             />
           </div>
 
@@ -598,6 +598,10 @@ const isNonCatalogPlan = computed(() =>
 // stock cancelled treatment (isUnknownTier's contract — no borrowed claims).
 const isEnterprisePlan = computed(
   () => subscription.value?.tier === 'ENTERPRISE'
+)
+
+const isEndedEnterprise = computed(
+  () => isEnterprisePlan.value && isSubscriptionEnded.value
 )
 
 // An Enterprise end date is an agreed ending — operator pilot term or
