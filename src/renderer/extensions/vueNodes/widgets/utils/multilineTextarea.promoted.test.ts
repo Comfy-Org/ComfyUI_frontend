@@ -8,6 +8,7 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComponentWidget, DOMWidget } from '@/scripts/domWidget'
+import { DOMWidgetImpl } from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
@@ -223,9 +224,13 @@ describe('createPromotedDomWidget', () => {
       options: {}
     })
 
+    // The interior widget's element listener predates the promotion.
+    element.addEventListener('input', () => {
+      source.value = 'direct edit'
+    })
+
     const widget = promote(source) as unknown as DOMWidget<HTMLElement, string>
 
-    source.value = 'direct edit'
     element.dispatchEvent(new Event('input'))
 
     expect(useWidgetValueStore().getWidget(WIDGET_ID)?.value).toBe(
@@ -240,6 +245,39 @@ describe('createPromotedDomWidget', () => {
       'direct edit'
     )
     expect(useDomWidgetStore().widgetStates.has(widget.id)).toBe(false)
+  })
+
+  it('syncs setter-driven changes through the chained source callback', () => {
+    const element = document.createElement('div')
+    let interiorValue = 'live'
+    const source = new DOMWidgetImpl<HTMLElement, string>({
+      node: subgraphNode(),
+      name: 'preview',
+      type: 'kj_preview',
+      element,
+      options: {
+        getValue: () => interiorValue,
+        setValue: (value: string) => {
+          interiorValue = value
+        }
+      }
+    })
+    useWidgetValueStore().registerWidget(WIDGET_ID, {
+      type: 'kj_preview',
+      value: 'live',
+      options: {}
+    })
+
+    const widget = promote(source) as unknown as DOMWidget<HTMLElement, string>
+
+    source.value = 'randomized'
+
+    expect(useWidgetValueStore().getWidget(WIDGET_ID)?.value).toBe('randomized')
+
+    widget.onRemove?.()
+    source.value = 'after removal'
+
+    expect(useWidgetValueStore().getWidget(WIDGET_ID)?.value).toBe('randomized')
   })
 
   it('delegates textarea sources to the multiline host widget', () => {

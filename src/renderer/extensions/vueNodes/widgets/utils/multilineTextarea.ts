@@ -256,8 +256,15 @@ export function createPromotedDomWidget(
     () => widgetStore.setValue(widgetId, sourceWidget.value),
     { signal: inputListenerController.signal }
   )
+  // Setter-driven changes (a button assigning its value) never reach the
+  // element; chain the same sync onto the interior callback the setter fires.
+  const previousSourceCallback = sourceWidget.callback
+  sourceWidget.callback = useChainCallback(previousSourceCallback, () => {
+    widgetStore.setValue(widgetId, sourceWidget.value)
+  })
   widget.onRemove = useChainCallback(widget.onRemove, () => {
     inputListenerController.abort()
+    sourceWidget.callback = previousSourceCallback
   })
   useDomWidgetStore().registerWidget(widget)
 
