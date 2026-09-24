@@ -54,6 +54,7 @@ interface WorkspaceState extends WorkspaceWithRole {
   subscriptionTier: SubscriptionTier | null
   members: WorkspaceMember[]
   membersLoaded: boolean
+  totalMembers?: number
   pendingInvites: WorkspacePendingInvite[]
   pendingInvitesLoaded: boolean
 }
@@ -750,7 +751,11 @@ export const useTeamWorkspaceStore = defineStore('teamWorkspace', () => {
     })
     const members = response.members.map(mapApiMemberToWorkspaceMember)
     if (!isStaleWorkspace(generation, workspaceId)) {
-      updateWorkspace(workspaceId, { members, membersLoaded: true })
+      updateWorkspace(workspaceId, {
+        members,
+        membersLoaded: true,
+        totalMembers: response.pagination.total
+      })
     }
     return members
   }

@@ -410,7 +410,8 @@
     "blueprints": "Blueprints",
     "partnerNodes": "Partner Nodes",
     "collapseAll": "Collapse all",
-    "expandAll": "Expand all"
+    "expandAll": "Expand all",
+    "retry": "Retry"
   },
   "hdrViewer": {
     "title": "HDR Viewer",
@@ -3341,7 +3342,8 @@
       "noInvitesMatch": "No invites match \"{query}\"",
       "noMembers": "No members",
       "noMembersMatch": "No members match \"{query}\"",
-      "searchPlaceholder": "Search..."
+      "searchPlaceholder": "Search...",
+      "loadFailed": "Couldn't load members."
     },
     "partnerNodes": {
       "title": "Partner models",
