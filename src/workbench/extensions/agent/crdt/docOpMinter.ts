@@ -8,10 +8,13 @@
  * the tick, in command order. Only `add_node` reads anything at that point:
  * paste adds a node and then configures it, so the snapshot waits for the
  * command's own tick to finish. A node added and removed in one tick mints
- * nothing; a widget write on a node whose add is still pending is already in
- * that snapshot.
+ * nothing, and neither do the links it was wired with in between; a widget
+ * write on a node whose add is still pending is already in that snapshot.
  */
-import type { WorkflowNode } from '@comfyorg/comfy-multi-player'
+import type {
+  NodeId as WireNodeId,
+  WorkflowNode
+} from '@comfyorg/comfy-multi-player'
 
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
@@ -21,7 +24,10 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
-import { findSubgraphNodePathById } from '@/utils/graphTraversalUtil'
+import {
+  findNodeInHierarchy,
+  findSubgraphNodePathById
+} from '@/utils/graphTraversalUtil'
 
 import type { GraphOperation } from './graphOperations'
 
@@ -105,6 +111,54 @@ function valueWidgetsOnly(
 
 function nodeKey(graphId: string, nodeId: NodeId): string {
   return `${graphId}:${String(nodeId)}`
+}
+
+/**
+ * Drops a same-tick pending `add_node` together with every link command that
+ * touched it: the doc never sees the node, so a `connect` naming it would
+ * dangle, and a `disconnect` of such a link would target a link the doc
+ * never had.
+ */
+function withoutCancelledAdd(
+  pending: PendingOp[],
+  nodeId: NodeId
+): PendingOp[] {
+  const cancelledLinkIds = new Set<WireNodeId>()
+  for (const entry of pending) {
+    if (entry.kind !== 'op' || entry.operation.op !== 'connect') continue
+    const { from_node, to_node, link_id } = entry.operation
+    if (from_node === nodeId || to_node === nodeId)
+      cancelledLinkIds.add(link_id)
+  }
+  return pending.filter((entry) => {
+    if (entry.kind === 'add_node') return entry.node.id !== nodeId
+    const { operation } = entry
+    switch (operation.op) {
+      case 'connect':
+        return !cancelledLinkIds.has(operation.link_id)
+      case 'disconnect':
+        return (
+          operation.to_node !== nodeId &&
+          !cancelledLinkIds.has(operation.link_id)
+        )
+      default:
+        return true
+    }
+  })
+}
+
+/**
+ * The graph that owns the written widget's node. The widget store keys every
+ * widget by ROOT graph id (`BaseWidget.setNodeId`), so a live interior write
+ * arrives naming the root; node ids are unique across a root graph and its
+ * subgraphs, so the node itself names its owner.
+ */
+function owningGraphIdOf(
+  graph: LGraph,
+  event: Extract<GraphIntentEvent, { type: 'set_widget' }>
+): string {
+  if (event.graphId !== graph.id) return event.graphId
+  return findNodeInHierarchy(graph, event.nodeId)?.graph?.id ?? graph.id
 }
 
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
@@ -209,15 +263,16 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
       value: event.value,
       old: event.previous
     } as const
-    if (event.graphId === rootGraphId) {
+    const owningGraphId = owningGraphIdOf(graph, event)
+    if (owningGraphId === rootGraphId) {
       schedule({ kind: 'op', operation })
       return
     }
-    const subgraphNodePath = findSubgraphNodePathById(graph, event.graphId)
+    const subgraphNodePath = findSubgraphNodePathById(graph, owningGraphId)
     if (subgraphNodePath === null || subgraphNodePath.length === 0) {
       console.error(
         '[agent-crdt] set_widget with an unresolvable owner not minted; the bound doc diverges from the local graph',
-        nodeKey(event.graphId, event.nodeId) + `:${event.name}`
+        nodeKey(owningGraphId, event.nodeId) + `:${event.name}`
       )
       return
     }
@@ -249,9 +304,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         const key = nodeKey(event.graph.id, event.node.id)
         if (pendingAdds.get(key) === event.node) {
           pendingAdds.delete(key)
-          pending = pending.filter(
-            (entry) => entry.kind !== 'add_node' || entry.node !== event.node
-          )
+          pending = withoutCancelledAdd(pending, event.node.id)
           return
         }
         schedule({

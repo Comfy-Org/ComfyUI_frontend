@@ -266,6 +266,22 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
+  it('drops the links wired to a node added and removed in the same tick', async () => {
+    const { sink, link } = seedGraph(graph)
+    sink.disconnectInput(0)
+    const added = new TestSource()
+    graph.add(added)
+    added.connect(0, sink, 0)
+    sink.disconnectInput(0)
+    added.connect(0, sink, 0)
+    graph.remove(added)
+    await afterFlush()
+
+    expect(minted).toEqual([
+      expect.objectContaining({ op: 'disconnect', link_id: link.id })
+    ])
+  })
+
   it('keeps command order across one tick and flushes the batch together', async () => {
     const { source, sink } = seedGraph(graph)
     const enqueue = vi.fn((operations: GraphOperation[]) =>
@@ -334,10 +350,31 @@ describe('attachDocOpMinter', () => {
     doc.destroy()
   })
 
-  // The widget store keys every widget by ROOT graph id
-  // (`BaseWidget.setNodeId`), so a live interior widget write arrives as a
-  // root-scoped set_widget; only an intent that names the owning subgraph
-  // takes the path branch.
+  it('mints a live subgraph-interior widget write with the subgraph-node path', async () => {
+    const subgraph = createTestSubgraph({ rootGraph: graph })
+    const host = createTestSubgraphNode(subgraph)
+    const interior = new TestSource()
+    withGraphIntentSource('load', () => {
+      graph.add(host)
+      subgraph.add(interior)
+    })
+
+    interior.widgets![0].value = 3
+    await afterFlush()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_widget',
+        node_id: interior.id,
+        widget: 'steps',
+        value: 3,
+        old: 20,
+        path: [String(host.id), String(interior.id)],
+        inner_widget: 'steps'
+      }
+    ])
+  })
+
   it('mints a set_widget that names a subgraph owner with the subgraph-node path', async () => {
     const subgraph = createTestSubgraph({ rootGraph: graph })
     const host = createTestSubgraphNode(subgraph)
