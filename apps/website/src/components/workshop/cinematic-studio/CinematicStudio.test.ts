@@ -270,7 +270,7 @@ describe('CinematicStudio', () => {
       screen.getByRole('button', { name: tc('cinematic.firstRun.desert') })
     ).toHaveAttribute('aria-pressed', 'true')
     expect(
-      screen.getByRole('button', { name: 'Shot: Extreme wide' })
+      screen.getByRole('button', { name: /^Direction: Shot: Extreme wide/ })
     ).toBeInTheDocument()
   })
 
@@ -278,10 +278,9 @@ describe('CinematicStudio', () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()
 
-    await user.click(
-      screen.getByRole('button', { name: 'Light: Practical night' })
-    )
+    await user.click(screen.getByRole('button', { name: /^Direction:/ }))
     const picker = screen.getByRole('dialog', { name: 'Direction' })
+    await user.click(within(picker).getByRole('button', { name: /^Light/ }))
     await user.click(within(picker).getByRole('radio', { name: 'Neon' }))
     expect(
       within(picker).getByRole('button', { name: 'Film' })
@@ -293,10 +292,9 @@ describe('CinematicStudio', () => {
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(
-      screen.getByRole('button', { name: 'Light: Neon' })
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Look: Western' })
+      screen.getByRole('button', {
+        name: /^Direction: Shot: Medium, Light: Neon, .*Look: Western/
+      })
     ).toBeInTheDocument()
     await user.click(generateButton())
     await screen.findByAltText(/A diner at dawn/)
@@ -421,10 +419,10 @@ describe('CinematicStudio', () => {
 
   it('moves focus into a picker and back to its chip on Escape', async () => {
     const user = renderStudio()
-    const chip = screen.getByRole('button', { name: 'Light: Practical night' })
+    const chip = screen.getByRole('button', { name: /^Direction:/ })
 
     await user.click(chip)
-    expect(screen.getByRole('radio', { name: 'Practical night' })).toHaveFocus()
+    expect(screen.getByRole('radio', { name: 'Medium' })).toHaveFocus()
 
     await user.keyboard('{Escape}')
 

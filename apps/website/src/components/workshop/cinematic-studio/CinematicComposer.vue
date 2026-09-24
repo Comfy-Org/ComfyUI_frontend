@@ -188,7 +188,7 @@ const chipClass = (key: PopoverKey) =>
           :direction
           :open="openPopover === 'direction'"
           :locale
-          @open="emit('open', 'direction', $event)"
+          @open="emit('open', 'direction')"
         />
         <button
           type="button"

@@ -3,10 +3,7 @@ import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type {
-  Direction,
-  DirectionPart
-} from '../../../lib/workshop/cinematic-studio/catalog'
+import type { Direction } from '../../../lib/workshop/cinematic-studio/catalog'
 import {
   directionOption,
   gradeGroup,
@@ -25,7 +22,7 @@ const {
   locale?: Locale
 }>()
 
-const emit = defineEmits<{ open: [part: DirectionPart] }>()
+const emit = defineEmits<{ open: [] }>()
 
 const chips = computed(() =>
   [...lookGroups, gradeGroup].map((group) => {
@@ -39,59 +36,62 @@ const chips = computed(() =>
     }
   })
 )
+
+const looks = computed(() =>
+  chips.value.filter((chip) => chip.part !== 'grade')
+)
+const palette = computed(
+  () => chips.value.find((chip) => chip.part === 'grade')?.palette
+)
+const summary = computed(() =>
+  looks.value.map((chip) => chip.label).join(' · ')
+)
+const description = computed(() =>
+  chips.value.map((chip) => `${chip.title}: ${chip.label}`).join(', ')
+)
 </script>
 
 <template>
-  <div
-    role="group"
-    :aria-label="tc('cinematic.section.direction', locale)"
+  <button
+    type="button"
+    aria-haspopup="dialog"
+    :aria-expanded="open"
+    :aria-label="`${tc('cinematic.section.direction', locale)}: ${description}`"
+    :title="description"
     :class="
       cn(
-        'flex h-9 shrink-0 items-center rounded-xl p-0.5 ring-1 ring-transparency-white-t8 ring-inset',
-        open && 'ring-transparency-white-t20'
+        'flex h-9 max-w-md min-w-0 shrink-0 items-center gap-2.5 rounded-xl pr-3 pl-1.5 text-[13px] whitespace-nowrap text-primary-comfy-canvas ring-1 ring-transparency-white-t8 transition-colors ring-inset hover:bg-transparency-white-t4 hover:text-primary-warm-white',
+        open &&
+          'bg-transparency-white-t8 text-primary-warm-white ring-transparency-white-t20'
       )
     "
+    @click="emit('open')"
   >
-    <button
-      v-for="chip in chips"
-      :key="chip.part"
-      type="button"
-      aria-haspopup="dialog"
-      :aria-expanded="open"
-      :aria-label="`${chip.title}: ${chip.label}`"
-      :title="`${chip.title}: ${chip.label}`"
-      class="flex h-8 items-center gap-2 rounded-[10px] px-1 text-[13px] whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t8 hover:text-primary-warm-white min-[88rem]:pr-2.5"
-      @click="emit('open', chip.part)"
-    >
-      <img
-        v-if="chip.preview"
-        :src="chip.preview"
-        alt=""
-        class="size-6 shrink-0 rounded-md object-cover"
-      />
+    <span class="flex shrink-0 items-center" aria-hidden="true">
+      <template v-for="chip in looks" :key="chip.part">
+        <img
+          v-if="chip.preview"
+          :src="chip.preview"
+          alt=""
+          class="-ml-2 size-6 rounded-md object-cover ring-2 ring-primary-comfy-ink-light first:ml-0"
+        />
+        <span
+          v-else
+          class="-ml-2 size-6 rounded-md bg-transparency-white-t8 ring-2 ring-primary-comfy-ink-light first:ml-0"
+        />
+      </template>
       <span
-        v-else-if="chip.palette"
-        class="flex size-6 shrink-0 overflow-hidden rounded-full"
-        aria-hidden="true"
+        v-if="palette"
+        class="-ml-2 flex size-6 overflow-hidden rounded-full ring-2 ring-primary-comfy-ink-light"
       >
         <span
-          v-for="(color, index) in chip.palette"
+          v-for="(color, index) in palette"
           :key="index"
           class="h-full flex-1"
           :style="{ backgroundColor: color }"
         />
       </span>
-      <span
-        v-else
-        class="size-6 shrink-0 rounded-md border border-dashed border-transparency-white-t20"
-        aria-hidden="true"
-      />
-      <span
-        v-if="chip.part !== 'grade'"
-        class="hidden max-w-26 truncate min-[88rem]:block"
-      >
-        {{ chip.label }}
-      </span>
-    </button>
-  </div>
+    </span>
+    <span class="hidden truncate min-[88rem]:block">{{ summary }}</span>
+  </button>
 </template>

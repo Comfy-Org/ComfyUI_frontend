@@ -50,7 +50,7 @@ function pickLayout(id: string) {
       :model-value="layout"
       :options="layoutOptions"
       :heading="tc('cinematic.ux.heading', locale)"
-      trigger-class="fixed right-3 bottom-56 z-40 size-8 justify-center rounded-full border border-transparency-white-t20 bg-primary-comfy-ink-light text-primary-comfy-canvas shadow-lg hover:text-primary-warm-white lg:right-5 lg:bottom-5"
+      trigger-class="fixed right-3 bottom-56 z-60 size-8 justify-center rounded-full border border-transparency-white-t20 bg-primary-comfy-ink-light text-primary-comfy-canvas shadow-lg hover:text-primary-warm-white lg:right-5 lg:bottom-5"
       @update:model-value="pickLayout"
     >
       <Ellipsis class="size-4" aria-hidden="true" />
