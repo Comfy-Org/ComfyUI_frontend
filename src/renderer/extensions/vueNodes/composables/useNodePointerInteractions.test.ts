@@ -297,6 +297,31 @@ describe('useNodePointerInteractions', () => {
     expect(toggleNodeSelectionAfterPointerUp).toHaveBeenCalledTimes(1)
   })
 
+  it('ignores a bubbling move whose pointerdown a child stopped', () => {
+    const { pointerHandlers } = useNodePointerInteractions(testNodeState)
+    const { handleNodeSelect } = useNodeEventHandlers()
+
+    pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { clientX: 100, clientY: 100 })
+    )
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { clientX: 100, clientY: 100 })
+    )
+    vi.mocked(handleNodeSelect).mockClear()
+
+    // No pointerdown here: a child stops it, yet the move still bubbles up.
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        clientX: 200,
+        clientY: 200,
+        buttons: 1
+      })
+    )
+
+    expect(handleNodeSelect).not.toHaveBeenCalled()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
+  })
+
   it('on ctrl+click: calls toggleNodeSelectionAfterPointerUp on pointer up (not pointer down)', async () => {
     const { pointerHandlers } = useNodePointerInteractions(testNodeState)
     const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
