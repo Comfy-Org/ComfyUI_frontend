@@ -280,6 +280,79 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     })
   })
 
+  test('does not surface an ask failure after starting a new chat', async ({
+    agentPanel,
+    comfyPage,
+    getWebSocket
+  }) => {
+    const page = comfyPage.page
+    let releaseAnswer!: () => void
+    let markAnswerRequested!: () => void
+    const answerReleased = new Promise<void>((resolve) => {
+      releaseAnswer = resolve
+    })
+    const answerRequested = new Promise<void>((resolve) => {
+      markAnswerRequested = resolve
+    })
+    await page.route('**/api/agent/threads/*/asks/*/answer', async (route) => {
+      markAnswerRequested()
+      await answerReleased
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ message: 'stale ask failure' })
+      })
+    })
+
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
+    const composer = panel.getByRole('textbox', { name: /^Describe ideas/ })
+    await composer.fill('Build a portrait workflow')
+    await panel.getByRole('button', { name: 'Send' }).click()
+
+    const ws = await getWebSocket()
+    pushEvent(ws, {
+      type: 'agent_ask',
+      data: {
+        thread_id: 'd4c016c4-3b8c-44cf-97de-1ae27e43e718',
+        message_id: '3818ba00-d772-4a3f-98c1-9312725b577d',
+        ask_id: 'turn-1:call-1',
+        kind: 'run_approval',
+        context: {
+          workflow_id: 'workflow-1',
+          workflow_name: 'Portrait workflow'
+        },
+        prompt: 'Run it?',
+        options: [
+          { id: 'run', label: 'Run' },
+          { id: 'cancel', label: 'Cancel' }
+        ],
+        min_selections: 1,
+        max_selections: 1,
+        allow_other: false
+      }
+    })
+    await panel.getByRole('button', { name: 'Run' }).click()
+    await answerRequested
+
+    // `answerAsk()` only reaches its error handler after the 500 is received,
+    // so the absence assertion has to wait for that response. Without this the
+    // negative could pass while the route was still held open.
+    const answerFailure = page.waitForResponse(
+      (response) =>
+        /\/api\/agent\/threads\/[^/]+\/asks\/[^/]+\/answer$/.test(
+          response.url()
+        ) && response.status() === 500
+    )
+    await panel.getByRole('button', { name: enMessages.agent.newChat }).click()
+    releaseAnswer()
+    await answerFailure
+
+    await expect(panel.getByText('What do you want to make?')).toBeVisible()
+    await expect(page.getByText('stale ask failure')).toHaveCount(0)
+  })
+
   test.describe('composer sizing', () => {
     test.use({
       viewport: { width: 1920, height: 1080 },

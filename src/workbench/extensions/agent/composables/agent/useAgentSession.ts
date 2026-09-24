@@ -232,7 +232,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     unsubscribeStatus?.()
     unsubscribe = null
     unsubscribeStatus = null
-    const stoppedGeneration = ownedGeneration
+    if (ownedGeneration !== sessionGeneration) return
+    const stoppedGeneration = ++sessionGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
       conversationStore.abortActiveTurn()
@@ -595,6 +596,70 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function isSessionGenerationCurrent(
+    expectedOwnedGeneration: number,
+    expectedSessionGeneration: number
+  ): boolean {
+    return (
+      expectedOwnedGeneration === ownedGeneration &&
+      expectedSessionGeneration === sessionGeneration
+    )
+  }
+
+  function isAnswerThreadOnScreen(
+    expectedOwnedGeneration: number,
+    expectedSessionGeneration: number,
+    expectedThreadId: string
+  ): boolean {
+    return (
+      isSessionGenerationCurrent(
+        expectedOwnedGeneration,
+        expectedSessionGeneration
+      ) && conversationStore.threadId === expectedThreadId
+    )
+  }
+
+  function handleAnswerAskError(
+    error: unknown,
+    askId: string,
+    messageId: string,
+    threadId: string,
+    answerOwnedGeneration: number,
+    answerSessionGeneration: number
+  ): void {
+    setAskAnswering(askId, false)
+    if (error instanceof AgentApiError && error.status === 409) {
+      if (
+        !isSessionGenerationCurrent(
+          answerOwnedGeneration,
+          answerSessionGeneration
+        )
+      )
+        return
+      conversationStore.ingest({
+        type: 'agent_ask_resolved',
+        data: {
+          thread_id: threadId,
+          message_id: messageId,
+          ask_id: askId,
+          status: 'answered',
+          selected: null
+        }
+      })
+      return
+    }
+    reportError(error, { errorType: 'agent_ask_answer_failed' })
+    if (
+      !isAnswerThreadOnScreen(
+        answerOwnedGeneration,
+        answerSessionGeneration,
+        threadId
+      )
+    )
+      return
+    pushError(error instanceof Error ? error.message : String(error))
+  }
+
   async function answerAsk(
     askId: string,
     selection: 'run' | 'cancel'
@@ -607,27 +672,21 @@ export function useAgentSession(deps: AgentSessionDeps) {
       answeringAskIds.value.has(askId)
     )
       return
+    const answerOwnedGeneration = ownedGeneration
+    const answerSessionGeneration = sessionGeneration
     setAskAnswering(askId, true)
     try {
       await rest.answerAsk(currentThreadId, askId, [selection])
       // Keep the actions disabled until the canonical resolution frame arrives.
     } catch (error) {
-      setAskAnswering(askId, false)
-      if (error instanceof AgentApiError && error.status === 409) {
-        conversationStore.ingest({
-          type: 'agent_ask_resolved',
-          data: {
-            thread_id: currentThreadId,
-            message_id: messageId,
-            ask_id: askId,
-            status: 'answered',
-            selected: null
-          }
-        })
-        return
-      }
-      reportError(error, { errorType: 'agent_ask_answer_failed' })
-      pushError(error instanceof Error ? error.message : String(error))
+      handleAnswerAskError(
+        error,
+        askId,
+        messageId,
+        currentThreadId,
+        answerOwnedGeneration,
+        answerSessionGeneration
+      )
     }
   }
 
