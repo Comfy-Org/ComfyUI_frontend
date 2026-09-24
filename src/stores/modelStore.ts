@@ -314,6 +314,7 @@ export const useModelStore = defineStore('models', () => {
   }
 
   let modelFoldersRequestId = 0
+  const pendingReloads = new Set<Promise<boolean>>()
 
   /**
    * Whether anything has consumed this store's model data (sidebar loads,
@@ -387,6 +388,8 @@ export const useModelStore = defineStore('models', () => {
    */
   async function loadModels() {
     modelDataConsumed = true
+    // Folders a pending reload replaces would finish loading into detached objects.
+    while (pendingReloads.size > 0) await Promise.allSettled(pendingReloads)
     // A load superseded by a newer concurrent one commits nothing, which
     // would leave the folder list empty and silently load no models; retry
     // until a load of ours commits (even a genuinely empty result) or a
@@ -445,6 +448,16 @@ export const useModelStore = defineStore('models', () => {
    * one — the winning load populates the fresh data.
    */
   async function reloadModels(): Promise<boolean> {
+    const reload = rebuildModelFolders()
+    pendingReloads.add(reload)
+    try {
+      return await reload
+    } finally {
+      pendingReloads.delete(reload)
+    }
+  }
+
+  async function rebuildModelFolders(): Promise<boolean> {
     assetService.invalidateModelBuckets()
     // Loading counts as previously loaded: a scan-complete reload can land
     // while the eager load is still in flight, and replacing those folder
