@@ -7,8 +7,6 @@ import { readPanelStyle } from '@e2e/fixtures/utils/panelStyle'
 
 const test = mergeTests(comfyPageFixture, canvasMenuFixture)
 
-const CONNECTED_TOOLBAR_WIDTH = 56
-
 for (const location of ['left', 'right'] as const) {
   const locationSettings = {
     'Comfy.Graph.CanvasMenu': true,
@@ -49,8 +47,8 @@ for (const location of ['left', 'right'] as const) {
       const connected = await readLayout()
       if (!connected) throw new Error('Connected layout not ready')
       expect(connected.toolbar).toMatchObject({
-        x: location === 'left' ? 0 : viewport.width - CONNECTED_TOOLBAR_WIDTH,
-        width: CONNECTED_TOOLBAR_WIDTH
+        x: location === 'left' ? 0 : viewport.width - 56,
+        width: 56
       })
 
       await comfyPage.settings.setSetting('Comfy.Sidebar.Style', 'floating')

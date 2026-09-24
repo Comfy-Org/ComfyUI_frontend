@@ -212,7 +212,9 @@ const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
     'sidebar-item-group flex shrink-0 flex-col items-center overflow-hidden',
-    !isConnected.value && 'pointer-events-auto floating-panel p-0'
+    isConnected.value
+      ? 'border border-transparent'
+      : 'pointer-events-auto floating-panel p-0'
   )
 )
 
@@ -337,10 +339,6 @@ onMounted(() => {
 .connected-sidebar {
   padding: var(--sidebar-padding) 0;
   background-color: var(--comfy-menu-bg);
-}
-
-.connected-sidebar .sidebar-item-group {
-  border: 1px solid transparent;
 }
 
 .overflowing-sidebar :deep(.comfy-menu-button-wrapper) {
