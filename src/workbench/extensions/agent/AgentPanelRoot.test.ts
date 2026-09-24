@@ -2387,6 +2387,42 @@ describe('AgentPanelRoot history', () => {
     await nextTick()
   }
 
+  it('keeps a new chat rename when the first turn creates its thread', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) =>
+        url.endsWith('/api/agent/threads')
+          ? json(200, agentThreadList())
+          : json(202, { thread_id: 'th-new', message_id: 'm-new' })
+      )
+    )
+    workflowStore.activeWorkflow = addTab('workflows/new-chat.json')
+    renderWithSelectedTarget()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.newChatTitle')
+      })
+    )
+    const renameInput = await screen.findByRole<HTMLInputElement>('textbox', {
+      name: i18n.global.t('g.rename')
+    })
+    await userEvent.type(renameInput, 'Duck storyboard{Enter}')
+    expect(screen.getByText('Duck storyboard')).toBeInTheDocument()
+
+    const composer = screen.getByRole('textbox')
+    await userEvent.click(composer)
+    await userEvent.paste('Build it')
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+
+    await vi.waitFor(() => {
+      expect(useAgentConversationStore().threadId).toBe('th-new')
+      expect(useAgentChatHistoryStore().titleFor('th-new')).toBe(
+        'Duck storyboard'
+      )
+    })
+  })
+
   it('renames the current chat from the title menu on Enter', async () => {
     await renderWithActiveThread()
 

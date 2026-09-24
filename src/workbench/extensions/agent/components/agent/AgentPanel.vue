@@ -289,7 +289,6 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
             type="button"
             variant="muted-textonly"
             size="sm"
-            :disabled="sessionId === null"
             class="min-w-0 justify-start text-left"
             @click="startRename"
           >
