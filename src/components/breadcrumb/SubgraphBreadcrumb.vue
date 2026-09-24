@@ -3,7 +3,7 @@
     data-testid="subgraph-breadcrumb"
     :class="
       cn(
-        'subgraph-breadcrumb -mt-3 flex w-auto items-center pt-4 drop-shadow-(--interface-panel-drop-shadow)',
+        'subgraph-breadcrumb flex w-auto items-center drop-shadow-(--interface-panel-drop-shadow)',
         {
           'subgraph-breadcrumb-collapse': collapseTabs,
           'subgraph-breadcrumb-overflow': overflowingTabs
@@ -45,7 +45,7 @@
       >
         <template v-for="(item, index) in items" :key="item.key">
           <li
-            class="p-breadcrumb-item hover:text-foreground pointer-events-auto"
+            class="p-breadcrumb-item pointer-events-auto hover:text-base-foreground"
           >
             <SubgraphBreadcrumbItem
               :item

@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeBookmarkStore } from '@/stores/nodeBookmarkStore'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import type {
@@ -23,26 +24,21 @@ beforeEach(() => {
   )
 })
 
-const {
-  mockAddNodeOnGraph,
-  mockToggleNodeOnEvent,
-  captureRoot,
-  getRoot,
-  resetRoot
-} = vi.hoisted(() => {
-  let capturedRoot: TreeExplorerNode | null = null
-  return {
-    mockAddNodeOnGraph: vi.fn(),
-    mockToggleNodeOnEvent: vi.fn(),
-    captureRoot: (root: TreeExplorerNode) => {
-      capturedRoot = root
-    },
-    getRoot: () => capturedRoot as TreeExplorerNode<ComfyNodeDefImpl>,
-    resetRoot: () => {
-      capturedRoot = null
+const { mockToggleNodeOnEvent, captureRoot, getRoot, resetRoot } = vi.hoisted(
+  () => {
+    let capturedRoot: TreeExplorerNode | null = null
+    return {
+      mockToggleNodeOnEvent: vi.fn(),
+      captureRoot: (root: TreeExplorerNode) => {
+        capturedRoot = root
+      },
+      getRoot: () => capturedRoot as TreeExplorerNode<ComfyNodeDefImpl>,
+      resetRoot: () => {
+        capturedRoot = null
+      }
     }
   }
-})
+)
 
 const mockFolderNodeDef = fromPartial<ComfyNodeDefImpl>({
   name: 'MyFolder',
@@ -82,9 +78,7 @@ const mockBookmarkedRoot: TreeNode = {
   ]
 }
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ addNodeOnGraph: mockAddNodeOnGraph })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 vi.mock<unknown>(import('@/composables/useTreeExpansion'), () => ({
   useTreeExpansion: () => ({
@@ -167,7 +161,7 @@ describe('NodeBookmarkTreeExplorer', () => {
         })
       )
 
-      expect(vi.mocked(useNodeBookmarkStore().addBookmark)).toHaveBeenCalled()
+      expect(useNodeBookmarkStore().addBookmark).toHaveBeenCalled()
     })
 
     it('moves bookmark when a node is dragged onto a folder and is bookmarked', async () => {
@@ -182,10 +176,10 @@ describe('NodeBookmarkTreeExplorer', () => {
         })
       )
 
-      expect(
-        vi.mocked(useNodeBookmarkStore().toggleBookmark)
-      ).toHaveBeenCalledWith(mockLeafNodeDef)
-      expect(vi.mocked(useNodeBookmarkStore().addBookmark)).toHaveBeenCalled()
+      expect(useNodeBookmarkStore().toggleBookmark).toHaveBeenCalledWith(
+        mockLeafNodeDef
+      )
+      expect(useNodeBookmarkStore().addBookmark).toHaveBeenCalled()
     })
 
     it('is a no-op when the dragged node carries no data', async () => {
@@ -199,9 +193,7 @@ describe('NodeBookmarkTreeExplorer', () => {
         })
       )
 
-      expect(
-        vi.mocked(useNodeBookmarkStore().addBookmark)
-      ).not.toHaveBeenCalled()
+      expect(useNodeBookmarkStore().addBookmark).not.toHaveBeenCalled()
     })
   })
 
@@ -213,7 +205,9 @@ describe('NodeBookmarkTreeExplorer', () => {
 
       await leafNode?.handleClick?.call(leafNode, mockEvent)
 
-      expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockLeafNodeDef)
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
+        mockLeafNodeDef
+      )
     })
 
     it('toggles node expansion when a folder node is clicked', async () => {
@@ -240,9 +234,9 @@ describe('NodeBookmarkTreeExplorer', () => {
         data: mockFolderNodeDef
       })
 
-      expect(
-        vi.mocked(useNodeBookmarkStore().deleteBookmarkFolder)
-      ).toHaveBeenCalledWith(mockFolderNodeDef)
+      expect(useNodeBookmarkStore().deleteBookmarkFolder).toHaveBeenCalledWith(
+        mockFolderNodeDef
+      )
     })
 
     it('is a no-op when node data is missing', async () => {
@@ -251,9 +245,7 @@ describe('NodeBookmarkTreeExplorer', () => {
 
       await folderNode?.handleDelete?.call({ ...folderNode, data: undefined })
 
-      expect(
-        vi.mocked(useNodeBookmarkStore().deleteBookmarkFolder)
-      ).not.toHaveBeenCalled()
+      expect(useNodeBookmarkStore().deleteBookmarkFolder).not.toHaveBeenCalled()
     })
   })
 })

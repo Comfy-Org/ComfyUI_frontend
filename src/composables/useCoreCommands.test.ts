@@ -111,12 +111,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 
 vi.mock(import('firebase/auth'))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: vi.fn(() => ({}))
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock(import('@/services/dialogService'))
 
@@ -598,17 +593,13 @@ describe('useCoreCommands', () => {
 
       const commandPromise = findCmd('Comfy.RefreshNodeDefinitions').function()
 
-      expect(
-        vi.mocked(useMissingModelStore().refreshMissingModels)
-      ).not.toHaveBeenCalled()
+      expect(useMissingModelStore().refreshMissingModels).not.toHaveBeenCalled()
       resolveComboRefresh()
       await commandPromise
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
-      expect(vi.mocked(useModelStore().refresh)).toHaveBeenCalled()
-      expect(
-        vi.mocked(useMissingModelStore().refreshMissingModels)
-      ).toHaveBeenCalledWith({
+      expect(useModelStore().refresh).toHaveBeenCalled()
+      expect(useMissingModelStore().refreshMissingModels).toHaveBeenCalledWith({
         reloadDefs: false
       })
       expect(order.indexOf('missing')).toBeGreaterThan(
@@ -622,9 +613,7 @@ describe('useCoreCommands', () => {
       await expect(
         findCmd('Comfy.RefreshNodeDefinitions').function()
       ).rejects.toThrow('boom')
-      expect(
-        vi.mocked(useMissingModelStore().refreshMissingModels)
-      ).not.toHaveBeenCalled()
+      expect(useMissingModelStore().refreshMissingModels).not.toHaveBeenCalled()
     })
 
     it('Comfy.RefreshNodeDefinitions skips missing model refresh on cloud', async () => {
@@ -633,10 +622,8 @@ describe('useCoreCommands', () => {
       await findCmd('Comfy.RefreshNodeDefinitions').function()
 
       expect(app.refreshComboInNodes).toHaveBeenCalled()
-      expect(vi.mocked(useModelStore().refresh)).toHaveBeenCalled()
-      expect(
-        vi.mocked(useMissingModelStore().refreshMissingModels)
-      ).not.toHaveBeenCalled()
+      expect(useModelStore().refresh).toHaveBeenCalled()
+      expect(useMissingModelStore().refreshMissingModels).not.toHaveBeenCalled()
     })
   })
 
