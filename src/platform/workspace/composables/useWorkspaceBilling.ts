@@ -10,10 +10,12 @@ import {
 import type { PreviewSubscribeInput } from '@comfyorg/account-core/billing'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { t } from '@/i18n'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTelemetry } from '@/platform/telemetry'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import type {
@@ -28,7 +30,7 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
-import { openHostedBillingTab } from '@/platform/workspace/billing/openHostedBillingTab'
+import { openHostedBillingTabOutcome } from '@/platform/workspace/billing/openHostedBillingTab'
 import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import type {
@@ -522,19 +524,33 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     return true
   }
 
-  // Layer C first; the rail, and then the legacy client, only when the tab
-  // before them was refused. Each step opens a different destination, so a
-  // block on one says nothing about the next.
+  function reportBillingTabBlocked(): void {
+    useToastStore().add({
+      severity: 'warn',
+      summary: t('g.warning'),
+      detail: t('subscription.billingTabBlocked')
+    })
+  }
+
+  // Layer C first; the rail, and then the legacy client, only when the one
+  // before them doesn't serve this workspace. A pop-up blocker refuses this
+  // page rather than one destination, so a refused tab ends the attempt
+  // without minting another portal session.
   async function manageSubscription(): Promise<void> {
     error.value = null
-    if (openHostedBillingTab('payment-methods')) return
+    const hosted = openHostedBillingTabOutcome('payment-methods')
+    if (hosted === 'opened') return
+    if (hosted === 'blocked') return reportBillingTabBlocked()
 
     const rail = useSubscriptionRail()
     if (rail) {
       const url = await onSubscriptionRail(() =>
         rail.openPaymentPortal(window.location.href)
       )
-      if (url !== DECLINED && openPortalWindow(url)) return
+      if (url !== DECLINED) {
+        if (!openPortalWindow(url)) reportBillingTabBlocked()
+        return
+      }
     }
 
     isLoading.value = true
@@ -542,7 +558,9 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     try {
       const returnUrl = window.location.href
       const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
-      if (response.url) openPortalWindow(response.url)
+      if (response.url && !openPortalWindow(response.url)) {
+        reportBillingTabBlocked()
+      }
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to open billing portal'
