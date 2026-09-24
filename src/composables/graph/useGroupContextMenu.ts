@@ -1,6 +1,14 @@
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
+import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
+
+function shouldUseLegacyContextMenu(
+  canvas: LGraphCanvas,
+  node: LGraphNode | undefined
+) {
+  return Boolean(node) || !LiteGraph.vueNodesMode || !canvas.graph
+}
 
 /**
  * Routes Nodes 2.0 group right-clicks to Vue while nodes, reroutes,
@@ -15,7 +23,7 @@ export function useGroupContextMenu() {
   ): void {
     const [node, event] = args
 
-    if (node || !LiteGraph.vueNodesMode || !this.graph) {
+    if (shouldUseLegacyContextMenu(this, node)) {
       original.apply(this, args)
       return
     }
