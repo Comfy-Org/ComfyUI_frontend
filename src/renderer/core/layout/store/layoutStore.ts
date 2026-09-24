@@ -183,6 +183,7 @@ class LayoutStoreImpl {
   private version = ref(0)
   private _nodeGeometryVersion = 0
   private _contentSizeVersion = 0
+  private _slotOffsetVersion = ref(0)
   private currentActor = `${ACTOR_CONFIG.USER_PREFIX}${Math.random()
     .toString(36)
     .substring(2, 2 + ACTOR_CONFIG.ID_LENGTH)}`
@@ -275,6 +276,15 @@ class LayoutStoreImpl {
   /** Non-reactive revision for measured Vue content dimensions. */
   get contentSizeVersion(): number {
     return this._contentSizeVersion
+  }
+
+  /**
+   * Reactive counter bumped when measured slot offsets are dropped in bulk.
+   * A Vue node that stays mounted through a graph reload has nothing else to
+   * tell it that its measurements are gone, so it re-measures on this.
+   */
+  get slotOffsetVersion(): number {
+    return this._slotOffsetVersion.value
   }
 
   constructor() {
@@ -833,7 +843,7 @@ class LayoutStoreImpl {
     const prefix = graphId + ':'
     let deleted = false
 
-    for (const key of [...this.ynodes.keys()]) {
+    for (const key of Array.from(this.ynodes.keys())) {
       if (!key.startsWith(prefix)) continue
       this.ynodes.delete(key)
       change.nodeIds.push(toNodeId(parseLayoutKey(key).localId))
@@ -844,15 +854,19 @@ class LayoutStoreImpl {
       this.contentSizes.delete(key)
       this._contentSizeVersion++
     }
+    let slotOffsetsDropped = false
     for (const key of this.slotOffsets.keys()) {
-      if (key.startsWith(prefix)) this.slotOffsets.delete(key)
+      if (!key.startsWith(prefix)) continue
+      this.slotOffsets.delete(key)
+      slotOffsetsDropped = true
     }
-    for (const key of [...this.ygroups.keys()]) {
+    if (slotOffsetsDropped) this._slotOffsetVersion.value++
+    for (const key of Array.from(this.ygroups.keys())) {
       if (!key.startsWith(prefix)) continue
       this.ygroups.delete(key)
       deleted = true
     }
-    for (const key of [...this.yreroutes.keys()]) {
+    for (const key of Array.from(this.yreroutes.keys())) {
       if (!key.startsWith(prefix)) continue
       this.yreroutes.delete(key)
       deleted = true
@@ -964,7 +978,10 @@ class LayoutStoreImpl {
         this.contentSizes.clear()
         this._contentSizeVersion++
       }
-      this.slotOffsets.clear()
+      if (this.slotOffsets.size > 0) {
+        this.slotOffsets.clear()
+        this._slotOffsetVersion.value++
+      }
       // Reroute layouts outlive active-graph switches.
       this.pendingGlobalChanges = []
       this.isGlobalDispatchQueued = false

@@ -92,6 +92,21 @@ test.describe(
       await expect(comfyPage.selectionToolbox).toBeHidden()
     })
 
+    test('selectItems with an empty array clears selection and hides the toolbox', async ({
+      comfyPage
+    }) => {
+      const a = await comfyPage.vueNodes.getFixtureByTitle('Node A')
+      await a.title.click()
+      await expect(a.root).toHaveClass(/outline-node-component-outline/)
+      await expect(comfyPage.selectionToolbox).toBeVisible()
+
+      await comfyPage.page.evaluate(() => window.app!.canvas.selectItems([]))
+
+      await expect(comfyPage.vueNodes.selectedNodes).toHaveCount(0)
+      await expect(a.root).not.toHaveClass(/outline-node-component-outline/)
+      await expect(comfyPage.selectionToolbox).toBeHidden()
+    })
+
     test('marquee selects enclosed nodes and replaces the previous selection', async ({
       comfyPage
     }) => {

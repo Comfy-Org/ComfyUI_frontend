@@ -1,4 +1,4 @@
-import { safeInternalPath } from '@comfyorg/account/redirect'
+import { safeInternalPath } from '@comfyorg/account-core/redirect'
 
 import type {
   WorkshopField,
@@ -89,16 +89,60 @@ const SIGN_IN_LEAVE_EVENT = 'comfy:workshop-sign-in-leave'
  * A window event, not a module registry: the header and the model page are
  * separate Astro islands and must not depend on sharing one module instance.
  */
-export function onBeforeSignInLeave(stash: () => void): () => void {
+export function onBeforeSignInLeave(
+  stash: () => void | Promise<void>
+): () => void {
   if (typeof window === 'undefined') return () => {}
-  window.addEventListener(SIGN_IN_LEAVE_EVENT, stash)
-  return () => {
-    window.removeEventListener(SIGN_IN_LEAVE_EVENT, stash)
+  const listener = (event: Event) => {
+    const work = stash()
+    if (work && 'waitUntil' in event && typeof event.waitUntil === 'function')
+      event.waitUntil(work)
   }
+  window.addEventListener(SIGN_IN_LEAVE_EVENT, listener)
+  return () => window.removeEventListener(SIGN_IN_LEAVE_EVENT, listener)
 }
 
-export function runBeforeSignInLeave(): void {
-  window.dispatchEvent(new Event(SIGN_IN_LEAVE_EVENT))
+export async function runBeforeSignInLeave(): Promise<void> {
+  const pending: Promise<void>[] = []
+  window.dispatchEvent(
+    Object.assign(new Event(SIGN_IN_LEAVE_EVENT), {
+      waitUntil(work: Promise<void>) {
+        pending.push(work)
+      }
+    })
+  )
+  await Promise.allSettled(pending)
+}
+
+export async function leaveForSignIn(
+  event: MouseEvent,
+  destination: string
+): Promise<void> {
+  const saved = runBeforeSignInLeave()
+  if (
+    event.metaKey ||
+    event.ctrlKey ||
+    event.shiftKey ||
+    event.altKey ||
+    event.button !== 0
+  ) {
+    await saved
+    return
+  }
+  event.preventDefault()
+  const source = window.location.href
+  const departure = new AbortController()
+  const onLeave = () => {
+    departure.abort()
+  }
+  window.addEventListener('pagehide', onLeave, { once: true })
+  try {
+    await saved
+    if (!departure.signal.aborted && window.location.href === source)
+      window.location.assign(destination)
+  } finally {
+    window.removeEventListener('pagehide', onLeave)
+  }
 }
 
 /**

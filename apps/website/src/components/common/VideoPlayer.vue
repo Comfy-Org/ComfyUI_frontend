@@ -79,6 +79,11 @@ const {
   class?: HTMLAttributes['class']
 }>()
 
+const emit = defineEmits<{
+  loaded: [src: string]
+  failed: [src: string]
+}>()
+
 const playerEl = useTemplateRef<HTMLDivElement>('playerEl')
 const videoEl = useTemplateRef<HTMLVideoElement>('videoEl')
 const scrubberEl = useTemplateRef<HTMLDivElement>('scrubberEl')
@@ -305,6 +310,8 @@ function toggleFullscreen() {
       :autoplay="autoplay && !lazyAutoplay"
       :loop
       :muted="autoplay"
+      @loadeddata="emit('loaded', src)"
+      @error="emit('failed', src)"
       @click="hideControls || muteOnly ? undefined : (playing = !playing)"
     >
       <track
@@ -333,7 +340,7 @@ function toggleFullscreen() {
       />
       <button
         type="button"
-        class="bg-primary-comfy-yellow flex size-8 items-center justify-center rounded-lg lg:size-10"
+        class="flex size-8 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="
           muted ? t('player.unmute', locale) : t('player.mute', locale)
         "
@@ -400,7 +407,7 @@ function toggleFullscreen() {
         @touchstart.passive="scrubbing = true"
       >
         <div
-          class="bg-primary-comfy-yellow h-full rounded-full"
+          class="h-full rounded-full bg-primary-comfy-yellow"
           :style="{ width: `${progress * 100}%` }"
         />
       </div>
@@ -414,7 +421,7 @@ function toggleFullscreen() {
       <button
         v-if="!hideFullscreen"
         type="button"
-        class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-lg lg:size-10"
+        class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="t('player.fullscreen', locale)"
         @click="toggleFullscreen"
       >
@@ -458,7 +465,7 @@ function toggleFullscreen() {
       <!-- Mute / Unmute button -->
       <button
         type="button"
-        class="bg-primary-comfy-yellow flex size-8 shrink-0 items-center justify-center rounded-lg lg:size-10"
+        class="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary-comfy-yellow lg:size-10"
         :aria-label="
           muted ? t('player.unmute', locale) : t('player.mute', locale)
         "

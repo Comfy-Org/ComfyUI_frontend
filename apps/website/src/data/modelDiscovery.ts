@@ -1,4 +1,4 @@
-import { workshopModels } from '../config/models-catalogue'
+import { workshopModels } from '../config/workshop-browse-content'
 
 export interface DiscoveryProvider {
   readonly name: string

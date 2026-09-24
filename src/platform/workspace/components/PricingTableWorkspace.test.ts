@@ -6,21 +6,14 @@ import { computed, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import enMessages from '@/locales/en/main.json'
 import type { Plan } from '@/platform/workspace/api/workspaceApi'
 import PricingTableWorkspace from '@/platform/workspace/components/PricingTableWorkspace.vue'
 
 const state = vi.hoisted(() => ({ plans: [] as Plan[] }))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    plans: computed(() => state.plans),
-    currentPlanSlug: computed(() => null),
-    fetchPlans: vi.fn(),
-    subscription: computed(() => null),
-    getMaxSeats: () => 5
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 function apiPlan(
   tier: Plan['tier'],
@@ -66,8 +59,7 @@ function renderComponent() {
       plugins: [i18n],
       components: { Button },
       stubs: {
-        SelectButton: cycleToggleStub,
-        Popover: { template: '<div><slot /></div>' }
+        SelectButton: cycleToggleStub
       }
     }
   })
@@ -79,7 +71,11 @@ beforeEach(() => {
 
 describe('PricingTableWorkspace credit allotment copy', () => {
   beforeEach(() => {
+    const billing = useBillingContext()
     state.plans = []
+    billing.plans = computed(() => state.plans)
+    vi.mocked(billing.getMaxSeats).mockReturnValue(5)
+    vi.mocked(useBillingContext).mockReturnValue(billing)
   })
 
   it('shows the catalog grant in preference to twelve static months', () => {

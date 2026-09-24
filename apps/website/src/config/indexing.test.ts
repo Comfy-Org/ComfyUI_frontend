@@ -2,6 +2,20 @@ import { describe, expect, it, vi } from 'vitest'
 import { isExcludedFromSitemap, isNoindexPathname } from './indexing'
 
 describe('indexing policy', () => {
+  it('excludes render pages while keeping the public Models marketing routes', () => {
+    vi.stubEnv('WORKSHOP_IN_BUILD', '1')
+    expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(false)
+    expect(isExcludedFromSitemap('https://comfy.org/models/example/')).toBe(
+      true
+    )
+    expect(isExcludedFromSitemap('https://comfy.org/models/showcase/')).toBe(
+      true
+    )
+    expect(isNoindexPathname('/models/showcase/')).toBe(true)
+    expect(isNoindexPathname('/zh-CN/models/showcase')).toBe(true)
+    vi.stubEnv('WORKSHOP_IN_BUILD', '0')
+    expect(isExcludedFromSitemap('https://comfy.org/models/')).toBe(false)
+  })
   it.for(['0', '1'])(
     'excludes retired Workshop in either build (%s)',
     (value) => {
@@ -37,6 +51,10 @@ describe('indexing policy', () => {
     '/login',
     '/signup',
     '/forgot-password',
+    '/checkout-opening',
+    '/zh-CN/checkout-opening/',
+    '/checkout-return',
+    '/zh-CN/checkout-return/',
     '/zh-CN/login'
   ])('marks %s as noindex', (pathname) => {
     expect(isNoindexPathname(pathname)).toBe(true)

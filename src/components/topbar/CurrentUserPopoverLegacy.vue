@@ -22,7 +22,7 @@
       </p>
       <span
         v-if="subscriptionTierName"
-        class="text-foreground my-0 mt-2 rounded-full bg-secondary-background-hover px-2 py-0.5 text-xs font-bold uppercase"
+        class="my-0 mt-2 rounded-full bg-secondary-background-hover px-2 py-0.5 text-xs font-bold text-base-foreground uppercase"
       >
         {{ subscriptionTierName }}
       </span>
