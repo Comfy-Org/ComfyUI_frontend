@@ -8,6 +8,7 @@ import type {
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 import {
   agentTest as test,
@@ -17,8 +18,8 @@ import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import type { WorkspaceStore } from '@e2e/types/globals'
 
-const BINDING_KEY = 'Comfy.Agent.WorkflowTabBindings.v2'
-const THREAD_KEY = 'Comfy.Agent.ThreadId'
+const BINDING_KEY = StorageKeys.agentWorkflowTabBindings('personal')
+const THREAD_KEY = StorageKeys.agentThread('personal')
 const PORTRAIT_PATH = 'workflows/Portrait.json'
 const TARGET_ID = 'a81718a4-02ae-41e6-ae85-000000000001'
 const THREAD_ID = '6f4b1e2a-7c3d-4e5f-8a9b-0c1d2e3f4a5b'
