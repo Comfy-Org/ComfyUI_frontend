@@ -1,5 +1,11 @@
 <template>
-  <BaseModalLayout content-title="" data-testid="settings-dialog" size="full">
+  <BaseModalLayout
+    content-title=""
+    data-testid="settings-dialog"
+    size="full"
+    :content-padding="isWorkspaceCategoryActive ? 'none' : 'default'"
+    header-padding="symmetric"
+  >
     <template #leftPanelHeaderTitle>
       <i class="icon-[lucide--settings]" />
       <h2 class="text-neutral text-base">{{ $t('g.settings') }}</h2>
@@ -49,6 +55,12 @@
         id="keybinding-panel-header"
         class="flex-1"
       />
+      <SettingsWorkspaceHeader
+        v-else-if="isWorkspaceCategoryActive"
+        :workspace-name="workspaceName"
+        :subscription-tier="activeWorkspace?.subscriptionTier"
+        :collapsed="isHeaderCollapsed"
+      />
     </template>
 
     <template #header-right-area>
@@ -59,39 +71,56 @@
     </template>
 
     <template #content>
-      <template v-if="activePanel">
-        <Suspense>
-          <component :is="activePanel.component" v-bind="activePanel.props" />
-          <template #fallback>
-            <div>
-              {{ $t('g.loadingPanel', { panel: activePanel.node.label }) }}
-            </div>
-          </template>
-        </Suspense>
-      </template>
-      <template v-else-if="inSearch">
-        <SettingsPanel :setting-groups="searchResults" />
-      </template>
-      <template v-else-if="activeSettingCategory">
-        <CurrentUserMessage v-if="activeSettingCategory.label === 'Comfy'" />
-        <ColorPaletteMessage
-          v-if="activeSettingCategory.label === 'Appearance'"
-        />
-        <SettingsPanel :setting-groups="sortedGroups(activeSettingCategory)" />
-      </template>
+      <div
+        :class="
+          cn(
+            'flex min-h-0 flex-1 flex-col',
+            isWorkspaceCategoryActive && 'px-6'
+          )
+        "
+        @scroll.capture="handlePanelScroll"
+      >
+        <template v-if="activePanel">
+          <Suspense>
+            <component :is="activePanel.component" v-bind="activePanel.props" />
+            <template #fallback>
+              <div>
+                {{ $t('g.loadingPanel', { panel: activePanel.node.label }) }}
+              </div>
+            </template>
+          </Suspense>
+        </template>
+        <template v-else-if="inSearch">
+          <SettingsPanel :setting-groups="searchResults" />
+        </template>
+        <template v-else-if="activeSettingCategory">
+          <CurrentUserMessage v-if="activeSettingCategory.label === 'Comfy'" />
+          <ColorPaletteMessage
+            v-if="activeSettingCategory.label === 'Appearance'"
+          />
+          <SettingsPanel
+            :setting-groups="sortedGroups(activeSettingCategory)"
+          />
+        </template>
+      </div>
     </template>
   </BaseModalLayout>
 </template>
 
 <script setup lang="ts">
+import { storeToRefs } from 'pinia'
 import { computed, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import SettingsWorkspaceHeader from '@/platform/settings/components/SettingsWorkspaceHeader.vue'
 import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'
 import NavTitle from '@/components/widget/nav/NavTitle.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
+import { cn } from '@comfyorg/tailwind-utils'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'
 import { useSettingSearch } from '@/platform/settings/composables/useSettingSearch'
@@ -135,6 +164,30 @@ const { fetchBalance } = useBillingContext()
 
 const navRef = ref<HTMLElement | null>(null)
 const activeCategoryKey = ref<string | null>(defaultCategory.value?.key ?? null)
+
+const WORKSPACE_CATEGORY_KEYS = new Set([
+  'workspace',
+  'workspace-members',
+  'workspace-allowlist'
+])
+const isWorkspaceCategoryActive = computed(
+  () =>
+    activeCategoryKey.value !== null &&
+    WORKSPACE_CATEGORY_KEYS.has(activeCategoryKey.value)
+)
+const { workspaceName, activeWorkspace } = storeToRefs(useTeamWorkspaceStore())
+
+const { isHeaderCollapsed, handlePanelScroll, resetHeaderCollapse } =
+  useSettingsHeaderCollapse()
+
+// A panel change swaps the scroller out from under the collapse state, and the
+// state outlives the dialog, so a reopen would otherwise start collapsed.
+watch(activeCategoryKey, resetHeaderCollapse)
+onBeforeUnmount(resetHeaderCollapse)
+
+// Written from outside this dialog too (SubscriptionPanelContentWorkspace also
+// renders in WorkspacePanelContent), so never trust the inherited value.
+resetHeaderCollapse()
 
 const navItems = computed(() => navGroups.value.flatMap((group) => group.items))
 const searchableNavItems = computed(() =>

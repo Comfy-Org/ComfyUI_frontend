@@ -410,7 +410,8 @@
     "blueprints": "Blueprints",
     "partnerNodes": "Partner Nodes",
     "collapseAll": "Collapse all",
-    "expandAll": "Expand all"
+    "expandAll": "Expand all",
+    "retry": "Retry"
   },
   "hdrViewer": {
     "title": "HDR Viewer",
@@ -3307,10 +3308,11 @@
         "pendingCount": "Pending ({count})"
       },
       "columns": {
+        "email": "Email",
         "inviteDate": "Invite date",
         "expiryDate": "Expiry date",
         "role": "Role",
-        "creditsUsed": "Monthly credits"
+        "creditsUsed": "Credits used this month"
       },
       "actions": {
         "copyInviteLink": "Copy invite link",
@@ -3333,11 +3335,15 @@
       "upsellBannerReactivate": "To add more teammates, reactivate your plan.",
       "upgradeToTeam": "Upgrade to Team",
       "reactivateTeam": "Reactivate Team",
+      "totalMembersCount": "{count} of {maxSeats} total members.",
       "needMoreMembers": "Need more members?",
       "contactUs": "Contact us",
       "noInvites": "No pending invites",
+      "noInvitesMatch": "No invites match \"{query}\"",
       "noMembers": "No members",
-      "searchPlaceholder": "Search..."
+      "noMembersMatch": "No members match \"{query}\"",
+      "searchPlaceholder": "Search...",
+      "loadFailed": "Couldn't load members."
     },
     "partnerNodes": {
       "title": "Partner models",
