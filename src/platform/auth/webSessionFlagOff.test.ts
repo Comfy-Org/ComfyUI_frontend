@@ -37,6 +37,11 @@ const identity = vi.hoisted(() => {
     },
     refreshIdToken() {
       tokenObservers.forEach((observer) => observer(state.user))
+    },
+    signOut() {
+      state.user = null
+      userObservers.forEach((observer) => observer(null))
+      tokenObservers.forEach((observer) => observer(null))
     }
   }
 })
@@ -158,6 +163,32 @@ function installFetchRecorder(features: Record<string, unknown>) {
     }
   }
 
+  class RecordingWebSocket extends EventTarget {
+    static readonly CONNECTING = 0
+    static readonly OPEN = 1
+    static readonly CLOSING = 2
+    static readonly CLOSED = 3
+    readyState = RecordingWebSocket.CONNECTING
+    binaryType = 'blob'
+    constructor(url: string | URL) {
+      super()
+      const parsed = new URL(String(url))
+      const request: RecordedRequest = {
+        method: 'WEBSOCKET',
+        path: parsed.pathname + parsed.search,
+        headers: {},
+        credentials: null
+      }
+      all.push(request)
+      pending.push(request)
+    }
+    send() {}
+    close() {
+      this.readyState = RecordingWebSocket.CLOSED
+    }
+  }
+  vi.stubGlobal('WebSocket', RecordingWebSocket)
+
   vi.stubGlobal(
     'fetch',
     vi.fn<typeof fetch>(async (input, init) => {
@@ -188,12 +219,13 @@ function wireSessionCookieExtension() {
   assert.exists(extension)
   const scope = effectScope()
   scope.run(() => {
-    const { onUserResolved, onTokenRefreshed } = useCurrentUser()
+    const { onUserResolved, onTokenRefreshed, onUserLogout } = useCurrentUser()
     onUserResolved(
       (user) =>
         void extension.onAuthUserResolved?.(user, fromPartial<ComfyApp>({}))
     )
     onTokenRefreshed(() => void extension.onAuthTokenRefreshed?.())
+    onUserLogout(() => void extension.onAuthUserLogout?.())
   })
   return scope
 }
@@ -222,10 +254,22 @@ const TOKEN_MINT: RecordedRequest = {
   credentials: null
 }
 
+const SIGN_OUT: RecordedRequest[] = [
+  {
+    method: 'DELETE',
+    path: '/api/auth/session',
+    headers: {},
+    credentials: 'include'
+  },
+  { method: 'WEBSOCKET', path: '/ws', headers: {}, credentials: null }
+]
+
 interface FlowGolden {
   signIn: RecordedRequest[]
   tokenRefresh: RecordedRequest[]
   apiCall: RecordedRequest[]
+  socket: RecordedRequest[]
+  signOut: RecordedRequest[]
 }
 
 const UNIFIED_CLOUD_AUTH_OFF: FlowGolden = {
@@ -248,7 +292,16 @@ const UNIFIED_CLOUD_AUTH_OFF: FlowGolden = {
       },
       credentials: null
     }
-  ]
+  ],
+  socket: [
+    {
+      method: 'WEBSOCKET',
+      path: '/ws?token=firebase-id-token',
+      headers: {},
+      credentials: null
+    }
+  ],
+  signOut: SIGN_OUT
 }
 
 const UNIFIED_CLOUD_AUTH_ON: FlowGolden = {
@@ -271,7 +324,16 @@ const UNIFIED_CLOUD_AUTH_ON: FlowGolden = {
       },
       credentials: null
     }
-  ]
+  ],
+  socket: [
+    {
+      method: 'WEBSOCKET',
+      path: '/ws?token=cloud-jwt-2',
+      headers: {},
+      credentials: null
+    }
+  ],
+  signOut: SIGN_OUT
 }
 
 const FORBIDDEN_HEADERS = [
@@ -318,7 +380,7 @@ describe('cloud auth requests with unified_web_session off', () => {
       golden: UNIFIED_CLOUD_AUTH_ON
     }
   ])(
-    'sends the pinned sign-in, refresh and API requests ($name)',
+    'sends the pinned sign-in, refresh, API, socket and sign-out requests ($name)',
     async ({ features, golden }) => {
       const recorder = installFetchRecorder(features)
 
@@ -345,11 +407,20 @@ describe('cloud auth requests with unified_web_session off', () => {
       })
       expect(recorder.take()).toEqual(golden.apiCall)
 
+      await api.resetSocket()
+      expect(recorder.take()).toEqual(golden.socket)
+
+      identity.signOut()
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(recorder.take()).toEqual(golden.signOut)
+
       expect(recorder.all).toEqual([
         ...FEATURES_BOOTSTRAP,
         ...golden.signIn,
         ...golden.tokenRefresh,
-        ...golden.apiCall
+        ...golden.apiCall,
+        ...golden.socket,
+        ...golden.signOut
       ])
 
       expect(
