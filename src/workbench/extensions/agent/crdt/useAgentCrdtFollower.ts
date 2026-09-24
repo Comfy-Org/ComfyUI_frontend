@@ -536,10 +536,11 @@ function startAgentCrdtFollower(
       // what this correlation last projected is not yet established either
       // way. Retaining the ledger's ids against a doc this follower cannot
       // yet vouch for is exactly the risk `pendingCorrelation.ts`'s
-      // reactivation invalidation exists to avoid; until the ack is
-      // consumed, "continuity unknown" is treated the same as "continuity
-      // failed" for THIS reconcile, and the ledger itself is left untouched
-      // for the ack to resolve normally once it arrives.
+      // reactivation-continuity check exists to guard against; until the ack
+      // is consumed, "continuity unknown" is treated the same as "continuity
+      // not yet established" for THIS reconcile, and the ledger itself is
+      // left untouched (never reverted) for the ack to resolve normally once
+      // it arrives.
       pendingAdds: () =>
         awaitingReactivationContinuity
           ? new Set<string>()
@@ -564,8 +565,7 @@ function startAgentCrdtFollower(
       projectedSeq = seq
     },
     reconcileFromDoc: (id, seq) => projection.reconcileFromDoc(id, seq),
-    effectPresent: (op) => docEffectPresent(op),
-    abortSender: () => sender.abortAll()
+    effectPresent: (op) => docEffectPresent(op)
   })
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
@@ -621,7 +621,16 @@ function startAgentCrdtFollower(
     // neither this frame's ECS apply nor its seq-coverage clear to have run
     // first; running it first also keeps a just-reverted entry's id out of
     // the SAME frame's full-reconcile `pendingAdds`/`pendingConnects`.
-    if (update.catchUp) pendingOps.resolveDeliveryUnknown(docEffectPresent)
+    //
+    // `consumeCatchUpRevertOnAbsent()` is `false` for exactly the one
+    // catch-up a reactivation ack with an unproven-continuity seq mismatch
+    // implies (the reactivation-continuity rule in (a)): an absent entry
+    // stays parked instead of reverting there. Every other catch-up reverts
+    // on absence as usual.
+    if (update.catchUp)
+      pendingOps.resolveDeliveryUnknown(docEffectPresent, {
+        revertOnAbsent: pendingCorrelation.consumeCatchUpRevertOnAbsent()
+      })
     const applied = projection.applyFrame(update)
     incrementOutcome(applied ? 'applied' : 'skipped')
     if (!applied) return []

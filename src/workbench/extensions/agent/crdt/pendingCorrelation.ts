@@ -46,18 +46,6 @@ export interface PendingCorrelationDeps {
   reconcileFromDoc(workflowId: string, seq: number): boolean
   /** Per-op-kind doc presence check; see `docEffectPresent` in the composable. */
   effectPresent(op: Op): boolean | null
-  /**
-   * Settles every batch the sender still holds — queued/open ones
-   * `undeliverable` (revert, with the existing toast), a transmitted-but-
-   * unacknowledged one `unconfirmed` (parked, per (a)'s parked set). Called
-   * by {@link PendingCorrelation.resolveIfAlreadyCurrent} when a reactivation
-   * ack cannot establish continuity with what this correlation last
-   * projected: this frontend has no generation token yet (a backend
-   * dependency, not decided here) to prove the resumed subscription is the
-   * same lineage the ledger was built against, so it conservatively treats
-   * every batch as addressed to a doc it can no longer vouch for.
-   */
-  abortSender(): void
 }
 
 /** The subscribe ack {@link PendingCorrelation.resolveIfAlreadyCurrent} classifies. */
@@ -115,23 +103,27 @@ export interface PendingCorrelation {
    * resume from a paused (tab-inactive) subscription: `ack.seq` equal to
    * what this correlation last projected means the document did not change
    * while away (seq is monotonic across a same-workflow remint), so parked
-   * entries survive and the reconcile above runs as it always has. A
-   * DIFFERENT `ack.seq` there cannot be trusted to mean "a catch-up frame is
-   * coming and will resolve things normally" — a `doc_reset` missed while
-   * inactive remints the same workflow id with no lineage-break notice, and
-   * this frontend has no generation token yet to tell that apart from
-   * ordinary progress — so it conservatively invalidates instead
-   * (`deps.abortSender` plus reverting whatever was already parked). Outside
-   * a reactivation (the ordinary resubscribe-while-active case, e.g. a
-   * FEB-2 gap or a reconnect), a seq mismatch is left alone: the follower's
-   * state vector was never stale, so the natural catch-up frame is trusted
-   * to arrive and resolve things through {@link onProjected} instead.
+   * entries survive and the reconcile above runs as it always has, revert-
+   * on-absence included. A DIFFERENT `ack.seq` there is ordinary same-
+   * lineage progress, not proof any parked effect is absent (this frontend
+   * has no generation token yet — a named backend dependency — to rule out a
+   * silent remint under the same workflow id, so it cannot go further than
+   * that): `resume` still runs, and the guaranteed catch-up `doc_update` this
+   * implies still runs the barrier's same per-kind check in
+   * `applyAndReconcile`, but {@link consumeCatchUpRevertOnAbsent} flags that
+   * ONE catch-up not to revert on absence — an absent entry stays parked as
+   * `delivery_unknown` and resolves at the next same-lineage `doc_update`, an
+   * explicit host rejection, or the retry-timeout expiry instead. Outside a
+   * reactivation (the ordinary resubscribe-while-active case, e.g. a FEB-2
+   * gap or a reconnect), a seq mismatch is left alone as before: the natural
+   * catch-up frame resolves things through {@link onProjected} and
+   * `applyAndReconcile`'s own (unflagged, revert-on-absence-as-usual)
+   * per-kind rules.
    *
-   * `resume` is called exactly when continuity is established (or the ack
-   * carries nothing to check): NEVER when a reactivation is invalidated. The
-   * caller's held ops must not reach the wire again until this decision is
-   * made — resuming first and invalidating after would let an in-flight
-   * held operation transmit into a doc this ack cannot vouch for.
+   * `resume` runs on every path through this method that reaches a decision
+   * (a bare ack, a duplicate generation, continuity established, or
+   * continuity unproven) — there is no case left where held ops must wait
+   * further once this ack has been classified.
    */
   resolveIfAlreadyCurrent(ack: ReactivationAck, resume: () => void): void
   /**
@@ -160,6 +152,19 @@ export interface PendingCorrelation {
    * stop early instead of running out its budget.
    */
   retryAlreadyCurrent(): boolean
+  /**
+   * Whether the NEXT `update.catchUp` frame's `resolveDeliveryUnknown` call
+   * (`applyAndReconcile` in the composable) may revert an entry the per-kind
+   * check finds absent. Defaults to, and always resets back to, `true` once
+   * read — {@link resolveIfAlreadyCurrent} flips it to `false` for exactly
+   * the one guaranteed catch-up a reactivation ack with an unproven-
+   * continuity seq mismatch implies, per ADR-CRDT-RECONCILE-0035 (a)'s
+   * reactivation-continuity rule; every catch-up after that one reverts on
+   * absence as usual, including one driven by a later, successful resubscribe
+   * once the connection recovers (e.g. after CRDT-FOLLOWER-0035's bounded
+   * ack-timeout retry).
+   */
+  consumeCatchUpRevertOnAbsent(): boolean
 }
 
 export function createPendingCorrelation(
@@ -183,6 +188,10 @@ export function createPendingCorrelation(
   // hold is outstanding; only a reactivation ack ever reads it, and it is
   // cleared the instant one does.
   let reactivationBaseline: number | null | undefined
+  // Consumed by `consumeCatchUpRevertOnAbsent`; see that method's doc
+  // comment. Reset to `true` on every read, so it only ever suppresses the
+  // ONE catch-up a continuity-unproven reactivation ack implies.
+  let nextCatchUpRevertOnAbsent = true
   // The internally-owned already-current retry timer and its attempt count —
   // the whole catch-up transition's lifecycle (lineage, consumed generation,
   // pendingRetry, AND this timer) now lives under one owner; see `reset`'s
@@ -215,6 +224,7 @@ export function createPendingCorrelation(
     deps.setWatermark(null)
     pendingRetry = null
     reactivationBaseline = undefined
+    nextCatchUpRevertOnAbsent = true
     clearRetryTimer()
     pendingOps.reset()
   }
@@ -249,26 +259,6 @@ export function createPendingCorrelation(
     if (!pendingRetry) return true
     const { workflowId, ackSeq } = pendingRetry
     return tryResolveAlreadyCurrent(workflowId, ackSeq)
-  }
-
-  /**
-   * Aborts the sender FIRST, then sweeps every parked entry — including
-   * whatever `deps.abortSender` itself just parked as `unconfirmed` from an
-   * in-flight batch settling underneath it. Reversing that order would let
-   * such a settlement land AFTER the sweep, so it would survive invalidation
-   * as a stale-lineage entry the sweep never saw.
-   */
-  function invalidateStaleReactivation(): void {
-    deps.abortSender()
-    // Whatever is parked now — including anything `abortSender` itself just
-    // parked — belongs to a lineage this ack cannot vouch for continuity
-    // with (ADR-CRDT-RECONCILE-0035 (a)'s missing-generation-token gap):
-    // treat every one of those entries as though its effect is absent,
-    // reverting it with the existing toast, rather than let it be retained
-    // through the rebind's full reconcile (whose ledger-derived
-    // `LocalIntent.pendingAdds`/`pendingConnects` would otherwise protect
-    // stale, possibly wrong-lineage ids).
-    pendingOps.resolveDeliveryUnknown(() => false)
   }
 
   return {
@@ -316,17 +306,29 @@ export function createPendingCorrelation(
           ? reactivationBaseline
           : deps.getWatermark()
       if (isReactivation) reactivationBaseline = undefined
+      resume()
       if (ackSeq === watermark) {
-        resume()
         tryResolveAlreadyCurrent(workflowId, ackSeq)
         return
       }
       if (isReactivation) {
-        invalidateStaleReactivation()
-        return
+        // ADR-CRDT-RECONCILE-0035 (a), round-6 correction: a changed seq at
+        // reactivation is ordinary same-lineage progress, not proof any
+        // parked effect is absent — there is no destructive invalidation
+        // here anymore. The seq gap guarantees a catch-up `doc_update` is
+        // coming (see `layoutFollowerBridge.ts`'s `isCatchUp`); flag that ONE
+        // frame's barrier not to revert on absence instead of forcing a
+        // reconcile now.
+        nextCatchUpRevertOnAbsent = false
       }
-      resume()
+      // Non-reactivation mismatch, as before: left alone for the natural
+      // catch-up frame to resolve through `onProjected`.
     },
-    retryAlreadyCurrent
+    retryAlreadyCurrent,
+    consumeCatchUpRevertOnAbsent() {
+      const value = nextCatchUpRevertOnAbsent
+      nextCatchUpRevertOnAbsent = true
+      return value
+    }
   }
 }

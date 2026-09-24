@@ -79,10 +79,22 @@ export interface PendingOpTracker {
    * `delete_node`: absent; `connect`: link id present), or `null` when the
    * kind cannot be checked this way (`set_widget`, which always resolves
    * present — LWW makes a value comparison meaningless — and `clear`, which
-   * is never parked). Present clears the entry; absent reverts it
-   * (`reason: 'diverged'`) through the same path a host rejection uses.
+   * is never parked). Present clears the entry.
+   *
+   * Absent reverts it (`reason: 'diverged'`) through the same path a host
+   * rejection uses, UNLESS `revertOnAbsent` is `false` (default `true`): an
+   * absent entry then stays parked as `delivery_unknown` instead of
+   * reverting. ADR-CRDT-RECONCILE-0035 (a)'s reactivation-continuity rule
+   * passes `false` here — a changed `seq` at reactivation is ordinary
+   * same-lineage progress, not proof of absence, and reverting on that basis
+   * alone could strip a local projection of an add the document already
+   * holds; the entry resolves instead at the next same-lineage `doc_update`,
+   * an explicit host rejection, or the retry-timeout expiry.
    */
-  resolveDeliveryUnknown(effectPresent: (op: Op) => boolean | null): void
+  resolveDeliveryUnknown(
+    effectPresent: (op: Op) => boolean | null,
+    options?: { revertOnAbsent?: boolean }
+  ): void
   reset(): void
   entries(): PendingOpEntry<Op>[]
   /**
@@ -122,6 +134,23 @@ export interface PendingOpTracker {
    * because the doc has not caught up yet.
    */
   pendingDeleteNodeIds(): ReadonlySet<string>
+}
+
+/** What {@link PendingOpTracker.resolveDeliveryUnknown} does with one parked entry. */
+type DeliveryUnknownDisposition = 'clear' | 'revert' | 'skip'
+
+function classifyDeliveryUnknownEntry(
+  entry: PendingOpEntry<Op>,
+  effectPresent: (op: Op) => boolean | null,
+  revertOnAbsent: boolean
+): DeliveryUnknownDisposition {
+  const op = entry.shadow
+  // `set_widget` has no meaningful presence check (LWW), so a parked one
+  // always resolves present once a catch-up runs at all.
+  const present = op.op === 'set_widget' ? true : effectPresent(op)
+  if (present === null) return 'skip'
+  if (present) return 'clear'
+  return revertOnAbsent ? 'revert' : 'skip'
 }
 
 /** States in which the host can have already reflected an op back to this follower. */
@@ -374,19 +403,20 @@ export function createPendingOpTracker(
     onDocEffect(opIds) {
       applyEffect(opIds)
     },
-    resolveDeliveryUnknown(effectPresent) {
+    resolveDeliveryUnknown(effectPresent, options) {
+      const revertOnAbsent = options?.revertOnAbsent ?? true
       const parked = ledger.entries('delivery_unknown')
       if (parked.length === 0) return
       const toClear: string[] = []
       const toRevert: string[] = []
       for (const entry of parked) {
-        const op = entry.shadow
-        // `set_widget` has no meaningful presence check (LWW), so a parked
-        // one always resolves present once a catch-up runs at all.
-        const present = op.op === 'set_widget' ? true : effectPresent(op)
-        if (present === null) continue
-        if (present) toClear.push(entry.opId)
-        else toRevert.push(entry.opId)
+        const disposition = classifyDeliveryUnknownEntry(
+          entry,
+          effectPresent,
+          revertOnAbsent
+        )
+        if (disposition === 'clear') toClear.push(entry.opId)
+        else if (disposition === 'revert') toRevert.push(entry.opId)
       }
       applyEffect(toClear)
       if (toRevert.length > 0) revert(toRevert, 'diverged')
