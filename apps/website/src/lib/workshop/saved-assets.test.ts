@@ -126,12 +126,28 @@ describe('accessAfterFailure', () => {
   const url = 'https://assets.example/saved.png'
 
   it.for([
-    ['nothing granted yet', undefined, undefined],
-    ['a grant with time left', { url, expiresAt: now + 30_000 }, url],
-    ['a grant that has lapsed', { url, expiresAt: now - 1 }, undefined]
+    ['nothing granted yet', undefined, undefined, now + 15_000],
+    [
+      'a grant with time left',
+      { url, expiresAt: now + 30_000 },
+      url,
+      now + 15_000
+    ],
+    [
+      'a grant shorter than the retry',
+      { url, expiresAt: now + 5_000 },
+      url,
+      now + 5_000
+    ],
+    [
+      'a grant that has lapsed',
+      { url, expiresAt: now - 1 },
+      undefined,
+      now + 15_000
+    ]
   ] as const)(
     'serves %s as %s while it schedules the retry',
-    ([, held, expected]) => {
+    ([, held, expected, renewAt]) => {
       const next = accessAfterFailure(
         held && { ...held, renewAt: now - 1 },
         now,
@@ -142,7 +158,10 @@ describe('accessAfterFailure', () => {
         next.url,
         'a URL still inside its expiry outlives the attempt to replace it'
       ).toBe(expected)
-      expect(next.renewAt, 'nothing else would ask again').toBe(now + 15_000)
+      expect(
+        next.renewAt,
+        'a retry after the expiry would leave a dead URL on the tile until it fired'
+      ).toBe(renewAt)
     }
   )
 })

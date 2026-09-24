@@ -107,15 +107,17 @@ export interface AssetAccess {
  * sits inside the grant's expiry, so a URL with time still on it outlives the
  * attempt to replace it rather than unmounting the player mid-playback. One
  * that has lapsed is let go, and either way a deadline of its own is what
- * makes the tile ask again.
+ * makes the tile ask again. That deadline never outlives the URL it keeps: on
+ * a grant shorter than the retry, the next attempt lands at the expiry, which
+ * is the moment the URL stops being worth keeping.
  */
 export function accessAfterFailure(
   held: AssetAccess | undefined,
   now: number,
   retryMs: number
 ): AssetAccess {
-  const renewAt = now + retryMs
+  const retryAt = now + retryMs
   return held && held.expiresAt > now
-    ? { ...held, renewAt }
-    : { expiresAt: 0, renewAt }
+    ? { ...held, renewAt: Math.min(retryAt, held.expiresAt) }
+    : { expiresAt: 0, renewAt: retryAt }
 }
