@@ -168,6 +168,35 @@ describe('LiveGraphApplier', () => {
     )
   })
 
+  it('restores a widget and its mirrored property when a widget callback throws', () => {
+    const { graph, doc, applier, applyEdit } = setup({
+      nodes: [sourceNode(1)],
+      links: []
+    })
+    applier.syncFromDoc(doc, CONTEXT)
+    const node = graph.getNodeById(toNodeId(1))
+    const widget = node?.widgets?.[0]
+    if (!node || !widget) throw new Error('node 1 was not created')
+    node.properties.steps = 20
+    widget.options.property = 'steps'
+    node.onWidgetChanged = () => {
+      throw new Error('extension hook exploded')
+    }
+
+    applyEdit(() => {
+      const widgets = nodesMap(doc).get('1')?.get('widgets')
+      if (!(widgets instanceof Y.Map)) throw new Error('named storage')
+      widgets.set('steps', 35)
+    })
+
+    expect(widget.value).toBe(20)
+    expect(node.properties.steps).toBe(20)
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({ message: 'extension hook exploded' }),
+      expect.objectContaining({ errorType: 'agent_graph_apply_failed' })
+    )
+  })
+
   describe('full sync reconciles the live graph to the document', () => {
     function reconcileSetup() {
       const { graph, doc, applier } = setup({
@@ -286,6 +315,34 @@ describe('LiveGraphApplier', () => {
     expect(reportError).toHaveBeenCalledWith(
       expect.anything(),
       expect.objectContaining({ errorType: 'agent_graph_link_unresolved' })
+    )
+  })
+
+  it('reports a document node whose slots are not arrays instead of creating it', () => {
+    const { graph, doc, applier, applyEdit } = setup({
+      nodes: [sourceNode(1)],
+      links: []
+    })
+    applier.syncFromDoc(doc, CONTEXT)
+
+    applyEdit(() => {
+      nodesMap(doc).set(
+        '2',
+        new Y.Map<unknown>(
+          Object.entries({
+            ...sinkNode(2),
+            inputs: { name: 'image', type: 'IMAGE' }
+          })
+        )
+      )
+    })
+
+    expect(graph.getNodeById(toNodeId(2))).toBeNull()
+    expect(reportError).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining('Document node 2 is malformed')
+      }),
+      expect.objectContaining({ errorType: 'agent_graph_node_malformed' })
     )
   })
 

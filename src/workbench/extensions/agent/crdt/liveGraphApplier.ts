@@ -4,6 +4,7 @@ import {
   OPAQUE_WIDGETS_KEY
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
+import { z } from 'zod'
 
 import type { INodeFlags, INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
@@ -21,6 +22,7 @@ import type {
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
+import { zComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { LinkId } from '@/types/linkId'
@@ -122,19 +124,55 @@ function plain(value: unknown): unknown {
  * while placement is live carries it, but the flag is local interaction
  * state, never document state.
  */
-function syncedFlags(flags: unknown): INodeFlags {
-  if (typeof flags !== 'object' || flags === null) return {}
-  const { ghost: _ghost, ...rest } = flags as INodeFlags
+function syncedFlags(flags: INodeFlags | undefined): INodeFlags {
+  const { ghost: _ghost, ...rest } = flags ?? {}
   return rest
 }
 
-function readDocNode(doc: Y.Doc, id: string): DocNode | null {
+const zDocSlot = z
+  .object({ name: z.string(), type: z.union([z.string(), z.number()]) })
+  .passthrough()
+const zNodeProperty = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.object({}).passthrough(),
+  z.array(z.unknown()),
+  z.null()
+])
+
+/**
+ * The shape a document node must have before it can configure a live node.
+ * Agent-minted nodes are sparse, so geometry and mode fall back to defaults;
+ * slot and property shapes are enforced because `LGraphNode.configure` maps
+ * over them without checking. Slot link references are not validated because
+ * `detachSerialisedLinks` discards them; links come from the links map.
+ * Widget values live in the node's `widgets` map, never in `widgets_values`.
+ */
+const zDocNodeFields = zComfyNode
+  .partial({ pos: true, size: true, flags: true, order: true, mode: true })
+  .omit({ widgets_values: true })
+  .extend({
+    id: z.string(),
+    type: z.string().min(1),
+    title: z.string().optional(),
+    inputs: z.array(zDocSlot).optional(),
+    outputs: z.array(zDocSlot).optional(),
+    properties: z.record(zNodeProperty.optional()).optional()
+  })
+
+interface MalformedDocNode {
+  malformed: string
+}
+
+function readDocNode(
+  doc: Y.Doc,
+  id: string
+): DocNode | MalformedDocNode | null {
   const source = nodesMap(doc).get(id)
   if (!(source instanceof Y.Map)) return null
-  const type = source.get('type')
-  if (typeof type !== 'string' || type.length === 0) return null
 
-  const fields: Record<string, unknown> = {}
+  const fields: Record<string, unknown> = { id }
   let widgets: DocNode['widgets']
   source.forEach((value, key) => {
     if (key === 'widgets' && value instanceof Y.Map) {
@@ -142,21 +180,35 @@ function readDocNode(doc: Y.Doc, id: string): DocNode | null {
     } else if (key === OPAQUE_WIDGETS_KEY) {
       const opaque = plain(value)
       if (Array.isArray(opaque)) widgets = opaque
-    } else {
+    } else if (key !== 'id') {
       fields[key] = plain(value)
     }
   })
-  const serialised = {
-    ...fields,
-    id,
-    type,
-    pos: Array.isArray(fields.pos) ? fields.pos : [0, 0],
-    size: Array.isArray(fields.size) ? fields.size : [0, 0],
-    flags: syncedFlags(fields.flags),
-    order: typeof fields.order === 'number' ? fields.order : 0,
-    mode: typeof fields.mode === 'number' ? fields.mode : 0
-  } as ISerialisedNode
-  return { id, type, serialised, widgets }
+  const parsed = zDocNodeFields.safeParse(fields)
+  if (!parsed.success) {
+    return {
+      malformed: parsed.error.issues
+        .map((issue) => `${issue.path.join('.')} ${issue.message}`)
+        .join('; ')
+    }
+  }
+  const {
+    pos = [0, 0],
+    size = [0, 0],
+    flags,
+    order = 0,
+    mode = 0,
+    ...rest
+  } = parsed.data
+  const serialised: ISerialisedNode = {
+    ...rest,
+    pos,
+    size,
+    flags: syncedFlags(flags),
+    order,
+    mode
+  }
+  return { id, type: serialised.type, serialised, widgets }
 }
 
 function readDocLink(doc: Y.Doc, key: string): DocLink | null {
@@ -480,7 +532,7 @@ export class LiveGraphApplier {
     id: string,
     pendingWidgetKeys: ReadonlySet<string> = new Set()
   ): 'created' | 'recreated' | 'updated' | 'skipped' {
-    const docNode = readDocNode(doc, id)
+    const docNode = this.#readDocNode(doc, id)
     if (!docNode) return 'skipped'
     const live = graph.getNodeById(toNodeId(id))
     if (live && live.type === docNode.type) {
@@ -543,8 +595,24 @@ export class LiveGraphApplier {
     applyAppearance(node, source)
   }
 
+  #readDocNode(doc: Y.Doc, id: string): DocNode | null {
+    const read = readDocNode(doc, id)
+    if (read === null) return null
+    if (!('malformed' in read)) {
+      this.#reported.delete(`node-shape:${id}`)
+      return read
+    }
+    this.#reportOnce(
+      `node-shape:${id}`,
+      `Document node ${id} is malformed: ${read.malformed}`,
+      'agent_graph_node_malformed',
+      { nodeId: id, issues: read.malformed }
+    )
+    return null
+  }
+
   #syncFields(graph: LGraph, doc: Y.Doc, id: string): void {
-    const docNode = readDocNode(doc, id)
+    const docNode = this.#readDocNode(doc, id)
     const node = graph.getNodeById(toNodeId(id))
     if (!docNode || !node || node.type !== docNode.type) return
     this.#applyFields(node, docNode)
@@ -556,7 +624,7 @@ export class LiveGraphApplier {
     id: string,
     names: ReadonlySet<string> | 'all'
   ): void {
-    const docNode = readDocNode(doc, id)
+    const docNode = this.#readDocNode(doc, id)
     const node = graph.getNodeById(toNodeId(id))
     if (!docNode || !node || node.type !== docNode.type) return
     const widgets = docNode.widgets
@@ -636,16 +704,16 @@ export class LiveGraphApplier {
   }
 
   #setWidgetValue(node: LGraphNode, widget: IBaseWidget, value: WidgetValue) {
-    if (widget.type === 'button') return
+    if (widget.type === 'button' || Object.is(widget.value, value)) return
     const previous = widget.value
-    if (Object.is(previous, value)) return
-    widget.value = value
-    const property = widget.options.property
-    if (property && node.properties[property] !== undefined)
-      node.setProperty(property, value)
-    const canvas = this.#deps.getCanvas?.() ?? undefined
-    widget.callback?.(value, canvas, node)
-    node.onWidgetChanged?.(widget.name, value, previous, widget)
+    const rollback = writeWidgetValue(node, widget, value)
+    try {
+      widget.callback?.(value, this.#deps.getCanvas?.() ?? undefined, node)
+      node.onWidgetChanged?.(widget.name, value, previous, widget)
+    } catch (error) {
+      rollback()
+      throw error
+    }
     node.graph?.incrementVersion()
   }
 
@@ -769,6 +837,29 @@ function hostWidgetEntries(
   if (Array.isArray(widgets))
     return promoted.map((input, index) => [input.name, widgets[index]])
   return Object.entries(widgets ?? {})
+}
+
+/** Writes a widget value and its mirrored node property; returns the undo. */
+function writeWidgetValue(
+  node: LGraphNode,
+  widget: IBaseWidget,
+  value: WidgetValue
+): () => void {
+  const previous = widget.value
+  const property = widget.options.property
+  if (!property || node.properties[property] === undefined) {
+    widget.value = value
+    return () => {
+      widget.value = previous
+    }
+  }
+  const previousProperty = node.properties[property]
+  widget.value = value
+  node.setProperty(property, value)
+  return () => {
+    widget.value = previous
+    node.setProperty(property, previousProperty)
+  }
 }
 
 function applyAppearance(node: LGraphNode, source: ISerialisedNode): void {
