@@ -95,12 +95,13 @@ export function createCreatorFields(
     label: string,
     maxItems = 1,
     isRequired = false,
-    mimeTypes?: string[]
+    mimeTypes?: string[],
+    accept: WorkshopCreatorFile['accept'] = 'image'
   ) {
     files.push({
       name,
       label,
-      accept: 'image',
+      accept,
       maxItems,
       required: isRequired,
       ...(mimeTypes ? { mimeTypes } : {})
@@ -174,6 +175,9 @@ export function createCreatorFields(
       inputs[field.name] = {
         label: field.label,
         help: rules[field.name]?.help ?? '',
+        ...(rules[field.name]?.formConstraint
+          ? { formConstraint: rules[field.name].formConstraint }
+          : {}),
         control: 'media',
         hidden: false,
         advanced: false

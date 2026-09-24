@@ -1,5 +1,5 @@
-import type * as DistributionModule from '@/platform/distribution/types'
-import type * as I18nModule from '@/i18n'
+import { computed } from 'vue'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useDialogStore } from '@/stores/dialogStore'
 /**
  * Settings dialog migration regression net: `useSettingsDialog().show()` must
@@ -12,29 +12,27 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const showDialog = vi.hoisted(() => vi.fn())
 const isCloudRef = vi.hoisted(() => ({ value: false }))
 
-vi.mock(import('@/platform/distribution/types'), async (importOriginal) => ({
-  ...(await importOriginal<typeof DistributionModule>()),
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return isCloudRef.value
   }
 }))
 
-vi.mock(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
-  t: (k: string) => k
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({ trackEvent: vi.fn() })
-}))
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({
-    canAccessSubscriptionFeatures: { value: true },
-    isFreeTier: { value: false },
-    type: { value: 'legacy' }
+beforeEach(() => {
+  const billing = useBillingContext()
+  Object.assign(billing, {
+    canAccessSubscriptionFeatures: computed(() => true),
+    isFreeTier: computed(() => false),
+    type: computed(() => 'legacy')
   })
-}))
+  vi.mocked(useBillingContext).mockReturnValue(billing)
+})
+
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 

@@ -1,130 +1,103 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
+import type { useAudioService } from '@/services/audioService'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { reportError } from '@/platform/telemetry/reportError'
 
 const {
-  extensions,
-  mockApiURL,
-  mockFetchApi,
   mockMediaRecorderConstruct,
   mockMediaRecorderStart,
   mockMediaRecorderStop,
-  mockReportError,
   mockStopAllTracks
-} = await vi.hoisted(async () => {
-  const { createExtensionCapture } =
-    await import('@/utils/__tests__/extensionTestUtils')
+} = vi.hoisted(() => {
   return {
-    extensions: createExtensionCapture(),
-    mockApiURL: vi.fn((url: string) => `api:${url}`),
-    mockFetchApi: vi.fn(),
     mockMediaRecorderConstruct: vi.fn(),
     mockMediaRecorderStart: vi.fn(),
     mockMediaRecorderStop: vi.fn(),
-    mockReportError: vi.fn(),
     mockStopAllTracks: vi.fn()
   }
 })
 
-let capturedDragDrop: ((files: File[]) => Promise<File[] | never[]>) | undefined
-let capturedFileSelect:
-  | ((files: File[]) => Promise<File[] | never[]>)
-  | undefined
-let capturedPaste: ((files: File[]) => Promise<File[] | never[]>) | undefined
+type FileHandler = (files: File[]) => Promise<unknown>
+let capturedDragDrop: FileHandler | undefined
+let capturedPaste: FileHandler | undefined
 
-vi.mock('extendable-media-recorder', () => ({
-  MediaRecorder: class MockMediaRecorder {
-    start = mockMediaRecorderStart
-    stop = mockMediaRecorderStop
+vi.mock(import('extendable-media-recorder'), () => ({
+  MediaRecorder: fromAny(
+    class MockMediaRecorder {
+      start = mockMediaRecorderStart
+      stop = mockMediaRecorderStop
 
-    constructor() {
-      mockMediaRecorderConstruct()
+      constructor() {
+        mockMediaRecorderConstruct()
+      }
     }
-  }
+  )
 }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
-  reportError: mockReportError
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
 }))
 
-vi.mock('@/composables/node/useNodeDragAndDrop', () => ({
-  useNodeDragAndDrop: (
-    _node: LGraphNode,
-    options: { onDrop: typeof capturedDragDrop }
-  ) => {
+vi.mock(import('@/composables/node/useNodeDragAndDrop'), () => ({
+  useNodeDragAndDrop: (_node, options) => {
     capturedDragDrop = options.onDrop
   }
 }))
 
-vi.mock('@/composables/node/useNodeFileInput', () => ({
-  useNodeFileInput: (
-    _node: LGraphNode,
-    options: { onSelect: typeof capturedFileSelect }
-  ) => {
-    capturedFileSelect = options.onSelect
-    return { openFileSelection: vi.fn() }
-  }
+vi.mock(import('@/composables/node/useNodeFileInput'), () => ({
+  useNodeFileInput: () => ({ openFileSelection: vi.fn() })
 }))
 
-vi.mock('@/composables/node/useNodePaste', () => ({
-  useNodePaste: (
-    _node: LGraphNode,
-    options: { onPaste: typeof capturedPaste }
-  ) => {
+vi.mock(import('@/composables/node/useNodePaste'), () => ({
+  useNodePaste: (_node, options) => {
     capturedPaste = options.onPaste
   }
 }))
 
-vi.mock('@/i18n', () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
-let mockAddAlert: ReturnType<typeof useToastStore>['addAlert']
-beforeEach(() => {
-  mockAddAlert = useToastStore().addAlert
-})
+vi.mock(
+  import('@/renderer/extensions/vueNodes/widgets/utils/audioUtils'),
+  () => ({
+    getResourceURL: (subfolder, filename, type = 'input') =>
+      `/view?filename=${filename}&subfolder=${subfolder}&type=${type}`,
+    splitFilePath: (path) => ['', path]
+  })
+)
 
-vi.mock('@/renderer/extensions/vueNodes/widgets/utils/audioUtils', () => ({
-  getResourceURL: (subfolder = '', filename = '', type = 'input') =>
-    `/view?filename=${filename}&subfolder=${subfolder}&type=${type}`,
-  splitFilePath: (path: string) => ['', path, 'input']
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    apiURL: mockApiURL,
-    fetchApi: mockFetchApi
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    registerExtension: extensions.registerExtension,
-    rootGraph: { id: 'root' }
-  }
-}))
+vi.mock(import('@/utils/graphTraversalUtil'))
 
-vi.mock('@/utils/graphTraversalUtil', () => ({
-  getNodeByLocatorId: vi.fn()
-}))
-
-vi.mock('@/services/audioService', () => ({
-  useAudioService: () => ({ stopAllTracks: mockStopAllTracks })
+vi.mock(import('@/services/audioService'), () => ({
+  useAudioService: () =>
+    fromPartial<ReturnType<typeof useAudioService>>({
+      stopAllTracks: mockStopAllTracks
+    })
 }))
 
 await import('./uploadAudio')
+const registeredExtensions = vi
+  .mocked(app.registerExtension)
+  .mock.calls.map(([extension]) => extension)
 
 async function getCustomWidget(extensionName: string, widgetName: string) {
-  const extension = extensions.getExtension(extensionName)
+  const extension = registeredExtensions.find(
+    ({ name }) => name === extensionName
+  )
+  if (!extension) throw new Error(`${extensionName} was not registered`)
   if (!extension.getCustomWidgets) {
     throw new Error(`${extensionName} does not register custom widgets`)
   }
   const widgets = await extension.getCustomWidgets(fromAny({}))
-  const widget = widgets[widgetName]
-  if (!widget) throw new Error(`${widgetName} widget was not registered`)
-  return widget
+  return widgets[widgetName]
 }
 
 function createFile(name = 'clip.mp3'): File {
@@ -132,17 +105,14 @@ function createFile(name = 'clip.mp3'): File {
 }
 
 function successResponse(name: string, subfolder?: string) {
-  return {
-    status: 200,
-    json: () => Promise.resolve({ name, subfolder })
-  }
+  return new Response(JSON.stringify({ name, subfolder }), { status: 200 })
 }
 
 function failResponse(status = 500) {
-  return {
+  return new Response(null, {
     status,
     statusText: 'Server Error'
-  }
+  })
 }
 
 function createAudioNode() {
@@ -158,7 +128,7 @@ function createAudioNode() {
     value: '',
     callback: vi.fn()
   }
-  const uploadWidget = { label: '', serialize: true, canvasOnly: false }
+  const uploadWidget = { label: '', serialize: true }
   const node = fromAny<LGraphNode, unknown>({
     widgets: [audioWidget, audioUIWidget],
     isUploading: false,
@@ -179,7 +149,6 @@ async function loadAudioUploadWidget() {
 describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
   beforeEach(() => {
     capturedDragDrop = undefined
-    capturedFileSelect = undefined
     capturedPaste = undefined
   })
 
@@ -191,17 +160,17 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     AUDIOUPLOAD(node, 'upload')
 
-    expect(mockApiURL).not.toHaveBeenCalled()
+    expect(api.apiURL).not.toHaveBeenCalled()
 
     audioWidget.value = ''
     audioWidget.options.values = []
     audioWidget.callback()
-    expect(mockApiURL).not.toHaveBeenCalled()
+    expect(api.apiURL).not.toHaveBeenCalled()
 
     audioWidget.value = 'none'
     audioWidget.options.values = ['none', 'other.mp3']
     audioWidget.callback()
-    expect(mockApiURL).toHaveBeenCalledWith(
+    expect(api.apiURL).toHaveBeenCalledWith(
       '/view?filename=none&subfolder=&type=input'
     )
   })
@@ -212,7 +181,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     AUDIOUPLOAD(node, 'upload')
 
     let resolveUpload: (response: ReturnType<typeof successResponse>) => void
-    mockFetchApi.mockReturnValueOnce(
+    vi.mocked(api.fetchApi).mockReturnValueOnce(
       new Promise((resolve) => {
         resolveUpload = resolve
       })
@@ -247,21 +216,23 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     const result = await capturedDragDrop!([createFile()])
 
     expect(result).toEqual([])
-    expect(mockAddAlert).toHaveBeenCalledWith('g.uploadAlreadyInProgress')
-    expect(mockFetchApi).not.toHaveBeenCalled()
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      'g.uploadAlreadyInProgress'
+    )
+    expect(api.fetchApi).not.toHaveBeenCalled()
   })
 
   it('rolls back the widget value and clears isUploading when upload fails', async () => {
     const AUDIOUPLOAD = await loadAudioUploadWidget()
     const { audioWidget, node } = createAudioNode()
     AUDIOUPLOAD(node, 'upload')
-    mockFetchApi.mockResolvedValueOnce(failResponse())
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(failResponse())
 
     await capturedPaste!([createFile()])
 
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('previous.mp3')
-    expect(mockAddAlert).toHaveBeenCalledWith('500 - Server Error')
+    expect(useToastStore().addAlert).toHaveBeenCalledWith('500 - Server Error')
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 
@@ -270,7 +241,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     const { audioWidget, node } = createAudioNode()
     AUDIOUPLOAD(node, 'upload')
     const error = new Error('Upload failed before request promise')
-    mockFetchApi.mockImplementationOnce(() => {
+    vi.mocked(api.fetchApi).mockImplementationOnce(() => {
       throw error
     })
 
@@ -278,7 +249,7 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
 
     expect(node.isUploading).toBe(false)
     expect(audioWidget.value).toBe('previous.mp3')
-    expect(mockAddAlert).toHaveBeenCalledWith(error)
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(error)
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledWith(true)
   })
 
@@ -287,11 +258,11 @@ describe('Comfy.UploadAudio AUDIOUPLOAD widget', () => {
     const { node } = createAudioNode()
     AUDIOUPLOAD(node, 'upload')
 
-    const result = await capturedFileSelect!([])
+    const result = await capturedDragDrop!([])
 
     expect(result).toEqual([])
     expect(node.isUploading).toBe(false)
-    expect(mockFetchApi).not.toHaveBeenCalled()
+    expect(api.fetchApi).not.toHaveBeenCalled()
   })
 })
 
@@ -371,8 +342,8 @@ describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
     expect(mockMediaRecorderConstruct).toHaveBeenCalledTimes(1)
     expect(mockMediaRecorderStart).toHaveBeenCalledTimes(1)
     expect(recordWidget.label).toBe('g.stopRecording')
-    expect(mockReportError).not.toHaveBeenCalled()
-    expect(mockAddAlert).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+    expect(useToastStore().addAlert).not.toHaveBeenCalled()
   })
 
   it('reports a recorder start failure after the microphone was granted', async () => {
@@ -389,8 +360,8 @@ describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
 
     await pressRecord()
 
-    expect(mockReportError).toHaveBeenCalledTimes(1)
-    expect(mockReportError).toHaveBeenCalledWith(
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
       accessError,
       RECORDER_FAILURE_REPORT
     )
@@ -409,14 +380,18 @@ describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
 
     const recordWidget = await pressRecord()
 
-    expect(mockReportError).toHaveBeenCalledTimes(1)
-    expect(mockReportError).toHaveBeenCalledWith(
+    expect(reportError).toHaveBeenCalledTimes(1)
+    expect(reportError).toHaveBeenCalledWith(
       constructionError,
       RECORDER_FAILURE_REPORT
     )
     expect(mockStopAllTracks).toHaveBeenCalledWith(stream)
-    expect(mockAddAlert).toHaveBeenCalledWith('g.recordingFailedToStart')
-    expect(mockAddAlert).not.toHaveBeenCalledWith('g.micPermissionDenied')
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      'g.recordingFailedToStart'
+    )
+    expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
+      'g.micPermissionDenied'
+    )
     expect(recordWidget.label).toBe('g.startRecording')
   })
 
@@ -433,8 +408,10 @@ describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
 
     await pressRecord()
 
-    expect(mockAddAlert).toHaveBeenCalledWith('g.micPermissionDenied')
-    expect(mockReportError).not.toHaveBeenCalled()
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      'g.micPermissionDenied'
+    )
+    expect(reportError).not.toHaveBeenCalled()
     expect(mockMediaRecorderConstruct).not.toHaveBeenCalled()
   })
 
@@ -446,12 +423,16 @@ describe('Comfy.RecordAudio AUDIO_RECORD widget', () => {
 
     await pressRecord()
 
-    expect(mockReportError).toHaveBeenCalledWith(
+    expect(reportError).toHaveBeenCalledWith(
       accessError,
       RECORDER_FAILURE_REPORT
     )
-    expect(mockAddAlert).toHaveBeenCalledWith('g.recordingFailedToStart')
-    expect(mockAddAlert).not.toHaveBeenCalledWith('g.micPermissionDenied')
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      'g.recordingFailedToStart'
+    )
+    expect(useToastStore().addAlert).not.toHaveBeenCalledWith(
+      'g.micPermissionDenied'
+    )
     expect(mockMediaRecorderConstruct).not.toHaveBeenCalled()
   })
 })

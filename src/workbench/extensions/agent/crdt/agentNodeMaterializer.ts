@@ -1,11 +1,23 @@
+import { reconcileAutogrowInputs } from '@/core/graph/widgets/dynamicWidgets'
+import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
+import {
+  isReservedBitRangeNodeId,
+  matchesReservedBitConvention
+} from '@/lib/litegraph/src/idAllocation'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
   ISerialisedNode
 } from '@/lib/litegraph/src/types/serialisation'
+import { isWidgetValue } from '@/lib/litegraph/src/types/widgets'
 import { reportError } from '@/platform/telemetry/reportError'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { useLinkStore } from '@/stores/linkStore'
@@ -15,10 +27,22 @@ import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
+import type { WidgetValue } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
 
+import { allSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { runMintPortsSuppressed } from './mintPortWiring'
+
+const AGENT_ECS_TAGS = {
+  failure_kind: 'caught_unexpected',
+  feature_area: 'agent',
+  operation: 'sync',
+  integration_target: 'ecs',
+  feature_flag: 'agent_crdt_follower',
+  feature_flag_state: 'enabled',
+  project_context: 'active_workflow'
+}
 
 export type MaterializableGraph = Pick<
   LGraph,
@@ -50,16 +74,24 @@ export type MaterializableGraph = Pick<
  * @param subgraphDefinitions explicitly created definitions present in the
  * document. Root nodes typed by a definition id can only materialize once the
  * definition is registered on the root graph.
+ * @param pendingDefinitionIds definition ids whose bodies were deliberately
+ * not read but whose dependent nodes must remain pending.
  * @returns ids that received a new live node.
  */
 export function reconcileAgentAdapters(
   graph: MaterializableGraph,
-  subgraphDefinitions: ExportedSubgraph[] = []
+  subgraphDefinitions: ExportedSubgraph[] = [],
+  pendingDefinitionIds: ReadonlySet<string> = new Set()
 ): NodeId[] {
-  return runMintPortsSuppressed(() => {
-    const pending = registerSubgraphDefinitions(graph, subgraphDefinitions)
-    return reconcile(graph, pending)
-  })
+  return runMintPortsSuppressed(() =>
+    useWidgetValueStore().withLocalDirtyTrackingSuppressed(() => {
+      const pending = registerSubgraphDefinitions(graph, subgraphDefinitions)
+      for (const id of pendingDefinitionIds) {
+        if (!graph.rootGraph.subgraphs.has(id)) pending.add(id)
+      }
+      return reconcile(graph, pending)
+    })
+  )
 }
 
 /**
@@ -67,6 +99,26 @@ export function reconcileAgentAdapters(
  * a definition that keeps failing across reconcile frames is reported once.
  */
 const reportedDefinitionFailures = new WeakMap<LGraph, Set<string>>()
+
+/**
+ * Whether an id-only projection should pay to read a definition body.
+ *
+ * A failed definition remains absent from `rootGraph.subgraphs`, but retrying
+ * its unchanged body on every unrelated frame only repeats the deep copy and
+ * a failure whose telemetry is already deduplicated. Explicit callers that
+ * supply a fresh body to `reconcileAgentAdapters` still retry registration.
+ */
+export type SubgraphDefinitionReadState = 'registered' | 'failed' | 'missing'
+
+export function subgraphDefinitionReadState(
+  rootGraph: LGraph,
+  definitionId: string
+): SubgraphDefinitionReadState {
+  if (rootGraph.subgraphs.has(definitionId)) return 'registered'
+  if (reportedDefinitionFailures.get(rootGraph)?.has(definitionId))
+    return 'failed'
+  return 'missing'
+}
 
 /**
  * Register explicitly created subgraph definitions the root graph does not
@@ -97,9 +149,15 @@ function registerSubgraphDefinitions(
   // Filter after flattening: a live nested definition must not be recreated
   // just because its outer is missing, and a missing nested definition must
   // still register when its outer is already live.
-  const missing = uniqueDefinitions(flattenDefinitions(definitions)).filter(
-    (definition) => !rootGraph.subgraphs.has(definition.id)
-  )
+  const seen = new Set<string>()
+  const missing = allSubgraphDefinitions(definitions)
+    .filter((definition) => {
+      if (seen.has(definition.id)) return false
+      seen.add(definition.id)
+      return true
+    })
+    .map((definition) => ({ ...definition, definitions: undefined }))
+    .filter((definition) => !rootGraph.subgraphs.has(definition.id))
   const pending = new Set(missing.map((definition) => definition.id))
   if (missing.length === 0) return pending
 
@@ -118,6 +176,7 @@ function registerSubgraphDefinitions(
     reported.add(definition.id)
     reportError(failure, {
       errorType: 'agent_subgraph_definitions_failed',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
       context: { graphId: graph.id, definitionId: definition.id }
     })
   }
@@ -148,9 +207,11 @@ function tryCreateSubgraph(
     withNamedValuesRestore(() => rootGraph.createSubgraph(definition))
     return undefined
   } catch (cause) {
-    // Tear the half-built graph down through the same path node removal uses:
-    // a bare map delete would leave its graph metadata behind, and the next
-    // attempt would remint its id.
+    // createSubgraph registers the definition before configuring it. Tear the
+    // half-built entry down through the same path node removal uses: a bare
+    // map delete would leave its graph metadata behind, and the Subgraph
+    // constructor remints the id on the next attempt when it finds that
+    // metadata, so the retry would never land under the document's id.
     const halfBuilt = rootGraph.subgraphs.get(definition.id)
     if (halfBuilt) {
       try {
@@ -167,51 +228,20 @@ function tryCreateSubgraph(
 }
 
 /**
- * Each definition plus every definition nested under its `definitions`, with
- * the nesting stripped so each one registers on its own.
- *
- * Shallowest first, so that `uniqueDefinitions` resolves an id carried both at
- * the top level and inside another definition in favour of the top-level copy.
- * A depth-first walk would hand that decision to the order the CRDT happens to
- * yield the definitions root in, which is stable neither across a fresh
- * state-vector catch-up nor an incremental frame sequence.
- */
-function flattenDefinitions(
-  definitions: ExportedSubgraph[]
-): ExportedSubgraph[] {
-  const flattened: ExportedSubgraph[] = []
-  for (let level = definitions; level.length > 0;) {
-    flattened.push(
-      ...level.map((definition) => ({ ...definition, definitions: undefined }))
-    )
-    level = level.flatMap(
-      (definition) => definition.definitions?.subgraphs ?? []
-    )
-  }
-  return flattened
-}
-
-/** Keep the first occurrence, matching LiteGraph's definition normalization. */
-function uniqueDefinitions(
-  definitions: ExportedSubgraph[]
-): ExportedSubgraph[] {
-  const seen = new Set<string>()
-  return definitions.filter((definition) => {
-    if (seen.has(definition.id)) return false
-    seen.add(definition.id)
-    return true
-  })
-}
-
-/**
  * Run `fn` with `LGraphNode.configure()` honouring `widgets_values_named`.
  *
- * The op layer stores interior widget values by name and the follower has no
- * widget catalog to project them positionally the way the package's
- * `project()` does. Named restore is otherwise gated behind the experimental
- * `Comfy.Workflow.NamedValuesRestore` setting; enabling it only while the
- * agent's definitions configure lets values land inside `configure()`, before
- * `onConfigure`, exactly as they do for a human-loaded workflow.
+ * The op layer stores widget values by name (both a subgraph definition's
+ * interior values and an ordinary node's `widgets` map, per
+ * `readSemanticNode`) and the follower has no widget catalog to project them
+ * positionally the way the package's `project()` does. Named restore is
+ * otherwise gated behind the experimental `Comfy.Workflow.NamedValuesRestore`
+ * setting; enabling it while a definition configures, or while `materialize`
+ * configures a freshly-created node, lets values land inside `configure()`,
+ * before `onConfigure`, exactly as they do for a human-loaded workflow.
+ * Without it, `configure()` falls back to positional restore against
+ * `info.widgets_values` — for a named payload that's a plain object, not an
+ * array, so nothing restores and the node keeps its constructor defaults
+ * (PM-1580).
  */
 function withNamedValuesRestore<T>(fn: () => T): T {
   const previous = LiteGraph.namedValuesRestore
@@ -251,7 +281,8 @@ function reconcile(
     const registeredType = LiteGraph.registered_node_types[node.type]
     return (
       !nodeStore.ownsNode(scope, node._state) ||
-      Object.getPrototypeOf(node).constructor !== registeredType
+      Object.getPrototypeOf(node).constructor !== registeredType ||
+      (node.has_errors === true && graph.rootGraph.subgraphs.has(node.type))
     )
   })
   const orphansById = new Map(orphans.map((node) => [node.id, node]))
@@ -264,6 +295,7 @@ function reconcile(
       nodeStore.ownsNode(scope, live._state) &&
       !orphansById.has(state.id)
     ) {
+      reconcileAutogrowInputs(live)
       continue
     }
     const serialised = state.lastSerialization
@@ -282,7 +314,10 @@ function reconcile(
       graph._nodes_by_id[orphan.id] !== orphan || !recordIds.has(orphan.id)
   )
   for (const orphan of detached) {
-    graph.remove(orphan, { preserveCanonicalState: true })
+    graph.remove(orphan, {
+      preserveCanonicalState: true,
+      preserveSubgraphDefinitions: graph._nodes_by_id[orphan.id] !== orphan
+    })
   }
   return materialized
 }
@@ -299,6 +334,7 @@ function materialize(
   const node =
     LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
   node.id = state.id
+  reportReservedBitViolation(graph, scope, state.id)
 
   const widgets = widgetStore.getNodeWidgets(scope.rootGraphId, state.id).map(
     (widget): WidgetStateInit => ({
@@ -344,11 +380,16 @@ function materialize(
     restore()
     reportError(cause, {
       errorType: 'agent_node_materialize_add_failed',
+      tags: {
+        ...AGENT_ECS_TAGS,
+        outcome: cleanupFailed ? 'degraded' : 'recovered'
+      },
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
     if (cleanupFailed) {
       reportError(cleanupCause, {
         errorType: 'agent_node_materialize_rollback_failed',
+        tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
         context: { graphId: graph.id, nodeId: String(state.id) }
       })
     }
@@ -364,6 +405,9 @@ function materialize(
   // ended. Provenance on the operation, not the bracket, is what keeps the
   // layout port quiet here.
   nodeStore.deleteNode(scope, state)
+  if (orphan && graph._nodes_by_id[orphan.id] === orphan) {
+    delete graph._nodes_by_id[orphan.id]
+  }
   let added: LGraphNode | null | undefined
   try {
     added = graph.add(node)
@@ -372,18 +416,189 @@ function materialize(
   }
   if (!added) return rollback('LGraph.add returned no node')
 
+  // Only report once the node this id now belongs to is actually live: a
+  // failed add rolls the orphan back onto the id via `rollback()`/`restore()`,
+  // so a report emitted before this point would claim a drop that a
+  // subsequent retry then contradicts.
+  reportNodeIdWriteDropped(graph, state, orphan)
+
   try {
-    node.configure(withNamedWidgetValues(serialised))
+    const savedInputs = serialised.inputs?.map((input) => ({ ...input }))
+    const configureNode = () =>
+      node.configure(withNamedWidgetValues(serialised, widgets))
+    // A SubgraphNode instance restores its promoted-input values through
+    // `_applyPromotedWidgetValues`, not the named-values path — and that
+    // method is the only place `proxyWidgetErrorQuarantine` overrides a
+    // stale value. `SubgraphNode.configure()` skips it precisely when
+    // `widgets_values_named` is set AND `namedValuesRestore` is on, so
+    // forcing the flag here would silently resurrect a quarantined value on
+    // every agent-materialized subgraph instance. Ordinary nodes have no
+    // such guard, so they still need the flag to restore their own
+    // `widgets_values` (PM-1580).
+    if (node instanceof SubgraphNode) {
+      configureNode()
+    } else {
+      withNamedValuesRestore(configureNode)
+    }
+    replayUpdatedWidgetCallbacks(node, serialised, widgets)
+    // After configure and any widget-driven restructuring, re-point the saved
+    // links at their named inputs (CRDT-INPUTS-0030).
+    realignInputLinkSlots(graph.rootGraph, [
+      [node.id, { id: node.id, inputs: savedInputs }]
+    ])
   } catch (cause) {
     // The node is attached and consistent with the stores; removing it here
     // would also drop the layout entry it adopted. Keep it and report.
     reportError(cause, {
       errorType: 'agent_node_materialize_configure_failed',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
       context: { graphId: graph.id, nodeId: String(state.id) }
     })
   }
   node.last_serialization = serialised
   return true
+}
+
+/**
+ * The disjoint-mint partition (`idAllocation.ts`'s `AGENT_RESERVED_BIT`)
+ * rests on comfy-cli's `mint_id()` always setting bit 40 — a premise this
+ * repo cannot verify and comfy-cli could change without notice. Surface a
+ * remote id that carries NEITHER reserved bit (on a doc-bound graph, at the
+ * size only a modern mint produces) as telemetry instead of leaving the
+ * partition to silently stop holding.
+ *
+ * Only a numeric integer id says anything here: string ids are legal
+ * (`NodeId` is `string | number`, and a bound doc can carry a legacy
+ * `"named"` node or a `"57:3"` subgraph address), predate both mints, and
+ * are not `BigInt`-convertible — reconciliation must not abort on one.
+ */
+function reportReservedBitViolation(
+  graph: MaterializableGraph,
+  scope: GraphScope,
+  nodeId: NodeId
+): void {
+  if (!isRootGraphDocBound(scope.rootGraphId)) return
+  if (!isReservedBitRangeNodeId(nodeId)) return
+  if (matchesReservedBitConvention(nodeId)) return
+  reportError(
+    new Error(
+      `Remote node id ${String(nodeId)} on a CRDT-bound graph carries neither reserved mint bit (the agent's nor this app's)`
+    ),
+    {
+      errorType: 'agent_node_id_reserved_bit_violation',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
+      context: { graphId: graph.id, nodeId: String(nodeId) }
+    }
+  )
+}
+
+/**
+ * Node ids already reported as a dropped write for their current live/doc
+ * class pairing, per root graph, so a reconcile frame that keeps re-deriving
+ * the same orphan across many frames reports it once rather than on every
+ * frame it remains unresolved.
+ */
+const reportedNodeIdCollisions = new WeakMap<LGraph, Set<NodeId>>()
+
+/** Bound on a class name read from the shared doc before it reaches
+ * telemetry, so a peer cannot inflate the report or inject fake log lines
+ * into it through an oversized or newline-bearing `type`. */
+const MAX_REPORTED_CLASS_NAME_LENGTH = 200
+
+function sanitizeClassNameForTelemetry(value: string): string {
+  const collapsed = value.replace(/[\r\n]+/g, ' ')
+  return collapsed.length > MAX_REPORTED_CLASS_NAME_LENGTH
+    ? `${collapsed.slice(0, MAX_REPORTED_CLASS_NAME_LENGTH)}…`
+    : collapsed
+}
+
+/**
+ * A node id's class is fixed by the `add_node` that claimed it: the op
+ * vocabulary has no retype, so nothing can legally change the class at a live
+ * id through an ordinary edit. A class change here most often means the
+ * document resolved two `add_node` writes sharing an id as last-write-wins
+ * and dropped the loser with no error to either actor — but the same shape
+ * (a live node at this id whose class no longer matches the record) can also
+ * come from a legitimate `remove_node` + `add_node` pair reusing the id, a
+ * retype, or a stale-canvas catch-up reconcile that observes both changes at
+ * once. This function has no op provenance to tell those apart, so it is a
+ * heuristic, not a confirmed diagnosis: treat the report as "this id's class
+ * changed under our feet", not as proof a write was lost.
+ *
+ * `orphan` is the live node at this id that is no longer owned by the record
+ * the document now holds for it. Comparing its class to the record's is the
+ * only trace of a genuine drop this client gets, since the ack counts an
+ * LWW-dropped op as applied and the applier's own conflict event fires
+ * host-side.
+ */
+function reportNodeIdWriteDropped(
+  graph: MaterializableGraph,
+  state: NodeState,
+  orphan: LGraphNode | undefined
+): void {
+  const rootGraph = graph.rootGraph
+  const reported =
+    reportedNodeIdCollisions.get(rootGraph) ??
+    reportedNodeIdCollisions.set(rootGraph, new Set()).get(rootGraph)!
+
+  if (!orphan || orphan.type === state.type) {
+    reported.delete(state.id)
+    return
+  }
+  if (reported.has(state.id)) return
+  reported.add(state.id)
+
+  const liveClass = sanitizeClassNameForTelemetry(orphan.type)
+  const docClass = sanitizeClassNameForTelemetry(state.type)
+  reportError(
+    new Error(
+      `Node id ${String(state.id)} changed class from ${liveClass} to ${docClass} at the same id`
+    ),
+    {
+      errorType: 'agent_node_id_collision_write_dropped',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
+      context: {
+        graphId: graph.id,
+        nodeId: String(state.id),
+        liveClass,
+        docClass
+      }
+    }
+  )
+}
+
+function replayUpdatedWidgetCallbacks(
+  node: LGraphNode,
+  serialised: ISerialisedNode,
+  widgets: readonly WidgetStateInit[]
+): void {
+  const values = namedWidgetValues(serialised)
+  if (!values) return
+  const canonicalByName = new Map(
+    widgets.flatMap((state) => (state.name ? [[state.name, state]] : []))
+  )
+  for (const [name, state] of canonicalByName) {
+    const previousValue = values[name]
+    if (Object.hasOwn(values, name) && Object.is(previousValue, state.value)) {
+      continue
+    }
+    const widget = node.widgets?.find((candidate) => candidate.name === name)
+    if (!widget) continue
+    widget.value = state.value
+    widget.callback?.(state.value)
+    node.onWidgetChanged?.(name, state.value, previousValue, widget)
+  }
+}
+
+function namedWidgetValues(
+  serialised: ISerialisedNode
+): Record<string, WidgetValue> | undefined {
+  const values = serialised.widgets_values_named ?? serialised.widgets_values
+  if (!values || Array.isArray(values) || typeof values !== 'object') return
+  const entries = Object.entries(values)
+  return entries.every(([, value]) => isWidgetValue(value))
+    ? Object.fromEntries(entries)
+    : undefined
 }
 
 /** Same placeholder `LGraph.configure()` builds for an unregistered type. */
@@ -400,14 +615,19 @@ function missingNode(state: NodeState): LGraphNode {
  * Op-layer serialisations carry widget values keyed by name; `configure()`
  * only reads name-keyed values from `widgets_values_named`.
  */
-function withNamedWidgetValues(serialised: ISerialisedNode): ISerialisedNode {
-  const values = serialised.widgets_values
-  if (
-    values === undefined ||
-    Array.isArray(values) ||
-    serialised.widgets_values_named !== undefined
-  ) {
-    return serialised
+function withNamedWidgetValues(
+  serialised: ISerialisedNode,
+  widgets: readonly WidgetStateInit[]
+): ISerialisedNode {
+  const namedValues = namedWidgetValues(serialised)
+  if (!namedValues) return serialised
+  return {
+    ...serialised,
+    widgets_values_named: {
+      ...namedValues,
+      ...Object.fromEntries(
+        widgets.map((widget) => [widget.name ?? '', widget.value])
+      )
+    }
   }
-  return { ...serialised, widgets_values_named: values }
 }

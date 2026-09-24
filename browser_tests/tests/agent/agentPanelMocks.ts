@@ -1,25 +1,29 @@
-import { expect } from '@playwright/test'
+import { zGlobalSettingValue } from '@comfyorg/ingest-types/zod'
 import type { Page, Route } from '@playwright/test'
 
 import type {
   AgentThreadListResponse,
+  GlobalSetting,
   WorkflowListResponse
 } from '@comfyorg/ingest-types'
 
 import { comfyPageFixture } from '@e2e/fixtures/ComfyPage'
 
-import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/schemas/apiSchema'
+import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { RemoteConfig } from '@/platform/remoteConfig/types'
+import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import type {
   AgentCancelAccepted,
   AgentTurnAccepted,
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { zAgentAdmissionError } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
+import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
+import { assetPath } from '@e2e/fixtures/utils/paths'
 
 const THREAD_ID = 'd4c016c4-3b8c-44cf-97de-1ae27e43e718'
 const TURN_ID = '3818ba00-d772-4a3f-98c1-9312725b577d'
@@ -32,6 +36,16 @@ const TURN_ACCEPTED: AgentTurnAccepted = {
 }
 
 const CANCEL_ACCEPTED: AgentCancelAccepted = { status: 'cancelling' }
+
+export const FUNDS_UNAVAILABLE_MESSAGE =
+  'Billing status is temporarily unavailable; please retry.'
+const FUNDS_UNAVAILABLE = zAgentAdmissionError.parse({
+  error: {
+    message: FUNDS_UNAVAILABLE_MESSAGE,
+    reason: 'funds_unavailable',
+    type: 'SERVICE_UNAVAILABLE'
+  }
+})
 
 export const THINKING_TEXT =
   "I'll set the positive prompt to your red fox scene."
@@ -141,25 +155,80 @@ function agentFeatures(agentFlag: boolean): RemoteConfig {
 async function mockAgentBoot(
   page: Page,
   {
-    agentFlag,
-    postedMessages
-  }: { agentFlag: boolean; postedMessages: string[] }
+    agentConsentAccepted,
+    agentConsentReads,
+    agentConsentSave,
+    agentConsentWrites,
+    agentFlagEnabled,
+    agentPanelInitiallyOpen,
+    agentOnboardingCompleted,
+    agentRetryAfter,
+    crdtDebugEnabled,
+    initialFeatureFlags,
+    initialSettings,
+    objectInfo,
+    postedMessages,
+    vueNodes
+  }: Omit<AgentFixtures, 'agentPanel'> & {
+    initialFeatureFlags: Record<string, unknown>
+    initialSettings: Record<string, unknown>
+    vueNodes: boolean
+  }
 ): Promise<void> {
-  await page.addInitScript(() => {
-    localStorage.setItem('Comfy.AgentPanel.onboarded', 'true')
-  })
+  let consentAccepted = agentConsentAccepted
+
+  await page.addInitScript(
+    ({ initiallyOpen, onboardingCompleted, debugEnabled }) => {
+      if (localStorage.getItem('Comfy.AgentPanel.open') === null) {
+        localStorage.setItem('Comfy.AgentPanel.open', String(initiallyOpen))
+      }
+      if (localStorage.getItem('Comfy.AgentPanel.onboarded') === null) {
+        localStorage.setItem(
+          'Comfy.AgentPanel.onboarded',
+          String(onboardingCompleted)
+        )
+      }
+      if (debugEnabled) {
+        localStorage.setItem('Comfy.Agent.CrdtDebug.enabled', 'true')
+        localStorage.setItem('Comfy.Agent.CrdtDevPanel.open', 'true')
+      }
+    },
+    {
+      initiallyOpen: agentPanelInitiallyOpen,
+      onboardingCompleted: agentOnboardingCompleted,
+      debugEnabled: crdtDebugEnabled
+    }
+  )
 
   await mockBilling(page)
+  await page.route(
+    'https://media.comfy.org/website/comfy-agent/**',
+    (route) => {
+      const url = route.request().url()
+      if (url.endsWith('.mp4')) {
+        return route.fulfill({ path: assetPath('plain_video.mp4') })
+      }
+      if (url.endsWith('.webm')) {
+        return route.fulfill({
+          path: assetPath('video/video-preview-wide.webm')
+        })
+      }
+      return route.fulfill({ path: assetPath('image64x64.webp') })
+    }
+  )
   await page.route('**/api/assets**', (r) =>
     r.fulfill(jsonRoute({ assets: [] }))
   )
 
   await mockCloudBootRoutes(page, {
-    features: agentFeatures(agentFlag),
+    features: { ...agentFeatures(agentFlagEnabled), ...initialFeatureFlags },
     settings: {
       'Comfy.TutorialCompleted': true,
-      'Comfy.RightSidePanel.ShowErrorsTab': false
-    }
+      'Comfy.RightSidePanel.ShowErrorsTab': false,
+      ...(vueNodes && { 'Comfy.VueNodes.Enabled': true }),
+      ...initialSettings
+    },
+    objectInfo
   })
   let savedWorkflow: UserDataFullInfo | undefined
   let savedContent: string | undefined
@@ -226,7 +295,42 @@ async function mockAgentBoot(
   await page.route('**/api/agent/threads', (route) =>
     route.fulfill(jsonRoute(threads))
   )
-
+  const storedConsent: GlobalSetting = {
+    key: AGENT_CONSENT_SETTING_ID,
+    value: true,
+    updated_at: '2026-09-09T00:00:00Z'
+  }
+  await page.route(
+    `**/api/global-settings/${AGENT_CONSENT_SETTING_ID}`,
+    (route) => {
+      agentConsentReads.push(consentAccepted)
+      return route.fulfill(
+        consentAccepted
+          ? jsonRoute(storedConsent)
+          : {
+              ...jsonRoute({
+                code: 'NOT_FOUND',
+                message: 'Setting is not set for this user and workspace'
+              }),
+              status: 404
+            }
+      )
+    }
+  )
+  await page.route('**/api/global-settings', async (route) => {
+    const request = route.request()
+    if (request.method() !== 'POST') return route.fulfill({ status: 405 })
+    const setting = zGlobalSettingValue.parse(request.postDataJSON())
+    const { status, pending } = agentConsentSave
+    agentConsentWrites.push(setting.value)
+    await pending
+    if (status >= 400) return route.fulfill({ status })
+    consentAccepted = setting.value
+    return route.fulfill({
+      ...jsonRoute(storedConsent),
+      status
+    })
+  })
   await page.route('**/api/auth/token', (r) =>
     r.fulfill(
       jsonRoute({
@@ -257,6 +361,15 @@ async function mockAgentBoot(
     const request = route.request()
     if (request.method() === 'POST') {
       postedMessages.push(request.postData() ?? '')
+      if (agentRetryAfter !== undefined)
+        return route.fulfill({
+          status: 503,
+          headers: {
+            'content-type': 'application/json',
+            'retry-after': agentRetryAfter
+          },
+          body: JSON.stringify(FUNDS_UNAVAILABLE)
+        })
       const accepted: AgentTurnAccepted = {
         ...TURN_ACCEPTED,
         message_id:
@@ -279,29 +392,80 @@ async function mockAgentBoot(
 }
 
 type AgentFixtures = {
+  agentConsentAccepted: boolean
+  agentConsentReads: boolean[]
+  agentConsentSave: { status: number; pending?: Promise<void> }
+  agentConsentWrites: boolean[]
   agentFlagEnabled: boolean
+  agentPanel: AgentPanel
+  agentPanelInitiallyOpen: boolean
+  agentOnboardingCompleted: boolean
+  agentRetryAfter: string | undefined
+  crdtDebugEnabled: boolean
+  /** `'server'` loads real node definitions instead of the empty catalog. */
+  objectInfo: 'server' | undefined
   postedMessages: string[]
 }
 
 export const agentTest = comfyPageFixture.extend<AgentFixtures>({
-  agentFlagEnabled: [true, { option: true }],
-  // oxlint-disable-next-line no-empty-pattern -- Playwright requires an object pattern.
-  postedMessages: async ({}, use) => {
+  agentConsentAccepted: [true, { option: true }],
+  agentConsentReads: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
     await use([])
   },
-  page: async ({ page, agentFlagEnabled, postedMessages }, use) => {
-    await mockAgentBoot(page, { agentFlag: agentFlagEnabled, postedMessages })
+  agentConsentSave: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
+    await use({ status: 200 })
+  },
+  agentConsentWrites: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
+    await use([])
+  },
+  agentFlagEnabled: [true, { option: true }],
+  agentPanel: async ({ comfyPage }, use) => {
+    await use(new AgentPanel(comfyPage.page))
+  },
+  agentPanelInitiallyOpen: [false, { option: true }],
+  agentOnboardingCompleted: [true, { option: true }],
+  agentRetryAfter: [undefined, { option: true }],
+  crdtDebugEnabled: [false, { option: true }],
+  objectInfo: [undefined, { option: true }],
+  page: async (
+    {
+      agentConsentAccepted,
+      agentConsentReads,
+      agentConsentSave,
+      agentConsentWrites,
+      agentFlagEnabled,
+      agentPanelInitiallyOpen,
+      agentOnboardingCompleted,
+      agentRetryAfter,
+      crdtDebugEnabled,
+      initialFeatureFlags,
+      initialSettings,
+      objectInfo,
+      page,
+      postedMessages
+    },
+    use,
+    testInfo
+  ) => {
+    await mockAgentBoot(page, {
+      agentConsentAccepted,
+      agentConsentReads,
+      agentConsentSave,
+      agentConsentWrites,
+      agentFlagEnabled,
+      agentPanelInitiallyOpen,
+      agentOnboardingCompleted,
+      agentRetryAfter,
+      crdtDebugEnabled,
+      initialFeatureFlags,
+      initialSettings,
+      objectInfo,
+      postedMessages,
+      vueNodes: testInfo.tags.includes('@vue-nodes')
+    })
     await use(page)
+  },
+  postedMessages: async ({ agentFlagEnabled: _agentFlagEnabled }, use) => {
+    await use([])
   }
 })
-
-export async function selectAgentWorkflow(page: Page): Promise<void> {
-  const picker = page.locator('#agent-panel-root').getByRole('button', {
-    name: enMessages.agent.switchWorkflow
-  })
-  await picker.click()
-  await page
-    .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-    .click()
-  await expect(picker).toHaveText('Unsaved Workflow')
-}

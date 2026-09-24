@@ -3,7 +3,7 @@ import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
-import type { BookmarkCustomization } from '@/schemas/apiSchema'
+import type { BookmarkCustomization } from '@/platform/settings/types'
 import type { TreeNode } from '@/types/treeExplorerTypes'
 
 import {

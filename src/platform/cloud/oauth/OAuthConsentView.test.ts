@@ -4,16 +4,14 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import OAuthConsentView from '@/platform/cloud/oauth/OAuthConsentView.vue'
-import { OAuthApiError } from '@/platform/cloud/oauth/oauthApi'
-import type * as oauthApi from '@/platform/cloud/oauth/oauthApi'
+import {
+  OAuthApiError,
+  submitOAuthConsentDecision
+} from '@/platform/cloud/oauth/oauthApi'
 import type { OAuthConsentChallenge } from '@/platform/cloud/oauth/oauthApi'
 
-const submitOAuthConsentDecision = vi.hoisted(() => vi.fn())
-
-vi.mock(import('@/platform/cloud/oauth/oauthApi'), async (importOriginal) => ({
-  ...(await importOriginal<typeof oauthApi>()),
-  submitOAuthConsentDecision
-}))
+vi.mock(import('@/platform/cloud/oauth/oauthApi'), { spy: true })
+const mockSubmitOAuthConsentDecision = vi.mocked(submitOAuthConsentDecision)
 
 const i18n = createI18n({
   legacy: false,
@@ -98,7 +96,7 @@ const renderConsent = (overrides: Partial<OAuthConsentChallenge> = {}) =>
 
 describe('OAuthConsentView', () => {
   beforeEach(() => {
-    submitOAuthConsentDecision.mockReset().mockResolvedValue(undefined)
+    mockSubmitOAuthConsentDecision.mockReset().mockResolvedValue(undefined)
   })
 
   it('shows the generic app icon regardless of client_display_name', () => {
@@ -145,7 +143,7 @@ describe('OAuthConsentView', () => {
     // sole workspace_id.
     await user.click(screen.getByRole('button', { name: 'Continue' }))
 
-    expect(submitOAuthConsentDecision).toHaveBeenCalledWith({
+    expect(mockSubmitOAuthConsentDecision).toHaveBeenCalledWith({
       oauthRequestId: '550e8400-e29b-41d4-a716-446655440000',
       csrfToken: 'csrf-token',
       decision: 'allow',
@@ -166,7 +164,7 @@ describe('OAuthConsentView', () => {
 
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
-    expect(submitOAuthConsentDecision).toHaveBeenCalledWith(
+    expect(mockSubmitOAuthConsentDecision).toHaveBeenCalledWith(
       expect.objectContaining({
         decision: 'deny',
         workspaceId: 'personal-workspace'
@@ -187,11 +185,11 @@ describe('OAuthConsentView', () => {
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
 
     expect(screen.getByRole('alert')).toBeVisible()
-    expect(submitOAuthConsentDecision).not.toHaveBeenCalled()
+    expect(mockSubmitOAuthConsentDecision).not.toHaveBeenCalled()
   })
 
   it('maps OAuthApiError(400) to the expired-request message', async () => {
-    submitOAuthConsentDecision.mockRejectedValue(
+    mockSubmitOAuthConsentDecision.mockRejectedValue(
       new OAuthApiError('expired', 400)
     )
     const user = userEvent.setup()
@@ -209,7 +207,7 @@ describe('OAuthConsentView', () => {
   })
 
   it('maps OAuthApiError(401) to the session-expired message', async () => {
-    submitOAuthConsentDecision.mockRejectedValue(
+    mockSubmitOAuthConsentDecision.mockRejectedValue(
       new OAuthApiError('session expired', 401)
     )
     const user = userEvent.setup()
@@ -225,7 +223,7 @@ describe('OAuthConsentView', () => {
   })
 
   it('maps OAuthApiError(403) to the scope-broadening re-prompt message', async () => {
-    submitOAuthConsentDecision.mockRejectedValue(
+    mockSubmitOAuthConsentDecision.mockRejectedValue(
       new OAuthApiError('scope broadening', 403)
     )
     const user = userEvent.setup()
@@ -243,7 +241,7 @@ describe('OAuthConsentView', () => {
   })
 
   it('maps OAuthApiError(404) to the feature-unavailable message', async () => {
-    submitOAuthConsentDecision.mockRejectedValue(
+    mockSubmitOAuthConsentDecision.mockRejectedValue(
       new OAuthApiError('disabled', 404)
     )
     const user = userEvent.setup()

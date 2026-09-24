@@ -25,6 +25,40 @@ test.describe('Toast Notifications', { tag: '@ui' }, () => {
     await expect(comfyPage.toast.visibleToasts.first()).toBeVisible()
   })
 
+  test('Graph toast fallback respects the workspace inset', async ({
+    comfyPage
+  }) => {
+    const workspaceInset = 240
+    await comfyPage.page.evaluate((inset) => {
+      document.documentElement.style.setProperty(
+        '--workspace-inset-right',
+        `${inset}px`
+      )
+      document
+        .querySelectorAll<HTMLElement>(
+          '.graph-canvas-panel, .docked-agent-panel'
+        )
+        .forEach((element) => {
+          element.style.setProperty('anchor-name', 'none')
+        })
+    }, workspaceInset)
+
+    await triggerErrorToast(comfyPage)
+
+    const graphToast = comfyPage.page
+      .locator('.graph-toast .p-toast-message')
+      .filter({ hasText: 'Test execution error' })
+    await expect(graphToast).toBeVisible()
+
+    const bounds = await graphToast.boundingBox()
+    const viewport = comfyPage.page.viewportSize()
+    expect(bounds).not.toBeNull()
+    expect(viewport).not.toBeNull()
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(
+      viewport!.width - workspaceInset
+    )
+  })
+
   test('Toast shows correct error severity class', async ({ comfyPage }) => {
     await triggerErrorToast(comfyPage)
 

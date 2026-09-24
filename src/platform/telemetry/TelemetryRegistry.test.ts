@@ -2,14 +2,18 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { TelemetryRegistry } from './TelemetryRegistry'
 import type {
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
   AgentNodeTaggedMetadata,
+  AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
   AgentWorkflowAppliedMetadata,
   BillingTelemetryEvent,
+  CheckoutJourneyTelemetryEvent,
   TelemetryProvider
 } from './types'
 
@@ -223,6 +227,28 @@ describe('TelemetryRegistry', () => {
     expect(b.trackBillingEvent).toHaveBeenCalledExactlyOnceWith(event)
   })
 
+  it('dispatches the same checkout journey event to every provider', () => {
+    const a: TelemetryProvider = { trackCheckoutJourneyEvent: vi.fn() }
+    const b: TelemetryProvider = { trackCheckoutJourneyEvent: vi.fn() }
+    const registry = new TelemetryRegistry()
+    registry.registerProvider(a)
+    registry.registerProvider(b)
+
+    const event: CheckoutJourneyTelemetryEvent = {
+      phase: 'entered',
+      checkout_journey_id: 'journey-1',
+      checkout_entered_at: '2026-09-09T00:00:00.000Z',
+      assignment_status: 'resolved',
+      assigned_arm: 'treatment',
+      entry_flow: 'initial_subscription',
+      entry_source: 'pricing'
+    }
+    registry.trackCheckoutJourneyEvent(event)
+
+    expect(a.trackCheckoutJourneyEvent).toHaveBeenCalledExactlyOnceWith(event)
+    expect(b.trackCheckoutJourneyEvent).toHaveBeenCalledExactlyOnceWith(event)
+  })
+
   it('dispatches trackWidgetFavoriteToggled to every registered provider', () => {
     const a: TelemetryProvider = { trackWidgetFavoriteToggled: vi.fn() }
     const b: TelemetryProvider = { trackWidgetFavoriteToggled: vi.fn() }
@@ -265,8 +291,22 @@ describe('TelemetryRegistry', () => {
     } satisfies AgentEntryButtonClickedMetadata
     const messageSentMetadata = {
       attachment_count: 1,
-      node_tag_count: 2
+      node_tag_count: 2,
+      thread_id: 'th-1',
+      workflow_id: 'w1',
+      client_message_id: 'cm-1',
+      input_method: 'typed'
     } satisfies AgentMessageSentMetadata
+    const consentShownMetadata = {
+      trigger: 'button_click'
+    } satisfies AgentConsentShownMetadata
+    const consentResolvedMetadata = {
+      decision: 'accepted'
+    } satisfies AgentConsentResolvedMetadata
+    const onboardingStepMetadata = {
+      step: 2,
+      action: 'next'
+    } satisfies AgentOnboardingStepMetadata
     const nodeTaggedMetadata = {
       source: 'mention_picker'
     } satisfies AgentNodeTaggedMetadata
@@ -316,6 +356,29 @@ describe('TelemetryRegistry', () => {
           registry.trackAgentMessageSent(messageSentMetadata)
       },
       {
+        method: 'trackAgentConsentShown',
+        expected: { ...consentShownMetadata },
+        invoke: (registry) =>
+          registry.trackAgentConsentShown(consentShownMetadata)
+      },
+      {
+        method: 'trackAgentConsentResolved',
+        expected: { ...consentResolvedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentConsentResolved(consentResolvedMetadata)
+      },
+      {
+        method: 'trackAgentOnboardingShown',
+        expected: undefined,
+        invoke: (registry) => registry.trackAgentOnboardingShown()
+      },
+      {
+        method: 'trackAgentOnboardingStep',
+        expected: { ...onboardingStepMetadata },
+        invoke: (registry) =>
+          registry.trackAgentOnboardingStep(onboardingStepMetadata)
+      },
+      {
         method: 'trackAgentNodeTagged',
         expected: { ...nodeTaggedMetadata },
         invoke: (registry) => registry.trackAgentNodeTagged(nodeTaggedMetadata)
@@ -330,6 +393,18 @@ describe('TelemetryRegistry', () => {
         expected: { ...workflowAppliedMetadata },
         invoke: (registry) =>
           registry.trackAgentWorkflowApplied(workflowAppliedMetadata)
+      },
+      {
+        method: 'trackAgentConsentNotOffered',
+        expected: { reason: 'first_run_screen' },
+        invoke: (registry) =>
+          registry.trackAgentConsentNotOffered({ reason: 'first_run_screen' })
+      },
+      {
+        method: 'trackAgentOnboardingNotShown',
+        expected: { reason: 'app_mode' },
+        invoke: (registry) =>
+          registry.trackAgentOnboardingNotShown({ reason: 'app_mode' })
       }
     ]
 

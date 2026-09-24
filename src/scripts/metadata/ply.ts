@@ -167,8 +167,10 @@ export async function isGaussianSplatPLY(
   try {
     const reader = new PlyReader({ fileBytes: arrayBuffer })
     await reader.parseHeader()
-    const props = reader.elements.vertex?.properties
-    if (!props) return false
+    const elements: Partial<PlyReader['elements']> = reader.elements
+    const vertex = elements.vertex
+    if (!vertex) return false
+    const props: Partial<typeof vertex.properties> = vertex.properties
     const hasScales = !!(props.scale_0 && props.scale_1 && props.scale_2)
     const hasRots = !!(props.rot_0 && props.rot_1 && props.rot_2 && props.rot_3)
     return hasScales && hasRots

@@ -20,7 +20,7 @@ import { workshopFileBase64 } from './workshop-file-encoding'
 import { prepareWorkshopCreatorRequest } from './workshop-creator-request'
 import type { WorkshopUrlEncoder } from './workshop-url-input'
 import { resolveWorkshopUrlInputs } from './workshop-url-input'
-import { loadWorkshopExampleFile } from './workshop-example-file'
+import { loadWorkshopExampleFile } from './workshop-example-file-loader'
 import { MAX_REQUEST_BYTES } from './workshop-limits'
 
 const ACCEPT: Record<WorkshopMediaBinding['accept'], readonly string[]> = {
@@ -110,11 +110,23 @@ export async function prepareWorkshopRouterInput(
     return nativeBody
   }
   const schema = schemaForModel({ fields: [], form: formForContract(contract) })
-  values = await resolveWorkshopUrlInputs(schema, values, signal, uploadFile)
+  const formErrors = contract.creator ? validateForm(schema, values) : {}
+  if (Object.keys(formErrors).length)
+    throw new WorkshopRouterError(
+      'validation',
+      null,
+      formErrors,
+      undefined,
+      'input_preparation'
+    )
+  values = await resolveWorkshopUrlInputs(
+    schema,
+    values,
+    signal,
+    uploadFile,
+    contract.rehostUrlInputs === true
+  )
   if (contract.creator) {
-    const errors = validateForm(schema, values)
-    if (Object.keys(errors).length)
-      throw new WorkshopRouterError('validation', null, errors)
     const body = {
       ...contract.defaultInput,
       ...(await prepareWorkshopCreatorRequest(
@@ -258,7 +270,7 @@ export async function prepareWorkshopRouterInput(
       })
     if (!(upload.file instanceof File))
       reserve(file, media.name, media.targets[index])
-    const encoded = await encodeFile(file, signal)
+    const encoded = await encodeFile(file, signal, media.name)
     try {
       setAtPointer(
         body,

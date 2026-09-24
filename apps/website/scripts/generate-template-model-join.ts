@@ -13,9 +13,11 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 
-import { workshopModels } from '../src/config/models-catalogue'
+import {
+  authoredRouterModelSlugAliases,
+  authoredWorkshopModels
+} from '../src/config/workshop-browse-content'
 import type { WorkshopModel } from '../src/config/models-catalogue'
-import { routerModelSlugAliases } from '../src/config/workshop-browse-content'
 import { hubTemplatesSchema } from '../src/lib/hub/types'
 import { modelNamedBy, partnerModelFor } from '../src/lib/hub/template-use-case'
 import { API_PROVIDER_MAP } from './generate-models'
@@ -61,7 +63,7 @@ function decodeFromName(name: string): string | undefined {
 
 export function buildTemplateModelJoin(
   rawTemplates: unknown,
-  models: readonly WorkshopModel[] = workshopModels
+  models: readonly WorkshopModel[] = authoredWorkshopModels
 ): { joined: Record<string, string>; rejected: string[] } {
   const templates = hubTemplatesSchema.parse(rawTemplates)
   const joined: Record<string, string> = {}
@@ -69,15 +71,15 @@ export function buildTemplateModelJoin(
 
   for (const template of templates) {
     if (!template.tags.includes('API')) continue
-    if (modelNamedBy(template, models)) continue
 
     const exactId = EXACT_ROUTER_IDS.get(template.name)
+    const exactSlug = EXACT_MODEL_SLUGS.get(template.name)
+    if (!exactId && !exactSlug && modelNamedBy(template, models)) continue
     const family = decodeFromName(template.name)
     const sourceSlug =
-      EXACT_MODEL_SLUGS.get(template.name) ??
-      (exactId ? exactId.replace('/', '--') : family)
+      exactSlug ?? (exactId ? exactId.replace('/', '--') : family)
     if (!sourceSlug) continue
-    const slug = routerModelSlugAliases.get(sourceSlug) ?? sourceSlug
+    const slug = authoredRouterModelSlugAliases.get(sourceSlug) ?? sourceSlug
     const model = partnerModelFor(template, models, slug)
     if (model) {
       joined[template.name] = model.slug
