@@ -127,6 +127,24 @@ function emitPendingMaterializations(
   events.onMaterialized?.({ workflowId, actor, nodeIds })
 }
 
+// PM-1604 / BE-11437: a subscribe refusal carries a `code` that is either
+// retryable (the lifecycle keeps retrying on its own) or a permanent
+// `schema_version_mismatch`, the one case the lifecycle won't recover from
+// by itself — surface it to the person via `onSyncError`.
+function handleSubscribeRefusal(
+  detail: { code?: unknown; message?: unknown } | null,
+  lifecycle: AgentCrdtDocLifecycle,
+  events: AgentCrdtFollowerEvents
+): void {
+  const code = typeof detail?.code === 'string' ? detail.code : undefined
+  lifecycle.onSubscribeRefused(code)
+  if (code === 'schema_version_mismatch') {
+    events.onSyncError?.(
+      typeof detail?.message === 'string' ? detail.message : undefined
+    )
+  }
+}
+
 function notifyAgentMaterialization(
   update: ClassifiedDocUpdate,
   added: readonly string[],
@@ -444,13 +462,7 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
-      const code = typeof detail?.code === 'string' ? detail.code : undefined
-      lifecycle.onSubscribeRefused(code)
-      if (code === 'schema_version_mismatch') {
-        events.onSyncError?.(
-          typeof detail?.message === 'string' ? detail.message : undefined
-        )
-      }
+      handleSubscribeRefusal(detail, lifecycle, events)
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.
