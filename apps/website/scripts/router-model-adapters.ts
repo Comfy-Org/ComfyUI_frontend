@@ -63,8 +63,9 @@ function withSeedanceEditDurationConstraint(
         ...allOf,
         {
           if: {
-            required: ['content'],
+            required: ['content', 'omni_reference_task_type'],
             properties: {
+              omni_reference_task_type: { const: 'edit' },
               content: {
                 contains: {
                   required: ['type', 'role', 'video_url'],

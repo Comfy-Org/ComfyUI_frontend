@@ -168,18 +168,42 @@ describe('Seedance edit-video input adapter', () => {
     )
     expect(
       validateWorkshopInput(
-        { content: [prompt, source], duration: 5 },
+        {
+          content: [prompt, source],
+          duration: 5,
+          omni_reference_task_type: 'edit'
+        },
         contract.inputSchema
       )
     ).toBe(false)
     expect(
       validateWorkshopInput(
-        { content: [prompt, source], duration: -1 },
+        {
+          content: [prompt, source],
+          duration: -1,
+          omni_reference_task_type: 'edit'
+        },
         contract.inputSchema
       )
     ).toBe(true)
     expect(
-      validateWorkshopInput({ content: [prompt, source] }, contract.inputSchema)
+      validateWorkshopInput(
+        {
+          content: [prompt, source],
+          omni_reference_task_type: 'edit'
+        },
+        contract.inputSchema
+      )
+    ).toBe(true)
+    expect(
+      validateWorkshopInput(
+        {
+          content: [prompt, source],
+          duration: 5,
+          omni_reference_task_type: 'reference'
+        },
+        contract.inputSchema
+      )
     ).toBe(true)
     expect(
       validateWorkshopInput(
