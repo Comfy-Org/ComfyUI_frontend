@@ -1,5 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { t } from '@/i18n'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -22,7 +22,16 @@ class MockContextMenu {
   }
 }
 
-fromPartial<{ ContextMenu: unknown }>(LiteGraph).ContextMenu = MockContextMenu
+const liteGraph = fromPartial<{ ContextMenu: unknown }>(LiteGraph)
+const originalContextMenu = liteGraph.ContextMenu
+
+beforeEach(() => {
+  liteGraph.ContextMenu = MockContextMenu
+})
+
+afterEach(() => {
+  liteGraph.ContextMenu = originalContextMenu
+})
 
 function makeLoad3d(
   exportImpl: (format: string) => Promise<void> = vi

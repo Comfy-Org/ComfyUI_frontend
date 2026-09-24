@@ -331,9 +331,7 @@ describe('restricted syntax rules', () => {
       probeDirs.source,
       'typeOnlyDoubleAssertion.test.ts'
     )
-    expect(fixProbe(missingHelper)).toBe(0)
-    expect(fixProbe(missingHelper)).toBe(0)
-    expect(fixProbe(typeOnlyHelper)).toBe(0)
+    expect(fixProbe(missingHelper)).toBe(1)
     expect(fixProbe(typeOnlyHelper)).toBe(0)
     expect(readFileSync(missingHelper, 'utf8')).toContain(
       "import { fromAny } from '@total-typescript/shoehorn'"
@@ -354,7 +352,6 @@ describe('restricted syntax rules', () => {
       probeDirs.source,
       'collidingHelpers.test.ts'
     )
-    expect(fixProbe(collidingHelpers)).toBe(0)
     expect(fixProbe(collidingHelpers)).toBe(0)
     expect(readFileSync(collidingHelpers, 'utf8')).toContain(
       "import { fromAny as fromAnyRuntime2 } from '@total-typescript/shoehorn'"

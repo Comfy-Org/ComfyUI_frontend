@@ -255,22 +255,19 @@ export const noUnknownDoubleAssertion = {
         if (fromAny || withoutHelper.length === 0 || !canInsertHelper) return
 
         const helper = availableHelperName(usedNames)
-        withoutHelper.forEach(({ node, inner }, index) => {
-          const fix = (fixer: RuleFixer) => {
-            const replacementFix = fixer.replaceText(
-              node,
-              replacement(node, inner, helper)
-            )
-            return index === 0
-              ? [
+        withoutHelper.forEach(({ node }, index) => {
+          const fix =
+            index === 0
+              ? (fixer: RuleFixer) => [
                   fixer.insertTextBefore(
                     program,
                     `import { fromAny${helper === 'fromAny' ? '' : ` as ${helper}`} } from '@total-typescript/shoehorn'\n`
                   ),
-                  replacementFix
+                  ...withoutHelper.map(({ node, inner }) =>
+                    fixer.replaceText(node, replacement(node, inner, helper))
+                  )
                 ]
-              : replacementFix
-          }
+              : undefined
           context.report({ node, message: DOUBLE_ASSERTION_MESSAGE, fix })
         })
       },
