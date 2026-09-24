@@ -425,28 +425,6 @@ describe('AgentPanel extension flag gate', () => {
     expect(mocks.flagListener).toBeNull()
   })
 
-  it('loads and offers device-scoped consent to a signed-out standalone user with no workspace', async () => {
-    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
-    currentUser.value = null
-    Object.assign(workspaceStore, { activeWorkspaceId: null })
-    Object.assign(consentStore, { accepted: false })
-
-    await loadEntryAndSetup({ awaitFlagSource: false })
-
-    await vi.waitFor(() =>
-      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-    )
-    expect(consentStore.load).toHaveBeenCalled()
-    expect(localStorage.getItem('Comfy.AgentConsent.AutoShown.device')).toBe(
-      'true'
-    )
-
-    // Shown once per device: a later load does not offer it again.
-    currentUser.value = { id: 'account-a' }
-    await flush()
-    expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
-  })
-
   it('leaves the panel disabled while the flag is undefined', async () => {
     await loadEntryAndSetup()
     expect(agentStore.enabled).toBe(false)

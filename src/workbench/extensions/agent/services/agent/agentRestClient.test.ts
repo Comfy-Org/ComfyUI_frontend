@@ -6,14 +6,15 @@ const fetchApi = vi.hoisted(() =>
   vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
 )
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
-const credential = vi.hoisted(() => ({
-  token: undefined as string | undefined
+const auth = vi.hoisted(() => ({
+  header: null as Record<string, string> | null
 }))
-vi.mock(import('./comfyCredential'), () => ({
-  withComfyCredential: async (init: RequestInit) => {
-    if (credential.token === undefined) return init
+vi.mock(import('./agentAuth'), () => ({
+  withAgentAuth: async (init: RequestInit) => {
+    if (auth.header === null) return init
     const headers = new Headers(init.headers)
-    headers.set('X-Comfy-Token', credential.token)
+    for (const [name, value] of Object.entries(auth.header))
+      headers.set(name, value)
     return { ...init, headers }
   }
 }))
@@ -519,9 +520,17 @@ describe('error mapping', () => {
   })
 })
 
-describe('Comfy credential forwarding', () => {
+// One auth contract for every backend: each request carries the signed-in
+// user's auth header. The cloud applies its own workspace header on top in
+// api.fetchApi; the local agent reads this one the way ingest does.
+const emptyThreadPage = {
+  threads: [],
+  pagination: { offset: 0, limit: 1, total: 0, has_more: false }
+}
+
+describe('user auth on agent requests', () => {
   beforeEach(() => {
-    credential.token = 'id-token'
+    auth.header = { Authorization: 'Bearer id-token' }
   })
 
   const calls: [
@@ -540,52 +549,46 @@ describe('Comfy credential forwarding', () => {
       (c) => c.answerAsk('t1', 'ask-1', { selected: ['allow'] }),
       { status: 'answered' }
     ],
-    ['GET identity', (c) => c.refreshCredential(), { user_id: 'local-user' }]
+    ['the credential refresh', (c) => c.refreshCredential(), emptyThreadPage]
   ]
 
-  it.for(calls)(
-    'attaches X-Comfy-Token to %s in the standalone agent harness',
-    async ([, call, body]) => {
-      vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
+  it.for(
+    calls.flatMap(([name, call, body]) => [
+      ['cloud', name, call, body] as const,
+      ['the standalone agent harness', name, call, body] as const
+    ])
+  )(
+    'sends the user auth header with %s: %s',
+    async ([distribution, , call, body]) => {
+      if (distribution !== 'cloud') vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
       respond(jsonResponse(200, body))
 
       await call(makeClient())
 
-      expect(new Headers(lastCall().init.headers).get('X-Comfy-Token')).toBe(
-        'id-token'
+      expect(new Headers(lastCall().init.headers).get('Authorization')).toBe(
+        'Bearer id-token'
       )
     }
   )
 
-  it('sends no X-Comfy-Token for a signed-out standalone user', async () => {
-    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
-    credential.token = undefined
+  it('sends no auth header for a signed-out user', async () => {
+    auth.header = null
     respond(jsonResponse(200, []))
 
     await makeClient().getMessages('t1')
 
-    expect(new Headers(lastCall().init.headers).has('X-Comfy-Token')).toBe(
+    expect(new Headers(lastCall().init.headers).has('Authorization')).toBe(
       false
     )
   })
 
-  it('leaves cloud requests to the host auth headers', async () => {
-    respond(jsonResponse(200, []))
-
-    await makeClient().getMessages('t1')
-
-    expect(new Headers(lastCall().init.headers).has('X-Comfy-Token')).toBe(
-      false
-    )
-  })
-
-  it('refreshes the credential through GET /agent/identity', async () => {
-    respond(jsonResponse(200, { user_id: 'local-user', workspace_id: 'w-1' }))
+  it('refreshes the credential through a request every backend answers', async () => {
+    respond(jsonResponse(200, emptyThreadPage))
 
     await makeClient().refreshCredential()
 
     expect(lastCall()).toMatchObject({
-      route: '/agent/identity',
+      route: '/agent/threads?limit=1',
       init: { method: 'GET' }
     })
   })

@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { hasCloudWorkflowIndex } from '@/workbench/extensions/agent/agentDistribution'
 
 import type {
   AgentRestClient,
@@ -46,9 +45,6 @@ export function useAgentWorkflowResolver({
   })
 
   async function refreshCloudWorkflowIds(): Promise<boolean> {
-    // The local agent has no cloud workflow index; tabs bind to the ids it
-    // mints on send instead.
-    if (!hasCloudWorkflowIndex()) return true
     const generation = ++refreshGeneration
     try {
       const entries = await listCloudWorkflows()

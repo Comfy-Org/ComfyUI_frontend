@@ -11,30 +11,3 @@
 export function isAgentStandalone(): boolean {
   return import.meta.env.VITE_AGENT_STANDALONE === 'true'
 }
-
-/**
- * Whether the backend serves the cloud workflow index (`GET /workflows`) and
- * cloud save. Without it (the local agent), tabs bind to the workflow ids the
- * agent mints on send, and an unbound tab, saved or not, travels as a draft.
- */
-export function hasCloudWorkflowIndex(): boolean {
-  return !isAgentStandalone()
-}
-
-/**
- * Whether agent requests carry the signed-in Comfy account's credential. The
- * local agent makes its model and CLI calls as that account, so sending needs
- * a credential and a running turn re-sends it before it expires.
- */
-export function forwardsComfyCredential(): boolean {
-  return isAgentStandalone()
-}
-
-/**
- * Where the consent decision lives: on the Comfy account and team workspace
- * (cloud, which needs sign-in first), or on this device (the local agent has
- * no account or workspace to scope it to).
- */
-export function agentConsentScope(): 'account' | 'device' {
-  return isAgentStandalone() ? 'device' : 'account'
-}

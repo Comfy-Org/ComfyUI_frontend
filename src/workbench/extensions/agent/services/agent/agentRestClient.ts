@@ -2,13 +2,13 @@ import type { AgentPostMessageRequest } from '@comfyorg/ingest-types'
 import type { z } from 'zod'
 
 import { api } from '@/scripts/api'
-import { forwardsComfyCredential } from '@/workbench/extensions/agent/agentDistribution'
+
+import type * as AgentAuth from './agentAuth'
 
 import {
   zAgentAnswerAccepted,
   zAgentCancelAccepted,
   zAgentError,
-  zAgentIdentity,
   zAgentMessages,
   zAgentRunMode,
   zAgentThreads,
@@ -30,6 +30,16 @@ import type {
 } from '../../schemas/agentApiSchema'
 
 const CLOUD_WORKFLOW_PAGE_SIZE = 100
+
+// The auth header module is loaded on first use and shared: the auth store it
+// reads is app state, and a client module that pulled it in at load would
+// drag it into every importer (and every test that only needs the transport).
+// One promise for every request, so concurrent first requests load it once.
+let agentAuth: Promise<typeof AgentAuth> | undefined
+function loadAgentAuth(): Promise<typeof AgentAuth> {
+  agentAuth ??= import('./agentAuth')
+  return agentAuth
+}
 
 export class AgentApiError extends Error {
   readonly status: number
@@ -142,12 +152,8 @@ export function createAgentRestClient() {
     init: RequestInit,
     schema: z.ZodType<T>
   ): Promise<T> {
-    const response = await api.fetchApi(
-      route,
-      forwardsComfyCredential()
-        ? await (await import('./comfyCredential')).withComfyCredential(init)
-        : init
-    )
+    const { withAgentAuth } = await loadAgentAuth()
+    const response = await api.fetchApi(route, await withAgentAuth(init))
     if (!response.ok) throw await toApiError(response)
     return schema.parse(await response.json())
   }
@@ -283,9 +289,14 @@ export function createAgentRestClient() {
     )
   }
 
-  /** Hands the local agent a fresh credential for a long-running turn. */
+  /**
+   * Re-presents the user's auth header during a long turn. The local agent
+   * makes its model and CLI calls as the user and reads the credential off
+   * requests, so a turn that outlives the token it started with needs a fresh
+   * one. A one-thread page is the cheapest request every backend answers.
+   */
   async function refreshCredential(): Promise<void> {
-    await request('/agent/identity', { method: 'GET' }, zAgentIdentity)
+    await request('/agent/threads?limit=1', { method: 'GET' }, zAgentThreads)
   }
 
   async function uploadImage(

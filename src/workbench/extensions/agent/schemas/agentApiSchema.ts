@@ -104,13 +104,6 @@ export const zAgentMessage = zGeneratedAgentMessage
   })
   .passthrough()
 
-export const zAgentIdentity = z
-  .object({
-    user_id: z.string().optional(),
-    workspace_id: z.string().optional()
-  })
-  .passthrough()
-
 export const zAgentMessages = z.array(zAgentMessage)
 export type AgentMessages = z.infer<typeof zAgentMessages>
 

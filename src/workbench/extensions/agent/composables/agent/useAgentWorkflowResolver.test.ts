@@ -345,23 +345,3 @@ describe('Agent workflow resolution', () => {
     ])
   })
 })
-
-describe('Agent workflow resolution in the standalone agent harness', () => {
-  beforeEach(() => {
-    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
-    localStorage.clear()
-  })
-
-  it('never fetches the cloud workflow index and keeps local bindings', async () => {
-    const { resolver, bindings, workflows, listCloudWorkflows } = setup([
-      workflow('workflows/local.json', 'Portrait')
-    ])
-    bindings.bind('wf-minted', 'workflows/local.json')
-
-    await expect(resolver.refreshCloudWorkflowIds()).resolves.toBe(true)
-
-    expect(listCloudWorkflows).not.toHaveBeenCalled()
-    expect(reportError).not.toHaveBeenCalled()
-    expect(resolver.cloudIdFor(workflows.openWorkflows[0])).toBe('wf-minted')
-  })
-})
