@@ -341,7 +341,12 @@ export class AgentConversationHarness {
 
   async replayResponse(
     turn = 0,
-    beforeFirstGraphOps?: () => Promise<void>
+    beforeFirstGraphOps?: () => Promise<void>,
+    // Fires before every graph_ops entry (by its index in `response`), not
+    // just the first: a fixture that needs to act on a later graph_ops entry
+    // (e.g. the specific frame carrying a `clear` op) reads the entry's ops
+    // itself to decide whether this is the one it wants.
+    onGraphOps?: (index: number) => Promise<void>
   ): Promise<void> {
     const startedAt = Date.now()
     const response = this.conversation.turns[turn].response
@@ -355,6 +360,7 @@ export class AgentConversationHarness {
       else {
         await this.hostSocket.waitForSubscribe()
         if (index === firstGraphOps) await beforeFirstGraphOps?.()
+        await onGraphOps?.(index)
         this.hostSocket.send(this.host.apply(entry.ops))
         for (const id of Object.keys(this.host.graph().nodes))
           this.seenIds.add(id)

@@ -363,4 +363,84 @@ describe('AgentCrdtProjection self-driven reconcile retry', () => {
       vi.useRealTimers()
     }
   })
+
+  it('removes the stale live node once a later timer retries a live-graph sweep that threw once', () => {
+    vi.useFakeTimers()
+    try {
+      const { graph, source } = buildLiveGraph()
+      const scope = graphScopeOf(graph)
+      let scopeAvailable = true
+      const mutations = createGraphMutations({
+        getScope: () => (scopeAvailable ? scope : null),
+        layout,
+        placement: inertPlacementPort
+      })
+      const host = mint(
+        toWorkflowJson(structuredClone(graph.serialize())),
+        CATALOG
+      )
+      const follower = new FollowerDoc()
+      const projection = new AgentCrdtProjection(
+        mutations,
+        () => graph,
+        () => follower.doc
+      )
+      let seq = 0
+      const deliver = (update: Uint8Array) => {
+        follower.applyRemoteUpdate(update)
+        const applied = projection.applyFrame({
+          workflowId: WORKFLOW_ID,
+          seq: ++seq,
+          update,
+          actor: 'agent:comfy:host',
+          opIds: []
+        })
+        if (applied) projection.reconcileLiveGraph(WORKFLOW_ID)
+        return applied
+      }
+
+      projection.bind(WORKFLOW_ID, follower)
+      deliver(Y.encodeStateAsUpdate(host))
+      expect(graph.getNodeById(toNodeId(1))).toBe(source)
+
+      // Only now does the sweep start throwing, so the catch-up frame above
+      // (a normal, non-retry commit) is unaffected.
+      const sweepFailure = new Error('live sweep failed')
+      const sweepSpy = vi.spyOn(projection, 'reconcileLiveGraph')
+      sweepSpy.mockImplementationOnce(() => {
+        throw sweepFailure
+      })
+
+      const before = Y.encodeStateVector(host)
+      host.transact(() => {
+        nodesMap(host).clear()
+        linksMap(host).clear()
+      })
+      scopeAvailable = false
+      const deleteAllUpdate = Y.encodeStateAsUpdate(host, before)
+      expect(deliver(deleteAllUpdate)).toBe(false)
+      expect(graph.getNodeById(toNodeId(1))).toBe(source)
+
+      // Scope recovers: the retry's batch commits, but its live-graph sweep
+      // throws once. The store has already converged, but the throw must
+      // not be silently treated as done - the stale node is still live.
+      scopeAvailable = true
+      vi.advanceTimersByTime(200)
+      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+      expect(graph.getNodeById(toNodeId(1))).toBe(source)
+      expect(sweepSpy).toHaveBeenCalledTimes(1)
+
+      // A later timer retries only the sweep - never the already-committed
+      // mutation - and this time it actually removes the live node.
+      vi.advanceTimersByTime(200)
+      expect(graph.getNodeById(toNodeId(1))).toBeNull()
+      expect(sweepSpy).toHaveBeenCalledTimes(2)
+
+      projection.destroy()
+      follower.destroy()
+      host.destroy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
 })

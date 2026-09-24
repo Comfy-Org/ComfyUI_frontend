@@ -398,6 +398,12 @@ interface TargetSession {
    * rejected again" (which must not reset the retry budget).
    */
   retryInFlight: boolean
+  /**
+   * Pending retry of the live-graph sweep after a committed retry batch's
+   * `onReconcileRetryCommitted` callback threw. The store mutation already
+   * committed by the time this fires, so only the sweep itself is retried.
+   */
+  liveSweepRetryTimer: ReturnType<typeof setTimeout> | null
 }
 
 /**
@@ -437,6 +443,7 @@ export class EcsFollowerAdapter {
     const session = this.targets.get(workflowId)
     if (!session) return
     this.clearReconcileRetry(session)
+    this.clearLiveSweepRetry(session)
     session.nodes.unobserveDeep(session.onNodesChanged)
     session.links.unobserve(session.onLinksChanged)
     this.targets.delete(workflowId)
@@ -520,6 +527,7 @@ export class EcsFollowerAdapter {
       reconcileRetryAttempt: 0,
       lastRejectedFrame: null,
       retryInFlight: false,
+      liveSweepRetryTimer: null,
       onNodesChanged: (_events): void => undefined,
       onLinksChanged: (_event): void => undefined
     }
@@ -750,24 +758,31 @@ export class EcsFollowerAdapter {
       this.clearReconcileRetry(session)
       return
     }
-    // A rejection that arrives while no retry is already in flight starts
-    // a new rejection episode: reset the budget so an unrelated later
+    // A rejection that arrives while no retry is already in flight starts a
+    // new rejection episode: reset the budget so an unrelated later
     // rejection (or scope staying down longer than the previous episode's
     // remaining budget) still gets the full retry window, instead of
-    // inheriting whatever was left over from an earlier, unrelated
-    // episode. `retryInFlight` excludes the retry's own resubmission
-    // (already counted against the budget when it was scheduled) from
-    // being mistaken for a new episode.
+    // inheriting whatever was left over from an earlier, unrelated episode.
+    // It also captures this episode's frame once: a later rejection that
+    // arrives while a retry is already armed must not overwrite the frame
+    // the pending timer will resubmit, or the replayed commit gets
+    // attributed to whichever frame happened to arrive last instead of the
+    // one that actually started the episode. `retryInFlight` excludes the
+    // retry's own resubmission (already counted against the budget, and not
+    // a new episode) from either of these.
     if (!session.retryInFlight && !session.reconcileRetryTimer) {
       session.reconcileRetryAttempt = 0
+      session.lastRejectedFrame = update
     }
-    session.lastRejectedFrame = update
     // Read the rejection captured by the same `batch()` call so scope
-    // becoming available immediately afterward cannot hide the race.
+    // becoming available immediately afterward cannot hide the race. A
+    // `GraphMutations` that implements neither optional classifier must
+    // never be treated as a scope race: `hasScope` has to explicitly say
+    // `false` before a deterministic-looking rejection is retried.
     const rejection = session.mutations.lastBatchRejection?.()
     if (
       rejection === 'no-scope' ||
-      (rejection === undefined && session.mutations.hasScope?.() !== true)
+      (rejection === undefined && session.mutations.hasScope?.() === false)
     ) {
       this.scheduleReconcileRetry(session)
     }
@@ -821,8 +836,32 @@ export class EcsFollowerAdapter {
         return
       }
       session.retryInFlight = false
-      if (committed) this.onReconcileRetryCommitted(session.workflowId)
+      if (committed) this.runLiveGraphSweep(session)
     }, delay)
+  }
+
+  /**
+   * Sweeps the live graph for a retry batch that has already committed.
+   * `onReconcileRetryCommitted` can throw (its contract reaches extension
+   * `onRemoved` hooks), and by this point the store mutation is done and the
+   * retry state already cleared — replaying `applyFrame` would resubmit a
+   * batch that already succeeded. So a throw here only reschedules the sweep
+   * itself, keeping recovery armed until the live graph actually converges.
+   */
+  private runLiveGraphSweep(session: TargetSession): void {
+    try {
+      this.onReconcileRetryCommitted(session.workflowId)
+    } catch (error) {
+      reportError(error instanceof Error ? error : new Error(String(error)), {
+        errorType: 'error_agent_reconcile_live_sweep_threw',
+        context: { workflowId: session.workflowId }
+      })
+      session.liveSweepRetryTimer = setTimeout(() => {
+        session.liveSweepRetryTimer = null
+        if (this.targets.get(session.workflowId) !== session) return
+        this.runLiveGraphSweep(session)
+      }, RECONCILE_RETRY_INTERVAL_MS)
+    }
   }
 
   private clearReconcileRetry(session: TargetSession): void {
@@ -830,6 +869,11 @@ export class EcsFollowerAdapter {
     session.reconcileRetryTimer = null
     session.reconcileRetryAttempt = 0
     session.lastRejectedFrame = null
+  }
+
+  private clearLiveSweepRetry(session: TargetSession): void {
+    if (session.liveSweepRetryTimer) clearTimeout(session.liveSweepRetryTimer)
+    session.liveSweepRetryTimer = null
   }
 
   private discardSessionPending(session: TargetSession): void {
