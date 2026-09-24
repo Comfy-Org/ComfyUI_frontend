@@ -1609,7 +1609,9 @@ export class LGraph
    * Returns a node by its id.
    */
   getNodeById(id: NodeId | null | undefined): LGraphNode | null {
-    return id != null && id !== UNASSIGNED_NODE_ID
+    return id != null &&
+      id !== UNASSIGNED_NODE_ID &&
+      Object.hasOwn(this._nodes_by_id, id)
       ? (this._nodes_by_id[id] ?? null)
       : null
   }
