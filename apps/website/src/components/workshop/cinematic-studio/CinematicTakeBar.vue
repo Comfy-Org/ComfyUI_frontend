@@ -36,7 +36,7 @@ const emit = defineEmits<{ select: [id: string] }>()
     </span>
     <div
       v-if="siblings.length > 1"
-      role="tablist"
+      role="radiogroup"
       :aria-label="tc('cinematic.stage.takes', locale)"
       class="flex gap-1"
     >
@@ -44,8 +44,8 @@ const emit = defineEmits<{ select: [id: string] }>()
         v-for="take in siblings"
         :key="take.id"
         type="button"
-        role="tab"
-        :aria-selected="take.id === current.id"
+        role="radio"
+        :aria-checked="take.id === current.id"
         :class="
           cn(
             'grid size-6 place-items-center rounded-md text-xs font-medium',

@@ -54,6 +54,8 @@ export function useCinematicStudioRun(model: WorkshopModelDetail) {
     studioGate({
       runEnabled:
         workshopEnabled.value &&
+        !!model.execution &&
+        !model.incompleteReason &&
         import.meta.env.PUBLIC_WORKSHOP_ROUTER_RUN === '1',
       mounted: mounted.value,
       authAvailable: authEnabled.value && !sessionFailure.value,

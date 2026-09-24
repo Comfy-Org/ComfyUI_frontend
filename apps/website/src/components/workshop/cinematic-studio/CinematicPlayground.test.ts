@@ -6,12 +6,14 @@ import { computed, ref } from 'vue'
 import type { AccountCredential } from '@comfyorg/account-core/session'
 
 import type { WorkshopModelDetail } from '../../../config/models-catalogue'
+import { workshopContract } from '../../../config/workshop-contract-catalog'
 import { router_render } from '../../../config/router-render'
 import { useWorkshopCredits } from '../../../config/workshop-credits'
 import { WorkshopRouterError } from '../../../config/workshop-router-errors'
 import { useWorkshopSession } from '../../../config/workshop-session-state'
 import { useWorkshopEnabled } from '../../../scripts/posthog'
 import { t } from '../../../i18n/translations'
+import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicPlayground from './CinematicPlayground.vue'
 
 vi.mock(import('../../../config/workshop-session-state'))
@@ -30,7 +32,8 @@ const model: WorkshopModelDetail = {
   capabilities: [],
   fields: [],
   defaults: {},
-  examples: []
+  examples: [],
+  execution: workshopContract('bfl/flux-2-pro')
 }
 
 const credential: AccountCredential = {
@@ -44,8 +47,8 @@ const credential: AccountCredential = {
 
 const signedIn = ref<AccountCredential>()
 
-function renderStudio() {
-  render(CinematicPlayground, { props: { model } })
+function renderStudio(props: { model: WorkshopModelDetail } = { model }) {
+  render(CinematicPlayground, { props })
   return userEvent.setup()
 }
 
@@ -93,7 +96,7 @@ describe('CinematicPlayground', () => {
     await user.click(screen.getByRole('button', { name: 'More takes' }))
     await user.click(generateButton())
 
-    expect(await screen.findByRole('tab', { name: 'B' })).toBeInTheDocument()
+    expect(await screen.findByRole('radio', { name: 'B' })).toBeInTheDocument()
     expect(router_render).toHaveBeenCalledTimes(2)
     const [slug, parameters, options] = vi.mocked(router_render).mock.calls[0]
     expect(slug).toBe(model.slug)
@@ -127,6 +130,21 @@ describe('CinematicPlayground', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(
       t('workshop.error.provider')
     )
+  })
+
+  it.for([
+    ['has no Router contract', { ...model, execution: undefined }],
+    [
+      'is missing its input schema',
+      { ...model, incompleteReason: 'missing-input-schema' as const }
+    ]
+  ] as const)('does not offer to generate when the model %s', ([, blocked]) => {
+    renderStudio({ model: blocked })
+
+    expect(generateButton()).toBeDisabled()
+    expect(
+      screen.getByText(tc('cinematic.output.unavailable'))
+    ).toBeInTheDocument()
   })
 
   it('asks a signed-out visitor to sign in instead of generating', async () => {
