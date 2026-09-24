@@ -38,62 +38,62 @@ const extraFileExtensions = ['.vue']
 // `text-danger` with no `--color-danger` fails lint while custom CSS hooks
 // (`side-bar-button`, `lg-node`, PrimeIcons `pi-*`) stay allowed.
 const tailwindTokenUtilityPrefixes = [
-  'text',
+  'accent',
+  'animate',
   'bg',
   'border',
-  'ring',
-  'inset-ring',
-  'outline',
-  'shadow',
-  'inset-shadow',
-  'fill',
-  'stroke',
-  'decoration',
-  'accent',
   'caret',
+  'decoration',
   'divide',
-  'placeholder',
-  'from',
-  'via',
-  'to',
+  'fill',
   'font',
+  'from',
+  'inset-ring',
+  'inset-shadow',
+  'outline',
+  'placeholder',
+  'ring',
   'rounded',
-  'animate'
+  'shadow',
+  'stroke',
+  'text',
+  'to',
+  'via'
 ]
 const nonTokenUtilityClassPattern = `^(?!(?:.*:)?!?(?:${tailwindTokenUtilityPrefixes.join('|')})-)`
 
 const themeColorUtilityPatterns = [
-  'bg',
-  'text',
-  'border(?:-[trblsexy])?',
-  'ring',
-  'inset-ring',
-  'outline',
-  'shadow',
-  'inset-shadow',
-  'fill',
-  'stroke',
-  'decoration',
   'accent',
+  'bg',
+  'border(?:-[trblsexy])?',
   'caret',
+  'decoration',
   'divide',
-  'placeholder',
+  'fill',
   'from',
-  'via',
-  'to'
+  'inset-ring',
+  'inset-shadow',
+  'outline',
+  'placeholder',
+  'ring',
+  'shadow',
+  'stroke',
+  'text',
+  'to',
+  'via'
 ]
 const specializedThemeTokenPatterns = [
   'button-',
-  'modal-',
-  'dialog-',
-  'interface-',
   'comfy-',
+  'component-',
+  'dialog-',
+  'input-surface(?:/|$)',
+  'interface-',
+  'modal-',
   'nav-',
   'node-',
-  'component-',
-  'video-',
   'text-(?:primary|secondary)(?:/|$)',
-  'input-surface(?:/|$)'
+  'video-'
 ]
 const specializedThemeClassPattern = `^(?:.*:)?!?(?:${themeColorUtilityPatterns.join('|')})-(?:${specializedThemeTokenPatterns.join('|')})`
 
