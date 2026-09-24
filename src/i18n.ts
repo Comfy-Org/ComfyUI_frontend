@@ -39,6 +39,289 @@ const loadingLocales = new Map<string, Promise<void>>()
 // Store custom nodes i18n data for merging when locales are lazily loaded
 const customNodesI18nData: Record<string, unknown> = {}
 
+export type SecureLocalizationMessage =
+  | string
+  | null
+  | { readonly [key: string]: SecureLocalizationMessage }
+
+export interface SecureLocalizationCatalog {
+  readonly messages: Readonly<Record<string, SecureLocalizationMessage>>
+  readonly phrases?: Readonly<Record<string, string>>
+}
+
+const secureCatalogs = new Map<
+  SupportedLocale,
+  Map<string, SecureLocalizationCatalog>
+>()
+const secureLocaleBases = new Map<SupportedLocale, Record<string, unknown>>()
+const forbiddenCatalogKeys = new Set(['__proto__', 'prototype', 'constructor'])
+
+interface CatalogBudget {
+  entries: number
+  bytes: number
+  readonly seen: WeakSet<object>
+  readonly encoder: TextEncoder
+}
+
+function cloneLocaleTree<T>(value: T): T {
+  if (value === null || typeof value === 'string') return value
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    throw new TypeError(
+      'localization catalogs contain only objects and strings'
+    )
+  }
+  const result: Record<string, unknown> = {}
+  for (const [key, child] of Object.entries(value)) {
+    result[key] = cloneLocaleTree(child)
+  }
+  return result as T
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function secureCatalogRecord(value: unknown): Record<string, unknown> {
+  if (!isRecord(value))
+    throw new TypeError('localization catalog must be an object')
+  const raw = value
+  const keys = Object.keys(raw)
+  if (
+    !keys.includes('messages') ||
+    keys.some((key) => key !== 'messages' && key !== 'phrases') ||
+    !isRecord(raw.messages)
+  ) {
+    throw new TypeError(
+      'localization catalog requires messages and optional phrases'
+    )
+  }
+  return raw
+}
+
+function addCatalogString(
+  budget: CatalogBudget,
+  text: string,
+  maximum: number,
+  label: string
+): void {
+  const size = budget.encoder.encode(text).byteLength
+  if (size > maximum || text.includes('\0')) {
+    throw new TypeError(`localization ${label} exceeds its bound`)
+  }
+  budget.bytes += size
+  if (budget.bytes > 4 * 1024 * 1024) {
+    throw new TypeError('localization catalog exceeds 4 MiB')
+  }
+}
+
+function addCatalogEntry(budget: CatalogBudget): void {
+  budget.entries++
+  if (budget.entries > 20_000) {
+    throw new TypeError('localization catalog has too many entries')
+  }
+}
+
+function secureMessageRecord(
+  input: unknown,
+  depth: number
+): Record<string, unknown> {
+  if (!isRecord(input) || depth > 16) {
+    throw new TypeError('localization message tree is invalid')
+  }
+  return input
+}
+
+function normalizeSecureMessage(
+  input: unknown,
+  budget: CatalogBudget,
+  depth: number
+): SecureLocalizationMessage {
+  if (typeof input === 'string') {
+    addCatalogString(budget, input, 4096, 'message')
+    return input
+  }
+  if (input === null) return null
+
+  const record = secureMessageRecord(input, depth)
+  if (budget.seen.has(record)) {
+    throw new TypeError('localization catalog is cyclic')
+  }
+  budget.seen.add(record)
+  const output: Record<string, SecureLocalizationMessage> = {}
+  for (const [key, child] of Object.entries(record)) {
+    if (forbiddenCatalogKeys.has(key)) {
+      throw new TypeError('localization catalog contains a forbidden key')
+    }
+    addCatalogEntry(budget)
+    addCatalogString(budget, key, 512, 'key')
+    output[key] = normalizeSecureMessage(child, budget, depth + 1)
+  }
+  budget.seen.delete(record)
+  return output
+}
+
+function normalizeCatalogMessages(
+  input: unknown,
+  budget: CatalogBudget
+): Readonly<Record<string, SecureLocalizationMessage>> {
+  const messages = normalizeSecureMessage(input, budget, 0)
+  if (!messages || typeof messages !== 'object' || Array.isArray(messages)) {
+    throw new TypeError('localization messages must be an object')
+  }
+  return messages
+}
+
+function normalizeCatalogPhrases(
+  input: unknown,
+  budget: CatalogBudget
+): Readonly<Record<string, string>> | undefined {
+  if (input === undefined) return undefined
+  if (!isRecord(input)) {
+    throw new TypeError('localization phrases must be an object')
+  }
+  const phrases: Record<string, string> = {}
+  for (const [source, translated] of Object.entries(input)) {
+    if (forbiddenCatalogKeys.has(source) || typeof translated !== 'string') {
+      throw new TypeError('localization phrase is invalid')
+    }
+    addCatalogEntry(budget)
+    addCatalogString(budget, source, 4096, 'phrase source')
+    addCatalogString(budget, translated, 4096, 'phrase translation')
+    phrases[source] = translated
+  }
+  return phrases
+}
+
+function normalizeSecureCatalog(value: unknown): SecureLocalizationCatalog {
+  const raw = secureCatalogRecord(value)
+  const budget: CatalogBudget = {
+    entries: 0,
+    bytes: 0,
+    seen: new WeakSet(),
+    encoder: new TextEncoder()
+  }
+  const messages = normalizeCatalogMessages(raw.messages, budget)
+  const phrases = normalizeCatalogPhrases(raw.phrases, budget)
+  return { messages, ...(phrases ? { phrases } : {}) }
+}
+
+function applySecureCatalogs(locale: SupportedLocale): void {
+  const base = secureLocaleBases.get(locale)
+  const catalogs = secureCatalogs.get(locale)
+  if (!base || !catalogs?.size) return
+  i18n.global.setLocaleMessage(locale, cloneLocaleTree(base) as LocaleMessages)
+  for (const catalog of catalogs.values()) {
+    i18n.global.mergeLocaleMessage(
+      locale,
+      cloneLocaleTree(catalog.messages) as unknown as LocaleMessages
+    )
+  }
+}
+
+function restoreSecureLocaleBase(locale: SupportedLocale): void {
+  const base = secureLocaleBases.get(locale)
+  if (base) {
+    i18n.global.setLocaleMessage(
+      locale,
+      cloneLocaleTree(base) as LocaleMessages
+    )
+  }
+}
+
+function refreshSecureLocaleBase(locale: SupportedLocale): void {
+  if (!secureCatalogs.get(locale)?.size) return
+  secureLocaleBases.set(
+    locale,
+    cloneLocaleTree(
+      i18n.global.getLocaleMessage(locale) as Record<string, unknown>
+    )
+  )
+  applySecureCatalogs(locale)
+}
+
+/**
+ * Register one sandboxed pack's bounded, declarative locale contribution.
+ * Pack identity is supplied by the host and is never chosen by guest code.
+ */
+export function registerSecureLocalizationCatalog(
+  owner: string,
+  locale: string,
+  value: unknown
+): () => void {
+  if (
+    typeof owner !== 'string' ||
+    owner.length < 1 ||
+    owner.length > 256 ||
+    owner.includes('\0')
+  ) {
+    throw new TypeError('localization owner is invalid')
+  }
+  if (!Object.prototype.hasOwnProperty.call(localeDefinitions, locale)) {
+    throw new TypeError(`unsupported localization locale "${locale}"`)
+  }
+  const supportedLocale = locale as SupportedLocale
+  const catalog = normalizeSecureCatalog(value)
+  let byOwner = secureCatalogs.get(supportedLocale)
+  if (!byOwner) {
+    byOwner = new Map()
+    secureCatalogs.set(supportedLocale, byOwner)
+  }
+  if (byOwner.has(owner)) {
+    throw new TypeError(`duplicate localization catalog for ${owner}/${locale}`)
+  }
+  byOwner.set(owner, catalog)
+  if (loadedLocales.has(supportedLocale)) {
+    if (!secureLocaleBases.has(supportedLocale)) {
+      secureLocaleBases.set(
+        supportedLocale,
+        cloneLocaleTree(
+          i18n.global.getLocaleMessage(supportedLocale) as Record<
+            string,
+            unknown
+          >
+        )
+      )
+    }
+    applySecureCatalogs(supportedLocale)
+  }
+
+  let active = true
+  return () => {
+    if (!active) return
+    active = false
+    const current = secureCatalogs.get(supportedLocale)
+    current?.delete(owner)
+    if (!current?.size) secureCatalogs.delete(supportedLocale)
+    if (!loadedLocales.has(supportedLocale)) return
+    const base = secureLocaleBases.get(supportedLocale)
+    if (!base) return
+    if (current?.size) {
+      applySecureCatalogs(supportedLocale)
+    } else {
+      i18n.global.setLocaleMessage(
+        supportedLocale,
+        cloneLocaleTree(base) as LocaleMessages
+      )
+      secureLocaleBases.delete(supportedLocale)
+    }
+  }
+}
+
+/** Exact-source fallback used only at host-owned translation render points. */
+export function translateSecurePhrase(
+  source: string,
+  locale: string = i18n.global.locale.value
+): string {
+  const catalogs = secureCatalogs.get(locale as SupportedLocale)
+  if (!catalogs || typeof source !== 'string') return source
+  const ordered = [...catalogs.values()].reverse()
+  for (const catalog of ordered) {
+    const translated = catalog.phrases?.[source]
+    if (typeof translated === 'string') return translated
+  }
+  return source
+}
+
 /**
  * Dynamically load a shipped locale's bundles (nodeDefs, commands, settings).
  * Callers must pre-resolve untrusted input via `resolveSupportedLocale` or
@@ -82,6 +365,7 @@ export async function loadLocale(locale: SupportedLocale): Promise<void> {
       if (customNodesI18nData[locale]) {
         i18n.global.mergeLocaleMessage(locale, customNodesI18nData[locale])
       }
+      refreshSecureLocaleBase(locale)
     } catch (error) {
       console.error(`Failed to load locale "${locale}":`, error)
       throw error
@@ -128,7 +412,9 @@ export function mergeCustomNodesI18n(i18nData: Record<string, unknown>): void {
 
   for (const [locale, message] of Object.entries(i18nData)) {
     if (loadedLocales.has(locale)) {
+      restoreSecureLocaleBase(locale as SupportedLocale)
       i18n.global.mergeLocaleMessage(locale, message)
+      refreshSecureLocaleBase(locale as SupportedLocale)
     }
   }
 }
@@ -187,6 +473,40 @@ function customNodesProvide(nodeName: string, path: string): boolean {
   return false
 }
 
+function secureMessageAtPath(
+  root: Readonly<Record<string, SecureLocalizationMessage>>,
+  path: string
+): SecureLocalizationMessage | undefined {
+  let cursor: SecureLocalizationMessage | undefined = root
+  for (const segment of path.split('.')) {
+    if (typeof cursor !== 'object' || cursor === null) return undefined
+    cursor = cursor[segment]
+  }
+  return cursor
+}
+
+function secureCatalogHasNodeText(
+  catalog: SecureLocalizationCatalog,
+  candidates: readonly string[],
+  path: string
+): boolean {
+  const nodeDefs = catalog.messages['nodeDefs']
+  if (typeof nodeDefs !== 'object' || nodeDefs === null) return false
+  return candidates.some(
+    (candidate) =>
+      typeof secureMessageAtPath(nodeDefs, `${candidate}.${path}`) === 'string'
+  )
+}
+
+function secureCatalogProvides(nodeName: string, path: string): boolean {
+  const catalogs = secureCatalogs.get(i18n.global.locale.value)
+  if (!catalogs) return false
+  const candidates = nodeDefKeyCandidates(nodeName)
+  return [...catalogs.values()].some((catalog) =>
+    secureCatalogHasNodeText(catalog, candidates, path)
+  )
+}
+
 /**
  * Generated locales key dotted node ids flat (`my_node`). Locales written by
  * hand before that convention nest them (`my.node`), which vue-i18n resolves by
@@ -232,12 +552,17 @@ function resolveNodeDefPath(
   fallback: string,
   read: MessageReader
 ): string {
-  if (customNodesProvide(nodeName, path)) {
+  if (
+    customNodesProvide(nodeName, path) ||
+    secureCatalogProvides(nodeName, path)
+  ) {
     return translateNodeDefText(nodeName, path, fallback, read)
   }
   if (i18n.global.locale.value === 'en' && backend !== undefined) return backend
 
-  return translateNodeDefText(nodeName, path, fallback, read)
+  return translateSecurePhrase(
+    translateNodeDefText(nodeName, path, fallback, read)
+  )
 }
 
 export function resolveNodeDefText(
@@ -327,7 +652,7 @@ function rawTranslationOrFallback(key: string, fallbackMessage: string) {
  * @param fallbackMessage - The fallback message to use if the key is not found.
  */
 export function st(key: string, fallbackMessage: string) {
-  if (!te(key)) return fallbackMessage
+  if (!te(key)) return translateSecurePhrase(fallbackMessage)
 
   try {
     // The normal defaultMsg overload fails in some cases for custom nodes
@@ -346,7 +671,7 @@ export function st(key: string, fallbackMessage: string) {
  * or the locale message is not a string.
  */
 export function stRaw(key: string, fallbackMessage: string) {
-  if (!te(key)) return fallbackMessage
+  if (!te(key)) return translateSecurePhrase(fallbackMessage)
 
   return rawTranslationOrFallback(key, fallbackMessage)
 }
