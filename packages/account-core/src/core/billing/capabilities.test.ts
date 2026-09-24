@@ -550,12 +550,18 @@ describe('createCapabilitiesReader over the session transport', () => {
  * HTTP cache's pre-mutation copy.
  */
 describe('createCapabilitiesReader over a caching browser', () => {
+  const REVALIDATING_CACHE_MODES = new Set<RequestCache | undefined>([
+    'no-store',
+    'reload',
+    'no-cache'
+  ])
+
   function cachingFetch(server: { body: unknown }) {
     const stored = new Map<string, string>()
     return vi.fn<typeof fetch>(async (input, init) => {
       const url = String(input)
       const cached = stored.get(url)
-      const bypass = init?.cache !== undefined && init.cache !== 'default'
+      const bypass = REVALIDATING_CACHE_MODES.has(init?.cache)
       const body =
         cached !== undefined && !bypass ? cached : JSON.stringify(server.body)
       stored.set(url, body)
@@ -590,31 +596,38 @@ describe('createCapabilitiesReader over a caching browser', () => {
   }
 
   it.for([
-    { name: 'a forced refresh', options: { forceRefresh: true } },
-    { name: 'the read after an invalidation', options: {} }
-  ])('$name reaches the server, not the HTTP cache', async ({ options }) => {
-    const server = {
-      body: capabilitiesBody({
-        capabilities: { ...CAPABILITIES, can_cancel: true }
+    {
+      name: 'a forced refresh',
+      options: { forceRefresh: true },
+      invalidate: false
+    },
+    { name: 'the read after an invalidation', options: {}, invalidate: true }
+  ])(
+    '$name reaches the server, not the HTTP cache',
+    async ({ options, invalidate }) => {
+      const server = {
+        body: capabilitiesBody({
+          capabilities: { ...CAPABILITIES, can_cancel: true }
+        })
+      }
+      const reader = readerOverCache(server)
+      await reader.read()
+
+      server.body = capabilitiesBody({
+        capabilities: { ...CAPABILITIES, can_reactivate: true },
+        revision: 43
+      })
+      if (invalidate) reader.invalidate()
+      const result = await reader.read(options)
+
+      expect(result.status).toBe('ok')
+      if (result.status !== 'ok') return
+      expect(result.value.capabilities).toMatchObject({
+        can_cancel: false,
+        can_reactivate: true
       })
     }
-    const reader = readerOverCache(server)
-    await reader.read()
-
-    server.body = capabilitiesBody({
-      capabilities: { ...CAPABILITIES, can_reactivate: true },
-      revision: 43
-    })
-    reader.invalidate()
-    const result = await reader.read(options)
-
-    expect(result.status).toBe('ok')
-    if (result.status !== 'ok') return
-    expect(result.value.capabilities).toMatchObject({
-      can_cancel: false,
-      can_reactivate: true
-    })
-  })
+  )
 })
 
 describe('readCapabilityRevision', () => {
