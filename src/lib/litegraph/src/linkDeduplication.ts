@@ -194,7 +194,9 @@ function isGroupWidgetChildInput(node: LGraphNode, inputName: string): boolean {
  * Autogrow groups renumber their own slots as the graph configures, so their
  * links belong to {@link LGraph.configure}'s final pass rather than to an
  * early realignment. A group is not a widget; ownership comes from the
- * registry `applyAutogrow` populates.
+ * registry `applyAutogrow` populates, which only covers groups the selected
+ * option laid out — children of an unselected option reach this filter and are
+ * safe to realign, since their group's handler bails on the same missing key.
  */
 function isAutogrowGroupInput(node: LGraphNode, inputName: string): boolean {
   const groupName = groupNameOf(inputName)
@@ -208,10 +210,11 @@ function isAutogrowGroupInput(node: LGraphNode, inputName: string): boolean {
 
 /**
  * Re-points a node's group widget child links at the slot their name will map
- * to, before applying the widget's value rebuilds those inputs and drops any
- * link left on a slot the selected option does not lay out. Ordinary inputs
- * join the batch so an occupied destination slot is vacated in the same atomic
- * update instead of blocking the move.
+ * to. A saved link arrives on the wrong slot because the definition lays out
+ * the default option's children while `target_slot` counts the serialized
+ * layout, so applying the widget's value would rebuild those inputs and drop
+ * it. Ordinary inputs join the batch so an occupied destination slot is
+ * vacated in the same atomic update instead of blocking the move.
  */
 export function realignGroupWidgetChildLinks(
   node: LGraphNode,

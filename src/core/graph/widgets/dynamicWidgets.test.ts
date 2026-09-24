@@ -673,13 +673,16 @@ class SourceNode extends LGraphNode {
 
 type ChildInputs = Record<string, InputSpec>
 
+type ComboOption = [key: string, childInputs: ChildInputs]
+
 function dynamicCombo(
-  childInputsByOptionKey: Record<string, ChildInputs>
+  defaultOption: ComboOption,
+  ...remainingOptions: ComboOption[]
 ): InputSpec {
   return [
     'COMFY_DYNAMICCOMBO_V3',
     {
-      options: Object.entries(childInputsByOptionKey).map(([key, inputs]) => ({
+      options: [defaultOption, ...remainingOptions].map(([key, inputs]) => ({
         key,
         inputs: { required: inputs }
       }))
@@ -712,7 +715,7 @@ function testNodeDef(
     description: '',
     input: { required },
     output,
-    output_name: output,
+    output_name: [...output],
     output_node: false
   }
 }
@@ -726,10 +729,10 @@ const resizeNodeDef = testNodeDef(
   RESIZE_NODE_TYPE,
   {
     image: ['IMAGE', {}],
-    resize_type: dynamicCombo({
-      'scale dimensions': { width: ['INT', {}] },
-      'scale by multiplier': { multiplier: ['FLOAT', {}] }
-    })
+    resize_type: dynamicCombo(
+      ['scale dimensions', { width: ['INT', {}] }],
+      ['scale by multiplier', { multiplier: ['FLOAT', {}] }]
+    )
   },
   ['IMAGE']
 )
@@ -824,8 +827,9 @@ const REFERENCE_NODE_TYPE = 'test/AutogrowInsideCombo'
 const referenceNodeDef = testNodeDef(
   REFERENCE_NODE_TYPE,
   {
-    model: dynamicCombo({
-      Seedance: {
+    model: dynamicCombo([
+      'Seedance',
+      {
         generate_audio: ['BOOLEAN', { default: true }],
         reference_images: autogrow({
           names: ['image_1', 'image_2', 'image_3'],
@@ -833,7 +837,7 @@ const referenceNodeDef = testNodeDef(
           input: { reference_image: ['IMAGE', {}] }
         })
       }
-    })
+    ])
   },
   ['VIDEO']
 )
@@ -879,8 +883,9 @@ const GROWN_NODE_TYPE = 'test/AutogrowBeforeOrdinaryChild'
 const grownNodeDef = testNodeDef(
   GROWN_NODE_TYPE,
   {
-    model: dynamicCombo({
-      'gpt-image-1': {
+    model: dynamicCombo([
+      'gpt-image-1',
+      {
         seed: ['INT', { default: 0 }],
         images: autogrow({
           names: ['image_1', 'image_2', 'image_3', 'image_4'],
@@ -889,7 +894,7 @@ const grownNodeDef = testNodeDef(
         }),
         mask: ['MASK', { forceInput: true }]
       }
-    })
+    ])
   },
   ['IMAGE']
 )
