@@ -50,6 +50,7 @@ import { badgeDrawObjects, badgeRows } from './nodeBadgeDraw'
 import { LGraphButton } from './LGraphButton'
 import type { LGraphButtonOptions } from './LGraphButton'
 import { LGraphCanvas } from './LGraphCanvas'
+import { realignGroupWidgetChildLinks } from './linkDeduplication'
 import { LLink, replaceLinkTopology, slotFloatingLinks } from './LLink'
 import {
   inputHasLink,
@@ -1159,6 +1160,8 @@ export class LGraphNode
 
     // SubgraphNode callback.
     this._internalConfigureAfterSlots?.()
+
+    realignGroupWidgetChildLinks(this, info)
 
     const restoration = createWidgetRestorationState(
       info,
@@ -3685,6 +3688,9 @@ export class LGraphNode
 
   /* Forces to redraw or the main canvas (LGraphNode) or the bg canvas (links) */
   setDirtyCanvas(dirty_foreground: boolean, dirty_background?: boolean): void {
+    if (dirty_foreground && LiteGraph.vueNodesMode) {
+      for (const widget of this.widgets ?? []) widget.syncLiveDisabled?.()
+    }
     this.graph?.canvasAction((c) =>
       c.setDirty(dirty_foreground, dirty_background)
     )

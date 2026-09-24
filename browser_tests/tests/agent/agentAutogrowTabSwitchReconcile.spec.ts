@@ -260,8 +260,9 @@ test.describe(
           }
           if (workflow_id !== WORKFLOW_ID) return
           if (type === 'doc_ops' && Array.isArray(ops)) {
-            for (const hostFrame of host.applyClient(ops as Op[]))
-              socketSend!(hostFrame)
+            const { result, update } = host.applyWire(ops as Op[])
+            socketSend!(result)
+            if (update) socketSend!(update)
             return
           }
           if (type !== 'doc_subscribe' || typeof state_vector_b64 !== 'string')
@@ -384,7 +385,10 @@ test.describe(
 
       await test.step('open the agent panel and target the workflow', async () => {
         await page
-          .getByRole('button', { name: enMessages.agent.askComfyAgent })
+          .getByRole('button', {
+            name: enMessages.agent.entryButton,
+            exact: true
+          })
           .click()
         await expect(panel).toBeVisible()
         await panel
@@ -495,7 +499,10 @@ test.describe(
         // local edit, and prove the replacement follower has rebound this doc.
         subscribedTo = null
         await page
-          .getByRole('button', { name: enMessages.agent.askComfyAgent })
+          .getByRole('button', {
+            name: enMessages.agent.entryButton,
+            exact: true
+          })
           .click()
         await expect(panel).toBeVisible()
         await expect

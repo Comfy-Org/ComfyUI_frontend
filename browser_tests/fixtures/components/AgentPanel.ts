@@ -20,7 +20,7 @@ export class AgentPanel {
   constructor(private readonly page: Page) {
     this.root = page.locator('#agent-panel-root')
     this.openButton = page.getByRole('button', {
-      name: enMessages.agent.askComfyAgent,
+      name: enMessages.agent.entryButton,
       exact: true
     })
     this.debugHeading = this.root.getByText('CRDT debug', { exact: true })

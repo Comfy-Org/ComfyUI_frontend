@@ -2,8 +2,12 @@ import { storeToRefs } from 'pinia'
 import { watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { AgentConsentNotOfferedReason } from '@/platform/telemetry/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import { useAgentConsent } from '@/workbench/extensions/agent/composables/agent/useAgentConsent'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
@@ -12,6 +16,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExtensionService } from '@/services/extensionService'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import {
@@ -30,16 +35,66 @@ function writeAutoShown(key: string, shown: boolean): boolean {
   }
 }
 
-function prepareAutoShow(key: string): boolean {
+function wasAutoShown(key: string): boolean {
   try {
-    if (localStorage.getItem(key) === 'true') return false
-    return writeAutoShown(key, false)
+    return localStorage.getItem(key) === 'true'
   } catch {
     return false
   }
 }
 
+function prepareAutoShow(
+  key: string
+): 'ready' | 'already_offered' | 'storage_unavailable' {
+  try {
+    if (localStorage.getItem(key) === 'true') return 'already_offered'
+    return writeAutoShown(key, false) ? 'ready' : 'storage_unavailable'
+  } catch {
+    return 'storage_unavailable'
+  }
+}
+
 let registered = false
+
+/**
+ * Owns the local-dirty-tracking suppression window(s) graph loads open in
+ * `beforeLoadGraph`. Two loads can genuinely overlap - e.g. two rapid tab
+ * switches, each an async `loadGraphData` call - and each one's
+ * `beforeLoadGraph` opens the same underlying suppression before either
+ * finishes. A single boolean flag cannot tell those apart: whichever load
+ * finishes first (success or error) would close the flag while the other is
+ * still mid-`configure`, and that other load's own structural writes would
+ * then get misread as a human edit and wrongly marked dirty.
+ *
+ * A depth counter fixes that: every `beforeLoadGraph` increments it and
+ * opens the store's suppression only on the 0 -> 1 transition; every
+ * matching completion (`afterConfigureGraph` or `onGraphLoadError`, in
+ * either order) decrements it and closes the suppression only once the
+ * count is back at 0, i.e. once every overlapping load that opened it has
+ * also finished. `app.ts`'s `loadGraphData` mirrors this: a single try
+ * wraps its entire body from right after `beforeLoadGraph` through
+ * `rootGraph.configure` succeeding (asset-scan resets, `clean()`, workflow
+ * cloning, `validateWorkflow`, reroute-migration inspection, subgraph
+ * loading, a `beforeConfigureGraph` extension hook throwing, or a
+ * node-replacement load failure), so every one of those paths also routes
+ * through `onGraphLoadError` and this counter's decrement is never skipped.
+ * A leaked-open suppression would misread every later context-less user
+ * edit as structural and never mark it dirty again.
+ */
+let widgetDirtySuppressionDepth = 0
+
+function openWidgetDirtySuppression(): void {
+  widgetDirtySuppressionDepth++
+  if (widgetDirtySuppressionDepth > 1) return
+  useWidgetValueStore().beginLocalDirtyTrackingSuppression()
+}
+
+function closeWidgetDirtySuppression(): void {
+  if (widgetDirtySuppressionDepth === 0) return
+  widgetDirtySuppressionDepth--
+  if (widgetDirtySuppressionDepth > 0) return
+  useWidgetValueStore().endLocalDirtyTrackingSuppression()
+}
 
 export function registerAgentPanelExtension(): void {
   if (registered) return
@@ -49,6 +104,7 @@ export function registerAgentPanelExtension(): void {
     name: 'Comfy.AgentPanel',
     beforeLoadGraph() {
       notifyMintPortsBeforeGraphLoad()
+      openWidgetDirtySuppression()
       const agentPanelStore = useAgentPanelStore()
       if (!agentPanelStore.isVisible) return
 
@@ -72,6 +128,15 @@ export function registerAgentPanelExtension(): void {
           .nodeIds(workflowPath)
           .map((locatorId) => getNodeByLocatorId(app.rootGraph, locatorId))
           .filter(isLGraphNode)
+        if (nodes.length === 0) {
+          // Nothing was saved for this workflow (e.g. a brand-new, never-saved
+          // tab). Disarm the restore guard directly instead of arming it with
+          // an empty selection - otherwise it stays armed until the *next*
+          // unrelated selection change (such as manually adding a node), which
+          // then gets wrongly adopted as "the restored selection".
+          nodeSelectionStore.finishWorkflowLoad()
+          return
+        }
         nodeSelectionStore.restoreNodeIds(
           nodes.map((node) => workflowStore.nodeToNodeLocatorId(node))
         )
@@ -83,6 +148,7 @@ export function registerAgentPanelExtension(): void {
       }
     },
     onGraphLoadError() {
+      closeWidgetDirtySuppression()
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (nodeSelectionStore.isLoadingWorkflow) {
         nodeSelectionStore.finishWorkflowLoad()
@@ -90,6 +156,7 @@ export function registerAgentPanelExtension(): void {
     },
     afterConfigureGraph() {
       notifyMintPortsAfterGraphConfigure()
+      closeWidgetDirtySuppression()
     },
     setup() {
       const agentPanelStore = useAgentPanelStore()
@@ -98,6 +165,8 @@ export function registerAgentPanelExtension(): void {
       const workspaceStore = useTeamWorkspaceStore()
       const { resolvedUserInfo, isLoggedIn } = useCurrentUser()
       const { withConsent } = useAgentConsent()
+      const { firstRunTookScreen, whenStartupDecided } = useFirstRunEntry()
+      const onboardingTourStore = useOnboardingTourStore()
       registerWorkflowTabActivityTracker(enabled)
 
       watch(
@@ -108,17 +177,54 @@ export function registerAgentPanelExtension(): void {
         { immediate: true, flush: 'sync' }
       )
 
+      const screenHolder = (): AgentConsentNotOfferedReason | null =>
+        firstRunTookScreen.value
+          ? 'first_run_screen'
+          : onboardingTourStore.activeTour !== null
+            ? 'tour_active'
+            : null
+
+      const reportedWithheld = new Set<string>()
+      const withholdOffer = (
+        reason: AgentConsentNotOfferedReason,
+        userId = resolvedUserInfo.value?.id,
+        workspaceId = workspaceStore.activeWorkspaceId
+      ): void => {
+        if (!userId || !workspaceId) return
+        if (
+          wasAutoShown(`${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`)
+        )
+          return
+        const key = `${userId}.${workspaceId}:${reason}`
+        if (reportedWithheld.has(key)) return
+        reportedWithheld.add(key)
+        useTelemetry()?.trackAgentConsentNotOffered({ reason })
+      }
+
+      const offerEligible = (): boolean =>
+        agentPanelStore.enabled &&
+        isLoggedIn.value &&
+        !consentStore.isChecking &&
+        !consentStore.accepted
+
       let autoShowInFlight = false
       const offerConsentUnprompted = (): void => {
         if (autoShowInFlight) return
-        if (!agentPanelStore.enabled || !isLoggedIn.value) return
-        if (consentStore.isChecking || consentStore.accepted) return
+        if (!offerEligible()) return
+        // Must precede prepareAutoShow, which burns the one-shot key.
+        const held = screenHolder()
+        if (held) {
+          withholdOffer(held)
+          return
+        }
 
         const userId = resolvedUserInfo.value?.id
         const workspaceId = workspaceStore.activeWorkspaceId
         if (!userId || !workspaceId || workspaceStore.isSwitching) return
         const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
-        if (!prepareAutoShow(key)) return
+        const autoShow = prepareAutoShow(key)
+        if (autoShow === 'storage_unavailable') withholdOffer(autoShow)
+        if (autoShow !== 'ready') return
 
         const offeredIdentity = consentStore.identity
         autoShowInFlight = true
@@ -128,8 +234,15 @@ export function registerAgentPanelExtension(): void {
             if (!agentPanelStore.enabled) return
             agentPanelStore.open('automatic_consent')
           },
-          () => {
-            writeAutoShown(key, true)
+          {
+            onShown: () => {
+              writeAutoShown(key, true)
+            },
+            canShow: () => {
+              const heldAtMount = screenHolder()
+              if (heldAtMount) withholdOffer(heldAtMount, userId, workspaceId)
+              return heldAtMount === null
+            }
           }
         ).finally(() => {
           autoShowInFlight = false
@@ -137,12 +250,27 @@ export function registerAgentPanelExtension(): void {
         })
       }
 
+      const offerWhenStartupDecided = (): void => {
+        // A boot that never reports forfeits this session's automatic offer
+        // rather than landing it on a late first-run screen.
+        whenStartupDecided()
+          .then((decided) => {
+            if (decided) offerConsentUnprompted()
+            else if (offerEligible()) withholdOffer('boot_undecided')
+          })
+          .catch((error: unknown) => {
+            reportError(error, {
+              errorType: 'agent_consent_auto_offer_failure'
+            })
+          })
+      }
+
       const loadConsentIfEligible = (): void => {
         if (!agentPanelStore.enabled || !resolvedUserInfo.value) return
         void consentStore
           .load()
           .then((isAccepted) => {
-            if (!isAccepted) offerConsentUnprompted()
+            if (!isAccepted) offerWhenStartupDecided()
           })
           .catch((error: unknown) => {
             reportError(error, {
@@ -154,6 +282,12 @@ export function registerAgentPanelExtension(): void {
         [() => resolvedUserInfo.value?.id, () => consentStore.identity],
         loadConsentIfEligible,
         { immediate: true }
+      )
+      watch(
+        () => onboardingTourStore.activeTour,
+        (tour) => {
+          if (tour === null) loadConsentIfEligible()
+        }
       )
       return setupFlagGate(loadConsentIfEligible)
     }
