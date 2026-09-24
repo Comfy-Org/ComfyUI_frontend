@@ -196,7 +196,93 @@ describe('useWidgetSelectActions', () => {
 
       const toastStore = useToastStore()
       expect(toastStore.addAlert).toHaveBeenCalledWith(
-        '500 - Internal Server Error'
+        'Upload failed: Internal Server Error'
+      )
+    })
+
+    it('shows a status-derived toast without a dangling separator when statusText is empty', async () => {
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 502,
+          statusText: ''
+        })
+      )
+
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue: ref<string | undefined>(),
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: [] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([new File(['test'], 'fail.png')])
+
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+        'Upload failed: HTTP 502'
+      )
+    })
+
+    it('shows a file-too-large toast on a 413 with no known upload limit', async () => {
+      vi.mocked(api.getServerFeature).mockReturnValue(undefined)
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 413,
+          statusText: 'Payload Too Large'
+        })
+      )
+
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue: ref<string | undefined>(),
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: [] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([new File(['test'], 'huge.png')])
+
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+        'File is too large to upload.'
+      )
+    })
+
+    it('shows a file-too-large toast with the limit on a 413 when the server reports one', async () => {
+      vi.mocked(api.getServerFeature).mockReturnValue(104_857_600)
+      vi.mocked(api.fetchApi).mockResolvedValue(
+        fromPartial<Response>({
+          status: 413,
+          statusText: 'Payload Too Large'
+        })
+      )
+
+      const { handleFilesUpdate } = useWidgetSelectActions({
+        modelValue: ref<string | undefined>(),
+        dropdownItems: computed(() => []),
+        widget: () =>
+          fromPartial<SimplifiedWidget<string | undefined>>({
+            name: 'test',
+            type: 'combo',
+            options: { values: [] }
+          }),
+        uploadFolder: () => 'input',
+        uploadSubfolder: () => undefined
+      })
+
+      await handleFilesUpdate([new File(['test'], 'huge.png')])
+
+      expect(useToastStore().addAlert).toHaveBeenCalledWith(
+        'File is too large to upload (limit: 100 MB).'
       )
     })
   })

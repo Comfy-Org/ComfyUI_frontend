@@ -85,13 +85,7 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    menu: {
-      element: document.createElement('div')
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock(import('@/platform/telemetry'))
 
