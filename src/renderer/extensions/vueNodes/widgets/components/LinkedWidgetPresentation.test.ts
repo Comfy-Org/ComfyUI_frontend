@@ -11,7 +11,7 @@ import WidgetSelectDefault from './WidgetSelectDefault.vue'
 import WidgetTextarea from './WidgetTextarea.vue'
 import WidgetToggleSwitch from './WidgetToggleSwitch.vue'
 
-vi.mock('@/composables/useCopyToClipboard', () => ({
+vi.mock(import('@/composables/useCopyToClipboard'), () => ({
   useCopyToClipboard: () => ({ copyToClipboard: vi.fn() })
 }))
 
