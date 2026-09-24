@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ChevronLeft } from '@lucide/vue'
-import { computed, ref } from 'vue'
+import { computed } from 'vue'
 
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
 import { WORKSHOP_CLOUD_BASE_URL } from '../../config/workshop-env'
@@ -16,7 +16,6 @@ const scope = computed(() =>
     ? JSON.stringify([session.value.uid, session.value.workspace.id])
     : 'anonymous'
 )
-const selectedExample = ref(0)
 const template = model.workflow.template
 const cloudHref = template
   ? `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(template.id)}`
@@ -72,47 +71,8 @@ const cloudHref = template
       :key="scope"
       :model="model"
       :scope="scope"
-      :example-index="selectedExample"
       :cloud-href="cloudHref"
       @recovery="emit('recovery', $event)"
     />
-
-    <section
-      v-if="model.examples.length"
-      class="mt-14"
-      aria-labelledby="workflow-examples-heading"
-    >
-      <h2
-        id="workflow-examples-heading"
-        class="mb-5 text-2xl font-light text-primary-comfy-canvas"
-      >
-        {{ t('workshop.workflow.explore') }}
-      </h2>
-      <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        <button
-          v-for="(example, index) in model.examples"
-          :key="example.name"
-          type="button"
-          :aria-pressed="selectedExample === index"
-          class="cursor-pointer overflow-hidden rounded-2xl border border-transparency-white-t8 text-left hover:border-primary-comfy-yellow focus-visible:outline-primary-comfy-yellow"
-          @click="selectedExample = index"
-        >
-          <img
-            :src="example.thumbnailUrl"
-            :alt="example.title"
-            loading="lazy"
-            class="aspect-4/3 w-full object-cover"
-          />
-          <span class="block p-4 text-sm text-primary-warm-gray">
-            {{
-              t('workshop.workflow.templateExample').replace(
-                '{n}',
-                String(index + 1)
-              )
-            }}
-          </span>
-        </button>
-      </div>
-    </section>
   </div>
 </template>

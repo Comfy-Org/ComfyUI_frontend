@@ -262,12 +262,11 @@ export function createWorkflowController(options: {
     retryDelivery,
     refreshOutput,
     dismiss() {
-      if (
-        operation ||
-        state.phase !== 'interrupted' ||
-        record()?.stage !== 'intent'
-      )
-        return
+      const dismissible =
+        state.phase === 'settled' ||
+        state.phase === 'failed' ||
+        (state.phase === 'interrupted' && record()?.stage === 'intent')
+      if (operation || !dismissible) return
       try {
         options.storage.clear()
         dispatch({ type: 'detach' })

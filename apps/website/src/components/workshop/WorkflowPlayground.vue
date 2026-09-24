@@ -3,7 +3,10 @@ import { ArrowUpRight } from '@lucide/vue'
 import { computed, onScopeDispose, ref, watch } from 'vue'
 
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
-import { initialWorkshopPageState } from '../../config/workshop-page-state'
+import {
+  initialWorkshopPageState,
+  workshopExampleState
+} from '../../config/workshop-page-state'
 import {
   restoreFormValues,
   urlUploadField
@@ -21,16 +24,17 @@ import {
   useWorkshopEnabled,
   useWorkshopWorkflowsEnabled
 } from '../../scripts/posthog'
+import { sameFormValues } from '../../lib/workshop/form-values'
+import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
 import WorkflowResults from './WorkflowResults.vue'
 import WorkflowRunControls from './WorkflowRunControls.vue'
 import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
 
-const { model, scope, exampleIndex, cloudHref } = defineProps<{
+const { model, scope, cloudHref } = defineProps<{
   model: WorkflowWorkshopModelDetail
   scope: string
-  exampleIndex: number
   cloudHref?: string
 }>()
 const emit = defineEmits<{ recovery: [active: boolean] }>()
@@ -44,6 +48,9 @@ const sectionLabels = {
 } as const
 const initial = initialWorkshopPageState(model)
 const values = ref(initial.values)
+const settledValues = ref(initial.values)
+const selectedExample = ref(0)
+const replacing = ref<number>()
 const schema = computed(() => initial.schema)
 const workflow = useWorkflowRun(model, scope, (inputs) => {
   values.value = {
@@ -110,6 +117,32 @@ const statusLabel = computed(() => {
     ? t(workflowStatusKey(observation.value.run))
     : t('workshop.workflow.submitting')
 })
+
+function selectExample(index: number) {
+  const example = initial.examples[index]
+  if (!example || formDisabled.value) return
+  if (
+    !example.sampleOnly &&
+    !sameFormValues(values.value, settledValues.value)
+  ) {
+    replacing.value = index
+    return
+  }
+  applyExample(index)
+}
+
+function applyExample(index: number) {
+  const example = initial.examples[index]
+  if (!example || formDisabled.value) return
+  if (!example.sampleOnly) {
+    values.value = workshopExampleState(model, example).values
+    settledValues.value = values.value
+  }
+  replacing.value = undefined
+  selectedExample.value = index
+  workflow.dismiss()
+  section.value = 'playground'
+}
 
 function start() {
   if (!canStart.value) return
@@ -217,7 +250,7 @@ function start() {
         :key="selectedRunId"
         :model="model"
         :state="state"
-        :example-index="exampleIndex"
+        :example-index="selectedExample"
         :busy="busy"
         :status-label="statusLabel"
         :can-start="canStart"
@@ -240,4 +273,47 @@ function start() {
   >
     <WorkflowApi :model="model" :values="values" />
   </div>
+  <section
+    v-if="model.examples.length"
+    class="mt-14"
+    aria-labelledby="workflow-examples-heading"
+  >
+    <h2
+      id="workflow-examples-heading"
+      class="mb-5 text-2xl font-light text-primary-comfy-canvas"
+    >
+      {{ t('workshop.workflow.explore') }}
+    </h2>
+    <div class="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+      <button
+        v-for="(example, index) in model.examples"
+        :key="example.name"
+        type="button"
+        :aria-pressed="selectedExample === index"
+        class="cursor-pointer overflow-hidden rounded-2xl border border-transparency-white-t8 text-left hover:border-primary-comfy-yellow focus-visible:outline-primary-comfy-yellow disabled:cursor-not-allowed disabled:opacity-50"
+        :disabled="formDisabled"
+        @click="selectExample(index)"
+      >
+        <img
+          :src="example.thumbnailUrl"
+          :alt="example.title"
+          loading="lazy"
+          class="aspect-4/3 w-full object-cover"
+        />
+        <span class="block p-4 text-sm text-primary-warm-gray">
+          {{
+            t('workshop.workflow.templateExample').replace(
+              '{n}',
+              String(index + 1)
+            )
+          }}
+        </span>
+      </button>
+    </div>
+  </section>
+  <ExampleReplaceDialog
+    :open="replacing !== undefined"
+    @update:open="(value: boolean) => !value && (replacing = undefined)"
+    @replace="replacing !== undefined && applyExample(replacing)"
+  />
 </template>

@@ -221,6 +221,16 @@ test('Cloud upload, refresh, partial delivery and downloads retain one run @mobi
       (command) => command.path === '/api/prompt' || command.path === path
     )
   ).toBe(true)
+  await page.getByRole('button', { name: /Template example 1/ }).click()
+  await page.getByTestId('example-replace-confirm').click()
+  await expect(page.getByTestId('playground-output')).toHaveAttribute(
+    'data-state',
+    'example'
+  )
+  await expect(
+    page.getByRole('button', { name: 'Replace the_lily_veil.png' })
+  ).toBeVisible()
+  expect(submissions()).toHaveLength(1)
 })
 
 test('workflow cancellation survives disabled admission and hides on sign-out', async ({

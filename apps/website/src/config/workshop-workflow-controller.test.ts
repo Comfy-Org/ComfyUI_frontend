@@ -461,6 +461,46 @@ describe('existing Cloud workflow controller', () => {
     })
   })
 
+  it.for(['completed', 'failed', 'cancelled'] as const)(
+    'clears a %s run when returning to an example',
+    async (status) => {
+      const f = fixture()
+      f.fetch
+        .mockResolvedValueOnce(Response.json({ prompt_id: id }))
+        .mockResolvedValueOnce(Response.json(job(status)))
+      await f.controller.start(input)
+      f.controller.dismiss()
+      expect(f.storage.read()).toBeUndefined()
+      expect(f.updates.at(-1)).toEqual({ phase: 'idle' })
+      expect(f.fetch).toHaveBeenCalledTimes(2)
+    }
+  )
+
+  it('does not restore a dismissed result when output delivery finishes late', async () => {
+    const f = fixture()
+    f.fetch
+      .mockResolvedValueOnce(Response.json({ prompt_id: id }))
+      .mockResolvedValueOnce(Response.json(job()))
+    await f.controller.start(input)
+    const requesting = Promise.withResolvers<void>()
+    const response = Promise.withResolvers<Response>()
+    f.fetch.mockImplementationOnce(async () => {
+      requesting.resolve()
+      return response.promise
+    })
+    const pending = f.controller.refreshOutput('image:0')
+    onTestFinished(async () => {
+      response.resolve(Response.json(job()))
+      await pending
+    })
+    await requesting.promise
+    f.controller.dismiss()
+    response.resolve(Response.json(job()))
+    await pending
+    expect(f.updates.at(-1)).toEqual({ phase: 'idle' })
+    expect(f.storage.read()).toBeUndefined()
+  })
+
   type Fixture = ReturnType<typeof fixture>
   type DeferredResponse = ReturnType<typeof Promise.withResolvers<Response>>
   const deliveryActions = [

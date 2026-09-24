@@ -1,3 +1,5 @@
+import { z } from 'astro/zod'
+
 import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
 import type {
   WorkflowWorkshopModel,
@@ -6,6 +8,11 @@ import type {
 import { isWorkshopModelDisabled } from './workshop-model-availability'
 import type { WorkshopWorkflowEntry } from './workshop-workflow-catalog'
 import { formForWorkflow } from './workshop-workflow-definition'
+
+const exampleValuesSchema = z.record(
+  z.string(),
+  z.union([z.string(), z.number(), z.boolean(), z.array(z.string())])
+)
 
 export function workflowPagesFor(
   pages: readonly WorkshopDisplayEntry[],
@@ -62,16 +69,20 @@ function workflowPageFor(
     form: formForWorkflow(workflow),
     fields: [],
     defaults: {},
-    examples: (page.media.samples ?? []).map((sample, index) => ({
-      name: `${page.slug}-example-${index + 1}`,
-      title: page.examples.at(index)?.title ?? model.name,
-      description: page.examples.at(index)?.description ?? '',
-      thumbnailUrl: sample.url,
-      mediaKind: sample.kind,
-      tags: [],
-      sampleOnly: true,
-      values: {}
-    }))
+    examples: (page.media.samples ?? []).map((sample, index) => {
+      const example = page.examples.at(index)
+      const values = exampleValuesSchema.parse(example?.values ?? {})
+      return {
+        name: `${page.slug}-example-${index + 1}`,
+        title: example?.title ?? model.name,
+        description: example?.description ?? '',
+        thumbnailUrl: sample.url,
+        mediaKind: sample.kind,
+        tags: [],
+        sampleOnly: Object.keys(values).length === 0,
+        values
+      }
+    })
   }
   return { model, detail }
 }
