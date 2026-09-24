@@ -1,6 +1,6 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref, shallowRef } from 'vue'
 
 import type { AccountCredential } from '@comfyorg/account-core/session'
@@ -9,6 +9,8 @@ import { zJobDetailResponse } from '@comfyorg/ingest-types/zod'
 import type { RunState } from '../../composables/useWorkflowRun'
 import type { WorkflowField } from '../../config/workflow-fields'
 import { useWorkshopCredits } from '../../config/workshop-credits'
+import { previewScene } from '../../lib/hub/run-preview'
+import { RUN_SCENES } from '../../lib/hub/run-scenes'
 import WorkflowRunForm from './WorkflowRunForm.vue'
 
 vi.mock(import('../../config/workshop-credits'))
@@ -74,6 +76,12 @@ const graph = {
   '2': { class_type: 'Text', inputs: { prompt: 'make it night' } }
 }
 
+const sceneNamed = (name: string) => {
+  const found = RUN_SCENES.find((scene) => scene.name === name)
+  if (!found) throw new Error(`No scene named ${name}`)
+  return found
+}
+
 const mount = () => {
   useWorkshopCredits().balance = computed(() => balance.value)
   return render(WorkflowRunForm, { props: { fields, graph } })
@@ -86,6 +94,10 @@ describe('WorkflowRunForm', () => {
     signedIn.value = credential
     balance = ref({ status: 'unknown' })
     sending.value = -1
+  })
+
+  afterEach(() => {
+    previewScene.value = undefined
   })
 
   it('asks one question per answer the graph needs', () => {
@@ -193,6 +205,33 @@ describe('WorkflowRunForm', () => {
     mount()
 
     expect(screen.queryByTestId('field-travel-1.image')).toBeNull()
+  })
+
+  // The states are there to be looked at, and looking costs nothing. Neither
+  // being signed out nor an empty wallet stands between a reader and one.
+  it.for([
+    {
+      case: 'nobody is signed in',
+      arrange: () => {
+        signedIn.value = undefined
+      }
+    },
+    {
+      case: 'the wallet is empty',
+      arrange: () => {
+        balance.value = { status: 'ok', credits: 0 }
+      }
+    }
+  ])('stands a state up although $case', ({ arrange }) => {
+    arrange()
+    previewScene.value = sceneNamed('Generating')
+    mount()
+
+    expect(screen.queryByTestId('workflow-run-signin')).toBeNull()
+    expect(screen.queryByTestId('run-gate')).toBeNull()
+    expect(screen.getByTestId('workflow-run-button').matches(':disabled')).toBe(
+      true
+    )
   })
 
   // A balance that has not arrived is not a balance of nothing.

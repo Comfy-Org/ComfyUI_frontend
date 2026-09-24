@@ -11,6 +11,7 @@ import {
   workflowFinished
 } from '../config/workflow-execution'
 import type { WorkflowFailure } from '../lib/hub/run-failure'
+import { runUnderWay } from '../lib/hub/run-progress'
 import { WORKSHOP_CLOUD_BASE_URL } from '../config/workshop-env'
 import { useWorkshopSession } from '../config/workshop-session-state'
 import { refreshWorkshopCredits } from '../config/workshop-credits'
@@ -135,11 +136,7 @@ export function useWorkflowRun(
     )
   )
   const outputs = ref<{ url: string; name: string; mime: string }[]>([])
-  const busy = computed(() =>
-    ['uploading', 'submitting', 'tracking', 'reconnecting'].includes(
-      state.value.phase
-    )
-  )
+  const busy = computed(() => runUnderWay(state.value.phase))
   let controller: AbortController | undefined
   let owner = ''
   const client = createWorkflowClient(WORKSHOP_CLOUD_BASE_URL, async () => {

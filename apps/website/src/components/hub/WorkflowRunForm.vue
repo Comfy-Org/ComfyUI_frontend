@@ -8,6 +8,7 @@ import type { WorkflowGraph } from '../../config/workflow-execution'
 import type { WorkflowField } from '../../config/workflow-fields'
 import type { RunWayOut } from '../../lib/hub/run-failure'
 import { previewScene } from '../../lib/hub/run-preview'
+import { runUnderWay } from '../../lib/hub/run-progress'
 import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { useWorkshopCredits } from '../../config/workshop-credits'
 import { leaveForSignIn } from '../../config/workshop-return'
@@ -66,9 +67,29 @@ const signInHref = useSignInHref(locale)
 
 const address = (field: WorkflowField) => `${field.node}.${field.input}`
 
-const signedOut = computed(() => settled.value && !session.value)
+/** What the reference tool has stood the panel up in, where it was asked for. */
+const scene = previewScene
 
-const running = computed(() => state.value.phase === 'tracking')
+const shown = computed(() => scene.value?.state ?? state.value)
+const shownOutputs = computed(() => scene.value?.outputs ?? outputs.value)
+
+// A scene is a picture of a run rather than one being paid for, so while it
+// stands the form follows it: nobody has to sign in or hold credits to look
+// at the state the panel is in.
+const signedOut = computed(
+  () => !scene.value && settled.value && !session.value
+)
+
+const underWay = computed(() =>
+  scene.value ? runUnderWay(shown.value.phase) : busy.value
+)
+
+const running = computed(() => shown.value.phase === 'tracking')
+
+// The panel says files are going up; the scene that shows that says which one.
+const goingUp = computed(() =>
+  scene.value ? (shown.value.phase === 'uploading' ? 0 : -1) : sending.value
+)
 
 /**
  * The workspace this run would spend, named only where the reader is a member
@@ -80,10 +101,6 @@ const memberWorkspace = computed(() =>
 )
 
 /**
- * Asking before the run rather than after it. A reader with nothing to spend
- * would otherwise upload their files, wait, and be told at the end.
- */
-/**
  * The ways out the panel can offer, each wired to the thing that takes it.
  * Trying again is simply running it again, with the same answers in place.
  */
@@ -94,19 +111,18 @@ const ways: Record<RunWayOut, () => void> = {
   personal: () => void switchToPersonal()
 }
 
+/**
+ * Asking before the run rather than after it. A reader with nothing to spend
+ * would otherwise upload their files, wait, and be told at the end.
+ */
 const broke = computed(
   () =>
+    !scene.value &&
     !!session.value &&
     !busy.value &&
     balance.value.status === 'ok' &&
     balance.value.credits <= 0
 )
-
-/** What the reference tool has stood the panel up in, where it was asked for. */
-const scene = previewScene
-
-const shown = computed(() => scene.value?.state ?? state.value)
-const shownOutputs = computed(() => scene.value?.outputs ?? outputs.value)
 </script>
 
 <template>
@@ -132,9 +148,9 @@ const shownOutputs = computed(() => scene.value?.outputs ?? outputs.value)
           v-model:file="files[address(field)]"
           :field
           :name="address(field)"
-          :disabled="busy"
-          :sending="index === sending"
-          :sent="sending >= 0 && index < sending"
+          :disabled="underWay"
+          :sending="index === goingUp"
+          :sent="goingUp >= 0 && index < goingUp"
           :locale
         />
       </div>
@@ -170,7 +186,7 @@ const shownOutputs = computed(() => scene.value?.outputs ?? outputs.value)
           v-else
           size="lg"
           class="w-full"
-          :disabled="busy || !settled"
+          :disabled="underWay || !settled"
           data-testid="workflow-run-button"
           @click="run"
         >

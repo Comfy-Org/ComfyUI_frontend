@@ -11,6 +11,16 @@ export type RunPhase =
   | 'cancelled'
   | 'error'
 
+const UNDER_WAY: readonly RunPhase[] = [
+  'uploading',
+  'submitting',
+  'tracking',
+  'reconnecting'
+]
+
+/** Whether a run is still going, and so whether Run is out of reach. */
+export const runUnderWay = (phase: RunPhase) => UNDER_WAY.includes(phase)
+
 const BEFORE_THE_JOB: Partial<Record<RunPhase, HubKey>> = {
   uploading: 'workshop.v2.run.uploading',
   submitting: 'workshop.v2.run.sending',
