@@ -34,7 +34,7 @@ describe('WorkshopFilterMenu', () => {
   it('closes on Escape from inside the filter panel and restores trigger focus', async () => {
     const user = userEvent.setup()
     mountMenu()
-    const trigger = screen.getByRole('button', { name: 'Filter' })
+    const trigger = screen.getByRole('button', { name: 'Use cases' })
     await user.click(trigger)
     const dialog = await screen.findByRole('dialog')
     const useCase = within(dialog).getByRole('button', {

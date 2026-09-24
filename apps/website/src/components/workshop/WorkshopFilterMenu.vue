@@ -11,6 +11,7 @@ import { useVisualViewport } from '../../composables/useVisualViewport'
 import type { UseCase } from '../../config/models-catalogue'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { filterLabel } from '../../lib/workshop/filter-label'
 import type { FacetSheetGroup } from './FacetSheet.vue'
 import FacetSheet from './FacetSheet.vue'
 
@@ -72,6 +73,10 @@ const selectedCount = computed(() =>
   groups.value.reduce((total, group) => total + group.selected.length, 0)
 )
 
+const label = computed(() =>
+  filterLabel(groups.value, t('workshop.filter.label', locale))
+)
+
 function toggle(_facet: string, value: string) {
   const useCase = useCaseOptions.find((option) => option.value === value)?.value
   if (!useCase) return
@@ -85,7 +90,7 @@ function clearAll() {
 }
 
 const sheetLabels = computed(() => ({
-  title: t('workshop.filter.label', locale),
+  title: label.value,
   search: t('workshop.filter.search', locale),
   noMatches: t('workshop.filter.noMatches', locale),
   applied: t('workshop.filter.applied', locale),
@@ -103,7 +108,7 @@ const sheetLabels = computed(() => ({
       type="button"
       data-testid="workshop-filter"
       :aria-expanded="open"
-      :aria-label="t('workshop.filter.label', locale)"
+      :aria-label="label"
       :class="
         cn(
           'relative inline-flex h-11 cursor-pointer items-center gap-2 rounded-2xl bg-transparency-white-t4 px-4 text-sm font-medium transition-colors outline-none hover:bg-transparency-white-t8 focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:size-10 max-sm:justify-center max-sm:rounded-xl max-sm:bg-white/8 max-sm:px-0',
@@ -116,7 +121,7 @@ const sheetLabels = computed(() => ({
     >
       <ListFilter class="size-4 shrink-0" aria-hidden="true" />
       <span class="max-sm:hidden">
-        {{ t('workshop.filter.label', locale) }}
+        {{ label }}
       </span>
       <span
         v-if="selectedCount"
@@ -153,7 +158,7 @@ const sheetLabels = computed(() => ({
         <div
           ref="panel"
           role="dialog"
-          :aria-label="t('workshop.filter.label', locale)"
+          :aria-label="label"
           :aria-modal="isPhone || undefined"
           data-testid="workshop-filter-menu"
           :style="{
