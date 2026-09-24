@@ -101,7 +101,18 @@ export interface UnifiedAuthRefreshMetadata {
  * recorded in `probe_outcome` rather than guessed at.
  */
 export interface ImageLoadFailureMetadata {
-  source: 'node_image_preview'
+  /**
+   * Which surface failed. `node_image_preview` is the Vue node renderer;
+   * `canvas_node_image` / `canvas_node_video` are the litegraph canvas previews
+   * that every user gets by default, since `Comfy.VueNodes.Enabled` is off
+   * unless App Builder turns it on. Splitting on this is what keeps a rate
+   * measured on one renderer from being read as the rate for everyone.
+   */
+  source: 'node_image_preview' | 'canvas_node_image' | 'canvas_node_video'
+  /** Load attempts made before giving up, including the first. */
+  attempts?: number
+  /** True when the load timed out rather than erroring — a stall, not a rejection. */
+  timed_out?: boolean
   /** HTTP status of the follow-up probe. Absent unless `probe_outcome` is `probed`. */
   status?: number
   probe_outcome?:
