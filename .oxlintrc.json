@@ -82,8 +82,8 @@
     "vitest/no-standalone-expect": "off",
     "vitest/valid-title": "off",
     "vitest/require-to-throw-message": "off",
-    "typescript/no-this-alias": "off",
-    "typescript/no-useless-default-assignment": "off",
+    "typescript/no-this-alias": "error",
+    "typescript/no-useless-default-assignment": "error",
     "typescript/no-unnecessary-boolean-literal-compare": "error",
     "typescript/no-unnecessary-condition": "error",
     "typescript/no-unnecessary-parameter-property-assignment": "error",
@@ -113,15 +113,15 @@
         "suite": "for"
       }
     ],
-    "unicorn/no-new-array": "off",
-    "unicorn/no-single-promise-in-promise-methods": "off",
-    "unicorn/no-useless-fallback-in-spread": "off",
-    "unicorn/no-useless-spread": "off",
+    "unicorn/no-new-array": "error",
+    "unicorn/no-single-promise-in-promise-methods": "error",
+    "unicorn/no-useless-fallback-in-spread": "error",
+    "unicorn/no-useless-spread": "error",
     "typescript/await-thenable": "off",
     "typescript/no-base-to-string": "off",
-    "typescript/no-duplicate-type-constituents": "off",
-    "typescript/no-for-in-array": "off",
-    "typescript/no-meaningless-void-operator": "off",
+    "typescript/no-duplicate-type-constituents": "error",
+    "typescript/no-for-in-array": "error",
+    "typescript/no-meaningless-void-operator": "error",
     "typescript/no-redundant-type-constituents": "off",
     "typescript/restrict-template-expressions": "off",
     "typescript/unbound-method": "off",
@@ -137,6 +137,12 @@
     "vue/no-import-compiler-macros": "error"
   },
   "overrides": [
+    {
+      "files": ["packages/ingest-types/src/types.gen.ts"],
+      "rules": {
+        "comfy/no-duplicate-ingest-type": "off"
+      }
+    },
     {
       "files": [
         "**/*.{test,spec}.{ts,tsx}",
@@ -185,12 +191,6 @@
       }
     },
     {
-      "files": ["src/scripts/app.test.ts", "src/scripts/app.ts"],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
-      }
-    },
-    {
       "files": ["browser_tests/fixtures/data/**/*.ts"],
       "rules": {
         "comfy/no-playwright-imports-in-fixture-data": "error"
@@ -233,20 +233,6 @@
       "files": ["**/*.{stories,test,spec}.ts", "**/*.stories.vue"],
       "rules": {
         "no-console": "allow"
-      }
-    },
-    {
-      "files": [
-        "src/scripts/api.ts",
-        "src/scripts/changeTracker.test.ts",
-        "src/scripts/changeTracker.ts",
-        "src/scripts/ui.ts",
-        "src/scripts/ui/components/button.ts",
-        "src/scripts/ui/draggableList.ts",
-        "src/scripts/ui/utils.ts"
-      ],
-      "rules": {
-        "typescript/no-unnecessary-condition": "off"
       }
     },
     {

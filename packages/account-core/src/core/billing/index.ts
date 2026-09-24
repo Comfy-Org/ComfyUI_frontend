@@ -155,7 +155,10 @@ export type {
   EmbeddedChallengePort
 } from './challengeDriver.js'
 export { driveEmbeddedChallenge } from './challengeDriver.js'
-export { readBillingErrorCode } from './billingErrorBody.js'
+export {
+  readBillingErrorCode,
+  readBillingErrorMessage
+} from './billingErrorBody.js'
 export type {
   BillingCommands,
   BillingCommandsOptions,

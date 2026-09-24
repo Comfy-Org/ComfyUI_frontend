@@ -1111,7 +1111,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           : existing
       })
     }
-    const serializedProperties = { ...(serialized.properties ?? {}) }
+    const serializedProperties = { ...serialized.properties }
     const rootGraphId = this.rootGraph.id
     const hostLocator = tryGetPreviewExposureHostLocator(this)
 

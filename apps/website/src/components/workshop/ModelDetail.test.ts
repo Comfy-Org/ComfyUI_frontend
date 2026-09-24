@@ -1474,7 +1474,8 @@ describe('ModelDetail', () => {
       name: 'run_validation_failed',
       properties: expect.objectContaining({
         model_slug: runnable.slug,
-        field_error_codes: ['required']
+        field_error_codes: ['required'],
+        field_error_names: ['prompt']
       })
     })
     expect(
@@ -2333,4 +2334,16 @@ describe('ModelDetail', () => {
       expect(runWorkshopRouter).not.toHaveBeenCalled()
     }
   )
+
+  it("sends the API tab's get-key link as a models onboarding arrival for this model and workspace", async () => {
+    auth.session.value = credential
+    mountDetail({ model: runnable })
+    await nextTick()
+    await user().click(screen.getByTestId('tab-api'))
+    const href = screen.getByTestId('api-get-key').getAttribute('href')
+    const params = new URL(href ?? '').searchParams
+    expect(params.get('onboarding')).toBe('models')
+    expect(params.get('model')).toBe('bfl--flux-2-pro')
+    expect(params.get('workspace')).toBe(credential.workspace.id)
+  })
 })

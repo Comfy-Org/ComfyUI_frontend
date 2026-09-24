@@ -160,7 +160,8 @@ function projectDefinitionLinks(
 function projectDefinitionEntry(
   source: Y.Map<unknown>,
   key: string,
-  value: unknown
+  value: unknown,
+  excludedDefinitionIds: ReadonlySet<string>
 ): Array<[string, unknown]> {
   if (isSkippedDefinitionKey(key)) return []
   if (key === 'nodes' && value instanceof Y.Map) {
@@ -171,17 +172,20 @@ function projectDefinitionEntry(
   }
   if (key === 'definitions') {
     if (value instanceof Y.Map) {
-      return [[key, readNestedDefinitions(value)]]
+      return [[key, readNestedDefinitions(value, excludedDefinitionIds)]]
     }
     return [[key, withoutNestedDefinitionBookkeeping(plain(value))]]
   }
   return [[key, plain(value)]]
 }
 
-function projectSubgraphDefinition(source: Y.Map<unknown>): ExportedSubgraph {
+function projectSubgraphDefinition(
+  source: Y.Map<unknown>,
+  excludedDefinitionIds: ReadonlySet<string>
+): ExportedSubgraph {
   const definition = Object.fromEntries(
     [...source.entries()].flatMap(([key, value]) =>
-      projectDefinitionEntry(source, key, value)
+      projectDefinitionEntry(source, key, value, excludedDefinitionIds)
     )
   )
   return definition as unknown as ExportedSubgraph
@@ -241,8 +245,17 @@ function isSafeDefinition(value: unknown): boolean {
   )
 }
 
+function isExcludedDefinition(
+  source: Y.Map<unknown>,
+  excludedDefinitionIds: ReadonlySet<string>
+): boolean {
+  const id = plain(source.get('id'))
+  return typeof id === 'string' && excludedDefinitionIds.has(id)
+}
+
 function readNestedDefinitions(
-  source: Y.Map<unknown>
+  source: Y.Map<unknown>,
+  excludedDefinitionIds: ReadonlySet<string>
 ): Record<string, unknown> {
   const definitions: Record<string, unknown> = {}
   source.forEach((value, key) => {
@@ -251,9 +264,19 @@ function readNestedDefinitions(
       definitions.subgraphs = orderedKeys(
         source.get('subgraph_order'),
         value
-      ).map((id) => {
+      ).flatMap((id) => {
         const definition = value.get(id)
-        return definition instanceof Y.Map ? readDefinition(definition) : null
+        if (
+          definition instanceof Y.Map &&
+          isExcludedDefinition(definition, excludedDefinitionIds)
+        ) {
+          return []
+        }
+        return [
+          definition instanceof Y.Map
+            ? readDefinition(definition, excludedDefinitionIds)
+            : null
+        ]
       })
     } else {
       definitions[key] = plain(value)
@@ -262,14 +285,22 @@ function readNestedDefinitions(
   return definitions
 }
 
-function readDefinition(source: Y.Map<unknown>): ExportedSubgraph | null {
-  const definition = projectSubgraphDefinition(source)
+function readDefinition(
+  source: Y.Map<unknown>,
+  excludedDefinitionIds: ReadonlySet<string>
+): ExportedSubgraph | null {
+  const definition = projectSubgraphDefinition(source, excludedDefinitionIds)
   return isSafeDefinition(definition) ? definition : null
 }
 
 function readField(source: unknown, key: string): unknown {
   if (source instanceof Y.Map) return source.get(key)
-  if (typeof source !== 'object' || source === null || !(key in source)) {
+  if (
+    typeof source !== 'object' ||
+    source === null ||
+    !isReadableKey(key) ||
+    !Object.hasOwn(source, key)
+  ) {
     return undefined
   }
   return Reflect.get(source, key)
@@ -281,18 +312,22 @@ function readList(source: unknown): unknown[] {
 }
 
 function collectDefinitionIds(source: unknown, ids: string[]): void {
-  const id = readField(source, 'id')
-  if (typeof id === 'string') ids.push(id)
-  const container = readField(source, 'definitions')
-  const nested = readField(container, 'subgraphs')
-  const definitions =
-    nested instanceof Y.Map
-      ? orderedKeys(readField(container, 'subgraph_order'), nested).map((key) =>
-          nested.get(key)
-        )
-      : readList(nested)
-  for (const definition of definitions) {
-    collectDefinitionIds(definition, ids)
+  const pending = [source]
+  while (pending.length > 0) {
+    const definition = pending.pop()
+    const id = plain(readField(definition, 'id'))
+    if (typeof id === 'string') ids.push(id)
+    const container = readField(definition, 'definitions')
+    const nested = readField(container, 'subgraphs')
+    const definitions =
+      nested instanceof Y.Map
+        ? orderedKeys(readField(container, 'subgraph_order'), nested).map(
+            (key) => nested.get(key)
+          )
+        : readList(nested)
+    for (let index = definitions.length - 1; index >= 0; index--) {
+      pending.push(definitions[index])
+    }
   }
 }
 
@@ -332,14 +367,19 @@ export function readSubgraphDefinitionIds(doc: Y.Doc): string[] {
  *
  * Mirrors the package's own `projectDefinition()` so that what the agent
  * seeded and what the canvas instantiates agree byte-for-byte on structure.
+ * Excluded IDs are checked before projection so their bodies are not copied.
  */
-export function readSubgraphDefinitions(doc: Y.Doc): ExportedSubgraph[] {
+export function readSubgraphDefinitions(
+  doc: Y.Doc,
+  excludedDefinitionIds: ReadonlySet<string> = new Set()
+): ExportedSubgraph[] {
   const definitions: ExportedSubgraph[] = []
   const root = definitionsMap(doc)
   if (!root) return definitions
   root.forEach((value) => {
     if (!(value instanceof Y.Map)) return
-    const definition = readDefinition(value)
+    if (isExcludedDefinition(value, excludedDefinitionIds)) return
+    const definition = readDefinition(value, excludedDefinitionIds)
     if (definition) definitions.push(definition)
   })
   return definitions

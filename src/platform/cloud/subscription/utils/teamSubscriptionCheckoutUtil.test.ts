@@ -2,12 +2,10 @@ import { useAuthStore } from '@/stores/authStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import type { SubscriptionRail } from '@/platform/workspace/billing/sdk/subscriptionOperationView'
 
-const { mockIsCloud, mockSubscribe } = vi.hoisted(() => ({
-  mockIsCloud: { value: true },
-  mockSubscribe: vi.fn()
-}))
+const mockIsCloud = vi.hoisted(() => ({ value: true }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
@@ -17,19 +15,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@/config/comfyApi'), () => ({
   getComfyPlatformBaseUrl: () => 'https://app.test'
 }))
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: { subscribe: mockSubscribe },
-  WorkspaceApiError: class WorkspaceApiError extends Error {
-    constructor(
-      message: string,
-      public readonly status?: number,
-      public readonly code?: string
-    ) {
-      super(message)
-      this.name = 'WorkspaceApiError'
-    }
-  }
-}))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 vi.mock(import('@/platform/telemetry'))
 
 const { mockRailSubscribe, railState } = vi.hoisted(() => ({
@@ -70,7 +56,7 @@ describe('performTeamSubscriptionCheckout', () => {
   })
 
   it('subscribes at the stop with the yearly slug and redirects to the Stripe payment page', async () => {
-    mockSubscribe.mockResolvedValue({
+    vi.mocked(workspaceApi.subscribe).mockResolvedValue({
       status: 'needs_payment_method',
       payment_method_url: 'https://stripe.test/pay',
       billing_op_id: 'op_1'
@@ -80,11 +66,14 @@ describe('performTeamSubscriptionCheckout', () => {
       paymentIntentSource: 'deep_link'
     })
 
-    expect(mockSubscribe).toHaveBeenCalledWith('team_per_credit_annual', {
-      returnUrl: 'https://app.test/payment/success',
-      cancelUrl: 'https://app.test/payment/failed',
-      teamCreditStopId: 'team_700'
-    })
+    expect(workspaceApi.subscribe).toHaveBeenCalledWith(
+      'team_per_credit_annual',
+      {
+        returnUrl: 'https://app.test/payment/success',
+        cancelUrl: 'https://app.test/payment/failed',
+        teamCreditStopId: 'team_700'
+      }
+    )
     expect(assignedHref).toBe('https://stripe.test/pay')
     expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith({
       user_id: 'user-1',
@@ -97,23 +86,26 @@ describe('performTeamSubscriptionCheckout', () => {
   })
 
   it('uses the monthly slug and lands in the app when no Stripe step is needed', async () => {
-    mockSubscribe.mockResolvedValue({
+    vi.mocked(workspaceApi.subscribe).mockResolvedValue({
       status: 'subscribed',
       billing_op_id: 'op_2'
     })
 
     await performTeamSubscriptionCheckout('team_1400', 'monthly')
 
-    expect(mockSubscribe).toHaveBeenCalledWith('team_per_credit_monthly', {
-      returnUrl: expect.any(String),
-      cancelUrl: expect.any(String),
-      teamCreditStopId: 'team_1400'
-    })
+    expect(workspaceApi.subscribe).toHaveBeenCalledWith(
+      'team_per_credit_monthly',
+      {
+        returnUrl: expect.any(String),
+        cancelUrl: expect.any(String),
+        teamCreditStopId: 'team_1400'
+      }
+    )
     expect(assignedHref).toBe('/')
   })
 
   it('throws when payment is needed but no payment URL is returned', async () => {
-    mockSubscribe.mockResolvedValue({
+    vi.mocked(workspaceApi.subscribe).mockResolvedValue({
       status: 'needs_payment_method',
       billing_op_id: 'op_3'
     })
@@ -136,7 +128,9 @@ describe('performTeamSubscriptionCheckout', () => {
   })
 
   it('does not track begin_checkout when subscribe fails, but does track the failure', async () => {
-    mockSubscribe.mockRejectedValueOnce(new Error('subscribe failed'))
+    vi.mocked(workspaceApi.subscribe).mockRejectedValueOnce(
+      new Error('subscribe failed')
+    )
 
     await expect(
       performTeamSubscriptionCheckout('team_700', 'yearly', {
@@ -185,7 +179,7 @@ describe('performTeamSubscriptionCheckout', () => {
           cancel_url: 'https://app.test/payment/failed'
         })
       )
-      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(workspaceApi.subscribe).not.toHaveBeenCalled()
       expect(assignedHref).toBe('/')
       // The operation id the rail settled is the one the checkout reports.
       expect(useTelemetry()?.trackBeginCheckout).toHaveBeenCalledWith(
@@ -195,7 +189,7 @@ describe('performTeamSubscriptionCheckout', () => {
 
     it('runs the legacy call when the SDK route is not deployed', async () => {
       mockRailSubscribe.mockResolvedValue({ status: 'unavailable' })
-      mockSubscribe.mockResolvedValue({
+      vi.mocked(workspaceApi.subscribe).mockResolvedValue({
         status: 'needs_payment_method',
         payment_method_url: 'https://stripe.test/pay',
         billing_op_id: 'op_legacy'
@@ -203,11 +197,14 @@ describe('performTeamSubscriptionCheckout', () => {
 
       await performTeamSubscriptionCheckout('team_700', 'yearly')
 
-      expect(mockSubscribe).toHaveBeenCalledWith('team_per_credit_annual', {
-        returnUrl: 'https://app.test/payment/success',
-        cancelUrl: 'https://app.test/payment/failed',
-        teamCreditStopId: 'team_700'
-      })
+      expect(workspaceApi.subscribe).toHaveBeenCalledWith(
+        'team_per_credit_annual',
+        {
+          returnUrl: 'https://app.test/payment/success',
+          cancelUrl: 'https://app.test/payment/failed',
+          teamCreditStopId: 'team_700'
+        }
+      )
       expect(assignedHref).toBe('https://stripe.test/pay')
     })
 
@@ -221,7 +218,7 @@ describe('performTeamSubscriptionCheckout', () => {
         performTeamSubscriptionCheckout('team_700', 'yearly')
       ).rejects.toThrow('card declined')
 
-      expect(mockSubscribe).not.toHaveBeenCalled()
+      expect(workspaceApi.subscribe).not.toHaveBeenCalled()
       expect(assignedHref).toBeUndefined()
       expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith(
         expect.objectContaining({ stage: 'failed', tier: 'team' })
@@ -234,7 +231,7 @@ describe('performTeamSubscriptionCheckout', () => {
 
     await performTeamSubscriptionCheckout('team_700', 'yearly')
 
-    expect(mockSubscribe).not.toHaveBeenCalled()
+    expect(workspaceApi.subscribe).not.toHaveBeenCalled()
     expect(assignedHref).toBeUndefined()
   })
 })
