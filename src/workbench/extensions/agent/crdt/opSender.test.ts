@@ -491,6 +491,25 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(2)
   })
 
+  it('abortAll settles each chunk from one oversized admission', () => {
+    sender.enqueue(Array.from({ length: 300 }, (_, index) => addNode(index)))
+
+    sender.abortAll()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'undeliverable'
+    ])
+    expect(
+      settled.map((outcome) =>
+        outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+      )
+    ).toEqual([
+      Array.from({ length: 256 }, (_, index) => index),
+      Array.from({ length: 44 }, (_, index) => index + 256)
+    ])
+  })
+
   it('does not attribute a late anonymous result from an aborted batch to the next batch', () => {
     sender.enqueue([addNode(1)])
     sender.abortAll()
