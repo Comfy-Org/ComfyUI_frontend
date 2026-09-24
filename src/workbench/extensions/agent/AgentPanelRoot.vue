@@ -1175,8 +1175,8 @@ function onNewChat(): void {
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
   newChat()
-  agentPanelStore.startFollowingVisibleWorkflow()
   if (selectionTags.value.length) agentPanelStore.retainWorkflowTarget()
+  else agentPanelStore.startFollowingVisibleWorkflow()
 }
 
 const panelRef = ref<InstanceType<typeof AgentPanel>>()
