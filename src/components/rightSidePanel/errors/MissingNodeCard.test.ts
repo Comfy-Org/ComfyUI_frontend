@@ -2,11 +2,13 @@ import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 import MissingNodeCard from './MissingNodeCard.vue'
@@ -52,16 +54,7 @@ vi.mock<unknown>(
 )
 
 const mockShouldShowManagerButtons = vi.hoisted(() => ({ value: false }))
-vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useManagerState'),
-
-  () => ({
-    useManagerState: () => ({
-      shouldShowManagerButtons: mockShouldShowManagerButtons,
-      isNewManagerUI: { value: false }
-    })
-  })
-)
+vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
 
 vi.mock<unknown>(import('./MissingPackGroupRow.vue'), () => ({
   default: {
@@ -127,10 +120,7 @@ function renderCard(
       ...props
     },
     global: {
-      plugins: [i18n],
-      stubs: {
-        DotSpinner: { template: '<span role="status" aria-label="loading" />' }
-      }
+      plugins: [i18n]
     }
   })
   return { ...result, user }
@@ -138,6 +128,9 @@ function renderCard(
 
 describe('MissingNodeCard', () => {
   beforeEach(async () => {
+    useManagerState().shouldShowManagerButtons = computed(
+      () => mockShouldShowManagerButtons.value
+    )
     vi.spyOn(api, 'getSystemStats').mockResolvedValue(
       fromPartial({ system: {}, devices: [] })
     )
@@ -220,7 +213,7 @@ describe('MissingNodeCard', () => {
       vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(true)
       mockIsRestarting.value = true
       renderCard()
-      expect(screen.getByRole('status')).toBeInTheDocument()
+      expect(screen.getByTestId('dot-spinner')).toBeInTheDocument()
     })
 
     it('disables button during restart', () => {
@@ -253,12 +246,7 @@ describe('MissingNodeCard', () => {
           onLocateNode
         },
         global: {
-          plugins: [i18n],
-          stubs: {
-            DotSpinner: {
-              template: '<span role="status" aria-label="loading" />'
-            }
-          }
+          plugins: [i18n]
         }
       })
       await user.click(screen.getAllByTestId('locate-node')[0])
@@ -275,12 +263,7 @@ describe('MissingNodeCard', () => {
           onOpenManagerInfo
         },
         global: {
-          plugins: [i18n],
-          stubs: {
-            DotSpinner: {
-              template: '<span role="status" aria-label="loading" />'
-            }
-          }
+          plugins: [i18n]
         }
       })
       await user.click(screen.getAllByTestId('open-manager-info')[0])

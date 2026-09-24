@@ -8,16 +8,7 @@ name: CI - PR Risk Grade
 
 on:
   pull_request:
-    types:
-      [
-        opened,
-        synchronize,
-        reopened,
-        ready_for_review,
-        edited,
-        labeled,
-        unlabeled
-      ]
+    types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
   workflow_dispatch:
     inputs:
       pr_number:
@@ -69,18 +60,17 @@ jobs:
       checks: write # the rollup read + the opt-in Check Run publish
       actions: read # CheckRun -> checkSuite -> workflowRun for self-exclusion
       statuses: read
-    # Pinned to github-workflows main (df10491); keep workflows_ref in
+    # Pinned to github-workflows main (ba2e67b); keep workflows_ref in
     # lock-step so the grader + risk map schema load from the same commit.
     # This permissions block must stay a superset of the UNION of every job
     # the reusable workflow declares, including jobs whose `if:` skips them.
-    uses: Comfy-Org/github-workflows/.github/workflows/pr-risk.yml@df10491e93cddef6fd78e512a2ec1d363237d44a # github-workflows main (df10491)
+    uses: Comfy-Org/github-workflows/.github/workflows/pr-risk.yml@ba2e67b68ddbf28c0d3af05a0213b12822a3bf68 # github-workflows main (ba2e67b)
     with:
-      workflows_ref: df10491e93cddef6fd78e512a2ec1d363237d44a
+      workflows_ref: ba2e67b68ddbf28c0d3af05a0213b12822a3bf68
       # Required: upstream defaults enabled to FALSE. The repository variable
       # RISK_CONFIG outranks this in both directions ({"enabled": false} is a
       # kill switch that needs no PR).
       enabled: true
       label_map: 'R0=risk:low,R1=risk:medium,R2=risk:high,R3=risk:xhigh,unknown=risk:unknown'
-      check_run: true
       pr_number: ${{ inputs.pr_number }}
       pr_numbers: ${{ inputs.pr_numbers }}

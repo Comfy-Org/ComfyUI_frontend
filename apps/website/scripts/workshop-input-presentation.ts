@@ -240,6 +240,14 @@ export function curateWorkshopInputs(
       ...(rule.unit ? { unit: rule.unit } : {}),
       ...(rule.optionLabels ? { optionLabels: rule.optionLabels } : {}),
       ...(rule.imageSource ? { imageSource: rule.imageSource } : {}),
+      ...(rule.maxUploadBytes ? { maxUploadBytes: rule.maxUploadBytes } : {}),
+      ...(rule.maxVideoDurationSeconds
+        ? { maxVideoDurationSeconds: rule.maxVideoDurationSeconds }
+        : {}),
+      ...(rule.videoWidthPixels
+        ? { videoWidthPixels: rule.videoWidthPixels }
+        : {}),
+      ...(rule.formConstraint ? { formConstraint: rule.formConstraint } : {}),
       ...(rule.urlUpload ? { urlUpload: rule.urlUpload } : {})
     })
     return [name, effective] as const

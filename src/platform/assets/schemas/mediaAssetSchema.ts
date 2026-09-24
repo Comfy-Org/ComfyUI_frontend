@@ -1,7 +1,7 @@
 import type { InjectionKey, Ref } from 'vue'
 import { z } from 'zod'
 
-import { zResultItem } from '@/schemas/apiSchema'
+import { zResultItem } from '@/platform/remote/comfyui/execution/types'
 
 import { assetItemSchema } from './assetSchema'
 

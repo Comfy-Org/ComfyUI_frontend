@@ -1,9 +1,9 @@
-import type * as VueUse from '@vueuse/core'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { fromPartial } from '@total-typescript/shoehorn'
+import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, shallowRef } from 'vue'
 import { toNodeId } from '@/types/nodeId'
@@ -14,6 +14,7 @@ import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEv
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { MinimapDataSource } from '@/renderer/extensions/minimap/data/MinimapDataSource'
+import { api } from '@/scripts/api'
 import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
 interface HarnessCounters {
@@ -73,51 +74,43 @@ const {
       originSlot: number
       targetSlot: number
     }>,
-    apiListeners: new Map<string, EventListener>(),
+    apiListeners: new Set<string>(),
     pollControl: { current: undefined as (() => void) | undefined }
   }
 })
 
-vi.mock<unknown>(import('@vueuse/core'), async (importOriginal) => ({
-  ...(await importOriginal<typeof VueUse>()),
-  useDocumentVisibility: () => ({ value: 'visible' }),
-  useIntervalFn: (callback: () => void) => {
-    counters.pollRegistrations++
-    // The callback is driven explicitly so WS fanout and 100 ms poll cadence
-    // remain separate deterministic axes in this baseline.
-    pollControl.current = () => {
-      counters.pollCallbacks++
-      callback()
+vi.mock(import('@vueuse/core'), { spy: true })
+function setupVueUseMocks() {
+  vi.mocked(VueUse.useDocumentVisibility).mockReturnValue(shallowRef('visible'))
+  vi.mocked(VueUse.useIntervalFn, { partial: true }).mockImplementation(
+    (callback) => {
+      counters.pollRegistrations++
+      pollControl.current = () => {
+        counters.pollCallbacks++
+        callback()
+      }
+      return {
+        isActive: shallowRef(false),
+        pause: () => void counters.pollPauses++,
+        resume: () => void counters.pollResumes++
+      }
     }
-    return {
-      pause: () => counters.pollPauses++,
-      resume: () => counters.pollResumes++
-    }
-  },
-  useRafFn: () => ({
+  )
+  vi.mocked(VueUse.useRafFn, { partial: true }).mockReturnValue({
+    isActive: shallowRef(false),
     pause: vi.fn(),
     resume: vi.fn()
-  }),
-  useThrottleFn: (callback: () => void) => () => {
-    counters.throttleRequests++
-    counters.throttleCallbacks++
-    callback()
-  }
-}))
+  })
+  vi.mocked(VueUse.useThrottleFn, { partial: true }).mockImplementation(
+    (callback) => () => {
+      counters.throttleRequests++
+      counters.throttleCallbacks++
+      return callback()
+    }
+  )
+}
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: (name: string, listener: EventListener) => {
-      counters.listenersAdded++
-      apiListeners.set(name, listener)
-    },
-    removeEventListener: (name: string) => {
-      counters.listenersRemoved++
-      apiListeners.delete(name)
-    },
-    apiURL: (path: string) => path
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { canvas: null }
@@ -362,6 +355,15 @@ async function runCell(
 }
 
 beforeEach(() => {
+  setupVueUseMocks()
+  vi.mocked(api.addEventListener).mockImplementation((name) => {
+    counters.listenersAdded++
+    apiListeners.add(name)
+  })
+  vi.mocked(api.removeEventListener).mockImplementation((name) => {
+    counters.listenersRemoved++
+    apiListeners.delete(name)
+  })
   Object.assign(useExecutionStore(), {
     nodeLocationProgressStates: useExecutionStore().nodeProgressStates
   })

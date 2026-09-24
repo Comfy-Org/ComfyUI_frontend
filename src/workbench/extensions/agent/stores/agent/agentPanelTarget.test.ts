@@ -4,7 +4,7 @@ import { nextTick } from 'vue'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentPanelStore } from './agentPanelStore'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
+vi.mock(import('@/platform/telemetry'), () => ({
   useTelemetry: () => null
 }))
 

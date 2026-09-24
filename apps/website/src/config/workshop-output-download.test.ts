@@ -1,4 +1,3 @@
-// @vitest-environment happy-dom
 import { describe, expect, it, vi } from 'vitest'
 
 import { attachmentUrl, downloadOutput } from './workshop-output-download'

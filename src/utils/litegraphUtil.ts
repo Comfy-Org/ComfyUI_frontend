@@ -1,7 +1,7 @@
 import { every, filter, head, isEmpty, isEqual, map } from 'es-toolkit/compat'
 
 import type { ColorOption, LGraph } from '@/lib/litegraph/src/litegraph'
-import type { ExecutedWsMessage } from '@/schemas/apiSchema'
+import type { ExecutedWsMessage } from '@/platform/remote/comfyui/execution/types'
 import {
   LGraphCanvas,
   LGraphGroup,
@@ -117,7 +117,7 @@ export function isAudioNode(node: LGraphNode | undefined): boolean {
   return !!node && node.previewMediaType === 'audio'
 }
 
-export function resolveComboValues(widget: IComboWidget): string[] {
+export function resolveComboValues(widget: IComboWidget): (string | number)[] {
   const values = widget.options.values
   if (typeof values === 'function') return values(widget)
   if (Array.isArray(values)) return values
@@ -133,13 +133,13 @@ export function addToComboValues(widget: IComboWidget, value: string) {
 }
 
 /**
- * True while the canvas is a picking surface rather than an editable one - the
- * agent's node selection mode sets `selectOnly`.
+ * True while the canvas is a picking surface rather than an editable one: its
+ * own `selectOnly` flag is set, or the interaction mode the application
+ * injected reads select-only (ADR-CANVAS-INTERACTION-0035).
  *
- * Guard every editing operation with this. It is checked at each call site
- * rather than inside litegraph itself, to keep that vendored library untouched.
- * A new way to edit the canvas therefore has to opt in: add the guard, or the
- * operation will run during picking.
+ * The canvas pointer and key dispatch and the command store read the mode
+ * themselves. The document-level paste, drop and history listeners guard with
+ * this helper, so a new document-level edit path has to opt in.
  */
 export const isSelectOnly = (canvas: LGraphCanvas | undefined): boolean =>
   canvas?.selectOnly === true

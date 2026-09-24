@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock(import('../config/models-catalogue'), () => ({
+vi.mock(import('../config/workshop-browse-content'), () => ({
   workshopModels: [
     { provider: 'Kling', thumbnailUrl: '/first.webp' },
     { provider: 'Kling', thumbnailUrl: '/second.webp' },

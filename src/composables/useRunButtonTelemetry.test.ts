@@ -1,11 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { useTelemetry } from '@/platform/telemetry'
 
 const state = vi.hoisted(() => ({
-  mode: { value: 'graph' },
-  isAppMode: { value: false },
-  telemetry: {
-    trackRunButton: vi.fn()
-  },
   executionContext: {
     is_template: false,
     workflow_name: 'Desktop workflow',
@@ -20,16 +16,7 @@ const state = vi.hoisted(() => ({
   executionContextError: null as Error | null
 }))
 
-vi.mock<unknown>(import('@/composables/useAppMode'), () => ({
-  useAppMode: () => ({
-    mode: state.mode,
-    isAppMode: state.isAppMode
-  })
-}))
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => state.telemetry
-}))
+vi.mock(import('@/platform/telemetry'))
 
 vi.mock<unknown>(
   import('@/platform/telemetry/utils/getExecutionContext'),
@@ -48,8 +35,6 @@ import {
 
 describe('useRunButtonTelemetry', () => {
   beforeEach(() => {
-    state.mode.value = 'graph'
-    state.isAppMode.value = false
     state.executionContextError = null
   })
 
@@ -82,7 +67,7 @@ describe('useRunButtonTelemetry', () => {
   it('tracks the completed run button payload', () => {
     useRunButtonTelemetry().trackRunButton({ trigger_source: 'linear' })
 
-    expect(state.telemetry.trackRunButton).toHaveBeenCalledExactlyOnceWith(
+    expect(useTelemetry()?.trackRunButton).toHaveBeenCalledExactlyOnceWith(
       expect.objectContaining({
         subscribe_to_run: false,
         trigger_source: 'linear',
@@ -101,7 +86,7 @@ describe('useRunButtonTelemetry', () => {
         useRunButtonTelemetry().trackRunButton({ trigger_source: 'linear' })
       ).not.toThrow()
 
-      expect(state.telemetry.trackRunButton).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackRunButton).not.toHaveBeenCalled()
       expect(consoleError).toHaveBeenCalledExactlyOnceWith(
         '[Telemetry] Run button tracking failed',
         error
