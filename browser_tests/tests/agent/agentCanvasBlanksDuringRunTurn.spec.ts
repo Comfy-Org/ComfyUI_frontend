@@ -20,6 +20,7 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -83,7 +84,6 @@ import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 const WORKFLOW_ID = 'b7e2f1a4-9c3d-4e5f-8a6b-1d2c3e4f5a6b'
 const THREAD_ID = 'd4c5b6a7-8e9f-4a1b-9c2d-3e4f5a6b7c8d'
 const MESSAGE_ID = '1a2b3c4d-5e6f-4a7b-8c9d-0e1f2a3b4c5e'
-const SOCKET_SID = '9f8e7d6c-5b4a-4c3d-8e1f-2a3b4c5d6e7f'
 
 const CATALOG: WidgetCatalog = {
   types: { MarkdownNote: { widget_order: ['text'] } }
@@ -129,7 +129,7 @@ const COMPOSER_LABEL = createI18n({
 }).global.t('agent.placeholder')
 
 /**
- * Parses a raw `/ws` message down to its `doc_subscribe` payload, or `null`
+ * Parses a raw agent-socket message down to its `doc_subscribe` payload, or `null`
  * if the frame is malformed or is some other frame type. Extracted from the
  * mock's `onMessage` handler to keep that handler's branching to the
  * post-parse decisions (reset-gating, catch-up dropping).
@@ -200,7 +200,8 @@ async function driveThroughDocReset(
       parseServerDocFrame(frame) === null
     )
       throw new Error(`frame ${frame.type} is not a valid doc frame`)
-    if (!socket) throw new Error('the app has not opened /ws yet')
+    if (!socket)
+      throw new Error('the panel has not opened the agent socket yet')
     socket.send(JSON.stringify(frame))
   }
 
@@ -224,17 +225,8 @@ async function driveThroughDocReset(
   await page.route('**/api/agent/threads/*/asks/*/answer', (route) =>
     route.fulfill(jsonRoute({ ok: true }))
   )
-  await page.routeWebSocket(/\/ws/, (ws) => {
+  await page.routeWebSocket(AGENT_SOCKET_URL, (ws) => {
     socket = ws
-    ws.send(
-      JSON.stringify({
-        type: 'status',
-        data: {
-          status: { exec_info: { queue_remaining: 0 } },
-          sid: SOCKET_SID
-        }
-      })
-    )
     ws.onMessage((raw) => {
       const data = parseDocSubscribeData(raw)
       if (data === null) return

@@ -46,6 +46,9 @@ export function resolveAgentIdentity(
   let failures = 0
   let retryNotBefore = 0
   let deferredRetry: ReturnType<typeof setTimeout> | null = null
+  // A connected edge that lands while a lookup is in flight is owed a retry
+  // should that lookup fail — the socket may never announce itself again.
+  let edgeDuringFlight = false
 
   async function attempt(): Promise<void> {
     if (stopped || inFlight || userId.value !== null) return
@@ -64,10 +67,18 @@ export function resolveAgentIdentity(
     } finally {
       inFlight = false
     }
+    if (edgeDuringFlight) {
+      edgeDuringFlight = false
+      onConnected()
+    }
   }
 
   function onConnected(): void {
-    if (stopped || inFlight || userId.value !== null) return
+    if (stopped || userId.value !== null) return
+    if (inFlight) {
+      edgeDuringFlight = true
+      return
+    }
     const wait = retryNotBefore - Date.now()
     if (wait <= 0) {
       void attempt()

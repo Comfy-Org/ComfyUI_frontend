@@ -182,8 +182,8 @@ export class AgentTurnLockHarness {
     private readonly server: TurnLockServer,
     private readonly finishSave: (success: boolean) => void,
     private readonly savedPaths: () => number,
-    private readonly getWebSocket: () => Promise<WebSocketRoute>,
-    private readonly nextWebSocket: () => Promise<WebSocketRoute>
+    private readonly getAgentSocket: () => Promise<WebSocketRoute>,
+    private readonly nextAgentSocket: () => Promise<WebSocketRoute>
   ) {
     this.agentPanel = new AgentPanel(page)
     this.panel = this.agentPanel.root
@@ -247,7 +247,7 @@ export class AgentTurnLockHarness {
 
   /** Sends a prompt and streams it to the point where a user sees work happening. */
   async startTurn(prompt: string): Promise<void> {
-    const live = await this.getWebSocket()
+    const live = await this.getAgentSocket()
     await this.composer.fill(prompt)
     await this.sendButton.click()
     // Stop is NOT an ack: Composer renders it from `isSending`, which
@@ -308,8 +308,8 @@ export class AgentTurnLockHarness {
     // Resolve the live route first: with no socket open yet both calls would
     // queue on the same waiter and hand back the same route, so the close
     // below would kill the one returned as the reconnect.
-    const live = await this.getWebSocket()
-    const reconnected = this.nextWebSocket()
+    const live = await this.getAgentSocket()
+    const reconnected = this.nextAgentSocket()
     await live.close()
     return reconnected
   }
@@ -321,7 +321,7 @@ export const agentTurnLockTest = mergeTests(
   webSocketFixture
 ).extend<{ turnLock: AgentTurnLockHarness }>({
   turnLock: async (
-    { page, workflowSelection, getWebSocket, nextWebSocket },
+    { page, workflowSelection, getAgentSocket, nextAgentSocket },
     use
   ) => {
     const server = new TurnLockServer()
@@ -332,8 +332,8 @@ export const agentTurnLockTest = mergeTests(
         server,
         workflowSelection.finishSave,
         () => workflowSelection.savedPaths.length,
-        getWebSocket,
-        nextWebSocket
+        getAgentSocket,
+        nextAgentSocket
       )
     )
   }
