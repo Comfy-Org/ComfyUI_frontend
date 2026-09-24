@@ -137,18 +137,13 @@ describe('attachLinkMintPort', () => {
   })
 
   it('surfaces a subgraph-interior placement observably instead of minting', () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     place(SUBGRAPH_SCOPE, topology(41))
 
     expect(minted).toEqual([])
-    expect(consoleError).toHaveBeenCalledOnce()
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
       errorType: 'agent_crdt_reporting_unrepresentable_link_operation',
       context: { id: 41 }
     })
-    consoleError.mockRestore()
   })
 
   it('captures a severed link under both endpoints, consumed exactly once', () => {
@@ -215,37 +210,26 @@ describe('attachLinkMintPort', () => {
   })
 
   it('surfaces an unconsumed subgraph-interior deletion observably instead of minting', async () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     remove(SUBGRAPH_SCOPE, topology(41))
     await afterSweep()
 
     expect(minted).toEqual([])
-    expect(consoleError).toHaveBeenCalledWith(
-      '[agent-crdt] subgraph-interior disconnect has no wire op; the bound doc diverges from the local graph',
-      '41'
-    )
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_crdt_reporting_unrepresentable_link_operation',
+      context: { id: '41' }
+    })
   })
 
   it('does not consume a subgraph-interior deletion into delete_node', async () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     remove(SUBGRAPH_SCOPE, topology(41))
     expect(port.severances.take(SUBGRAPH_SCOPE.owningGraphId, '1')).toEqual([])
     await afterSweep()
 
     expect(minted).toEqual([])
-    expect(consoleError).toHaveBeenCalledOnce()
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   it('keeps same-id severances isolated by their owning graph', async () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     remove(ROOT_SCOPE, topology(41))
     remove(SUBGRAPH_SCOPE, topology(41))
 
@@ -255,21 +239,16 @@ describe('attachLinkMintPort', () => {
     expect(minted).toEqual([
       { op: 'disconnect', link_id: 41, to_node: 2, to_slot: 3 }
     ])
-    expect(consoleError).toHaveBeenCalledOnce()
-    consoleError.mockRestore()
+    expect(reportError).toHaveBeenCalledOnce()
   })
 
   it('stays silent for teardown severances', async () => {
-    const consoleError = vi
-      .spyOn(console, 'error')
-      .mockImplementation(() => undefined)
     session.beginGraphTeardown()
     remove(ROOT_SCOPE, topology(41))
     session.endGraphTeardown()
     await afterSweep()
 
-    expect(consoleError).not.toHaveBeenCalled()
-    consoleError.mockRestore()
+    expect(reportError).not.toHaveBeenCalled()
   })
 
   it('suppresses standalone disconnects during an intentional clear', async () => {
