@@ -843,6 +843,53 @@ describe('SubgraphWidgetPromotion', () => {
       expect(outerState.label).toBe('interior label')
       expect(outerState.disabled).toBe(true)
     })
+
+    it('seeds the outer state with the deepest serialize and disabled flags through the inner projection', () => {
+      const rootGraph = createTestRootGraph()
+
+      const innerSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'seed', type: 'number' }]
+      })
+      const { node: leaf, widget: leafWidget } = createNodeWithWidget(
+        'Sampler',
+        'number',
+        7,
+        'number'
+      )
+      leafWidget.serialize = false
+      leafWidget.disabled = true
+      innerSubgraph.add(leaf)
+      innerSubgraph.inputNode.slots[0].connect(leaf.inputs[0], leaf)
+
+      const outerSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'seed', type: 'number' }]
+      })
+      const innerHost = createTestSubgraphNode(innerSubgraph, {
+        parentGraph: outerSubgraph,
+        id: 11
+      })
+      outerSubgraph.add(innerHost)
+      innerHost._internalConfigureAfterSlots()
+
+      outerSubgraph.inputNode.slots[0].connect(innerHost.inputs[0], innerHost)
+
+      const outerHost = createTestSubgraphNode(outerSubgraph, {
+        parentGraph: rootGraph,
+        id: 22
+      })
+      rootGraph.add(outerHost)
+
+      const outerState = promotedWidgetStateByName(outerHost, 'seed')
+      expect(outerState.serialize).toBe(false)
+      expect(outerState.disabled).toBe(true)
+
+      leafWidget.value = 42
+      innerHost.syncPromotedWidgetState()
+      outerHost.syncPromotedWidgetState()
+      expect(promotedWidgetStateByName(outerHost, 'seed').value).toBe(42)
+    })
   })
 
   describe('Tooltip Promotion', () => {

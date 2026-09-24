@@ -33,6 +33,12 @@ export function createPromotedWidgetStoreProjection(
     get options() {
       return store.getWidget(id)?.options ?? {}
     },
+    get serialize() {
+      return store.getWidget(id)?.serialize
+    },
+    get disabled() {
+      return store.getWidget(id)?.disabled
+    },
     get value() {
       return store.getWidget(id)?.value
     },

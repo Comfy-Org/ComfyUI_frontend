@@ -285,11 +285,15 @@ export function promoteValueWidgetViaSubgraphInput(
     return { ok: true }
   }
 
+  let createdSourceSlot = false
   let sourceSlot = sourceNode.getSlotFromWidget(sourceWidget)
   if (!sourceSlot) {
+    if (sourceNode.inputs.some((input) => input.name === sourceWidgetName))
+      return { ok: false, reason: 'missingSourceSlot' }
     sourceSlot = sourceNode.addInput(sourceWidgetName, sourceWidget.type, {
       widget: { name: sourceWidgetName }
     })
+    createdSourceSlot = true
   }
 
   const existingNames = subgraphNode.subgraph.inputs.map((input) => input.name)
@@ -303,6 +307,10 @@ export function promoteValueWidgetViaSubgraphInput(
   const link = subgraphInput.connect(sourceSlot, sourceNode)
   if (!link) {
     subgraphNode.subgraph.removeInput(subgraphInput)
+    if (createdSourceSlot) {
+      const sourceSlotIndex = sourceNode.inputs.indexOf(sourceSlot)
+      if (sourceSlotIndex !== -1) sourceNode.removeInput(sourceSlotIndex)
+    }
     return { ok: false, reason: 'connectFailed' }
   }
 

@@ -395,6 +395,48 @@ describe('promoteRecommendedWidgets', () => {
   })
 })
 
+describe('promoteValueWidgetViaSubgraphInput — source slot fallback', () => {
+  it('fails with missingSourceSlot when a non-widget input already has the widget name', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Source')
+    subgraph.add(interiorNode)
+    interiorNode.addInput('text', 'STRING')
+    const textWidget = interiorNode.addWidget('text', 'text', '', () => {})
+
+    const result = promoteValueWidgetViaSubgraphInput(
+      host,
+      interiorNode,
+      textWidget
+    )
+
+    expect(result).toEqual({ ok: false, reason: 'missingSourceSlot' })
+    expect(
+      interiorNode.inputs.filter((input) => input.name === 'text')
+    ).toHaveLength(1)
+    expect(host.subgraph.inputs).toHaveLength(0)
+  })
+
+  it('removes the fallback-created source slot when the connection is rejected', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const interiorNode = new LGraphNode('Source')
+    subgraph.add(interiorNode)
+    interiorNode.onConnectInput = () => false
+    const textWidget = interiorNode.addWidget('text', 'text', '', () => {})
+
+    const result = promoteValueWidgetViaSubgraphInput(
+      host,
+      interiorNode,
+      textWidget
+    )
+
+    expect(result).toEqual({ ok: false, reason: 'connectFailed' })
+    expect(interiorNode.inputs).toHaveLength(0)
+    expect(host.subgraph.inputs).toHaveLength(0)
+  })
+})
+
 describe('autoExposeKnownPreviewNodes', () => {
   it('auto-exposes previews when host has no persisted previewExposures property', () => {
     const subgraph = createTestSubgraph()
