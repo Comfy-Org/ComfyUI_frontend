@@ -5,6 +5,7 @@ import { computed, reactive, ref, watch } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { MapPinMarker } from '../../components/blocks/MapPins01.vue'
+import type { ComfyEvent } from '../../data/events'
 import type { Locale } from '../../i18n/translations'
 import type { EventsDirectoryView } from '../../utils/eventsDirectory'
 
@@ -23,7 +24,15 @@ import {
 } from '../../utils/eventsDirectory'
 import EventsDirectoryList from './EventsDirectoryList.vue'
 
-const { locale = 'en' } = defineProps<{ locale?: Locale }>()
+const {
+  locale = 'en',
+  events = directoryEvents,
+  derivedAt = eventsDerivedAt
+} = defineProps<{
+  locale?: Locale
+  events?: readonly ComfyEvent[]
+  derivedAt?: Date
+}>()
 
 // Search, type and organizer feed whichever view is active, so the whole
 // section is one reactive model: three filter fields plus the view. Everything
@@ -33,7 +42,7 @@ const view = ref<EventsDirectoryView>('map')
 const sort = ref<'latest' | 'oldest'>('latest')
 
 const visibleEvents = computed(() =>
-  filterDirectoryEvents(directoryEvents, filters, locale)
+  filterDirectoryEvents(events, filters, locale)
 )
 
 // `directoryEvents` is latest-first, so Oldest is a plain reversal of the
@@ -50,7 +59,7 @@ const sortedEvents = computed(() =>
 // clock that ordered `directoryEvents`, so a row's position and its CTA can
 // never straddle the upcoming/past boundary.
 const rows = computed(() =>
-  directoryRows(sortedEvents.value, locale, eventsDerivedAt)
+  directoryRows(sortedEvents.value, locale, derivedAt)
 )
 
 // Pins are the filtered events that have coordinates; virtual events stay in
@@ -59,7 +68,14 @@ const rows = computed(() =>
 const markers = computed<MapPinMarker[]>(() =>
   rows.value.flatMap((row) =>
     row.event.coords
-      ? [{ id: row.event.id, coords: row.event.coords, label: row.title }]
+      ? [
+          {
+            id: row.event.id,
+            coords: row.event.coords,
+            label: row.title,
+            meta: [row.date, row.location].filter(Boolean).join(' · ')
+          }
+        ]
       : []
   )
 )
@@ -87,6 +103,13 @@ const clusterLabel = (labels: string[]) =>
     String(labels.length)
   )
 
+// Heading of the popup a still-coincident cluster opens on the map.
+const clusterPopupTitle = (count: number) =>
+  t('events.directory.clusterPopupTitle', locale).replace(
+    '{count}',
+    String(count)
+  )
+
 // `t()` has neither interpolation nor plurals, so both are resolved here.
 const countLabel = computed(() => {
   const count = visibleEvents.value.length
@@ -107,7 +130,7 @@ const VIEWS: ReadonlyArray<{
 ]
 
 const controlClass =
-  'bg-transparency-white-t5 h-11 rounded-full border border-white/15 text-sm text-primary-comfy-canvas'
+  'bg-transparency-white-t4 h-11 rounded-full border border-white/15 text-sm text-primary-comfy-canvas'
 
 // `appearance-none` drops the native arrow, so each select is wrapped and gets
 // a ChevronDown overlaid, the same icon the rest of the site uses.
@@ -123,11 +146,11 @@ const caretClass =
 <template>
   <section
     id="events-directory"
-    class="max-w-9xl mx-auto scroll-mt-24 px-6 py-16 lg:px-20 lg:py-24"
+    class="mx-auto max-w-9xl scroll-mt-24 px-6 py-16 lg:px-20 lg:py-24"
   >
     <div class="mx-auto max-w-3xl text-center">
       <p
-        class="text-primary-comfy-yellow text-xs font-semibold tracking-widest uppercase"
+        class="text-xs font-semibold tracking-widest text-primary-comfy-yellow uppercase"
         aria-live="polite"
       >
         {{ countLabel }}
@@ -273,6 +296,7 @@ const caretClass =
         :markers
         :region-label="t('events.directory.mapLabel', locale)"
         :cluster-label="clusterLabel"
+        :popup-title="clusterPopupTitle"
         class="h-80 sm:h-96 lg:h-140"
         @select="pinnedId = $event"
       />

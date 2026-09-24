@@ -1,95 +1,263 @@
 <script setup lang="ts">
-import { onKeyStroke, useWindowSize } from '@vueuse/core'
-import { nextTick, ref, watch } from 'vue'
+import { cn } from '@comfyorg/tailwind-utils'
+import { autoUpdate, offset, shift, useFloating } from '@floating-ui/vue'
+import type { Middleware } from '@floating-ui/vue'
+import {
+  useElementBounding,
+  useEventListener,
+  useTimeoutFn,
+  useWindowSize
+} from '@vueuse/core'
+import { FocusScope } from 'reka-ui'
+import { computed, nextTick, onBeforeUnmount, ref, useId, watch } from 'vue'
 
+import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
+import { clampSpotlight } from '@/platform/onboarding/coachmarkLayout'
+import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
+import { useTelemetry } from '@/platform/telemetry'
+import type { AgentOnboardingAction } from '@/platform/telemetry/types'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
-import { useOnboarding } from '../../composables/agent/useOnboarding'
+import {
+  reportMissingCoachTarget,
+  useOnboarding
+} from '../../composables/agent/useOnboarding'
 
-const { step, storageKey } = defineProps<{
-  step: CoachStep
+/** Long enough for any panel layout to settle; a target still absent is a regression. */
+const TARGET_MISSING_AFTER_MS = 8000
+
+const { steps, storageKey } = defineProps<{
+  steps: CoachStep[]
   storageKey?: string
 }>()
 
-const { active, finish } = useOnboarding(storageKey)
+const { active, index, step, isLast, next, finish } = useOnboarding(
+  () => steps,
+  storageKey
+)
 
-onKeyStroke('Escape', () => {
-  if (active.value) finish()
+const titleId = useId()
+const bodyId = useId()
+const target = ref<HTMLElement | null>(null)
+const visible = computed(() => active.value && target.value !== null)
+// Let surfaces like the What's New popup defer while a coach card is on
+// screen. The store drops the source with this component's scope on unmount.
+useOnboardingOverlayStore().registerSource(() => visible.value)
+const toolbar = ref<HTMLElement | null>(null)
+const card = ref<HTMLElement | null>(null)
+const bounds = useElementBounding(target)
+const toolbarBounds = useElementBounding(toolbar)
+const { width, height } = useWindowSize()
+let targetRetryTimer: ReturnType<typeof setTimeout> | undefined
+
+function scheduleTargetRetry(): void {
+  clearTimeout(targetRetryTimer)
+  if (!active.value || target.value) return
+  targetRetryTimer = setTimeout(() => {
+    resolveTargets()
+    scheduleTargetRetry()
+  }, 50)
+}
+
+function resolveTargets(): void {
+  const nextTarget = active.value
+    ? document.querySelector<HTMLElement>(step.value.target)
+    : null
+  const nextToolbar =
+    active.value && step.value.toolbarTarget
+      ? document.querySelector<HTMLElement>(step.value.toolbarTarget)
+      : null
+  if (target.value !== nextTarget) target.value = nextTarget
+  if (toolbar.value !== nextToolbar) toolbar.value = nextToolbar
+  bounds.update()
+  toolbarBounds.update()
+  scheduleTargetRetry()
+}
+
+// Reported off `visible`, the same condition the card renders and the overlay
+// source registers on, so the tour is never counted as seen while it is still
+// waiting for a target to mount.
+let reportedShown = false
+watch(visible, (isVisible) => {
+  if (!isVisible || reportedShown) return
+  reportedShown = true
+  useTelemetry()?.trackAgentOnboardingShown()
 })
 
-const { width, height } = useWindowSize()
-const CARD_W = 256
-const CARD_H = 160
-const MARGIN = 8
+function reportStep(action: AgentOnboardingAction): void {
+  useTelemetry()?.trackAgentOnboardingStep({ step: index.value + 1, action })
+}
 
-const cardStyle = ref<Record<string, string> | null>(null)
+function onNext(): void {
+  reportStep(isLast.value ? 'finish' : 'next')
+  next()
+}
 
-// Explicit `watch` sources, not `watchEffect`. This callback measures the
-// DOM after `await nextTick()`, so `width`/`height` must not be read only
-// on the far side of that `await` -- `watchEffect` only tracks dependencies
-// an effect reads during its synchronous execution, and anything read after
-// an `await` is invisible to the tracker. That was the root cause of the
-// original bug: a later viewport resize (e.g. narrowing the window) never
-// re-ran the effect, so the card stayed pinned at its stale position. Naming
-// the sources explicitly sidesteps the tracking pitfall entirely, since
-// `watch`'s sources are declared up front rather than discovered by reading
-// refs inside the callback.
+function onSkip(): void {
+  reportStep('skip')
+  finish()
+}
+
+const targetObserver = new MutationObserver(resolveTargets)
+targetObserver.observe(document.body, {
+  childList: true,
+  subtree: true
+})
+const missingTarget = computed(() =>
+  active.value && !target.value ? step.value.target : null
+)
+const { start: startMissingTargetTimer, stop: stopMissingTargetTimer } =
+  useTimeoutFn(
+    (selector: string, step: number) =>
+      reportMissingCoachTarget(selector, step),
+    TARGET_MISSING_AFTER_MS,
+    { immediate: false }
+  )
 watch(
-  [active, width, height],
-  async ([isActive, viewportWidth, viewportHeight]) => {
-    if (!isActive) {
-      cardStyle.value = null
-      return
-    }
+  missingTarget,
+  (selector) => {
+    stopMissingTargetTimer()
+    if (selector) startMissingTargetTimer(selector, index.value + 1)
+  },
+  { immediate: true }
+)
+onBeforeUnmount(() => {
+  targetObserver.disconnect()
+  clearTimeout(targetRetryTimer)
+})
+
+watch(
+  [active, step],
+  async () => {
     await nextTick()
-    const target = document.querySelector(step.target)
-    if (!target) return
-    const rect = target.getBoundingClientRect()
-    // The panel docks on the right, so the card sits to its left rather than
-    // covering it.
-    const left = Math.min(
-      Math.max(MARGIN, rect.left - CARD_W - MARGIN),
-      Math.max(MARGIN, viewportWidth - CARD_W - MARGIN)
-    )
-    const top = Math.min(
-      Math.max(MARGIN, rect.top + MARGIN),
-      Math.max(MARGIN, viewportHeight - CARD_H - MARGIN)
-    )
-    cardStyle.value = {
-      top: `${top}px`,
-      left: `${left}px`,
-      width: `${CARD_W}px`
-    }
+    resolveTargets()
   },
   { immediate: true, flush: 'post' }
+)
+
+const middleware = computed<Middleware[]>(() => {
+  const result = [
+    offset({
+      mainAxis: 16,
+      crossAxis: step.value?.placement === 'left-start' ? -16 : 0
+    })
+  ]
+  if (step.value?.placement === 'graph-bottom') {
+    const bottom = toolbar.value ? toolbarBounds.top.value : bounds.bottom.value
+    result.push({
+      name: 'graphBottom',
+      fn: ({ rects }) => ({
+        x:
+          rects.reference.x +
+          (rects.reference.width - rects.floating.width) / 2,
+        y:
+          Math.min(bottom, rects.reference.y + rects.reference.height) -
+          16 -
+          rects.floating.height
+      })
+    })
+  }
+  return [...result, shift({ padding: 8, crossAxis: true })]
+})
+
+const { floatingStyles, isPositioned } = useFloating(target, card, {
+  strategy: 'fixed',
+  transform: false,
+  placement: () =>
+    step.value?.placement === 'left-center'
+      ? 'left'
+      : step.value?.placement === 'left-end'
+        ? 'left-end'
+        : 'left-start',
+  middleware,
+  whileElementsMounted: autoUpdate
+})
+
+const spotlightStyle = computed(() =>
+  clampSpotlight(
+    new DOMRect(
+      bounds.left.value,
+      bounds.top.value,
+      bounds.width.value,
+      bounds.height.value
+    ),
+    0,
+    { width: width.value, height: height.value }
+  )
+)
+
+useEventListener(
+  document,
+  'keydown',
+  (event) => {
+    if (!active.value || !target.value || event.key !== 'Escape') return
+    event.preventDefault()
+    event.stopPropagation()
+    onSkip()
+  },
+  { capture: true }
 )
 </script>
 
 <template>
-  <div
-    v-if="active && cardStyle"
-    role="dialog"
-    aria-modal="true"
-    :aria-label="step.title"
-    class="fixed inset-0 z-50"
-  >
-    <div class="absolute inset-0 bg-black/40" />
-    <div
-      :style="cardStyle ?? undefined"
-      class="rounded-agent border-agent-border bg-agent-surface-raised text-agent-fg absolute border p-3 shadow-xl"
-    >
-      <p class="text-sm font-semibold">{{ step.title }}</p>
-      <p class="text-agent-fg-muted mt-2 text-xs">{{ step.body }}</p>
-      <div class="mt-4 flex justify-end">
-        <Button
-          variant="primary"
-          size="md"
-          class="text-agent-accent-fg hover:bg-agent-accent/90 focus-visible:ring-agent-accent rounded-xl px-3 text-sm focus-visible:ring-2"
-          @click="finish"
+  <Teleport to="body">
+    <div v-if="visible" v-reka-z-index class="agent-scope fixed inset-0">
+      <div class="absolute inset-0" />
+      <div
+        aria-hidden="true"
+        data-testid="agent-coach-spotlight"
+        :style="{ ...spotlightStyle }"
+        class="pointer-events-none absolute rounded-lg shadow-[0_0_0_9999px_var(--color-coach-scrim)]"
+      />
+      <FocusScope as-child trapped loop>
+        <div
+          ref="card"
+          role="dialog"
+          aria-modal="true"
+          :aria-labelledby="titleId"
+          :aria-describedby="bodyId"
+          tabindex="-1"
+          :style="{
+            ...floatingStyles,
+            opacity: isPositioned ? 1 : 0
+          }"
+          :class="
+            cn(
+              'fixed box-border flex max-h-[calc(100vh-16px)] w-[307px] max-w-[calc(100vw-16px)] flex-col gap-3 overflow-y-auto rounded-2xl border bg-base-background p-4 font-inter text-base-foreground shadow-lg',
+              index < 2
+                ? 'border-secondary-background'
+                : 'border-alpha-smoke-500-20'
+            )
+          "
         >
-          {{ $t('agent.gotIt') }}
-        </Button>
-      </div>
+          <div class="flex flex-col gap-6">
+            <div class="flex flex-col gap-2">
+              <p class="m-0 text-xs/normal opacity-50">
+                {{
+                  $t('agent.coachProgress', {
+                    current: index + 1,
+                    total: steps.length
+                  })
+                }}
+              </p>
+              <h3 :id="titleId" class="m-0 text-base/normal font-semibold">
+                {{ step.title }}
+              </h3>
+              <p :id="bodyId" class="m-0 text-sm/normal text-muted-foreground">
+                {{ step.body }}
+              </p>
+            </div>
+            <div class="flex justify-end gap-3">
+              <Button variant="secondary" size="md" @click="onSkip">{{
+                $t('agent.skip')
+              }}</Button>
+              <Button variant="inverted" size="md" @click="onNext">{{
+                $t(isLast ? 'onboardingCoachmarks.done' : 'g.next')
+              }}</Button>
+            </div>
+          </div>
+        </div>
+      </FocusScope>
     </div>
-  </div>
+  </Teleport>
 </template>

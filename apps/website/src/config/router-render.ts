@@ -12,12 +12,13 @@ import { initialWorkshopPageState } from './workshop-page-state'
 import type { FieldSchema, FormValues } from './workshop-playground'
 import { validateForm } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
-import { runWorkshopRouter } from './workshop-router'
+import { runWorkshopRouter } from './workshop-router-queue'
 import { WorkshopRouterError } from './workshop-router-errors'
 import type { RunOutput } from './workshop-run'
 import type { WorkshopUrlEncoder } from './workshop-url-input'
 import { createWorkshopUrlUploader } from './workshop-url-upload'
 import type { WorkshopSvgRasterizer } from './workshop-svg-output'
+import { releaseRouterOutputs } from './workshop-response'
 
 const upload = createWorkshopUrlUploader()
 
@@ -37,6 +38,10 @@ export interface RouterRenderOptions {
   readonly rasterizeSvg?: WorkshopSvgRasterizer
   readonly onRequestId?: (requestId: string | null) => void
   readonly onPrepared?: (prepared: PreparedRouterRender) => void | Promise<void>
+}
+
+export type BoundRouterRenderOptions = RouterRenderOptions & {
+  readonly model: WorkshopModelDetail
 }
 
 export interface ResolvedRouterRender {
@@ -104,35 +109,43 @@ export async function prepareModelRouterRender(
 ): Promise<PreparedRouterRender> {
   const signal = options.signal ?? new AbortController().signal
   signal.throwIfAborted()
-  const resolved = resolveModelRouterRender(model, parameters, options)
-  const body = await prepareWorkshopRouterInput(
-    resolved.contract,
-    resolved.values,
-    signal,
-    undefined,
-    options.uploadFile ??
-      (async (file, uploadSignal) => {
-        const token = await credential(options)
-        return upload(file, token, token, uploadSignal)
-      })
-  )
-  return { ...resolved, body }
+  try {
+    const resolved = resolveModelRouterRender(model, parameters, options)
+    const body = await prepareWorkshopRouterInput(
+      resolved.contract,
+      resolved.values,
+      signal,
+      undefined,
+      options.uploadFile ??
+        (async (file, uploadSignal) => {
+          const token = await credential(options)
+          return upload(file, token, token, uploadSignal)
+        })
+    )
+    return { ...resolved, body }
+  } catch (cause) {
+    signal.throwIfAborted()
+    if (cause instanceof WorkshopRouterError) throw cause
+    throw new WorkshopRouterError(
+      'client',
+      null,
+      {},
+      undefined,
+      'input_preparation',
+      { cause }
+    )
+  }
 }
 
 export async function router_render(
   slug: string,
   parameters: RouterRenderParameters = {},
-  options: RouterRenderOptions = {}
+  options: BoundRouterRenderOptions
 ): Promise<RouterRenderResult> {
   const signal = options.signal ?? new AbortController().signal
   signal.throwIfAborted()
-  const model =
-    options.model ??
-    (await import('./workshop-router-content')).getRouterWorkshopModelDetail(
-      slug
-    )
-  if (!model || (options.model && model.slug !== slug))
-    throw new WorkshopRouterError('unavailable')
+  const { model } = options
+  if (model.slug !== slug) throw new WorkshopRouterError('unavailable')
   const prepared = await prepareModelRouterRender(model, parameters, {
     ...options,
     signal
@@ -149,15 +162,23 @@ export async function router_render(
     contract: prepared.contract,
     body: prepared.body,
     token,
+    freshToken: () => credential(options),
     idempotencyKey,
     signal,
     rasterizeSvg: options.rasterizeSvg,
     ...(options.onRequestId ? { onRequestId: options.onRequestId } : {})
   })
+  const outputs = result.outputs.filter(
+    (output) => output.purpose !== 'response-metadata'
+  )
+  releaseRouterOutputs(
+    result.outputs.filter((output) => output.purpose === 'response-metadata')
+  )
   return {
     slug: prepared.slug,
     routerId: prepared.routerId,
     expectedKind: prepared.expectedKind,
-    ...result
+    ...result,
+    outputs
   }
 }

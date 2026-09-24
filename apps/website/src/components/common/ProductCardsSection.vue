@@ -52,7 +52,7 @@ const cards = excludeProduct
 
 <template>
   <section
-    class="max-w-9xl mx-auto bg-primary-comfy-ink px-0 py-20 lg:px-20 lg:py-24"
+    class="mx-auto max-w-9xl bg-primary-comfy-ink px-0 py-20 lg:px-20 lg:py-24"
   >
     <!-- Header -->
     <div class="flex flex-col items-center px-4 text-center">
@@ -75,7 +75,7 @@ const cards = excludeProduct
       :aria-label="t('products.labelProducts', locale)"
       :class="
         cn(
-          'bg-transparency-white-t4 rounded-5xl mt-16 grid grid-cols-1 gap-4 p-4 lg:p-2',
+          'mt-16 grid grid-cols-1 gap-4 rounded-5xl bg-transparency-white-t4 p-4 lg:p-2',
           cards.length === 4 ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
         )
       "

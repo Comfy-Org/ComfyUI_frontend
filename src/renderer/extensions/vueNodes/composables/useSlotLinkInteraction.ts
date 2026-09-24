@@ -25,9 +25,11 @@ import {
   resolveSlotTargetCandidate
 } from '@/renderer/core/canvas/links/linkDropOrchestrator'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { isLinkRevealed } from '@/lib/litegraph/src/canvas/linkRevealState'
 import { useSlotLinkDragUIState } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import type { SlotDropCandidate } from '@/renderer/core/canvas/links/slotLinkDragUIState'
 import { getSlotKey } from '@/renderer/core/layout/slots/slotIdentifier'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
@@ -35,6 +37,7 @@ import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/compos
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
@@ -113,6 +116,25 @@ export function resolvePointerTarget(
   fallback: EventTarget | null
 ): EventTarget | null {
   return document.elementFromPoint(clientX, clientY) ?? fallback
+}
+
+export function isRerouteVisibleForLinkDrag(
+  graph: Pick<LGraph, 'getLink' | 'id' | 'rootGraph'>,
+  reroute: Pick<Reroute, 'linkIds' | 'floatingLinkIds'>
+): boolean {
+  if (reroute.linkIds.size === 0 || reroute.floatingLinkIds.size > 0)
+    return true
+
+  const scope = graphScopeOf(graph)
+  for (const linkId of reroute.linkIds) {
+    const link = graph.getLink(linkId)
+    const hidden =
+      link && useLinkPresentationStore().getPresentation(scope, linkId)?.hidden
+    if (!hidden || isLinkRevealed(scope.rootGraphId, linkId)) {
+      return true
+    }
+  }
+  return false
 }
 
 export function useSlotLinkInteraction({
@@ -500,7 +522,13 @@ export function useSlotLinkInteraction({
     if (!rerouteLayout) return false
 
     const reroute = graph.getReroute(rerouteLayout.id)
-    if (!reroute || !adapter.isRerouteValidDrop(reroute.id)) return false
+    if (
+      !reroute ||
+      !isRerouteVisibleForLinkDrag(graph, reroute) ||
+      !adapter.isRerouteValidDrop(reroute.id)
+    ) {
+      return false
+    }
 
     let didConnect = false
 
@@ -572,6 +600,7 @@ export function useSlotLinkInteraction({
 
     cleanupInteraction()
     app.canvas.setDirty(true, true)
+    useWorkflowStore().activeWorkflow?.changeTracker.captureCanvasState()
   }
 
   const handlePointerUp = (event: PointerEvent) => {

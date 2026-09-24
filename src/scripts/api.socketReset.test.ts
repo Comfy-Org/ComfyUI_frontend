@@ -17,7 +17,7 @@ const releaseNextToken = async () => {
   await new Promise((resolve) => setTimeout(resolve, 0))
 }
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: true }))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: true }))
 
 class FakeWebSocket {
   static readonly OPEN = 1

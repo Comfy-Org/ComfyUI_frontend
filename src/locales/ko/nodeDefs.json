@@ -821,6 +821,83 @@
       }
     }
   },
+  "BriaAddObject": {
+    "description": "Bria를 사용하여 일반 텍스트로 설명한 객체를 이미지에 삽입합니다. Bria는 전체 프레임을 약 100만 픽셀로 다시 렌더링하므로 결과가 입력과 픽셀 단위로 정렬되지 않습니다.",
+    "display_name": "Bria 객체 추가",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "instruction": {
+        "name": "지시문",
+        "tooltip": "추가할 항목과 위치입니다. 예: '테이블 위에 꽃이 든 빨간 화병을 놓으세요'."
+      },
+      "moderation": {
+        "name": "검토",
+        "tooltip": "검토 설정"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "Bria는 여기서 시드를 사용하지 않으며, 호출할 때마다 편집을 새롭게 생성하므로 반복 실행 결과가 달라질 수 있습니다. 이 값은 전송되지 않으며, 이 노드의 캐시 키만 변경합니다. 따라서 동일한 그래프라도 캐시된 결과를 반환하는 대신 편집을 다시 실행합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Bria FIBO Image Edit를 사용한 후속 편집용으로, 편집된 이미지의 구조화된 설명입니다."
+      }
+    }
+  },
+  "BriaEraseByText": {
+    "description": "Bria를 사용하여 일반 텍스트로 지정한 객체를 이미지에서 제거합니다. Bria는 전체 프레임을 약 100만 픽셀로 다시 렌더링하므로 결과가 입력과 픽셀 단위로 정렬되지 않습니다.",
+    "display_name": "Bria 텍스트로 지우기",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "moderation": {
+        "name": "검토",
+        "tooltip": "검토 설정"
+      },
+      "object_name": {
+        "name": "object_name",
+        "tooltip": "제거할 객체의 이름입니다. 예: '램프'. '휴대폰과 연필'처럼 여러 객체를 한 번에 지정할 수 있습니다. 이미지에 없는 항목을 지정해도 다시 렌더링된 이미지가 반환되며 비용이 청구됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Bria FIBO Image Edit를 사용한 후속 편집용으로, 편집된 이미지의 구조화된 설명입니다."
+      }
+    }
+  },
+  "BriaEraseForeground": {
+    "description": "Bria로 이미지의 전경을 제거하고 그 자리에 배경을 생성합니다. 사람뿐 아니라 Bria가 전경으로 인식하는 모든 항목이 제거됩니다. 수정하지 않은 픽셀은 보존되지만, 출력은 약 100만 픽셀에 가까운 표준 크기로 다시 렌더링됩니다.",
+    "display_name": "Bria 전경 지우기",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "moderation": {
+        "name": "검토",
+        "tooltip": "검토 설정"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "BriaEraser": {
     "description": "Bria를 사용하여 이미지에서 mask로 윤곽 지정된 객체 또는 영역을 제거합니다.",
     "display_name": "Bria 지우개",
@@ -1004,6 +1081,36 @@
       }
     }
   },
+  "BriaRelight": {
+    "description": "Bria를 사용하여 이미지의 조명 분위기와 방향을 변경합니다. Bria는 전체 프레임을 약 100만 픽셀로 다시 렌더링하므로 결과가 입력과 픽셀 단위로 정렬되지 않습니다.",
+    "display_name": "Bria 조명 변경",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "light_direction": {
+        "name": "light_direction",
+        "tooltip": "빛이 오는 방향입니다. 한낮, 피사체 스포트라이트, 강한 스튜디오 조명과 같은 강한 조명 분위기가 이에 가장 크게 반응합니다."
+      },
+      "light_type": {
+        "name": "light_type",
+        "tooltip": "적용할 조명 분위기입니다."
+      },
+      "moderation": {
+        "name": "검토",
+        "tooltip": "검토 설정"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Bria FIBO Image Edit를 사용한 후속 편집용으로, 편집된 이미지의 구조화된 설명입니다."
+      }
+    }
+  },
   "BriaRemoveImageBackground": {
     "description": "Bria RMBG 2.0을 사용하여 이미지에서 배경을 제거합니다.",
     "display_name": "Bria 이미지 배경 제거",
@@ -1054,6 +1161,133 @@
       }
     }
   },
+  "BriaReplaceImageBackground": {
+    "description": "Bria를 사용하여 프롬프트로 설명하거나 참조 이미지로 안내된 이미지 배경으로 교체합니다. 피사체의 픽셀은 보존되며, 그 주변에 배경이 생성됩니다.",
+    "display_name": "Bria 이미지 배경 교체",
+    "inputs": {
+      "background": {
+        "name": "배경",
+        "tooltip": "프롬프트로 새 배경을 설명하거나 참조 이미지로 안내하세요."
+      },
+      "background_mode": {
+        "name": "모드"
+      },
+      "background_prompt": {
+        "name": "프롬프트"
+      },
+      "background_refine_prompt": {
+        "name": "refine_prompt"
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "moderation": {
+        "name": "모더레이션",
+        "tooltip": "모더레이션 설정"
+      },
+      "original_quality": {
+        "name": "original_quality",
+        "tooltip": "결과를 약 100만 픽셀로 조정하는 대신 입력의 정확한 픽셀 크기를 반환합니다. 큰 입력은 큰 이미지를 반환합니다."
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "같은 시드는 일반적으로 같은 배경을 반환하지만, 자동 프롬프트 개선으로 인해 달라질 수 있습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "refined_prompt",
+        "tooltip": "Bria가 생성한 프롬프트이며, 참조 이미지 경로에서는 비어 있습니다."
+      }
+    }
+  },
+  "BriaReplaceObject": {
+    "description": "Bria를 사용하여 이미지의 객체를 일반 텍스트로 설명한 다른 객체로 교체합니다. Bria는 전체 프레임을 약 100만 픽셀로 다시 렌더링하므로 결과는 입력과 픽셀 정렬되지 않습니다.",
+    "display_name": "Bria 객체 교체",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "image": {
+        "name": "이미지"
+      },
+      "instruction": {
+        "name": "지시문",
+        "tooltip": "무엇을 무엇으로 교체할지 지정합니다. 예: '빨간 사과를 초록색 배로 교체'."
+      },
+      "moderation": {
+        "name": "모더레이션",
+        "tooltip": "모더레이션 설정"
+      },
+      "seed": {
+        "name": "시드",
+        "tooltip": "Bria는 여기서 시드를 사용하지 않으며 호출할 때마다 편집을 새롭게 생성하므로 반복 실행 결과가 달라질 수 있습니다. 이 값은 전송되지 않으며 이 노드의 캐시 키만 변경합니다. 따라서 동일한 그래프가 캐시된 결과를 반환하는 대신 편집을 다시 실행합니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Bria FIBO Image Edit를 사용한 후속 편집을 위한 편집된 이미지의 구조화된 설명입니다."
+      }
+    }
+  },
+  "BriaReseason": {
+    "description": "Bria를 사용하여 이미지를 다른 계절로 변경합니다. 전체 장면이 다시 렌더링되므로 계절 외의 풍경도 변경될 수 있습니다. Bria는 전체 프레임을 약 100만 픽셀로 다시 렌더링하므로 결과는 입력과 픽셀 정렬되지 않습니다.",
+    "display_name": "Bria Reseason",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "moderation": {
+        "name": "모더레이션",
+        "tooltip": "모더레이션 설정"
+      },
+      "season": {
+        "name": "계절",
+        "tooltip": "적용할 계절입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Bria FIBO Image Edit를 사용한 후속 편집을 위한 편집된 이미지의 구조화된 설명입니다."
+      }
+    }
+  },
+  "BriaRestorePhoto": {
+    "description": "Bria를 사용하여 오래되거나 손상된 사진을 복구합니다. 입자, 스크래치, 흐림을 제거하고 노화로 인한 색조를 중화합니다. 카드 마운트와 스튜디오 테두리는 잘려 나갈 수 있으며 얼굴은 다시 그려집니다. Bria는 전체 프레임을 약 100만 픽셀로 다시 렌더링하므로 결과는 입력과 픽셀 정렬되지 않습니다. 확대하려면 대신 Bria Increase Resolution을 사용하세요.",
+    "display_name": "Bria 사진 복원",
+    "inputs": {
+      "image": {
+        "name": "이미지"
+      },
+      "moderation": {
+        "name": "모더레이션",
+        "tooltip": "모더레이션 설정"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "name": "structured_prompt",
+        "tooltip": "Bria FIBO Image Edit로 후속 편집할 수 있도록 편집된 이미지의 구조화된 설명입니다."
+      }
+    }
+  },
   "BriaTransparentVideoBackground": {
     "description": "Bria를 사용하여 비디오에서 배경을 제거하고 잘라낸 프레임과 알파 마스크를 반환합니다. 둘 다 합성 노드에 연결하거나, Save WEBM에 전달하여 투명 비디오로 저장할 수 있습니다.",
     "display_name": "Bria 비디오 배경 제거 (투명)",
@@ -1076,6 +1310,33 @@
       },
       "1": {
         "name": "mask",
+        "tooltip": null
+      }
+    }
+  },
+  "BriaVideoEraser": {
+    "description": "Bria를 사용하여 비디오에서 프레임별 mask가 덮는 모든 항목을 지우고 빈 부분을 채웁니다. mask에서 제거할 부분은 흰색, 나머지는 검은색이어야 합니다. Bria는 초당 20~30프레임, 짝수 픽셀 크기의 최대 5.1초 길이 clip을 지원하며, 기본적으로 오디오는 유지됩니다. 반환된 clip은 입력보다 몇 프레임 짧을 수 있습니다.",
+    "display_name": "Bria 비디오 지우개",
+    "inputs": {
+      "mask": {
+        "name": "mask",
+        "tooltip": "비디오의 프레임당 하나의 mask이며, 지울 객체가 있는 부분은 흰색입니다. mask 또는 mask 비디오 중 하나만 제공하고 둘 다 제공하지 마십시오."
+      },
+      "mask_video": {
+        "name": "mask_video",
+        "tooltip": "비디오와 동일한 크기 및 프레임 수로 이미 인코딩된 mask 비디오입니다. mask 또는 mask 비디오 중 하나만 제공하고 둘 다 제공하지 마십시오."
+      },
+      "preserve_audio": {
+        "name": "preserve_audio",
+        "tooltip": "입력의 오디오 트랙을 유지합니다."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "지울 clip입니다."
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -4741,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "빈 잠재 비디오 (Cosmos)",
+    "display_name": "빈 Cosmos 잠재 비디오",
     "inputs": {
       "batch_size": {
         "name": "배치 크기"
@@ -4802,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "빈 훈위안 이미지 잠재",
+    "display_name": "빈 Hunyuan 이미지 잠재",
     "inputs": {
       "batch_size": {
         "name": "배치 크기"
@@ -4821,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "빈 잠재 비디오 (Hunyuan)",
+    "display_name": "빈 Hunyuan 비디오 1.0 잠재",
     "inputs": {
       "batch_size": {
         "name": "배치 크기"
@@ -4843,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Empty HunyuanVideo 1.5 Latent",
+    "display_name": "빈 Hunyuan 비디오 1.5 잠재",
     "inputs": {
       "batch_size": {
         "name": "배치 크기"
@@ -4882,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "빈 잠재 비디오 (LTXV)",
+    "display_name": "빈 LTXV 잠재 비디오",
     "inputs": {
       "batch_size": {
         "name": "배치 크기"
@@ -4921,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "빈 Hunyuan 3D v2 잠재",
     "inputs": {
       "batch_size": {
         "name": "배치 크기",
@@ -5062,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "빈 Trellis2 잠재 구조",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -5088,6 +5349,33 @@
     "outputs": {
       "0": {
         "tooltip": null
+      }
+    }
+  },
+  "EndLoop": {
+    "display_name": "루프 종료",
+    "inputs": {
+      "accumulate": {
+        "name": "누적",
+        "tooltip": "활성화하면 모든 반복의 출력 값을 반환하고, 그렇지 않으면 마지막 반복만 반환합니다."
+      },
+      "next_iteration_value": {
+        "name": "다음 반복 값",
+        "tooltip": "다음 반복을 위해 End Loop에서 Start Loop로 다시 전송되는 값입니다."
+      },
+      "output_value": {
+        "name": "출력 값",
+        "tooltip": "End Loop에서 반환되는 값입니다. accumulate 설정에 따라 마지막 반복 또는 모든 반복을 반환합니다."
+      },
+      "terminations": {
+        "name": "종료 항목",
+        "tooltip": "모든 반복에서 실행해야 하는 출력을 연결합니다. 해당 값은 반환되지 않습니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "출력",
+        "tooltip": "마지막 반복의 출력 값 또는 accumulate가 활성화된 경우 반복 전체에 걸쳐 누적된 값입니다."
       }
     }
   },
@@ -5955,6 +6243,40 @@
       }
     }
   },
+  "FluxVideoEditNode": {
+    "description": "작성한 지시에 따라 클립을 편집합니다. 객체를 제거, 추가 또는 교체하고, 배경을 변경하거나, 영상 스타일을 바꾸고, 화면 텍스트를 변경하거나, 음성 대사를 교체할 수 있습니다. 길이, 구도, 카메라 움직임 및 오디오는 원본 클립에서 가져옵니다.",
+    "display_name": "Flux 비디오 편집",
+    "inputs": {
+      "auto_downscale": {
+        "name": "auto_downscale",
+        "tooltip": "업로드 전에 면적이 1280x704픽셀보다 큰 원본을 자동으로 축소합니다. 종횡비는 유지되며, 더 작은 비디오는 변경되지 않습니다."
+      },
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "prompt": {
+        "name": "prompt",
+        "tooltip": "변경할 내용을 일반 언어로 최대 4096자까지 입력합니다. 언급하지 않은 모든 내용은 기존 상태로 유지됩니다. 교체 대사는 원본 음성 길이에 맞아야 하며, 무음 클립은 계속 무음으로 유지됩니다."
+      },
+      "safety_tolerance": {
+        "name": "safety_tolerance",
+        "tooltip": "검토 허용 수준입니다. 0이 가장 엄격합니다."
+      },
+      "seed": {
+        "name": "seed",
+        "tooltip": "노드를 다시 실행할지 결정하는 시드입니다. FLUX는 자체 시드를 선택하므로 이 값과 관계없이 실제 결과는 비결정적입니다."
+      },
+      "video": {
+        "name": "video",
+        "tooltip": "0.7~15초 길이이며 최소 160x160픽셀인 원본 클립입니다. 출력은 24 fps로 렌더링되며 프레임당 약 0.9메가픽셀로 제한되므로, 더 큰 원본은 더 작게 반환됩니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "FluxVideoUpscaleNode": {
     "description": "FLUX 슈퍼 해상도로 비디오를 1.5~3배 업스케일하며, 원본을 정밀하게 유지하거나 디테일을 창의적으로 향상합니다.",
     "display_name": "Flux 비디오 업스케일",
@@ -6530,6 +6852,42 @@
       }
     }
   },
+  "GeminiNodeV3": {
+    "description": "Google의 Gemini 모델로 텍스트 응답을 생성합니다. 텍스트 프롬프트와 선택적으로 하나 이상의 이미지, 오디오 클립, 비디오 또는 파일을 멀티모달 컨텍스트로 제공합니다.",
+    "display_name": "Google Gemini",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "응답 생성에 사용되는 Gemini 모델입니다."
+      },
+      "model_max_output_tokens": {
+        "name": "최대 출력 토큰"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_system_prompt": {
+        "name": "시스템 프롬프트"
+      },
+      "model_thinking_level": {
+        "name": "사고 수준"
+      },
+      "model_video_processing": {
+        "name": "비디오 처리"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "GeminiVideoOmni": {
     "description": "Google의 Gemini Omni Flash 모델을 사용하여 텍스트 프롬프트로 오디오가 포함된 영상을 생성합니다. 결과를 안내하거나 편집하기 위해 참조 이미지 및/또는 영상을 선택적으로 제공할 수 있습니다. 원하는 길이(3~10초)와 화면 비율(16:9 또는 9:16)을 프롬프트에 직접 작성하세요.",
     "display_name": "Google Gemini Omni (Video)",
@@ -6717,6 +7075,22 @@
       },
       "2": {
         "name": "batch_size",
+        "tooltip": null
+      }
+    }
+  },
+  "GetItemFromList": {
+    "display_name": "목록에서 항목 가져오기",
+    "inputs": {
+      "index": {
+        "name": "인덱스"
+      },
+      "list": {
+        "name": "목록"
+      }
+    },
+    "outputs": {
+      "0": {
         "tooltip": null
       }
     }
@@ -7581,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Tencent의 Hunyuan Image 모델을 사용하여 텍스트 프롬프트의 안내에 따라 최대 5장의 참조 이미지를 편집하거나 결합합니다.",
+    "display_name": "Tencent HY Image: 편집",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_watermark": {
+        "name": "워터마크"
+      },
+      "model_width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Tencent의 Hunyuan Image 모델을 사용하여 텍스트 프롬프트로부터 이미지를 생성합니다.",
+    "display_name": "Tencent HY Image: 텍스트를 이미지로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "높이"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      },
+      "model_watermark": {
+        "name": "워터마크"
+      },
+      "model_width": {
+        "name": "너비"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -7698,7 +8153,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent Upscale With Model",
+    "display_name": "모델을 사용한 Hunyuan 비디오 1.5 잠재 업스케일",
     "inputs": {
       "crop": {
         "name": "crop"
@@ -8763,6 +9218,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "텍스트 내 첫 번째 유효한 JSON 객체에서 키의 값을 추출합니다. Markdown 코드 블록을 포함합니다.",
     "display_name": "JSON에서 문자열 추출",
     "inputs": {
       "json_string": {
@@ -10140,7 +10596,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV 빈 latent 오디오",
+    "display_name": "빈 LTXV 잠재 오디오",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -11328,6 +11784,73 @@
       "1": {
         "name": "텍스트",
         "tooltip": "텍스트 캡션 목록입니다."
+      }
+    }
+  },
+  "LoopIteration": {
+    "display_name": "LoopIteration",
+    "inputs": {
+      "current_iteration_value": {
+        "name": "현재 반복 값"
+      },
+      "is_first": {
+        "name": "첫 번째 여부"
+      },
+      "is_last": {
+        "name": "마지막 여부"
+      },
+      "iteration_index": {
+        "name": "반복 인덱스"
+      },
+      "list_item": {
+        "name": "목록 항목"
+      },
+      "reuse_cache": {
+        "name": "캐시 재사용"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      },
+      "1": {
+        "tooltip": null
+      },
+      "2": {
+        "tooltip": null
+      },
+      "3": {
+        "tooltip": null
+      },
+      "4": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopProgress": {
+    "display_name": "LoopProgress",
+    "inputs": {
+      "position": {
+        "name": "위치"
+      },
+      "start_id": {
+        "name": "시작 ID"
+      },
+      "total": {
+        "name": "합계"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "LoopResult": {
+    "display_name": "LoopResult",
+    "inputs": {
+      "close_id": {
+        "name": "종료 ID"
       }
     }
   },
@@ -12793,6 +13316,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "더 정교한 표면 디테일과 높은 충실도의 기하 구조를 위해 추가 정제 패스를 실행합니다."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "울트라 패스의 해상도: 2k는 2048³, 4k는 4096³로 실행되어 가장 섬세한 표면 디테일을 제공합니다. 4k에는 meshy-7.1 이상이 필요합니다. ultra_mode가 활성화된 경우에만 사용됩니다."
       }
     },
     "outputs": {
@@ -12859,6 +13386,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "더 섬세한 표면 디테일과 높은 충실도의 형상을 위해 2048³에서 추가 정제 패스를 실행합니다."
       }
     },
     "outputs": {
@@ -13000,6 +13531,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "더 정교한 표면 디테일과 높은 충실도의 기하 구조를 위해 추가 정제 패스를 실행합니다."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "울트라 패스의 해상도: 2k는 2048³, 4k는 4096³로 실행되어 가장 섬세한 표면 디테일을 제공합니다. 4k에는 meshy-7.1 이상이 필요합니다. ultra_mode가 활성화된 경우에만 사용됩니다."
       }
     },
     "outputs": {
@@ -13758,6 +14293,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 전용: 예측된 깊이에 대해 희소 볼륨 정제를 수행합니다. 패스가 많을수록 대략 선형적인 비용으로 미세한 디테일과 가장자리가 선명해집니다. 0은 정제를 비활성화합니다. MoGe-1 / MoGe-2에서는 무시됩니다."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = 가장 빠름, 9 = 가장 디테일함."
@@ -13788,6 +14327,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "MoGe-3 전용: 예측된 깊이에 대해 희소 볼륨 정제를 수행합니다. 패스가 많을수록 대략 선형적인 비용으로 미세한 디테일과 가장자리가 선명해집니다. 0은 정제를 비활성화합니다. MoGe-1 / MoGe-2에서는 무시됩니다."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -16981,7 +17524,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Pixal3D 컨디셔닝",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -17763,6 +18306,93 @@
       }
     }
   },
+  "PrunaImageToVideoNode": {
+    "description": "선택적으로 마지막 프레임, 생성된 사운드 또는 오디오 트랙을 사용하여 Pruna 비디오 모델로 이미지를 비디오로 애니메이션화합니다.",
+    "display_name": "Pruna P-Video-2 이미지를 비디오로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_draft": {
+        "name": "초안"
+      },
+      "model_duration": {
+        "name": "기간"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "PrunaTextToVideoNode": {
+    "description": "선택적으로 생성된 사운드 또는 이를 구동할 오디오 트랙과 함께 Pruna 비디오 모델을 사용하여 텍스트 프롬프트에서 비디오를 생성합니다.",
+    "display_name": "Pruna P-Video-2 텍스트-비디오",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "사용할 모델입니다."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_draft": {
+        "name": "초안"
+      },
+      "model_duration": {
+        "name": "기간"
+      },
+      "model_enhance_prompt": {
+        "name": "enhance_prompt"
+      },
+      "model_fps": {
+        "name": "fps"
+      },
+      "model_generate_audio": {
+        "name": "generate_audio"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_resolution": {
+        "name": "해상도"
+      },
+      "model_seed": {
+        "name": "시드"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "QuadrupleCLIPLoader": {
     "description": "[레시피]\n\nhidream: long clip-l, long clip-g, t5xxl, llama_8b_3.1_instruct",
     "display_name": "QuadrupleCLIPLoader",
@@ -17817,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "그리기 전에 모델이 수행하는 추론의 양입니다. 수준이 높을수록 세부 묘사가 개선되지만 더 많은 토큰이 소모됩니다. Arrow 2 모델에서만 사용됩니다."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
@@ -17856,6 +18490,10 @@
         "name": "prompt",
         "tooltip": "원하는 SVG 출력에 대한 텍스트 설명입니다."
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "그리기 전에 모델이 수행하는 추론의 양입니다. 수준이 높을수록 세부 묘사가 개선되지만 더 많은 토큰이 소모됩니다. Arrow 2 모델에서만 사용됩니다."
+      },
       "reference_images": {
         "name": "reference_images",
         "tooltip": "생성을 안내할 최대 4개의 참조 이미지입니다."
@@ -17863,6 +18501,28 @@
       "seed": {
         "name": "seed",
         "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "KV 캐시 장치와 양자화를 설정할 수 있습니다. 기본적으로 모델은 auto 옵션을 사용합니다. 양자화는 메모리가 부족할 때 편집 워크플로를 잠재적으로 가속합니다.",
+    "display_name": "Qwen Image 2.1 캐시",
+    "inputs": {
+      "device": {
+        "name": "device",
+        "tooltip": "auto는 여유 VRAM을 사용한 후 RAM을 사용합니다. cpu (RAM)는 연산 중 백그라운드에서 미리 가져오며 속도 저하가 거의 없습니다. off는 매 단계마다 접두사를 다시 계산하므로 느리지만 캐시를 제외할 수 있는 유일한 방법입니다."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "저장 정밀도입니다. default는 무손실입니다. int8은 대략 bf16 정확도에서 캐시를 절반으로 줄이며, int4는 1/4로 줄이지만 단계당 오차는 대략 두 배가 됩니다."
+      },
+      "model": {
+        "name": "model"
       }
     },
     "outputs": {
@@ -18504,7 +19164,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 일관된 스타일의 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다."
+        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 일관된 스타일의 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다. recraftv4_1_flash는 가장 빠르고 저렴한 모델이며 스타일을 전혀 지원하지 않습니다."
       },
       "model_size": {
         "name": "size"
@@ -22223,7 +22883,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade 빈 잠재 이미지",
+    "display_name": "빈 Stable Cascade 잠재 이미지",
     "inputs": {
       "batch_size": {
         "name": "배치 크기"
@@ -22266,7 +22926,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_StageC VAE 인코딩",
+    "display_name": "Stable Cascade 스테이지 C VAE 인코드",
     "inputs": {
       "compression": {
         "name": "압축"
@@ -22403,6 +23063,52 @@
       "2": {
         "name": "잠재 데이터",
         "tooltip": null
+      }
+    }
+  },
+  "StartLoop": {
+    "display_name": "루프 시작",
+    "inputs": {
+      "cache_iterations": {
+        "name": "cache_iterations",
+        "tooltip": "이전 실행에서 변경되지 않은 반복 결과를 재사용합니다. 모든 반복을 다시 실행하려면 비활성화하세요."
+      },
+      "initial_iteration_value": {
+        "name": "initial_iteration_value",
+        "tooltip": "첫 번째 반복에서 current_iteration_value로 노출되는 값입니다."
+      },
+      "mode": {
+        "name": "모드",
+        "tooltip": "루프 반복 모드입니다."
+      },
+      "mode_num_iterations": {
+        "name": "num_iterations"
+      },
+      "parent_iteration": {
+        "name": "parent_iteration",
+        "tooltip": "이 루프를 중첩하려면 외부 Start Loop의 iteration_index를 연결하세요."
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "iteration_index",
+        "tooltip": "현재 루프 반복의 인덱스입니다."
+      },
+      "1": {
+        "name": "is_first",
+        "tooltip": "루프의 첫 번째 반복 동안 True입니다."
+      },
+      "2": {
+        "name": "is_last",
+        "tooltip": "루프의 마지막 반복에서 참입니다."
+      },
+      "3": {
+        "name": "list_item",
+        "tooltip": "List 모드 사용 시 목록의 현재 항목입니다. Simple 및 For 모드에서는 None입니다."
+      },
+      "4": {
+        "name": "current_iteration_value",
+        "tooltip": "현재 반복의 루프 전달 값입니다. 첫 번째 반복에서는 initial_iteration_value이고, 이후 각 반복에서는 End Loop의 next_iteration_value입니다."
       }
     }
   },
@@ -23182,8 +23888,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "텍스트 인코드 Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "텍스트 인코더가 확인하고 VAE latents로 시퀀스에 삽입하는 참조 이미지입니다."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "resolution": {
+        "name": "resolution",
+        "tooltip": "참조 이미지는 종횡비를 유지하면서 32의 배수로, 약 resolution x resolution 픽셀로 크기가 조정됩니다. 0은 각 참조를 자체 크기로 유지하되 32의 배수로 반올림합니다."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "positive",
+        "tooltip": null
+      },
+      "1": {
+        "name": "negative",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "다른 크기는 편집을 변경하므로 샘플링과 일치하도록 첫 번째 참조 이미지 크기의 빈 latent입니다."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "텍스트 인코드 Qwen Image Edit",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23205,7 +23950,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "텍스트 인코드 Qwen Image Edit Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23281,6 +24026,10 @@
       "max_length": {
         "name": "최대 길이"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "체크포인트의 다중 토큰 예측 헤드를 사용한 추측적 디코딩입니다. MTP 가중치가 없으면 효과가 없습니다. auto는 초안 깊이를 조정하고, 2-5는 이를 고정합니다. 샘플링된 출력은 올바른 분포를 유지하지만 동일한 시드에서도 비 MTP 출력과 다릅니다."
+      },
       "prompt": {
         "name": "프롬프트"
       },
@@ -23308,6 +24057,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 채팅 템플릿에서 시스템 프롬프트를 대체합니다. 기본 템플릿을 사용하지 않을 때는 무시됩니다."
+      },
       "thinking": {
         "name": "생각 중",
         "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
@@ -23324,6 +24077,10 @@
     "outputs": {
       "0": {
         "name": "생성된 텍스트",
+        "tooltip": null
+      },
+      "1": {
+        "name": "사고 과정",
         "tooltip": null
       }
     }
@@ -23343,6 +24100,10 @@
       "max_length": {
         "name": "최대 길이"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "체크포인트의 멀티 토큰 예측 헤드를 사용한 추측 디코딩입니다. MTP 가중치가 없으면 효과가 없습니다. auto는 초안 깊이를 자동 조정하고, 2-5는 이를 고정합니다. 샘플링된 출력은 올바른 분포를 유지하지만 동일한 시드에서 비-MTP 출력과는 다릅니다."
+      },
       "prompt": {
         "name": "프롬프트"
       },
@@ -23370,6 +24131,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 채팅 템플릿에서 시스템 프롬프트를 대체합니다. 기본 템플릿을 사용하지 않을 때는 무시됩니다."
+      },
       "thinking": {
         "name": "생각 중",
         "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
@@ -23386,6 +24151,10 @@
     "outputs": {
       "0": {
         "name": "생성된 텍스트",
+        "tooltip": null
+      },
+      "1": {
+        "name": "사고 과정",
         "tooltip": null
       }
     }
@@ -23858,7 +24627,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Trellis2 컨디셔닝",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -23880,7 +24649,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Trellis2 형태 단계",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -23908,7 +24677,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Trellis2 텍스처 단계",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24601,6 +25370,192 @@
       "2": {
         "name": "GLB",
         "tooltip": null
+      }
+    }
+  },
+  "TripoPSeriesImageToModelNode": {
+    "description": "이미지에서 깔끔한 토폴로지의 저폴리 3D 모델을 삼각형 메시(GLB) 또는 쿼드 중심 메시(FBX)로 생성합니다.",
+    "display_name": "Tripo P2: 이미지에서 모델",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "Tripo P 시리즈 모델입니다."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_enable_image_autofix": {
+        "name": "enable_image_autofix"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "방향"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "쿼드"
+      },
+      "model_texture": {
+        "name": "텍스처"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "쿼드가 활성화된 경우 비어 있습니다."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "쿼드가 활성화된 경우에만 채워집니다."
+      }
+    }
+  },
+  "TripoPSeriesMultiviewToModelNode": {
+    "description": "정면 뷰와 좌측, 후면, 우측 뷰 중 1~3개를 사용하여 깔끔한 토폴로지의 저폴리 3D 모델을 삼각형 메시(GLB) 또는 쿼드 중심 메시(FBX)로 생성합니다.",
+    "display_name": "Tripo P2: 다중 뷰에서 모델",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "Tripo P 시리즈 모델입니다."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_orientation": {
+        "name": "방향"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_quad": {
+        "name": "쿼드"
+      },
+      "model_texture": {
+        "name": "텍스처"
+      },
+      "model_texture_alignment": {
+        "name": "texture_alignment"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quad가 활성화되면 비어 있습니다."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "quad가 활성화된 경우에만 채워집니다."
+      }
+    }
+  },
+  "TripoPSeriesTextToModelNode": {
+    "description": "텍스트 프롬프트에서 깔끔한 토폴로지의 로우 폴리 3D 모델을 삼각형 메시(GLB) 또는 쿼드 중심 메시(FBX)로 생성합니다.",
+    "display_name": "Tripo P2: 텍스트에서 모델로",
+    "inputs": {
+      "control_after_generate": {
+        "name": "생성 후 제어"
+      },
+      "model": {
+        "name": "모델",
+        "tooltip": "Tripo P 시리즈 모델입니다."
+      },
+      "model_auto_size": {
+        "name": "auto_size"
+      },
+      "model_compress_geometry": {
+        "name": "compress_geometry"
+      },
+      "model_export_uv": {
+        "name": "export_uv"
+      },
+      "model_face_limit": {
+        "name": "face_limit"
+      },
+      "model_image_seed": {
+        "name": "image_seed"
+      },
+      "model_model_seed": {
+        "name": "model_seed"
+      },
+      "model_negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "model_pbr": {
+        "name": "pbr"
+      },
+      "model_prompt": {
+        "name": "프롬프트"
+      },
+      "model_quad": {
+        "name": "quad"
+      },
+      "model_texture": {
+        "name": "텍스처"
+      },
+      "model_texture_seed": {
+        "name": "texture_seed"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "모델 task_id",
+        "tooltip": null
+      },
+      "1": {
+        "name": "GLB",
+        "tooltip": "quad가 활성화되면 비어 있습니다."
+      },
+      "2": {
+        "name": "FBX",
+        "tooltip": "quad가 활성화된 경우에만 채워집니다."
       }
     }
   },
@@ -25402,7 +26357,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "Hunyuan 3D VAE 디코드",
     "inputs": {
       "num_chunks": {
         "name": "분할 수"
@@ -25710,7 +26665,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Trellis2 VAE 형태 디코드",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -25731,7 +26686,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Trellis2 VAE 구조 디코드",
     "inputs": {
       "resolution": {
         "name": "해상도"
@@ -25751,7 +26706,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Trellis2 VAE 텍스처 디코드",
     "inputs": {
       "samples": {
         "name": "샘플"
@@ -28669,11 +29624,27 @@
         "name": "모드",
         "tooltip": "full: 멜로디와 코드를 생성합니다; melody: 멜로디만 생성하며, 커버에 권장됩니다."
       },
+      "penalty_window": {
+        "name": "penalty_window",
+        "tooltip": "반복 페널티에 사용되는 최근 ABC 토큰 수입니다."
+      },
+      "repetition_penalty": {
+        "name": "repetition_penalty"
+      },
       "seed": {
         "name": "시드"
       },
       "style": {
         "name": "style"
+      },
+      "temperature": {
+        "name": "temperature"
+      },
+      "top_k": {
+        "name": "top_k"
+      },
+      "top_p": {
+        "name": "top_p"
       }
     },
     "outputs": {
@@ -28691,6 +29662,10 @@
         "name": "abc",
         "tooltip": "ABC 생성기를 연결하거나 편집한 악보를 제공하세요. 비워 두면 자동으로 off 모드가 사용됩니다."
       },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "스타일과 가사를 위한 자기회귀 가이던스입니다. 1.0은 CFG를 비활성화하며 ABC 워크플로와 일치합니다. 원래의 비활성 모드 가이던스와 일치시키려면 1.01을 사용하세요."
+      },
       "clip": {
         "name": "clip"
       },
@@ -28702,7 +29677,7 @@
       },
       "max_duration": {
         "name": "max_duration",
-        "tooltip": "최대 길이이며, 생성은 더 일찍 종료될 수 있습니다. 릴리스 버전은 360초 예산을 사용합니다."
+        "tooltip": "최대 길이(초)입니다. 긴 프롬프트의 경우 자동으로 줄어들며, 생성이 더 일찍 중단될 수 있습니다."
       },
       "mode": {
         "name": "모드",
