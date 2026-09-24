@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
+import type { DroppedScope } from '@e2e/fixtures/agentWorkflowScopeFixture'
 import {
   dropWorkflowScope,
   restoreWorkflowScope
@@ -46,7 +47,7 @@ test.describe(
       }) => {
         test.setTimeout(90_000)
         const workflowId = agentConversation.conversation.workflow.id
-        let tabPath: string | undefined
+        let dropped: DroppedScope | undefined
 
         await test.step('setup: drop scope as the clear frame arrives', async () => {
           await agentConversation.sendPrompt(0)
@@ -66,14 +67,14 @@ test.describe(
               // rejecting it too and leaving nothing on screen to prove the
               // clear's rejection with.
               await expect(agentConversation.vueNodes.nodes).not.toHaveCount(0)
-              tabPath = await dropWorkflowScope(page, workflowId)
+              dropped = await dropWorkflowScope(page, workflowId)
             }
           )
         })
 
-        if (tabPath === undefined)
+        if (dropped === undefined)
           throw new Error('the clear frame never armed the scope drop')
-        const droppedTabPath = tabPath
+        const droppedScope = dropped
 
         await test.step('rejection: the same graph keeps its stale node', async () => {
           // Observing the same graph the whole way through (never switching
@@ -84,7 +85,7 @@ test.describe(
         })
 
         await test.step('autonomous recovery: scope returns, no new frame is sent', async () => {
-          await restoreWorkflowScope(page, workflowId, droppedTabPath)
+          await restoreWorkflowScope(page, workflowId, droppedScope)
           // The self-driven retry clears the same canvas on its own; nothing
           // sends another frame after this point.
           await expect(agentConversation.vueNodes.nodes).toHaveCount(0)
