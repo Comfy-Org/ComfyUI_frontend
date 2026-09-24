@@ -2828,6 +2828,29 @@ describe('useAgentSession credential refresh in the standalone agent harness', (
     scope.stop()
   })
 
+  // A thread switch stashes the running turn; it keeps running server-side and
+  // still needs a current credential until its done event arrives.
+  it('keeps refreshing for a turn a thread switch moved to the background', async () => {
+    const refreshCredential = vi.fn(async () => {})
+    const { source, emit } = fakeEvents()
+    const scope = effectScope()
+    const session = scope.run(() =>
+      useAgentSession({ rest: fakeRest({ refreshCredential }), events: source })
+    )!
+    session.start()
+
+    await session.sendMessage('build it')
+    session.newChat()
+    expect(useAgentConversationStore().isStreaming).toBe(false)
+    await vi.advanceTimersByTimeAsync(CREDENTIAL_REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+
+    emit(done('msg-1'))
+    await vi.advanceTimersByTimeAsync(CREDENTIAL_REFRESH_INTERVAL_MS * 2)
+    expect(refreshCredential).toHaveBeenCalledTimes(2)
+    scope.stop()
+  })
+
   it('stops refreshing when the panel scope is disposed mid-turn', async () => {
     const refreshCredential = vi.fn(async () => {})
     const { source } = fakeEvents()
