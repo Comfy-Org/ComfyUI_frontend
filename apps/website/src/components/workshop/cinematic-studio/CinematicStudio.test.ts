@@ -491,6 +491,18 @@ describe('CinematicStudio', () => {
       expect(window.location.search).toBe('?ux=d')
     })
 
+    it('lists Cinematic Studio first in the Hub apps tab', async () => {
+      window.history.replaceState(null, '', '/cinematic-studio?ux=hub')
+      render(CinematicStudioPage, { props: { models } })
+
+      const tab = await screen.findByRole('button', { name: 'Apps' })
+      expect(tab).toHaveAttribute('aria-pressed', 'true')
+      const [firstApp] = screen.getAllByRole('listitem')
+      expect(
+        within(firstApp).getByRole('link', { name: 'Cinematic Studio' })
+      ).toHaveAttribute('href', '/cinematic-studio?ux=e')
+    })
+
     it('runs a shot from the side panel on the model picked there', async () => {
       window.history.replaceState(null, '', '/cinematic-studio?ux=d')
       vi.mocked(router_render).mockImplementation(async (slug) =>

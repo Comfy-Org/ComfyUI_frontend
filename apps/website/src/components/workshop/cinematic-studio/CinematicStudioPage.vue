@@ -6,6 +6,7 @@ import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/mode
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import WorkshopGate from '../WorkshopGate.vue'
+import CinematicAppsHub from './CinematicAppsHub.vue'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
@@ -17,7 +18,8 @@ const { models, locale = 'en' } = defineProps<{
 
 const LAYOUTS = [
   { id: 'e', label: 'cinematic.ux.composer' },
-  { id: 'd', label: 'cinematic.ux.panel' }
+  { id: 'd', label: 'cinematic.ux.panel' },
+  { id: 'hub', label: 'cinematic.ux.hub' }
 ] as const
 
 const layout = ref('e')
@@ -41,7 +43,8 @@ function pickLayout(id: string) {
 
 <template>
   <WorkshopGate>
-    <CinematicStudioPanel v-if="layout === 'd'" :models :locale />
+    <CinematicAppsHub v-if="layout === 'hub'" :locale />
+    <CinematicStudioPanel v-else-if="layout === 'd'" :models :locale />
     <CinematicStudio v-else :models :locale />
     <CinematicMenu
       :model-value="layout"

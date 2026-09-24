@@ -6,6 +6,58 @@ import type { Locale, LocalizedText } from '../../../i18n/translations'
  * not add to every other page's script budget.
  */
 const copy = {
+  'cinematic.ux.hub': {
+    en: 'Hub · Apps tab',
+    'zh-CN': 'Hub · 应用标签页'
+  },
+  'cinematic.hub.eyebrow': { en: 'Hub', 'zh-CN': 'Hub' },
+  'cinematic.hub.heading': {
+    en: 'What will you make next?',
+    'zh-CN': '接下来你想创造什么？'
+  },
+  'cinematic.hub.subtitle': {
+    en: 'Models, the workflows built on them, and apps made for one job.',
+    'zh-CN': '模型、基于模型的工作流，以及为单一任务打造的应用。'
+  },
+  'cinematic.hub.tabs': { en: 'Show', 'zh-CN': '显示' },
+  'cinematic.hub.models': { en: 'Models', 'zh-CN': '模型' },
+  'cinematic.hub.workflows': { en: 'Workflows', 'zh-CN': '工作流' },
+  'cinematic.hub.apps': { en: 'Apps', 'zh-CN': '应用' },
+  'cinematic.hub.appsIntro': {
+    en: 'Tools built around one kind of work. Each one runs models and workflows for you.',
+    'zh-CN': '围绕一类工作打造的工具，为你运行模型和工作流。'
+  },
+  'cinematic.hub.elsewhere': {
+    en: 'Models and workflows live in the new Hub prototype.',
+    'zh-CN': '模型和工作流在新版 Hub 原型中。'
+  },
+  'cinematic.hub.openHub': { en: 'Open the Hub', 'zh-CN': '打开 Hub' },
+  'cinematic.hub.beta': { en: 'Beta', 'zh-CN': '测试版' },
+  'cinematic.hub.soon': { en: 'Coming soon', 'zh-CN': '即将推出' },
+  'cinematic.hub.studioSummary': {
+    en: 'Direct a shot with a real camera, light and grade, then run it on any image model.',
+    'zh-CN':
+      '用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。'
+  },
+  'cinematic.hub.studioMeta': {
+    en: 'Image · 5 models',
+    'zh-CN': '图像 · 5 个模型'
+  },
+  'cinematic.hub.to3d': { en: 'Image to 3D', 'zh-CN': '图像转 3D' },
+  'cinematic.hub.to3dSummary': {
+    en: 'Turn a product photo into a 3D model you can spin and export.',
+    'zh-CN': '把产品照片变成可旋转、可导出的 3D 模型。'
+  },
+  'cinematic.hub.product': { en: 'Product Shots', 'zh-CN': '产品图' },
+  'cinematic.hub.productSummary': {
+    en: 'Place a product in studio or lifestyle scenes, on a clean background or in context.',
+    'zh-CN': '把产品放进棚拍或生活场景，干净背景或真实环境都可以。'
+  },
+  'cinematic.hub.storyboard': { en: 'Storyboard', 'zh-CN': '分镜' },
+  'cinematic.hub.storyboardSummary': {
+    en: 'Write a sequence and get consistent frames, ready to animate.',
+    'zh-CN': '写下一段情节，生成风格一致、可直接做动画的分镜。'
+  },
   'cinematic.stage.renderingTake': {
     en: 'Rendering take {take}',
     'zh-CN': '正在渲染第 {take} 条'
