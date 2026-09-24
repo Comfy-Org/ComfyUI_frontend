@@ -72,7 +72,6 @@ const config: KnipConfig = {
     'src/workbench/extensions/manager/types/generatedManagerTypes.ts',
     'packages/ingest-types/src/zod.gen.ts',
     // Pending integration in stacked PR
-    'src/components/sidebar/tabs/nodeLibrary/CustomNodesPanel.vue',
     // Served to custom nodes at runtime as /comfy/api/v2.js. Nothing in
     // the build imports it — that is the point: it is the entry point
     // packs import from, so knip cannot see a consumer.
