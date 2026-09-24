@@ -23,6 +23,12 @@ on:
         options: [staging, production]
         default: staging
 
+# Per-target group taken before preflight: test drops a superseded push,
+# staging and production queue so dispatches promote in order.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'push' && 'test' || inputs.environment }}
+  cancel-in-progress: ${{ github.event_name == 'push' }}
+
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_BILLING_WEB_ORG_ID }}
   VERCEL_TOKEN: ${{ secrets.VERCEL_BILLING_WEB_TOKEN }}
@@ -63,9 +69,6 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    concurrency:
-      group: ci-vercel-billing-web-deploy-test
-      cancel-in-progress: true
     env:
       VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BILLING_WEB_TEST_PROJECT_ID }}
     steps:
