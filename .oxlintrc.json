@@ -139,6 +139,12 @@
   },
   "overrides": [
     {
+      "files": ["packages/ingest-types/src/types.gen.ts"],
+      "rules": {
+        "comfy/no-duplicate-ingest-type": "off"
+      }
+    },
+    {
       "files": [
         "**/*.{test,spec}.{ts,tsx}",
         "**/{__test__,__tests__,__fixtures__}/**/*.{ts,tsx}"
