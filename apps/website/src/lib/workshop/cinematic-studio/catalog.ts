@@ -1,3 +1,4 @@
+import type { WorkshopModelDetail } from '../../../config/models-catalogue'
 import type { CinematicCopyKey } from './copy'
 
 type CameraPart = 'body' | 'lens' | 'focal' | 'aperture'
@@ -104,11 +105,16 @@ export const cameraGroups: readonly DirectionGroup[] = [
     hint: 'cinematic.camera.hint',
     options: [
       auto,
-      ...['14', '24', '35', '50', '85', '135'].map((mm) => ({
-        id: mm,
-        label: `cinematic.option.mm${mm}` as CinematicCopyKey,
-        phrase: `${mm}mm`
-      }))
+      ...(
+        [
+          ['14', 'cinematic.option.mm14'],
+          ['24', 'cinematic.option.mm24'],
+          ['35', 'cinematic.option.mm35'],
+          ['50', 'cinematic.option.mm50'],
+          ['85', 'cinematic.option.mm85'],
+          ['135', 'cinematic.option.mm135']
+        ] as const satisfies readonly (readonly [string, CinematicCopyKey])[]
+      ).map(([mm, label]) => ({ id: mm, label, phrase: `${mm}mm` }))
     ]
   },
   {
@@ -117,17 +123,15 @@ export const cameraGroups: readonly DirectionGroup[] = [
     hint: 'cinematic.camera.hint',
     options: [
       auto,
-      ...[
-        ['1.4', 'f14'],
-        ['2', 'f2'],
-        ['2.8', 'f28'],
-        ['4', 'f4'],
-        ['8', 'f8']
-      ].map(([stop, key]) => ({
-        id: stop,
-        label: `cinematic.option.${key}` as CinematicCopyKey,
-        phrase: `f/${stop}`
-      }))
+      ...(
+        [
+          ['1.4', 'cinematic.option.f14'],
+          ['2', 'cinematic.option.f2'],
+          ['2.8', 'cinematic.option.f28'],
+          ['4', 'cinematic.option.f4'],
+          ['8', 'cinematic.option.f8']
+        ] as const satisfies readonly (readonly [string, CinematicCopyKey])[]
+      ).map(([stop, label]) => ({ id: stop, label, phrase: `f/${stop}` }))
     ]
   }
 ]
@@ -425,6 +429,11 @@ export function directionOption(
   )
 }
 
+type RunnableModel = Pick<
+  WorkshopModelDetail,
+  'slug' | 'name' | 'provider' | 'execution'
+>
+
 export interface CinematicModel {
   readonly slug: string
   readonly name: string
@@ -433,7 +442,7 @@ export interface CinematicModel {
 }
 
 /** Image models the studio can route to, by Router page slug. */
-export const CINEMATIC_MODEL_LOGOS: Readonly<Record<string, string>> = {
+const CINEMATIC_MODEL_LOGOS: Readonly<Record<string, string>> = {
   'byteplus--seedream-4-5--generate-images': '/icons/ai-models/bytedance.svg',
   'vertexai--gemini-3-pro-image--generate-images':
     '/icons/ai-models/gemini.svg',
@@ -462,3 +471,25 @@ export const RESOLUTIONS = [
 export type Resolution = (typeof RESOLUTIONS)[number]['id']
 
 export const MAX_TAKES = 4
+
+export function runnableCinematicModels(
+  lookup: (slug: string) => RunnableModel | undefined
+): readonly CinematicModel[] {
+  const models = Object.entries(CINEMATIC_MODEL_LOGOS).flatMap(
+    ([slug, logo]) => {
+      const model = lookup(slug)
+      return model?.execution
+        ? [
+            {
+              slug: model.slug,
+              name: model.name,
+              provider: model.provider ?? '',
+              logo
+            }
+          ]
+        : []
+    }
+  )
+  if (!models.length) throw new Error('Cinematic Studio has no runnable models')
+  return models
+}

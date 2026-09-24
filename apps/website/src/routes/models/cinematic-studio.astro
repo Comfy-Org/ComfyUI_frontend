@@ -2,23 +2,10 @@
 import ToolLayout from '../../layouts/ToolLayout.astro'
 import CinematicStudioPage from '../../components/workshop/cinematic-studio/CinematicStudioPage.vue'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
-import { CINEMATIC_MODEL_LOGOS } from '../../lib/workshop/cinematic-studio/catalog'
+import { runnableCinematicModels } from '../../lib/workshop/cinematic-studio/catalog'
 import { tc } from '../../lib/workshop/cinematic-studio/copy'
 
-const models = Object.entries(CINEMATIC_MODEL_LOGOS).flatMap(([slug, logo]) => {
-  const model = getRouterWorkshopModelDetail(slug)
-  return model?.execution
-    ? [
-        {
-          slug: model.slug,
-          name: model.name,
-          provider: model.provider ?? '',
-          logo
-        }
-      ]
-    : []
-})
-if (!models.length) throw new Error('Cinematic Studio has no runnable models')
+const models = runnableCinematicModels(getRouterWorkshopModelDetail)
 ---
 
 <ToolLayout

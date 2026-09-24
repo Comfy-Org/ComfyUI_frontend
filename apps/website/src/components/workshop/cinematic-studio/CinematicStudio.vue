@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Code } from '@lucide/vue'
 import { computedAsync } from '@vueuse/core'
-import { computed, ref, shallowRef } from 'vue'
+import { computed, nextTick, ref, shallowRef, watch } from 'vue'
 
 import { useCinematicStudioRun } from '../../../composables/useCinematicStudioRun'
 import { resolveModelRouterRender } from '../../../config/router-render'
@@ -63,6 +63,9 @@ const brief = computed(() => ({
 }))
 const promptSegments = computed(() => cinematicPromptSegments(brief.value))
 const prompt = computed(() => cinematicPrompt(brief.value))
+const references = computed(() =>
+  [cast.value, palette.value].filter((file): file is File => !!file)
+)
 const resolutionPixels = computed(
   () => RESOLUTIONS.find((option) => option.id === resolution.value)?.pixels
 )
@@ -80,9 +83,17 @@ const pickerTitle = computed(() =>
       : ''
 )
 
+let pickerOpener: HTMLElement | undefined
 function togglePicker(key: PickerKey) {
+  const active = document.activeElement
+  if (active instanceof HTMLElement) pickerOpener = active
   picker.value = picker.value === key ? undefined : key
 }
+watch(picker, async (open, wasOpen) => {
+  if (open || !wasOpen) return
+  await nextTick()
+  pickerOpener?.focus()
+})
 
 function choose(part: DirectionPart, id: string) {
   direction.value = { ...direction.value, [part]: id }
@@ -96,9 +107,7 @@ function generate() {
     aspect: aspect.value,
     resolutionPixels: resolutionPixels.value ?? 2048,
     takes: takes.value,
-    references: [cast.value, palette.value].filter(
-      (file): file is File => !!file
-    )
+    references: references.value
   })
 }
 
@@ -111,7 +120,8 @@ const apiRequest = computedAsync(async () => {
     const resolved = resolveModelRouterRender(model, {
       prompt: prompt.value || tc('cinematic.scene.placeholder', locale),
       aspect_ratio: aspect.value,
-      resolution: resolutionPixels.value
+      resolution: resolutionPixels.value,
+      ...(references.value.length ? { reference_images: references.value } : {})
     })
     return {
       contract: resolved.contract,
@@ -179,6 +189,7 @@ const apiRequest = computedAsync(async () => {
       />
       <CinematicPicker
         v-if="picker"
+        :key="picker"
         :groups="pickerGroups"
         :direction
         :title="pickerTitle"

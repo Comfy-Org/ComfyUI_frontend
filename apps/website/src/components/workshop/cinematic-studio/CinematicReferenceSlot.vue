@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Palette, Plus, UserRound, X } from '@lucide/vue'
 import { useObjectUrl } from '@vueuse/core'
-import { useTemplateRef } from 'vue'
+import { computed, useTemplateRef } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -16,6 +16,15 @@ const { kind, locale = 'en' } = defineProps<{
 const file = defineModel<File | undefined>()
 const preview = useObjectUrl(file)
 const input = useTemplateRef<HTMLInputElement>('input')
+const accessibleName = computed(() => {
+  const action = tc(
+    kind === 'cast'
+      ? 'cinematic.reference.castAction'
+      : 'cinematic.reference.paletteAction',
+    locale
+  )
+  return file.value ? `${action}: ${file.value.name}` : action
+})
 
 function choose(event: Event) {
   const target = event.target
@@ -38,14 +47,7 @@ function choose(event: Event) {
             : 'border border-dashed border-transparency-white-t20 bg-transparency-white-t4 hover:border-primary-warm-white/50'
         )
       "
-      :aria-label="
-        tc(
-          kind === 'cast'
-            ? 'cinematic.reference.castAction'
-            : 'cinematic.reference.paletteAction',
-          locale
-        )
-      "
+      :aria-label="accessibleName"
       @click="input?.click()"
     >
       <img
@@ -109,6 +111,7 @@ function choose(event: Event) {
       ref="input"
       type="file"
       accept="image/png,image/jpeg,image/webp"
+      :data-testid="`cinematic-reference-${kind}`"
       class="sr-only"
       tabindex="-1"
       aria-hidden="true"

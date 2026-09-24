@@ -9,6 +9,7 @@ import {
   DropdownMenuRoot,
   DropdownMenuTrigger
 } from 'reka-ui'
+import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -32,12 +33,16 @@ const {
 }>()
 
 const value = defineModel<string>({ required: true })
+const triggerLabel = computed(() => {
+  const selected = options.find((option) => option.id === value.value)
+  return selected ? `${heading}: ${selected.label}` : heading
+})
 </script>
 
 <template>
   <DropdownMenuRoot>
     <DropdownMenuTrigger
-      :aria-label="heading"
+      :aria-label="triggerLabel"
       :class="
         cn(
           'flex items-center rounded-xl outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 data-[state=open]:bg-transparency-white-t8',

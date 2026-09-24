@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { X } from '@lucide/vue'
 import { onKeyStroke } from '@vueuse/core'
-import { computed } from 'vue'
+import { computed, onMounted, useTemplateRef } from 'vue'
 
 import type {
   Direction,
@@ -31,7 +31,14 @@ const emit = defineEmits<{
   close: []
 }>()
 
-onKeyStroke('Escape', () => emit('close'))
+const root = useTemplateRef<HTMLElement>('root')
+onKeyStroke('Escape', () => emit('close'), { target: root })
+onMounted(() => {
+  const target =
+    root.value?.querySelector<HTMLElement>('[aria-checked="true"]') ??
+    root.value?.querySelector<HTMLElement>('button')
+  target?.focus()
+})
 
 const chips = computed(() => groups.length > 1)
 const adds = computed(() =>
@@ -44,6 +51,7 @@ const adds = computed(() =>
 
 <template>
   <section
+    ref="root"
     role="dialog"
     :aria-label="title"
     class="flex h-full w-[480px] flex-col border-r border-transparency-white-t8 bg-primary-comfy-ink shadow-[24px_0_48px_rgb(0_0_0/0.35)]"

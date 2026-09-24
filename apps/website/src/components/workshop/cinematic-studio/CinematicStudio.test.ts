@@ -198,4 +198,62 @@ describe('CinematicStudio', () => {
       })
     ).toBeInTheDocument()
   })
+
+  it('sends a character reference with the prompt that names it', async () => {
+    vi.mocked(router_render).mockResolvedValue({
+      slug: detail.slug,
+      routerId: detail.routerId,
+      expectedKind: 'image',
+      requestId: 'request-1',
+      deadlineCollections: 0,
+      outputs: [{ kind: 'image', url: 'blob:shot', fileName: 'shot.png' }]
+    })
+    const user = renderStudio()
+    const face = new File(['face'], 'mara.png', { type: 'image/png' })
+
+    await user.upload(screen.getByTestId('cinematic-reference-cast'), face)
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+
+    await screen.findByAltText(/A diner at dawn/)
+    const [, parameters] = vi.mocked(router_render).mock.calls[0]
+    expect(parameters?.reference_images).toEqual([face])
+    expect(parameters?.prompt).toContain(
+      'Keep the character from reference image 1.'
+    )
+  })
+
+  it('cancels a take that is still rendering', async () => {
+    const signals: AbortSignal[] = []
+    vi.mocked(router_render).mockImplementation(
+      (_slug, _parameters, options) =>
+        new Promise(() => {
+          if (options.signal) signals.push(options.signal)
+        })
+    )
+    const user = renderStudio()
+
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+    await user.click(await screen.findByRole('button', { name: 'Cancel' }))
+
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      t('workshop.output.cancelled')
+    )
+    expect(signals).toHaveLength(1)
+    expect(signals[0].aborted).toBe(true)
+  })
+
+  it('moves focus into a picker and back to its tile on Escape', async () => {
+    const user = renderStudio()
+    const tile = screen.getByRole('button', { name: /Light/ })
+
+    await user.click(tile)
+    expect(screen.getByRole('radio', { name: 'Practical night' })).toHaveFocus()
+
+    await user.keyboard('{Escape}')
+
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(tile).toHaveFocus()
+  })
 })
