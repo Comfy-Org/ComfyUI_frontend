@@ -2,6 +2,7 @@ import { expect } from '@playwright/test'
 import type { Locator, Page } from '@playwright/test'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import { TestIds } from '@e2e/fixtures/selectors'
 
 test.describe('Workflow tabs', () => {
   // These Agent-adjacent path-identity cases are staged behind the stacked
@@ -266,47 +267,107 @@ test.describe('Workflow tabs', () => {
     await expect.poll(() => topbar.getTabNames()).toHaveLength(2)
   })
 
+  test.describe('with a narrow viewport', () => {
+    test.use({ viewport: { width: 800, height: 720 } })
+
+    test(
+      'Overflowing tabs shrink to stay visible while the active tab keeps its width',
+      { tag: '@ui' },
+      async ({ comfyPage }) => {
+        const topbar = comfyPage.menu.topbar
+        await topbar.openBlankWorkflows(5)
+
+        await topbar.getTab(0).click()
+
+        await expect(topbar.tabs.last()).toBeInViewport({ ratio: 1 })
+        await expect
+          .poll(async () => {
+            const [activeBox, inactiveBox] = await Promise.all([
+              topbar.getActiveTab().boundingBox(),
+              topbar.tabs.last().boundingBox()
+            ])
+            return activeBox && inactiveBox
+              ? activeBox.width - inactiveBox.width
+              : null
+          })
+          .toBeGreaterThan(0)
+      }
+    )
+
+    test(
+      'Scrolls the active tab into view once the strip overflows',
+      { tag: '@ui' },
+      async ({ comfyPage }) => {
+        const topbar = comfyPage.menu.topbar
+        await topbar.openBlankWorkflows(10)
+
+        await expect(topbar.tabs.last()).toBeInViewport({ ratio: 1 })
+        await expect(topbar.tabs.first()).not.toBeInViewport({ ratio: 1 })
+
+        await topbar.workflowTabs
+          .getByRole('button', { name: 'More workflows', exact: true })
+          .click()
+        await comfyPage.page
+          .getByRole('menuitem', { name: 'Unsaved Workflow', exact: true })
+          .click()
+
+        await expect(topbar.tabs.first()).toBeInViewport({ ratio: 1 })
+        await expect(topbar.tabs.last()).not.toBeInViewport({ ratio: 1 })
+      }
+    )
+
+    test(
+      'Compact inactive tabs do not reveal a close button on hover',
+      { tag: '@ui' },
+      async ({ comfyPage }) => {
+        const topbar = comfyPage.menu.topbar
+        await topbar.openBlankWorkflows(10)
+        const inactiveTab = topbar.getTab(9)
+        const activeTab = topbar.getActiveTab()
+        await expect(
+          topbar.tabs.first(),
+          'strip must overflow'
+        ).not.toBeInViewport({ ratio: 1 })
+
+        await inactiveTab.hover()
+        await expect(
+          inactiveTab.getByTestId(TestIds.topbar.closeWorkflowButton)
+        ).toBeHidden()
+
+        await activeTab.hover()
+        await expect(
+          activeTab.getByTestId(TestIds.topbar.closeWorkflowButton)
+        ).toBeVisible()
+      }
+    )
+  })
+
   test(
-    'Scroll arrows navigate overflowing workflow tabs',
+    'Hover popover is centered under the hovered tab',
     { tag: '@ui' },
     async ({ comfyPage }) => {
-      await comfyPage.page.setViewportSize({ width: 800, height: 720 })
       const topbar = comfyPage.menu.topbar
+      await topbar.openBlankWorkflows(2)
+      const tab = topbar.getTab(1)
 
-      for (let index = 0; index < 8; index++) {
-        await topbar.newWorkflowButton.click()
-      }
-      await expect.poll(() => topbar.getTabNames()).toHaveLength(9)
+      await tab.hover()
 
-      const scrollLeft = topbar.workflowTabs.getByRole('button', {
-        name: 'Scroll Left'
-      })
-      const scrollRight = topbar.workflowTabs.getByRole('button', {
-        name: 'Scroll Right'
-      })
-      await expect(scrollLeft).toBeVisible()
-      await expect(scrollLeft).toBeEnabled()
-      await expect(scrollRight).toBeDisabled()
-      const moreWorkflows = topbar.workflowTabs.getByRole('button', {
-        name: 'More workflows',
-        exact: true
-      })
-      await expect(async () => {
-        const [scrollArrowBox, moreWorkflowsBox] = await Promise.all([
-          scrollRight.boundingBox(),
-          moreWorkflows.boundingBox()
-        ])
-        expect(scrollArrowBox).not.toBeNull()
-        expect(moreWorkflowsBox).toMatchObject({
-          height: scrollArrowBox?.height
+      await expect(topbar.workflowPopover).toBeVisible()
+      await expect
+        .poll(async () => {
+          const [tabBox, popoverBox] = await Promise.all([
+            tab.boundingBox(),
+            topbar.workflowPopover.boundingBox()
+          ])
+          return tabBox && popoverBox
+            ? Math.abs(
+                tabBox.x +
+                  tabBox.width / 2 -
+                  (popoverBox.x + popoverBox.width / 2)
+              )
+            : null
         })
-      }).toPass({ timeout: 5000 })
-
-      const activeTabName = await topbar.getActiveTabName()
-      await scrollLeft.dispatchEvent('mousedown')
-      await expect(scrollRight).toBeEnabled()
-      await scrollLeft.dispatchEvent('mouseup')
-      await expect.poll(() => topbar.getActiveTabName()).toBe(activeTabName)
+        .toBeLessThanOrEqual(1)
     }
   )
 

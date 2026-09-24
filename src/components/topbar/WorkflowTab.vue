@@ -4,7 +4,12 @@
       <div
         ref="workflowTabRef"
         data-testid="workflow-tab"
-        class="workflow-tab group/tab relative h-full shrink-0"
+        :class="
+          cn(
+            'workflow-tab group/tab relative h-full duration-200 ease-[cubic-bezier(0.19,1,0.22,1)] motion-safe:transition-[flex-shrink,min-width]',
+            isActiveTab ? 'min-w-22.5 shrink-0' : 'min-w-16 shrink'
+          )
+        "
         v-bind="$attrs"
         @mouseenter="handleMouseEnter"
         @mouseleave="handleMouseLeave"
@@ -12,7 +17,7 @@
       >
         <TabsTrigger
           :value="workflowOption.workflow.path"
-          class="h-full max-w-full min-w-22.5 py-2 pr-2 pl-3"
+          class="h-full w-full py-2 pr-2 pl-3"
         >
           <i
             v-if="isBuilderState"
@@ -70,8 +75,9 @@
         <Button
           :class="
             cn(
-              'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 text-smoke-800 group-focus-within/tab:visible group-hover/tab:visible',
-              isActiveTab && !hasStatusIndicator ? 'visible' : 'invisible'
+              'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 text-smoke-800 group-focus-within/tab:visible',
+              isActiveTab && !hasStatusIndicator ? 'visible' : 'invisible',
+              (isActiveTab || !compact) && 'group-hover/tab:visible'
             )
           "
           variant="muted-textonly"
@@ -85,6 +91,12 @@
             class="icon-[lucide--x] size-4"
           />
         </Button>
+        <WorkflowTabPopover
+          ref="popoverRef"
+          :workflow-filename="workflowOption.workflow.filename"
+          :thumbnail-url="thumbnailUrl"
+          :is-active-tab="isActiveTab"
+        />
       </div>
     </ContextMenuTrigger>
     <ContextMenuPortal>
@@ -99,13 +111,6 @@
       </ContextMenuContent>
     </ContextMenuPortal>
   </ContextMenuRoot>
-
-  <WorkflowTabPopover
-    ref="popoverRef"
-    :workflow-filename="workflowOption.workflow.filename"
-    :thumbnail-url="thumbnailUrl"
-    :is-active-tab="isActiveTab"
-  />
 </template>
 
 <script setup lang="ts">
@@ -158,6 +163,7 @@ const props = defineProps<{
   workflowOption: WorkflowOption
   isFirst: boolean
   isLast: boolean
+  compact?: boolean
 }>()
 
 const emit = defineEmits<{

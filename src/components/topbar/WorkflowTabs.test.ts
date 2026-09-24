@@ -100,10 +100,6 @@ vi.mock(
   })
 )
 
-vi.mock(import('@/utils/mouseDownUtil'), () => ({
-  whileMouseDown: vi.fn()
-}))
-
 vi.mock(import('./WorkflowOverflowMenu.vue'), () => ({
   default: defineComponent({
     name: 'WorkflowOverflowMenuStub',
@@ -573,19 +569,16 @@ describe('WorkflowTabs selection and overflow', () => {
     ).toHaveAttribute('aria-selected', 'false')
   })
 
-  it('keeps overflow controls available when the tab strip overflows', async () => {
+  it('renders the overflow menu only while the strip overflows', async () => {
     renderComponent()
     await waitFor(() => expect(overflowObservers).toHaveLength(1))
+    expect(
+      screen.queryByTestId('workflow-overflow-menu')
+    ).not.toBeInTheDocument()
 
     overflowObservers[0].isOverflowing.value = true
     await nextTick()
 
-    expect(
-      screen.getByRole('button', { name: 'Scroll Left' })
-    ).toBeInTheDocument()
-    expect(
-      screen.getByRole('button', { name: 'Scroll Right' })
-    ).toBeInTheDocument()
     expect(screen.getByTestId('workflow-overflow-menu')).toBeInTheDocument()
   })
 
@@ -602,6 +595,28 @@ describe('WorkflowTabs selection and overflow', () => {
       })
     )
   })
+
+  it.for([
+    { propertyName: 'flex-shrink', reveals: true },
+    { propertyName: 'background-color', reveals: false }
+  ])(
+    'reveals the active tab after a $propertyName transition: $reveals',
+    async ({ propertyName, reveals }) => {
+      const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
+      renderComponent()
+      await nextTick()
+      scrollIntoView.mockClear()
+
+      screen.getByRole('tab', { name: 'Second workflow' }).dispatchEvent(
+        Object.assign(new Event('transitionend', { bubbles: true }), {
+          propertyName
+        })
+      )
+      await nextTick()
+
+      expect(scrollIntoView).toHaveBeenCalledTimes(reveals ? 1 : 0)
+    }
+  )
 })
 
 describe('WorkflowTabs scrolling', () => {

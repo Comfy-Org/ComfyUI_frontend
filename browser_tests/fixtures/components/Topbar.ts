@@ -12,6 +12,7 @@ export class Topbar {
   readonly workflowTabs: Locator
   readonly tabs: Locator
   readonly integratedTabBarActions: Locator
+  readonly workflowPopover: Locator
   readonly menuRootList: Locator
 
   constructor(public readonly page: Page) {
@@ -24,6 +25,18 @@ export class Topbar {
     this.integratedTabBarActions = this.workflowTabs.getByTestId(
       TestIds.topbar.integratedTabBarActions
     )
+    this.workflowPopover = page
+      .locator('.workflow-popover-fade')
+      .filter({ visible: true })
+  }
+
+  async openBlankWorkflows(count: number) {
+    await expect(this.tabs.first()).toBeVisible()
+    const openTabs = await this.tabs.count()
+    for (let index = 0; index < count; index++) {
+      await this.newWorkflowButton.click()
+    }
+    await expect(this.tabs).toHaveCount(openTabs + count)
   }
 
   async getTabNames(): Promise<string[]> {
@@ -132,9 +145,7 @@ export class Topbar {
 
   async dismissWorkflowPopover() {
     await this.page.mouse.move(0, 0)
-    await expect(
-      this.page.locator('.workflow-popover-fade').filter({ visible: true })
-    ).toHaveCount(0)
+    await expect(this.workflowPopover).toHaveCount(0)
   }
 
   async openTopbarMenu() {
