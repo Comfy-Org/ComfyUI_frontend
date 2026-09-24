@@ -1087,13 +1087,15 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
-    it('drops a pagehide agent panel close before PostHog has initialized', () => {
+    it('drops a pagehide agent panel close before PostHog has initialized', async () => {
       const provider = createProvider()
 
       provider.trackAgentPanelClosed({
         source: 'pagehide',
         open_duration_ms: 5000
       })
+
+      await vi.dynamicImportSettled()
 
       expect(hoisted.mockCapture).not.toHaveBeenCalled()
     })
