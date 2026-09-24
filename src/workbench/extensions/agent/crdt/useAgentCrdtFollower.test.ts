@@ -1210,6 +1210,63 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  describe('own-actor echo', () => {
+    async function mountAndSendOneOp(): Promise<{
+      unmount: () => void
+      status: () => AgentCrdtStatus
+      ownActor: string
+    }> {
+      const { unmount, status, enqueue } = mountFollower('wf-1')
+      enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+      await Promise.resolve()
+      const [, , ops] = clientState.sendOps.mock.calls[0]
+      return { unmount, status, ownActor: ops[0].actor }
+    }
+
+    it('merges the echo of this tab’s own ops without applying it to the graph', async () => {
+      const { unmount, status, ownActor } = await mountAndSendOneOp()
+      expect(ownActor).toMatch(/^human:anonymous:/)
+
+      dispatchFrame('doc_update', {
+        workflowId: 'wf-1',
+        seq: 42,
+        actor: ownActor,
+        catchUp: false
+      })
+
+      expect(projectionState.applyFrame).not.toHaveBeenCalled()
+      expect(projectionState.discardPending).toHaveBeenCalledExactlyOnceWith(
+        'wf-1'
+      )
+      expect(status().outcomes).toMatchObject({
+        received: 1,
+        applied: 0,
+        skipped: 1
+      })
+      unmount()
+    })
+
+    it.for([
+      {
+        name: 'another tab of the same user',
+        frame: () => ({ actor: 'human:anonymous:other-tab', catchUp: false })
+      },
+      {
+        name: 'a catch-up frame last written by this tab',
+        frame: (ownActor: string) => ({ actor: ownActor, catchUp: true })
+      }
+    ])('still applies $name', async ({ frame }) => {
+      const { unmount, ownActor } = await mountAndSendOneOp()
+      const update = { workflowId: 'wf-1', seq: 42, ...frame(ownActor) }
+
+      dispatchFrame('doc_update', update)
+
+      expect(projectionState.applyFrame).toHaveBeenCalledExactlyOnceWith(update)
+      expect(projectionState.discardPending).not.toHaveBeenCalled()
+      unmount()
+    })
+  })
+
   it('a refused subscription settles the transmitted in-flight batch unconfirmed at the resend instead of reaching the client', async () => {
     vi.useFakeTimers()
     const { recordDevEvent } = await import('./devPanelLog')

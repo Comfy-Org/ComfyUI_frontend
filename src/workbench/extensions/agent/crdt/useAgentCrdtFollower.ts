@@ -310,6 +310,7 @@ function startAgentCrdtFollower(
     }
   )
   const tabId = createUuidv4()
+  const ownActor = (): string => `human:${userId() ?? 'anonymous'}:${tabId}`
   // Doc node ids whose human delete the host has applied but whose effect
   // frame has not yet removed them from the doc. Kept pending for the
   // reconcile so the result-to-effect window cannot resurrect them.
@@ -337,7 +338,7 @@ function startAgentCrdtFollower(
     // every send and resend, so ops never reach a doc we are not subscribed to.
     workflowId: () => bridge.subscribedWorkflowId,
     tab: tabId,
-    actor: () => `human:${userId() ?? 'anonymous'}:${tabId}`,
+    actor: ownActor,
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: (outcome) => {
       if (outcome.state === 'acknowledged') {
@@ -414,7 +415,21 @@ function startAgentCrdtFollower(
     knownDocNodeIds = ids
     return added
   }
+  /**
+   * The host echoes this tab's own ops back as a `doc_update`. The graph
+   * already holds that edit (the intent was minted from it), so the frame is
+   * merged into the doc and never re-applied. Catch-up frames are exempt:
+   * they can carry this actor as the last writer while replaying state the
+   * graph has not seen.
+   */
+  const isOwnEcho = (update: ClassifiedDocUpdate): boolean =>
+    !update.catchUp && update.actor === ownActor()
   const applyFrame = (update: ClassifiedDocUpdate): NodeId[] => {
+    if (isOwnEcho(update)) {
+      projection.discardPending(update.workflowId)
+      incrementOutcome('skipped')
+      return []
+    }
     const created = projection.applyFrame(update)
     incrementOutcome(created ? 'applied' : 'skipped')
     if (created && !update.catchUp) incrementOutcome('appliedLive')
@@ -456,6 +471,7 @@ function startAgentCrdtFollower(
       workflowId: update.workflowId,
       seq: update.seq,
       actor: update.actor,
+      echo: isOwnEcho(update),
       bytes: update.update instanceof Uint8Array ? update.update.length : null
     })
     const added = trackNodeChanges()
