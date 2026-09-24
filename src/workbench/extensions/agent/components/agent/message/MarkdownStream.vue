@@ -94,7 +94,10 @@ function onProseClick(event: MouseEvent): void {
     filename: image.alt || 'image',
     kind: 'image' as const
   }
-  proseItems.value = [replyAssetLightboxItem({ ...asset, kind: 'image' })]
+  const item = replyAssetLightboxItem({ ...asset, kind: 'image' })
+  if (!item) return
+
+  proseItems.value = [item]
   proseIndex.value = 0
 }
 

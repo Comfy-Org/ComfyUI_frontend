@@ -23,9 +23,10 @@ const meta: Meta<typeof MediaAssetCard> = {
           onZoom?: (asset: AssetItem) => void
         }
         args.onZoom = (asset: AssetItem) => {
-          galleryItems.value = [
-            fileLightboxItem(asset.preview_url || '', asset.name)
-          ]
+          const item = fileLightboxItem(asset.preview_url || '', asset.name)
+          if (!item) return
+
+          galleryItems.value = [item]
           galleryIndex.value = 0
         }
         return { galleryIndex, galleryItems }

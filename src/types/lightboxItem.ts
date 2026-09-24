@@ -32,18 +32,8 @@ export interface LightboxTextItem {
   readonly content?: string
 }
 
-/**
- * Kept in the union so adapters stay total and indices line up 1:1 with the
- * source records. Renders nothing, matching the previous fallthrough.
- */
-interface LightboxUnsupportedItem {
-  readonly kind: 'unsupported'
-  readonly url: string
-}
-
 export type LightboxItem =
   | LightboxImageItem
   | LightboxVideoItem
   | LightboxAudioItem
   | LightboxTextItem
-  | LightboxUnsupportedItem

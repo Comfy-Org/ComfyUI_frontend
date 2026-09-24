@@ -39,21 +39,6 @@ export function resultItemPreviewUrl(item: AugmentedResultItem): string {
   return api.apiURL('/view?' + params)
 }
 
-export function resultItemVhsAdvancedPreviewUrl(
-  item: AugmentedResultItem
-): string {
-  return vhsAdvancedPreviewUrl(item)
-}
-
 export function resultItemUrlWithTimestamp(item: AugmentedResultItem): string {
   return `${resultItemUrl(item)}&t=${+new Date()}`
-}
-
-export function findResultIndexByUrl(
-  items: readonly AugmentedResultItem[],
-  url?: string
-): number {
-  if (!url) return 0
-  const idx = items.findIndex((item) => resultItemUrl(item) === url)
-  return idx >= 0 ? idx : 0
 }

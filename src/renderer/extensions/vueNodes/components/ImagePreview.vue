@@ -141,6 +141,7 @@
             !currentImageIsHdr &&
             !isTransientUrl(currentImageUrl)
           "
+          type="button"
           :class="actionButtonClass"
           :title="$t('g.openInLightbox')"
           :aria-label="$t('g.openInLightbox')"

@@ -59,7 +59,10 @@ const galleryAssets = computed(() =>
   visual.value.filter((asset) => asset.kind !== '3D')
 )
 const galleryItems = computed(() =>
-  galleryAssets.value.map(replyAssetLightboxItem)
+  galleryAssets.value.flatMap((asset) => {
+    const item = replyAssetLightboxItem(asset)
+    return item ? [item] : []
+  })
 )
 const galleryIndex = ref<number | null>(null)
 

@@ -4,8 +4,28 @@ import type { LightboxItem } from '@/types/lightboxItem'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import {
   fileLightboxItem,
+  findLightboxIndexByUrl,
   resultItemsToLightboxItems
 } from '@/utils/lightboxItem'
+
+describe('findLightboxIndexByUrl', () => {
+  const items: LightboxItem[] = [
+    { kind: 'image', url: 'a' },
+    { kind: 'image', url: 'b' },
+    { kind: 'image', url: 'c' }
+  ]
+
+  it.for([
+    ['b', 1],
+    ['missing', 0],
+    [undefined, 0]
+  ] as const satisfies readonly (readonly [string | undefined, number])[])(
+    'resolves %s to index %i',
+    ([url, expected]) => {
+      expect(findLightboxIndexByUrl(items, url)).toBe(expected)
+    }
+  )
+})
 
 describe('fileLightboxItem', () => {
   it.for([
@@ -14,12 +34,18 @@ describe('fileLightboxItem', () => {
     ['clip.webm', { kind: 'video', url: 'u', mimeType: 'video/webm' }],
     ['clip.mkv', { kind: 'video', url: 'u', mimeType: undefined }],
     ['track.mp3', { kind: 'audio', url: 'u' }],
-    ['notes.txt', { kind: 'text', url: 'u' }],
-    ['model.glb', { kind: 'unsupported', url: 'u' }]
+    ['notes.txt', { kind: 'text', url: 'u' }]
   ] as const satisfies readonly (readonly [string, LightboxItem])[])(
     'classifies %s from its extension',
     ([filename, expected]) => {
       expect(fileLightboxItem('u', filename)).toEqual(expected)
+    }
+  )
+
+  it.for(['model.glb', 'archive.zip'])(
+    'has no item for unrenderable %s',
+    (filename) => {
+      expect(fileLightboxItem('u', filename)).toBeUndefined()
     }
   )
 
@@ -55,17 +81,16 @@ describe('resultItemsToLightboxItems', () => {
     ...over
   })
 
-  it('maps one item per record so caller indices stay aligned', () => {
+  it('drops unrenderable records so navigation never lands on a blank frame', () => {
     const items = resultItemsToLightboxItems([
       record({ filename: 'a.png', mediaType: 'images' }),
-      record({ filename: 'unknown.bin' }),
+      record({ filename: 'mesh.glb' }),
       record({ filename: 'b.png', mediaType: 'images' })
     ])
 
-    expect(items.map(({ kind }) => kind)).toEqual([
-      'image',
-      'unsupported',
-      'image'
+    expect(items).toEqual([
+      { kind: 'image', url: '/api/view?filename=a.png', alt: 'a.png' },
+      { kind: 'image', url: '/api/view?filename=b.png', alt: 'b.png' }
     ])
   })
 
@@ -93,17 +118,21 @@ describe('resultItemsToLightboxItems', () => {
       { kind: 'text', url: '/api/view?filename=notes.txt', content: 'inline' }
     ],
     [
-      'mesh.glb',
-      {},
-      { kind: 'unsupported', url: '/api/view?filename=mesh.glb' }
+      'clip.mp4',
+      { mediaType: 'video' },
+      {
+        kind: 'video',
+        url: '/api/view?filename=clip.mp4',
+        mimeType: 'video/mp4'
+      }
     ]
   ] as const satisfies readonly (readonly [
     string,
     Partial<AugmentedResultItem>,
     LightboxItem
   ])[])('adapts %s to its rendering kind', ([filename, over, expected]) => {
-    expect(resultItemsToLightboxItems([record({ filename, ...over })])).toEqual(
-      [expected]
-    )
+    expect(
+      resultItemsToLightboxItems([record({ filename, ...over })])
+    ).toMatchObject([expected])
   })
 })

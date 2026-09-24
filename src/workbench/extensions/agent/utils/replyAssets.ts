@@ -2,8 +2,10 @@ import type { Token } from 'marked'
 
 import type { LightboxItem } from '@/types/lightboxItem'
 import type { MediaType } from '@/utils/formatUtil'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import { htmlVideoTypeForFilename } from '@/utils/resultItem'
+import {
+  getMediaTypeFromFilename,
+  htmlVideoTypeForFilename
+} from '@/utils/formatUtil'
 
 const ASSET_KINDS = [
   'image',
@@ -125,7 +127,9 @@ export function htmlReplyAssets(html: string): ReplyAsset[] {
  * Videos deliberately omit `advancedPreviewUrl`: that URL needs a subfolder
  * and type, and a reply asset only ever knows its href and filename.
  */
-export function replyAssetLightboxItem(asset: ReplyAsset): LightboxItem {
+export function replyAssetLightboxItem(
+  asset: ReplyAsset
+): LightboxItem | undefined {
   const { kind, url, filename } = asset
   switch (kind) {
     case 'image':
@@ -139,7 +143,7 @@ export function replyAssetLightboxItem(asset: ReplyAsset): LightboxItem {
     case 'audio':
       return { kind: 'audio', url }
     case '3D':
-      return { kind: 'unsupported', url }
+      return undefined
     default: {
       const unhandledKind: never = kind
       return unhandledKind

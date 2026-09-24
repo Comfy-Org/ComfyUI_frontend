@@ -245,7 +245,10 @@ import {
   isPreviewableMediaType
 } from '@/utils/formatUtil'
 import type { LightboxItem } from '@/types/lightboxItem'
-import { fileLightboxItem } from '@/utils/lightboxItem'
+import {
+  fileLightboxItem,
+  isLightboxRenderableFilename
+} from '@/utils/lightboxItem'
 import { vhsAdvancedPreviewUrl } from '@/utils/resultItemUrl'
 
 const Load3dViewerContent = defineAsyncComponent(
@@ -410,9 +413,9 @@ const { marqueeStyle } = useAssetGridSelection({
   isEnabled: () => !isListView.value
 })
 
-const previewableVisibleAssets = computed(() =>
+const lightboxVisibleAssets = computed(() =>
   visibleAssets.value.filter((asset) =>
-    isPreviewableMediaType(getMediaTypeFromFilename(asset.name))
+    isLightboxRenderableFilename(asset.name)
   )
 )
 
@@ -448,7 +451,7 @@ watch(visibleAssets, (newAssets) => {
   // so selection stays consistent with what this view can act on.
   reconcileSelection(newAssets)
   if (currentGalleryAssetId.value && galleryActiveIndex.value !== null) {
-    const newIndex = previewableVisibleAssets.value.findIndex(
+    const newIndex = lightboxVisibleAssets.value.findIndex(
       (asset) => asset.id === currentGalleryAssetId.value
     )
     galleryActiveIndex.value = newIndex === -1 ? null : newIndex
@@ -462,8 +465,8 @@ watch(galleryActiveIndex, (index) => {
 })
 
 const galleryItems = computed<LightboxItem[]>(() =>
-  previewableVisibleAssets.value.map((asset) =>
-    fileLightboxItem(
+  lightboxVisibleAssets.value.flatMap((asset) => {
+    const item = fileLightboxItem(
       asset.preview_url || '',
       asset.name,
       vhsAdvancedPreviewUrl({
@@ -472,7 +475,8 @@ const galleryItems = computed<LightboxItem[]>(() =>
         type: 'output'
       })
     )
-  )
+    return item ? [item] : []
+  })
 )
 
 const refreshAssets = async () => {
@@ -587,9 +591,7 @@ const handleZoomClick = (asset: AssetItem) => {
   }
 
   currentGalleryAssetId.value = asset.id
-  const index = previewableVisibleAssets.value.findIndex(
-    (a) => a.id === asset.id
-  )
+  const index = lightboxVisibleAssets.value.findIndex((a) => a.id === asset.id)
   if (index !== -1) {
     galleryActiveIndex.value = index
   }

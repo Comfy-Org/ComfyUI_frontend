@@ -130,8 +130,7 @@ describe('replyAssetLightboxItem', () => {
         mimeType: 'video/mp4'
       }
     ],
-    ['a.flac', 'audio', { kind: 'audio', url: 'https://x/y?filename=a.flac' }],
-    ['a.glb', '3D', { kind: 'unsupported', url: 'https://x/y?filename=a.glb' }]
+    ['a.flac', 'audio', { kind: 'audio', url: 'https://x/y?filename=a.flac' }]
   ] as const satisfies readonly (readonly [
     string,
     ReplyAsset['kind'],
@@ -144,4 +143,14 @@ describe('replyAssetLightboxItem', () => {
       ).toEqual(expected)
     }
   )
+
+  it('has no lightbox item for a 3D asset, which its own viewer handles', () => {
+    expect(
+      replyAssetLightboxItem({
+        url: 'https://x/y?filename=a.glb',
+        filename: 'a.glb',
+        kind: '3D'
+      })
+    ).toBeUndefined()
+  })
 })
