@@ -1,5 +1,7 @@
 import { defineStore } from 'pinia'
 
+import { reportError } from '@/platform/telemetry/reportError'
+
 const STORAGE_PREFIX = 'Comfy.Agent.CrdtDocHistory'
 const INITIAL_LINEAGE = 'initial'
 
@@ -32,22 +34,43 @@ function seenKey(workflowId: string, lineage: string, nodeId: string): string {
 export const useAgentCrdtDocHistoryStore = defineStore(
   'agentCrdtDocHistory',
   () => {
-    function currentLineage(workflowId: string): string {
-      const prefix = resetPrefix(workflowId)
-      let latestSequence: number | undefined
-      for (let index = 0; index < localStorage.length; index++) {
-        const key = localStorage.key(index)
-        if (!key?.startsWith(prefix)) continue
-        const sequence = Number(key.slice(prefix.length))
-        if (
-          Number.isSafeInteger(sequence) &&
-          (latestSequence === undefined || sequence > latestSequence)
-        )
-          latestSequence = sequence
+    let available = true
+
+    function accessStorage<T>(fallback: T, operation: () => T): T {
+      if (!available) return fallback
+      try {
+        return operation()
+      } catch (error) {
+        available = false
+        reportError(error, {
+          errorType: 'error_accessing_agent_crdt_doc_history'
+        })
+        return fallback
       }
-      return latestSequence === undefined
-        ? INITIAL_LINEAGE
-        : `reset:${latestSequence}`
+    }
+
+    function isAvailable(): boolean {
+      return available
+    }
+
+    function currentLineage(workflowId: string): string {
+      return accessStorage(INITIAL_LINEAGE, () => {
+        const prefix = resetPrefix(workflowId)
+        let latestSequence: number | undefined
+        for (let index = 0; index < localStorage.length; index++) {
+          const key = localStorage.key(index)
+          if (!key?.startsWith(prefix)) continue
+          const sequence = Number(key.slice(prefix.length))
+          if (
+            Number.isSafeInteger(sequence) &&
+            (latestSequence === undefined || sequence > latestSequence)
+          )
+            latestSequence = sequence
+        }
+        return latestSequence === undefined
+          ? INITIAL_LINEAGE
+          : `reset:${latestSequence}`
+      })
     }
 
     function remember(
@@ -55,29 +78,35 @@ export const useAgentCrdtDocHistoryStore = defineStore(
       lineage: string,
       ids: ReadonlySet<string>
     ): void {
-      for (const id of ids)
-        localStorage.setItem(seenKey(workflowId, lineage, id), '')
+      accessStorage(undefined, () => {
+        for (const id of ids)
+          localStorage.setItem(seenKey(workflowId, lineage, id), '')
+      })
     }
 
     function everSeen(
       workflowId: string,
       lineage: string
     ): ReadonlySet<string> {
-      const prefix = seenPrefix(workflowId, lineage)
-      const ids = new Set<string>()
-      for (let index = 0; index < localStorage.length; index++) {
-        const key = localStorage.key(index)
-        if (key?.startsWith(prefix))
-          ids.add(decodeURIComponent(key.slice(prefix.length)))
-      }
-      return ids
+      return accessStorage(new Set<string>(), () => {
+        const prefix = seenPrefix(workflowId, lineage)
+        const ids = new Set<string>()
+        for (let index = 0; index < localStorage.length; index++) {
+          const key = localStorage.key(index)
+          if (key?.startsWith(prefix))
+            ids.add(decodeURIComponent(key.slice(prefix.length)))
+        }
+        return ids
+      })
     }
 
     function reset(workflowId: string, sequence: number): string {
-      localStorage.setItem(resetKey(workflowId, sequence), '')
+      accessStorage(undefined, () => {
+        localStorage.setItem(resetKey(workflowId, sequence), '')
+      })
       return currentLineage(workflowId)
     }
 
-    return { currentLineage, remember, everSeen, reset }
+    return { isAvailable, currentLineage, remember, everSeen, reset }
   }
 )

@@ -60,15 +60,27 @@ const clientState = vi.hoisted(() => ({
   transport: null as DocFrameTransport | null
 }))
 
-const adapterState = vi.hoisted(() => ({
-  intent: null as LocalIntent | null,
-  bind: vi.fn(),
-  unbind: vi.fn(),
-  applyFrame: vi.fn(() => true),
-  clearForReset: vi.fn(),
-  discardPending: vi.fn(),
-  destroy: vi.fn()
-}))
+const adapterState = vi.hoisted(
+  (): {
+    intent: LocalIntent | null
+    bind: ReturnType<typeof vi.fn>
+    unbind: ReturnType<typeof vi.fn>
+    applyFrame: ReturnType<typeof vi.fn<() => boolean>>
+    clearForReset: ReturnType<typeof vi.fn>
+    clearForFollowerReplacement: ReturnType<typeof vi.fn>
+    discardPending: ReturnType<typeof vi.fn>
+    destroy: ReturnType<typeof vi.fn>
+  } => ({
+    intent: null,
+    bind: vi.fn(),
+    unbind: vi.fn(),
+    applyFrame: vi.fn(() => true),
+    clearForReset: vi.fn(),
+    clearForFollowerReplacement: vi.fn(),
+    discardPending: vi.fn(),
+    destroy: vi.fn()
+  })
+)
 
 const materializerState = vi.hoisted(() => ({
   reconcileAgentAdapters: vi.fn(() => [] as NodeId[]),
@@ -140,6 +152,7 @@ vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
     unbind = adapterState.unbind
     applyFrame = adapterState.applyFrame
     clearForReset = adapterState.clearForReset
+    clearForFollowerReplacement = adapterState.clearForFollowerReplacement
     discardPending = adapterState.discardPending
     destroy = adapterState.destroy
   }
@@ -730,11 +743,15 @@ describe('useAgentCrdtFollower', () => {
 
     dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
     expect(status().updatesApplied).toBe(0)
-    expect(adapterState.clearForReset).toHaveBeenLastCalledWith('wf-1', {
-      source: 'agent-remote',
-      actor: 'agent-lineage',
-      opId: 'follower-replaced:wf-1'
-    })
+    expect(adapterState.clearForReset).toHaveBeenCalledTimes(1)
+    expect(adapterState.clearForFollowerReplacement).toHaveBeenCalledWith(
+      'wf-1',
+      {
+        source: 'agent-remote',
+        actor: 'agent-lineage',
+        opId: 'follower-replaced:wf-1'
+      }
+    )
     expect(adapterState.bind).toHaveBeenCalledTimes(2)
     expect(adapterState.bind).toHaveBeenLastCalledWith(
       'wf-1',
@@ -1186,7 +1203,7 @@ describe('useAgentCrdtFollower', () => {
 
       dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
 
-      expect(adapterState.clearForReset).toHaveBeenCalled()
+      expect(adapterState.clearForFollowerReplacement).toHaveBeenCalled()
       expect(
         definitionsState.readSubgraphDefinitionIds
       ).toHaveBeenLastCalledWith(replacementDoc)

@@ -398,6 +398,9 @@ function startAgentCrdtFollower(
     if (workflowId !== boundWorkflowId) return null
     const graph = getGraph()
     if (!graph) return null
+    if (!docHistory.isAvailable()) {
+      return { nodeIds: new Set<string>(), linkIds: new Set<number>() }
+    }
     return computeLocalOnlyGraphIds(
       graph,
       docHistory.everSeen(workflowId, historyLineage(workflowId))
@@ -568,7 +571,7 @@ function startAgentCrdtFollower(
     ) {
       updatesApplied.value = 0
       confirmedDeletes.clear()
-      projection.clearForReset(workflowId, {
+      projection.clearForFollowerReplacement(workflowId, {
         source: 'agent-remote',
         actor: 'agent-lineage',
         opId: `follower-replaced:${workflowId}`

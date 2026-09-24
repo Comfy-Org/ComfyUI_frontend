@@ -1,11 +1,18 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { reportError } from '@/platform/telemetry/reportError'
 
 import { useAgentCrdtDocHistoryStore } from './agentCrdtDocHistoryStore'
 
-describe('agentCrdtDocHistoryStore', () => {
-  beforeEach(() => localStorage.clear())
+vi.mock(import('@/platform/telemetry/reportError'))
 
-  it('unions observations from independent browser contexts without a lost update', () => {
+describe('agentCrdtDocHistoryStore', () => {
+  beforeEach(() => {
+    useAgentCrdtDocHistoryStore().$dispose()
+    localStorage.clear()
+  })
+
+  it('writes each observation to an independent storage key', () => {
     const history = useAgentCrdtDocHistoryStore()
     const firstLineage = history.currentLineage('wf')
     const secondLineage = history.currentLineage('wf')
@@ -14,6 +21,10 @@ describe('agentCrdtDocHistoryStore', () => {
     history.remember('wf', secondLineage, new Set(['2']))
 
     expect(history.everSeen('wf', firstLineage)).toEqual(new Set(['1', '2']))
+    expect(Object.keys(localStorage).sort()).toEqual([
+      'Comfy.Agent.CrdtDocHistory|seen|wf|initial|1',
+      'Comfy.Agent.CrdtDocHistory|seen|wf|initial|2'
+    ])
   })
 
   it('isolates a reset lineage from late writes by a stale browser context', () => {
@@ -45,8 +56,24 @@ describe('agentCrdtDocHistoryStore', () => {
     const lineage = history.currentLineage('wf')
     history.remember('wf', lineage, new Set(['1']))
 
-    expect(history.currentLineage('wf')).toBe(lineage)
-    expect(history.everSeen('wf', lineage)).toEqual(new Set(['1']))
+    history.$dispose()
+    const reopenedHistory = useAgentCrdtDocHistoryStore()
+    expect(reopenedHistory.currentLineage('wf')).toBe(lineage)
+    expect(reopenedHistory.everSeen('wf', lineage)).toEqual(new Set(['1']))
+  })
+
+  it('disables protection without throwing when storage is unavailable', () => {
+    const history = useAgentCrdtDocHistoryStore()
+    vi.spyOn(localStorage, 'setItem').mockImplementation(() => {
+      throw new DOMException('Storage is unavailable', 'SecurityError')
+    })
+
+    expect(() =>
+      history.remember('wf', 'initial', new Set(['1']))
+    ).not.toThrow()
+    expect(history.isAvailable()).toBe(false)
+    expect(reportError).toHaveBeenCalledOnce()
+    history.$dispose()
   })
 
   it('scopes observations by workflow', () => {

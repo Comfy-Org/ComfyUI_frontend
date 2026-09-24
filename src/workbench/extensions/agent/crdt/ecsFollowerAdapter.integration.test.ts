@@ -1911,6 +1911,18 @@ describe('EcsFollowerAdapter integration', () => {
       )
       expect(localOnlyGraphIds).toHaveBeenCalledTimes(1)
 
+      adapter.clearForFollowerReplacement('wf', {
+        source: 'agent-remote',
+        actor: 'agent-lineage',
+        opId: 'follower-replaced:wf'
+      })
+      adapter.unbind('wf')
+      bindAndApply(adapter, 'wf', update)
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        true
+      )
+      expect(localOnlyGraphIds).toHaveBeenCalledTimes(1)
+
       adapter.clearForReset('wf', {
         source: 'agent-remote',
         actor: 'agent-reset',

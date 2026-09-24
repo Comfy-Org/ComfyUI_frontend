@@ -2,15 +2,12 @@ import { expect } from '@playwright/test'
 
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 
-const CASE = 'agent-rec-text-only-answer'
-const ADD_POSITION: [number, number] = [400, 400]
-
 test.describe(
   'Human-added node survives reload before host acknowledgement',
   { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({
-      conversationCase: CASE,
+      conversationCase: 'agent-rec-text-only-answer',
       humanOpsHost: 'hold',
       blankStartupGraph: true
     })
@@ -31,7 +28,7 @@ test.describe(
         await test.step('add a node while the host withholds acknowledgement', async () => {
           const addedNodeId = await agentConversation.addNodeOfType(
             'Note',
-            ADD_POSITION
+            [400, 400]
           )
           await expect(
             agentConversation.vueNodes.getNodeLocator(addedNodeId)

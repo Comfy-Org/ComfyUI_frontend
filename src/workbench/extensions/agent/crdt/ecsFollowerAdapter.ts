@@ -6,7 +6,6 @@ import {
 import * as Y from 'yjs'
 
 import type {
-  GraphMutationBatch,
   GraphMutations,
   SemanticLinkPayload,
   SemanticNodePayload
@@ -255,22 +254,6 @@ function resolveLinkMapKey(id: string): number | null {
   return linkId !== undefined && linkId >= 0 ? linkId : null
 }
 
-/**
- * The link ids `applyIncrementalFrame` must actively `removeLinks` for: a
- * changed link that is now missing from the doc, unreadable, or newly
- * incompatible. A link that is still present and compatible is instead
- * re-`connect`ed from `changedLinks`, never listed here.
- */
-function removedLinkIdsFor(
-  changedLinks: ReadonlyMap<string, SemanticLinkPayload | null>
-): number[] {
-  return [...changedLinks].flatMap(([id, link]) => {
-    if (link && !isIncompatibleLinkType(link)) return []
-    const linkId = resolveLinkMapKey(id)
-    return linkId === null ? [] : [linkId]
-  })
-}
-
 function readSemanticLink(
   doc: Y.Doc,
   id: string,
@@ -394,22 +377,6 @@ function frameContext(update: DocUpdate): RemoteMutationContext {
   }
 }
 
-/**
- * One frame's snapshotted incremental edits, read off `TargetSession`
- * before `discardSessionPending` clears it for the next frame. Passed to
- * `applyIncrementalFrame` rather than the session itself so that function
- * cannot reach past what this one frame observed.
- */
-interface FramePendingEdits {
-  readonly nodeActions: ReadonlyMap<string, NodeRootAction>
-  readonly changedWidgets: ReadonlyMap<string, ReadonlySet<string>>
-  readonly replacedWidgetMaps: ReadonlySet<string>
-  readonly replacedOpaqueWidgets: ReadonlySet<string>
-  readonly changedNodeFields: ReadonlySet<string>
-  readonly changedLinks: ReadonlyMap<string, SemanticLinkPayload | null>
-  readonly removedLinkIds: readonly number[]
-}
-
 interface TargetSession {
   readonly workflowId: string
   readonly follower: FollowerDoc
@@ -491,6 +458,20 @@ export class EcsFollowerAdapter {
   /** Explicit lineage reset only; reconnect/gap recovery never calls it. */
   clearForReset(workflowId: string, context: RemoteMutationContext): boolean {
     this.protectedWorkflowIds.delete(workflowId)
+    return this.clearSemanticGraph(workflowId, context)
+  }
+
+  clearForFollowerReplacement(
+    workflowId: string,
+    context: RemoteMutationContext
+  ): boolean {
+    return this.clearSemanticGraph(workflowId, context)
+  }
+
+  private clearSemanticGraph(
+    workflowId: string,
+    context: RemoteMutationContext
+  ): boolean {
     const session = this.targets.get(workflowId)
     if (!session) return false
     this.discardSessionPending(session)
@@ -563,75 +544,6 @@ export class EcsFollowerAdapter {
         .filter(([, action]) => action === 'update')
         .map(([id]) => id)
     )
-    const changedLinks = this.changedLinksFor(
-      session,
-      doc,
-      definitions,
-      replacedNodeIds,
-      changedLinkIds
-    )
-    const framePending: FramePendingEdits = {
-      nodeActions,
-      changedWidgets,
-      replacedWidgetMaps,
-      replacedOpaqueWidgets,
-      changedNodeFields,
-      changedLinks,
-      removedLinkIds: removedLinkIdsFor(changedLinks)
-    }
-    const needsProtection = this.needsProtection(session.workflowId)
-    const localOnly =
-      reconcile && needsProtection
-        ? this.intent.localOnlyGraphIds(session.workflowId)
-        : null
-    if (reconcile && needsProtection && localOnly === null) {
-      session.reconcileNextFrame = true
-      return false
-    }
-
-    const committed = session.mutations.batch(frameContext(update), (batch) =>
-      reconcile
-        ? this.reconcileFrame(session, batch, doc, definitions, localOnly)
-        : this.applyIncrementalFrame(
-            session,
-            batch,
-            doc,
-            definitions,
-            framePending
-          )
-    )
-
-    if (committed && localOnly !== null) {
-      this.protectedWorkflowIds.add(session.workflowId)
-      this.intent.commitProtectedReconcile?.(session.workflowId)
-    }
-    // The pending sets were snapshotted and cleared before `batch` ran, so a
-    // rejected batch (no scope, or validation failure) has already lost the
-    // incremental record of this frame. Arm a full reconcile for the next
-    // frame so the dropped edits are re-read from the doc instead of falling
-    // through to incremental handling that never revisits them.
-    session.reconcileNextFrame = !committed
-    return committed
-  }
-
-  /**
-   * Extends `changedLinkIds` with every link incident to a node this frame
-   * replaced wholesale (a `reconcileNode`/`reconcileNodeFields` target, not a
-   * `setWidget` patch) -- a doc-side replace can move slot indices without
-   * the link's own doc entry changing, so a link the doc did not itself
-   * touch can still need re-materializing. Resolves each changed link's
-   * current doc state too, so an id gone from the live map, or pointing at a
-   * slot the follower cannot read, comes back `null` rather than throwing
-   * when `applyIncrementalFrame` reads it later.
-   */
-  private changedLinksFor(
-    session: TargetSession,
-    doc: Y.Doc,
-    definitions: () => SubgraphDefinitionIndex,
-    replacedNodeIds: ReadonlySet<string>,
-    changedLinkIds: ReadonlySet<string>
-  ): Map<string, SemanticLinkPayload | null> {
-    const ids = new Set(changedLinkIds)
     if (replacedNodeIds.size > 0) {
       session.links.forEach((_raw, id) => {
         const link = readSemanticLink(
@@ -645,281 +557,197 @@ export class EcsFollowerAdapter {
           (replacedNodeIds.has(String(link.originNodeId)) ||
             replacedNodeIds.has(String(link.targetNodeId)))
         ) {
-          ids.add(id)
+          changedLinkIds.add(id)
         }
       })
     }
-    // A changed link the follower cannot read (gone from the doc, or
-    // re-minted by cmp onto a promoted slot the definition does not
-    // declare) must be retired live; otherwise its previous topology stays
-    // connected.
-    return new Map(
-      [...ids].map((id) => [
+
+    // A changed link the follower cannot read (gone from the doc, or re-minted
+    // by cmp onto a promoted slot the definition does not declare) must be
+    // retired live; otherwise its previous topology stays connected.
+    const changedLinks = new Map(
+      [...changedLinkIds].map((id) => [
         id,
         session.links.has(id)
           ? readSemanticLink(doc, id, definitions(), session.reportedErrors)
           : null
       ])
     )
-  }
+    const removedLinkIds = [...changedLinks].flatMap(([id, link]) => {
+      if (link && !isIncompatibleLinkType(link)) return []
+      const linkId = resolveLinkMapKey(id)
+      return linkId === null ? [] : [linkId]
+    })
+    const needsProtection = this.needsProtection(session.workflowId)
+    const localOnly =
+      reconcile && needsProtection
+        ? this.intent.localOnlyGraphIds(session.workflowId)
+        : null
+    if (reconcile && needsProtection && localOnly === null) {
+      session.reconcileNextFrame = true
+      return false
+    }
+    const committed = session.mutations.batch(frameContext(update), (batch) => {
+      // A SubgraphNode host that is already live must never be rebuilt from
+      // its doc entry: `reconcileNode` (and delete + `addNode`) replaces the
+      // host's input list in place, which drops the `widgetId` /
+      // `_subgraphSlot` bindings its promoted widgets hang off, leaving the
+      // host with no widgets at all. Resync the host's scalar fields (title,
+      // mode, flags, properties, colors) and promoted values only;
+      // `readSemanticNode` has already keyed the values from the definition.
+      const isHost = (payload: SemanticNodePayload) =>
+        definitions().has(payload.type)
+      const upsertNode = (
+        payload: SemanticNodePayload,
+        mode: 'add' | 'reconcile'
+      ) => {
+        if (mode === 'add') batch.addNode(payload)
+        else if (isHost(payload)) batch.reconcileNodeFields(payload)
+        else batch.reconcileNode(payload)
+      }
 
-  /**
-   * A SubgraphNode host that is already live must never be rebuilt from its
-   * doc entry: `reconcileNode` (and delete + `addNode`) replaces the host's
-   * input list in place, which drops the `widgetId` / `_subgraphSlot`
-   * bindings its promoted widgets hang off, leaving the host with no
-   * widgets at all. Resync the host's scalar fields (title, mode, flags,
-   * properties, colors) and promoted values only; `readSemanticNode` has
-   * already keyed the values from the definition.
-   */
-  private upsertNode(
-    batch: GraphMutationBatch,
-    definitions: () => SubgraphDefinitionIndex,
-    payload: SemanticNodePayload,
-    mode: 'add' | 'reconcile'
-  ): void {
-    if (mode === 'add') batch.addNode(payload)
-    else if (definitions().has(payload.type)) batch.reconcileNodeFields(payload)
-    else batch.reconcileNode(payload)
-  }
-
-  /**
-   * Full resync path for a session whose `reconcileNextFrame` is armed:
-   * replaces the batch's view of every doc node/link with what the doc
-   * holds right now (minus `pendingDeletes`, the local human's edits the
-   * doc has not caught up to yet). `localOnly`'s ids -- live-only
-   * nodes/links `removeMissing` must not sweep -- are kept out of that
-   * missing calculation without themselves being upserted from the doc.
-   */
-  private reconcileFrame(
-    session: TargetSession,
-    batch: GraphMutationBatch,
-    doc: Y.Doc,
-    definitions: () => SubgraphDefinitionIndex,
-    localOnly: LocalOnlyGraphIds | null
-  ): void {
-    const pendingDeletes = this.intent.pendingDeletes(session.workflowId)
-    const localOnlyNodeIds = localOnly?.nodeIds ?? new Set<string>()
-    const localOnlyLinkIds = localOnly?.linkIds ?? new Set<number>()
-    const nodes = [...session.nodes.keys()]
-      .filter((id) => !pendingDeletes.has(id))
-      .flatMap((id) => {
-        const payload = readSemanticNode(
-          doc,
-          id,
-          definitions,
-          session.reportedErrors
-        )
-        return payload ? [payload] : []
-      })
-    const links = excludeIncompatibleLinks(
-      [...session.links.keys()].flatMap((id) => {
-        const link = readSemanticLink(
-          doc,
-          id,
-          definitions(),
-          session.reportedErrors
-        )
-        return link &&
-          !pendingDeletes.has(String(link.originNodeId)) &&
-          !pendingDeletes.has(String(link.targetNodeId))
-          ? [link]
-          : []
-      }),
-      session.reportedErrors
-    )
-    batch.removeMissing(
-      [
-        ...nodes.map(({ id }) => toNodeId(id)),
-        ...[...localOnlyNodeIds].map((id) => toNodeId(id))
-      ],
-      [...links.map(({ id }) => id), ...localOnlyLinkIds]
-    )
-    for (const payload of nodes)
-      this.upsertNode(batch, definitions, payload, 'reconcile')
-    for (const link of links) batch.connect(link)
-  }
-
-  /**
-   * Incremental path for a session that already reflects the doc: replays
-   * only this frame's `pending` edits (node adds/updates/deletes, widget and
-   * field resyncs, link changes) instead of re-reading every node and link
-   * the way `reconcileFrame` does.
-   */
-  private applyIncrementalFrame(
-    session: TargetSession,
-    batch: GraphMutationBatch,
-    doc: Y.Doc,
-    definitions: () => SubgraphDefinitionIndex,
-    pending: FramePendingEdits
-  ): void {
-    batch.removeLinks(pending.removedLinkIds)
-    this.applyNodeActions(session, batch, doc, definitions, pending)
-    this.resyncReplacedWidgetStorage(session, batch, doc, definitions, pending)
-    this.resyncChangedNodeFields(session, batch, doc, definitions, pending)
-    this.resyncChangedWidgets(session, batch, doc, definitions, pending)
-    this.connectChangedLinks(session, batch, pending)
-  }
-
-  /**
-   * Applies each `nodeActions` lifecycle edit: deletes a doc-deleted node
-   * (or an 'update' whose new type no host definition recognizes, which the
-   * doc cannot express as a same-type resync), then adds or resyncs
-   * whatever is left from what the doc holds now.
-   */
-  private applyNodeActions(
-    session: TargetSession,
-    batch: GraphMutationBatch,
-    doc: Y.Doc,
-    definitions: () => SubgraphDefinitionIndex,
-    pending: FramePendingEdits
-  ): void {
-    const payloads = new Map(
-      [...pending.nodeActions]
-        .filter(([, action]) => action !== 'delete')
-        .map(
-          ([id]) =>
-            [
+      if (reconcile) {
+        const pendingDeletes = this.intent.pendingDeletes(session.workflowId)
+        const localOnlyNodeIds = localOnly?.nodeIds ?? new Set<string>()
+        const localOnlyLinkIds = localOnly?.linkIds ?? new Set<number>()
+        const nodes = [...session.nodes.keys()]
+          .filter((id) => !pendingDeletes.has(id))
+          .flatMap((id) => {
+            const payload = readSemanticNode(
+              doc,
               id,
-              readSemanticNode(doc, id, definitions, session.reportedErrors)
-            ] as const
+              definitions,
+              session.reportedErrors
+            )
+            return payload ? [payload] : []
+          })
+        const links = excludeIncompatibleLinks(
+          [...session.links.keys()].flatMap((id) => {
+            const link = readSemanticLink(
+              doc,
+              id,
+              definitions(),
+              session.reportedErrors
+            )
+            return link &&
+              !pendingDeletes.has(String(link.originNodeId)) &&
+              !pendingDeletes.has(String(link.targetNodeId))
+              ? [link]
+              : []
+          }),
+          session.reportedErrors
         )
-    )
-    for (const [id, action] of pending.nodeActions) {
-      if (action === 'delete') {
-        batch.deleteNode(toNodeId(id))
-        continue
+        batch.removeMissing(
+          [
+            ...nodes.map(({ id }) => toNodeId(id)),
+            ...[...localOnlyNodeIds].map((id) => toNodeId(id))
+          ],
+          [...links.map(({ id }) => id), ...localOnlyLinkIds]
+        )
+        for (const payload of nodes) upsertNode(payload, 'reconcile')
+        for (const link of links) batch.connect(link)
+        return
       }
-      const payload = payloads.get(id)
-      if (action === 'update' && !(payload && definitions().has(payload.type)))
-        batch.deleteNode(toNodeId(id))
-    }
-    for (const [id, payload] of payloads) {
-      if (!payload) continue
-      this.upsertNode(
-        batch,
-        definitions,
-        payload,
-        pending.nodeActions.get(id) === 'add' ? 'add' : 'reconcile'
-      )
-    }
-  }
 
-  /**
-   * A node whose widget storage was replaced wholesale, either the named
-   * `widgets` map or the positional `__widgets_opaque` array (cmp writes
-   * both in one transaction when a host's storage flips to opaque, and
-   * deletes the opaque array when it flips back), is re-read in full. Skips
-   * a node `applyNodeActions` already resynced this frame.
-   */
-  private resyncReplacedWidgetStorage(
-    session: TargetSession,
-    batch: GraphMutationBatch,
-    doc: Y.Doc,
-    definitions: () => SubgraphDefinitionIndex,
-    pending: FramePendingEdits
-  ): void {
-    for (const id of new Set([
-      ...pending.replacedWidgetMaps,
-      ...pending.replacedOpaqueWidgets
-    ])) {
-      if (pending.nodeActions.has(id)) continue
-      const payload = readSemanticNode(
-        doc,
-        id,
-        definitions,
-        session.reportedErrors
+      batch.removeLinks(removedLinkIds)
+      const payloads = new Map(
+        [...nodeActions]
+          .filter(([, action]) => action !== 'delete')
+          .map(
+            ([id]) =>
+              [
+                id,
+                readSemanticNode(doc, id, definitions, session.reportedErrors)
+              ] as const
+          )
       )
-      if (payload) this.upsertNode(batch, definitions, payload, 'reconcile')
-    }
-  }
-
-  /**
-   * A node whose scalar fields were edited by key (title, mode, flags,
-   * properties, colors) is re-read so a live host resyncs those fields
-   * without rebuilding its promoted widgets or slots. Skips a node already
-   * resynced this frame by `applyNodeActions` or
-   * `resyncReplacedWidgetStorage`.
-   */
-  private resyncChangedNodeFields(
-    session: TargetSession,
-    batch: GraphMutationBatch,
-    doc: Y.Doc,
-    definitions: () => SubgraphDefinitionIndex,
-    pending: FramePendingEdits
-  ): void {
-    for (const id of pending.changedNodeFields) {
-      if (
-        pending.nodeActions.has(id) ||
-        pending.replacedWidgetMaps.has(id) ||
-        pending.replacedOpaqueWidgets.has(id)
-      )
-        continue
-      const payload = readSemanticNode(
-        doc,
-        id,
-        definitions,
-        session.reportedErrors
-      )
-      if (payload) this.upsertNode(batch, definitions, payload, 'reconcile')
-    }
-  }
-
-  /**
-   * Patches each individually changed widget value onto its registered
-   * widget, or falls back to a full node resync when a changed name is not
-   * yet registered (the widget list grew since the last read). Skips a
-   * node already resynced this frame by `applyNodeActions` or
-   * `resyncReplacedWidgetStorage`.
-   */
-  private resyncChangedWidgets(
-    session: TargetSession,
-    batch: GraphMutationBatch,
-    doc: Y.Doc,
-    definitions: () => SubgraphDefinitionIndex,
-    pending: FramePendingEdits
-  ): void {
-    for (const [id, names] of pending.changedWidgets) {
-      if (pending.nodeActions.has(id) || pending.replacedWidgetMaps.has(id))
-        continue
-      const node = session.nodes.get(id)
-      const widgets = node?.get('widgets')
-      if (!(widgets instanceof Y.Map)) continue
-      if ([...names].some((name) => !widgets.has(name))) {
+      for (const [id, action] of nodeActions) {
+        if (action === 'delete') {
+          batch.deleteNode(toNodeId(id))
+          continue
+        }
+        const payload = payloads.get(id)
+        if (action === 'update' && !(payload && isHost(payload)))
+          batch.deleteNode(toNodeId(id))
+      }
+      for (const [id, payload] of payloads) {
+        if (!payload) continue
+        upsertNode(payload, nodeActions.get(id) === 'add' ? 'add' : 'reconcile')
+      }
+      // A node whose widget storage was replaced wholesale, either the named
+      // `widgets` map or the positional `__widgets_opaque` array (cmp writes
+      // both in one transaction when a host's storage flips to opaque, and
+      // deletes the opaque array when it flips back), is re-read in full.
+      for (const id of new Set([
+        ...replacedWidgetMaps,
+        ...replacedOpaqueWidgets
+      ])) {
+        if (nodeActions.has(id)) continue
         const payload = readSemanticNode(
           doc,
           id,
           definitions,
           session.reportedErrors
         )
-        if (payload) this.upsertNode(batch, definitions, payload, 'reconcile')
-        continue
+        if (payload) upsertNode(payload, 'reconcile')
       }
-      for (const name of names) {
-        batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
+      // A node whose scalar fields were edited by key (title, mode, flags,
+      // properties, colors) is re-read so a live host resyncs those fields
+      // without rebuilding its promoted widgets or slots.
+      for (const id of changedNodeFields) {
+        if (
+          nodeActions.has(id) ||
+          replacedWidgetMaps.has(id) ||
+          replacedOpaqueWidgets.has(id)
+        )
+          continue
+        const payload = readSemanticNode(
+          doc,
+          id,
+          definitions,
+          session.reportedErrors
+        )
+        if (payload) upsertNode(payload, 'reconcile')
       }
-    }
-  }
+      for (const [id, names] of changedWidgets) {
+        if (nodeActions.has(id) || replacedWidgetMaps.has(id)) continue
+        const node = session.nodes.get(id)
+        const widgets = node?.get('widgets')
+        if (!(widgets instanceof Y.Map)) continue
+        if ([...names].some((name) => !widgets.has(name))) {
+          const payload = readSemanticNode(
+            doc,
+            id,
+            definitions,
+            session.reportedErrors
+          )
+          if (payload) upsertNode(payload, 'reconcile')
+          continue
+        }
+        for (const name of names) {
+          batch.setWidget(toNodeId(id), name, plain(widgets.get(name)))
+        }
+      }
+      const incomingLinks = excludeIncompatibleLinks(
+        [...changedLinks.values()].filter(
+          (link): link is SemanticLinkPayload => link !== null
+        ),
+        session.reportedErrors
+      )
+      for (const link of incomingLinks) batch.connect(link)
+    })
 
-  /**
-   * Re-`connect`s every changed link still present and readable in the doc.
-   * A changed link that is gone, unreadable, or newly incompatible is not
-   * connected here -- `removedLinkIdsFor` already routed it to
-   * `batch.removeLinks` instead, called before any of this frame's node
-   * edits so a link's old endpoint is never briefly reconnected mid-frame.
-   */
-  private connectChangedLinks(
-    session: TargetSession,
-    batch: GraphMutationBatch,
-    pending: FramePendingEdits
-  ): void {
-    const incomingLinks = excludeIncompatibleLinks(
-      [...pending.changedLinks.values()].filter(
-        (link): link is SemanticLinkPayload => link !== null
-      ),
-      session.reportedErrors
-    )
-    for (const link of incomingLinks) batch.connect(link)
+    if (committed && localOnly !== null) {
+      this.protectedWorkflowIds.add(session.workflowId)
+      this.intent.commitProtectedReconcile?.(session.workflowId)
+    }
+    // The pending sets were snapshotted and cleared before `batch` ran, so a
+    // rejected batch (no scope, or validation failure) has already lost the
+    // incremental record of this frame. Arm a full reconcile for the next
+    // frame so the dropped edits are re-read from the doc instead of falling
+    // through to incremental handling that never revisits them.
+    session.reconcileNextFrame = !committed
+    return committed
   }
 
   private discardSessionPending(session: TargetSession): void {

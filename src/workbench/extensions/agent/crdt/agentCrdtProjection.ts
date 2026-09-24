@@ -61,6 +61,18 @@ export class AgentCrdtProjection {
     return cleared
   }
 
+  clearForFollowerReplacement(
+    workflowId: string,
+    context: RemoteMutationContext
+  ): boolean {
+    const cleared = this.adapter.clearForFollowerReplacement(
+      workflowId,
+      context
+    )
+    this.reconcileLiveGraph(workflowId)
+    return cleared
+  }
+
   discardPending(workflowId: string): void {
     this.adapter.discardPending(workflowId)
   }
