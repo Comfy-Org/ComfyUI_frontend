@@ -52,4 +52,35 @@ describe('RunNoticeBanner', () => {
     mount()
     expect(screen.queryByRole('note')).toBeNull()
   })
+
+  it('shows mismatch despite educational dismissal and preserves that dismissal when resolved', async () => {
+    localStorage.setItem(STORAGE_KEY, 'true')
+    const { rerender, emitted } = render(RunNoticeBanner, {
+      props: { workflowName: 'portrait', context: 'mismatch' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByRole('note')).toHaveTextContent(
+      i18n.global.t('agent.viewingDifferentWorkflow')
+    )
+    expect(screen.queryByRole('button', { name: 'Dismiss' })).toBeNull()
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Show target workflow: portrait' })
+    )
+    expect(emitted('showTarget')).toHaveLength(1)
+
+    await rerender({ context: undefined })
+    expect(screen.queryByRole('note')).toBeNull()
+    expect(localStorage.getItem(STORAGE_KEY)).toBe('true')
+  })
+
+  it('explains both ways to decide the target before the first Send', () => {
+    render(RunNoticeBanner, {
+      props: { context: 'following', workflowName: 'portrait' },
+      global: { plugins: [i18n] }
+    })
+    expect(screen.getByRole('note')).toHaveTextContent(
+      'Target workflow follows the visible tab until you reference nodes or send a message.'
+    )
+    expect(screen.queryByText(/The agent can now edit/)).toBeNull()
+  })
 })

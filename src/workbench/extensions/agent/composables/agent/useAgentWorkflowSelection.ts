@@ -62,6 +62,16 @@ export function useAgentWorkflowSelection({
     () => workflowSelection.value?.purpose === 'reference'
   )
   let targetSelectionGeneration = 0
+  function followVisibleWorkflow(): void {
+    if (!panelStore.followsVisibleWorkflow) return
+    if (
+      workflowSelection.value?.purpose === 'target' &&
+      workflowSelection.value.workflow !== workflowStore.activeWorkflow
+    )
+      ++targetSelectionGeneration
+    panelStore.followVisibleWorkflow()
+  }
+
   function commitWorkflowTarget(
     workflow: ComfyWorkflow,
     workflowId: string
@@ -232,6 +242,7 @@ export function useAgentWorkflowSelection({
     isSelecting: computed(() => workflowSelection.value !== null),
     selectingTarget,
     savingReference,
+    followVisibleWorkflow,
     selectTarget: onSelectWorkflowTarget,
     selectReference: onSelectWorkflowReference,
     restoreTarget: onWorkflowRestored,

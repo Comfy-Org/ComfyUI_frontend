@@ -12,6 +12,7 @@ import type { ComposerAttachment } from './useComposer'
 
 interface UseAgentDraftSubmissionOptions {
   canSubmit: () => boolean
+  onSubmit: () => void
   target: () => ComfyWorkflow | null
   editableWorkflowId: () => string | undefined
   selection: Pick<
@@ -90,6 +91,7 @@ export function useAgentDraftSubmission(
     )
       return
 
+    options.onSubmit()
     const prompt = composer.prompt
     const inputMethod = composer.promptOrigin
     const sentAttachments = [...attachments]

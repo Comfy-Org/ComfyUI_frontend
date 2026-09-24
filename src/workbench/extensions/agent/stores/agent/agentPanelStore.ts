@@ -20,6 +20,8 @@ type WorkflowTargetSelection =
   | { status: 'cleared' }
   | { status: 'selected'; workflow: ComfyWorkflow }
 
+type TargetTrackingMode = 'uninitialized' | 'following' | 'retained'
+
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
   const consentAccepted = ref(false)
@@ -37,6 +39,10 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   const workflowTargetSelection = ref<WorkflowTargetSelection>({
     status: 'uninitialized'
   })
+  const targetTrackingMode = ref<TargetTrackingMode>('uninitialized')
+  const followsVisibleWorkflow = computed(
+    () => targetTrackingMode.value === 'following'
+  )
   const selectedWorkflow = computed(() =>
     workflowTargetSelection.value.status === 'selected'
       ? workflowTargetSelection.value.workflow
@@ -47,7 +53,30 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   )
 
   function resetWorkflowTarget(): void {
+    retainWorkflowTarget()
     workflowTargetSelection.value = { status: 'uninitialized' }
+  }
+
+  function initializeTargetTracking(hasThread: boolean): void {
+    if (targetTrackingMode.value !== 'uninitialized') return
+    targetTrackingMode.value = hasThread ? 'retained' : 'following'
+  }
+
+  function retainWorkflowTarget(): void {
+    targetTrackingMode.value = 'retained'
+  }
+
+  function startFollowingVisibleWorkflow(): void {
+    targetTrackingMode.value = 'following'
+    setWorkflowTarget(workflowStore.activeWorkflow)
+  }
+
+  function followVisibleWorkflow(): void {
+    if (
+      followsVisibleWorkflow.value &&
+      selectedWorkflow.value !== workflowStore.activeWorkflow
+    )
+      setWorkflowTarget(workflowStore.activeWorkflow)
   }
 
   function setWorkflowTarget(workflow: ComfyWorkflow | null): void {
@@ -170,6 +199,12 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     dismissedSelectionSignature,
     open,
     workflowTargetSelection,
+    targetTrackingMode,
+    followsVisibleWorkflow,
+    initializeTargetTracking,
+    retainWorkflowTarget,
+    startFollowingVisibleWorkflow,
+    followVisibleWorkflow,
     selectedWorkflow,
     canRestoreWorkflow,
     resetWorkflowTarget,

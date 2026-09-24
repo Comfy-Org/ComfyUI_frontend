@@ -204,6 +204,7 @@ const {
   isSelecting: workflowSelecting,
   selectingTarget,
   savingReference,
+  followVisibleWorkflow,
   selectTarget: onSelectWorkflowTarget,
   selectReference: onSelectWorkflowReference,
   restoreTarget: onWorkflowRestored,
@@ -476,6 +477,7 @@ function mentionableNodes(): SelectedNode[] {
 watch(
   selectionTags,
   (tags) => {
+    if (tags.length) agentPanelStore.retainWorkflowTarget()
     nodeReferenceWorkflow = tags.length ? selectedTarget.value : null
     if (!agentPanelStore.isOpen || agentNodeSelectionStore.isLoadingWorkflow)
       return
@@ -887,6 +889,16 @@ async function onNavigateToReferenceWorkflow(
   }
 }
 
+async function onShowTarget(): Promise<void> {
+  const target = selectedTarget.value
+  if (target === null) return
+  try {
+    if (!(await workflowService.openWorkflow(target))) warnWorkflowUnavailable()
+  } catch {
+    warnWorkflowUnavailable()
+  }
+}
+
 function agentTabFilename(name: string | undefined): string | undefined {
   const cleaned = [
     ...(name ?? '')
@@ -1096,6 +1108,7 @@ const coachSteps = computed<CoachStep[]>(() => [
 
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
+  onSubmit: agentPanelStore.retainWorkflowTarget,
   target: () => selectedTarget.value,
   editableWorkflowId: () => editableWorkflowId.value,
   selection: {
@@ -1161,11 +1174,9 @@ function onNewChat(): void {
   exitNodeSelectionMode()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
-  // A new chat targets whatever tab is on screen right now, not the previous
-  // chat's target - unlike onSelectHistory(), which resets to 'uninitialized'
-  // so restoreTarget() can re-apply the loaded thread's own binding.
-  agentPanelStore.setWorkflowTarget(workflowStore.activeWorkflow)
   newChat()
+  agentPanelStore.startFollowingVisibleWorkflow()
+  if (selectionTags.value.length) agentPanelStore.retainWorkflowTarget()
 }
 
 const panelRef = ref<InstanceType<typeof AgentPanel>>()
@@ -1206,8 +1217,6 @@ watch(
   }
 )
 
-watch(() => workflowStore.activeWorkflow, exitNodeSelectionMode)
-
 watch(
   selectedTarget,
   (target, previous) => {
@@ -1218,6 +1227,16 @@ watch(
     agentNodeSelectionStore.saveNodeIds(target?.path, [])
   },
   { flush: 'sync' }
+)
+
+agentPanelStore.initializeTargetTracking(threadId.value !== null)
+watch(
+  () => workflowStore.activeWorkflow,
+  () => {
+    exitNodeSelectionMode()
+    followVisibleWorkflow()
+  },
+  { immediate: true, flush: 'sync' }
 )
 
 watch(
@@ -1457,6 +1476,7 @@ function onPanelDrop(event: DragEvent): void {
       :active-tab="selectedTargetTab"
       :workflow-tabs="workflowTabs"
       :visible-tab-path="workflowStore.activeWorkflow?.path ?? null"
+      :follows-visible-workflow="agentPanelStore.followsVisibleWorkflow"
       :selecting-tab-path="selectingTarget?.path ?? null"
       :select-tab="onSelectWorkflowTarget"
       :workflow-detached="workflowDetached"
@@ -1475,6 +1495,7 @@ function onPanelDrop(event: DragEvent): void {
       @answer-ask="answerAsk"
       @open-workflow="onOpenApprovalWorkflow"
       @open-reference-workflow="onNavigateToReferenceWorkflow"
+      @show-target="onShowTarget"
       @paywall-action="onPaywallAction"
       @new-chat="onNewChat"
       @toggle-size="agentPanelStore.toggleMaximize()"

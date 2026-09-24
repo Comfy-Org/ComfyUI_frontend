@@ -5223,6 +5223,10 @@
     "runNotice": "The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.",
     "runNoticeExpanded": "The agent can modify your workflow. Check Run permissions before allowing it to execute.",
     "workflowEditNotice": "The agent can now edit {workflow}. It works on 1 workflow at a time, and you can switch workflows during chat.",
+    "targetFollowsVisibleWorkflow": "Target workflow follows the visible tab until you reference nodes or send a message.",
+    "viewingDifferentWorkflow": "You’re viewing a different workflow from the target.",
+    "showTarget": "Show target",
+    "showTargetWorkflow": "Show target workflow: {workflowName}",
     "runApproval": {
       "lead": "This tool wants to run the workflow:",
       "question": "Do you approve?",
