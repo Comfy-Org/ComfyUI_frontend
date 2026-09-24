@@ -14,7 +14,6 @@ import type { NodeState } from '@/types/nodeState'
 import { useNodeEventHandlers } from '@/renderer/extensions/vueNodes/composables/useNodeEventHandlers'
 import { isMultiSelectKey } from '@/renderer/extensions/vueNodes/utils/selectionUtils'
 import { useNodeDrag } from '@/renderer/extensions/vueNodes/layout/useNodeDrag'
-import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 
 export function useNodePointerInteractions(
   nodeStateRef: MaybeRefOrGetter<NodeState>
@@ -25,7 +24,6 @@ export function useNodePointerInteractions(
     useCanvasInteractions()
   const { handleNodeSelect, toggleNodeSelectionAfterPointerUp } =
     useNodeEventHandlers()
-  const agentNodeSelectionStore = useAgentNodeSelectionStore()
   const isPinned = () => !!toValue(nodeStateRef).flags.pinned
 
   const forwardMiddlePointerIfNeeded = (
@@ -73,8 +71,6 @@ export function useNodePointerInteractions(
 
     if (isPinned()) return
 
-    if (agentNodeSelectionStore.isActive) return
-
     const nodeId = toValue(nodeStateRef).id
 
     dragGuard.recordStart(event)
@@ -86,8 +82,6 @@ export function useNodePointerInteractions(
     if (forwardMiddlePointerIfNeeded(event, isMiddleButtonHeld)) return
 
     if (!ownsSequence(event)) return
-
-    if (agentNodeSelectionStore.isActive) return
 
     // Don't activate drag while resizing
     if (layoutStore.isResizingVueNodes.value) return
@@ -180,8 +174,7 @@ export function useNodePointerInteractions(
     if (event.button === 2) return
     if (!shouldToggleSelection) return
 
-    const multiSelect =
-      agentNodeSelectionStore.isActive || isMultiSelectKey(event)
+    const multiSelect = isMultiSelectKey(event)
 
     toggleNodeSelectionAfterPointerUp(toValue(nodeStateRef).id, multiSelect)
   }

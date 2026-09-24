@@ -2222,8 +2222,10 @@
     "star": "星號"
   },
   "imageCompare": {
+    "afterAlt": "處理後影像",
     "batchLabelA": "A：",
     "batchLabelB": "B：",
+    "beforeAlt": "處理前影像",
     "noImages": "沒有可比較的圖像"
   },
   "imageCrop": {
@@ -4808,6 +4810,7 @@
     },
     "clearAllFilters": "清除所有篩選器",
     "error": {
+      "loading": "無法開啟範本。請再試一次。",
       "templateNotFound": "找不到範本 \"{templateName}\""
     },
     "filtersApplied": "已套用 {count} 個篩選器",
@@ -5088,6 +5091,7 @@
   },
   "workspace": {
     "addedToWorkspace": "您已加入：",
+    "deepLinkStayed": "無法開啟該工作區。您仍在 {workspaceName} 中。",
     "inviteAccepted": "已接受邀請",
     "inviteFailed": "接受邀請失敗",
     "switchFailed": "切換工作區失敗。請再試一次。",

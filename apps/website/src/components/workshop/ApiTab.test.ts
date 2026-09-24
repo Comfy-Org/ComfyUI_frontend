@@ -184,22 +184,41 @@ describe('ApiTab', () => {
     }
   )
 
-  it.for([
-    {
-      modelSlug: 'bfl--flux-2-pro',
-      href: 'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-2-pro'
-    },
-    {
-      modelSlug: undefined,
-      href: 'https://platform.comfy.org/profile/api-keys?onboarding=models'
-    }
-  ])(
-    'sends the get-key link as a models onboarding arrival, naming the model page when given one: $modelSlug',
-    async ({ modelSlug, href }) => {
-      render(ApiTab, { props: { contract, values, modelSlug } })
+  describe('API key link', () => {
+    it.for([
+      {
+        modelSlug: 'bfl--flux-2-pro',
+        href: 'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-2-pro'
+      },
+      {
+        modelSlug: undefined,
+        href: 'https://platform.comfy.org/profile/api-keys?onboarding=models'
+      }
+    ])(
+      'sends the get-key link as a models onboarding arrival, naming the model page when given one: $modelSlug',
+      async ({ modelSlug, href }) => {
+        render(ApiTab, { props: { contract, values, modelSlug } })
+        expect(
+          (await screen.findByTestId('api-get-key')).getAttribute('href')
+        ).toBe(href)
+      }
+    )
+
+    it('carries the given workspace alongside the onboarding params', async () => {
+      render(ApiTab, {
+        props: {
+          contract,
+          values,
+          modelSlug: 'bfl--flux-2-pro',
+          workspaceId: 'ws-team'
+        }
+      })
+
       expect(
         (await screen.findByTestId('api-get-key')).getAttribute('href')
-      ).toBe(href)
-    }
-  )
+      ).toBe(
+        'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-2-pro&workspace=ws-team'
+      )
+    })
+  })
 })

@@ -2222,8 +2222,10 @@
     "star": "نجمة"
   },
   "imageCompare": {
+    "afterAlt": "صورة بعد",
     "batchLabelA": "أ: ",
     "batchLabelB": "ب: ",
+    "beforeAlt": "صورة قبل",
     "noImages": "لا توجد صور للمقارنة"
   },
   "imageCrop": {
@@ -4808,6 +4810,7 @@
     },
     "clearAllFilters": "مسح جميع الفلاتر",
     "error": {
+      "loading": "تعذّر فتح القالب. يُرجى المحاولة مرة أخرى.",
       "templateNotFound": "النموذج \"{templateName}\" غير موجود"
     },
     "filtersApplied": "{count} فلتر مُطبَّق | {count} فلاتر مُطبَّقة",
@@ -5088,6 +5091,7 @@
   },
   "workspace": {
     "addedToWorkspace": "تمت إضافتك إلى:",
+    "deepLinkStayed": "تعذّر فتح مساحة العمل تلك. ما زلت في {workspaceName}.",
     "inviteAccepted": "تم قبول الدعوة",
     "inviteFailed": "فشل في قبول الدعوة",
     "switchFailed": "فشل في تبديل مساحة العمل. يرجى المحاولة مرة أخرى.",

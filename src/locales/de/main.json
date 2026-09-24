@@ -2222,8 +2222,10 @@
     "star": "Stern"
   },
   "imageCompare": {
+    "afterAlt": "Bild danach",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "Bild davor",
     "noImages": "Keine Bilder zum Vergleichen"
   },
   "imageCrop": {
@@ -4808,6 +4810,7 @@
     },
     "clearAllFilters": "Alle Filter zurücksetzen",
     "error": {
+      "loading": "Die Vorlage konnte nicht geöffnet werden. Bitte versuchen Sie es erneut.",
       "templateNotFound": "Vorlage \"{templateName}\" nicht gefunden"
     },
     "filtersApplied": "{count} Filter angewendet | {count} Filter angewendet",
@@ -5088,6 +5091,7 @@
   },
   "workspace": {
     "addedToWorkspace": "Sie wurden hinzugefügt zu:",
+    "deepLinkStayed": "Dieser Arbeitsbereich konnte nicht geöffnet werden. Sie befinden sich weiterhin in {workspaceName}.",
     "inviteAccepted": "Einladung angenommen",
     "inviteFailed": "Einladung konnte nicht angenommen werden",
     "switchFailed": "Workspace konnte nicht gewechselt werden. Bitte versuchen Sie es erneut.",

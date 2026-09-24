@@ -2222,8 +2222,10 @@
     "star": "Estrela"
   },
   "imageCompare": {
+    "afterAlt": "Imagem posterior",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "Imagem anterior",
     "noImages": "Nenhuma imagem para comparar"
   },
   "imageCrop": {
@@ -4808,6 +4810,7 @@
     },
     "clearAllFilters": "Limpar todos os filtros",
     "error": {
+      "loading": "Não foi possível abrir o modelo. Tente novamente.",
       "templateNotFound": "Modelo \"{templateName}\" não encontrado"
     },
     "filtersApplied": "{count} filtro aplicado | {count} filtros aplicados",
@@ -5088,6 +5091,7 @@
   },
   "workspace": {
     "addedToWorkspace": "Você foi adicionado a:",
+    "deepLinkStayed": "Não foi possível abrir esse espaço de trabalho. Você ainda está em {workspaceName}.",
     "inviteAccepted": "Convite aceito",
     "inviteFailed": "Falha ao aceitar convite",
     "switchFailed": "Falha ao alternar o workspace. Por favor, tente novamente.",

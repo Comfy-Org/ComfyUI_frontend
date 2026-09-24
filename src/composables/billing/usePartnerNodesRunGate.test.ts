@@ -1,9 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { User } from 'firebase/auth'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { computed, effectScope, nextTick, ref } from 'vue'
 import type { EffectScope, Ref } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 
 vi.mock(import('firebase/auth'))
@@ -46,6 +50,13 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 }))
 
 let scope: EffectScope
+
+async function storeApiKeyStillValidating() {
+  vi.spyOn(useAuthStore(), 'createCustomer').mockReturnValue(
+    new Promise(() => {})
+  )
+  await useApiKeyAuthStore().storeApiKey('stored-key')
+}
 
 function setup() {
   scope = effectScope()
@@ -120,12 +131,45 @@ describe('usePartnerNodesRunGate', () => {
         level: 'warning',
         tags: expect.objectContaining({
           trigger: 'run-button',
-          isLoggedIn: false,
           partnerNodeCount: 1
         }),
         context: { partnerNodeTypes: ['Kling'] }
       })
     )
+  })
+
+  describe('tags the raw sessions so a wrongly blocked user is visible', () => {
+    it.for([
+      { held: 'no session', firebase: false, apiKey: false },
+      { held: 'a Firebase user', firebase: true, apiKey: false },
+      { held: 'a validated API key', firebase: false, apiKey: true }
+    ])('while holding $held', async ({ firebase, apiKey }) => {
+      useCurrentUser().isLoggedIn = computed(() => false)
+      if (firebase) {
+        vi.spyOn(firebaseIdentity, 'currentUser').mockReturnValue(
+          fromPartial<User>({ uid: 'u1' })
+        )
+      }
+      if (apiKey) {
+        const apiKeyStore = useApiKeyAuthStore()
+        vi.spyOn(apiKeyStore, 'getApiKey').mockReturnValue('stored-key')
+        apiKeyStore.currentUser = fromPartial({ id: 'customer-1' })
+      }
+      state.hasPartnerNodes.value = true
+      state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
+      setup()
+      await nextTick()
+
+      expect(mockReportError).toHaveBeenCalledWith(
+        expect.any(Error),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            hasFirebaseSession: firebase,
+            hasStoredApiKey: apiKey
+          })
+        })
+      )
+    })
   })
 
   it('reports nothing while the gate stays open', async () => {
@@ -157,6 +201,25 @@ describe('usePartnerNodesRunGate', () => {
     loggedIn.value = false
     await nextTick()
     expect(gate.value).toBe('sign-in')
+  })
+
+  it('does not gate while a stored API key validates, then follows the outcome', async () => {
+    useCurrentUser().isLoggedIn = computed(() => false)
+    await storeApiKeyStillValidating()
+    state.hasPartnerNodes.value = true
+    state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
+    const { gate } = setup()
+    await nextTick()
+    expect(gate.value, 'a validating key must never read as signed-out').toBe(
+      'none'
+    )
+    expect(mockReportError).not.toHaveBeenCalled()
+
+    await useApiKeyAuthStore().clearStoredApiKey()
+    await nextTick()
+    expect(gate.value, 'a rejected key leaves the user signed out').toBe(
+      'sign-in'
+    )
   })
 
   it('stays inert when the feature flag is off, even for a gated graph', async () => {
@@ -193,6 +256,13 @@ describe('partnerRunGateBlocksAutoQueue', () => {
   it('never blocks while auth is still resolving', () => {
     state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
     useAuthStore().isInitialized = false
+    expect(partnerRunGateBlocksAutoQueue()).toBe(false)
+  })
+
+  it('never blocks while a stored API key is still validating', async () => {
+    useCurrentUser().isLoggedIn = computed(() => false)
+    await storeApiKeyStillValidating()
+    state.partnerNodes.value = [{ nodeName: 'Kling', displayName: 'Kling' }]
     expect(partnerRunGateBlocksAutoQueue()).toBe(false)
   })
 
