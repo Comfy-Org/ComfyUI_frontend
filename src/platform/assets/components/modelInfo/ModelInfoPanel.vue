@@ -44,7 +44,7 @@
           :href="sourceUrl"
           target="_blank"
           rel="noopener noreferrer"
-          class="hover:text-foreground inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors"
+          class="inline-flex items-center gap-1.5 text-muted-foreground no-underline transition-colors hover:text-base-foreground"
         >
           <img
             v-if="sourceName === 'Civitai'"
