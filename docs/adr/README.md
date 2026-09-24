@@ -65,8 +65,10 @@ An Architecture Decision Record captures an important architectural decision mad
 | [WEBSITE-ACCEPTANCE-0036](WEBSITE-ACCEPTANCE-0036-separate-live-customer-tests-from-offline-ci.md)               | Separate live customer acceptance from offline CI                                  | Proposed   | 2026-09-21 |
 | [WEBSITE-REQUESTS-0030](WEBSITE-REQUESTS-0030-creator-widgets-and-router-request-composition.md)                 | Creator widgets and Router request composition                                     | Deprecated | 2026-09-09 |
 | [WIDGET-SERIALIZATION-0006](WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md) | PrimitiveNode Widget Restoration Lifecycle                                         | Accepted   | 2026-02-22 |
+| [WORKSHOP-CATALOG-0037](WORKSHOP-CATALOG-0037-shared-pages-and-authored-execution-catalogs.md)                   | Shared pages and authored execution catalogs                                       | Accepted   | 2026-09-23 |
 | [WORKSHOP-TELEMETRY-0034](WORKSHOP-TELEMETRY-0034-browser-delivery-health.md)                                    | Browser delivery health for Models                                                 | Proposed   | 2026-09-18 |
 | [WORKSHOP-VALIDATION-0036](WORKSHOP-VALIDATION-0036-declarative-input-constraints.md)                            | Declarative input constraints                                                      | Proposed   | 2026-09-22 |
+| [WORKSHOP-WORKFLOWS-0036](WORKSHOP-WORKFLOWS-0036-published-app-definitions-and-durable-cloud-runs.md)           | Published APP definitions and durable Cloud runs                                   | Superseded | 2026-09-22 |
 
 ## Creating a New ADR
 
