@@ -184,7 +184,7 @@ describe('describeImageLoadFailure', () => {
       .spyOn(window, 'addEventListener')
       .mockImplementation((type, _fn, opts) => {
         if (type === 'pagehide' && opts && typeof opts === 'object') {
-          signals.push((opts).signal!)
+          signals.push(opts.signal!)
         }
       })
 
