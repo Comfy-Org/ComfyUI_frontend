@@ -109,7 +109,7 @@ function generateFromKeyboard() {
 
 const chipClass = (key: PopoverKey) =>
   cn(
-    'flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2.5 text-[13px] whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t8 hover:text-primary-warm-white',
+    'flex h-8 shrink-0 items-center gap-1.5 rounded-lg px-2 text-[13px] whitespace-nowrap text-primary-comfy-canvas transition-colors hover:bg-transparency-white-t8 hover:text-primary-warm-white',
     openPopover === key &&
       'bg-transparency-white-t8 text-primary-warm-white ring-1 ring-transparency-white-t20 ring-inset'
   )
@@ -160,7 +160,7 @@ const chipClass = (key: PopoverKey) =>
 
       <div class="flex flex-wrap items-center gap-2 lg:flex-nowrap">
         <div
-          class="-mx-1 scrollbar-hide flex min-w-0 flex-1 basis-full items-center gap-0.5 overflow-x-auto px-1 lg:basis-auto"
+          class="-mx-1 scrollbar-hide flex min-w-0 flex-1 basis-full items-center gap-0.5 overflow-x-auto px-1 lg:basis-auto lg:flex-wrap lg:overflow-visible"
         >
           <CinematicMenu
             v-model="modelSlug"

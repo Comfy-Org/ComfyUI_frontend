@@ -100,7 +100,7 @@ function generate() {
     <div
       class="sticky bottom-0 z-30 bg-linear-to-t from-primary-comfy-ink via-primary-comfy-ink/90 to-transparent px-3 pt-4 pb-4 sm:px-6 sm:pb-6"
     >
-      <div class="relative mx-auto w-full max-w-5xl">
+      <div class="relative mx-auto w-full max-w-6xl">
         <div
           v-if="popover"
           class="fixed inset-0 z-40 bg-black/60 lg:hidden"

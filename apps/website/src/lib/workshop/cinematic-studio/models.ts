@@ -40,7 +40,7 @@ export function runnableCinematicModels(
       ? [
           {
             slug: model.slug,
-            name: model.name,
+            name: model.name.replace(/ Text-to-Image$/, ''),
             provider: model.provider ?? '',
             logo
           }
