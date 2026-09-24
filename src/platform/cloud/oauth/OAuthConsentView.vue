@@ -63,7 +63,7 @@
               cn(
                 'flex w-full cursor-pointer items-center gap-3 border-none bg-transparent p-3 text-left transition-colors',
                 'hover:bg-ink-300',
-                'focus-visible:ring-ring focus-visible:ring-1 focus-visible:outline-none focus-visible:ring-inset',
+                'focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none focus-visible:ring-inset',
                 selectedWorkspaceId === workspace.id && 'bg-ink-200'
               )
             "

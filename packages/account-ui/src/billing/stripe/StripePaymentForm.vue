@@ -12,7 +12,7 @@
     </div>
     <div
       v-if="configurationError"
-      class="border-danger-background bg-danger-background/10 text-danger rounded-lg border px-3 py-2 text-sm"
+      class="rounded-lg border border-destructive-background bg-destructive-background/10 px-3 py-2 text-sm text-destructive-background"
     >
       {{ configurationError }}
     </div>

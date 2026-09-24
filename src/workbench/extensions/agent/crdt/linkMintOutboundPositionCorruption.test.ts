@@ -184,6 +184,7 @@ describe('agent CRDT outbound leg: link mint by live position vs. doc order', ()
       session: createMintSession(),
       isEnabled: () => true,
       isDocBound: () => true,
+      isIntentionalClear: () => false,
       enqueue: (operations) => minted.push(...operations)
     })
 

@@ -168,6 +168,7 @@ function valueWidgetsOnly(
 
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const session = createMintSession()
+  let intentionalClearDepth = 0
   const enqueue = (operations: GraphOperation[]) => {
     const pending = bufferedEnqueues.at(-1)
     if (pending) pending.push(() => deps.enqueue(operations))
@@ -201,6 +202,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     session,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
+    isIntentionalClear: () => intentionalClearDepth > 0,
     enqueue
   })
 
@@ -303,7 +305,12 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const wiring: MintPortWiring = {
     session,
     runIntentionalClear(fn) {
-      return layoutPort.runIntentionalClear(fn)
+      intentionalClearDepth++
+      try {
+        return layoutPort.runIntentionalClear(fn)
+      } finally {
+        intentionalClearDepth--
+      }
     },
     onBeforeGraphLoad() {
       if (loadBracketOpen) return
