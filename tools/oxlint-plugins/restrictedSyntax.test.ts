@@ -35,6 +35,17 @@ const removedModuleFiles = [
   path.join(probeDirs.browserTests, 'deprecated.spec.ts')
 ]
 
+const selectionWriteProbes = [
+  ['selected-assignment.ts', 'group.selected = true'],
+  ['selected-items-add.ts', 'canvas.selectedItems.add(group)'],
+  ['selected-items-delete.ts', 'canvas.selectedItems.delete(group)'],
+  ['selected-items-clear.ts', 'canvas.selectedItems.clear()'],
+  ['selected-nodes-assignment.ts', 'canvas.selected_nodes[group.id] = group'],
+  ['selected-nodes-delete.ts', 'delete canvas.selected_nodes[group.id]'],
+  ['selection-store-apply.ts', 'useSelectionStore().apply(scope, command)'],
+  ['computed-selected-assignment.ts', "canvas['selected'] = true"]
+] as const
+
 const probes = [
   {
     file: path.join(probeDirs.source, 'assertion.tsx'),
@@ -91,18 +102,16 @@ computed(() => element.getBoundingClientRect())
 </script>
 `
   },
+  ...selectionWriteProbes.map(([file, source]) => ({
+    file: path.join(probeDirs.selection, file),
+    source: `${source}\n`
+  })),
   {
-    file: path.join(probeDirs.selection, 'selection.ts'),
-    source: `group.selected = true
-canvas.selectedItems.add(group)
-canvas.selectedItems.delete(group)
-canvas.selectedItems.clear()
-canvas.selected_nodes[group.id] = group
-delete canvas.selected_nodes[group.id]
-useSelectionStore().apply(scope, command)
-void group.selected
+    file: path.join(probeDirs.selection, 'allowed-selection-access.ts'),
+    source: `void group.selected
 void canvas.selectedItems.has(group)
 void canvas.selected_nodes[group.id]
+canvas[selected] = value
 `
   },
   ...removedModuleFiles.map((file) => {
@@ -291,7 +300,9 @@ describe('restricted syntax rules', () => {
 
   it('rejects direct canvas selection writes', () => {
     const selectionFindings = findingsFor('no-direct-selection-write')
-    expect(selectionFindings).toHaveLength(7)
+    expect(
+      selectionFindings.map(({ filename }) => path.basename(filename)).sort()
+    ).toEqual(selectionWriteProbes.map(([file]) => file).sort())
     expect(
       selectionFindings.every(({ severity }) => severity === 'error')
     ).toBe(true)

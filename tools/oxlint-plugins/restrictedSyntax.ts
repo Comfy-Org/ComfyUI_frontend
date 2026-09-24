@@ -25,6 +25,11 @@ interface StringLiteral extends Node {
   readonly value: string
 }
 
+interface Literal extends Node {
+  readonly type: 'Literal'
+  readonly value: unknown
+}
+
 interface ImportDeclaration extends Node {
   readonly source: StringLiteral
 }
@@ -35,6 +40,7 @@ interface ExportDeclaration extends Node {
 
 interface MemberExpression extends Node {
   readonly type: 'MemberExpression'
+  readonly computed: boolean
   readonly object: Node
   readonly property: Node
 }
@@ -71,12 +77,10 @@ function identifierName(node: Node): string | undefined {
 }
 
 function memberName(node: MemberExpression): string | undefined {
-  return (
-    identifierName(node.property) ??
-    (node.property.type === 'Literal'
-      ? (node.property as StringLiteral).value
-      : undefined)
-  )
+  if (!node.computed) return identifierName(node.property)
+  if (node.property.type !== 'Literal') return
+  const { value } = node.property as Literal
+  return typeof value === 'string' ? value : undefined
 }
 
 const SELECTION_PROJECTIONS = new Set([
