@@ -72,7 +72,10 @@ test.describe('hreflang alternates', () => {
   })
 
   test('excludes noindex routes from the sitemap', async ({ request }) => {
-    const sitemap = await (await request.get('/sitemap-0.xml')).text()
+    const response = await request.get('/sitemap-0.xml')
+    expect(response.status()).toBe(200)
+    const sitemap = await response.text()
+    expect(sitemap).toContain('/pricing')
     expect(sitemap).not.toContain('/platform/serverless-animation')
   })
 })
