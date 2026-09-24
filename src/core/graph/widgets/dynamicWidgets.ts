@@ -524,10 +524,10 @@ const ORDINAL_REGEX = /\d+$/
  * `names` list when the group defines one, or (absent that) required to
  * end in a numeric ordinal. The one membership rule a live autogrow
  * registration (`resolveAutogrowOrdinal` below) and a node type's own
- * static schema (`nodeDefAutogrowGroupOf` in `graphMutations.ts`) must
- * agree on, so it is shared rather than reimplemented at each call site.
+ * static schema must agree on, so it is shared rather than reimplemented at
+ * each call site.
  */
-export function isAutogrowGroupMember(
+function isAutogrowGroupMember(
   key: string,
   names: readonly string[] | undefined
 ): boolean {
@@ -590,19 +590,6 @@ export function liveAutogrowGroupOf(
     }
   }
   return undefined
-}
-
-export function reconcileAutogrowInputs(node: LGraphNode): void {
-  if (!node.comfyDynamic?.autogrow) return
-  withComfyAutogrow(node)
-  for (const groupName of Object.keys(node.comfyDynamic.autogrow)) {
-    const slot = node.inputs.findLastIndex(
-      (input, index) =>
-        input.name.slice(0, input.name.lastIndexOf('.')) === groupName &&
-        node.getInputLink(index)
-    )
-    if (slot !== -1) autogrowInputConnected(slot, node)
-  }
 }
 
 function autogrowInputDisconnected(index: number, node: AutogrowNode) {

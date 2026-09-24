@@ -15,12 +15,9 @@ import {
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
-import { graphScopeOf } from '@/types/graphScopeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { FollowerDoc } from './followerDoc'
-import { createGraphMutations } from './graphMutations'
 
 const WORKFLOW_ID = 'wf-plain-insert'
 
@@ -76,15 +73,7 @@ function insertOp(
 
 function bindProjection(workflowId: string, graph: LGraph) {
   const follower = new FollowerDoc()
-  const projection = new AgentCrdtProjection(
-    createGraphMutations({
-      getScope: () => graphScopeOf(graph),
-      layout: { createNode: () => {}, deleteNodes: () => {} },
-      placement: inertPlacementPort
-    }),
-    () => graph,
-    () => follower.doc
-  )
+  const projection = new AgentCrdtProjection(() => graph)
   projection.bind(workflowId, follower)
   onTestFinished(() => {
     projection.destroy()
@@ -94,14 +83,14 @@ function bindProjection(workflowId: string, graph: LGraph) {
   let seq = 0
   const deliver = (update: Uint8Array, opIds: string[]): boolean => {
     follower.applyRemoteUpdate(update)
-    const committed = projection.applyFrame({
-      workflowId,
-      seq: ++seq,
-      update,
-      actor: 'agent:test',
-      opIds
-    })
-    projection.reconcileLiveGraph(workflowId)
+    const committed =
+      projection.applyFrame({
+        workflowId,
+        seq: ++seq,
+        update,
+        actor: 'agent:test',
+        opIds
+      }) !== null
     return committed
   }
   return deliver

@@ -42,10 +42,9 @@ export type NodeIdMintMode = 'sequential' | 'crdt-disjoint'
  * https://github.com/Comfy-Org/comfy-cli/blob/aec5220c4573fdc3ea89794572305d12a4d24e70/comfy_cli/workflow_ops.py#L65-L72
  * (`Comfy-Org/comfy-cli`'s `comfy_cli/workflow_ops.py:65-72`: `_ID_FLOOR = 1 << 40`,
  * `mint_id() -> _ID_FLOOR | random.getrandbits(52)`). If that reservation bit
- * ever changes there, this partition silently stops holding, and the runtime
- * guard in `agentNodeMaterializer.ts` catches only part of that: it reports a
- * remote id with BOTH reserved bits clear (see
- * {@link matchesReservedBitConvention}). An agent mint that stopped setting
+ * ever changes there, this partition silently stops holding, and
+ * {@link matchesReservedBitConvention} catches only part of that: it flags a
+ * remote id with BOTH reserved bits clear. An agent mint that stopped setting
  * bit 40 but happened to set bit 41 would still pass it silently — and would
  * then be inside this app's own range.
  */

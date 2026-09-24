@@ -10,15 +10,14 @@ import {
 import type { Ref } from 'vue'
 import * as Y from 'yjs'
 
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-import type { MaterializableGraph } from './agentNodeMaterializer'
 import {
   AgentCrdtDocLifecycle,
   STALE_AFTER_MS,
@@ -30,10 +29,13 @@ import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
-import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import type {
+  LiveGraphApplierDeps,
+  RemoteApplyContext
+} from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
@@ -88,12 +90,12 @@ interface AgentCrdtOutcomeCounters {
 
 function liveAddedNodeIds(
   added: readonly string[],
-  graph: MaterializableGraph | null
+  graph: LGraph | null
 ): NodeId[] {
   if (!graph) return []
   return added.flatMap((id) => {
     const nodeId = parseNodeId(id)
-    return nodeId && graph._nodes_by_id[nodeId] ? [nodeId] : []
+    return nodeId && graph.getNodeById(nodeId) ? [nodeId] : []
   })
 }
 
@@ -131,7 +133,7 @@ function notifyAgentMaterialization(
   update: ClassifiedDocUpdate,
   added: readonly string[],
   materialized: readonly NodeId[],
-  graph: MaterializableGraph | null,
+  graph: LGraph | null,
   pendingLiveNodeIds: Set<NodeId>,
   events: AgentCrdtFollowerEvents
 ): void {
@@ -201,18 +203,20 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
   }
 }
 
+export type AgentCrdtApplierDeps = Omit<LiveGraphApplierDeps, 'getGraph'>
+
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
-  graphMutations: MutationsForTarget,
   userId: () => string | null = () => null,
   isTargetActive: Ref<boolean> = ref(true),
   /**
-   * Live graph that receives node adapters for store-only records. Reactive
-   * reads inside the getter are tracked, so a `null` → graph flip triggers a
-   * reconcile without waiting for the next remote frame.
+   * Live graph the document is applied to. Reactive reads inside the getter
+   * are tracked, so a `null` → graph flip syncs the graph from the document
+   * without waiting for the next remote frame.
    */
-  getGraph: () => MaterializableGraph | null = () => null,
-  events: AgentCrdtFollowerEvents = {}
+  getGraph: () => LGraph | null = () => null,
+  events: AgentCrdtFollowerEvents = {},
+  applierDeps: AgentCrdtApplierDeps = {}
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -247,11 +251,11 @@ export function useAgentCrdtFollower(
       follower.value = scope.run(() =>
         startAgentCrdtFollower(
           workflowId,
-          graphMutations,
           userId,
           isTargetActive,
           getGraph,
-          events
+          events,
+          applierDeps
         )
       )
     },
@@ -275,11 +279,11 @@ export function useAgentCrdtFollower(
 
 function startAgentCrdtFollower(
   workflowId: Ref<string | null>,
-  graphMutations: MutationsForTarget,
   userId: () => string | null,
   isTargetActive: Ref<boolean>,
-  getGraph: () => MaterializableGraph | null,
-  events: AgentCrdtFollowerEvents
+  getGraph: () => LGraph | null,
+  events: AgentCrdtFollowerEvents,
+  applierDeps: AgentCrdtApplierDeps
 ) {
   const connected = ref(false)
   const updatesApplied = ref(0)
@@ -360,12 +364,9 @@ function startAgentCrdtFollower(
     }
     return pending
   }
-  const projection = new AgentCrdtProjection(
-    graphMutations,
-    getGraph,
-    () => bridge.follower.doc,
-    { pendingDeletes: pendingHumanDeletes }
-  )
+  const projection = new AgentCrdtProjection(getGraph, applierDeps, {
+    pendingDeletes: pendingHumanDeletes
+  })
   const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
@@ -383,8 +384,8 @@ function startAgentCrdtFollower(
       return new Set()
     }
   }
-  const reconcileAndReportPending = (workflowId: string): void => {
-    const materialized = projection.reconcileLiveGraph(workflowId)
+  const syncAndReportPending = (workflowId: string): void => {
+    const materialized = projection.syncFromDoc(workflowId)
     emitPendingMaterializations(
       workflowId,
       undefined,
@@ -413,11 +414,11 @@ function startAgentCrdtFollower(
     knownDocNodeIds = ids
     return added
   }
-  const applyAndReconcile = (update: ClassifiedDocUpdate): NodeId[] => {
-    const applied = projection.applyFrame(update)
-    incrementOutcome(applied ? 'applied' : 'skipped')
-    if (applied && !update.catchUp) incrementOutcome('appliedLive')
-    return applied ? projection.reconcileLiveGraph(update.workflowId) : []
+  const applyFrame = (update: ClassifiedDocUpdate): NodeId[] => {
+    const created = projection.applyFrame(update)
+    incrementOutcome(created ? 'applied' : 'skipped')
+    if (created && !update.catchUp) incrementOutcome('appliedLive')
+    return created ?? []
   }
 
   const onSubscribed: EventListener = (event) => {
@@ -450,7 +451,7 @@ function startAgentCrdtFollower(
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
-    const materialized = applyAndReconcile(update)
+    const materialized = applyFrame(update)
     recordDevEvent('doc_update', {
       workflowId: update.workflowId,
       seq: update.seq,
@@ -496,10 +497,9 @@ function startAgentCrdtFollower(
         : undefined
     incrementOutcome('reset')
     if (!isCurrentWorkflow(detail?.workflowId)) return
-    const context: RemoteMutationContext = {
-      source: 'agent-remote',
+    const context: RemoteApplyContext = {
       actor: detail.actor ?? 'agent-reset',
-      opId: `doc-reset:${detail.seq ?? 'unknown'}`
+      opIds: [`doc-reset:${detail.seq ?? 'unknown'}`]
     }
     projection.clearForReset(detail.workflowId, context)
     sender.abortAll()
@@ -532,11 +532,7 @@ function startAgentCrdtFollower(
     ) {
       updatesApplied.value = 0
       confirmedDeletes.clear()
-      projection.clearForReset(workflowId, {
-        source: 'agent-remote',
-        actor: 'agent-lineage',
-        opId: `follower-replaced:${workflowId}`
-      })
+      projection.discardPending(workflowId)
       projection.bind(workflowId, bridge.follower)
     }
   }
@@ -630,7 +626,7 @@ function startAgentCrdtFollower(
   // the bind site instead, once the binding actually exists.
   watch(getGraph, (graph) => {
     if (graph && boundWorkflowId !== null && isTargetActive.value) {
-      reconcileAndReportPending(boundWorkflowId)
+      syncAndReportPending(boundWorkflowId)
     }
   })
   // The bound workflow whose tab went inactive while the sender still held
@@ -710,7 +706,7 @@ function startAgentCrdtFollower(
     }
     subscribedWorkflowId.value = persisted
     retarget(persisted)
-    if (justActivated) reconcileAndReportPending(persisted)
+    if (justActivated) syncAndReportPending(persisted)
   }
 
   const activateTarget = (next: string, justActivated: boolean): void => {
@@ -722,7 +718,7 @@ function startAgentCrdtFollower(
     }
     subscribedWorkflowId.value = next
     retarget(next)
-    if (justActivated) reconcileAndReportPending(next)
+    if (justActivated) syncAndReportPending(next)
   }
 
   watch(

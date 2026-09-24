@@ -131,10 +131,9 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
    * Depth counter for {@link withLocalDirtyTrackingSuppressed} and the
    * {@link beginLocalDirtyTrackingSuppression}/
    * {@link endLocalDirtyTrackingSuppression} pair. A context-less write made
-   * while this is above zero is a structural replay - e.g.
-   * `agentNodeMaterializer`'s `node.configure()` catch-up (which legitimately
-   * re-applies a stale positional snapshot before immediately correcting it),
-   * or any workflow load's `LGraphNode.configure()` re-applying a tab's own
+   * while this is above zero is a structural replay - e.g. a remote CRDT
+   * frame's `node.configure()` re-applying the document's positional
+   * snapshot, or any workflow load's `LGraphNode.configure()` re-applying a tab's own
    * locally-saved (possibly pre-edit) snapshot onto widgets already aliased
    * to newer canonical state - rather than a human edit, so it must not arm
    * the one-shot stale-reconcile guard.

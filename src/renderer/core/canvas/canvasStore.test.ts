@@ -16,13 +16,11 @@ import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
-import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 import {
   createMockCanvasRenderingContext2D,
   createTestCanvas
 } from '@/utils/__tests__/litegraphTestUtils'
-import { reconcileAgentAdapters } from '@/workbench/extensions/agent/crdt/agentNodeMaterializer'
 
 function createMockCanvas(readOnly = false): LGraphCanvas {
   return fromPartial<LGraphCanvas>({
@@ -124,70 +122,50 @@ describe('useCanvasStore', () => {
   })
 
   describe('node:before-removed selection cleanup', () => {
-    it.for(['direct', 'materialized'] as const)(
-      'clears selection before onRemoved during %s replacement',
-      async (mode) => {
-        const graph = new LGraph()
-        const node = new LGraphNode('test')
-        node.type = 'test-node'
-        graph.add(node)
+    it('clears selection before onRemoved during node replacement', async () => {
+      const graph = new LGraph()
+      const node = new LGraphNode('test')
+      node.type = 'test-node'
+      graph.add(node)
 
-        const scope = graphScopeOf(graph)
-        const selectionStore = useSelectionStore()
-        const canvas = createTestCanvas(
-          graph,
-          createMockCanvasRenderingContext2D()
-        )
-        document.body.append(canvas.canvas)
-        onTestFinished(() => {
-          canvas.unbindEvents()
-          canvas.canvas.remove()
-        })
-        store.canvas = canvas
-        await nextTick()
-        canvas.select(node)
-        expect(store.selectedItems).toContain(node)
+      const scope = graphScopeOf(graph)
+      const selectionStore = useSelectionStore()
+      const canvas = createTestCanvas(
+        graph,
+        createMockCanvasRenderingContext2D()
+      )
+      document.body.append(canvas.canvas)
+      onTestFinished(() => {
+        canvas.unbindEvents()
+        canvas.canvas.remove()
+      })
+      store.canvas = canvas
+      await nextTick()
+      canvas.select(node)
+      expect(store.selectedItems).toContain(node)
 
-        let stillSelectedInOnRemoved: boolean | undefined
-        node.onRemoved = () => {
-          stillSelectedInOnRemoved = store.selectedItems.includes(node)
-        }
-
-        const replace = {
-          direct: () => {
-            graph.remove(node)
-            const replacement = new LGraphNode('replacement')
-            replacement.id = node.id
-            graph.add(replacement)
-          },
-          materialized: () => {
-            const nodes = useNodeDataStore()
-            const state = nodes.getNode(scope.rootGraphId, node.id)
-            assert.exists(state)
-            const replacement = {
-              ...state,
-              lastSerialization: node.serialize()
-            }
-            nodes.deleteNode(scope, state)
-            nodes.registerNode(scope, replacement)
-            reconcileAgentAdapters(graph)
-          }
-        }
-        replace[mode]()
-
-        expect(
-          stillSelectedInOnRemoved,
-          'selectedItems must not contain the node when onRemoved fires'
-        ).toBe(false)
-        expect(store.selectedItems).toEqual([])
-        const replacement = graph.getNodeById(node.id)
-        assert.exists(replacement)
-        expect(replacement).not.toBe(node)
-        expect(selectionStore.selectedKeys(scope)).toEqual([])
-        expect([...canvas.selectedItems]).toEqual([])
-        expect(replacement.selected).toBeFalsy()
+      let stillSelectedInOnRemoved: boolean | undefined
+      node.onRemoved = () => {
+        stillSelectedInOnRemoved = store.selectedItems.includes(node)
       }
-    )
+
+      graph.remove(node)
+      const added = new LGraphNode('replacement')
+      added.id = node.id
+      graph.add(added)
+
+      expect(
+        stillSelectedInOnRemoved,
+        'selectedItems must not contain the node when onRemoved fires'
+      ).toBe(false)
+      expect(store.selectedItems).toEqual([])
+      const replacement = graph.getNodeById(node.id)
+      assert.exists(replacement)
+      expect(replacement).not.toBe(node)
+      expect(selectionStore.selectedKeys(scope)).toEqual([])
+      expect([...canvas.selectedItems]).toEqual([])
+      expect(replacement.selected).toBeFalsy()
+    })
   })
 
   describe('rootGraphId', () => {

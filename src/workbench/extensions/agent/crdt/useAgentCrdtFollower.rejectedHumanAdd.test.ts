@@ -9,7 +9,6 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 
-import type { GraphMutations } from './graphMutations'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 // The frame the sender actually put on the wire, narrowed the same way a
@@ -57,10 +56,7 @@ it.fails('surfaces a human add_node the doc host rejected instead of swallowing 
   const { unmount } = render(
     defineComponent({
       setup() {
-        follower = useAgentCrdtFollower(
-          ref<string | null>(WORKFLOW_ID),
-          fromPartial<GraphMutations>({})
-        )
+        follower = useAgentCrdtFollower(ref<string | null>(WORKFLOW_ID))
         return () => null
       }
     })

@@ -462,8 +462,7 @@ function serialiseStoredGroups(owner: LGraph) {
  * `idAllocation.ts` stays pure and context-free, so the mode is decided here:
  * `'crdt-disjoint'` only for a mint landing directly on a root graph that
  * shares its id space with the agent's collaborative doc — subgraph-owned
- * nodes are outside the doc's scope (see `agentNodeMaterializer.ts`) and keep
- * plain sequential ids.
+ * nodes are outside the doc's scope and keep plain sequential ids.
  */
 function nodeIdMintModeFor(graph: {
   isRootGraph: boolean

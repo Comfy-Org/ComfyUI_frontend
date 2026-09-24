@@ -1,107 +1,124 @@
-import type * as Y from 'yjs'
-
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import type { NodeId } from '@/types/nodeId'
 
-import type { MaterializableGraph } from './agentNodeMaterializer'
-import {
-  reconcileAgentAdapters,
-  subgraphDefinitionReadState
-} from './agentNodeMaterializer'
-import {
-  readSubgraphDefinitionIds,
-  readSubgraphDefinitions
-} from './agentSubgraphDefinitions'
 import { recordDevEvent } from './devPanelLog'
+import { DocChangeCollector } from './docChangeCollector'
 import type { DocUpdate } from './docFrameClient'
-import type { LocalIntent, MutationsForTarget } from './ecsFollowerAdapter'
-import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import type { FollowerDoc } from './followerDoc'
+import { LiveGraphApplier } from './liveGraphApplier'
+import type {
+  LiveGraphApplierDeps,
+  RemoteApplyContext
+} from './liveGraphApplier'
 
+interface BoundTarget {
+  follower: FollowerDoc
+  collector: DocChangeCollector
+}
+
+export interface LocalIntent {
+  /** Doc node ids whose local delete has not yet left the document. */
+  pendingDeletes(workflowId: string): ReadonlySet<string>
+}
+
+const NO_LOCAL_INTENT: LocalIntent = { pendingDeletes: () => new Set() }
+
+/**
+ * Projects a follower document onto the live graph through the graph API.
+ * One collector per bound workflow records what each delivered frame changed;
+ * the applier replays those changes as ordinary graph operations.
+ */
 export class AgentCrdtProjection {
-  private readonly adapter: EcsFollowerAdapter
+  private readonly targets = new Map<string, BoundTarget>()
+  private readonly applier: LiveGraphApplier
 
   constructor(
-    mutations: MutationsForTarget,
-    private readonly getGraph: () => MaterializableGraph | null,
-    private readonly getFollowerDoc: () => Y.Doc,
-    intent?: LocalIntent
+    private readonly getGraph: () => LGraph | null,
+    deps: Omit<LiveGraphApplierDeps, 'getGraph'> = {},
+    private readonly intent: LocalIntent = NO_LOCAL_INTENT
   ) {
-    this.adapter = new EcsFollowerAdapter(mutations, intent)
+    this.applier = new LiveGraphApplier({ ...deps, getGraph })
   }
 
   bind(workflowId: string, follower: FollowerDoc): void {
-    this.adapter.bind(workflowId, follower)
+    this.unbind(workflowId)
+    this.targets.set(workflowId, {
+      follower,
+      collector: new DocChangeCollector(follower.doc)
+    })
   }
 
   unbind(workflowId: string): void {
-    this.adapter.unbind(workflowId)
+    const target = this.targets.get(workflowId)
+    if (!target) return
+    target.collector.destroy()
+    this.targets.delete(workflowId)
   }
 
   /**
-   * Store-only, and deliberately so: `reconcileLiveGraph` can throw (its
-   * orphan sweep reaches extension `onRemoved` hooks), and the caller counts
-   * this frame's outcome from the return value. Folding the sweep in here
-   * would let a third-party hook leave a frame counted in `received` and in
-   * neither `applied` nor `skipped`.
+   * Applies one delivered frame's changes to the live graph.
+   * @returns ids of nodes the frame created live, or `null` when the frame
+   * addressed a workflow this projection is not bound to.
    */
-  applyFrame(update: DocUpdate): boolean {
-    return this.adapter.applyFrame(update)
+  applyFrame(update: DocUpdate): NodeId[] | null {
+    const target = this.targets.get(update.workflowId)
+    if (!target) return null
+    const changes = target.collector.take()
+    const { createdNodeIds } = this.applier.applyChanges(
+      target.follower.doc,
+      changes,
+      frameContext(update)
+    )
+    this.reportMaterialized(update.workflowId, createdNodeIds)
+    return createdNodeIds
   }
 
   /**
-   * Empties the stores for a lineage break and sweeps the live graph in the
-   * same step. The adapter's clear is store-only, but the live adapters are
-   * what a save serialises: without the sweep the pre-reset nodes survive,
-   * and can be written back, until some later frame happens to arrive.
+   * Brings the live graph up to the bound document in full: used when the
+   * graph appears after frames were already delivered, or the tab returns to
+   * the followed workflow.
+   * @returns ids of nodes created live on this pass.
    */
-  clearForReset(workflowId: string, context: RemoteMutationContext): boolean {
-    const cleared = this.adapter.clearForReset(workflowId, context)
-    this.reconcileLiveGraph(workflowId)
-    return cleared
+  syncFromDoc(workflowId: string): NodeId[] {
+    const target = this.targets.get(workflowId)
+    if (!target || !this.getGraph()) return []
+    target.collector.discard()
+    const { createdNodeIds } = this.applier.syncFromDoc(
+      target.follower.doc,
+      { actor: 'agent-sync', opIds: [] },
+      this.intent.pendingDeletes(workflowId)
+    )
+    this.reportMaterialized(workflowId, createdNodeIds)
+    return createdNodeIds
+  }
+
+  /** Explicit lineage reset only: the document was replaced, so is the graph. */
+  clearForReset(workflowId: string, context: RemoteApplyContext): void {
+    this.targets.get(workflowId)?.collector.discard()
+    this.applier.clear(context)
   }
 
   discardPending(workflowId: string): void {
-    this.adapter.discardPending(workflowId)
-  }
-
-  /** @returns ids that received a new live node on this pass. */
-  reconcileLiveGraph(workflowId: string): NodeId[] {
-    const graph = this.getGraph()
-    if (!graph) return []
-    const followerDoc = this.getFollowerDoc()
-    const definitionIds = readSubgraphDefinitionIds(followerDoc)
-    const definitionStates = definitionIds.map((id) => ({
-      id,
-      state: subgraphDefinitionReadState(graph.rootGraph, id)
-    }))
-    const needsDefinitionBody = definitionStates.some(
-      ({ state }) => state === 'missing'
-    )
-    const failedDefinitionIds = new Set(
-      definitionStates
-        .filter(({ state }) => state === 'failed')
-        .map(({ id }) => id)
-    )
-    const definitions = needsDefinitionBody
-      ? readSubgraphDefinitions(followerDoc, failedDefinitionIds)
-      : []
-    const nodeIds = failedDefinitionIds.size
-      ? reconcileAgentAdapters(graph, definitions, failedDefinitionIds)
-      : reconcileAgentAdapters(graph, definitions)
-    // A frame that only wires or rewires nodes moves no layout, so nothing
-    // else asks the canvas to paint the new links.
-    graph.setDirtyCanvas(true, true)
-    if (nodeIds.length > 0) {
-      recordDevEvent('agent_node_adapters_materialized', {
-        workflowId,
-        nodeIds
-      })
-    }
-    return nodeIds
+    this.targets.get(workflowId)?.collector.discard()
   }
 
   destroy(): void {
-    this.adapter.destroy()
+    for (const workflowId of Array.from(this.targets.keys()))
+      this.unbind(workflowId)
+  }
+
+  private reportMaterialized(
+    workflowId: string,
+    nodeIds: readonly NodeId[]
+  ): void {
+    if (nodeIds.length === 0) return
+    recordDevEvent('agent_node_adapters_materialized', { workflowId, nodeIds })
+  }
+}
+
+function frameContext(update: DocUpdate): RemoteApplyContext {
+  return {
+    actor: update.actor ?? 'agent-remote',
+    opIds: update.opIds?.filter((id) => id.length > 0) ?? []
   }
 }

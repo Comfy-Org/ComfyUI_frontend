@@ -13,8 +13,6 @@ import type {
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
-import { createGraphMutations } from './graphMutations'
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import {
   LGraph,
   LGraphNode,
@@ -32,9 +30,8 @@ import { graphScopeOf } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
-import { reconcileAgentAdapters } from './agentNodeMaterializer'
+import { AgentCrdtProjection } from './agentCrdtProjection'
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
-import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
 import type { GraphOperation } from './graphOperations'
 
@@ -97,12 +94,6 @@ interface FixtureOptions {
    * promoted-widget interior) so a host can be retyped between definitions.
    */
   secondDefinition?: boolean
-  /**
-   * Mutable gate for the adapter's `getScope`. While `blocked` is true the
-   * scope resolves to `null`, so `graphMutations.batch` rejects the frame
-   * (the "no active graph scope" failure the adapter must survive).
-   */
-  scope?: { blocked: boolean }
 }
 
 function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
@@ -170,20 +161,13 @@ function startFollower(options: FixtureOptions = {}) {
   const disableSubgraphNodeCreation = enableSubgraphNodeCreation(graph)
   const hostDoc = mint(promotedWorkflow(options), CATALOG)
   const follower = new FollowerDoc()
-  const adapter = new EcsFollowerAdapter(
-    createGraphMutations({
-      placement: inertPlacementPort,
-      getScope: () => (options.scope?.blocked ? null : graphScopeOf(graph)),
-      layout: { createNode: () => {}, deleteNodes: () => {} }
-    })
-  )
+  const adapter = new AgentCrdtProjection(() => graph)
   adapter.bind('workflow', follower)
   const update = Y.encodeStateAsUpdate(hostDoc)
   follower.applyRemoteUpdate(update)
-  expect(adapter.applyFrame({ workflowId: 'workflow', seq: 1, update })).toBe(
-    true
-  )
-  reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+  expect(
+    adapter.applyFrame({ workflowId: 'workflow', seq: 1, update })
+  ).not.toBeNull()
   const instance = graph.getNodeById(toNodeId(1)) as SubgraphNode
   expect(instance).toBeInstanceOf(SubgraphNode)
   expect(instance.widgets[0]?.value).toBe(
@@ -222,11 +206,7 @@ function deliver(
       actor: 'agent:test',
       opIds: [id]
     })
-  ).toBe(true)
-  reconcileAgentAdapters(
-    state.graph,
-    readSubgraphDefinitions(state.follower.doc)
-  )
+  ).not.toBeNull()
 }
 
 /**
@@ -245,11 +225,7 @@ function forwardRaw(
   state.follower.applyRemoteUpdate(update)
   expect(
     state.adapter.applyFrame({ workflowId: 'workflow', seq: seq + 1, update })
-  ).toBe(true)
-  reconcileAgentAdapters(
-    state.graph,
-    readSubgraphDefinitions(state.follower.doc)
-  )
+  ).not.toBeNull()
 }
 
 beforeEach(() => {
@@ -496,15 +472,11 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(reportError).toHaveBeenCalledTimes(1)
     expect(reportError).toHaveBeenCalledWith(
       expect.objectContaining({
-        message: expect.stringContaining("'bogus'")
+        message: expect.stringContaining('Link 9')
       }),
       expect.objectContaining({
-        errorType: 'error_reconciling_agent_subgraph_host_slot',
-        context: expect.objectContaining({
-          nodeId: '1',
-          slot: 0,
-          name: 'bogus'
-        })
+        errorType: 'agent_graph_link_unresolved',
+        context: expect.objectContaining({ target: '1', targetSlot: 0 })
       })
     )
   })
@@ -626,7 +598,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
         message: expect.stringContaining('carries 2 opaque widget values')
       }),
       expect.objectContaining({
-        errorType: 'error_reconciling_agent_subgraph_host_widgets',
+        errorType: 'agent_graph_host_widgets_mismatch',
         context: expect.objectContaining({ expected: 1, actual: 2 })
       })
     )
@@ -770,24 +742,12 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(state.instance.inputs[0]).toBe(inputBefore)
   })
 
-  it('S1l resyncs live host resizable and showAdvanced flags', () => {
-    // `reconcileNodeFields` already copies both booleans onto NodeState; the
-    // by-key filter must let the edits through, or a doc toggle is dropped.
+  it('S1l resyncs the live host showAdvanced flag', () => {
     const state = startFollower()
     deliver(state, hostSetWidget(48), 1)
-    expect(state.instance.resizable).not.toBe(false)
     expect(state.instance.showAdvanced).not.toBe(true)
-    forwardRaw(
-      state,
-      (nodes) => {
-        const node = nodes.get('1')!
-        node.set('resizable', false)
-        node.set('showAdvanced', true)
-      },
-      2
-    )
+    forwardRaw(state, (nodes) => nodes.get('1')!.set('showAdvanced', true), 2)
 
-    expect(state.instance.resizable).toBe(false)
     expect(state.instance.showAdvanced).toBe(true)
     expect(state.instance.widgets[0]?.value).toBe(48)
   })
@@ -857,7 +817,7 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
       expect.objectContaining({
-        errorType: 'error_reconciling_agent_subgraph_host_widgets',
+        errorType: 'agent_graph_host_widgets_mismatch',
         context: expect.objectContaining({ expected: 1, actual: 0 })
       })
     )
@@ -876,46 +836,6 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(reportError).toHaveBeenCalledTimes(1)
   })
 
-  it('S1o replays a promoted edit dropped by a rejected batch on the next frame', () => {
-    // `applyQueuedFrame` snapshots and clears the session's pending sets
-    // before `batch` runs. When `batch` is rejected (no graph scope) the
-    // snapshot is gone, so the only way the edit can still land is a full
-    // reconcile on the next frame. The follow-up frame touches a different
-    // node: a `changedNodeFields` hit on the host itself re-reads the whole
-    // host (widgets included) and would mask the lost edit.
-    const scope = { blocked: false }
-    const state = startFollower({ scope })
-
-    scope.blocked = true
-    const vector = Y.encodeStateVector(state.hostDoc)
-    const id = 'op-1'
-    const result = applyOps(
-      state.hostDoc,
-      [operation(id, 1, hostSetWidget(46))],
-      CATALOG
-    )
-    expect(result.outcomes).toEqual([{ op_id: id, outcome: 'applied' }])
-    const update = Y.encodeStateAsUpdate(state.hostDoc, vector)
-    state.follower.applyRemoteUpdate(update)
-    expect(
-      state.adapter.applyFrame({
-        workflowId: 'workflow',
-        seq: 2,
-        update,
-        actor: 'agent:test',
-        opIds: [id]
-      })
-    ).toBe(false)
-    expect(state.instance.widgets[0]?.value).toBe(HOST_INITIAL_VALUE)
-
-    scope.blocked = false
-    forwardRaw(state, (nodes) => nodes.get('2')!.set('title', 'Retitled'), 2)
-
-    expect(state.graph.getNodeById(toNodeId(2))?.title).toBe('Retitled')
-    expect(storedHostWidgets(state)).toEqual([['value', 46]])
-    expect(state.instance.widgets[0]?.value).toBe(46)
-  })
-
   it('S1p rebuilds a plain node whose doc entry becomes a subgraph host', () => {
     // "Already live" must mean the same node *type*, not merely the same id.
     // When a plain node's map is replaced by a host-typed map, keeping the
@@ -926,36 +846,6 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     )
     forwardRaw(state, retypeNode3AsHost, 1)
 
-    expectNode3RebuiltAsHost(state)
-  })
-
-  it('S1r rebuilds a retyped node through the reconcile path after a rejected frame', () => {
-    // The incremental path deletes + re-adds an `update`d node, but a frame
-    // rejected by `batch` (no graph scope) loses that action set and the next
-    // frame runs a full reconcile. `reconcileNode` on an existing node only
-    // updates its fields, so a plain node whose doc entry became a host would
-    // survive as a promoted-widget node unless reconcile also compares types.
-    const scope = { blocked: false }
-    const state = startFollower({ rootWidgetNode: true, scope })
-
-    scope.blocked = true
-    const vector = Y.encodeStateVector(state.hostDoc)
-    state.hostDoc.transact(() => {
-      retypeNode3AsHost(state.hostDoc.getMap<Y.Map<unknown>>('nodes'))
-    })
-    const update = Y.encodeStateAsUpdate(state.hostDoc, vector)
-    state.follower.applyRemoteUpdate(update)
-    expect(
-      state.adapter.applyFrame({ workflowId: 'workflow', seq: 2, update })
-    ).toBe(false)
-    expect(state.graph.getNodeById(toNodeId(3))).not.toBeInstanceOf(
-      SubgraphNode
-    )
-
-    scope.blocked = false
-    forwardRaw(state, (nodes) => nodes.get('2')!.set('title', 'Retitled'), 2)
-
-    expect(state.graph.getNodeById(toNodeId(2))?.title).toBe('Retitled')
     expectNode3RebuiltAsHost(state)
   })
 

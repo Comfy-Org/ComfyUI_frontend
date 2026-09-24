@@ -4,19 +4,16 @@ import type {
   WidgetCatalog,
   WorkflowJSON
 } from '@comfyorg/comfy-multi-player'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { graphScopeOf } from '@/types/graphScopeId'
-import type { GraphScope } from '@/types/graphScopeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { FollowerDoc } from './followerDoc'
-import { createGraphMutations } from './graphMutations'
 
 class TestSource extends LGraphNode {
   static override title = 'Test Source'
@@ -43,15 +40,6 @@ const WORKFLOW_ID = 'wf-a'
 const HUMAN_ACTOR = 'human:user:tab'
 const CATALOG: WidgetCatalog = {
   types: { TestSource: { widget_order: ['steps'] } }
-}
-const layout = { createNode: vi.fn(), deleteNodes: vi.fn() }
-
-function remoteMutations(scope: GraphScope) {
-  return createGraphMutations({
-    getScope: () => scope,
-    layout,
-    placement: inertPlacementPort
-  })
 }
 
 function toWorkflowJson({ nodes, ...rest }: ISerialisedGraph): WorkflowJSON {
@@ -90,45 +78,41 @@ function nodeIds(graph: LGraph) {
 /**
  * A follower bound to the doc minted from the graph's own save. `tabReturn`
  * does what leaving the workflow tab and coming back does to the follower:
- * unbind, bind a fresh session over the same doc, and deliver the host's
- * catch-up for the follower's state vector.
+ * unbind, bind again over the same doc, sync the live graph from the whole
+ * doc, and deliver the host's catch-up for the follower's state vector.
  */
 function bindFollower(graph: LGraph, saved: ISerialisedGraph) {
   const host = mint(toWorkflowJson(saved), CATALOG)
   const follower = new FollowerDoc()
-  const projection = new AgentCrdtProjection(
-    remoteMutations(graphScopeOf(graph)),
-    () => graph,
-    () => follower.doc
-  )
+  const projection = new AgentCrdtProjection(() => graph)
   let seq = 0
-  /** Delivers one host frame; returns whether the adapter committed it. */
-  const deliver = (update: Uint8Array): boolean => {
+  const deliver = (update: Uint8Array): void => {
     follower.applyRemoteUpdate(update)
-    const committed = projection.applyFrame({
-      workflowId: WORKFLOW_ID,
-      seq: ++seq,
-      update,
-      actor: 'agent:comfy:host',
-      opIds: []
-    })
-    projection.reconcileLiveGraph(WORKFLOW_ID)
-    return committed
+    expect(
+      projection.applyFrame({
+        workflowId: WORKFLOW_ID,
+        seq: ++seq,
+        update,
+        actor: 'agent:comfy:host',
+        opIds: []
+      })
+    ).not.toBeNull()
   }
   projection.bind(WORKFLOW_ID, follower)
-  expect(deliver(Y.encodeStateAsUpdate(host))).toBe(true)
+  deliver(Y.encodeStateAsUpdate(host))
 
   /** The host applies the ops and echoes the delta, as the relay fans it out. */
-  const hostApplies = (ops: Op[]): boolean => {
+  const hostApplies = (ops: Op[]): void => {
     const before = Y.encodeStateVector(host)
     const { outcomes } = applyOps(host, ops, CATALOG)
     expect(outcomes.map((outcome) => outcome.outcome)).toEqual(['applied'])
-    return deliver(Y.encodeStateAsUpdate(host, before))
+    deliver(Y.encodeStateAsUpdate(host, before))
   }
-  const tabReturn = (): boolean => {
+  const tabReturn = (): void => {
     projection.unbind(WORKFLOW_ID)
     projection.bind(WORKFLOW_ID, follower)
-    return deliver(Y.encodeStateAsUpdate(host, follower.stateVector()))
+    projection.syncFromDoc(WORKFLOW_ID)
+    deliver(Y.encodeStateAsUpdate(host, follower.stateVector()))
   }
   const destroy = () => {
     projection.destroy()
@@ -162,17 +146,12 @@ function addNodeOp(node: LGraphNode, widgetsValues: unknown[]): Op {
 }
 
 beforeEach(() => {
-  layout.createNode.mockReset()
-  layout.deleteNodes.mockReset()
   LiteGraph.registerNodeType('TestSource', TestSource)
   LiteGraph.registerNodeType('TestNote', TestNote)
 })
 
 describe('AgentCrdtProjection after a tab return', () => {
-  // The first frame after a rebind runs a full reconcile whose removeMissing
-  // deletes every store record the doc does not hold, and the orphan sweep
-  // then removes the live node.
-  it.fails('keeps a node the user added whose add_node never reached the doc', () => {
+  it('keeps a node the user added whose add_node never reached the doc', () => {
     const { graph, source } = buildLiveGraph()
     const { tabReturn, destroy } = bindFollower(
       graph,
@@ -190,7 +169,6 @@ describe('AgentCrdtProjection after a tab return', () => {
       records: [String(source.id), String(added.id)],
       serialized: [String(source.id), String(added.id)]
     })
-    expect(layout.deleteNodes).not.toHaveBeenCalled()
     destroy()
   })
 
@@ -216,9 +194,7 @@ describe('AgentCrdtProjection after a tab return', () => {
       const added = createRegisteredNode(type)
       graph.add(added)
       added.pos = [300, 20]
-      // The echo of the page's own add reaches a node the stores already
-      // register, so the adapter rejects that batch and arms a full reconcile.
-      expect(hostApplies([addNodeOp(added, widgetsValues)])).toBe(false)
+      hostApplies([addNodeOp(added, widgetsValues)])
 
       tabReturn()
 
@@ -227,14 +203,11 @@ describe('AgentCrdtProjection after a tab return', () => {
         records: [String(source.id), String(added.id)],
         serialized: [String(source.id), String(added.id)]
       })
-      expect(layout.deleteNodes).not.toHaveBeenCalled()
       destroy()
     }
   )
 
-  // The rejected echo of the accepted add arms a full reconcile; the next
-  // frame runs removeMissing against the doc, which never took the first node.
-  it.fails('keeps a node the doc never took when a later accepted add is echoed, without any tab return', () => {
+  it('keeps a node the doc never took when a later accepted add is echoed, without any tab return', () => {
     const { graph, source } = buildLiveGraph()
     const { hostApplies, destroy } = bindFollower(
       graph,
@@ -244,7 +217,7 @@ describe('AgentCrdtProjection after a tab return', () => {
     graph.add(rejectedByHost)
     const accepted = createRegisteredNode('TestSource')
     graph.add(accepted)
-    expect(hostApplies([addNodeOp(accepted, [20])])).toBe(false)
+    hostApplies([addNodeOp(accepted, [20])])
 
     const setWidget: Op = {
       op: 'set_widget',
@@ -256,14 +229,13 @@ describe('AgentCrdtProjection after a tab return', () => {
       widget: 'steps',
       value: 30
     }
-    expect(hostApplies([setWidget])).toBe(true)
+    hostApplies([setWidget])
 
     expect(nodeIds(graph).live).toEqual([
       source.id,
       rejectedByHost.id,
       accepted.id
     ])
-    expect(layout.deleteNodes).not.toHaveBeenCalled()
     destroy()
   })
 })

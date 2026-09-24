@@ -37,7 +37,7 @@ import enMessages from '@/locales/en/main.json' with { type: 'json' }
  * touched the same node.
  *
  * Fixed in `nodeDataStore.ts`'s `updateNodeSlots`/`mergeSlotsByName` (used by
- * `graphMutations.ts`'s `connect` and link-detach paths): a sync now matches
+ * the follower's `connect` and link-detach paths): a sync now matches
  * incoming slots by name, patches the ones it recognizes in place, and
  * inserts unmatched ones instead of overwriting the array wholesale — so a
  * live slot the payload doesn't mention keeps its name, its index, and (via

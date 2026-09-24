@@ -7,7 +7,7 @@
  * node/widget shapes as the well-known public templates, exercised through
  * the same real pipeline every other file in this group drives
  * (comfy-multi-player's `insert_workflow` applier -> `AgentCrdtProjection`
- * -> `graphMutations` -> `agentNodeMaterializer`), asserting every node
+ * -> `LiveGraphApplier` -> the LiteGraph graph API), asserting every node
  * renders with correct widgets and every link lands.
  */
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
@@ -23,12 +23,9 @@ import {
   stripGraphPrefix,
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
-import { graphScopeOf } from '@/types/graphScopeId'
 
 import { AgentCrdtProjection } from './agentCrdtProjection'
-import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
 import { FollowerDoc } from './followerDoc'
-import { createGraphMutations } from './graphMutations'
 
 class TestCheckpointLoader extends LGraphNode {
   static override title = 'Test Checkpoint Loader'
@@ -258,15 +255,7 @@ function insertOp(
 
 function bindProjection(workflowId: string, graph: LGraph) {
   const follower = new FollowerDoc()
-  const projection = new AgentCrdtProjection(
-    createGraphMutations({
-      getScope: () => graphScopeOf(graph),
-      layout: { createNode: () => {}, deleteNodes: () => {} },
-      placement: inertPlacementPort
-    }),
-    () => graph,
-    () => follower.doc
-  )
+  const projection = new AgentCrdtProjection(() => graph)
   projection.bind(workflowId, follower)
   onTestFinished(() => {
     projection.destroy()
@@ -276,14 +265,14 @@ function bindProjection(workflowId: string, graph: LGraph) {
   let seq = 0
   const deliver = (update: Uint8Array, opIds: string[]): boolean => {
     follower.applyRemoteUpdate(update)
-    const committed = projection.applyFrame({
-      workflowId,
-      seq: ++seq,
-      update,
-      actor: 'agent:test',
-      opIds
-    })
-    projection.reconcileLiveGraph(workflowId)
+    const committed =
+      projection.applyFrame({
+        workflowId,
+        seq: ++seq,
+        update,
+        actor: 'agent:test',
+        opIds
+      }) !== null
     return committed
   }
   return deliver
