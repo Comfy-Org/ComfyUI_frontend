@@ -12,7 +12,7 @@ import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview
 import { openHdrViewer } from '@/services/hdrViewerService'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeImage } from '@/types/nodeMedia'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
 
 // Mock downloadFile to avoid DOM errors
 vi.mock(import('@/base/common/downloadUtil'), () => ({
@@ -59,7 +59,7 @@ const i18n = createI18n({
 
 describe('ImagePreview', () => {
   const lightbox: {
-    items: readonly AugmentedResultItem[]
+    items: readonly LightboxItem[]
     activeIndex: number | null
   } = { items: [], activeIndex: null }
 
@@ -67,6 +67,13 @@ describe('ImagePreview', () => {
   const lightboxItem = () => {
     if (lightbox.activeIndex === null) throw new Error('lightbox is closed')
     return lightbox.items[lightbox.activeIndex]
+  }
+  const lightboxImage = () => {
+    const item = lightboxItem()
+    if (item.kind !== 'image') {
+      throw new Error(`expected an image item, got ${item.kind}`)
+    }
+    return item
   }
 
   beforeEach(() => {
@@ -101,8 +108,7 @@ describe('ImagePreview', () => {
             setup(props: Record<string, unknown>) {
               watchEffect(() => {
                 lightbox.items =
-                  (props.items as readonly AugmentedResultItem[] | undefined) ??
-                  []
+                  (props.items as readonly LightboxItem[] | undefined) ?? []
                 lightbox.activeIndex =
                   (props.activeIndex as number | null | undefined) ?? null
               })
@@ -247,7 +253,7 @@ describe('ImagePreview', () => {
       await nextTick()
       await user.dblClick(screen.getByRole('region'))
 
-      expect(lightboxItem().filename).toBe('test2.png')
+      expect(lightboxImage().alt).toBe('test2.png')
     })
 
     it('opens the lightbox from the gallery panel of a single image', async () => {
@@ -259,12 +265,16 @@ describe('ImagePreview', () => {
       expect(lightboxItem().url).toBe(defaultUrls[0])
     })
 
-    it('carries the metadata the backend sent, not the url it built', async () => {
+    it('names the image from the record the backend sent, not the url', async () => {
       renderImagePreview({
         images: [
           {
             url: '/api/view?filename=p.png',
-            result: { filename: 'p.png', subfolder: 'nested/dir', type: 'temp' }
+            result: {
+              filename: 'original name.png',
+              subfolder: 'nested/dir',
+              type: 'temp'
+            }
           }
         ]
       })
@@ -272,13 +282,14 @@ describe('ImagePreview', () => {
 
       await user.dblClick(screen.getByRole('region'))
 
-      expect(lightboxItem()).toMatchObject({
-        subfolder: 'nested/dir',
-        type: 'temp'
+      expect(lightboxItem()).toEqual({
+        kind: 'image',
+        url: '/api/view?filename=p.png',
+        alt: 'original name.png'
       })
     })
 
-    it('omits the result type when no record backs the image', async () => {
+    it('falls back to the url filename when no record backs the image', async () => {
       renderImagePreview({
         images: imagesOf('/api/view?filename=p.png')
       })
@@ -286,7 +297,7 @@ describe('ImagePreview', () => {
 
       await user.dblClick(screen.getByRole('region'))
 
-      expect(lightboxItem()).not.toHaveProperty('type')
+      expect(lightboxImage().alt).toBe('p.png')
       expect(lightboxItem().url).toBe('/api/view?filename=p.png')
     })
 

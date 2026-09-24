@@ -1,12 +1,10 @@
 import { marked } from 'marked'
 import { describe, expect, it } from 'vitest'
 
-import { isImageResult } from '@/utils/resultItem'
-
 import {
   classifyAssetUrl,
   htmlReplyAssets,
-  replyAssetResultItem,
+  replyAssetLightboxItem,
   tokenReplyAssets
 } from './replyAssets'
 
@@ -113,14 +111,32 @@ describe('tokenReplyAssets', () => {
   })
 })
 
-describe('replyAssetResultItem', () => {
-  it('pins the exact source url and classifies from the filename', () => {
-    const item = replyAssetResultItem({
+describe('replyAssetLightboxItem', () => {
+  it('pins the exact source url and renders as an image', () => {
+    expect(
+      replyAssetLightboxItem({
+        url: 'https://x/y?filename=a.png',
+        filename: 'a.png',
+        kind: 'image'
+      })
+    ).toEqual({
+      kind: 'image',
       url: 'https://x/y?filename=a.png',
-      filename: 'a.png',
-      kind: 'image'
+      alt: 'a.png'
     })
-    expect(item.url).toBe('https://x/y?filename=a.png')
-    expect(isImageResult(item)).toBe(true)
+  })
+
+  it('carries a source type for video assets', () => {
+    expect(
+      replyAssetLightboxItem({
+        url: 'https://x/y?filename=a.mp4',
+        filename: 'a.mp4',
+        kind: 'video'
+      })
+    ).toEqual({
+      kind: 'video',
+      url: 'https://x/y?filename=a.mp4',
+      mimeType: 'video/mp4'
+    })
   })
 })

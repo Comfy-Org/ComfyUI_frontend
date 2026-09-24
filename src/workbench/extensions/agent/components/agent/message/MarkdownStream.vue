@@ -6,7 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import SanitizedHtml from '@/components/common/SanitizedHtml.vue'
 import { api } from '@/scripts/api'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
 import {
   renderMarkdownToHtml,
   resolveMarkdownUrl
@@ -15,7 +15,7 @@ import {
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import {
   classifyAssetUrl,
-  replyAssetResultItem,
+  replyAssetLightboxItem,
   tokenReplyAssets
 } from '../../../utils/replyAssets'
 import CodeBlock from './CodeBlock.vue'
@@ -83,7 +83,7 @@ const MediaLightbox = defineAsyncComponent(
   () => import('@/components/common/MediaLightbox.vue')
 )
 
-const proseItems = ref<AugmentedResultItem[]>([])
+const proseItems = ref<LightboxItem[]>([])
 const proseIndex = ref<number | null>(null)
 
 function onProseClick(event: MouseEvent): void {
@@ -94,7 +94,7 @@ function onProseClick(event: MouseEvent): void {
     filename: image.alt || 'image',
     kind: 'image' as const
   }
-  proseItems.value = [replyAssetResultItem({ ...asset, kind: 'image' })]
+  proseItems.value = [replyAssetLightboxItem({ ...asset, kind: 'image' })]
   proseIndex.value = 0
 }
 

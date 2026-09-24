@@ -230,10 +230,7 @@ import type { OutputAssetMetadata } from '@/platform/assets/schemas/assetMetadat
 import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { getAssetDisplayName } from '@/platform/assets/utils/assetMetadataUtils'
-import {
-  getAssetFileUrl,
-  getAssetSubfolder
-} from '@/platform/assets/utils/assetUrlUtil'
+import { getAssetFileUrl } from '@/platform/assets/utils/assetUrlUtil'
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { isCloud } from '@/platform/distribution/types'
@@ -244,7 +241,8 @@ import {
   getMediaTypeFromFilename,
   isPreviewableMediaType
 } from '@/utils/formatUtil'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
+import { fileLightboxItem } from '@/utils/lightboxItem'
 
 const Load3dViewerContent = defineAsyncComponent(
   () => import('@/components/load3d/Load3dViewerContent.vue')
@@ -459,19 +457,11 @@ watch(galleryActiveIndex, (index) => {
   }
 })
 
-const galleryItems = computed<AugmentedResultItem[]>(() => {
-  return previewableVisibleAssets.value.map((asset) => {
-    const mediaType = getMediaTypeFromFilename(asset.name)
-    return {
-      filename: asset.name,
-      subfolder: getAssetSubfolder(asset),
-      type: 'output',
-      nodeId: '0',
-      mediaType: mediaType === 'image' ? 'images' : mediaType,
-      url: asset.preview_url || ''
-    }
-  })
-})
+const galleryItems = computed<LightboxItem[]>(() =>
+  previewableVisibleAssets.value.map((asset) =>
+    fileLightboxItem(asset.preview_url || '', asset.name)
+  )
+)
 
 const refreshAssets = async () => {
   await currentAssets.value.invalidate()

@@ -6,6 +6,7 @@ import { useResultGallery } from '@/composables/queue/useResultGallery'
 import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
 import type { JobListItem } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { TaskItemImpl } from '@/stores/queueStore'
+import type { LightboxItem } from '@/types/lightboxItem'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 
 const createResultItem = (
@@ -18,6 +19,12 @@ const createResultItem = (
   subfolder: '',
   type: 'output',
   url
+})
+
+const lightboxImage = (url: string): LightboxItem => ({
+  kind: 'image',
+  url,
+  alt: url
 })
 
 const createMockJob = (id: string, outputsCount = 1): JobListItem => ({
@@ -71,7 +78,7 @@ describe('useResultGallery', () => {
 
     await onViewItem(createJobViewItem('job-1', tasks[0]))
 
-    expect(galleryItems.value).toEqual([previewable[0]])
+    expect(galleryItems.value).toEqual([lightboxImage('p-1')])
     expect(galleryActiveIndex.value).toBe(0)
   })
 
@@ -100,7 +107,7 @@ describe('useResultGallery', () => {
 
     await onViewItem(createJobViewItem('job-2', tasks[1]))
 
-    expect(galleryItems.value).toEqual([previewable[1]])
+    expect(galleryItems.value).toEqual([lightboxImage('p-2')])
     expect(galleryActiveIndex.value).toBe(0)
   })
 
@@ -114,7 +121,10 @@ describe('useResultGallery', () => {
 
     await onViewItem(createJobViewItem('job-no-preview'))
 
-    expect(galleryItems.value).toEqual(previewable)
+    expect(galleryItems.value).toEqual([
+      lightboxImage('p-1'),
+      lightboxImage('p-2')
+    ])
     expect(galleryActiveIndex.value).toBe(0)
   })
 
@@ -131,7 +141,7 @@ describe('useResultGallery', () => {
       createJobViewItem('job-mismatch', taskWithMismatchedPreview)
     )
 
-    expect(galleryItems.value).toEqual([createResultItem('missing')])
+    expect(galleryItems.value).toEqual([lightboxImage('missing')])
     expect(galleryActiveIndex.value).toBe(0)
   })
 
@@ -157,7 +167,11 @@ describe('useResultGallery', () => {
 
     await onViewItem(createJobViewItem('job-1', task))
 
-    expect(galleryItems.value).toEqual(fullOutputs)
+    expect(galleryItems.value).toEqual([
+      lightboxImage('full-1'),
+      lightboxImage('full-2'),
+      lightboxImage('full-3')
+    ])
     expect(galleryActiveIndex.value).toBe(0)
   })
 })

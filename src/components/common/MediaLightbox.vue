@@ -72,10 +72,10 @@ import MediaLightboxItem from '@/components/common/MediaLightboxItem.vue'
 import Button from '@/components/ui/button/Button.vue'
 import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
 
 const { items } = defineProps<{
-  readonly items: readonly AugmentedResultItem[]
+  readonly items: readonly LightboxItem[]
 }>()
 const activeIndex = defineModel<number | null>('activeIndex', {
   required: true

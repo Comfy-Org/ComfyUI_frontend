@@ -65,12 +65,18 @@ export function isTextResult(item: AugmentedResultItem): boolean {
   )
 }
 
+export function htmlVideoTypeForFilename(filename: string): string | undefined {
+  if (filename.endsWith('.webm')) return 'video/webm'
+  if (filename.endsWith('.mp4')) return 'video/mp4'
+  if (filename.endsWith('.mov')) return 'video/quicktime'
+  return undefined
+}
+
 export function resultItemHtmlVideoType(
   item: AugmentedResultItem
 ): string | undefined {
-  if (item.filename.endsWith('.webm')) return 'video/webm'
-  if (item.filename.endsWith('.mp4')) return 'video/mp4'
-  if (item.filename.endsWith('.mov')) return 'video/quicktime'
+  const byFilename = htmlVideoTypeForFilename(item.filename)
+  if (byFilename) return byFilename
   if (isVhsFormat(item)) {
     if (item.format?.endsWith('webm')) return 'video/webm'
     if (item.format?.endsWith('mp4')) return 'video/mp4'

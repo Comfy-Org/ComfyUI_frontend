@@ -4,8 +4,8 @@ import type { Meta, StoryObj } from '@storybook/vue3-vite'
 import { ref, shallowRef } from 'vue'
 
 import MediaLightbox from '@/components/common/MediaLightbox.vue'
-import { getMediaTypeFromFilename } from '@/utils/formatUtil'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
+import { fileLightboxItem } from '@/utils/lightboxItem'
 
 import type { AssetItem } from '../schemas/assetSchema'
 import MediaAssetCard from './MediaAssetCard.vue'
@@ -17,22 +17,15 @@ const meta: Meta<typeof MediaAssetCard> = {
     (_story, context) => ({
       components: { MediaLightbox },
       setup() {
-        const galleryItems = shallowRef<AugmentedResultItem[]>([])
+        const galleryItems = shallowRef<LightboxItem[]>([])
         const galleryIndex = ref<number | null>(null)
         const args = context.args as {
           onZoom?: (asset: AssetItem) => void
         }
         args.onZoom = (asset: AssetItem) => {
-          const kind = getMediaTypeFromFilename(asset.name)
-          const item: AugmentedResultItem = {
-            filename: asset.name,
-            subfolder: '',
-            type: 'output',
-            nodeId: '0',
-            mediaType: kind === 'image' ? 'images' : kind,
-            url: asset.preview_url || ''
-          }
-          galleryItems.value = [item]
+          galleryItems.value = [
+            fileLightboxItem(asset.preview_url || '', asset.name)
+          ]
           galleryIndex.value = 0
         }
         return { galleryIndex, galleryItems }

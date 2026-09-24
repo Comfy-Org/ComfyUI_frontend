@@ -1,6 +1,6 @@
 <template>
   <video controls class="max-h-[90vh] max-w-[90vw]">
-    <source :src="url" :type="htmlVideoType" />
+    <source :src="src" :type="sourceType" />
     {{ $t('g.videoFailedToLoad') }}
   </video>
 </template>
@@ -10,16 +10,10 @@ import { computed } from 'vue'
 
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useExtensionStore } from '@/stores/extensionStore'
-import type { AugmentedResultItem } from '@/utils/resultItem'
-import {
-  resultItemUrl,
-  resultItemVhsAdvancedPreviewUrl
-} from '@/utils/resultItemUrl'
-import { resultItemHtmlVideoType } from '@/utils/resultItem'
+import type { LightboxVideoItem } from '@/types/lightboxItem'
 
-const props = defineProps<{
-  readonly result: AugmentedResultItem
-}>()
+const { url, mimeType, advancedPreviewUrl } =
+  defineProps<Omit<LightboxVideoItem, 'kind'>>()
 
 const settingStore = useSettingStore()
 const { isExtensionInstalled, isExtensionEnabled } = useExtensionStore()
@@ -33,14 +27,14 @@ const vhsAdvancedPreviews = computed(() => {
   )
 })
 
-const url = computed(() =>
-  vhsAdvancedPreviews.value
-    ? resultItemVhsAdvancedPreviewUrl(props.result)
-    : resultItemUrl(props.result)
+const useAdvancedPreview = computed(
+  () => vhsAdvancedPreviews.value && advancedPreviewUrl !== undefined
 )
-const htmlVideoType = computed(() =>
-  vhsAdvancedPreviews.value
-    ? 'video/webm'
-    : resultItemHtmlVideoType(props.result)
+
+const src = computed(() =>
+  useAdvancedPreview.value ? advancedPreviewUrl : url
+)
+const sourceType = computed(() =>
+  useAdvancedPreview.value ? 'video/webm' : mimeType
 )
 </script>

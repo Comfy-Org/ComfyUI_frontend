@@ -252,7 +252,7 @@ import {
 } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxImageItem } from '@/types/lightboxItem'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from './imagePreviewLayout'
@@ -293,7 +293,7 @@ const showLoader = ref(false)
 const imageAspectRatio = ref(1)
 const gestureStartedOnControl = ref(false)
 const lightboxIndex = ref<number | null>(null)
-const lightboxItems = ref<AugmentedResultItem[]>([])
+const lightboxItems = ref<LightboxImageItem[]>([])
 
 const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   () => {
@@ -437,14 +437,11 @@ function isTransientUrl(url: string): boolean {
   return url.startsWith('blob:') || url.startsWith('data:')
 }
 
-function toGalleryItem({ url, result }: NodeImage): AugmentedResultItem {
+function toLightboxItem({ url, result }: NodeImage): LightboxImageItem {
   return {
-    ...result,
-    filename: result?.filename ?? getImageFilenameFromUrl(url) ?? '',
-    subfolder: result?.subfolder ?? '',
-    mediaType: 'images',
-    nodeId: nodeId ?? '',
-    url: toFullResolutionUrl(url)
+    kind: 'image',
+    url: toFullResolutionUrl(url),
+    alt: result?.filename ?? getImageFilenameFromUrl(url) ?? ''
   }
 }
 
@@ -463,7 +460,7 @@ function openInLightbox(index: number) {
   )
   const selectedIndex = renderable.indexOf(selectedImage)
   if (selectedIndex === -1) return
-  lightboxItems.value = renderable.map(toGalleryItem)
+  lightboxItems.value = renderable.map(toLightboxItem)
   lightboxIndex.value = selectedIndex
 }
 

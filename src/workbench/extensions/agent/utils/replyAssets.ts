@@ -1,8 +1,9 @@
 import type { Token } from 'marked'
 
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
 import type { MediaType } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
+import { htmlVideoTypeForFilename } from '@/utils/resultItem'
 
 type ReplyAssetKind = Extract<MediaType, 'image' | 'video' | 'audio' | '3D'>
 
@@ -111,13 +112,19 @@ export function htmlReplyAssets(html: string): ReplyAsset[] {
   return out
 }
 
-export function replyAssetResultItem(asset: ReplyAsset): AugmentedResultItem {
-  return {
-    filename: asset.filename,
-    subfolder: '',
-    type: 'output',
-    nodeId: '',
-    mediaType: asset.kind === 'image' ? 'images' : asset.kind,
-    url: asset.url
+export function replyAssetLightboxItem(asset: ReplyAsset): LightboxItem {
+  switch (asset.kind) {
+    case 'image':
+      return { kind: 'image', url: asset.url, alt: asset.filename }
+    case 'video':
+      return {
+        kind: 'video',
+        url: asset.url,
+        mimeType: htmlVideoTypeForFilename(asset.filename)
+      }
+    case 'audio':
+      return { kind: 'audio', url: asset.url }
+    default:
+      return { kind: 'unsupported', url: asset.url }
   }
 }

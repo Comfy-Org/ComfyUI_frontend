@@ -1859,7 +1859,6 @@
     "imageDoesNotExist": "L’image n’existe pas",
     "imageFailedToLoad": "Échec du chargement de l'image",
     "imageGallery": "galerie d’images",
-    "imageLightbox": "Aperçu de l'image",
     "imagePreview": "Aperçu de l'image - Utilisez les flèches pour naviguer entre les images",
     "imageUrl": "URL de l'image",
     "import": "Importer",

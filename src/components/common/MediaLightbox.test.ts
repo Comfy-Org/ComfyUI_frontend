@@ -4,7 +4,7 @@ import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
 
 import MediaLightbox from '@/components/common/MediaLightbox.vue'
 
@@ -25,10 +25,6 @@ const i18n = createI18n({
   }
 })
 
-type MockResultItem = AugmentedResultItem & {
-  id?: string
-}
-
 describe('MediaLightbox', () => {
   const mockComfyImage = {
     name: 'ComfyImage',
@@ -36,48 +32,24 @@ describe('MediaLightbox', () => {
     props: ['src', 'contain', 'alt']
   }
 
-  const mockResultVideo = {
-    name: 'ResultVideo',
+  const mockLightboxVideo = {
+    name: 'LightboxVideo',
     template:
-      '<div class="mock-result-video" data-testid="result-video"></div>',
-    props: ['result']
+      '<div class="mock-lightbox-video" data-testid="lightbox-video"></div>',
+    props: ['url', 'mimeType', 'advancedPreviewUrl']
   }
 
-  const mockResultAudio = {
-    name: 'ResultAudio',
+  const mockLightboxAudio = {
+    name: 'LightboxAudio',
     template:
-      '<div class="mock-result-audio" data-testid="result-audio"></div>',
-    props: ['result']
+      '<div class="mock-lightbox-audio" data-testid="lightbox-audio"></div>',
+    props: ['url']
   }
 
-  const mockGalleryItems: MockResultItem[] = [
-    {
-      filename: 'image1.jpg',
-      subfolder: 'outputs',
-      type: 'output',
-      nodeId: '123',
-      mediaType: 'images',
-      url: 'image1.jpg',
-      id: '1'
-    },
-    {
-      filename: 'image2.jpg',
-      subfolder: 'outputs',
-      type: 'output',
-      nodeId: '456',
-      mediaType: 'images',
-      url: 'image2.jpg',
-      id: '2'
-    },
-    {
-      filename: 'image3.jpg',
-      subfolder: 'outputs',
-      type: 'output',
-      nodeId: '789',
-      mediaType: 'images',
-      url: 'image3.jpg',
-      id: '3'
-    }
+  const mockGalleryItems: LightboxItem[] = [
+    { kind: 'image', url: 'image1.jpg', alt: 'image1.jpg' },
+    { kind: 'image', url: 'image2.jpg', alt: 'image2.jpg' },
+    { kind: 'image', url: 'image3.jpg', alt: 'image3.jpg' }
   ]
 
   const createOpener = () => {
@@ -97,8 +69,8 @@ describe('MediaLightbox', () => {
         plugins: [i18n],
         components: {
           ComfyImage: mockComfyImage,
-          ResultVideo: mockResultVideo,
-          ResultAudio: mockResultAudio
+          LightboxVideo: mockLightboxVideo,
+          LightboxAudio: mockLightboxAudio
         },
         stubs
       },
@@ -251,16 +223,9 @@ describe('MediaLightbox', () => {
 
     const { user, rerender } = renderGallery(
       {
-        items: [
-          {
-            ...mockGalleryItems[0],
-            filename: 'failed.txt',
-            mediaType: 'text',
-            url: '/api/view?filename=failed.txt'
-          }
-        ]
+        items: [{ kind: 'text', url: '/api/view?filename=failed.txt' }]
       },
-      { ResultText: false }
+      { LightboxText: false }
     )
 
     expect(await screen.findByText('Text failed to load')).toBeInTheDocument()
@@ -316,17 +281,13 @@ describe('MediaLightbox', () => {
 
   /* eslint-disable testing-library/no-node-access -- element identity is the behavior under test: the browser only keeps a video's buffer if the same node survives navigation. The real Teleport must render (the test-utils teleport stub remounts its subtree and would defeat KeepAlive), so queries go through document.body. */
   describe('video retention across navigation', () => {
-    const videoItem = (n: number): MockResultItem => ({
-      filename: `v${n}.mp4`,
-      subfolder: '',
-      type: 'output',
-      nodeId: `${n}`,
-      mediaType: 'video',
+    const videoItem = (n: number): LightboxItem => ({
+      kind: 'video',
       url: `http://assets.test/v${n}.mp4`,
-      id: `v${n}`
+      mimeType: 'video/mp4'
     })
 
-    const renderTeleported = (items: MockResultItem[]) => {
+    const renderTeleported = (items: LightboxItem[]) => {
       const { rerender } = render(MediaLightbox, {
         global: { plugins: [i18n] },
         props: {

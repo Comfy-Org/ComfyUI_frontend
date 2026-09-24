@@ -12,7 +12,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
-import { replyAssetResultItem } from '../../../utils/replyAssets'
+import { replyAssetLightboxItem } from '../../../utils/replyAssets'
 import ReplyAudioCard from './ReplyAudioCard.vue'
 
 const { assets } = defineProps<{ assets: ReplyAsset[] }>()
@@ -59,7 +59,7 @@ const galleryAssets = computed(() =>
   visual.value.filter((asset) => asset.kind !== '3D')
 )
 const galleryItems = computed(() =>
-  galleryAssets.value.map(replyAssetResultItem)
+  galleryAssets.value.map(replyAssetLightboxItem)
 )
 const galleryIndex = ref<number | null>(null)
 

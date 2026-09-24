@@ -3,7 +3,8 @@ import { ref, shallowRef } from 'vue'
 import type { JobListItem } from '@/composables/queue/useJobList'
 import { findActiveIndex, getOutputsForTask } from '@/services/jobOutputCache'
 import type { TaskItemImpl } from '@/stores/queueStore'
-import type { AugmentedResultItem } from '@/utils/resultItem'
+import type { LightboxItem } from '@/types/lightboxItem'
+import { resultItemsToLightboxItems } from '@/utils/lightboxItem'
 import { resultItemUrl } from '@/utils/resultItemUrl'
 
 /**
@@ -11,7 +12,7 @@ import { resultItemUrl } from '@/utils/resultItemUrl'
  */
 export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
   const galleryActiveIndex = ref<number | null>(null)
-  const galleryItems = shallowRef<AugmentedResultItem[]>([])
+  const galleryItems = shallowRef<LightboxItem[]>([])
 
   async function onViewItem(item: JobListItem) {
     const tasks = getFilteredTasks()
@@ -32,7 +33,7 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
 
     if (!items.length) return
 
-    galleryItems.value = items
+    galleryItems.value = resultItemsToLightboxItems(items)
     const previewOutput = item.taskRef?.previewOutput
     galleryActiveIndex.value = findActiveIndex(
       items,
