@@ -11,50 +11,36 @@ export type RunPhase =
   | 'cancelled'
   | 'error'
 
-const QUEUED: readonly HubKey[] = [
-  'workshop.v2.run.queued',
-  'workshop.v2.run.generating'
-]
-
-const COLD: readonly HubKey[] = [
-  'workshop.v2.run.waking',
-  'workshop.v2.run.loading',
-  'workshop.v2.run.generating'
-]
-
-/**
- * The wait, as the steps it actually has. Shared Cloud is already awake, so
- * its wait is a queue and then the work. A workflow with a server of its own
- * wakes it and loads its models first, which is the long part, and a reader
- * who is told that reads a slow first run as the shape of the thing.
- */
-export function runSteps(coldStart: boolean): readonly HubKey[] {
-  return coldStart ? COLD : QUEUED
-}
-
-/** How far down those steps the run has got, or -1 before it starts. */
-export function stepReached(
-  phase: RunPhase,
-  queued: boolean,
-  steps: number
-): number {
-  if (phase === 'finished') return steps
-  if (phase === 'uploading' || phase === 'submitting') return 0
-  if (phase === 'tracking') return queued ? 0 : steps - 1
-  return -1
-}
-
-const SAYING: Partial<Record<RunPhase, HubKey>> = {
+const BEFORE_THE_JOB: Partial<Record<RunPhase, HubKey>> = {
   uploading: 'workshop.v2.run.uploading',
   submitting: 'workshop.v2.run.sending',
   reconnecting: 'workshop.v2.run.reconnecting'
 }
 
 /**
- * What to say beside the steps. Everything before the job exists is about
- * this page's own work, so it says that; once the job exists, the step it has
- * reached is lit in the list above and a line repeating it says nothing.
+ * The one line the wait is told in, the way a model's playground tells it.
+ * Before the job exists this page is doing the work and says so; once it
+ * exists, the run is either waiting its turn or making the thing. A workflow
+ * that wakes a server of its own waits on that instead of on a queue, which
+ * is a different wait and is named as one.
  */
-export function runSaying(phase: RunPhase): HubKey | undefined {
-  return SAYING[phase]
+export function runSaying(
+  phase: RunPhase,
+  queued: boolean,
+  coldStart: boolean
+): HubKey | undefined {
+  if (phase !== 'tracking') return BEFORE_THE_JOB[phase]
+  if (!queued) return 'workshop.v2.run.generating'
+  return coldStart ? 'workshop.v2.run.waking' : 'workshop.v2.run.queued'
+}
+
+/** The aside a cold start earns, because its first run is the slow one. */
+export function runHint(
+  phase: RunPhase,
+  queued: boolean,
+  coldStart: boolean
+): HubKey | undefined {
+  return coldStart && queued && phase === 'tracking'
+    ? 'workshop.v2.run.wakingHint'
+    : undefined
 }

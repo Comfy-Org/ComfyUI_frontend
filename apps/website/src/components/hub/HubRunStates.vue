@@ -67,17 +67,17 @@ const scenes: readonly Scene[] = [
   },
   {
     name: 'Queued',
-    when: 'Cloud has the job and has not started it. The first step is where the run stands.',
+    when: 'Cloud has the job and has not started it.',
     state: { phase: 'tracking', job: job('pending'), startedAt: STARTED }
   },
   {
     name: 'Generating',
-    when: 'The job is running. The last step is where the run stands.',
+    when: 'The job is running.',
     state: { phase: 'tracking', job: job('in_progress'), startedAt: STARTED }
   },
   {
     name: 'Queued, on its own server',
-    when: 'The one workflow that wakes a server of its own. Its wait has three steps instead of two, so a slow first run reads as the shape of the thing.',
+    when: 'The one workflow that wakes a server of its own. It waits on that rather than in a queue, so a slow first run reads as the shape of the thing.',
     state: { phase: 'tracking', job: job('pending'), startedAt: STARTED },
     coldStart: true
   },

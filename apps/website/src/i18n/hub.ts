@@ -240,14 +240,14 @@ const hub = {
   },
   'workshop.v2.run.queued': { en: 'Waiting its turn', 'zh-CN': '排队中' },
   'workshop.v2.run.waking': {
-    en: 'Waking the server. The first run takes longer.',
-    'zh-CN': '正在唤醒服务器，首次运行会慢一些。'
+    en: 'Waking its server',
+    'zh-CN': '正在唤醒服务器'
   },
-  'workshop.v2.run.loading': {
-    en: 'Loading the models it needs',
-    'zh-CN': '正在加载所需模型'
+  'workshop.v2.run.wakingHint': {
+    en: 'The first run takes longer.',
+    'zh-CN': '首次运行会慢一些。'
   },
-  'workshop.v2.run.generating': { en: 'Generating', 'zh-CN': '生成中' },
+  'workshop.v2.run.generating': { en: 'Generating…', 'zh-CN': '生成中…' },
   'workshop.v2.run.cancelled': {
     en: 'This run was cancelled before it finished.',
     'zh-CN': '这次运行在完成前已取消。'

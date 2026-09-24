@@ -14,6 +14,13 @@ const JOB = zJobDetailResponse.parse({
   update_time: 0n
 })
 
+const PENDING = zJobDetailResponse.parse({
+  id: '66666666-7777-8888-9999-000000000000',
+  status: 'pending',
+  create_time: 0n,
+  update_time: 0n
+})
+
 const mount = (state: RunState, memberWorkspace?: string) =>
   render(WorkflowRunResult, {
     props: { state, outputs: [], memberWorkspace }
@@ -74,15 +81,35 @@ describe('WorkflowRunResult', () => {
     ).toBe(named)
   })
 
-  // The wait is counted off the way a model's is, and the step it has reached
-  // is said once, in the lit step, not again in a line beneath it.
-  it('counts the wait off and says the step once', () => {
+  // The wait reads the way a model's does: where the run is now, with the
+  // count beside it. What it will do next is not on the panel.
+  it('says where the run is now, once, with the count beside it', () => {
     mount({ phase: 'tracking', job: JOB, startedAt: Date.now() - 74_000 })
 
     expect(screen.getByTestId('workflow-run-elapsed').textContent).toContain(
       '1:14'
     )
-    expect(screen.getAllByText('Generating', { exact: true })).toHaveLength(1)
+    expect(screen.getAllByText('Generating…', { exact: true })).toHaveLength(1)
+    expect(screen.queryByText('Waiting its turn')).toBeNull()
+  })
+
+  // The one workflow that wakes a server of its own is waiting on that, not
+  // in a queue, and the reason its first run is slow sits under the line.
+  it('names the server it is waking and why that run is the slow one', () => {
+    render(WorkflowRunResult, {
+      props: {
+        state: {
+          phase: 'tracking',
+          job: PENDING,
+          startedAt: Date.now()
+        },
+        outputs: [],
+        coldStart: true
+      }
+    })
+
+    expect(screen.getByText('Waking its server')).toBeTruthy()
+    expect(screen.getByText('The first run takes longer.')).toBeTruthy()
   })
 
   // Before a run, the panel shows what this workflow makes and marks it as

@@ -8,11 +8,10 @@ import { formatElapsed } from '../../config/workshop-run'
 import type { Locale } from '../../i18n/translations'
 import { tHub } from '../../i18n/hub'
 import type { RunWayOut } from '../../lib/hub/run-failure'
-import { runSaying, runSteps, stepReached } from '../../lib/hub/run-progress'
+import { runHint, runSaying } from '../../lib/hub/run-progress'
 import Button from '../ui/button/Button.vue'
 import WorkflowRunFailure from './WorkflowRunFailure.vue'
 import WorkflowRunOutput from './WorkflowRunOutput.vue'
-import WorkflowRunSteps from './WorkflowRunSteps.vue'
 
 // The right half of the playground, built to the same contract as a model's:
 // one state fills the panel at a time, centred, and the result runs to the
@@ -45,14 +44,8 @@ defineEmits<{ press: [RunWayOut] }>()
 
 const now = useTimestamp({ interval: 1000 })
 
-const steps = computed(() => runSteps(coldStart))
-
-const reached = computed(() =>
-  stepReached(
-    state.phase,
-    state.phase === 'tracking' && state.job.status === 'pending',
-    steps.value.length
-  )
+const queued = computed(
+  () => state.phase === 'tracking' && state.job.status === 'pending'
 )
 
 /** Everything between the press of Run and an answer, told as one state. */
@@ -64,11 +57,9 @@ const elapsed = computed(() =>
   waiting.value ? formatElapsed(now.value - waiting.value.since) : '0:00'
 )
 
-/**
- * What to say beside the steps. Before the job exists this page is doing the
- * work and says so; once it exists, the lit step is the whole answer.
- */
-const progress = computed(() => runSaying(state.phase))
+const progress = computed(() => runSaying(state.phase, queued.value, coldStart))
+
+const hint = computed(() => runHint(state.phase, queued.value, coldStart))
 
 const failure = computed(() => (state.phase === 'error' ? state : undefined))
 
@@ -104,9 +95,8 @@ const showSample = computed(() => sample && state.phase === 'idle')
       </p>
     </div>
 
-    <!-- The wait. A model's playground counts off one step; a workflow has
-      two, or three when it wakes a server of its own, so the steps carry the
-      words and the count sits above them. -->
+    <!-- The wait, told the way a model's playground tells it: where the run
+      is now, with the count beside it. What comes after it is not news. -->
     <div
       v-else-if="waiting"
       class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
@@ -116,16 +106,18 @@ const showSample = computed(() => sample && state.phase === 'idle')
         class="size-8 text-primary-comfy-yellow motion-safe:animate-spin"
         aria-hidden="true"
       />
-      <p
-        class="text-sm text-primary-warm-gray tabular-nums"
-        data-testid="workflow-run-elapsed"
-      >
-        {{ elapsed }}
+      <p class="flex items-baseline gap-2 text-sm text-primary-warm-white">
+        <span v-if="progress">{{ tHub(progress, locale) }}</span>
+        <span
+          class="text-primary-warm-gray tabular-nums"
+          data-testid="workflow-run-elapsed"
+        >
+          {{ elapsed }}
+        </span>
       </p>
-      <p v-if="progress" class="text-sm text-primary-warm-white">
-        {{ tHub(progress, locale) }}
+      <p v-if="hint" class="max-w-xs text-xs text-primary-warm-gray">
+        {{ tHub(hint, locale) }}
       </p>
-      <WorkflowRunSteps v-if="reached >= 0" :steps :reached :locale />
     </div>
 
     <!-- A run stopped on purpose is not a failure, and says so without the

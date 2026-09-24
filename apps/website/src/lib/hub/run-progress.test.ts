@@ -1,45 +1,40 @@
 import { describe, expect, it } from 'vitest'
 
-import { runSaying, runSteps, stepReached } from './run-progress'
-
-describe('runSteps', () => {
-  // A wait on a server that is already awake is a queue; one that has to be
-  // woken is a longer wait with a different story, and saying so is the point.
-  it('tells a cold start as the longer wait it is', () => {
-    expect(runSteps(false)).toHaveLength(2)
-    expect(runSteps(true)).toHaveLength(3)
-    expect(runSteps(true)[0]).toBe('workshop.v2.run.waking')
-  })
-})
-
-describe('stepReached', () => {
-  it.for([
-    ['idle', false, -1],
-    ['error', false, -1],
-    ['uploading', false, 0],
-    ['submitting', false, 0],
-    ['tracking', true, 0],
-    ['tracking', false, 1],
-    ['finished', false, 2]
-  ] as const)('places %s at the right step', ([phase, queued, expected]) => {
-    expect(stepReached(phase, queued, 2)).toBe(expected)
-  })
-})
+import { runHint, runSaying } from './run-progress'
 
 describe('runSaying', () => {
-  // Before the job exists the page is doing the work, so it says so. Once it
-  // exists, the step is the whole answer and a line repeating it says nothing.
+  // One line, and it is where the run stands now. Before the job exists the
+  // page is doing the work and says so; after it, the job is.
   it.for([
-    ['uploading', 'workshop.v2.run.uploading'],
-    ['submitting', 'workshop.v2.run.sending'],
-    ['reconnecting', 'workshop.v2.run.reconnecting'],
-    ['idle', undefined],
-    ['finished', undefined]
-  ] as const)('says %s in its own words', ([phase, expected]) => {
-    expect(runSaying(phase)).toBe(expected)
-  })
+    ['uploading', false, false, 'workshop.v2.run.uploading'],
+    ['submitting', false, false, 'workshop.v2.run.sending'],
+    ['reconnecting', false, false, 'workshop.v2.run.reconnecting'],
+    ['tracking', true, false, 'workshop.v2.run.queued'],
+    ['tracking', false, false, 'workshop.v2.run.generating'],
+    ['idle', false, false, undefined],
+    ['finished', false, false, undefined]
+  ] as const)(
+    'says where %s stands',
+    ([phase, queued, coldStart, expected]) => {
+      expect(runSaying(phase, queued, coldStart)).toBe(expected)
+    }
+  )
 
-  it('says nothing once the lit step is already saying it', () => {
-    expect(runSaying('tracking')).toBeUndefined()
+  // A workflow with a server of its own is not waiting in a queue, and a
+  // reader told it is waiting for a server reads a slow first run correctly.
+  it('waits on the server rather than on a queue when it has its own', () => {
+    expect(runSaying('tracking', true, true)).toBe('workshop.v2.run.waking')
+    expect(runSaying('tracking', false, true)).toBe(
+      'workshop.v2.run.generating'
+    )
+  })
+})
+
+describe('runHint', () => {
+  it('explains the long wait only while the server is being woken', () => {
+    expect(runHint('tracking', true, true)).toBe('workshop.v2.run.wakingHint')
+    expect(runHint('tracking', false, true)).toBeUndefined()
+    expect(runHint('tracking', true, false)).toBeUndefined()
+    expect(runHint('uploading', true, true)).toBeUndefined()
   })
 })
