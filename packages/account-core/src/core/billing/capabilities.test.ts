@@ -543,6 +543,80 @@ describe('createCapabilitiesReader over the session transport', () => {
   })
 })
 
+/**
+ * The server answers this route with `Cache-Control: private, max-age=30`.
+ * The fake honours it the way a browser does, so a read that goes to the
+ * network after a mutation is proven to reach the server rather than the
+ * HTTP cache's pre-mutation copy.
+ */
+describe('createCapabilitiesReader over a caching browser', () => {
+  function cachingFetch(server: { body: unknown }) {
+    const stored = new Map<string, string>()
+    return vi.fn<typeof fetch>(async (input, init) => {
+      const url = String(input)
+      const cached = stored.get(url)
+      const bypass = init?.cache !== undefined && init.cache !== 'default'
+      const body =
+        cached !== undefined && !bypass ? cached : JSON.stringify(server.body)
+      stored.set(url, body)
+      return new Response(body, {
+        status: 200,
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'private, max-age=30'
+        }
+      })
+    })
+  }
+
+  function readerOverCache(server: { body: unknown }) {
+    const snapshot = authenticated(credential())
+    const next = async () => ({ status: 'ok' as const, session: credential() })
+    const session: BillingSession = {
+      ensureFresh: vi.fn(next),
+      remint: vi.fn(next),
+      getSnapshot: () => snapshot,
+      subscribe: () => () => {}
+    }
+    const transport = createSessionBillingTransport({
+      session,
+      resolveUrl: (route) => `https://cloud.test/api${route}`,
+      fetchImpl: cachingFetch(server)
+    })
+    return createCapabilitiesReader({
+      transport,
+      scopeSource: sessionBillingScopeSource(session)
+    })
+  }
+
+  it.for([
+    { name: 'a forced refresh', options: { forceRefresh: true } },
+    { name: 'the read after an invalidation', options: {} }
+  ])('$name reaches the server, not the HTTP cache', async ({ options }) => {
+    const server = {
+      body: capabilitiesBody({
+        capabilities: { ...CAPABILITIES, can_cancel: true }
+      })
+    }
+    const reader = readerOverCache(server)
+    await reader.read()
+
+    server.body = capabilitiesBody({
+      capabilities: { ...CAPABILITIES, can_reactivate: true },
+      revision: 43
+    })
+    reader.invalidate()
+    const result = await reader.read(options)
+
+    expect(result.status).toBe('ok')
+    if (result.status !== 'ok') return
+    expect(result.value.capabilities).toMatchObject({
+      can_cancel: false,
+      can_reactivate: true
+    })
+  })
+})
+
 describe('readCapabilityRevision', () => {
   it('reads the revision a response reports', () => {
     expect(
