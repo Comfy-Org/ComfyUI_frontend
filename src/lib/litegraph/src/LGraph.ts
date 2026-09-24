@@ -45,6 +45,7 @@ import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
 import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import {
+  counterSnapshot,
   createLGraphState,
   mintGroupId,
   mintLinkId,
@@ -1474,8 +1475,8 @@ export class LGraph
       const index = this._groups.indexOf(node)
       if (index != -1) {
         this._groups.splice(index, 1)
+        releaseGroupId(this.state, node.id)
       }
-      releaseGroupId(this.state, node.id)
       detachGroupLayout(node)
       node.graph = undefined
       this.incrementVersion()
@@ -2970,7 +2971,7 @@ export class LGraph
       revision,
       version: LGraph.serialisedSchemaVersion,
       config,
-      state,
+      state: counterSnapshot(state),
       groups,
       nodes,
       ...topology,
@@ -3719,7 +3720,7 @@ export class Subgraph
     return {
       id: this.id,
       version: LGraph.serialisedSchemaVersion,
-      state: this.state,
+      state: counterSnapshot(this.state),
       revision: this.revision,
       config: this.config,
       name: this.name,

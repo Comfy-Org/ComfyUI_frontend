@@ -269,6 +269,64 @@ function createCanvas(graph: LGraph): LGraphCanvas {
   return new LGraphCanvas(el, graph, { skip_render: true, skip_events: true })
 }
 
+describe('_deserializeItems change-tracking invariant', () => {
+  function createExhaustedRootGraph(): LGraph {
+    const rootGraph = new LGraph()
+    rootGraph.state.lastNodeId = MAX_ID
+
+    const existingNode = new LGraphNode('existing')
+    existingNode.id = toNodeId(1)
+    rootGraph.add(existingNode)
+    return rootGraph
+  }
+
+  function createCollidingClipboardItems(): ClipboardItems {
+    const pastedSubgraph: ExportedSubgraph = {
+      id: createUuidv4(),
+      version: 1,
+      revision: 0,
+      state: { lastNodeId: 0, lastLinkId: 0, lastGroupId: 0, lastRerouteId: 0 },
+      config: {},
+      name: 'Pasted Subgraph',
+      inputNode: { id: SUBGRAPH_INPUT_ID, bounding: [0, 0, 10, 10] },
+      outputNode: { id: SUBGRAPH_OUTPUT_ID, bounding: [0, 0, 10, 10] },
+      inputs: [],
+      outputs: [],
+      widgets: [],
+      nodes: [createSerialisedNode(1, 'test/node')],
+      links: [],
+      groups: []
+    }
+    return {
+      nodes: [],
+      groups: [],
+      reroutes: [],
+      links: [],
+      subgraphs: [pastedSubgraph]
+    }
+  }
+
+  it('calls afterChange/emitAfterChange even when the paste throws partway through', () => {
+    const rootGraph = createExhaustedRootGraph()
+    const canvas = createCanvas(rootGraph)
+    const parsed = createCollidingClipboardItems()
+
+    const beforeChangeSpy = vi.spyOn(rootGraph, 'beforeChange')
+    const afterChangeSpy = vi.spyOn(rootGraph, 'afterChange')
+    const emitBeforeChangeSpy = vi.spyOn(canvas, 'emitBeforeChange')
+    const emitAfterChangeSpy = vi.spyOn(canvas, 'emitAfterChange')
+
+    expect(() => canvas._deserializeItems(parsed, {})).toThrow(
+      'Node ID space exhausted'
+    )
+
+    expect(beforeChangeSpy).toHaveBeenCalledTimes(1)
+    expect(emitBeforeChangeSpy).toHaveBeenCalledTimes(1)
+    expect(afterChangeSpy).toHaveBeenCalledTimes(1)
+    expect(emitAfterChangeSpy).toHaveBeenCalledTimes(1)
+  })
+})
+
 describe('link presentation transfer across recreation flows', () => {
   it.for([
     {

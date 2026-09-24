@@ -41,6 +41,8 @@ import { useNodeReplacementStore } from '@/platform/nodeReplacement/nodeReplacem
 import { getCnrIdFromNode } from '@/platform/nodeReplacement/cnrIdUtil'
 import { app } from '@/scripts/app'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
+import { useExecutionStore } from '@/stores/executionStore'
+import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
@@ -623,6 +625,8 @@ export function installErrorClearingHooks(graph: LGraph): () => void {
     if (!successor) {
       const execId = getRemovedNodeExecutionId(graph, node.id)
       removeNodeErrors(node, execId)
+      useExecutionStore().clearNodeProgressState(String(node.id))
+      useNodeOutputStore().removeNodeOutputsForNode(node)
     }
     scheduleDropOutOfScopeMissingMedia()
     restoreNodeHooksRecursive(node)

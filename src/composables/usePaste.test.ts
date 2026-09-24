@@ -621,9 +621,12 @@ describe('usePaste', () => {
     expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
   })
 
+  const validClipboardData = {
+    nodes: [{ id: 1, type: 'KSampler', pos: [0, 0] }]
+  }
+
   it('should handle clipboard items with metadata', async () => {
-    const data = { test: 'data' }
-    const encoded = btoa(JSON.stringify(data))
+    const encoded = btoa(JSON.stringify(validClipboardData))
     const html = `<div data-metadata="${encoded}"></div>`
 
     usePaste()
@@ -636,7 +639,7 @@ describe('usePaste', () => {
 
     await vi.waitFor(() => {
       expect(mockCanvas._deserializeItems).toHaveBeenCalledWith(
-        data,
+        validClipboardData,
         expect.any(Object)
       )
     })
@@ -650,8 +653,7 @@ describe('usePaste', () => {
 
     usePaste()
 
-    const data = { test: 'data' }
-    const encoded = btoa(JSON.stringify(data))
+    const encoded = btoa(JSON.stringify(validClipboardData))
     const html = `<div data-metadata="${encoded}"></div>`
 
     const dataTransfer = new DataTransfer()
@@ -668,6 +670,48 @@ describe('usePaste', () => {
       )
       expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
     })
+  })
+
+  it('falls through to legacy paste when the data-metadata payload is not clipboard-shaped', async () => {
+    // A third-party page whose HTML coincidentally contains a
+    // base64-ish `data-metadata` attribute that happens to decode to
+    // unrelated, valid JSON — must not be treated as a graph payload.
+    const unrelatedPayload = { foo: 'bar' }
+    const encoded = btoa(JSON.stringify(unrelatedPayload))
+    const html = `<div data-metadata="${encoded}"></div>`
+
+    usePaste()
+
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/html', html)
+    dataTransfer.setData('text/plain', 'the real copied text')
+
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+    })
+    expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
+  })
+
+  it('falls through to legacy paste when the decoded metadata is malformed (e.g. base64-encoded null)', async () => {
+    const encoded = btoa(JSON.stringify(null))
+    const html = `<div data-metadata="${encoded}"></div>`
+
+    usePaste()
+
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/html', html)
+    dataTransfer.setData('text/plain', 'the real copied text')
+
+    const event = new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    document.dispatchEvent(event)
+
+    await vi.waitFor(() => {
+      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+    })
+    expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
   })
 
   it('should skip node metadata paste when a media node is selected', async () => {

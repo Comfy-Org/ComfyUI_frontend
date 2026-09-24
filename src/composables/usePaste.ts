@@ -1,4 +1,5 @@
 import { useEventListener } from '@vueuse/core'
+import { z } from 'zod'
 
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -14,6 +15,66 @@ import {
   isVideoNode
 } from '@/utils/litegraphUtil'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
+
+const zClipboardNodeId = z.union([z.number(), z.string()])
+const zClipboardPos = z.array(z.number()).min(2)
+
+const zClipboardNode = z
+  .object({
+    id: zClipboardNodeId,
+    type: z.string(),
+    pos: zClipboardPos
+  })
+  .passthrough()
+
+const zClipboardGroup = z
+  .object({
+    bounding: z.array(z.number()).min(4)
+  })
+  .passthrough()
+
+const zClipboardReroute = z
+  .object({
+    id: z.number(),
+    pos: zClipboardPos
+  })
+  .passthrough()
+
+const zClipboardLink = z
+  .object({
+    id: z.number(),
+    origin_id: zClipboardNodeId,
+    target_id: zClipboardNodeId
+  })
+  .passthrough()
+
+const zClipboardSubgraph = z.object({ id: z.string() }).passthrough()
+
+/**
+ * The subset of `ClipboardItems`' shape `_deserializeItems` actually
+ * dereferences (`item.pos[0]`, `group.bounding[0]`, node/link ids). Rejects a
+ * decoded `data-metadata` payload that merely happens to be valid JSON —
+ * copied from a third-party page whose HTML coincidentally matches the
+ * base64-ish attribute pattern — as well as a well-formed but empty object,
+ * which carries none of the five keys below.
+ */
+const zClipboardItems = z
+  .object({
+    nodes: z.array(zClipboardNode).optional(),
+    groups: z.array(zClipboardGroup).optional(),
+    reroutes: z.array(zClipboardReroute).optional(),
+    links: z.array(zClipboardLink).optional(),
+    subgraphs: z.array(zClipboardSubgraph).optional()
+  })
+  .passthrough()
+  .refine(
+    (value) =>
+      Array.isArray(value.nodes) ||
+      Array.isArray(value.groups) ||
+      Array.isArray(value.reroutes) ||
+      Array.isArray(value.links) ||
+      Array.isArray(value.subgraphs)
+  )
 
 export function cloneDataTransfer(original: DataTransfer): DataTransfer {
   const persistent = new DataTransfer()
@@ -47,18 +108,21 @@ function pasteClipboardItems(data: DataTransfer): boolean {
   const match = rawData.match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
   if (!match) return false
 
-  let parsed: ClipboardItems
+  let decoded: unknown
   try {
     // Decode UTF-8 safe base64
     const binaryString = atob(match)
     const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0))
     const decodedData = new TextDecoder().decode(bytes)
-    parsed = JSON.parse(decodedData) as ClipboardItems
+    decoded = JSON.parse(decodedData)
   } catch (err) {
     // Not a valid metadata payload — other paste strategies may still apply.
     console.error(err)
     return false
   }
+
+  if (!zClipboardItems.safeParse(decoded).success) return false
+  const parsed = decoded as ClipboardItems
 
   // A real deserialization/graph-mutation failure (e.g. node ID space
   // exhaustion) is a genuine paste error, not "no valid metadata payload" —

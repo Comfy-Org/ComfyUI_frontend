@@ -27,6 +27,7 @@ import {
   isRootGraphDocBound,
   registerDocBoundRootGraphProbe
 } from '@/lib/litegraph/src/docBoundGraphs'
+import { MAX_ID } from '@/lib/litegraph/src/idAllocation'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useEntityIdStore } from '@/stores/entityIdStore'
@@ -1169,6 +1170,26 @@ describe('node:before-removed event', () => {
     graph.remove(group)
 
     expect(fired).not.toHaveBeenCalled()
+  })
+
+  it('does not release a group ID on a redundant remove() call, even after a new group has reused it', () => {
+    const graph = new LGraph()
+    const first = new LGraphGroup('first')
+    graph.add(first)
+    const firstId = first.id
+
+    graph.remove(first)
+
+    const second = new LGraphGroup('second')
+    graph.add(second)
+    expect(second.id).toBe(firstId)
+
+    // Redundant: `first` is already detached, not in `graph.groups`.
+    graph.remove(first)
+
+    const third = new LGraphGroup('third')
+    graph.add(third)
+    expect(third.id).not.toBe(second.id)
   })
 
   it('does not fire node:before-removed when ignore_remove is set', () => {
@@ -2424,6 +2445,40 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
       const graph = new LGraph()
       graph.configure(structuredClone(nodeIdSpaceExhausted))
     }).toThrow('Node ID space exhausted')
+  })
+
+  it('does not let observing an above-MAX_ID node ID cause a later mint to collide with it', () => {
+    const graph = new LGraph()
+    const existing = new LGraphNode('test')
+    existing.id = toNodeId(MAX_ID + 1)
+    graph.add(existing)
+
+    expect(() => graph.add(new LGraphNode('test'))).toThrow(
+      'Node ID space exhausted'
+    )
+    expect(graph.getNodeById(toNodeId(MAX_ID + 1))).toBe(existing)
+    expect(graph.nodes).toHaveLength(1)
+  })
+
+  it('asSerialisable() projects only the four counters, not the live free-ID pools', () => {
+    const graph = new LGraph()
+    const node = new LGraphNode('test')
+    graph.add(node)
+    graph.remove(node)
+
+    const serialised = graph.asSerialisable()
+
+    expect(serialised.state).toEqual({
+      lastGroupId: 0,
+      lastNodeId: 1,
+      lastLinkId: 0,
+      lastRerouteId: 0
+    })
+    expect(JSON.stringify(serialised.state)).not.toContain('freeNodeIds')
+
+    // The returned snapshot must not alias the live allocator state.
+    graph.state.freeNodeIds.add(999)
+    expect(serialised.state).not.toHaveProperty('freeNodeIds')
   })
 
   it('is a no-op when subgraph node IDs are already unique', () => {

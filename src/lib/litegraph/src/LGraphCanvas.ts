@@ -4180,6 +4180,20 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     graph.beforeChange()
     this.emitBeforeChange()
 
+    try {
+      return this._deserializeItemsBody(parsed, graph, connectInputs, position)
+    } finally {
+      graph.afterChange()
+      this.emitAfterChange()
+    }
+  }
+
+  private _deserializeItemsBody(
+    parsed: ClipboardItems,
+    graph: LGraph,
+    connectInputs: boolean,
+    position: Point
+  ): ClipboardPasteResult | undefined {
     // Parse & initialise
     parsed.nodes ??= []
     parsed.groups ??= []
@@ -4389,9 +4403,6 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     this.selectItems(created)
     forEachNode(graph, (n) => n.onGraphConfigured?.())
     forEachNode(graph, (n) => n.onAfterGraphConfigured?.())
-
-    graph.afterChange()
-    this.emitAfterChange()
 
     return results
   }

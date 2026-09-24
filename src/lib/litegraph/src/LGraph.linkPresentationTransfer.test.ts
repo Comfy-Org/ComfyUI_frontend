@@ -525,6 +525,31 @@ describe('link presentation transfer across recreation flows', () => {
     }
   })
 
+  it('clears stale presentation when a released link ID is recycled onto an unrelated link', () => {
+    const graph = createTestRootGraph()
+    const origin = createTestNode(graph, [], ['number'])
+    const target = createTestNode(graph, ['number'])
+    const link = origin.connect(0, target, 0)
+    if (!link) throw new Error('Failed to connect removed test link')
+    const scope = graphScopeOf(graph)
+    useLinkPresentationStore().patch(scope, link.id, {
+      hidden: true,
+      label: 'Stale'
+    })
+
+    graph.removeLink(link.id)
+
+    const otherOrigin = createTestNode(graph, [], ['number'])
+    const otherTarget = createTestNode(graph, ['number'])
+    const recycled = otherOrigin.connect(0, otherTarget, 0)
+    if (!recycled) throw new Error('Failed to connect recycling test link')
+
+    expect(recycled.id).toBe(link.id)
+    expect(
+      useLinkPresentationStore().getPresentation(scope, recycled.id)
+    ).toBeUndefined()
+  })
+
   it('preserves each ordinary reroute presentation when moving its source', () => {
     const graph = createTestRootGraph()
     const source = createTestNode(graph, [], ['number'])
