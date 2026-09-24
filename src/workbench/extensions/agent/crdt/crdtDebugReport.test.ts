@@ -57,6 +57,7 @@ const SNAPSHOT: CrdtDebugSnapshot = {
     outcomes: {
       received: 3,
       applied: 3,
+      appliedLive: 3,
       skipped: 0,
       errored: 0,
       gap: 0,

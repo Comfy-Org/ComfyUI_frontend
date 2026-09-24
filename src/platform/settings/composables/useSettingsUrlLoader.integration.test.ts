@@ -6,22 +6,15 @@ import { createMemoryHistory, createRouter } from 'vue-router'
 import { clearPreservedQuery } from '@/platform/navigation/preservedQueryManager'
 import { PRESERVED_QUERY_NAMESPACES } from '@/platform/navigation/preservedQueryNamespaces'
 import { installPreservedQueryTracker } from '@/platform/navigation/preservedQueryTracker'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useSettingsUrlLoader } from '@/platform/settings/composables/useSettingsUrlLoader'
 
 const STORAGE_KEY = 'Comfy.PreservedQuery.settings'
 
 let testRouter: Router
 
-const mockShowSettings = vi.hoisted(() => vi.fn())
-
-vi.mock<unknown>(
-  import('@/platform/settings/composables/useSettingsDialog'),
-  () => ({
-    useSettingsDialog: () => ({
-      show: mockShowSettings
-    })
-  })
-)
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
+const mockShowSettings = vi.mocked(useSettingsDialog().show)
 
 function createAppLikeRouter(): Router {
   const router = createRouter({
