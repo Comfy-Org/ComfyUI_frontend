@@ -887,7 +887,7 @@ export class AgentConversationHarness {
   }
 
   async switchAwayAndBack(nodeId: string, widget: string): Promise<void> {
-    const tabs = this.topbar.workflowTabs.locator('.p-togglebutton')
+    const tabs = this.topbar.tabs
     await expect(tabs).toHaveCount(1)
     await this.topbar.newWorkflowButton.click()
     await expect(tabs).toHaveCount(2)
@@ -895,7 +895,9 @@ export class AgentConversationHarness {
 
     const subscribes = this.subscribeCount()
     await this.topbar.getTab(0).click()
-    await expect(this.topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+    await expect(
+      this.topbar.getTab(0).and(this.topbar.getActiveTab())
+    ).toBeVisible()
     await expect.poll(() => this.subscribeCount()).toBe(subscribes + 1)
     await this.waitForPendingFrames(
       nodeId,
