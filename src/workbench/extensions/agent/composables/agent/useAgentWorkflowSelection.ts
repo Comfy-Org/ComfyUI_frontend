@@ -2,6 +2,7 @@ import { storeToRefs } from 'pinia'
 import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { AgentWorkflowBindSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -23,7 +24,7 @@ interface WorkflowSelectionOptions {
   onTargetBound?: (
     workflowId: string,
     previousWorkflowId: string | null,
-    source: 'selector_chip' | 'restored'
+    source: Extract<AgentWorkflowBindSource, 'selector_chip' | 'restored'>
   ) => void
 }
 
@@ -71,7 +72,7 @@ export function useAgentWorkflowSelection({
   function commitWorkflowTarget(
     workflow: ComfyWorkflow,
     workflowId: string,
-    source: 'selector_chip' | 'restored'
+    source: Extract<AgentWorkflowBindSource, 'selector_chip' | 'restored'>
   ): void {
     const previousWorkflowId = selectedTarget.value
       ? (cloudIdFor(selectedTarget.value) ?? null)

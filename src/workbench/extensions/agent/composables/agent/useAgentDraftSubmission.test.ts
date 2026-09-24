@@ -133,8 +133,7 @@ describe('Agent draft submission', () => {
     if (submission?.phase !== 'pending') throw new Error('Expected submission')
     composer.submission = {
       ...submission,
-      stopRequested: true,
-      stopMethod: null
+      stop: { method: null }
     }
 
     pending.resolve(true)

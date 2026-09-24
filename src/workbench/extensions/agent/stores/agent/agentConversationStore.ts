@@ -104,6 +104,14 @@ export const useAgentConversationStore = defineStore(
       shownApprovalIds.delete(askId)
     }
 
+    // Approval dedupe/timing belongs to one conversation: a remount of the
+    // same thread keeps it (hydrate alone must not re-arm a shown card), while
+    // leaving the thread drops the abandoned asks with it.
+    function forgetAllApprovals(): void {
+      approvalShownAtByAsk.clear()
+      shownApprovalIds.clear()
+    }
+
     function replaceActive(message: AssistantMessage): void {
       // PM-1575: looked up by id, not `activeIndex.value`. A turn's own
       // transport keeps emitting after settle -- notifyCanvasCaughtUp() can
@@ -132,6 +140,7 @@ export const useAgentConversationStore = defineStore(
     }
 
     function setThreadId(id: string | null): void {
+      if (id !== threadId.value) forgetAllApprovals()
       threadId.value = id
     }
 
@@ -434,6 +443,7 @@ export const useAgentConversationStore = defineStore(
       latestWorkflowId.value = undefined
       dropAttachmentPreviews()
       threadId.value = null
+      forgetAllApprovals()
       hydratedMessageIds = new Set()
       hydratedAssistantTurnIds = new Set()
       clearActive()

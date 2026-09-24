@@ -535,6 +535,28 @@ describe('useAgentConversationStore', () => {
     expect(store.threadId).toBeNull()
   })
 
+  it('scopes approval dedupe and timing to the conversation that owns them', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    expect(store.recordApprovalShown('ask-1', 1_000)).toBe(true)
+    expect(store.recordApprovalShown('ask-1', 2_000)).toBe(false)
+    expect(store.approvalShownAt('ask-1')).toBe(1_000)
+
+    // Re-affirming the same thread (remount hydration) keeps the shown state.
+    store.setThreadId('th')
+    expect(store.approvalShownAt('ask-1')).toBe(1_000)
+    expect(store.recordApprovalShown('ask-1', 3_000)).toBe(false)
+
+    // Leaving the thread drops its abandoned asks with it.
+    store.setThreadId('th-other')
+    expect(store.approvalShownAt('ask-1')).toBeUndefined()
+    expect(store.recordApprovalShown('ask-1', 4_000)).toBe(true)
+
+    store.reset()
+    expect(store.approvalShownAt('ask-1')).toBeUndefined()
+    expect(store.recordApprovalShown('ask-1', 5_000)).toBe(true)
+  })
+
   it('snapshots local workflow references on the submitted turn', () => {
     const store = useAgentConversationStore()
     store.startTurn(T1)

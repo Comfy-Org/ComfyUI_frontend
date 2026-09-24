@@ -1846,6 +1846,7 @@ describe('AgentPanelRoot attach flow', () => {
       vi.stubGlobal('fetch', fetchSpy)
       renderWithSelectedTarget()
       await nextTick()
+      telemetry.trackAgentAttachButtonClicked.mockClear()
       const target = screen.getByRole('textbox')
       const ref = `stored_${filename}`
       const dragData = {
@@ -1878,6 +1879,12 @@ describe('AgentPanelRoot attach flow', () => {
       expect(
         screen.queryByLabelText(i18n.global.t('agent.uploading'))
       ).not.toBeInTheDocument()
+      // The duplicate drop left one chip, so it must also leave one event.
+      await vi.waitFor(() =>
+        expect(
+          telemetry.trackAgentAttachButtonClicked
+        ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
+      )
 
       await userEvent.click(screen.getByRole('button', { name: 'Send' }))
 
@@ -2033,6 +2040,129 @@ describe('AgentPanelRoot attach flow', () => {
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual(['cat.png']))
   })
+
+  // Falsifiers for the committed-drop gates: an implementation that emits
+  // before the deferred fetch or upload settles, or ignores their results,
+  // fails these.
+  it.for(['failed', 'cancelled'] as const)(
+    'emits no drop telemetry for a %s deferred asset',
+    async (outcome) => {
+      let resolveAsset: (response: Response) => void = () => {}
+      let rejectAsset: (error: Error) => void = () => {}
+      vi.stubGlobal(
+        'fetch',
+        vi.fn((input: RequestInfo | URL) => {
+          const url = String(input)
+          if (url.includes('/api/view'))
+            return new Promise<Response>((resolve, reject) => {
+              resolveAsset = resolve
+              rejectAsset = reject
+            })
+          if (url.endsWith('/api/upload/image'))
+            return Promise.resolve(
+              json(200, {
+                name: 'uploaded_gen.png',
+                subfolder: '',
+                type: 'input'
+              })
+            )
+          return Promise.resolve(json(200, agentThreadList()))
+        })
+      )
+      renderWithSelectedTarget()
+      await nextTick()
+      telemetry.trackAgentAttachButtonClicked.mockClear()
+
+      const dragData = {
+        types: ['application/x-comfy-asset-info', 'text/uri-list'],
+        getData: (type: string) =>
+          type === 'application/x-comfy-asset-info'
+            ? JSON.stringify({ filename: 'gen.png', type: 'input' })
+            : 'http://localhost/api/view?filename=gen.png'
+      }
+      expect(dispatchDrag(screen.getByRole('textbox'), 'drop', dragData)).toBe(
+        true
+      )
+      expect(
+        await screen.findByLabelText(i18n.global.t('agent.uploading'))
+      ).toBeInTheDocument()
+
+      if (outcome === 'cancelled') {
+        await userEvent.click(
+          screen.getByRole('button', { name: i18n.global.t('agent.remove') })
+        )
+        resolveAsset(new Response(new Blob(['asset'], { type: 'image/png' })))
+      } else {
+        rejectAsset(new Error('asset fetch failed'))
+      }
+      await vi.waitFor(() =>
+        expect(
+          screen.queryByLabelText(i18n.global.t('agent.uploading'))
+        ).not.toBeInTheDocument()
+      )
+      await nextTick()
+
+      expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    { files: ['bad.png'], expectedEvents: 0 },
+    { files: ['bad.png', 'good.png'], expectedEvents: 1 }
+  ])(
+    'emits $expectedEvents drop event(s) when uploads of $files are rejected except any good one',
+    async ({ files, expectedEvents }) => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+          const url = String(input)
+          if (!url.includes('/upload/')) return json(200, agentThreadList())
+          const body = init?.body
+          const file = body instanceof FormData ? body.get('image') : null
+          const name = file instanceof File ? file.name : ''
+          if (name.startsWith('bad')) return json(500, {})
+          return json(200, {
+            name: `uploaded_${name}`,
+            subfolder: '',
+            type: 'input'
+          })
+        })
+      )
+      renderWithSelectedTarget()
+      await nextTick()
+      telemetry.trackAgentAttachButtonClicked.mockClear()
+
+      dispatchDrag(screen.getByRole('textbox'), 'drop', {
+        files: files.map((name) => new File(['x'], name, { type: 'image/png' }))
+      })
+
+      // The rejected upload's chip leaves; only a committed one stays settled.
+      await vi.waitFor(() =>
+        expect(screen.queryByText('bad.png')).not.toBeInTheDocument()
+      )
+      await vi.waitFor(() =>
+        expect(
+          screen.queryByLabelText(i18n.global.t('agent.uploading'))
+        ).not.toBeInTheDocument()
+      )
+      await nextTick()
+
+      if (expectedEvents === 0) {
+        expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
+      } else {
+        expect(
+          within(screen.getByTestId('composer-asset-section')).getByText(
+            'good.png'
+          )
+        ).toBeInTheDocument()
+        await vi.waitFor(() =>
+          expect(
+            telemetry.trackAgentAttachButtonClicked
+          ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
+        )
+      }
+    }
+  )
 
   it('shows an uploading chip and blocks send until the upload settles', async () => {
     let settleUpload: () => void = () => {}
@@ -4919,6 +5049,45 @@ describe('AgentPanelRoot workflow binding', () => {
       prev_workflow_id: 'wf-42',
       bind_source: 'selector_chip'
     })
+  })
+
+  it('attributes the thread started after deleting the open chat', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint(
+      'wf-42',
+      [],
+      [
+        agentThread({
+          id: 'th-1',
+          title: 'build a duck',
+          last_message_at: '2026-07-07T10:00:00Z'
+        })
+      ]
+    )
+    await renderAndSend('work here')
+    ws.emit('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1',
+      usage: null
+    })
+    await screen.findByRole('button', { name: 'Send' })
+    telemetry.trackAgentThreadStarted.mockClear()
+
+    await userEvent.click(
+      screen.getByRole('button', { name: i18n.global.t('agent.chatOptions') })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitem', { name: i18n.global.t('g.delete') })
+    )
+    expect(telemetry.trackAgentThreadStarted).not.toHaveBeenCalled()
+
+    await sendFromComposer('start again')
+
+    await vi.waitFor(() =>
+      expect(telemetry.trackAgentThreadStarted).toHaveBeenCalledExactlyOnceWith(
+        { source: 'history_delete' }
+      )
+    )
   })
 
   it('agent_active_tab opens an unknown workflow as a blank named tab', async () => {

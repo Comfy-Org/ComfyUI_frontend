@@ -13,6 +13,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Input from '@/components/ui/input/Input.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
+import type { AgentStopMethod } from '@/platform/telemetry/types'
 
 import type { ActiveTab } from '../../types/activeTab'
 import type {
@@ -103,7 +104,7 @@ const emit = defineEmits<{
     attachments: ComposerAttachment[],
     workflowReferences?: WorkflowReference[]
   ]
-  stop: [method: 'button' | 'escape']
+  stop: [method: AgentStopMethod]
   attach: []
   openAssets: []
   selectNodes: []
@@ -204,8 +205,8 @@ function onDeleteChat(): void {
   if (sessionId !== null) emit('deleteHistory', sessionId)
 }
 
-function addAttachment(attachment: ComposerAttachment): void {
-  composerRef.value?.addAttachment(attachment)
+function addAttachment(attachment: ComposerAttachment): boolean {
+  return composerRef.value?.addAttachment(attachment) ?? false
 }
 
 function updateAttachment(

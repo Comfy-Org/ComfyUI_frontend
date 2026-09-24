@@ -18,7 +18,11 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
-import type { AgentMessageSentMetadata } from '@/platform/telemetry/types'
+import type {
+  AgentMessageSentMetadata,
+  AgentRunApprovalDecision,
+  AgentStopMethod
+} from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LiveAutogrowGroupAnswer } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
@@ -213,7 +217,8 @@ const {
   resolver: workflowResolver,
   canSelectTarget: () => !isSending.value && status.value === 'idle',
   warnWorkflowUnavailable,
-  onTargetBound: trackWorkflowBound
+  onTargetBound: (workflowId, previousWorkflowId, source) =>
+    reportWorkflowBound(workflowId, previousWorkflowId, source)
 })
 const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
@@ -588,7 +593,7 @@ function onWorkflowAdopted(
   if (adoptable) {
     bindingStore.bind(workflowId, sent.tabPath)
     tabActivity.setEditing(sent.tabPath)
-    trackWorkflowBound(
+    reportWorkflowBound(
       workflowId,
       previousWorkflowId,
       sent.id === undefined ? 'minted' : 'active_tab'
@@ -652,6 +657,7 @@ const {
   loadThread,
   boundWorkflowId,
   bindWorkflow,
+  reportWorkflowBound,
   answerAsk,
   answeringAskIds
 } = useAgentSession({
@@ -938,7 +944,7 @@ async function onAgentActiveTab(
       bindingStore.bind(data.workflow_id, bound.path)
       if (status.value !== 'idle') tabActivity.setEditing(bound.path)
       bindWorkflow(data.workflow_id)
-      trackWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
+      reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
       useTelemetry()?.trackAgentWorkflowApplied({
         workflow_id: data.workflow_id,
         target: 'active_tab_switch'
@@ -972,7 +978,7 @@ async function onAgentActiveTab(
     if (status.value !== 'idle') tabActivity.setEditing(tab.path)
     bindingStore.bind(data.workflow_id, tab.path)
     bindWorkflow(data.workflow_id)
-    trackWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
+    reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
     useTelemetry()?.trackAgentWorkflowApplied({
       workflow_id: data.workflow_id,
       target: 'active_tab_open'
@@ -1005,7 +1011,7 @@ function onApprovalShown(
 
 function trackApprovalResolved(
   askId: string,
-  decision: 'run' | 'cancel' | 'open_workflow',
+  decision: AgentRunApprovalDecision,
   decidedAt = Date.now(),
   shownAt = conversationStore.approvalShownAt(askId)
 ): void {
@@ -1030,53 +1036,6 @@ async function onAnswerAsk(
   const decidedAt = Date.now()
   if (await answerAsk(askId, selection))
     trackApprovalResolved(askId, selection, decidedAt, shownAt)
-}
-
-const lastReportedWorkflowByThread = new Map<string, string>()
-let pendingWorkflowBind: {
-  workflowId: string
-  previousWorkflowId: string | null
-  source: 'selector_chip' | 'restored'
-} | null = null
-
-function rememberPendingWorkflowBind(
-  workflowId: string,
-  previousWorkflowId: string | null,
-  source: 'active_tab' | 'selector_chip' | 'minted' | 'restored'
-): void {
-  if (source !== 'selector_chip' && source !== 'restored') return
-  pendingWorkflowBind = { workflowId, previousWorkflowId, source }
-}
-
-function consumePendingWorkflowBind(workflowId: string) {
-  const pending = pendingWorkflowBind
-  pendingWorkflowBind = null
-  return pending?.workflowId === workflowId ? pending : null
-}
-
-function trackWorkflowBound(
-  workflowId: string,
-  previousWorkflowId: string | null,
-  bindSource: 'active_tab' | 'selector_chip' | 'minted' | 'restored'
-): void {
-  const currentThreadId = threadId.value
-  if (currentThreadId === null) {
-    rememberPendingWorkflowBind(workflowId, previousWorkflowId, bindSource)
-    return
-  }
-  const pendingBind = consumePendingWorkflowBind(workflowId)
-  const lastReportedWorkflowId =
-    lastReportedWorkflowByThread.get(currentThreadId) ??
-    pendingBind?.previousWorkflowId ??
-    previousWorkflowId
-  if (workflowId === lastReportedWorkflowId) return
-  lastReportedWorkflowByThread.set(currentThreadId, workflowId)
-  useTelemetry()?.trackAgentWorkflowBound({
-    thread_id: currentThreadId,
-    workflow_id: workflowId,
-    prev_workflow_id: lastReportedWorkflowId,
-    bind_source: pendingBind?.source ?? bindSource
-  })
 }
 
 start()
@@ -1151,7 +1110,6 @@ void refreshHistory()
 async function onSelectHistory(id: string): Promise<void> {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
-  pendingWorkflowBind = null
   agentPanelStore.resetWorkflowTarget()
   exitNodeSelectionMode()
   if (await loadThread(id))
@@ -1248,7 +1206,7 @@ const { submit: onSend } = useAgentDraftSubmission({
   stop: stopTurn
 })
 
-function onStop(method: 'button' | 'escape'): void {
+function onStop(method: AgentStopMethod): void {
   if (!composerStore.requestSubmissionStop(method)) void stopTurn(method)
 }
 
@@ -1263,13 +1221,12 @@ function onRenameHistory(id: string, title: string): void {
 function onDeleteHistory(id: string): void {
   history.remove(id)
   // Deleting the open chat also ends it; a dead thread must not stay editable.
-  if (id === threadId.value) onNewChat()
+  if (id === threadId.value) onNewChat('history_delete')
 }
 
-function onNewChat(source?: 'new_chat_button'): void {
+function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
-  pendingWorkflowBind = null
   exitNodeSelectionMode()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
@@ -1482,13 +1439,14 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
   }
 
   if (asset.ref && asset.kind !== 'other') {
-    panelRef.value?.addAttachment({
-      id: `asset:${asset.ref}`,
-      name: asset.name,
-      ref: asset.ref,
-      previewUrl: asset.previewUrl
-    })
-    return true
+    return (
+      panelRef.value?.addAttachment({
+        id: `asset:${asset.ref}`,
+        name: asset.name,
+        ref: asset.ref,
+        previewUrl: asset.previewUrl
+      }) ?? false
+    )
   }
 
   const result = await attachment.addDeferredFile(asset.name, async () => {

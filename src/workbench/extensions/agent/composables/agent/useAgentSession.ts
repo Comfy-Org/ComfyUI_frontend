@@ -2,7 +2,12 @@ import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
-import type { AgentStopClickedMetadata } from '@/platform/telemetry/types'
+import type {
+  AgentStopClickedMetadata,
+  AgentStopMethod,
+  AgentThreadStartSource,
+  AgentWorkflowBindSource
+} from '@/platform/telemetry/types'
 import { useTelemetry } from '@/platform/telemetry'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
@@ -69,10 +74,19 @@ type PromptEditState =
   | { phase: 'stopping'; turnId: TurnId }
   | { phase: 'ready'; turnId: TurnId }
 
+/**
+ * Thread starts the session attributes through its pending source;
+ * `history_select` is reported where the history picker resolves instead.
+ */
+export type AgentSessionThreadStartSource = Exclude<
+  AgentThreadStartSource,
+  'history_select'
+>
+
 export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
-  onThreadStarted?: (source: 'new_chat_button' | 'first_open') => void
+  onThreadStarted?: (source: AgentSessionThreadStartSource) => void
   onAskResolved?: (askId: string) => void
   workflow?: {
     // origin, when given, pins resolution to the tab that initiated the send
@@ -142,11 +156,55 @@ export function useAgentSession(deps: AgentSessionDeps) {
    */
   const boundWorkflowId = ref<string | null>(rememberedWorkflowId)
 
+  /**
+   * H8 reporting state, kept beside the binding it describes: the workflow
+   * last reported for the current thread (suppresses the ack's re-report of a
+   * transition already committed by a selection), and a target selection
+   * committed before its thread exists, consumed by the ack that binds it.
+   */
+  let reportedWorkflowBind: { threadId: string; workflowId: string } | null =
+    null
+  let pendingWorkflowBind: {
+    workflowId: string
+    previousWorkflowId: string | null
+    source: 'selector_chip' | 'restored'
+  } | null = null
+
+  function reportWorkflowBound(
+    workflowId: string,
+    previousWorkflowId: string | null,
+    source: AgentWorkflowBindSource
+  ): void {
+    const currentThreadId = conversationStore.threadId
+    if (currentThreadId === null) {
+      if (source === 'selector_chip' || source === 'restored')
+        pendingWorkflowBind = { workflowId, previousWorkflowId, source }
+      return
+    }
+    const pending =
+      pendingWorkflowBind?.workflowId === workflowId
+        ? pendingWorkflowBind
+        : null
+    pendingWorkflowBind = null
+    const lastReported =
+      reportedWorkflowBind?.threadId === currentThreadId
+        ? reportedWorkflowBind.workflowId
+        : (pending?.previousWorkflowId ?? previousWorkflowId)
+    if (workflowId === lastReported) return
+    reportedWorkflowBind = { threadId: currentThreadId, workflowId }
+    useTelemetry()?.trackAgentWorkflowBound({
+      thread_id: currentThreadId,
+      workflow_id: workflowId,
+      prev_workflow_id: lastReported,
+      bind_source: pending?.source ?? source
+    })
+  }
+
   const notices = ref<SessionNotice[]>([])
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
   const answeringAskIds = ref<ReadonlySet<string>>(new Set())
-  const pendingThreadSource = ref<'new_chat_button' | 'first_open' | null>(
+  const pendingThreadSource = ref<AgentSessionThreadStartSource | null>(
     'first_open'
   )
 
@@ -432,7 +490,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           bindingStore.tabPathFor(ack.workflow_id) === undefined)
       if (shouldAdopt) workflow?.adopted(ack.workflow_id, wfContext, boundAtAck)
     }
-    const turnId = ack.message_id as TurnId
+    const turnId = toTurnId(ack.message_id)
     conversationStore.recordUser(
       turnId,
       text,
@@ -446,12 +504,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
     conversationStore.startTurn(turnId)
     recordTurnStarted(turnId, startsThread)
-    if (wasStopRequestedWhileSending()) {
-      stopRequestedWhileSending.value = false
-      const method = stopMethodWhileSending.value
-      stopMethodWhileSending.value = undefined
-      void stopTurn(method)
-    }
+    const pendingStop = consumeStopPendingAck()
+    if (pendingStop !== null) void stopTurn(pendingStop.method)
   }
 
   function recordSendError(error: unknown, text: string): void {
@@ -581,7 +635,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     promptEditState.value = { phase: 'idle' }
     sending.value = true
-    stopRequestedWhileSending.value = false
+    stopPendingAck = null
     try {
       return await performSend(
         text,
@@ -595,13 +649,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
-  const stopRequestedWhileSending = ref(false)
-  const stopMethodWhileSending = ref<'button' | 'escape'>()
-  const wasStopRequestedWhileSending = () => stopRequestedWhileSending.value
+  /** A stop requested before the turn's POST acks, consumed once at ack. */
+  let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
+
+  function consumeStopPendingAck() {
+    const pending = stopPendingAck
+    stopPendingAck = null
+    return pending
+  }
 
   function captureStopMetadata(
     turnId: TurnId,
-    method: 'button' | 'escape' | undefined
+    method: AgentStopMethod | undefined
   ): AgentStopClickedMetadata | null {
     if (method === undefined) return null
     const startedAt = turnStartedAt.get(turnId)
@@ -640,15 +699,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
     pushError(error instanceof Error ? error.message : String(error))
   }
 
-  async function stopTurn(method?: 'button' | 'escape'): Promise<void> {
+  async function stopTurn(method?: AgentStopMethod): Promise<void> {
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
       // The POST has not acked yet; remember the intent and cancel on ack.
-      if (sending.value) {
-        stopRequestedWhileSending.value = true
-        stopMethodWhileSending.value = method
-      }
+      if (sending.value) stopPendingAck = { method }
       return
     }
     if (isStoppingTurn(turnId)) return
@@ -705,13 +761,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   let loadGeneration = 0
 
-  function newChat(source?: 'new_chat_button'): void {
+  function newChat(
+    source?: Exclude<AgentSessionThreadStartSource, 'first_open'>
+  ): void {
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
     conversationStore.stashActiveTurn()
     conversationStore.reset()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
+    pendingWorkflowBind = null
     localStorage.removeItem(THREAD_STORAGE_KEY)
     pendingThreadSource.value = source ?? null
   }
@@ -728,6 +787,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     conversationStore.stashActiveTurn()
     boundWorkflowId.value = null
     rememberedWorkflowId = null
+    pendingWorkflowBind = null
     conversationStore.setThreadId(threadId)
     localStorage.setItem(THREAD_STORAGE_KEY, threadId)
     const hydrated = await hydrateFromServer(threadId, isCurrent)
@@ -735,25 +795,28 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return hydrated && isCurrent()
   }
 
+  function malformedEventTurnId(raw: object): TurnId | undefined {
+    if (!('data' in raw) || typeof raw.data !== 'object' || raw.data === null)
+      return undefined
+    if (!('message_id' in raw.data)) return undefined
+    const messageId = raw.data.message_id
+    return typeof messageId === 'string' ? toTurnId(messageId) : undefined
+  }
+
   function handleMalformedEvent(
     type: string,
     raw: object,
     error: unknown
   ): void {
-    const messageId = (raw as { data?: { message_id?: unknown } }).data
-      ?.message_id
+    const turnId = malformedEventTurnId(raw)
     if (type === 'agent_message_done') {
-      if (typeof messageId === 'string')
-        turnStartedAt.delete(messageId as TurnId)
-      if (
-        typeof messageId !== 'string' ||
-        messageId === conversationStore.activeTurnId
-      ) {
+      if (turnId !== undefined) turnStartedAt.delete(turnId)
+      if (turnId === undefined || turnId === conversationStore.activeTurnId) {
         forgetActiveTurnStartedAt()
         conversationStore.abortActiveTurn()
         pushError(i18n.global.t('agent.malformedEvent'))
       } else {
-        conversationStore.settleBackgroundTurn(messageId)
+        conversationStore.settleBackgroundTurn(turnId)
       }
     }
     console.warn('[agent] dropping malformed agent event', error)
@@ -762,7 +825,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function handleMessageDone(
     event: Extract<AgentWsEvent, { type: 'agent_message_done' }>
   ): void {
-    turnStartedAt.delete(event.data.message_id as TurnId)
+    turnStartedAt.delete(toTurnId(event.data.message_id))
     if (
       promptEditState.value.phase === 'stopping' &&
       event.data.message_id === promptEditState.value.turnId &&
@@ -832,6 +895,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   return {
     boundWorkflowId: computed(() => boundWorkflowId.value),
     bindWorkflow,
+    reportWorkflowBound,
     isSending,
     editableTurnId,
     start,

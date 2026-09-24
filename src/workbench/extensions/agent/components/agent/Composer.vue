@@ -28,6 +28,7 @@ import Tag from '@/components/chip/Tag.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
+import type { AgentStopMethod } from '@/platform/telemetry/types'
 
 import InlinePromptEditor from './composer/InlinePromptEditor.vue'
 import { composerPromptForSend } from '../../utils/composerPrompt'
@@ -83,7 +84,7 @@ const emit = defineEmits<{
     attachments: ComposerAttachment[],
     workflowReferences?: WorkflowReference[]
   ]
-  stop: [method: 'button' | 'escape']
+  stop: [method: AgentStopMethod]
   attach: []
   openAssets: []
   selectNodes: []

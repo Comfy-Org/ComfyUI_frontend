@@ -16,6 +16,7 @@ import {
   AUTH_TELEMETRY_EVENT,
   SESSION_TELEMETRY_EVENT
 } from '@comfyorg/account-core/telemetry'
+import type { AgentRunMode } from '@comfyorg/ingest-types'
 import type {
   AuthErrorMetadata,
   AuthFlowAction,
@@ -675,34 +676,46 @@ export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
   workflow_id: string
   target: 'active_tab_switch' | 'active_tab_open'
 }
+export type AgentStopMethod = 'button' | 'escape'
 export interface AgentStopClickedMetadata extends Record<string, unknown> {
-  method: 'button' | 'escape'
+  method: AgentStopMethod
   turn_id: string
   turn_elapsed_ms: number | null
 }
+export type AgentWorkflowBindSource =
+  | 'active_tab'
+  | 'selector_chip'
+  | 'minted'
+  | 'restored'
 export interface AgentWorkflowBoundMetadata extends Record<string, unknown> {
   thread_id: string
   workflow_id: string
   prev_workflow_id: string | null
-  bind_source: 'active_tab' | 'selector_chip' | 'minted' | 'restored'
+  bind_source: AgentWorkflowBindSource
 }
 export interface AgentRunApprovalShownMetadata extends Record<string, unknown> {
   turn_id: string
   workflow_id: string | null
 }
+export type AgentRunApprovalDecision = 'run' | 'cancel' | 'open_workflow'
 export interface AgentRunApprovalResolvedMetadata extends Record<
   string,
   unknown
 > {
-  decision: 'run' | 'cancel' | 'open_workflow'
+  decision: AgentRunApprovalDecision
   time_to_decide_ms: number
 }
 export interface AgentRunModeChangedMetadata extends Record<string, unknown> {
-  from: 'ask_approval' | 'auto' | 'auto_limited'
-  to: 'ask_approval' | 'auto' | 'auto_limited'
+  from: AgentRunMode['mode']
+  to: AgentRunMode['mode']
 }
+export type AgentThreadStartSource =
+  | 'new_chat_button'
+  | 'first_open'
+  | 'history_select'
+  | 'history_delete'
 export interface AgentThreadStartedMetadata extends Record<string, unknown> {
-  source: 'new_chat_button' | 'first_open' | 'history_select'
+  source: AgentThreadStartSource
 }
 
 /**
