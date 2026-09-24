@@ -419,7 +419,9 @@ describe('doc_reset — a lineage break drops the doc and resubscribes from zero
     expect(bridge.follower).not.toBe(oldDoc)
     expect(bridge.follower.updatesApplied).toBe(0)
     expect(bridge.follower.doc.getMap('nodes').size).toBe(0)
-    expect(resets).toEqual([{ workflowId: WORKFLOW_ID, seq: 43 }])
+    expect(resets).toEqual([
+      { workflowId: WORKFLOW_ID, lineageSeq: 43, seq: 43 }
+    ])
     expect(followerSeenDuringReset).toBe(oldDoc)
 
     // The resubscribe carries the FRESH doc's state vector — the empty one —

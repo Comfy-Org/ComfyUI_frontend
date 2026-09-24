@@ -22,6 +22,7 @@ import {
   bootAgentApp,
   mockWorkflowPersistence
 } from '@e2e/fixtures/agentPanelFixture'
+import { ComfyPage } from '@e2e/fixtures/ComfyPage'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import type {
@@ -46,6 +47,7 @@ import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
+import { installStartupGraph } from '@e2e/fixtures/utils/startupGraph'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
@@ -192,11 +194,13 @@ export class AgentConversationHarness {
 
   constructor(
     private readonly page: Page,
+    private readonly comfyPage: ComfyPage,
     readonly conversation: AgentConversation,
     readonly replayTiming: ReplayTiming,
     caseId: string,
     private readonly extraNodeDefs: Record<string, ComfyNodeDef> = {},
-    humanOpsHost: HumanOpsHost = 'hold'
+    humanOpsHost: HumanOpsHost = 'hold',
+    private readonly blankStartupGraph = false
   ) {
     const { workflow } = conversation
     this.host = new HostDoc(workflow.id, workflow.seed, workflow.catalog)
@@ -260,6 +264,7 @@ export class AgentConversationHarness {
   async boot(agentFlag: boolean, vueNodes: boolean): Promise<void> {
     await this.mockAgentApi()
     await this.hostSocket.install()
+    if (this.blankStartupGraph) await installStartupGraph(this.page)
     const objectInfo = this.page.waitForResponse((response) =>
       new URL(response.url()).pathname.endsWith('/api/object_info')
     )
@@ -293,24 +298,16 @@ export class AgentConversationHarness {
     await this.selectWorkflowTarget()
   }
 
-  private async selectWorkflowTarget(): Promise<void> {
+  private async selectWorkflowTarget(name = 'Unsaved Workflow'): Promise<void> {
     await mockWorkflowPersistence(this.page, this.conversation.workflow.id)
     const picker = this.panel.getByRole('button', {
       name: enMessages.agent.switchWorkflow
     })
     await picker.click()
-    await this.page
-      .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
-      .click()
-    await expect(picker).toHaveText('Unsaved Workflow')
+    await this.page.getByRole('menuitemradio', { name, exact: true }).click()
+    await expect(picker).toHaveText(name)
   }
 
-  /**
-   * Delegates to the shared persistence mock (`savedWorkflowPersistence.ts`)
-   * instead of independently re-capturing/re-serving saves: this harness and
-   * `MultiAutogrowRealignHarness` had drifted into two mutable
-   * implementations of the same save/reopen round trip.
-   */
   async persistSavedWorkflow(): Promise<void> {
     await mockSavedWorkflowPersistence(this.page, this.conversation.workflow.id)
   }
@@ -693,6 +690,16 @@ export class AgentConversationHarness {
     for (const id of Object.keys(this.host.graph().nodes)) this.seenIds.add(id)
   }
 
+  deleteNodeOnHost(nodeId: number, removedLinkIds: number[]): void {
+    this.host.apply([
+      {
+        op: 'delete_node',
+        node_id: nodeId,
+        removed_links: removedLinkIds
+      }
+    ])
+  }
+
   // Rises once per follower subscribe; a tab return re-subscribes and the
   // host answers with the catch-up frame this counter has just sent.
   subscribeCount(): number {
@@ -914,13 +921,23 @@ export class AgentConversationHarness {
       }
     })
     await this.page.reload({ waitUntil: 'domcontentloaded' })
-    await this.page.waitForFunction(() => window.app?.extensionManager)
-    await this.page.getByTestId(TestIds.app.loadingOverlay).waitFor({
-      state: 'hidden',
-      timeout: PANEL_MOUNT_TIMEOUT
-    })
+    await this.comfyPage.waitForAppReady()
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
+  }
+
+  async reloadWithCurrentGraph(): Promise<void> {
+    const graph = await this.comfyPage.nodeOps.getSerializedGraph()
+    await this.page.reload({ waitUntil: 'domcontentloaded' })
+    await this.comfyPage.waitForAppReady()
+    await this.comfyPage.workflow.newBlankWorkflow()
+    await this.comfyPage.workflow.loadGraphData(graph)
+    await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
+    const name = await this.topbar
+      .getActiveTab()
+      .locator('.workflow-label')
+      .innerText()
+    await this.selectWorkflowTarget(name)
   }
 
   async resyncWidget(nodeId: string, widget: string): Promise<void> {
@@ -1013,6 +1030,8 @@ interface ConversationFixtures {
   // Node definitions this case needs beyond the recorded core subset.
   extraNodeDefs: Record<string, ComfyNodeDef>
   humanOpsHost: HumanOpsHost
+  blankStartupGraph: boolean
+  comfyPage: ComfyPage
   agentConversation: AgentConversationHarness
 }
 
@@ -1024,6 +1043,10 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   replayTiming: [defaultReplayTiming(), { option: true }],
   extraNodeDefs: [{}, { option: true }],
   humanOpsHost: ['hold', { option: true }],
+  blankStartupGraph: [false, { option: true }],
+  comfyPage: async ({ page, request }, use) => {
+    await use(new ComfyPage(page, request))
+  },
   viewport: VIEWPORT,
   video: {
     mode:
@@ -1035,11 +1058,13 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
   agentConversation: async (
     {
       page,
+      comfyPage,
       agentFlagEnabled,
       conversationCase,
       replayTiming,
       extraNodeDefs,
-      humanOpsHost
+      humanOpsHost,
+      blankStartupGraph
     },
     use,
     testInfo
@@ -1053,11 +1078,13 @@ export const agentConversationTest = agentTest.extend<ConversationFixtures>({
       )
     const harness = new AgentConversationHarness(
       page,
+      comfyPage,
       loadAgentConversation(conversationCase),
       replayTiming,
       conversationCase,
       extraNodeDefs,
-      humanOpsHost
+      humanOpsHost,
+      blankStartupGraph
     )
     await harness.boot(agentFlagEnabled, vueNodes)
     await use(harness)

@@ -4,16 +4,22 @@ import {
   mint,
   nodesMap
 } from '@comfyorg/comfy-multi-player'
-import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import type {
+  Op,
+  WidgetCatalog,
+  WorkflowJSON
+} from '@comfyorg/comfy-multi-player'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { createGraphMutations } from './graphMutations'
 import { inertPlacementPort } from './__fixtures__/inertPlacementPort'
-import type { GraphMutations } from './graphMutations'
+import type { GraphMutations, GraphMutationsDeps } from './graphMutations'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { useAgentCrdtDocHistoryStore } from '@/workbench/extensions/agent/stores/agent/agentCrdtDocHistoryStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toLinkId } from '@/types/linkId'
 import type { NodeId } from '@/types/nodeId'
@@ -22,7 +28,9 @@ import { widgetId } from '@/types/widgetId'
 
 import type { DocUpdate } from './docFrameClient'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
+import type { LocalOnlyGraphIds } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
+import { computeLocalOnlyGraphIds } from './agentLocalOnlyGraphIds'
 
 const catalog: WidgetCatalog = {
   types: {
@@ -1601,7 +1609,8 @@ describe('EcsFollowerAdapter integration', () => {
       )
       const follower = new FollowerDoc()
       const adapter = new EcsFollowerAdapter(mutations, {
-        pendingDeletes: () => pendingDeletes
+        pendingDeletes: () => pendingDeletes,
+        localOnlyGraphIds: () => ({ nodeIds: new Set(), linkIds: new Set() })
       })
       adapter.bind('wf', follower)
       const update = Y.encodeStateAsUpdate(host)
@@ -1634,6 +1643,476 @@ describe('EcsFollowerAdapter integration', () => {
         nodeIds: [toNodeId(1), toNodeId(2)],
         linked: true
       })
+    })
+  })
+
+  describe('local-only protection timing and scope', () => {
+    const LOCAL_HYDRATION_CONTEXT = {
+      source: 'agent-remote' as const,
+      actor: 'local-hydration',
+      opId: 'local-seed'
+    }
+
+    function localOnlyMutations(
+      overrides: {
+        getScope?: () => typeof scope | null
+        deleteNodes?: GraphMutationsDeps['layout']['deleteNodes']
+      } = {}
+    ): GraphMutations {
+      return createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: overrides.getScope ?? (() => scope),
+        layout: {
+          createNode: vi.fn(),
+          deleteNodes: overrides.deleteNodes ?? vi.fn()
+        }
+      })
+    }
+
+    function mintUpdate(graph: WorkflowJSON): Uint8Array {
+      const host = mint(graph, catalog)
+      onTestFinished(() => host.destroy())
+      return Y.encodeStateAsUpdate(host)
+    }
+
+    function bindAndApply(
+      adapter: EcsFollowerAdapter,
+      workflowId: string,
+      update: Uint8Array
+    ): void {
+      const follower = new FollowerDoc()
+      adapter.bind(workflowId, follower)
+      follower.applyRemoteUpdate(update)
+      onTestFinished(() => follower.destroy())
+    }
+
+    it('retains the live links incident to a protected local-only node, but still sweeps other stale links', () => {
+      const deleteLayouts = vi.fn()
+      const mutations = localOnlyMutations({ deleteNodes: deleteLayouts })
+      // Node 1 will be doc-retained; node 99 is local-only. Link 99 connects
+      // them (must be protected alongside node 99); link 98 is an unrelated
+      // stale self-loop on node 1 (must still be swept -- protection is
+      // scoped to the protected node's own incident links, not everything).
+      mutations.addNode(
+        {
+          id: 1,
+          type: 'Source',
+          inputs: [{ name: 'in', type: 'IMAGE', link: 98 }],
+          outputs: [{ name: 'out', type: 'IMAGE', links: [98, 99] }]
+        },
+        LOCAL_HYDRATION_CONTEXT
+      )
+      mutations.addNode(
+        {
+          id: 99,
+          type: 'Sink',
+          widgets_values: { stale: 9 },
+          inputs: [{ name: 'in', type: 'IMAGE', link: 99 }],
+          outputs: []
+        },
+        LOCAL_HYDRATION_CONTEXT
+      )
+      mutations.connect(
+        {
+          id: 98,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 1,
+          targetSlot: 0,
+          type: 'IMAGE'
+        },
+        LOCAL_HYDRATION_CONTEXT
+      )
+      mutations.connect(
+        {
+          id: 99,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 99,
+          targetSlot: 0,
+          type: 'IMAGE'
+        },
+        LOCAL_HYDRATION_CONTEXT
+      )
+      deleteLayouts.mockClear()
+
+      const adapter = new EcsFollowerAdapter(mutations, {
+        pendingDeletes: () => new Set(),
+        localOnlyGraphIds: () => ({
+          nodeIds: new Set(['99']),
+          linkIds: new Set([99])
+        })
+      })
+      onTestFinished(() => adapter.destroy())
+      const update = mintUpdate({
+        nodes: [{ id: 1, type: 'Source', inputs: [], outputs: [] }],
+        links: []
+      })
+      bindAndApply(adapter, 'wf', update)
+
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        true
+      )
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(1), toNodeId(99)])
+      expect(
+        useLinkStore().getTopology(scope.rootGraphId, toLinkId(99))
+      ).toMatchObject({ originNodeId: toNodeId(1), targetNodeId: toNodeId(99) })
+      expect(
+        useLinkStore().getTopology(scope.rootGraphId, toLinkId(98))
+      ).toBeUndefined()
+      expect(
+        useWidgetValueStore().getWidget(widgetId('root', toNodeId(99), 'stale'))
+          ?.value
+      ).toBe(9)
+      expect(deleteLayouts).not.toHaveBeenCalled()
+    })
+
+    it('defers the first full reconcile instead of committing an empty retain set when scope exists but no live graph is available yet', () => {
+      const mutations = localOnlyMutations()
+      mutations.addNode(
+        { id: 99, type: 'Sink', inputs: [], outputs: [] },
+        LOCAL_HYDRATION_CONTEXT
+      )
+
+      let graphReady = false
+      const localOnlyGraphIds = vi.fn(() =>
+        graphReady
+          ? { nodeIds: new Set(['99']), linkIds: new Set<number>() }
+          : null
+      )
+      const adapter = new EcsFollowerAdapter(mutations, {
+        pendingDeletes: () => new Set(),
+        localOnlyGraphIds
+      })
+      onTestFinished(() => adapter.destroy())
+      const update = mintUpdate({ nodes: [], links: [] })
+      bindAndApply(adapter, 'wf', update)
+
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        false
+      )
+      expect(localOnlyGraphIds).toHaveBeenCalledTimes(1)
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(99)])
+
+      graphReady = true
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(
+        true
+      )
+      expect(localOnlyGraphIds).toHaveBeenCalledTimes(2)
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(99)])
+    })
+
+    it('does not spend the local-only one-shot on a batch its first full reconcile has rejected', () => {
+      const localOnlyGraphIds = vi.fn(() => ({
+        nodeIds: new Set(['99']),
+        linkIds: new Set<number>()
+      }))
+      let scopeAvailable = false
+      const mutations = localOnlyMutations({
+        getScope: () => (scopeAvailable ? scope : null)
+      })
+      scopeAvailable = true
+      mutations.addNode(
+        { id: 99, type: 'Sink', inputs: [], outputs: [] },
+        LOCAL_HYDRATION_CONTEXT
+      )
+
+      const adapter = new EcsFollowerAdapter(mutations, {
+        pendingDeletes: () => new Set(),
+        localOnlyGraphIds
+      })
+      onTestFinished(() => adapter.destroy())
+      const update = mintUpdate({ nodes: [], links: [] })
+      bindAndApply(adapter, 'wf', update)
+
+      scopeAvailable = false
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        false
+      )
+      expect(localOnlyGraphIds).toHaveBeenCalledTimes(1)
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(99)])
+
+      scopeAvailable = true
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(
+        true
+      )
+      expect(localOnlyGraphIds).toHaveBeenCalledTimes(2)
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(99)])
+    })
+
+    it('keeps the local-only one-shot armed across an unbind/rebind that never got a completed reconcile', () => {
+      const mutations = localOnlyMutations()
+      mutations.addNode(
+        { id: 99, type: 'Sink', inputs: [], outputs: [] },
+        LOCAL_HYDRATION_CONTEXT
+      )
+
+      const adapter = new EcsFollowerAdapter(mutations, {
+        pendingDeletes: () => new Set(),
+        localOnlyGraphIds: () => ({
+          nodeIds: new Set(['99']),
+          linkIds: new Set<number>()
+        })
+      })
+      onTestFinished(() => adapter.destroy())
+      const followerA = new FollowerDoc()
+      onTestFinished(() => followerA.destroy())
+      adapter.bind('wf', followerA)
+      adapter.unbind('wf')
+
+      const update = mintUpdate({ nodes: [], links: [] })
+      bindAndApply(adapter, 'wf', update)
+
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        true
+      )
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(99)])
+    })
+
+    it('clears protectedWorkflowIds on an explicit reset, whether or not the workflow is actively bound, so the next lineage under that id is treated as a first bind', () => {
+      const mutations = localOnlyMutations()
+      const localOnlyGraphIds = vi.fn(() => ({
+        nodeIds: new Set<string>(),
+        linkIds: new Set<number>()
+      }))
+      const adapter = new EcsFollowerAdapter(mutations, {
+        pendingDeletes: () => new Set(),
+        localOnlyGraphIds
+      })
+      onTestFinished(() => adapter.destroy())
+      const update = mintUpdate({ nodes: [], links: [] })
+      bindAndApply(adapter, 'wf', update)
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        true
+      )
+      expect(localOnlyGraphIds).toHaveBeenCalledTimes(1)
+
+      adapter.clearForFollowerReplacement('wf', {
+        source: 'agent-remote',
+        actor: 'agent-lineage',
+        opId: 'follower-replaced:wf'
+      })
+      adapter.unbind('wf')
+      bindAndApply(adapter, 'wf', update)
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        true
+      )
+      expect(localOnlyGraphIds).toHaveBeenCalledTimes(1)
+
+      adapter.clearForReset('wf', {
+        source: 'agent-remote',
+        actor: 'agent-reset',
+        opId: 'doc-reset:1'
+      })
+      adapter.unbind('wf')
+      bindAndApply(adapter, 'wf', update)
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        true
+      )
+      expect(localOnlyGraphIds).toHaveBeenCalledTimes(2)
+      adapter.unbind('wf')
+
+      adapter.clearForReset('wf', {
+        source: 'agent-remote',
+        actor: 'agent-reset',
+        opId: 'doc-reset:2'
+      })
+      bindAndApply(adapter, 'wf', update)
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        true
+      )
+      expect(localOnlyGraphIds).toHaveBeenCalledTimes(3)
+    })
+
+    it('sweeps a previously protected local-only node and link on a later rebind, without consulting the local-only hook again', () => {
+      const mutations = localOnlyMutations()
+      mutations.addNode(
+        {
+          id: 1,
+          type: 'Source',
+          inputs: [],
+          outputs: [{ name: 'out', type: 'IMAGE', links: [99] }]
+        },
+        LOCAL_HYDRATION_CONTEXT
+      )
+      mutations.addNode(
+        {
+          id: 99,
+          type: 'Sink',
+          inputs: [{ name: 'in', type: 'IMAGE', link: 99 }],
+          outputs: []
+        },
+        LOCAL_HYDRATION_CONTEXT
+      )
+      mutations.connect(
+        {
+          id: 99,
+          originNodeId: 1,
+          originSlot: 0,
+          targetNodeId: 99,
+          targetSlot: 0,
+          type: 'IMAGE'
+        },
+        LOCAL_HYDRATION_CONTEXT
+      )
+
+      const localOnlyGraphIds = vi.fn(() => ({
+        nodeIds: new Set(['99']),
+        linkIds: new Set([99])
+      }))
+      const adapter = new EcsFollowerAdapter(mutations, {
+        pendingDeletes: () => new Set(),
+        localOnlyGraphIds
+      })
+      onTestFinished(() => adapter.destroy())
+      const update = mintUpdate({
+        nodes: [{ id: 1, type: 'Source', inputs: [], outputs: [] }],
+        links: []
+      })
+
+      bindAndApply(adapter, 'wf', update)
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        true
+      )
+      expect(localOnlyGraphIds).toHaveBeenCalledTimes(1)
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(1), toNodeId(99)])
+
+      adapter.unbind('wf')
+      bindAndApply(adapter, 'wf', update)
+
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        true
+      )
+      expect(localOnlyGraphIds).toHaveBeenCalledTimes(1)
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(1)])
+      expect(
+        useLinkStore().getTopology(scope.rootGraphId, toLinkId(99))
+      ).toBeUndefined()
+    })
+
+    it('composes the classifier and history store across adapter recreation', () => {
+      const docHistory = useAgentCrdtDocHistoryStore()
+      const lineage = docHistory.reset('wf', 1)
+
+      const graph = new LGraph()
+      graph.id = 'root'
+      const handAddedSink = new LGraphNode('Sink')
+      handAddedSink.id = toNodeId(99)
+      handAddedSink.addInput('in', 'IMAGE')
+      graph.add(handAddedSink)
+      const handAddedSource = new LGraphNode('Source')
+      handAddedSource.id = toNodeId(50)
+      handAddedSource.addOutput('out', 'IMAGE')
+      graph.add(handAddedSource)
+
+      const localOnlyGraphIds = (
+        workflowId: string
+      ): LocalOnlyGraphIds | null =>
+        workflowId !== 'wf'
+          ? null
+          : computeLocalOnlyGraphIds(
+              graph,
+              docHistory.everSeen(workflowId, lineage)
+            )
+
+      const mutations = localOnlyMutations()
+      mutations.addNode(
+        { id: 1, type: 'Source', inputs: [], outputs: [] },
+        LOCAL_HYDRATION_CONTEXT
+      )
+      mutations.connect(
+        {
+          id: 77,
+          originNodeId: 50,
+          originSlot: 0,
+          targetNodeId: 99,
+          targetSlot: 0,
+          type: 'IMAGE'
+        },
+        LOCAL_HYDRATION_CONTEXT
+      )
+
+      const firstAdapter = new EcsFollowerAdapter(mutations, {
+        pendingDeletes: () => new Set(),
+        localOnlyGraphIds
+      })
+      const observedUpdate = mintUpdate({
+        nodes: [{ id: 1, type: 'Source', inputs: [], outputs: [] }],
+        links: []
+      })
+      bindAndApply(firstAdapter, 'wf', observedUpdate)
+      docHistory.remember('wf', lineage, new Set(['1']))
+      expect(
+        firstAdapter.applyFrame({
+          workflowId: 'wf',
+          seq: 1,
+          update: observedUpdate
+        })
+      ).toBe(true)
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(99), toNodeId(50), toNodeId(1)])
+      expect(
+        useLinkStore().getTopology(scope.rootGraphId, toLinkId(77))
+      ).toBeDefined()
+      firstAdapter.destroy()
+
+      const secondAdapter = new EcsFollowerAdapter(mutations, {
+        pendingDeletes: () => new Set(),
+        localOnlyGraphIds
+      })
+      onTestFinished(() => secondAdapter.destroy())
+      const rebindUpdate = mintUpdate({ nodes: [], links: [] })
+      bindAndApply(secondAdapter, 'wf', rebindUpdate)
+      expect(
+        secondAdapter.applyFrame({
+          workflowId: 'wf',
+          seq: 1,
+          update: rebindUpdate
+        })
+      ).toBe(true)
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(99), toNodeId(50)])
+      expect(
+        useLinkStore().getTopology(scope.rootGraphId, toLinkId(77))
+      ).toBeDefined()
     })
   })
 })
