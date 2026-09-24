@@ -57,6 +57,11 @@ describe('MessageFeedback', () => {
     )
     clipboard.copy.mockClear()
     fetchApi.mockReset()
+    // The download sink appends an `<a href="blob:...">` and clicks it, which
+    // this DOM treats as a navigation: `window.location.origin` becomes "null"
+    // and the next reply-asset URL is unparseable. Only the invocation matters
+    // here, and the object-URL assertions below still observe the real sink.
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
   })
 
   it('emits the vote, then null when the same vote is clicked again', async () => {
@@ -136,22 +141,35 @@ describe('MessageFeedback', () => {
     ).not.toBeInTheDocument()
   })
 
+  // The reply assets the backend serves live on the API's own view route, and
+  // only those reach the authenticated client. Anything else is fetched
+  // credentialless by `resolveReplyAssetDownload`, so driving these download
+  // tests with foreign URLs would be asserting a credential leak.
   it('downloads every reply asset from the download action', async () => {
     fetchApi.mockImplementation(async () => new Response(new Blob(['x'])))
     const createObjectURL = vi.fn(() => 'blob:mock')
     const revokeObjectURL = vi.fn()
     URL.createObjectURL = createObjectURL
     URL.revokeObjectURL = revokeObjectURL
+    const origin = window.location.origin
     const { user } = renderFeedback([
-      { url: 'https://x/a.png', filename: 'a.png', kind: 'image' },
-      { url: 'https://x/mesh.glb', filename: 'mesh.glb', kind: '3D' }
+      {
+        url: `${origin}/api/view?filename=a.png`,
+        filename: 'a.png',
+        kind: 'image'
+      },
+      {
+        url: `${origin}/api/view?filename=mesh.glb`,
+        filename: 'mesh.glb',
+        kind: '3D'
+      }
     ])
 
     await user.click(screen.getByRole('button', { name: 'Download assets' }))
 
     await waitFor(() => expect(fetchApi).toHaveBeenCalledTimes(2))
-    expect(fetchApi).toHaveBeenCalledWith('https://x/a.png')
-    expect(fetchApi).toHaveBeenCalledWith('https://x/mesh.glb')
+    expect(fetchApi).toHaveBeenCalledWith('/view?filename=a.png')
+    expect(fetchApi).toHaveBeenCalledWith('/view?filename=mesh.glb')
     await waitFor(() => expect(revokeObjectURL).toHaveBeenCalledTimes(2))
   })
 
@@ -166,9 +184,18 @@ describe('MessageFeedback', () => {
     const revokeObjectURL = vi
       .spyOn(URL, 'revokeObjectURL')
       .mockImplementation(() => {})
+    const origin = window.location.origin
     const { user } = renderFeedback([
-      { url: 'https://x/a.png', filename: 'a.png', kind: 'image' },
-      { url: 'https://x/b.png', filename: 'b.png', kind: 'image' }
+      {
+        url: `${origin}/api/view?filename=a.png`,
+        filename: 'a.png',
+        kind: 'image'
+      },
+      {
+        url: `${origin}/api/view?filename=b.png`,
+        filename: 'b.png',
+        kind: 'image'
+      }
     ])
     const download = screen.getByRole('button', { name: 'Download assets' })
 
