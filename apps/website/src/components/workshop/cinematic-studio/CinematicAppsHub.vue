@@ -7,6 +7,7 @@ import { getRoutes } from '../../../config/routes'
 import type { Locale } from '../../../i18n/translations'
 import type { CinematicCopyKey } from '../../../lib/workshop/cinematic-studio/copy'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import CinematicAppCard from './CinematicAppCard.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -120,65 +121,16 @@ const markerOffset = computed(
         {{ tc('cinematic.hub.appsIntro', locale) }}
       </p>
       <ul class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <li
+        <CinematicAppCard
           v-for="app in apps"
           :key="app.key"
-          :class="
-            cn(
-              'group relative flex flex-col gap-3 rounded-4xl bg-hub-surface px-2 pt-2 pb-4 transition-colors duration-200',
-              app.href ? 'hover:bg-hub-surface-hover' : 'opacity-60'
-            )
-          "
-        >
-          <a
-            v-if="app.href"
-            :href="app.href"
-            class="absolute inset-0 z-10 rounded-4xl outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
-          >
-            <span class="sr-only">{{ tc(app.name, locale) }}</span>
-          </a>
-          <div
-            class="relative aspect-4/3 overflow-hidden rounded-3xl bg-hub-surface-hover"
-          >
-            <img
-              v-if="app.image"
-              :src="app.image"
-              alt=""
-              loading="lazy"
-              class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
-            />
-            <span
-              v-else
-              class="grid size-full place-items-center font-formula text-7xl font-bold text-primary-warm-white/20 select-none"
-              aria-hidden="true"
-            >
-              {{ tc(app.name, locale).charAt(0) }}
-            </span>
-            <span
-              :class="
-                cn(
-                  'absolute top-3 left-3 rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-wider uppercase',
-                  app.href
-                    ? 'bg-primary-comfy-yellow text-primary-comfy-ink'
-                    : 'bg-primary-comfy-ink/70 text-primary-comfy-canvas'
-                )
-              "
-            >
-              {{ tc(app.badge, locale) }}
-            </span>
-          </div>
-          <div class="flex flex-col gap-1.5 px-3">
-            <h3 class="text-sm font-semibold text-content-bright">
-              {{ tc(app.name, locale) }}
-            </h3>
-            <p class="line-clamp-2 text-xs/relaxed text-content-secondary">
-              {{ tc(app.summary, locale) }}
-            </p>
-            <p v-if="app.meta" class="text-xs text-primary-warm-gray">
-              {{ tc(app.meta, locale) }}
-            </p>
-          </div>
-        </li>
+          :name="tc(app.name, locale)"
+          :summary="tc(app.summary, locale)"
+          :badge="tc(app.badge, locale)"
+          :meta="app.meta && tc(app.meta, locale)"
+          :image="app.image"
+          :href="app.href"
+        />
       </ul>
     </template>
     <div
