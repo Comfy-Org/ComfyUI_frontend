@@ -19,6 +19,7 @@ import { copy } from './copy'
 import type { Geometry } from './cvgeo'
 import { readGeometry } from './cvgeo'
 import CrossViewPreview from './CrossViewPreview.vue'
+import HubVideoCompare from '../HubVideoCompare.vue'
 import type { Job } from './deployment'
 import {
   analyzeWorkflow,
@@ -435,6 +436,12 @@ const busy = computed(
   () => phase.value === 'analyzing' || phase.value === 'generating'
 )
 const aimed = computed(() => !!geometry.value)
+
+// The worked example is the one state that has both a clip and what the
+// workflow made of it, so it is the one the seam can be drawn across.
+const showingExample = computed(
+  () => isExample.value && phase.value === 'idle' && !stale.value
+)
 
 const labelClass =
   'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
@@ -931,7 +938,21 @@ const inputClass =
 
         <template v-else>
           <div
-            v-if="sourceUrl || phase === 'analyzing'"
+            v-if="showingExample && sourceUrl"
+            class="flex flex-col gap-2"
+            data-testid="crossview-example"
+          >
+            <HubVideoCompare
+              :before="sourceUrl"
+              :after="EXAMPLE_RESULT"
+              :before-label="copy.source"
+              :after-label="copy.result"
+              :label="copy.compare"
+            />
+            <p :class="helpClass">{{ copy.exampleHelp }}</p>
+          </div>
+          <div
+            v-else-if="sourceUrl || phase === 'analyzing'"
             class="relative overflow-hidden rounded-xl bg-black"
           >
             <video
@@ -971,23 +992,6 @@ const inputClass =
                 {{ copy.cancel }}
               </Button>
             </div>
-          </div>
-          <div
-            v-if="isExample && phase === 'idle' && !stale"
-            class="flex flex-col gap-2"
-            data-testid="crossview-example"
-          >
-            <span :class="labelClass">{{ copy.exampleResult }}</span>
-            <video
-              :src="EXAMPLE_RESULT"
-              muted
-              loop
-              autoplay
-              playsinline
-              controls
-              class="w-full rounded-xl bg-black"
-            />
-            <p :class="helpClass">{{ copy.exampleHelp }}</p>
           </div>
           <p
             v-if="phase !== 'analyzing'"
