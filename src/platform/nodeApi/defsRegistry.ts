@@ -882,8 +882,8 @@ function nodeDefInput(nodeType: string, name: string, spec: unknown) {
 
 function rawNodeInputs(raw: RawNodeDef): Record<string, unknown> {
   return {
-    ...(raw.input?.required ?? {}),
-    ...(raw.input?.optional ?? {})
+    ...raw.input?.required,
+    ...raw.input?.optional
   }
 }
 
@@ -914,7 +914,7 @@ function toNodeDef(raw: RawNodeDef): NodeDef {
     inputs: Object.freeze(inputs),
     outputs: Object.freeze(rawNodeOutputs(raw)),
     isOutputNode: raw.output_node ?? false,
-    hidden: Object.freeze({ ...(raw.input?.hidden ?? {}) }),
+    hidden: Object.freeze({ ...raw.input?.hidden }),
     source: raw.python_module
   })
 }
@@ -1008,7 +1008,7 @@ const refreshListeners = new Set<() => void>()
 
 /** Called by the host once node definitions have finished reloading. */
 export function notifyDefsRefreshed(): void {
-  for (const listener of [...refreshListeners]) {
+  for (const listener of Array.from(refreshListeners)) {
     try {
       listener()
     } catch (error) {

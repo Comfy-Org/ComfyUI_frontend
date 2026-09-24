@@ -513,7 +513,7 @@ export function createNodeHandles(
           return freezePoint(x, y)
         },
         getSizeConstraints: (n) =>
-          Object.freeze({ ...(constraintsByNode.get(n) ?? {}) }),
+          Object.freeze({ ...constraintsByNode.get(n) }),
         setSizeConstraints: (n, ...args) => {
           const next = { ...(args[0] as SizeConstraints) }
           constraintsByNode.set(n, next)
