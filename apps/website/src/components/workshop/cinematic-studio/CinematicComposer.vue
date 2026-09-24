@@ -81,7 +81,11 @@ const cameraLabel = computed(() =>
 const directionLabel = computed(() =>
   summary(['shot', 'light', 'look'], tc('cinematic.section.direction', locale))
 )
-const grade = computed(() => directionOption('grade', direction))
+const lookPreview = computed(
+  () =>
+    directionOption('look', direction).preview ??
+    directionOption('shot', direction).preview
+)
 const formatLabel = computed(() => `${aspect} · ${resolution} · ×${takes}`)
 const canGenerate = computed(
   () => gate === 'ready' && scene.value.trim().length > 0
@@ -151,7 +155,12 @@ const chipClass = (key: PopoverKey) =>
           :heading="tc('cinematic.model.heading', locale)"
           trigger-class="h-9 shrink-0 gap-2 rounded-xl px-3 text-[13px] whitespace-nowrap text-primary-warm-white hover:bg-transparency-white-t8"
         >
-          <img v-if="model" :src="model.logo" alt="" class="size-4" />
+          <img
+            v-if="model"
+            :src="model.logo"
+            alt=""
+            class="size-4 brightness-0 invert"
+          />
           {{ model?.name }}
           <ChevronDown
             class="size-3 text-primary-warm-gray"
@@ -183,17 +192,12 @@ const chipClass = (key: PopoverKey) =>
           :class="chipClass('direction')"
           @click="emit('open', 'direction')"
         >
-          <span
-            class="flex h-3.5 w-6 shrink-0 overflow-hidden rounded-xs bg-transparency-white-t20"
-            aria-hidden="true"
-          >
-            <span
-              v-for="(color, index) in grade.palette"
-              :key="index"
-              class="h-full flex-1"
-              :style="{ backgroundColor: color }"
-            />
-          </span>
+          <img
+            v-if="lookPreview"
+            :src="lookPreview"
+            alt=""
+            class="size-5 shrink-0 rounded-md object-cover ring-1 ring-transparency-white-t20"
+          />
           <span class="truncate">{{ directionLabel }}</span>
         </button>
         <button

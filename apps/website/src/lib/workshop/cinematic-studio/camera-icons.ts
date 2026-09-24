@@ -9,85 +9,100 @@ const circle = (cx: number, cy: number, r: number) =>
   `M${cx - r} ${cy}a${r} ${r} 0 1 0 ${2 * r} 0a${r} ${r} 0 1 0 ${-2 * r} 0`
 
 const ellipse = (cx: number, cy: number, rx: number, ry: number) =>
-  `M${cx - rx} ${cy}a${rx} ${ry} 0 1 0 ${2 * rx} 0a${rx} ${ry} 0 1 0 ${-2 * rx} 0`
+  `M${cx} ${cy - ry}a${rx} ${ry} 0 1 0 0 ${2 * ry}a${rx} ${ry} 0 1 0 0 ${-2 * ry}`
 
-const BODIES: Record<string, readonly string[]> = {
-  auto: ['M5 8h20v11H5z', 'M25 11l8-3v11l-8-3z'],
-  digital: ['M6 9h19v11H6z', 'M10 9V6h11v3', 'M25 11h3v7h-3', 'M28 10h6v9h-6z'],
-  large: [
-    'M3 7h23v14H3z',
-    'M8 7V4h13v3',
-    'M26 11h3v6h-3',
-    'M29 8l7-3v18l-7-3z'
-  ],
-  super35: ['M8 10h16v10H8z', 'M24 13h3v4h-3', 'M27 12h7v6h-7z'],
-  film35: [
-    'M5 12h20v9H5z',
-    circle(10, 7, 4),
-    circle(20, 7, 4),
-    'M25 14h3v5h-3',
-    'M28 13h6v7h-6z'
-  ],
-  film16: [
-    'M8 13h16v8H8z',
-    circle(14, 8, 4),
-    'M24 15h3v4h-3',
-    'M27 14h6v6h-6z'
-  ],
-  handheld: [
-    'M6 9h18v10H6z',
-    'M9 19v3h8v-3',
-    'M6 11H3v5h3',
-    'M24 11l9-3v12l-9-3z'
+/** A lens barrel seen from the side: round front glass, body, rear mount. */
+function barrel(
+  front: number,
+  length: number,
+  radius: number,
+  cy = 12
+): string[] {
+  const back = front + length
+  return [
+    ellipse(front, cy, radius / 3, radius),
+    `M${front} ${cy - radius}H${back}V${cy + radius}H${front}`,
+    `M${back} ${cy - radius / 2}h2.5v${radius}h-2.5`
   ]
 }
 
+const cameraBody = (x: number, y: number, w: number, h: number) =>
+  `M${x} ${y}h${w}v${h}h-${w}z`
+
+const BODIES: Record<string, readonly string[]> = {
+  auto: [...barrel(2, 8, 4), cameraBody(13, 5, 24, 14)],
+  digital: [
+    ...barrel(2, 8, 4),
+    cameraBody(13, 6, 23, 13),
+    'M18 6V3h11v3',
+    'M36 9h2v6h-2'
+  ],
+  large: [
+    ...barrel(1, 9, 5),
+    cameraBody(13, 4, 25, 16),
+    'M18 4V2h10v2',
+    'M32 9h3M32 12h3'
+  ],
+  super35: [...barrel(3, 7, 3.5), cameraBody(13, 7, 20, 11), 'M18 7V5h8v2'],
+  film35: [
+    ...barrel(2, 8, 3.5, 16),
+    cameraBody(13, 11, 24, 10),
+    circle(19, 6, 4.2),
+    circle(31, 6, 4.2)
+  ],
+  film16: [
+    ...barrel(3, 7, 3, 16),
+    cameraBody(13, 11, 19, 9),
+    circle(22.5, 6, 4.2)
+  ],
+  handheld: [
+    ...barrel(2, 7, 3.5, 10),
+    cameraBody(12, 5, 20, 11),
+    'M17 16v5h8v-5',
+    'M32 8h6v5h-6'
+  ]
+}
+
+const LENS = (extra: readonly string[] = [], badge?: string): CameraIcon => ({
+  paths: [...barrel(3, 19, 8), ...extra],
+  badge
+})
+
 const LENSES: Record<string, CameraIcon> = {
-  auto: { paths: [circle(16, 12, 9)] },
-  prime: { paths: [circle(16, 12, 9), circle(16, 12, 6)], badge: 'PR' },
-  anamorphic: {
-    paths: [ellipse(16, 12, 10, 7), ellipse(16, 12, 6, 4)],
-    badge: 'AM'
-  },
-  vintage: {
-    paths: [circle(16, 12, 9), circle(16, 12, 7), circle(16, 12, 4)],
-    badge: 'VT'
-  },
-  macro: { paths: [circle(16, 12, 9), circle(16, 12, 3)], badge: 'MC' },
-  tilt: {
-    paths: [circle(16, 12, 9), 'M9 5l14 14', circle(16, 12, 5)],
-    badge: 'TS'
-  }
+  auto: LENS(),
+  prime: LENS(['M13 4v16'], 'PR'),
+  anamorphic: LENS([ellipse(3, 12, 1.4, 4.5)], 'AM'),
+  vintage: LENS(['M10 4v16', 'M13 4v16', 'M16 4v16'], 'VT'),
+  macro: LENS([ellipse(3, 12, 1, 2.5)], 'MC'),
+  tilt: LENS(['M11 4l5 16'], 'TS')
 }
 
 function focalIcon(id: string): CameraIcon {
-  const barrel =
-    id === 'auto' ? 12 : Math.round(6 + Math.sqrt(Number(id)) * 1.3)
-  const start = 20 - (barrel + 4) / 2
+  const length =
+    id === 'auto' ? 16 : Math.round(4 + Math.sqrt(Number(id)) * 2.2)
+  const front = 20 - (length + 3) / 2
   return {
-    paths: [
-      `M${start} 3h4v18h-4z`,
-      `M${start + 4} 6h${barrel}v12h-${barrel}z`,
-      `M${start + 4 + barrel / 2} 6v12`
-    ]
+    paths: [...barrel(front, length, 7), `M${front + length / 2} 5v14`]
   }
 }
 
+function irisPoint(radius: number, angle: number) {
+  return [20 + radius * Math.cos(angle), 12 + radius * Math.sin(angle)]
+    .map((value) => value.toFixed(1))
+    .join(' ')
+}
+
 function apertureIcon(id: string): CameraIcon {
-  const opening = id === 'auto' ? 5 : Math.max(2.5, 9 - Number(id) * 0.8)
-  const blades = Array.from({ length: 6 }, (_, index) => {
-    const angle = (index * Math.PI) / 3
-    const inner = [
-      20 + opening * Math.cos(angle),
-      12 + opening * Math.sin(angle)
-    ]
-    const outer = [
-      20 + 10 * Math.cos(angle + 1.1),
-      12 + 10 * Math.sin(angle + 1.1)
-    ]
-    return `M${inner[0].toFixed(1)} ${inner[1].toFixed(1)}L${outer[0].toFixed(1)} ${outer[1].toFixed(1)}`
-  })
-  return { paths: [circle(20, 12, 10), ...blades] }
+  const stop = id === 'auto' ? 2.8 : Number(id)
+  const opening = Math.max(2.5, 8.5 - stop * 0.75)
+  if (stop <= 1.4)
+    return { paths: [circle(20, 12, 10), circle(20, 12, opening)] }
+  const angles = Array.from({ length: 6 }, (_, index) => (index * Math.PI) / 3)
+  const iris = `M${angles.map((angle) => irisPoint(opening, angle)).join('L')}Z`
+  const blades = angles.map(
+    (angle) => `M${irisPoint(opening, angle)}L${irisPoint(10, angle + 1)}`
+  )
+  return { paths: [circle(20, 12, 10), iris, ...blades] }
 }
 
 export function cameraIcon(

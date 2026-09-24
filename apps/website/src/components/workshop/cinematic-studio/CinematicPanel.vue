@@ -110,7 +110,12 @@ const cardClass =
           :heading="tc('cinematic.model.heading', locale)"
           :trigger-class="cn(cardClass, 'h-12 gap-3 px-3')"
         >
-          <img v-if="model" :src="model.logo" alt="" class="size-5" />
+          <img
+            v-if="model"
+            :src="model.logo"
+            alt=""
+            class="size-5 brightness-0 invert"
+          />
           <span class="flex-1 text-sm font-semibold text-primary-warm-white">
             {{ model?.name }}
           </span>

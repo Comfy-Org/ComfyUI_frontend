@@ -52,7 +52,7 @@ const triggerLabel = computed(() => {
         align="start"
         :side-offset="8"
         :collision-padding="8"
-        class="z-50 min-w-60 rounded-2xl border border-transparency-white-t8 bg-site-dropdown p-1.5 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+        class="z-50 min-w-72 rounded-2xl border border-transparency-white-t8 bg-site-dropdown p-1.5 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
       >
         <DropdownMenuLabel
           class="px-2.5 pt-1.5 pb-1 text-xs text-primary-warm-gray"
@@ -64,9 +64,14 @@ const triggerLabel = computed(() => {
             v-for="option in options"
             :key="option.id"
             :value="option.id"
-            class="flex h-9 cursor-pointer items-center gap-2.5 rounded-lg px-2.5 text-sm text-primary-warm-white outline-none data-highlighted:bg-transparency-white-t8 data-[state=checked]:bg-transparency-white-t4"
+            class="flex h-9 cursor-pointer items-center gap-2.5 rounded-lg px-2.5 text-sm text-primary-warm-white outline-none data-highlighted:bg-transparency-white-t8"
           >
-            <img v-if="option.logo" :src="option.logo" alt="" class="size-4" />
+            <img
+              v-if="option.logo"
+              :src="option.logo"
+              alt=""
+              class="size-4 brightness-0 invert"
+            />
             <span class="flex-1">{{ option.label }}</span>
             <span v-if="option.meta" class="text-xs text-primary-warm-gray">
               {{ option.meta }}
