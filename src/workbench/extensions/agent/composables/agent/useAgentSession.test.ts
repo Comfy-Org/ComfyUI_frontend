@@ -1085,6 +1085,35 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   })
 
+  it('(g6a) a stopped turn settled from REST becomes editable after reconnect', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'msg-1', 'interrupted', 'msg-1'),
+            status: 'interrupted'
+          }
+        ]
+      )
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+    await session.stopTurn()
+    expect(session.editableTurnId.value).toBeNull()
+
+    status(false)
+    status(true)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    expect(session.editableTurnId.value).toBe('msg-1')
+  })
+
   it('(g7) a flapping socket starts one recovery job per turn, not one per reconnect', async () => {
     vi.useFakeTimers()
     try {
