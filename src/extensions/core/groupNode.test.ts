@@ -7,44 +7,25 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
-import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
-import type { ComfyApp } from '@/scripts/app'
+import { app } from '@/scripts/app'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 
-import type { ComfyExtension, MissingNodeType } from '@/types/comfy'
+import type { MissingNodeType } from '@/types/comfy'
 
 import type { GroupNodeLink, GroupNodeWorkflowData } from './groupNode'
 
-const extensionState = vi.hoisted(() => ({
-  ext: undefined as ComfyExtension | undefined,
-  configuringGraph: false,
-  rootGraph: {
-    extra: {},
-    nodes: [] as { id: string | number }[]
-  },
-  registerNodeDef:
-    vi.fn<(typeName: string, nodeDef: ComfyNodeDef) => Promise<void>>()
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock(import('@/scripts/app'), () => ({
-  app: fromPartial<ComfyApp>({
-    get configuringGraph() {
-      return extensionState.configuringGraph
-    },
-    rootGraph: fromAny(extensionState.rootGraph),
-    registerNodeDef: extensionState.registerNodeDef,
-    registerExtension: (ext: ComfyExtension) => {
-      extensionState.ext = ext
-    }
-  })
-}))
-
-import {
+const {
   GroupNodeConfig,
   GroupNodeHandler,
   findUnconsumedWidgetIndex,
   replaceLegacySeparators
-} from './groupNode'
+} = await import('./groupNode')
+const groupNodeExtension = vi
+  .mocked(app.registerExtension)
+  .mock.calls.find(([extension]) => extension.name === 'Comfy.GroupNode')?.[0]
+if (!groupNodeExtension) throw new Error('Comfy.GroupNode was not registered')
 
 function makeNode(type: string): ComfyNode {
   return {
@@ -317,7 +298,7 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
   it('removes a prior same-name group type before reporting missing nodes', async () => {
     const groupType = 'workflow>MyGroup'
     const missing: MissingNodeType[] = []
-    extensionState.registerNodeDef.mockImplementation(
+    vi.mocked(app.registerNodeDef).mockImplementation(
       async (typeName, nodeDef) => {
         class PreviousGroupNode extends LGraphNode {
           static override nodeData = nodeDef
@@ -326,38 +307,34 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
       }
     )
 
-    try {
-      await GroupNodeConfig.registerFromWorkflow(
-        {
-          MyGroup: {
-            nodes: [],
-            links: [],
-            external: []
-          }
-        },
-        []
-      )
-      const previousGroupNode = LiteGraph.createNode(groupType)
-      if (!previousGroupNode) throw new Error('group type not registered')
-      expect(GroupNodeHandler.isGroupNode(previousGroupNode)).toBe(true)
-      expect(LiteGraph.Nodes.PreviousGroupNode).toBeDefined()
-      expect(useNodeDefStore().nodeDefsByName[groupType]).toBeDefined()
+    await GroupNodeConfig.registerFromWorkflow(
+      {
+        MyGroup: {
+          nodes: [],
+          links: [],
+          external: []
+        }
+      },
+      []
+    )
+    const previousGroupNode = LiteGraph.createNode(groupType)
+    if (!previousGroupNode) throw new Error('group type not registered')
+    expect(GroupNodeHandler.isGroupNode(previousGroupNode)).toBe(true)
+    expect(LiteGraph.Nodes.PreviousGroupNode).toBeDefined()
+    expect(useNodeDefStore().nodeDefsByName[groupType]).toBeDefined()
 
-      await GroupNodeConfig.registerFromWorkflow(
-        groupWithMissingInnerNodes(),
-        missing,
-        new Map([['MyGroup', [7]]])
-      )
+    await GroupNodeConfig.registerFromWorkflow(
+      groupWithMissingInnerNodes(),
+      missing,
+      new Map([['MyGroup', [7]]])
+    )
 
-      expect(LiteGraph.registered_node_types[groupType]).toBeUndefined()
-      expect(LiteGraph.Nodes.PreviousGroupNode).toBeUndefined()
-      expect(useNodeDefStore().nodeDefsByName[groupType]).toBeUndefined()
-      expect(missing).toStrictEqual([
-        expect.objectContaining({ type: groupType, nodeId: '7' })
-      ])
-    } finally {
-      extensionState.registerNodeDef.mockReset()
-    }
+    expect(LiteGraph.registered_node_types[groupType]).toBeUndefined()
+    expect(LiteGraph.Nodes.PreviousGroupNode).toBeUndefined()
+    expect(useNodeDefStore().nodeDefsByName[groupType]).toBeUndefined()
+    expect(missing).toStrictEqual([
+      expect.objectContaining({ type: groupType, nodeId: '7' })
+    ])
   })
 
   it('keeps the legacy unbacked entries when no instance map is given', async () => {
@@ -383,8 +360,8 @@ describe('GroupNodeConfig.registerFromWorkflow', () => {
 
 describe('group node extension beforeConfigureGraph', () => {
   it('wires serialized instance positions per group into registerFromWorkflow', async () => {
-    const ext = extensionState.ext
-    if (!ext?.beforeConfigureGraph) throw new Error('extension not registered')
+    const ext = groupNodeExtension
+    if (!ext.beforeConfigureGraph) throw new Error('extension not registered')
     const spy = vi
       .spyOn(GroupNodeConfig, 'registerFromWorkflow')
       .mockResolvedValue()
@@ -420,8 +397,8 @@ describe('group node extension beforeConfigureGraph', () => {
   })
 
   it('binds duplicate serialized ids to distinct configured graph ids', async () => {
-    const ext = extensionState.ext
-    if (!ext?.beforeConfigureGraph || !ext.afterConfigureGraph) {
+    const ext = groupNodeExtension
+    if (!ext.beforeConfigureGraph || !ext.afterConfigureGraph) {
       throw new Error('extension not registered')
     }
     const groupNodes = {
@@ -441,7 +418,10 @@ describe('group node extension beforeConfigureGraph', () => {
       extra: { groupNodes }
     })
     const missingNodeTypes: MissingNodeType[] = []
-    extensionState.rootGraph.nodes = [{ id: 7 }, { id: 8 }]
+    vi.mocked(app).rootGraph = fromAny({
+      extra: {},
+      nodes: [{ id: 7 }, { id: 8 }]
+    })
 
     try {
       await ext.beforeConfigureGraph(
@@ -463,13 +443,13 @@ describe('group node extension beforeConfigureGraph', () => {
         expect.objectContaining({ nodeId: '8', type: 'workflow>MyGroup' })
       ])
     } finally {
-      extensionState.rootGraph.nodes = []
+      vi.mocked(app).rootGraph = fromAny({ extra: {}, nodes: [] })
     }
   })
 
   it('does not reinterpret reports appended by concurrent extensions', async () => {
-    const ext = extensionState.ext
-    if (!ext?.beforeConfigureGraph || !ext.afterConfigureGraph) {
+    const ext = groupNodeExtension
+    if (!ext.beforeConfigureGraph || !ext.afterConfigureGraph) {
       throw new Error('extension not registered')
     }
     const missingNodeTypes: MissingNodeType[] = []
@@ -497,7 +477,7 @@ describe('group node extension beforeConfigureGraph', () => {
         }
       }
     })
-    extensionState.rootGraph.nodes = [{ id: 7 }]
+    vi.mocked(app).rootGraph = fromAny({ extra: {}, nodes: [{ id: 7 }] })
 
     try {
       await ext.beforeConfigureGraph(
@@ -515,14 +495,14 @@ describe('group node extension beforeConfigureGraph', () => {
         })
       ])
     } finally {
-      extensionState.rootGraph.nodes = []
+      vi.mocked(app).rootGraph = fromAny({ extra: {}, nodes: [] })
       spy.mockRestore()
     }
   })
 
   it('skips stray conversion while configuring and converts afterwards', async () => {
-    const ext = extensionState.ext
-    if (!ext?.nodeCreated) throw new Error('extension not registered')
+    const ext = groupNodeExtension
+    if (!ext.nodeCreated) throw new Error('extension not registered')
     const convertToNodes = vi.fn(() => [])
     const isGroupNode = vi
       .spyOn(GroupNodeHandler, 'isGroupNode')
@@ -537,15 +517,15 @@ describe('group node extension beforeConfigureGraph', () => {
     pastedNode.graph = graph
 
     try {
-      extensionState.configuringGraph = true
+      vi.mocked(app).configuringGraph = true
       ext.nodeCreated(failedLoadNode, fromPartial({}))
-      extensionState.configuringGraph = false
+      vi.mocked(app).configuringGraph = false
       ext.nodeCreated(pastedNode, fromPartial({}))
       await Promise.resolve()
 
       expect(convertToNodes).toHaveBeenCalledOnce()
     } finally {
-      extensionState.configuringGraph = false
+      vi.mocked(app).configuringGraph = false
       isGroupNode.mockRestore()
       getHandler.mockRestore()
     }
