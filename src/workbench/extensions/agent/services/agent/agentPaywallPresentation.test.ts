@@ -31,6 +31,7 @@ describe('resolveAgentPaywallPresentation', () => {
   ])('maps the ready server pair for $name', (testCase) => {
     expect(
       resolveAgentPaywallPresentation({
+        distribution: 'cloud',
         role: 'owner',
         tier: 'STANDARD',
         canTopUp: testCase.canTopUp,
@@ -52,6 +53,7 @@ describe('resolveAgentPaywallPresentation', () => {
     ({ tier, showUpgrade }) => {
       expect(
         resolveAgentPaywallPresentation({
+          distribution: 'cloud',
           role: 'owner',
           tier,
           canTopUp: true,
@@ -61,14 +63,45 @@ describe('resolveAgentPaywallPresentation', () => {
     }
   )
 
-  it('keeps the member override ahead of the server pair', () => {
+  it('keeps members without billing permissions actionless', () => {
     expect(
       resolveAgentPaywallPresentation({
+        distribution: 'cloud',
         role: 'member',
         tier: 'STANDARD',
-        canTopUp: true,
-        canSubscribeSelfServe: true
+        canTopUp: false,
+        canSubscribeSelfServe: false
       })
     ).toEqual({ kind: 'member' })
+    expect(
+      resolveAgentPaywallPresentation({
+        distribution: 'local',
+        role: 'owner',
+        tier: null,
+        canTopUp: true,
+        canSubscribeSelfServe: false
+      })
+    ).toEqual({ kind: 'local' })
   })
+
+  it.for([
+    {
+      distribution: 'cloud' as const,
+      expected: { kind: 'subscribed', showUpgrade: false }
+    },
+    { distribution: 'local' as const, expected: { kind: 'local' } }
+  ])(
+    'respects a member top-up capability on $distribution',
+    ({ distribution, expected }) => {
+      expect(
+        resolveAgentPaywallPresentation({
+          distribution,
+          role: 'member',
+          tier: 'TEAM',
+          canTopUp: true,
+          canSubscribeSelfServe: false
+        })
+      ).toEqual(expected)
+    }
+  )
 })

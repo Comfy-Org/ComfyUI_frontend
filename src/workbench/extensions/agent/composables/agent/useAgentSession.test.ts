@@ -1,4 +1,7 @@
-import type { AgentAdmissionError } from '@comfyorg/ingest-types'
+import type {
+  AgentAdmissionError,
+  UploadImageResponse
+} from '@comfyorg/ingest-types'
 import { createPinia, setActivePinia } from 'pinia'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -13,8 +16,7 @@ import type {
   AgentRunModePreference,
   AgentThreadSummary,
   AgentTurnAccepted,
-  TurnId,
-  UploadImageResult
+  TurnId
 } from '../../schemas/agentApiSchema'
 import {
   zAgentAdmissionError,
@@ -64,7 +66,7 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
       async (): Promise<AgentAnswerAccepted> => ({ status: 'answered' })
     ),
     uploadImage: vi.fn(
-      async (): Promise<UploadImageResult> => ({
+      async (): Promise<UploadImageResponse> => ({
         name: 'n',
         subfolder: '',
         type: 'input'
@@ -554,7 +556,13 @@ describe('useAgentSession (v1 composition root)', () => {
       {
         role: 'assistant',
         streaming: false,
-        parts: [{ type: 'paywall' }]
+        parts: [
+          {
+            type: 'paywall',
+            message:
+              "You're out of credits. Add credits to keep running the agent."
+          }
+        ]
       }
     ])
     expect(session.threadId.value).toBeNull()
@@ -631,7 +639,7 @@ describe('useAgentSession (v1 composition root)', () => {
       workflow: {
         current: () => undefined,
         adopted: () => {},
-        draft: () => ({ content: { nodes: [] }, version: 1 })
+        draft: () => ({ content: { nodes: [] } })
       }
     })
     session.start()
@@ -643,6 +651,37 @@ describe('useAgentSession (v1 composition root)', () => {
       parts: [{ type: 'notice', level: 'error', text: message }]
     })
   })
+
+  it.for([
+    { reason: 'no_funds' as const, status: 500 },
+    { reason: 'funds_unavailable' as const, status: 402 }
+  ])(
+    'rejects a mismatched admission status for $reason',
+    async ({ reason, status }) => {
+      const valid = admissionError(reason, 'Server denial')
+      const session = useAgentSession({
+        rest: fakeRest({
+          postMessage: vi
+            .fn()
+            .mockRejectedValue(
+              new AgentApiError(valid.message, status, valid.body)
+            )
+        }),
+        events: fakeEvents().source
+      })
+      session.start()
+      expect(await session.sendMessage('try again')).toBe(false)
+      expect(session.entries.value.at(-1)).toMatchObject({
+        parts: [
+          {
+            type: 'notice',
+            level: 'error',
+            text: 'Message failed to send: Server denial'
+          }
+        ]
+      })
+    }
+  )
 
   it('carries retryAfterSeconds through on a funds_unavailable denial so the UI can honour Retry-After', async () => {
     const message = 'Billing status is temporarily unavailable; please retry.'
@@ -998,6 +1037,27 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('explain', undefined, tags)
     const body = vi.mocked(rest.postMessage).mock.calls[0][1]
     expect(body.selection).toEqual({ node_ids: ['5', '6'] })
+  })
+
+  it('(h2b) identifies the workflow that owns the selected nodes', async () => {
+    const rest = fakeRest()
+    const session = useAgentSession({ rest, events: fakeEvents().source })
+    const tags: SelectedNode[] = [{ id: '5', title: 'KSampler' }]
+    session.start()
+
+    await session.sendMessage(
+      'explain',
+      undefined,
+      tags,
+      undefined,
+      () => 'wf-selected'
+    )
+
+    const body = vi.mocked(rest.postMessage).mock.calls[0][1]
+    expect(body.selection).toEqual({
+      node_ids: ['5'],
+      workflow_id: 'wf-selected'
+    })
   })
 
   it('(h3) sends workflow references separately and keeps them in the local turn', async () => {

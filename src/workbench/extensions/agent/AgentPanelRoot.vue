@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import './agentPanel.css'
 
+import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
 import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
@@ -25,11 +26,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import {
-  fetchDroppedAsset,
-  getDroppedAsset,
-  hasVideoType
-} from '@/utils/eventUtils'
+import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -56,18 +53,20 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
+import { isCloud } from '@/platform/distribution/types'
 import { parseNodeId } from '@/types/nodeId'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   adoptSharedOnboardingFlag,
   hasSeenCoach,
   scopedOnboardingKey,
   trackCoachDeferral
 } from './composables/agent/useOnboarding'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
@@ -102,12 +101,14 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
-import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
+import {
+  DEFAULT_AGENT_PAYWALL_PRESENTATION,
+  resolveAgentPaywallPresentation
+} from './services/agent/agentPaywallPresentation'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
@@ -134,25 +135,20 @@ watch(
   (hasFunds) => conversationStore.setPaywallsResolved(hasFunds === true),
   { immediate: true }
 )
-const {
-  canTopUp,
-  canSubscribeSelfServe,
-  isReady: billingCapabilitiesReady
-} = useBillingCapabilities()
-const paywallPresentation = computed(() =>
-  resolveAgentPaywallPresentation({
+const { canTopUp, canSubscribeSelfServe, hasResolvedCapabilities } =
+  useBillingCapabilities()
+const paywallPresentation = computed(() => {
+  if (isCloud && !hasResolvedCapabilities.value && !canTopUp.value) {
+    return DEFAULT_AGENT_PAYWALL_PRESENTATION
+  }
+  return resolveAgentPaywallPresentation({
+    distribution: isCloud ? 'cloud' : 'local',
     role: workspaceRole.value,
     tier: subscriptionTier.value,
-    // The initial false/false pair is not an authoritative sales-managed
-    // result while the shared capability source initializes in the background.
-    canTopUp: billingCapabilitiesReady.value
-      ? canTopUp.value
-      : workspaceRole.value === 'owner',
-    canSubscribeSelfServe: billingCapabilitiesReady.value
-      ? canSubscribeSelfServe.value
-      : workspaceRole.value === 'owner'
+    canTopUp: canTopUp.value,
+    canSubscribeSelfServe: canSubscribeSelfServe.value
   })
-)
+})
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
@@ -1039,7 +1035,10 @@ const { submit: onSend } = useAgentDraftSubmission({
       attachment_count: attachments.length,
       node_tag_count: nodes.length
     })
-    return sendMessage(text, attachments, nodes, references)
+    const selectionWorkflow = selectedTarget.value
+    return sendMessage(text, attachments, nodes, references, () =>
+      selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined
+    )
   },
   stop: stopTurn
 })
@@ -1173,24 +1172,33 @@ function onSelectNodes(): void {
 }
 
 const assetsStore = useAssetsStore()
+let inputAssetRefresh: Promise<unknown> = Promise.resolve()
 
 const attachment = useAttachment({
-  upload: async (file) => {
-    const uploaded = await rest.uploadImage(file, file.name)
-    // The library caches input assets; without this refresh a just-uploaded
-    // file is neither listed in the Assets tab nor mentionable this session.
-    void assetsStore.inputAssets.loadNew()
-    return { ref: uploaded.name }
+  upload: async (file, signal) => {
+    const uploaded = await rest.uploadImage(file, file.name, signal)
+    const filename = uploaded.name ?? file.name
+    return {
+      ref: filename,
+      url: api.apiURL(
+        `/view?filename=${encodeURIComponent(filename)}&type=input`
+      )
+    }
   },
-  maxBytes: (file) => {
-    const serverLimit = api.getServerFeature(
-      'max_upload_size',
-      MAX_ATTACHMENT_BYTES
-    )
-    return hasVideoType(file)
-      ? serverLimit
-      : Math.min(MAX_ATTACHMENT_BYTES, serverLimit)
+  // The library caches input assets; without this refresh a just-uploaded file
+  // is neither listed in the Assets tab nor mentionable this session. One run
+  // per settled batch, chained, because the query queue coalesces an
+  // overlapping refresh into the in-flight one instead of scheduling a
+  // trailing pass.
+  onUploaded: () => {
+    inputAssetRefresh = inputAssetRefresh
+      .then(() => assetsStore.inputAssets.loadNew())
+      .catch(() => undefined)
   },
+  maxBytes: () =>
+    api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
+      'max_upload_size'
+    ) ?? MAX_ATTACHMENT_BYTES,
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
   onError: (message) =>
@@ -1199,6 +1207,8 @@ const attachment = useAttachment({
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment
 })
+
+onBeforeUnmount(() => attachment.cancelAllUploads())
 
 function onAttach(): void {
   exitNodeSelectionMode()
@@ -1286,11 +1296,11 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
     return
   }
 
-  const file = await attachment.addDeferredFile(asset.name, async () => {
+  const result = await attachment.addDeferredFile(asset.name, async () => {
     const file = await fetchDroppedAsset(asset)
     return file && isAgentAttachable(file) ? file : undefined
   })
-  if (!file)
+  if (result === 'unsupported')
     toast.add({
       severity: 'warn',
       detail: t('agent.assetNotAttachable'),
