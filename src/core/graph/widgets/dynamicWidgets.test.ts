@@ -686,9 +686,9 @@ function dynamicCombo(
   )
   if (realizedKeys.length !== declaredKeys.length)
     throw new Error(`Duplicate option keys: ${declaredKeys.join(', ')}`)
-  if (realizedKeys[0] !== defaultOption[0])
+  if (realizedKeys.some((key, index) => key !== declaredKeys[index]))
     throw new Error(
-      `Applying the combo would order option '${realizedKeys[0]}' ahead of '${defaultOption[0]}', changing which option is the default.`
+      `Applying the combo would order options as [${realizedKeys.join(', ')}] instead of [${declaredKeys.join(', ')}].`
     )
 
   return [
@@ -707,7 +707,10 @@ describe('dynamicCombo fixture builder', () => {
     const option = (key: string): ComboOption => [key, {}]
 
     expect(() => dynamicCombo(option('Seedance'), option('0'))).toThrow(
-      /ahead of 'Seedance'/
+      /\[0, Seedance\] instead of \[Seedance, 0\]/
+    )
+    expect(() => dynamicCombo(option('0'), option('2'), option('1'))).toThrow(
+      /\[0, 1, 2\] instead of \[0, 2, 1\]/
     )
     expect(() => dynamicCombo(option('a'), option('b'), option('a'))).toThrow(
       /Duplicate option keys/
