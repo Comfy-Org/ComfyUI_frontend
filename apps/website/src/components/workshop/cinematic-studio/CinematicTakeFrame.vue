@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import { failureLabelKey } from '../../../lib/workshop/failure-label'
 import type { Locale } from '../../../i18n/translations'
@@ -27,14 +29,24 @@ function statusText(take: Take) {
 
 <template>
   <figure
-    class="group relative flex max-w-full items-center justify-center overflow-hidden rounded-md bg-transparency-white-t4"
-    :style="framedStyle(current.aspect, height)"
+    :class="
+      cn(
+        'group relative flex max-w-full items-center justify-center overflow-hidden rounded-md',
+        current.status !== 'done' && 'bg-transparency-white-t4'
+      )
+    "
+    :style="
+      current.status === 'done'
+        ? undefined
+        : framedStyle(current.aspect, height)
+    "
   >
     <img
       v-if="current.status === 'done'"
       :src="current.output.url"
       :alt="current.prompt"
-      class="size-full object-contain"
+      class="block h-auto w-auto max-w-full"
+      :style="{ maxHeight: height }"
     />
     <figcaption
       v-else

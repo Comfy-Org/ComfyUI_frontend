@@ -178,10 +178,6 @@ const chipClass = (key: PopoverKey) =>
             aria-hidden="true"
           />
         </CinematicMenu>
-        <span
-          class="mx-0.5 h-5 w-px shrink-0 bg-transparency-white-t20"
-          aria-hidden="true"
-        />
         <button
           type="button"
           aria-haspopup="dialog"

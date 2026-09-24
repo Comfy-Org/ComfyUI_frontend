@@ -57,7 +57,12 @@ const modelName = computed(
       <h1 class="sr-only">{{ tc('cinematic.title', locale) }}</h1>
       <div
         class="flex max-w-5xl flex-col gap-3"
-        :style="{ width: framedStyle(current.aspect, FRAME_HEIGHT).width }"
+        :style="{
+          width:
+            current.status === 'done'
+              ? 'fit-content'
+              : framedStyle(current.aspect, FRAME_HEIGHT).width
+        }"
       >
         <CinematicTakeFrame :current :height="FRAME_HEIGHT" :locale>
           <div
