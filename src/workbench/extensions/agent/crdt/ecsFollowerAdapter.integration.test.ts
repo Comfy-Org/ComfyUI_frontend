@@ -828,6 +828,73 @@ describe('EcsFollowerAdapter integration', () => {
     }
   })
 
+  it('keeps retry provenance from the frame that started the rejection episode', () => {
+    vi.useFakeTimers()
+    try {
+      let scopeAvailable = true
+      const deleteLayouts = vi.fn()
+      const mutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => (scopeAvailable ? scope : null),
+        layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
+      })
+      mutations.addNode(
+        { id: 99, type: 'Sink', inputs: [], outputs: [] },
+        { source: 'agent-remote', actor: 'seed', opId: 'seed' }
+      )
+      const host = mint({ nodes: [], links: [] }, catalog)
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+
+      scopeAvailable = false
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 7,
+          update,
+          actor: 'agent:first-frame',
+          opIds: ['first-op']
+        })
+      ).toBe(false)
+      expect(
+        adapter.applyFrame({
+          workflowId: 'wf',
+          seq: 8,
+          update,
+          actor: 'agent:later-frame',
+          opIds: ['later-op']
+        })
+      ).toBe(false)
+
+      scopeAvailable = true
+      vi.advanceTimersByTime(200)
+
+      expect(deleteLayouts).toHaveBeenCalledWith(
+        scope,
+        [toNodeId(99)],
+        expect.objectContaining({
+          actor: 'agent:first-frame',
+          opId: 'first-op',
+          opIds: ['first-op']
+        })
+      )
+      expect(deleteLayouts).not.toHaveBeenCalledWith(
+        scope,
+        [toNodeId(99)],
+        expect.objectContaining({ actor: 'agent:later-frame' })
+      )
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it.for(['clearForReset', 'discardPending', 'unbind'] as const)(
     'a no-scope retry armed before %s cannot mutate or callback after it',
     (lifecycleAction) => {
