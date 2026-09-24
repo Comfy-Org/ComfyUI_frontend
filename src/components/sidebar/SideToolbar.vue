@@ -6,20 +6,25 @@
     :aria-hidden="isHidden"
     :class="
       cn(
-        'side-tool-bar-container flex h-full flex-col items-center overflow-hidden bg-transparent transition-[max-width,opacity,transform] duration-300 ease-in-out [.floating-sidebar]:-mr-2',
+        'side-tool-bar-container flex h-full flex-col items-center bg-transparent transition-[max-width,opacity,transform] duration-300 ease-in-out',
         {
           'small-sidebar': isSmall,
           'connected-sidebar pointer-events-auto': isConnected,
-          'floating-sidebar': !isConnected,
+          'floating-sidebar py-(--comfy-canvas-gutter) [--sidebar-item-radius:var(--radius-lg)]':
+            !isConnected,
+          'ml-(--comfy-canvas-gutter)':
+            !isConnected && sidebarLocation === 'left',
+          'mr-(--comfy-canvas-gutter)':
+            !isConnected && sidebarLocation === 'right',
           'overflowing-sidebar': isOverflowing,
           'border-r border-interface-stroke/50 shadow-interface': isConnected,
-          'pointer-events-none opacity-0': isHidden,
+          'pointer-events-none overflow-hidden opacity-0': isHidden,
           '-translate-x-8': isHidden && sidebarLocation === 'left',
           'translate-x-8': isHidden && sidebarLocation === 'right'
         }
       )
     "
-    :style="{ maxWidth: isHidden ? '0px' : 'var(--sidebar-width)' }"
+    :style="{ maxWidth }"
   >
     <div
       :class="
@@ -28,7 +33,11 @@
           : 'flex h-full flex-col'
       "
     >
-      <div ref="topToolbarRef" :class="groupClasses">
+      <div
+        ref="topToolbarRef"
+        data-testid="sidebar-top-group"
+        :class="groupClasses"
+      >
         <ComfyMenuButton />
         <SidebarIcon
           v-for="tab in tabs"
@@ -151,6 +160,11 @@ const tabs = computed(() => {
 })
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
 const isHidden = computed(() => agentNodeSelectionStore.isActionBarsHidden)
+const maxWidth = computed(() => {
+  if (isHidden.value) return '0px'
+  if (isConnected.value) return 'var(--sidebar-width)'
+  return 'calc(var(--sidebar-width) + 2 * var(--sidebar-padding))'
+})
 
 /**
  * Handle sidebar tab icon click.
@@ -203,7 +217,7 @@ const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
     'sidebar-item-group flex shrink-0 flex-col items-center overflow-hidden',
-    !isConnected.value && 'pointer-events-auto rounded-lg shadow-interface'
+    !isConnected.value && 'pointer-events-auto floating-panel'
   )
 )
 
@@ -291,7 +305,7 @@ onMounted(() => {
  * but need to reference sidebar dimensions for proper positioning.
  */
 :root {
-  --sidebar-padding: 4px;
+  --sidebar-padding: var(--spacing);
   --sidebar-icon-size: 1rem;
 
   --sidebar-default-floating-width: 48px;
@@ -325,22 +339,9 @@ onMounted(() => {
 </style>
 
 <style scoped>
-.floating-sidebar {
-  padding: var(--sidebar-padding);
-}
-
-.floating-sidebar .sidebar-item-group {
-  border-color: var(--interface-stroke);
-}
-
 .connected-sidebar {
   padding: var(--sidebar-padding) 0;
   background-color: var(--comfy-menu-bg);
-}
-
-.sidebar-item-group {
-  background-color: var(--comfy-menu-bg);
-  border: 1px solid transparent;
 }
 
 .overflowing-sidebar :deep(.comfy-menu-button-wrapper) {

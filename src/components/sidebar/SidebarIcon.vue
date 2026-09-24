@@ -118,7 +118,7 @@ const computedTooltip = computed(() => {
 .side-bar-button {
   width: var(--sidebar-width);
   height: var(--sidebar-item-height);
-  border-radius: 0;
+  border-radius: var(--sidebar-item-radius, 0);
   flex-shrink: 0;
 }
 

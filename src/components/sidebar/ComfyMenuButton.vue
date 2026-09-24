@@ -338,6 +338,7 @@ function nodes2MenuItemProps({
 .comfy-menu-button-wrapper {
   width: var(--sidebar-width);
   height: var(--sidebar-item-height);
+  border-radius: var(--sidebar-item-radius, 0);
 }
 
 .comfy-menu-button-wrapper:hover {
