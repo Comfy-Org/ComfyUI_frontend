@@ -582,6 +582,7 @@ export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
 export type AgentConsentNotOfferedReason =
   | 'first_run_screen'
   | 'tour_active'
+  | 'dialog_open'
   | 'boot_undecided'
   | 'storage_unavailable'
 export interface AgentConsentNotOfferedMetadata extends Record<
