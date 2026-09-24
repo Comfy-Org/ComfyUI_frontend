@@ -245,6 +245,7 @@ test.describe(
       const customTitle = 'My Custom Sampler'
       const topbar = new Topbar(page)
       await agentConversation.runTurns()
+      await agentConversation.fitCanvasToGraph()
       const sampler =
         await agentConversation.vueNodes.getFixtureByTitle('KSampler')
       await sampler.setTitle(customTitle)
@@ -274,6 +275,7 @@ test.describe(
       const wrapper = nodes.getNodeInnerWrapper(nodeId)
       const topbar = new Topbar(page)
       await agentConversation.runTurns()
+      await agentConversation.fitCanvasToGraph()
       await nodes.selectNode(nodeId)
       const originalBackground = await wrapper.evaluate(
         (element) => getComputedStyle(element).backgroundColor

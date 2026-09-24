@@ -47,6 +47,7 @@ import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
 import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.
@@ -878,6 +879,14 @@ export class AgentConversationHarness {
     await expect(
       this.vueNodes.getNodeLocator(nodeId).getByLabel(widget, { exact: true })
     ).toHaveValue(marker)
+  }
+
+  // A recorded tab switch parks the viewport at the origin, hiding node headers above the top edge.
+  async fitCanvasToGraph(): Promise<void> {
+    await this.page.evaluate(() =>
+      window.app!.extensionManager.command.execute('Comfy.Canvas.FitView')
+    )
+    await nextFrame(this.page)
   }
 
   async switchAwayAndBack(nodeId: string, widget: string): Promise<void> {
