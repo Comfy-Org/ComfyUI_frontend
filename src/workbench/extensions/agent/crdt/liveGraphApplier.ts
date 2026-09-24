@@ -320,11 +320,11 @@ function missingNode(docNode: DocNode): LGraphNode {
 }
 
 export class LiveGraphApplier {
-  readonly #deps: LiveGraphApplierDeps
-  readonly #reported = new Set<string>()
+  private readonly deps: LiveGraphApplierDeps
+  private readonly reported = new Set<string>()
 
   constructor(deps: LiveGraphApplierDeps) {
-    this.#deps = deps
+    this.deps = deps
   }
 
   /** Applies the collected changes of one delivered frame to the live graph. */
@@ -333,25 +333,25 @@ export class LiveGraphApplier {
     changes: FrameChanges,
     context: RemoteApplyContext
   ): ApplyResult {
-    const graph = this.#deps.getGraph()
+    const graph = this.deps.getGraph()
     if (!graph) return { createdNodeIds: [] }
-    return this.#write(graph, context, () => {
+    return this.write(graph, context, () => {
       const created: NodeId[] = []
       const touchedNodes = new Set<string>()
-      this.#registerDefinitions(graph, doc)
+      this.registerDefinitions(graph, doc)
 
       for (const [id, change] of changes.nodes) {
         if (change === 'delete') {
-          this.#try(context, () => this.#deleteNode(graph, id))
+          this.try(context, () => this.deleteNode(graph, id))
           continue
         }
         touchedNodes.add(id)
-        this.#try(context, () => {
-          const result = this.#upsertNode(graph, doc, id)
+        this.try(context, () => {
+          const result = this.upsertNode(graph, doc, id)
           if (result === 'created') created.push(toNodeId(id))
           if (result === 'recreated') {
             for (const link of docLinksIncident(doc, id)) {
-              this.#connectLink(graph, doc, link)
+              this.connectLink(graph, doc, link)
             }
           }
         })
@@ -359,16 +359,16 @@ export class LiveGraphApplier {
 
       for (const id of changes.resyncNodes) {
         if (touchedNodes.has(id)) continue
-        this.#try(context, () => this.#syncFields(graph, doc, id))
+        this.try(context, () => this.syncFields(graph, doc, id))
       }
 
       for (const [id, names] of changes.widgets) {
         if (touchedNodes.has(id)) continue
-        this.#try(context, () => this.#syncWidgets(graph, doc, id, names))
+        this.try(context, () => this.syncWidgets(graph, doc, id, names))
       }
 
-      this.#applyLinks(graph, doc, [...changes.links], context)
-      this.#placeBatch(graph, created)
+      this.applyLinks(graph, doc, [...changes.links], context)
+      this.placeBatch(graph, created)
       return { createdNodeIds: created }
     })
   }
@@ -385,22 +385,20 @@ export class LiveGraphApplier {
     context: RemoteApplyContext,
     pending: PendingLocalEdits = NO_PENDING_LOCAL_EDITS
   ): ApplyResult {
-    const graph = this.#deps.getGraph()
+    const graph = this.deps.getGraph()
     if (!graph) return { createdNodeIds: [] }
-    return this.#write(graph, context, () => {
+    return this.write(graph, context, () => {
       const created: NodeId[] = []
-      this.#registerDefinitions(graph, doc)
-      this.#removeAbsentNodes(graph, doc, pending, context)
+      this.registerDefinitions(graph, doc)
+      this.removeAbsentNodes(graph, doc, pending, context)
       nodesMap(doc).forEach((_, id) => {
         if (pending.deletedNodeIds.has(id)) return
-        this.#try(context, () => {
-          if (
-            this.#upsertNode(graph, doc, id, pending.widgetKeys) === 'created'
-          )
+        this.try(context, () => {
+          if (this.upsertNode(graph, doc, id, pending.widgetKeys) === 'created')
             created.push(toNodeId(id))
         })
       })
-      this.#removeAbsentLinks(graph, doc, pending, context)
+      this.removeAbsentLinks(graph, doc, pending, context)
       const linkKeys = [...linksMap(doc).keys()].filter((key) => {
         const link = readDocLink(doc, key)
         return (
@@ -410,13 +408,13 @@ export class LiveGraphApplier {
             !pending.linkIds.has(link.id))
         )
       })
-      this.#applyLinks(graph, doc, linkKeys, context)
-      this.#placeBatch(graph, created)
+      this.applyLinks(graph, doc, linkKeys, context)
+      this.placeBatch(graph, created)
       return { createdNodeIds: created }
     })
   }
 
-  #removeAbsentNodes(
+  private removeAbsentNodes(
     graph: LGraph,
     doc: Y.Doc,
     pending: PendingLocalEdits,
@@ -427,10 +425,10 @@ export class LiveGraphApplier {
       const id = String(node.id)
       return !docNodes.has(id) && !pending.addedNodeIds.has(id)
     })
-    for (const node of absent) this.#try(context, () => graph.remove(node))
+    for (const node of absent) this.try(context, () => graph.remove(node))
   }
 
-  #removeAbsentLinks(
+  private removeAbsentLinks(
     graph: LGraph,
     doc: Y.Doc,
     pending: PendingLocalEdits,
@@ -445,14 +443,14 @@ export class LiveGraphApplier {
         !pending.addedNodeIds.has(String(link.target_id))
     )
     for (const link of absent)
-      this.#try(context, () => graph.removeLink(link.id))
+      this.try(context, () => graph.removeLink(link.id))
   }
 
   /** Empties the live graph, as a document reset replaces everything. */
   clear(context: RemoteApplyContext): void {
-    const graph = this.#deps.getGraph()
+    const graph = this.deps.getGraph()
     if (!graph) return
-    this.#write(graph, context, () => graph.clear())
+    this.write(graph, context, () => graph.clear())
   }
 
   /**
@@ -460,8 +458,8 @@ export class LiveGraphApplier {
    * a multi-step human edit emits, so the change tracker records a single
    * undo entry and flips `isModified` once.
    */
-  #write<T>(graph: LGraph, context: RemoteApplyContext, fn: () => T): T {
-    const withActor = this.#deps.withRemoteActor ?? ((_, run) => run())
+  private write<T>(graph: LGraph, context: RemoteApplyContext, fn: () => T): T {
+    const withActor = this.deps.withRemoteActor ?? ((_, run) => run())
     return withActor(context.actor, () => {
       graph.canvasAction((canvas) => canvas.emitBeforeChange())
       try {
@@ -473,7 +471,7 @@ export class LiveGraphApplier {
     })
   }
 
-  #try(context: RemoteApplyContext, fn: () => void): void {
+  private try(context: RemoteApplyContext, fn: () => void): void {
     try {
       fn()
     } catch (error) {
@@ -485,14 +483,14 @@ export class LiveGraphApplier {
     }
   }
 
-  #reportOnce(
+  private reportOnce(
     key: string,
     message: string,
     errorType: string,
     context: Record<string, unknown>
   ): void {
-    if (this.#reported.has(key)) return
-    this.#reported.add(key)
+    if (this.reported.has(key)) return
+    this.reported.add(key)
     reportError(new Error(message), {
       errorType,
       tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
@@ -500,7 +498,7 @@ export class LiveGraphApplier {
     })
   }
 
-  #registerDefinitions(graph: LGraph, doc: Y.Doc): void {
+  private registerDefinitions(graph: LGraph, doc: Y.Doc): void {
     const rootGraph = graph.rootGraph
     const missing = allSubgraphDefinitions(readSubgraphDefinitions(doc))
       .map((definition) => ({ ...definition, definitions: undefined }))
@@ -508,11 +506,11 @@ export class LiveGraphApplier {
     for (const definition of topologicalSortSubgraphs(missing)) {
       const failure = tryCreateSubgraph(rootGraph, definition)
       if (failure === undefined) {
-        this.#reported.delete(`definition:${definition.id}`)
+        this.reported.delete(`definition:${definition.id}`)
         continue
       }
-      if (this.#reported.has(`definition:${definition.id}`)) continue
-      this.#reported.add(`definition:${definition.id}`)
+      if (this.reported.has(`definition:${definition.id}`)) continue
+      this.reported.add(`definition:${definition.id}`)
       reportError(failure, {
         errorType: 'agent_subgraph_definitions_failed',
         tags: { ...AGENT_APPLY_TAGS, outcome: 'degraded' },
@@ -521,31 +519,31 @@ export class LiveGraphApplier {
     }
   }
 
-  #deleteNode(graph: LGraph, id: string): void {
+  private deleteNode(graph: LGraph, id: string): void {
     const node = graph.getNodeById(toNodeId(id))
     if (node) graph.remove(node)
   }
 
-  #upsertNode(
+  private upsertNode(
     graph: LGraph,
     doc: Y.Doc,
     id: string,
     pendingWidgetKeys: ReadonlySet<string> = new Set()
   ): 'created' | 'recreated' | 'updated' | 'skipped' {
-    const docNode = this.#readDocNode(doc, id)
+    const docNode = this.readDocNode(doc, id)
     if (!docNode) return 'skipped'
     const live = graph.getNodeById(toNodeId(id))
     if (live && live.type === docNode.type) {
-      this.#applyFields(live, docNode)
-      this.#applyWidgets(live, docNode.widgets, pendingWidgetKeys)
+      this.applyFields(live, docNode)
+      this.applyWidgets(live, docNode.widgets, pendingWidgetKeys)
       return 'updated'
     }
     if (live) graph.remove(live)
-    this.#createNode(graph, docNode)
+    this.createNode(graph, docNode)
     return live ? 'recreated' : 'created'
   }
 
-  #createNode(graph: LGraph, docNode: DocNode): LGraphNode {
+  private createNode(graph: LGraph, docNode: DocNode): LGraphNode {
     const node =
       LiteGraph.createNode(docNode.type, docNode.serialised.title) ??
       missingNode(docNode)
@@ -563,7 +561,7 @@ export class LiveGraphApplier {
     node.pos = [info.pos[0], info.pos[1]]
     graph.add(node)
     if (node.id !== toNodeId(docNode.id)) {
-      this.#reportOnce(
+      this.reportOnce(
         `node-id:${docNode.id}`,
         `Live graph reminted node ${docNode.id} as ${String(node.id)}`,
         'agent_graph_node_id_reminted',
@@ -582,7 +580,7 @@ export class LiveGraphApplier {
     return node
   }
 
-  #applyFields(node: LGraphNode, docNode: DocNode): void {
+  private applyFields(node: LGraphNode, docNode: DocNode): void {
     const source = docNode.serialised
     if (source.title !== undefined && node.title !== source.title)
       node.title = source.title
@@ -595,14 +593,14 @@ export class LiveGraphApplier {
     applyAppearance(node, source)
   }
 
-  #readDocNode(doc: Y.Doc, id: string): DocNode | null {
+  private readDocNode(doc: Y.Doc, id: string): DocNode | null {
     const read = readDocNode(doc, id)
     if (read === null) return null
     if (!('malformed' in read)) {
-      this.#reported.delete(`node-shape:${id}`)
+      this.reported.delete(`node-shape:${id}`)
       return read
     }
-    this.#reportOnce(
+    this.reportOnce(
       `node-shape:${id}`,
       `Document node ${id} is malformed: ${read.malformed}`,
       'agent_graph_node_malformed',
@@ -611,29 +609,29 @@ export class LiveGraphApplier {
     return null
   }
 
-  #syncFields(graph: LGraph, doc: Y.Doc, id: string): void {
-    const docNode = this.#readDocNode(doc, id)
+  private syncFields(graph: LGraph, doc: Y.Doc, id: string): void {
+    const docNode = this.readDocNode(doc, id)
     const node = graph.getNodeById(toNodeId(id))
     if (!docNode || !node || node.type !== docNode.type) return
-    this.#applyFields(node, docNode)
+    this.applyFields(node, docNode)
   }
 
-  #syncWidgets(
+  private syncWidgets(
     graph: LGraph,
     doc: Y.Doc,
     id: string,
     names: ReadonlySet<string> | 'all'
   ): void {
-    const docNode = this.#readDocNode(doc, id)
+    const docNode = this.readDocNode(doc, id)
     const node = graph.getNodeById(toNodeId(id))
     if (!docNode || !node || node.type !== docNode.type) return
     const widgets = docNode.widgets
     if (names === 'all' || Array.isArray(widgets)) {
-      this.#applyWidgets(node, widgets)
+      this.applyWidgets(node, widgets)
       return
     }
     if (!widgets) return
-    this.#applyWidgets(
+    this.applyWidgets(
       node,
       Object.fromEntries(
         Object.entries(widgets).filter(([name]) => names.has(name))
@@ -641,14 +639,14 @@ export class LiveGraphApplier {
     )
   }
 
-  #applyWidgets(
+  private applyWidgets(
     node: LGraphNode,
     widgets: DocNode['widgets'],
     pendingWidgetKeys: ReadonlySet<string> = new Set()
   ): void {
     if (widgets === undefined) return
     if (node.isSubgraphNode()) {
-      this.#applyHostWidgets(node, widgets)
+      this.applyHostWidgets(node, widgets)
       return
     }
     const entries = Array.isArray(widgets)
@@ -662,7 +660,7 @@ export class LiveGraphApplier {
       if (pendingWidgetKeys.has(widgetKey(node.id, name))) continue
       const widget = node.widgets?.find((candidate) => candidate.name === name)
       if (!widget) {
-        this.#reportOnce(
+        this.reportOnce(
           `widget:${String(node.id)}:${name}`,
           `Node ${String(node.id)} (${node.type}) has no widget '${name}'`,
           'agent_graph_widget_missing',
@@ -670,14 +668,17 @@ export class LiveGraphApplier {
         )
         continue
       }
-      this.#setWidgetValue(node, widget, value)
+      this.setWidgetValue(node, widget, value)
     }
   }
 
-  #applyHostWidgets(node: LGraphNode, widgets: DocNode['widgets']): void {
+  private applyHostWidgets(
+    node: LGraphNode,
+    widgets: DocNode['widgets']
+  ): void {
     const promoted = node.inputs.filter((input) => input.widgetId)
     if (Array.isArray(widgets) && widgets.length !== promoted.length) {
-      this.#reportOnce(
+      this.reportOnce(
         `host-widgets:${String(node.id)}:${widgets.length}`,
         `Subgraph host ${String(node.id)} carries ${widgets.length} opaque widget values for ${promoted.length} promoted widgets`,
         'agent_graph_host_widgets_mismatch',
@@ -690,7 +691,7 @@ export class LiveGraphApplier {
       if (!isWidgetValue(value)) continue
       const widgetId = promoted.find((input) => input.name === name)?.widgetId
       if (!widgetId) {
-        this.#reportOnce(
+        this.reportOnce(
           `widget:${String(node.id)}:${name}`,
           `Subgraph host ${String(node.id)} (${node.type}) promotes no widget '${name}'`,
           'agent_graph_widget_missing',
@@ -703,12 +704,16 @@ export class LiveGraphApplier {
     node.graph?.incrementVersion()
   }
 
-  #setWidgetValue(node: LGraphNode, widget: IBaseWidget, value: WidgetValue) {
+  private setWidgetValue(
+    node: LGraphNode,
+    widget: IBaseWidget,
+    value: WidgetValue
+  ) {
     if (widget.type === 'button' || Object.is(widget.value, value)) return
     const previous = widget.value
     const rollback = writeWidgetValue(node, widget, value)
     try {
-      widget.callback?.(value, this.#deps.getCanvas?.() ?? undefined, node)
+      widget.callback?.(value, this.deps.getCanvas?.() ?? undefined, node)
       node.onWidgetChanged?.(widget.name, value, previous, widget)
     } catch (error) {
       rollback()
@@ -717,7 +722,7 @@ export class LiveGraphApplier {
     node.graph?.incrementVersion()
   }
 
-  #applyLinks(
+  private applyLinks(
     graph: LGraph,
     doc: Y.Doc,
     keys: readonly string[],
@@ -729,18 +734,18 @@ export class LiveGraphApplier {
       if (!link) {
         const id = parseLinkId(key)
         if (id !== undefined)
-          this.#try(context, () => graph.removeLink(toLinkId(id)))
+          this.try(context, () => graph.removeLink(toLinkId(id)))
         continue
       }
-      this.#try(context, () => {
-        if (this.#connectLink(graph, doc, link) === 'unresolved')
+      this.try(context, () => {
+        if (this.connectLink(graph, doc, link) === 'unresolved')
           retry.push(link)
       })
     }
     for (const link of retry) {
-      this.#try(context, () => {
-        if (this.#connectLink(graph, doc, link) !== 'connected') {
-          this.#reportOnce(
+      this.try(context, () => {
+        if (this.connectLink(graph, doc, link) !== 'connected') {
+          this.reportOnce(
             `link:${link.id}`,
             `Link ${link.id} (node ${link.origin} slot ${link.originSlot} -> node ${link.target} slot ${link.targetSlot}) could not be connected on the live graph`,
             'agent_graph_link_unresolved',
@@ -751,7 +756,7 @@ export class LiveGraphApplier {
     }
   }
 
-  #connectLink(
+  private connectLink(
     graph: LGraph,
     doc: Y.Doc,
     link: DocLink
@@ -784,7 +789,7 @@ export class LiveGraphApplier {
     return created ? 'connected' : 'refused'
   }
 
-  #placeBatch(graph: LGraph, created: readonly NodeId[]): void {
+  private placeBatch(graph: LGraph, created: readonly NodeId[]): void {
     if (created.length === 0) return
     const createdSet = new Set(created)
     const rect = (node: LGraphNode): PlacementRect => ({
@@ -798,7 +803,7 @@ export class LiveGraphApplier {
       existing: graph._nodes
         .filter((node) => !createdSet.has(node.id))
         .map(rect),
-      viewport: this.#deps.viewportBounds?.() ?? null,
+      viewport: this.deps.viewportBounds?.() ?? null,
       incoming: incoming.map(rect)
     })
     if (!offset) return

@@ -15,91 +15,91 @@ import { SYNCED_NODE_FIELDS } from './liveGraphApplier'
  * update sees exactly that update's changes.
  */
 export class DocChangeCollector {
-  readonly #nodes = new Map<string, NodeChange>()
-  readonly #widgets = new Map<string, Set<string> | 'all'>()
-  readonly #resyncNodes = new Set<string>()
-  readonly #links = new Set<string>()
-  readonly #nodesMap: Y.Map<Y.Map<unknown>>
-  readonly #linksMap: Y.Map<unknown>
+  private readonly nodes = new Map<string, NodeChange>()
+  private readonly widgets = new Map<string, Set<string> | 'all'>()
+  private readonly resyncNodes = new Set<string>()
+  private readonly links = new Set<string>()
+  private readonly nodesMap: Y.Map<Y.Map<unknown>>
+  private readonly linksMap: Y.Map<unknown>
 
   constructor(doc: Y.Doc) {
-    this.#nodesMap = nodesMap(doc)
-    this.#linksMap = linksMap(doc)
-    this.#nodesMap.observeDeep(this.#onNodesChanged)
-    this.#linksMap.observe(this.#onLinksChanged)
+    this.nodesMap = nodesMap(doc)
+    this.linksMap = linksMap(doc)
+    this.nodesMap.observeDeep(this.onNodesChanged)
+    this.linksMap.observe(this.onLinksChanged)
   }
 
   /** Returns and clears everything collected so far. */
   take(): FrameChanges {
     const changes: FrameChanges = {
-      nodes: new Map(this.#nodes),
-      widgets: new Map(this.#widgets),
-      resyncNodes: new Set(this.#resyncNodes),
-      links: new Set(this.#links)
+      nodes: new Map(this.nodes),
+      widgets: new Map(this.widgets),
+      resyncNodes: new Set(this.resyncNodes),
+      links: new Set(this.links)
     }
     this.discard()
     return changes
   }
 
   discard(): void {
-    this.#nodes.clear()
-    this.#widgets.clear()
-    this.#resyncNodes.clear()
-    this.#links.clear()
+    this.nodes.clear()
+    this.widgets.clear()
+    this.resyncNodes.clear()
+    this.links.clear()
   }
 
   destroy(): void {
-    this.#nodesMap.unobserveDeep(this.#onNodesChanged)
-    this.#linksMap.unobserve(this.#onLinksChanged)
+    this.nodesMap.unobserveDeep(this.onNodesChanged)
+    this.linksMap.unobserve(this.onLinksChanged)
     this.discard()
   }
 
-  readonly #onNodesChanged = (
+  private readonly onNodesChanged = (
     events: Y.YEvent<Y.AbstractType<unknown>>[]
   ): void => {
     for (const event of events) {
-      if (event instanceof Y.YArrayEvent) this.#onOpaqueWidgetsChanged(event)
-      else if (event instanceof Y.YMapEvent) this.#onNodeMapChanged(event)
+      if (event instanceof Y.YArrayEvent) this.onOpaqueWidgetsChanged(event)
+      else if (event instanceof Y.YMapEvent) this.onNodeMapChanged(event)
     }
   }
 
-  #onNodeMapChanged(event: Y.YMapEvent<unknown>): void {
-    if (event.target === this.#nodesMap) this.#onNodeEntriesChanged(event)
-    else if (event.path.length === 1) this.#onNodeFieldsChanged(event)
-    else if (event.path[1] === 'widgets') this.#onNamedWidgetsChanged(event)
+  private onNodeMapChanged(event: Y.YMapEvent<unknown>): void {
+    if (event.target === this.nodesMap) this.onNodeEntriesChanged(event)
+    else if (event.path.length === 1) this.onNodeFieldsChanged(event)
+    else if (event.path[1] === 'widgets') this.onNamedWidgetsChanged(event)
   }
 
-  #onOpaqueWidgetsChanged(event: Y.YArrayEvent<unknown>): void {
+  private onOpaqueWidgetsChanged(event: Y.YArrayEvent<unknown>): void {
     if (event.path.length === 2 && event.path[1] === OPAQUE_WIDGETS_KEY)
-      this.#widgets.set(String(event.path[0]), 'all')
+      this.widgets.set(String(event.path[0]), 'all')
   }
 
-  #onNodeEntriesChanged(event: Y.YMapEvent<unknown>): void {
+  private onNodeEntriesChanged(event: Y.YMapEvent<unknown>): void {
     for (const [id, change] of event.changes.keys)
-      this.#nodes.set(id, change.action)
+      this.nodes.set(id, change.action)
   }
 
-  #onNamedWidgetsChanged(event: Y.YMapEvent<unknown>): void {
+  private onNamedWidgetsChanged(event: Y.YMapEvent<unknown>): void {
     const id = String(event.path[0])
-    const current = this.#widgets.get(id)
+    const current = this.widgets.get(id)
     if (current === 'all') return
     const names = current ?? new Set<string>()
     for (const name of event.keysChanged) names.add(name)
-    this.#widgets.set(id, names)
+    this.widgets.set(id, names)
   }
 
-  #onNodeFieldsChanged(event: Y.YMapEvent<unknown>): void {
+  private onNodeFieldsChanged(event: Y.YMapEvent<unknown>): void {
     const id = String(event.path[0])
     if (
       event.keysChanged.has('widgets') ||
       event.keysChanged.has(OPAQUE_WIDGETS_KEY)
     )
-      this.#widgets.set(id, 'all')
+      this.widgets.set(id, 'all')
     if ([...event.keysChanged].some((key) => SYNCED_NODE_FIELDS.has(key)))
-      this.#resyncNodes.add(id)
+      this.resyncNodes.add(id)
   }
 
-  readonly #onLinksChanged = (event: Y.YMapEvent<unknown>): void => {
-    for (const id of event.keysChanged) this.#links.add(id)
+  private readonly onLinksChanged = (event: Y.YMapEvent<unknown>): void => {
+    for (const id of event.keysChanged) this.links.add(id)
   }
 }
