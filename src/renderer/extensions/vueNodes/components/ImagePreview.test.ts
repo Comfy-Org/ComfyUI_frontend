@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/vue'
+import { render, screen, fireEvent, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -113,7 +113,7 @@ describe('ImagePreview', () => {
                   (props.activeIndex as number | null | undefined) ?? null
               })
             },
-            template: '<div />'
+            template: '<div data-testid="media-lightbox" />'
           },
           'i-lucide:venetian-mask': true,
           'i-lucide:download': true,
@@ -141,6 +141,14 @@ describe('ImagePreview', () => {
     renderImagePreview({ images: [] })
 
     expect(screen.queryByTestId('image-preview')).not.toBeInTheDocument()
+  })
+
+  it('nests the lightbox inside the preview root, keeping the node single-rooted', () => {
+    renderImagePreview()
+
+    const preview = screen.getByTestId('image-preview')
+
+    expect(within(preview).getByTestId('media-lightbox')).toBeInTheDocument()
   })
 
   it('offers the HDR viewer instead of an <img> for exr outputs', () => {

@@ -224,8 +224,12 @@
         @click="setCurrentIndex(index)"
       />
     </div>
+
+    <MediaLightbox
+      v-model:active-index="lightboxIndex"
+      :items="lightboxItems"
+    />
   </div>
-  <MediaLightbox v-model:active-index="lightboxIndex" :items="lightboxItems" />
 </template>
 
 <script setup lang="ts">
