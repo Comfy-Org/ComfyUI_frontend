@@ -1382,6 +1382,70 @@ describe('Composer', () => {
     }
   )
 
+  it.for([
+    {
+      direction: 'ArrowLeft',
+      key: '{ArrowLeft}',
+      insertedText: 'again ',
+      expectedText:
+        'again Before Unsaved Workflow between Unsaved Workflow (2) after',
+      expectedOffsets: [13, 22] as const
+    },
+    {
+      direction: 'ArrowRight',
+      key: '{ArrowRight}',
+      insertedText: ' again',
+      expectedText:
+        'Before Unsaved Workflow between Unsaved Workflow (2) after again',
+      expectedOffsets: [7, 16] as const
+    }
+  ])(
+    'keeps restored workflow chips when $direction collapses Select All',
+    async ({ key, insertedText, expectedText, expectedOffsets }) => {
+      useAgentComposerStore().replacePrompt({
+        text: 'Before  between  after',
+        workflowReferences: [
+          { id: 'wf-1', name: 'Unsaved Workflow', textOffset: 7 },
+          { id: 'wf-2', name: 'Unsaved Workflow (2)', textOffset: 16 }
+        ]
+      })
+      mount()
+      const store = useAgentComposerStore()
+      const epoch = store.promptEpoch
+      store.setNodeScope('workflows/Unsaved Workflow (3).json')
+      expect(store.promptEpoch).toBe(epoch)
+
+      const textbox = screen.getByRole('textbox')
+      expect(textbox).toHaveTextContent(
+        'Before Unsaved Workflow between Unsaved Workflow (2) after'
+      )
+      expect(
+        within(textbox).getAllByTestId('workflow-reference-chip')
+      ).toHaveLength(2)
+
+      await userEvent.click(textbox)
+      await userEvent.keyboard(`{Control>}a{/Control}${key}`)
+      await userEvent.keyboard(insertedText)
+
+      expect(textbox).toHaveTextContent(expectedText)
+      expect(
+        within(textbox).getAllByTestId('workflow-reference-chip')
+      ).toHaveLength(2)
+      expect(store.workflowReferences).toEqual([
+        {
+          id: 'wf-1',
+          name: 'Unsaved Workflow',
+          textOffset: expectedOffsets[0]
+        },
+        {
+          id: 'wf-2',
+          name: 'Unsaved Workflow (2)',
+          textOffset: expectedOffsets[1]
+        }
+      ])
+    }
+  )
+
   it('removes the workflow reference before the text caret with Backspace', async () => {
     useAgentComposerStore().setText('keep me')
     const { emitted } = mount({
