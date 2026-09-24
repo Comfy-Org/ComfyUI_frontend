@@ -49,6 +49,8 @@ function followPointer(event: MouseEvent) {
     >
       <span class="sr-only">{{ view.title }}</span>
     </a>
+    <!-- The link names the card and the heading says it again, so the
+      artwork stays decorative rather than naming it a third time. -->
     <div
       ref="frame"
       class="relative aspect-4/3 overflow-hidden rounded-3.5xl bg-hub-surface-hover"
@@ -66,7 +68,7 @@ function followPointer(event: MouseEvent) {
         v-if="view.media?.kind === 'video'"
         ref="video"
         :src="previewSrc"
-        :aria-label="view.title"
+        aria-hidden="true"
         class="size-full object-cover transition-transform duration-300 group-hover:scale-105"
         muted
         loop
@@ -78,17 +80,17 @@ function followPointer(event: MouseEvent) {
           v-if="view.compare && view.hoverMedia"
           :still="view.media.url"
           :over="view.hoverMedia"
-          :title="view.title"
           :split
         />
         <template v-else>
           <img
             :src="view.media.url"
-            :alt="view.title"
+            alt=""
             loading="lazy"
             decoding="async"
             draggable="false"
             class="size-full object-cover transition-transform duration-300 select-none group-hover:scale-105"
+            data-testid="catalogue-card-still"
           />
           <img
             v-if="view.hoverMedia"

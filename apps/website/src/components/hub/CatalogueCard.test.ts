@@ -57,7 +57,16 @@ describe('CatalogueCard', () => {
     mount({ compare: false })
 
     expect(screen.queryByTestId('catalogue-card-compare')).toBeNull()
-    expect(screen.getByAltText('Remove an object')).toBeTruthy()
+    expect(screen.getByTestId('catalogue-card-still')).toBeTruthy()
+  })
+
+  // The link and the heading both carry the name. Artwork that carries it too
+  // reads the same card out three times to anyone not looking at it.
+  it('names itself once to anyone who cannot see it', () => {
+    mount({ compare: false })
+
+    expect(screen.getAllByText('Remove an object')).toHaveLength(2)
+    expect(screen.queryByAltText('Remove an object')).toBeNull()
   })
 
   it('shows one still on its own when there is no second one', () => {

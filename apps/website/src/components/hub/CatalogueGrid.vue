@@ -60,6 +60,7 @@ const showingText = computed(() =>
   </div>
   <div
     v-else
+    role="status"
     class="py-20 text-center text-content-muted"
     data-testid="catalogue-empty"
   >
@@ -75,8 +76,11 @@ const showingText = computed(() =>
     data-testid="catalogue-foot"
   />
 
+  <!-- A search answers with a different list and no other sign of it. The
+    count is that answer, so it is spoken as well as drawn. -->
   <p
     v-if="visible.length > 0"
+    role="status"
     class="pt-2 pb-4 text-center text-sm text-hub-muted"
     data-testid="catalogue-showing"
   >

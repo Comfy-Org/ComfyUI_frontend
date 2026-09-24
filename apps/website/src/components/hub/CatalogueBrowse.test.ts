@@ -211,6 +211,25 @@ describe('CatalogueBrowse', () => {
     expect(screen.getByTestId('catalogue-empty')).toBeTruthy()
   })
 
+  // A search swaps the list and nothing else on the page moves, so the count
+  // is the only answer a reader who cannot see the cards gets.
+  it.for([
+    {
+      case: 'what a search found',
+      search: '?q=flux',
+      testId: 'catalogue-showing'
+    },
+    {
+      case: 'that it found nothing',
+      search: '?q=nothing-matches-this',
+      testId: 'catalogue-empty'
+    }
+  ])('speaks $case', async ({ search, testId }) => {
+    await at(search)
+
+    expect(screen.getByTestId(testId).getAttribute('role')).toBe('status')
+  })
+
   it('opens a medium on the rows that name a job inside it', async () => {
     await at('?type=workflow', [...ENTRIES, ...EDITING])
     await userEvent.click(screen.getByTestId('shelf-cleanup-open'))

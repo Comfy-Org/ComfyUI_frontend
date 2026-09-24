@@ -3,11 +3,10 @@
 // app's own template browser shows them. Side by side each one would be half
 // the size; laid over each other they stay whole, and the reader moves the
 // seam to see what the workflow changed.
-const { still, over, title, split } = defineProps<{
+const { still, over, split } = defineProps<{
   still: string
   /** The one that sweeps across it, which the registry orders, not us. */
   over: string
-  title: string
   /** Where the seam stands, as a percentage of the frame's width. */
   split: number
 }>()
@@ -16,7 +15,7 @@ const { still, over, title, split } = defineProps<{
 <template>
   <img
     :src="still"
-    :alt="title"
+    alt=""
     loading="lazy"
     decoding="async"
     draggable="false"
