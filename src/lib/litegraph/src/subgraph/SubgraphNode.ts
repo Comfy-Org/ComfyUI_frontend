@@ -82,6 +82,8 @@ export type PromotedHostInput = INodeInputSlot & {
   _promotedWidget?: IBaseWidget
   /** True when a user renamed the slot; interior label sync must not overwrite. */
   _labelCustomized?: boolean
+  /** True when the host assigned disabled; interior disabled sync must not overwrite. */
+  _disabledOverride?: boolean
 }
 
 export class SubgraphNode extends LGraphNode implements BaseLGraph {
@@ -308,9 +310,7 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     const id = input.widgetId
     if (!id) return
 
-    const widget = createPromotedWidgetStoreProjection(input, id, () =>
-      this._resolveInteriorWidget(input.name)
-    )
+    const widget = createPromotedWidgetStoreProjection(input, id)
     const rec = input as PromotedHostInput
     let hostWidget: IBaseWidget = widget
     if (widget.type === 'button') {
@@ -686,6 +686,17 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     )
   }
 
+  private _resolveInteriorNode(inputName: string): LGraphNode | undefined {
+    return resolveSubgraphInputLink(
+      this,
+      inputName,
+      ({ inputNode, targetInput, getTargetWidget }) =>
+        getTargetWidget()
+          ? inputNode
+          : this._resolveNestedPromotedSource(inputNode, targetInput)?.node
+    )
+  }
+
   private _setWidget(
     subgraphInput: Readonly<SubgraphInput>,
     input: INodeInputSlot,
@@ -767,8 +778,16 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
           if (interior) before.push([hostInput, interior, interior.value])
         }
         // Interior callbacks are plain functions using widget `this` (the INT
-        // rounding callback reads `this.options`).
-        sourceCallback.call(interiorWidget, value, canvas, node, pos, e)
+        // rounding callback reads `this.options`), and the node argument must
+        // be the widget's owner, not the host showing it.
+        sourceCallback.call(
+          interiorWidget,
+          value,
+          canvas,
+          this._resolveInteriorNode(input.name) ?? node,
+          pos,
+          e
+        )
         for (const [hostInput, interior, previousValue] of before) {
           // The interior action may mutate sibling widgets (a button driving a
           // seed); their host store entries are the values of record.
@@ -903,7 +922,9 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
       const interior = this._resolveInteriorWidget(input.name)
       if (!interior) continue
 
+      const disabledOverride = (input as PromotedHostInput)._disabledOverride
       if (
+        !disabledOverride &&
         interior.disabled !== undefined &&
         state.disabled !== interior.disabled
       ) {

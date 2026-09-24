@@ -913,7 +913,102 @@ describe('SubgraphWidgetPromotion', () => {
       const state = promotedWidgetStates(host)[0]
       expect(state.disabled).toBe(true)
       expect(state.serialize).toBe(false)
-      expect(widget.disabled).toBe(true)
+      expect(widget.disabled).toBe(false)
+    })
+
+    it('keeps disabled overrides isolated between hosts of one subgraph', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node, widget } = createNodeWithWidget(
+        'Test Node',
+        'number',
+        42,
+        'number'
+      )
+      widget.disabled = false
+      subgraph.add(node)
+      subgraph.inputNode.slots[0].connect(node.inputs[0], node)
+
+      const hostA = createTestSubgraphNode(subgraph, { id: 101 })
+      const hostB = createTestSubgraphNode(subgraph, { id: 102 })
+
+      hostA.widgets[0].disabled = true
+      hostA.arrange()
+      hostB.arrange()
+
+      expect(promotedWidgetStateByName(hostA, 'value').disabled).toBe(true)
+      expect(promotedWidgetStateByName(hostB, 'value').disabled).toBe(false)
+      expect(widget.disabled).toBe(false)
+    })
+
+    it('calls the interior callback with its owning node', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node, widget } = createNodeWithWidget(
+        'Test Node',
+        'number',
+        42,
+        'number'
+      )
+      let callbackNode: LGraphNode | undefined
+      widget.callback = (
+        _value: unknown,
+        _canvas: unknown,
+        nodeArg?: LGraphNode
+      ) => {
+        callbackNode = nodeArg
+      }
+      const host = setupPromotedWidget(subgraph, node)
+
+      host.widgets[0].callback?.(7, undefined, host)
+
+      expect(callbackNode).toBe(node)
+    })
+
+    it('passes the owning interior node through nested host callbacks', () => {
+      const rootGraph = createTestRootGraph()
+
+      const innerSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const { node: leaf } = createNodeWithWidget('Leaf', 'number', 7, 'number')
+      innerSubgraph.add(leaf)
+      innerSubgraph.inputNode.slots[0].connect(leaf.inputs[0], leaf)
+
+      const outerSubgraph = createTestSubgraph({
+        rootGraph,
+        inputs: [{ name: 'value', type: 'number' }]
+      })
+      const innerHost = createTestSubgraphNode(innerSubgraph, {
+        parentGraph: outerSubgraph,
+        id: 11
+      })
+      outerSubgraph.add(innerHost)
+      innerHost._internalConfigureAfterSlots()
+
+      outerSubgraph.inputNode.slots[0].connect(innerHost.inputs[0], innerHost)
+
+      const innerProjection = innerHost.inputs[0]._widget
+      if (!innerProjection) throw new Error('Missing promoted projection')
+      const innerCallback = innerProjection.callback
+      let callbackNode: LGraphNode | undefined
+      innerProjection.callback = (value, canvas, nodeArg, pos, e) => {
+        callbackNode = nodeArg
+        innerCallback?.call(innerProjection, value, canvas, nodeArg, pos, e)
+      }
+
+      const outerHost = createTestSubgraphNode(outerSubgraph, {
+        parentGraph: rootGraph,
+        id: 22
+      })
+      rootGraph.add(outerHost)
+
+      outerHost.widgets[0].callback?.(5, undefined, outerHost)
+
+      expect(callbackNode).toBe(innerHost)
     })
 
     it('keeps a synchronized interior label propagating across rebinds', () => {
