@@ -421,7 +421,18 @@ const events: readonly ComfyEvent[] = [
       },
       newTab: true
     },
-    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' }
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' },
+    // TODO: temporarily hosted via GitHub attachment; migrate to
+    // media.comfy.org and switch to eventImage() when available.
+    media: {
+      type: 'image',
+      src: 'https://github.com/user-attachments/assets/07c6b3bf-9aa3-49b7-b8ad-1b4300802473',
+      alt: {
+        en: 'SF Tech Week: ComfyUI Panel with TOOL, featuring Tony Pu (Kling AI) and Yannik Marek (ComfyUI), moderated by Dustin Callif (Tool)',
+        'zh-CN':
+          'SF Tech Week：与 TOOL 共同举办的 ComfyUI 圆桌讨论，嘉宾为 Tony Pu（Kling AI）和 Yannik Marek（ComfyUI），主持人为 Dustin Callif（Tool）'
+      }
+    }
   },
   {
     id: 'la-tech-week-tool-panel',
@@ -451,7 +462,18 @@ const events: readonly ComfyEvent[] = [
       },
       newTab: true
     },
-    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' }
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' },
+    // TODO: temporarily hosted via GitHub attachment; migrate to
+    // media.comfy.org and switch to eventImage() when available.
+    media: {
+      type: 'image',
+      src: 'https://github.com/user-attachments/assets/916211b0-5da9-4c91-b817-bc898a36cfca',
+      alt: {
+        en: 'LA Tech Week: ComfyUI Panel with TOOL, featuring Ian Sansavera (Runway) and Justin Offerman (ComfyUI), moderated by Dustin Callif (Tool)',
+        'zh-CN':
+          'LA Tech Week：与 TOOL 共同举办的 ComfyUI 圆桌讨论，嘉宾为 Ian Sansavera（Runway）和 Justin Offerman（ComfyUI），主持人为 Dustin Callif（Tool）'
+      }
+    }
   },
   {
     id: 'la-august-meetup',
