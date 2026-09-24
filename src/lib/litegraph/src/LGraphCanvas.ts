@@ -29,7 +29,8 @@ import {
   ownsSelectable,
   releaseCanvasSelection,
   selectableKeyOf,
-  setCanvasItemSelected
+  setCanvasItemSelected,
+  syncNodeLinkHighlights
 } from '@/renderer/core/canvas/litegraph/selectionAdapter'
 import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
@@ -53,7 +54,7 @@ import { detachSerialisedLinks } from './linkDeduplication'
 import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'
-import { inputHasLink, nodeLinkIds, outputLinks } from './node/slotLinks'
+import { inputHasLink, outputLinks } from './node/slotLinks'
 import type { LinkId } from './LLink'
 import { Reroute } from './Reroute'
 import type { RerouteId } from './Reroute'
@@ -1841,11 +1842,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
   clear(): void {
     releaseCanvasSelection(this)
     applyCanvasSelection(this, { type: 'selection.clear' })
-    this.#resetTransientState()
+    this.resetTransientState()
     this.onClear?.()
   }
 
-  #resetTransientState(): void {
+  private resetTransientState(): void {
     this.frame = 0
     this.last_draw_time = 0
     this.render_time = 0
@@ -1899,7 +1900,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.dispatch('litegraph:set-graph', { newGraph, oldGraph: graph })
     clearGraphSelection(graph)
-    this.#resetTransientState()
+    this.resetTransientState()
   }
 
   openSubgraph(subgraph: Subgraph, fromNode: SubgraphNode): void {
@@ -2451,7 +2452,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     }
 
     if (this.selectOnly) {
-      this.#processSelectOnlyPrimaryButton(e, node)
+      this.processSelectOnlyPrimaryButton(e, node)
       return
     }
 
@@ -2672,7 +2673,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       !pointer.onDrag &&
       this.allow_dragcanvas
     ) {
-      this.#setupCanvasDrag(e, pointer)
+      this.setupCanvasDrag(e, pointer)
     }
   }
 
@@ -2680,7 +2681,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * Pointer primary button processing while the canvas is select-only.
    * A node press can only select; anything else is an empty-canvas press.
    */
-  #processSelectOnlyPrimaryButton(
+  private processSelectOnlyPrimaryButton(
     e: CanvasPointerEvent,
     node: LGraphNode | undefined
   ): void {
@@ -2689,11 +2690,11 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     if (node && (this.allow_interaction || node.flags.allow_interaction)) {
       pointer.onClick = () => this.processSelect(node, e)
     } else if (this.allow_dragcanvas) {
-      this.#setupCanvasDrag(e, pointer)
+      this.setupCanvasDrag(e, pointer)
     }
   }
 
-  #setupCanvasDrag(e: CanvasPointerEvent, pointer: CanvasPointer): void {
+  private setupCanvasDrag(e: CanvasPointerEvent, pointer: CanvasPointer): void {
     // allow dragging canvas based on leftMouseClickBehavior or read-only mode
     if (LiteGraph.leftMouseClickBehavior === 'panning') {
       pointer.onClick = () => this.processSelect(null, e)
@@ -4603,7 +4604,10 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * @param item The canvas item to add to the selection.
    */
   select<TPositionable extends Positionable = LGraphNode>(
-    item: TPositionable
+    item: TPositionable,
+    {
+      selectGroupChildren = this.groupSelectChildren
+    }: { selectGroupChildren?: boolean } = {}
   ): void {
     if (!ownsSelectable(this, item)) return
     if (this.selectOnly && !(item instanceof LGraphNode)) return
@@ -4613,8 +4617,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (item instanceof LGraphGroup) {
       item.recomputeInsideNodes()
-      if (this.groupSelectChildren) {
-        this.#traverseGroupChildren(
+      if (selectGroupChildren) {
+        this.traverseGroupChildren(
           item,
           (child) => {
             if (!child.selected || !this.selectedItems.has(child)) {
@@ -4635,7 +4639,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.onNodeSelected?.(item)
 
-    this.#highlightLinksOf(item)
+    syncNodeLinkHighlights(this, item)
   }
 
   /**
@@ -4655,7 +4659,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     setCanvasItemSelected(this, item, false)
 
     if (item instanceof LGraphGroup && this.groupSelectChildren) {
-      this.#traverseGroupChildren(
+      this.traverseGroupChildren(
         item,
         (child) => {
           if (child.selected || this.selectedItems.has(child)) {
@@ -4675,24 +4679,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     this.onNodeDeselected?.(item)
 
-    const { graph } = this
-    if (!graph) return
-
-    for (const linkId of nodeLinkIds(graph, item)) {
-      const origin = LLink.getOriginNode(graph, linkId)
-      const target = LLink.getTargetNode(graph, linkId)
-      if (origin && this.selectedItems.has(origin)) continue
-      if (target && this.selectedItems.has(target)) continue
-      delete this.highlighted_links[linkId]
-    }
-  }
-
-  #highlightLinksOf(node: LGraphNode): void {
-    const { graph } = this
-    if (!graph) return
-    for (const linkId of nodeLinkIds(graph, node)) {
-      this.highlighted_links[linkId] = true
-    }
+    syncNodeLinkHighlights(this, item)
   }
 
   /**
@@ -4701,7 +4688,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
    * non-group children.  Always recurses into nested groups regardless of
    * their current selection state.
    */
-  #traverseGroupChildren(
+  private traverseGroupChildren(
     group: LGraphGroup,
     groupAction: (child: LGraphGroup) => void,
     leafAction: (child: Positionable) => void
@@ -4819,7 +4806,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
 
     if (kept instanceof LGraphNode) {
       if (oldNode) this.selected_nodes[oldNode.id] = oldNode
-      this.#highlightLinksOf(kept)
+      syncNodeLinkHighlights(this, kept)
     }
 
     // Only set selectionChanged if selection actually changed

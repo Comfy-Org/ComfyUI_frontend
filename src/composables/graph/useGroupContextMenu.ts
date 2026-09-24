@@ -1,22 +1,6 @@
 import { showNodeOptions } from '@/composables/graph/useMoreOptionsMenu'
 import { getCanvasContextMenuTarget } from '@/lib/litegraph/src/canvas/getCanvasContextMenuTarget'
-import type { LGraphGroup } from '@/lib/litegraph/src/litegraph'
 import { LGraphCanvas, LiteGraph } from '@/lib/litegraph/src/litegraph'
-
-/**
- * The group menu only shows group actions when no nodes are selected, so the
- * group is selected without its child cascade regardless of the setting.
- */
-function selectGroupWithoutChildren(canvas: LGraphCanvas, group: LGraphGroup) {
-  const cascade = canvas.groupSelectChildren
-  canvas.groupSelectChildren = false
-  try {
-    canvas.deselectAll()
-    canvas.select(group)
-  } finally {
-    canvas.groupSelectChildren = cascade
-  }
-}
 
 /**
  * Routes Nodes 2.0 group right-clicks to Vue while nodes, reroutes,
@@ -49,7 +33,10 @@ export function useGroupContextMenu() {
     const groupIsOnlySelection =
       this.selectedItems.size === 1 && this.selectedItems.has(group)
 
-    if (!groupIsOnlySelection) selectGroupWithoutChildren(this, group)
+    if (!groupIsOnlySelection && !this.selectOnly) {
+      this.deselectAll()
+      this.select(group, { selectGroupChildren: false })
+    }
     showNodeOptions(event)
   }
 

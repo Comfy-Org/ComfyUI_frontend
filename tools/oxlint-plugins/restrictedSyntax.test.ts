@@ -10,10 +10,13 @@ interface Diagnostic {
   readonly severity: string
 }
 
+const privateSigil = '#'
+
 const probeDirs = {
   source: path.resolve('src/__restricted_syntax_probes__'),
   app: path.resolve('apps/__restricted_syntax_probes__/src'),
   remote: path.resolve('src/platform/remote/__restricted_syntax_probes__'),
+  selection: path.resolve('src/composables/graph/__restricted_syntax_probes__'),
   schemas: path.resolve('src/schemas/__restricted_syntax_probes__'),
   fixtureData: path.resolve(
     'browser_tests/fixtures/data/__restricted_syntax_probes__'
@@ -73,10 +76,33 @@ void unrelated
 `
   },
   {
+    file: path.join(probeDirs.source, 'privateMembers.ts'),
+    source: `class Example {
+  ${privateSigil}value = 0
+  ${privateSigil}read() { return this.${privateSigil}value }
+}
+void Example
+`
+  },
+  {
     file: path.join(probeDirs.source, 'computed.vue'),
     source: `<script setup lang="ts">
 computed(() => element.getBoundingClientRect())
 </script>
+`
+  },
+  {
+    file: path.join(probeDirs.selection, 'selection.ts'),
+    source: `group.selected = true
+canvas.selectedItems.add(group)
+canvas.selectedItems.delete(group)
+canvas.selectedItems.clear()
+canvas.selected_nodes[group.id] = group
+delete canvas.selected_nodes[group.id]
+useSelectionStore().apply(scope, command)
+void group.selected
+void canvas.selectedItems.has(group)
+void canvas.selected_nodes[group.id]
 `
   },
   ...removedModuleFiles.map((file) => {
@@ -244,6 +270,34 @@ describe('restricted syntax rules', () => {
       new Set([
         'Do not measure the DOM inside a computed - every recompute becomes a layout read. Derive from a store instead. See docs/guidance/state-and-effects.md.',
         'Do not inspect the DOM inside a computed. Derive from a store instead. See docs/guidance/state-and-effects.md.'
+      ])
+    )
+  })
+
+  it('rejects JavaScript hard-private class members', () => {
+    const privateMemberFindings = findingsFor('no-js-private-class-members')
+    expect(privateMemberFindings).toHaveLength(2)
+    expect(
+      privateMemberFindings.every(({ severity }) => severity === 'error')
+    ).toBe(true)
+    expect(
+      new Set(privateMemberFindings.map(({ message }) => message))
+    ).toEqual(
+      new Set([
+        'Do not use JavaScript hard-private class members. Use TypeScript private members instead.'
+      ])
+    )
+  })
+
+  it('rejects direct canvas selection writes', () => {
+    const selectionFindings = findingsFor('no-direct-selection-write')
+    expect(selectionFindings).toHaveLength(7)
+    expect(
+      selectionFindings.every(({ severity }) => severity === 'error')
+    ).toBe(true)
+    expect(new Set(selectionFindings.map(({ message }) => message))).toEqual(
+      new Set([
+        'Route canvas selection changes through LGraphCanvas selection APIs.'
       ])
     )
   })

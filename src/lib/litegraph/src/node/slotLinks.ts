@@ -66,7 +66,6 @@ export function outputLinkIds(
   return ids.sort((a, b) => a - b)
 }
 
-/** Ids of every link attached to the node's input and output slots. */
 export function nodeLinkIds(
   graph: Pick<LGraph, 'rootGraph' | 'id'>,
   node: Pick<LGraphNode, 'id' | 'inputs' | 'outputs'>
