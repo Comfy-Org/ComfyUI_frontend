@@ -110,6 +110,8 @@ export interface ImageLoadFailureMetadata {
     | 'probe_timeout'
     | 'probe_capped'
     | 'probe_blocked'
+    | 'probe_redirected'
+    | 'probe_abandoned'
     | 'invalid_src'
   /** `/api/view?type=` — separates an expired output from a missing upload. */
   resource_kind?: 'output' | 'input' | 'temp' | 'unspecified' | 'not_api_view'

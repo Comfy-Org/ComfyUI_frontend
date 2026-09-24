@@ -8,7 +8,7 @@ import {
 const ORIGIN = 'https://cloud.comfy.org'
 
 function respondWith(status: number) {
-  return vi.fn().mockResolvedValue({ status, body: null })
+  return vi.fn().mockResolvedValue({ status, type: 'basic', body: null })
 }
 
 describe('describeImageLoadFailure', () => {
@@ -114,6 +114,67 @@ describe('describeImageLoadFailure', () => {
 
     expect(fetchSpy).not.toHaveBeenCalled()
     expect(result.probe_outcome).toBe('invalid_src')
+  })
+
+  it('reports a redirect as a redirect, not as our own status', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi
+        .fn()
+        .mockResolvedValue({ status: 0, type: 'opaqueredirect', body: null })
+    )
+
+    const result = await describeImageLoadFailure(
+      `${ORIGIN}/api/view?filename=a.png`
+    )
+
+    expect(result.probe_outcome).toBe('probe_redirected')
+    expect(result.status).toBeUndefined()
+  })
+
+  it('does not follow redirects — a signed storage URL answers on its own terms', async () => {
+    const fetchSpy = respondWith(200)
+    vi.stubGlobal('fetch', fetchSpy)
+
+    await describeImageLoadFailure(`${ORIGIN}/api/view?filename=a.png`)
+
+    expect(fetchSpy).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ redirect: 'manual' })
+    )
+  })
+
+  it('survives a body cancel that rejects, rather than raising an unhandled rejection', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        status: 404,
+        type: 'basic',
+        body: { cancel: () => Promise.reject(new TypeError('already errored')) }
+      })
+    )
+
+    const result = await describeImageLoadFailure(
+      `${ORIGIN}/api/view?filename=a.png`
+    )
+
+    expect(result).toMatchObject({ status: 404, probe_outcome: 'probed' })
+  })
+
+  it('emits the report rather than holding it for a probe while the page unloads', async () => {
+    // A probe that never settles: without the unload race this await hangs and
+    // the failure is never reported.
+    vi.stubGlobal('fetch', vi.fn().mockReturnValue(new Promise(() => {})))
+
+    const pending = describeImageLoadFailure(
+      `${ORIGIN}/api/view?filename=a.png`
+    )
+    window.dispatchEvent(new Event('pagehide'))
+
+    await expect(pending).resolves.toMatchObject({
+      source: 'node_image_preview',
+      probe_outcome: 'probe_abandoned'
+    })
   })
 
   it('carries page age, the field that distinguishes auth expiry from a 404', async () => {

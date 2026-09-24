@@ -24,8 +24,12 @@ import type { ImageLoadFailureMetadata } from '@/platform/telemetry/types'
 /** Probes are capped per page so a node retrying a missing file in a loop cannot amplify. */
 const MAX_PROBES_PER_PAGE = 20
 
-/** A probe that outlives this is worth less than the request it occupies. */
-const PROBE_TIMEOUT_MS = 5_000
+/**
+ * A probe that outlives this is worth less than the request it occupies. Kept
+ * short because the report is emitted after it: a long budget turns every
+ * failed image into a window where a page unload loses the event entirely.
+ */
+const PROBE_TIMEOUT_MS = 2_000
 
 let probesIssued = 0
 
@@ -60,6 +64,22 @@ function filenameKind(url: URL): ImageLoadFailureMetadata['filename_kind'] {
   return 'named'
 }
 
+/**
+ * Resolves if the page starts going away, so a pending probe cannot hold the
+ * report hostage. Never resolves otherwise — it only ever loses the race.
+ */
+function abandonOnUnload(): Promise<
+  Pick<ImageLoadFailureMetadata, 'probe_outcome'>
+> {
+  return new Promise((resolve) => {
+    window.addEventListener(
+      'pagehide',
+      () => resolve({ probe_outcome: 'probe_abandoned' }),
+      { once: true }
+    )
+  })
+}
+
 async function probeStatus(
   src: string
 ): Promise<Pick<ImageLoadFailureMetadata, 'status' | 'probe_outcome'>> {
@@ -73,11 +93,23 @@ async function probeStatus(
       method: 'GET',
       credentials: 'include',
       headers: { Range: 'bytes=0-0' },
+      // Our own status is the finding. Following a redirect would report the
+      // status of wherever `/api/view` sent us — a signed storage URL answering
+      // 200 or 403 on its own terms — and attribute it to our endpoint.
+      redirect: 'manual',
       signal: AbortSignal.timeout(PROBE_TIMEOUT_MS)
     })
+    // A manual-redirect response is opaque: status reads 0 and no header is
+    // legible. That the endpoint redirected is still the answer, so it gets its
+    // own outcome rather than being reported as a status of 0.
+    if (response.type === 'opaqueredirect') {
+      return { probe_outcome: 'probe_redirected' }
+    }
     // The body is never read: `Range` already bounded it, and cancelling here
     // releases the connection instead of buffering an image we will not show.
-    void response.body?.cancel()
+    // A cancel on an already-errored body rejects, and an unhandled rejection
+    // becomes a spurious Sentry report — so it is swallowed explicitly.
+    void response.body?.cancel().catch(() => {})
     return { status: response.status, probe_outcome: 'probed' }
   } catch (error) {
     // An opaque/CORS/offline failure is itself the finding: the request never
@@ -137,5 +169,11 @@ export async function describeImageLoadFailure(
   // report our own failure rather than the server's answer.
   if (!shape.same_origin) return shape
 
-  return { ...shape, ...(await probeStatus(src)) }
+  // The report is emitted after the probe resolves, so a page unload mid-probe
+  // would drop the event — the diagnostic would cost us the very failure it
+  // describes. Losing the status is survivable; losing the report is not.
+  return {
+    ...shape,
+    ...(await Promise.race([probeStatus(src), abandonOnUnload()]))
+  }
 }
