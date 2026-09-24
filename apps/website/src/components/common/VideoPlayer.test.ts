@@ -4,6 +4,27 @@ import { describe, expect, it, vi } from 'vitest'
 import VideoPlayer from './VideoPlayer.vue'
 
 describe('VideoPlayer', () => {
+  // The autoplay watcher forces the element muted directly (so play() sees
+  // it synchronously) without going through the `muted` ref. If it doesn't
+  // also update the ref, the button renders "Mute" (implying sound is
+  // already on) while the video is actually silent, so a visitor never
+  // finds a reason to unmute it.
+  it('shows Unmute once a lazily-autoplaying video is forced muted to start playback', async () => {
+    vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(false)
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+
+    render(VideoPlayer, {
+      props: {
+        src: 'https://example.com/clip.mp4',
+        autoplay: true,
+        lazyAutoplay: true,
+        muteOnly: true
+      }
+    })
+
+    expect(await screen.findByRole('button', { name: 'Unmute' })).toBeTruthy()
+  })
+
   // A server-rendered autoplay video can already be playing (and muted) when
   // hydration binds the element, after its play/volumechange events fired.
   // The element-bind watcher must sync the controls to that reality.

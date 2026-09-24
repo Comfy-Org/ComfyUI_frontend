@@ -15,6 +15,7 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
       poster="https://media.comfy.org/website/router/router-animatic-v019-poster.webp"
       autoplay
       lazy-autoplay
+      mute-only
     />
   </section>
 </template>
