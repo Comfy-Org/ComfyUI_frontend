@@ -194,9 +194,6 @@ describe('showTopUpCreditsDialog', () => {
     })
   })
 
-  // The legacy content declares only `isInsufficientCredits`, so forwarding
-  // `source` there lands it in attrs as a stray DOM attribute rather than as
-  // attribution.
   it('withholds the surface from the legacy rail content', async () => {
     state.type = 'legacy'
 

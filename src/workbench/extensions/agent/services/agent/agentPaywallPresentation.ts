@@ -28,22 +28,6 @@ export const DEFAULT_AGENT_PAYWALL_PRESENTATION = {
   kind: 'unavailable'
 } as const satisfies AgentPaywallPresentation
 
-/**
- * Telemetry reason for each presentation the resolver can produce.
- *
- * Every paywall card ultimately comes from a `no_funds` admission refusal, so
- * the presentation kind contributes the remediation-relevant state on top of
- * that: whether the workspace can top up, needs a subscription, or cannot pay
- * at all. Keying off the resolver's single verdict also means the precedence
- * between overlapping states is its branch order and cannot drift from a
- * second ordering kept here.
- *
- * `unavailable` is the indeterminate state. Callers should withhold the event
- * until the capability read has *settled* rather than report a confident
- * reason from an unsettled snapshot — but a read can settle without resolving
- * (denied), and the paywall is still on screen in that case, so `unknown` is
- * a real reported value and not merely padding to keep this mapping total.
- */
 const AGENT_PAYWALL_REASONS = {
   subscribed: 'no_funds',
   local: 'no_funds',

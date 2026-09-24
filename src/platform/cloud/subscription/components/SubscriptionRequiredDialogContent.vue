@@ -33,8 +33,6 @@
       </i18n-t>
     </div>
 
-    <!-- `PricingTable`'s `reason` is attribution, never copy: it feeds
-         `payment_intent_source` and the checkout call. -->
     <PricingTable
       :reason="paymentIntentSource"
       class="flex-1"

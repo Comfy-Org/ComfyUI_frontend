@@ -26,17 +26,6 @@ const CHECKOUT_JOURNEY_STORAGE_KEY = 'comfy.checkout.journey'
 const EMBEDDED_CHECKOUT_FLAG_KEY: `${ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED}` =
   'embedded_checked_enabled'
 
-// These three allowlists are the rehydration gate for `CheckoutJourneyContext`,
-// the payload every `billing.checkout.*` phase event carries. Each phase
-// re-reads the record from storage through `normalizeRecord` rather than
-// holding it in memory, so a degraded value reaches every phase after the one
-// that created the record — the whole post-redirect half of a hosted checkout,
-// `operation_linked` included, which is the phase that binds `billing_op_id`.
-// A `ReadonlySet<T>` constrains element types only and does not require every
-// union member, so a value added to one of these unions but forgotten here used
-// to compile clean and then degrade to `'unknown'` at runtime. Written as
-// `satisfies Record<T, true>` (the pattern `VALID_PAYMENT_INTENT_SOURCES` uses)
-// so the omission is a build error instead.
 const ENTRY_FLOWS = {
   initial_subscription: true,
   paid_upgrade: true,
@@ -54,11 +43,6 @@ const ENTRY_SOURCES = {
   agent_paywall: true
 } satisfies Record<CheckoutEntrySource, true>
 
-/**
- * Own-key predicate over one of the allowlists above, so the runtime check
- * establishes the type at this persisted-data boundary instead of an assertion
- * overriding the compiler after it.
- */
 function isAllowlisted<T extends string>(
   allowlist: Record<T, true>,
   value: unknown
@@ -74,13 +58,6 @@ function toEntrySource(value: unknown): CheckoutEntrySource {
   return isAllowlisted(ENTRY_SOURCES, value) ? value : 'unknown'
 }
 
-/**
- * Entry sources that a payment-intent source pins directly. Both checkout
- * rails already thread a `PaymentIntentSource` from the surface that opened
- * them, so the journey's entry source is derived from it rather than plumbed
- * separately. A source absent from this map keeps its rail's own default,
- * which is what holds every pre-existing surface's attribution byte-identical.
- */
 const PAYMENT_INTENT_ENTRY_SOURCES: Partial<
   Record<PaymentIntentSource, CheckoutEntrySource>
 > = {
@@ -271,17 +248,6 @@ export function resolveCheckoutJourney(
     return { status: 'active', record: existing, resumed: true }
   }
 
-  // Control has reached here, so the live journey does not match this entry and
-  // would be replaced. A journey bound to an in-flight operation must not be:
-  // its poller gates the terminal clear on this record's billing_op_id, so
-  // evicting it leaves the operation unable to close its own journey and the
-  // replacement active indefinitely. A single storage slot cannot isolate two
-  // journeys, so the bound one keeps it and this entry goes uninstrumented
-  // until the operation resolves. See ADR-BILLING-CHECKOUT-0031.
-  //
-  // This covers a different rail *and* the same rail entered under a different
-  // intent — a top-up reopened from another surface, or a tier changed
-  // mid-operation. Both replace a bound journey, and neither is safe.
   if (live && existing.billing_op_id !== undefined) {
     return { status: 'blocked' }
   }

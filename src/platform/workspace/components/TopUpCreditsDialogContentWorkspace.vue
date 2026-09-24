@@ -332,11 +332,6 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const { isInsufficientCredits = false, source } = defineProps<{
   isInsufficientCredits?: boolean
-  /**
-   * Surface that opened this dialog, used to attribute the top-up journey.
-   * Absent keeps the settings-billing default this dialog assumed when every
-   * caller was the billing panel.
-   */
   source?: PaymentIntentSource
 }>()
 
@@ -372,14 +367,6 @@ function enterTopupJourney(): void {
     workspaceId,
     entryFlow: 'topup',
     entrySource,
-    // Keyed by entry source so a top-up opened from a different surface is a
-    // different journey. This rail passes no tier/cycle, so without a key any
-    // unexpired top-up journey for the same actor and workspace resumes and
-    // keeps its *original* entry source for every later phase — a top-up
-    // started from the agent paywall shortly after one from the billing panel
-    // would report `settings_billing` on this journey's `submitted` and
-    // `operation_linked` phases, and `operation_linked` is the one that binds
-    // `billing_op_id`. Same-surface top-ups still resume exactly as before.
     intent: entrySource,
     assignment: resolveCheckoutAssignment(api.getServerFeatures())
   })

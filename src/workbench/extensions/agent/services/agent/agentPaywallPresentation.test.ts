@@ -117,8 +117,6 @@ describe('resolveAgentPaywallPresentation', () => {
 })
 
 describe('toAgentPaywallReason', () => {
-  // Every paywall card originates in a `no_funds` admission refusal, so the
-  // presentation contributes the remediation-relevant state on top of that.
   it.for([
     {
       presentation: { kind: 'subscribed', showUpgrade: true },
@@ -143,9 +141,6 @@ describe('toAgentPaywallReason', () => {
     }
   )
 
-  // Precedence is the resolver's own branch order rather than a second
-  // ordering: a workspace that cannot top up reads as needing a subscription
-  // even though its balance is also empty.
   it('prefers subscription_inactive over no_funds when both apply', () => {
     expect(
       toAgentPaywallReason(

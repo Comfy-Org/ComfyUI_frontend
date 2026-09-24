@@ -158,17 +158,6 @@ export const useAgentConversationStore = defineStore(
       if (resolved) resolvePaywalls()
     }
 
-    /**
-     * Claim a paywall message for impression reporting, returning false when
-     * it has already been reported.
-     *
-     * The record lives here rather than in the panel because the panel is
-     * unmounted every time it is closed while these messages stay in the
-     * conversation. Panel-scoped bookkeeping would forget what it reported
-     * and count the same refused send again on reopen. It also outlives
-     * `resolvePaywalls` stripping the parts, so a resolved-then-reshown
-     * paywall is not double-counted against the same message.
-     */
     function claimPaywallImpression(turnId: TurnId): boolean {
       if (reportedPaywallImpressions.has(turnId)) return false
       reportedPaywallImpressions.add(turnId)

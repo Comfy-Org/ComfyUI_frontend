@@ -184,10 +184,6 @@ describe('resolveCheckoutJourney', () => {
     expect(getActiveCheckoutJourney()?.billing_op_id).toBe('op-1')
   })
 
-  // Reaching the replacement path means the live journey does not match this
-  // entry. If it is bound to an in-flight operation, replacing it strands that
-  // operation: terminal cleanup keys on billing_op_id, so it can no longer
-  // clear its own journey and the replacement stays active indefinitely.
   it('blocks a same-rail entry under a different intent rather than evicting a bound journey', () => {
     const first = activeJourney({
       ...baseInput,
@@ -379,12 +375,6 @@ describe('corrupt storage', () => {
 })
 
 describe('entry source attribution across rehydration', () => {
-  // The hosted checkout arm sends the user to Stripe and resumes the journey
-  // from storage on return, so every post-redirect phase — including the
-  // `.succeeded` events revenue attribution reads — takes its entry source
-  // from this path. An entry source missing from the persisted-record
-  // allowlist degrades to `'unknown'` here, silently and only after the
-  // redirect, which is why each member is pinned rather than just the new one.
   const ENTRY_SOURCES: CheckoutEntrySource[] = [
     'pricing',
     'deep_link',
@@ -401,8 +391,6 @@ describe('entry source attribution across rehydration', () => {
       entrySource,
       uiMode: 'hosted'
     })
-    // Drop the in-session mirror so the read below has to rehydrate from
-    // storage, as it does after the return trip from Stripe.
     const persisted = sessionStorage.getItem(STORAGE_KEY)
     clearCheckoutJourney()
     sessionStorage.setItem(STORAGE_KEY, persisted ?? '')
@@ -482,11 +470,6 @@ describe('resolveEntrySource', () => {
 })
 
 describe('resolveEntrySource prototype safety', () => {
-  // `resolveEntrySource` takes a string because its callers read the value from
-  // a Vue prop and a composable argument, neither enforced at runtime. An
-  // unvalidated key would resolve an inherited Object.prototype member truthy,
-  // so `?? fallback` never fires and a non-CheckoutEntrySource value reaches
-  // the record, storage and every downstream phase.
   it.for(['constructor', 'toString', 'hasOwnProperty', '__proto__'])(
     'falls back rather than resolving the inherited %s member',
     (key) => {

@@ -64,27 +64,9 @@ const SELF_STYLED_PANEL_CONTENT_CLASS = `${HUG_CONTENT_CLASS} border-none bg-tra
 // typed, and only object literal types get an implicit index signature.
 type TopUpCreditsDialogOptions = {
   isInsufficientCredits?: boolean
-  /**
-   * Surface that asked for the top-up, threaded on to the top-up journey and
-   * preserved across the subscription-required fall-through so a caller's
-   * attribution is not rewritten by an internal redirect.
-   */
   source?: PaymentIntentSource
 }
 
-/**
- * Which copy the subscription dialog shows when it stands in for a top-up the
- * workspace cannot make.
- *
- * `reason` selects copy: the dialog contents branch on `out_of_credits` to
- * render the insufficient-credits heading and body
- * (`SubscriptionRequiredDialogContent{,Unified,Workspace}.vue`). So the
- * balance-derived value wins whenever it would change what the user reads —
- * letting a caller's surface override it would redirect someone here and then
- * drop the explanation of why. The caller's surface is not lost to that: it
- * travels beside this as `paymentIntentSource`, which is what attributes the
- * purchase.
- */
 function topUpFallbackReason(
   options?: TopUpCreditsDialogOptions
 ): PaymentIntentSource {

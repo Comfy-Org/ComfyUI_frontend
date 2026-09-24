@@ -6,16 +6,6 @@ import { useDialogService } from '@/services/dialogService'
 interface AccountPreconditionContext {
   /** Node type that triggered the precondition, used as modal context. */
   nodeType?: string
-  /**
-   * Surface that triggered the precondition, attributed on the payment intent
-   * and carried on to the checkout journey.
-   *
-   * Optional, and each branch falls back to the literal it hardcoded before
-   * this existed, so the execution-error and prompt-precondition callers in
-   * `app.ts` keep emitting exactly what they emitted before. Requiring it
-   * would force those callers to name a value and is where an attribution
-   * regression would come from.
-   */
   source?: PaymentIntentSource
 }
 

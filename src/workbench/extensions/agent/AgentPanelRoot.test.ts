@@ -939,10 +939,6 @@ describe('AgentPanelRoot paywall actions', () => {
 })
 
 describe('AgentPanelRoot paywall telemetry', () => {
-  // The shared `paywallCapabilities` fixture is a plain object read through a
-  // computed, so mutating it after render changes nothing. These tests turn on
-  // billing state changing *while* a paywall is on screen, so they own
-  // reactive refs instead.
   let canTopUp: Ref<boolean>
   let canSubscribeSelfServe: Ref<boolean>
   let hasResolvedCapabilities: Ref<boolean>
@@ -964,8 +960,6 @@ describe('AgentPanelRoot paywall telemetry', () => {
     snapshotAuthoritative = ref(true)
     workspaceRole = ref<'owner' | 'member' | undefined>('owner')
     tier = ref<SubscriptionTier | null>('STANDARD')
-    // Funds present would resolve the paywalls and strip their parts, which is
-    // the state where no impression is expected at all.
     hasFunds = ref(false)
 
     vi.mocked(useBillingCapabilities).mockReturnValue(
@@ -1050,9 +1044,6 @@ describe('AgentPanelRoot paywall telemetry', () => {
     expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
   })
 
-  // Closing the panel unmounts this component (DockedAgentPanel's `v-if`) but
-  // leaves the conversation intact, so reopening re-observes the same paywall
-  // message. That is the same impression, not a new one.
   it('does not report the same paywall again after the panel is closed and reopened', async () => {
     const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     showPaywall()
@@ -1085,8 +1076,6 @@ describe('AgentPanelRoot paywall telemetry', () => {
     )
   })
 
-  // The reason is read from a computed over billing state, so a re-evaluation
-  // of that state must not turn one impression into several.
   it('reports one impression per paywall even as billing state re-evaluates', async () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
     showPaywall()
@@ -1119,9 +1108,6 @@ describe('AgentPanelRoot paywall telemetry', () => {
     )
   })
 
-  // While the capability read is still in flight the reason is not knowable,
-  // so the impression is held back rather than dropped, and lands exactly once
-  // when the read settles.
   it('withholds the paywall report until the capability read settles, then reports it once', async () => {
     canTopUp.value = false
     hasResolvedCapabilities.value = false
@@ -1143,10 +1129,6 @@ describe('AgentPanelRoot paywall telemetry', () => {
     )
   })
 
-  // Mid-outage `useBillingCapabilities.canTopUp` falls back to true for an
-  // owner while nothing has resolved. Gating on the presentation kind would
-  // read that as a confident `subscribed` and permanently claim the message id
-  // with `no_funds`; the corrected reason could then never be reported.
   it('does not report a confident reason from an unsettled read, and reports the real one once it settles', async () => {
     canTopUp.value = true
     canSubscribeSelfServe.value = false
@@ -1159,7 +1141,6 @@ describe('AgentPanelRoot paywall telemetry', () => {
     await nextTick()
     expect(telemetry.trackAgentPaywallShown).not.toHaveBeenCalled()
 
-    // The retry settles and the workspace turns out to need a subscription.
     canTopUp.value = false
     canSubscribeSelfServe.value = true
     hasResolvedCapabilities.value = true
@@ -1172,9 +1153,6 @@ describe('AgentPanelRoot paywall telemetry', () => {
     )
   })
 
-  // A denied read settles without ever resolving, and no refresh is
-  // rescheduled, so the card stays on screen indefinitely. Reporting `unknown`
-  // keeps that impression in the funnel's denominator.
   it('reports a visible paywall as unknown when the read settles without resolving', async () => {
     canTopUp.value = false
     canSubscribeSelfServe.value = false

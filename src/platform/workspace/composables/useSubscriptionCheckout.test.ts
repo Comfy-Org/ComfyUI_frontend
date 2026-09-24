@@ -581,10 +581,6 @@ describe('useSubscriptionCheckout', () => {
       return journeyEvents().map((event) => event.phase)
     }
 
-    // This rail derives its entry source from the payment-intent source its
-    // surface passed in. A regression to the `'pricing'` default, or a source
-    // dropped before this composable, misattributes hosted subscription
-    // conversion while every other assertion in this file still passes.
     it.for([
       { paymentIntentSource: 'agent_paywall', entrySource: 'agent_paywall' },
       { paymentIntentSource: undefined, entrySource: 'pricing' }
@@ -598,7 +594,6 @@ describe('useSubscriptionCheckout', () => {
           billingCycle: 'yearly'
         })
 
-        // One per emitted phase: `entered`, then `preview_ready`.
         expect(journeyEvents().map((event) => event.entry_source)).toEqual([
           entrySource,
           entrySource

@@ -217,9 +217,6 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     })
   })
 
-  // This dialog assumed the billing panel was its only caller and hardcoded
-  // `settings_billing`, so a top-up opened from the agent paywall was
-  // attributed to the settings panel.
   it('attributes the topup journey to the surface that opened the dialog', async () => {
     renderDialog({ source: 'agent_paywall' })
 
@@ -247,13 +244,7 @@ describe('TopUpCreditsDialogContentWorkspace', () => {
     )
   })
 
-  // This rail passes no tier/cycle, so without keying the journey by surface
-  // any unexpired top-up journey for the same actor and workspace resumes and
-  // keeps its *original* entry source for every later phase — including the
-  // `.succeeded` events revenue attribution reads.
   it('does not inherit a prior surface when a top-up is opened from a different one', async () => {
-    // Seeded the way this rail used to enter: no intent key, so anything
-    // opened within the journey's 24h lifetime resumed it wholesale.
     resolveCheckoutJourney({
       actorUid: 'user-1',
       workspaceId: 'workspace-1',

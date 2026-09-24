@@ -183,9 +183,6 @@ function onPaywallAction(action: AgentPaywallAction): void {
     cta: toAgentPaywallCta(action)
   })
   if (action === 'addCredits') {
-    // Gated like `useTopUpUrlLoader`, because this pre-existing metric means
-    // "reached a top-up" and the precondition may open something else. The CTA
-    // itself is counted above, unconditionally.
     if (canTopUp.value) {
       useTelemetry()?.trackAddApiCreditButtonClicked({
         source: 'agent_paywall'
@@ -197,16 +194,9 @@ function onPaywallAction(action: AgentPaywallAction): void {
   openAccountPrecondition('subscription', { source: 'agent_paywall' })
 }
 
-// Keyed on the id of the message carrying the paywall part, not on
-// `paywallPresentation` — that computed re-evaluates on every billing-state
-// change and would over-count one impression.
 const { messages: conversationMessages } = storeToRefs(conversationStore)
 watch(
   () =>
-    // Gated on the capability read having *settled*, not on the presentation
-    // looking resolved: mid-outage `canTopUp` falls back to true for an owner
-    // while nothing has resolved, so the presentation is not a proxy for
-    // "capabilities are known".
     snapshotAuthoritative.value
       ? conversationMessages.value
           .filter((message) =>
@@ -216,8 +206,6 @@ watch(
       : [],
   (paywallMessageIds) => {
     const telemetry = useTelemetry()
-    // The claim is permanent, so claiming before there is a dispatcher to
-    // deliver to would drop the impression for good.
     if (!telemetry) return
     for (const id of paywallMessageIds) {
       if (!conversationStore.claimPaywallImpression(id)) continue

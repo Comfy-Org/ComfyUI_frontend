@@ -49,10 +49,6 @@ describe('useAccountPreconditionDialog', () => {
     ).not.toHaveBeenCalled()
   })
 
-  // A caller that names no source must keep emitting exactly what it emitted
-  // before the source existed, or threading the agent paywall through this
-  // shared seam silently re-attributes the execution-error and
-  // prompt-precondition callers in app.ts.
   it('attributes a subscription precondition to subscription_required when no source is named', () => {
     useAccountPreconditionDialog().open('subscription')
 

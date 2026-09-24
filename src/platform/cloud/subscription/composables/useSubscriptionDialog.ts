@@ -28,23 +28,7 @@ const DIALOG_KEY = 'subscription-required'
 const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
 
 export interface SubscriptionDialogOptions {
-  /**
-   * Why this dialog opened. Also selects copy: the contents branch on
-   * `out_of_credits` to render the insufficient-credits heading and body.
-   */
   reason?: PaymentIntentSource
-  /**
-   * Surface to attribute the resulting purchase to, when it differs from
-   * `reason`. A caller that must rewrite `reason` to keep the copy correct —
-   * the top-up fall-through in `showTopUpCreditsDialog` is the only one —
-   * carries its originating surface here instead of losing it.
-   *
-   * Defaults to `reason`, so a caller that sets only `reason` attributes its
-   * purchase exactly as before. `showPricingTable` resolves that default once
-   * and hands every content variant the answer, which is why their
-   * `paymentIntentSource` prop is required rather than optional: the policy
-   * has one owner, and a variant cannot quietly grow a second.
-   */
   paymentIntentSource?: PaymentIntentSource
   /**
    * Forces the unified pricing dialog to open on a specific plan tab,
@@ -119,9 +103,6 @@ export const useSubscriptionDialog = () => {
 
     trackModalOpened(options?.reason)
 
-    // The single owner of the fallback. Each content variant takes this as a
-    // required prop and uses it directly, so `reason` drives copy and this
-    // drives attribution with no second resolution downstream.
     const paymentIntentSource = options?.paymentIntentSource ?? options?.reason
 
     const legacyPricingDialogProps = {

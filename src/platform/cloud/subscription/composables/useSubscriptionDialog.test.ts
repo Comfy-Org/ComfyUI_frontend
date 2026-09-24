@@ -518,7 +518,6 @@ describe('useSubscriptionDialog', () => {
       expect(useTelemetry()?.trackSubscription).not.toHaveBeenCalled()
     })
 
-    // Each variant is checked separately because each drives its own checkout.
     describe('payment intent source', () => {
       function contentProps() {
         return mockShowLayoutDialog.mock.calls[0][0].props
