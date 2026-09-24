@@ -4,13 +4,12 @@ import { describe, expect, it, vi } from 'vitest'
 import VideoPlayer from './VideoPlayer.vue'
 
 describe('VideoPlayer', () => {
-  // The autoplay watcher forces the element muted directly (so play() sees
-  // it synchronously) without going through the `muted` ref. If it doesn't
-  // also update the ref, the button renders "Mute" (implying sound is
-  // already on) while the video is actually silent, so a visitor never
-  // finds a reason to unmute it.
   it('shows Unmute once a lazily-autoplaying video is forced muted to start playback', async () => {
     vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(false)
+    vi.spyOn(HTMLMediaElement.prototype, 'muted', 'get').mockReturnValue(false)
+    vi.spyOn(HTMLMediaElement.prototype, 'muted', 'set').mockImplementation(
+      () => {}
+    )
     vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
 
     render(VideoPlayer, {
@@ -25,12 +24,15 @@ describe('VideoPlayer', () => {
     expect(await screen.findByRole('button', { name: 'Unmute' })).toBeTruthy()
   })
 
-  // With autoplayUnmuted, the watcher unmutes the element directly to attempt
-  // sound-on playback. When that play() resolves, `muted.value` must follow
-  // `el.muted` so the button reflects the unmuted state.
   it('shows Mute once autoplay-unmuted playback succeeds', async () => {
     vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(false)
-    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+    vi.spyOn(HTMLMediaElement.prototype, 'muted', 'get').mockReturnValue(true)
+    vi.spyOn(HTMLMediaElement.prototype, 'muted', 'set').mockImplementation(
+      () => {}
+    )
+    const play = vi
+      .spyOn(HTMLMediaElement.prototype, 'play')
+      .mockResolvedValue(undefined)
 
     render(VideoPlayer, {
       props: {
@@ -41,7 +43,8 @@ describe('VideoPlayer', () => {
       }
     })
 
-    expect(await screen.findByRole('button', { name: 'Mute' })).toBeTruthy()
+    await vi.waitFor(() => expect(play).toHaveBeenCalled())
+    expect(screen.getByRole('button', { name: 'Mute' })).toBeTruthy()
   })
 
   // A server-rendered autoplay video can already be playing (and muted) when
