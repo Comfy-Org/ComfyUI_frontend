@@ -31,6 +31,7 @@ import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
+import type { DocOpsResult } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
@@ -39,7 +40,6 @@ import type {
   RemoteApplyContext
 } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
-import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 import type { PendingLocalEdits } from './pendingLocalEdits'
 import { collectPendingLocalEdits, docReflects } from './pendingLocalEdits'
@@ -324,15 +324,13 @@ function startAgentCrdtFollower(
     onOpsResult(listener) {
       const handler: EventListener = (event) => {
         if (!(event instanceof CustomEvent)) return
-        const detail = event.detail as OpsResultView & { failed?: unknown }
+        const detail = event.detail as DocOpsResult
         listener({
           workflowId: detail.workflowId,
           ok: detail.ok,
           applied: detail.applied,
           skipped: detail.skipped,
-          ...(detail.failed && typeof detail.failed === 'object'
-            ? { failure: detail.failed }
-            : {})
+          ...(detail.failed ? { failure: detail.failed } : {})
         })
       }
       bridge.addEventListener('doc_ops_result', handler)
@@ -345,13 +343,32 @@ function startAgentCrdtFollower(
     actor: ownActor,
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: (outcome) => {
-      if (outcome.state === 'acknowledged') {
-        const applied = new Set(outcome.result.applied)
-        acknowledgedOps.push(
-          ...outcome.ops.filter((op) => applied.has(op.op_id))
-        )
-      }
       recordDevEvent('human_ops_settled', outcome)
+      if (outcome.state !== 'acknowledged') return
+      const applied = new Set(outcome.result.applied)
+      acknowledgedOps.push(...outcome.ops.filter((op) => applied.has(op.op_id)))
+      if (outcome.result.ok) return
+      const workflowId =
+        outcome.result.workflowId ?? bridge.subscribedWorkflowId
+      const settled = new Set([...applied, ...outcome.result.skipped])
+      const rejected = outcome.ops.filter((op) => !settled.has(op.op_id))
+      reportError(
+        new Error(
+          `The doc host rejected ${rejected.length} local edit(s): ${outcome.result.failure?.message ?? 'no diagnostics'}`
+        ),
+        {
+          errorType: 'agent_crdt_human_ops_rejected',
+          context: {
+            workflowId,
+            opId: outcome.result.failure?.op_id ?? rejected[0]?.op_id,
+            code: outcome.result.failure?.code,
+            rejectedOps: rejected.map((op) => op.op)
+          }
+        }
+      )
+      // The rejected edits are no longer pending, so the doc is the graph's
+      // whole truth again: put the live graph back on it.
+      if (workflowId !== null) syncAndReportPending(workflowId)
     }
   })
   const pendingHumanEdits = (workflowId: string): PendingLocalEdits => {

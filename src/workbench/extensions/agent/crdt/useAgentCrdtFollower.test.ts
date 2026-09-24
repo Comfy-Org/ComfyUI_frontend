@@ -1211,6 +1211,35 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('re-syncs the live graph to the doc when the host rejects a human batch', async () => {
+    const { unmount, enqueue } = mountFollower('wf-1')
+    enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])
+    await Promise.resolve()
+    const [, , ops] = clientState.sendOps.mock.calls[0]
+    projectionState.syncFromDoc.mockClear()
+
+    dispatchFrame('doc_ops_result', {
+      workflowId: 'wf-1',
+      ok: false,
+      applied: [],
+      skipped: [],
+      failed: { index: 0, op_id: ops[0].op_id, code: 'unknown_node' }
+    })
+
+    expect(projectionState.syncFromDoc).toHaveBeenCalledExactlyOnceWith('wf-1')
+    expect(telemetryState.reportError).toHaveBeenCalledWith(
+      expect.any(Error),
+      expect.objectContaining({
+        errorType: 'agent_crdt_human_ops_rejected',
+        context: expect.objectContaining({
+          opId: ops[0].op_id,
+          code: 'unknown_node'
+        })
+      })
+    )
+    unmount()
+  })
+
   describe('own-actor echo', () => {
     async function mountAndSendOneOp(): Promise<{
       unmount: () => void
