@@ -1,4 +1,7 @@
-import type { AstroIntegrationLogger } from 'astro'
+// @vitest-environment node
+
+import type { AstroIntegrationLogger, HookParameters } from 'astro'
+import { mergeConfig, validateConfig } from 'astro/config'
 import { existsSync } from 'node:fs'
 import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -32,6 +35,18 @@ afterEach(async () => {
   await rm(root, { recursive: true, force: true })
 })
 
+/**
+ * Every plugin name in a Vite `plugins` option, however deeply nested. Walked by
+ * hand on `unknown`: `flat(Infinity)` on Vite's recursive `PluginOption` type
+ * exceeds TypeScript's instantiation depth.
+ */
+function pluginNames(option: unknown): unknown[] {
+  if (Array.isArray(option)) return option.flatMap(pluginNames)
+  return option !== null && typeof option === 'object' && 'name' in option
+    ? [option.name]
+    : []
+}
+
 async function buildDone() {
   const hook = workshopReleaseGate().hooks['astro:build:done']
   if (!hook) throw new Error('Missing build hook')
@@ -44,6 +59,42 @@ async function buildDone() {
 }
 
 describe('Workshop release output', () => {
+  it('registers the catalogue client boundary during Astro setup', async () => {
+    vi.stubEnv('WORKSHOP_IN_BUILD', '0')
+    const config = await validateConfig({}, root, 'build')
+    // Applies each update with the same merge Astro's hook runner uses, so the
+    // assertion is on the configuration Astro would actually build with, not
+    // on the argument the integration happened to pass.
+    let applied = config
+    const updateConfig = vi.fn<
+      HookParameters<'astro:config:setup'>['updateConfig']
+    >((update) => {
+      applied = mergeConfig(applied, update)
+      return applied
+    })
+    const hook = workshopReleaseGate().hooks['astro:config:setup']
+    if (!hook) throw new Error('Missing config setup hook')
+    await hook({
+      config,
+      command: 'build',
+      isRestart: false,
+      updateConfig,
+      injectRoute: vi.fn(),
+      injectScript: vi.fn(),
+      addRenderer: vi.fn(),
+      addWatchFile: vi.fn(),
+      addClientDirective: vi.fn(),
+      addDevToolbarApp: vi.fn(),
+      addMiddleware: vi.fn(),
+      createCodegenDir: () => pathToFileURL(`${root}/.astro/`),
+      logger
+    })
+    expect(updateConfig).toHaveBeenCalledOnce()
+    expect(pluginNames(applied.vite.plugins)).toContain(
+      'workshop-client-boundary'
+    )
+  })
+
   it('rejects an invalid Cloud family before building', () => {
     vi.stubEnv('VERCEL_ENV', 'preview')
     vi.stubEnv('WORKSHOP_IN_BUILD', '1')
@@ -67,8 +118,14 @@ describe('Workshop release output', () => {
     const enabled = modelsBuildRoutes(true)
     expect(enabled.map((route) => route.pattern)).toEqual([
       '/models',
-      '/models/[slug]',
-      '/models/showcase'
+      '/models/[...slug]',
+      '/models/showcase',
+      '/checkout-opening',
+      '/zh-CN/checkout-opening',
+      '/checkout-return',
+      '/zh-CN/checkout-return',
+      '/models/[...slug]/page.json',
+      '/models/catalogue.json'
     ])
     expect(enabled[0].entrypoint).toContain('/routes/models/index.astro')
     for (const route of enabled) expect(existsSync(route.entrypoint)).toBe(true)

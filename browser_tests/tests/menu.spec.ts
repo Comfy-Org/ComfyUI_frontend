@@ -23,10 +23,6 @@ test.describe('Menu', { tag: '@ui' }, () => {
 
   test.describe('Workflows topbar tabs', () => {
     test.beforeEach(async ({ comfyPage }) => {
-      await comfyPage.settings.setSetting(
-        'Comfy.Workflow.WorkflowTabsPosition',
-        'Topbar'
-      )
       await comfyPage.workflow.setupWorkflowsDirectory({})
     })
 
@@ -247,6 +243,36 @@ test.describe('Menu', { tag: '@ui' }, () => {
       // Close menu
       await topbar.closeTopbarMenu()
     })
+  })
+
+  test('Toggles the focused Nodes 2.0 row with Enter and Space', async ({
+    comfyPage
+  }) => {
+    const { topbar } = comfyPage.menu
+    await topbar.openTopbarMenu()
+    const nodes2Toggle = comfyPage.page.getByRole('menuitemcheckbox', {
+      name: 'Nodes 2.0'
+    })
+
+    await topbar.menuRootList.focus()
+    await comfyPage.page.keyboard.press('n')
+    await expect
+      .poll(() => comfyPage.settings.getSetting('Comfy.VueNodes.Enabled'))
+      .toBe(false)
+
+    await topbar.focusMenuItem('Nodes 2.0')
+
+    await comfyPage.page.keyboard.press('Enter')
+    await expect
+      .poll(() => comfyPage.settings.getSetting('Comfy.VueNodes.Enabled'))
+      .toBe(true)
+    await expect(nodes2Toggle).toBeChecked()
+
+    await comfyPage.page.keyboard.press('Space')
+    await expect
+      .poll(() => comfyPage.settings.getSetting('Comfy.VueNodes.Enabled'))
+      .toBe(false)
+    await expect(nodes2Toggle).not.toBeChecked()
   })
 
   // Only test 'Top' to reduce test time.

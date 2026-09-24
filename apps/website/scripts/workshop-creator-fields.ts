@@ -95,12 +95,13 @@ export function createCreatorFields(
     label: string,
     maxItems = 1,
     isRequired = false,
-    mimeTypes?: string[]
+    mimeTypes?: string[],
+    accept: WorkshopCreatorFile['accept'] = 'image'
   ) {
     files.push({
       name,
       label,
-      accept: 'image',
+      accept,
       maxItems,
       required: isRequired,
       ...(mimeTypes ? { mimeTypes } : {})
@@ -170,14 +171,21 @@ export function createCreatorFields(
       scalarRules
     )
     const inputs: Record<string, WorkshopInputDefinition> = { ...form.inputs }
-    for (const field of files)
+    for (const field of files) {
+      const rule = Object.hasOwn(rules, field.name) ? rules[field.name] : {}
       inputs[field.name] = {
         label: field.label,
-        help: rules[field.name]?.help ?? '',
+        help: rule.help ?? '',
+        ...(rule.formConstraint ? { formConstraint: rule.formConstraint } : {}),
+        ...(rule.imageAspectRatio
+          ? { imageAspectRatio: rule.imageAspectRatio }
+          : {}),
+        ...(rule.urlUpload ? { urlUpload: rule.urlUpload } : {}),
         control: 'media',
         hidden: false,
         advanced: false
       }
+    }
     return workshopCreatorFormSchema.parse({
       parameters: form.inputSchema,
       inputs,

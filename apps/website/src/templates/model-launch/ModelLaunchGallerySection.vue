@@ -35,7 +35,7 @@ const { stop } = useIntersectionObserver(
 <template>
   <section
     ref="sectionRef"
-    class="max-w-9xl mx-auto px-4 py-16 lg:px-20 lg:py-24"
+    class="mx-auto max-w-9xl px-4 py-16 lg:px-20 lg:py-24"
   >
     <div class="mx-auto flex max-w-3xl flex-col items-center text-center">
       <h2
@@ -50,7 +50,7 @@ const { stop } = useIntersectionObserver(
     >
       <article v-for="card in gallery.cards" :key="card.id">
         <div
-          class="group rounded-4.5xl relative block aspect-19/10 overflow-hidden bg-black/40"
+          class="group relative block aspect-19/10 overflow-hidden rounded-4.5xl bg-black/40"
         >
           <video
             v-if="card.media.kind === 'video'"
@@ -83,7 +83,7 @@ const { stop } = useIntersectionObserver(
             class="absolute inset-x-8 top-8 flex items-start justify-end"
           >
             <div
-              class="group-hover:bg-primary-comfy-yellow flex size-10 items-center justify-center rounded-2xl bg-transparency-white-t20 text-primary-warm-white backdrop-blur-sm transition-colors group-hover:text-primary-comfy-ink"
+              class="flex size-10 items-center justify-center rounded-2xl bg-transparency-white-t20 text-primary-warm-white backdrop-blur-sm transition-colors group-hover:bg-primary-comfy-yellow group-hover:text-primary-comfy-ink"
             >
               <span
                 class="inline-block size-6 bg-current"
@@ -124,7 +124,7 @@ const { stop } = useIntersectionObserver(
                 'rounded-xl text-primary-comfy-ink hover:text-primary-comfy-ink',
                 gallery.ctaVariant === 'accent'
                   ? 'bg-primary-comfy-yellow hover:opacity-90'
-                  : 'hover:bg-primary-comfy-yellow bg-primary-warm-gray'
+                  : 'bg-primary-warm-gray hover:bg-primary-comfy-yellow'
               )
             "
           >

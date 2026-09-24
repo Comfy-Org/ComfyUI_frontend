@@ -1,21 +1,41 @@
 <script setup lang="ts">
+import type { Node } from '@tiptap/pm/model'
+import { DOMParser, Fragment, Slice } from '@tiptap/pm/model'
 import { baseKeymap } from '@tiptap/pm/commands'
 import { closeHistory, history, redo, undo } from '@tiptap/pm/history'
 import { keymap } from '@tiptap/pm/keymap'
 import { EditorState, TextSelection } from '@tiptap/pm/state'
-import { EditorView } from '@tiptap/pm/view'
+import { Decoration, DecorationSet, EditorView } from '@tiptap/pm/view'
 import { onBeforeUnmount, onMounted, useTemplateRef, watch } from 'vue'
+import { default as DOMPurify } from 'dompurify'
 import { useI18n } from 'vue-i18n'
 
+import { buttonVariants } from '@/components/ui/button/button.variants'
+import {
+  tagRemoveButtonVariants,
+  tagVariants
+} from '@/components/chip/tag.variants'
+import { cn } from '@comfyorg/tailwind-utils'
+
+import type { ComposerPrompt } from '../../../types/composerPrompt'
+import {
+  composerReferenceKey,
+  composerReferenceName
+} from '../../../types/composerPrompt'
+import { sameComposerReferenceOrder } from '../../../utils/composerPrompt'
+import {
+  assetReferenceText,
+  nodeReferenceText
+} from '../../../utils/agentMessageText'
+import { selectedNodeKey } from '../../../composables/agent/useCanvasSelection'
 import type { PromptEditor } from '../../../types/promptEditor'
-import type {
-  PromptSnapshot,
-  WorkflowReferenceMetadata
-} from '../../../types/workflowReference'
+import type { WorkflowReferenceMetadata } from '../../../types/workflowReference'
 import {
   inlinePromptSchema,
   promptDocument,
   promptDocumentPosition,
+  promptInsertionPoint,
+  promptNodeReference,
   promptDraft,
   promptTextOffset
 } from './inlinePrompt'
@@ -24,14 +44,18 @@ defineOptions({ inheritAttrs: false })
 const {
   label,
   expanded = false,
-  activeDescendant
+  activeDescendant,
+  historyEpoch = 0,
+  editableWorkflowId
 } = defineProps<{
   label: string
   expanded?: boolean
   activeDescendant?: string
+  historyEpoch?: number
+  editableWorkflowId?: string
 }>()
-const model = defineModel<PromptSnapshot>({
-  default: () => ({ text: '', workflowReferences: [] })
+const model = defineModel<ComposerPrompt>({
+  default: () => ({ text: '', references: [] })
 })
 const emit = defineEmits<{
   input: []
@@ -42,6 +66,7 @@ const emit = defineEmits<{
   blur: []
   openReferenceWorkflow: [id: string, name: string]
   removeWorkflowReference: [id: string]
+  removeNodeReference: [id: string]
 }>()
 const { t } = useI18n()
 const host = useTemplateRef<HTMLDivElement>('host')
@@ -53,6 +78,24 @@ const plugins = [
     'Mod-z': undo,
     'Mod-Shift-z': redo,
     'Mod-y': redo,
+    ArrowRight: (state, dispatch) => {
+      if (state.selection.empty) return false
+      dispatch?.(
+        state.tr.setSelection(
+          TextSelection.create(state.doc, state.selection.to)
+        )
+      )
+      return true
+    },
+    ArrowLeft: (state, dispatch) => {
+      if (state.selection.empty) return false
+      dispatch?.(
+        state.tr.setSelection(
+          TextSelection.create(state.doc, state.selection.from)
+        )
+      )
+      return true
+    },
     'Shift-Enter': (state, dispatch) => {
       dispatch?.(state.tr.insertText('\n').scrollIntoView())
       return true
@@ -63,9 +106,42 @@ const plugins = [
 
 function createState(): EditorState {
   return EditorState.create({
-    doc: promptDocument(model.value.text, model.value.workflowReferences),
+    doc: promptDocument(model.value),
     plugins
   })
+}
+
+function deleteReference(state: EditorState, position: number, node: Node) {
+  const end = position + node.nodeSize
+  const padding = state.doc.nodeAt(end)?.text?.startsWith(' ') ? 1 : 0
+  return state.tr.delete(position, end + padding)
+}
+
+function referenceClipboardText(node: Node): string {
+  const reference = promptNodeReference(node, 0)
+  if (!reference) return ''
+  const name = composerReferenceName(reference)
+  if (reference.kind === 'workflow') return `@[Workflow: ${name}]`
+  return reference.kind === 'node'
+    ? nodeReferenceText(name)
+    : assetReferenceText(name)
+}
+
+function passiveReferenceView(node: Node, iconClass: string) {
+  const dom = document.createElement('span')
+  const reference = promptNodeReference(node, 0)
+  if (!reference) return { dom }
+  dom.contentEditable = 'false'
+  dom.dataset.testid = `${reference.kind}-reference-chip`
+  dom.className = cn(tagVariants(), 'align-middle')
+  const icon = document.createElement('span')
+  icon.className = `${iconClass} size-3 shrink-0`
+  icon.setAttribute('aria-hidden', 'true')
+  const label = document.createElement('span')
+  label.className = 'min-w-0 max-w-56 truncate'
+  label.textContent = composerReferenceName(reference)
+  dom.append(icon, label)
+  return { dom, ignoreMutation: () => true }
 }
 
 onMounted(() => {
@@ -82,8 +158,25 @@ onMounted(() => {
         ? { 'aria-activedescendant': activeDescendant }
         : {}),
       class:
-        'text-agent-fg min-h-7 w-full cursor-text font-inter text-[14px]/5 font-normal wrap-anywhere whitespace-pre-wrap outline-none [&_.ProseMirror-selectednode]:outline-1'
+        'text-base-foreground min-h-7 w-full cursor-text font-inter text-[14px]/7 font-normal wrap-anywhere whitespace-pre-wrap outline-none'
     }),
+    decorations(state) {
+      if (state.selection.empty) return null
+      const decorations: Decoration[] = []
+      state.doc.nodesBetween(
+        state.selection.from,
+        state.selection.to,
+        (node, position) => {
+          if (node.type === inlinePromptSchema.nodes.workflow)
+            decorations.push(
+              Decoration.node(position, position + node.nodeSize, {
+                'data-selected': 'true'
+              })
+            )
+        }
+      )
+      return DecorationSet.create(state.doc, decorations)
+    },
     dispatchTransaction(transaction) {
       if (!view) return
       const previousReferences = promptDraft(view.state.doc).references
@@ -91,7 +184,9 @@ onMounted(() => {
       if (
         previousReferences.length !== nextReferences.length ||
         previousReferences.some(
-          (reference, index) => reference.id !== nextReferences[index]?.id
+          (reference, index) =>
+            composerReferenceKey(reference) !==
+            composerReferenceKey(nextReferences[index])
         )
       )
         closeHistory(transaction)
@@ -106,13 +201,25 @@ onMounted(() => {
       view.updateState(view.state.apply(transaction))
       if (transaction.docChanged) {
         const draft = promptDraft(view.state.doc)
-        model.value = { text: draft.text, workflowReferences: draft.references }
-        for (const previous of previousReferences)
-          if (!draft.references.some(({ id }) => id === previous.id))
+        model.value = draft
+        for (const previous of previousReferences) {
+          if (
+            draft.references.some(
+              (reference) =>
+                composerReferenceKey(reference) ===
+                composerReferenceKey(previous)
+            )
+          )
+            continue
+          if (previous.kind === 'workflow')
             emit('removeWorkflowReference', previous.id)
+          if (previous.kind === 'node')
+            emit('removeNodeReference', selectedNodeKey(previous.node))
+        }
         emit('input')
       }
-      if (transaction.selectionSet) emit('selectionChange')
+      if (transaction.selectionSet || transaction.docChanged)
+        emit('selectionChange')
     },
     handleKeyDown(editor, event) {
       emit('keydown', event)
@@ -128,13 +235,11 @@ onMounted(() => {
             : event.key === 'Delete'
               ? $from.nodeAfter
               : null
-        if (adjacent?.type.name === 'workflow') {
+        if (adjacent?.isAtom && !adjacent.isText) {
           const start =
             event.key === 'Backspace' ? from - adjacent.nodeSize : from
           editor.dispatch(
-            editor.state.tr
-              .delete(start, start + adjacent.nodeSize)
-              .scrollIntoView()
+            deleteReference(editor.state, start, adjacent).scrollIntoView()
           )
           event.preventDefault()
         }
@@ -158,17 +263,57 @@ onMounted(() => {
         return false
       }
     },
-    handlePaste(editor, event) {
-      const text = event.clipboardData?.getData('text/plain')
-      if (text === undefined) return false
-      editor.dispatch(editor.state.tr.insertText(text).scrollIntoView())
+    transformPastedHTML: (html) => DOMPurify.sanitize(html),
+    handlePaste(editor, event, slice) {
+      const clipboard = event.clipboardData
+      if (!clipboard) return false
+      const text = clipboard.getData('text/plain')
+      const { state } = editor
+      const hasWorkflows = slice.content.content.some(
+        (node) => node.type === inlinePromptSchema.nodes.workflow
+      )
+      if (!hasWorkflows) {
+        editor.dispatch(state.tr.insertText(text).scrollIntoView())
+        return true
+      }
+      const usedIds = new Set([editableWorkflowId])
+      state.doc.forEach((node, position) => {
+        if (
+          node.type === inlinePromptSchema.nodes.workflow &&
+          (position < state.selection.from || position >= state.selection.to)
+        )
+          usedIds.add(node.attrs.id)
+      })
+      // The default clipboard parser collapses whitespace in inline slices.
+      const pasted = DOMParser.fromSchema(inlinePromptSchema).parseSlice(
+        DOMPurify.sanitize(clipboard.getData('text/html'), {
+          RETURN_DOM_FRAGMENT: true
+        }),
+        { preserveWhitespace: 'full' }
+      )
+      const content = pasted.content.content.map((node) => {
+        if (node.type !== inlinePromptSchema.nodes.workflow) return node
+        if (usedIds.has(node.attrs.id))
+          return inlinePromptSchema.text(referenceClipboardText(node))
+        usedIds.add(node.attrs.id)
+        return node
+      })
+      editor.dispatch(
+        state.tr
+          .replaceSelection(new Slice(Fragment.from(content), 0, 0))
+          .setMeta('paste', true)
+          .setMeta('uiEvent', 'paste')
+          .scrollIntoView()
+      )
       return true
     },
     clipboardTextSerializer: (slice) =>
       slice.content.textBetween(0, slice.content.size, '', (node) =>
-        String(node.attrs.name ?? '')
+        referenceClipboardText(node)
       ),
     nodeViews: {
+      node: (node) => passiveReferenceView(node, 'icon-[comfy--node]'),
+      asset: (node) => passiveReferenceView(node, 'icon-[lucide--paperclip]'),
       workflow(node, editor, getPos) {
         const id: unknown = node.attrs.id
         const name: unknown = node.attrs.name
@@ -176,9 +321,12 @@ onMounted(() => {
         if (typeof id !== 'string' || typeof name !== 'string') return { dom }
         dom.contentEditable = 'false'
         dom.dataset.testid = 'workflow-reference-chip'
-        dom.className = 'group/workflow inline'
-        const open = document.createElement('span')
-        open.setAttribute('role', 'button')
+        dom.className = cn(
+          tagVariants({ interactive: true, removable: true }),
+          'group/workflow align-middle'
+        )
+        const open = document.createElement('button')
+        open.type = 'button'
         open.tabIndex = 0
         const unavailable = node.attrs.unavailable === true
         open.setAttribute(
@@ -197,24 +345,15 @@ onMounted(() => {
           open.title = reason
         }
         open.className =
-          'inline cursor-pointer rounded-sm bg-primary-background/30 box-decoration-clone px-1 py-0.5 font-inter text-xs/[15px] font-normal break-all whitespace-normal text-primary-background-hover ring-1 ring-primary-background/30 transition-colors ring-inset hover:bg-primary-background/40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary-background aria-disabled:cursor-not-allowed aria-disabled:opacity-50'
+          'flex min-w-0 cursor-pointer items-center border-none bg-transparent p-0 text-inherit outline-none aria-disabled:cursor-not-allowed'
         const icon = document.createElement('span')
-        icon.className =
-          'icon-[comfy--workflow] mr-1 inline-block size-3 align-middle'
+        icon.className = 'icon-[comfy--workflow] mr-1 size-3 shrink-0'
         const title = document.createElement('span')
+        title.className = 'min-w-0 max-w-56 truncate'
         title.textContent = name
         open.append(icon, title)
         open.onclick = () => {
           if (!unavailable) emit('openReferenceWorkflow', id, name)
-        }
-        open.onkeydown = (event) => {
-          if (event.key === 'Enter' || event.key === ' ') event.preventDefault()
-          if (event.key === 'Enter') open.click()
-        }
-        open.onkeyup = (event) => {
-          if (event.key !== ' ') return
-          event.preventDefault()
-          open.click()
         }
         const removeAnchor = document.createElement('span')
         removeAnchor.className = 'relative inline-block h-4 w-0 align-middle'
@@ -224,11 +363,14 @@ onMounted(() => {
           'aria-label',
           t('agent.removeWorkflowReference', { name })
         )
-        remove.className =
-          'text-agent-fg pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 cursor-pointer items-center justify-center rounded-full p-0 opacity-0 transition-opacity group-focus-within/workflow:pointer-events-auto group-focus-within/workflow:opacity-100 group-hover/workflow:pointer-events-auto group-hover/workflow:opacity-100 focus-visible:outline-2 focus-visible:outline-primary-background touch:pointer-events-auto touch:opacity-100'
+        remove.className = cn(
+          buttonVariants({ variant: 'textonly', size: 'icon-sm' }),
+          tagRemoveButtonVariants(),
+          'pointer-events-none absolute -top-2 -right-2 z-10 flex size-5 cursor-pointer items-center justify-center rounded-full p-0 text-base-foreground opacity-0 transition-opacity group-focus-within/workflow:pointer-events-auto group-focus-within/workflow:opacity-100 group-hover/workflow:pointer-events-auto group-hover/workflow:opacity-100 touch:pointer-events-auto touch:opacity-100'
+        )
         const badge = document.createElement('span')
         badge.className =
-          'bg-agent-surface hover:bg-agent-surface-hover flex size-3 items-center justify-center rounded-full ring-1 ring-border-default'
+          'flex size-3 items-center justify-center rounded-full bg-base-background ring-1 ring-border-default hover:bg-secondary-background-hover'
         const cross = document.createElement('span')
         cross.className = 'icon-[lucide--x] size-2'
         badge.append(cross)
@@ -236,9 +378,7 @@ onMounted(() => {
         remove.onclick = () => {
           const position = getPos()
           if (position === undefined) return
-          editor.dispatch(
-            editor.state.tr.delete(position, position + node.nodeSize)
-          )
+          editor.dispatch(deleteReference(editor.state, position, node))
         }
         removeAnchor.append(remove)
         dom.append(open, removeAnchor)
@@ -249,26 +389,42 @@ onMounted(() => {
 })
 
 watch(
-  model,
-  () => {
-    if (
-      !view ||
-      view.state.doc.eq(
-        promptDocument(model.value.text, model.value.workflowReferences)
+  [model, () => historyEpoch],
+  ([next, epoch], [, previousEpoch]) => {
+    if (!view) return
+    const doc = promptDocument(next)
+    if (epoch !== previousEpoch) {
+      insertions.clear()
+      const state = createState()
+      const position = Math.min(view.state.selection.head, doc.content.size)
+      view.updateState(
+        state.apply(
+          state.tr.setSelection(TextSelection.create(state.doc, position))
+        )
       )
-    )
+      emit('selectionChange')
       return
-    insertions.clear()
-    const state = createState()
-    const position = Math.min(view.state.selection.head, state.doc.content.size)
-    view.updateState(
-      state.apply(
-        state.tr.setSelection(TextSelection.create(state.doc, position))
-      )
+    }
+    const start = view.state.doc.content.findDiffStart(doc.content)
+    if (start === null) return
+    const end = view.state.doc.content.findDiffEnd(doc.content)
+    if (!end) return
+    const overlap = Math.max(0, start - Math.min(end.a, end.b))
+    const before = promptDraft(view.state.doc)
+    const metadataOnly =
+      before.text === next.text && sameComposerReferenceOrder(before, next)
+    const transaction = view.state.tr.replace(
+      start,
+      end.a + overlap,
+      doc.slice(start, end.b + overlap)
+    )
+    view.dispatch(
+      closeHistory(transaction.setMeta('addToHistory', !metadataOnly))
     )
   },
-  { deep: true, flush: 'post' }
+  { flush: 'post', deep: true }
 )
+
 watch(
   () => [label, expanded, activeDescendant],
   () => view?.setProps({})
@@ -339,6 +495,10 @@ function captureInsertion(from?: number, to?: number) {
 }
 
 defineExpose({
+  insertionPoint: () =>
+    view
+      ? promptInsertionPoint(view.state.doc, view.state.selection.head)
+      : { textOffset: 0, referenceIndex: 0 },
   focus: () => view?.focus(),
   selection,
   replaceText,

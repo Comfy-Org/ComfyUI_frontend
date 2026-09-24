@@ -5,11 +5,17 @@ const isEnabled = vi.fn()
 const addError = vi.fn()
 const getInitConfiguration = vi.fn()
 const mockIsCloud = { value: false }
+const captureDesktopException = vi.fn()
+const hostTelemetryEnabled = vi.fn(() => true)
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
+}))
+
+vi.mock(import('@/platform/telemetry/hostTelemetryEnabled'), () => ({
+  isHostTelemetryEnabled: () => hostTelemetryEnabled()
 }))
 
 vi.mock(import('@sentry/vue'), () => ({
@@ -33,9 +39,17 @@ const sentryLive = (live: boolean) => isEnabled.mockReturnValue(live)
 const datadogLive = (live: boolean) =>
   getInitConfiguration.mockReturnValue(live ? {} : undefined)
 
+function installDesktopBridge(capture: unknown = captureDesktopException) {
+  const telemetry = { capture: vi.fn() }
+  Object.defineProperty(telemetry, 'captureException', { value: capture })
+  window.__comfyDesktop2 = { Telemetry: telemetry }
+}
+
 describe('reportError', () => {
   beforeEach(() => {
     mockIsCloud.value = false
+    delete window.__comfyDesktop2
+    hostTelemetryEnabled.mockReturnValue(true)
     sentryLive(true)
     datadogLive(true)
   })
@@ -105,6 +119,148 @@ describe('reportError', () => {
 
     expect(captureException).not.toHaveBeenCalled()
     expect(addError).toHaveBeenCalledOnce()
+  })
+
+  // The bridge gets the same message and stack Sentry does; what it never gets
+  // is the free-form `context`, or a tag that is not a defined primitive.
+  it('keeps context and non-primitive tags out of the Desktop payload', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    installDesktopBridge()
+    const { reportError } = await loadReportError()
+    const error = new Error('failed for /Users/private/workflow.json')
+    const tags = {
+      feature_area: 'workspace_auth',
+      http_status: undefined
+    }
+    Object.assign(tags, { unsafe: { nested: true } })
+
+    reportError(error, {
+      errorType: 'workspace_auth_gate_initialization_failure',
+      tags,
+      context: { workflow: '/Users/private/workflow.json' },
+      level: 'error'
+    })
+
+    expect(captureDesktopException).toHaveBeenCalledWith(
+      { message: error.message, stack: error.stack },
+      {
+        error_type: 'workspace_auth_gate_initialization_failure',
+        feature_area: 'workspace_auth',
+        level: 'error'
+      }
+    )
+  })
+
+  it('flushes a report buffered before the Desktop bridge appeared', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    expect(captureDesktopException).not.toHaveBeenCalled()
+
+    installDesktopBridge()
+    flushErrorReports()
+    flushErrorReports()
+
+    expect(captureDesktopException).toHaveBeenCalledOnce()
+  })
+
+  it('retires a report off cloud once the Desktop bridge accepted it', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    installDesktopBridge()
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    expect(captureDesktopException).toHaveBeenCalledOnce()
+
+    datadogLive(true)
+    flushErrorReports()
+
+    expect(addError).not.toHaveBeenCalled()
+  })
+
+  it('buffers for another sink when an older Desktop bridge omits captureException', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    window.__comfyDesktop2 = { Telemetry: { capture: vi.fn() } }
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    datadogLive(true)
+    flushErrorReports()
+
+    expect(addError).toHaveBeenCalledOnce()
+  })
+
+  it('honors the host telemetry kill switch', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    hostTelemetryEnabled.mockReturnValue(false)
+    installDesktopBridge()
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('disabled'), { errorType: 'resource_load_error' })
+    expect(captureDesktopException).not.toHaveBeenCalled()
+
+    hostTelemetryEnabled.mockReturnValue(true)
+    flushErrorReports()
+    expect(captureDesktopException).toHaveBeenCalledOnce()
+  })
+
+  it('ignores a non-callable Desktop captureException', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    installDesktopBridge('not a function')
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    expect(() =>
+      reportError(new Error('early'), { errorType: 'resource_load_error' })
+    ).not.toThrow()
+
+    datadogLive(true)
+    flushErrorReports()
+    expect(addError).toHaveBeenCalledOnce()
+  })
+
+  it('keeps a buffered report deliverable when the Desktop bridge is not an object', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('early'), { errorType: 'resource_load_error' })
+
+    Object.defineProperty(window, '__comfyDesktop2', {
+      value: { Telemetry: 'invalid' },
+      configurable: true
+    })
+    expect(() => flushErrorReports()).not.toThrow()
+
+    datadogLive(true)
+    flushErrorReports()
+    expect(addError).toHaveBeenCalledOnce()
+  })
+
+  it('does not throw out of flushErrorReports when the sink probe throws', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    sentryLive(false)
+    datadogLive(false)
+    const { reportError, flushErrorReports } = await loadReportError()
+
+    reportError(new Error('early'), { errorType: 'resource_load_error' })
+    hostTelemetryEnabled.mockImplementation(() => {
+      throw new Error('storage is blocked')
+    })
+
+    expect(() => flushErrorReports()).not.toThrow()
+
+    hostTelemetryEnabled.mockReturnValue(true)
+    datadogLive(true)
+    flushErrorReports()
+    expect(addError).toHaveBeenCalledOnce()
+    consoleError.mockRestore()
   })
 
   it('buffers reports raised before any sink is live, then flushes them', async () => {
@@ -201,6 +357,57 @@ describe('reportError', () => {
     const [, context] = addError.mock.calls[0]
     expect(context).not.toHaveProperty('http_status')
     expect(context).toMatchObject({ api_endpoint: '/settings/{key}' })
+  })
+
+  it('drops undefined context values from both sinks', async () => {
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('boom'), {
+      errorType: 'http_error',
+      context: {
+        requestId: 'abc123',
+        retryAfter: undefined,
+        attempts: 0,
+        lastMessage: '',
+        healthy: false,
+        cause: null
+      }
+    })
+
+    const [, datadogContext] = addError.mock.calls[0]
+    expect(datadogContext).not.toHaveProperty('retryAfter')
+    expect(datadogContext).toMatchObject({
+      requestId: 'abc123',
+      attempts: 0,
+      lastMessage: '',
+      healthy: false,
+      cause: null
+    })
+
+    const [, sentryOptions] = captureException.mock.calls[0]
+    expect(sentryOptions.extra).not.toHaveProperty('retryAfter')
+    expect(sentryOptions.extra).toMatchObject({
+      requestId: 'abc123',
+      attempts: 0,
+      lastMessage: '',
+      healthy: false,
+      cause: null
+    })
+  })
+
+  it('keeps a caller tag out of the reserved level field', async () => {
+    sentryLive(false)
+    datadogLive(false)
+    installDesktopBridge()
+    const { reportError } = await loadReportError()
+
+    reportError(new Error('boom'), {
+      errorType: 'http_error',
+      tags: { level: 'warning', error_type: 'spoofed' }
+    })
+
+    const [, properties] = captureDesktopException.mock.calls[0]
+    expect(properties).toEqual({ error_type: 'http_error' })
   })
 
   it('does not throw out of flushErrorReports when a sink throws', async () => {
@@ -320,5 +527,74 @@ describe('reportError', () => {
       })
     ).not.toThrow()
     expect(addError).toHaveBeenCalledOnce()
+  })
+
+  it('delivers a report that re-enters through a sink once, then accepts the next report', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { reportError } = await loadReportError()
+    const nested = new Error('Graph serialization state mismatch')
+    captureException.mockImplementationOnce(() => {
+      reportError(nested, { errorType: 'graph_serialization_state_mismatch' })
+    })
+
+    reportError(new Error('bad subgraph'), {
+      errorType: 'subgraph_load_failure'
+    })
+
+    expect(captureException).toHaveBeenCalledOnce()
+    expect(addError).toHaveBeenCalledOnce()
+    expect(consoleError).toHaveBeenCalledWith(
+      expect.stringContaining('graph_serialization_state_mismatch'),
+      nested
+    )
+
+    reportError(new Error('later'), { errorType: 'http_error' })
+
+    expect(captureException).toHaveBeenCalledTimes(2)
+    expect(addError).toHaveBeenCalledTimes(2)
+  })
+
+  it('skips the console line for a suppressed re-entrant report that opted out', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { reportError } = await loadReportError()
+    captureException.mockImplementationOnce(() => {
+      reportError(new Error('nested'), {
+        errorType: 'invariant_assert',
+        logToConsole: false
+      })
+    })
+
+    reportError(new Error('outer'), {
+      errorType: 'subgraph_load_failure',
+      logToConsole: false
+    })
+
+    expect(consoleError).not.toHaveBeenCalled()
+    expect(consoleWarn).not.toHaveBeenCalled()
+  })
+
+  it('logs a suppressed warning-level re-entrant report through console.warn', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const { reportError, REPORTED_ERROR_PREFIX } = await loadReportError()
+    const nested = new Error('nested')
+    captureException.mockImplementationOnce(() => {
+      reportError(nested, {
+        errorType: 'session_cookie_creation_failure',
+        level: 'warning'
+      })
+    })
+
+    reportError(new Error('outer'), {
+      errorType: 'subgraph_load_failure',
+      logToConsole: false
+    })
+
+    expect(consoleWarn).toHaveBeenCalledExactlyOnceWith(
+      `${REPORTED_ERROR_PREFIX}session_cookie_creation_failure (suppressed: raised while reporting)`,
+      nested
+    )
+    expect(consoleError).not.toHaveBeenCalled()
   })
 })

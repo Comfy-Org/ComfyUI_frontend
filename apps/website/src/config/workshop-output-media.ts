@@ -1,3 +1,4 @@
+import { combineAbortSignals } from '../utils/abortSignal'
 import type { RunOutput } from './workshop-run'
 
 const EXTENSIONS = new Map([
@@ -39,6 +40,68 @@ export function outputMimeForUrl(value: string): string {
   const extension =
     new URL(value).pathname.split('.').at(-1)?.toLowerCase() ?? ''
   return EXTENSIONS.get(extension) ?? 'application/octet-stream'
+}
+
+export async function discoverOutputMimes(
+  urls: readonly string[],
+  signal?: AbortSignal
+): Promise<ReadonlyMap<string, string>> {
+  signal?.throwIfAborted()
+  const pending = [...new Set(urls)].filter((value) => {
+    const url = URL.parse(value)
+    return (
+      url?.protocol === 'https:' &&
+      !url.username &&
+      !url.password &&
+      outputMimeForUrl(value) === 'application/octet-stream'
+    )
+  })
+  const discovered = new Map<string, string>()
+  if (!pending.length) return discovered
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), 5_000)
+  const requestSignal = signal
+    ? combineAbortSignals([signal, controller.signal])
+    : controller.signal
+  let next = 0
+  async function worker() {
+    while (next < pending.length && !requestSignal.aborted) {
+      const url = pending[next++]
+      try {
+        const response = await fetch(url, {
+          method: 'HEAD',
+          credentials: 'omit',
+          redirect: 'error',
+          referrerPolicy: 'no-referrer',
+          signal: requestSignal
+        })
+        const mime = response.headers
+          .get('Content-Type')
+          ?.split(';')[0]
+          .trim()
+          .toLowerCase()
+        if (
+          response.ok &&
+          mime &&
+          (isPassiveOutputMime(mime) || mime === 'image/svg+xml')
+        )
+          discovered.set(url, mime)
+        await response.body?.cancel()
+      } catch {
+        signal?.throwIfAborted()
+      }
+    }
+  }
+  try {
+    await Promise.all(
+      Array.from({ length: Math.min(4, pending.length) }, worker)
+    )
+    signal?.throwIfAborted()
+    return discovered
+  } finally {
+    clearTimeout(timeout)
+    controller.abort()
+  }
 }
 
 export function outputExtension(mime: string): string {

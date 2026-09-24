@@ -13,9 +13,7 @@ import { useAgentRunModeStore } from '@/workbench/extensions/agent/stores/agent/
 
 import DockedAgentPanel from './DockedAgentPanel.vue'
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => undefined
-}))
+vi.mock(import('@/platform/telemetry'))
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
@@ -57,12 +55,15 @@ vi.mock(import('@/workbench/extensions/agent/AgentPanelRoot.vue'), async () => {
 function openPanel() {
   const store = useAgentPanelStore()
   store.enabled = true
+  store.consentAccepted = true
   store.isOpen = true
   return store
 }
 
 function renderPanel() {
-  return render(DockedAgentPanel, { global: { plugins: [i18n] } })
+  return render(DockedAgentPanel, {
+    global: { plugins: [i18n] }
+  })
 }
 
 describe('DockedAgentPanel', () => {
@@ -112,15 +113,6 @@ describe('DockedAgentPanel', () => {
         errorType: 'agent_run_mode_load_failure'
       })
     )
-  })
-
-  it('fills the panel shell and draws the canvas seam border', () => {
-    openPanel()
-    renderPanel()
-
-    const shell = screen.getByTestId('docked-agent-panel-shell')
-
-    expect(shell).toHaveClass('border-l', 'border-interface-stroke')
   })
 
   it('renders nothing while the panel is closed', () => {

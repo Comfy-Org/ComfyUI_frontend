@@ -1,37 +1,94 @@
-// @vitest-environment happy-dom
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { readonly, ref, nextTick } from 'vue'
+import type { Ref } from 'vue'
 
 import { discoveryProviders } from '../../data/modelDiscovery'
+import type { DiscoveryProvider } from '../../data/modelDiscovery'
+import {
+  useWorkshopEnabled,
+  useWorkshopEnabledSettled
+} from '../../scripts/posthog'
 import ModelDiscoverySection from './ModelDiscoverySection.vue'
 
-describe('ModelDiscoverySection', () => {
-  it('only lines up providers that run models and have a preview', () => {
-    expect(discoveryProviders.length).toBeGreaterThan(10)
-    for (const provider of discoveryProviders) {
-      expect(provider.modelCount, provider.name).toBeGreaterThan(0)
-      expect(provider.thumbnailUrl, provider.name).toBeTruthy()
-    }
+vi.mock(import('../../scripts/posthog'))
+
+let enabled: Ref<boolean>
+let settled: Ref<boolean>
+
+beforeEach(() => {
+  enabled = ref(true)
+  vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
+  settled = ref(true)
+  vi.mocked(useWorkshopEnabledSettled).mockReturnValue(readonly(settled))
+})
+
+const providers: readonly DiscoveryProvider[] = [
+  {
+    name: 'Fixture Studio & Co',
+    logo: '/icons/fixture.svg',
+    modelCount: 2,
+    thumbnailUrl: '/fixture-preview.png'
+  }
+]
+
+describe('ModelDiscoverySection', async () => {
+  it('keeps discovery unavailable until enabled and hides it on revocation', async () => {
+    enabled.value = false
+    render(ModelDiscoverySection, { props: { providers } })
+    await nextTick()
+    expect(screen.queryByText('Browse all models')).toBeNull()
+    expect(screen.queryByText('Fixture Studio & Co')).toBeNull()
+
+    enabled.value = true
+    await nextTick()
+    expect(screen.getByRole('link', { name: 'Browse all models' })).toBeTruthy()
+    expect(
+      screen.getByRole('link', { name: /Fixture Studio & Co/ })
+    ).toBeTruthy()
+
+    enabled.value = false
+    await nextTick()
+    expect(screen.queryByRole('link', { name: 'Browse all models' })).toBeNull()
+    expect(
+      screen.queryByRole('link', { name: /Fixture Studio & Co/ })
+    ).toBeNull()
   })
 
-  it('sends every provider to the catalog filtered by that provider', () => {
-    render(ModelDiscoverySection)
+  it('lines up multiple providers', () => {
+    expect(discoveryProviders.length).toBeGreaterThan(1)
+  })
 
-    const bytedance = screen.getByRole('link', { name: /ByteDance/ })
-    expect(bytedance.getAttribute('href')).toBe('/models?provider=ByteDance')
-    expect(screen.getByRole('link', { name: /Black Forest Labs/ })).toBeTruthy()
+  it.for(discoveryProviders)(
+    '$name runs published models and has a preview',
+    (provider) => {
+      expect(provider.modelCount).toBeGreaterThan(0)
+      expect(provider.thumbnailUrl).toBeTruthy()
+    }
+  )
+
+  it('sends every provider to a visible catalog search', async () => {
+    render(ModelDiscoverySection, { props: { providers } })
+    await nextTick()
+
+    const provider = screen.getByRole('link', { name: /Fixture Studio & Co/ })
+    expect(provider.getAttribute('href')).toBe(
+      '/models?q=Fixture+Studio+%26+Co'
+    )
+    expect(screen.queryByRole('link', { name: /ByteDance/ })).toBeNull()
 
     const browse = screen.getByRole('link', { name: 'Browse all models' })
     expect(browse.getAttribute('href')).toBe('/models')
   })
 
-  it('hides the looping copy of the row from assistive tech', () => {
-    render(ModelDiscoverySection)
+  it('hides the looping copy of the row from assistive tech', async () => {
+    render(ModelDiscoverySection, { props: { providers } })
+    await nextTick()
 
-    const visible = screen.getAllByRole('link', { name: /ByteDance/ })
+    const visible = screen.getAllByRole('link', { name: /Fixture Studio & Co/ })
     const all = screen.getAllByRole('link', {
-      name: /ByteDance/,
+      name: /Fixture Studio & Co/,
       hidden: true
     })
     expect(visible).toHaveLength(1)
@@ -42,15 +99,19 @@ describe('ModelDiscoverySection', () => {
 
   it('loads a provider preview only once its card is hovered', async () => {
     const user = userEvent.setup()
-    render(ModelDiscoverySection)
+    render(ModelDiscoverySection, { props: { providers } })
+    await nextTick()
 
     expect(screen.queryByTestId('static-frame')).toBeNull()
-    await user.hover(screen.getByRole('link', { name: /ByteDance/ }))
+    await user.hover(screen.getByRole('link', { name: /Fixture Studio & Co/ }))
     expect(screen.getAllByTestId('static-frame').length).toBeGreaterThan(0)
   })
 
-  it('localizes copy while keeping the English-only Workshop route', () => {
-    render(ModelDiscoverySection, { props: { locale: 'zh-CN' } })
+  it('localizes copy while keeping the English-only Workshop route', async () => {
+    render(ModelDiscoverySection, {
+      props: { locale: 'zh-CN', providers }
+    })
+    await nextTick()
 
     const browse = screen.getByRole('link', { name: '浏览全部模型' })
     expect(browse.getAttribute('href')).toBe('/models')

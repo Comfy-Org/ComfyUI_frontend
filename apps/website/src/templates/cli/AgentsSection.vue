@@ -36,7 +36,7 @@ const features: {
 </script>
 
 <template>
-  <section class="max-w-9xl mx-auto px-6 py-16 lg:py-24">
+  <section class="mx-auto max-w-9xl px-6 py-16 lg:py-24">
     <SectionHeader
       max-width="xl"
       :label="t('cli.agents.label', locale)"
@@ -54,10 +54,10 @@ const features: {
       <article
         v-for="feature in features"
         :key="feature.id"
-        class="border-primary-comfy-yellow flex flex-col gap-5 rounded-[40px] border-2 bg-primary-comfy-ink p-8 lg:p-10"
+        class="flex flex-col gap-5 rounded-[40px] border-2 border-primary-comfy-yellow bg-primary-comfy-ink p-8 lg:p-10"
       >
         <p
-          class="text-primary-comfy-yellow self-start rounded-lg bg-white/8 px-3 py-1.5 font-mono text-xs"
+          class="self-start rounded-lg bg-white/8 px-3 py-1.5 font-mono text-xs text-primary-comfy-yellow"
         >
           {{ feature.command }}
         </p>

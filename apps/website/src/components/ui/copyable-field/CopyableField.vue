@@ -27,7 +27,7 @@ function handleCopy() {
   <div
     :class="
       cn(
-        'bg-transparency-white-t4 flex gap-2 rounded-xl border border-primary-warm-gray px-4 py-3',
+        'flex gap-2 rounded-xl border border-primary-warm-gray bg-transparency-white-t4 px-4 py-3',
         multiline ? 'items-start' : 'items-center'
       )
     "

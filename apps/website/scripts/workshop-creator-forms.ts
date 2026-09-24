@@ -15,6 +15,16 @@ const definitions = z
   })
   .parse(rawModels)
 
+function restrictReferenceVideoResolution(
+  properties: z.infer<typeof object>
+): void {
+  properties.resolution = {
+    ...object.parse(properties.resolution),
+    enum: ['480p', '720p'],
+    default: '720p'
+  }
+}
+
 export function creatorFormFor(
   id: string,
   curated: ReturnType<typeof curateWorkshopInputs>,
@@ -58,7 +68,14 @@ export function creatorFormFor(
         url('last_frame_url', 'Last frame')
       }
       if (model.options.mode === 'edit')
-        url('video_url', 'Source video', true, 'video')
+        file(
+          'video',
+          'Source video',
+          1,
+          true,
+          ['video/mp4', 'video/webm'],
+          'video'
+        )
       request = {
         kind: 'callback',
         callback: 'gemini-video',
@@ -121,24 +138,55 @@ export function creatorFormFor(
       request = { kind: 'callback', callback: 'dialogue', options: {} }
       break
     case 'seedance':
-      addRoot()
+      // An edit keeps the source clip's length and aspect ratio, so those
+      // controls (and the last-frame return) are not offered on the edit page.
+      addRoot(
+        model.options.mode === 'edit'
+          ? ['duration', 'ratio', 'return_last_frame']
+          : []
+      )
       prompt('content/[]/text')
       if (model.options.urlMedia) {
         if (model.options.mode === 'reference') {
           url('reference_image_url', 'Reference image', true)
           for (let index = 2; index <= 4; index++)
             url(`reference_image_url_${index}`, `Reference image ${index}`)
+        } else if (model.options.mode === 'edit') {
+          // The edit page rewrites a source clip; Seedance keeps its length
+          // and aspect ratio, so no frame or reference slots are offered.
+          url('video_url', 'Source video', true, 'video')
         } else if (model.options.mode !== 'text') {
           url('first_frame_url', 'First frame', true)
           if (model.options.mode === 'first-last')
             url('last_frame_url', 'Last frame')
         }
-      } else if (model.options.mode !== 'text') {
+      } else if (!['text', 'edit'].includes(model.options.mode)) {
         file('first_frame', 'First frame', 1, model.options.mode === 'image')
         if (model.options.mode === 'mixed') {
           file('last_frame', 'Last frame')
           file('reference_images', 'Reference images', 4)
         }
+      }
+      if (
+        id === 'byteplus/dreamina-seedance-2-5-260628' &&
+        !['text', 'edit'].includes(model.options.mode)
+      ) {
+        const imageFields = model.options.urlMedia
+          ? model.options.mode === 'reference'
+            ? [
+                'reference_image_url',
+                'reference_image_url_2',
+                'reference_image_url_3',
+                'reference_image_url_4'
+              ]
+            : ['first_frame_url', 'last_frame_url']
+          : ['first_frame', 'last_frame', 'reference_images']
+        for (const name of imageFields)
+          rules[name] = {
+            ...rules[name],
+            imageAspectRatio: { minimum: 0.39, maximum: 2.5 },
+            help: 'Use an image with an aspect ratio between 0.39 and 2.50.'
+          }
       }
       request = {
         kind: 'callback',
@@ -147,15 +195,59 @@ export function creatorFormFor(
       }
       break
     case 'seedream':
-      addRoot()
+      addRoot(model.options.mode === 'generate' ? ['layer_decomposition'] : [])
       required.add('prompt')
-      if (Object.hasOwn(object.parse(source.properties), 'image'))
-        file('images', 'Reference images', 10)
+      // The generate page hides the image slot; the edit page requires it.
+      if (
+        model.options.mode !== 'generate' &&
+        Object.hasOwn(object.parse(source.properties), 'image')
+      )
+        file(
+          'images',
+          model.options.mode === 'edit' ? 'Source images' : 'Reference images',
+          10,
+          model.options.mode === 'edit'
+        )
+      if (
+        id === 'byteplus/seedream-5-0-pro-260628' &&
+        model.options.mode !== 'generate'
+      )
+        rules.images = {
+          help: 'Use exactly one image when Separate layers is enabled.',
+          formConstraint: {
+            schema: {
+              if: {
+                properties: { layer_decomposition: { const: true } },
+                required: ['layer_decomposition']
+              },
+              then: {
+                required: ['images'],
+                properties: {
+                  images: {
+                    anyOf: [
+                      { type: 'object' },
+                      { type: 'array', minItems: 1, maxItems: 1 }
+                    ]
+                  }
+                }
+              }
+            },
+            error: 'incompatible'
+          }
+        }
       request = { kind: 'callback', callback: 'seedream', options: {} }
       break
     case 'gemini-image':
       prompt('contents/[]/parts/[]/text')
-      file('images', 'Images', 4)
+      // The generate page hides the image slot; the edit page requires it.
+      if (model.options.mode !== 'generate')
+        file(
+          'images',
+          model.options.mode === 'edit' ? 'Source images' : 'Images',
+          4,
+          model.options.mode === 'edit'
+        )
+      rules.images = { ...rules.images, urlUpload: 'image' }
       settings(
         'generationConfig',
         ['temperature', 'topP', 'topK', 'maxOutputTokens'],
@@ -330,12 +422,46 @@ export function creatorFormFor(
           throw new Error(`Missing creator parameter ${id}:parameters.${name}`)
       }
       prompt('instances/[]/prompt')
-      file('first_frame', 'First frame', 1, false, ['image/jpeg', 'image/png'])
-      file('last_frame', 'Last frame', 1, false, ['image/jpeg', 'image/png'])
-      file('reference_images', 'Reference images', 3, false, [
-        'image/jpeg',
-        'image/png'
-      ])
+      // Text mode (the generate page) takes no frames; image mode (the animate
+      // page) requires the first frame. Without a mode every slot is optional.
+      if (model.options.mode !== 'text') {
+        file('first_frame', 'First frame', 1, model.options.mode === 'image', [
+          'image/jpeg',
+          'image/png'
+        ])
+        file('last_frame', 'Last frame', 1, false, ['image/jpeg', 'image/png'])
+        if (model.options.mode !== 'image')
+          file('reference_images', 'Reference images', 3, false, [
+            'image/jpeg',
+            'image/png'
+          ])
+        rules.first_frame = {
+          help: 'A first frame is required when a last frame is provided.',
+          formConstraint: {
+            schema: {
+              if: { required: ['last_frame'] },
+              then: { required: ['first_frame'] }
+            },
+            error: 'required'
+          }
+        }
+        if (model.options.mode !== 'image')
+          rules.reference_images = {
+            help: 'Use reference images without first or last frames.',
+            formConstraint: {
+              schema: {
+                not: {
+                  required: ['reference_images'],
+                  anyOf: [
+                    { required: ['first_frame'] },
+                    { required: ['last_frame'] }
+                  ]
+                }
+              },
+              error: 'incompatible'
+            }
+          }
+      }
       settings(
         'parameters',
         [
@@ -409,10 +535,17 @@ export function creatorFormFor(
     case 'grok-video':
       addRoot()
       if (model.options.mode === 'reference') {
+        if (id === 'xai/grok-imagine-video')
+          properties.duration = {
+            ...object.parse(properties.duration),
+            maximum: 10,
+            enum: Array.from({ length: 10 }, (_, index) => index + 1)
+          }
+        restrictReferenceVideoResolution(properties)
         url('reference_image_url', 'Reference image', true)
         for (let index = 2; index <= 4; index++)
           url(`reference_image_url_${index}`, `Reference image ${index}`)
-      } else
+      } else if (model.options.mode !== 'text')
         url('image_url', 'First frame image', model.options.mode === 'image')
       request = {
         kind: 'callback',
@@ -420,11 +553,91 @@ export function creatorFormFor(
         options: model.options
       }
       break
+    case 'kling-omni-video': {
+      const mode = model.options.mode
+      addRoot([
+        'image_list',
+        'mode',
+        'multi_shot',
+        'shot_type',
+        'sound',
+        'video_list',
+        ...(mode === 'edit' ? ['aspect_ratio', 'duration'] : []),
+        ...(mode === 'first-last' ? ['aspect_ratio'] : []),
+        ...(mode === 'reference-video' ? ['duration'] : [])
+      ])
+      required.add('prompt')
+      if (mode === 'reference-video')
+        add(
+          'duration',
+          {
+            ...schemaAt(source, 'duration'),
+            enum: ['3', '4', '5', '6', '7', '8', '9', '10'],
+            default: '3'
+          },
+          { label: 'Duration', help: '', advanced: false }
+        )
+      add(
+        'resolution',
+        { type: 'string', enum: ['720p', '1080p'], default: '1080p' },
+        { label: 'Resolution', help: '', advanced: false }
+      )
+      if (
+        id === 'kling/kling-v3-omni' &&
+        ['text', 'image', 'first-last'].includes(mode)
+      )
+        add(
+          'generate_audio',
+          { type: 'boolean', default: false },
+          { label: 'Generate audio', help: '', advanced: false }
+        )
+      if (mode === 'first-last') {
+        url('first_frame_url', 'First frame', true)
+        url('last_frame_url', 'Last frame')
+      }
+      const referenceCount =
+        mode === 'image' ? 7 : mode === 'first-last' ? 6 : 4
+      if (mode !== 'text')
+        for (let index = 1; index <= referenceCount; index++)
+          url(
+            index === 1
+              ? 'reference_image_url'
+              : `reference_image_url_${index}`,
+            index === 1 ? 'Reference image' : `Reference image ${index}`,
+            mode === 'image' && index === 1
+          )
+      if (mode === 'edit' || mode === 'reference-video') {
+        url('video_url', 'Source video', true, 'video')
+        if (id === 'kling/kling-v3-omni')
+          rules.video_url = {
+            ...rules.video_url,
+            maxVideoDurationSeconds: 15.5,
+            videoWidthPixels: { minimum: 700, maximum: 4553 },
+            help: 'Use an SDR source video no longer than 15.5 seconds and between 700 and 4553 pixels wide. HDR video is not supported.'
+          }
+        add(
+          'keep_original_sound',
+          { type: 'boolean', default: true },
+          { label: 'Keep original sound', help: '', advanced: false }
+        )
+      }
+      request = {
+        kind: 'callback',
+        callback: 'kling-omni-video',
+        options: model.options
+      }
+      break
+    }
     case 'flat':
       addRoot(['multi_shot', 'shot_type', 'type'])
       if (Object.hasOwn(properties, 'prompt')) required.add('prompt')
       if (id === 'kling/kling-v1-5') required.add('image')
       request = { kind: 'callback', callback: 'flat', options: {} }
+      break
+    case 'gpt-image':
+      addRoot()
+      required.add('prompt')
+      request = { kind: 'callback', callback: 'gpt-image', options: {} }
       break
     case 'ideogram':
       addRoot(['text_prompt', 'json_prompt'])

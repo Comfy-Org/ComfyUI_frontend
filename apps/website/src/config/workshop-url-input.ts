@@ -1,19 +1,144 @@
-import type { FieldSchema, FormValues } from './workshop-playground'
+import type { FieldSchema, FileValue, FormValues } from './workshop-playground'
 import { urlUploadField, validateForm } from './workshop-playground'
 import { WorkshopRouterError } from './workshop-router-errors'
 import { isHttpImageSource } from './workshop-image-source'
+import { workshopExampleFile } from './workshop-example-file'
+import { loadWorkshopExampleFile } from './workshop-example-file-loader'
+import { readWorkshopFile } from './workshop-file-encoding'
+
+const downloadedSources = new Map<string, FileValue>()
+const formSources = new WeakMap<FormValues, ReadonlyMap<string, FileValue>>()
+const REHOST_SOURCE =
+  /^https:\/\/cdn\.jsdelivr\.net\/gh\/Comfy-Org\/workflow_templates@[^/]+\//
+
+export function shouldRehostWorkshopUrl(
+  field: FieldSchema,
+  source: unknown
+): source is string {
+  return (
+    !!urlUploadField(field) &&
+    typeof source === 'string' &&
+    isHttpImageSource(source) &&
+    REHOST_SOURCE.test(source)
+  )
+}
+
+async function rehostUrlInputs(
+  fields: readonly FieldSchema[],
+  values: FormValues,
+  signal: AbortSignal
+): Promise<FormValues> {
+  const pending = fields.flatMap((field) => {
+    const source = values[field.name]
+    return shouldRehostWorkshopUrl(field, source) ? [{ field, source }] : []
+  })
+  if (!pending.length) return values
+  const errors = validateForm(fields, values)
+  if (Object.keys(errors).length)
+    throw new WorkshopRouterError('validation', null, errors)
+  const previous = formSources.get(values)
+  const retained = new Map<string, FileValue>()
+  const resolved = { ...values }
+  for (const { field, source } of pending) {
+    signal.throwIfAborted()
+    try {
+      let selected = previous?.get(source) ?? downloadedSources.get(source)
+      if (!selected) {
+        const example = workshopExampleFile(source)
+        if (!example) throw new Error('Invalid source URL')
+        const file = await loadWorkshopExampleFile(example, signal)
+        signal.throwIfAborted()
+        selected = { file, name: file.name, type: file.type, size: file.size }
+      }
+      // Preserve File identity so retries reuse the scoped storage URL.
+      retained.set(source, selected)
+      downloadedSources.delete(source)
+      downloadedSources.set(source, selected)
+      if (downloadedSources.size > 8) {
+        const oldest = downloadedSources.keys().next().value
+        if (oldest !== undefined) downloadedSources.delete(oldest)
+      }
+      resolved[field.name] = selected
+    } catch {
+      signal.throwIfAborted()
+      throw new WorkshopRouterError(
+        'upload',
+        null,
+        {
+          [field.name]: 'uploadFailed'
+        },
+        undefined,
+        'example_download'
+      )
+    }
+  }
+  formSources.set(values, retained)
+  return resolved
+}
 
 export type WorkshopUrlEncoder = (
   file: File,
   signal: AbortSignal
 ) => Promise<string>
 
+export async function uploadWorkshopFile(
+  file: File,
+  name: string,
+  signal: AbortSignal,
+  upload?: WorkshopUrlEncoder
+): Promise<string> {
+  signal.throwIfAborted()
+  try {
+    if (!upload) throw new Error('Upload unavailable')
+    const url = await upload(file, signal)
+    signal.throwIfAborted()
+    if (!isHttpImageSource(url)) throw new Error('Invalid upload URL')
+    return url
+  } catch (error) {
+    signal.throwIfAborted()
+    if (
+      error instanceof WorkshopRouterError &&
+      error.stage === 'upload_put' &&
+      !error.response
+    )
+      await readWorkshopFile(file.slice(0, 1), signal, name)
+    const failure =
+      error instanceof WorkshopRouterError
+        ? error
+        : new WorkshopRouterError('upload')
+    throw new WorkshopRouterError(
+      'upload',
+      failure.requestId,
+      { [name]: 'uploadFailed' },
+      failure.response,
+      failure.stage
+    )
+  }
+}
+
+async function uploadUrlInput(
+  field: FieldSchema,
+  file: File,
+  signal: AbortSignal,
+  upload?: WorkshopUrlEncoder
+): Promise<string> {
+  const url = await uploadWorkshopFile(file, field.name, signal, upload)
+  const errors = validateForm([field], { [field.name]: url })
+  if (Object.keys(errors).length)
+    throw new WorkshopRouterError('upload', null, {
+      [field.name]: 'uploadFailed'
+    })
+  return url
+}
+
 export async function resolveWorkshopUrlInputs(
   fields: readonly FieldSchema[],
   values: FormValues,
   signal: AbortSignal,
-  upload?: WorkshopUrlEncoder
+  upload?: WorkshopUrlEncoder,
+  rehostUrls = false
 ): Promise<FormValues> {
+  if (rehostUrls) values = await rehostUrlInputs(fields, values, signal)
   if (
     !fields.some(
       (field) => urlUploadField(field) && typeof values[field.name] === 'object'
@@ -43,22 +168,7 @@ export async function resolveWorkshopUrlInputs(
   })
   const resolved = { ...values }
   for (const { field, file } of pending) {
-    signal.throwIfAborted()
-    try {
-      if (!upload) throw new Error('Upload unavailable')
-      const url = await upload(file, signal)
-      signal.throwIfAborted()
-      const errors = validateForm([field], { [field.name]: url })
-      if (!isHttpImageSource(url) || Object.keys(errors).length)
-        throw new Error('Invalid upload URL')
-      resolved[field.name] = url
-    } catch (error) {
-      signal.throwIfAborted()
-      if (error instanceof WorkshopRouterError) throw error
-      throw new WorkshopRouterError('validation', null, {
-        [field.name]: 'uploadFailed'
-      })
-    }
+    resolved[field.name] = await uploadUrlInput(field, file, signal, upload)
   }
   return resolved
 }

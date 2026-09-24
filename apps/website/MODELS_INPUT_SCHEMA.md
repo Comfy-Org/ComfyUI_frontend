@@ -37,11 +37,29 @@ Router request schema, not a replacement for the authoritative snapshot.
   Do not fabricate assets or IDs.
 - Defaulted dropdowns have no empty `—` option. A required choice with no usable
   default asks for that specific value; it must not silently submit a fake one.
+- A dropdown with one fixed value is disabled; an optional choice can still be
+  selected and cleared. `optionLabels` maps native values to display names only.
+  Capitalization and readable language names never change the submitted values.
+- File previews create Blob URLs only after client mounting. Server-created Blob
+  URLs cannot be loaded by a browser.
 - The creator form has no Native JSON mode switch. Native validation and API
   serialization remain intact underneath the widgets.
 - Common or obvious inputs need only a label. Retain short inline guidance for
   unfamiliar inputs or important model-specific constraints, not help popups.
   Longer necessary guidance wraps inline; it is not clipped to one visual line.
+
+HeyGen's curated language choices correspond to languages in the
+[Starfish voice list](https://github.com/Comfy-Org/ComfyUI/blob/b08e6cf35fac50d3ca8470dffb3f9a1fbb7187d2/comfy_api_nodes/apis/heygen.py).
+Language and locale remain unset for automatic detection; a selected locale
+overrides language, as described in the
+[HeyGen speech contract](https://developers.heygen.com/docs/voices/speech).
+Voice ID is hidden and fixed to the existing tested account voice in the
+input-presentation data; creators cannot choose an unavailable account voice.
+
+Model price estimates prefer the generated node pricing rules. Models whose
+nodes have no price badge can use verified flat rates from
+`src/data/workshop-published-pricing.json`; each snapshot records its source and
+verification date. Do not substitute a flat rate for parameter-dependent billing.
 
 ## Prompt starters
 
@@ -315,11 +333,24 @@ with `pnpm --filter @comfyorg/website generate:workshop-router-contracts`.
 - Multiple Qwen reference inputs become ordered native image entries; Base64
   arrays and first/last-frame mappings remain unchanged. This does not add every
   optional provider media mode or override provider-specific limits.
-- Python/TypeScript examples use the same storage handshake for URL files and
-  local Base64 encoding for Base64 files. cURL continues to omit local files and
-  marks the request incomplete. For script retries, reuse the prepared URLs and
-  key; rerunning upload setup creates different request URLs. Signed URLs and
-  keys must not be logged, checked in, or put into the content pack.
+- Python/TypeScript examples use `comfy-sdk==0.2.0` / `@comfyorg/sdk@0.2.0`.
+  URL-capable local inputs use SDK assets; native inline-only inputs retain
+  Base64 with MIME inferred from the supplied file or HTTP response. Default
+  source URLs remain runnable without inventing local filenames. Preparing the
+  API tab does not read private file bytes or download example media.
+  Embedded default media retains its original data URI: inline requests use
+  those known bytes, and URL inputs use the SDK's `assets.from_bytes` /
+  `assets.fromBytes`. User-selected files still refer to local paths.
+- JSON endpoints use the SDK's `models.run`, which owns request identity and
+  retries. SDK 0.2.0 cannot decode binary responses, so binary/unknown-output
+  endpoints retain HTTP examples that check errors and save non-JSON bytes.
+  cURL generates a fresh key on execution, preserves usable source URLs, and
+  warns when it omits file inputs. Retrying a request requires its original
+  prepared body and key. Credentials are checked before accessing inputs.
+- SDK examples use the same environment family as the page, with separate
+  `COMFY_ROUTER_BASE_URL` and `COMFY_BASE_URL` overrides. SDK dependencies are
+  development-only: tests execute generated code; they add no browser imports.
+  Signed URLs and keys must not be checked in or put into the content pack.
 
 **Live verification is blocked, not certified.** On September 10, both
 `api-nodes-prod` and `api-nodes-staging` returned HTTP 200 without any
@@ -344,7 +375,7 @@ and upload failure preventing generation. This does not replace live CORS tests.
 This separate draft remains uncommitted and is not included in the preview.
 Its local `e2e-models/README.md` contains the repeatable commands.
 `test:e2e:models` runs isolated browser regressions; `test:e2e:models:live`
-explicitly opts into up to two paid requests using `COMFY_KEY`, with the real
+explicitly opts into up to two paid requests using `COMFY_API_KEY`, with the real
 Router and real storage CORS. It requires a generated output that actually
 decodes, not just HTTP 200 or the example already on the page. Normal website
 CI remains network-isolated and never runs these paid tests.
@@ -424,6 +455,23 @@ Choices are narrowed from the pinned Router snapshot and provider documentation:
 Content identity and unfinished per-use-case widget customization are documented
 in [Models content format](MODELS_CONTENT_FORMAT.md). Live render tests remain
 paused while these input definitions are tuned.
+
+## Sign-in drafts
+
+Signed-out visitors can select local media before signing in. The same
+pre-navigation hook serves the header and Playground: scalar edits flush to
+session storage, while media is saved to IndexedDB before same-tab navigation.
+No file is uploaded until the authenticated Run path prepares the request.
+
+Each tab stores an opaque draft key in session storage. Media drafts are consumed
+on return, validated against the current input schema, and usable for one hour.
+Writes prune expired entries and retain at most four drafts, each capped at
+100 MiB. Entries left behind by an abandoned login are pruned on a later write;
+there is no background deletion timer. Document-owned Blob URLs are never stored.
+The storage operation has a five-second deadline and aborts with its component.
+Repeated sign-in clicks share one save; completion cannot redirect a departed
+page. If storage fails, sign-in proceeds and the return page asks the visitor to
+reselect missing files instead of silently submitting default media.
 
 ## Verification boundaries
 

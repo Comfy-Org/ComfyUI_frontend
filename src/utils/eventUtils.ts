@@ -39,6 +39,7 @@ export async function fetchDroppedAsset({
   if (!uri) return undefined
   try {
     const response = await fetch(uri)
+    if (!response.ok) return undefined
     const blob = await response.blob()
     return new File([blob], name, { type: blob.type })
   } catch {

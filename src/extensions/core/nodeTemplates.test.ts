@@ -1,50 +1,37 @@
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import type { ComfyApi } from '@/scripts/api'
+import { app } from '@/scripts/app'
 
-const { extensions, getUserData, reportErrorMock } = await vi.hoisted(
-  async () => {
-    const { createExtensionCapture } =
-      await import('@/utils/__tests__/extensionTestUtils')
-    return {
-      extensions: createExtensionCapture(),
-      getUserData: vi.fn(),
-      reportErrorMock: vi.fn()
-    }
-  }
-)
+const getUserData = vi.hoisted(() => vi.fn())
 
-vi.mock('@/base/common/downloadUtil', () => ({ downloadBlob: vi.fn() }))
+vi.mock(import('@/base/common/downloadUtil'), () => ({ downloadBlob: vi.fn() }))
 
-vi.mock('@/platform/telemetry/reportError', () => ({
-  reportError: reportErrorMock
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
 }))
 
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: () => ({ prompt: vi.fn() })
-}))
+vi.mock(import('@/services/dialogService'))
 
-vi.mock('@/utils/vintageClipboard', () => ({
+vi.mock(import('@/utils/vintageClipboard'), () => ({
   deserialiseAndCreate: vi.fn()
 }))
 
-vi.mock('@/scripts/api', () => ({
-  api: { getUserData, storeUserData: vi.fn() }
+vi.mock(import('@/scripts/api'), () => ({
+  api: fromPartial<ComfyApi>({ getUserData, storeUserData: vi.fn() })
 }))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    registerExtension: extensions.registerExtension,
-    canvas: { selected_nodes: {} }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@/scripts/ui', () => ({
-  ComfyDialog: class {
-    element = document.createElement('div')
-  },
-  $el: (tag: string) => document.createElement(tag)
+vi.mock(import('@/scripts/ui'), () => ({
+  ComfyDialog: fromAny(
+    class {
+      element = document.createElement('div')
+    }
+  ),
+  $el: fromAny((tag: string) => document.createElement(tag))
 }))
 
 function createDeferred<T>() {
@@ -64,6 +51,7 @@ const response = createDeferred<{
 getUserData.mockReturnValue(response.promise)
 
 await import('./nodeTemplates')
+const extension = vi.mocked(app.registerExtension).mock.calls[0][0]
 
 it('reports invalid persisted node templates before falling back to empty', async () => {
   const error = new Error('invalid template JSON')
@@ -85,7 +73,6 @@ it('reports invalid persisted node templates before falling back to empty', asyn
     })
   })
 
-  const extension = extensions.getExtension('Comfy.NodeTemplates')
   if (!extension.getCanvasMenuItems) {
     throw new Error('Comfy.NodeTemplates does not register canvas menu items')
   }
