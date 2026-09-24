@@ -1561,9 +1561,7 @@ export class LGraph
     const { list_of_graphcanvas } = this
     if (list_of_graphcanvas) {
       for (const canvas of list_of_graphcanvas) {
-        if (node.id in canvas.selected_nodes)
-          delete canvas.selected_nodes[node.id]
-
+        delete canvas.selected_nodes[node.id]
         canvas.deselect(node)
       }
     }

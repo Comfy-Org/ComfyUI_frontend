@@ -14,6 +14,8 @@ describe('RouterVideoSection', () => {
 
     expect(video).toBeTruthy()
     expect(video.hasAttribute('muted')).toBe(true)
-    expect(video.hasAttribute('autoplay')).toBe(false)
+    // The section now sits right below the hero, so it loads eagerly
+    // (native `autoplay`) instead of waiting on `lazy-autoplay` + scroll.
+    expect(video.hasAttribute('autoplay')).toBe(true)
   })
 })

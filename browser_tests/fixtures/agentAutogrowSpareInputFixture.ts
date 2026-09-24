@@ -267,12 +267,12 @@ async function wireAutogrowNodeAndSwitchTabs(page: Page) {
   })
 
   await test.step('user switches to a new tab and back', async () => {
-    await expect(topbar.workflowTabs.locator('.p-togglebutton')).toHaveCount(1)
+    await expect(topbar.tabs).toHaveCount(1)
     await topbar.newWorkflowButton.click()
-    await expect(topbar.workflowTabs.locator('.p-togglebutton')).toHaveCount(2)
+    await expect(topbar.tabs).toHaveCount(2)
     const subscribes = hostSocket.subscribeCount()
     await topbar.getTab(0).click()
-    await expect(topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+    await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
     await expect.poll(() => hostSocket.subscribeCount()).toBe(subscribes + 1)
     hostSocket.send(
       host.apply([

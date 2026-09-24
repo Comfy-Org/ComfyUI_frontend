@@ -15,6 +15,7 @@ import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useModelStore } from '@/stores/modelStore'
 import { useMissingModelStore } from '@/platform/missingModel/missingModelStore'
+import { resetOnboardingState } from '@/platform/onboarding/onboardingReset'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
@@ -104,6 +105,8 @@ vi.mock(import('firebase/auth'))
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock(import('@/services/dialogService'))
+
+vi.mock(import('@/platform/onboarding/onboardingReset'))
 
 vi.mock(import('@/services/litegraphService'))
 
@@ -292,6 +295,107 @@ describe('useCoreCommands', () => {
       expect(app.clean).not.toHaveBeenCalled()
       expect(app.rootGraph.clear).not.toHaveBeenCalled()
       expect(api.dispatchCustomEvent).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Replay Onboarding command', () => {
+    function findCommand() {
+      const command = useCoreCommands().find(
+        (cmd) => cmd.id === 'Comfy.Onboarding.Replay'
+      )
+      if (!command) throw new Error('Missing Comfy.Onboarding.Replay command')
+      return command
+    }
+
+    beforeEach(() => {
+      vi.stubGlobal('location', { assign: vi.fn(), reload: vi.fn() })
+      vi.mocked(useDialogService().confirm).mockResolvedValue(true)
+      vi.mocked(resetOnboardingState).mockResolvedValue({ status: 'ready' })
+      useSettingStore().settingValues['Comfy.DevMode'] = true
+    })
+
+    it('does nothing outside developer mode', async () => {
+      useSettingStore().settingValues['Comfy.DevMode'] = false
+
+      await findCommand().function()
+
+      expect(useDialogService().confirm).not.toHaveBeenCalled()
+      expect(resetOnboardingState).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when confirmation is declined', async () => {
+      vi.mocked(useDialogService().confirm).mockResolvedValue(false)
+
+      await findCommand().function()
+
+      expect(resetOnboardingState).not.toHaveBeenCalled()
+      expect(location.reload).not.toHaveBeenCalled()
+    })
+
+    it('reports reset failures without navigating', async () => {
+      vi.mocked(resetOnboardingState).mockResolvedValue({
+        status: 'failed',
+        cause: 'failed'
+      })
+
+      await findCommand().function()
+
+      expect(useToastStore().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'error' })
+      )
+      expect(location.assign).not.toHaveBeenCalled()
+      expect(location.reload).not.toHaveBeenCalled()
+    })
+
+    it('navigates to the cloud root after resetting', async () => {
+      mockDistributionState.isCloud = true
+
+      await findCommand().function()
+
+      expect(location.assign).toHaveBeenCalledWith('/')
+      expect(location.reload).not.toHaveBeenCalled()
+    })
+
+    it('reloads the current page off cloud', async () => {
+      await findCommand().function()
+
+      expect(location.reload).toHaveBeenCalledOnce()
+      expect(location.assign).not.toHaveBeenCalled()
+    })
+
+    it('deduplicates concurrent executions', async () => {
+      let finishReset: (() => void) | undefined
+      vi.mocked(resetOnboardingState).mockReturnValue(
+        new Promise((resolve) => {
+          finishReset = () => resolve({ status: 'ready' })
+        })
+      )
+      const command = findCommand()
+
+      const first = command.function()
+      const second = command.function()
+      await vi.waitFor(() =>
+        expect(resetOnboardingState).toHaveBeenCalledOnce()
+      )
+      finishReset?.()
+      await Promise.all([first, second])
+
+      expect(useDialogService().confirm).toHaveBeenCalledOnce()
+      expect(location.reload).toHaveBeenCalledOnce()
+    })
+
+    it('allows another execution after an earlier one is declined', async () => {
+      vi.mocked(useDialogService().confirm)
+        .mockResolvedValueOnce(false)
+        .mockResolvedValueOnce(true)
+      const command = findCommand()
+
+      await command.function()
+      await command.function()
+
+      expect(useDialogService().confirm).toHaveBeenCalledTimes(2)
+      expect(resetOnboardingState).toHaveBeenCalledOnce()
+      expect(location.reload).toHaveBeenCalledOnce()
     })
   })
 
