@@ -124,7 +124,7 @@ export function useOutputHistory(): {
         user_metadata.outputCount <= user_metadata.allOutputs.length) &&
       item.preview_url
     ) {
-      const reversed = user_metadata.allOutputs.toReversed()
+      const reversed = [...user_metadata.allOutputs].reverse()
       resolvedCache.set(item.id, reversed)
       return filterByOutputNodes(reversed)
     }
@@ -140,7 +140,7 @@ export function useOutputHistory(): {
         if (!jobDetail?.outputs) return []
         const results = Object.entries(jobDetail.outputs)
           .flatMap(flattenNodeOutput)
-          .toReversed()
+          .reverse()
         resolvedCache.set(itemId, results)
         return results
       }),
