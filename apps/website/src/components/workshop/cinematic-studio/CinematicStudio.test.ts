@@ -196,6 +196,7 @@ describe('CinematicStudio', () => {
     expect(picker).toBeInTheDocument()
     await user.click(screen.getByLabelText('Scene'))
     expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByLabelText('Scene')).toHaveFocus()
     expect(
       screen.getByRole('button', { name: /Large format/ })
     ).toHaveTextContent(/85mm.*f\/4/)

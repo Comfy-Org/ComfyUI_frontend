@@ -91,8 +91,12 @@ function togglePicker(key: PickerKey) {
 }
 watch(picker, async (open, wasOpen) => {
   if (open || !wasOpen) return
+  const focusWasInPicker = !!document.activeElement?.closest(
+    '[data-testid="cinematic-picker"]'
+  )
   await nextTick()
-  pickerOpener?.focus()
+  if (focusWasInPicker || document.activeElement === document.body)
+    pickerOpener?.focus()
 })
 
 function choose(part: DirectionPart, id: string) {
