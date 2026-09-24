@@ -1,8 +1,14 @@
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { NavFeatured } from '../../../data/mainNavigation'
 import NavFeaturedCard from './NavFeaturedCard.vue'
+
+const motion = vi.hoisted(() => ({ reduced: false }))
+
+vi.mock(import('../../../composables/useReducedMotion'), () => ({
+  prefersReducedMotion: () => motion.reduced
+}))
 
 const featured: NavFeatured = {
   imageSrc: 'https://example.com/poster.webp',
@@ -32,4 +38,22 @@ describe('NavFeaturedCard', () => {
     expect(video.hasAttribute('loop')).toBe(false)
     expect(screen.queryByRole('img')).toBeNull()
   })
+
+  it.for([
+    { reduced: false, autoplay: true },
+    { reduced: true, autoplay: false }
+  ])(
+    'autoplays the video only without reduced motion (reduced: $reduced)',
+    ({ reduced, autoplay }) => {
+      motion.reduced = reduced
+      render(NavFeaturedCard, {
+        props: {
+          featured: { ...featured, videoSrc: 'https://example.com/clip.webm' }
+        }
+      })
+      expect(
+        screen.getByLabelText('Featured clip').hasAttribute('autoplay')
+      ).toBe(autoplay)
+    }
+  )
 })
