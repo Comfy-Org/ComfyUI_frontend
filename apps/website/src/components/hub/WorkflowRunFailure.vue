@@ -97,8 +97,10 @@ const press = computed<
 </script>
 
 <template>
+  <!-- The same shape a model's playground gives a refusal: the panel says it,
+    centred, and offers the one thing worth pressing. -->
   <div
-    class="flex flex-col items-start gap-3 rounded-xl border border-primary-comfy-red/40 p-4"
+    class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
     data-testid="workflow-run-error"
     :data-reason="reason"
   >

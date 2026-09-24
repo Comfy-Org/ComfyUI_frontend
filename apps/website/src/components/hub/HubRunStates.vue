@@ -24,6 +24,10 @@ type JobStatus =
 
 const JOB_ID = '11111111-2222-3333-4444-555555555555'
 
+// A wait that has been going a little while, so the count beside the spinner
+// reads as a real one rather than a stopped clock.
+const STARTED = Date.now() - 74_000
+
 const job = (status: JobStatus) =>
   zJobDetailResponse.parse({
     id: JOB_ID,
@@ -54,39 +58,39 @@ const scenes: readonly Scene[] = [
   {
     name: 'Uploading',
     when: 'The reader pressed Run and their files are going up. Nothing has reached Cloud yet.',
-    state: { phase: 'uploading' }
+    state: { phase: 'uploading', startedAt: STARTED }
   },
   {
     name: 'Sending',
     when: 'The files are up and the whole graph is on its way to Cloud.',
-    state: { phase: 'submitting' }
+    state: { phase: 'submitting', startedAt: STARTED }
   },
   {
     name: 'Queued',
     when: 'Cloud has the job and has not started it. The first step is where the run stands.',
-    state: { phase: 'tracking', job: job('pending') }
+    state: { phase: 'tracking', job: job('pending'), startedAt: STARTED }
   },
   {
     name: 'Generating',
     when: 'The job is running. The last step is where the run stands.',
-    state: { phase: 'tracking', job: job('in_progress') }
+    state: { phase: 'tracking', job: job('in_progress'), startedAt: STARTED }
   },
   {
     name: 'Queued, on its own server',
     when: 'The one workflow that wakes a server of its own. Its wait has three steps instead of two, so a slow first run reads as the shape of the thing.',
-    state: { phase: 'tracking', job: job('pending') },
+    state: { phase: 'tracking', job: job('pending'), startedAt: STARTED },
     coldStart: true
   },
   {
     name: 'Generating, on its own server',
     when: 'The same run, once the server is awake.',
-    state: { phase: 'tracking', job: job('in_progress') },
+    state: { phase: 'tracking', job: job('in_progress'), startedAt: STARTED },
     coldStart: true
   },
   {
     name: 'Reconnecting',
     when: 'The page lost the job and is asking Cloud where it got to. The run itself never stopped.',
-    state: { phase: 'reconnecting' }
+    state: { phase: 'reconnecting', startedAt: STARTED }
   },
   {
     name: 'Done',

@@ -126,7 +126,7 @@ describe('WorkflowRunForm', () => {
 
     expect(screen.queryByTestId('workflow-run-cancel')).toBeNull()
 
-    state.value = { phase: 'tracking', job: running }
+    state.value = { phase: 'tracking', job: running, startedAt: Date.now() }
     mount()
 
     expect(screen.getAllByTestId('workflow-run-cancel')).not.toHaveLength(0)

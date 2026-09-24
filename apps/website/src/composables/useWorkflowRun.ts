@@ -18,8 +18,12 @@ import { refreshWorkshopCredits } from '../config/workshop-credits'
 /** Where one run has got to, and what the page can say about it. */
 export type RunState =
   | { phase: 'idle' }
-  | { phase: 'uploading' | 'submitting' | 'reconnecting' }
-  | { phase: 'tracking'; job: WorkflowJob }
+  /**
+   * The wait, timed from the press of Run, so the panel can count it off the
+   * way a model's playground does.
+   */
+  | { phase: 'uploading' | 'submitting' | 'reconnecting'; startedAt: number }
+  | { phase: 'tracking'; job: WorkflowJob; startedAt: number }
   | { phase: 'finished'; job: WorkflowJob }
   | { phase: 'cancelled' }
   | {
@@ -183,14 +187,14 @@ export function useWorkflowRun(
       signal.addEventListener('abort', abort, { once: true })
     })
 
-  async function poll(id: string, signal: AbortSignal) {
+  async function poll(id: string, signal: AbortSignal, startedAt: number) {
     while (!signal.aborted) {
       const job = await client.read(
         `/api/jobs/${encodeURIComponent(id)}`,
         signal
       )
       signal.throwIfAborted()
-      state.value = { phase: 'tracking', job }
+      state.value = { phase: 'tracking', job, startedAt }
       if (workflowFinished(job)) {
         if (job.status === 'completed') await collect(id, signal)
         state.value = settledState(job)
@@ -254,7 +258,8 @@ export function useWorkflowRun(
     releaseOutputs()
     let jobId: string | undefined
     let sent = false
-    state.value = { phase: 'uploading' }
+    const startedAt = Date.now()
+    state.value = { phase: 'uploading', startedAt }
     try {
       const missing = unanswered()
       if (missing)
@@ -264,10 +269,10 @@ export function useWorkflowRun(
         )
       const bindings = []
       for (const field of fields) bindings.push(await bindingFor(field, signal))
-      state.value = { phase: 'submitting' }
+      state.value = { phase: 'submitting', startedAt }
       sent = true
       jobId = await client.submit(bindWorkflowInputs(graph, bindings), signal)
-      await poll(jobId, signal)
+      await poll(jobId, signal, startedAt)
     } catch (error) {
       if (!signal.aborted) state.value = failed(error, jobId, sent)
     }
@@ -275,12 +280,13 @@ export function useWorkflowRun(
   async function resume() {
     if (state.value.phase !== 'error' || !state.value.jobId) return
     const jobId = state.value.jobId
-    state.value = { phase: 'reconnecting' }
+    const startedAt = Date.now()
+    state.value = { phase: 'reconnecting', startedAt }
     releaseOutputs()
     controller = new AbortController()
     const { signal } = controller
     try {
-      await poll(jobId, signal)
+      await poll(jobId, signal, startedAt)
     } catch (error) {
       if (!signal.aborted) state.value = failed(error, jobId, true)
     }

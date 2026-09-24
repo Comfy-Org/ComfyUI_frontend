@@ -1,7 +1,10 @@
 <script setup lang="ts">
+import { Image as ImageIcon, Loader2 } from '@lucide/vue'
 import { computed } from 'vue'
+import { useTimestamp } from '@vueuse/core'
 
 import type { RunState } from '../../composables/useWorkflowRun'
+import { formatElapsed } from '../../config/workshop-run'
 import type { Locale } from '../../i18n/translations'
 import { tHub } from '../../i18n/hub'
 import type { RunWayOut } from '../../lib/hub/run-failure'
@@ -11,9 +14,10 @@ import WorkflowRunFailure from './WorkflowRunFailure.vue'
 import WorkflowRunOutput from './WorkflowRunOutput.vue'
 import WorkflowRunSteps from './WorkflowRunSteps.vue'
 
-// The right half of the playground: the wait, then what came back. It is the
-// same panel a model page shows, so a reader crossing from one to the other
-// reads the same thing in the same place.
+// The right half of the playground, built to the same contract as a model's:
+// one state fills the panel at a time, centred, and the result runs to the
+// panel's own edges. A reader crossing from one half to the other is told the
+// same things in the same places.
 const {
   state,
   outputs,
@@ -39,6 +43,8 @@ const {
 
 defineEmits<{ press: [RunWayOut] }>()
 
+const now = useTimestamp({ interval: 1000 })
+
 const steps = computed(() => runSteps(coldStart))
 
 const reached = computed(() =>
@@ -49,6 +55,19 @@ const reached = computed(() =>
   )
 )
 
+/** Everything between the press of Run and an answer, told as one state. */
+const waiting = computed(() =>
+  'startedAt' in state ? { since: state.startedAt } : undefined
+)
+
+const elapsed = computed(() =>
+  waiting.value ? formatElapsed(now.value - waiting.value.since) : '0:00'
+)
+
+/**
+ * What to say beside the steps. Before the job exists this page is doing the
+ * work and says so; once it exists, the lit step is the whole answer.
+ */
 const progress = computed(() => runSaying(state.phase))
 
 const failure = computed(() => (state.phase === 'error' ? state : undefined))
@@ -58,8 +77,9 @@ const showSample = computed(() => sample && state.phase === 'idle')
 
 <template>
   <div
-    class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-7"
+    class="flex min-h-96 min-w-0 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 lg:col-span-7"
     data-testid="workflow-run-result"
+    :data-state="state.phase"
   >
     <header
       class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
@@ -67,60 +87,100 @@ const showSample = computed(() => sample && state.phase === 'idle')
       {{ tHub('workshop.output.title', locale) }}
     </header>
 
-    <!-- The floor keeps this panel level with the form beside it. Stacked
-      under the form on a phone there is nothing to keep level, and the floor
-      is only an empty stretch under the result. -->
-    <div class="flex flex-col gap-4 p-5 lg:min-h-80">
-      <WorkflowRunSteps v-if="reached >= 0" :steps :reached :locale />
+    <!-- Nothing has been made yet and there is nothing of this workflow's to
+      show in its place. -->
+    <div
+      v-if="state.phase === 'idle' && !showSample"
+      class="flex min-h-80 flex-1 flex-col items-center justify-center gap-3 p-6 text-center"
+    >
+      <span
+        class="grid size-12 place-items-center rounded-2xl border border-dashed border-transparency-white-t20 text-primary-warm-gray"
+        aria-hidden="true"
+      >
+        <ImageIcon class="size-5" />
+      </span>
+      <p class="text-sm text-primary-warm-gray">
+        {{ tHub('workshop.output.placeholder', locale) }}
+      </p>
+    </div>
 
-      <p v-if="progress" class="text-sm text-content-muted">
+    <!-- The wait. A model's playground counts off one step; a workflow has
+      two, or three when it wakes a server of its own, so the steps carry the
+      words and the count sits above them. -->
+    <div
+      v-else-if="waiting"
+      class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
+      data-testid="workflow-run-waiting"
+    >
+      <Loader2
+        class="size-8 text-primary-comfy-yellow motion-safe:animate-spin"
+        aria-hidden="true"
+      />
+      <p
+        class="text-sm text-primary-warm-gray tabular-nums"
+        data-testid="workflow-run-elapsed"
+      >
+        {{ elapsed }}
+      </p>
+      <p v-if="progress" class="text-sm text-primary-warm-white">
         {{ tHub(progress, locale) }}
       </p>
+      <WorkflowRunSteps v-if="reached >= 0" :steps :reached :locale />
+    </div>
 
-      <!-- A run stopped on purpose is not a failure, and says so without the
-        red of one. -->
-      <div
-        v-if="state.phase === 'cancelled'"
-        class="flex flex-col items-start gap-3 rounded-xl border border-transparency-white-t8 p-4"
-        data-testid="workflow-run-cancelled"
-      >
-        <p class="text-sm text-content">
-          {{ tHub('workshop.v2.run.cancelled', locale) }}
-        </p>
-        <Button variant="outline" size="sm" @click="$emit('press', 'retry')">
-          {{ tHub('workshop.v2.run.runAgain', locale) }}
-        </Button>
-      </div>
+    <!-- A run stopped on purpose is not a failure, and says so without the
+      red of one. -->
+    <div
+      v-else-if="state.phase === 'cancelled'"
+      class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
+      data-testid="workflow-run-cancelled"
+    >
+      <p class="text-sm text-primary-comfy-canvas">
+        {{ tHub('workshop.v2.run.cancelled', locale) }}
+      </p>
+      <Button variant="outline" size="sm" @click="$emit('press', 'retry')">
+        {{ tHub('workshop.v2.run.runAgain', locale) }}
+      </Button>
+    </div>
 
-      <WorkflowRunFailure
-        v-if="failure"
-        :reason="failure.reason"
-        :message="failure.message"
-        :job-id="failure.jobId"
-        :member-workspace
-        :locale
-        @press="$emit('press', $event)"
+    <WorkflowRunFailure
+      v-else-if="failure"
+      :reason="failure.reason"
+      :message="failure.message"
+      :job-id="failure.jobId"
+      :member-workspace
+      :locale
+      @press="$emit('press', $event)"
+    />
+
+    <template v-else-if="outputs.length">
+      <WorkflowRunOutput
+        v-for="output in outputs"
+        :key="output.url"
+        v-bind="output"
       />
+    </template>
 
-      <div v-if="outputs.length" class="flex flex-col gap-3">
-        <WorkflowRunOutput
-          v-for="output in outputs"
-          :key="output.url"
-          v-bind="output"
-        />
-      </div>
-
-      <!-- Nothing has been made yet, so the panel shows what this workflow
-        makes rather than an empty box. -->
+    <!-- What this workflow makes, marked once as the example it is, in the
+      corner a model's own example is marked in. -->
+    <div
+      v-else
+      class="relative aspect-video max-h-[70dvh] w-full flex-1 overflow-hidden bg-black/20"
+    >
       <img
-        v-else-if="showSample"
         :src="sample"
         :alt="tHub('workshop.output.title', locale)"
         loading="lazy"
         decoding="async"
-        class="aspect-video w-full rounded-xl bg-hub-surface object-cover"
+        class="size-full object-contain"
         data-testid="workflow-run-sample"
       />
+      <span
+        class="absolute top-3 right-3 z-20 inline-flex h-6 items-center rounded-lg bg-black/40 px-2 text-2xs font-bold tracking-wider text-white uppercase backdrop-blur-md"
+        data-testid="workflow-run-example"
+      >
+        {{ tHub('workshop.output.example', locale) }}
+      </span>
     </div>
   </div>
 </template>
