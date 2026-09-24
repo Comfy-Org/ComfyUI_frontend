@@ -31,8 +31,8 @@ function spawnSyncRunner(cwd: string | undefined): CommandRunner {
     })
     return {
       status: result.error ? null : result.status,
-      stdout: result.stdout ?? '',
-      stderr: result.error?.message ?? result.stderr ?? ''
+      stdout: result.stdout,
+      stderr: result.error?.message ?? result.stderr
     }
   }
 }

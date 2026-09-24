@@ -348,7 +348,7 @@ export async function runRecord(
     cwd: process.cwd(),
     stdio: 'pipe'
   })
-    .stdout?.toString()
+    .stdout.toString()
     .trim()
   info([
     `The app you're testing is your local checkout (branch ${branch || 'unknown'}). ` +
@@ -386,7 +386,7 @@ export async function runRecord(
     s.stop('Dependency installation failed')
     fail(
       'pnpm install failed',
-      install.error?.message ?? install.stderr?.toString() ?? ''
+      install.error?.message ?? install.stderr.toString()
     )
     process.exit(1)
   }

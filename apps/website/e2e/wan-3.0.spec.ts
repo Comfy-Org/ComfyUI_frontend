@@ -103,8 +103,8 @@ test.describe('Wan 3.0 launch page @smoke', () => {
         )
       )
       return (
-        scripts.find((s) => (s.textContent ?? '').includes('FAQPage'))
-          ?.textContent ?? null
+        scripts.find((s) => s.textContent.includes('FAQPage'))?.textContent ??
+        null
       )
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()

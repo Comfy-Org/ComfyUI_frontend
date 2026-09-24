@@ -17,7 +17,7 @@ const CTA_HEADING = t('minimax.cta.heading', 'en')
 const CTA_PRIMARY = t('minimax.cta.primaryCta', 'en')
 const CLOUD_URL = externalLinks.cloud
 const CLOUD_RUN_URL = minimaxLinks.cloudRun
-const FAQS = minimaxPage.faq?.items ?? []
+const FAQS = minimaxPage.faq.items
 const FAQ_COUNT = FAQS.length
 const FIRST_FAQ = FAQS[0]
 const PRICING_HEADING = t('pricing.title', 'en')
@@ -222,9 +222,7 @@ test.describe('MiniMax H3 page — interactions', () => {
           'script[type="application/ld+json"]'
         )
       )
-      const match = scripts.find((s) =>
-        (s.textContent ?? '').includes('FAQPage')
-      )
+      const match = scripts.find((s) => s.textContent.includes('FAQPage'))
       return match?.textContent ?? null
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
@@ -248,7 +246,7 @@ test.describe('MiniMax H3 page — interactions', () => {
       )
       return scripts.flatMap((s) => {
         try {
-          const parsed = JSON.parse(s.textContent ?? '{}') as {
+          const parsed = JSON.parse(s.textContent) as {
             '@graph'?: { '@type': string }[]
           }
           return (parsed['@graph'] ?? []).map((node) => node['@type'])

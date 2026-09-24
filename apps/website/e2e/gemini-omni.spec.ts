@@ -290,8 +290,8 @@ test.describe('Gemini Omni — Q&A', () => {
         )
       )
       return (
-        scripts.find((s) => (s.textContent ?? '').includes('FAQPage'))
-          ?.textContent ?? null
+        scripts.find((s) => s.textContent.includes('FAQPage'))?.textContent ??
+        null
       )
     })
 

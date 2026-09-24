@@ -191,8 +191,8 @@ test.describe('LTX 2.5 Q&A', () => {
         )
       )
       return (
-        scripts.find((s) => (s.textContent ?? '').includes('FAQPage'))
-          ?.textContent ?? null
+        scripts.find((s) => s.textContent.includes('FAQPage'))?.textContent ??
+        null
       )
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()

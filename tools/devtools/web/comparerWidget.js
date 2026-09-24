@@ -31,7 +31,7 @@ class ComparerWidget {
         return d
       })
     } else {
-      cleanedVal = v.images || []
+      cleanedVal = v.images
     }
     this._value.images = cleanedVal
     this.selected = cleanedVal.filter((d) => d.selected)

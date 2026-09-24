@@ -199,9 +199,7 @@ test.describe('Seedance 2.5 page — interactions', () => {
           'script[type="application/ld+json"]'
         )
       )
-      const match = scripts.find((s) =>
-        (s.textContent ?? '').includes('FAQPage')
-      )
+      const match = scripts.find((s) => s.textContent.includes('FAQPage'))
       return match?.textContent ?? null
     })
     expect(faqJsonLd, 'FAQ JSON-LD script').not.toBeNull()
