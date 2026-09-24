@@ -3,10 +3,7 @@ import { computed, onScopeDispose, ref, watch } from 'vue'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
 import { createUuidv4 } from '@/utils/uuid'
-import {
-  forwardsComfyCredential,
-  hasCloudWorkflowIndex
-} from '@/workbench/extensions/agent/agentDistribution'
+import { forwardsComfyCredential } from '@/workbench/extensions/agent/agentDistribution'
 import type {
   AgentActiveTabData,
   AgentTurnAccepted,
@@ -360,10 +357,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     draft: DraftSnapshot | undefined
   ): boolean {
     if (draft === undefined) return false
-    if (threadId === 'new' || wfContext?.id !== undefined) return true
-    // Without a cloud index an unbound tab has no id to send; its draft is how
-    // the local agent mints the workflow the session then adopts onto it.
-    return wfContext !== undefined && !hasCloudWorkflowIndex()
+    return threadId === 'new' || wfContext?.id !== undefined
   }
 
   function acceptTurn(

@@ -101,11 +101,7 @@ import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmis
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import { ensureComfyCredential } from './services/agent/comfyCredential'
-import {
-  forwardsComfyCredential,
-  hasCloudWorkflowIndex,
-  isAgentStandalone
-} from './agentDistribution'
+import { forwardsComfyCredential, isAgentStandalone } from './agentDistribution'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {

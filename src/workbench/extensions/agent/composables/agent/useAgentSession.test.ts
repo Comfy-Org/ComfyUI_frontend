@@ -2760,43 +2760,36 @@ describe('useAgentSession credential refresh in the standalone agent harness', (
   })
 })
 
+// An unbound tab on an existing thread has no workflow the thread could own,
+// so its canvas stays out of someone else's thread. Every backend now serves
+// the saved-workflow index, so there is one rule, not one per distribution.
 describe('useAgentSession drafts for an unbound tab on an existing thread', () => {
   it.for([
-    { distribution: 'cloud', standalone: 'false', sendsDraft: false },
-    {
-      distribution: 'the standalone agent harness',
-      standalone: 'true',
-      sendsDraft: true
-    }
-  ])(
-    'in $distribution, sends the draft: $sendsDraft',
-    async ({ standalone, sendsDraft }) => {
-      vi.stubEnv('VITE_AGENT_STANDALONE', standalone)
-      const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
-        thread_id: 'th-1',
-        message_id: 'msg-1'
-      }))
-      const draftSnapshot = {
-        content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] }
+    { distribution: 'cloud', standalone: 'false' },
+    { distribution: 'the standalone agent harness', standalone: 'true' }
+  ])('in $distribution, does not send the draft', async ({ standalone }) => {
+    vi.stubEnv('VITE_AGENT_STANDALONE', standalone)
+    const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
+      thread_id: 'th-1',
+      message_id: 'msg-1'
+    }))
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/local.json' }),
+        adopted: vi.fn(),
+        draft: () => ({
+          content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] }
+        })
       }
-      const session = useAgentSession({
-        rest: fakeRest({ postMessage }),
-        events: fakeEvents().source,
-        workflow: {
-          current: () => ({ tabPath: 'workflows/local.json' }),
-          adopted: vi.fn(),
-          draft: () => draftSnapshot
-        }
-      })
-      session.start()
-      useAgentConversationStore().setThreadId('th-1')
+    })
+    session.start()
+    useAgentConversationStore().setThreadId('th-1')
 
-      await session.sendMessage('use my open workflow')
+    await session.sendMessage('use my open workflow')
 
-      expect(postMessage.mock.calls[0][0]).toBe('th-1')
-      expect(postMessage.mock.calls[0][1].draft).toEqual(
-        sendsDraft ? draftSnapshot : undefined
-      )
-    }
-  )
+    expect(postMessage.mock.calls[0][0]).toBe('th-1')
+    expect(postMessage.mock.calls[0][1].draft).toBeUndefined()
+  })
 })
