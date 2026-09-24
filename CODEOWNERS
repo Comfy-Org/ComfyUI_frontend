@@ -1,4 +1,4 @@
-*                                               @christian-byrne @Comfy-Org/comfy_frontend_devs
+*                                               @Comfy-Org/comfy_frontend_devs @Comfy-Org/comfy-standard-approver
 
 # Renderer extensions — fallback owner.
 # CODEOWNERS is last-match-wins, so this stays above the per-feature blocks
@@ -72,11 +72,11 @@
 /src/platform/assets/mappings/                    @deepme987 @Comfy-Org/comfy_frontend_devs
 
 # Public API types
-/packages/ingest-types/                          @christian-byrne
-/packages/registry-types/                        @christian-byrne
+/packages/ingest-types/                          @Comfy-Org/comfy_frontend_devs
+/packages/registry-types/                        @Comfy-Org/comfy_frontend_devs
 
 # Billing and account boundary - see ADR-AUTH-BILLING-0032.
-/packages/account-core/src/core/                 @dante01yoon @MaanilVerma
+/packages/account-core/src/core/                 @Comfy-Org/comfy_frontend_devs
 /packages/account-core/src/core/billing/               @dante01yoon @Comfy-Org/comfy_frontend_devs
 /apps/billing-web/                                @dante01yoon @Comfy-Org/comfy_frontend_devs
 /apps/website/src/lib/workshop/                   @dante01yoon @Comfy-Org/comfy_website_devs
