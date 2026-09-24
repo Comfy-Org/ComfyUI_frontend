@@ -1,16 +1,19 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import type { User } from 'firebase/auth'
+import type { User, UserCredential } from 'firebase/auth'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import type { ExchangeTokenResponse } from '@comfyorg/ingest-types'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
+import { getComfyApiBaseUrl } from '@/config/comfyApi'
 import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { TOKEN_REFRESH_BUFFER_MS } from '@/platform/workspace/workspaceConstants'
 import { api } from '@/scripts/api'
+import { useAuthStore } from '@/stores/authStore'
+import { resultItemPreviewUrl, resultItemUrl } from '@/utils/resultItemUrl'
 import type { useExtensionService } from '@/services/extensionService'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
@@ -65,7 +68,11 @@ vi.mock(import('@/platform/auth/firebaseIdentity'), () => ({
       identity.tokenObservers.add(observer)
       return () => identity.tokenObservers.delete(observer)
     },
-    currentUser: () => identity.state.user
+    currentUser: () => identity.state.user,
+    signInWithEmail: async () => {
+      identity.signIn(FIREBASE_USER)
+      return fromPartial<UserCredential>({ user: FIREBASE_USER })
+    }
   })
 }))
 
@@ -147,6 +154,9 @@ function installFetchRecorder(features: Record<string, unknown>) {
   }
 
   const respond = (request: RecordedRequest): Response => {
+    if (request.path === `${getComfyApiBaseUrl()}/customers`) {
+      return jsonResponse({ id: 'customer-1' }, 201)
+    }
     switch (`${request.method} ${request.path}`) {
       case 'GET /api/features':
         return jsonResponse(features)
@@ -254,6 +264,19 @@ const TOKEN_MINT: RecordedRequest = {
   credentials: null
 }
 
+const MEDIA_ITEM = {
+  filename: 'output.png',
+  subfolder: '',
+  type: 'output',
+  nodeId: '1',
+  mediaType: 'images'
+} as const
+
+const MEDIA_URLS = [
+  '/api/view?filename=output.png&type=output&subfolder=',
+  '/api/view?filename=output.png&type=output&subfolder=&res=512'
+]
+
 const SIGN_OUT: RecordedRequest[] = [
   {
     method: 'DELETE',
@@ -264,6 +287,16 @@ const SIGN_OUT: RecordedRequest[] = [
   { method: 'WEBSOCKET', path: '/ws', headers: {}, credentials: null }
 ]
 
+const CUSTOMER_PROVISIONING: RecordedRequest = {
+  method: 'POST',
+  path: `${getComfyApiBaseUrl()}/customers`,
+  headers: {
+    authorization: 'Bearer firebase-id-token',
+    'content-type': 'application/json'
+  },
+  credentials: null
+}
+
 interface FlowGolden {
   signIn: RecordedRequest[]
   tokenRefresh: RecordedRequest[]
@@ -273,7 +306,7 @@ interface FlowGolden {
 }
 
 const UNIFIED_CLOUD_AUTH_OFF: FlowGolden = {
-  signIn: [SESSION_POST],
+  signIn: [SESSION_POST, CUSTOMER_PROVISIONING],
   tokenRefresh: [SESSION_POST],
   apiCall: [
     {
@@ -305,7 +338,7 @@ const UNIFIED_CLOUD_AUTH_OFF: FlowGolden = {
 }
 
 const UNIFIED_CLOUD_AUTH_ON: FlowGolden = {
-  signIn: [TOKEN_MINT, SESSION_POST],
+  signIn: [TOKEN_MINT, SESSION_POST, CUSTOMER_PROVISIONING],
   tokenRefresh: [TOKEN_MINT, SESSION_POST],
   apiCall: [
     {
@@ -380,7 +413,7 @@ describe('cloud auth requests with unified_web_session off', () => {
       golden: UNIFIED_CLOUD_AUTH_ON
     }
   ])(
-    'sends the pinned sign-in, refresh, API, socket and sign-out requests ($name)',
+    'pins sign-in, refresh, API, socket, media and sign-out traffic ($name)',
     async ({ features, golden }) => {
       const recorder = installFetchRecorder(features)
 
@@ -388,7 +421,7 @@ describe('cloud auth requests with unified_web_session off', () => {
       expect(recorder.take()).toEqual(FEATURES_BOOTSTRAP)
 
       hooks = wireSessionCookieExtension()
-      identity.signIn(FIREBASE_USER)
+      await useAuthStore().login('user-a@example.com', 'password')
       await vi.waitFor(() => expect(recorder.pending).toEqual(golden.signIn))
       recorder.take()
 
@@ -409,6 +442,11 @@ describe('cloud auth requests with unified_web_session off', () => {
 
       await api.resetSocket()
       expect(recorder.take()).toEqual(golden.socket)
+
+      expect([
+        resultItemUrl(MEDIA_ITEM),
+        resultItemPreviewUrl(MEDIA_ITEM)
+      ]).toEqual(MEDIA_URLS)
 
       identity.signOut()
       await vi.advanceTimersByTimeAsync(1_000)
