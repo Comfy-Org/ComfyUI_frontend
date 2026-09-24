@@ -445,6 +445,7 @@ function stopObserving() {
 }
 
 function clearSessionOutputs() {
+  const ended = runState.value
   stopObserving()
   pendingRequest = undefined
   releaseRouterOutputs(
@@ -452,7 +453,10 @@ function clearSessionOutputs() {
   )
   runs.value = []
   requestId.value = null
-  runState.value = IDLE
+  // The pictures went with the workspace being left, but a run that ended in
+  // nothing but a word keeps saying it rather than blanking mid-sentence.
+  if (ended.status === 'failed' || ended.status === 'cancelled')
+    runState.value = ended
 }
 
 async function historyToken(): Promise<string> {

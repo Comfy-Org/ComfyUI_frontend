@@ -1786,6 +1786,44 @@ describe('ModelDetail', () => {
     }
   )
 
+  it.for([
+    {
+      case: 'a run that ended in a word keeps saying it',
+      outcome: () =>
+        vi
+          .mocked(runWorkshopRouter)
+          .mockRejectedValue(new WorkshopRouterError('provider')),
+      ended: 'failed',
+      after: 'failed'
+    },
+    {
+      case: 'a picture leaves with the workspace it was made in',
+      outcome: () =>
+        vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult),
+      ended: 'succeeded',
+      after: 'idle'
+    }
+  ])('after a workspace change, $case', async ({ outcome, ended, after }) => {
+    auth.session.value = credential
+    outcome()
+    mountDetail({ model: runnable })
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() =>
+      expect(
+        screen.getByTestId('playground-output').getAttribute('data-state')
+      ).toBe(ended)
+    )
+    auth.session.value = {
+      ...credential,
+      workspace: { ...credential.workspace, id: 'other-workspace' }
+    }
+    await nextTick()
+    expect(
+      screen.getByTestId('playground-output').getAttribute('data-state')
+    ).toBe(after)
+  })
+
   it('finishes an active render while the gate hides the page on revocation', async () => {
     auth.session.value = credential
     const late = Promise.withResolvers<typeof routerResult>()
