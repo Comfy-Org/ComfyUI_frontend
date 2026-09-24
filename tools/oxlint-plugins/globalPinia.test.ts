@@ -69,6 +69,11 @@ writeFileSync(
 export const useDeletedStore = defineStore('deleted', () => ({}))`
 )
 const createdStore = path.join(directory, 'src/createdStore.ts')
+const restoredStore = path.join(directory, 'src/restoredStore.ts')
+writeFileSync(
+  path.join(directory, 'src/restoredBarrel.ts'),
+  `export * from './restoredStore'`
+)
 afterAll(() => rmSync(directory, { recursive: true, force: true }))
 
 const ruleTester = new RuleTester({
@@ -194,6 +199,26 @@ export const useCreatedStore = defineStore('created', () => ({}))`
   ruleTester.run('refreshes a failed module resolution', useGlobalPinia, {
     valid: [],
     invalid: [invalid(`vi.mock('./createdStore')`, /Do not mock Pinia/)]
+  })
+})
+
+describe.sequential('failed barrel dependency resolution freshness', () => {
+  ruleTester.run('caches a barrel with a missing dependency', useGlobalPinia, {
+    valid: [{ filename, code: `vi.mock('./restoredBarrel')` }],
+    invalid: []
+  })
+
+  it('restores the missing dependency', () => {
+    writeFileSync(
+      restoredStore,
+      `import { defineStore } from 'pinia'
+export const useRestoredStore = defineStore('restored', () => ({}))`
+    )
+  })
+
+  ruleTester.run('refreshes the unchanged barrel', useGlobalPinia, {
+    valid: [],
+    invalid: [invalid(`vi.mock('./restoredBarrel')`, /Do not mock Pinia/)]
   })
 })
 
