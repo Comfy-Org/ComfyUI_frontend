@@ -3,9 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { MissingNodeType } from '@/types/comfy'
 
-vi.mock(import('@/i18n'), () => ({
-  st: vi.fn((_key: string, fallback: string) => fallback)
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
