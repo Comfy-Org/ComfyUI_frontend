@@ -661,6 +661,29 @@ describe('usePaste', () => {
     })
   })
 
+  it.for([
+    { name: 'null payload', data: null },
+    { name: 'malformed node', data: { nodes: [{ type: 'KSampler' }] } }
+  ])('falls back for malformed Comfy metadata: $name', async ({ data }) => {
+    const encoded = btoa(JSON.stringify(data))
+    const html = `<div data-comfy-metadata="${encoded}"></div>`
+
+    usePaste()
+
+    const dataTransfer = new DataTransfer()
+    dataTransfer.setData('text/html', html)
+    dataTransfer.setData('text/plain', 'some text')
+
+    document.dispatchEvent(
+      new ClipboardEvent('paste', { clipboardData: dataTransfer })
+    )
+
+    await vi.waitFor(() => {
+      expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
+      expect(mockCanvas.pasteFromClipboard).toHaveBeenCalled()
+    })
+  })
+
   it('should toast a deserialization error without falling back', async () => {
     const deserializeError = new Error('ID space exhausted')
     vi.mocked(mockCanvas._deserializeItems).mockImplementation(() => {

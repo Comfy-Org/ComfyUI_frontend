@@ -3,6 +3,7 @@ import { useEventListener } from '@vueuse/core'
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ClipboardItems } from '@/lib/litegraph/src/types/serialisation'
+import { zClipboardItems } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
@@ -47,7 +48,7 @@ function pasteClipboardItems(data: DataTransfer): boolean {
   const match = rawData.match(/data-comfy-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
   if (!match) return false
 
-  let parsed: ClipboardItems
+  let parsed: unknown
   try {
     const binaryString = atob(match)
     const bytes = Uint8Array.from(binaryString, (c) => c.charCodeAt(0))
@@ -58,8 +59,13 @@ function pasteClipboardItems(data: DataTransfer): boolean {
     return false
   }
 
+  const clipboardItems = zClipboardItems.safeParse(parsed)
+  if (!clipboardItems.success) return false
+
   try {
-    useCanvasStore().getCanvas()._deserializeItems(parsed, {})
+    useCanvasStore()
+      .getCanvas()
+      ._deserializeItems(clipboardItems.data as ClipboardItems, {})
   } catch (err) {
     useErrorHandling().toastErrorHandler(err)
   }

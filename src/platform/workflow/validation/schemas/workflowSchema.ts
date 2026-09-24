@@ -511,6 +511,25 @@ const zSubgraphDefinition = zComfyWorkflow1
   })
   .passthrough()
 
+export const zClipboardItems = z
+  .object({
+    nodes: z.array(zComfyNode).optional(),
+    groups: z.array(zGroup.extend({ id: z.number() })).optional(),
+    reroutes: z
+      .array(zReroute.extend({ linkIds: z.array(z.number()) }))
+      .optional(),
+    links: z.array(zComfyLinkObject).optional(),
+    subgraphs: z.array(zSubgraphDefinition).optional()
+  })
+  .refine(
+    (items) =>
+      items.nodes !== undefined ||
+      items.groups !== undefined ||
+      items.reroutes !== undefined ||
+      items.links !== undefined ||
+      items.subgraphs !== undefined
+  )
+
 export type ModelFile = z.infer<typeof zModelFile>
 export type ComfyLinkObject = z.infer<typeof zComfyLinkObject>
 export type ComfyNode = z.infer<typeof zComfyNode>
