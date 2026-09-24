@@ -37,6 +37,20 @@ describe('UI theme token restrictions', () => {
     }
   )
 
+  it('rejects specialized tokens in TypeScript class utilities', async () => {
+    const messages = await themeTokenMessages(
+      "const variants = cva('bg-component-node-widget-background')",
+      'src/components/ui/lint-fixture/lintFixture.ts'
+    )
+
+    expect(messages).toEqual([
+      expect.objectContaining({
+        ruleId: 'better-tailwindcss/no-restricted-classes',
+        severity: 2
+      })
+    ])
+  })
+
   it('allows core semantic tokens', async () => {
     const messages = await themeTokenMessages(
       '<template><div class="bg-secondary-background text-base-foreground border-border-default" /></template>'
