@@ -33,4 +33,27 @@ describe('getMainNavigation', () => {
       href: '/enterprise/managed-builds'
     })
   })
+
+  it.for([
+    {
+      nav: 'Products',
+      imageSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webp',
+      videoSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webm',
+      href: getRoutes('en').geminiOmni
+    },
+    {
+      nav: 'Community',
+      imageSrc:
+        'https://media.comfy.org/website/learning/advertising3-thumb.png',
+      videoSrc: undefined,
+      href: '/learning/ads/product-photography'
+    }
+  ])('features the current launch in the $nav card', (card) => {
+    const featured = getMainNavigation('en').find(
+      (item) => item.label === card.nav
+    )?.featured
+    expect(featured?.imageSrc).toBe(card.imageSrc)
+    expect(featured?.videoSrc).toBe(card.videoSrc)
+    expect(featured?.cta.href).toBe(card.href)
+  })
 })

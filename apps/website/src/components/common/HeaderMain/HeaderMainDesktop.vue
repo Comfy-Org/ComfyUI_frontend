@@ -68,6 +68,7 @@ function isNavItemActive(navItem: NavItem, path: string): boolean {
               <NavFeaturedCard
                 v-if="navItem.featured"
                 :featured="navItem.featured"
+                :locale="locale"
               />
               <NavColumn
                 v-for="column in navItem.columns"
