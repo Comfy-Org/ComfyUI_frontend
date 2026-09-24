@@ -6,7 +6,7 @@
   >
     <template #leftPanelHeaderTitle>
       <i class="icon-[comfy--template]" />
-      <h2 class="text-neutral text-base font-semibold">
+      <h2 class="text-base font-semibold text-base-foreground">
         {{ $t('sideToolbar.templates', 'Templates') }}
       </h2>
     </template>
@@ -17,7 +17,7 @@
     <template #header>
       <div class="flex min-w-0 flex-1 items-center gap-2">
         <h2
-          class="text-neutral m-0 hidden shrink-0 truncate text-base font-medium min-[880px]:block"
+          class="m-0 hidden shrink-0 truncate text-base font-medium text-base-foreground min-[880px]:block"
         >
           {{ pageTitle }}
         </h2>
