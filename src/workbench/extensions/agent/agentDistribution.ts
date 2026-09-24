@@ -20,12 +20,3 @@ export function isAgentStandalone(): boolean {
 export function forwardsComfyCredential(): boolean {
   return isAgentStandalone()
 }
-
-/**
- * Where the consent decision lives: on the Comfy account and team workspace
- * (cloud, which needs sign-in first), or on this device (the local agent has
- * no account or workspace to scope it to).
- */
-export function agentConsentScope(): 'account' | 'device' {
-  return isAgentStandalone() ? 'device' : 'account'
-}

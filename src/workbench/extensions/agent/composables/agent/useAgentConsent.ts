@@ -7,7 +7,6 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
-import { agentConsentScope } from '@/workbench/extensions/agent/agentDistribution'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
 const CONSENT_DIALOG_KEY = 'agent-consent'
@@ -196,11 +195,9 @@ export function useAgentConsent() {
     onAccept: () => void,
     onShown?: () => void
   ): Promise<void> {
-    // The local agent harness keeps consent on this device; it needs no sign-in.
-    const decisionIdentity =
-      agentConsentScope() === 'device' || isLoggedIn.value
-        ? await requestConsentForCurrentUser(onShown)
-        : await acceptAfterSignIn(onShown)
+    const decisionIdentity = isLoggedIn.value
+      ? await requestConsentForCurrentUser(onShown)
+      : await acceptAfterSignIn(onShown)
     if (
       !decisionIdentity ||
       identity.value !== decisionIdentity ||
