@@ -157,6 +157,25 @@ export const useAgentConversationStore = defineStore(
       if (resolved) resolvePaywalls()
     }
 
+    /**
+     * PM-1658: drops a run-approval part the way an `agent_ask_resolved` frame
+     * would, for the one case `ingest` cannot serve. A socket drop aborts the
+     * active turn, which disposes the transport that frame routes through while
+     * leaving the turn's card on screen; answering that card then has nothing
+     * to dismiss it with. Live turns keep using `ingest` — this is only for a
+     * card whose own turn is already gone.
+     */
+    function resolveDetachedAsk(askId: string): void {
+      messages.value = messages.value.map((message) => {
+        const parts = message.parts.filter(
+          (part) => part.type !== 'runApproval' || part.askId !== askId
+        )
+        return parts.length === message.parts.length
+          ? message
+          : { ...message, parts }
+      })
+    }
+
     function startTurn(turnId: TurnId): void {
       if (transport) abortActiveTurn()
       const message = createAssistantMessage(turnId)
@@ -465,6 +484,20 @@ export const useAgentConversationStore = defineStore(
     const activeMessage = computed(() =>
       activeIndex.value >= 0 ? messages.value[activeIndex.value] : null
     )
+    /**
+     * PM-1658: whether the live turn still owns this ask, i.e. whether an
+     * `agent_ask_resolved` frame for it has a transport to route through.
+     * False once a socket drop or a newer turn has detached the message the
+     * card sits on — which is when a caller has to resolve it itself.
+     */
+    function activeTurnOwnsAsk(askId: string): boolean {
+      return (
+        activeMessage.value?.parts.some(
+          (part) => part.type === 'runApproval' && part.askId === askId
+        ) ?? false
+      )
+    }
+
     const isStreaming = computed(() => activeMessage.value?.streaming ?? false)
     const status = computed<ConversationStatus>(() => {
       const message = activeMessage.value
@@ -485,6 +518,8 @@ export const useAgentConversationStore = defineStore(
       recordFailedSend,
       recordPaywall,
       setPaywallsResolved,
+      resolveDetachedAsk,
+      activeTurnOwnsAsk,
       startTurn,
       ingest,
       setCanvasSyncGate,

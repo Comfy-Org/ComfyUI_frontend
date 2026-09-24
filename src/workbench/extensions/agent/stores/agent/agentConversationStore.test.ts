@@ -487,6 +487,57 @@ describe('useAgentConversationStore', () => {
     expect(store.isStreaming).toBe(false)
   })
 
+  it('resolveDetachedAsk drops a card that ingest can no longer route a resolution to', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'turn-1', 'Run it', 'user-message-1'),
+      zAgentMessages.parse([
+        {
+          id: 'assistant-message-1',
+          thread_id: 'th',
+          seq: 2,
+          role: 'assistant',
+          status: 'streaming',
+          turn_id: 'turn-1',
+          pending_ask: {
+            message_id: 'assistant-message-1',
+            ask_id: 'turn-1:call-1',
+            kind: 'run_approval',
+            context: { workflow_id: 'workflow-1' },
+            prompt: 'Run workflow?',
+            options: [
+              { id: 'run', label: 'Run' },
+              { id: 'cancel', label: 'Cancel' }
+            ],
+            min_selections: 1,
+            max_selections: 1,
+            allow_other: false
+          }
+        }
+      ])[0]
+    ])
+    const hasCard = () =>
+      store.messages.some((message) =>
+        message.parts.some(
+          (part) => (part as { type: string }).type === 'runApproval'
+        )
+      )
+
+    store.abortActiveTurn()
+    expect(store.activeTurnId).toBeNull()
+    store.ingest(askResolved('assistant-message-1', 'turn-1:call-1'))
+    expect(hasCard()).toBe(true)
+
+    store.resolveDetachedAsk('turn-1:call-1')
+
+    expect(hasCard()).toBe(false)
+    expect(store.entries.map((entry) => entry.role)).toEqual([
+      'user',
+      'assistant'
+    ])
+  })
+
   it('recordFailedSend renders [user, assistant(notice)] and leaves the turn idle', () => {
     const store = useAgentConversationStore()
     store.recordFailedSend('local-error-1' as TurnId, 'boom', 'send failed')

@@ -600,35 +600,62 @@ export function useAgentSession(deps: AgentSessionDeps) {
     selection: 'run' | 'cancel'
   ): Promise<void> {
     const currentThreadId = conversationStore.threadId
-    const messageId = conversationStore.activeTurnId
-    if (
-      currentThreadId === null ||
-      messageId === null ||
-      answeringAskIds.value.has(askId)
-    )
+    if (currentThreadId === null) {
+      // PM-1658: the card is on screen, so a click on it is never a no-op.
+      reportError(
+        new Error('run approval answered with no thread to send on'),
+        {
+          errorType: 'agent_ask_answer_unroutable'
+        }
+      )
+      pushError(i18n.global.t('agent.runApproval.answerFailed'))
       return
+    }
+    // PM-1658: deliberately NOT gated on an active turn. The endpoint is keyed
+    // by thread and ask alone, and the server parks a consent card with no
+    // interrupt timeout precisely so it can be answered long after the turn
+    // that raised it stopped streaming to this client.
+    if (answeringAskIds.value.has(askId)) return
     setAskAnswering(askId, true)
     try {
       await rest.answerAsk(currentThreadId, askId, [selection])
-      // Keep the actions disabled until the canonical resolution frame arrives.
+      dismissDetachedAsk(askId)
     } catch (error) {
       setAskAnswering(askId, false)
       if (error instanceof AgentApiError && error.status === 409) {
-        conversationStore.ingest({
-          type: 'agent_ask_resolved',
-          data: {
-            thread_id: currentThreadId,
-            message_id: messageId,
-            ask_id: askId,
-            status: 'answered',
-            selected: null
-          }
-        })
+        const messageId = conversationStore.activeTurnId
+        if (messageId === null || !conversationStore.activeTurnOwnsAsk(askId))
+          conversationStore.resolveDetachedAsk(askId)
+        else
+          conversationStore.ingest({
+            type: 'agent_ask_resolved',
+            data: {
+              thread_id: currentThreadId,
+              message_id: messageId,
+              ask_id: askId,
+              status: 'answered',
+              selected: null
+            }
+          })
         return
       }
       reportError(error, { errorType: 'agent_ask_answer_failed' })
       pushError(error instanceof Error ? error.message : String(error))
     }
+  }
+
+  /**
+   * PM-1658: an answered card is normally left disabled until the server's
+   * `agent_ask_resolved` frame arrives and drops it, which is why the live
+   * path below does nothing. That frame routes through the transport of the
+   * turn holding the card, so once a socket drop or a newer turn has detached
+   * that message nothing can ever deliver it — dismiss the card here instead
+   * of leaving it on screen, answered and disabled, for good.
+   */
+  function dismissDetachedAsk(askId: string): void {
+    if (conversationStore.activeTurnOwnsAsk(askId)) return
+    setAskAnswering(askId, false)
+    conversationStore.resolveDetachedAsk(askId)
   }
 
   let loadGeneration = 0
@@ -721,6 +748,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // interrupted. An initial `false` (socket not open yet) is not a
     // reconnect and must not abort a turn that survived a remount.
     if (!everLive) return
+    // PM-1658: the socket that would carry an answered card's resolution frame
+    // is gone, so an answer still waiting on one has nothing left to re-enable
+    // its card. Release them here rather than strand the card disabled.
+    if (answeringAskIds.value.size > 0) answeringAskIds.value = new Set()
     conversationStore.abortActiveTurn()
     conversationStore.dropBackgroundTurns()
   }
