@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Download, ExternalLink, Play } from '@lucide/vue'
+import { Download, Play } from '@lucide/vue'
 import { useEventListener, useMounted, useTimestamp } from '@vueuse/core'
 import {
   computed,
@@ -10,8 +10,6 @@ import {
   watch
 } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
@@ -20,7 +18,6 @@ import { sameFormValues } from '../../lib/workshop/form-values'
 import { validateWorkshopMediaInputs } from '../../config/workshop-media-validation'
 import { leaveForSignIn } from '../../config/workshop-return'
 import { useSignInHref } from '../../composables/useSignInHref'
-import { useTablist } from '../../composables/useTablist'
 import type { WorkshopModelDetail } from '../../config/models-catalogue'
 import type {
   FieldErrors,
@@ -59,7 +56,7 @@ import { linkLeavingPage } from '../../lib/workshop/leaving-link'
 import type { WorkshopSession } from '../../config/workshop-session-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
-import type { Locale, TranslationKey } from '../../i18n/translations'
+import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import {
   captureWorkshopEvent,
@@ -80,6 +77,8 @@ import PlaygroundOutput from './PlaygroundOutput.vue'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import RunLeaveDialog from './RunLeaveDialog.vue'
 import ModelSupport from './ModelSupport.vue'
+import ModelTabs from './ModelTabs.vue'
+import type { ModelSection } from './model-section'
 
 const {
   model,
@@ -98,21 +97,10 @@ const slots = useSlots()
 const modelAnalytics = workshopModelAnalytics(model)
 const frameRatio = frameRatioRule(model.slug)
 
-type Section = 'playground' | 'details' | 'api'
-const sections = computed<readonly Section[]>(() =>
+const sections = computed<readonly ModelSection[]>(() =>
   slots.details ? ['playground', 'details', 'api'] : ['playground', 'api']
 )
-const sectionLabel: Record<Section, TranslationKey> = {
-  playground: 'workshop.model.tabs.playground',
-  details: 'workshop.model.tabs.details',
-  api: 'workshop.model.tabs.api'
-}
-
-const activeSection = ref<Section>('playground')
-const { onKeydown: onTabKeydown } = useTablist(
-  () => sections.value,
-  activeSection
-)
+const activeSection = ref<ModelSection>('playground')
 
 const initialPageState = initialWorkshopPageState(model)
 const examples = initialPageState.examples
@@ -700,51 +688,12 @@ function useInCode() {
 
 <template>
   <div class="flex flex-col gap-10" data-testid="model-detail">
-    <div
-      class="flex items-center gap-8 border-b border-transparency-white-t8 max-sm:gap-5"
-    >
-      <div
-        role="tablist"
-        :aria-label="t('workshop.title', locale)"
-        class="scrollbar-hide flex min-w-0 gap-8 overflow-x-auto max-sm:gap-5"
-        data-testid="model-tabs"
-        @keydown="onTabKeydown"
-      >
-        <button
-          v-for="section in sections"
-          :id="`tab-${section}`"
-          :key="section"
-          type="button"
-          role="tab"
-          :aria-selected="section === activeSection"
-          :aria-controls="`panel-${section}`"
-          :tabindex="section === activeSection ? 0 : -1"
-          :data-testid="`tab-${section}`"
-          :class="
-            cn(
-              'cursor-pointer border-b-2 pb-3 text-sm font-bold tracking-wider uppercase transition-colors',
-              section === activeSection
-                ? 'border-primary-comfy-yellow text-primary-warm-white'
-                : 'border-transparent text-primary-warm-gray hover:text-primary-warm-white'
-            )
-          "
-          @click="activeSection = section"
-        >
-          {{ t(sectionLabel[section], locale) }}
-        </button>
-      </div>
-      <a
-        v-if="docsHref"
-        :href="docsHref"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="ml-auto inline-flex shrink-0 items-center gap-1.5 pb-3 text-sm leading-none font-bold tracking-wider whitespace-nowrap text-primary-warm-white uppercase transition-colors hover:text-primary-comfy-yellow"
-        data-testid="model-docs-link"
-      >
-        {{ t('workshop.hub.docs', locale) }}
-        <ExternalLink class="size-4" aria-hidden="true" />
-      </a>
-    </div>
+    <ModelTabs
+      v-model="activeSection"
+      :sections
+      :docs-href="docsHref"
+      :locale
+    />
 
     <section
       v-if="slots.playground"
