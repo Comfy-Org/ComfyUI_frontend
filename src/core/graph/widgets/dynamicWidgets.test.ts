@@ -685,7 +685,9 @@ function dynamicCombo(
     Object.fromEntries(declaredKeys.map((key) => [key, null]))
   )
   if (realizedKeys.length !== declaredKeys.length)
-    throw new Error(`Duplicate option keys: ${declaredKeys.join(', ')}`)
+    throw new Error(
+      `Duplicate option keys: ${declaredKeys.filter((key, index) => declaredKeys.indexOf(key) !== index).join(', ')}`
+    )
   if (realizedKeys.some((key, index) => key !== declaredKeys[index]))
     throw new Error(
       `Applying the combo would order options as [${realizedKeys.join(', ')}] instead of [${declaredKeys.join(', ')}].`
@@ -703,7 +705,7 @@ function dynamicCombo(
 }
 
 describe('dynamicCombo fixture builder', () => {
-  test('rejects option keys that would not survive the round trip through a record', () => {
+  test('rejects option keys that a record reorders, and accepts those it does not', () => {
     const option = (key: string): ComboOption => [key, {}]
 
     expect(() => dynamicCombo(option('Seedance'), option('0'))).toThrow(
@@ -830,6 +832,18 @@ describe('Dynamic combo child links on workflow load (FE-258)', () => {
   beforeEach(async () => {
     LiteGraph.registerNodeType(SOURCE_NODE_TYPE, SourceNode)
     await useLitegraphService().registerNodeDef(RESIZE_NODE_TYPE, resizeNodeDef)
+  })
+
+  test('lays out the default option, which the saved workflow does not select', () => {
+    const graph = new LGraph()
+    const node = LiteGraph.createNode(RESIZE_NODE_TYPE)
+    assert.ok(node, 'resize node')
+    graph.add(node)
+
+    const children = node.inputs
+      .map((input) => input.name)
+      .filter((name) => name.startsWith('resize_type.'))
+    expect(children).toEqual(['resize_type.width'])
   })
 
   test('keeps the link on the child the selected option lays out', () => {
