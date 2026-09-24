@@ -68,23 +68,6 @@ const devLogState = vi.hoisted(() => ({
   recordDevEvent: vi.fn()
 }))
 
-const apiState = vi.hoisted(() => {
-  const target = new EventTarget()
-  return {
-    target,
-    api: {
-      socket: { readyState: 1, send: vi.fn() },
-      addCustomEventListener: vi.fn(),
-      removeCustomEventListener: vi.fn(),
-      addEventListener: (type: string, listener: EventListener) =>
-        target.addEventListener(type, listener),
-      removeEventListener: vi.fn((type: string, listener: EventListener) =>
-        target.removeEventListener(type, listener)
-      )
-    }
-  }
-})
-
 vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
   LayoutFollowerBridge: class {
     constructor() {
@@ -117,11 +100,11 @@ vi.mock(import('./devPanelLog'), () => ({
   recordDevEvent: devLogState.recordDevEvent
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
 
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 import type { AgentCrdtStatus } from './useAgentCrdtFollower'
 
@@ -148,7 +131,12 @@ function mountFollower(initial: string): {
     setup() {
       const { enqueueHumanOperations, status } = useAgentCrdtFollower(
         workflowId,
-        graphMutations
+        graphMutations,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        createFakeAgentSocket().transport
       )
       enqueue = async (operations) => {
         enqueueHumanOperations(operations)

@@ -11,7 +11,6 @@ import type { Ref } from 'vue'
 import * as Y from 'yjs'
 
 import { reportError } from '@/platform/telemetry/reportError'
-import { api } from '@/scripts/api'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
@@ -25,7 +24,7 @@ import {
   SUBSCRIBE_CATCHUP_GRACE_MS
 } from './agentCrdtDocLifecycle'
 import { AgentCrdtProjection } from './agentCrdtProjection'
-import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
+import { createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
@@ -39,7 +38,7 @@ import { createOpCoalescer } from './opCoalescer'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
-export { apiTransport, STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
+export { STALE_AFTER_MS, SUBSCRIBE_CATCHUP_GRACE_MS }
 
 /**
  * s5-metrics-1: per-outcome counters for every `doc_update` the composable's
@@ -215,13 +214,10 @@ export function useAgentCrdtFollower(
   getGraph: () => MaterializableGraph | null = () => null,
   events: AgentCrdtFollowerEvents = {},
   /**
-   * Where document frames travel. Defaults to ComfyUI's same-origin socket,
-   * which carries them only because ingest relays the agent's frames onto it.
-   * A STANDALONE agent has no ingest, and ComfyUI's socket carries nothing from
-   * it, so this default can never see an update there — pass the standalone
-   * transport instead (see standaloneDocFrameTransport).
+   * Where document frames travel: the agent's one socket on every backend
+   * (see agentDocFrameTransport). Its opens drive resubscription.
    */
-  baseTransport: DocFrameTransport = apiTransport
+  baseTransport: DocFrameTransport
 ) {
   const productGate = useAgentPanelStore()
   const follower = shallowRef<ReturnType<typeof startAgentCrdtFollower>>()
@@ -601,27 +597,6 @@ function startAgentCrdtFollower(
     recordDevEvent('reconnected', null)
     bridge.resubscribe()
   }
-  const onReconnected: EventListener = () => handleReconnected()
-  /**
-   * Re-drive subscription intent whenever the socket may have become usable.
-   *
-   * `reconnected` fires only on a RE-connect (`api.ts` guards the dispatch with
-   * `isReconnect`), so it can never repair a follower that mounted while the
-   * first socket was still being opened — `createSocket` awaits an auth token
-   * before `new WebSocket(...)`, and a panel mounted inside that window used to
-   * stay inert forever. The ComfyUI server sends a `status` frame immediately
-   * on every accepted connection, first one included, so it is the earliest
-   * signal available that the socket can now carry a frame. `reconcile()` is a
-   * no-op once intent and reality agree, so the extra `status` traffic costs
-   * nothing unless a refused subscribe has a scheduled retry. In that case,
-   * the retry timer owns the next attempt and its backoff.
-   */
-  const reconcileIfIdle = (): void => {
-    if (lifecycle.shouldDeferSubscribe()) return
-    bridge.reconcile()
-    resumeHeldOpsIfSubscribed()
-  }
-  const onSocketActivity: EventListener = () => reconcileIfIdle()
 
   bridge.addEventListener('doc_subscribed', onSubscribed)
   bridge.addEventListener('doc_update', onUpdate)
@@ -632,14 +607,13 @@ function startAgentCrdtFollower(
   bridge.addEventListener('doc_gap', onGap)
   bridge.addEventListener('doc_stale', onStale)
   bridge.addEventListener('doc_subscribe_sent', onSubscribeSent)
-  api.addEventListener('reconnected', onReconnected)
-  api.addEventListener('status', onSocketActivity)
-  // A transport on a socket other than ComfyUI's (the standalone agent's)
-  // announces its own opens. Every open is treated as a reconnect: the server
+  // Every open of the agent's socket is treated as a reconnect: the server
   // drops a connection's follows when its socket closes while the bridge
   // still believes it is subscribed, so a reconcile (a no-op once intent
   // equals reality) would leave the follower deaf. On a first open the
-  // resubscribe is one redundant frame the server answers as a resync.
+  // resubscribe is one redundant frame the server answers as a resync. It is
+  // also the only repair for a subscribe dropped while the socket was still
+  // connecting (`send` returned false).
   const stopTransportConnected = baseTransport.onConnected?.(handleReconnected)
 
   // FE-1902 (poc-3): distinguish the mount-time null (in-memory doc id died
@@ -783,9 +757,7 @@ function startAgentCrdtFollower(
     // update twice after a remount.
     runFollowerTeardown([
       () => lifecycle.destroy(),
-      () => api.removeEventListener('reconnected', onReconnected),
       () => stopTransportConnected?.(),
-      () => api.removeEventListener('status', onSocketActivity),
       () => bridge.removeEventListener('doc_subscribed', onSubscribed),
       () => bridge.removeEventListener('doc_update', onUpdate),
       () => bridge.removeEventListener('doc_ops_result', onOpsResult),
