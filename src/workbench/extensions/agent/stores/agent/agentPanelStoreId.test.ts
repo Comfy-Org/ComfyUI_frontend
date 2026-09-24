@@ -3,7 +3,8 @@ import type { Pinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { visibleCanvasViewport } from '@/composables/canvas/visibleCanvasViewport'
-import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas } from '@/lib/litegraph/src/litegraph'
+import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphTestUtils'
 import { useAgentDockMount } from '@/workbench/extensions/agent/composables/useAgentDockMount'
 
 import { useAgentPanelStore } from './agentPanelStore'
@@ -64,10 +65,23 @@ describe('the agentPanel store id', () => {
     store.isOpen = true
     expect(docked.value).toBe(true)
 
-    const canvas = { canvas: { width: 1600, height: 900 } } as LGraphCanvas
+    const element = document.createElement('canvas')
+    element.getContext = vi
+      .fn()
+      .mockReturnValue(createMockCanvasRenderingContext2D())
+    element.getBoundingClientRect = () => new DOMRect(0, 0, 1600, 900)
+    const panel = document.createElement('div')
+    panel.dataset.graphViewport = ''
+    panel.getBoundingClientRect = () =>
+      new DOMRect(0, 0, 1600 - store.width, 900)
+    document.body.append(panel)
+    const canvas = new LGraphCanvas(element, new LGraph(), {
+      skip_render: true
+    })
     const viewport = visibleCanvasViewport(canvas)
 
     expect(viewport.every((value) => Number.isFinite(value))).toBe(true)
     expect(viewport).toEqual([0, 0, 1600 - store.width, 900])
+    panel.remove()
   })
 })

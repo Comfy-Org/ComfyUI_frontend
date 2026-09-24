@@ -93,6 +93,7 @@
               @resizestart="onResizestart"
             >
               <SplitterPanel
+                data-graph-viewport
                 class="graph-canvas-panel relative overflow-visible [anchor-name:--graph-canvas-panel]"
               >
                 <slot name="graph-canvas-panel" />

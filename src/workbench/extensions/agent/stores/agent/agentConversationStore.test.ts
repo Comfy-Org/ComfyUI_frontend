@@ -1,10 +1,15 @@
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, watch } from 'vue'
 
+import { createGraphMutations } from '@/core/graph/graphMutations'
+import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
+
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
 import { zAgentMessages, zAgentWsEvent } from '../../schemas/agentApiSchema'
 import type { AgentChatEvent } from '../../services/agent/agentEventTransport'
 
+import { useAgentGeneratedNodesStore } from '../agentGeneratedNodesStore'
 import { useAgentConversationStore } from './agentConversationStore'
 
 const chat = (raw: unknown): AgentChatEvent => zAgentWsEvent.parse(raw)
@@ -184,6 +189,59 @@ describe('useAgentConversationStore', () => {
     expect(store.status).toBe('idle')
     expect(store.activeTurnId).toBeNull()
   })
+
+  it.for([false, true])(
+    'keeps graph activity aligned with hydrated pending approval: %s',
+    (pending) => {
+      vi.useFakeTimers()
+      vi.spyOn(performance, 'now').mockReturnValue(1_000)
+      const store = useAgentConversationStore()
+      const activity = useAgentGeneratedNodesStore()
+      const scope = {
+        rootGraphId: toRootGraphId('root'),
+        owningGraphId: toOwningGraphId('root')
+      }
+      const graph = createGraphMutations({
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      store.startTurn(T1)
+      graph.addNode(
+        { id: 17, type: 'Source', pos: [0, 0], size: [100, 80] },
+        { source: 'agent-remote', actor: 'agent:test', opId: 'op-17' }
+      )
+      expect(activity.generatedAtFor(scope, toNodeId(17))).toBeTypeOf('number')
+
+      store.hydrate([
+        historyRow(1, 'user', 't1', 'question'),
+        ...zAgentMessages.parse([
+          {
+            ...historyRow(2, 'assistant', 't1', 'answer', T1),
+            ...(pending && {
+              status: 'streaming',
+              pending_ask: {
+                message_id: T1,
+                ask_id: 'approval',
+                kind: 'run_approval',
+                prompt: 'Run?',
+                options: [{ id: 'run', label: 'Run' }],
+                min_selections: 1,
+                max_selections: 1,
+                allow_other: false
+              }
+            })
+          }
+        ])
+      ])
+      vi.advanceTimersByTime(1_200)
+
+      expect(activity.activities.get(scope.rootGraphId)).toMatchObject({
+        phase: pending ? 'working' : 'complete',
+        turnId: T1
+      })
+      expect(store.activeTurnId).toBe(pending ? T1 : null)
+    }
+  )
 
   it('reports thinking vs streaming status', () => {
     const store = useAgentConversationStore()

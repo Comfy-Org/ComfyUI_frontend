@@ -4,11 +4,13 @@ import type { Mock } from 'vitest'
 import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, shallowRef } from 'vue'
+import type { Ref } from 'vue'
 
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import { useLinkStore } from '@/stores/linkStore'
+import { useMinimapLayerStore } from '@/stores/minimapLayerStore'
 import { toLinkId } from '@/types/linkId'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
@@ -94,22 +96,31 @@ const mockIntervalResume = vi.fn()
 
 const rafCallbacks: Record<string, () => void> = {}
 let rafCallbackId = 0
+let documentVisibility = ref<DocumentVisibilityState>('visible')
 
 vi.mock(import('@vueuse/core'), { spy: true })
 function setupVueUseMocks() {
-  vi.mocked(VueUse.useDocumentVisibility).mockReturnValue(ref('visible'))
+  documentVisibility = ref('visible')
+  vi.mocked(VueUse.useDocumentVisibility).mockReturnValue(documentVisibility)
   vi.mocked(VueUse.useRafFn, { partial: true }).mockImplementation(
     (callback, options) => {
       const id = rafCallbackId++
+      const isActive = ref(options?.immediate !== false)
       const run = () => callback({ timestamp: 0, delta: 0 })
-      rafCallbacks[id] = run
+      rafCallbacks[id] = () => {
+        if (isActive.value) run()
+      }
       if (options?.immediate !== false) void Promise.resolve().then(run)
       return {
-        isActive: ref(false),
-        pause: mockPause,
+        isActive,
+        pause: vi.fn(() => {
+          isActive.value = false
+          mockPause()
+        }),
         resume: vi.fn(() => {
+          isActive.value = true
           mockResume()
-          rafCallbacks[id]?.()
+          run()
         })
       }
     }
@@ -243,6 +254,10 @@ describe('useMinimap', () => {
   }
 
   beforeEach(() => {
+    // Callbacks registered by an earlier test belong to a torn-down pinia, and
+    // triggerRAF() drives every entry in the map.
+    for (const id of Object.keys(rafCallbacks)) delete rafCallbacks[id]
+
     setupVueUseMocks()
     registerMockLink(1, 'node2')
 
@@ -462,6 +477,116 @@ describe('useMinimap', () => {
       expect(moduleMockGraph.onConnectionChange).toBe(
         originalCallbacks.onConnectionChange
       )
+    })
+  })
+
+  describe('layer animation lifecycle', () => {
+    function registerLayer(animationEndsAt: Readonly<Ref<number>>) {
+      const revision = ref(0)
+      const draw = vi.fn()
+      const unregister = useMinimapLayerStore().register({
+        revision,
+        draw,
+        isAnimating: (now) => now < animationEndsAt.value
+      })
+      return { revision, draw, unregister }
+    }
+
+    it('stays idle until a layer revision starts an animation', async () => {
+      let now = 1_000
+      vi.spyOn(performance, 'now').mockImplementation(() => now)
+      const animationEndsAt = ref(0)
+      const layer = registerLayer(animationEndsAt)
+      await createAndInitializeMinimap()
+      const settled = layer.draw.mock.calls.length
+
+      await triggerRAF()
+      expect(layer.draw).toHaveBeenCalledTimes(settled)
+
+      animationEndsAt.value = 1_100
+      layer.revision.value++
+      await nextTick()
+      expect(layer.draw.mock.calls.length).toBeGreaterThan(settled)
+
+      now = 1_001
+      await triggerRAF()
+      expect(layer.draw.mock.calls.length).toBeGreaterThan(settled + 1)
+      layer.unregister()
+    })
+
+    it('stops frames at expiry and does not restart after a hidden resume', async () => {
+      let now = 1_000
+      vi.spyOn(performance, 'now').mockImplementation(() => now)
+      const animationEndsAt = ref(1_100)
+      const layer = registerLayer(animationEndsAt)
+      await createAndInitializeMinimap()
+
+      now = 1_100
+      await triggerRAF()
+      const expired = layer.draw.mock.calls.length
+      await triggerRAF()
+      expect(layer.draw).toHaveBeenCalledTimes(expired)
+
+      documentVisibility.value = 'hidden'
+      await nextTick()
+      documentVisibility.value = 'visible'
+      await nextTick()
+      const resumed = layer.draw.mock.calls.length
+      await triggerRAF()
+      expect(layer.draw).toHaveBeenCalledTimes(resumed)
+      layer.unregister()
+    })
+
+    it('pauses while hidden and after destroy', async () => {
+      const animationEndsAt = ref(Number.POSITIVE_INFINITY)
+      const layer = registerLayer(animationEndsAt)
+      const minimap = await createAndInitializeMinimap()
+
+      documentVisibility.value = 'hidden'
+      await nextTick()
+      const hidden = layer.draw.mock.calls.length
+      await triggerRAF()
+      expect(layer.draw).toHaveBeenCalledTimes(hidden)
+
+      documentVisibility.value = 'visible'
+      await nextTick()
+      minimap.destroy()
+      const destroyed = layer.draw.mock.calls.length
+      await triggerRAF()
+      expect(layer.draw).toHaveBeenCalledTimes(destroyed)
+      layer.unregister()
+    })
+
+    it('redraws settled and stops when animation preference changes', async () => {
+      const animationEndsAt = ref(Number.POSITIVE_INFINITY)
+      const layer = registerLayer(animationEndsAt)
+      await createAndInitializeMinimap()
+      const animated = layer.draw.mock.calls.length
+
+      animationEndsAt.value = 0
+      layer.revision.value++
+      await nextTick()
+      expect(layer.draw.mock.calls.length).toBeGreaterThan(animated)
+
+      const settled = layer.draw.mock.calls.length
+      await triggerRAF()
+      expect(layer.draw).toHaveBeenCalledTimes(settled)
+      layer.unregister()
+    })
+
+    it('uses the monotonic animation clock when Date moves backward', async () => {
+      let now = 1_000
+      vi.spyOn(performance, 'now').mockImplementation(() => now)
+      vi.spyOn(Date, 'now').mockReturnValue(10_000)
+      const layer = registerLayer(ref(1_100))
+      await createAndInitializeMinimap()
+      const started = layer.draw.mock.calls.length
+
+      vi.mocked(Date.now).mockReturnValue(1)
+      now = 1_050
+      await triggerRAF()
+      expect(layer.draw.mock.calls.length).toBeGreaterThan(started)
+      layer.unregister()
     })
   })
 

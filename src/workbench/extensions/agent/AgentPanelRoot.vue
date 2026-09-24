@@ -644,6 +644,7 @@ const {
   listThreads,
   loadThread,
   boundWorkflowId,
+  restorationReady,
   bindWorkflow,
   answerAsk,
   answeringAskIds
@@ -678,6 +679,7 @@ const isBoundWorkflowActive = computed(() => {
   const bound = boundWorkflowId.value
   const active = workflowStore.activeWorkflow
   return (
+    restorationReady.value &&
     bound !== null &&
     active !== null &&
     boundOrOpenWorkflowFor(bound)?.path === active.path

@@ -10,6 +10,19 @@ describe('extensionStore', () => {
       expect(store.isExtensionInstalled('test.ext')).toBe(true)
     })
 
+    it('disposes only its own registration, including after a replacement', () => {
+      const store = useExtensionStore()
+      const dispose = store.registerExtension({ name: 'temporary' })
+      store.registerExtension({ name: 'other' })
+      dispose()
+      expect(store.isExtensionInstalled('temporary')).toBe(false)
+      expect(store.isExtensionInstalled('other')).toBe(true)
+
+      store.registerExtension({ name: 'temporary' })
+      dispose()
+      expect(store.isExtensionInstalled('temporary')).toBe(true)
+    })
+
     it('throws for extension without name', () => {
       const store = useExtensionStore()
       expect(() => store.registerExtension({ name: '' })).toThrow(

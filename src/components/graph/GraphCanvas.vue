@@ -60,6 +60,17 @@
         "
         class="pointer-events-auto"
       />
+      <div
+        v-if="showUI && !isBuilderMode"
+        class="contents"
+        @wheel="canvasInteractions.forwardEventToCanvas"
+      >
+        <component
+          :is="overlay"
+          v-for="(overlay, index) in canvasOverlayStore.components"
+          :key="index"
+        />
+      </div>
       <NodeSelectionModeBanner />
     </template>
   </LiteGraphCanvasSplitterOverlay>
@@ -182,6 +193,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { useWorkflowAutoSave } from '@/platform/workflow/persistence/composables/useWorkflowAutoSave'
 import { useWorkflowPersistenceV2 as useWorkflowPersistence } from '@/platform/workflow/persistence/composables/useWorkflowPersistenceV2'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
+import { useCanvasOverlayStore } from '@/stores/canvasOverlayStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { arrangeForLegacyRender } from '@/renderer/core/canvas/litegraph/arrangeForLegacyRender'
@@ -229,6 +241,7 @@ const nodeSearchboxPopoverRef = shallowRef<InstanceType<
   typeof NodeSearchboxPopover
 > | null>(null)
 const settingStore = useSettingStore()
+const canvasOverlayStore = useCanvasOverlayStore()
 const nodeDefStore = useNodeDefStore()
 const workspaceStore = useWorkspaceStore()
 const { isBuilderMode } = useAppMode()

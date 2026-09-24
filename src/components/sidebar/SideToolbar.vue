@@ -2,6 +2,7 @@
   <nav
     ref="sideToolbarRef"
     data-testid="side-toolbar"
+    data-graph-viewport-occluder
     :inert="isHidden"
     :aria-hidden="isHidden"
     :class="

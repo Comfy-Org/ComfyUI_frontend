@@ -69,6 +69,10 @@ export const useExtensionStore = defineStore('extension', () => {
     }
 
     extensionByName.value[extension.name] = markRaw(extension)
+    return () => {
+      if (extensionByName.value[extension.name] === extension)
+        delete extensionByName.value[extension.name]
+    }
   }
 
   function loadDisabledExtensionNames(names: string[]) {

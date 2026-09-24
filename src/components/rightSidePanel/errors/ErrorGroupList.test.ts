@@ -149,6 +149,9 @@ function createCanvasFixture(pinia: Pinia, graph = ROOT_GRAPH) {
   const canvasElement = document.createElement('canvas')
   canvasElement.width = 900
   canvasElement.height = 700
+  vi.spyOn(canvasElement, 'getBoundingClientRect').mockReturnValue(
+    new DOMRect(0, 0, 900, 700)
+  )
   const canvas = fromPartial<LGraphCanvas>({
     graph,
     read_only: false,

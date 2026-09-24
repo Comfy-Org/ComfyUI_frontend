@@ -545,6 +545,34 @@ export default defineConfig([
     }
   },
 
+  {
+    files: [
+      'src/core/graph/**/*.{ts,vue}',
+      'src/renderer/extensions/minimap/**/*.{ts,vue}',
+      'src/stores/canvasOverlayStore.ts',
+      'src/stores/minimapLayerStore.ts',
+      'src/composables/canvas/visibleCanvasViewport.ts',
+      'src/components/graph/GraphCanvas.vue'
+    ],
+    ignores: ['**/*.test.ts'],
+    rules: {
+      'import-x/no-restricted-paths': [
+        'error',
+        {
+          zones: [
+            {
+              target: './src/**',
+              from: './src/workbench/extensions/agent',
+              except: ['./composables/useAgentDockMount.ts'],
+              message:
+                'Agent graph feedback belongs in the agent extension. Register generic overlays and minimap layers instead of importing agent policy into the host.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+
   // src/lib/ holds vendored leaf libraries (litegraph). They may import from
   // src/lib/ and from the shared base utilities, but never from an app layer —
   // a vendored library depending on the app that vendors it is a dependency

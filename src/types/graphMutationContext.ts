@@ -6,6 +6,11 @@ export interface RemoteMutationContext {
   readonly opId: string
   /** All effect identities when one replay frame folds several semantic ops. */
   readonly opIds?: readonly string[]
+  /**
+   * This frame is the catch-up a fresh subscription receives, replaying state
+   * that already existed rather than reporting anything new.
+   */
+  readonly hydration?: boolean
 }
 
 export function isRemoteMutationContext(

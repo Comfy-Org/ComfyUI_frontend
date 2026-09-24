@@ -2,6 +2,7 @@
   <div
     v-if="docked"
     data-testid="docked-agent-panel"
+    data-graph-viewport-occluder
     role="complementary"
     aria-labelledby="agent-panel-title"
     class="docked-agent-panel pointer-events-auto relative h-full shrink-0 overflow-hidden [anchor-name:--docked-agent-panel]"

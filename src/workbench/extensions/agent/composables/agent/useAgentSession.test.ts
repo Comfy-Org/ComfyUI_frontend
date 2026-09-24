@@ -2169,6 +2169,26 @@ describe('useAgentSession (v1 composition root)', () => {
       ])
   })
 
+  it('newChat releases restoration gating while a stale load remains pending', () => {
+    const getMessages = vi.fn(
+      (): Promise<AgentMessages> => new Promise(() => undefined)
+    )
+    const session = useAgentSession({
+      rest: fakeRest({ getMessages }),
+      events: fakeEvents().source
+    })
+    const conversation = useAgentConversationStore()
+    conversation.setThreadId('th-pending')
+
+    session.start()
+    expect(session.restorationReady.value).toBe(false)
+
+    session.newChat()
+
+    expect(session.restorationReady.value).toBe(true)
+    expect(session.threadId.value).toBeNull()
+  })
+
   it('(l14) a settled turn already inside a longer history is not duplicated', async () => {
     const getMessages = vi.fn(
       async (threadId: string): Promise<AgentMessages> =>
