@@ -658,18 +658,25 @@ function startAgentCrdtFollower(
   // with the previous mount — rebind from sessionStorage) from a later null
   // (a REAL detach, e.g. new chat — drop the persisted id too).
   let initialBind = true
-  let boundWorkflowId: string | null = null
   // Readiness only. The other ordering -- graph ready first, target activated
   // second -- cannot be caught here: `getGraph` does not change when activity
   // flips, and even if this watcher also took `isTargetActive` as a source it
   // was created before the binding watcher below, so it would run first and
-  // still see `boundWorkflowId === null`. Activation is therefore reconciled at
+  // still see no subscribed workflow. Activation is therefore reconciled at
   // the bind site instead, once the binding actually exists.
   watch(getGraph, (graph) => {
-    if (graph && boundWorkflowId !== null && isTargetActive.value) {
-      syncAndReportPending(boundWorkflowId)
+    const bound = subscribedWorkflowId.value
+    if (graph && bound !== null && isTargetActive.value) {
+      syncAndReportPending(bound)
     }
   })
+  const rebindProjection = (next: string | null): void => {
+    const current = subscribedWorkflowId.value
+    if (current === next) return
+    if (current !== null) projection.unbind(current)
+    if (next !== null) projection.bind(next, bridge.follower)
+    subscribedWorkflowId.value = next
+  }
   // The bound workflow whose tab went inactive while the sender still held
   // batches for it. A tab switch pauses the subscription without rebinding
   // the session, so those batches are held rather than aborted (see
@@ -718,11 +725,7 @@ function startAgentCrdtFollower(
     previousWorkflowId: string | null
   ): void => {
     if (next !== null) initialBind = false
-    if (boundWorkflowId !== null) {
-      projection.unbind(boundWorkflowId)
-      boundWorkflowId = null
-    }
-    subscribedWorkflowId.value = null
+    rebindProjection(null)
     if (next !== null && next === previousWorkflowId)
       holdOpsForInactiveTab(next)
     else retarget(null)
@@ -733,31 +736,19 @@ function startAgentCrdtFollower(
     initialBind = false
     if (persisted === null) {
       lifecycle.clearPersistedDocId()
-      if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
-      boundWorkflowId = null
-      subscribedWorkflowId.value = null
+      rebindProjection(null)
       retarget(null)
       return
     }
     recordDevEvent('rebind', { workflowId: persisted })
-    if (boundWorkflowId !== persisted) {
-      if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
-      projection.bind(persisted, bridge.follower)
-      boundWorkflowId = persisted
-    }
-    subscribedWorkflowId.value = persisted
+    rebindProjection(persisted)
     retarget(persisted)
     if (justActivated) syncAndReportPending(persisted)
   }
 
   const activateTarget = (next: string, justActivated: boolean): void => {
     initialBind = false
-    if (boundWorkflowId !== next) {
-      if (boundWorkflowId !== null) projection.unbind(boundWorkflowId)
-      projection.bind(next, bridge.follower)
-      boundWorkflowId = next
-    }
-    subscribedWorkflowId.value = next
+    rebindProjection(next)
     retarget(next)
     if (justActivated) syncAndReportPending(next)
   }
