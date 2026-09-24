@@ -237,6 +237,12 @@
                 <div v-if="planDateDisplay" class="text-sm text-text-secondary">
                   {{ planDateDisplay }}
                 </div>
+                <p
+                  v-if="isEnterprisePlan && isSubscriptionEnded"
+                  class="m-0 text-sm text-text-secondary"
+                >
+                  {{ $t('subscription.inactiveEnterpriseDescription') }}
+                </p>
               </div>
 
               <div

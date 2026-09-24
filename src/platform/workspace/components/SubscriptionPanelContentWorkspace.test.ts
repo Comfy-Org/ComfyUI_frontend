@@ -588,6 +588,27 @@ describe('SubscriptionPanelContentWorkspace', () => {
         ).toBeInTheDocument()
       })
 
+      it('names what stopped once the plan has ended (FE-2886)', () => {
+        endInDays(-5)
+        mockSubscriptionStatus.value = 'ended'
+        renderComponent()
+
+        expect(
+          screen.getByText(
+            "You can't run workflows or add new members. Contact your Comfy account manager to restore access."
+          )
+        ).toBeInTheDocument()
+      })
+
+      it('keeps the subtitle away while the plan still runs', () => {
+        endInDays(30)
+        renderComponent()
+
+        expect(
+          screen.queryByText(/Contact your Comfy account manager/)
+        ).not.toBeInTheDocument()
+      })
+
       it('falls back to the stock cancelled treatment without an end date', () => {
         mockEndDate.value = null
         renderComponent()
