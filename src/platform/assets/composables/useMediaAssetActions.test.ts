@@ -14,13 +14,13 @@ import { createApp, defineComponent, h, provide, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import type { IWidget } from '@/lib/litegraph/src/types/widgets'
 import { MediaAssetKey } from '@/platform/assets/schemas/mediaAssetSchema'
 import type { AssetId, AssetItem } from '@/platform/assets/schemas/assetSchema'
 import type { AssetMeta } from '@/platform/assets/schemas/mediaAssetSchema'
 import { scanNodeMediaCandidates } from '@/platform/missingMedia/missingMediaScan'
 import { useMissingMediaStore } from '@/platform/missingMedia/missingMediaStore'
 import { api } from '@/scripts/api'
+import { useLitegraphService } from '@/services/litegraphService'
 import { detectNodeTypeFromFilename } from '@/utils/loaderNodeUtil'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
@@ -92,13 +92,7 @@ vi.mock(import('@/platform/workflow/utils/workflowExtractionUtil'), () => ({
   extractWorkflowFromAsset: mockExtractWorkflowFromAsset
 }))
 
-const litegraphServiceMock = vi.hoisted(() => ({
-  addNodeOnGraph: vi.fn<(nodeDef: unknown, options?: unknown) => LGraphNode>(),
-  getCanvasCenter: vi.fn<() => [number, number]>()
-}))
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => litegraphServiceMock
-}))
+vi.mock(import('@/services/litegraphService'))
 
 vi.mock(import('@/utils/loaderNodeUtil'))
 const mockDetectNodeTypeFromFilename = vi.mocked(detectNodeTypeFromFilename)
@@ -148,6 +142,7 @@ const mockTrackExport = vi.hoisted(() => vi.fn())
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     deleteItem: vi.fn(),
+    fetchApi: vi.fn(() => Promise.resolve(new Response())),
     apiURL: vi.fn((path: string) => `http://localhost:8188/api${path}`),
     internalURL: vi.fn((path: string) => `http://localhost:8188${path}`),
     addEventListener: vi.fn(),
@@ -219,10 +214,19 @@ function createLoadImageNode(): LGraphNode {
   })
 }
 
-function getAddedImageWidgetValues() {
-  return litegraphServiceMock.addNodeOnGraph.mock.results.map(
-    ({ value }) =>
-      value.widgets?.find((widget: IWidget) => widget.name === 'image')?.value
+function captureAddedNodes() {
+  const addedNodes: LGraphNode[] = []
+  vi.mocked(useLitegraphService()).addNodeOnGraph.mockImplementation(() => {
+    const node = createLoadImageNode()
+    addedNodes.push(node)
+    return node
+  })
+  return addedNodes
+}
+
+function getImageWidgetValues(nodes: LGraphNode[]) {
+  return nodes.map(
+    (node) => node.widgets?.find((widget) => widget.name === 'image')?.value
   )
 }
 
@@ -320,8 +324,10 @@ describe('useMediaAssetActions', () => {
     vi.mocked(api.getServerFeature).mockImplementation(
       (_path: string, defaultValue?: unknown) => defaultValue
     )
-    litegraphServiceMock.addNodeOnGraph.mockImplementation(createLoadImageNode)
-    litegraphServiceMock.getCanvasCenter.mockReturnValue([100, 100])
+    vi.mocked(useLitegraphService()).addNodeOnGraph.mockImplementation(
+      createLoadImageNode
+    )
+    vi.mocked(useLitegraphService()).getCanvasCenter.mockReturnValue([100, 100])
     mockDetectNodeTypeFromFilename.mockReturnValue({
       nodeType: 'LoadImage',
       widgetName: 'image'
@@ -339,6 +345,7 @@ describe('useMediaAssetActions', () => {
       })
 
       it('should use asset.name as filename', async () => {
+        const addedNodes = captureAddedNodes()
         const actions = useMediaAssetActions()
 
         const asset = createMockAsset({
@@ -348,7 +355,7 @@ describe('useMediaAssetActions', () => {
 
         await actions.addWorkflow(asset)
 
-        expect(getAddedImageWidgetValues()).toEqual(['my-image.jpeg'])
+        expect(getImageWidgetValues(addedNodes)).toEqual(['my-image.jpeg'])
       })
     })
 
@@ -358,6 +365,7 @@ describe('useMediaAssetActions', () => {
       })
 
       it('should use hash as filename when available', async () => {
+        const addedNodes = captureAddedNodes()
         const actions = useMediaAssetActions()
 
         const asset = createMockAsset({
@@ -367,10 +375,11 @@ describe('useMediaAssetActions', () => {
 
         await actions.addWorkflow(asset)
 
-        expect(getAddedImageWidgetValues()).toEqual(['abc123hash.jpeg'])
+        expect(getImageWidgetValues(addedNodes)).toEqual(['abc123hash.jpeg'])
       })
 
       it('annotates a single output asset with its metadata subfolder', async () => {
+        const addedNodes = captureAddedNodes()
         mockGetAssetType.mockReturnValue('output')
         mockGetOutputAssetMetadata.mockReturnValue({
           subfolder: 'runs/2026'
@@ -383,12 +392,13 @@ describe('useMediaAssetActions', () => {
           })
         )
 
-        expect(getAddedImageWidgetValues()).toEqual([
+        expect(getImageWidgetValues(addedNodes)).toEqual([
           'runs/2026/generated.png [output]'
         ])
       })
 
       it('should fall back to asset.name when hash is not available', async () => {
+        const addedNodes = captureAddedNodes()
         const actions = useMediaAssetActions()
 
         const asset = createMockAsset({
@@ -398,11 +408,12 @@ describe('useMediaAssetActions', () => {
 
         await actions.addWorkflow(asset)
 
-        expect(getAddedImageWidgetValues()).toEqual(['fallback-name.jpeg'])
+        expect(getImageWidgetValues(addedNodes)).toEqual(['fallback-name.jpeg'])
       })
     })
 
     it('adds supported assets and reports an exact partial result', async () => {
+      const addedNodes = captureAddedNodes()
       mockDetectNodeTypeFromFilename.mockImplementation((filename: string) =>
         filename.endsWith('.txt')
           ? { nodeType: null, widgetName: null }
@@ -417,12 +428,15 @@ describe('useMediaAssetActions', () => {
 
       await actions.addMultipleToWorkflow(assets)
 
-      expect(litegraphServiceMock.addNodeOnGraph).toHaveBeenCalledTimes(2)
-      expect(getAddedImageWidgetValues()).toEqual(['first.png', 'third.png'])
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledTimes(2)
+      expect(getImageWidgetValues(addedNodes)).toEqual([
+        'first.png',
+        'third.png'
+      ])
       expect(
-        litegraphServiceMock.addNodeOnGraph.mock.calls.map(
-          ([, options]) => options
-        )
+        vi
+          .mocked(useLitegraphService())
+          .addNodeOnGraph.mock.calls.map(([, options]) => options)
       ).toEqual([{ pos: [100, 100] }, { pos: [150, 150] }])
       expect(useToast().add).toHaveBeenCalledWith({
         severity: 'warn',
@@ -444,6 +458,7 @@ describe('useMediaAssetActions', () => {
       })
 
       it('assigns hashes with annotations derived from each asset type', async () => {
+        const addedNodes = captureAddedNodes()
         const typeByAssetId = new Map([
           ['1', 'input'],
           ['2', 'temp'],
@@ -473,7 +488,7 @@ describe('useMediaAssetActions', () => {
         ]
 
         await actions.addMultipleToWorkflow(assets)
-        const widgetValues = getAddedImageWidgetValues()
+        const widgetValues = getImageWidgetValues(addedNodes)
         unmount()
 
         expect(widgetValues).toEqual([
@@ -647,6 +662,34 @@ describe('useMediaAssetActions', () => {
       )
       expect(mockCreateAssetExport).not.toHaveBeenCalled()
       expect(mockTrackExport).not.toHaveBeenCalled()
+    })
+
+    it('fetches a cloud download through the workspace-authenticated client', async () => {
+      mockIsCloud.value = true
+      mockGetOutputAssetMetadata.mockReturnValue({
+        jobId: 'job1',
+        outputCount: 1
+      })
+
+      const actions = useMediaAssetActions()
+      actions.downloadAssets([
+        createMockAsset({
+          id: 'team-owned',
+          name: 'team-owned.glb',
+          tags: ['output'],
+          user_metadata: { jobId: 'job1', outputCount: 1 }
+        })
+      ])
+
+      const contentUrl = 'http://localhost:8188/api/assets/team-owned/content'
+      expect(mockDownloadFileAsBlob).toHaveBeenCalledWith(
+        contentUrl,
+        expect.objectContaining({ fetch: expect.any(Function) })
+      )
+
+      const { fetch: authedFetch } = mockDownloadFileAsBlob.mock.calls[0][1]
+      await authedFetch(contentUrl)
+      expect(api.fetchApi).toHaveBeenCalledWith(contentUrl)
     })
 
     it('preserves successful OSS downloads when another file fails', async () => {
@@ -1388,6 +1431,29 @@ describe('useMediaAssetActions', () => {
       })
 
       unmount()
+    })
+
+    it('deletes OSS output history without calling the asset endpoint', async () => {
+      mockIsCloud.value = false
+      vi.mocked(api.getServerFeature).mockReturnValue(false)
+      mockGetAssetType.mockReturnValue('output')
+      mockGetOutputAssetMetadata.mockReturnValue({ jobId: 'job-1' })
+      vi.mocked(api.deleteItem).mockResolvedValue(undefined)
+      const actions = useMediaAssetActions()
+      const asset = createMockAsset({
+        id: 'asset-1',
+        name: 'output.png',
+        tags: ['output'],
+        user_metadata: { jobId: 'job-1' }
+      })
+
+      await expect(actions.deleteAssets(asset)).resolves.toBe(true)
+
+      expect(api.deleteItem).toHaveBeenCalledWith('history', 'job-1')
+      expect(mockDeleteAsset).not.toHaveBeenCalled()
+      expect(useToast().add).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success' })
+      )
     })
   })
 

@@ -9,7 +9,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
-const CONSENT_DIALOG_KEY = 'agent-consent'
+export const CONSENT_DIALOG_KEY = 'agent-consent'
 const DOCS_URL = 'https://docs.comfy.org/agent-tools/in-app-agent'
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
 const CONSENT_VIDEO_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-1280.webm`
@@ -20,6 +20,12 @@ const AgentConsentCard = defineAsyncComponent(
   () =>
     import('@/workbench/extensions/agent/components/agent/AgentConsentCard.vue')
 )
+
+export interface ConsentOfferHooks {
+  onShown?: () => void
+  /** Asked right before the card mounts, after every await that precedes it. */
+  canShow?: () => boolean
+}
 
 export function useAgentConsent() {
   const dialogStore = useDialogStore()
@@ -33,9 +39,13 @@ export function useAgentConsent() {
   function showConsentDialog(
     persistOnAccept = true,
     expectedIdentity?: string,
-    onShown?: () => void
+    { onShown, canShow }: ConsentOfferHooks = {}
   ): Promise<boolean> {
     return new Promise<boolean>((resolve) => {
+      if (canShow && !canShow()) {
+        resolve(false)
+        return
+      }
       let settled = false
       let saving = false
 
@@ -127,9 +137,9 @@ export function useAgentConsent() {
   }
 
   async function acceptAfterSignIn(
-    onShown?: () => void
+    hooks: ConsentOfferHooks
   ): Promise<string | null> {
-    if (!(await showConsentDialog(false, undefined, onShown))) return null
+    if (!(await showConsentDialog(false, undefined, hooks))) return null
     try {
       if (!(await dialogService.showSignInDialog())) return null
     } catch (error) {
@@ -163,7 +173,7 @@ export function useAgentConsent() {
   }
 
   async function requestConsentForCurrentUser(
-    onShown?: () => void
+    hooks: ConsentOfferHooks
   ): Promise<string | null> {
     let decisionIdentity: string | null
     try {
@@ -185,7 +195,7 @@ export function useAgentConsent() {
     if (identity.value !== decisionIdentity) return null
     if (
       !accepted.value &&
-      !(await showConsentDialog(true, decisionIdentity, onShown))
+      !(await showConsentDialog(true, decisionIdentity, hooks))
     )
       return null
     return decisionIdentity
@@ -193,11 +203,11 @@ export function useAgentConsent() {
 
   async function withConsent(
     onAccept: () => void,
-    onShown?: () => void
+    hooks: ConsentOfferHooks = {}
   ): Promise<void> {
     const decisionIdentity = isLoggedIn.value
-      ? await requestConsentForCurrentUser(onShown)
-      : await acceptAfterSignIn(onShown)
+      ? await requestConsentForCurrentUser(hooks)
+      : await acceptAfterSignIn(hooks)
     if (
       !decisionIdentity ||
       identity.value !== decisionIdentity ||

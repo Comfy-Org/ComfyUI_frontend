@@ -16,7 +16,10 @@
     @click="onClick"
   >
     <NavIcon v-if="icon" :icon="icon" />
-    <i v-else class="text-neutral icon-[lucide--folder] shrink-0 text-xs" />
+    <i
+      v-else
+      class="icon-[lucide--folder] shrink-0 text-xs text-base-foreground"
+    />
     <span ref="textRef" class="min-w-0 truncate">
       <slot />
     </span>

@@ -1,6 +1,8 @@
 import type { GlobalSetting } from '@comfyorg/ingest-types'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
+
 import {
   GlobalSettingsApiError,
   getGlobalSetting,
@@ -12,10 +14,8 @@ vi.mock(import('@/config/comfyApi'), () => ({
 }))
 const distribution = vi.hoisted(() => ({ isCloud: true }))
 vi.mock(import('@/platform/distribution/types'), () => distribution)
-const fetchApi = vi.hoisted(() => vi.fn())
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: { fetchApi, apiURL: (path: string) => `/api${path}` }
-}))
+vi.mock(import('@/scripts/api'))
+const fetchApi = vi.mocked(api.fetchApi)
 const fetchWithUnifiedRemint = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/auth/unified/remintRetry'), () => ({
   fetchWithUnifiedRemint,
@@ -38,6 +38,7 @@ function respondWith(body: unknown, status = 200): void {
 describe('Global Settings transport', () => {
   beforeEach(() => {
     distribution.isCloud = true
+    vi.mocked(api.apiURL).mockImplementation((path) => `/api${path}`)
   })
 
   it.for([true, false])(

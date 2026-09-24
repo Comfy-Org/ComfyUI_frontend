@@ -260,13 +260,14 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-undo',
       label: 'Undo',
       category: 'essentials' as const,
+      mutatesGraph: () => !dialogStore.isDialogOpen('global-mask-editor'),
       function: async () => {
         // If Mask Editor is open, use its history instead of the graph
         if (dialogStore.isDialogOpen('global-mask-editor')) {
           maskEditorStore.canvasHistory.undo()
-        } else {
-          await getTracker()?.undo()
+          return
         }
+        await getTracker()?.undo()
       }
     },
     {
@@ -274,12 +275,13 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-refresh',
       label: 'Redo',
       category: 'essentials' as const,
+      mutatesGraph: () => !dialogStore.isDialogOpen('global-mask-editor'),
       function: async () => {
         if (dialogStore.isDialogOpen('global-mask-editor')) {
           maskEditorStore.canvasHistory.redo()
-        } else {
-          await getTracker()?.redo()
+          return
         }
+        await getTracker()?.redo()
       }
     },
     {
@@ -287,6 +289,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-trash',
       label: 'Clear Workflow',
       category: 'essentials' as const,
+      mutatesGraph: true,
       function: () => {
         const settingStore = useSettingStore()
         if (
@@ -618,6 +621,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Group Selected Nodes',
       versionAdded: '1.3.7',
       category: 'essentials' as const,
+      mutatesGraph: true,
       function: () => {
         const { canvas } = app
         if (!canvas.selectedItems.size) {
@@ -664,6 +668,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Mute/Unmute Selected Nodes',
       versionAdded: '1.3.11',
       category: 'essentials' as const,
+      mutatesGraph: true,
       function: () => {
         toggleSelectedNodesMode(LGraphEventMode.NEVER)
         app.canvas.setDirty(true, true)
@@ -675,6 +680,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Bypass/Unbypass Selected Nodes',
       versionAdded: '1.3.11',
       category: 'essentials' as const,
+      mutatesGraph: true,
       function: () => {
         toggleSelectedNodesMode(LGraphEventMode.BYPASS)
         app.canvas.setDirty(true, true)
@@ -686,6 +692,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Pin/Unpin Selected Nodes',
       versionAdded: '1.3.11',
       category: 'essentials' as const,
+      mutatesGraph: true,
       function: () => {
         getSelectedNodes().forEach((node) => {
           node.pin(!node.pinned)
@@ -698,6 +705,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-pin',
       label: 'Pin/Unpin Selected Items',
       versionAdded: '1.3.33',
+      mutatesGraph: true,
       function: () => {
         for (const item of app.canvas.selectedItems) {
           if (item instanceof LGraphNode || item instanceof LGraphGroup) {
@@ -712,6 +720,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-minus',
       label: 'Resize Selected Nodes',
       versionAdded: '',
+      mutatesGraph: true,
       function: () => {
         getSelectedNodes().forEach((node) => {
           const optimalSize = node.computeSize()
@@ -725,6 +734,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-minus',
       label: 'Collapse/Expand Selected Nodes',
       versionAdded: '1.3.11',
+      mutatesGraph: true,
       function: () => {
         getSelectedNodes().forEach((node) => {
           node.collapse()
@@ -783,6 +793,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-expand',
       label: 'Fit Group To Contents',
       versionAdded: '1.4.9',
+      mutatesGraph: true,
       function: () => {
         for (const group of app.canvas.selectedItems) {
           if (group instanceof LGraphGroup) {
@@ -922,6 +933,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.Canvas.PasteFromClipboard',
       icon: 'icon-[lucide--clipboard-paste]',
       label: 'Paste',
+      mutatesGraph: true,
       function: () => {
         app.canvas.pasteFromClipboard()
       }
@@ -930,6 +942,7 @@ export function useCoreCommands(): ComfyCommand[] {
       id: 'Comfy.Canvas.PasteFromClipboardWithConnect',
       icon: 'icon-[lucide--clipboard-paste]',
       label: () => t('Paste with Connect'),
+      mutatesGraph: true,
       function: () => {
         app.canvas.pasteFromClipboard({ connectInputs: true })
       }
@@ -947,8 +960,8 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-trash',
       label: 'Delete Selected Items',
       versionAdded: '1.10.5',
+      mutatesGraph: true,
       function: () => {
-        if (app.canvas.selectOnly) return
         if (app.canvas.selectedItems.size === 0) {
           app.canvas.canvas.dispatchEvent(
             new CustomEvent('litegraph:no-items-selected', { bubbles: true })
@@ -1030,6 +1043,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-arrow-up',
       label: 'Move Selected Nodes Up',
       versionAdded: moveSelectedNodesVersionAdded,
+      mutatesGraph: true,
       function: () => moveSelectedNodes(([x, y], gridSize) => [x, y - gridSize])
     },
     {
@@ -1037,6 +1051,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-arrow-down',
       label: 'Move Selected Nodes Down',
       versionAdded: moveSelectedNodesVersionAdded,
+      mutatesGraph: true,
       function: () => moveSelectedNodes(([x, y], gridSize) => [x, y + gridSize])
     },
     {
@@ -1044,6 +1059,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-arrow-left',
       label: 'Move Selected Nodes Left',
       versionAdded: moveSelectedNodesVersionAdded,
+      mutatesGraph: true,
       function: () => moveSelectedNodes(([x, y], gridSize) => [x - gridSize, y])
     },
     {
@@ -1051,6 +1067,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-arrow-right',
       label: 'Move Selected Nodes Right',
       versionAdded: moveSelectedNodesVersionAdded,
+      mutatesGraph: true,
       function: () => moveSelectedNodes(([x, y], gridSize) => [x + gridSize, y])
     },
     {
@@ -1059,6 +1076,7 @@ export function useCoreCommands(): ComfyCommand[] {
       label: 'Convert Selection to Subgraph',
       versionAdded: '1.20.1',
       category: 'essentials' as const,
+      mutatesGraph: true,
       function: () => {
         const canvas = canvasStore.getCanvas()
         const graph = canvas.subgraph ?? canvas.graph
@@ -1074,6 +1092,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--expand]',
       label: 'Unpack the selected Subgraph',
       versionAdded: '1.26.3',
+      mutatesGraph: true,
       function: () => {
         const { unpackSubgraph } = useSubgraphOperations()
         unpackSubgraph()
@@ -1093,7 +1112,10 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'icon-[lucide--arrow-left-right]',
       label: 'Toggle promotion of hovered widget',
       versionAdded: '1.30.1',
-      function: tryToggleWidgetPromotion
+      mutatesGraph: true,
+      function: () => {
+        tryToggleWidgetPromotion()
+      }
     },
     {
       id: 'Comfy.OpenManagerDialog',
@@ -1156,6 +1178,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-pencil',
       label: 'Set Subgraph Description',
       versionAdded: '1.39.7',
+      mutatesGraph: true,
       function: async (metadata?: Record<string, unknown>) => {
         const canvas = canvasStore.getCanvas()
         const subgraph = canvas.subgraph
@@ -1188,6 +1211,7 @@ export function useCoreCommands(): ComfyCommand[] {
       icon: 'pi pi-search',
       label: 'Set Subgraph Search Aliases',
       versionAdded: '1.39.7',
+      mutatesGraph: true,
       function: async (metadata?: Record<string, unknown>) => {
         const canvas = canvasStore.getCanvas()
         const subgraph = canvas.subgraph

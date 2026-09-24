@@ -6,6 +6,7 @@
  * over beforeLoadGraph/afterConfigureGraph: a failed load leaves mints
  * suppressed until the next load's pair recloses.
  */
+import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { RootGraphId } from '@/types/graphScopeId'
@@ -290,6 +291,17 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
 
   let loadBracketOpen = false
 
+  // The ports gate their sends on exactly this trio, so the same read also
+  // answers litegraph's mint-time question: a graph whose edits reach the doc
+  // is a graph the agent mints into too, and must mint from the disjoint
+  // range (`idAllocation.ts`).
+  const unregisterDocBoundProbe = registerDocBoundRootGraphProbe(() => {
+    if (!deps.isEnabled() || !deps.isDocBound()) return null
+    const graph = deps.getGraph()
+    if (!graph) return null
+    return graph.rootGraph?.id ?? graph.id
+  })
+
   const wiring: MintPortWiring = {
     session,
     runIntentionalClear(fn) {
@@ -312,6 +324,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     },
     detach() {
       activeWirings.delete(wiring)
+      unregisterDocBoundProbe()
       detachLinkActions()
       detachWidgetChanges()
       widgetPort.detach()
