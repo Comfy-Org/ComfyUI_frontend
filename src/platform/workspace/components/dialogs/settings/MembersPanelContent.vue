@@ -221,7 +221,7 @@
       <p class="text-sm text-muted-foreground">
         {{
           $t('workspacePanel.members.totalMembersCount', {
-            count: members.length,
+            count: totalMembers,
             maxSeats: maxSeats
           })
         }}
@@ -261,6 +261,7 @@ const TEAM_PLAN_REQUEST_URL =
 const {
   searchQuery,
   membersLoaded,
+  totalMembers,
   pendingInvitesLoaded,
   activeView,
   maxSeats,
@@ -281,7 +282,6 @@ const {
   filteredMembers,
   filteredPendingInvites,
   memberMenus,
-  members,
   pendingInvites,
   permissions,
   uiConfig,

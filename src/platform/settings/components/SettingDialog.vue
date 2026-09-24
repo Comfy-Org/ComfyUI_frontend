@@ -55,24 +55,12 @@
         id="keybinding-panel-header"
         class="flex-1"
       />
-      <div
+      <SettingsWorkspaceHeader
         v-else-if="isWorkspaceCategoryActive"
-        class="flex min-w-0 flex-1 items-center gap-3"
-      >
-        <template v-if="!isHeaderCollapsed && workspaceName">
-          <WorkspaceProfilePic
-            size="lg"
-            :workspace-name="workspaceName"
-            :subscription-tier="activeWorkspace?.subscriptionTier"
-          />
-          <h1
-            class="m-0 truncate text-2xl font-semibold text-base-foreground select-none"
-          >
-            {{ workspaceName }}
-          </h1>
-        </template>
-        <div id="settings-header-controls" class="contents" />
-      </div>
+        :workspace-name="workspaceName"
+        :subscription-tier="activeWorkspace?.subscriptionTier"
+        :collapsed="isHeaderCollapsed"
+      />
     </template>
 
     <template #header-right-area>
@@ -124,6 +112,7 @@ import { storeToRefs } from 'pinia'
 import { computed, nextTick, onBeforeUnmount, provide, ref, watch } from 'vue'
 
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import SettingsWorkspaceHeader from '@/platform/settings/components/SettingsWorkspaceHeader.vue'
 import CurrentUserMessage from '@/components/dialog/content/setting/CurrentUserMessage.vue'
 import BaseModalLayout from '@/components/widget/layout/BaseModalLayout.vue'
 import NavItem from '@/components/widget/nav/NavItem.vue'
@@ -131,7 +120,6 @@ import NavTitle from '@/components/widget/nav/NavTitle.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSettingsHeaderCollapse } from '@/platform/settings/composables/useSettingsHeaderCollapse'
 import { cn } from '@comfyorg/tailwind-utils'
-import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import ColorPaletteMessage from '@/platform/settings/components/ColorPaletteMessage.vue'
 import SettingsPanel from '@/platform/settings/components/SettingsPanel.vue'

@@ -21,6 +21,7 @@ const mockHandleInviteMember = vi.fn()
 
 const {
   mockMembers,
+  mockTotalMembers,
   mockPendingInvites,
   mockOriginalOwnerId,
   mockFilteredMembers,
@@ -51,6 +52,7 @@ const {
 
   return {
     mockMembers: ref<WorkspaceMember[]>([]),
+    mockTotalMembers: ref<number | null>(null),
     mockPendingInvites: ref<WorkspacePendingInvite[]>([]),
     mockOriginalOwnerId: ref<string | null>(null),
     mockHasMultipleMembers: ref(true),
@@ -154,6 +156,9 @@ vi.mock<unknown>(
       ),
       members: mockMembers,
       membersLoaded: mockMembersLoaded,
+      totalMembers: computed(
+        () => mockTotalMembers.value ?? mockMembers.value.length
+      ),
       pendingInvites: mockPendingInvites,
       pendingInvitesLoaded: mockPendingInvitesLoaded,
       permissions: mockPermissions,
@@ -243,6 +248,7 @@ describe('MembersPanelContent', () => {
   beforeEach(() => {
     mockMemberMenuItems.mockReturnValue([])
     mockMembers.value = []
+    mockTotalMembers.value = null
     mockPendingInvites.value = []
     mockOriginalOwnerId.value = null
     mockFilteredMembers.value = []
@@ -705,6 +711,12 @@ describe('MembersPanelContent', () => {
     it('counts the members against the seats the plan bought', () => {
       renderComponent()
       expect(screen.getByText(/2 of 20 total members\./)).toBeInTheDocument()
+    })
+
+    it('shows the server total when it exceeds the fetched page', () => {
+      mockTotalMembers.value = 140
+      renderComponent()
+      expect(screen.getByText(/140 of 20 total members\./)).toBeInTheDocument()
     })
 
     it('stays silent until the members request has completed', () => {

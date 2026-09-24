@@ -120,6 +120,9 @@ export function useMembersPanel() {
     pendingInvitesLoaded,
     originalOwnerId
   } = storeToRefs(workspaceStore)
+  const totalMembers = computed(
+    () => activeWorkspace.value?.totalMembers ?? members.value.length
+  )
   const { resendInvite } = workspaceStore
   const {
     permissions: workspacePermissions,
@@ -478,6 +481,7 @@ export function useMembersPanel() {
     memberMenus,
     members,
     membersLoaded,
+    totalMembers,
     pendingInvites,
     pendingInvitesLoaded,
     permissions,
