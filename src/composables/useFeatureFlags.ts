@@ -39,6 +39,7 @@ export enum ServerFeatureFlag {
   HOSTED_BILLING_DESTINATION = 'hosted_billing_destination',
   SHOW_SIGNIN_BUTTON = 'show_signin_button',
   UNIFIED_CLOUD_AUTH = 'unified_cloud_auth',
+  UNIFIED_WEB_SESSION = 'unified_web_session',
   BILLING_CONTROL_ENABLED = 'billing_control_enabled',
   LEGACY_BILLING_MIGRATION_ENABLED = 'legacy_billing_migration_enabled',
   EMBEDDED_CHECKOUT_ENABLED = 'embedded_checked_enabled',
@@ -254,6 +255,15 @@ export function useFeatureFlags() {
       return resolveFlag(
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
         remoteConfig.value.unified_cloud_auth,
+        false
+      )
+    },
+    get unifiedWebSessionEnabled() {
+      if (!isCloud) return false
+
+      return resolveFlag(
+        ServerFeatureFlag.UNIFIED_WEB_SESSION,
+        remoteConfig.value.unified_web_session,
         false
       )
     },
