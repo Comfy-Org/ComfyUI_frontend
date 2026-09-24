@@ -441,6 +441,21 @@ async function renderAndSend(text: string): Promise<void> {
   await sendFromComposer(text)
 }
 
+// A send the panel refuses locally never reaches the Stop state; it ends on
+// the failed-send notice for a saved tab the saved-workflow index cannot name.
+async function renderAndSendUnresolved(text: string): Promise<void> {
+  renderWithSelectedTarget()
+  const textbox = screen.getByRole('textbox')
+  await userEvent.click(textbox)
+  await userEvent.paste(text)
+  await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+  expect(
+    await screen.findByText(i18n.global.t('agent.targetNotResolved'), {
+      exact: false
+    })
+  ).toBeVisible()
+}
+
 function addTab(
   path: string,
   overrides: Partial<LoadedComfyWorkflow> = {}
@@ -1926,6 +1941,7 @@ describe('AgentPanelRoot canvas draft on send', () => {
     const prepareForSave = vi.fn()
     const activeWorkflow = addTab('workflows/video_minimax_h3_i2v.json', {
       activeState,
+      isTemporary: true,
       changeTracker: createMockChangeTracker({ prepareForSave })
     })
     workflowStore.activeWorkflow = activeWorkflow
@@ -4608,17 +4624,16 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ workflow_id: 'wf-cloud-current' })
   })
 
-  it('does not resolve two same-named open saved tabs to one cloud id', async () => {
+  it('does not resolve two same-named open saved tabs to one cloud id, and refuses the send', async () => {
     const current = makeTab()
     const archived = addTab('workflows/archive/current.json')
     const bodies = mockMessagesEndpoint('wf-fresh', [
       { id: 'wf-cloud-current', name: 'current' }
     ])
 
-    await renderAndSend('first message')
+    await renderAndSendUnresolved('first message')
 
-    expect(bodies[0]).not.toHaveProperty('workflow_id')
-    expect(bodies[0]).not.toHaveProperty('open_tabs')
+    expect(bodies).toHaveLength(0)
     expect(
       useAgentWorkflowTabBindingStore().workflowIdFor(current.path)
     ).toBeUndefined()
@@ -4627,7 +4642,7 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toBeUndefined()
   })
 
-  it('excludes ambiguous and nameless cloud records from resolution', async () => {
+  it('excludes ambiguous and nameless cloud records from resolution, and refuses the send', async () => {
     makeTab()
     const bodies = mockMessagesEndpoint('wf-fresh', [
       { id: 'wf-a', name: 'current' },
@@ -4635,10 +4650,9 @@ describe('AgentPanelRoot workflow binding', () => {
       { id: 'wf-nameless' } as { id: string; name: string }
     ])
 
-    await renderAndSend('first message')
+    await renderAndSendUnresolved('first message')
 
-    expect(bodies[0]).not.toHaveProperty('workflow_id')
-    expect(bodies[0]).not.toHaveProperty('open_tabs')
+    expect(bodies).toHaveLength(0)
   })
 
   it('falls back to bindings when the cloud index request fails', async () => {
@@ -4669,7 +4683,9 @@ describe('AgentPanelRoot workflow binding', () => {
     })
   })
 
-  it('does not adopt a minted workflow when a saved tab cloud lookup fails', async () => {
+  // Sent without an id, the server would fall back to the thread's previous
+  // workflow; an unnamed saved tab is refused instead of misattributed.
+  it('refuses to send a saved tab when the saved-workflow lookup fails', async () => {
     const tab = makeTab()
     const bodies: unknown[] = []
     vi.stubGlobal(
@@ -4685,15 +4701,15 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     )
 
-    await renderAndSend('first message')
+    await renderAndSendUnresolved('first message')
 
-    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    expect(bodies).toHaveLength(0)
     expect(
       useAgentWorkflowTabBindingStore().workflowIdFor(tab.path)
     ).toBeUndefined()
   })
 
-  it('does not adopt a minted workflow after cloud preparation times out', async () => {
+  it('refuses to send a saved tab after saved-workflow preparation times out', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const tab = makeTab()
     const bodies: unknown[] = []
@@ -4727,8 +4743,14 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() => expect(workflowRequests).toBe(2))
     await vi.advanceTimersByTimeAsync(3000)
 
-    await vi.waitFor(() => expect(bodies).toHaveLength(1))
-    expect(bodies[0]).not.toHaveProperty('workflow_id')
+    await vi.waitFor(() =>
+      expect(
+        screen.getByText(i18n.global.t('agent.targetNotResolved'), {
+          exact: false
+        })
+      ).toBeVisible()
+    )
+    expect(bodies).toHaveLength(0)
     expect(
       useAgentWorkflowTabBindingStore().workflowIdFor(tab.path)
     ).toBeUndefined()
@@ -5405,7 +5427,7 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('skips the draft on first send from an unbound empty tab', async () => {
-    makeTab()
+    Object.assign(makeTab(), { isTemporary: true })
     const bodies = mockMessagesEndpoint('wf-42')
 
     await renderAndSend('first message')
@@ -5814,7 +5836,7 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   it('sends no workflow id for an unbound tab and posts exactly once', async () => {
-    const tab = makeTab()
+    const tab = Object.assign(makeTab(), { isTemporary: true })
     tab.activeState = fromPartial<ComfyWorkflowJSON>({
       id: 'graph-internal-id-not-a-cloud-id'
     })
@@ -6211,7 +6233,9 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('sends only the remaining chip after one is dismissed', async () => {
     makeTab()
-    const bodies = mockMessagesEndpoint('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42', [
+      { id: 'wf-42', name: 'current' }
+    ])
     appMock.graph.nodes = [
       { id: 5, title: 'KSampler' },
       { id: 7, title: 'VAEDecode' }
@@ -6562,7 +6586,9 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('does not resend a canvas selection after its chip was consumed', async () => {
     makeTab()
-    const bodies = mockMessagesEndpoint('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42', [
+      { id: 'wf-42', name: 'current' }
+    ])
     const state = setupNodeSelectionCanvas()
 
     renderWithSelectedTarget()
@@ -6585,7 +6611,9 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('keeps normal graph selections out of the composer across a panel remount', async () => {
     makeTab()
-    const bodies = mockMessagesEndpoint('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42', [
+      { id: 'wf-42', name: 'current' }
+    ])
     appMock.graph.nodes = [{ id: 7, title: 'KSampler' }]
 
     const panelStore = useAgentPanelStore()
@@ -6755,7 +6783,9 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('X-03 / PM-680 / FE-1311 keeps displayed node chips identical to every sent node id', async () => {
     makeTab()
-    const bodies = mockMessagesEndpoint('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42', [
+      { id: 'wf-42', name: 'current' }
+    ])
     const selection = await startVueNodeSelection()
 
     expect(selection.canvas.multi_select).toBe(true)
@@ -6895,7 +6925,9 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('resolves picker nodes from the viewed subgraph, not the root graph', async () => {
     makeTab()
-    const bodies = mockMessagesEndpoint('wf-42')
+    const bodies = mockMessagesEndpoint('wf-42', [
+      { id: 'wf-42', name: 'current' }
+    ])
     appMock.canvas = {
       graph: {
         nodes: [{ id: 12, title: 'KSampler' }],

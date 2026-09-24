@@ -12,12 +12,14 @@ export interface TurnContextInput {
 /**
  * Which workflow a turn is attributed to.
  *
- * A resolved tab names its workflow. An unresolved one is sent tab-only, which
- * lets the agent mint a workflow for it and lets the tab adopt that workflow on
- * the ack — EXCEPT for a saved tab: every backend serves the saved-workflow
- * index (GET /workflows), so an unresolved saved tab most likely means that
+ * A resolved tab names its workflow. An unresolved temporary tab is sent
+ * tab-only, which lets the agent mint a workflow for it and lets the tab adopt
+ * that workflow on the ack. An unresolved SAVED tab is different: every backend
+ * serves the saved-workflow index (GET /workflows), so it most likely means the
  * list has not loaded, and a tab-only context would let the agent mint a
- * second workflow for a tab that already has one.
+ * second workflow for a tab that already has one. It keeps its identity and is
+ * marked `unresolved`, so the send can refuse it rather than attribute it to
+ * the thread's previous workflow.
  */
 export function turnContextFor({
   id,
@@ -26,6 +28,6 @@ export function turnContextFor({
   hasOrigin
 }: TurnContextInput): WorkflowTurnContext | undefined {
   if (id !== undefined) return { id, tabPath }
-  if (!isTemporary && hasOrigin) return undefined
+  if (!isTemporary && hasOrigin) return { tabPath, unresolved: true }
   return { tabPath }
 }

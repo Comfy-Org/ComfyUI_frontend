@@ -1304,6 +1304,32 @@ describe('useAgentSession (v1 composition root)', () => {
     )
   })
 
+  // Sent without an id, the turn would land on whatever workflow the thread
+  // used last — another canvas. Refused locally instead.
+  it('refuses to send a saved tab the saved-workflow index still has not named', async () => {
+    const postMessage = vi.fn<AgentRestClient['postMessage']>()
+    const prepare = vi.fn(async () => undefined)
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source,
+      workflow: {
+        current: () => ({ tabPath: 'workflows/a.json', unresolved: true }),
+        adopted: vi.fn(),
+        prepare
+      }
+    })
+    session.start()
+
+    expect(await session.sendMessage('add a node')).toBe(false)
+
+    expect(prepare).toHaveBeenCalled()
+    expect(postMessage).not.toHaveBeenCalled()
+    expect(session.entries.value.at(-1)).toMatchObject({
+      role: 'assistant',
+      parts: [{ type: 'notice', level: 'error' }]
+    })
+  })
+
   it('does not flag the current tab as unbound when the turn context names a workflow', async () => {
     const postMessage = vi.fn<AgentRestClient['postMessage']>(async () => ({
       thread_id: 'th-1',
