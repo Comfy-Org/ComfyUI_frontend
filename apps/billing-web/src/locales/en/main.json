@@ -155,7 +155,10 @@
     "plan": {
       "name": "{tier} · {duration}",
       "credits": "{amount} in monthly credits",
-      "seats": "{count} seat | {count} seats"
+      "seats": "{count} seat | {count} seats",
+      "stopCredits": "{credits} credits a month",
+      "stopOption": "{credits} · {price}",
+      "chooseStop": "Monthly credits for {plan}"
     },
     "availability": {
       "unknown": "This plan isn't available for your workspace.",
