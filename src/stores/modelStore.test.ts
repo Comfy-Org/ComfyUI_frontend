@@ -647,7 +647,6 @@ describe('useModelStore', () => {
       store = useModelStore()
       await store.loadModelFolders()
 
-      // Registered after the store's watcher, like the sidebar's.
       const { flags } = useFeatureFlags()
       const eagerLoads: Promise<unknown>[] = []
       watch(
