@@ -46,9 +46,10 @@ const {
 } = useCinematicPopover<PopoverKey>()
 
 const POPOVER_WIDTH: Readonly<Partial<Record<PopoverKey, string>>> = {
-  camera: 'lg:w-176',
+  camera: 'lg:w-4xl',
+  direction: 'lg:w-2xl',
   references: 'lg:w-96',
-  format: 'lg:w-88'
+  format: 'lg:w-96'
 }
 const popoverClass = computed(() =>
   cn(
@@ -129,17 +130,35 @@ function generate() {
             <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
             <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
           </div>
-          <CinematicOutputControls
-            v-else
-            v-model:aspect="aspect"
-            v-model:resolution="resolution"
-            v-model:takes="takes"
-            :locale
-          />
+          <div v-else class="flex flex-col gap-3">
+            <CinematicOutputControls
+              v-model:aspect="aspect"
+              v-model:resolution="resolution"
+              v-model:takes="takes"
+              :locale
+            />
+            <label
+              class="flex cursor-pointer items-center gap-2.5 rounded-xl px-1 text-xs text-primary-warm-white"
+            >
+              <input
+                v-model="enhance"
+                type="checkbox"
+                role="switch"
+                class="peer sr-only"
+              />
+              <span
+                class="relative h-4 w-7 shrink-0 rounded-full bg-transparency-white-t20 transition-colors peer-checked:bg-primary-comfy-yellow peer-focus-visible:ring-3 peer-focus-visible:ring-primary-comfy-yellow/50 after:absolute after:top-0.5 after:left-0.5 after:size-3 after:rounded-full after:bg-primary-comfy-ink after:transition-transform peer-checked:after:translate-x-3"
+                aria-hidden="true"
+              />
+              {{ tc('cinematic.scene.enhance', locale) }}
+              <span class="truncate text-primary-warm-gray">
+                {{ tc('cinematic.scene.enhanceHint', locale) }}
+              </span>
+            </label>
+          </div>
         </CinematicPopover>
         <CinematicComposer
           v-model:scene="scene"
-          v-model:enhance="enhance"
           v-model:model="modelSlug"
           :models
           :direction

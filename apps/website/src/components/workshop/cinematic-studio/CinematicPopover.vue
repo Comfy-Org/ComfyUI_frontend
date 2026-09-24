@@ -24,7 +24,7 @@ onMounted(() => {
     root.value?.querySelector<HTMLElement>(
       '[data-popover-body] :is(button, input)'
     )
-  target?.focus()
+  target?.focus({ preventScroll: true })
 })
 </script>
 
