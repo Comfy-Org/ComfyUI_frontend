@@ -6,16 +6,28 @@ import type { BatchOutcome, OpsResultView } from './opSender'
 import type { PendingOpEntry, PendingOpLedger } from './pendingOpLedger'
 import { createPendingOpLedger } from './pendingOpLedger'
 
+/**
+ * ADR-CRDT-RECONCILE-0035 (a), round 8 (DrJKL, review 5298630064): the
+ * bounded ledger terminal path is NON-DESTRUCTIVE. Each parked entry carries
+ * an ABSOLUTE deadline of this length from the moment it parked — no
+ * same-lineage frame extends it, and nothing about doc seq or acks feeds it.
+ * On expiry the entry is left exactly where it was (the optimistic
+ * projection stays on the canvas; nothing reverts) and this tracker emits
+ * `unresolved` once, a distinct, non-rejection notification — "could not
+ * confirm this edit synced" — rather than the standard rejected-operation
+ * toast. The entry's identity stays registered (still `delivery_unknown`) so
+ * a late echo or an explicit host response can still resolve it to
+ * `applied` or reverted, until a lineage break or destruction settles it.
+ * On the order of the existing `SUBSCRIBE_ACK_TIMEOUT_MS` bound
+ * (`agentCrdtDocLifecycle.ts`) — the ingest relay's own resync budget.
+ */
+export const LEDGER_SETTLE_TIMEOUT_MS = 15_000
+
 type PendingOpRevertReason =
   | 'failed'
   | 'unprocessed'
   | 'unattributed'
   | 'undeliverable'
-  /**
-   * A `delivery_unknown` entry's per-kind effect check found no trace of it
-   * in the doc at the next same-lineage catch-up (ADR-CRDT-RECONCILE-0035).
-   */
-  | 'diverged'
 
 export type PendingOpTrackerEvent =
   | {
@@ -43,6 +55,19 @@ export type PendingOpTrackerEvent =
   /** Duplicate waiting for its acknowledged sequence to be projected. */
   | { type: 'skipped_awaiting'; seq: number | null; opIds: string[] }
   | { type: 'reset'; opIds: string[] }
+  /**
+   * The bounded ledger terminal path's deadline elapsed
+   * (ADR-CRDT-RECONCILE-0035 (a), round 8): non-destructive — the entry is
+   * still `delivery_unknown` and still held, only notified once so the user
+   * knows this edit's sync status is unconfirmed.
+   */
+  | { type: 'unresolved'; opIds: string[] }
+  /**
+   * Destruction (target-session/document destroy) settled these still-parked
+   * entries: dropped, deadlines cancelled, no revert and no rejection toast
+   * — distinct from a lineage-break `reset`, which this is not.
+   */
+  | { type: 'abandoned'; opIds: string[] }
 
 export interface PendingOpTrackerDeps {
   ledger?: PendingOpLedger<Op>
@@ -74,28 +99,37 @@ export interface PendingOpTracker {
   onAuthoritativeState(seq: number | null): void
   /**
    * Resolves every `delivery_unknown` (parked) entry against the doc state a
-   * same-lineage catch-up just projected. `effectPresent` answers, per op,
-   * whether ITS effect is visible now (`add_node`: node id present;
-   * `delete_node`: absent; `connect`: link id present), or `null` when the
-   * kind cannot be checked this way (`set_widget`, which always resolves
-   * present — LWW makes a value comparison meaningless — and `clear`, which
-   * is never parked). Present clears the entry.
+   * same-lineage frame just projected. `effectPresent` answers, per op,
+   * whether ITS success condition is visible now (`add_node`: node id
+   * present and the doc node's type matches; `delete_node`: id ABSENT —
+   * absence is the effect being checked for; `connect`: link id present;
+   * `set_widget`: the target widget's current value equals the op's value),
+   * or `null` when the kind cannot be checked this way (`clear`, which is
+   * never parked, and any op kind this build has no projection for yet).
+   * `true` clears the entry as applied.
    *
-   * Absent reverts it (`reason: 'diverged'`) through the same path a host
-   * rejection uses, UNLESS `revertOnAbsent` is `false` (default `true`): an
-   * absent entry then stays parked as `delivery_unknown` instead of
-   * reverting. ADR-CRDT-RECONCILE-0035 (a)'s reactivation-continuity rule
-   * passes `false` here — a changed `seq` at reactivation is ordinary
-   * same-lineage progress, not proof of absence, and reverting on that basis
-   * alone could strip a local projection of an add the document already
-   * holds; the entry resolves instead at the next same-lineage `doc_update`,
-   * an explicit host rejection, or the retry-timeout expiry.
+   * ADR-CRDT-RECONCILE-0035 (a), round 8 (DrJKL, review 5298630064): absence
+   * never reverts, for any kind, ever — only when absence itself IS the
+   * kind's success condition (`delete_node`) does it settle. `false` or
+   * `null` from `effectPresent` always leaves the entry parked; the only
+   * paths that ever move it out of `delivery_unknown` again are an explicit
+   * host rejection (`reason` in the `reverted` event), a lineage break, or
+   * destruction. The bounded ledger terminal path
+   * ({@link LEDGER_SETTLE_TIMEOUT_MS}) does not revert it either — see that
+   * constant's doc comment.
    */
-  resolveDeliveryUnknown(
-    effectPresent: (op: Op) => boolean | null,
-    options?: { revertOnAbsent?: boolean }
-  ): void
+  resolveDeliveryUnknown(effectPresent: (op: Op) => boolean | null): void
   reset(): void
+  /**
+   * The target-session/document destruction boundary (ADR-CRDT-RECONCILE-0035
+   * (a)'s ledger-ownership bullet, round 8): every parked (`delivery_unknown`)
+   * entry is dropped as `abandoned` — no revert, no rejection toast, since
+   * destruction is not a rejection — and every settle deadline is cancelled.
+   * Every other entry drops silently, exactly as {@link reset} does — a
+   * queued/in-flight/applied op has no unresolved "was it lost?" question the
+   * way a parked one does.
+   */
+  destroy(): void
   entries(): PendingOpEntry<Op>[]
   /**
    * The `class_type` of a pending `add_node` for this node id, read through
@@ -136,21 +170,25 @@ export interface PendingOpTracker {
   pendingDeleteNodeIds(): ReadonlySet<string>
 }
 
-/** What {@link PendingOpTracker.resolveDeliveryUnknown} does with one parked entry. */
-type DeliveryUnknownDisposition = 'clear' | 'revert' | 'skip'
+/**
+ * What {@link PendingOpTracker.resolveDeliveryUnknown} does with one parked
+ * entry. Round 8: there is no `'revert'` disposition — absence never settles
+ * an entry from this path, so the only outcomes are "its success condition
+ * is visible" or "still unknown".
+ */
+type DeliveryUnknownDisposition = 'clear' | 'skip'
 
 function classifyDeliveryUnknownEntry(
   entry: PendingOpEntry<Op>,
-  effectPresent: (op: Op) => boolean | null,
-  revertOnAbsent: boolean
+  effectPresent: (op: Op) => boolean | null
 ): DeliveryUnknownDisposition {
-  const op = entry.shadow
-  // `set_widget` has no meaningful presence check (LWW), so a parked one
-  // always resolves present once a catch-up runs at all.
-  const present = op.op === 'set_widget' ? true : effectPresent(op)
-  if (present === null) return 'skip'
-  if (present) return 'clear'
-  return revertOnAbsent ? 'revert' : 'skip'
+  // ADR-CRDT-RECONCILE-0035 (a): `set_widget` is checked like any other kind
+  // — the caller compares the target widget's current value against the
+  // op's value, never an unconditional clear (last-writer-wins does not make
+  // an arbitrary document value proof that THIS op landed). `delete_node`'s
+  // success condition is the id's ABSENCE, already encoded as `true` by the
+  // caller's `effectPresent` for that kind.
+  return effectPresent(entry.shadow) === true ? 'clear' : 'skip'
 }
 
 /** States in which the host can have already reflected an op back to this follower. */
@@ -184,6 +222,46 @@ export function createPendingOpTracker(
   // Rejected op ids already reported this session, so a retried settle of
   // the same ledger entry (e.g. a duplicate `revert`) reports it only once.
   const reportedHumanOpFailures = new Set<string>()
+  // Bounded ledger terminal path (ADR-CRDT-RECONCILE-0035 (a), round 8): one
+  // outstanding, ABSOLUTE settle-deadline timer per parked op id, armed once
+  // at park time and never restarted or otherwise fed by doc seq or acks.
+  const deadlines = new Map<string, ReturnType<typeof setTimeout>>()
+
+  function clearDeadline(opId: string): void {
+    const timer = deadlines.get(opId)
+    if (timer === undefined) return
+    clearTimeout(timer)
+    deadlines.delete(opId)
+  }
+
+  function clearAllDeadlines(): void {
+    for (const timer of deadlines.values()) clearTimeout(timer)
+    deadlines.clear()
+  }
+
+  /**
+   * Terminal-path expiry for one parked entry (ADR-CRDT-RECONCILE-0035 (a),
+   * round 8): non-destructive. The entry is left exactly where it is — still
+   * `delivery_unknown`, still indexed, still reconcilable by a late result or
+   * a later same-lineage frame — and this only notifies once that its sync
+   * status could not be confirmed. A lineage break or destruction dropping
+   * the entry first (which cancels this timer) is the only way this callback
+   * becomes a no-op.
+   */
+  function onDeadlineExpired(opId: string): void {
+    deadlines.delete(opId)
+    const entry = ledger.get(opId)
+    if (!entry || entry.state !== 'delivery_unknown') return
+    emit({ type: 'unresolved', opIds: [opId] })
+  }
+
+  function armDeadline(opId: string): void {
+    clearDeadline(opId)
+    deadlines.set(
+      opId,
+      setTimeout(() => onDeadlineExpired(opId), LEDGER_SETTLE_TIMEOUT_MS)
+    )
+  }
 
   function emit(event: PendingOpTrackerEvent): void {
     try {
@@ -229,6 +307,7 @@ export function createPendingOpTracker(
   function drop(opId: string): PendingOpEntry<Op> | undefined {
     attempts.delete(opId)
     awaitingSkipped.delete(opId)
+    clearDeadline(opId)
     const entry = ledger.take(opId)
     if (entry) releaseIndexes(entry)
     return entry
@@ -314,6 +393,7 @@ export function createPendingOpTracker(
     for (const entry of cleared) {
       attempts.delete(entry.opId)
       awaitingSkipped.delete(entry.opId)
+      clearDeadline(entry.opId)
       releaseIndexes(entry)
     }
     if (cleared.length > 0)
@@ -386,6 +466,7 @@ export function createPendingOpTracker(
         const rejected =
           parkable.length > 0 ? ledger.markDeliveryUnknown(parkable) : parkable
         const parked = parkable.filter((opId) => !rejected.includes(opId))
+        for (const opId of parked) armDeadline(opId)
         if (parked.length > 0) emit({ type: 'delivery_unknown', opIds: parked })
         // A rejected id was never `inflight` when parking was attempted (e.g.
         // still `queued`, its transmit never landed): it will never get a
@@ -403,23 +484,18 @@ export function createPendingOpTracker(
     onDocEffect(opIds) {
       applyEffect(opIds)
     },
-    resolveDeliveryUnknown(effectPresent, options) {
-      const revertOnAbsent = options?.revertOnAbsent ?? true
+    resolveDeliveryUnknown(effectPresent) {
       const parked = ledger.entries('delivery_unknown')
       if (parked.length === 0) return
       const toClear: string[] = []
-      const toRevert: string[] = []
       for (const entry of parked) {
-        const disposition = classifyDeliveryUnknownEntry(
-          entry,
-          effectPresent,
-          revertOnAbsent
-        )
-        if (disposition === 'clear') toClear.push(entry.opId)
-        else if (disposition === 'revert') toRevert.push(entry.opId)
+        if (classifyDeliveryUnknownEntry(entry, effectPresent) === 'clear')
+          toClear.push(entry.opId)
       }
+      // Round 8: nothing else happens to an entry this pass leaves parked —
+      // no revert, and its terminal-path deadline (armed once, at park time)
+      // is neither read nor restarted here.
       applyEffect(toClear)
-      if (toRevert.length > 0) revert(toRevert, 'diverged')
     },
     onAuthoritativeState(seq) {
       if (awaitingSkipped.size === 0) return
@@ -435,6 +511,27 @@ export function createPendingOpTracker(
       clearSkipped(covered, seq)
     },
     reset() {
+      clearAllDeadlines()
+      const dropped = ledger.reset()
+      attempts.clear()
+      awaitingSkipped.clear()
+      addNodeIndex.clear()
+      connectLinkIndex.clear()
+      deleteNodeIndex.clear()
+      if (dropped.length > 0)
+        emit({ type: 'reset', opIds: dropped.map((entry) => entry.opId) })
+    },
+    destroy() {
+      // Round 8: destruction is not a rejection. Every still-parked entry is
+      // dropped as `abandoned` — no revert, no rejection toast — since no
+      // later frame can ever arrive to settle it (ADR-CRDT-RECONCILE-0035
+      // (a)).
+      const parkedIds = ledger.entries('delivery_unknown').map((e) => e.opId)
+      for (const opId of parkedIds) drop(opId)
+      if (parkedIds.length > 0) emit({ type: 'abandoned', opIds: parkedIds })
+      // Whatever remains has no such unresolved question; drop it exactly as
+      // an ordinary lineage-break reset does.
+      clearAllDeadlines()
       const dropped = ledger.reset()
       attempts.clear()
       awaitingSkipped.clear()

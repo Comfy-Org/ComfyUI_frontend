@@ -2510,7 +2510,8 @@
     "failedToToggleGizmo": "Failed to toggle gizmo",
     "failedToSetGizmoMode": "Failed to set gizmo mode",
     "agentSyncEditReverted": "Your edit couldn't be synced and was undone.",
-    "agentSyncEditFailed": "Your edit couldn't be synced."
+    "agentSyncEditFailed": "Your edit couldn't be synced.",
+    "agentSyncEditUnconfirmed": "Your edit couldn't be confirmed as synced."
   },
   "nodeBadge": {
     "partnerNodesCount": "Partner Nodes x {count}"

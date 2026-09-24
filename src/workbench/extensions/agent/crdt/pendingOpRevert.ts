@@ -82,10 +82,14 @@ export function applyPendingOpRevert(
 ): NodeId[] {
   const removedNodeIds: NodeId[] = []
   if (event.type !== 'reverted') {
+    // `unresolved` (ADR-CRDT-RECONCILE-0035 (a), round 8) deliberately is
+    // NOT here: the entry is still held, still reconcilable, so its
+    // registered node must survive for a later revert to still find it.
     if (
       event.type === 'cleared' ||
       event.type === 'skipped_cleared' ||
-      event.type === 'reset'
+      event.type === 'reset' ||
+      event.type === 'abandoned'
     )
       registry.release(event.opIds)
     return removedNodeIds

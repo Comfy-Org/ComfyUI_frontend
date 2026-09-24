@@ -8,6 +8,7 @@ import {
   watch
 } from 'vue'
 import type { Ref } from 'vue'
+import { isEqual } from 'es-toolkit'
 import * as Y from 'yjs'
 
 import { nodesMap } from '@comfyorg/comfy-multi-player'
@@ -54,11 +55,16 @@ import {
   ALREADY_CURRENT_RETRY_INTERVAL_MS,
   createPendingCorrelation
 } from './pendingCorrelation'
-import { createPendingOpTracker } from './pendingOpTracker'
+import type { PendingOpTrackerEvent } from './pendingOpTracker'
+import {
+  LEDGER_SETTLE_TIMEOUT_MS,
+  createPendingOpTracker
+} from './pendingOpTracker'
 
 export {
   ALREADY_CURRENT_RETRY_INTERVAL_MS,
   apiTransport,
+  LEDGER_SETTLE_TIMEOUT_MS,
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS
 }
@@ -255,13 +261,9 @@ function readNumberField(
 /** Narrows a `doc_subscribed` event's `detail` without casting it. */
 function readSubscribedAckDetail(detail: unknown): {
   seq: number | undefined
-  generation: number | undefined
 } {
-  if (!isRecord(detail)) return { seq: undefined, generation: undefined }
-  return {
-    seq: readNumberField(detail, 'seq'),
-    generation: readNumberField(detail, 'generation')
-  }
+  if (!isRecord(detail)) return { seq: undefined }
+  return { seq: readNumberField(detail, 'seq') }
 }
 
 function deleteNodeEffectPresent(
@@ -290,6 +292,29 @@ function connectEffectPresent(
   const link = tuple && validateLinkEndpoints(tuple)
   if (!link) return false
   return connectEndpointsMatch(link, op) && link.type === op.link_type
+}
+
+/**
+ * ADR-CRDT-RECONCILE-0035 (a), round 7: `set_widget` presence is the target
+ * widget's CURRENT value equalling the op's value — never an unconditional
+ * clear, since last-writer-wins does not make an arbitrary document value
+ * proof that THIS op landed. Reads the raw `nodes`/`widgets` Y.Maps directly
+ * (like {@link addNodeEffectPresent}), not the package's `readGraph` snapshot
+ * surface, which gates on a readable `meta.schema_version` this hand-built
+ * test/merge doc need not carry. Only a top-level write has a target this way
+ * at all: an interior (definition-scoped) write's widget lives inside a
+ * subgraph definition, which this doc shape doesn't reach, so it stays
+ * unresolvable (`null`), exactly like the other {@link UNPROJECTED_OP_KINDS}.
+ */
+function setWidgetEffectPresent(
+  doc: Y.Doc,
+  op: Extract<Op, { op: 'set_widget' }>
+): boolean | null {
+  if (op.path != null && op.path.length > 0) return null
+  const node = nodesMap(doc).get(String(op.node_id))
+  const widgets = node?.get('widgets')
+  if (!(widgets instanceof Y.Map) || !widgets.has(op.widget)) return null
+  return isEqual(widgets.get(op.widget), op.value)
 }
 
 /**
@@ -437,6 +462,24 @@ function startAgentCrdtFollower(
       life: 5000
     })
   })
+  /**
+   * ADR-CRDT-RECONCILE-0035 (a), round 8: the bounded ledger terminal path's
+   * `unresolved` event is deliberately NOT a rejection — the entry stays
+   * parked and the optimistic projection stays on the canvas — so it gets
+   * its own, distinct, non-rejection notification rather than
+   * `notifyReverted`'s toast.
+   */
+  const notifyUnresolved = (event: PendingOpTrackerEvent): void => {
+    if (event.type !== 'unresolved') return
+    useToastStore().add({
+      severity: 'warn',
+      summary: st(
+        'toastMessages.agentSyncEditUnconfirmed',
+        "Your edit couldn't be confirmed as synced."
+      ),
+      life: 5000
+    })
+  }
   // Construction order is acyclic: the watermark and tracker exist before
   // anything that reads them, the projection exists before
   // `pendingCorrelation` (which needs its `reconcileFromDoc` as a plain,
@@ -451,6 +494,7 @@ function startAgentCrdtFollower(
     currentSeq: () => projectedSeq ?? 0,
     onEvent: (event) => {
       notifyReverted(event, applyPendingOpRevert(event, pendingRevertNodes))
+      notifyUnresolved(event)
       recordDevEvent('pending_ops', event)
     }
   })
@@ -622,15 +666,12 @@ function startAgentCrdtFollower(
     // first; running it first also keeps a just-reverted entry's id out of
     // the SAME frame's full-reconcile `pendingAdds`/`pendingConnects`.
     //
-    // `consumeCatchUpRevertOnAbsent()` is `false` for exactly the one
-    // catch-up a reactivation ack with an unproven-continuity seq mismatch
-    // implies (the reactivation-continuity rule in (a)): an absent entry
-    // stays parked instead of reverting there. Every other catch-up reverts
-    // on absence as usual.
-    if (update.catchUp)
-      pendingOps.resolveDeliveryUnknown(docEffectPresent, {
-        revertOnAbsent: pendingCorrelation.consumeCatchUpRevertOnAbsent()
-      })
+    // Round 8: an ordinary same-lineage frame's presence check only ever
+    // settles a PRESENT entry (or, for `delete_node`, an absent one — its
+    // own success condition). Nothing else ever reverts an entry from here;
+    // the bounded terminal path notifies without touching the projection,
+    // and only an explicit host rejection reverts.
+    if (update.catchUp) pendingOps.resolveDeliveryUnknown(docEffectPresent)
     const applied = projection.applyFrame(update)
     incrementOutcome(applied ? 'applied' : 'skipped')
     if (!applied) return []
@@ -647,7 +688,7 @@ function startAgentCrdtFollower(
     // `pendingCorrelation.ts`'s `resolveIfAlreadyCurrent` doc comment.
     const isReactivation = awaitingReactivationContinuity
     awaitingReactivationContinuity = false
-    const { seq, generation } = readSubscribedAckDetail(event.detail)
+    const { seq } = readSubscribedAckDetail(event.detail)
     // `resumeHeldOpsIfSubscribed` is passed in, not called here first: the
     // held sender must not resume until continuity is decided, so
     // `resolveIfAlreadyCurrent` is the one that calls it.
@@ -655,7 +696,6 @@ function startAgentCrdtFollower(
       {
         workflowId: subscribedWorkflowId.value,
         seq,
-        generation,
         isReactivation
       },
       resumeHeldOpsIfSubscribed
@@ -866,9 +906,7 @@ function startAgentCrdtFollower(
       case 'connect':
         return connectEffectPresent(doc, op)
       case 'set_widget':
-        // Last-writer-wins: a doc value differing from the shadow does not
-        // prove non-delivery (pendingOpTracker.ts resolves it present).
-        return null
+        return setWidgetEffectPresent(doc, op)
       case 'clear':
         // Never parked as delivery_unknown, so this check never runs for it.
         return null
@@ -1102,7 +1140,13 @@ function startAgentCrdtFollower(
       // transmitting anything new.
       () => sender.abortAll(),
       () => sender.detach(),
-      () => pendingCorrelation.reset(),
+      // Destruction, not an ordinary lineage-break reset
+      // (ADR-CRDT-RECONCILE-0035 (a)'s ledger-ownership bullet, round 8): no
+      // later frame can ever arrive to settle a still-parked entry from here,
+      // so it drops as `abandoned` — never reverted, never toasted as a
+      // rejection — instead of vanishing exactly like a lineage break's
+      // silent `reset`.
+      () => pendingCorrelation.destroy(),
       () => coalescer.detach(),
       () => projection.destroy(),
       () => bridge.destroy(),

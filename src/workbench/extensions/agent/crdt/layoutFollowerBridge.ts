@@ -120,36 +120,6 @@ export class LayoutFollowerBridge extends EventTarget {
    */
   private catchUpPending = false
   /**
-   * Incremented once per subscribe frame this bridge actually sends
-   * ({@link reconcile}'s successful `client.subscribe` call) — never per
-   * ack. Forwarded on `doc_subscribed` so a consumer (`pendingCorrelation.ts`)
-   * can tell a fresh ack from a duplicate or delayed-retry ack of the SAME
-   * subscribe apart: both name this bridge's current `sentWorkflowId` and
-   * both pass its guard, so sequence equality with some prior state alone
-   * cannot distinguish them. This is a same-session counter, not a protocol
-   * generation token the host echoes back — that token does not exist yet
-   * (ADR-CRDT-RECONCILE-0035 (a)'s missing-generation-token gap), so it
-   * cannot prove the ack belongs to THIS bridge's history versus a doc the
-   * host silently reminted under the same workflow id.
-   */
-  private subscribeGeneration = 0
-  /**
-   * Generations still awaiting their ack, oldest first — send-to-response
-   * identity, since the wire carries no request id the ack could echo back
-   * (ADR-CRDT-RECONCILE-0035 (a)'s missing-generation-token gap). The
-   * transport preserves order, so the OLDEST outstanding send is always the
-   * one the NEXT ack for this workflow answers; `onDocSubscribed` dequeues
-   * from the front rather than reading {@link subscribeGeneration} at
-   * receipt time, which would relabel a delayed generation-1 ack as
-   * generation 2 once a resubscribe has sent a second request. Cleared
-   * whenever the subscription for the current workflow is abandoned (a
-   * different workflow, or an explicit unsubscribe) — see {@link
-   * reconcile}'s switching-away branch — since a straggling ack for it would
-   * already fail the `sentWorkflowId` guard and must not be misattributed
-   * to whatever is subscribed next.
-   */
-  private pendingGenerations: number[] = []
-  /**
    * The `seq` of the last `doc_reset` this bridge actually applied for the
    * CURRENT lineage; `null` until one lands, and cleared whenever the doc is
    * replaced for a different lineage ({@link dropDocForNewLineage}). Guards
@@ -162,43 +132,6 @@ export class LayoutFollowerBridge extends EventTarget {
    * must still process normally.
    */
   private lastAppliedResetSeq: number | null = null
-  /**
-   * Identity (workflowId, seq, ok) of the last ack this bridge dequeued a
-   * generation for. Without a host-echoed request id this queue cannot PROVE
-   * two acks are the same delivery, so it only refuses to let an ack whose
-   * identity repeats the one just consumed steal a barrier that was ALREADY
-   * outstanding at that consumption — see {@link lastConsumptionHadNewerSend}
-   * for why that, not merely "the queue is non-empty right now", is the
-   * signal: `[ack1, duplicate ack1, ack2]` must dequeue `[1, 1, 2]`, never
-   * `[1, 2, 2]`. This is deliberately conservative, not exact: a genuinely
-   * identical re-ack of a generation whose slot has already been consumed
-   * with nothing else outstanding is left to the ordinary fallback below, and
-   * if this rule ever swallows a legitimate repeat ack instead, the bounded
-   * retry / ack-timeout resubscribe recovers — the safe direction per
-   * ADR-CRDT-RECONCILE-0035 (a)'s missing-generation-token gap.
-   */
-  private lastConsumedAckIdentity: {
-    workflowId: string
-    seq: number | undefined
-    ok: boolean
-  } | null = null
-  /** The generation {@link lastConsumedAckIdentity} was dequeued as. */
-  private lastConsumedGeneration = 0
-  /**
-   * True iff, at the moment {@link lastConsumedAckIdentity} was dequeued,
-   * ANOTHER generation was already outstanding too (queued concurrently,
-   * before either had an ack) — the FIFO front and one more behind it. This
-   * is captured once at consumption and reused for however many later acks
-   * repeat that identity, rather than re-read from the live queue: by the
-   * time a second, unrelated subscribe (tab-away then back) sends its own
-   * request and its ack happens to carry the same (workflowId, seq, ok) as
-   * an earlier, fully-settled one, the queue is back to holding only that
-   * ack's own entry — indistinguishable, by length alone, from the
-   * concurrent-outstanding case this guards. Recording the fact at the
-   * moment it was true keeps that ordinary sequential resubscribe from being
-   * misread as a duplicate of its predecessor.
-   */
-  private lastConsumptionHadNewerSend = false
 
   constructor(private readonly client: DocFrameClient) {
     super()
@@ -295,7 +228,6 @@ export class LayoutFollowerBridge extends EventTarget {
       // record is cleared either way.
       const sent = this.sentWorkflowId
       this.sentWorkflowId = null
-      this.pendingGenerations = []
       trySend(() => this.client.unsubscribe(sent))
     }
     if (desired === null || this.sentWorkflowId === desired) return
@@ -306,11 +238,9 @@ export class LayoutFollowerBridge extends EventTarget {
       this.lastSeq = null
       this.ackSeq = null
       this.catchUpPending = false
-      this.subscribeGeneration += 1
-      this.pendingGenerations.push(this.subscribeGeneration)
       this.dispatchEvent(
         new CustomEvent('doc_subscribe_sent', {
-          detail: { workflowId: desired, generation: this.subscribeGeneration }
+          detail: { workflowId: desired }
         })
       )
     }
@@ -503,44 +433,12 @@ export class LayoutFollowerBridge extends EventTarget {
       this.ackSeq = subscribed.seq ?? null
       this.catchUpPending = this.ackSeq !== null
     } else this.sentWorkflowId = null
-    const generation = this.resolveAckGeneration({
-      workflowId: subscribed.workflowId,
-      seq: subscribed.seq,
-      ok: subscribed.ok
-    })
-    this.dispatchEvent(
-      new CustomEvent(event.type, {
-        detail: { ...event.detail, generation }
-      })
-    )
-  }
-
-  /**
-   * This ack's send-to-response identity: see `pendingGenerations`'s and
-   * `lastConsumptionHadNewerSend`'s doc comments for why a duplicate of the
-   * ack just consumed is never dequeued — and instead repeats the same
-   * generation rather than stealing the next one's barrier — while a
-   * genuinely distinct ack always dequeues the oldest outstanding send,
-   * never `subscribeGeneration` read here at receipt.
-   */
-  private resolveAckGeneration(identity: {
-    workflowId: string
-    seq: number | undefined
-    ok: boolean
-  }): number {
-    const isDuplicateOfLastConsumed =
-      this.lastConsumedAckIdentity !== null &&
-      this.lastConsumptionHadNewerSend &&
-      identity.workflowId === this.lastConsumedAckIdentity.workflowId &&
-      identity.seq === this.lastConsumedAckIdentity.seq &&
-      identity.ok === this.lastConsumedAckIdentity.ok
-    if (isDuplicateOfLastConsumed) return this.lastConsumedGeneration
-    const generation =
-      this.pendingGenerations.shift() ?? this.subscribeGeneration
-    this.lastConsumedAckIdentity = identity
-    this.lastConsumedGeneration = generation
-    this.lastConsumptionHadNewerSend = this.pendingGenerations.length > 0
-    return generation
+    // ADR-CRDT-RECONCILE-0035 (a), round 7: no generation is resolved or
+    // forwarded here any more. The wire carries no echoed subscribe
+    // identity, so a duplicate ack can never be proven distinct from a fresh
+    // one — and nothing downstream needs that proof any more, since an ack
+    // never settles a parked ledger entry by itself either way.
+    this.dispatchEvent(new CustomEvent(event.type, { detail: event.detail }))
   }
 
   private readonly forwardFrame: EventListener = (event) => {
