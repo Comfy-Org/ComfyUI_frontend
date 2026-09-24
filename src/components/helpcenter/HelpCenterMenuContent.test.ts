@@ -2,17 +2,23 @@ import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor } from '@testing-library/vue'
 import axios from 'axios'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { defineComponent, h } from 'vue'
+import { computed, defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import enCommands from '@/locales/en/commands.json' with { type: 'json' }
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useCommandStore } from '@/stores/commandStore'
+import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 
 import HelpCenterMenuContent from './HelpCenterMenuContent.vue'
 
 beforeEach(() => {
   managerState.isNewManagerUI.value = false
+  useManagerState().isNewManagerUI = computed(
+    () => managerState.isNewManagerUI.value
+  )
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
   vi.mocked(useReleaseStore().fetchReleases).mockResolvedValue(undefined)
 })
@@ -52,13 +58,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/workbench/extensions/manager/composables/useManagerState'),
-
-  () => ({
-    useManagerState: () => managerState
-  })
-)
+vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
 
 vi.mock<unknown>(
   import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
@@ -80,7 +80,7 @@ function renderComponent() {
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
-    messages: { en: enMessages }
+    messages: { en: { ...enMessages, commands: enCommands } }
   })
 
   const result = render(HelpCenterMenuContent, {
@@ -177,6 +177,35 @@ describe('HelpCenterMenuContent system status item', () => {
     renderComponent()
 
     expect(screen.queryByRole('menuitem', { name: 'System Status' })).toBeNull()
+  })
+})
+
+describe('HelpCenterMenuContent onboarding replay', () => {
+  it('is hidden outside developer mode', async () => {
+    distribution.isDesktop = true
+    useSettingStore().settingValues['Comfy.DevMode'] = false
+    const { user } = renderComponent()
+
+    await user.hover(screen.getByRole('menuitem', { name: 'More...' }))
+
+    expect(
+      screen.queryByRole('menuitem', { name: 'Replay Onboarding' })
+    ).toBeNull()
+  })
+
+  it('runs the replay command and closes the help center', async () => {
+    useSettingStore().settingValues['Comfy.DevMode'] = true
+    const { user, emitted } = renderComponent()
+
+    await user.hover(screen.getByRole('menuitem', { name: 'More...' }))
+    await user.click(
+      screen.getByRole('menuitem', { name: 'Replay Onboarding' })
+    )
+
+    expect(useCommandStore().execute).toHaveBeenCalledWith(
+      'Comfy.Onboarding.Replay'
+    )
+    expect(emitted().close).toHaveLength(1)
   })
 })
 

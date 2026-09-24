@@ -638,6 +638,43 @@ export class ComfyApi extends EventTarget {
         ? AbortSignal.any([requestOptions.signal, timeout.controller.signal])
         : (requestOptions.signal ?? timeout?.controller.signal)
 
+    let retryTimeoutId: ReturnType<typeof setTimeout> | undefined
+    const retrySignalLifecycle = timeout
+      ? {
+          clearInitialTimeout: () => {
+            if (timeoutId !== undefined) clearTimeout(timeoutId)
+          },
+          createSignal: () => {
+            const retryController = new AbortController()
+            retryTimeoutId = setTimeout(() => {
+              const method = (requestOptions.method ?? 'GET').toUpperCase()
+              const routeTemplate = getFetchRouteTemplate(route)
+
+              addBreadcrumb({
+                category: 'fetch',
+                message: `Timeout on ${method} ${routeTemplate}`,
+                level: 'warning',
+                data: { timeout_ms: timeout.duration }
+              })
+
+              useTelemetry()?.trackFetchTimeout({
+                route: routeTemplate,
+                method,
+                timeout_ms: timeout.duration
+              })
+
+              retryController.abort(
+                new DOMException('Fetch timeout', 'TimeoutError')
+              )
+            }, timeout.duration)
+
+            return requestOptions.signal
+              ? AbortSignal.any([requestOptions.signal, retryController.signal])
+              : retryController.signal
+          }
+        }
+      : undefined
+
     return fetchWithUnifiedRemint(
       this.apiURL(route),
       {
@@ -646,9 +683,11 @@ export class ComfyApi extends EventTarget {
         headers,
         signal
       },
-      unifiedRetryOn401
+      unifiedRetryOn401,
+      retrySignalLifecycle
     ).finally(() => {
       if (timeoutId !== undefined) clearTimeout(timeoutId)
+      if (retryTimeoutId !== undefined) clearTimeout(retryTimeoutId)
     })
   }
 

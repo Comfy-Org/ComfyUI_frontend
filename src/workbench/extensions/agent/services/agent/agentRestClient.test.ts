@@ -280,7 +280,7 @@ describe('postMessage wire body', () => {
     expect(Object.keys(parsed)).toEqual(['content'])
   })
 
-  it('includes draft.content (and omits version when absent) when a draft is provided', async () => {
+  it('sends draft.content when a draft is provided', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', {
       content: "what's on my canvas",
@@ -293,15 +293,22 @@ describe('postMessage wire body', () => {
     })
   })
 
-  it('forwards draft.version when the client has previously seen one', async () => {
+  it('sends only draft.content when the provider hands over a wider snapshot', async () => {
     respond(jsonResponse(202, turnAccepted))
+    const snapshotWithVersion = {
+      content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] },
+      version: 4
+    }
     await makeClient().postMessage('t1', {
-      content: 'edit it',
-      draft: { content: { nodes: [], links: [] }, version: 4 }
+      content: "what's on my canvas",
+      draft: snapshotWithVersion
     })
 
-    expect(JSON.parse(String(lastCall().init.body))).toMatchObject({
-      draft: { version: 4 }
+    const parsed = JSON.parse(String(lastCall().init.body)) as {
+      draft: unknown
+    }
+    expect(parsed.draft).toEqual({
+      content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] }
     })
   })
 })

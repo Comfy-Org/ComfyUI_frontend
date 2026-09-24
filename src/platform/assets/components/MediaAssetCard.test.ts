@@ -11,14 +11,9 @@ import MediaAssetCard from '@/platform/assets/components/MediaAssetCard.vue'
 import { unflattenOutputAssets } from '@/platform/assets/composables/media/assetMappers'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 
-const { downloadAssets } = vi.hoisted(() => ({
-  downloadAssets: vi.fn()
-}))
-
-vi.mock<unknown>(import('../composables/useMediaAssetActions'), () => ({
-  useMediaAssetActions: () => ({ downloadAssets })
-}))
+vi.mock(import('../composables/useMediaAssetActions'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -220,7 +215,7 @@ describe('MediaAssetCard', () => {
       screen.getByRole('button', { name: 'mediaAsset.actions.download' })
     )
 
-    expect(downloadAssets).toHaveBeenCalledWith([asset])
+    expect(useMediaAssetActions().downloadAssets).toHaveBeenCalledWith([asset])
     expect(emitted().select).toBeUndefined()
     expect(emitted()['toggle-selection']).toBeUndefined()
 

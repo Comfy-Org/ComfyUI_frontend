@@ -1,14 +1,17 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { TabsTrigger } from 'reka-ui'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -48,7 +51,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const openFeedbackDialog = vi.hoisted(() => vi.fn())
-const openWorkflow = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/support/feedbackDialog'), () => ({
   openFeedbackDialog
 }))
@@ -74,22 +76,14 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({
-      openWorkflow,
-      closeWorkflow: vi.fn()
-    })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const consentChecking = await vi.hoisted(async () =>
   (await import('vue')).ref(false)
 )
 
 const withConsent = vi.hoisted(() =>
-  vi.fn<(onAccept: () => void) => Promise<void>>()
+  vi.fn<(trigger: AgentConsentTrigger, onAccept: () => void) => Promise<void>>()
 )
 const telemetry = {
   trackAgentEntryButtonClicked: vi.fn(),
@@ -123,12 +117,18 @@ vi.mock(import('./WorkflowTab.vue'), () => ({
     name: 'WorkflowTabStub',
     props: {
       workflowOption: {
-        type: Object as PropType<{ workflow: { filename?: string } }>,
+        type: Object as PropType<{
+          workflow: { path: string; filename?: string }
+        }>,
         required: true
       }
     },
     render() {
-      return h('div', this.workflowOption.workflow.filename)
+      return h(
+        TabsTrigger,
+        { value: this.workflowOption.workflow.path },
+        () => this.workflowOption.workflow.filename
+      )
     }
   })
 }))
@@ -179,7 +179,7 @@ beforeEach(() => {
   })
   useAgentPanelStore().isOpen = false
   useAgentPanelStore().consentAccepted = false
-  withConsent.mockImplementation(async (onAccept) => {
+  withConsent.mockImplementation(async (_trigger, onAccept) => {
     useAgentPanelStore().consentAccepted = true
     onAccept()
   })
@@ -281,6 +281,7 @@ describe('WorkflowTabs agent entry button', () => {
     await user.click(button)
 
     expect(withConsent).toHaveBeenCalledOnce()
+    expect(withConsent.mock.calls[0][0]).toBe('button_click')
     expect(useAgentPanelStore().isVisible).toBe(true)
     expect(button).toHaveAttribute('aria-pressed', 'true')
   })
@@ -304,7 +305,7 @@ describe('WorkflowTabs agent entry button', () => {
     const store = useAgentPanelStore()
     let finishConsent!: () => void
     withConsent.mockImplementationOnce(
-      (onAccept) =>
+      (_trigger, onAccept) =>
         new Promise<void>((resolve) => {
           finishConsent = () => {
             store.consentAccepted = true
@@ -396,7 +397,7 @@ describe('WorkflowTabs agent entry button', () => {
 
   it('keeps a hidden restored intent reachable and clears it before requesting consent', async () => {
     useAgentPanelStore().open()
-    withConsent.mockImplementationOnce(async (onAccept) => {
+    withConsent.mockImplementationOnce(async (_trigger, onAccept) => {
       expect(useAgentPanelStore().isOpen).toBe(false)
       useAgentPanelStore().consentAccepted = true
       onAccept()
@@ -498,11 +499,14 @@ describe('WorkflowTabs selection and overflow', () => {
 
     await user.click(screen.getByText('First workflow'))
 
-    expect(openWorkflow).toHaveBeenCalledOnce()
-    expect(openWorkflow).toHaveBeenCalledWith(firstWorkflow)
-    expect(
-      screen.getByRole('button', { name: 'First workflow' })
-    ).toHaveAttribute('aria-pressed', 'true')
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      firstWorkflow
+    )
+    expect(screen.getByRole('tab', { name: 'First workflow' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
   })
 
   it('opens another workflow once when its tab is activated', async () => {
@@ -510,64 +514,91 @@ describe('WorkflowTabs selection and overflow', () => {
 
     await user.click(screen.getByText('Second workflow'))
 
-    expect(openWorkflow).toHaveBeenCalledOnce()
-    expect(openWorkflow).toHaveBeenCalledWith(secondWorkflow)
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      secondWorkflow
+    )
   })
 
   it('opens another workflow when its tab is activated by keyboard', async () => {
     const { user } = renderComponent()
-    const secondTab = screen.getByRole('button', { name: 'Second workflow' })
+    const secondTab = screen.getByRole('tab', { name: 'Second workflow' })
 
     secondTab.focus()
     await user.keyboard('{Enter}')
 
-    expect(openWorkflow).toHaveBeenCalledOnce()
-    expect(openWorkflow).toHaveBeenCalledWith(secondWorkflow)
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      secondWorkflow
+    )
   })
 
   it('opens the selected workflow when its tab is activated by keyboard', async () => {
     const { user } = renderComponent()
-    const firstTab = screen.getByRole('button', { name: 'First workflow' })
+    const firstTab = screen.getByRole('tab', { name: 'First workflow' })
 
     firstTab.focus()
     await user.keyboard('{Enter}')
 
-    expect(openWorkflow).toHaveBeenCalledOnce()
-    expect(openWorkflow).toHaveBeenCalledWith(firstWorkflow)
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      firstWorkflow
+    )
   })
 
   it('keeps the real workflow selected when another workflow fails to load', async () => {
     const error = new Error('load failed')
     const errorHandler = vi.fn()
-    openWorkflow.mockRejectedValueOnce(error)
+    vi.mocked(useWorkflowService().openWorkflow).mockRejectedValueOnce(error)
     const { user } = renderComponent(errorHandler)
 
     await user.click(screen.getByText('Second workflow'))
 
     await vi.waitFor(() => expect(errorHandler).toHaveBeenCalled())
     expect(errorHandler.mock.calls[0][0]).toBe(error)
+    expect(screen.getByRole('tab', { name: 'First workflow' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
     expect(
-      screen.getByRole('button', { name: 'First workflow' })
-    ).toHaveAttribute('aria-pressed', 'true')
-    expect(
-      screen.getByRole('button', { name: 'Second workflow' })
-    ).toHaveAttribute('aria-pressed', 'false')
+      screen.getByRole('tab', { name: 'Second workflow' })
+    ).toHaveAttribute('aria-selected', 'false')
   })
 
   it('keeps the real workflow selected when another workflow is not opened', async () => {
-    openWorkflow.mockResolvedValueOnce(false)
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValueOnce(false)
     const { user } = renderComponent()
-    const secondTab = screen.getByRole('button', { name: 'Second workflow' })
+    const secondTab = screen.getByRole('tab', { name: 'Second workflow' })
 
     await user.click(secondTab)
 
+    expect(screen.getByRole('tab', { name: 'First workflow' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
     expect(
-      screen.getByRole('button', { name: 'First workflow' })
-    ).toHaveAttribute('aria-pressed', 'true')
-    expect(
-      screen.getByRole('button', { name: 'Second workflow' })
-    ).toHaveAttribute('aria-pressed', 'false')
+      screen.getByRole('tab', { name: 'Second workflow' })
+    ).toHaveAttribute('aria-selected', 'false')
     expect(secondTab).toHaveFocus()
+  })
+
+  it('stays controlled by the store when mounted before any workflow is active', async () => {
+    const workflowStore = useWorkflowStore()
+    workflowStore.activeWorkflow = null
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValueOnce(false)
+    const { user } = renderComponent()
+
+    workflowStore.activeWorkflow = firstWorkflow
+    await nextTick()
+    await user.click(screen.getByRole('tab', { name: 'Second workflow' }))
+
+    expect(screen.getByRole('tab', { name: 'First workflow' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    expect(
+      screen.getByRole('tab', { name: 'Second workflow' })
+    ).toHaveAttribute('aria-selected', 'false')
   })
 
   it('keeps overflow controls available when the tab strip overflows', async () => {

@@ -207,7 +207,8 @@ const {
   mockCanReactivatePlan,
   mockSubscription,
   mockBillingStatus,
-  mockSubscriptionRail
+  mockSubscriptionRail,
+  mockOpenHostedBillingTab
 } = vi.hoisted(() => {
   return {
     mockSubscribe: vi.fn(),
@@ -243,9 +244,15 @@ const {
     mockBillingStatus: { value: null as BillingStatus | null },
     mockSubscriptionRail: {
       value: null as SubscriptionRailStub | null
-    }
+    },
+    mockOpenHostedBillingTab: vi.fn(() => false)
   }
 })
+
+vi.mock<unknown>(
+  import('@/platform/workspace/billing/openHostedBillingTab'),
+  () => ({ openHostedBillingTab: mockOpenHostedBillingTab })
+)
 
 /** The reads the checkout takes off the rail, as the store answers them. */
 interface SubscriptionRailStub {
@@ -506,6 +513,7 @@ describe('useSubscriptionCheckout', () => {
     mockFetchStatus.mockReset()
     vi.mocked(useBillingOperationStore().startOperation).mockReset()
     mockListSavedPaymentMethods.mockReset()
+    mockOpenHostedBillingTab.mockReset().mockReturnValue(false)
     railState.rail = null
     Object.assign(useBillingOperationStore(), {
       subscriptionActionOperation: undefined
@@ -1932,6 +1940,56 @@ describe('useSubscriptionCheckout', () => {
       expect(checkout.checkoutStep.value).toBe('success')
       expect(useTelemetry()?.trackBillingEvent).not.toHaveBeenCalled()
     })
+
+    describe('hosted billing handoff', () => {
+      it('opens billing-web with the plan slug and closes without subscribing', async () => {
+        mockOpenHostedBillingTab.mockReturnValue(true)
+        const checkout = await setup()
+
+        await checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
+
+        expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
+          plan: 'standard-yearly'
+        })
+        expect(mockPreviewSubscribe).not.toHaveBeenCalled()
+        expect(emit).toHaveBeenCalledWith('close', false)
+      })
+
+      it('falls back to the embedded preview step when the opener returns false', async () => {
+        mockOpenHostedBillingTab.mockReturnValue(false)
+        const checkout = await setup()
+
+        await checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
+
+        expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
+          plan: 'standard-yearly'
+        })
+        expect(mockPreviewSubscribe).toHaveBeenCalledOnce()
+        expect(checkout.checkoutStep.value).toBe('preview')
+      })
+
+      it('opens the hosted tab before any await, so the click gesture survives', async () => {
+        mockOpenHostedBillingTab.mockReturnValue(true)
+        const checkout = await setup()
+
+        const pending = checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
+
+        expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
+          plan: 'standard-yearly'
+        })
+
+        await pending
+      })
+    })
   })
 
   describe('handleSubscribeTeamClick', () => {
@@ -2503,6 +2561,72 @@ describe('useSubscriptionCheckout', () => {
       expect(mockPreviewSubscribe).not.toHaveBeenCalled()
       expect(checkout.selectedTeamStop.value).toBeNull()
       expect(checkout.checkoutStep.value).toBe('pricing')
+    })
+
+    describe('hosted billing handoff', () => {
+      it('opens billing-web with the team plan slug and credit stop, and closes without subscribing', async () => {
+        mockOpenHostedBillingTab.mockReturnValue(true)
+        const checkout = await setup()
+
+        await checkout.handleSubscribeTeamClick({
+          stop: teamStop,
+          billingCycle: 'yearly',
+          isChange: true
+        })
+
+        expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
+          plan: 'team_per_credit_annual',
+          teamCreditStopId: 'team_1400'
+        })
+        expect(mockPreviewSubscribe).not.toHaveBeenCalled()
+        expect(emit).toHaveBeenCalledWith('close', false)
+      })
+
+      it('falls back to the embedded preview step when the opener returns false', async () => {
+        mockOpenHostedBillingTab.mockReturnValue(false)
+        const checkout = await setup()
+
+        await checkout.handleSubscribeTeamClick({
+          stop: teamStop,
+          billingCycle: 'monthly',
+          isChange: true
+        })
+
+        expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('checkout', {
+          plan: 'team_per_credit_monthly',
+          teamCreditStopId: 'team_1400'
+        })
+        expect(mockPreviewSubscribe).toHaveBeenCalledOnce()
+        expect(checkout.checkoutStep.value).toBe('preview')
+      })
+
+      it("never hands off a stop with no server-assigned id, and keeps today's fallback toast", async () => {
+        const checkout = await setup(undefined, 'team', false)
+
+        await checkout.handleSubscribeTeamClick({
+          stop: { ...teamStop, id: undefined },
+          billingCycle: 'monthly',
+          isChange: true
+        })
+
+        expect(mockOpenHostedBillingTab).not.toHaveBeenCalled()
+        expect(mockToastAdd).toHaveBeenCalledWith(
+          expect.objectContaining({ detail: 'Team plan unavailable' })
+        )
+      })
+
+      it('never hands off a stop with no server-assigned id on the embedded path either', async () => {
+        const checkout = await setup()
+
+        await checkout.handleSubscribeTeamClick({
+          stop: { ...teamStop, id: undefined },
+          billingCycle: 'monthly',
+          isChange: true
+        })
+
+        expect(mockOpenHostedBillingTab).not.toHaveBeenCalled()
+        expect(checkout.checkoutStep.value).toBe('pricing')
+      })
     })
   })
 
@@ -5137,6 +5261,34 @@ describe('useSubscriptionCheckout', () => {
   })
 
   describe('handleResubscribe', () => {
+    it('opens billing-web with the subscription intent and closes without resubscribing', async () => {
+      mockOpenHostedBillingTab.mockReturnValue(true)
+      const checkout = await setup()
+
+      await checkout.handleResubscribe()
+
+      expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('subscription')
+      expect(mockResubscribe).not.toHaveBeenCalled()
+      expect(emit).toHaveBeenCalledWith('close', false)
+    })
+
+    it('falls back to resubscribing in place when the opener returns false', async () => {
+      mockOpenHostedBillingTab.mockReturnValue(false)
+      const checkout = await setup('subscribe_to_run')
+      mockResubscribe.mockResolvedValueOnce({
+        billing_op_id: 'op-4',
+        status: 'active'
+      })
+      mockFetchStatus.mockResolvedValueOnce(undefined)
+      mockFetchBalance.mockResolvedValueOnce(undefined)
+
+      await checkout.handleResubscribe()
+
+      expect(mockOpenHostedBillingTab).toHaveBeenCalledWith('subscription')
+      expect(mockResubscribe).toHaveBeenCalled()
+      expect(emit).toHaveBeenCalledWith('close', true)
+    })
+
     it('fires a started event before resubscribe resolves', async () => {
       const checkout = await setup('subscribe_to_run')
       mockResubscribe.mockResolvedValueOnce({

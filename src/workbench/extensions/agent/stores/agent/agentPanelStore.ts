@@ -1,4 +1,4 @@
-import { useLocalStorage } from '@vueuse/core'
+import { useEventListener, useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, ref, watch } from 'vue'
 
@@ -71,6 +71,11 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
   )
 
   let openedAt: number | null = null
+  // Guards the pagehide teardown report below: true once this open epoch has
+  // reported a close, so a bfcache-frozen page that fires pagehide again
+  // (background/resume/close) can't emit a second overlapping duration for
+  // the same openedAt. A fresh epoch (open(), or the watcher below) resets it.
+  let teardownReported = false
 
   const isVisible = computed(
     () => enabled.value && isOpen.value && consentAccepted.value
@@ -84,6 +89,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     hasEverOpened.value = true
     if (openedAt !== null) return
     openedAt = Date.now()
+    teardownReported = false
     useTelemetry()?.trackAgentPanelOpened({ source: 'restored' })
   })
 
@@ -95,6 +101,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     if (isOpen.value) return
     isOpen.value = true
     openedAt = Date.now()
+    teardownReported = false
     useTelemetry()?.trackAgentPanelOpened({ source })
   }
 
@@ -114,6 +121,31 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isOpen.value = false
     openedAt = null
   }
+
+  // pagehide is the reliable teardown signal on tab close/reload and even on
+  // some mobile Safari backgrounding, where nothing else is guaranteed to
+  // fire again. Reports the open duration without mutating isOpen/local
+  // storage, so the localStorage-backed restore-on-reload behaviour
+  // (FE-1284/PM-648) is untouched.
+  useEventListener(window, 'pagehide', () => {
+    if (!isVisible.value || openedAt === null || teardownReported) return
+    teardownReported = true
+    useTelemetry()?.trackAgentPanelClosed({
+      source: 'pagehide',
+      open_duration_ms: Date.now() - openedAt
+    })
+  })
+
+  // A bfcache restore resumes this same frozen interval rather than starting
+  // a new one, so the pagehide report above already closed it out. Starting
+  // a fresh interval here keeps a later close()/pagehide measuring only the
+  // time since resume, instead of re-including (and double counting) the
+  // span already reported.
+  useEventListener(window, 'pageshow', (event: PageTransitionEvent) => {
+    if (!event.persisted || !isVisible.value) return
+    openedAt = Date.now()
+    teardownReported = false
+  })
 
   function toggle(): void {
     if (isOpen.value) close('topbar_button')
