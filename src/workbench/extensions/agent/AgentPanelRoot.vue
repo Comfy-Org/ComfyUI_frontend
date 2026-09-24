@@ -1006,9 +1006,9 @@ function onApprovalShown(
 function trackApprovalResolved(
   askId: string,
   decision: 'run' | 'cancel' | 'open_workflow',
-  decidedAt = Date.now()
+  decidedAt = Date.now(),
+  shownAt = conversationStore.approvalShownAt(askId)
 ): void {
-  const shownAt = conversationStore.approvalShownAt(askId)
   if (shownAt === undefined) return
   if (decision !== 'open_workflow')
     conversationStore.forgetApprovalTiming(askId)
@@ -1026,7 +1026,10 @@ async function onAnswerAsk(
   askId: string,
   selection: 'run' | 'cancel'
 ): Promise<void> {
-  if (await answerAsk(askId, selection)) trackApprovalResolved(askId, selection)
+  const shownAt = conversationStore.approvalShownAt(askId)
+  const decidedAt = Date.now()
+  if (await answerAsk(askId, selection))
+    trackApprovalResolved(askId, selection, decidedAt, shownAt)
 }
 
 const lastReportedWorkflowByThread = new Map<string, string>()

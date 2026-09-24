@@ -2909,9 +2909,13 @@ describe('AgentPanelRoot feedback capture', () => {
 
 describe('AgentPanelRoot run approval telemetry', () => {
   it('keeps the timer for a terminal decision after workflow inspection', async () => {
+    let resolveAnswer!: (response: Response) => void
+    const answerResponse = new Promise<Response>((resolve) => {
+      resolveAnswer = resolve
+    })
     const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
       if (url.includes('/asks/') && init?.method === 'POST')
-        return json(200, { status: 'answered' })
+        return answerResponse
       if (url.includes('/agent/threads')) return json(200, agentThreadList())
       if (url.includes('/workflows'))
         return json(200, {
@@ -2993,6 +2997,22 @@ describe('AgentPanelRoot run approval telemetry', () => {
 
     currentTime = 1_275
     await userEvent.click(screen.getByRole('button', { name: 'Run' }))
+    await vi.waitFor(() =>
+      expect(
+        fetchMock.mock.calls.filter(
+          ([url, init]) => url.includes('/asks/') && init?.method === 'POST'
+        )
+      ).toHaveLength(1)
+    )
+    ws.emit('agent_ask_resolved', {
+      thread_id: 'th-1',
+      message_id: turnId,
+      ask_id: 'turn-approval:call-1',
+      status: 'answered',
+      selected: ['run']
+    })
+    currentTime = 1_900
+    resolveAnswer(json(200, { status: 'answered' }))
     await vi.waitFor(() =>
       expect(telemetry.trackAgentRunApprovalResolved.mock.calls).toEqual([
         [{ decision: 'open_workflow', time_to_decide_ms: 150 }],
