@@ -53,9 +53,11 @@ const AGENT_PAYWALL_REASONS = {
   unavailable: 'unknown'
 } satisfies Record<AgentPaywallPresentation['kind'], AgentPaywallReason>
 
-export const toAgentPaywallReason = (
+export function toAgentPaywallReason(
   presentation: AgentPaywallPresentation
-): AgentPaywallReason => AGENT_PAYWALL_REASONS[presentation.kind]
+): AgentPaywallReason {
+  return AGENT_PAYWALL_REASONS[presentation.kind]
+}
 
 const AGENT_PAYWALL_CTAS = {
   addCredits: 'add_credits',
@@ -63,9 +65,9 @@ const AGENT_PAYWALL_CTAS = {
   upgrade: 'upgrade'
 } satisfies Record<AgentPaywallAction, AgentPaywallCta>
 
-export const toAgentPaywallCta = (
-  action: AgentPaywallAction
-): AgentPaywallCta => AGENT_PAYWALL_CTAS[action]
+export function toAgentPaywallCta(action: AgentPaywallAction): AgentPaywallCta {
+  return AGENT_PAYWALL_CTAS[action]
+}
 
 export function resolveAgentPaywallPresentation({
   distribution,

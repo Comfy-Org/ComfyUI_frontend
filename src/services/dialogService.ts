@@ -73,16 +73,17 @@ type TopUpCreditsDialogOptions = {
 }
 
 /**
- * Why the subscription dialog stands in for a top-up the workspace cannot
- * make.
+ * Which copy the subscription dialog shows when it stands in for a top-up the
+ * workspace cannot make.
  *
- * `reason` is not purely an attribution key: the subscription dialog contents
- * branch on `out_of_credits` to render the insufficient-credits heading and
- * body (`SubscriptionRequiredDialogContent{,Unified,Workspace}.vue`). So the
+ * `reason` selects copy: the dialog contents branch on `out_of_credits` to
+ * render the insufficient-credits heading and body
+ * (`SubscriptionRequiredDialogContent{,Unified,Workspace}.vue`). So the
  * balance-derived value wins whenever it would change what the user reads —
  * letting a caller's surface override it would redirect someone here and then
- * drop the explanation of why. The surface is only used on the
- * `top_up_blocked` path, which has no copy branch.
+ * drop the explanation of why. The caller's surface is not lost to that: it
+ * travels beside this as `paymentIntentSource`, which is what attributes the
+ * purchase.
  */
 function topUpFallbackReason(
   options?: TopUpCreditsDialogOptions
@@ -510,7 +511,8 @@ export const useDialogService = () => {
     if (!isReady.value) return
     if (!canTopUp.value && canSubscribeSelfServe.value) {
       await showSubscriptionRequiredDialog({
-        reason: topUpFallbackReason(options)
+        reason: topUpFallbackReason(options),
+        paymentIntentSource: options?.source
       })
       return
     }

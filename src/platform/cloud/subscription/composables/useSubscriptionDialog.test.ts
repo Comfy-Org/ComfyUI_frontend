@@ -517,6 +517,80 @@ describe('useSubscriptionDialog', () => {
 
       expect(useTelemetry()?.trackSubscription).not.toHaveBeenCalled()
     })
+
+    // The top-up fall-through rewrites `reason` to `out_of_credits` to keep the
+    // insufficient-credits copy, so the surface that opened it has to reach
+    // checkout by a separate field or the purchase is attributed to the
+    // rewrite. Each content variant is checked because each drives its own
+    // checkout.
+    describe('payment intent source', () => {
+      function contentProps() {
+        return mockShowLayoutDialog.mock.calls[0][0].props
+      }
+
+      function useUnifiedWorkspaceRouting() {
+        useBillingRouting().type = computed(() => 'workspace')
+        useBillingRouting().shouldUseWorkspaceBilling = computed(() => true)
+        useBillingRouting().shouldUseUnifiedPricing = computed(() => true)
+      }
+
+      it('carries a surface that differs from the copy reason to the unified table', () => {
+        useUnifiedWorkspaceRouting()
+        const { showPricingTable } = useSubscriptionDialog()
+
+        showPricingTable({
+          reason: 'out_of_credits',
+          paymentIntentSource: 'agent_paywall'
+        })
+
+        expect(contentProps()).toMatchObject({
+          reason: 'out_of_credits',
+          paymentIntentSource: 'agent_paywall'
+        })
+      })
+
+      it('carries it to the legacy team table', () => {
+        useUnifiedWorkspaceRouting()
+        mockIsLegacyTeamPlan.value = true
+        const { showPricingTable } = useSubscriptionDialog()
+
+        showPricingTable({
+          reason: 'out_of_credits',
+          paymentIntentSource: 'agent_paywall'
+        })
+
+        expect(contentProps()).toMatchObject({
+          reason: 'out_of_credits',
+          paymentIntentSource: 'agent_paywall'
+        })
+      })
+
+      it('carries it to the legacy pricing table', () => {
+        const { showPricingTable } = useSubscriptionDialog()
+
+        showPricingTable({
+          reason: 'out_of_credits',
+          paymentIntentSource: 'agent_paywall'
+        })
+
+        expect(contentProps()).toMatchObject({
+          reason: 'out_of_credits',
+          paymentIntentSource: 'agent_paywall'
+        })
+      })
+
+      it('defaults to the reason so callers that name no surface are unchanged', () => {
+        useUnifiedWorkspaceRouting()
+        const { showPricingTable } = useSubscriptionDialog()
+
+        showPricingTable({ reason: 'settings_billing_panel' })
+
+        expect(contentProps()).toMatchObject({
+          reason: 'settings_billing_panel',
+          paymentIntentSource: 'settings_billing_panel'
+        })
+      })
+    })
   })
 
   describe('show', () => {

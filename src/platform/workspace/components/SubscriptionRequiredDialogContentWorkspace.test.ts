@@ -88,6 +88,7 @@ function renderComponent(
   props: {
     onClose?: () => void
     reason?: PaymentIntentSource
+    paymentIntentSource?: PaymentIntentSource
     isPersonal?: boolean
     initialCheckout?: SubscriptionCheckoutSelection
   } = {}
@@ -96,6 +97,9 @@ function renderComponent(
     props: {
       onClose: props.onClose ?? vi.fn(),
       ...(props.reason ? { reason: props.reason } : {}),
+      ...(props.paymentIntentSource
+        ? { paymentIntentSource: props.paymentIntentSource }
+        : {}),
       ...(props.isPersonal !== undefined
         ? { isPersonal: props.isPersonal }
         : {}),
@@ -304,5 +308,30 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     await user.click(screen.getByTestId('success-close-btn'))
 
     expect(mockHandleSuccessClose).toHaveBeenCalled()
+  })
+
+  // `reason` drives the insufficient-credits copy above the table, so the
+  // top-up fall-through rewrites it. Checkout must read the surface instead, or
+  // the purchase is attributed to that rewrite.
+  describe('checkout attribution', () => {
+    function paymentIntentSourceGivenToCheckout() {
+      return mockUseSubscriptionCheckout.mock.calls[0][1]
+    }
+
+    it('gives checkout the surface, not the copy reason', () => {
+      renderComponent({
+        reason: 'out_of_credits',
+        paymentIntentSource: 'agent_paywall'
+      })
+
+      expect(paymentIntentSourceGivenToCheckout()).toBe('agent_paywall')
+      expect(screen.getByText('Insufficient Credits')).toBeInTheDocument()
+    })
+
+    it('falls back to the reason when no surface is named', () => {
+      renderComponent({ reason: 'out_of_credits' })
+
+      expect(paymentIntentSourceGivenToCheckout()).toBe('out_of_credits')
+    })
   })
 })

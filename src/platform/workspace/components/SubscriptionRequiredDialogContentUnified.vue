@@ -193,12 +193,16 @@ import UnifiedPricingTable from './UnifiedPricingTable.vue'
 const {
   onClose,
   reason,
+  paymentIntentSource,
   embeddedCheckoutEnabled = false,
   initialPlanMode,
   initialCheckout
 } = defineProps<{
   onClose: () => void
+  /** Selects the insufficient-credits copy below; not the attribution. */
   reason?: PaymentIntentSource
+  /** Surface the resulting purchase is attributed to. Defaults to `reason`. */
+  paymentIntentSource?: PaymentIntentSource
   embeddedCheckoutEnabled?: boolean
   initialPlanMode?: 'personal' | 'team'
   initialCheckout?: SubscriptionCheckoutSelection
@@ -252,7 +256,9 @@ const {
   applyPromotionCode,
   invalidateQuote,
   handleResubscribe
-} = useSubscriptionCheckout(emit, reason, { embeddedCheckoutEnabled })
+} = useSubscriptionCheckout(emit, paymentIntentSource ?? reason, {
+  embeddedCheckoutEnabled
+})
 
 const savedMethodsForConfirm = computed(() =>
   collectingNewPaymentMethod.value || !selectedSavedPaymentMethodId.value

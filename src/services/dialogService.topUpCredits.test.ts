@@ -155,8 +155,10 @@ describe('showTopUpCreditsDialog', () => {
   // `reason` selects the dialog's copy, not just its attribution: the
   // subscription contents branch on `out_of_credits` for the
   // insufficient-credits heading and body. A caller's surface must not
-  // displace it, or someone redirected here loses the explanation why.
-  it('keeps the insufficient-credits reason when a surface is named', async () => {
+  // displace it, or someone redirected here loses the explanation why — and it
+  // must not be dropped either, or the purchase it leads to is unattributable.
+  // The two travel as separate fields.
+  it('keeps the insufficient-credits copy and still attributes the surface', async () => {
     useBillingCapabilities().canTopUp = computed(() => false)
     useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
 
@@ -166,7 +168,8 @@ describe('showTopUpCreditsDialog', () => {
     })
 
     expect(showSubscriptionDialog).toHaveBeenCalledWith({
-      reason: 'out_of_credits'
+      reason: 'out_of_credits',
+      paymentIntentSource: 'agent_paywall'
     })
   })
 
@@ -179,7 +182,24 @@ describe('showTopUpCreditsDialog', () => {
     })
 
     expect(showSubscriptionDialog).toHaveBeenCalledWith({
-      reason: 'agent_paywall'
+      reason: 'agent_paywall',
+      paymentIntentSource: 'agent_paywall'
+    })
+  })
+
+  // Every caller that names no surface must reach the subscription dialog
+  // exactly as before, with attribution left to fall back to `reason`.
+  it('names no payment intent source when the caller named no surface', async () => {
+    useBillingCapabilities().canTopUp = computed(() => false)
+    useBillingCapabilities().canSubscribeSelfServe = computed(() => true)
+
+    await useDialogService().showTopUpCreditsDialog({
+      isInsufficientCredits: true
+    })
+
+    expect(showSubscriptionDialog).toHaveBeenCalledWith({
+      reason: 'out_of_credits',
+      paymentIntentSource: undefined
     })
   })
 

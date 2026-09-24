@@ -183,11 +183,9 @@ function onPaywallAction(action: AgentPaywallAction): void {
     cta: toAgentPaywallCta(action)
   })
   if (action === 'addCredits') {
-    // Only when the click can actually reach a top-up, matching
-    // `useTopUpUrlLoader`. Without capabilities the precondition may open the
-    // subscription dialog or nothing, and counting those would inflate a
-    // pre-existing metric that means "reached a top-up". The CTA itself is
-    // already counted above, unconditionally.
+    // Gated like `useTopUpUrlLoader`, because this pre-existing metric means
+    // "reached a top-up" and the precondition may open something else. The CTA
+    // itself is counted above, unconditionally.
     if (canTopUp.value) {
       useTelemetry()?.trackAddApiCreditButtonClicked({
         source: 'agent_paywall'
@@ -199,24 +197,16 @@ function onPaywallAction(action: AgentPaywallAction): void {
   openAccountPrecondition('subscription', { source: 'agent_paywall' })
 }
 
-// A paywall part only ever enters the conversation through `recordPaywall`, on
-// a send this session refused — `normalizeAgentTranscript` produces none — so
-// a message id claimed here for the first time is always a fresh impression
-// and never history replayed on thread load. Keyed on that id rather than on
-// `paywallPresentation`, which is a computed that re-evaluates whenever
-// billing state changes and would over-count a single impression. The claim
-// is owned by the conversation store because closing the panel unmounts this
-// component while its paywall messages remain.
+// Keyed on the id of the message carrying the paywall part, not on
+// `paywallPresentation` — that computed re-evaluates on every billing-state
+// change and would over-count one impression.
 const { messages: conversationMessages } = storeToRefs(conversationStore)
 watch(
   () =>
-    // Gated on the capability read having *settled* (resolved or denied, and
-    // always true off-cloud), not on the presentation looking resolved. The
-    // presentation is not a proxy for "capabilities are known" and fails both
-    // ways: mid-outage `canTopUp` falls back to true for an owner while
-    // nothing has resolved, which would report a confident `no_funds`; and a
-    // denied read never resolves, which would withhold a visible paywall
-    // forever. Settling covers both — a denied read still emits, as `unknown`.
+    // Gated on the capability read having *settled*, not on the presentation
+    // looking resolved: mid-outage `canTopUp` falls back to true for an owner
+    // while nothing has resolved, so the presentation is not a proxy for
+    // "capabilities are known".
     snapshotAuthoritative.value
       ? conversationMessages.value
           .filter((message) =>
@@ -226,9 +216,8 @@ watch(
       : [],
   (paywallMessageIds) => {
     const telemetry = useTelemetry()
-    // Claim only once there is a dispatcher to deliver to. The claim is
-    // permanent, so claiming first would drop the impression for good if
-    // telemetry registration has not completed yet.
+    // The claim is permanent, so claiming before there is a dispatcher to
+    // deliver to would drop the impression for good.
     if (!telemetry) return
     for (const id of paywallMessageIds) {
       if (!conversationStore.claimPaywallImpression(id)) continue

@@ -28,7 +28,19 @@ const DIALOG_KEY = 'subscription-required'
 const RESUME_PRICING_KEY = 'comfy:resume-team-pricing'
 
 export interface SubscriptionDialogOptions {
+  /**
+   * Why this dialog opened. Also selects copy: the contents branch on
+   * `out_of_credits` to render the insufficient-credits heading and body.
+   */
   reason?: PaymentIntentSource
+  /**
+   * Surface to attribute the resulting purchase to, when it differs from
+   * `reason`. A caller that must rewrite `reason` to keep the copy correct —
+   * the top-up fall-through in `showTopUpCreditsDialog` is the only one —
+   * carries its originating surface here instead of losing it. Defaults to
+   * `reason`, which keeps every caller that sets only `reason` unchanged.
+   */
+  paymentIntentSource?: PaymentIntentSource
   /**
    * Forces the unified pricing dialog to open on a specific plan tab,
    * overriding the workspace-derived default (e.g. an "Upgrade to Team" CTA
@@ -102,6 +114,10 @@ export const useSubscriptionDialog = () => {
 
     trackModalOpened(options?.reason)
 
+    // Resolved once here so each content variant receives an unambiguous pair:
+    // `reason` drives copy, this drives attribution.
+    const paymentIntentSource = options?.paymentIntentSource ?? options?.reason
+
     const legacyPricingDialogProps = {
       renderer: 'reka',
       size: 'full',
@@ -136,6 +152,7 @@ export const useSubscriptionDialog = () => {
           props: {
             onClose: hide,
             reason: options?.reason,
+            paymentIntentSource,
             ...(personalInitialCheckout
               ? {
                   initialCheckout: personalInitialCheckout,
@@ -163,6 +180,7 @@ export const useSubscriptionDialog = () => {
         props: {
           onClose: hide,
           reason: options?.reason,
+          paymentIntentSource,
           embeddedCheckoutEnabled: flags.embeddedCheckoutEnabled,
           initialCheckout: options?.initialCheckout,
           initialPlanMode: getInitialPlanMode(
@@ -199,6 +217,7 @@ export const useSubscriptionDialog = () => {
       props: {
         onClose: hide,
         reason: options?.reason,
+        paymentIntentSource,
         onChooseTeam: () => startTeamWorkspaceUpgradeFlow()
       },
       dialogComponentProps: legacyPricingDialogProps

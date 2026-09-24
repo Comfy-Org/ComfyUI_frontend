@@ -19,42 +19,47 @@ const mockSelectedTeamStop = ref<Record<string, unknown> | null>(null)
 const mockSelectedSavedPaymentMethodId = ref<string | null>('pm_default')
 const mockSavedPaymentMethods = ref<Record<string, unknown>[]>([])
 
+const mockUseSubscriptionCheckout = vi.hoisted(() => vi.fn())
+
 vi.mock<unknown>(
   import('@/platform/workspace/composables/useSubscriptionCheckout'),
   () => ({
-    useSubscriptionCheckout: () => ({
-      checkoutStep: mockCheckoutStep,
-      isLoadingPreview: ref(false),
-      loadingTier: ref(null),
-      isSubscribing: ref(false),
-      isResubscribing: ref(false),
-      previewData: mockPreviewData,
-      quoteIsCurrent: ref(false),
-      savedPaymentMethods: mockSavedPaymentMethods,
-      selectedSavedPaymentMethodId: mockSelectedSavedPaymentMethodId,
-      selectedTierKey: ref(null),
-      selectedTeamStop: mockSelectedTeamStop,
-      selectedBillingCycle: ref('yearly'),
-      activeCheckoutActionUrl: ref(null),
-      authenticationState: ref(null),
-      authenticationError: ref(null),
-      reconciliationOperationId: ref(null),
-      isPolling: ref(false),
-      isTeamCheckout: computed(() => false),
-      previewVariant: computed(() => mockPreviewVariant.value),
-      handleSubscribeClick: mockHandleSubscribeClick,
-      handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
-      handleBackToPricing: mockHandleBackToPricing,
-      handleSuccessClose: vi.fn(),
-      handleAddCreditCard: vi.fn(),
-      handleConfirmTransition: vi.fn(),
-      handleTeamSubscribe: vi.fn(),
-      handleSubscriptionPayment: vi.fn(),
-      handleTeamSubscriptionPayment: vi.fn(),
-      applyPromotionCode: vi.fn(),
-      invalidateQuote: mockInvalidateQuote,
-      handleResubscribe: vi.fn()
-    })
+    useSubscriptionCheckout: (...args: unknown[]) => {
+      mockUseSubscriptionCheckout(...args)
+      return {
+        checkoutStep: mockCheckoutStep,
+        isLoadingPreview: ref(false),
+        loadingTier: ref(null),
+        isSubscribing: ref(false),
+        isResubscribing: ref(false),
+        previewData: mockPreviewData,
+        quoteIsCurrent: ref(false),
+        savedPaymentMethods: mockSavedPaymentMethods,
+        selectedSavedPaymentMethodId: mockSelectedSavedPaymentMethodId,
+        selectedTierKey: ref(null),
+        selectedTeamStop: mockSelectedTeamStop,
+        selectedBillingCycle: ref('yearly'),
+        activeCheckoutActionUrl: ref(null),
+        authenticationState: ref(null),
+        authenticationError: ref(null),
+        reconciliationOperationId: ref(null),
+        isPolling: ref(false),
+        isTeamCheckout: computed(() => false),
+        previewVariant: computed(() => mockPreviewVariant.value),
+        handleSubscribeClick: mockHandleSubscribeClick,
+        handleSubscribeTeamClick: mockHandleSubscribeTeamClick,
+        handleBackToPricing: mockHandleBackToPricing,
+        handleSuccessClose: vi.fn(),
+        handleAddCreditCard: vi.fn(),
+        handleConfirmTransition: vi.fn(),
+        handleTeamSubscribe: vi.fn(),
+        handleSubscriptionPayment: vi.fn(),
+        handleTeamSubscriptionPayment: vi.fn(),
+        applyPromotionCode: vi.fn(),
+        invalidateQuote: mockInvalidateQuote,
+        handleResubscribe: vi.fn()
+      }
+    }
   })
 )
 
@@ -282,4 +287,28 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
       expect(mockHandleBackToPricing).toHaveBeenCalled()
     }
   )
+
+  // `reason` drives the insufficient-credits copy above the table, so the
+  // top-up fall-through rewrites it. Checkout must read the surface instead, or
+  // the purchase is attributed to that rewrite.
+  describe('checkout attribution', () => {
+    function paymentIntentSourceGivenToCheckout() {
+      return mockUseSubscriptionCheckout.mock.calls[0][1]
+    }
+
+    it('gives checkout the surface, not the copy reason', () => {
+      renderComponent({
+        reason: 'out_of_credits',
+        paymentIntentSource: 'agent_paywall'
+      })
+
+      expect(paymentIntentSourceGivenToCheckout()).toBe('agent_paywall')
+    })
+
+    it('falls back to the reason when no surface is named', () => {
+      renderComponent({ reason: 'out_of_credits' })
+
+      expect(paymentIntentSourceGivenToCheckout()).toBe('out_of_credits')
+    })
+  })
 })

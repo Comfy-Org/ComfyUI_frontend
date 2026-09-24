@@ -167,14 +167,10 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.ADD_API_CREDIT_BUTTON_CLICKED, metadata)
   }
 
-  // Dispatched as an optional TelemetryProvider member by the registry, so
-  // no reference to this class reaches it.
-  // fallow-ignore-next-line unused-class-member
   trackAgentPaywallShown(metadata: AgentPaywallShownMetadata): void {
     this.capture(TelemetryEvents.AGENT_PAYWALL_SHOWN, metadata)
   }
 
-  // fallow-ignore-next-line unused-class-member
   trackAgentPaywallCtaClicked(metadata: AgentPaywallCtaMetadata): void {
     this.capture(TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED, metadata)
   }

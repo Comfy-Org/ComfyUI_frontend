@@ -377,8 +377,9 @@ function enterTopupJourney(): void {
     // unexpired top-up journey for the same actor and workspace resumes and
     // keeps its *original* entry source for every later phase — a top-up
     // started from the agent paywall shortly after one from the billing panel
-    // would report `settings_billing` right through to the `.succeeded`
-    // events. Same-surface top-ups still resume exactly as before.
+    // would report `settings_billing` on this journey's `submitted` and
+    // `operation_linked` phases, and `operation_linked` is the one that binds
+    // `billing_op_id`. Same-surface top-ups still resume exactly as before.
     intent: entrySource,
     assignment: resolveCheckoutAssignment(api.getServerFeatures())
   })

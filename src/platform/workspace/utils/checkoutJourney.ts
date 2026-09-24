@@ -26,16 +26,17 @@ const CHECKOUT_JOURNEY_STORAGE_KEY = 'comfy.checkout.journey'
 const EMBEDDED_CHECKOUT_FLAG_KEY: `${ServerFeatureFlag.EMBEDDED_CHECKOUT_ENABLED}` =
   'embedded_checked_enabled'
 
-// These three allowlists guard the persisted-record rehydration path, which is
-// the *primary* path for hosted checkout: the user leaves the page for Stripe
-// and the journey resumes from storage on return, so every post-redirect phase
-// — including the `.succeeded` events revenue attribution reads — takes its
-// entry context from here. A `ReadonlySet<T>` constrains element types only and
-// does not require every union member, so a value added to one of these unions
-// but forgotten here used to compile clean and then silently degrade to
-// `'unknown'` at runtime. Written as `satisfies Record<T, true>` (the pattern
-// `VALID_PAYMENT_INTENT_SOURCES` already uses) so the omission is a build error
-// instead.
+// These three allowlists are the rehydration gate for `CheckoutJourneyContext`,
+// the payload every `billing.checkout.*` phase event carries. Each phase
+// re-reads the record from storage through `normalizeRecord` rather than
+// holding it in memory, so a degraded value reaches every phase after the one
+// that created the record — the whole post-redirect half of a hosted checkout,
+// `operation_linked` included, which is the phase that binds `billing_op_id`.
+// A `ReadonlySet<T>` constrains element types only and does not require every
+// union member, so a value added to one of these unions but forgotten here used
+// to compile clean and then degrade to `'unknown'` at runtime. Written as
+// `satisfies Record<T, true>` (the pattern `VALID_PAYMENT_INTENT_SOURCES` uses)
+// so the omission is a build error instead.
 const ENTRY_FLOWS = {
   initial_subscription: true,
   paid_upgrade: true,
@@ -53,15 +54,25 @@ const ENTRY_SOURCES = {
   agent_paywall: true
 } satisfies Record<CheckoutEntrySource, true>
 
-const toEntryFlow = (value: unknown): CheckoutEntryFlow =>
-  typeof value === 'string' && Object.hasOwn(ENTRY_FLOWS, value)
-    ? (value as CheckoutEntryFlow)
-    : 'unknown'
+/**
+ * Own-key predicate over one of the allowlists above, so the runtime check
+ * establishes the type at this persisted-data boundary instead of an assertion
+ * overriding the compiler after it.
+ */
+function isAllowlisted<T extends string>(
+  allowlist: Record<T, true>,
+  value: unknown
+): value is T {
+  return typeof value === 'string' && Object.hasOwn(allowlist, value)
+}
 
-const toEntrySource = (value: unknown): CheckoutEntrySource =>
-  typeof value === 'string' && Object.hasOwn(ENTRY_SOURCES, value)
-    ? (value as CheckoutEntrySource)
-    : 'unknown'
+function toEntryFlow(value: unknown): CheckoutEntryFlow {
+  return isAllowlisted(ENTRY_FLOWS, value) ? value : 'unknown'
+}
+
+function toEntrySource(value: unknown): CheckoutEntrySource {
+  return isAllowlisted(ENTRY_SOURCES, value) ? value : 'unknown'
+}
 
 /**
  * Entry sources that a payment-intent source pins directly. Both checkout
@@ -76,23 +87,31 @@ const PAYMENT_INTENT_ENTRY_SOURCES: Partial<
   agent_paywall: 'agent_paywall'
 }
 
+function isMappedPaymentIntentSource(
+  value: string
+): value is keyof typeof PAYMENT_INTENT_ENTRY_SOURCES {
+  return Object.hasOwn(PAYMENT_INTENT_ENTRY_SOURCES, value)
+}
+
 /**
  * Entry source for a journey opened with `paymentIntentSource`.
  *
- * Guarded with `Object.hasOwn` like the three lookups above: an unvalidated
- * key would otherwise resolve inherited `Object.prototype` members truthy
- * (`'constructor'`, `'toString'`), so `?? fallback` would not fire and a
- * non-`CheckoutEntrySource` value would reach the record, storage and every
- * downstream phase.
+ * Takes a `string` rather than a `PaymentIntentSource` because this function
+ * owns the runtime hardening: its callers read the value from a Vue prop and a
+ * composable argument, neither of which TypeScript enforces at runtime. Own-key
+ * narrowing is what makes that safe — a bare lookup would resolve an inherited
+ * `Object.prototype` member (`'constructor'`, `'toString'`) truthy, so
+ * `?? fallback` would not fire and a non-`CheckoutEntrySource` value would
+ * reach the record, storage and every downstream phase.
  */
-export const resolveEntrySource = (
-  paymentIntentSource: PaymentIntentSource | undefined,
+export function resolveEntrySource(
+  paymentIntentSource: string | undefined,
   fallback: CheckoutEntrySource
-): CheckoutEntrySource =>
-  paymentIntentSource !== undefined &&
-  Object.hasOwn(PAYMENT_INTENT_ENTRY_SOURCES, paymentIntentSource)
-    ? (PAYMENT_INTENT_ENTRY_SOURCES[paymentIntentSource] ?? fallback)
-    : fallback
+): CheckoutEntrySource {
+  if (paymentIntentSource === undefined) return fallback
+  if (!isMappedPaymentIntentSource(paymentIntentSource)) return fallback
+  return PAYMENT_INTENT_ENTRY_SOURCES[paymentIntentSource] ?? fallback
+}
 
 export interface CheckoutJourneyRecord {
   journey_id: string
@@ -498,10 +517,7 @@ function readOptionalFields(candidate: Record<string, unknown>) {
   const { intent, ui_mode, billing_op_id } = candidate
   return {
     ...(typeof intent === 'string' && { intent }),
-    ...(typeof ui_mode === 'string' &&
-      Object.hasOwn(UI_MODES, ui_mode) && {
-        ui_mode: ui_mode as CheckoutUiMode
-      }),
+    ...(isAllowlisted(UI_MODES, ui_mode) && { ui_mode }),
     ...(typeof billing_op_id === 'string' && { billing_op_id })
   }
 }
