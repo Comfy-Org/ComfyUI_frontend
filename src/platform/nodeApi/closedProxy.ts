@@ -358,7 +358,7 @@ export function createHandleFactory<TTarget>(
      * but lets a caller reclaim map slots eagerly, e.g. after clearing a graph.
      */
     prune(): void {
-      for (const [key, ref] of [...cache.entries()]) {
+      for (const [key, ref] of cache.entries()) {
         const id = key.slice(key.lastIndexOf('\u0000') + 1)
         if (ref.deref() === undefined || resolve(id) === undefined) {
           cache.delete(key)
