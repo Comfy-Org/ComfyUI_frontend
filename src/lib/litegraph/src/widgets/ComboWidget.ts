@@ -44,10 +44,7 @@ function toContextMenuValue(
   return typeof value === 'number' ? { content: label, value } : value
 }
 
-function attachOptionPreview(
-  element: unknown,
-  value: string | number
-): void {
+function attachOptionPreview(element: unknown, value: string | number): void {
   if (!(element instanceof HTMLElement) || typeof value !== 'string') return
   element.addEventListener('pointerenter', () => {
     showComboOptionPreview(value, element)
