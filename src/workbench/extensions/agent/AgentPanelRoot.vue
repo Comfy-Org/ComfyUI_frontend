@@ -599,24 +599,32 @@ function warnWorkflowUnavailable(): void {
 
 /**
  * The sent message, held from the moment the user sends until the cloud ids
- * are refreshed. Scoped to one `sendMessage` call, so a send never hands these
- * fields to the next one. `workflow_id` is re-read on the way out.
+ * are refreshed, alongside the turn's origin. Scoped to one `sendMessage`
+ * call, so a send never hands these fields to the next one.
  */
-let pendingSend: AgentMessageSentMetadata | null = null
+let pendingSend: {
+  metadata: AgentMessageSentMetadata
+  origin: TurnOrigin
+} | null = null
 
 /**
  * A freshly opened tab has no cloud id until `refreshCloudWorkflowIds()` lands,
  * and the turn is posted with the id resolved by that refresh (QAF-19).
  * Reporting before it would file the first send of a session — the one the
  * activation funnel is measuring — against no workflow at all.
+ *
+ * Resolved through the turn's own origin rather than the live selection,
+ * because `performSend` posts the origin tab's id: switching target or
+ * starting a new chat while the refresh is in flight must not retarget the
+ * report at a workflow the turn was never sent against.
  */
 function reportPendingSend(): void {
   const sent = pendingSend
   if (!sent) return
   pendingSend = null
   useTelemetry()?.trackAgentMessageSent({
-    ...sent,
-    workflow_id: editableWorkflowId.value ?? null
+    ...sent.metadata,
+    workflow_id: targetWorkflowTurnContext(sent.origin)?.id ?? null
   })
 }
 
@@ -1098,15 +1106,22 @@ const { submit: onSend } = useAgentDraftSubmission({
     exit: exitNodeSelectionMode
   },
   send: async (text, attachments, nodes, references, meta) => {
-    // Captured now, like the thread the turn is posted under. The workflow id
-    // here is only the fallback for a send that never reaches the refresh.
+    // The same origin `performSend` pins the turn to, taken in the same tick,
+    // so the report follows the tab the turn is posted against. Everything but
+    // the workflow id is captured now, like the thread; the id here is only
+    // the fallback for a send that never reaches the refresh.
+    const originContext = targetWorkflowTurnContext()
     pendingSend = {
-      attachment_count: attachments.length,
-      node_tag_count: nodes.length,
-      thread_id: threadId.value,
-      workflow_id: editableWorkflowId.value ?? null,
-      client_message_id: meta.clientMessageId,
-      input_method: meta.inputMethod
+      metadata: {
+        attachment_count: attachments.length,
+        node_tag_count: nodes.length,
+        thread_id: threadId.value,
+        workflow_id: originContext?.id ?? null,
+        client_message_id: meta.clientMessageId,
+        input_method: meta.inputMethod
+      },
+      origin:
+        originContext === undefined ? null : { tabPath: originContext.tabPath }
     }
     const selectionWorkflow = selectedTarget.value
     try {

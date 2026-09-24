@@ -3050,6 +3050,48 @@ describe('AgentPanelRoot workflow binding', () => {
     ])
   })
 
+  it('keeps the report on the turn’s own workflow when the target changes mid-send', async () => {
+    makeTab('wf-42')
+    const other = addTab('workflows/other.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-99' })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-99', other.path)
+    // Switch target only while the send's own refresh is in flight — not the
+    // one on mount. The turn is pinned to the tab it started on, so the report
+    // has to stay there too.
+    let sending = false
+    const bodies = mockMessagesEndpoint('wf-42', () => {
+      if (sending)
+        useAgentPanelStore().setWorkflowTarget(
+          fromPartial<ComfyWorkflow>(other)
+        )
+      return [
+        { id: 'wf-42', name: 'current' },
+        { id: 'wf-99', name: 'other' }
+      ]
+    })
+    telemetry.trackAgentMessageSent.mockClear()
+    renderWithSelectedTarget()
+    await screen.findByRole('textbox')
+    sending = true
+
+    await sendFromComposer('build me a workflow')
+
+    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
+    expect(telemetry.trackAgentMessageSent.mock.calls).toEqual([
+      [
+        {
+          attachment_count: 0,
+          node_tag_count: 0,
+          thread_id: null,
+          workflow_id: 'wf-42',
+          client_message_id: 'client-message-1',
+          input_method: 'typed'
+        }
+      ]
+    ])
+  })
+
   it('reports the workflow the turn was posted against, not the id known before it resolved', async () => {
     // No binding, and the cloud index does not list the tab until the send's
     // own refresh — so the id is genuinely unresolved at the moment the user

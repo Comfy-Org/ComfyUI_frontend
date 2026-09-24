@@ -136,8 +136,6 @@ describe('useAgentConsent', () => {
     fetchWithUnifiedRemint.mockReset()
     fetchWithUnifiedRemint.mockResolvedValue(settingResponse(false))
     reportError.mockReset()
-    telemetry.trackAgentConsentShown.mockReset()
-    telemetry.trackAgentConsentResolved.mockReset()
     vi.mocked(useToastStore().add).mockReset()
   })
 
