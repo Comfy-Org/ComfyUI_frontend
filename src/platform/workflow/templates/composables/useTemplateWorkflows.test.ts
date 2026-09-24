@@ -1139,7 +1139,6 @@ describe('useTemplateWorkflows', () => {
       expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
         'loaded'
       )
-      await flushPromises()
 
       expect(useFeatureUsageTracker(SURVEY_ID).useCount.value).toBe(1)
     })
@@ -1151,7 +1150,6 @@ describe('useTemplateWorkflows', () => {
       expect(await loader.loadWorkflowTemplate('template1', 'default')).toBe(
         'graph-failed'
       )
-      await flushPromises()
 
       expect(useFeatureUsageTracker(SURVEY_ID).useCount.value).toBe(0)
     })
