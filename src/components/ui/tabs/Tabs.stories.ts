@@ -37,13 +37,13 @@ function renderTabs({ disabled = false } = {}) {
             <TabsTrigger value="info" :disabled="disabled">Info</TabsTrigger>
             <TabsTrigger value="settings">Settings</TabsTrigger>
           </TabsList>
-          <TabsContent value="parameters" class="text-sm text-text-secondary">
+          <TabsContent value="parameters" class="text-sm text-muted-foreground">
             Adjust the node parameters.
           </TabsContent>
-          <TabsContent value="info" class="text-sm text-text-secondary">
+          <TabsContent value="info" class="text-sm text-muted-foreground">
             Read about the node.
           </TabsContent>
-          <TabsContent value="settings" class="text-sm text-text-secondary">
+          <TabsContent value="settings" class="text-sm text-muted-foreground">
             Configure how the node behaves.
           </TabsContent>
         </Tabs>
