@@ -4,7 +4,10 @@ import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { NodeId } from '@/types/nodeId'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
-import { reconcileAgentAdapters } from './agentNodeMaterializer'
+import {
+  reconcileAgentAdapters,
+  subgraphDefinitionReadState
+} from './agentNodeMaterializer'
 import {
   readSubgraphDefinitionIds,
   readSubgraphDefinitions
@@ -76,13 +79,24 @@ export class AgentCrdtProjection {
     if (!graph) return []
     const followerDoc = this.getFollowerDoc()
     const definitionIds = readSubgraphDefinitionIds(followerDoc)
-    const hasMissingDefinition = definitionIds.some(
-      (id) => !graph.rootGraph.subgraphs.has(id)
+    const definitionStates = definitionIds.map((id) => ({
+      id,
+      state: subgraphDefinitionReadState(graph.rootGraph, id)
+    }))
+    const needsDefinitionBody = definitionStates.some(
+      ({ state }) => state === 'missing'
     )
-    const definitions = hasMissingDefinition
-      ? readSubgraphDefinitions(followerDoc)
+    const failedDefinitionIds = new Set(
+      definitionStates
+        .filter(({ state }) => state === 'failed')
+        .map(({ id }) => id)
+    )
+    const definitions = needsDefinitionBody
+      ? readSubgraphDefinitions(followerDoc, failedDefinitionIds)
       : []
-    const nodeIds = reconcileAgentAdapters(graph, definitions)
+    const nodeIds = failedDefinitionIds.size
+      ? reconcileAgentAdapters(graph, definitions, failedDefinitionIds)
+      : reconcileAgentAdapters(graph, definitions)
     // A frame that only wires or rewires nodes moves no layout, so nothing
     // else asks the canvas to paint the new links.
     graph.setDirtyCanvas(true, true)
