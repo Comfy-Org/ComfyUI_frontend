@@ -569,8 +569,8 @@ function startAgentCrdtFollower(
         }
         return pending
       },
-      // A pending human `add_node`/`connect` — queued through
-      // delivery-unknown — that a reactivation's full reconcile must not
+      // A pending human `add_node`/`connect` — queued through unresolved —
+      // that a reactivation's full reconcile must not
       // delete/drop just because the doc does not have it yet.
       //
       // Empty while `awaitingReactivationContinuity` is still true: a
@@ -671,7 +671,7 @@ function startAgentCrdtFollower(
     // own success condition). Nothing else ever reverts an entry from here;
     // the bounded terminal path notifies without touching the projection,
     // and only an explicit host rejection reverts.
-    if (update.catchUp) pendingOps.resolveDeliveryUnknown(docEffectPresent)
+    pendingOps.resolveDeliveryUnknown(docEffectPresent)
     const applied = projection.applyFrame(update)
     incrementOutcome(applied ? 'applied' : 'skipped')
     if (!applied) return []

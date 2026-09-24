@@ -811,11 +811,19 @@ describe('createPendingOpTracker', () => {
 
       expect(events.at(-1)).toEqual({ type: 'unresolved', opIds: ['op-1'] })
       expect(events.some((event) => event.type === 'reverted')).toBe(false)
-      // Still held, still delivery_unknown: a late echo or explicit
-      // rejection can still resolve it.
       expect(tracker.entries()).toEqual([
-        { opId: 'op-1', state: 'delivery_unknown', shadow: op }
+        { opId: 'op-1', state: 'unresolved', shadow: op }
       ])
+    })
+
+    it('a late matching effect clears an unresolved entry', () => {
+      parkAddNode('op-1', 1)
+      vi.advanceTimersByTime(LEDGER_SETTLE_TIMEOUT_MS)
+
+      tracker.resolveDeliveryUnknown(() => true)
+
+      expect(events.at(-1)).toEqual({ type: 'cleared', opIds: ['op-1'] })
+      expect(tracker.entries()).toEqual([])
     })
 
     it('a same-lineage frame within the bound does not extend or shorten the deadline', () => {

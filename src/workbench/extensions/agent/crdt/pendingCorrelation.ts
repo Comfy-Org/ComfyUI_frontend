@@ -106,9 +106,9 @@ export interface PendingCorrelation {
   /**
    * Watermark and settlement for an applied frame; the caller owns both the
    * reconcile and, per ADR-CRDT-RECONCILE-0035's fixed resolve/apply/clear
-   * frame order, the earlier `resolveDeliveryUnknown` call against the
-   * frame's `catchUp` flag — this only clears what THIS frame's effect or
-   * seq coverage settles, after that resolution and the reconcile have run.
+   * frame order, the earlier `resolveDeliveryUnknown` call against each
+   * same-lineage frame — this only clears what THIS frame's effect or seq
+   * coverage settles, after that resolution and the reconcile have run.
    */
   onProjected(update: { seq: number | null; opIds?: string[] }): void
   /**
@@ -304,7 +304,7 @@ export function createPendingCorrelation(
       resume()
       if (ackSeq === watermark) tryResolveAlreadyCurrent(workflowId, ackSeq)
       // A seq mismatch, reactivation or not, is left alone: the natural
-      // catch-up frame resolves things through `onProjected` and
+      // next same-lineage frame resolves things through `onProjected` and
       // `applyAndReconcile`'s own presence check, which never reverts on
       // absence either (round 7).
     },

@@ -2,7 +2,15 @@ import { nodesMap, OPAQUE_WIDGETS_KEY } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
 import type { SemanticLinkPayload, SemanticNodePayload } from './graphMutations'
-import { isIncompatibleLinkType } from './graphMutations'
+import {
+  isIncompatibleLinkType,
+  prepareInputSlots,
+  prepareOutputSlots
+} from './graphMutations'
+import type {
+  ISerialisableNodeInput,
+  ISerialisableNodeOutput
+} from '@/lib/litegraph/src/types/serialisation'
 import { reportError } from '@/platform/telemetry/reportError'
 
 import {
@@ -110,19 +118,24 @@ export function readSemanticNode(
   return payload
 }
 
-function readNodeSlots<TKey extends 'inputs' | 'outputs'>(
+function readNodeSlots(
   doc: Y.Doc,
   id: string,
-  key: TKey
-): SemanticLinkPayload[TKey extends 'inputs'
-  ? 'targetInputs'
-  : 'originOutputs'] {
+  key: 'inputs'
+): readonly ISerialisableNodeInput[]
+function readNodeSlots(
+  doc: Y.Doc,
+  id: string,
+  key: 'outputs'
+): readonly ISerialisableNodeOutput[]
+function readNodeSlots(
+  doc: Y.Doc,
+  id: string,
+  key: 'inputs' | 'outputs'
+): readonly ISerialisableNodeInput[] | readonly ISerialisableNodeOutput[] {
   const value = nodesMap(doc).get(id)?.get(key)
-  return (
-    value instanceof Y.Array ? value.toJSON() : []
-  ) as SemanticLinkPayload[TKey extends 'inputs'
-    ? 'targetInputs'
-    : 'originOutputs']
+  const slots = value instanceof Y.Array ? value.toJSON() : []
+  return key === 'inputs' ? prepareInputSlots(slots) : prepareOutputSlots(slots)
 }
 
 function reportInvalidHostTarget(
@@ -171,7 +184,7 @@ function hostTarget(
     typeof type === 'string' ? definitions.get(type) : undefined
   if (!definition) return { targetSlot: docSlot, targetInputs: docInputs }
 
-  const name = docInputs?.[docSlot]?.name
+  const name = docInputs.at(docSlot)?.name
   const slot = name == null ? -1 : hostSlotIndex(definition, name)
   if (slot < 0) {
     reportInvalidHostTarget(reported, targetId, type, docSlot, name)
@@ -179,7 +192,7 @@ function hostTarget(
   }
   return {
     targetSlot: slot,
-    targetInputs: hostInputs(definition, docInputs ?? [])
+    targetInputs: hostInputs(definition, docInputs)
   }
 }
 

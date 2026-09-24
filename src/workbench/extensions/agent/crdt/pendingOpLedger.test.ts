@@ -146,6 +146,28 @@ describe('markDeliveryUnknown (ADR-CRDT-RECONCILE-0035)', () => {
       'op-1'
     ])
   })
+
+  it('retains unresolved entries for late effect and result reconciliation', () => {
+    const ledger = createPendingOpLedger<string>()
+    flownBatch(ledger, ['effect', 'result'])
+    ledger.markDeliveryUnknown(['effect', 'result'])
+
+    expect(ledger.markUnresolved(['effect', 'result'])).toEqual([])
+    expect(ledger.entries('unresolved').map((entry) => entry.opId)).toEqual([
+      'effect',
+      'result'
+    ])
+    expect(ledger.clearOnEffect(['effect']).map((entry) => entry.opId)).toEqual(
+      ['effect']
+    )
+    expect(
+      ledger.reconcileOpsResult({
+        batch: ['result'],
+        applied: ['result'],
+        skipped: []
+      }).applied
+    ).toEqual(['result'])
+  })
 })
 
 describe('reconcileOpsResult', () => {

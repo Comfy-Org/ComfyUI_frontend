@@ -17,6 +17,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import type { GraphMutations } from './graphMutations'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
+import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -775,7 +776,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('F4: IF a doc_reset for the bound workflow reaches this composable while inactive, the pending correlation resets immediately (unit-level: the bridge is mocked, so this does not prove the frame reaches here — see useAgentCrdtFollowerLineageBoundary.test.ts for that boundary)', async () => {
-    const { recordDevEvent } = await import('./devPanelLog')
     const workflowId = ref<string | null>('wf-1')
     const isTargetActive = ref(true)
     let enqueue!: ReturnType<
@@ -1563,7 +1563,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('ADR-CRDT-RECONCILE-0035 (a): pending ops survive tab deactivation and reactivation of the same workflow', async () => {
-    const { recordDevEvent } = await import('./devPanelLog')
     const { enqueue, isTargetActive, unmount } = mountWithHumanOps()
     dispatchFrame('doc_subscribed', { ok: true })
 
@@ -1597,7 +1596,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it("ADR-CRDT-RECONCILE-0035 (c): an add_node's echo classification survives tab deactivation and reactivation of the same workflow", async () => {
-    const { recordDevEvent } = await import('./devPanelLog')
     const { enqueue, isTargetActive, pendingAddType, unmount } =
       mountWithHumanOps()
     dispatchFrame('doc_subscribed', { ok: true })
@@ -1738,23 +1736,8 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
-  it('F2: an unrelated live delta must not resolve a parked delivery-unknown entry', async () => {
-    vi.useFakeTimers()
-    const { recordDevEvent } = await import('./devPanelLog')
-    const workflowId = ref<string | null>('wf-1')
-    let enqueue!: ReturnType<
-      typeof useAgentCrdtFollower
-    >['enqueueHumanOperations']
-    const host = defineComponent({
-      setup() {
-        enqueue = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        ).enqueueHumanOperations
-        return () => null
-      }
-    })
-    const { unmount } = render(host)
+  it('F2: a live same-lineage frame resolves a parked entry whose effect is present', async () => {
+    const { unmount, enqueue } = mountFollower('wf-1')
 
     enqueue([
       {
@@ -1775,37 +1758,20 @@ describe('useAgentCrdtFollower', () => {
       opIds: [opId]
     })
 
-    // The doc already shows the node, so a catch-up would clear it -- but
-    // this frame is a plain live delta (no `catchUp`), so it must not.
     const doc = new Y.Doc()
     doc.getMap('nodes').set('5', new Y.Map([['type', 'Test']]))
     bridge().follower.doc = doc
     dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 3, catchUp: false })
 
-    expect(recordDevEvent).not.toHaveBeenCalledWith(
-      'pending_ops',
-      expect.objectContaining({ type: 'cleared' })
-    )
+    expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+      type: 'cleared',
+      opIds: [opId]
+    })
     unmount()
   })
 
   it('a parked set_node_field entry has no effect-presence check, so a same-lineage catch-up leaves it parked', async () => {
-    vi.useFakeTimers()
-    const { recordDevEvent } = await import('./devPanelLog')
-    const workflowId = ref<string | null>('wf-1')
-    let enqueue!: ReturnType<
-      typeof useAgentCrdtFollower
-    >['enqueueHumanOperations']
-    const host = defineComponent({
-      setup() {
-        enqueue = useAgentCrdtFollower(
-          workflowId,
-          graphMutations
-        ).enqueueHumanOperations
-        return () => null
-      }
-    })
-    const { unmount } = render(host)
+    const { unmount, enqueue } = mountFollower('wf-1')
 
     enqueue([
       { op: 'set_node_field', node_id: 5, field: 'title', value: 'Renamed' }
@@ -1837,11 +1803,16 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('ADR-CRDT-RECONCILE-0035 (a), round 7: a parked set_widget settles only when the target widget already holds the op value', async () => {
-    vi.useFakeTimers()
-    const { recordDevEvent } = await import('./devPanelLog')
     const { unmount, enqueue } = mountFollower('wf-1')
 
-    enqueue([{ op: 'set_widget', node_id: 5, widget: 'seed', value: 42 }])
+    enqueue([
+      {
+        op: 'set_widget',
+        node_id: 5,
+        widget: 'config',
+        value: { seed: 42, steps: [1, 2] }
+      }
+    ])
     await Promise.resolve()
     const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id
 
@@ -1859,7 +1830,7 @@ describe('useAgentCrdtFollower', () => {
       '5',
       new Y.Map<unknown>([
         ['type', 'Test'],
-        ['widgets', new Y.Map([['seed', 7]])]
+        ['widgets', new Y.Map([['config', { seed: 42, steps: [1, 3] }]])]
       ])
     )
     bridge().follower.doc = mismatched
@@ -1875,7 +1846,7 @@ describe('useAgentCrdtFollower', () => {
       '5',
       new Y.Map<unknown>([
         ['type', 'Test'],
-        ['widgets', new Y.Map([['seed', 42]])]
+        ['widgets', new Y.Map([['config', { seed: 42, steps: [1, 2] }]])]
       ])
     )
     bridge().follower.doc = matched
@@ -2018,7 +1989,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('F8: an add_node whose parked id resolves to a different doc type is reported as a collision, never reverted, notified unresolved by the terminal path', async () => {
-    const { recordDevEvent } = await import('./devPanelLog')
     const { unmount, enqueue } = mountFollower('wf-1')
 
     enqueue([
@@ -2066,6 +2036,11 @@ describe('useAgentCrdtFollower', () => {
       type: 'unresolved',
       opIds: [opId]
     })
+    expect(useToastStore().add).toHaveBeenCalledWith({
+      severity: 'warn',
+      summary: "Your edit couldn't be confirmed as synced.",
+      life: 5000
+    })
     expect(recordDevEvent).not.toHaveBeenCalledWith(
       'pending_ops',
       expect.objectContaining({ type: 'reverted' })
@@ -2074,7 +2049,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('F8: a connect whose link id resolves to different endpoints stays parked, notified unresolved by the terminal path', async () => {
-    const { recordDevEvent } = await import('./devPanelLog')
     const { unmount, enqueue } = mountFollower('wf-1')
 
     enqueue([
@@ -2118,7 +2092,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('F9: a connect whose link id resolves to the same endpoints but a different semantic type stays parked, notified unresolved by the terminal path', async () => {
-    const { recordDevEvent } = await import('./devPanelLog')
     const { unmount, enqueue } = mountFollower('wf-1')
 
     enqueue([
@@ -2162,7 +2135,6 @@ describe('useAgentCrdtFollower', () => {
   })
 
   it('a refused subscription settles the transmitted in-flight batch unconfirmed at the resend instead of reaching the client', async () => {
-    const { recordDevEvent } = await import('./devPanelLog')
     const { unmount, enqueue } = mountFollower('wf-1')
 
     enqueue([{ op: 'delete_node', node_id: '1', removed_links: [] }])

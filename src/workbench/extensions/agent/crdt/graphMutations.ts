@@ -378,7 +378,7 @@ function prepareInputSlot(
   return slot
 }
 
-function prepareInputSlots(
+export function prepareInputSlots(
   value: unknown,
   existing?: readonly (NodeState['inputs'][number] | undefined)[]
 ): NodeState['inputs'] {
@@ -390,7 +390,7 @@ function prepareInputSlots(
   })
 }
 
-function prepareOutputSlots(value: unknown): NodeState['outputs'] {
+export function prepareOutputSlots(value: unknown): NodeState['outputs'] {
   if (!Array.isArray(value)) return []
   return value.flatMap((raw) => {
     if (
