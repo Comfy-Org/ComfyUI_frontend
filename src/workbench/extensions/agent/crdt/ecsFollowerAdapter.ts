@@ -480,6 +480,7 @@ export class EcsFollowerAdapter {
     // fire up to `RECONCILE_RETRY_INTERVAL_MS` later and re-project the
     // pre-reset doc, resurrecting exactly the state this reset clears.
     this.clearReconcileRetry(session)
+    this.clearLiveSweepRetry(session)
     session.reconcileNextFrame = false
     return session.mutations.clearSemanticGraph(context)
   }
@@ -492,6 +493,7 @@ export class EcsFollowerAdapter {
     // fail-closed gate, and a stale retry firing later would silently
     // re-apply the very state that gate just refused.
     this.clearReconcileRetry(session)
+    this.clearLiveSweepRetry(session)
     session.reconcileNextFrame = false
   }
 
@@ -860,7 +862,7 @@ export class EcsFollowerAdapter {
         session.liveSweepRetryTimer = null
         if (this.targets.get(session.workflowId) !== session) return
         this.runLiveGraphSweep(session)
-      }, RECONCILE_RETRY_INTERVAL_MS)
+      }, RECONCILE_SLOW_RETRY_INTERVAL_MS)
     }
   }
 

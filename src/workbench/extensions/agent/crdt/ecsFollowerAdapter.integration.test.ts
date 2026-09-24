@@ -816,7 +816,7 @@ describe('EcsFollowerAdapter integration', () => {
 
       // A later timer removes the live node's store record by retrying only
       // the sweep, never the mutation batch.
-      vi.advanceTimersByTime(200)
+      vi.advanceTimersByTime(2_000)
       expect(onReconcileRetryCommitted).toHaveBeenCalledTimes(2)
       expect(batchCalls).toHaveLength(2)
 
@@ -893,6 +893,62 @@ describe('EcsFollowerAdapter integration', () => {
 
         expect(batchCalls).toHaveLength(0)
         expect(onReconcileRetryCommitted).not.toHaveBeenCalled()
+
+        if (lifecycleAction !== 'unbind') adapter.unbind('wf')
+        follower.destroy()
+        host.destroy()
+      } finally {
+        vi.useRealTimers()
+      }
+    }
+  )
+
+  it.for(['clearForReset', 'discardPending', 'unbind'] as const)(
+    'a failed live sweep armed before %s cannot callback after it',
+    (lifecycleAction) => {
+      vi.useFakeTimers()
+      try {
+        let scopeAvailable = false
+        const mutations = createGraphMutations({
+          placement: inertPlacementPort,
+          getScope: () => (scopeAvailable ? scope : null),
+          layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+        })
+        const onReconcileRetryCommitted = vi.fn(() => {
+          throw new Error('live sweep failed')
+        })
+        const host = mint({ nodes: [], links: [] }, catalog)
+        const follower = new FollowerDoc()
+        const adapter = new EcsFollowerAdapter(
+          mutations,
+          undefined,
+          onReconcileRetryCommitted
+        )
+        adapter.bind('wf', follower)
+        const update = Y.encodeStateAsUpdate(host)
+        follower.applyRemoteUpdate(update)
+
+        expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+          false
+        )
+        scopeAvailable = true
+        vi.advanceTimersByTime(200)
+        expect(onReconcileRetryCommitted).toHaveBeenCalledTimes(1)
+
+        if (lifecycleAction === 'clearForReset') {
+          adapter.clearForReset('wf', {
+            source: 'agent-remote',
+            actor: 'reset',
+            opId: 'reset'
+          })
+        } else if (lifecycleAction === 'discardPending') {
+          adapter.discardPending('wf')
+        } else {
+          adapter.unbind('wf')
+        }
+
+        vi.advanceTimersByTime(5_000)
+        expect(onReconcileRetryCommitted).toHaveBeenCalledTimes(1)
 
         if (lifecycleAction !== 'unbind') adapter.unbind('wf')
         follower.destroy()
