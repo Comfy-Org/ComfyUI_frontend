@@ -1,4 +1,12 @@
 {
+  "crossview_warp_h3": {
+    "description": "Upload a video and aim a new camera at it: orbit, rise or dolly, or key a move across the clip. MoGe estimates the scene's depth, the page previews the warped view live, and MiniMax H3 with the CrossView-Warp LoRA generates the scene from there. The LoRA and the CrossView Warp node are by Cseti.",
+    "requiresCustomNodes": ["ComfyUI-CrossViewWarp"],
+    "inputs": [{ "nodeType": "LoadVideo", "mediaType": "video" }],
+    "outputs": [{ "mediaType": "video" }],
+    "size": 54750000000,
+    "openSource": true
+  },
   "video_minimax_h3_i2v": {
     "description": "Turn a starting image into a short, high-quality video clip with MiniMax H3, a unified multimodal model that generates visuals and synchronized audio in a single pass. The workflow takes 1 input image and produces 1 video output, with optional text or reference media to steer motion, style, or sound. Ideal for rapid concept visualization, character-driven animation tests, and creating shareable social media clips with built-in sound design.",
     "inputs": [

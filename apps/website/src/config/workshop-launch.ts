@@ -31,6 +31,13 @@ export const LAUNCH_CATEGORIES: readonly LaunchCategory[] = [
     highlight: 'video_ltx2_3_i2v',
     workflows: [
       { template: 'video_ltx2_3_i2v', outcome: 'Turn an image into a video' },
+      // Prototype outside the Phase 2 list: runs on its own deployment through
+      // the page in components/hub/crossview/.
+      {
+        template: 'crossview_warp_h3',
+        outcome: 'Re-shoot a video: aim your own camera',
+        ownEndpoint: true
+      },
       {
         template: 'video_minimax_h3_r2v',
         outcome: 'Create a video from references'
