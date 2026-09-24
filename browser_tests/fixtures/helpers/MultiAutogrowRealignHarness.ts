@@ -399,16 +399,17 @@ export class MultiAutogrowRealignHarness {
   }
 
   async switchTabsAwayAndBack(): Promise<void> {
-    await expect(
-      this.topbar.workflowTabs.locator('.p-togglebutton')
-    ).toHaveCount(1)
+    await expect(this.topbar.tabs).toHaveCount(1)
     await this.topbar.newWorkflowButton.click()
+    await expect(this.topbar.tabs).toHaveCount(2)
     await expect(
-      this.topbar.workflowTabs.locator('.p-togglebutton')
-    ).toHaveCount(2)
-    await expect(this.topbar.getTab(1)).toHaveAttribute('aria-pressed', 'true')
+      this.topbar.getTab(1).and(this.topbar.getActiveTab())
+    ).toBeVisible()
     await this.topbar.getTab(0).click()
-    await expect(this.topbar.getTab(0)).toHaveClass(/p-togglebutton-checked/)
+    await expect(
+      this.topbar.getTab(0).and(this.topbar.getActiveTab())
+    ).toBeVisible()
+    await this.topbar.dismissWorkflowPopover()
     await expect.poll(() => this.hostSocket.subscribeCount()).toBe(2)
   }
 
