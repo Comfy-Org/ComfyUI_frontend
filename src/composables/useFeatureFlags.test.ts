@@ -996,6 +996,31 @@ describe('useFeatureFlags', () => {
       }
     )
 
+    it('lets a false ff: override turn off a server true', () => {
+      remoteConfigState.value = 'authenticated'
+      remoteConfig.value = { unified_web_session: true }
+      localStorage.setItem(
+        `ff:${ServerFeatureFlag.UNIFIED_WEB_SESSION}`,
+        'false'
+      )
+
+      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)
+    })
+
+    it('lets a false ?ff= override beat a true ff: override and server value', () => {
+      remoteConfigState.value = 'authenticated'
+      remoteConfig.value = { unified_web_session: true }
+      localStorage.setItem(
+        `ff:${ServerFeatureFlag.UNIFIED_WEB_SESSION}`,
+        'true'
+      )
+      vi.mocked(getSessionOverride).mockImplementation((flagKey) =>
+        flagKey === ServerFeatureFlag.UNIFIED_WEB_SESSION ? false : undefined
+      )
+
+      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)
+    })
+
     it('honours the ff: localStorage dev override', () => {
       remoteConfigState.value = 'authenticated'
       localStorage.setItem(
