@@ -165,7 +165,22 @@ function gone(error: unknown): boolean {
   )
 }
 
+/** A held URL is good until its own expiry and no longer, whatever becomes of
+ * the request sent to replace it: letting the tile serve it until that request
+ * settles hands a slow or hung attempt the whole fetch timeout to serve a dead
+ * URL in. */
+function lapseHeld(assetId: string) {
+  const held = access.value.get(assetId)
+  if (!held?.url) return undefined
+  const lapse = () => access.value.set(assetId, { ...held, url: undefined })
+  const left = held.expiresAt - Date.now()
+  if (left > 0) return setTimeout(lapse, left)
+  lapse()
+  return undefined
+}
+
 async function grantAccess(tile: SavedAsset) {
+  const lapsing = lapseHeld(tile.assetId)
   try {
     const granted = await accessWorkshopAsset(
       tile.assetId,
@@ -194,6 +209,8 @@ async function grantAccess(tile: SavedAsset) {
         ACCESS_RETRY_MS
       )
     )
+  } finally {
+    clearTimeout(lapsing)
   }
 }
 

@@ -270,6 +270,28 @@ describe('SavedAssetsStrip', () => {
     }
   )
 
+  it('lets a lapsed URL go while its replacement is still in flight', async () => {
+    vi.useFakeTimers()
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [saved] })
+    vi.mocked(accessWorkshopAsset)
+      .mockResolvedValueOnce({
+        content_url: 'https://assets.example/saved.png',
+        expires_at: new Date(Date.now() + 60_000).toISOString()
+      })
+      .mockReturnValue(new Promise<never>(() => {}))
+    render(SavedAssetsStrip, { props })
+    await vi.waitFor(() => expect(accessWorkshopAsset).toHaveBeenCalledTimes(1))
+
+    await vi.advanceTimersByTimeAsync(61_000)
+
+    expect(
+      screen.queryByTestId('saved-asset-media')?.getAttribute('src') ??
+        undefined,
+      'a renewal that hangs past the expiry would otherwise keep a dead URL on the tile for as long as it took to time out'
+    ).toBeUndefined()
+    vi.useRealTimers()
+  })
+
   it('grants access to the asset a gone one uncovers', async () => {
     const shown = 8
     const older = Array.from({ length: shown + 1 }, (_, index) => ({
