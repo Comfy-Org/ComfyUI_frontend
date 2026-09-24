@@ -1,11 +1,9 @@
 <script setup lang="ts">
+import { Code } from '@lucide/vue'
 import { computedAsync } from '@vueuse/core'
 import { computed, ref, shallowRef } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import { useCinematicStudioRun } from '../../../composables/useCinematicStudioRun'
-import { useTablist } from '../../../composables/useTablist'
 import { resolveModelRouterRender } from '../../../config/router-render'
 import type {
   AspectRatio,
@@ -27,7 +25,12 @@ import {
 } from '../../../lib/workshop/cinematic-studio/prompt'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
+import Sheet from '@/components/ui/sheet/Sheet.vue'
+import SheetContent from '@/components/ui/sheet/SheetContent.vue'
+import SheetDescription from '@/components/ui/sheet/SheetDescription.vue'
+import SheetTitle from '@/components/ui/sheet/SheetTitle.vue'
 import ApiTab from '../ApiTab.vue'
+import HeaderAccount from '../HeaderAccount.vue'
 import CinematicPanel from './CinematicPanel.vue'
 import type { PickerKey } from './CinematicPanel.vue'
 import CinematicPicker from './CinematicPicker.vue'
@@ -99,13 +102,10 @@ function generate() {
   })
 }
 
-type View = 'playground' | 'api'
-const views: readonly View[] = ['playground', 'api']
-const view = ref<View>('playground')
-const { onKeydown } = useTablist(() => views, view)
+const apiOpen = ref(false)
 
 const apiRequest = computedAsync(async () => {
-  if (view.value !== 'api') return undefined
+  if (!apiOpen.value) return undefined
   const model = await studio.loadModel(modelSlug.value)
   try {
     const resolved = resolveModelRouterRender(model, {
@@ -125,50 +125,37 @@ const apiRequest = computedAsync(async () => {
 </script>
 
 <template>
-  <div
-    class="flex h-[calc(100dvh-11.25rem)] min-h-[680px] flex-col overflow-hidden border-t border-transparency-white-t8 bg-primary-comfy-ink text-primary-warm-white"
-  >
+  <div class="flex h-svh flex-col overflow-hidden text-primary-warm-white">
     <header
-      class="flex h-13 shrink-0 items-center gap-7 border-b border-transparency-white-t8 px-6"
+      class="flex h-12 shrink-0 items-center gap-3 border-b border-transparency-white-t8 px-4"
     >
-      <h1 class="text-sm font-semibold">{{ t('cinematic.title', locale) }}</h1>
-      <div
-        role="tablist"
-        :aria-label="t('cinematic.views', locale)"
-        class="flex h-full gap-5"
-        @keydown="onKeydown"
+      <a
+        href="/models/"
+        class="grid size-8 place-items-center rounded-lg hover:bg-transparency-white-t8"
+        :aria-label="t('cinematic.bar.home', locale)"
       >
-        <button
-          v-for="tab in views"
-          :id="`cinematic-tab-${tab}`"
-          :key="tab"
-          type="button"
-          role="tab"
-          :aria-selected="view === tab"
-          :aria-controls="`cinematic-panel-${tab}`"
-          :tabindex="view === tab ? 0 : -1"
-          :class="
-            cn(
-              'h-full text-sm',
-              view === tab
-                ? 'font-semibold text-primary-warm-white shadow-[inset_0_-2px_0] shadow-primary-warm-white'
-                : 'text-primary-warm-gray hover:text-primary-warm-white'
-            )
-          "
-          @click="view = tab"
-        >
-          {{ t(`cinematic.view.${tab}`, locale) }}
-        </button>
-      </div>
+        <img src="/icons/logo.svg" alt="" class="h-4 w-auto" />
+      </a>
+      <span class="h-5 w-px bg-transparency-white-t8" aria-hidden="true" />
+      <h1 class="text-sm font-semibold">{{ t('cinematic.title', locale) }}</h1>
+      <span
+        class="rounded-full border border-transparency-white-t20 px-2 py-0.5 text-[10px] font-bold tracking-wider text-primary-comfy-canvas uppercase"
+      >
+        {{ t('cinematic.bar.beta', locale) }}
+      </span>
+      <span class="flex-1" />
+      <button
+        type="button"
+        class="flex h-8 items-center gap-2 rounded-lg px-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase hover:bg-transparency-white-t8 hover:text-primary-warm-white"
+        @click="apiOpen = true"
+      >
+        <Code class="size-4" aria-hidden="true" />
+        {{ t('cinematic.bar.api', locale) }}
+      </button>
+      <HeaderAccount :locale />
     </header>
 
-    <div
-      v-show="view === 'playground'"
-      id="cinematic-panel-playground"
-      role="tabpanel"
-      aria-labelledby="cinematic-tab-playground"
-      class="relative flex min-h-0 flex-1"
-    >
+    <div class="relative flex min-h-0 flex-1">
       <CinematicPanel
         v-model:model-slug="modelSlug"
         v-model:scene="scene"
@@ -196,7 +183,7 @@ const apiRequest = computedAsync(async () => {
         :direction
         :title="pickerTitle"
         :locale
-        class="absolute top-0 bottom-0 left-[392px] z-20"
+        class="absolute top-0 bottom-0 left-[380px] z-20"
         @choose="choose"
         @close="picker = undefined"
       />
@@ -208,17 +195,18 @@ const apiRequest = computedAsync(async () => {
       />
     </div>
 
-    <div
-      v-if="view === 'api'"
-      id="cinematic-panel-api"
-      role="tabpanel"
-      aria-labelledby="cinematic-tab-api"
-      class="flex-1 overflow-y-auto px-6 py-8"
-    >
-      <div class="mx-auto flex max-w-4xl flex-col gap-4">
-        <p class="text-sm text-primary-comfy-canvas">
+    <Sheet v-model:open="apiOpen">
+      <SheetContent
+        side="right"
+        :close-label="t('cinematic.picker.close', locale)"
+        class="w-full overflow-y-auto border-l border-transparency-white-t8 p-6 sm:max-w-2xl"
+      >
+        <SheetTitle class="text-lg font-semibold text-primary-warm-white">
+          {{ t('cinematic.api.title', locale) }}
+        </SheetTitle>
+        <SheetDescription class="text-sm text-primary-comfy-canvas">
           {{ t('cinematic.api.intro', locale) }}
-        </p>
+        </SheetDescription>
         <ApiTab
           v-if="apiRequest"
           :contract="apiRequest.contract"
@@ -227,7 +215,7 @@ const apiRequest = computedAsync(async () => {
           :model-slug="apiRequest.slug"
           :locale
         />
-      </div>
-    </div>
+      </SheetContent>
+    </Sheet>
   </div>
 </template>

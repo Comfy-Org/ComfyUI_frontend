@@ -10952,6 +10952,30 @@ Enterprise`
     en: 'Comfy Cloud Nodes',
     'zh-CN': 'Comfy Cloud 节点'
   },
+  'cinematic.bar.home': {
+    en: 'Back to Models',
+    'zh-CN': '返回模型'
+  },
+  'cinematic.bar.beta': {
+    en: 'Beta',
+    'zh-CN': '测试版'
+  },
+  'cinematic.bar.api': {
+    en: 'API',
+    'zh-CN': 'API'
+  },
+  'cinematic.api.title': {
+    en: 'Call this studio from your code',
+    'zh-CN': '在代码中调用此工作室'
+  },
+  'cinematic.unavailable.title': {
+    en: 'Cinematic Studio is not open yet',
+    'zh-CN': '电影工作室尚未开放'
+  },
+  'cinematic.unavailable.link': {
+    en: 'Browse models',
+    'zh-CN': '浏览模型'
+  },
   'cinematic.title': {
     en: 'Cinematic Studio',
     'zh-CN': '电影工作室'
@@ -10960,18 +10984,6 @@ Enterprise`
     en: 'Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router.',
     'zh-CN':
       '导演电影感静帧：选择摄影机、景别、光线、胶片与调色，然后通过 Comfy Router 运行任意图像模型。'
-  },
-  'cinematic.views': {
-    en: 'Studio views',
-    'zh-CN': '工作室视图'
-  },
-  'cinematic.view.playground': {
-    en: 'Playground',
-    'zh-CN': '试用'
-  },
-  'cinematic.view.api': {
-    en: 'API',
-    'zh-CN': 'API'
   },
   'cinematic.api.intro': {
     en: 'The same request the Playground sends, with the prompt your direction builds. Every control becomes a field.',
@@ -11347,7 +11359,7 @@ Enterprise`
     'zh-CN': '角色'
   },
   'cinematic.reference.castHint': {
-    en: 'Keep the same face across shots',
+    en: 'Same face across shots',
     'zh-CN': '在各镜头中保持同一张脸'
   },
   'cinematic.reference.castAction': {
@@ -11359,8 +11371,8 @@ Enterprise`
     'zh-CN': '色板'
   },
   'cinematic.reference.paletteHint': {
-    en: 'Match the colors of an image',
-    'zh-CN': '匹配一张图片的色彩'
+    en: 'Match its colors',
+    'zh-CN': '匹配其色彩'
   },
   'cinematic.reference.paletteAction': {
     en: 'Add a palette reference',

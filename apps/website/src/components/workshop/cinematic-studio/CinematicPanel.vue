@@ -1,5 +1,13 @@
 <script setup lang="ts">
-import { Camera, ChevronDown, ChevronRight, Minus, Plus } from '@lucide/vue'
+import {
+  Camera,
+  ChevronDown,
+  ChevronRight,
+  Maximize,
+  Minus,
+  Plus,
+  RectangleHorizontal
+} from '@lucide/vue'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -128,6 +136,10 @@ const grade = computed(() => directionOption('grade', direction.value))
 const canGenerate = computed(
   () => gate === 'ready' && scene.value.trim().length > 0
 )
+const labelClass =
+  'text-[11px] font-bold tracking-widest text-primary-warm-gray uppercase'
+const cardClass =
+  'flex w-full items-center gap-3 rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4 p-2.5 text-left transition-colors hover:border-primary-warm-white/50'
 const segmentClass: Record<PromptSegment['source'], string> = {
   scene: 'text-primary-warm-white',
   direction: 'text-primary-comfy-canvas',
@@ -139,38 +151,33 @@ const segmentClass: Record<PromptSegment['source'], string> = {
 <template>
   <aside
     :aria-label="t('cinematic.panel.label', locale)"
-    class="flex h-full w-[392px] shrink-0 flex-col border-r border-transparency-white-t8 bg-primary-comfy-ink"
+    class="flex h-full w-[380px] shrink-0 flex-col border-r border-transparency-white-t8 bg-primary-comfy-ink"
   >
-    <div class="flex flex-1 flex-col gap-7 overflow-y-auto px-5 pt-5 pb-4">
-      <section class="flex flex-col gap-2.5">
-        <h2
-          class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
-        >
-          {{ t('cinematic.section.model', locale) }}
-        </h2>
+    <div
+      class="flex flex-1 flex-col divide-y divide-transparency-white-t8 overflow-y-auto"
+    >
+      <section class="flex flex-col gap-2.5 p-4">
+        <h2 :class="labelClass">{{ t('cinematic.section.model', locale) }}</h2>
         <CinematicMenu
           v-model="modelSlug"
           :options="modelOptions"
           :heading="t('cinematic.model.heading', locale)"
           side="bottom"
-          trigger-class="w-full gap-3 border border-transparency-white-t8 bg-transparency-white-t4 p-3 text-left hover:border-transparency-white-t20"
+          :trigger-class="cardClass"
         >
           <span
-            class="grid size-11 shrink-0 place-items-center rounded-xl bg-transparency-white-t8"
+            class="grid size-10 shrink-0 place-items-center rounded-xl bg-transparency-white-t8"
           >
             <img :src="model.logo" alt="" class="size-5" />
           </span>
-          <span class="flex min-w-0 flex-1 flex-col gap-1">
-            <span class="truncate text-base text-primary-warm-white">{{
-              model.name
-            }}</span>
-            <span class="flex gap-1.5 text-xs text-primary-comfy-canvas">
-              <span class="rounded-md bg-transparency-white-t8 px-1.5 py-0.5">
-                {{ t('cinematic.model.router', locale) }}
-              </span>
-              <span class="rounded-md bg-transparency-white-t8 px-1.5 py-0.5">
-                {{ model.provider }}
-              </span>
+          <span class="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span
+              class="truncate text-sm font-semibold text-primary-warm-white"
+            >
+              {{ model.name }}
+            </span>
+            <span class="truncate text-xs text-primary-warm-gray">
+              {{ model.provider }} · {{ t('cinematic.model.router', locale) }}
             </span>
           </span>
           <ChevronDown
@@ -180,12 +187,9 @@ const segmentClass: Record<PromptSegment['source'], string> = {
         </CinematicMenu>
       </section>
 
-      <section class="flex flex-col gap-2.5">
+      <section class="flex flex-col gap-2.5 p-4">
         <div class="flex items-center justify-between">
-          <label
-            for="cinematic-scene"
-            class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
-          >
+          <label for="cinematic-scene" :class="labelClass">
             {{ t('cinematic.section.scene', locale) }}
           </label>
           <button
@@ -209,7 +213,7 @@ const segmentClass: Record<PromptSegment['source'], string> = {
         >
           <p
             v-if="showFullPrompt"
-            class="h-32 overflow-y-auto px-4 pt-3.5 pb-2 text-sm leading-relaxed"
+            class="h-28 overflow-y-auto px-3.5 pt-3 pb-2 text-sm leading-relaxed"
             data-testid="cinematic-full-prompt"
           >
             <span
@@ -225,10 +229,10 @@ const segmentClass: Record<PromptSegment['source'], string> = {
             v-model="scene"
             rows="4"
             :placeholder="t('cinematic.scene.placeholder', locale)"
-            class="h-32 resize-none bg-transparent px-4 pt-3.5 text-[15px] leading-relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
+            class="h-28 resize-none bg-transparent px-3.5 pt-3 text-sm leading-relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
           />
           <label
-            class="flex cursor-pointer items-center gap-2.5 px-4 pt-2 pb-3.5 text-sm text-primary-warm-white"
+            class="flex cursor-pointer items-center gap-2.5 border-t border-transparency-white-t8 px-3.5 py-2.5 text-xs text-primary-warm-white"
           >
             <input
               v-model="enhance"
@@ -237,46 +241,42 @@ const segmentClass: Record<PromptSegment['source'], string> = {
               class="peer sr-only"
             />
             <span
-              class="relative h-5 w-9 rounded-full bg-transparency-white-t20 transition-colors peer-checked:bg-primary-comfy-yellow peer-focus-visible:ring-3 peer-focus-visible:ring-primary-comfy-yellow/50 after:absolute after:top-0.5 after:left-0.5 after:size-4 after:rounded-full after:bg-primary-comfy-ink after:transition-transform peer-checked:after:translate-x-4"
+              class="relative h-4 w-7 shrink-0 rounded-full bg-transparency-white-t20 transition-colors peer-checked:bg-primary-comfy-yellow peer-focus-visible:ring-3 peer-focus-visible:ring-primary-comfy-yellow/50 after:absolute after:top-0.5 after:left-0.5 after:size-3 after:rounded-full after:bg-primary-comfy-ink after:transition-transform peer-checked:after:translate-x-3"
               aria-hidden="true"
             />
             {{ t('cinematic.scene.enhance', locale) }}
-            <span class="text-xs text-primary-warm-gray">
+            <span class="truncate text-primary-warm-gray">
               {{ t('cinematic.scene.enhanceHint', locale) }}
             </span>
           </label>
         </div>
       </section>
 
-      <section class="flex flex-col gap-2.5">
-        <h2
-          class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
-        >
-          {{ t('cinematic.section.camera', locale) }}
-        </h2>
+      <section class="flex flex-col gap-2.5 p-4">
+        <h2 :class="labelClass">{{ t('cinematic.section.camera', locale) }}</h2>
         <button
           type="button"
           :aria-expanded="openPicker === 'camera'"
           aria-haspopup="dialog"
           :class="
             cn(
-              'flex items-center gap-3 rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4 p-3 text-left hover:border-transparency-white-t20',
-              openPicker === 'camera' && 'border-primary-warm-white/60'
+              cardClass,
+              openPicker === 'camera' && 'border-primary-warm-white'
             )
           "
           @click="emit('open', 'camera')"
         >
           <span
-            class="grid size-11 shrink-0 place-items-center rounded-xl bg-transparency-white-t8 text-primary-warm-white"
+            class="grid size-10 shrink-0 place-items-center rounded-xl bg-transparency-white-t8 text-primary-warm-white"
           >
             <Camera class="size-5" aria-hidden="true" />
           </span>
           <span class="flex min-w-0 flex-1 flex-col gap-1">
-            <span class="text-base text-primary-warm-white">
+            <span class="text-sm font-semibold text-primary-warm-white">
               {{ t(cameraBody.label, locale) }}
             </span>
             <span
-              class="flex flex-wrap gap-1.5 text-xs text-primary-comfy-canvas"
+              class="flex flex-wrap gap-1 text-[11px] text-primary-comfy-canvas"
             >
               <span
                 v-for="spec in cameraSpecs"
@@ -294,13 +294,11 @@ const segmentClass: Record<PromptSegment['source'], string> = {
         </button>
       </section>
 
-      <section class="flex flex-col gap-2.5">
-        <h2
-          class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
-        >
+      <section class="flex flex-col gap-2.5 p-4">
+        <h2 :class="labelClass">
           {{ t('cinematic.section.direction', locale) }}
         </h2>
-        <div class="grid grid-cols-2 gap-2.5">
+        <div class="grid grid-cols-2 gap-2">
           <button
             v-for="tile in tiles"
             :key="tile.key"
@@ -309,7 +307,7 @@ const segmentClass: Record<PromptSegment['source'], string> = {
             :aria-expanded="openPicker === tile.key"
             :class="
               cn(
-                'group relative flex aspect-8/5 flex-col justify-end overflow-hidden rounded-2xl bg-transparency-white-t4 p-2.5 text-left ring-1 ring-transparency-white-t8 hover:ring-transparency-white-t20',
+                'group relative flex aspect-8/5 flex-col justify-end overflow-hidden rounded-xl bg-transparency-white-t4 p-2.5 text-left ring-1 ring-transparency-white-t20 ring-inset hover:ring-primary-warm-white/50',
                 openPicker === tile.key && 'ring-2 ring-primary-warm-white'
               )
             "
@@ -319,14 +317,14 @@ const segmentClass: Record<PromptSegment['source'], string> = {
               v-if="tile.option.preview"
               :src="tile.option.preview"
               alt=""
-              class="absolute inset-0 size-full object-cover opacity-70 transition-opacity group-hover:opacity-90"
+              class="absolute inset-0 size-full object-cover opacity-75 transition-opacity group-hover:opacity-100"
             />
             <span
-              class="absolute inset-0 bg-linear-to-t from-primary-comfy-ink/90 via-primary-comfy-ink/20 to-transparent"
+              class="absolute inset-0 bg-linear-to-t from-primary-comfy-ink via-primary-comfy-ink/30 to-transparent"
               aria-hidden="true"
             />
             <span
-              class="relative text-[11px] text-primary-comfy-canvas uppercase"
+              class="relative text-[10px] font-bold tracking-widest text-primary-comfy-canvas uppercase"
             >
               {{ tile.title }}
             </span>
@@ -342,13 +340,13 @@ const segmentClass: Record<PromptSegment['source'], string> = {
             :aria-expanded="openPicker === 'grade'"
             :class="
               cn(
-                'col-span-2 flex items-center gap-3 rounded-2xl bg-transparency-white-t4 p-2.5 text-left ring-1 ring-transparency-white-t8 hover:ring-transparency-white-t20',
+                'col-span-2 flex items-center gap-3 rounded-xl bg-transparency-white-t4 p-2 text-left ring-1 ring-transparency-white-t20 ring-inset hover:ring-primary-warm-white/50',
                 openPicker === 'grade' && 'ring-2 ring-primary-warm-white'
               )
             "
             @click="emit('open', 'grade')"
           >
-            <span class="flex h-9 w-24 shrink-0 overflow-hidden rounded-lg">
+            <span class="flex h-8 w-24 shrink-0 overflow-hidden rounded-lg">
               <span
                 v-for="(color, index) in grade.palette"
                 :key="index"
@@ -357,7 +355,9 @@ const segmentClass: Record<PromptSegment['source'], string> = {
               />
             </span>
             <span class="flex min-w-0 flex-1 flex-col">
-              <span class="text-[11px] text-primary-comfy-canvas uppercase">
+              <span
+                class="text-[10px] font-bold tracking-widest text-primary-comfy-canvas uppercase"
+              >
                 {{ t(gradeGroup.title, locale) }}
               </span>
               <span
@@ -374,69 +374,77 @@ const segmentClass: Record<PromptSegment['source'], string> = {
         </div>
       </section>
 
-      <section class="flex flex-col gap-2.5">
+      <section class="flex flex-col gap-2.5 p-4">
         <div class="flex items-center justify-between">
-          <h2
-            class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
-          >
+          <h2 :class="labelClass">
             {{ t('cinematic.section.references', locale) }}
           </h2>
-          <span class="text-xs text-primary-warm-gray">
+          <span class="text-[11px] text-primary-warm-gray">
             {{ t('cinematic.reference.optional', locale) }}
           </span>
         </div>
-        <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
-        <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
+        <div class="grid grid-cols-2 gap-2">
+          <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
+          <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
+        </div>
       </section>
     </div>
 
     <footer
-      class="flex flex-col gap-2.5 border-t border-transparency-white-t8 p-5"
+      class="flex flex-col gap-2.5 border-t border-transparency-white-t8 bg-primary-comfy-ink p-4"
     >
       <div class="grid grid-cols-[auto_1fr_1fr] gap-2">
         <div
-          class="flex h-11 items-center rounded-xl bg-transparency-white-t4"
+          class="flex h-10 items-center rounded-xl border border-transparency-white-t20"
           role="group"
           :aria-label="t('cinematic.output.takes', locale)"
         >
           <button
             type="button"
-            class="grid size-11 place-items-center text-primary-warm-gray hover:text-primary-warm-white disabled:opacity-40"
+            class="grid size-9 place-items-center text-primary-warm-gray hover:text-primary-warm-white disabled:opacity-40"
             :disabled="takes <= 1"
             :aria-label="t('cinematic.output.fewerTakes', locale)"
             @click="takes = takes - 1"
           >
-            <Minus class="size-4" aria-hidden="true" />
+            <Minus class="size-3.5" aria-hidden="true" />
           </button>
           <span
-            class="w-4 text-center text-base text-primary-warm-white tabular-nums"
+            class="w-4 text-center text-sm text-primary-warm-white tabular-nums"
           >
             {{ takes }}
           </span>
           <button
             type="button"
-            class="grid size-11 place-items-center text-primary-warm-gray hover:text-primary-warm-white disabled:opacity-40"
+            class="grid size-9 place-items-center text-primary-warm-gray hover:text-primary-warm-white disabled:opacity-40"
             :disabled="takes >= MAX_TAKES"
             :aria-label="t('cinematic.output.moreTakes', locale)"
             @click="takes = takes + 1"
           >
-            <Plus class="size-4" aria-hidden="true" />
+            <Plus class="size-3.5" aria-hidden="true" />
           </button>
         </div>
         <CinematicMenu
           v-model="aspectValue"
           :options="aspectOptions"
           :heading="t('cinematic.output.aspect', locale)"
-          trigger-class="h-11 justify-center gap-2 bg-transparency-white-t4 text-base text-primary-warm-white hover:bg-transparency-white-t8"
+          trigger-class="h-10 justify-center gap-1.5 border border-transparency-white-t20 text-sm text-primary-warm-white hover:border-primary-warm-white/50"
         >
+          <RectangleHorizontal
+            class="size-3.5 text-primary-warm-gray"
+            aria-hidden="true"
+          />
           {{ aspect }}
         </CinematicMenu>
         <CinematicMenu
           v-model="resolutionValue"
           :options="resolutionOptions"
           :heading="t('cinematic.output.resolution', locale)"
-          trigger-class="h-11 justify-center gap-2 bg-transparency-white-t4 text-base text-primary-warm-white hover:bg-transparency-white-t8"
+          trigger-class="h-10 justify-center gap-1.5 border border-transparency-white-t20 text-sm text-primary-warm-white hover:border-primary-warm-white/50"
         >
+          <Maximize
+            class="size-3.5 text-primary-warm-gray"
+            aria-hidden="true"
+          />
           {{ resolution }}
         </CinematicMenu>
       </div>
@@ -445,8 +453,7 @@ const segmentClass: Record<PromptSegment['source'], string> = {
         v-if="gate === 'signedOut'"
         as="a"
         :href="signInHref"
-        size="lg"
-        class="w-full"
+        class="h-12 w-full"
         @click="leaveForSignIn($event, signInHref)"
       >
         {{ t('workshop.run.signIn', locale) }}
@@ -460,7 +467,7 @@ const segmentClass: Record<PromptSegment['source'], string> = {
             )
           }}
         </p>
-        <Button size="lg" class="w-full" @click="requestWorkshopBuyCredits">
+        <Button class="h-12 w-full" @click="requestWorkshopBuyCredits">
           {{ t('workshop.run.buyCredits', locale) }}
         </Button>
       </template>
@@ -478,22 +485,20 @@ const segmentClass: Record<PromptSegment['source'], string> = {
       <Button
         v-else-if="rendering"
         variant="outline"
-        size="lg"
-        class="w-full"
+        class="h-12 w-full"
         @click="emit('cancel')"
       >
         {{ t('cinematic.output.cancel', locale) }}
       </Button>
       <Button
         v-else
-        size="lg"
-        class="w-full justify-between"
+        class="h-12 w-full justify-between px-5"
         :disabled="!canGenerate"
         data-testid="cinematic-generate"
         @click="emit('generate')"
       >
         {{ t('cinematic.output.generate', locale) }}
-        <span class="text-sm font-normal normal-case">
+        <span class="text-xs font-bold tracking-wider">
           {{ tPlural('cinematic.output.takeCount', takes, locale) }}
         </span>
       </Button>

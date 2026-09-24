@@ -48,7 +48,7 @@ const statusText = (take: Take) => {
 
 <template>
   <main
-    class="flex min-w-0 flex-1 flex-col bg-primary-comfy-ink"
+    class="flex min-w-0 flex-1 flex-col bg-black/25"
     :aria-label="t('cinematic.stage.label', locale)"
   >
     <div
@@ -83,7 +83,9 @@ const statusText = (take: Take) => {
           </figcaption>
         </figure>
 
-        <div class="flex w-full max-w-5xl items-center gap-2.5">
+        <div
+          class="flex max-w-full items-center gap-2.5 rounded-2xl border border-transparency-white-t8 bg-primary-comfy-ink/90 py-1.5 pr-1.5 pl-4 backdrop-blur-sm"
+        >
           <span class="text-[15px] font-semibold text-primary-warm-white">
             {{
               t('cinematic.stage.shot', locale).replace(
@@ -120,7 +122,7 @@ const statusText = (take: Take) => {
           <span class="truncate text-sm text-primary-warm-gray">
             {{ modelName(current.modelSlug) }} · {{ current.aspect }}
           </span>
-          <span class="flex-1" />
+          <span class="h-5 w-px bg-transparency-white-t8" aria-hidden="true" />
           <a
             v-if="current.status === 'done'"
             :href="current.output.url"
@@ -146,8 +148,13 @@ const statusText = (take: Take) => {
     <nav
       v-if="reel.takes.length"
       :aria-label="t('cinematic.stage.sequence', locale)"
-      class="flex h-24 shrink-0 items-center justify-center gap-3 overflow-x-auto px-10"
+      class="flex h-24 shrink-0 items-center gap-3 overflow-x-auto border-t border-transparency-white-t8 bg-primary-comfy-ink px-5"
     >
+      <span
+        class="mr-2 shrink-0 text-[11px] font-bold tracking-widest text-primary-warm-gray uppercase"
+      >
+        {{ t('cinematic.stage.sequence', locale) }}
+      </span>
       <button
         v-for="(take, index) in reel.takes"
         :key="take.id"

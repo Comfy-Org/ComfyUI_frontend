@@ -184,4 +184,17 @@ describe('CinematicStudio', () => {
       'Neon light'
     )
   })
+
+  it('opens the API request from the tool bar instead of a tab', async () => {
+    const user = renderStudio()
+    expect(screen.queryByRole('tablist')).toBeNull()
+
+    await user.click(screen.getByRole('button', { name: 'API' }))
+
+    expect(
+      await screen.findByRole('dialog', {
+        name: t('cinematic.api.title')
+      })
+    ).toBeInTheDocument()
+  })
 })
