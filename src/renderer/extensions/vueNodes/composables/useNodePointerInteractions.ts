@@ -47,6 +47,14 @@ export function useNodePointerInteractions(
     dragGuard.reset()
   }
 
+  /** No open sequence means an alt+clone drag, which bypasses onPointerdown. */
+  function ownsSequence(event: PointerEvent) {
+    return (
+      nodePointerSequenceId === null ||
+      nodePointerSequenceId === event.pointerId
+    )
+  }
+
   function onPointerdown(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event, isMiddlePointerInput)) return
 
@@ -58,6 +66,8 @@ export function useNodePointerInteractions(
       forwardEventToCanvas(event)
       return
     }
+
+    if (!ownsSequence(event)) return
 
     nodePointerSequenceId = event.pointerId
 
@@ -74,6 +84,8 @@ export function useNodePointerInteractions(
 
   function onPointermove(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event, isMiddleButtonHeld)) return
+
+    if (!ownsSequence(event)) return
 
     if (agentNodeSelectionStore.isActive) return
 
@@ -136,17 +148,24 @@ export function useNodePointerInteractions(
 
   function onPointerup(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event, isMiddleButtonEvent)) return
+    const isOwner = ownsSequence(event)
     const shouldToggleSelection = nodePointerSequenceId === event.pointerId
     if (shouldToggleSelection) endPointerSequence()
     // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
     const canHandlePointer = shouldHandleNodePointerEvents.value
     if (!canHandlePointer) {
       forwardEventToCanvas(event)
-      if (hasDraggingStarted || layoutStore.isDraggingVueNodes.value) {
+      if (
+        isOwner &&
+        (hasDraggingStarted || layoutStore.isDraggingVueNodes.value)
+      ) {
         safeDragEnd(event)
       }
       return
     }
+
+    if (!isOwner) return
+
     const wasDragging = layoutStore.isDraggingVueNodes.value
 
     if (hasDraggingStarted || wasDragging) {

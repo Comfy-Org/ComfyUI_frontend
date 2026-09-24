@@ -2,34 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type { LightboxItem } from '@/types/lightboxItem'
 import type { AugmentedResultItem } from '@/utils/resultItem'
-import {
-  fileLightboxItem,
-  findLightboxIndexByUrl,
-  resultItemsToLightboxItems
-} from '@/utils/lightboxItem'
-
-describe('findLightboxIndexByUrl', () => {
-  const items: LightboxItem[] = [
-    { kind: 'image', url: 'a' },
-    { kind: 'image', url: 'b' },
-    { kind: 'image', url: 'c' }
-  ]
-
-  it.for([
-    ['a', 0],
-    ['b', 1],
-    ['c', 2]
-  ] as const satisfies readonly (readonly [string, number])[])(
-    'resolves %s to index %i',
-    ([url, expected]) => {
-      expect(findLightboxIndexByUrl(items, url)).toBe(expected)
-    }
-  )
-
-  it('reports a miss rather than silently selecting the first item', () => {
-    expect(findLightboxIndexByUrl(items, 'dropped')).toBeUndefined()
-  })
-})
+import { fileLightboxItem, resultLightboxEntries } from '@/utils/lightboxItem'
 
 describe('fileLightboxItem', () => {
   it.for([
@@ -73,7 +46,7 @@ describe('fileLightboxItem', () => {
   })
 })
 
-describe('resultItemsToLightboxItems', () => {
+describe('resultLightboxEntries', () => {
   const record = (
     over: Partial<AugmentedResultItem> & { filename: string }
   ): AugmentedResultItem => ({
@@ -85,29 +58,28 @@ describe('resultItemsToLightboxItems', () => {
     ...over
   })
 
-  it('drops unrenderable records so navigation never lands on a blank frame', () => {
-    const items = resultItemsToLightboxItems([
+  it('drops unrenderable records and keeps each item paired with its source', () => {
+    const renderable = [
       record({ filename: 'a.png', mediaType: 'images' }),
-      record({ filename: 'mesh.glb' }),
       record({ filename: 'b.png', mediaType: 'images' })
+    ]
+
+    const entries = resultLightboxEntries([
+      renderable[0],
+      record({ filename: 'mesh.glb' }),
+      renderable[1]
     ])
 
-    expect(items).toEqual([
-      { kind: 'image', url: '/api/view?filename=a.png', alt: 'a.png' },
-      { kind: 'image', url: '/api/view?filename=b.png', alt: 'b.png' }
+    expect(entries).toEqual([
+      {
+        source: renderable[0],
+        item: { kind: 'image', url: '/api/view?filename=a.png', alt: 'a.png' }
+      },
+      {
+        source: renderable[1],
+        item: { kind: 'image', url: '/api/view?filename=b.png', alt: 'b.png' }
+      }
     ])
-  })
-
-  it('keeps the advanced preview url for videos', () => {
-    const [item] = resultItemsToLightboxItems([
-      record({ filename: 'clip.mp4', mediaType: 'video' })
-    ])
-
-    expect(item).toMatchObject({ kind: 'video', mimeType: 'video/mp4' })
-    expect(item).toHaveProperty(
-      'advancedPreviewUrl',
-      expect.stringContaining('/viewvideo?filename=clip.mp4')
-    )
   })
 
   it.for([
@@ -122,21 +94,34 @@ describe('resultItemsToLightboxItems', () => {
       { kind: 'text', url: '/api/view?filename=notes.txt', content: 'inline' }
     ],
     [
-      'clip.mp4',
-      { mediaType: 'video' },
-      {
-        kind: 'video',
-        url: '/api/view?filename=clip.mp4',
-        mimeType: 'video/mp4'
-      }
+      'a.png',
+      { mediaType: 'images' },
+      { kind: 'image', url: '/api/view?filename=a.png', alt: 'a.png' }
     ]
   ] as const satisfies readonly (readonly [
     string,
     Partial<AugmentedResultItem>,
     LightboxItem
   ])[])('adapts %s to its rendering kind', ([filename, over, expected]) => {
-    expect(
-      resultItemsToLightboxItems([record({ filename, ...over })])
-    ).toMatchObject([expected])
+    const entries = resultLightboxEntries([record({ filename, ...over })])
+
+    expect(entries.map(({ item }) => item)).toEqual([expected])
+  })
+
+  it('adapts a video with both its source type and advanced preview url', () => {
+    const entries = resultLightboxEntries([
+      record({ filename: 'clip.mp4', mediaType: 'video' })
+    ])
+
+    expect(entries.map(({ item }) => item)).toEqual([
+      {
+        kind: 'video',
+        url: '/api/view?filename=clip.mp4',
+        mimeType: 'video/mp4',
+        advancedPreviewUrl: expect.stringContaining(
+          '/viewvideo?filename=clip.mp4'
+        )
+      }
+    ])
   })
 })

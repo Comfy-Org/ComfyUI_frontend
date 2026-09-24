@@ -174,4 +174,23 @@ describe('useResultGallery', () => {
     ])
     expect(galleryActiveIndex.value).toBe(0)
   })
+
+  it('stays closed rather than opening another job when the clicked preview is unrenderable', async () => {
+    const job = createMockJob('task-glb', 3)
+    const clickedTask = new TaskItemImpl(job, {}, [
+      createResultItem('mesh.glb', false)
+    ])
+    clickedTask.loadFullOutputs = async () => new TaskItemImpl(job, {}, [])
+
+    const otherTask = createTask(createResultItem('other-job.png'))
+
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => [clickedTask, otherTask]
+    )
+
+    await onViewItem(createJobViewItem('job-glb', clickedTask))
+
+    expect(galleryItems.value).toEqual([])
+    expect(galleryActiveIndex.value).toBeNull()
+  })
 })

@@ -1,30 +1,13 @@
 <template>
-  <KeepAlive :max="RETAINED_VIDEO_COUNT">
-    <LightboxVideo
-      v-if="item.kind === 'video'"
-      :key="item.url"
-      :url="item.url"
-      :mime-type="item.mimeType"
-      :advanced-preview-url="item.advancedPreviewUrl"
-    />
+  <KeepAlive :max="RETAINED_VIDEO_COUNT" :include="RETAINED_COMPONENT">
+    <component :is="rendered.is" :key="item.url" v-bind="rendered.props" />
   </KeepAlive>
-  <ComfyImage
-    v-if="item.kind === 'image'"
-    :key="item.url"
-    :src="item.url"
-    :contain="false"
-    :alt="item.alt ?? ''"
-    class="size-auto max-h-[90vh] max-w-[90vw] object-contain"
-  />
-  <LightboxAudio v-if="item.kind === 'audio'" :url="item.url" />
-  <LightboxText
-    v-if="item.kind === 'text'"
-    :url="item.url"
-    :content="item.content"
-  />
 </template>
 
 <script setup lang="ts">
+import type { Component } from 'vue'
+import { computed } from 'vue'
+
 import ComfyImage from '@/components/common/ComfyImage.vue'
 import type { LightboxItem } from '@/types/lightboxItem'
 
@@ -37,4 +20,44 @@ const { item } = defineProps<{
 }>()
 
 const RETAINED_VIDEO_COUNT = 3
+const RETAINED_COMPONENT = 'LightboxVideo'
+const IMAGE_CLASS = 'size-auto max-h-[90vh] max-w-[90vw] object-contain'
+
+const rendered = computed<{
+  is: Component
+  props: Record<string, unknown>
+}>(() => {
+  switch (item.kind) {
+    case 'image':
+      return {
+        is: ComfyImage,
+        props: {
+          src: item.url,
+          contain: false,
+          alt: item.alt ?? '',
+          class: IMAGE_CLASS
+        }
+      }
+    case 'video':
+      return {
+        is: LightboxVideo,
+        props: {
+          url: item.url,
+          mimeType: item.mimeType,
+          advancedPreviewUrl: item.advancedPreviewUrl
+        }
+      }
+    case 'audio':
+      return { is: LightboxAudio, props: { url: item.url } }
+    case 'text':
+      return {
+        is: LightboxText,
+        props: { url: item.url, content: item.content }
+      }
+    default: {
+      const unhandledKind: never = item
+      return unhandledKind
+    }
+  }
+})
 </script>

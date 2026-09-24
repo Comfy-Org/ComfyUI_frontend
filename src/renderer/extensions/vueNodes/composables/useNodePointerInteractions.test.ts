@@ -309,7 +309,6 @@ describe('useNodePointerInteractions', () => {
     )
     vi.mocked(handleNodeSelect).mockClear()
 
-    // No pointerdown here: a child stops it, yet the move still bubbles up.
     pointerHandlers.onPointermove(
       createPointerEvent('pointermove', {
         clientX: 200,
@@ -322,9 +321,9 @@ describe('useNodePointerInteractions', () => {
     expect(layoutStore.isDraggingVueNodes.value).toBe(false)
   })
 
-  it('keeps dragging with the pointer that started it when a second contact lands', () => {
+  it('denies a second contact any control over the active drag', () => {
     const { pointerHandlers } = useNodePointerInteractions(testNodeState)
-    const { handleDrag } = useNodeDrag()
+    const { startDrag, handleDrag, endDrag } = useNodeDrag()
 
     pointerHandlers.onPointerdown(
       createPointerEvent('pointerdown', { pointerId: 1 })
@@ -337,10 +336,31 @@ describe('useNodePointerInteractions', () => {
         buttons: 1
       })
     )
+    expect(layoutStore.isDraggingVueNodes.value).toBe(true)
+
+    vi.mocked(startDrag).mockClear()
+    vi.mocked(handleDrag).mockClear()
+    vi.mocked(endDrag).mockClear()
+
     pointerHandlers.onPointerdown(
       createPointerEvent('pointerdown', { pointerId: 2 })
     )
-    vi.mocked(handleDrag).mockClear()
+    pointerHandlers.onPointermove(
+      createPointerEvent('pointermove', {
+        pointerId: 2,
+        clientX: 300,
+        clientY: 300,
+        buttons: 1
+      })
+    )
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { pointerId: 2 })
+    )
+
+    expect(startDrag).not.toHaveBeenCalled()
+    expect(handleDrag).not.toHaveBeenCalled()
+    expect(endDrag).not.toHaveBeenCalled()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(true)
 
     pointerHandlers.onPointermove(
       createPointerEvent('pointermove', {
@@ -350,16 +370,21 @@ describe('useNodePointerInteractions', () => {
         buttons: 1
       })
     )
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { pointerId: 1 })
+    )
 
     expect(handleDrag).toHaveBeenCalled()
-    layoutStore.isDraggingVueNodes.value = false
+    expect(endDrag).toHaveBeenCalled()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
   })
 
   it('carries a drag that was started without a pointerdown, as alt+clone does', () => {
     const { pointerHandlers } = useNodePointerInteractions(testNodeState)
-    const { handleDrag } = useNodeDrag()
+    const { handleDrag, endDrag } = useNodeDrag()
 
     vi.mocked(handleDrag).mockClear()
+    vi.mocked(endDrag).mockClear()
     layoutStore.isDraggingVueNodes.value = true
 
     pointerHandlers.onPointermove(
@@ -370,9 +395,13 @@ describe('useNodePointerInteractions', () => {
         buttons: 1
       })
     )
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { pointerId: 7 })
+    )
 
     expect(handleDrag).toHaveBeenCalled()
-    layoutStore.isDraggingVueNodes.value = false
+    expect(endDrag).toHaveBeenCalled()
+    expect(layoutStore.isDraggingVueNodes.value).toBe(false)
   })
 
   it('on ctrl+click: calls toggleNodeSelectionAfterPointerUp on pointer up (not pointer down)', async () => {

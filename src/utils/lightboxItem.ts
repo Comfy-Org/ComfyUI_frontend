@@ -13,14 +13,19 @@ import {
 } from '@/utils/resultItem'
 import { resultItemUrl, vhsAdvancedPreviewUrl } from '@/utils/resultItemUrl'
 
-export function isLightboxRenderableFilename(filename: string): boolean {
-  const mediaType = getMediaTypeFromFilename(filename)
-  return (
-    mediaType === 'image' ||
-    mediaType === 'video' ||
-    mediaType === 'audio' ||
-    mediaType === 'text'
-  )
+export interface LightboxEntry<TSource> {
+  readonly source: TSource
+  readonly item: LightboxItem
+}
+
+export function toLightboxEntries<TSource>(
+  sources: readonly TSource[],
+  adapt: (source: TSource) => LightboxItem | undefined
+): LightboxEntry<TSource>[] {
+  return sources.flatMap((source) => {
+    const item = adapt(source)
+    return item ? [{ source, item }] : []
+  })
 }
 
 export function fileLightboxItem(
@@ -67,23 +72,8 @@ function resultItemToLightboxItem(
   return undefined
 }
 
-/**
- * Drops records the lightbox cannot render, so navigation never lands on a
- * blank frame. Callers must take their selected index from the result.
- */
-export function resultItemsToLightboxItems(
+export function resultLightboxEntries(
   items: readonly AugmentedResultItem[]
-): LightboxItem[] {
-  return items.flatMap((item) => {
-    const lightboxItem = resultItemToLightboxItem(item)
-    return lightboxItem ? [lightboxItem] : []
-  })
-}
-
-export function findLightboxIndexByUrl(
-  items: readonly LightboxItem[],
-  url: string
-): number | undefined {
-  const index = items.findIndex((item) => item.url === url)
-  return index >= 0 ? index : undefined
+): LightboxEntry<AugmentedResultItem>[] {
+  return toLightboxEntries(items, resultItemToLightboxItem)
 }

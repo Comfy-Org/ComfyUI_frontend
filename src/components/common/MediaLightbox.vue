@@ -1,7 +1,7 @@
 <template>
   <DialogRoot :open="isOpen" @update:open="setOpen">
     <DialogPortal>
-      <DialogOverlay class="bg-black/90" />
+      <DialogOverlay class="bg-media-scrim" />
       <DialogContent
         v-if="activeItem"
         aria-modal="true"

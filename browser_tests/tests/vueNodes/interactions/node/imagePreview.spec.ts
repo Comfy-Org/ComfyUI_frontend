@@ -193,7 +193,6 @@ async function countColumns(locator: Locator) {
   })
 }
 
-/** Returns the whole sequence so one assertion names the press that escaped. */
 async function pressAndTrackFocus(
   comfyPage: ComfyPage,
   dialog: Locator,
@@ -288,7 +287,7 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
 
       await node.imageGrid
         .getByRole('button', { name: 'View image 3 of 4' })
-        .dblclick()
+        .dblclick({ delay: 5 })
 
       const lightbox = comfyPage.page.getByRole('dialog', { name: 'Gallery' })
       await expect(lightbox).toBeVisible()
@@ -349,7 +348,7 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
       await test.step('Double-click a cell the action bar overlaps', async () => {
         await node.imageGrid
           .getByRole('button', { name: 'View image 2 of 16' })
-          .dblclick()
+          .dblclick({ delay: 5 })
 
         await expect(lightbox).toBeVisible()
       })
@@ -397,7 +396,7 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         await node.imagePreview.getByRole('region').hover()
         await comfyPage.page
           .getByRole('button', { name: 'Open in lightbox' })
-          .dblclick()
+          .dblclick({ delay: 5 })
       })
 
       await test.step('The second click does not dismiss it', async () => {
@@ -432,7 +431,7 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
 
           await node.imageGrid
             .getByRole('button', { name: 'View image 3 of 4' })
-            .dblclick()
+            .dblclick({ delay: 5 })
         })
 
         const lightbox = comfyPage.page.getByRole('dialog', { name: 'Gallery' })

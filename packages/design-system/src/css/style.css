@@ -422,6 +422,8 @@
 
 @theme inline {
   --color-backdrop: var(--backdrop);
+  /* Media viewers stay dark in both themes so artwork is judged on its own. */
+  --color-media-scrim: rgb(0 0 0 / 0.9);
   --color-button-active-surface: var(--button-active-surface);
   --color-button-hover-surface: var(--button-hover-surface);
   --color-button-icon: var(--button-icon);
