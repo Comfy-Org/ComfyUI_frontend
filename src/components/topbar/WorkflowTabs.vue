@@ -11,7 +11,7 @@
       ref="tabStripRef"
       class="no-drag scrollbar-thin scrollbar-thumb-alpha-smoke-500-50 scrollbar-track-transparent overflow-x-auto overflow-y-hidden"
       @wheel="handleWheel"
-      @transitionend="revealActiveTabAfterResize"
+      @transitionend="handleTabResize"
     >
       <Tabs
         class="h-full"
@@ -237,7 +237,8 @@ const onCloseWorkflow = async (option: WorkflowOption) => {
 }
 
 function handleWheel(event: WheelEvent) {
-  tabStripRef.value?.scrollBy({ left: event.deltaX || event.deltaY })
+  if (event.deltaX) return
+  tabStripRef.value?.scrollBy({ left: event.deltaY })
 }
 
 async function revealActiveTab() {
@@ -245,10 +246,6 @@ async function revealActiveTab() {
   tabStripRef.value
     ?.querySelector('[role="tab"][aria-selected="true"]')
     ?.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-}
-
-function revealActiveTabAfterResize(event: TransitionEvent) {
-  if (event.propertyName === 'flex-shrink') void revealActiveTab()
 }
 
 watch(
@@ -260,6 +257,12 @@ watch(
 const { isOverflowing, checkOverflow } = useOverflowObserver(tabStripRef)
 
 whenever(isOverflowing, () => void revealActiveTab())
+
+function handleTabResize(event: TransitionEvent) {
+  if (event.propertyName !== 'flex-shrink') return
+  checkOverflow()
+  void revealActiveTab()
+}
 
 onUpdated(checkOverflow)
 </script>

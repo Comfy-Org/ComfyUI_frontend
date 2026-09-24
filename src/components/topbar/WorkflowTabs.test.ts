@@ -597,15 +597,17 @@ describe('WorkflowTabs selection and overflow', () => {
   })
 
   it.for([
-    { propertyName: 'flex-shrink', reveals: true },
-    { propertyName: 'background-color', reveals: false }
+    { propertyName: 'flex-shrink', resizesTabs: true },
+    { propertyName: 'background-color', resizesTabs: false }
   ])(
-    'reveals the active tab after a $propertyName transition: $reveals',
-    async ({ propertyName, reveals }) => {
+    'treats the end of a $propertyName transition as a tab resize: $resizesTabs',
+    async ({ propertyName, resizesTabs }) => {
       const scrollIntoView = vi.spyOn(HTMLElement.prototype, 'scrollIntoView')
       renderComponent()
+      await waitFor(() => expect(overflowObservers).toHaveLength(1))
       await nextTick()
       scrollIntoView.mockClear()
+      overflowObservers[0].checkOverflow.mockClear()
 
       screen.getByRole('tab', { name: 'Second workflow' }).dispatchEvent(
         Object.assign(new Event('transitionend', { bubbles: true }), {
@@ -614,7 +616,10 @@ describe('WorkflowTabs selection and overflow', () => {
       )
       await nextTick()
 
-      expect(scrollIntoView).toHaveBeenCalledTimes(reveals ? 1 : 0)
+      expect(overflowObservers[0].checkOverflow).toHaveBeenCalledTimes(
+        resizesTabs ? 1 : 0
+      )
+      expect(scrollIntoView).toHaveBeenCalledTimes(resizesTabs ? 1 : 0)
     }
   )
 })

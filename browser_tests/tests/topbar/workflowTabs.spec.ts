@@ -348,16 +348,17 @@ test.describe('Workflow tabs', () => {
     async ({ comfyPage }) => {
       const topbar = comfyPage.menu.topbar
       await topbar.openBlankWorkflows(2)
-      const tab = topbar.getTab(1)
+      const tab = topbar.getWorkflowTab('Unsaved Workflow (2)')
+      const popover = topbar.getWorkflowPopover('Unsaved Workflow (2)')
 
       await tab.hover()
 
-      await expect(topbar.workflowPopover).toBeVisible()
+      await expect(popover).toBeVisible()
       await expect
         .poll(async () => {
           const [tabBox, popoverBox] = await Promise.all([
             tab.boundingBox(),
-            topbar.workflowPopover.boundingBox()
+            popover.boundingBox()
           ])
           return tabBox && popoverBox
             ? Math.abs(

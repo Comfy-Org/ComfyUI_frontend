@@ -35,19 +35,26 @@
           >
             {{ workflowOption.workflow.filename }}
           </span>
-          <span class="relative size-4 shrink-0">
+          <span
+            :class="
+              cn(
+                'relative size-4 shrink-0 group-focus-within/tab:invisible',
+                revealsCloseOnHover && 'group-hover/tab:invisible'
+              )
+            "
+          >
             <i
               v-if="isAgentEditing"
               role="img"
               :aria-label="t('g.agentWorking')"
-              class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-smoke-800 group-focus-within/tab:hidden group-hover/tab:hidden motion-safe:animate-spin"
+              class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-smoke-800 motion-safe:animate-spin"
             />
             <span
               v-else-if="showUnseenAgentDot"
               role="img"
               :aria-label="t('g.agentModified')"
               data-testid="agent-modified-indicator"
-              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background group-focus-within/tab:hidden group-hover/tab:hidden"
+              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background"
             />
             <i
               v-else-if="workflowStatus"
@@ -55,7 +62,7 @@
               :aria-label="workflowStatusLabel"
               :class="
                 cn(
-                  'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-focus-within/tab:hidden group-hover/tab:hidden',
+                  'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2',
                   workflowStatusIconClasses[workflowStatus]
                 )
               "
@@ -65,7 +72,7 @@
               data-testid="workflow-dirty-indicator"
               :class="
                 cn(
-                  'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full group-focus-within/tab:hidden group-hover/tab:hidden',
+                  'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full',
                   isActiveTab ? 'bg-base-foreground' : 'bg-smoke-800'
                 )
               "
@@ -77,7 +84,7 @@
             cn(
               'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 text-smoke-800 group-focus-within/tab:visible',
               isActiveTab && !hasStatusIndicator ? 'visible' : 'invisible',
-              (isActiveTab || !compact) && 'group-hover/tab:visible'
+              revealsCloseOnHover && 'group-hover/tab:visible'
             )
           "
           variant="muted-textonly"
@@ -258,6 +265,8 @@ const workflowStatusLabel = computed(() =>
     ? t(WORKFLOW_STATUS_I18N_KEYS[workflowStatus.value])
     : undefined
 )
+
+const revealsCloseOnHover = computed(() => isActiveTab.value || !props.compact)
 
 const hasStatusIndicator = computed(
   () =>
