@@ -131,7 +131,7 @@ export const MESSAGE_DONE_EVENT: AgentWsEvent = {
   }
 }
 
-/** The two options every `permission` ask carries. */
+/** Allow/Deny: the options the local agent's permission prompt carries as an `ask_user`. */
 export const PERMISSION_ASK_OPTIONS = [
   { id: 'allow', label: 'Allow' },
   { id: 'deny', label: 'Deny' }

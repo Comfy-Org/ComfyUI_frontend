@@ -18,8 +18,6 @@ export class AgentPanel {
   public readonly attachmentChips: Locator
   public readonly composer: Locator
   public readonly sendButton: Locator
-  public readonly permissionAllowButton: Locator
-  public readonly permissionDenyButton: Locator
   public readonly askSubmitButton: Locator
   public readonly askOtherInput: Locator
   public readonly askCheckboxes: Locator
@@ -52,14 +50,6 @@ export class AgentPanel {
     this.composer = this.root.getByRole('textbox', { name: /^Describe ideas/ })
     this.sendButton = this.root.getByRole('button', {
       name: enMessages.agent.send,
-      exact: true
-    })
-    this.permissionAllowButton = this.root.getByRole('button', {
-      name: enMessages.agent.permissionAsk.allow,
-      exact: true
-    })
-    this.permissionDenyButton = this.root.getByRole('button', {
-      name: enMessages.agent.permissionAsk.deny,
       exact: true
     })
     this.askSubmitButton = this.root.getByRole('button', {
