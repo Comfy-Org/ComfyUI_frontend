@@ -8,11 +8,10 @@ import type {
   DirectionGroup,
   DirectionPart
 } from '../../../lib/workshop/cinematic-studio/catalog'
-import { directionOption } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicOptionGrid from './CinematicOptionGrid.vue'
 import CinematicOptionList from './CinematicOptionList.vue'
+import CinematicPickerTabs from './CinematicPickerTabs.vue'
 import CinematicPopover from './CinematicPopover.vue'
 
 const {
@@ -50,46 +49,15 @@ function choose(part: DirectionPart, id: string) {
 
 <template>
   <CinematicPopover :title :locale @close="emit('close')">
-    <div
+    <CinematicPickerTabs
       v-if="multiple"
-      :class="
-        cn(
-          'mb-3 grid gap-1 rounded-xl bg-transparency-white-t4 p-1',
-          tabbed ? 'grid-cols-5' : 'grid-cols-4 sm:hidden'
-        )
-      "
-    >
-      <button
-        v-for="group in groups"
-        :key="group.part"
-        type="button"
-        :aria-pressed="activePart === group.part"
-        :class="
-          cn(
-            'flex min-w-0 flex-col items-center justify-center rounded-lg px-1 py-1.5 text-xs font-semibold',
-            activePart === group.part
-              ? 'bg-primary-warm-white text-primary-comfy-ink'
-              : 'text-primary-comfy-canvas hover:bg-transparency-white-t8'
-          )
-        "
-        @click="activePart = group.part"
-      >
-        <span class="max-w-full truncate">{{ tc(group.title, locale) }}</span>
-        <span
-          v-if="tabbed"
-          :class="
-            cn(
-              'max-w-full truncate text-[11px] font-normal',
-              activePart === group.part
-                ? 'text-primary-comfy-ink/70'
-                : 'text-primary-warm-gray'
-            )
-          "
-        >
-          {{ tc(directionOption(group.part, direction).label, locale) }}
-        </span>
-      </button>
-    </div>
+      v-model="activePart"
+      :groups
+      :direction
+      :show-choice="tabbed"
+      :locale
+      :class="cn('mb-3', tabbed ? 'grid-cols-5' : 'grid-cols-4 sm:hidden')"
+    />
     <CinematicOptionGrid
       v-if="tabbed"
       :key="activeGroup.part"
