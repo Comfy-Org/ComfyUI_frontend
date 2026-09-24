@@ -6,7 +6,6 @@ import type { TurnId } from '../../../schemas/agentApiSchema'
 import { createAgentEventTransport } from '../../../services/agent/agentEventTransport'
 import type {
   AssistantMessage,
-  PermissionAskPart,
   RunApprovalPart
 } from '../../../services/agent/agentMessageParts'
 import { createAssistantMessage } from '../../../services/agent/agentMessageParts'
@@ -661,106 +660,4 @@ describe('AgentMessage run approval', () => {
       }
     }
   )
-})
-
-describe('AgentMessage permission ask', () => {
-  const permissionMessage = (
-    ask: Partial<PermissionAskPart> = {}
-  ): AssistantMessage => ({
-    id: 'msg-permission' as TurnId,
-    role: 'assistant',
-    parts: [
-      { type: 'text', text: 'Let me look.', state: 'done' },
-      {
-        type: 'permissionAsk',
-        askId: 'turn-1:call-1',
-        requestId: '0123456789abcdef',
-        targetKind: 'path',
-        target: 'C:\\Users\\me\\models',
-        reason: 'List the checkpoints you mentioned',
-        ...ask
-      }
-    ],
-    streaming: true,
-    thinking: false
-  })
-
-  // i18n interpolation escapes parameters, so a reason carrying the model's
-  // own punctuation used to read `&quot;hello&quot;` on the card.
-  it("shows the model's punctuation in the reason literally", () => {
-    render(AgentMessage, {
-      props: {
-        message: permissionMessage({
-          reason:
-            'Create hello.txt containing the word "hello" & <nothing> else'
-        })
-      },
-      global: { plugins: [i18n] }
-    })
-
-    expect(
-      screen.getByText(
-        'Why: Create hello.txt containing the word "hello" & <nothing> else'
-      )
-    ).toBeInTheDocument()
-  })
-
-  it('shows the folder, the reason, and emits deny and allow without a working spinner', async () => {
-    const { emitted } = render(AgentMessage, {
-      props: { message: permissionMessage() },
-      global: { plugins: [i18n] }
-    })
-
-    expect(
-      screen.getByText('The agent wants to reach a folder on this computer:')
-    ).toBeInTheDocument()
-    expect(screen.getByText('C:\\Users\\me\\models')).toBeInTheDocument()
-    expect(
-      screen.getByText('Why: List the checkpoints you mentioned')
-    ).toBeInTheDocument()
-    expect(screen.queryByText('Working...')).not.toBeInTheDocument()
-
-    await userEvent.click(screen.getByRole('button', { name: 'Deny' }))
-    await userEvent.click(screen.getByRole('button', { name: 'Allow' }))
-
-    expect(emitted().answerAsk).toEqual([
-      ['turn-1:call-1', 'deny'],
-      ['turn-1:call-1', 'allow']
-    ])
-  })
-
-  it('names a network host and omits the reason when the agent gave none', () => {
-    render(AgentMessage, {
-      props: {
-        message: permissionMessage({
-          targetKind: 'host',
-          target: 'example.org',
-          reason: undefined
-        })
-      },
-      global: { plugins: [i18n] }
-    })
-
-    expect(
-      screen.getByText('The agent wants to connect to a website:')
-    ).toBeInTheDocument()
-    expect(screen.getByText('example.org')).toBeInTheDocument()
-    expect(screen.queryByText(/^Why:/)).not.toBeInTheDocument()
-  })
-
-  it('disables both actions while the answer is in flight', () => {
-    render(AgentMessage, {
-      props: {
-        message: permissionMessage(),
-        answeringAskIds: new Set(['turn-1:call-1'])
-      },
-      global: { plugins: [i18n] }
-    })
-
-    for (const name of ['Deny', 'Allow']) {
-      const button = screen.getByRole('button', { name })
-      expect(button).toBeDisabled()
-      expect(button).toHaveAttribute('aria-busy', 'true')
-    }
-  })
 })

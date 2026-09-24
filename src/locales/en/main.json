@@ -5224,13 +5224,6 @@
       "cancel": "Cancel",
       "run": "Run"
     },
-    "permissionAsk": {
-      "leadPath": "The agent wants to reach a folder on this computer:",
-      "leadHost": "The agent wants to connect to a website:",
-      "reason": "Why: {reason}",
-      "deny": "Deny",
-      "allow": "Allow"
-    },
     "dismiss": "Dismiss",
     "latest": "Latest",
     "copyUnavailable": "Only the current conversation can be copied in this version",

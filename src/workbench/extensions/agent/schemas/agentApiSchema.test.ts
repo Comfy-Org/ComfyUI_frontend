@@ -301,37 +301,6 @@ describe('agentApiSchema contract subtleties', () => {
     })
   })
 
-  it('parses the permission ask with its typed target context', () => {
-    const parsed = zAgentWsEvent.parse({
-      type: 'agent_ask',
-      data: {
-        thread_id: 'th-1',
-        message_id: 'message-1',
-        ask_id: 'turn-1:call-1',
-        kind: 'permission',
-        context: {
-          request_id: '0123456789abcdef',
-          target_kind: 'path',
-          target: 'C:\\Users\\me\\models',
-          reason: 'List the checkpoints'
-        },
-        prompt: 'Allow the agent to reach the folder C:\\Users\\me\\models?',
-        options: [
-          { id: 'allow', label: 'Allow' },
-          { id: 'deny', label: 'Deny' }
-        ],
-        min_selections: 1,
-        max_selections: 1,
-        allow_other: false
-      }
-    })
-
-    expect(parsed.data).toMatchObject({
-      kind: 'permission',
-      context: { target_kind: 'path', target: 'C:\\Users\\me\\models' }
-    })
-  })
-
   it('parses agent_active_tab with an optional stable locator and rejects a missing workflow_id', () => {
     const parsed = zAgentWsEvent.safeParse({
       type: 'agent_active_tab',

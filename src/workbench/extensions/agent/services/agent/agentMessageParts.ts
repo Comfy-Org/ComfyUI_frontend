@@ -52,24 +52,15 @@ export interface RunApprovalPart {
   workflowName?: string
 }
 
-export interface PermissionAskPart {
-  type: 'permissionAsk'
-  askId: string
-  requestId?: string
-  targetKind: 'path' | 'host'
-  target: string
-  reason?: string
-}
-
-export type AskPart = RunApprovalPart | PermissionAskPart
+export type AskPart = RunApprovalPart
 
 export function isAskPart(part: MessagePart): part is AskPart {
-  return part.type === 'runApproval' || part.type === 'permissionAsk'
+  return part.type === 'runApproval'
 }
 
 type PendingAsk = NonNullable<AgentMessages[number]['pending_ask']>
 
-export type AgentAskSelection = 'run' | 'cancel' | 'allow' | 'deny'
+export type AgentAskSelection = 'run' | 'cancel'
 
 export function toAskPart({
   kind,
@@ -77,7 +68,6 @@ export function toAskPart({
   context
 }: Pick<PendingAsk, 'kind' | 'ask_id' | 'context'>):
   | RunApprovalPart
-  | PermissionAskPart
   | undefined {
   if (kind === 'run_approval')
     return {
@@ -85,15 +75,6 @@ export function toAskPart({
       askId,
       workflowId: context?.workflow_id || undefined,
       workflowName: context?.workflow_name || undefined
-    }
-  if (kind === 'permission' && context?.target_kind && context.target)
-    return {
-      type: 'permissionAsk',
-      askId,
-      requestId: context.request_id || undefined,
-      targetKind: context.target_kind,
-      target: context.target,
-      reason: context.reason?.trim() || undefined
     }
   return undefined
 }
@@ -112,7 +93,6 @@ export type MessagePart =
   | NoticePart
   | TabLinkPart
   | RunApprovalPart
-  | PermissionAskPart
   | PaywallPart
 
 export interface AssistantMessage {

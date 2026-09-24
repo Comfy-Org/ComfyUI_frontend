@@ -3,7 +3,6 @@ import type {
   AgentAskSelection,
   AskPart
 } from '../../../services/agent/agentMessageParts'
-import PermissionAskCard from './PermissionAskCard.vue'
 import RunApprovalCard from './RunApprovalCard.vue'
 
 const { part, answering = false } = defineProps<{
@@ -27,11 +26,5 @@ const emit = defineEmits<{
       (workflowId, workflowName) =>
         emit('openWorkflow', workflowId, workflowName)
     "
-  />
-  <PermissionAskCard
-    v-else
-    :part
-    :answering
-    @answer="(askId, selection) => emit('answer', askId, selection)"
   />
 </template>

@@ -57,11 +57,7 @@ const zAgentPendingAsk = z
     context: z
       .object({
         workflow_id: z.string().optional(),
-        workflow_name: z.string().optional(),
-        request_id: z.string().optional(),
-        target_kind: z.enum(['path', 'host']).optional(),
-        target: z.string().optional(),
-        reason: z.string().optional()
+        workflow_name: z.string().optional()
       })
       .passthrough()
       .optional(),

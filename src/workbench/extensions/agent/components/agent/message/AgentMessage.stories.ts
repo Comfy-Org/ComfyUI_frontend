@@ -160,40 +160,6 @@ export const ApprovalPending: Story = {
   args: { ...Approval.args, answeringAskIds: new Set(['approval']) }
 }
 
-export const PermissionFolder: Story = {
-  args: {
-    message: message(
-      [
-        {
-          type: 'permissionAsk',
-          askId: 'permission',
-          targetKind: 'path',
-          target: 'C:\\Users\\me\\models',
-          reason: 'List the checkpoints you mentioned'
-        }
-      ],
-      true
-    )
-  }
-}
-
-export const PermissionHost: Story = {
-  args: {
-    message: message(
-      [
-        {
-          type: 'permissionAsk',
-          askId: 'permission',
-          targetKind: 'host',
-          target: 'example.org',
-          reason: 'Fetch the page you linked'
-        }
-      ],
-      true
-    )
-  }
-}
-
 export const ErrorNotice: Story = {
   args: {
     message: message(
