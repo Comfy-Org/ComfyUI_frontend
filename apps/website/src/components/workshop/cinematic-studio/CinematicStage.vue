@@ -10,6 +10,7 @@ import {
 import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { framedStyle } from './aspect-style'
 import CinematicFirstRun from './CinematicFirstRun.vue'
 import CinematicSequence from './CinematicSequence.vue'
 import CinematicTakeActions from './CinematicTakeActions.vue'
@@ -35,6 +36,8 @@ const emit = defineEmits<{
   reference: [url: string, name: string]
 }>()
 
+const FRAME_HEIGHT = '44svh'
+
 const current = computed(() => selectedTake(reel))
 const siblings = computed(() =>
   current.value ? takesOfShot(reel, current.value.shot) : []
@@ -47,29 +50,35 @@ const modelName = computed(
 
 <template>
   <section
-    class="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-3 px-4 py-6 sm:px-8 lg:px-14"
+    class="flex min-h-0 min-w-0 flex-1 flex-col items-center justify-center gap-3 px-4 pt-6 pb-10 sm:px-8 lg:px-14"
     :aria-label="tc('cinematic.stage.label', locale)"
   >
     <template v-if="current">
       <h1 class="sr-only">{{ tc('cinematic.title', locale) }}</h1>
-      <CinematicTakeFrame :current :locale />
       <div
-        class="flex w-full max-w-5xl flex-wrap items-center justify-between gap-3"
+        class="flex max-w-5xl flex-col gap-3"
+        :style="{ width: framedStyle(current.aspect, FRAME_HEIGHT).width }"
       >
-        <CinematicTakeBar
-          :current
-          :siblings
-          :model-name="modelName"
-          :locale
-          @select="emit('select', $event)"
-        />
-        <CinematicTakeActions
-          v-if="current.status === 'done'"
-          :take="current"
-          :locale
-          @again="emit('again')"
-          @reference="(url, name) => emit('reference', url, name)"
-        />
+        <CinematicTakeFrame :current :height="FRAME_HEIGHT" :locale>
+          <div
+            class="absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-3 bg-linear-to-t from-primary-comfy-ink/90 via-primary-comfy-ink/50 to-transparent p-4 pt-16 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
+          >
+            <CinematicTakeBar
+              :current
+              :siblings
+              :model-name="modelName"
+              :locale
+              @select="emit('select', $event)"
+            />
+            <CinematicTakeActions
+              v-if="current.status === 'done'"
+              :take="current"
+              :locale
+              @again="emit('again')"
+              @reference="(url, name) => emit('reference', url, name)"
+            />
+          </div>
+        </CinematicTakeFrame>
         <CinematicSequence
           :takes="reel.takes"
           :current-id="current.id"

@@ -6,8 +6,13 @@ import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
 
-const { current, locale = 'en' } = defineProps<{
+const {
+  current,
+  height = '58svh',
+  locale = 'en'
+} = defineProps<{
   current: Take
+  height?: string
   locale?: Locale
 }>()
 
@@ -22,8 +27,8 @@ function statusText(take: Take) {
 
 <template>
   <figure
-    class="relative flex max-w-5xl items-center justify-center overflow-hidden rounded-md bg-transparency-white-t4"
-    :style="framedStyle(current.aspect, '58svh')"
+    class="group relative flex max-w-full items-center justify-center overflow-hidden rounded-md bg-transparency-white-t4"
+    :style="framedStyle(current.aspect, height)"
   >
     <img
       v-if="current.status === 'done'"
@@ -47,5 +52,6 @@ function statusText(take: Take) {
         />
       </span>
     </figcaption>
+    <slot />
   </figure>
 </template>

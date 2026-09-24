@@ -16,7 +16,7 @@ const emit = defineEmits<{
 }>()
 
 const actionClass =
-  'flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[13px] text-primary-comfy-canvas ring-1 ring-transparency-white-t8 ring-inset hover:bg-transparency-white-t4 hover:text-primary-warm-white'
+  'flex h-8 items-center gap-1.5 rounded-lg bg-primary-comfy-ink/70 px-2.5 text-[13px] text-primary-warm-white ring-1 ring-transparency-white-t20 backdrop-blur-sm ring-inset hover:bg-primary-comfy-ink'
 </script>
 
 <template>

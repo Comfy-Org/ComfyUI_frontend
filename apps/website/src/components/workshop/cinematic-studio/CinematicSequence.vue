@@ -39,7 +39,7 @@ const startsShot = (index: number) =>
       "
       :class="
         cn(
-          'h-9 shrink-0 overflow-hidden rounded-sm bg-transparency-white-t8 transition-opacity',
+          'h-14 shrink-0 overflow-hidden rounded-md bg-transparency-white-t8 transition-opacity',
           startsShot(index) && 'ml-2',
           take.id === currentId
             ? 'opacity-100 outline-2 outline-offset-2 outline-primary-warm-white'
