@@ -67,7 +67,7 @@ export class Topbar {
 
   getWorkflowTab(tabName: string): Locator {
     return this.tabs.filter({
-      has: this.page.locator(`.workflow-label:has-text("${tabName}")`)
+      has: this.page.getByText(tabName, { exact: true })
     })
   }
 

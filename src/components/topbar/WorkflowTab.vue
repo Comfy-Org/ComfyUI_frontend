@@ -35,14 +35,14 @@
               v-if="isAgentEditing"
               role="img"
               :aria-label="t('g.agentWorking')"
-              class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-smoke-800 group-hover/tab:hidden motion-safe:animate-spin"
+              class="absolute top-1/2 left-1/2 z-10 icon-[lucide--loader-circle] size-4 -translate-1/2 text-smoke-800 group-focus-within/tab:hidden group-hover/tab:hidden motion-safe:animate-spin"
             />
             <span
               v-else-if="showUnseenAgentDot"
               role="img"
               :aria-label="t('g.agentModified')"
               data-testid="agent-modified-indicator"
-              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background group-hover/tab:hidden"
+              class="absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full bg-primary-background group-focus-within/tab:hidden group-hover/tab:hidden"
             />
             <i
               v-else-if="workflowStatus"
@@ -50,7 +50,7 @@
               :aria-label="workflowStatusLabel"
               :class="
                 cn(
-                  'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-hover/tab:hidden',
+                  'absolute top-1/2 left-1/2 z-10 size-4 -translate-1/2 group-focus-within/tab:hidden group-hover/tab:hidden',
                   workflowStatusIconClasses[workflowStatus]
                 )
               "
@@ -60,7 +60,7 @@
               data-testid="workflow-dirty-indicator"
               :class="
                 cn(
-                  'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full group-hover/tab:hidden',
+                  'absolute top-1/2 left-1/2 z-10 size-2 -translate-1/2 rounded-full group-focus-within/tab:hidden group-hover/tab:hidden',
                   isActiveTab ? 'bg-base-foreground' : 'bg-smoke-800'
                 )
               "
@@ -70,7 +70,7 @@
         <Button
           :class="
             cn(
-              'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 text-smoke-800 group-hover/tab:visible',
+              'close-button absolute top-1/2 right-2 size-4 -translate-y-1/2 rounded-none p-0 text-smoke-800 group-focus-within/tab:visible group-hover/tab:visible',
               isActiveTab && !hasStatusIndicator ? 'visible' : 'invisible'
             )
           "
