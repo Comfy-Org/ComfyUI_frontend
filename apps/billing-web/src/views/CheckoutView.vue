@@ -168,6 +168,17 @@ const paymentMethodConfigurationId = computed(
   () => preview.value?.payment_method_configuration_id ?? ''
 )
 
+/**
+ * A plan change on an existing subscription charges its saved default
+ * payment method server-side and never accepts a new one (the ingest
+ * `subscribeAcceptsSavedMethod` comment in useSubscriptionCheckout.ts states
+ * this outright); only a genuine new subscription has no saved method yet,
+ * so only that transition needs the card form.
+ */
+const needsPaymentMethod = computed(
+  () => preview.value?.transition_type === 'new_subscription'
+)
+
 const publishableKey = computed(() => stripeKey.value ?? '')
 
 const quoting = computed(() => loading.value && summary.value === undefined)
@@ -210,16 +221,23 @@ function resultUrl(): string | undefined {
   return built.status === 'ok' ? built.url.href : undefined
 }
 
-/** The quote's identity travels with the charge, so the server prices what the customer saw. */
+/**
+ * The quote's identity travels with the charge, so the server prices what
+ * the customer saw. A plan change on an existing subscription (see
+ * `needsPaymentMethod`) has no `confirmationToken` — the server charges the
+ * saved method on file instead.
+ */
 function subscribeRequest(
   plan: string,
-  confirmationToken: string,
+  confirmationToken: string | undefined,
   quoted: SubscriptionPreview
 ): SubscribeInput {
   const returnUrl = resultUrl()
   return {
     plan_slug: plan,
-    confirmation_token: confirmationToken,
+    ...(confirmationToken === undefined
+      ? {}
+      : { confirmation_token: confirmationToken }),
     ...(teamCreditStopId.value === undefined
       ? {}
       : { team_credit_stop_id: teamCreditStopId.value }),
@@ -235,7 +253,7 @@ function subscribeRequest(
   }
 }
 
-async function confirm(confirmationToken: string) {
+async function confirm(confirmationToken?: string) {
   const quoted = preview.value
   if (planSlug.value === undefined || !quoted || loading.value) return
   submitFailure.value = undefined
@@ -337,7 +355,7 @@ const subscriptionPath = computed(() => ({
             @continue-verification="checkout.continueVerification()"
           />
           <StripePaymentForm
-            v-else
+            v-else-if="needsPaymentMethod"
             :publishable-key="publishableKey"
             :amount-cents="amountCents"
             :currency="currency"
@@ -358,6 +376,20 @@ const subscriptionPath = computed(() => ({
               />
             </template>
           </StripePaymentForm>
+          <form
+            v-else
+            class="flex min-h-0 flex-col gap-6 xl:flex-1"
+            @submit.prevent="confirm()"
+          >
+            <CheckoutSubmit
+              v-model:confirmed="reactivationConfirmed"
+              :amount-cents="amountCents"
+              :disabled="!canSubmit"
+              :submitting="checkout.submitting.value"
+              :reactivation-required="reactivationRequired"
+              :failure="submitFailure"
+            />
+          </form>
         </template>
         <template #done>
           <a
