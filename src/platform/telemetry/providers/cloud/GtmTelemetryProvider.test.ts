@@ -355,6 +355,19 @@ describe('GtmTelemetryProvider', () => {
       expect(lastDataLayerEntry()).not.toHaveProperty('share_id')
     })
 
+    it('pushes page_visibility with the agent panel state', () => {
+      const provider = createInitializedProvider()
+      provider.trackPageVisibilityChanged({
+        visibility_state: 'hidden',
+        agent_panel_open: true
+      })
+      expect(lastDataLayerEntry()).toMatchObject({
+        event: 'page_visibility',
+        visibility_state: 'hidden',
+        agent_panel_open: true
+      })
+    })
+
     it('pushes ui_button_click with element_group', () => {
       const provider = createInitializedProvider()
       provider.trackUiButtonClicked({
