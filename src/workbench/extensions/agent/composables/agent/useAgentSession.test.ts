@@ -5,9 +5,12 @@ import type {
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { zAgentPostMessageRequest } from '@comfyorg/ingest-types/zod'
+
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
+import { api } from '@/scripts/api'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -24,7 +27,10 @@ import {
   zAgentAdmissionError,
   zAgentWsEvent
 } from '../../schemas/agentApiSchema'
-import { AgentApiError } from '../../services/agent/agentRestClient'
+import {
+  AgentApiError,
+  createAgentRestClient
+} from '../../services/agent/agentRestClient'
 import type {
   AgentRestClient,
   PostMessageInput
@@ -83,6 +89,42 @@ function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
     )
   }
   return { ...base, ...overrides }
+}
+
+/** cloud's storage-key hash shape: `<64 hex><ext>` (common/assets/manager_impl.go). */
+const storedRef = `${'9f2c'.repeat(16)}.png`
+
+/**
+ * A session wired to the real `agentRestClient` over a stubbed transport, for
+ * the cases that have to see the serialized HTTP body rather than the DTO the
+ * client is handed. Each call gets its own `Response`, since a body can only
+ * be read once.
+ */
+function wireSend() {
+  const fetchApi = vi
+    .spyOn(api, 'fetchApi')
+    .mockImplementation(async () =>
+      Response.json(
+        { thread_id: 'th-1', message_id: 'msg-1', workflow_id: 'wf-1' },
+        { status: 202 }
+      )
+    )
+  const session = useAgentSession({
+    rest: createAgentRestClient(),
+    events: fakeEvents().source
+  })
+  session.start()
+  return {
+    send: session.sendMessage,
+    postedBody: (): unknown => {
+      const posted = fetchApi.mock.calls.filter(
+        ([route, init]) =>
+          route.endsWith('/messages') && init?.method === 'POST'
+      )
+      assert(posted.length === 1)
+      return JSON.parse(String(posted[0][1]?.body))
+    }
+  }
 }
 
 function fakeEvents() {
@@ -1243,6 +1285,73 @@ describe('useAgentSession (v1 composition root)', () => {
       selection: undefined,
       attachments: ['upload_a.png', 'upload_b.png']
     })
+  })
+
+  /**
+   * The wire half of case (h): what `agentRestClient` actually serializes for
+   * a send carrying attachments. (h) stops at the DTO, so on its own it cannot
+   * see the client's body allowlist (`agentRestClient.postMessage`), which
+   * drops any DTO field it does not name. This drives the real client so the
+   * arrange below is exercised unmarked, per the note above (g3)/(g4).
+   */
+  it('(h-wire) serializes the attachment refs onto the POST body', async () => {
+    const { postedBody, send } = wireSend()
+
+    await send('upscale this', [{ ref: storedRef, name: 'Beach photo.png' }])
+
+    expect(zAgentPostMessageRequest.parse(postedBody())).toMatchObject({
+      content: 'upscale this',
+      attachments: [storedRef]
+    })
+  })
+
+  /**
+   * PM-1643 / PM-717 item 3. A ref is the storage name — `asset.hash` for an
+   * asset dragged out of the library, the deduplicated name the upload
+   * returned otherwise — so the name the user recognises never reaches the
+   * message row a refresh reads back. It is not lost to the server: the
+   * upload puts it on the asset row (`asset.Name`, common/assets), one join
+   * from the `id` on `attachment_refs`. It is only the turn that forgets it.
+   *
+   * The body is read back through `zAgentPostMessageRequest`, generated from
+   * cloud's openapi.yaml and declaring no passthrough, so an invented
+   * top-level key is stripped before the substring check — sending one would
+   * put the name nowhere the Go binding reads, and parsing first stops that
+   * from retiring the pin. The remaining assertions close the routes a
+   * repair would plausibly take while still losing the name: `content` rules
+   * out smuggling it into the prompt text, `attachments` rules out appending
+   * it there (the service stores that key verbatim, minting a phantom second
+   * file), `selection`/`draft` rule out the two free-form `z.record` fields
+   * the schema does let through, and the tab, workflow-id and
+   * workflow-reference fields cover every remaining string slot the schema
+   * declares, so no in-schema field can carry the name past the substring
+   * check while the turn still loses it.
+   *
+   * What remains is a widening of the attachment contract; resolving the
+   * name from the asset behind `attachment_refs[].id` is the other repair,
+   * and would retire this pin rather than satisfy it. The `attachments`
+   * assertion assumes a widening adds a sibling key rather than reshaping
+   * `attachments` itself — the house rule cloud states for exactly this pair
+   * (persist/threads.go) — so revisit it if that key is reshaped instead, or
+   * this pin stays red past its own fix.
+   */
+  it.fails('(h-gap) carries the attached filename, not only the storage ref', async () => {
+    const { postedBody, send } = wireSend()
+
+    await send('upscale this', [{ ref: storedRef, name: 'Beach photo.png' }])
+
+    const body = zAgentPostMessageRequest.parse(postedBody())
+    expect(body).toMatchObject({
+      content: 'upscale this',
+      attachments: [storedRef]
+    })
+    expect(body.selection).toBeUndefined()
+    expect(body.draft).toBeUndefined()
+    expect(body.open_tabs).toBeUndefined()
+    expect(body.current_tab).toBeUndefined()
+    expect(body.workflow_id).toBeUndefined()
+    expect(body.workflow_references).toEqual([])
+    expect(JSON.stringify(body)).toContain('Beach photo.png')
   })
 
   it('(h2) tags ride as node_ids on the POST selection', async () => {
