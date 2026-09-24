@@ -250,6 +250,66 @@ describe('HostTelemetrySink', () => {
       properties: { step: 4, action: 'finish' }
     },
     {
+      name: TelemetryEvents.AGENT_STOP_CLICKED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentStopClicked({
+          method: 'button',
+          turn_id: 'turn-1',
+          turn_elapsed_ms: 250
+        }),
+      properties: {
+        method: 'button',
+        turn_id: 'turn-1',
+        turn_elapsed_ms: 250
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_WORKFLOW_BOUND,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentWorkflowBound({
+          thread_id: 'thread-1',
+          workflow_id: 'workflow-2',
+          prev_workflow_id: 'workflow-1',
+          bind_source: 'active_tab'
+        }),
+      properties: {
+        thread_id: 'thread-1',
+        workflow_id: 'workflow-2',
+        prev_workflow_id: 'workflow-1',
+        bind_source: 'active_tab'
+      }
+    },
+    {
+      name: TelemetryEvents.AGENT_RUN_APPROVAL_SHOWN,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentRunApprovalShown({
+          turn_id: 'turn-1',
+          workflow_id: 'workflow-1'
+        }),
+      properties: { turn_id: 'turn-1', workflow_id: 'workflow-1' }
+    },
+    {
+      name: TelemetryEvents.AGENT_RUN_APPROVAL_RESOLVED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentRunApprovalResolved({
+          decision: 'cancel',
+          time_to_decide_ms: 300
+        }),
+      properties: { decision: 'cancel', time_to_decide_ms: 300 }
+    },
+    {
+      name: TelemetryEvents.AGENT_RUN_MODE_CHANGED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentRunModeChanged({ from: 'ask_approval', to: 'auto' }),
+      properties: { from: 'ask_approval', to: 'auto' }
+    },
+    {
+      name: TelemetryEvents.AGENT_THREAD_STARTED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentThreadStarted({ source: 'new_chat_button' }),
+      properties: { source: 'new_chat_button' }
+    },
+    {
       name: TelemetryEvents.AGENT_CONSENT_NOT_OFFERED,
       track: (sink: HostTelemetrySink) =>
         sink.trackAgentConsentNotOffered({ reason: 'tour_active' }),

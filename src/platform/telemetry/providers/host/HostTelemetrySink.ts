@@ -17,7 +17,13 @@ import type {
   AgentPanelOpenedMetadata,
   AgentPaywallCtaMetadata,
   AgentPaywallShownMetadata,
+  AgentRunApprovalResolvedMetadata,
+  AgentRunApprovalShownMetadata,
+  AgentRunModeChangedMetadata,
+  AgentStopClickedMetadata,
+  AgentThreadStartedMetadata,
   AgentWorkflowAppliedMetadata,
+  AgentWorkflowBoundMetadata,
   AuthMetadata,
   BeginCheckoutMetadata,
   BillingTelemetryEvent,
@@ -329,6 +335,32 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentOnboardingStep(metadata: AgentOnboardingStepMetadata): void {
     this.capture(TelemetryEvents.AGENT_ONBOARDING_STEP, metadata)
+  }
+
+  trackAgentStopClicked(metadata: AgentStopClickedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_STOP_CLICKED, metadata)
+  }
+
+  trackAgentWorkflowBound(metadata: AgentWorkflowBoundMetadata): void {
+    this.capture(TelemetryEvents.AGENT_WORKFLOW_BOUND, metadata)
+  }
+
+  trackAgentRunApprovalShown(metadata: AgentRunApprovalShownMetadata): void {
+    this.capture(TelemetryEvents.AGENT_RUN_APPROVAL_SHOWN, metadata)
+  }
+
+  trackAgentRunApprovalResolved(
+    metadata: AgentRunApprovalResolvedMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_RUN_APPROVAL_RESOLVED, metadata)
+  }
+
+  trackAgentRunModeChanged(metadata: AgentRunModeChangedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_RUN_MODE_CHANGED, metadata)
+  }
+
+  trackAgentThreadStarted(metadata: AgentThreadStartedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_THREAD_STARTED, metadata)
   }
 
   trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {

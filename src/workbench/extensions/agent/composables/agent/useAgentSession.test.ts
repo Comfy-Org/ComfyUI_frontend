@@ -6,6 +6,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@/platform/telemetry'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -34,7 +35,13 @@ import type { SelectedNode } from './useCanvasSelection'
 import type { AgentEventSource, TurnOrigin } from './useAgentSession'
 import { useAgentSession } from './useAgentSession'
 
-vi.mock('@/platform/telemetry/reportError', () => ({ reportError: vi.fn() }))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
+vi.mock(import('@/platform/telemetry'))
+const telemetryProvider = useTelemetry()
+assert.exists(telemetryProvider)
+const telemetry = vi.mocked(telemetryProvider)
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
@@ -212,6 +219,7 @@ describe('useAgentSession (v1 composition root)', () => {
     setActivePinia(createPinia())
     localStorage.clear()
     vi.mocked(reportError).mockClear()
+    telemetry.trackAgentStopClicked.mockClear()
   })
 
   it('(a) posts to new, adopts ids, records the user turn, and renders a settled reply', async () => {
@@ -242,6 +250,27 @@ describe('useAgentSession (v1 composition root)', () => {
       streaming: false
     })
     expect(session.isStreaming.value).toBe(false)
+  })
+
+  it('tracks each durable thread start once with its initiating source', async () => {
+    const onThreadStarted = vi.fn()
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: source,
+      onThreadStarted
+    })
+    session.start()
+
+    await session.sendMessage('first')
+    expect(onThreadStarted).toHaveBeenCalledExactlyOnceWith('first_open')
+
+    session.newChat('new_chat_button')
+    await session.sendMessage('second')
+    expect(onThreadStarted.mock.calls).toEqual([
+      ['first_open'],
+      ['new_chat_button']
+    ])
   })
 
   it('(b) a second send posts to the adopted threadId, not new', async () => {
@@ -465,7 +494,10 @@ describe('useAgentSession (v1 composition root)', () => {
     const duplicate = session.answerAsk('turn-1:call-1', 'run')
 
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
-    await Promise.all([first, duplicate])
+    await expect(Promise.all([first, duplicate])).resolves.toEqual([
+      true,
+      false
+    ])
     expect(answerAsk).toHaveBeenCalledTimes(1)
     expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', ['run'])
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
@@ -789,6 +821,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.notices.value).toHaveLength(0)
     expect(session.isStreaming.value).toBe(true)
     expect(session.editableTurnId.value).toBeNull()
+    expect(telemetry.trackAgentStopClicked).not.toHaveBeenCalled()
 
     emit(delta('msg-1', ' Stopped at your request.'))
     emit(done('msg-1'))
@@ -805,6 +838,144 @@ describe('useAgentSession (v1 composition root)', () => {
 
     session.newChat()
     expect(session.editableTurnId.value).toBeNull()
+  })
+
+  it('tracks one committed stop with its method, turn, and elapsed time', async () => {
+    let currentTime = 1_000
+    const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)
+    const cancelMessage = vi.fn(
+      async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+    )
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ cancelMessage }),
+      events: source
+    })
+    session.start()
+
+    await session.sendMessage('go')
+    currentTime = 1_450
+    await session.stopTurn('escape')
+
+    expect(telemetry.trackAgentStopClicked).toHaveBeenCalledExactlyOnceWith({
+      method: 'escape',
+      turn_id: 'msg-1',
+      turn_elapsed_ms: 450
+    })
+    now.mockRestore()
+  })
+
+  it('tracks a stop when completion arrives before cancellation responds', async () => {
+    let currentTime = 2_000
+    const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)
+    let resolveCancellation!: (accepted: AgentCancelAccepted) => void
+    const cancelMessage = vi.fn(
+      () =>
+        new Promise<AgentCancelAccepted>((resolve) => {
+          resolveCancellation = resolve
+        })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ cancelMessage }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('go')
+
+    currentTime = 2_300
+    const stopping = session.stopTurn('button')
+    emit(done('msg-1'))
+    currentTime = 2_900
+    resolveCancellation({ status: 'cancelling' })
+    await stopping
+
+    expect(telemetry.trackAgentStopClicked).toHaveBeenCalledExactlyOnceWith({
+      method: 'button',
+      turn_id: 'msg-1',
+      turn_elapsed_ms: 300
+    })
+    now.mockRestore()
+  })
+
+  it.for(['button', 'escape'] as const)(
+    'tracks a %s stop after restoring a pending approval without a start time',
+    async (method) => {
+      const history: AgentMessages = [
+        historyRow(1, 'user', 'restored-turn', 'Run it'),
+        {
+          ...historyRow(
+            2,
+            'assistant',
+            'restored-turn',
+            '',
+            'restored-approval'
+          ),
+          status: 'streaming',
+          pending_ask: {
+            message_id: 'restored-approval',
+            ask_id: 'restored-turn:call-1',
+            kind: 'run_approval',
+            context: { workflow_id: 'wf-1' },
+            prompt: 'Run it?',
+            options: [
+              { id: 'run', label: 'Run' },
+              { id: 'cancel', label: 'Cancel' }
+            ],
+            min_selections: 1,
+            max_selections: 1,
+            allow_other: false
+          }
+        }
+      ]
+      const rest = fakeRest({ getMessages: vi.fn(async () => history) })
+      const session = useAgentSession({ rest, events: fakeEvents().source })
+      session.start()
+
+      await session.loadThread('th-1')
+      expect(session.isStreaming.value).toBe(true)
+      await session.stopTurn(method)
+
+      expect(rest.cancelMessage).toHaveBeenCalledExactlyOnceWith(
+        'th-1',
+        'restored-approval'
+      )
+      expect(telemetry.trackAgentStopClicked).toHaveBeenCalledExactlyOnceWith({
+        method,
+        turn_id: 'restored-turn',
+        turn_elapsed_ms: null
+      })
+    }
+  )
+
+  it('tracks one stop while cancellation is already in flight', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(3_000)
+    let resolveCancellation!: (accepted: AgentCancelAccepted) => void
+    const cancelMessage = vi.fn(
+      () =>
+        new Promise<AgentCancelAccepted>((resolve) => {
+          resolveCancellation = resolve
+        })
+    )
+    const session = useAgentSession({
+      rest: fakeRest({ cancelMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.sendMessage('go')
+
+    const firstStop = session.stopTurn('button')
+    await session.stopTurn('escape')
+    resolveCancellation({ status: 'cancelling' })
+    await firstStop
+
+    expect(cancelMessage).toHaveBeenCalledExactlyOnceWith('th-1', 'msg-1')
+    expect(telemetry.trackAgentStopClicked).toHaveBeenCalledExactlyOnceWith({
+      method: 'button',
+      turn_id: 'msg-1',
+      turn_elapsed_ms: 0
+    })
+    now.mockRestore()
   })
 
   it('(d1) a normally completed turn is not editable', async () => {
@@ -842,31 +1013,52 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.editableTurnId.value).toBeNull()
   })
 
-  it('(d3) stopTurn before the POST acknowledgement cancels the acknowledged turn once', async () => {
-    let resolvePost: ((ack: AgentTurnAccepted) => void) | undefined
-    const postMessage = vi.fn(
-      () =>
-        new Promise<AgentTurnAccepted>((resolve) => {
-          resolvePost = resolve
-        })
-    )
-    const cancelMessage = vi.fn<
-      (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
-    >(async () => ({ status: 'cancelling' }))
-    const rest = fakeRest({ postMessage, cancelMessage })
-    const session = useAgentSession({ rest, events: fakeEvents().source })
-    session.start()
+  it.for([
+    { method: undefined, expectedStops: [] },
+    {
+      method: 'button' as const,
+      expectedStops: [
+        { method: 'button', turn_id: 'msg-1', turn_elapsed_ms: 0 }
+      ]
+    },
+    {
+      method: 'escape' as const,
+      expectedStops: [
+        { method: 'escape', turn_id: 'msg-1', turn_elapsed_ms: 0 }
+      ]
+    }
+  ])(
+    '(d3) preserves a $method stop before the POST acknowledgement',
+    async ({ method, expectedStops }) => {
+      vi.spyOn(Date, 'now').mockReturnValue(1_000)
+      let resolvePost: ((ack: AgentTurnAccepted) => void) | undefined
+      const postMessage = vi.fn(
+        () =>
+          new Promise<AgentTurnAccepted>((resolve) => {
+            resolvePost = resolve
+          })
+      )
+      const cancelMessage = vi.fn<
+        (threadId: string, messageId: string) => Promise<AgentCancelAccepted>
+      >(async () => ({ status: 'cancelling' }))
+      const rest = fakeRest({ postMessage, cancelMessage })
+      const session = useAgentSession({ rest, events: fakeEvents().source })
+      session.start()
 
-    const sending = session.sendMessage('go')
-    await session.stopTurn()
-    expect(cancelMessage).not.toHaveBeenCalled()
+      const sending = session.sendMessage('go')
+      await session.stopTurn(method)
+      expect(cancelMessage).not.toHaveBeenCalled()
 
-    resolvePost?.({ thread_id: 'th-1', message_id: 'msg-1' })
-    await sending
+      resolvePost?.({ thread_id: 'th-1', message_id: 'msg-1' })
+      await sending
 
-    expect(cancelMessage).toHaveBeenCalledTimes(1)
-    expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
-  })
+      expect(cancelMessage).toHaveBeenCalledTimes(1)
+      expect(cancelMessage).toHaveBeenCalledWith('th-1', 'msg-1')
+      expect(
+        telemetry.trackAgentStopClicked.mock.calls.map(([metadata]) => metadata)
+      ).toEqual(expectedStops)
+    }
+  )
 
   it('(g) onStatus(false) aborts the active turn; onStatus(true) is inert', async () => {
     const rest = fakeRest()
@@ -1134,7 +1326,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('hello')
 
     expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty('draft')
-    expect(adopted).toHaveBeenCalledWith('wf-1', undefined)
+    expect(adopted).toHaveBeenCalledWith('wf-1', undefined, null)
     expect(session.boundWorkflowId.value).toBe('wf-1')
   })
 
@@ -1356,10 +1548,14 @@ describe('useAgentSession (v1 composition root)', () => {
     releasePrepare()
     await sendPromise
 
-    expect(adopted).toHaveBeenCalledWith('wf-1', {
-      id: 'wf-a',
-      tabPath: 'tab-a'
-    })
+    expect(adopted).toHaveBeenCalledWith(
+      'wf-1',
+      {
+        id: 'wf-a',
+        tabPath: 'tab-a'
+      },
+      null
+    )
     expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
       workflowId: 'wf-a',
       tabs: { current_tab: 'wf-a' }
@@ -1486,7 +1682,7 @@ describe('useAgentSession (v1 composition root)', () => {
       { workflow_id: 'wf-b', name: 'tab-b' }
     ])
     // The ack echoes wf-b; with no origin tab there is nothing to bind it to.
-    expect(adopted).toHaveBeenCalledWith('wf-b', undefined)
+    expect(adopted).toHaveBeenCalledWith('wf-b', undefined, null)
   })
 
   it('(h6) a bind landing in the prepare()/POST window makes an echoed id read as an echo', async () => {

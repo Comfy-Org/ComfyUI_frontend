@@ -2,6 +2,7 @@ import { storeToRefs } from 'pinia'
 import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import type { AgentWorkflowBindSource } from '@/platform/telemetry/types'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
@@ -20,12 +21,18 @@ interface WorkflowSelectionOptions {
   resolver: ReturnType<typeof useAgentWorkflowResolver>
   canSelectTarget: () => boolean
   warnWorkflowUnavailable: () => void
+  onTargetBound?: (
+    workflowId: string,
+    previousWorkflowId: string | null,
+    source: Extract<AgentWorkflowBindSource, 'selector_chip' | 'restored'>
+  ) => void
 }
 
 export function useAgentWorkflowSelection({
   resolver,
   canSelectTarget,
-  warnWorkflowUnavailable
+  warnWorkflowUnavailable,
+  onTargetBound
 }: WorkflowSelectionOptions) {
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
@@ -73,11 +80,17 @@ export function useAgentWorkflowSelection({
 
   function commitWorkflowTarget(
     workflow: ComfyWorkflow,
-    workflowId: string
+    workflowId: string,
+    source: Extract<AgentWorkflowBindSource, 'selector_chip' | 'restored'>
   ): void {
+    const previousWorkflowId = selectedTarget.value
+      ? (cloudIdFor(selectedTarget.value) ?? null)
+      : null
     bindingStore.bind(workflowId, workflow.path)
     panelStore.setWorkflowTarget(workflow)
     composerStore.removeWorkflowReference(workflowId)
+    if (workflowId !== previousWorkflowId)
+      onTargetBound?.(workflowId, previousWorkflowId, source)
   }
 
   async function prepareWorkflowSelection(
@@ -137,7 +150,7 @@ export function useAgentWorkflowSelection({
         return false
       }
       if (!isCurrent()) return false
-      commitWorkflowTarget(tab, workflowId)
+      commitWorkflowTarget(tab, workflowId, 'selector_chip')
       return true
     } catch (error) {
       if (isCurrent())
@@ -224,7 +237,7 @@ export function useAgentWorkflowSelection({
         warnWorkflowUnavailable()
         return
       }
-      commitWorkflowTarget(target, workflowId)
+      commitWorkflowTarget(target, workflowId, 'restored')
     } catch {
       if (!isCurrent()) return
       warnWorkflowUnavailable()
