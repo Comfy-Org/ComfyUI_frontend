@@ -18,6 +18,7 @@ import type {
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
+import { mockAgentIdentity } from '@e2e/fixtures/agentSocket'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { mockCloudBootRoutes } from '@e2e/fixtures/utils/cloudBootMocks'
@@ -181,6 +182,8 @@ async function mockAgentBoot(
   )
 
   await mockBilling(page)
+  // The canvas follower stays inactive until the agent names its user.
+  await mockAgentIdentity(page)
   await page.route(
     'https://media.comfy.org/website/comfy-agent/**',
     (route) => {

@@ -181,7 +181,9 @@ to bind the workflow through.
 
 ## Capture
 
-The recorder keeps the `/ws` frames of the thread with their receipt times and,
+The recorder keeps the agent-socket frames of the thread (what the panel reads
+on `/api/agent/events`; the replay serves them there through
+`AgentFollowerHostSocket`) with their receipt times and,
 after the last turn completes, reads each turn's audit rows itself: the parent
 tool-call rows with their child op ids and statuses, plus the draft as it stands
 at the end of the thread (`readRows` in `scripts/agentConversationRecord.ts`

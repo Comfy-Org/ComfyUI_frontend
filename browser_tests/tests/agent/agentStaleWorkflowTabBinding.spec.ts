@@ -18,6 +18,7 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversation'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -75,7 +76,7 @@ test.describe(
       )
 
       let socket: WebSocketRoute | undefined
-      await page.routeWebSocket(/\/ws/, (ws) => {
+      await page.routeWebSocket(AGENT_SOCKET_URL, (ws) => {
         socket = ws
         // Answers a doc_subscribe for the abandoned workflow with its real
         // seeded content, the way the production doc host would.
@@ -101,14 +102,6 @@ test.describe(
           ws.send(JSON.stringify(host.subscribed()))
           ws.send(JSON.stringify(host.catchUp(state_vector_b64)))
         })
-        // The follower only re-drives a pending subscribe on a status frame,
-        // which every real connect sends.
-        ws.send(
-          JSON.stringify({
-            type: 'status',
-            data: { status: { exec_info: { queue_remaining: 0 } } }
-          })
-        )
       })
 
       const history: AgentMessage[] = [
@@ -230,7 +223,7 @@ test.describe(
       await expect(panel.getByTestId('user-message-bubble')).toHaveText([
         EARLIER_REQUEST
       ])
-      if (!socket) throw new Error('the app never opened /ws')
+      if (!socket) throw new Error('the panel never opened the agent socket')
 
       // The user continues the thread in the fresh tab.
       const workflowPicker = panel.getByRole('button', {

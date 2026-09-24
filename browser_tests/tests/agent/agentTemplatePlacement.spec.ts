@@ -16,6 +16,7 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import type { HostFrame } from '@e2e/fixtures/agentConversationHostDoc'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { nextFrame } from '@e2e/fixtures/utils/timing'
 
@@ -36,7 +37,6 @@ const THREAD_ID = 'a1b2c3d4-0000-4000-8000-000000000001'
 const MESSAGE_ID = 'a1b2c3d4-0000-4000-8000-000000000002'
 const WORKFLOW_ID = 'a1b2c3d4-0000-4000-8000-000000000003'
 const WORKFLOW_NAME = 'Image edit'
-const SOCKET_SID = 'a1b2c3d4-0000-4000-8000-000000000004'
 
 // Stands in for the node the user just placed (e.g. Load Image) before
 // asking the agent to insert a template.
@@ -130,18 +130,9 @@ class TemplatePlacementHarness {
 
   async boot(): Promise<void> {
     await this.mockAgentApi()
-    await this.page.routeWebSocket(/\/ws/, (socket) => {
+    await this.page.routeWebSocket(AGENT_SOCKET_URL, (socket) => {
       this.socket = socket
       socket.onMessage((raw) => this.onClientFrame(raw))
-      socket.send(
-        JSON.stringify({
-          type: 'status',
-          data: {
-            status: { exec_info: { queue_remaining: 0 } },
-            sid: SOCKET_SID
-          }
-        })
-      )
     })
 
     await bootAgentApp(this.page, true, {
@@ -315,7 +306,8 @@ class TemplatePlacementHarness {
       parseServerDocFrame(frame) === null
     )
       throw new Error(`host frame ${frame.type} is not a valid doc frame`)
-    if (!this.socket) throw new Error('the app has not opened /ws yet')
+    if (!this.socket)
+      throw new Error('the panel has not opened the agent socket yet')
     this.socket.send(JSON.stringify(frame))
   }
 
