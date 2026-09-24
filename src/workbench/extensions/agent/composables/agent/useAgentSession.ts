@@ -603,15 +603,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     promptEditState.value = { phase: 'stopping', turnId }
+    const startedAt = turnStartedAt.get(turnId)
+    const stopMetadata =
+      method !== undefined && startedAt !== undefined
+        ? {
+            method,
+            turn_id: turnId,
+            turn_elapsed_ms: Math.max(0, Date.now() - startedAt)
+          }
+        : null
     try {
       await rest.cancelMessage(threadId, turnId)
-      const startedAt = turnStartedAt.get(turnId)
-      if (method !== undefined && startedAt !== undefined)
-        useTelemetry()?.trackAgentStopClicked({
-          method,
-          turn_id: turnId,
-          turn_elapsed_ms: Math.max(0, Date.now() - startedAt)
-        })
+      if (stopMetadata !== null)
+        useTelemetry()?.trackAgentStopClicked(stopMetadata)
     } catch (error) {
       if (error instanceof AgentApiError) {
         if (error.status === 409) return

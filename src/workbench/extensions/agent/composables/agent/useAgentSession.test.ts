@@ -864,6 +864,39 @@ describe('useAgentSession (v1 composition root)', () => {
     now.mockRestore()
   })
 
+  it('tracks a stop when completion arrives before cancellation responds', async () => {
+    let currentTime = 2_000
+    const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)
+    let resolveCancellation!: (accepted: AgentCancelAccepted) => void
+    const cancelMessage = vi.fn(
+      () =>
+        new Promise<AgentCancelAccepted>((resolve) => {
+          resolveCancellation = resolve
+        })
+    )
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ cancelMessage }),
+      events: source
+    })
+    session.start()
+    await session.sendMessage('go')
+
+    currentTime = 2_300
+    const stopping = session.stopTurn('button')
+    emit(done('msg-1'))
+    currentTime = 2_900
+    resolveCancellation({ status: 'cancelling' })
+    await stopping
+
+    expect(telemetry.trackAgentStopClicked).toHaveBeenCalledExactlyOnceWith({
+      method: 'button',
+      turn_id: 'msg-1',
+      turn_elapsed_ms: 300
+    })
+    now.mockRestore()
+  })
+
   it('(d1) a normally completed turn is not editable', async () => {
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest: fakeRest(), events: source })
