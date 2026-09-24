@@ -65,7 +65,9 @@ export function inputControlMatches(
     case 'media':
       return (
         field.kind === 'file' ||
-        (field.kind === 'text' && input.urlUpload !== undefined)
+        (field.kind === 'text' &&
+          field.valueType !== 'json' &&
+          input.urlUpload !== undefined)
       )
   }
 }

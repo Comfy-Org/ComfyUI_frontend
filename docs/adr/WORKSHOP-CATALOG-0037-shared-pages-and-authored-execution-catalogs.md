@@ -20,9 +20,10 @@ infrastructure. Existing Cloud endpoints are the current execution contract.
 ## Decision
 
 Keep the existing master pages source and Router endpoint source. Add one
-workflow JSONL file for Cloud and serverless/API execution declarations, with
-one complete record per workflow. Preserve existing Models identities and file
-formats; do not introduce replacement master or Router catalogs.
+workflow JSONL file for `CLOUD` execution declarations, with one complete record
+per workflow. Serverless/API records and execution are future work. Preserve
+existing Models identities and file formats; do not introduce replacement
+master or Router catalogs.
 
 These files are the publication store for this phase. Catalog database tables,
 Router/workflow publishing APIs and automatic workflow input compilation are
@@ -126,7 +127,7 @@ availability or billing.
 
 ## Notes
 
-PR #18325 remains the presentation reference. FE-2736 implements Cloud execution;
-the workflow catalog accommodates serverless/API records without bringing
-FE-2737 sponsored execution into this phase. The editor exporter branch is no
-longer a dependency or a planned frontend PR for this feature.
+PR #18325 remains the presentation reference. FE-2736 supports only Cloud
+records and execution. Extending the workflow catalog to serverless/API records
+and FE-2737 sponsored execution is future work. The editor exporter branch is
+no longer a dependency or a planned frontend PR for this feature.

@@ -90,4 +90,21 @@ describe('workflow form declarations', () => {
     })
     expect(schemaForModel({ form, fields: [], modality: 'image' })).toEqual([])
   })
+
+  it('rejects a media upload control for a JSON input', () => {
+    const source = definition()
+    expect(() =>
+      formForWorkflow({
+        ...source,
+        inputSchema: {
+          ...source.inputSchema,
+          properties: { text: { type: 'object' } },
+          required: []
+        },
+        inputs: {
+          text: { ...source.inputs.text, control: 'media', urlUpload: 'image' }
+        }
+      })
+    ).toThrow('Input control does not match its declared type: text')
+  })
 })

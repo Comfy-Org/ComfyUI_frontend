@@ -13,8 +13,11 @@ Use the real prepared workflow records and shared Models validation to check:
 - Input types, explicit bindings, defaults and selected outputs are consistent.
 - Widget order comes from the master page. False, zero and empty defaults survive.
 - Invalid or unknown input fields and incompatible mappings fail before execution.
-- Discovery data omits executable graphs; runnable detail data contains the
-  prepared graph and mappings required by native Cloud submission.
+- Discovery data omits executable graphs and input bindings.
+- `WorkshopWorkflowEntry.cloud` retains the prepared graph and `inputBindings`.
+  The catalog/page foundation omits them from detail data. The native runtime
+  in [PR #18680](https://github.com/Comfy-Org/ComfyUI_frontend/pull/18680) includes
+  them in `detail.workflow.cloud` for submission.
 - Examples pair the original input with its output and restore inputs through
   the shared replacement confirmation.
 
