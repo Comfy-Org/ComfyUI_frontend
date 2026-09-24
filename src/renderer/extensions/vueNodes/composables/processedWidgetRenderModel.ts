@@ -421,7 +421,6 @@ function processWidget(
     linkedUpstream,
     nodeLocatorId: widgetNodeLocatorId(ctx, bareWidgetId, sourceExecutionId),
     options: widgetOptions,
-    sourceWidget: live?.widget,
     spec: live
       ? ctx.nodeDefStore.getInputSpecForWidget(live.node, live.widget.name)
       : undefined
@@ -538,4 +537,11 @@ export function computeProcessedWidgets({
   return Array.from(new Set(ids))
     .map((id) => processWidget(id, ctx))
     .filter((widget): widget is ProcessedWidget => widget !== null)
+    .map((widget) => ({
+      ...widget,
+      simplified: {
+        ...widget.simplified,
+        sourceWidget: liveWidgets.get(widget.widgetId)
+      }
+    }))
 }

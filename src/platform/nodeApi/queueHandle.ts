@@ -261,31 +261,38 @@ function executionIds(
   return ids
 }
 
-function normalizeRejectionError(error: unknown): RunRejectionError {
-  if (typeof error === 'string') {
-    return Object.freeze({
-      type: 'prompt_rejected',
-      message: error,
-      details: ''
-    })
+function stringProperty(source: object, property: string) {
+  const value = Reflect.get(source, property)
+  return typeof value === 'string' ? value : undefined
+}
+
+function rejectionFromObject(error: object): RunRejectionError | undefined {
+  const type = stringProperty(error, 'type')
+  const message = stringProperty(error, 'message')
+  if (type === undefined || message === undefined) return undefined
+  return {
+    type,
+    message,
+    details: stringProperty(error, 'details') ?? ''
   }
-  if (typeof error === 'object' && error !== null) {
-    const type = 'type' in error ? error.type : undefined
-    const message = 'message' in error ? error.message : undefined
-    const details = 'details' in error ? error.details : undefined
-    if (typeof type === 'string' && typeof message === 'string') {
-      return Object.freeze({
-        type,
-        message,
-        details: typeof details === 'string' ? details : ''
-      })
-    }
-  }
-  return Object.freeze({
+}
+
+function fallbackRejection(message: string): RunRejectionError {
+  return {
     type: 'prompt_rejected',
-    message: 'Prompt rejected',
+    message,
     details: ''
-  })
+  }
+}
+
+function normalizeRejectionError(error: unknown): RunRejectionError {
+  const normalized =
+    typeof error === 'string'
+      ? fallbackRejection(error)
+      : typeof error === 'object' && error !== null
+        ? rejectionFromObject(error)
+        : undefined
+  return Object.freeze(normalized ?? fallbackRejection('Prompt rejected'))
 }
 
 function normalizeRejection(
