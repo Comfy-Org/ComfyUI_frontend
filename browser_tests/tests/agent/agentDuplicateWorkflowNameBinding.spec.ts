@@ -156,6 +156,8 @@ test(
       route.fulfill(jsonRoute(history))
     )
 
+    const topbar = new Topbar(page)
+    await expect(topbar.getActiveTab()).toContainText('Unsaved Workflow')
     await page.evaluate(async (path) => {
       const store = (window.app!.extensionManager as WorkspaceStore).workflow
       await store.syncWorkflows()
@@ -163,6 +165,7 @@ test(
       if (!portrait) throw new Error('Portrait workflow was not indexed')
       await store.openWorkflow(portrait)
     }, PORTRAIT_PATH)
+    await expect(topbar.getActiveTab()).toContainText('Portrait')
     expect(
       await page.evaluate(
         ([key, workflowId]) => {
@@ -184,7 +187,6 @@ test(
       'Earlier request'
     ])
 
-    const topbar = new Topbar(page)
     await expect(topbar.getActiveTab()).toContainText('Portrait')
     await expect(
       panel.getByText(enMessages.agent.selectWorkflowForAgent)
