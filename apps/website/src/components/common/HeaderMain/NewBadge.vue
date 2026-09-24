@@ -16,7 +16,7 @@ const { label = 'new' } = defineProps<{
 
 <template>
   <Badge
-    :size="size"
+    :size
     variant="accent"
     :class="
       cn(
