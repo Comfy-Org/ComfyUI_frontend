@@ -702,6 +702,22 @@ function dynamicCombo(
   ]
 }
 
+describe('dynamicCombo fixture builder', () => {
+  test('rejects option keys that would not survive the round trip through a record', () => {
+    const option = (key: string): ComboOption => [key, {}]
+
+    expect(() => dynamicCombo(option('Seedance'), option('0'))).toThrow(
+      /ahead of 'Seedance'/
+    )
+    expect(() => dynamicCombo(option('a'), option('b'), option('a'))).toThrow(
+      /Duplicate option keys/
+    )
+    expect(() =>
+      dynamicCombo(option('0'), option('Seedance'), option('4294967295'))
+    ).not.toThrow()
+  })
+})
+
 function autogrow(template: {
   names: string[]
   min: number

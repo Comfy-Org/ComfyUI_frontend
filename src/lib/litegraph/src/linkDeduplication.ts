@@ -210,11 +210,12 @@ function isAutogrowGroupInput(node: LGraphNode, inputName: string): boolean {
 
 /**
  * Re-points a node's group widget child links at the slot their name will map
- * to. A saved link arrives on the wrong slot because the definition lays out
- * the default option's children while `target_slot` counts the serialized
- * layout, so applying the widget's value would rebuild those inputs and drop
- * it. Ordinary inputs join the batch so an occupied destination slot is
- * vacated in the same atomic update instead of blocking the move.
+ * to, before the node's group widget values are applied. A saved link arrives
+ * on the wrong slot because the definition lays out the default option's
+ * children while `target_slot` counts the serialized layout, so applying the
+ * widget's value would rebuild those inputs and drop it. Ordinary inputs join
+ * the batch so an occupied destination slot is vacated in the same atomic
+ * update instead of blocking the move.
  */
 export function realignGroupWidgetChildLinks(
   node: LGraphNode,
