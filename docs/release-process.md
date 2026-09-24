@@ -29,9 +29,10 @@ and `cloud/1.41`, branched from the commit _before_ the bump. Nightly patch
 bumps on `main` are convenience snapshots — no branches created.
 
 The minor bump is scheduled automatically: `release-version-bump.yaml` runs a
-**minor** bump on `main` every Monday 20:00 UTC and enables auto-merge on the
-resulting `version-bump-*` PR (marked with the `weekly-release-cut` label, which
-exempts it from the nightly stale-PR closer), so once its checks pass the merge
+**minor** bump on `main` every Monday and Wednesday 20:00 UTC and enables
+auto-merge on the resulting `version-bump-*` PR (marked with the
+`weekly-release-cut` label, which exempts it from the nightly stale-PR closer),
+so once its checks pass the merge
 triggers `release-branch-create.yaml` and the `core/` + `cloud/` cut is
 hands-off. The separate nightly `0 0 * * *` cron stays a **patch** bump.
 

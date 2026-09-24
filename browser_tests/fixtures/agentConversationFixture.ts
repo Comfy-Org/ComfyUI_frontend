@@ -6,7 +6,6 @@ import { z } from 'zod'
 import { createI18n } from 'vue-i18n'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
-import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
 import type { ComfyNodeDef, ObjectInfoResponse } from '@/schemas/nodeDefSchema'
 import { toNodeId } from '@/types/nodeId'
 import type {
@@ -15,6 +14,8 @@ import type {
   AgentWsEvent
 } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 import { parseAgentWsEvent } from '@/workbench/extensions/agent/schemas/agentApiSchema'
+import { parseServerDocFrame } from '@/workbench/extensions/agent/crdt/docFrameClient'
+import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
 
 import {
   agentTest,
@@ -45,6 +46,7 @@ import type { TabSwitchLens, WorkspaceStore } from '@e2e/types/globals'
 
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 import { assertAgentReplayNodeContract } from '@e2e/fixtures/utils/agentReplayNodeContract'
+import { mockSavedWorkflowPersistence } from '@e2e/fixtures/utils/savedWorkflowPersistence'
 
 const THREAD_ID = 'e9a2f3d1-7c44-4b2e-9a01-5f6d8c7b3a10'
 // One synthetic message id per turn; the recorded ids never reach the page.
@@ -303,45 +305,14 @@ export class AgentConversationHarness {
     await expect(picker).toHaveText('Unsaved Workflow')
   }
 
+  /**
+   * Delegates to the shared persistence mock (`savedWorkflowPersistence.ts`)
+   * instead of independently re-capturing/re-serving saves: this harness and
+   * `MultiAutogrowRealignHarness` had drifted into two mutable
+   * implementations of the same save/reopen round trip.
+   */
   async persistSavedWorkflow(): Promise<void> {
-    let saved: { info: UserDataFullInfo; content: string } | undefined
-    await this.page.route('**/api/userdata**', (route) => {
-      const request = route.request()
-      const path = decodeURIComponent(
-        new URL(request.url()).pathname.split('/userdata/')[1] ?? ''
-      )
-      if (request.method() !== 'POST' || !path.startsWith('workflows/'))
-        return route.fallback()
-      saved = {
-        info: {
-          path,
-          modified: Date.now(),
-          size: request.postDataBuffer()?.length ?? 0
-        },
-        content: request.postData() ?? '{}'
-      }
-      return route.fallback()
-    })
-    await this.page.route('**/api/userdata**', (route) => {
-      const request = route.request()
-      if (request.method() !== 'GET' || !saved) return route.fallback()
-      const url = new URL(request.url())
-      const path = decodeURIComponent(url.pathname.split('/userdata/')[1] ?? '')
-      if (path === saved.info.path)
-        return route.fulfill({
-          contentType: 'application/json',
-          body: saved.content
-        })
-      if (url.searchParams.get('dir') !== 'workflows') return route.fallback()
-      return route.fulfill(
-        jsonRoute([
-          {
-            ...saved.info,
-            path: saved.info.path.slice('workflows/'.length)
-          }
-        ])
-      )
-    })
+    await mockSavedWorkflowPersistence(this.page, this.conversation.workflow.id)
   }
 
   async sendPrompt(turn = 0): Promise<void> {
@@ -948,6 +919,77 @@ export class AgentConversationHarness {
     })
     await expect(this.panel).toBeVisible({ timeout: PANEL_MOUNT_TIMEOUT })
     await this.selectWorkflowTarget()
+  }
+
+  async resyncWidget(nodeId: string, widget: string): Promise<void> {
+    const widgets = z
+      .record(z.string(), z.unknown())
+      .optional()
+      .parse(this.host.graph().nodes[nodeId]?.widgets)
+    const value = widgets?.[widget]
+    if (value === undefined)
+      throw new Error(`Host widget ${nodeId}.${widget} does not exist`)
+    const operation = {
+      op: 'set_widget',
+      node_id: nodeId,
+      widget,
+      value,
+      old: value
+    } satisfies GraphOperation
+    const frame = this.host.apply([operation])
+    const parsedFrame = parseServerDocFrame(frame)
+    if (parsedFrame?.type !== 'doc_update')
+      throw new Error('Host widget resync did not produce a doc_update')
+
+    const receipt = crypto.randomUUID()
+    await this.page.evaluate(
+      ({ receipt, workflowId, seq }) => {
+        const api = window.app!.api
+        const attribute = 'data-agent-crdt-update-receipt'
+        const cleanupType = `agent-crdt-update-cleanup-${receipt}`
+        const removeReceiptListener = () => {
+          api.removeCustomEventListener('doc_update', recordReceipt)
+          document.removeEventListener(cleanupType, removeReceiptListener)
+        }
+        const recordReceipt = (event: CustomEvent<unknown>) => {
+          if (typeof event.detail !== 'object' || event.detail === null) return
+          if (
+            !('workflow_id' in event.detail) ||
+            event.detail.workflow_id !== workflowId ||
+            !('seq' in event.detail) ||
+            event.detail.seq !== seq
+          )
+            return
+          document.documentElement.setAttribute(attribute, receipt)
+          removeReceiptListener()
+        }
+        api.addCustomEventListener('doc_update', recordReceipt)
+        document.addEventListener(cleanupType, removeReceiptListener, {
+          once: true
+        })
+      },
+      {
+        receipt,
+        workflowId: parsedFrame.data.workflowId,
+        seq: parsedFrame.data.seq
+      }
+    )
+    try {
+      this.hostSocket.send(frame)
+      await expect(this.page.locator('html')).toHaveAttribute(
+        'data-agent-crdt-update-receipt',
+        receipt
+      )
+    } finally {
+      await this.page.evaluate((receipt) => {
+        document.dispatchEvent(
+          new CustomEvent(`agent-crdt-update-cleanup-${receipt}`)
+        )
+        document.documentElement.removeAttribute(
+          'data-agent-crdt-update-receipt'
+        )
+      }, receipt)
+    }
   }
 }
 

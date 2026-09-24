@@ -29,6 +29,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { isCloud } from '@/platform/distribution/types'
+import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
@@ -73,8 +74,21 @@ import {
 type ProgressKind = 'processing' | 'action'
 type ToastMessage = Parameters<ReturnType<typeof useToastStore>['add']>[0]
 
+/**
+ * The server's `/features` value when configured, this deployment's
+ * build-time fallback otherwise. `remoteConfig` already carries this
+ * document — fetched once at boot — so reading it here costs no extra
+ * request; a non-string or empty server value is treated as absent.
+ */
+function resolvedStripePublishableKey(): string | undefined {
+  const fromServer = remoteConfig.value.stripe_publishable_key
+  return typeof fromServer === 'string' && fromServer !== ''
+    ? fromServer
+    : import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+}
+
 async function loadChallengePort(): Promise<EmbeddedChallengePort | undefined> {
-  const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY
+  const publishableKey = resolvedStripePublishableKey()
   const stripe = publishableKey
     ? await loadStripe(publishableKey).catch(() => null)
     : null
@@ -107,8 +121,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     workspaceId: () => workspaceAuthStore.getUnifiedMintWorkspaceId(),
     pointerStorage: sessionStorage,
     embeddedCheckoutAvailable: () =>
-      flags.embeddedCheckoutEnabled &&
-      Boolean(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY),
+      flags.embeddedCheckoutEnabled && Boolean(resolvedStripePublishableKey()),
     hostedDestination: () => flags.hostedBillingDestination,
     onTelemetry: reportTelemetry,
     challengePort: loadChallengePort
@@ -260,6 +273,9 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   function onSubscriptionChanged(state: BillingOperationState) {
     if (state.phase !== 'pending') {
       offeredActions.delete(state.id)
+      if (resumedOperations.delete(state.id)) {
+        void settleResumedSubscription(state)
+      }
       return
     }
     void driveRequiredChallenge(state)
@@ -316,6 +332,36 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       toastStore.add({
         severity: 'error',
         summary: t('billingOperation.topupFailed'),
+        detail: declineDetail(state.declineReason),
+        life: 7000
+      })
+    }
+  }
+
+  // A subscribe this tab reattached to after a reload has no checkout left to
+  // report it, so it settles the way the poller settled it. Only a subscribe
+  // is ever reattached: the status names a pending subscription or top-up.
+  async function settleResumedSubscription(state: BillingOperationState) {
+    if (state.phase === 'succeeded') {
+      await refreshAfterSubscriptionChange()
+      toastStore.add({
+        severity: 'success',
+        summary: t('billingOperation.subscriptionSuccess'),
+        life: 5000
+      })
+      return
+    }
+    if (state.phase === 'timed_out') {
+      toastStore.add({
+        severity: 'error',
+        summary: t('billingOperation.subscriptionTimeout')
+      })
+      return
+    }
+    if (state.phase === 'failed') {
+      toastStore.add({
+        severity: 'error',
+        summary: t('billingOperation.subscriptionFailed'),
         detail: declineDetail(state.declineReason),
         life: 7000
       })

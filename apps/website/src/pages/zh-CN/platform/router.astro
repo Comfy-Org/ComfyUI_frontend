@@ -1,11 +1,20 @@
 ---
 import BaseLayout from '../../../layouts/BaseLayout.astro'
 import ProductCardsSection from '../../../components/common/ProductCardsSection.vue'
+import FAQSection from '../../../components/common/FAQSection.vue'
 import ClosingCtaSection from '../../../templates/platform/ClosingCtaSection.vue'
-import ModelsApiFeaturesSection from '../../../templates/platform/ModelsApiFeaturesSection.vue'
-import ModelsApiGallery from '../../../templates/platform/ModelsApiGallery.vue'
 import ModelsApiHero from '../../../templates/platform/ModelsApiHero.vue'
+import ModelsApiGallery from '../../../templates/platform/ModelsApiGallery.vue'
+import RouterCapabilitiesSection from '../../../templates/platform/RouterCapabilitiesSection.vue'
+import RouterCodeSection from '../../../templates/platform/RouterCodeSection.vue'
+import RouterVideoSection from '../../../templates/platform/RouterVideoSection.vue'
+import RouterMigrationBanner from '../../../templates/platform/RouterMigrationBanner.vue'
+import RouterProofStripSection from '../../../templates/platform/RouterProofStripSection.vue'
+import RouterProviderCoverageSection from '../../../templates/platform/RouterProviderCoverageSection.vue'
+import RouterRoadmapSection from '../../../templates/platform/RouterRoadmapSection.vue'
+import { externalLinks } from '../../../config/routes'
 import { t } from '../../../i18n/translations'
+import { routerFaq, routerT } from '../../../templates/platform/routerCopy'
 ---
 
 <BaseLayout
@@ -13,11 +22,28 @@ import { t } from '../../../i18n/translations'
   description={t('platform.products.models.description', 'zh-CN')}
 >
   <ModelsApiHero locale="zh-CN" client:load />
+  <RouterMigrationBanner locale="zh-CN" client:visible />
+  <RouterProofStripSection locale="zh-CN" />
   <ModelsApiGallery locale="zh-CN" client:visible />
-  <ModelsApiFeaturesSection locale="zh-CN" />
+  <RouterCodeSection locale="zh-CN" client:visible />
+  <RouterVideoSection locale="zh-CN" client:visible />
+  <RouterCapabilitiesSection locale="zh-CN" />
+  <RouterProviderCoverageSection locale="zh-CN" />
+  <RouterRoadmapSection locale="zh-CN" client:visible />
+  <FAQSection
+    locale="zh-CN"
+    heading={routerT('platform.router.faq.heading', 'zh-CN')}
+    items={routerFaq('zh-CN')}
+    client:load
+  />
   <ClosingCtaSection
     locale="zh-CN"
-    heading-after-badge={t('platform.closing.headingAfterBadge', 'zh-CN')}
+    heading-after-badge={routerT(
+      'platform.router.closing.headingAfterBadge',
+      'zh-CN'
+    )}
+    subtitle={routerT('platform.router.closing.subtitle', 'zh-CN')}
+    primary-href={externalLinks.routerApiKeys}
     client:visible
   />
   <ProductCardsSection locale="zh-CN" label-key="products.labelProducts" />

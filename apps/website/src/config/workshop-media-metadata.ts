@@ -1,0 +1,77 @@
+export interface WorkshopVideoMetadata {
+  readonly durationSeconds: number
+  readonly widthPixels: number
+  readonly heightPixels: number
+}
+
+export async function readWorkshopVideoMetadata(
+  source: File | string,
+  signal: AbortSignal
+): Promise<WorkshopVideoMetadata> {
+  signal.throwIfAborted()
+  const video = document.createElement('video')
+  const sourceUrl =
+    typeof source === 'string' ? source : URL.createObjectURL(source)
+  video.preload = 'metadata'
+
+  try {
+    const metadata = await new Promise<WorkshopVideoMetadata>(
+      (resolve, reject) => {
+        const abort = () => finish(undefined, signal.reason)
+        const fail = () =>
+          finish(
+            undefined,
+            new DOMException(
+              'Video metadata could not be read',
+              'NotSupportedError'
+            )
+          )
+        const timer = setTimeout(
+          () =>
+            finish(
+              undefined,
+              new DOMException('Video metadata timed out', 'TimeoutError')
+            ),
+          15_000
+        )
+
+        function finish(value?: WorkshopVideoMetadata, error?: unknown) {
+          clearTimeout(timer)
+          signal.removeEventListener('abort', abort)
+          video.onloadedmetadata = null
+          video.onerror = null
+          if (value === undefined) reject(error)
+          else resolve(value)
+        }
+
+        video.onloadedmetadata = () => {
+          const value = {
+            durationSeconds: video.duration,
+            widthPixels: video.videoWidth,
+            heightPixels: video.videoHeight
+          }
+          if (
+            Object.values(value).every(
+              (measurement) => Number.isFinite(measurement) && measurement > 0
+            )
+          )
+            finish(value)
+          else fail()
+        }
+        video.onerror = fail
+        signal.addEventListener('abort', abort, { once: true })
+        try {
+          video.src = sourceUrl
+        } catch {
+          fail()
+        }
+      }
+    )
+    signal.throwIfAborted()
+    return metadata
+  } finally {
+    video.removeAttribute('src')
+    video.load()
+    if (typeof source !== 'string') URL.revokeObjectURL(sourceUrl)
+  }
+}

@@ -6,6 +6,7 @@
  * over beforeLoadGraph/afterConfigureGraph: a failed load leaves mints
  * suppressed until the next load's pair recloses.
  */
+import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { RootGraphId } from '@/types/graphScopeId'
@@ -167,6 +168,7 @@ function valueWidgetsOnly(
 
 export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   const session = createMintSession()
+  let intentionalClearDepth = 0
   const enqueue = (operations: GraphOperation[]) => {
     const pending = bufferedEnqueues.at(-1)
     if (pending) pending.push(() => deps.enqueue(operations))
@@ -200,6 +202,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     session,
     isEnabled: deps.isEnabled,
     isDocBound: deps.isDocBound,
+    isIntentionalClear: () => intentionalClearDepth > 0,
     enqueue
   })
 
@@ -288,10 +291,26 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
 
   let loadBracketOpen = false
 
+  // The ports gate their sends on exactly this trio, so the same read also
+  // answers litegraph's mint-time question: a graph whose edits reach the doc
+  // is a graph the agent mints into too, and must mint from the disjoint
+  // range (`idAllocation.ts`).
+  const unregisterDocBoundProbe = registerDocBoundRootGraphProbe(() => {
+    if (!deps.isEnabled() || !deps.isDocBound()) return null
+    const graph = deps.getGraph()
+    if (!graph) return null
+    return graph.rootGraph?.id ?? graph.id
+  })
+
   const wiring: MintPortWiring = {
     session,
     runIntentionalClear(fn) {
-      return layoutPort.runIntentionalClear(fn)
+      intentionalClearDepth++
+      try {
+        return layoutPort.runIntentionalClear(fn)
+      } finally {
+        intentionalClearDepth--
+      }
     },
     onBeforeGraphLoad() {
       if (loadBracketOpen) return
@@ -305,6 +324,7 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     },
     detach() {
       activeWirings.delete(wiring)
+      unregisterDocBoundProbe()
       detachLinkActions()
       detachWidgetChanges()
       widgetPort.detach()
