@@ -3,11 +3,13 @@ import { computed, ref } from 'vue'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import type {
   AgentRestClient,
   OpenTabsSnapshot
 } from '../../services/agent/agentRestClient'
+import type { useAgentWorkflowDraftArchiveStore } from '../../stores/agent/agentWorkflowDraftArchiveStore'
 import type { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import type {
   WorkflowReferenceMetadata,
@@ -17,11 +19,15 @@ import type {
 type WorkflowResolverDeps = {
   workflows: Pick<
     ReturnType<typeof useWorkflowStore>,
-    'openWorkflows' | 'workflows' | 'getWorkflowByPath'
+    'openWorkflows' | 'workflows' | 'getWorkflowByPath' | 'createNewTemporary'
   >
   bindings: Pick<
     ReturnType<typeof useAgentWorkflowTabBindingStore>,
     'workflowIdFor' | 'tabPathFor' | 'matchesWorkflow' | 'unbind'
+  >
+  draftArchive: Pick<
+    ReturnType<typeof useAgentWorkflowDraftArchiveStore>,
+    'read' | 'discard'
   >
   listCloudWorkflows: AgentRestClient['listCloudWorkflows']
 }
@@ -29,6 +35,7 @@ type WorkflowResolverDeps = {
 export function useAgentWorkflowResolver({
   workflows,
   bindings,
+  draftArchive,
   listCloudWorkflows
 }: WorkflowResolverDeps) {
   const cloudIndex = ref<WorkflowReferenceMetadata[]>([])
@@ -158,6 +165,35 @@ export function useAgentWorkflowResolver({
     )
   }
 
+  /**
+   * Last resort for a chat thread whose workflow resolves to nothing: rebuilds
+   * the unsaved graph archived when its tab was closed. The caller must bind
+   * `workflowId` to the returned tab, which is what reconnects the thread.
+   */
+  async function recoverWorkflowFor(
+    workflowId: string
+  ): Promise<ComfyWorkflow | null> {
+    const archived = draftArchive.read(workflowId)
+    if (archived === null) return null
+    const graph = await validateComfyWorkflow(
+      parseArchivedGraph(archived.content),
+      () => {}
+    )
+    if (graph === null) {
+      draftArchive.discard(workflowId)
+      return null
+    }
+    return workflows.createNewTemporary(archived.filename, graph)
+  }
+
+  function parseArchivedGraph(content: string): unknown {
+    try {
+      return JSON.parse(content)
+    } catch {
+      return null
+    }
+  }
+
   const availableWorkflowReferences = computed<WorkflowReferenceOption[]>(
     () => {
       const seenIds = new Set<string>()
@@ -219,6 +255,7 @@ export function useAgentWorkflowResolver({
     boundOrOpenWorkflowFor,
     storedWorkflowFor,
     openWorkflowFor,
+    recoverWorkflowFor,
     availableWorkflowReferences,
     openTabsSnapshot,
     nextSaveFilename

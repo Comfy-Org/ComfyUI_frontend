@@ -4,8 +4,11 @@ import { reactive } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
+import { blankGraph } from '@/scripts/defaultGraph'
 
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
+import { useAgentWorkflowDraftArchiveStore } from '../../stores/agent/agentWorkflowDraftArchiveStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
 import { useAgentWorkflowResolver } from './useAgentWorkflowResolver'
@@ -38,18 +41,32 @@ function setup(
     workflows: [...open, ...closed],
     getWorkflowByPath(path: string): ComfyWorkflow | null {
       return this.workflows.find((candidate) => candidate.path === path) ?? null
+    },
+    createNewTemporary(
+      filename?: string,
+      workflowData?: ComfyWorkflowJSON
+    ): ComfyWorkflow {
+      const created = workflow(
+        `workflows/${filename ?? 'Unsaved Workflow.json'}`,
+        (filename ?? 'Unsaved Workflow.json').replace(/\.json$/, ''),
+        { isTemporary: true, activeState: workflowData ?? null }
+      )
+      this.workflows.push(created)
+      return created
     }
   })
   const bindings = useAgentWorkflowTabBindingStore()
+  const draftArchive = useAgentWorkflowDraftArchiveStore()
   const listCloudWorkflows = vi.fn(
     async (): Promise<CloudWorkflowEntry[]> => cloud
   )
   const resolver = useAgentWorkflowResolver({
     workflows,
     bindings,
+    draftArchive,
     listCloudWorkflows
   })
-  return { workflows, bindings, listCloudWorkflows, resolver }
+  return { workflows, bindings, draftArchive, listCloudWorkflows, resolver }
 }
 
 describe('Agent workflow resolution', () => {
@@ -344,4 +361,50 @@ describe('Agent workflow resolution', () => {
       { id: 'cloud-zimage', name: 'image_z_image_turbo' }
     ])
   })
+})
+
+describe('Agent unsaved workflow recovery', () => {
+  beforeEach(() => {
+    localStorage.clear()
+  })
+
+  it('rebuilds a closed unsaved workflow from its archived graph', async () => {
+    const { resolver, draftArchive, workflows } = setup([])
+    const graph = { ...blankGraph, id: '11111111-2222-3333-4444-555555555555' }
+    draftArchive.archive('cloud-draft', {
+      filename: 'Agent draft.json',
+      content: JSON.stringify(graph)
+    })
+
+    const recovered = await resolver.recoverWorkflowFor('cloud-draft')
+
+    expect(recovered?.path).toBe('workflows/Agent draft.json')
+    expect(recovered?.isTemporary).toBe(true)
+    expect(recovered?.activeState).toMatchObject({ id: graph.id })
+    expect(workflows.getWorkflowByPath('workflows/Agent draft.json')).toEqual(
+      recovered
+    )
+  })
+
+  it('recovers nothing for a workflow that was never archived', async () => {
+    const { resolver, workflows } = setup([])
+
+    expect(await resolver.recoverWorkflowFor('cloud-missing')).toBeNull()
+    expect(workflows.workflows).toEqual([])
+  })
+
+  it.for(['not json', '{"nodes":[]}'])(
+    'discards an archived graph it cannot load back (%s)',
+    async (content) => {
+      const { resolver, draftArchive, workflows } = setup([])
+      draftArchive.archive('cloud-broken', {
+        filename: 'Agent draft.json',
+        content
+      })
+
+      expect(await resolver.recoverWorkflowFor('cloud-broken')).toBeNull()
+      expect(draftArchive.read('cloud-broken')).toBeNull()
+      expect(workflows.workflows).toEqual([])
+    }
+  )
 })

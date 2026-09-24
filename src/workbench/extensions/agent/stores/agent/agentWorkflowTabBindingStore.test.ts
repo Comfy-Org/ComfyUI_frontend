@@ -5,6 +5,7 @@ import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkfl
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { blankGraph } from '@/scripts/defaultGraph'
 
+import { useAgentWorkflowDraftArchiveStore } from './agentWorkflowDraftArchiveStore'
 import { useAgentWorkflowTabBindingStore } from './agentWorkflowTabBindingStore'
 
 const LEGACY_KEY = 'Comfy.Agent.WorkflowTabBindings'
@@ -449,5 +450,64 @@ describe('agentWorkflowTabBindingStore', () => {
     const store = useAgentWorkflowTabBindingStore()
     expect(store.tabPathFor('constructor')).toBeUndefined()
     expect(store.workflowIdFor('workflows/missing.json')).toBeUndefined()
+  })
+
+  // FE-2911: closing an unsaved tab deletes the workflow and its draft, so a
+  // historical chat pinned to it has nothing left to reopen.
+  it('archives the graph of a bound unsaved tab so a chat can reopen it', async () => {
+    const path = 'workflows/Agent draft.json'
+    seedBindings({
+      'wf-minted': {
+        tabPath: path,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now()
+      }
+    })
+    const workflows = useWorkflowStore()
+    const archive = useAgentWorkflowDraftArchiveStore()
+    const bindings = useAgentWorkflowTabBindingStore()
+    const draft = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    await nextTick()
+    expect(bindings.matchesWorkflow('wf-minted', draft)).toBe(true)
+
+    await workflows.closeWorkflow(draft)
+    await nextTick()
+
+    expect(workflows.getWorkflowByPath(path)).toBeNull()
+    expect(archive.read('wf-minted')).toMatchObject({
+      filename: 'Agent draft.json'
+    })
+    expect(
+      JSON.parse(archive.read('wf-minted')?.content ?? 'null')
+    ).toMatchObject({ id: DRAFT_GRAPH_ID })
+  })
+
+  it('does not archive a bound tab that is still saved on the server', async () => {
+    const path = 'workflows/Saved.json'
+    seedBindings({
+      'wf-saved': {
+        tabPath: path,
+        graphId: DRAFT_GRAPH_ID,
+        confirmedAt: Date.now()
+      }
+    })
+    const workflows = useWorkflowStore()
+    const archive = useAgentWorkflowDraftArchiveStore()
+    const saved = workflows.createTemporary('Saved.json', {
+      ...blankGraph,
+      id: DRAFT_GRAPH_ID
+    })
+    saved.size = 1
+    workflows.openWorkflowsInBackground({ right: [saved.path] })
+    await nextTick()
+
+    await workflows.closeWorkflow(saved)
+    await nextTick()
+
+    expect(archive.read('wf-saved')).toBeNull()
   })
 })

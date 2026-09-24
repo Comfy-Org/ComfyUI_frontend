@@ -556,6 +556,8 @@ export function clearAllWorkflowStorage(): void {
   const localPrefixes = [
     StorageKeys.prefixes.draftIndex,
     StorageKeys.prefixes.draftPayload,
+    StorageKeys.prefixes.agentDraftArchiveIndex,
+    StorageKeys.prefixes.agentDraftArchivePayload,
     StorageKeys.prefixes.lastActivePath,
     StorageKeys.prefixes.lastOpenPaths,
     'Comfy.Workflow.Drafts:',

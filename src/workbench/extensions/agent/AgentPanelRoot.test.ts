@@ -37,6 +37,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { app } from '@/scripts/app'
+import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -231,6 +232,7 @@ import { useAgentConversationStore } from './stores/agent/agentConversationStore
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
+import { useAgentWorkflowDraftArchiveStore } from './stores/agent/agentWorkflowDraftArchiveStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { attachMintPortWiring } from './crdt/mintPortWiring'
 import type { MintPortWiring, MintPortWiringDeps } from './crdt/mintPortWiring'
@@ -3695,6 +3697,152 @@ describe('AgentPanelRoot workflow binding', () => {
       ).toHaveTextContent(i18n.global.t('agent.selectWorkflowForAgent'))
     }
   )
+
+  // FE-2911: the tab the thread was pinned to was unsaved and closed, so
+  // nothing open, stored or in Cloud carries `wf-history` any more. The graph
+  // archived on close is the only thing left to reconnect the thread to.
+  it('reconnects a historical chat to the unsaved workflow archived when its tab closed', async () => {
+    makeTab('wf-42')
+    useAgentWorkflowDraftArchiveStore().archive('wf-history', {
+      filename: 'Agent draft.json',
+      content: JSON.stringify({
+        ...blankGraph,
+        id: '3d4d7f1e-3c8b-4a0a-9a3c-1d2e3f4a5b6c'
+      })
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'history-user',
+              thread_id: 'th-history',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'history-turn',
+              workflow_id: 'wf-history',
+              content: { text: 'Historical prompt' }
+            }
+          ])
+        if (url.includes('/agent/threads'))
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-history',
+                title: 'Earlier chat',
+                last_message_at: '2026-09-01T00:00:00Z'
+              })
+            ])
+          )
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        return json(200, {})
+      })
+    )
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Earlier chat'))
+    await screen.findAllByText('Historical prompt')
+
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(
+        'workflows/Agent draft.json'
+      )
+    )
+    const recovered = workflowStore.getWorkflowByPath(
+      'workflows/Agent draft.json'
+    )
+    expect(recovered?.isTemporary).toBe(true)
+    expect(workflowStore.activeWorkflow?.path).toBe(recovered?.path)
+    expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-history')).toBe(
+      'workflows/Agent draft.json'
+    )
+    expect(useToastStore().messagesToAdd).not.toContainEqual(
+      expect.objectContaining({
+        detail: i18n.global.t('agent.targetNavigationUnavailable')
+      })
+    )
+  })
+
+  it('does not strand a recovered workflow that then refuses to open', async () => {
+    makeTab('wf-42')
+    useAgentWorkflowDraftArchiveStore().archive('wf-history', {
+      filename: 'Agent draft.json',
+      content: JSON.stringify(blankGraph)
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'history-user',
+              thread_id: 'th-history',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'history-turn',
+              workflow_id: 'wf-history',
+              content: { text: 'Historical prompt' }
+            }
+          ])
+        if (url.includes('/agent/threads'))
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-history',
+                title: 'Earlier chat',
+                last_message_at: '2026-09-01T00:00:00Z'
+              })
+            ])
+          )
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        return json(200, {})
+      })
+    )
+    workflowService.openWorkflow.mockResolvedValueOnce(false)
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    await userEvent.click(await screen.findByText('Earlier chat'))
+    await screen.findAllByText('Historical prompt')
+
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            detail: i18n.global.t('agent.targetNavigationUnavailable')
+          })
+        ])
+      )
+    )
+    expect(workflowService.closeWorkflow).toHaveBeenCalledWith(
+      expect.objectContaining({ path: 'workflows/Agent draft.json' }),
+      { warnIfUnsaved: false }
+    )
+    expect(
+      workflowStore.getWorkflowByPath('workflows/Agent draft.json')
+    ).toBeNull()
+    expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+  })
 
   it('does not commit a pending selection after its tab closes', async () => {
     const current = makeTab('wf-42')

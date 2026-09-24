@@ -89,11 +89,29 @@ export const StorageKeys = {
   },
 
   /**
+   * Index of workflow graphs the agent archived when their unsaved tab was
+   * closed, keyed by workspace. Holds metadata only; graphs live under
+   * `agentDraftArchivePayload`.
+   */
+  agentDraftArchiveIndex(workspaceId: string): string {
+    return `Comfy.Workflow.AgentDraftArchiveIndex.v1:${workspaceId}`
+  },
+
+  /**
+   * One archived graph, keyed by the cloud workflow id the agent chat pins.
+   */
+  agentDraftArchivePayload(workspaceId: string, workflowId: string): string {
+    return `Comfy.Workflow.AgentDraftArchive.v1:${workspaceId}:${workflowId}`
+  },
+
+  /**
    * Prefix patterns for cleanup operations.
    */
   prefixes: {
     draftIndex: 'Comfy.Workflow.DraftIndex.v2:',
     draftPayload: 'Comfy.Workflow.Draft.v2:',
+    agentDraftArchiveIndex: 'Comfy.Workflow.AgentDraftArchiveIndex.v1:',
+    agentDraftArchivePayload: 'Comfy.Workflow.AgentDraftArchive.v1:',
     activePath: 'Comfy.Workflow.ActivePath:',
     openPaths: 'Comfy.Workflow.OpenPaths:',
     lastActivePath: 'Comfy.Workflow.LastActivePath:',

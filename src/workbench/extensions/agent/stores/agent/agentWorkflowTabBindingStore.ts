@@ -6,6 +6,8 @@ import { areWorkflowIdsEquivalent } from '@/platform/workflow/core/utils/workflo
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 
+import { useAgentWorkflowDraftArchiveStore } from './agentWorkflowDraftArchiveStore'
+
 const LEGACY_STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings'
 const STORAGE_KEY = 'Comfy.Agent.WorkflowTabBindings.v2'
 const BINDING_TTL_MS = 30 * 24 * 60 * 60 * 1000
@@ -93,6 +95,7 @@ export const useAgentWorkflowTabBindingStore = defineStore(
     )
 
     const workflows = useWorkflowStore()
+    const archive = useAgentWorkflowDraftArchiveStore()
     const boundInstances = new Map<string, ComfyWorkflow>()
     const refusedInstances = new Map<string, ComfyWorkflow>()
 
@@ -164,12 +167,25 @@ export const useAgentWorkflowTabBindingStore = defineStore(
       refusedInstances.delete(workflowId)
     }
 
+    // Only a temporary tab needs this: a saved one stays resolvable by name.
+    // `content` is the fallback for a tab closed from the background, which
+    // never mounted and so has no change tracker behind `activeState`.
+    function archiveClosedDraft(workflowId: string, tab: ComfyWorkflow): void {
+      if (!tab.isTemporary) return
+      const content =
+        tab.activeState === null ? tab.content : JSON.stringify(tab.activeState)
+      if (content === null || content.length === 0) return
+      archive.archive(workflowId, { filename: tab.key, content })
+    }
+
     function releaseClosedTab({ tab, path }: OpenTab): void {
       const workflowId = recordIdFor(path)
       if (workflowId === undefined) return
       if (refusedInstances.get(workflowId) === toRaw(tab))
         refusedInstances.delete(workflowId)
-      if (isVerifiedOwner(workflowId, tab)) unbind(path)
+      if (!isVerifiedOwner(workflowId, tab)) return
+      archiveClosedDraft(workflowId, tab)
+      unbind(path)
     }
 
     function adoptOpenTab({ tab, path }: OpenTab): void {

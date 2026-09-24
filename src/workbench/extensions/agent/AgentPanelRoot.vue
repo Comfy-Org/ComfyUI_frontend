@@ -100,6 +100,7 @@ import { useAgentWorkflowResolver } from './composables/agent/useAgentWorkflowRe
 import { useAgentWorkflowSelection } from './composables/agent/useAgentWorkflowSelection'
 import { useAgentSession } from './composables/agent/useAgentSession'
 import { useAgentDraftSubmission } from './composables/agent/useAgentDraftSubmission'
+import { useAgentWorkflowDraftArchiveStore } from './stores/agent/agentWorkflowDraftArchiveStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
@@ -188,6 +189,7 @@ const agentNodeSelectionStore = useAgentNodeSelectionStore()
 const workflowResolver = useAgentWorkflowResolver({
   workflows: workflowStore,
   bindings: bindingStore,
+  draftArchive: useAgentWorkflowDraftArchiveStore(),
   listCloudWorkflows: () => rest.listCloudWorkflows()
 })
 const {
@@ -197,6 +199,7 @@ const {
   boundOrOpenWorkflowFor,
   storedWorkflowFor,
   openWorkflowFor,
+  recoverWorkflowFor,
   availableWorkflowReferences,
   openTabsSnapshot
 } = workflowResolver
@@ -868,6 +871,11 @@ function onOpenApprovalWorkflow(
 async function onNavigateToReferenceWorkflow(
   workflowId: string
 ): Promise<void> {
+  let recovered: ComfyWorkflow | null = null
+  const abandonRecovered = async () => {
+    if (recovered !== null)
+      await workflowService.closeWorkflow(recovered, { warnIfUnsaved: false })
+  }
   try {
     let target = openWorkflowFor(workflowId)
     if (target === null) {
@@ -877,12 +885,18 @@ async function onNavigateToReferenceWorkflow(
       ])
       target = storedWorkflowFor(workflowId)
     }
+    if (target === null) {
+      recovered = await recoverWorkflowFor(workflowId)
+      target = recovered
+    }
     if (target === null || !(await workflowService.openWorkflow(target))) {
+      await abandonRecovered()
       warnWorkflowUnavailable()
       return
     }
     bindingStore.bind(workflowId, target.path)
   } catch {
+    await abandonRecovered()
     warnWorkflowUnavailable()
   }
 }
