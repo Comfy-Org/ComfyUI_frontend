@@ -51,6 +51,18 @@ export type MutationsForTarget =
   | ((workflowId: string) => GraphMutations)
 
 /**
+ * Live node ids (string keys) the doc has never held, plus the live link ids
+ * incident to them. `null` means the caller could not determine this for the
+ * frame (no live graph to consult, or the reconcile belongs to a workflow
+ * this caller has not bound) -- distinct from an empty result, which means
+ * the caller looked and genuinely found nothing to protect.
+ */
+export interface LocalOnlyGraphIds {
+  nodeIds: ReadonlySet<string>
+  linkIds: ReadonlySet<number>
+}
+
+/**
  * The local human's edits the host has not yet reflected in the doc. A full
  * reconcile treats the doc as authoritative for everything else; without
  * this seam it would recreate a node whose delete is still on its way.
@@ -58,9 +70,23 @@ export type MutationsForTarget =
 export interface LocalIntent {
   /** Doc node ids (string keys) with a pending human `delete_node`. */
   pendingDeletes(workflowId: string): ReadonlySet<string>
+  /**
+   * Live node/link ids the doc has never held. Consulted only for the one
+   * full reconcile a session's first *completed* protected bind runs: a node
+   * added by hand before the follower ever protected a reconcile has no doc
+   * record and must not be swept as "missing" by that frame's
+   * `removeMissing` -- nor its incident links, which `removeMissing` would
+   * otherwise sweep right alongside a node it does retain.
+   */
+  localOnlyGraphIds(workflowId: string): LocalOnlyGraphIds | null
+  /** Records doc provenance after a protected reconcile commits. */
+  commitProtectedReconcile?(workflowId: string): void
 }
 
-const NO_LOCAL_INTENT: LocalIntent = { pendingDeletes: () => new Set() }
+const NO_LOCAL_INTENT: LocalIntent = {
+  pendingDeletes: () => new Set(),
+  localOnlyGraphIds: () => ({ nodeIds: new Set(), linkIds: new Set() })
+}
 
 function plain(value: unknown): unknown {
   if (value instanceof Y.Map || value instanceof Y.Array) return value.toJSON()
@@ -380,11 +406,16 @@ interface TargetSession {
  */
 export class EcsFollowerAdapter {
   private readonly targets = new Map<string, TargetSession>()
+  private readonly protectedWorkflowIds = new Set<string>()
 
   constructor(
     private readonly mutations: MutationsForTarget,
     private readonly intent: LocalIntent = NO_LOCAL_INTENT
   ) {}
+
+  private needsProtection(workflowId: string): boolean {
+    return !this.protectedWorkflowIds.has(workflowId)
+  }
 
   bind(workflowId: string, follower: FollowerDoc): void {
     this.unbind(workflowId)
@@ -426,6 +457,7 @@ export class EcsFollowerAdapter {
 
   /** Explicit lineage reset only; reconnect/gap recovery never calls it. */
   clearForReset(workflowId: string, context: RemoteMutationContext): boolean {
+    this.protectedWorkflowIds.delete(workflowId)
     const session = this.targets.get(workflowId)
     if (!session) return false
     this.discardSessionPending(session)
@@ -440,6 +472,7 @@ export class EcsFollowerAdapter {
   destroy(): void {
     for (const workflowId of Array.from(this.targets.keys()))
       this.unbind(workflowId)
+    this.protectedWorkflowIds.clear()
   }
 
   private createSession(
@@ -531,6 +564,15 @@ export class EcsFollowerAdapter {
       const linkId = resolveLinkMapKey(id)
       return linkId === null ? [] : [linkId]
     })
+    const needsProtection = this.needsProtection(session.workflowId)
+    const localOnly =
+      reconcile && needsProtection
+        ? this.intent.localOnlyGraphIds(session.workflowId)
+        : null
+    if (reconcile && needsProtection && localOnly === null) {
+      session.reconcileNextFrame = true
+      return false
+    }
     const committed = session.mutations.batch(frameContext(update), (batch) => {
       // A SubgraphNode host that is already live must never be rebuilt from
       // its doc entry: `reconcileNode` (and delete + `addNode`) replaces the
@@ -552,6 +594,8 @@ export class EcsFollowerAdapter {
 
       if (reconcile) {
         const pendingDeletes = this.intent.pendingDeletes(session.workflowId)
+        const localOnlyNodeIds = localOnly?.nodeIds ?? new Set<string>()
+        const localOnlyLinkIds = localOnly?.linkIds ?? new Set<number>()
         const nodes = [...session.nodes.keys()]
           .filter((id) => !pendingDeletes.has(id))
           .flatMap((id) => {
@@ -580,8 +624,11 @@ export class EcsFollowerAdapter {
           session.reportedErrors
         )
         batch.removeMissing(
-          nodes.map(({ id }) => toNodeId(id)),
-          links.map(({ id }) => id)
+          [
+            ...nodes.map(({ id }) => toNodeId(id)),
+            ...[...localOnlyNodeIds].map((id) => toNodeId(id))
+          ],
+          [...links.map(({ id }) => id), ...localOnlyLinkIds]
         )
         for (const payload of nodes) upsertNode(payload, 'reconcile')
         for (const link of links) batch.connect(link)
@@ -676,6 +723,10 @@ export class EcsFollowerAdapter {
       for (const link of incomingLinks) batch.connect(link)
     })
 
+    if (committed && localOnly !== null) {
+      this.protectedWorkflowIds.add(session.workflowId)
+      this.intent.commitProtectedReconcile?.(session.workflowId)
+    }
     // The pending sets were snapshotted and cleared before `batch` ran, so a
     // rejected batch (no scope, or validation failure) has already lost the
     // incremental record of this frame. Arm a full reconcile for the next

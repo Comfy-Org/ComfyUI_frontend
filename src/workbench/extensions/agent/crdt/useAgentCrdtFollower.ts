@@ -12,10 +12,10 @@ import * as Y from 'yjs'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
+import { useAgentCrdtDocHistoryStore } from '@/workbench/extensions/agent/stores/agent/agentCrdtDocHistoryStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import type { MaterializableGraph } from './agentNodeMaterializer'
@@ -24,13 +24,18 @@ import {
   STALE_AFTER_MS,
   SUBSCRIBE_CATCHUP_GRACE_MS
 } from './agentCrdtDocLifecycle'
+import { computeLocalOnlyGraphIds } from './agentLocalOnlyGraphIds'
 import { AgentCrdtProjection } from './agentCrdtProjection'
 import { apiTransport, createLoggedTransport } from './agentCrdtTransport'
 import { recordDevEvent } from './devPanelLog'
 import type { CrdtDebugSnapshot } from './crdtSnapshot'
 import { readCrdtSnapshot } from './crdtSnapshot'
 import { DocFrameClient } from './docFrameClient'
-import type { MutationsForTarget } from './ecsFollowerAdapter'
+import type { DocReset } from './docFrameClient'
+import type {
+  LocalOnlyGraphIds,
+  MutationsForTarget
+} from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
@@ -360,13 +365,19 @@ function startAgentCrdtFollower(
     }
     return pending
   }
-  const projection = new AgentCrdtProjection(
-    graphMutations,
-    getGraph,
-    () => bridge.follower.doc,
-    { pendingDeletes: pendingHumanDeletes }
-  )
-  const coalescer = createOpCoalescer(sender.admit, sender.flush)
+  const docHistory = useAgentCrdtDocHistoryStore()
+  const historyLineages = new Map<string, string>()
+  const historyLineage = (workflowId: string): string => {
+    const existing = historyLineages.get(workflowId)
+    if (existing !== undefined) return existing
+    const lineage = docHistory.currentLineage(workflowId)
+    historyLineages.set(workflowId, lineage)
+    return lineage
+  }
+  const rememberDocNodeIds = (
+    workflowId: string,
+    ids: ReadonlySet<string>
+  ): void => docHistory.remember(workflowId, historyLineage(workflowId), ids)
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
@@ -383,6 +394,30 @@ function startAgentCrdtFollower(
       return new Set()
     }
   }
+  const localOnlyGraphIds = (workflowId: string): LocalOnlyGraphIds | null => {
+    if (workflowId !== boundWorkflowId) return null
+    const graph = getGraph()
+    if (!graph) return null
+    return computeLocalOnlyGraphIds(
+      graph,
+      docHistory.everSeen(workflowId, historyLineage(workflowId))
+    )
+  }
+  const commitProtectedReconcile = (workflowId: string): void => {
+    rememberDocNodeIds(workflowId, currentDocNodeIds())
+  }
+  const projection = new AgentCrdtProjection(
+    graphMutations,
+    getGraph,
+    () => bridge.follower.doc,
+    {
+      pendingDeletes: pendingHumanDeletes,
+      localOnlyGraphIds,
+      commitProtectedReconcile
+    }
+  )
+  const coalescer = createOpCoalescer(sender.admit, sender.flush)
+
   const reconcileAndReportPending = (workflowId: string): void => {
     const materialized = projection.reconcileLiveGraph(workflowId)
     emitPendingMaterializations(
@@ -447,6 +482,7 @@ function startAgentCrdtFollower(
       incrementOutcome('skipped')
       return
     }
+    rememberDocNodeIds(update.workflowId, currentDocNodeIds())
     lifecycle.onDocumentUpdate()
     updatesApplied.value = bridge.follower.updatesApplied
     lastFrameType.value = event.type
@@ -485,23 +521,23 @@ function startAgentCrdtFollower(
     lastFrameType.value = event.type
     recordDevEvent('doc_ops_result', event.detail ?? null)
   }
-  const onDocReset: EventListener = (event) => {
-    const detail =
-      event instanceof CustomEvent
-        ? (event.detail as {
-            workflowId?: string
-            actor?: string
-            seq?: number
-          })
-        : undefined
-    incrementOutcome('reset')
-    if (!isCurrentWorkflow(detail?.workflowId)) return
-    const context: RemoteMutationContext = {
+  const resetLineageScopedState = (reset: DocReset): void => {
+    projection.clearForReset(reset.workflowId, {
       source: 'agent-remote',
-      actor: detail.actor ?? 'agent-reset',
-      opId: `doc-reset:${detail.seq ?? 'unknown'}`
-    }
-    projection.clearForReset(detail.workflowId, context)
+      actor: reset.actor ?? 'agent-reset',
+      opId: `doc-reset:${reset.seq}`
+    })
+    historyLineages.set(
+      reset.workflowId,
+      docHistory.reset(reset.workflowId, reset.seq)
+    )
+  }
+  const onDocReset: EventListener = (event) => {
+    if (!(event instanceof CustomEvent)) return
+    const detail = event.detail as DocReset
+    incrementOutcome('reset')
+    resetLineageScopedState(detail)
+    if (!isCurrentWorkflow(detail.workflowId)) return
     sender.abortAll()
     events.onReset?.(detail.workflowId)
     connected.value = false

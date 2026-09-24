@@ -12,6 +12,8 @@ import {
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 import { AgentPanel } from '@e2e/fixtures/components/AgentPanel'
+import { TestIds } from '@e2e/fixtures/selectors'
+import { installStartupGraph } from '@e2e/fixtures/utils/startupGraph'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { webSocketFixture } from '@e2e/fixtures/ws'
 
@@ -197,6 +199,7 @@ test.describe(
         settings: { 'Comfy.VueNodes.Enabled': true },
         objectInfo: nodeDefs,
         beforeNavigate: async (page) => {
+          await installStartupGraph(page)
           await mockAgentTurnApi(page, {
             message_id: MESSAGE_ID,
             thread_id: THREAD_ID,
@@ -205,6 +208,9 @@ test.describe(
           await mockWorkflowPersistence(page, WORKFLOW_ID)
         }
       })
+      const loadingOverlay = page.getByTestId(TestIds.app.loadingOverlay)
+      await loadingOverlay.waitFor({ state: 'attached' })
+      await loadingOverlay.waitFor({ state: 'hidden' })
       const socket = await getWebSocket()
       const outboundFrames: string[] = []
       socket.onMessage((message) => outboundFrames.push(String(message)))

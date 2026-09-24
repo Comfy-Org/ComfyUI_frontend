@@ -15,6 +15,7 @@ import { render } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { GraphMutations } from './graphMutations'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ExportedSubgraph } from '@/lib/litegraph/src/types/serialisation'
 import type { reportError as reportErrorFn } from '@/platform/telemetry/reportError'
 import type { NodeId } from '@/types/nodeId'
@@ -25,6 +26,7 @@ import type {
   MaterializableGraph,
   subgraphDefinitionReadState as subgraphDefinitionReadStateFn
 } from './agentNodeMaterializer'
+import type { LocalIntent } from './ecsFollowerAdapter'
 import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
 import type { BatchOutcome, OpSenderDeps } from './opSender'
@@ -59,9 +61,7 @@ const clientState = vi.hoisted(() => ({
 }))
 
 const adapterState = vi.hoisted(() => ({
-  intent: null as {
-    pendingDeletes(workflowId: string): ReadonlySet<string>
-  } | null,
+  intent: null as LocalIntent | null,
   bind: vi.fn(),
   unbind: vi.fn(),
   applyFrame: vi.fn(() => true),
@@ -132,12 +132,7 @@ vi.mock<unknown>(import('./docFrameClient'), () => ({
 
 vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
   EcsFollowerAdapter: class {
-    constructor(
-      _mutations: unknown,
-      intent: {
-        pendingDeletes(workflowId: string): ReadonlySet<string>
-      }
-    ) {
+    constructor(_mutations: unknown, intent: LocalIntent) {
       adapterState.intent = intent
     }
 
@@ -260,6 +255,23 @@ function reportedTeardownErrors(): unknown[] {
 
 function dispatchFrame(type: string, detail: unknown): void {
   bridge().dispatchEvent(new CustomEvent(type, { detail }))
+}
+
+function graphWithNodes(...ids: NodeId[]): LGraph {
+  const graph = new LGraph()
+  graph.id = 'root'
+  for (const id of ids) {
+    const node = new LGraphNode('Test')
+    node.id = id
+    graph.add(node)
+  }
+  return graph
+}
+
+function currentIntent(): LocalIntent {
+  const intent = adapterState.intent
+  if (!intent) throw new Error('Expected the follower adapter intent')
+  return intent
 }
 
 describe('useAgentCrdtFollower', () => {
@@ -877,7 +889,7 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('counts reset while the target is inactive, since the bridge replaced its doc regardless', () => {
+    it('counts reset and still clears lineage-scoped state while the target is inactive', () => {
       const { unmount, status } = mountFollower('wf-a', false)
 
       dispatchFrame('doc_reset', {
@@ -887,7 +899,11 @@ describe('useAgentCrdtFollower', () => {
       })
 
       expect(status().outcomes.reset).toBe(1)
-      expect(adapterState.clearForReset).not.toHaveBeenCalled()
+      expect(adapterState.clearForReset).toHaveBeenCalledWith('wf-a', {
+        source: 'agent-remote',
+        actor: 'agent:turn',
+        opId: 'doc-reset:43'
+      })
       unmount()
     })
 
@@ -1331,6 +1347,61 @@ describe('useAgentCrdtFollower', () => {
       })
 
       expect(onMaterialized).not.toHaveBeenCalled()
+      unmount()
+    })
+  })
+
+  describe('localOnlyGraphIds (first-reconcile local-only protection hook)', () => {
+    it('excludes a node the doc has ever held even after it drops from the current snapshot, but still flags one the doc never held', () => {
+      const fakeGraph = graphWithNodes(toNodeId(1), toNodeId(2))
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+      const intent = currentIntent()
+      let docNodes: Record<string, unknown> = { '1': {} }
+      bridge().follower.doc.getMap = () => ({ toJSON: () => docNodes })
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+
+      docNodes = {}
+      expect(intent.localOnlyGraphIds('wf-1')).toEqual({
+        nodeIds: new Set(['2']),
+        linkIds: new Set()
+      })
+      unmount()
+    })
+
+    it('excludes a node the doc has ever held even across an unmount and remount, so a remote delete observed while unmounted is not resurrected', () => {
+      const fakeGraph = graphWithNodes(toNodeId(1))
+      const first = mountFollower('wf-1', true, () => fakeGraph)
+      bridge().follower.doc.getMap = () => ({ toJSON: () => ({ '1': {} }) })
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
+      first.unmount()
+
+      const second = mountFollower('wf-1', true, () => fakeGraph)
+      bridge().follower.doc.getMap = () => ({ toJSON: () => ({}) })
+      const intent = currentIntent()
+
+      expect(intent.localOnlyGraphIds('wf-1')).toEqual({
+        nodeIds: new Set(),
+        linkIds: new Set()
+      })
+      second.unmount()
+    })
+
+    it('does not spend the one-shot on a frame where no live graph is available to protect anything', () => {
+      const { unmount } = mountFollower('wf-1')
+      const intent = currentIntent()
+
+      expect(intent.localOnlyGraphIds('wf-1')).toBeNull()
+      unmount()
+    })
+
+    it('never answers for a workflow other than the one this session has bound', () => {
+      const fakeGraph = graphWithNodes(toNodeId(1))
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+      const intent = currentIntent()
+
+      expect(intent.localOnlyGraphIds('wf-2')).toBeNull()
       unmount()
     })
   })
@@ -1813,7 +1884,7 @@ describe('useAgentCrdtFollower', () => {
 
     it('keeps a human delete pending for the reconcile until the doc no longer holds the node', async () => {
       const { unmount, enqueue } = mountWriter('wf-1')
-      const intent = adapterState.intent!
+      const intent = currentIntent()
       let docNodes: Record<string, unknown> = { '1': {} }
       bridge().follower.doc.getMap = () => ({ toJSON: () => docNodes })
 
