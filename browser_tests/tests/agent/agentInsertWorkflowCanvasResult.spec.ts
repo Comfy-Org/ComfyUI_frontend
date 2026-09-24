@@ -190,9 +190,6 @@ test.describe(
     }, testInfo) => {
       test.setTimeout(60_000)
       await page.setViewportSize({ width: 1920, height: 1280 })
-      await page.addInitScript(() => {
-        localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
-      })
       await bootAgentApp(page, true, {
         settings: { 'Comfy.VueNodes.Enabled': true },
         objectInfo: nodeDefs,

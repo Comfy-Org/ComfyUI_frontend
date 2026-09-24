@@ -17,19 +17,17 @@
  * name against the doc's order before the op is sent.
  *
  * When a node's document-side inputs sit in agent materialization's order -
- * autogrow groups stay CONTIGUOUS, as `multiAutogrowInputOrder.ts`'s
- * `savedNode` (landed with #18275) shows, not some guessed alphabetical
- * sort - but the live canvas order has drifted from it (a slot disconnected
- * and regrown lands at the END of its own group instead of its original
- * ordinal position), the live index minted here can land on whatever input
- * the DOCUMENT happens to hold at that same numeric position, regardless of
- * that input's name or type.
+ * autogrow groups stay CONTIGUOUS (the shape #18275 recorded), not some
+ * guessed alphabetical sort - but the live canvas order has drifted from it
+ * (a slot disconnected and regrown lands at the END of its own group instead
+ * of its original ordinal position), the live index minted here can land on
+ * whatever input the DOCUMENT happens to hold at that same numeric position,
+ * regardless of that input's name or type.
  *
  * This test asserts the CORRECT outcome - the link lands on the input it was
  * actually drawn to, by name, regardless of how the document happens to have
  * that node's inputs ordered - and is RED on `main`: today the applied op
- * instead reproduces the live evidence from PR #18275
- * (`error_reconciling_agent_incompatible_link_type`, a VIDEO link's tuple
+ * instead reproduces the live evidence from PR #18275 (a VIDEO link's tuple
  * landing on a STRING input). It does not fix anything: like the sibling
  * regressions landed ahead of their fix in this directory (e.g.
  * `agentCrdtProjection.tabReturn.test.ts`), it uses `it.fails` so
@@ -68,9 +66,8 @@ const CATALOG: WidgetCatalog = {
 /**
  * Node 2's DOCUMENT-ORDER inputs. Both autogrow groups (`ref_images`,
  * `ref_videos`) stay contiguous and the scalar widgets (`prompt`,
- * `ref_image_size`) sit after both, matching the real materialized shape in
- * `multiAutogrowInputOrder.ts`'s `savedNode` (#18275) rather than an assumed
- * alphabetical sort. `ref_videos.ref_video_1` sits LAST in its own group
+ * `ref_image_size`) sit after both, matching the real materialized shape
+ * #18275 recorded rather than an assumed alphabetical sort. `ref_videos.ref_video_1` sits LAST in its own group
  * (document index 5) because it was disconnected and regrown after
  * `ref_video_2`/`ref_video_3` - regrowth appends to the tail of a group
  * instead of restoring the original ordinal slot, the exact mechanism

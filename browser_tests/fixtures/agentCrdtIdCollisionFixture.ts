@@ -253,13 +253,12 @@ export class IdCollisionHarness {
    * doc that now disagrees with the still-live orphan at the collided id.
    *
    * `waitForSubscribe` only proves the host sent `doc_subscribed` plus
-   * catch-up, not that the client finished reconciling from it, but that is
-   * still safe here: rebinding on tab activation (`ecsFollowerAdapter.ts`'s
-   * `bind()`) always arms `reconcileNextFrame` for the fresh session, so the
-   * very next `doc_update` — this catch-up frame, even an empty one — forces
-   * a full reconcile regardless of the delta's size. Callers still assert
-   * on the resulting DOM through Playwright's own auto-retrying `expect`,
-   * which is what actually waits out any remaining latency.
+   * catch-up, not that the client finished rebuilding from it, but that is
+   * still safe here: returning to the tab runs
+   * `AgentCrdtProjection.syncFromDoc`, which rebuilds the live graph from the
+   * whole document regardless of the catch-up delta's size. Callers still
+   * assert on the resulting DOM through Playwright's own auto-retrying
+   * `expect`, which is what actually waits out any remaining latency.
    */
   async forceReconcile(): Promise<void> {
     const before = this.hostSocket.subscribeCount()

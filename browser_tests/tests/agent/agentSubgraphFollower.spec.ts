@@ -39,9 +39,6 @@ test.describe(
       const socket =
         await test.step('open the agent-enabled workflow', async () => {
           await page.setViewportSize({ width: 1920, height: 1280 })
-          await page.addInitScript(() => {
-            localStorage.setItem('Comfy.Agent.CrdtFollower', 'true')
-          })
           await bootAgentApp(page, true, {
             onboardingCompleted: true,
             settings: { 'Comfy.VueNodes.Enabled': true },

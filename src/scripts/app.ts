@@ -1293,10 +1293,9 @@ export class ComfyApp {
   /**
    * Shared failure reporting for a graph load that cannot proceed: shows the
    * load-error dialog, logs it, and notifies `onGraphLoadError` so any
-   * suppression or loading-state a `beforeLoadGraph` listener opened for this
-   * same load (e.g. the agent panel's local-dirty-tracking suppression) is
-   * reliably closed out, exactly as if `rootGraph.configure` itself had
-   * thrown. Callers still decide what to return/rethrow.
+   * loading-state a `beforeLoadGraph` listener opened for this same load is
+   * closed out, exactly as if `rootGraph.configure` itself had thrown.
+   * Callers still decide what to return/rethrow.
    */
   private async reportGraphLoadFailure(error: unknown): Promise<void> {
     useDialogService().showErrorDialog(error, {

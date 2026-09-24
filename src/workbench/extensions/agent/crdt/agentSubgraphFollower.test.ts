@@ -670,11 +670,11 @@ describe('agent CRDT follower on a SubgraphNode with promoted widgets', () => {
     expect(storedHostWidgets(state)).toEqual([['value', HOST_INITIAL_VALUE]])
   })
 
-  it('S1g keeps promoted names across a re-armed reconcile frame', () => {
+  it('S1g keeps promoted names across a rebind', () => {
     const state = startFollower()
     deliver(state, hostSetWidget(42), 1)
-    // Re-binding arms `reconcileNextFrame`, which routes every node through
-    // `reconcileNode(readSemanticNode)` — the same positional read as add.
+    // Re-binding replaces the change collector; the next frame must still
+    // land as a widget update on the live node, not a rebuild.
     state.adapter.bind('workflow', state.follower)
     deliver(state, hostSetWidget(43), 2)
 

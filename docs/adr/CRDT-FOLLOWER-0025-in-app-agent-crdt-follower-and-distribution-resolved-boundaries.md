@@ -8,8 +8,9 @@ Accepted (2026-09-24)
 
 Revised 2026-09-24 by
 [FE-2504](https://linear.app/comfyorg/issue/FE-2504/agentcrdt-remove-store-first-remote-apply-and-every-reconciliation).
-The original 2026-08-21 text decided "stores, not litegraph" as the follower's
-state seam, and the 2026-09-18 amendment blessed `graphMutations` as durable.
+The original 2026-08-21 text decided the follower writes remote state into the
+Pinia stores, not litegraph, and the 2026-09-18 amendment blessed
+`graphMutations` as durable.
 Both are withdrawn; the store-first apply and every reconciliation layer built
 on it were deleted. The distribution-boundary decision, the one-way follower
 invariant, the human write path, and the product gate map are unchanged and
@@ -42,7 +43,7 @@ the agent binary) and authentication (every surface uses the unified chain in
 `authStore.getAuthHeader()`; Cloud ingest additionally enforces M2M
 server-side). The model provider is never a distribution fork.
 
-### What went wrong with the first seam
+### What went wrong with writing the stores first
 
 The first durable follower (`ecsFollowerAdapter` + `graphMutations`, landed
 2026-09) wrote remote state into the Pinia domain stores (`nodeDataStore`,
@@ -70,10 +71,10 @@ the user's own edits re-recorded as local changes.
 
 ## Decision
 
-**Follower state seam.** The frontend follower is an adapter that replays the
-host's already-applied document onto the live graph through litegraph's graph
-API, carrying provenance. There is exactly one applier, and it is not in the
-frontend.
+**The follower writes the live graph, not the stores.** The frontend follower
+is an adapter that replays the host's already-applied document onto the live
+`LGraph` through litegraph's graph API, carrying provenance. There is exactly
+one applier, and it is not in the frontend.
 
 - **`applyOps` in `@comfyorg/comfy-multi-player` is the shared applier.** The
   frontend imports it (pinned by SHA) for the human write leg's local
@@ -89,7 +90,7 @@ frontend.
 - **Provenance is call-carried.** Every remote write runs inside
   `withGraphIntentSource('agent-remote', ...)` (`src/lib/litegraph/src/graphIntents.ts`)
   and `layoutStore.withActor(actor, ...)`. `LGraph.add/remove/_addLink/_removeLink/clear`
-  and the widget value seam announce `GraphIntent` events tagged with that
+  and the widget value setter announce `GraphIntent` events tagged with that
   source; `docOpMinter` mints `doc_ops` only from `local` intents. Layout
   operations recorded while the applier writes are stamped with the remote
   actor instead of this session's, so layout listeners can tell a remote
@@ -166,20 +167,20 @@ frontend.
 with surface differences isolated behind a small distribution-resolved boundary
 (rejecting both separate per-surface branches and distribution checks scattered
 through the follower core). Introduce a narrow agent connection/configuration
-seam **when direct-to-agent product wiring is implemented** — it resolves the
+module **when direct-to-agent product wiring is implemented** — it resolves the
 agent HTTP/WS base URL (an `AGENT_BASE_URL`-style value), whether the route is
 same-origin through cloud ingest or direct to the local/Desktop agent binary,
 and credentials by delegating to `authStore.getAuthHeader()`. Use
 `DISTRIBUTION`/`isCloud`/`isDesktop` **inside that boundary only**; do not
-scatter distribution checks through the CRDT apply seam or rendering, and never
+scatter distribution checks through the follower apply path or rendering, and never
 reduce auth to `isCloud` (Local and Desktop are authenticated product
 surfaces). Dev-only Vite proxy/credential behavior stays in Vite config and is
 never treated as Local product behavior.
 
-Today the follower rides the centralized ComfyUI `api` transport (`api.socket`
+Today the follower uses the centralized ComfyUI `api` transport (`api.socket`
 in `src/scripts/api.ts`), which is already distribution-resolved, so no
-`AGENT_BASE_URL` is wired yet; this ADR records the seam as the shape to
-introduce when the follower stops riding `api.socket`.
+`AGENT_BASE_URL` is wired yet; this ADR records the module as the shape to
+introduce when the follower stops using `api.socket`.
 
 ```text
                          compile-time __DISTRIBUTION__
@@ -189,7 +190,7 @@ introduce when the follower stops riding `api.socket`.
       same-origin ingest       direct agent binary      direct agent binary
              └────────────┬───────────┴───────────┬────────────┘
                           ▼                        │
-              distribution-resolved agent seam     │
+              distribution-resolved agent module   │
               endpoint + route + unified auth ◄─────┘
                           │
                           ▼   host → follower only
@@ -201,7 +202,7 @@ introduce when the follower stops riding `api.socket`.
  All four surfaces ───────────────────────► comfy-api proxy ─► remote model
 ```
 
-**Enforcement.** Guard the seams with the centralized `assert(cond, msg)` from
+**Enforcement.** Guard these boundaries with the centralized `assert(cond, msg)` from
 `src/base/assert.ts` (DEV throws, prod reports to Sentry); the message must
 name the broken invariant and link this ADR. The `.agents/checks/follower-boundary.md`
 profile flags direct shared-doc mutation, follower-side store writes, a second
@@ -218,8 +219,8 @@ guard.
   both cases, so there is nothing to reconcile.
 - Remote edits get undo, `isModified`, extension callbacks
   (`onAdded`, `onRemoved`, `onConnectionsChange`, `onConfigure`,
-  `onWidgetChanged`), autogrow, and slot realignment for free, because they
-  run the same code a human edit runs.
+  `onWidgetChanged`), autogrow, and slot realignment without follower code,
+  because they run the same code a human edit runs.
 - Litegraph and the stores carry no agent-specific hooks; the agent extension
   is deletable without touching them.
 - One shared apply/render path means shared fixes and tests protect all four
@@ -227,10 +228,10 @@ guard.
 
 ### Negative
 
-- The follower depends on litegraph's graph API staying a complete mutation
-  funnel. A new mutation path that bypasses `LGraph.add/remove/_addLink/_removeLink`
-  or the widget value seam is invisible to both the minter and the applier's
-  provenance scope; the graph-intent funnel is now load-bearing.
+- Every graph mutation must go through `LGraph.add/remove/_addLink/_removeLink`
+  or the widget value setter. A new mutation path that bypasses them emits no
+  `GraphIntent`, so the minter never sends it and the applier's provenance
+  scope never labels it.
 - Provenance is ambient (a synchronous innermost-wins scope), not a parameter.
   Asynchronous work started inside an `agent-remote` scope and completed later
   is attributed `local`. The applier does no asynchronous work today.
@@ -316,9 +317,9 @@ the store-migration dependency the original text had; that dependency no
 longer exists.
 
 [PM-1293](https://linear.app/comfyorg/issue/PM-1293) proposed a competing
-redesign of widget ownership and node replacement at the agent/litegraph seam,
-built on the store-first layer. FE-2504 resolves it by removing the seam that
-redesign would have reshaped; the widget-in-flight gap it identified survives
+redesign of widget ownership and node replacement between the agent applier
+and litegraph, built on the store-first layer. FE-2504 resolves it by removing
+the store-first layer that redesign would have reshaped; the widget-in-flight gap it identified survives
 as the locally-dirty consequence above.
 
 Files under `src/workbench/extensions/agent/crdt/` that carry this decision:
