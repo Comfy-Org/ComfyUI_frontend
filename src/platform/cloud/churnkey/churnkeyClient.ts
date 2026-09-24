@@ -98,11 +98,23 @@ function createSession(
           }
         }
 
+        function settleAfterCancellation(
+          cancellation: Promise<ChurnkeyHandlerResult>,
+          outcome: ChurnkeySessionOutcome
+        ) {
+          void cancellation.then(
+            () => settle(() => resolve(outcome)),
+            (error) => settle(() => reject(toError(error)))
+          )
+        }
+
         function recordDiscount() {
           if (settled) return
           switch (retention.type) {
             case 'undecided':
               retention = { type: 'discounted' }
+              return
+            case 'discounted':
               return
             case 'cancelling':
               reportError(
@@ -113,6 +125,10 @@ function createSession(
                 }
               )
               return
+            default: {
+              const unreachable: never = retention
+              return unreachable
+            }
           }
         }
 
@@ -153,27 +169,46 @@ function createSession(
                 settle(() => resolve({ type: 'discount-applied' }))
                 return
               case 'cancelling':
-                void retention.cancellation.then(
-                  () => settle(() => resolve(closedOutcome)),
-                  (error) => settle(() => reject(toError(error)))
-                )
+                settleAfterCancellation(retention.cancellation, closedOutcome)
                 return
+              default: {
+                const unreachable: never = retention
+                return unreachable
+              }
             }
           },
           onError: (error, type) => {
             if (settled) return
-            settled = true
             window.churnkey?.hide?.()
-            if (retention.type === 'discounted') {
-              resolve({ type: 'discount-applied' })
-              reportError(error, {
-                errorType: 'error_displaying_churnkey_after_discount',
-                context: { churnkeyErrorType: type }
-              })
-            } else {
-              reject(churnkeyError(error, type))
+            switch (retention.type) {
+              case 'undecided':
+                settled = true
+                reject(churnkeyError(error, type))
+                queueMicrotask(() => window.churnkey?.clearState?.())
+                return
+              case 'discounted':
+                settled = true
+                resolve({ type: 'discount-applied' })
+                reportError(error, {
+                  errorType: 'error_displaying_churnkey_after_discount',
+                  context: { churnkeyErrorType: type }
+                })
+                queueMicrotask(() => window.churnkey?.clearState?.())
+                return
+              case 'cancelling':
+                reportError(error, {
+                  errorType: 'error_displaying_churnkey_during_cancellation',
+                  context: { churnkeyErrorType: type }
+                })
+                settleAfterCancellation(retention.cancellation, {
+                  type: 'closed'
+                })
+                return
+              default: {
+                const unreachable: never = retention
+                return unreachable
+              }
             }
-            queueMicrotask(() => window.churnkey?.clearState?.())
           }
         }
 

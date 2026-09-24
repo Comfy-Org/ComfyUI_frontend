@@ -153,57 +153,98 @@ describe('churnkeyClient', () => {
     expect(handleCancel).not.toHaveBeenCalled()
   })
 
-  it.for([
-    {
-      cancellation: 'succeeds',
-      settle: (cancel: CancellationControls) =>
-        cancel.resolve({ message: 'Canceled' }),
-      outcome: { resolves: { type: 'closed' } }
-    },
-    {
-      cancellation: 'fails',
-      settle: (cancel: CancellationControls) =>
-        cancel.reject(new Error('Cancellation failed')),
-      outcome: { rejects: 'Cancellation failed' }
-    }
-  ] as const)(
-    'reports the cancellation, not a discount, when a discount lands after cancellation starts and cancellation $cancellation',
-    async ({ settle, outcome }) => {
-      vi.mocked(workspaceApi.getChurnkeyAuth).mockResolvedValue({
-        ...authResponse(),
-        offer_subscription_id: 'sub_offer_1'
-      })
-      const session = await prepareChurnkey()
-      assert.exists(session)
-      let cancel: CancellationControls | undefined
-      const handleCancel = vi.fn(
-        () =>
-          new Promise<ChurnkeyHandlerResult>((resolve, reject) => {
-            cancel = { resolve, reject }
-          })
-      )
-      const showPromise = session.show({ handleCancel })
-      const config = capturedConfig()
+  async function showWithPendingCancellation() {
+    vi.mocked(workspaceApi.getChurnkeyAuth).mockResolvedValue({
+      ...authResponse(),
+      offer_subscription_id: 'sub_offer_1'
+    })
+    const session = await prepareChurnkey()
+    assert.exists(session)
+    let cancel: CancellationControls | undefined
+    const handleCancel = vi.fn(
+      () =>
+        new Promise<ChurnkeyHandlerResult>((resolve, reject) => {
+          cancel = { resolve, reject }
+        })
+    )
+    const showPromise = session.show({ handleCancel })
+    const config = capturedConfig()
+    const firstCancel = config.handleCancel({}, 'too_expensive')
+    assert.exists(cancel)
+    return { cancel, config, firstCancel, handleCancel, showPromise }
+  }
 
-      const firstCancel = config.handleCancel({}, 'too_expensive')
-      config.onDiscount?.({}, {})
-      const repeatedCancel = config.handleCancel({}, 'too_expensive')
-      config.onClose({})
-      assert.exists(cancel)
-      settle(cancel)
+  const lateDiscountReport = [
+    expect.any(Error),
+    { errorType: 'error_applying_churnkey_discount_during_cancellation' }
+  ]
 
-      if ('resolves' in outcome) {
-        await expect(showPromise).resolves.toEqual(outcome.resolves)
-      } else {
-        await expect(showPromise).rejects.toThrow(outcome.rejects)
-      }
-      expect(repeatedCancel).toBe(firstCancel)
-      expect(handleCancel).toHaveBeenCalledOnce()
-      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
-        errorType: 'error_applying_churnkey_discount_during_cancellation'
-      })
+  it('keeps the cancellation result when a discount lands after cancellation starts', async () => {
+    const { cancel, config, firstCancel, handleCancel, showPromise } =
+      await showWithPendingCancellation()
+
+    config.onDiscount?.({}, {})
+    const repeatedCancel = config.handleCancel({}, 'too_expensive')
+    config.onClose({})
+    cancel.resolve({ message: 'Canceled' })
+
+    await expect(showPromise).resolves.toEqual({ type: 'closed' })
+    expect(repeatedCancel).toBe(firstCancel)
+    expect(handleCancel).toHaveBeenCalledOnce()
+    expect(vi.mocked(reportError).mock.calls).toEqual([lateDiscountReport])
+  })
+
+  it('rejects with the cancellation error when a discount lands after cancellation starts', async () => {
+    const { cancel, config, showPromise } = await showWithPendingCancellation()
+
+    config.onDiscount?.({}, {})
+    config.onClose({})
+    cancel.reject(new Error('Cancellation failed'))
+
+    await expect(showPromise).rejects.toThrow('Cancellation failed')
+    expect(vi.mocked(reportError).mock.calls).toEqual([lateDiscountReport])
+  })
+
+  const displayDuringCancellationReport = [
+    'display failed',
+    {
+      errorType: 'error_displaying_churnkey_during_cancellation',
+      context: { churnkeyErrorType: 'display' }
     }
-  )
+  ]
+
+  it('waits for an in-flight cancellation to succeed before settling a provider error', async () => {
+    const { cancel, config, showPromise } = await showWithPendingCancellation()
+
+    config.onDiscount?.({}, {})
+    config.onError('display failed', 'display')
+    const pending = Symbol('pending')
+    await expect(
+      Promise.race([showPromise, Promise.resolve(pending)])
+    ).resolves.toBe(pending)
+    cancel.resolve({ message: 'Canceled' })
+
+    await expect(showPromise).resolves.toEqual({ type: 'closed' })
+    expect(mocks.hide).toHaveBeenCalledOnce()
+    expect(vi.mocked(reportError).mock.calls).toEqual([
+      lateDiscountReport,
+      displayDuringCancellationReport
+    ])
+  })
+
+  it('rejects with the cancellation error when cancellation fails after a provider error', async () => {
+    const { cancel, config, showPromise } = await showWithPendingCancellation()
+
+    config.onDiscount?.({}, {})
+    config.onError('display failed', 'display')
+    cancel.reject(new Error('Cancellation failed'))
+
+    await expect(showPromise).rejects.toThrow('Cancellation failed')
+    expect(vi.mocked(reportError).mock.calls).toEqual([
+      lateDiscountReport,
+      displayDuringCancellationReport
+    ])
+  })
 
   it.for([
     { ending: 'close', reports: [] },
