@@ -1,0 +1,159 @@
+---
+name: 'CI: Vercel Billing Web Deploy'
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/billing-web/**'
+      - 'packages/account-core/**'
+      - 'packages/account-ui/**'
+      - 'packages/billing-contract/**'
+      - 'packages/design-system/**'
+      - 'packages/ingest-types/**'
+      - 'packages/tailwind-utils/**'
+      - 'public/fonts/**'
+      - 'pnpm-lock.yaml'
+      - 'pnpm-workspace.yaml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Vercel environment to deploy'
+        type: choice
+        options: [staging, production]
+        default: staging
+
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_BILLING_WEB_ORG_ID }}
+  VERCEL_TOKEN: ${{ secrets.VERCEL_BILLING_WEB_TOKEN }}
+  VERCEL_SCOPE: comfyui
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    permissions: {}
+    outputs:
+      test-configured: ${{ steps.check.outputs.test-configured }}
+      main-configured: ${{ steps.check.outputs.main-configured }}
+    steps:
+      - name: Check whether Vercel credentials are configured
+        id: check
+        env:
+          VERCEL_BILLING_WEB_TEST_PROJECT_ID: ${{ secrets.VERCEL_BILLING_WEB_TEST_PROJECT_ID }}
+          VERCEL_BILLING_WEB_PROJECT_ID: ${{ secrets.VERCEL_BILLING_WEB_PROJECT_ID }}
+        run: |
+          if [[ -n "$VERCEL_ORG_ID" && -n "$VERCEL_TOKEN" && -n "$VERCEL_BILLING_WEB_TEST_PROJECT_ID" ]]; then
+            echo 'test-configured=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'test-configured=false' >> "$GITHUB_OUTPUT"
+            echo "::notice title=Billing Web test deploy skipped::Set VERCEL_BILLING_WEB_ORG_ID, VERCEL_BILLING_WEB_TEST_PROJECT_ID and VERCEL_BILLING_WEB_TOKEN to enable deploys. See apps/billing-web/README.md."
+          fi
+          if [[ -n "$VERCEL_ORG_ID" && -n "$VERCEL_TOKEN" && -n "$VERCEL_BILLING_WEB_PROJECT_ID" ]]; then
+            echo 'main-configured=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'main-configured=false' >> "$GITHUB_OUTPUT"
+            echo "::notice title=Billing Web staging/production deploy skipped::Set VERCEL_BILLING_WEB_ORG_ID, VERCEL_BILLING_WEB_PROJECT_ID and VERCEL_BILLING_WEB_TOKEN to enable deploys. See apps/billing-web/README.md."
+          fi
+
+  # Test tracks main directly: every push that touches billing-web or its
+  # workspace deps redeploys billing-web-test with no human in the loop.
+  deploy-test:
+    needs: preflight
+    if: needs.preflight.outputs.test-configured == 'true' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    concurrency:
+      group: ci-vercel-billing-web-deploy-test
+      cancel-in-progress: true
+    env:
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BILLING_WEB_TEST_PROJECT_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel environment information
+        run: vercel pull --yes --environment=production
+
+      - name: Build project artifacts
+        run: NODE_ENV=production VERCEL_ENV=production vercel build --prod
+
+      - name: Deploy project artifacts to Vercel
+        id: deploy
+        run: |
+          URL=$(vercel deploy --prebuilt --prod --archive=tgz)
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Add deployment URL to summary
+        run: |
+          {
+            echo "**Target:** test"
+            echo "**Deployed:** ${{ steps.deploy.outputs.url }}"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  # Staging and production never follow a merge. Someone dispatches this
+  # workflow against main when either hosted app should change.
+  deploy-manual:
+    needs: preflight
+    if: >
+      needs.preflight.outputs.main-configured == 'true' &&
+      github.event_name == 'workflow_dispatch' &&
+      github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_BILLING_WEB_PROJECT_ID }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v7
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@0977fd99725f1db4007ccb2928dbb4e90d06cc86 # v6.0.10
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: Pull Vercel environment information
+        run: vercel pull --yes --environment=${{ inputs.environment }}
+
+      - name: Build project artifacts
+        run: |
+          if [[ "${{ inputs.environment }}" == "production" ]]; then
+            NODE_ENV=production VERCEL_ENV=production vercel build --prod
+          else
+            NODE_ENV=production vercel build --target=staging
+          fi
+
+      - name: Deploy project artifacts to Vercel
+        id: deploy
+        run: |
+          if [[ "${{ inputs.environment }}" == "production" ]]; then
+            URL=$(vercel deploy --prebuilt --prod --archive=tgz)
+          else
+            URL=$(vercel deploy --prebuilt --target=staging --archive=tgz)
+          fi
+          echo "url=$URL" >> "$GITHUB_OUTPUT"
+
+      - name: Add deployment URL to summary
+        run: |
+          {
+            echo "**Target:** ${{ inputs.environment }}"
+            echo "**Deployed:** ${{ steps.deploy.outputs.url }}"
+          } >> "$GITHUB_STEP_SUMMARY"
