@@ -252,6 +252,43 @@ describe('SubscriptionView', () => {
     expect(await screen.findByText('Ends on Oct 24, 2026')).toBeInTheDocument()
   })
 
+  it('drops the end date once a resubscription lands', async () => {
+    const cancelled = {
+      is_active: true,
+      has_funds: true,
+      max_seats: 1,
+      occupied_seats: 1,
+      scheduled_change: null,
+      team_credit_stop: null,
+      subscription_status: 'canceled',
+      cancel_at: '2026-10-24T12:00:00.000Z'
+    } as const
+    const fake = await renderSubscription({
+      capabilities: { can_reactivate: true },
+      resubscribe: { status: 'ok', value: { phase: 'succeeded' } },
+      status: cancelled
+    })
+    expect(await screen.findByText('Ends on Oct 24, 2026')).toBeInTheDocument()
+
+    const { cancel_at: _, ...active } = cancelled
+    fake.readStatus.mockResolvedValue({
+      status: 'ok',
+      value: {
+        status: { ...active, subscription_status: 'active' },
+        scope: { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' },
+        readAt: 0
+      }
+    })
+    await userEvent.click(screen.getByRole('button', { name: 'Resubscribe' }))
+
+    expect(
+      await screen.findByText('Your subscription is active again.')
+    ).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.queryByText(/^Ends on/)).not.toBeInTheDocument()
+    )
+  })
+
   it('keeps the plan when the customer backs out of cancelling', async () => {
     const fake = await renderSubscription({
       capabilities: { can_cancel: true }
