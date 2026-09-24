@@ -49,5 +49,8 @@ Qwen-Image-Edit-2511-Multiple-Angles-LoRA.
   which jumped on grab and inverted direction at some azimuths
 - invisible oversized hit-proxy spheres make the three handles easier to grab
   than upstream's exact-mesh raycast
+- a card with no picture on it, or one whose picture failed to load, takes its
+  colour from the palette instead of upstream's hard-coded grey and hot pink,
+  which ignored the palette and read as a fault rather than as an empty card
 - the glow ring sits concentric with the image card (upstream draws it offset
   behind), so the card reads as standing centred in its halo

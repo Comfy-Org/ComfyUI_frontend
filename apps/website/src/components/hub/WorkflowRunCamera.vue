@@ -107,7 +107,7 @@ const track =
     <div
       ref="scene"
       aria-hidden="true"
-      class="aspect-4/3 w-full touch-none overflow-hidden rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4 transition-opacity duration-300 motion-reduce:pointer-events-none"
+      class="relative aspect-4/3 w-full touch-none overflow-hidden rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4 transition-opacity duration-300 motion-reduce:pointer-events-none"
       :class="ready ? 'opacity-100' : 'opacity-0'"
       data-testid="camera-scene"
     />
