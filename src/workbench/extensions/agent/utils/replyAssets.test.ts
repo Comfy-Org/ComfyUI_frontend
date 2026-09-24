@@ -1,6 +1,9 @@
 import { marked } from 'marked'
 import { describe, expect, it } from 'vitest'
 
+import type { LightboxItem } from '@/types/lightboxItem'
+
+import type { ReplyAsset } from './replyAssets'
 import {
   classifyAssetUrl,
   htmlReplyAssets,
@@ -112,51 +115,33 @@ describe('tokenReplyAssets', () => {
 })
 
 describe('replyAssetLightboxItem', () => {
-  it('pins the exact source url and renders as an image', () => {
-    expect(
-      replyAssetLightboxItem({
-        url: 'https://x/y?filename=a.png',
-        filename: 'a.png',
-        kind: 'image'
-      })
-    ).toEqual({
-      kind: 'image',
-      url: 'https://x/y?filename=a.png',
-      alt: 'a.png'
-    })
-  })
-
-  it('carries a source type for video assets', () => {
-    expect(
-      replyAssetLightboxItem({
+  it.for([
+    [
+      'a.png',
+      'image',
+      { kind: 'image', url: 'https://x/y?filename=a.png', alt: 'a.png' }
+    ],
+    [
+      'a.mp4',
+      'video',
+      {
+        kind: 'video',
         url: 'https://x/y?filename=a.mp4',
-        filename: 'a.mp4',
-        kind: 'video'
-      })
-    ).toEqual({
-      kind: 'video',
-      url: 'https://x/y?filename=a.mp4',
-      mimeType: 'video/mp4'
-    })
-  })
-
-  it('maps audio assets to their url alone', () => {
-    expect(
-      replyAssetLightboxItem({
-        url: 'https://x/y?filename=a.flac',
-        filename: 'a.flac',
-        kind: 'audio'
-      })
-    ).toEqual({ kind: 'audio', url: 'https://x/y?filename=a.flac' })
-  })
-
-  it('maps 3D assets to an unsupported item', () => {
-    expect(
-      replyAssetLightboxItem({
-        url: 'https://x/y?filename=a.glb',
-        filename: 'a.glb',
-        kind: '3D'
-      })
-    ).toEqual({ kind: 'unsupported', url: 'https://x/y?filename=a.glb' })
-  })
+        mimeType: 'video/mp4'
+      }
+    ],
+    ['a.flac', 'audio', { kind: 'audio', url: 'https://x/y?filename=a.flac' }],
+    ['a.glb', '3D', { kind: 'unsupported', url: 'https://x/y?filename=a.glb' }]
+  ] as const satisfies readonly (readonly [
+    string,
+    ReplyAsset['kind'],
+    LightboxItem
+  ])[])(
+    'maps a %s %s asset onto its rendering kind, pinning the source url',
+    ([filename, kind, expected]) => {
+      expect(
+        replyAssetLightboxItem({ url: expected.url, filename, kind })
+      ).toEqual(expected)
+    }
+  )
 })
