@@ -9,6 +9,7 @@ export class Topbar {
   private readonly menuTrigger: Locator
   readonly newWorkflowButton: Locator
   readonly workflowTabs: Locator
+  readonly tabs: Locator
   readonly integratedTabBarActions: Locator
   readonly menuRootList: Locator
 
@@ -18,21 +19,18 @@ export class Topbar {
     this.menuRootList = this.menuLocator.getByRole('menubar')
     this.newWorkflowButton = page.locator('.new-blank-workflow-button')
     this.workflowTabs = page.getByTestId(TestIds.topbar.workflowTabs)
+    this.tabs = this.workflowTabs.getByTestId(TestIds.topbar.workflowTab)
     this.integratedTabBarActions = this.workflowTabs.getByTestId(
       TestIds.topbar.integratedTabBarActions
     )
   }
 
   async getTabNames(): Promise<string[]> {
-    return await this.page
-      .locator('.workflow-tabs .workflow-label')
-      .allInnerTexts()
+    return await this.tabs.locator('.workflow-label').allInnerTexts()
   }
 
   async getActiveTabName(): Promise<string> {
-    return this.page
-      .locator('.workflow-tabs .p-togglebutton-checked')
-      .innerText()
+    return this.getActiveTab().innerText()
   }
 
   /**
@@ -63,29 +61,29 @@ export class Topbar {
   }
 
   getWorkflowTabLabel(tabName: string): Locator {
-    return this.page.locator(
-      `.workflow-tabs .workflow-label:has-text("${tabName}")`
-    )
+    return this.getWorkflowTab(tabName).locator('.workflow-label')
   }
 
   getWorkflowTab(tabName: string): Locator {
-    return this.getWorkflowTabLabel(tabName).locator('..')
+    return this.tabs.filter({
+      has: this.page.locator(`.workflow-label:has-text("${tabName}")`)
+    })
   }
 
   getTab(index: number): Locator {
-    return this.page.locator('.workflow-tabs .p-togglebutton').nth(index)
+    return this.tabs.nth(index)
   }
 
   getActiveTab(): Locator {
-    return this.page.locator(
-      '.workflow-tabs .p-togglebutton.p-togglebutton-checked'
-    )
+    return this.tabs.filter({
+      has: this.page.getByRole('tab', { selected: true })
+    })
   }
 
   async closeWorkflowTab(tabName: string) {
     const tab = this.getWorkflowTab(tabName)
     await tab.hover()
-    await tab.locator('.close-button').click()
+    await tab.getByTestId(TestIds.topbar.closeWorkflowButton).click()
   }
 
   getSaveDialog(): Locator {

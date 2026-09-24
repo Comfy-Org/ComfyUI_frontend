@@ -1,6 +1,7 @@
 import { render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { TabsTrigger } from 'reka-ui'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick } from 'vue'
@@ -114,12 +115,18 @@ vi.mock(import('./WorkflowTab.vue'), () => ({
     name: 'WorkflowTabStub',
     props: {
       workflowOption: {
-        type: Object as PropType<{ workflow: { filename?: string } }>,
+        type: Object as PropType<{
+          workflow: { path: string; filename?: string }
+        }>,
         required: true
       }
     },
     render() {
-      return h('div', this.workflowOption.workflow.filename)
+      return h(
+        TabsTrigger,
+        { value: this.workflowOption.workflow.path },
+        () => this.workflowOption.workflow.filename
+      )
     }
   })
 }))
@@ -466,9 +473,10 @@ describe('WorkflowTabs selection and overflow', () => {
     expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
       firstWorkflow
     )
-    expect(
-      screen.getByRole('button', { name: 'First workflow' })
-    ).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('tab', { name: 'First workflow' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
   })
 
   it('opens another workflow once when its tab is activated', async () => {
@@ -484,7 +492,7 @@ describe('WorkflowTabs selection and overflow', () => {
 
   it('opens another workflow when its tab is activated by keyboard', async () => {
     const { user } = renderComponent()
-    const secondTab = screen.getByRole('button', { name: 'Second workflow' })
+    const secondTab = screen.getByRole('tab', { name: 'Second workflow' })
 
     secondTab.focus()
     await user.keyboard('{Enter}')
@@ -497,7 +505,7 @@ describe('WorkflowTabs selection and overflow', () => {
 
   it('opens the selected workflow when its tab is activated by keyboard', async () => {
     const { user } = renderComponent()
-    const firstTab = screen.getByRole('button', { name: 'First workflow' })
+    const firstTab = screen.getByRole('tab', { name: 'First workflow' })
 
     firstTab.focus()
     await user.keyboard('{Enter}')
@@ -518,28 +526,49 @@ describe('WorkflowTabs selection and overflow', () => {
 
     await vi.waitFor(() => expect(errorHandler).toHaveBeenCalled())
     expect(errorHandler.mock.calls[0][0]).toBe(error)
+    expect(screen.getByRole('tab', { name: 'First workflow' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
     expect(
-      screen.getByRole('button', { name: 'First workflow' })
-    ).toHaveAttribute('aria-pressed', 'true')
-    expect(
-      screen.getByRole('button', { name: 'Second workflow' })
-    ).toHaveAttribute('aria-pressed', 'false')
+      screen.getByRole('tab', { name: 'Second workflow' })
+    ).toHaveAttribute('aria-selected', 'false')
   })
 
   it('keeps the real workflow selected when another workflow is not opened', async () => {
     vi.mocked(useWorkflowService().openWorkflow).mockResolvedValueOnce(false)
     const { user } = renderComponent()
-    const secondTab = screen.getByRole('button', { name: 'Second workflow' })
+    const secondTab = screen.getByRole('tab', { name: 'Second workflow' })
 
     await user.click(secondTab)
 
+    expect(screen.getByRole('tab', { name: 'First workflow' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
     expect(
-      screen.getByRole('button', { name: 'First workflow' })
-    ).toHaveAttribute('aria-pressed', 'true')
-    expect(
-      screen.getByRole('button', { name: 'Second workflow' })
-    ).toHaveAttribute('aria-pressed', 'false')
+      screen.getByRole('tab', { name: 'Second workflow' })
+    ).toHaveAttribute('aria-selected', 'false')
     expect(secondTab).toHaveFocus()
+  })
+
+  it('stays controlled by the store when mounted before any workflow is active', async () => {
+    const workflowStore = useWorkflowStore()
+    workflowStore.activeWorkflow = null
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValueOnce(false)
+    const { user } = renderComponent()
+
+    workflowStore.activeWorkflow = firstWorkflow
+    await nextTick()
+    await user.click(screen.getByRole('tab', { name: 'Second workflow' }))
+
+    expect(screen.getByRole('tab', { name: 'First workflow' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+    expect(
+      screen.getByRole('tab', { name: 'Second workflow' })
+    ).toHaveAttribute('aria-selected', 'false')
   })
 
   it('keeps overflow controls available when the tab strip overflows', async () => {
