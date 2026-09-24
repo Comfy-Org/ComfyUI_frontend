@@ -743,7 +743,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       })
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Subscribe Now' })
+      screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
     expect(
       screen.queryByRole('heading', { name: 'Standard' })
@@ -950,7 +950,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByRole('button', { name: 'Resume subscription' })
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Subscribe Now' })
+      screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
   })
 
@@ -981,7 +981,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByText('This workspace is not on a subscription')
     ).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: 'Subscribe Now' })
+      screen.getByRole('button', { name: 'Subscribe' })
     ).toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-zero-state',
@@ -1003,7 +1003,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.queryByText('This workspace is not on a subscription')
     ).not.toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Subscribe Now' })
+      screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-zero-state',
@@ -1036,7 +1036,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     expect(useBillingContext().initialize).toHaveBeenCalledOnce()
   })
 
-  it('hides Subscribe Now when the server denies self-serve to a client-side owner', () => {
+  it('hides Subscribe when the server denies self-serve to a client-side owner', () => {
     mockIsActiveSubscription.value = false
     Object.assign(useTeamWorkspaceStore(), { isWorkspaceSubscribed: false })
     mockHasSubscription.value = false
@@ -1045,7 +1045,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
     renderComponent()
 
     expect(
-      screen.queryByRole('button', { name: 'Subscribe Now' })
+      screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
   })
 
@@ -1065,7 +1065,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
       screen.getByText('Contact the workspace owner to subscribe')
     ).toBeInTheDocument()
     expect(
-      screen.queryByRole('button', { name: 'Subscribe Now' })
+      screen.queryByRole('button', { name: 'Subscribe' })
     ).not.toBeInTheDocument()
     expect(screen.getByTestId('credits-tile')).toHaveAttribute(
       'data-zero-state',
