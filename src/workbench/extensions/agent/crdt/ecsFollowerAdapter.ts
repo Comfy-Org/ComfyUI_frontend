@@ -737,32 +737,40 @@ export class EcsFollowerAdapter {
     // frame so the dropped edits are re-read from the doc instead of falling
     // through to incremental handling that never revisits them.
     session.reconcileNextFrame = !committed
+    this.handleReconcileOutcome(session, update, committed)
+    return committed
+  }
+
+  private handleReconcileOutcome(
+    session: TargetSession,
+    update: DocUpdate,
+    committed: boolean
+  ): void {
     if (committed) {
       this.clearReconcileRetry(session)
-    } else {
-      // A rejection that arrives while no retry is already in flight starts
-      // a new rejection episode: reset the budget so an unrelated later
-      // rejection (or scope staying down longer than the previous episode's
-      // remaining budget) still gets the full retry window, instead of
-      // inheriting whatever was left over from an earlier, unrelated
-      // episode. `retryInFlight` excludes the retry's own resubmission
-      // (already counted against the budget when it was scheduled) from
-      // being mistaken for a new episode.
-      if (!session.retryInFlight && !session.reconcileRetryTimer) {
-        session.reconcileRetryAttempt = 0
-      }
-      session.lastRejectedFrame = update
-      // Read the rejection captured by the same `batch()` call so scope
-      // becoming available immediately afterward cannot hide the race.
-      const rejection = session.mutations.lastBatchRejection?.()
-      if (
-        rejection === 'no-scope' ||
-        (rejection === undefined && session.mutations.hasScope?.() !== true)
-      ) {
-        this.scheduleReconcileRetry(session)
-      }
+      return
     }
-    return committed
+    // A rejection that arrives while no retry is already in flight starts
+    // a new rejection episode: reset the budget so an unrelated later
+    // rejection (or scope staying down longer than the previous episode's
+    // remaining budget) still gets the full retry window, instead of
+    // inheriting whatever was left over from an earlier, unrelated
+    // episode. `retryInFlight` excludes the retry's own resubmission
+    // (already counted against the budget when it was scheduled) from
+    // being mistaken for a new episode.
+    if (!session.retryInFlight && !session.reconcileRetryTimer) {
+      session.reconcileRetryAttempt = 0
+    }
+    session.lastRejectedFrame = update
+    // Read the rejection captured by the same `batch()` call so scope
+    // becoming available immediately afterward cannot hide the race.
+    const rejection = session.mutations.lastBatchRejection?.()
+    if (
+      rejection === 'no-scope' ||
+      (rejection === undefined && session.mutations.hasScope?.() !== true)
+    ) {
+      this.scheduleReconcileRetry(session)
+    }
   }
 
   /**
