@@ -122,6 +122,67 @@ test.describe('Desktop dropdown @interaction', () => {
     }
   })
 
+  test('COMMUNITY dropdown badges Events and leaves Affiliates and Learning bare', async ({
+    page
+  }) => {
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    const desktopLinks = nav.getByTestId('desktop-nav-links')
+    await desktopLinks.getByRole('button', { name: 'Community' }).hover()
+
+    const dropdown = nav.getByTestId('nav-dropdown')
+    await expect(
+      dropdown.getByRole('link', { name: 'Events' }).getByText('NEW', {
+        exact: true
+      })
+    ).toBeVisible()
+
+    const affiliates = dropdown.getByRole('link', { name: 'Affiliates' })
+    await expect(affiliates).toBeVisible()
+    await expect(affiliates.locator('[data-slot="badge"]')).toHaveCount(0)
+
+    const learning = dropdown.getByRole('link', { name: 'Learning' })
+    await expect(learning).toBeVisible()
+    await expect(learning.locator('[data-slot="badge"]')).toHaveCount(0)
+  })
+
+  test('BETA badge paints the plum token behind warm-white text', async ({
+    page
+  }) => {
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    const desktopLinks = nav.getByTestId('desktop-nav-links')
+    await desktopLinks.getByRole('button', { name: 'Products' }).hover()
+
+    const badge = nav
+      .getByTestId('nav-dropdown')
+      .getByRole('link', { name: 'Developer Platform' })
+      .locator('[data-slot="badge"]')
+    await expect(badge).toBeVisible()
+
+    const palette = await page.evaluate(() => {
+      const probe = document.createElement('span')
+      document.body.append(probe)
+      const token = (name: string) => {
+        probe.style.color = `var(${name})`
+        return getComputedStyle(probe).color
+      }
+      const resolved = {
+        text: token('--color-primary-warm-white'),
+        fill: token('--color-primary-comfy-plum')
+      }
+      probe.remove()
+      return resolved
+    })
+
+    await expect
+      .poll(() =>
+        badge.evaluate((el) => ({
+          text: getComputedStyle(el).color,
+          fill: getComputedStyle(el, '::before').backgroundColor
+        }))
+      )
+      .toEqual(palette)
+  })
+
   test('moving mouse away closes dropdown', async ({ page }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
