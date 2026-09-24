@@ -12,6 +12,7 @@ import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 import type { Ref } from 'vue'
 import * as Y from 'yjs'
 
+import { mint, nodesMap } from '@comfyorg/comfy-multi-player'
 import { render } from '@testing-library/vue'
 
 import type { GraphMutations } from './graphMutations'
@@ -39,7 +40,10 @@ const bridgeState = vi.hoisted(() => {
     sendHumanOps = vi.fn()
     subscribedWorkflowId: string | null = 'wf-1'
     lastSequence = 41
-    follower = {
+    follower: {
+      updatesApplied: number
+      doc: Y.Doc | { getMap: () => { toJSON: () => Record<string, unknown> } }
+    } = {
       updatesApplied: 0,
       doc: {
         getMap: () => ({ toJSON: () => ({}) })
@@ -57,6 +61,16 @@ const clientState = vi.hoisted(() => ({
   sendOps: vi.fn<OpSenderDeps['sendOps']>(() => true),
   transport: null as DocFrameTransport | null
 }))
+
+function graphDoc(nodeIds: readonly string[] = []): Y.Doc {
+  const doc = mint({ nodes: [], links: [] }, { types: {} })
+  for (const id of nodeIds) {
+    const node = new Y.Map<unknown>()
+    node.set('type', 'KSampler')
+    nodesMap(doc).set(id, node)
+  }
+  return doc
+}
 
 const adapterState = vi.hoisted(() => ({
   intent: null as {
@@ -1083,9 +1097,7 @@ describe('useAgentCrdtFollower', () => {
       const { unmount } = mountFollower('wf-1', true, () => graph.value, {
         onMaterialized
       })
-      bridge().follower.doc = {
-        getMap: () => ({ toJSON: () => ({ '3': {} }) })
-      }
+      bridge().follower.doc = graphDoc(['3'])
 
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
@@ -1165,7 +1177,7 @@ describe('useAgentCrdtFollower', () => {
 
     it('reconciles a follower_replaced clear against the replacement document', () => {
       const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
-      const replacementDoc = { getMap: () => ({ toJSON: () => ({}) }) }
+      const replacementDoc = graphDoc()
       bridge().follower = { updatesApplied: 0, doc: replacementDoc }
 
       dispatchFrame('follower_replaced', { workflowId: 'wf-1' })
@@ -1253,10 +1265,8 @@ describe('useAgentCrdtFollower', () => {
       const { unmount } = mountFollower('wf-1', true, () => graph, {
         onMaterialized
       })
-      let nodes: Record<string, unknown> = {}
-      bridge().follower.doc = {
-        getMap: () => ({ toJSON: () => nodes })
-      }
+      const doc = graphDoc()
+      bridge().follower.doc = doc
       const source = new Y.Doc()
       source.getMap('nodes').set('3', { type: 'KSampler' })
 
@@ -1269,7 +1279,9 @@ describe('useAgentCrdtFollower', () => {
       })
       expect(onMaterialized).not.toHaveBeenCalled()
 
-      nodes = { '3': {} }
+      const node = new Y.Map<unknown>()
+      node.set('type', 'KSampler')
+      nodesMap(doc).set('3', node)
       materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
@@ -1294,13 +1306,11 @@ describe('useAgentCrdtFollower', () => {
         ...fakeGraph,
         _nodes_by_id: { [toNodeId(3)]: {} }
       })
-      let nodes: Record<string, unknown> = {}
       const { unmount } = mountFollower('wf-1', true, () => graph.value, {
         onMaterialized
       })
-      bridge().follower.doc = {
-        getMap: () => ({ toJSON: () => nodes })
-      }
+      const doc = graphDoc()
+      bridge().follower.doc = doc
 
       const source = new Y.Doc()
       source.getMap('nodes').set('3', { type: 'KSampler' })
@@ -1321,7 +1331,9 @@ describe('useAgentCrdtFollower', () => {
       })
 
       graph.value = readyGraph
-      nodes = { '3': {} }
+      const node = new Y.Map<unknown>()
+      node.set('type', 'KSampler')
+      nodesMap(doc).set('3', node)
       materializerState.reconcileAgentAdapters.mockReturnValue([toNodeId(3)])
       dispatchFrame('doc_update', {
         workflowId: 'wf-1',
@@ -1814,8 +1826,8 @@ describe('useAgentCrdtFollower', () => {
     it('keeps a human delete pending for the reconcile until the doc no longer holds the node', async () => {
       const { unmount, enqueue } = mountWriter('wf-1')
       const intent = adapterState.intent!
-      let docNodes: Record<string, unknown> = { '1': {} }
-      bridge().follower.doc.getMap = () => ({ toJSON: () => docNodes })
+      const doc = graphDoc(['1'])
+      bridge().follower.doc = doc
 
       enqueue([deleteNode('1')])
       expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
@@ -1826,7 +1838,7 @@ describe('useAgentCrdtFollower', () => {
       expect(await settledStates()).toEqual(['acknowledged'])
       expect([...intent.pendingDeletes('wf-1')]).toEqual(['1'])
 
-      docNodes = {}
+      nodesMap(doc).delete('1')
       expect([...intent.pendingDeletes('wf-1')]).toEqual([])
       unmount()
     })
