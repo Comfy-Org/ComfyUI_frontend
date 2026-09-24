@@ -5,7 +5,7 @@ import {
 } from '@comfyorg/comfy-multi-player'
 import * as Y from 'yjs'
 
-import type { INodeFlags } from '@/lib/litegraph/src/interfaces'
+import type { INodeFlags, INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
 import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
@@ -162,28 +162,28 @@ function readDocNode(doc: Y.Doc, id: string): DocNode | null {
 function readDocLink(doc: Y.Doc, key: string): DocLink | null {
   const raw = linksMap(doc).get(key)
   const tuple = raw instanceof Y.Array ? raw.toArray() : raw
-  if (!Array.isArray(tuple) || tuple.length < 5) return null
   const id = parseLinkId(key)
-  const originSlot = Number(tuple[2])
-  const targetSlot = Number(tuple[4])
-  if (
-    id === undefined ||
-    id < 0 ||
-    tuple[0] !== id ||
-    tuple[1] == null ||
-    tuple[3] == null ||
-    !Number.isInteger(originSlot) ||
-    !Number.isInteger(targetSlot)
-  ) {
-    return null
-  }
+  if (id === undefined || id < 0 || !isLinkTuple(tuple, id)) return null
   return {
     id,
     origin: String(tuple[1]),
-    originSlot,
+    originSlot: Number(tuple[2]),
     target: String(tuple[3]),
-    targetSlot
+    targetSlot: Number(tuple[4])
   }
+}
+
+/** `[id, origin, originSlot, target, targetSlot, type]` with both endpoints present and integer slots. */
+function isLinkTuple(tuple: unknown, id: LinkId): tuple is readonly unknown[] {
+  if (!Array.isArray(tuple) || tuple.length < 5) return false
+  const [tupleId, origin, originSlot, target, targetSlot] = tuple
+  return (
+    tupleId === id &&
+    origin != null &&
+    target != null &&
+    Number.isInteger(Number(originSlot)) &&
+    Number.isInteger(Number(targetSlot))
+  )
 }
 
 function readDocSlotName(
@@ -537,17 +537,10 @@ export class LiveGraphApplier {
     if (node.mode !== source.mode) node.mode = source.mode
     const { ghost } = node.flags
     node.flags = ghost === undefined ? source.flags : { ...source.flags, ghost }
-    if (source.properties) {
-      for (const [key, value] of Object.entries(source.properties)) {
-        if (node.properties[key] !== value) node.setProperty(key, value)
-      }
+    for (const [key, value] of Object.entries(source.properties ?? {})) {
+      if (node.properties[key] !== value) node.setProperty(key, value)
     }
-    for (const key of SYNCED_APPEARANCE_FIELDS) {
-      const value = source[key]
-      if (value !== undefined && node[key] !== value) {
-        Object.assign(node, { [key]: value })
-      }
-    }
+    applyAppearance(node, source)
   }
 
   #syncFields(graph: LGraph, doc: Y.Doc, id: string): void {
@@ -624,17 +617,11 @@ export class LiveGraphApplier {
       )
       return
     }
-    const values = Array.isArray(widgets)
-      ? promoted.map((input, index): [string, unknown] => [
-          input.name,
-          widgets[index]
-        ])
-      : Object.entries(widgets ?? {})
     const store = useWidgetValueStore()
-    for (const [name, value] of values) {
-      if (value === undefined || !isWidgetValue(value)) continue
-      const input = promoted.find((candidate) => candidate.name === name)
-      if (!input?.widgetId) {
+    for (const [name, value] of hostWidgetEntries(promoted, widgets)) {
+      if (!isWidgetValue(value)) continue
+      const widgetId = promoted.find((input) => input.name === name)?.widgetId
+      if (!widgetId) {
         this.#reportOnce(
           `widget:${String(node.id)}:${name}`,
           `Subgraph host ${String(node.id)} (${node.type}) promotes no widget '${name}'`,
@@ -643,7 +630,7 @@ export class LiveGraphApplier {
         )
         continue
       }
-      store.setValue(input.widgetId, value)
+      store.setValue(widgetId, value)
     }
     node.graph?.incrementVersion()
   }
@@ -719,18 +706,9 @@ export class LiveGraphApplier {
       if (graph.links.has(link.id)) graph.removeLink(link.id)
       return 'unresolved'
     }
-
-    const currentId = target.inputs[targetSlot]?.link
-    const current = currentId == null ? undefined : graph.links.get(currentId)
-    if (
-      current &&
-      current.origin_id === origin.id &&
-      current.origin_slot === originSlot
-    ) {
+    if (isLinkPresent(graph, origin, originSlot, target, targetSlot))
       return 'present'
-    }
-    const stale = graph.links.get(link.id)
-    if (stale) graph.removeLink(link.id)
+    if (graph.links.has(link.id)) graph.removeLink(link.id)
 
     const created = withLinkId(graph, link.id, () =>
       origin.connect(originSlot, target, targetSlot)
@@ -767,6 +745,41 @@ export class LiveGraphApplier {
  * names the slot (a name the live node lacks is a real mismatch, never a
  * positional guess), otherwise by position when that position exists live.
  */
+function isLinkPresent(
+  graph: LGraph,
+  origin: LGraphNode,
+  originSlot: number,
+  target: LGraphNode,
+  targetSlot: number
+): boolean {
+  const currentId = target.inputs[targetSlot]?.link
+  const current = currentId == null ? undefined : graph.links.get(currentId)
+  return (
+    current !== undefined &&
+    current.origin_id === origin.id &&
+    current.origin_slot === originSlot
+  )
+}
+
+/** Host widget values by promoted-input name; a positional list is read in promoted-input order. */
+function hostWidgetEntries(
+  promoted: readonly INodeInputSlot[],
+  widgets: DocNode['widgets']
+): [string, unknown][] {
+  if (Array.isArray(widgets))
+    return promoted.map((input, index) => [input.name, widgets[index]])
+  return Object.entries(widgets ?? {})
+}
+
+function applyAppearance(node: LGraphNode, source: ISerialisedNode): void {
+  for (const key of SYNCED_APPEARANCE_FIELDS) {
+    const value = source[key]
+    if (value !== undefined && node[key] !== value) {
+      Object.assign(node, { [key]: value })
+    }
+  }
+}
+
 function resolveSlot(
   liveNames: readonly string[],
   docName: string | undefined,

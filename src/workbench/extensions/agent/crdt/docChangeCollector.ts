@@ -58,38 +58,45 @@ export class DocChangeCollector {
     events: Y.YEvent<Y.AbstractType<unknown>>[]
   ): void => {
     for (const event of events) {
-      if (event instanceof Y.YArrayEvent) {
-        if (event.path.length === 2 && event.path[1] === OPAQUE_WIDGETS_KEY)
-          this.#widgets.set(String(event.path[0]), 'all')
-        continue
-      }
-      if (!(event instanceof Y.YMapEvent)) continue
-      if (event.target === this.#nodesMap) {
-        for (const [id, change] of event.changes.keys)
-          this.#nodes.set(id, change.action)
-        continue
-      }
-
-      const id = String(event.path[0] ?? '')
-      if (!id) continue
-      if (event.path[1] === 'widgets') {
-        const current = this.#widgets.get(id)
-        if (current === 'all') continue
-        const names = current ?? new Set<string>()
-        for (const name of event.keysChanged) names.add(name)
-        this.#widgets.set(id, names)
-        continue
-      }
-
-      if (event.path.length !== 1) continue
-      if (
-        event.keysChanged.has('widgets') ||
-        event.keysChanged.has(OPAQUE_WIDGETS_KEY)
-      )
-        this.#widgets.set(id, 'all')
-      if ([...event.keysChanged].some((key) => SYNCED_NODE_FIELDS.has(key)))
-        this.#resyncNodes.add(id)
+      if (event instanceof Y.YArrayEvent) this.#onOpaqueWidgetsChanged(event)
+      else if (event instanceof Y.YMapEvent) this.#onNodeMapChanged(event)
     }
+  }
+
+  #onNodeMapChanged(event: Y.YMapEvent<unknown>): void {
+    if (event.target === this.#nodesMap) this.#onNodeEntriesChanged(event)
+    else if (event.path.length === 1) this.#onNodeFieldsChanged(event)
+    else if (event.path[1] === 'widgets') this.#onNamedWidgetsChanged(event)
+  }
+
+  #onOpaqueWidgetsChanged(event: Y.YArrayEvent<unknown>): void {
+    if (event.path.length === 2 && event.path[1] === OPAQUE_WIDGETS_KEY)
+      this.#widgets.set(String(event.path[0]), 'all')
+  }
+
+  #onNodeEntriesChanged(event: Y.YMapEvent<unknown>): void {
+    for (const [id, change] of event.changes.keys)
+      this.#nodes.set(id, change.action)
+  }
+
+  #onNamedWidgetsChanged(event: Y.YMapEvent<unknown>): void {
+    const id = String(event.path[0])
+    const current = this.#widgets.get(id)
+    if (current === 'all') return
+    const names = current ?? new Set<string>()
+    for (const name of event.keysChanged) names.add(name)
+    this.#widgets.set(id, names)
+  }
+
+  #onNodeFieldsChanged(event: Y.YMapEvent<unknown>): void {
+    const id = String(event.path[0])
+    if (
+      event.keysChanged.has('widgets') ||
+      event.keysChanged.has(OPAQUE_WIDGETS_KEY)
+    )
+      this.#widgets.set(id, 'all')
+    if ([...event.keysChanged].some((key) => SYNCED_NODE_FIELDS.has(key)))
+      this.#resyncNodes.add(id)
   }
 
   readonly #onLinksChanged = (event: Y.YMapEvent<unknown>): void => {

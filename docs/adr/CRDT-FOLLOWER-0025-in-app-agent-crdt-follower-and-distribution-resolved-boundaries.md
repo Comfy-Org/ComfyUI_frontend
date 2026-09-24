@@ -93,9 +93,7 @@ frontend.
   source; `docOpMinter` mints `doc_ops` only from `local` intents. Layout
   operations recorded while the applier writes are stamped with the remote
   actor instead of this session's, so layout listeners can tell a remote
-  insertion from a local one. `LayoutSource.AgentRemote` remains the
-  designated source for those operations; minting no longer keys on layout
-  source, so nothing is gated on it today.
+  insertion from a local one. Minting no longer keys on layout source.
 - **No echo, by construction.** The host echoes every applied `doc_ops` batch
   as a `doc_update` stamped with the sender's actor. `useAgentCrdtFollower`
   drops a non-catch-up frame whose `actor` equals its own

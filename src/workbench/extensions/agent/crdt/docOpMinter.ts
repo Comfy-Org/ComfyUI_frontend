@@ -53,6 +53,11 @@ export interface DocOpMinter {
   detach(): void
 }
 
+type IntentOf<T extends GraphIntentEvent['type']> = Extract<
+  GraphIntentEvent,
+  { type: T }
+>
+
 type PendingOp =
   | { kind: 'add_node'; graph: LGraph; node: LGraphNode }
   | { kind: 'op'; operation: GraphOperation }
@@ -153,10 +158,7 @@ function withoutCancelledAdd(
  * arrives naming the root; node ids are unique across a root graph and its
  * subgraphs, so the node itself names its owner.
  */
-function owningGraphIdOf(
-  graph: LGraph,
-  event: Extract<GraphIntentEvent, { type: 'set_widget' }>
-): string {
+function owningGraphIdOf(graph: LGraph, event: IntentOf<'set_widget'>): string {
   if (event.graphId !== graph.id) return event.graphId
   return findNodeInHierarchy(graph, event.nodeId)?.graph?.id ?? graph.id
 }
@@ -249,9 +251,7 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     return true
   }
 
-  function mintSetWidget(
-    event: Extract<GraphIntentEvent, { type: 'set_widget' }>
-  ): void {
+  function mintSetWidget(event: IntentOf<'set_widget'>): void {
     if (pendingAdds.has(nodeKey(event.graphId, event.nodeId))) return
     const graph = deps.getGraph()
     if (!graph) return
@@ -287,86 +287,102 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     })
   }
 
+  function mintRemoveNode(event: IntentOf<'remove_node'>): void {
+    if (!isMintableRootScope(event.graph, 'node_delete', event.node.id)) return
+    const key = nodeKey(event.graph.id, event.node.id)
+    if (pendingAdds.get(key) === event.node) {
+      pendingAdds.delete(key)
+      pending = withoutCancelledAdd(pending, event.node.id)
+      return
+    }
+    schedule({
+      kind: 'op',
+      operation: {
+        op: 'delete_node',
+        node_id: event.node.id,
+        removed_links: event.removedLinkIds
+      }
+    })
+  }
+
+  function mintConnect(event: IntentOf<'connect'>): void {
+    if (!isMintableRootScope(event.graph, 'connect', event.link.id)) return
+    const { link } = event
+    schedule({
+      kind: 'op',
+      operation: {
+        op: 'connect',
+        link_id: link.id,
+        from_node: link.origin_id,
+        from_slot: link.origin_slot,
+        to_node: link.target_id,
+        to_slot: link.target_slot,
+        link_type: String(link.type)
+      }
+    })
+  }
+
+  function mintDisconnect(event: IntentOf<'disconnect'>): void {
+    if (!isMintableRootScope(event.graph, 'disconnect', event.link.id)) return
+    const { link } = event
+    schedule({
+      kind: 'op',
+      operation: {
+        op: 'disconnect',
+        link_id: link.id,
+        to_node: link.target_id,
+        to_slot: link.target_slot
+      }
+    })
+  }
+
+  function mintClear(event: IntentOf<'clear'>): void {
+    if (event.nodeIds.length === 0) return
+    const boundRootGraphId = deps.boundRootGraphId()
+    if (boundRootGraphId !== null && event.graphId !== boundRootGraphId) {
+      reportOnce(
+        `clear:${event.graphId}:${boundRootGraphId}`,
+        `clear targets graph ${event.graphId}, not the bound document's root graph ${boundRootGraphId}; refusing to mint`,
+        'agent_crdt_op_for_unbound_graph',
+        { graphId: event.graphId, boundRootGraphId }
+      )
+      return
+    }
+    schedule({
+      kind: 'op',
+      operation: { op: 'clear', removed_nodes: event.nodeIds }
+    })
+  }
+
+  function mintAddNode(event: IntentOf<'add_node'>): void {
+    if (!isMintableRootScope(event.graph, 'node_create', event.node.id)) return
+    pendingAdds.set(nodeKey(event.graph.id, event.node.id), event.node)
+    schedule({ kind: 'add_node', graph: event.graph, node: event.node })
+  }
+
   function onIntent(event: GraphIntentEvent): void {
     if (event.source !== 'local') return
     if (!deps.isEnabled() || !deps.isDocBound()) return
+    mintIntent(event)
+  }
+
+  function mintIntent(event: GraphIntentEvent): void {
     switch (event.type) {
-      case 'add_node': {
-        if (!isMintableRootScope(event.graph, 'node_create', event.node.id))
-          return
-        pendingAdds.set(nodeKey(event.graph.id, event.node.id), event.node)
-        schedule({ kind: 'add_node', graph: event.graph, node: event.node })
+      case 'add_node':
+        mintAddNode(event)
         return
-      }
-      case 'remove_node': {
-        if (!isMintableRootScope(event.graph, 'node_delete', event.node.id))
-          return
-        const key = nodeKey(event.graph.id, event.node.id)
-        if (pendingAdds.get(key) === event.node) {
-          pendingAdds.delete(key)
-          pending = withoutCancelledAdd(pending, event.node.id)
-          return
-        }
-        schedule({
-          kind: 'op',
-          operation: {
-            op: 'delete_node',
-            node_id: event.node.id,
-            removed_links: event.removedLinkIds
-          }
-        })
+      case 'remove_node':
+        mintRemoveNode(event)
         return
-      }
-      case 'connect': {
-        if (!isMintableRootScope(event.graph, 'connect', event.link.id)) return
-        const { link } = event
-        schedule({
-          kind: 'op',
-          operation: {
-            op: 'connect',
-            link_id: link.id,
-            from_node: link.origin_id,
-            from_slot: link.origin_slot,
-            to_node: link.target_id,
-            to_slot: link.target_slot,
-            link_type: String(link.type)
-          }
-        })
+      case 'connect':
+        mintConnect(event)
         return
-      }
-      case 'disconnect': {
-        if (!isMintableRootScope(event.graph, 'disconnect', event.link.id))
-          return
-        const { link } = event
-        schedule({
-          kind: 'op',
-          operation: {
-            op: 'disconnect',
-            link_id: link.id,
-            to_node: link.target_id,
-            to_slot: link.target_slot
-          }
-        })
+      case 'disconnect':
+        mintDisconnect(event)
         return
-      }
-      case 'clear': {
-        if (event.nodeIds.length === 0) return
-        const boundRootGraphId = deps.boundRootGraphId()
-        if (boundRootGraphId !== null && event.graphId !== boundRootGraphId) {
-          reportOnce(
-            `clear:${event.graphId}:${boundRootGraphId}`,
-            `clear targets graph ${event.graphId}, not the bound document's root graph ${boundRootGraphId}; refusing to mint`,
-            'agent_crdt_op_for_unbound_graph',
-            { graphId: event.graphId, boundRootGraphId }
-          )
-          return
-        }
-        schedule({
-          kind: 'op',
-          operation: { op: 'clear', removed_nodes: event.nodeIds }
-        })
+      case 'clear':
+        mintClear(event)
         return
-      }
       case 'set_widget':
         mintSetWidget(event)
         return

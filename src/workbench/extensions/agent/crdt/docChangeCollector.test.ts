@@ -46,6 +46,25 @@ describe('DocChangeCollector', () => {
     ])
   })
 
+  it('keeps only the effective action for a node id touched repeatedly before a take', () => {
+    const { doc, collector } = setup()
+
+    doc.transact(() => {
+      nodesMap(doc).set('3', docNode())
+      nodesMap(doc).set('3', docNode({ type: 'Other' }))
+      nodesMap(doc).delete('3')
+      nodesMap(doc).set('2', docNode({ type: 'Other' }))
+      nodesMap(doc).delete('2')
+    })
+    doc.transact(() => nodesMap(doc).set('4', docNode()))
+    doc.transact(() => nodesMap(doc).delete('4'))
+
+    expect([...collector.take().nodes]).toEqual([
+      ['2', 'delete'],
+      ['4', 'delete']
+    ])
+  })
+
   it('records named widget edits per node and a replaced storage as all', () => {
     const { doc, collector } = setup()
 

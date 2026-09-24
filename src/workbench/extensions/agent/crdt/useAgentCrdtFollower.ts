@@ -41,6 +41,7 @@ import type {
 } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
+import type { OpsResultView } from './opSender'
 import type { PendingLocalEdits } from './pendingLocalEdits'
 import { collectPendingLocalEdits, docReflects } from './pendingLocalEdits'
 
@@ -209,6 +210,30 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
 
 export type AgentCrdtApplierDeps = Omit<LiveGraphApplierDeps, 'getGraph'>
 
+function reportRejectedHumanOps(
+  workflowId: string | null,
+  ops: readonly Op[],
+  result: OpsResultView
+): void {
+  const settled = new Set([...result.applied, ...result.skipped])
+  const rejected = ops.filter((op) => !settled.has(op.op_id))
+  const { failure } = result
+  reportError(
+    new Error(
+      `The doc host rejected ${rejected.length} local edit(s): ${failure?.message ?? 'no diagnostics'}`
+    ),
+    {
+      errorType: 'agent_crdt_human_ops_rejected',
+      context: {
+        workflowId,
+        opId: failure?.op_id ?? rejected[0]?.op_id,
+        code: failure?.code,
+        rejectedOps: rejected.map((op) => op.op)
+      }
+    }
+  )
+}
+
 export function useAgentCrdtFollower(
   workflowId: Ref<string | null>,
   userId: () => string | null = () => null,
@@ -350,22 +375,7 @@ function startAgentCrdtFollower(
       if (outcome.result.ok) return
       const workflowId =
         outcome.result.workflowId ?? bridge.subscribedWorkflowId
-      const settled = new Set([...applied, ...outcome.result.skipped])
-      const rejected = outcome.ops.filter((op) => !settled.has(op.op_id))
-      reportError(
-        new Error(
-          `The doc host rejected ${rejected.length} local edit(s): ${outcome.result.failure?.message ?? 'no diagnostics'}`
-        ),
-        {
-          errorType: 'agent_crdt_human_ops_rejected',
-          context: {
-            workflowId,
-            opId: outcome.result.failure?.op_id ?? rejected[0]?.op_id,
-            code: outcome.result.failure?.code,
-            rejectedOps: rejected.map((op) => op.op)
-          }
-        }
-      )
+      reportRejectedHumanOps(workflowId, outcome.ops, outcome.result)
       // The rejected edits are no longer pending, so the doc is the graph's
       // whole truth again: put the live graph back on it.
       if (workflowId !== null) syncAndReportPending(workflowId)
