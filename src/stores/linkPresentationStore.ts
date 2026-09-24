@@ -10,6 +10,8 @@ import type {
 import type { LinkId } from '@/types/linkId'
 import type { LinkPresentation } from '@/types/linkPresentation'
 
+const EMPTY_LINK_IDS: readonly LinkId[] = []
+
 function isDefaultLinkPresentation(
   hidden: boolean | undefined,
   label: string | undefined
@@ -138,6 +140,15 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
       : undefined
   }
 
+  function graphHiddenLinkIds(scope: GraphScope): readonly LinkId[] {
+    const bucket = roots.get(scope.rootGraphId)
+    const ownerIds = bucket?.idsByOwner.get(scope.owningGraphId)
+    if (!bucket || !ownerIds) return EMPTY_LINK_IDS
+    return [...ownerIds].filter(
+      (linkId) => bucket.byId.get(linkId)?.presentation.hidden
+    )
+  }
+
   function clearGraph(rootGraphId: RootGraphId): void {
     roots.delete(rootGraphId)
   }
@@ -146,7 +157,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     const bucket = roots.get(scope.rootGraphId)
     const ownerIds = bucket?.idsByOwner.get(scope.owningGraphId)
     if (!bucket || !ownerIds) return
-    for (const linkId of [...ownerIds]) {
+    for (const linkId of Array.from(ownerIds)) {
       displace(scope.rootGraphId, bucket, linkId, scope.owningGraphId)
     }
   }
@@ -155,6 +166,7 @@ export const useLinkPresentationStore = defineStore('linkPresentation', () => {
     patch,
     take,
     getPresentation,
+    graphHiddenLinkIds,
     clearGraph,
     clearOwner
   }

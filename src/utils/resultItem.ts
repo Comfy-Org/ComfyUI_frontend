@@ -1,4 +1,4 @@
-import type { ResultItem } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 

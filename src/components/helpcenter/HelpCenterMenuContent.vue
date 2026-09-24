@@ -232,6 +232,7 @@ const hasReleases = computed(() => releaseStore.releases.length > 0)
 const showVersionUpdates = computed(() =>
   settingStore.get('Comfy.Notification.ShowVersionUpdates')
 )
+const isDevMode = computed(() => settingStore.get('Comfy.DevMode'))
 
 // Use conflict acknowledgment state from composable
 const { shouldShowRedDot: shouldShowManagerRedDot } =
@@ -278,6 +279,16 @@ const moreItems = computed<MenuItem[]>(() => {
       visible: isDesktop,
       action: () => {
         onReinstall()
+        emit('close')
+      }
+    },
+    {
+      key: 'replay-onboarding',
+      type: 'item',
+      label: t('commands.Comfy_Onboarding_Replay.label'),
+      visible: isDevMode.value,
+      action: () => {
+        void commandStore.execute('Comfy.Onboarding.Replay')
         emit('close')
       }
     }
@@ -592,7 +603,8 @@ const onReinstall = (): void => {
 }
 
 const onUpdateComfyUI = async (): Promise<void> => {
-  const { updateComfyUI, rebootComfyUI, error } = useComfyManagerService()
+  const { updateComfyUI, startQueue, rebootComfyUI, error } =
+    useComfyManagerService()
 
   toast.add({
     severity: 'info',
@@ -603,6 +615,7 @@ const onUpdateComfyUI = async (): Promise<void> => {
 
   try {
     const result = await updateComfyUI({ is_stable: true })
+    if (result !== null) await startQueue()
 
     if (result === null || error.value) {
       toast.add({

@@ -7,7 +7,10 @@ import type {
   JobListItem,
   TaskType
 } from '@/platform/remote/comfyui/jobs/jobTypes'
-import type { StatusWsMessageStatus, TaskOutput } from '@/schemas/apiSchema'
+import type {
+  StatusWsMessageStatus,
+  TaskOutput
+} from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import type { AugmentedResultItem } from '@/utils/resultItem'
 import { filterPreviewableResults } from '@/utils/resultItem'
@@ -432,7 +435,8 @@ export const useQueuePendingTaskCountStore = defineStore(
     }),
     actions: {
       update(e: CustomEvent<StatusWsMessageStatus | null>) {
-        this.count = e.detail?.exec_info.queue_remaining || 0
+        const queueRemaining = e.detail?.exec_info?.queue_remaining
+        if (queueRemaining != null) this.count = queueRemaining
       }
     }
   }

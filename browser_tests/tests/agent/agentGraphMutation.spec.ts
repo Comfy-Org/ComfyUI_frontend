@@ -19,7 +19,7 @@ const test = mergeTests(agentTest, webSocketFixture)
 test.describe(
   'In-App Agent graph mutations',
   {
-    tag: ['@cloud', '@canvas', '@node']
+    tag: ['@cloud', '@canvas', '@node', '@vue-nodes']
   },
   () => {
     test.use({ connectWebSocketToServer: false })
@@ -37,7 +37,7 @@ test.describe(
       const ws = await getWebSocket()
       const panel = page.locator('#agent-panel-root')
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', { name: enMessages.agent.entryButton })
         .click()
       await panel
         .getByRole('textbox', { name: /^Describe ideas/ })
@@ -47,7 +47,7 @@ test.describe(
 
       ws.send(JSON.stringify(BUILD_VIDEO_GRAPH_TOOL_EVENT))
       await expect(
-        panel.getByRole('button', { name: 'Ran 1 tool call for 2.1 seconds' })
+        panel.getByRole('button', { name: 'Worked for 2.1 seconds' })
       ).toBeVisible()
       ws.send(JSON.stringify(VIDEO_GRAPH_DONE_EVENT))
       ws.send(JSON.stringify(MESSAGE_DONE_EVENT))
@@ -69,10 +69,9 @@ test.describe(
       const ws = await getWebSocket()
       const clientFrames: string[] = []
       ws.onMessage((message) => clientFrames.push(message.toString()))
-      await comfyPage.settings.setSetting('Comfy.VueNodes.Enabled', true)
 
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', { name: enMessages.agent.entryButton })
         .click()
       const panel = page.locator('#agent-panel-root')
       await panel
@@ -88,7 +87,6 @@ test.describe(
 
       ws.send(JSON.stringify(GRAPH_SUBSCRIBED_EVENT))
       ws.send(JSON.stringify(GRAPH_UPDATE_EVENT))
-      await comfyPage.vueNodes.waitForNodes()
       await expect(
         comfyPage.vueNodes.getNodeByTitle('Agent-created node')
       ).toBeVisible()
