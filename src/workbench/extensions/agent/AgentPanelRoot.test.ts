@@ -76,17 +76,45 @@ const ws = vi.hoisted(() => {
   const remove = (type: string, listener: Listener): void => {
     listeners.get(type)?.delete(listener)
   }
+  // The agent's one socket (/api/agent/events), faked at its seam: every
+  // frame, chat or document, arrives as `{ type, data }`, and the production
+  // document transport rides it. It reports itself open, as a live socket does.
+  const frameListeners = new Set<(raw: unknown) => void>()
+  const statusListeners = new Set<(live: boolean) => void>()
+  const socket = {
+    send: (frame: string): boolean => {
+      socketSend(frame)
+      return true
+    },
+    subscribe(listener: (raw: unknown) => void) {
+      frameListeners.add(listener)
+      return () => {
+        frameListeners.delete(listener)
+      }
+    },
+    onStatus(listener: (live: boolean) => void) {
+      statusListeners.add(listener)
+      listener(true)
+      return () => {
+        statusListeners.delete(listener)
+      }
+    }
+  }
   const emit = (type: string, data?: unknown): void => {
     for (const listener of listeners.get(type) ?? []) listener({ detail: data })
+    for (const listener of [...frameListeners]) listener({ type, data })
   }
-  // The CRDT document client accepts only a real CustomEvent (it discards
-  // anything else as an invalid frame), so document frames need this one.
-  const emitEvent = (type: string, data?: unknown): void => {
-    const event = new CustomEvent(type, { detail: data })
-    for (const listener of listeners.get(type) ?? []) listener(event)
+  const emitEvent = emit
+  /** The socket (re)opened: the edge the follower and identity retry on. */
+  const connect = (): void => {
+    for (const listener of [...statusListeners]) listener(true)
   }
-  const clear = (): void => listeners.clear()
-  return { add, remove, emit, emitEvent, clear }
+  const clear = (): void => {
+    listeners.clear()
+    frameListeners.clear()
+    statusListeners.clear()
+  }
+  return { add, remove, emit, emitEvent, connect, clear, socket }
 })
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -249,9 +277,10 @@ const paywallBilling = vi.hoisted(() => ({
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
 })
-// Standalone (#17469): the panel's local-agent socket and its identity lookup
-// are exercised for real below, with only the socket itself faked.
-vi.mock(import('./services/agent/standaloneAgentEventSource'), { spy: true })
+// The agent socket is faked at its seam (`ws.socket`); the identity lookup is
+// stubbed to the signed-in account except where a test exercises it.
+vi.mock(import('./services/agent/agentEventSource'), { spy: true })
+vi.mock(import('./services/agent/agentIdentity'), { spy: true })
 vi.mock(import('@/platform/telemetry/reportError'), { spy: true })
 vi.mock(import('./crdt/devPanelLog'), { spy: true })
 vi.mock(import('@/composables/billing/useBillingContext'), { spy: true })
@@ -271,9 +300,11 @@ import { useAgentComposerStore } from './stores/agent/agentComposerStore'
 import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTabBindingStore'
 import { SUBSCRIBE_RETRY_MAX_ATTEMPTS } from './crdt/agentCrdtDocLifecycle'
 import { recordDevEvent } from './crdt/devPanelLog'
-import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
-import type { StandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
-import { STANDALONE_IDENTITY_RETRY_BASE_MS } from './services/agent/standaloneIdentity'
+import { createAgentEventSource } from './services/agent/agentEventSource'
+import {
+  AGENT_IDENTITY_RETRY_BASE_MS,
+  resolveAgentIdentity
+} from './services/agent/agentIdentity'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 // eslint-disable-next-line import-x/no-restricted-paths
@@ -283,6 +314,11 @@ import AgentPanelRoot from './AgentPanelRoot.vue'
 import DockedAgentPanel from './components/agent/DockedAgentPanel.vue'
 
 beforeEach(() => {
+  vi.mocked(createAgentEventSource).mockReturnValue(ws.socket)
+  vi.mocked(resolveAgentIdentity).mockReturnValue({
+    userId: ref('account-a'),
+    stop: () => {}
+  })
   useCurrentUser().isLoggedIn = computed(() => true)
   useCurrentUser().userDisplayName = computed(() => 'Jo Rivera')
   useCurrentUser().resolvedUserInfo = computed(() => ({
@@ -6970,51 +7006,14 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 })
 
-describe('AgentPanelRoot standalone agent (#17469)', () => {
-  // The standalone agent's ONE socket, faked at the seam the panel builds the
-  // document transport on: chat frames and document frames both ride it.
-  function fakeStandaloneSocket() {
-    const listeners = new Set<(raw: unknown) => void>()
-    const statusListeners = new Set<(live: boolean) => void>()
-    const send = vi.fn((_frame: string) => true)
-    const source: StandaloneAgentEventSource = {
-      send,
-      subscribe(listener) {
-        listeners.add(listener)
-        return () => {
-          listeners.delete(listener)
-        }
-      },
-      onStatus(listener) {
-        statusListeners.add(listener)
-        return () => {
-          statusListeners.delete(listener)
-        }
-      }
-    }
-    return {
-      source,
-      send,
-      /** A frame from the agent, chat or document alike. */
-      emit: (frame: unknown) =>
-        listeners.forEach((listener) => listener(frame)),
-      /** The socket (re)opened: the same edge the follower resubscribes on. */
-      connect: () => statusListeners.forEach((listener) => listener(true))
-    }
-  }
-
-  let socket: ReturnType<typeof fakeStandaloneSocket>
-
+describe('AgentPanelRoot agent socket identity (#17469)', () => {
   beforeEach(() => {
-    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
-    ws.clear()
-    socket = fakeStandaloneSocket()
-    vi.mocked(createStandaloneAgentEventSource).mockReturnValue(socket.source)
+    // A spy-mode mock resets to the real lookup.
+    vi.mocked(resolveAgentIdentity).mockReset()
     vi.mocked(reportError).mockImplementation(() => {})
   })
 
   afterEach(() => {
-    vi.mocked(createStandaloneAgentEventSource).mockReset()
     vi.mocked(reportError).mockReset()
     useAgentPanelStore().enabled = false
     Object.assign(appMock, { isGraphReady: undefined })
@@ -7029,7 +7028,7 @@ describe('AgentPanelRoot standalone agent (#17469)', () => {
     return tab
   }
 
-  function stubStandaloneFetch(
+  function stubAgentFetch(
     identity: () => Response | Promise<Response>
   ): unknown[] {
     const bodies: unknown[] = []
@@ -7055,7 +7054,7 @@ describe('AgentPanelRoot standalone agent (#17469)', () => {
 
   /** Workflow ids of every doc_subscribe the follower put on the socket. */
   function subscribedWorkflowIds(): string[] {
-    return socket.send.mock.calls
+    return socketSend.mock.calls
       .map(
         ([frame]) =>
           JSON.parse(frame) as {
@@ -7075,7 +7074,7 @@ describe('AgentPanelRoot standalone agent (#17469)', () => {
         throw new Error('identity route down')
       })
       .mockImplementation(identityResponse)
-    stubStandaloneFetch(identity)
+    stubAgentFetch(identity)
     bindActiveTab('wf-42')
     useAgentPanelStore().enabled = true
 
@@ -7085,21 +7084,21 @@ describe('AgentPanelRoot standalone agent (#17469)', () => {
     expect(identity).toHaveBeenCalledTimes(1)
     expect(reportError).toHaveBeenCalledWith(
       expect.any(Error),
-      expect.objectContaining({ errorType: 'agent_standalone_identity_failed' })
+      expect.objectContaining({ errorType: 'agent_identity_failed' })
     )
     // Bound and active, but unattributable: the follower must not subscribe.
     expect(subscribedWorkflowIds()).toEqual([])
 
-    socket.connect()
-    await vi.advanceTimersByTimeAsync(STANDALONE_IDENTITY_RETRY_BASE_MS)
+    ws.connect()
+    await vi.advanceTimersByTimeAsync(AGENT_IDENTITY_RETRY_BASE_MS)
 
     expect(identity).toHaveBeenCalledTimes(2)
     expect(subscribedWorkflowIds()).toEqual(['wf-42'])
   })
 
-  it('does not mint a canvas edit before the standalone identity resolves, and mints it once it has', async () => {
+  it('does not mint a canvas edit before the agent identity resolves, and mints it once it has', async () => {
     let resolveIdentity!: (response: Response) => void
-    stubStandaloneFetch(
+    stubAgentFetch(
       () =>
         new Promise<Response>((resolve) => {
           resolveIdentity = resolve
@@ -7127,7 +7126,7 @@ describe('AgentPanelRoot standalone agent (#17469)', () => {
         .mocked(recordDevEvent)
         .mock.calls.filter(([kind]) => kind === 'human_ops_settled')
     const opsFrames = () =>
-      socket.send.mock.calls
+      socketSend.mock.calls
         .map(
           ([frame]) =>
             JSON.parse(frame) as {
@@ -7157,9 +7156,11 @@ describe('AgentPanelRoot standalone agent (#17469)', () => {
 
       resolveIdentity(identityResponse())
       await vi.waitFor(() => expect(subscribedWorkflowIds()).toEqual(['wf-42']))
-      socket.emit({
-        type: 'doc_subscribed',
-        data: { v: 1, workflow_id: 'wf-42', ok: true, seq: 1 }
+      ws.emit('doc_subscribed', {
+        v: 1,
+        workflow_id: 'wf-42',
+        ok: true,
+        seq: 1
       })
 
       deliverLayoutChange!(humanEdit)

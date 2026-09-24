@@ -1,14 +1,10 @@
 /**
- * A `DocFrameTransport` for the LOCAL (standalone) agent.
- *
- * The cloud transport (`apiTransport` in useAgentCrdtFollower) rides ComfyUI's
- * one same-origin socket, because ingest multiplexes the agent's document
- * frames onto it. Standalone has no ingest — but the agent's own socket now
- * speaks the identical document protocol (doc_subscribe / doc_unsubscribe /
- * doc_ops inbound; doc_subscribed / doc_update / doc_ops_result / doc_reset
- * outbound), so this transport is the same idea with the socket swapped: ride
- * the chat stream's socket, forward outbound frames verbatim, surface inbound
- * document frames as events.
+ * The `DocFrameTransport` every follower uses: document frames ride the
+ * agent's one socket (`/api/agent/events`, see agentEventSource), which speaks
+ * the document protocol on both backends — doc_subscribe / doc_unsubscribe /
+ * doc_ops / awareness up; doc_subscribed / doc_update / doc_ops_result /
+ * doc_reset / awareness down. Outbound frames are forwarded verbatim; inbound
+ * document frames surface as events.
  *
  * ONE socket, on purpose. An earlier cut opened a second socket per followed
  * workflow because the agent fixed a connection's follows at connect time;
@@ -16,7 +12,7 @@
  * progress frame published while it re-established. With follows as frames,
  * nothing reconnects.
  */
-import type { StandaloneAgentEventSource } from '../services/agent/standaloneAgentEventSource'
+import type { AgentEventSocket } from '../services/agent/agentEventSource'
 import type { DocFrameTransport } from './docFrameClient'
 
 /** Frames the agent sends followers. Anything else on the socket is chat. */
@@ -33,14 +29,14 @@ interface AgentFrame {
   data?: unknown
 }
 
-export interface StandaloneDocFrameTransport extends DocFrameTransport {
+export interface AgentDocFrameTransport extends DocFrameTransport {
   onConnected(listener: () => void): () => void
   destroy(): void
 }
 
-export function createStandaloneDocFrameTransport(
-  source: StandaloneAgentEventSource
-): StandaloneDocFrameTransport {
+export function createAgentDocFrameTransport(
+  source: AgentEventSocket
+): AgentDocFrameTransport {
   const target = new EventTarget()
   let unsubscribe: (() => void) | null = null
 
