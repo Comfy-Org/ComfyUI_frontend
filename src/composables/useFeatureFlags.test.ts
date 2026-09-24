@@ -973,15 +973,23 @@ describe('useFeatureFlags', () => {
       expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(expected)
     })
 
-    it.for(['true', 'false', 1])(
-      'is off when the server sends the malformed value %j',
-      (wireValue) => {
+    it('ignores the server-feature fallback when /api/features lacks the flag', () => {
+      remoteConfigState.value = 'authenticated'
+      vi.mocked(api.getServerFeature).mockImplementation(
+        (path, defaultValue) =>
+          path === ServerFeatureFlag.UNIFIED_WEB_SESSION ? true : defaultValue
+      )
+
+      expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)
+    })
+
+    it.for(['"true"', '"false"', '1'])(
+      'is off for the malformed override value %s',
+      (rawValue) => {
         remoteConfigState.value = 'authenticated'
-        vi.mocked(api.getServerFeature).mockImplementation(
-          (path, defaultValue) =>
-            path === ServerFeatureFlag.UNIFIED_WEB_SESSION
-              ? wireValue
-              : defaultValue
+        localStorage.setItem(
+          `ff:${ServerFeatureFlag.UNIFIED_WEB_SESSION}`,
+          rawValue
         )
 
         expect(useFeatureFlags().flags.unifiedWebSessionEnabled).toBe(false)

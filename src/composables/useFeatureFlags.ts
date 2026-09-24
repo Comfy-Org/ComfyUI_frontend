@@ -261,10 +261,12 @@ export function useFeatureFlags() {
     get unifiedWebSessionEnabled() {
       if (!isCloud) return false
 
-      return resolveStrictBooleanFlag(
-        ServerFeatureFlag.UNIFIED_WEB_SESSION,
+      const key = ServerFeatureFlag.UNIFIED_WEB_SESSION
+      const value =
+        getSessionOverride<unknown>(key) ??
+        getDevOverride<unknown>(key) ??
         remoteConfig.value.unified_web_session
-      )
+      return value === true
     },
     get billingControlEnabled() {
       return resolveAuthGatedFlag(
