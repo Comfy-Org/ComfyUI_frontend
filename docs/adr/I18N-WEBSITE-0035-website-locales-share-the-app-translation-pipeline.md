@@ -98,9 +98,9 @@ Alternatives considered:
 - One translator, one manifest format, one validation rule set for both
   surfaces; fixes to the pipeline reach the website for free.
 - Japanese can be filled by running one workflow instead of by hand.
-- `locale:check` catches placeholder drift in website translations in CI, and
-  a unit test compiles every message with vue-i18n so syntax errors fail
-  before a page renders.
+- `locale:website:check` catches placeholder drift in website translations in
+  CI, and a unit test compiles every message with vue-i18n so syntax errors
+  fail before a page renders.
 - Consumers interpolate through the compiler, while the wrapper keeps a
   missing named value visible as `{name}` so incomplete calls are apparent.
 
