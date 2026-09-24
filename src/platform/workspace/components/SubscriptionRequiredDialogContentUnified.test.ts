@@ -92,7 +92,12 @@ const UnifiedPricingTableStub = {
 
 function renderComponent(props: Record<string, unknown> = {}) {
   return render(SubscriptionRequiredDialogContentUnified, {
-    props: { onClose: vi.fn(), embeddedCheckoutEnabled: true, ...props },
+    props: {
+      onClose: vi.fn(),
+      embeddedCheckoutEnabled: true,
+      paymentIntentSource: undefined,
+      ...props
+    },
     global: {
       plugins: [i18n],
       stubs: {
@@ -288,27 +293,12 @@ describe('SubscriptionRequiredDialogContentUnified team-plan subscribe', () => {
     }
   )
 
-  // `reason` drives the insufficient-credits copy above the table, so the
-  // top-up fall-through rewrites it. Checkout must read the surface instead, or
-  // the purchase is attributed to that rewrite.
-  describe('checkout attribution', () => {
-    function paymentIntentSourceGivenToCheckout() {
-      return mockUseSubscriptionCheckout.mock.calls[0][1]
-    }
-
-    it('gives checkout the surface, not the copy reason', () => {
-      renderComponent({
-        reason: 'out_of_credits',
-        paymentIntentSource: 'agent_paywall'
-      })
-
-      expect(paymentIntentSourceGivenToCheckout()).toBe('agent_paywall')
+  it('gives checkout the surface, not the copy reason', () => {
+    renderComponent({
+      reason: 'out_of_credits',
+      paymentIntentSource: 'agent_paywall'
     })
 
-    it('falls back to the reason when no surface is named', () => {
-      renderComponent({ reason: 'out_of_credits' })
-
-      expect(paymentIntentSourceGivenToCheckout()).toBe('out_of_credits')
-    })
+    expect(mockUseSubscriptionCheckout.mock.calls[0][1]).toBe('agent_paywall')
   })
 })

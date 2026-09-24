@@ -141,10 +141,9 @@ const {
   initialCheckout
 } = defineProps<{
   onClose: () => void
-  /** Selects the insufficient-credits copy below; not the attribution. */
   reason?: PaymentIntentSource
-  /** Surface the resulting purchase is attributed to. Defaults to `reason`. */
-  paymentIntentSource?: PaymentIntentSource
+  /** Required, because `useSubscriptionDialog` owns resolving it. */
+  paymentIntentSource: PaymentIntentSource | undefined
   isPersonal?: boolean
   initialCheckout?: SubscriptionCheckoutSelection
 }>()
@@ -179,7 +178,7 @@ const {
   invalidateQuote,
   handleResubscribe,
   handleSuccessClose
-} = useSubscriptionCheckout(emit, paymentIntentSource ?? reason, {
+} = useSubscriptionCheckout(emit, paymentIntentSource, {
   tierPlanType: isPersonal ? 'personal' : 'team'
 })
 

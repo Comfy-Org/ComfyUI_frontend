@@ -33,8 +33,10 @@
       </i18n-t>
     </div>
 
+    <!-- `PricingTable`'s `reason` is attribution, never copy: it feeds
+         `payment_intent_source` and the checkout call. -->
     <PricingTable
-      :reason="checkoutPaymentIntentSource"
+      :reason="paymentIntentSource"
       class="flex-1"
       @choose-team-workspace="handleChooseTeam"
     />
@@ -165,19 +167,11 @@ import type { PaymentIntentSource } from '@/platform/telemetry/types'
 
 const { onClose, reason, paymentIntentSource, onChooseTeam } = defineProps<{
   onClose: () => void
-  /** Selects the insufficient-credits copy below; not the attribution. */
   reason?: PaymentIntentSource
-  /** Surface the resulting purchase is attributed to. Defaults to `reason`. */
-  paymentIntentSource?: PaymentIntentSource
+  /** Required, because `useSubscriptionDialog` owns resolving it. */
+  paymentIntentSource: PaymentIntentSource | undefined
   onChooseTeam?: () => void
 }>()
-
-// `PricingTable`'s `reason` prop is attribution only — it feeds
-// `payment_intent_source` and the checkout call, never copy — so it takes the
-// resolved source while the heading above still branches on `reason`.
-const checkoutPaymentIntentSource = computed(
-  () => paymentIntentSource ?? reason
-)
 
 const emit = defineEmits<{
   close: [subscribed: boolean]

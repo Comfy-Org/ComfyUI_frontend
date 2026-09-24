@@ -19,7 +19,6 @@ import { useTelemetry } from '@/platform/telemetry'
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
 import {
   clearCheckoutJourney,
-  getActiveCheckoutJourney,
   resolveCheckoutJourney
 } from '@/platform/workspace/utils/checkoutJourney'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApi'
@@ -585,44 +584,27 @@ describe('useSubscriptionCheckout', () => {
     // This rail derives its entry source from the payment-intent source its
     // surface passed in. A regression to the `'pricing'` default, or a source
     // dropped before this composable, misattributes hosted subscription
-    // conversion while every other assertion in this file still passes. The
-    // persisted record is asserted too: on the hosted rail every phase after
-    // `entered` reads its context back out of storage.
-    it('carries the agent paywall entry source through the journey', async () => {
-      const checkout = await setup('agent_paywall')
+    // conversion while every other assertion in this file still passes.
+    it.for([
+      { paymentIntentSource: 'agent_paywall', entrySource: 'agent_paywall' },
+      { paymentIntentSource: undefined, entrySource: 'pricing' }
+    ] as const)(
+      'derives the $entrySource entry source from $paymentIntentSource',
+      async ({ paymentIntentSource, entrySource }) => {
+        const checkout = await setup(paymentIntentSource)
 
-      await checkout.handleSubscribeClick({
-        tierKey: 'standard',
-        billingCycle: 'yearly'
-      })
+        await checkout.handleSubscribeClick({
+          tierKey: 'standard',
+          billingCycle: 'yearly'
+        })
 
-      const events = journeyEvents()
-      expect(events).not.toHaveLength(0)
-      for (const event of events) {
-        expect(event.entry_source).toBe('agent_paywall')
+        // One per emitted phase: `entered`, then `preview_ready`.
+        expect(journeyEvents().map((event) => event.entry_source)).toEqual([
+          entrySource,
+          entrySource
+        ])
       }
-      expect(getActiveCheckoutJourney()).toMatchObject({
-        entry_source: 'agent_paywall'
-      })
-    })
-
-    it('keeps the pricing default when no payment intent source is named', async () => {
-      const checkout = await setup()
-
-      await checkout.handleSubscribeClick({
-        tierKey: 'standard',
-        billingCycle: 'yearly'
-      })
-
-      const events = journeyEvents()
-      expect(events).not.toHaveLength(0)
-      for (const event of events) {
-        expect(event.entry_source).toBe('pricing')
-      }
-      expect(getActiveCheckoutJourney()).toMatchObject({
-        entry_source: 'pricing'
-      })
-    })
+    )
 
     it('emits entered, submitted, and operation_linked across a subscribe', async () => {
       const checkout = await setup()

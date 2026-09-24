@@ -96,10 +96,8 @@ function renderComponent(
   return render(SubscriptionRequiredDialogContentWorkspace, {
     props: {
       onClose: props.onClose ?? vi.fn(),
+      paymentIntentSource: props.paymentIntentSource,
       ...(props.reason ? { reason: props.reason } : {}),
-      ...(props.paymentIntentSource
-        ? { paymentIntentSource: props.paymentIntentSource }
-        : {}),
       ...(props.isPersonal !== undefined
         ? { isPersonal: props.isPersonal }
         : {}),
@@ -154,14 +152,18 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     expect(screen.queryByTestId('transition-preview')).not.toBeInTheDocument()
   })
 
-  it('passes the reason into subscription checkout', () => {
-    renderComponent({ reason: 'out_of_credits' })
+  it('passes the surface, not the copy reason, into subscription checkout', () => {
+    renderComponent({
+      reason: 'out_of_credits',
+      paymentIntentSource: 'agent_paywall'
+    })
 
     expect(mockUseSubscriptionCheckout).toHaveBeenCalledWith(
       expect.any(Function),
-      'out_of_credits',
+      'agent_paywall',
       { tierPlanType: 'team' }
     )
+    expect(screen.getByText('Insufficient Credits')).toBeInTheDocument()
   })
 
   it('marks the legacy Personal table as a personal-plan target', () => {
@@ -308,30 +310,5 @@ describe('SubscriptionRequiredDialogContentWorkspace', () => {
     await user.click(screen.getByTestId('success-close-btn'))
 
     expect(mockHandleSuccessClose).toHaveBeenCalled()
-  })
-
-  // `reason` drives the insufficient-credits copy above the table, so the
-  // top-up fall-through rewrites it. Checkout must read the surface instead, or
-  // the purchase is attributed to that rewrite.
-  describe('checkout attribution', () => {
-    function paymentIntentSourceGivenToCheckout() {
-      return mockUseSubscriptionCheckout.mock.calls[0][1]
-    }
-
-    it('gives checkout the surface, not the copy reason', () => {
-      renderComponent({
-        reason: 'out_of_credits',
-        paymentIntentSource: 'agent_paywall'
-      })
-
-      expect(paymentIntentSourceGivenToCheckout()).toBe('agent_paywall')
-      expect(screen.getByText('Insufficient Credits')).toBeInTheDocument()
-    })
-
-    it('falls back to the reason when no surface is named', () => {
-      renderComponent({ reason: 'out_of_credits' })
-
-      expect(paymentIntentSourceGivenToCheckout()).toBe('out_of_credits')
-    })
   })
 })

@@ -518,11 +518,7 @@ describe('useSubscriptionDialog', () => {
       expect(useTelemetry()?.trackSubscription).not.toHaveBeenCalled()
     })
 
-    // The top-up fall-through rewrites `reason` to `out_of_credits` to keep the
-    // insufficient-credits copy, so the surface that opened it has to reach
-    // checkout by a separate field or the purchase is attributed to the
-    // rewrite. Each content variant is checked because each drives its own
-    // checkout.
+    // Each variant is checked separately because each drives its own checkout.
     describe('payment intent source', () => {
       function contentProps() {
         return mockShowLayoutDialog.mock.calls[0][0].props
