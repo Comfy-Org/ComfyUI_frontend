@@ -4,7 +4,7 @@ import { createI18n } from 'vue-i18n'
 
 import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
 
-import type { CheckoutJourneyTelemetryEvent } from '@/platform/telemetry/types'
+import { useTelemetry } from '@/platform/telemetry'
 import {
   clearCheckoutJourney,
   resolveCheckoutJourney
@@ -12,14 +12,7 @@ import {
 
 import UnifiedStripePaymentSelector from './UnifiedStripePaymentSelector.vue'
 
-const mockTrackCheckoutJourneyEvent = vi.hoisted(() =>
-  vi.fn<(event: CheckoutJourneyTelemetryEvent) => void>()
-)
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () => ({
-    trackCheckoutJourneyEvent: mockTrackCheckoutJourneyEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 /**
  * The provider work is covered in the package, against the real Stripe mocks.
@@ -101,7 +94,6 @@ describe('UnifiedStripePaymentSelector', () => {
   beforeEach(() => {
     sessionStorage.clear()
     clearCheckoutJourney()
-    mockTrackCheckoutJourneyEvent.mockClear()
     vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_test_example')
   })
 
@@ -145,7 +137,7 @@ describe('UnifiedStripePaymentSelector', () => {
 
     reportPhase({ phase: 'payment_element_ready', element: 'payment' })
 
-    expect(mockTrackCheckoutJourneyEvent).toHaveBeenCalledWith(
+    expect(useTelemetry()?.trackCheckoutJourneyEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         checkout_journey_id:
           seeded.status === 'active' ? seeded.record.journey_id : '',
@@ -161,6 +153,6 @@ describe('UnifiedStripePaymentSelector', () => {
 
     reportPhase({ phase: 'payment_submit_attempted' })
 
-    expect(mockTrackCheckoutJourneyEvent).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackCheckoutJourneyEvent).not.toHaveBeenCalled()
   })
 })

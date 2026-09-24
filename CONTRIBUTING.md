@@ -368,7 +368,7 @@ Starting PR Review
 1. Use comment threads for clarification
 2. Create a huddle or schedule a live review for complex discussions
 3. Escalate to team leads if discussion goes in circles
-4. Document recurring style conflicts in Coderabbit config or `CLAUDE.md`
+4. Document recurring style conflicts in Coderabbit config or `AGENTS.md`
 5. Defer to the author for pure personal preference items (but don't
    mislabel technical decisions as preference)
 

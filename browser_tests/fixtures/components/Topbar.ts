@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 export class Topbar {
@@ -9,6 +10,7 @@ export class Topbar {
   private readonly menuTrigger: Locator
   readonly newWorkflowButton: Locator
   readonly workflowTabs: Locator
+  readonly tabs: Locator
   readonly integratedTabBarActions: Locator
   readonly menuRootList: Locator
 
@@ -18,21 +20,18 @@ export class Topbar {
     this.menuRootList = this.menuLocator.getByRole('menubar')
     this.newWorkflowButton = page.locator('.new-blank-workflow-button')
     this.workflowTabs = page.getByTestId(TestIds.topbar.workflowTabs)
+    this.tabs = this.workflowTabs.getByTestId(TestIds.topbar.workflowTab)
     this.integratedTabBarActions = this.workflowTabs.getByTestId(
       TestIds.topbar.integratedTabBarActions
     )
   }
 
   async getTabNames(): Promise<string[]> {
-    return await this.page
-      .locator('.workflow-tabs .workflow-label')
-      .allInnerTexts()
+    return await this.tabs.locator('.workflow-label').allInnerTexts()
   }
 
   async getActiveTabName(): Promise<string> {
-    return this.page
-      .locator('.workflow-tabs .p-togglebutton-checked')
-      .innerText()
+    return this.getActiveTab().innerText()
   }
 
   /**
@@ -62,26 +61,30 @@ export class Topbar {
     return classes ? !classes.includes('invisible') : false
   }
 
+  getWorkflowTabLabel(tabName: string): Locator {
+    return this.getWorkflowTab(tabName).locator('.workflow-label')
+  }
+
   getWorkflowTab(tabName: string): Locator {
-    return this.page
-      .locator(`.workflow-tabs .workflow-label:has-text("${tabName}")`)
-      .locator('..')
+    return this.tabs.filter({
+      has: this.page.getByText(tabName, { exact: true })
+    })
   }
 
   getTab(index: number): Locator {
-    return this.page.locator('.workflow-tabs .p-togglebutton').nth(index)
+    return this.tabs.nth(index)
   }
 
   getActiveTab(): Locator {
-    return this.page.locator(
-      '.workflow-tabs .p-togglebutton.p-togglebutton-checked'
-    )
+    return this.tabs.filter({
+      has: this.page.getByRole('tab', { selected: true })
+    })
   }
 
   async closeWorkflowTab(tabName: string) {
     const tab = this.getWorkflowTab(tabName)
     await tab.hover()
-    await tab.locator('.close-button').click()
+    await tab.getByTestId(TestIds.topbar.closeWorkflowButton).click()
   }
 
   getSaveDialog(): Locator {
@@ -128,10 +131,10 @@ export class Topbar {
   }
 
   async dismissWorkflowPopover() {
-    await this.page
-      .locator('.workflow-popover-fade')
-      .waitFor({ state: 'hidden', timeout: 5000 })
-      .catch(() => {})
+    await this.page.mouse.move(0, 0)
+    await expect(
+      this.page.locator('.workflow-popover-fade').filter({ visible: true })
+    ).toHaveCount(0)
   }
 
   async openTopbarMenu() {

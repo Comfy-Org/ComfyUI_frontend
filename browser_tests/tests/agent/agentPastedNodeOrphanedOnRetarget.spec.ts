@@ -36,7 +36,7 @@ async function readGraphMouse(page: Page): Promise<[number, number]> {
 // position over the live node.
 test.describe(
   'pasted node survives a doc retarget',
-  { tag: ['@cloud', '@agent'] },
+  { tag: ['@cloud', '@agent', '@vue-nodes'] },
   () => {
     test.use({ conversationCase: SEED_CASE, humanOpsHost: 'apply' })
 
@@ -82,9 +82,7 @@ test.describe(
         const topbar = new Topbar(page)
         const beforeSubscribes = agentConversation.subscribeCount()
         await topbar.newWorkflowButton.click()
-        await expect(
-          topbar.workflowTabs.locator('.p-togglebutton')
-        ).toHaveCount(2)
+        await expect(topbar.tabs).toHaveCount(2)
         await topbar.getTab(0).click()
         await expect
           .poll(() => agentConversation.subscribeCount())

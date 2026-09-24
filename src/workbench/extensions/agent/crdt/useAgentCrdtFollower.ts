@@ -34,6 +34,7 @@ import type { MutationsForTarget } from './ecsFollowerAdapter'
 import type { GraphOperation } from './graphOperations'
 import type { ClassifiedDocUpdate } from './layoutFollowerBridge'
 import { LayoutFollowerBridge } from './layoutFollowerBridge'
+import { createOpCoalescer } from './opCoalescer'
 import type { OpsResultView } from './opSender'
 import { createOpSender } from './opSender'
 
@@ -61,6 +62,18 @@ interface AgentCrdtOutcomeCounters {
   received: number
   /** Passed this composable's own filter and the adapter had a bound session to apply it to. */
   applied: number
+  /**
+   * PM-1575: same as `applied`, excluding a subscribe's own catch-up frame
+   * (`update.catchUp`) -- the one-time state-vector sync that lands whenever
+   * a workflow is (re)subscribed to, unrelated to any in-flight tool call.
+   * `applied` alone is unusable as a canvas-sync gate for that reason: a tool
+   * call's baseline, captured before that catch-up lands, would otherwise
+   * read the catch-up itself as "the matching update already arrived" for
+   * whichever tool call happens to be first after a (re)subscribe. Consumers
+   * that need "did a LIVE update land" (agentEventTransport.ts's canvas-sync
+   * baseline) must read this field, not `applied`.
+   */
+  appliedLive: number
   /** Received but not applied: inactive target, workflow mismatch, or no bound adapter session. */
   skipped: number
   /** The merged doc failed the KA-11 read gate (`schema_error`). */
@@ -212,6 +225,7 @@ export function useAgentCrdtFollower(
     outcomes: {
       received: 0,
       applied: 0,
+      appliedLive: 0,
       skipped: 0,
       errored: 0,
       gap: 0,
@@ -274,6 +288,7 @@ function startAgentCrdtFollower(
   const outcomes = ref<AgentCrdtOutcomeCounters>({
     received: 0,
     applied: 0,
+    appliedLive: 0,
     skipped: 0,
     errored: 0,
     gap: 0,
@@ -351,6 +366,7 @@ function startAgentCrdtFollower(
     () => bridge.follower.doc,
     { pendingDeletes: pendingHumanDeletes }
   )
+  const coalescer = createOpCoalescer(sender.admit, sender.flush)
 
   // Dev-panel tap (poc-4): track the doc's node-id set so the panel can show
   // exactly which nodes each doc_update added/removed. Rebuilt from zero on
@@ -378,7 +394,7 @@ function startAgentCrdtFollower(
     )
   }
   const incrementOutcome = (
-    key: 'received' | 'applied' | 'skipped' | 'reset'
+    key: 'received' | 'applied' | 'appliedLive' | 'skipped' | 'reset'
   ): void => {
     outcomes.value = { ...outcomes.value, [key]: outcomes.value[key] + 1 }
   }
@@ -400,6 +416,7 @@ function startAgentCrdtFollower(
   const applyAndReconcile = (update: ClassifiedDocUpdate): NodeId[] => {
     const applied = projection.applyFrame(update)
     incrementOutcome(applied ? 'applied' : 'skipped')
+    if (applied && !update.catchUp) incrementOutcome('appliedLive')
     return applied ? projection.reconcileLiveGraph(update.workflowId) : []
   }
 
@@ -485,6 +502,7 @@ function startAgentCrdtFollower(
       opId: `doc-reset:${detail.seq ?? 'unknown'}`
     }
     projection.clearForReset(detail.workflowId, context)
+    sender.abortAll()
     events.onReset?.(detail.workflowId)
     connected.value = false
     updatesApplied.value = 0
@@ -638,13 +656,16 @@ function startAgentCrdtFollower(
     sender.suspend()
     bridge.unsubscribe()
   }
-  // Drive the bridge's intent, then give the sender the same eager signal the
-  // refusal branch gets: `reconcile()` clears send reality synchronously when
-  // the desired doc changes, and a batch minted for the old doc would
+  // Flush first: an edit admitted this tick is pinned to the doc still bound
+  // here, and the coalescer's deferred flush would otherwise find it unbound.
+  // Then drive the bridge's intent and give the sender the same eager signal
+  // the refusal branch gets: `reconcile()` clears send reality synchronously
+  // when the desired doc changes, and a batch minted for the old doc would
   // otherwise wait out the 10 s result-silence window before noticing. The
   // one exception is the workflow whose ops are held: its subscribe may not
   // have left a closed socket yet, so the abort waits for the ack instead.
   const retarget = (next: string | null): void => {
+    sender.flush()
     if (next === null) bridge.unsubscribe()
     else bridge.subscribe(next)
     if (next !== null && next === heldForWorkflowId) {
@@ -748,6 +769,7 @@ function startAgentCrdtFollower(
       () => bridge.removeEventListener('doc_stale', onStale),
       () => bridge.removeEventListener('doc_subscribe_sent', onSubscribeSent),
       () => sender.detach(),
+      () => coalescer.detach(),
       () => projection.destroy(),
       () => bridge.destroy(),
       () => client.destroy()
@@ -775,6 +797,6 @@ function startAgentCrdtFollower(
     status: readonly(status),
     debugSnapshot,
     enqueueHumanOperations: (operations: GraphOperation[]) =>
-      sender.enqueue(operations)
+      coalescer.enqueue(operations)
   }
 }

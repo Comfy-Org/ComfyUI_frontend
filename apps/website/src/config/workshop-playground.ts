@@ -112,6 +112,11 @@ export type FieldErrorCode =
   | 'outOfRange'
   | 'badOption'
   | 'uploadFailed'
+  | 'fileUnreadable'
+  | 'incompatible'
+  | 'videoTooLong'
+  | 'videoWidthOutOfRange'
+  | 'videoUnreadable'
   | 'rejected'
 export type FieldErrors = Readonly<Record<string, FieldErrorCode>>
 
@@ -397,6 +402,14 @@ export function validateForm(
   values: FormValues
 ): FieldErrors {
   const errors: Record<string, FieldErrorCode> = {}
+  const presentValues = Object.fromEntries(
+    Object.entries(values).filter(
+      ([, value]) =>
+        value !== undefined &&
+        value !== '' &&
+        (!Array.isArray(value) || value.length > 0)
+    )
+  )
   for (const source of schema) {
     const value = values[source.name]
     const field =
@@ -467,6 +480,11 @@ export function validateForm(
           : validateWorkshopInput(value, field.inputSchema)
       if (!result) errors[field.name] = 'rejected'
     }
+  }
+  for (const field of schema) {
+    const constraint = field.presentation?.formConstraint
+    if (constraint && !validateWorkshopInput(presentValues, constraint.schema))
+      errors[field.name] ??= constraint.error
   }
   const inlineFiles = schema.flatMap((field) => {
     const value = values[field.name]

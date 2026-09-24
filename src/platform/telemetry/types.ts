@@ -449,6 +449,7 @@ export interface TemplateLibraryClosedMetadata {
  */
 export interface PageVisibilityMetadata {
   visibility_state: 'visible' | 'hidden'
+  agent_panel_open: boolean
 }
 
 /**
@@ -569,15 +570,32 @@ export interface UiButtonClickMetadata {
 export interface AgentMessageFeedbackMetadata extends Record<string, unknown> {
   message_id: string
   vote: 'up' | 'down' | null
+  workflow_id: string | null
 }
 
 export type AgentPanelCloseSource =
   | 'close_button'
   | 'workflow_switch'
   | 'topbar_button'
+  | 'pagehide'
 export interface AgentPanelOpenedMetadata extends Record<string, unknown> {
   source: 'restored' | 'topbar_button' | 'automatic_consent'
 }
+export type AgentConsentNotOfferedReason =
+  | 'first_run_screen'
+  | 'tour_active'
+  | 'dialog_open'
+  | 'boot_undecided'
+  | 'storage_unavailable'
+export interface AgentConsentNotOfferedMetadata extends Record<
+  string,
+  unknown
+> {
+  reason: AgentConsentNotOfferedReason
+}
+export type AgentOnboardingNotShownMetadata =
+  | { reason: 'app_mode' | 'tour_active' }
+  | { reason: 'target_missing'; step: number }
 export interface AgentPanelClosedMetadata extends Record<string, unknown> {
   source: AgentPanelCloseSource
   open_duration_ms: number | null
@@ -588,9 +606,60 @@ export interface AgentEntryButtonClickedMetadata extends Record<
 > {
   resulting_state: 'opened' | 'closed'
 }
+export type AgentConsentTrigger = 'first_load' | 'button_click'
+export interface AgentConsentShownMetadata extends Record<string, unknown> {
+  trigger: AgentConsentTrigger
+}
+/**
+ * Only consent the user actually gave or refused resolves the card, so this
+ * never reports a decision that did not stick. An `agent_consent_shown` with
+ * no matching resolution is an *unresolved* offer, not a dismissal: it covers
+ * dismissing the card (Escape, overlay click), an acceptance whose save
+ * failed, and — signed out — accepting the card but abandoning the sign-in
+ * that has to follow. Splitting those three apart needs a signal this event
+ * does not carry.
+ */
+export interface AgentConsentResolvedMetadata extends Record<string, unknown> {
+  decision: 'accepted' | 'rejected'
+}
+export type AgentOnboardingAction = 'next' | 'finish' | 'skip'
+/**
+ * `step` is 1-based and matches the "Step N of M" indicator on the card.
+ * `finish` marks completion, so the gap from `agent_onboarding_shown` is the
+ * onboarding time.
+ */
+export interface AgentOnboardingStepMetadata extends Record<string, unknown> {
+  step: number
+  action: AgentOnboardingAction
+}
+/**
+ * Where the composer's text came from, by the affordance that put it there:
+ * `suggestion` is an empty-state suggestion chip, `edited` is an earlier prompt
+ * reopened through the conversation's edit action, and `typed` is everything
+ * the user wrote themselves. Each send falls into exactly one — a chip the user
+ * then reworded stays `suggestion`, because the chip is still what it came from.
+ */
+export type AgentInputMethod = 'typed' | 'suggestion' | 'edited'
 export interface AgentMessageSentMetadata extends Record<string, unknown> {
   attachment_count: number
   node_tag_count: number
+  /**
+   * The thread the message was posted into, `null` when it starts a new one —
+   * the backend mints that id in its acknowledgement, after this event fires.
+   */
+  thread_id: string | null
+  /** The targeted workflow's cloud id, `null` when the tab has none yet. */
+  workflow_id: string | null
+  /**
+   * Minted client-side, one per send attempt, so duplicate deliveries of this
+   * event collapse onto one message. A retry after a failed send is a new
+   * attempt and gets a new id. The backend does not receive it yet — the turn
+   * POST contract carries no client id — so it dedups within the frontend
+   * stream rather than joining to the backend turn; `thread_id` is the join
+   * today.
+   */
+  client_message_id: string
+  input_method: AgentInputMethod
 }
 export interface AgentNodeTaggedMetadata extends Record<string, unknown> {
   source: 'mention_picker'
@@ -1291,10 +1360,16 @@ export interface TelemetryProvider {
   trackAgentPanelClosed?(metadata: AgentPanelClosedMetadata): void
   trackAgentEntryButtonClicked?(metadata: AgentEntryButtonClickedMetadata): void
   trackAgentCloseButtonClicked?(): void
+  trackAgentConsentShown?(metadata: AgentConsentShownMetadata): void
+  trackAgentConsentResolved?(metadata: AgentConsentResolvedMetadata): void
+  trackAgentOnboardingShown?(): void
+  trackAgentOnboardingStep?(metadata: AgentOnboardingStepMetadata): void
   trackAgentMessageSent?(metadata: AgentMessageSentMetadata): void
   trackAgentNodeTagged?(metadata: AgentNodeTaggedMetadata): void
   trackAgentAttachButtonClicked?(): void
   trackAgentWorkflowApplied?(metadata: AgentWorkflowAppliedMetadata): void
+  trackAgentConsentNotOffered?(metadata: AgentConsentNotOfferedMetadata): void
+  trackAgentOnboardingNotShown?(metadata: AgentOnboardingNotShownMetadata): void
 
   // Right side panel widget favorite events
   trackWidgetFavoriteToggled?(metadata: WidgetFavoriteToggledMetadata): void
@@ -1461,10 +1536,16 @@ export const TelemetryEvents = {
   AGENT_PANEL_CLOSED: 'app:agent_panel_closed',
   AGENT_ENTRY_BUTTON_CLICKED: 'app:agent_entry_button_clicked',
   AGENT_CLOSE_BUTTON_CLICKED: 'app:agent_close_button_clicked',
+  AGENT_CONSENT_SHOWN: 'app:agent_consent_shown',
+  AGENT_CONSENT_RESOLVED: 'app:agent_consent_resolved',
+  AGENT_ONBOARDING_SHOWN: 'app:agent_onboarding_shown',
+  AGENT_ONBOARDING_STEP: 'app:agent_onboarding_step',
   AGENT_MESSAGE_SENT: 'app:agent_message_sent',
   AGENT_NODE_TAGGED: 'app:agent_node_tagged',
   AGENT_ATTACH_BUTTON_CLICKED: 'app:agent_attach_button_clicked',
   AGENT_WORKFLOW_APPLIED: 'app:agent_workflow_applied',
+  AGENT_CONSENT_NOT_OFFERED: 'app:agent_consent_not_offered',
+  AGENT_ONBOARDING_NOT_SHOWN: 'app:agent_onboarding_not_shown',
 
   // Right Side Panel Widget Favorites
   WIDGET_FAVORITE_TOGGLED: 'app:widget_favorite_toggled',

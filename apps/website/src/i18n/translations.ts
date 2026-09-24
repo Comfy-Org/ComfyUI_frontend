@@ -60,7 +60,7 @@ const translations = {
     en: '{count} models',
     'zh-CN': '{count} 个模型'
   },
-  'workshop.empty': {
+  'workshop.empty.message': {
     en: 'No models match your filters.',
     'zh-CN': '没有符合这些筛选条件的模型。'
   },
@@ -1991,6 +1991,18 @@ Enterprise`
     en: 'GPT Image 2',
     'zh-CN': 'GPT Image 2'
   },
+  'cloud.aiModels.card.chatgptImages25': {
+    en: 'ChatGPT Images 2.5',
+    'zh-CN': 'ChatGPT Images 2.5'
+  },
+  'cloud.aiModels.card.klingAi30': {
+    en: 'KlingAI 3.0',
+    'zh-CN': 'KlingAI 3.0'
+  },
+  'cloud.aiModels.card.flux3': {
+    en: 'Flux 3',
+    'zh-CN': 'Flux 3'
+  },
   'cloud.aiModels.ctaDesktop': {
     en: 'EXPLORE WORKFLOWS WITH THE LATEST MODELS',
     'zh-CN': '探索最新模型工作流'
@@ -2555,27 +2567,27 @@ Enterprise`
   },
   'learning.categoryNav': { en: 'Category filter', 'zh-CN': '分类筛选' },
   'learning.featuredBadge': { en: 'Featured', 'zh-CN': '精选' },
-  'learning.categories.all': { en: 'All', 'zh-CN': '全部' },
+  'learning.categories.all.label': { en: 'All', 'zh-CN': '全部' },
   'learning.categories.all.blurb': {
     en: 'Every tutorial and workflow',
     'zh-CN': '所有教程与工作流'
   },
-  'learning.categories.basics': { en: 'Basics', 'zh-CN': '基础' },
+  'learning.categories.basics.label': { en: 'Basics', 'zh-CN': '基础' },
   'learning.categories.basics.blurb': {
     en: 'Fundamentals and getting started',
     'zh-CN': '基础入门与上手指南'
   },
-  'learning.categories.vfx': { en: 'VFX', 'zh-CN': 'VFX' },
+  'learning.categories.vfx.label': { en: 'VFX', 'zh-CN': 'VFX' },
   'learning.categories.vfx.blurb': {
     en: 'Compositing, cleanup and shot work',
     'zh-CN': '合成、清理与镜头处理'
   },
-  'learning.categories.animations': { en: 'Animations', 'zh-CN': '动画' },
+  'learning.categories.animations.label': { en: 'Animations', 'zh-CN': '动画' },
   'learning.categories.animations.blurb': {
     en: 'Motion, retiming and character',
     'zh-CN': '运动、变速与角色'
   },
-  'learning.categories.ads': { en: 'Ads', 'zh-CN': '广告' },
+  'learning.categories.ads.label': { en: 'Ads', 'zh-CN': '广告' },
   'learning.categories.ads.blurb': {
     en: 'Product shots and campaign assets',
     'zh-CN': '产品展示与广告素材'
@@ -4290,6 +4302,13 @@ Enterprise`
   'nav.ctaDesktopCore': { en: 'DESKTOP', 'zh-CN': '桌面版' },
   'nav.ctaCloudCore': { en: 'TRY FREE', 'zh-CN': '免费试用' },
   'nav.home': { en: 'Comfy home', 'zh-CN': 'Comfy 首页' },
+  'nav.copyLogoSvg': { en: 'Copy logo as SVG', 'zh-CN': '复制 SVG 标志' },
+  'nav.copyLogomarkSvg': {
+    en: 'Copy logomark as SVG',
+    'zh-CN': '复制 SVG 标志符号'
+  },
+  'nav.brandAssets': { en: 'Brand assets', 'zh-CN': '品牌素材' },
+  'nav.copied': { en: 'Copied', 'zh-CN': '已复制' },
   'breadcrumb.home': { en: 'Home', 'zh-CN': '首页' },
   'breadcrumb.about': { en: 'About Us', 'zh-CN': '关于我们' },
   'breadcrumb.contact': { en: 'Contact', 'zh-CN': '联系我们' },
@@ -6225,7 +6244,7 @@ Enterprise`
     en: 'Loading interactive demo…',
     'zh-CN': '正在加载互动演示…'
   },
-  'demos.noscript': {
+  'demos.noscript.text': {
     en: 'This interactive demo requires JavaScript.',
     'zh-CN': '此互动演示需要 JavaScript。'
   },
@@ -6792,12 +6811,12 @@ Enterprise`
   // Launches page (/launches) — subscribe banner
   // zh-CN strings pending native review (see apps/website/.scratch/drops-page/PRD.md)
   'launches.banner.text': {
-    en: 'Now turn your agent into a creative technologist.',
-    'zh-CN': '现在，让你的智能体成为创意技术专家。'
+    en: 'One API for frontier media models.',
+    'zh-CN': '一个 API，调用前沿媒体模型。'
   },
   'launches.banner.cta': {
-    en: 'Start Comfy MCP',
-    'zh-CN': '启动 Comfy MCP'
+    en: 'Try Comfy Router',
+    'zh-CN': '试用 Comfy Router'
   },
 
   // Launches page (/launches) — closing CTA
@@ -8966,12 +8985,17 @@ Enterprise`
       '在一个 API 中使用数千个最新模型。调用 Seedance、Minimax H3、Nano Banana 和 GPT-Image。'
   },
   'platform.modelsHero.heading': {
-    en: '1000+ media AI models in one API.',
-    'zh-CN': '1000+ 媒体 AI 模型，尽在一个 API。'
+    en: 'One API for frontier media models.',
+    'zh-CN': '一个 API，接入所有前沿媒体模型。'
   },
   'platform.modelsHero.subtitle': {
-    en: 'Use state-of-the-art models for image, video, 3D, and audio. Ready for production.',
-    'zh-CN': '使用最先进的图像、视频、3D 和音频模型。生产环境就绪。'
+    en: 'Integrate frontier image, video, 3D and audio models once. Then choose the provider for each job for better availability and prices.',
+    'zh-CN':
+      '一次集成前沿的图像、视频、3D 和音频模型，然后为每个任务选择供应商，获得更好的可用性和价格。'
+  },
+  'platform.modelsHero.getApiKey': {
+    en: 'Get your API key',
+    'zh-CN': '获取 API 密钥'
   },
   'platform.builderHero.heading': {
     en: 'Package ComfyUI Builds for your team',
@@ -9551,7 +9575,7 @@ Enterprise`
   'workshop.task.video': { en: 'Video', 'zh-CN': '视频' },
   'workshop.task.audio': { en: 'Audio', 'zh-CN': '音频' },
   'workshop.models.heading': { en: 'Models', 'zh-CN': '模型' },
-  'workshop.proto.version': { en: 'Version', 'zh-CN': '版本' },
+  'workshop.proto.version.label': { en: 'Version', 'zh-CN': '版本' },
   'workshop.proto.version.v1': {
     en: 'Discarded · Categories in tabs',
     'zh-CN': '已弃用 · 标签页分类'
@@ -9969,6 +9993,15 @@ Enterprise`
     en: 'Select or drop up to {count} files',
     'zh-CN': '选择或拖入最多 {count} 个文件'
   },
+  'workshop.field.frameRatioMismatchTitle': {
+    en: 'The frames are different shapes',
+    'zh-CN': '两帧比例不同'
+  },
+  'workshop.field.frameRatioMismatch': {
+    en: 'The video has one shape, so a frame that does not match it will be stretched to fit. Run it as is, or upload frames with the same proportions.',
+    'zh-CN':
+      '视频只有一个宽高比，比例不符的那一帧会被拉伸以适应。可以直接生成，或上传比例相同的两帧。'
+  },
   'workshop.field.file': { en: 'File', 'zh-CN': '文件' },
   'workshop.field.replaceFile': {
     en: 'Replace {name}',
@@ -10047,6 +10080,26 @@ Enterprise`
   'workshop.form.uploadFailed': {
     en: 'Upload failed. Try again, or paste a public link instead.',
     'zh-CN': '上传失败。请重试或粘贴可访问的网址。'
+  },
+  'workshop.form.fileUnreadable': {
+    en: 'This file can no longer be read. Select it again.',
+    'zh-CN': '无法再读取此文件。请重新选择。'
+  },
+  'workshop.form.incompatible': {
+    en: 'This input is incompatible with the other settings.',
+    'zh-CN': '此输入与其他设置不兼容。'
+  },
+  'workshop.form.videoTooLong': {
+    en: 'Use a video that is {seconds} seconds or shorter.',
+    'zh-CN': '请使用时长不超过 {seconds} 秒的视频。'
+  },
+  'workshop.form.videoWidthOutOfRange': {
+    en: 'Use a video between {minimum} and {maximum} pixels wide.',
+    'zh-CN': '请使用宽度在 {minimum} 到 {maximum} 像素之间的视频。'
+  },
+  'workshop.form.videoUnreadable': {
+    en: 'Could not read the video details. Select a playable video or use an accessible video link.',
+    'zh-CN': '无法读取视频详情。请选择可播放的视频或使用可访问的视频链接。'
   },
   'workshop.form.draftRestoreFailed': {
     en: 'We could not restore all of your saved inputs. Check the form and pick your files again.',
@@ -10267,6 +10320,10 @@ Enterprise`
   'workshop.error.client': {
     en: 'The page could not complete this request. Keep your inputs unchanged and contact support if this persists.',
     'zh-CN': '页面未能完成此请求。请保持输入不变，若问题持续请联系支持。'
+  },
+  'workshop.error.fileUnreadable': {
+    en: 'The page could not read a selected file. Select it again in the highlighted field. The model has not run.',
+    'zh-CN': '页面无法读取所选文件。请在高亮字段中重新选择。模型尚未运行。'
   },
   'workshop.error.concurrency': {
     en: 'This workspace has reached its simultaneous run limit. Wait for an active run to finish, then retry.',
@@ -10565,7 +10622,7 @@ Enterprise`
     en: 'Show the featured row',
     'zh-CN': '显示精选行'
   },
-  'workshop.proto.session': { en: 'Session', 'zh-CN': '会话' },
+  'workshop.proto.session.label': { en: 'Session', 'zh-CN': '会话' },
   'workshop.proto.session.signedOut': { en: 'Signed out', 'zh-CN': '未登录' },
   'workshop.proto.session.new': {
     en: 'New account (no credits yet)',
@@ -10577,7 +10634,7 @@ Enterprise`
   },
   'workshop.proto.subscribed': { en: 'Subscribed', 'zh-CN': '已订阅' },
   'workshop.proto.zeroBalance': { en: 'Zero balance', 'zh-CN': '零余额' },
-  'workshop.proto.outcome': {
+  'workshop.proto.outcome.label': {
     en: 'Simulate run outcome',
     'zh-CN': '模拟运行结果'
   },
@@ -10598,7 +10655,7 @@ Enterprise`
     en: 'Rate limit (429)',
     'zh-CN': '限流 (429)'
   },
-  'workshop.proto.gate': {
+  'workshop.proto.gate.label': {
     en: 'Simulate model state',
     'zh-CN': '模拟模型状态'
   },
