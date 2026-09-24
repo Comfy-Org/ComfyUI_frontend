@@ -1,4 +1,5 @@
 import type { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 
@@ -357,214 +358,216 @@ export async function importA1111(
         })
 
       await beforeGraphClear?.()
-      graph.clear()
-      graph.add(ckptNode)
-      graph.add(clipSkipNode)
-      graph.add(positiveNode)
-      graph.add(negativeNode)
-      graph.add(samplerNode)
-      graph.add(imageNode)
-      graph.add(vaeNode)
-      graph.add(saveNode)
+      withGraphIntentSource('load', () => {
+        graph.clear()
+        graph.add(ckptNode)
+        graph.add(clipSkipNode)
+        graph.add(positiveNode)
+        graph.add(negativeNode)
+        graph.add(samplerNode)
+        graph.add(imageNode)
+        graph.add(vaeNode)
+        graph.add(saveNode)
 
-      ckptNode.connect(1, clipSkipNode, 0)
-      clipSkipNode.connect(0, positiveNode, 0)
-      clipSkipNode.connect(0, negativeNode, 0)
-      ckptNode.connect(0, samplerNode, 0)
-      positiveNode.connect(0, samplerNode, 1)
-      negativeNode.connect(0, samplerNode, 2)
-      imageNode.connect(0, samplerNode, 3)
-      vaeNode.connect(0, saveNode, 0)
-      samplerNode.connect(0, vaeNode, 0)
-      ckptNode.connect(2, vaeNode, 1)
+        ckptNode.connect(1, clipSkipNode, 0)
+        clipSkipNode.connect(0, positiveNode, 0)
+        clipSkipNode.connect(0, negativeNode, 0)
+        ckptNode.connect(0, samplerNode, 0)
+        positiveNode.connect(0, samplerNode, 1)
+        negativeNode.connect(0, samplerNode, 2)
+        imageNode.connect(0, samplerNode, 3)
+        vaeNode.connect(0, saveNode, 0)
+        samplerNode.connect(0, vaeNode, 0)
+        ckptNode.connect(2, vaeNode, 1)
 
-      const handlers: Partial<Record<string, (v: string) => void>> = {
-        model(v: string) {
-          setWidgetValue(ckptNode, 'ckpt_name', v, true)
-        },
-        vae() {},
-        'cfg scale'(v: string) {
-          setWidgetValue(samplerNode, 'cfg', +v)
-        },
-        'clip skip'(v: string) {
-          setWidgetValue(clipSkipNode, 'stop_at_clip_layer', -Number(v))
-        },
-        sampler(v: string) {
-          let name = v.toLowerCase().replace('++', 'pp').replaceAll(' ', '_')
-          if (name.includes('karras')) {
-            name = name.replace('karras', '').replace(/_+$/, '')
-            setWidgetValue(samplerNode, 'scheduler', 'karras')
-          } else {
-            setWidgetValue(samplerNode, 'scheduler', 'normal')
-          }
-          const w = getWidget(samplerNode, 'sampler_name')
-          const values = w?.options.values as string[] | undefined
-          const o = values?.find((v) => v === name || v === 'sample_' + name)
-          if (o) {
-            setWidgetValue(samplerNode, 'sampler_name', o)
-          }
-        },
-        size(v: string) {
-          const wxh = v.split('x')
-          const w = ceil64(+wxh[0])
-          const h = ceil64(+wxh[1])
-          const hrUp = popOpt('hires upscale')
-          const hrSz = popOpt('hires resize')
-          hires.steps = popOpt('hires steps')
-          let hrMethod = popOpt('hires upscaler')
-
-          setWidgetValue(imageNode, 'width', w)
-          setWidgetValue(imageNode, 'height', h)
-
-          if (hrUp || hrSz) {
-            let uw: number, uh: number
-            if (hrUp) {
-              uw = w * Number(hrUp)
-              uh = h * Number(hrUp)
-            } else if (hrSz) {
-              const s = hrSz.split('x')
-              uw = +s[0]
-              uh = +s[1]
+        const handlers: Partial<Record<string, (v: string) => void>> = {
+          model(v: string) {
+            setWidgetValue(ckptNode, 'ckpt_name', v, true)
+          },
+          vae() {},
+          'cfg scale'(v: string) {
+            setWidgetValue(samplerNode, 'cfg', +v)
+          },
+          'clip skip'(v: string) {
+            setWidgetValue(clipSkipNode, 'stop_at_clip_layer', -Number(v))
+          },
+          sampler(v: string) {
+            let name = v.toLowerCase().replace('++', 'pp').replaceAll(' ', '_')
+            if (name.includes('karras')) {
+              name = name.replace('karras', '').replace(/_+$/, '')
+              setWidgetValue(samplerNode, 'scheduler', 'karras')
             } else {
-              return
+              setWidgetValue(samplerNode, 'scheduler', 'normal')
             }
+            const w = getWidget(samplerNode, 'sampler_name')
+            const values = w?.options.values as string[] | undefined
+            const o = values?.find((v) => v === name || v === 'sample_' + name)
+            if (o) {
+              setWidgetValue(samplerNode, 'sampler_name', o)
+            }
+          },
+          size(v: string) {
+            const wxh = v.split('x')
+            const w = ceil64(+wxh[0])
+            const h = ceil64(+wxh[1])
+            const hrUp = popOpt('hires upscale')
+            const hrSz = popOpt('hires resize')
+            hires.steps = popOpt('hires steps')
+            let hrMethod = popOpt('hires upscaler')
 
-            let upscaleNode: LGraphNode | null
-            let latentNode: LGraphNode | null
+            setWidgetValue(imageNode, 'width', w)
+            setWidgetValue(imageNode, 'height', h)
 
-            if (hrMethod?.startsWith('Latent')) {
-              latentNode = upscaleNode = LiteGraph.createNode('LatentUpscale')
-              if (!upscaleNode) return
-              graph.add(upscaleNode)
-              samplerNode.connect(0, upscaleNode, 0)
-
-              switch (hrMethod) {
-                case 'Latent (nearest-exact)':
-                  hrMethod = 'nearest-exact'
-                  break
+            if (hrUp || hrSz) {
+              let uw: number, uh: number
+              if (hrUp) {
+                uw = w * Number(hrUp)
+                uh = h * Number(hrUp)
+              } else if (hrSz) {
+                const s = hrSz.split('x')
+                uw = +s[0]
+                uh = +s[1]
+              } else {
+                return
               }
-              setWidgetValue(upscaleNode, 'upscale_method', hrMethod, true)
-            } else {
-              const decode = LiteGraph.createNode('VAEDecodeTiled')
-              if (!decode) return
-              graph.add(decode)
-              samplerNode.connect(0, decode, 0)
-              ckptNode.connect(2, decode, 1)
 
-              const upscaleLoaderNode =
-                LiteGraph.createNode('UpscaleModelLoader')
-              if (!upscaleLoaderNode) return
-              graph.add(upscaleLoaderNode)
-              setWidgetValue(
-                upscaleLoaderNode,
-                'model_name',
-                hrMethod ?? '',
-                true
-              )
+              let upscaleNode: LGraphNode | null
+              let latentNode: LGraphNode | null
 
-              const modelUpscaleNode = LiteGraph.createNode(
-                'ImageUpscaleWithModel'
-              )
-              if (!modelUpscaleNode) return
-              graph.add(modelUpscaleNode)
-              decode.connect(0, modelUpscaleNode, 1)
-              upscaleLoaderNode.connect(0, modelUpscaleNode, 0)
+              if (hrMethod?.startsWith('Latent')) {
+                latentNode = upscaleNode = LiteGraph.createNode('LatentUpscale')
+                if (!upscaleNode) return
+                graph.add(upscaleNode)
+                samplerNode.connect(0, upscaleNode, 0)
 
-              upscaleNode = LiteGraph.createNode('ImageScale')
-              if (!upscaleNode) return
-              graph.add(upscaleNode)
-              modelUpscaleNode.connect(0, upscaleNode, 0)
+                switch (hrMethod) {
+                  case 'Latent (nearest-exact)':
+                    hrMethod = 'nearest-exact'
+                    break
+                }
+                setWidgetValue(upscaleNode, 'upscale_method', hrMethod, true)
+              } else {
+                const decode = LiteGraph.createNode('VAEDecodeTiled')
+                if (!decode) return
+                graph.add(decode)
+                samplerNode.connect(0, decode, 0)
+                ckptNode.connect(2, decode, 1)
 
-              const vaeEncodeNode = LiteGraph.createNode('VAEEncodeTiled')
-              if (!vaeEncodeNode) return
-              latentNode = vaeEncodeNode
-              graph.add(vaeEncodeNode)
-              upscaleNode.connect(0, vaeEncodeNode, 0)
-              ckptNode.connect(2, vaeEncodeNode, 1)
+                const upscaleLoaderNode =
+                  LiteGraph.createNode('UpscaleModelLoader')
+                if (!upscaleLoaderNode) return
+                graph.add(upscaleLoaderNode)
+                setWidgetValue(
+                  upscaleLoaderNode,
+                  'model_name',
+                  hrMethod ?? '',
+                  true
+                )
+
+                const modelUpscaleNode = LiteGraph.createNode(
+                  'ImageUpscaleWithModel'
+                )
+                if (!modelUpscaleNode) return
+                graph.add(modelUpscaleNode)
+                decode.connect(0, modelUpscaleNode, 1)
+                upscaleLoaderNode.connect(0, modelUpscaleNode, 0)
+
+                upscaleNode = LiteGraph.createNode('ImageScale')
+                if (!upscaleNode) return
+                graph.add(upscaleNode)
+                modelUpscaleNode.connect(0, upscaleNode, 0)
+
+                const vaeEncodeNode = LiteGraph.createNode('VAEEncodeTiled')
+                if (!vaeEncodeNode) return
+                latentNode = vaeEncodeNode
+                graph.add(vaeEncodeNode)
+                upscaleNode.connect(0, vaeEncodeNode, 0)
+                ckptNode.connect(2, vaeEncodeNode, 1)
+              }
+
+              setWidgetValue(upscaleNode, 'width', ceil64(uw))
+              setWidgetValue(upscaleNode, 'height', ceil64(uh))
+
+              const hrSamplerNode = LiteGraph.createNode('KSampler')
+              if (!hrSamplerNode || !latentNode) return
+              hires.samplerNode = hrSamplerNode
+              graph.add(hrSamplerNode)
+              ckptNode.connect(0, hrSamplerNode, 0)
+              positiveNode.connect(0, hrSamplerNode, 1)
+              negativeNode.connect(0, hrSamplerNode, 2)
+              latentNode.connect(0, hrSamplerNode, 3)
+              hrSamplerNode.connect(0, vaeNode, 0)
             }
-
-            setWidgetValue(upscaleNode, 'width', ceil64(uw))
-            setWidgetValue(upscaleNode, 'height', ceil64(uh))
-
-            const hrSamplerNode = LiteGraph.createNode('KSampler')
-            if (!hrSamplerNode || !latentNode) return
-            hires.samplerNode = hrSamplerNode
-            graph.add(hrSamplerNode)
-            ckptNode.connect(0, hrSamplerNode, 0)
-            positiveNode.connect(0, hrSamplerNode, 1)
-            negativeNode.connect(0, hrSamplerNode, 2)
-            latentNode.connect(0, hrSamplerNode, 3)
-            hrSamplerNode.connect(0, vaeNode, 0)
+          },
+          steps(v: string) {
+            setWidgetValue(samplerNode, 'steps', +v)
+          },
+          seed(v: string) {
+            setWidgetValue(samplerNode, 'seed', +v)
           }
-        },
-        steps(v: string) {
-          setWidgetValue(samplerNode, 'steps', +v)
-        },
-        seed(v: string) {
-          setWidgetValue(samplerNode, 'seed', +v)
         }
-      }
 
-      for (const opt in opts) {
-        const handler = handlers[opt]
-        if (handler) {
-          const value = popOpt(opt)
-          if (value !== undefined) handler(value)
+        for (const opt in opts) {
+          const handler = handlers[opt]
+          if (handler) {
+            const value = popOpt(opt)
+            if (value !== undefined) handler(value)
+          }
         }
-      }
 
-      const { samplerNode: hrSamplerNode, steps: hrSteps } = hires
-      if (hrSamplerNode) {
-        setWidgetValue(
-          hrSamplerNode,
-          'steps',
-          hrSteps
-            ? +hrSteps
-            : (getWidget(samplerNode, 'steps')?.value as number)
-        )
-        setWidgetValue(
-          hrSamplerNode,
-          'cfg',
-          getWidget(samplerNode, 'cfg')?.value as number
-        )
-        setWidgetValue(
-          hrSamplerNode,
-          'scheduler',
-          getWidget(samplerNode, 'scheduler')?.value as string
-        )
-        setWidgetValue(
-          hrSamplerNode,
-          'sampler_name',
-          getWidget(samplerNode, 'sampler_name')?.value as string
-        )
-        setWidgetValue(
-          hrSamplerNode,
-          'denoise',
-          +(popOpt('denoising strength') ?? '1')
-        )
-      }
+        const { samplerNode: hrSamplerNode, steps: hrSteps } = hires
+        if (hrSamplerNode) {
+          setWidgetValue(
+            hrSamplerNode,
+            'steps',
+            hrSteps
+              ? +hrSteps
+              : (getWidget(samplerNode, 'steps')?.value as number)
+          )
+          setWidgetValue(
+            hrSamplerNode,
+            'cfg',
+            getWidget(samplerNode, 'cfg')?.value as number
+          )
+          setWidgetValue(
+            hrSamplerNode,
+            'scheduler',
+            getWidget(samplerNode, 'scheduler')?.value as string
+          )
+          setWidgetValue(
+            hrSamplerNode,
+            'sampler_name',
+            getWidget(samplerNode, 'sampler_name')?.value as string
+          )
+          setWidgetValue(
+            hrSamplerNode,
+            'denoise',
+            +(popOpt('denoising strength') ?? '1')
+          )
+        }
 
-      let n = createLoraNodes(
-        positiveNode,
-        positive,
-        { node: clipSkipNode, index: 0 },
-        { node: ckptNode, index: 0 },
-        samplerNode
-      )
-      positive = n.text
-      n = createLoraNodes(
-        negativeNode,
-        negative,
-        n.prevClip,
-        n.prevModel,
-        samplerNode
-      )
-      negative = n.text
+        let n = createLoraNodes(
+          positiveNode,
+          positive,
+          { node: clipSkipNode, index: 0 },
+          { node: ckptNode, index: 0 },
+          samplerNode
+        )
+        positive = n.text
+        n = createLoraNodes(
+          negativeNode,
+          negative,
+          n.prevClip,
+          n.prevModel,
+          samplerNode
+        )
+        negative = n.text
 
-      setWidgetValue(positiveNode, 'text', replaceEmbeddings(positive))
-      setWidgetValue(negativeNode, 'text', replaceEmbeddings(negative))
+        setWidgetValue(positiveNode, 'text', replaceEmbeddings(positive))
+        setWidgetValue(negativeNode, 'text', replaceEmbeddings(negative))
 
-      graph.arrange()
+        graph.arrange()
+      })
 
       for (const opt of [
         'model hash',

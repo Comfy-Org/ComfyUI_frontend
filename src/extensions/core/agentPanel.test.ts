@@ -6,10 +6,6 @@ import { computed, defineComponent, effectScope, ref } from 'vue'
 import type { EffectScope } from 'vue'
 let setupScope: EffectScope
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
-import {
-  notifyMintPortsAfterGraphConfigure,
-  notifyMintPortsBeforeGraphLoad
-} from '@/workbench/extensions/agent/crdt/mintPortWiring'
 import { registerWorkflowTabActivityTracker } from '@/workbench/extensions/agent/services/agent/workflowTabActivityTracker'
 
 import type { ComfyExtension } from '@/types/comfy'
@@ -28,7 +24,6 @@ import type { PostHog } from 'posthog-js'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { ComfyApp } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -102,11 +97,6 @@ vi.mock(import('@/services/extensionService'), () => ({
         mocks.capturedExtensions.push(ext)
       }
     })
-}))
-
-vi.mock(import('@/workbench/extensions/agent/crdt/mintPortWiring'), () => ({
-  notifyMintPortsAfterGraphConfigure: vi.fn(),
-  notifyMintPortsBeforeGraphLoad: vi.fn()
 }))
 
 vi.mock(import('@/utils/litegraphUtil'), { spy: true })
@@ -1036,7 +1026,6 @@ describe('AgentPanel extension flag gate', () => {
     agentStore.enabled = true
     agentStore.consentAccepted = false
     await extension!.beforeLoadGraph!({} as never)
-    expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
   })
 
@@ -1087,7 +1076,6 @@ describe('AgentPanel extension flag gate', () => {
 
     await extension!.beforeLoadGraph!({} as never)
 
-    expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).toHaveBeenCalledOnce()
 
     nodeSelectionStore.isLoadingWorkflow = true
@@ -1137,18 +1125,6 @@ describe('AgentPanel extension flag gate', () => {
     expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.restoreNodeIds).not.toHaveBeenCalled()
     expect(selectItems).not.toHaveBeenCalled()
-  })
-
-  it('closes the mint suppression bracket after graph configuration', async () => {
-    const { registerAgentPanelExtension } = await import('./agentPanel')
-    registerAgentPanelExtension()
-    const extension = mocks.capturedExtensions.find(
-      (item) => item.name === 'Comfy.AgentPanel'
-    )
-
-    await extension!.afterConfigureGraph!([], {} as never)
-
-    expect(notifyMintPortsAfterGraphConfigure).toHaveBeenCalledOnce()
   })
 
   it('resumes ordinary local-dirty tracking after a failed load is followed by a successful one', async () => {
@@ -1290,7 +1266,6 @@ describe('AgentPanel extension flag gate', () => {
 
     await extension!.beforeLoadGraph!({} as never)
 
-    expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
     expect(nodeSelectionStore.beginWorkflowLoad).not.toHaveBeenCalled()
   })
 
@@ -1324,21 +1299,6 @@ describe('AgentPanel extension flag gate', () => {
     )
 
     expect(nodeSelectionStore.finishWorkflowLoad).toHaveBeenCalledOnce()
-  })
-
-  it('leaves mint suppression open when graph loading fails', async () => {
-    const { registerAgentPanelExtension } = await import('./agentPanel')
-    registerAgentPanelExtension()
-    const extension = mocks.capturedExtensions.find(
-      (item) => item.name === 'Comfy.AgentPanel'
-    )
-    const app = fromPartial<ComfyApp>({})
-
-    await extension!.beforeLoadGraph!(app)
-    await extension!.onGraphLoadError!(new Error('bad workflow json'), app)
-
-    expect(notifyMintPortsBeforeGraphLoad).toHaveBeenCalledOnce()
-    expect(notifyMintPortsAfterGraphConfigure).not.toHaveBeenCalled()
   })
 
   it('finishes restoration when selection restoration throws', async () => {

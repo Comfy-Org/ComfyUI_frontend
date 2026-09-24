@@ -494,7 +494,7 @@ describe('LGraph', () => {
 })
 
 describe('node id minting for a graph that shares its id space', () => {
-  /** Stands in for the agent panel's probe (`mintPortWiring.ts`). */
+  /** Stands in for the agent panel's probe (`docOpMinter.ts`). */
   function bindRootGraph(rootGraphId: string): () => void {
     return registerDocBoundRootGraphProbe(() => rootGraphId)
   }

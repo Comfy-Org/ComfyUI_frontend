@@ -23,10 +23,6 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import {
-  notifyMintPortsAfterGraphConfigure,
-  notifyMintPortsBeforeGraphLoad
-} from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
 const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
 
@@ -107,7 +103,6 @@ export function registerAgentPanelExtension(): void {
   useExtensionService().registerExtension({
     name: 'Comfy.AgentPanel',
     beforeLoadGraph() {
-      notifyMintPortsBeforeGraphLoad()
       openWidgetDirtySuppression()
       const agentPanelStore = useAgentPanelStore()
       if (!agentPanelStore.isVisible) return
@@ -158,7 +153,6 @@ export function registerAgentPanelExtension(): void {
       }
     },
     afterConfigureGraph() {
-      notifyMintPortsAfterGraphConfigure()
       closeWidgetDirtySuppression()
     },
     setup() {

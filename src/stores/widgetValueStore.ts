@@ -21,6 +21,7 @@ import {
 } from '@/types/widgetVisibility'
 import type { WidgetVisibilityComponent } from '@/types/widgetVisibility'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 
 export interface WidgetRenderState {
@@ -39,13 +40,6 @@ interface WidgetEntity {
   state: WidgetState
   render: WidgetRenderState
   visibility: WidgetVisibilityComponent
-}
-
-interface WidgetValueChange {
-  widgetId: WidgetId
-  value: WidgetValue
-  oldValue: WidgetValue
-  context?: RemoteMutationContext
 }
 
 function setNodeScoped<T>(
@@ -109,7 +103,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     Map<NodeId, WidgetRestorationState>
   >()
 
-  const valueChangeListeners = new Set<(change: WidgetValueChange) => void>()
   const valueMutationContexts = new WeakMap<
     WidgetState,
     RemoteMutationContext
@@ -160,9 +153,14 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
         if (!context && dirtyTrackingSuppressed === 0) {
           locallyDirtyWidgets.add(widgetId)
         }
-        for (const listener of valueChangeListeners) {
-          listener({ widgetId, value, oldValue, context })
-        }
+        emitGraphIntent({
+          type: 'set_widget',
+          graphId,
+          nodeId: state.nodeId,
+          name: state.name,
+          value,
+          previous: oldValue
+        })
       }
     })
   }
@@ -195,13 +193,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
   /** Closes one suppression opened by {@link beginLocalDirtyTrackingSuppression}. */
   function endLocalDirtyTrackingSuppression(): void {
     dirtyTrackingSuppressed = Math.max(0, dirtyTrackingSuppressed - 1)
-  }
-
-  function onValueChange(
-    listener: (change: WidgetValueChange) => void
-  ): () => void {
-    valueChangeListeners.add(listener)
-    return () => valueChangeListeners.delete(listener)
   }
 
   function setNodeWidgetRestoration(
@@ -618,7 +609,6 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     getWidget,
     getWidgetRenderState,
     getWidgetVisibility,
-    onValueChange,
     setValue,
     isLocallyDirty,
     withLocalDirtyTrackingSuppressed,

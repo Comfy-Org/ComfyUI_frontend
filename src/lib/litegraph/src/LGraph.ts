@@ -57,6 +57,11 @@ import {
 } from './idAllocation'
 import type { LGraphState, NodeIdMintMode } from './idAllocation'
 import { isRootGraphDocBound } from './docBoundGraphs'
+import {
+  collectingSeveredLinks,
+  emitGraphIntent,
+  withGraphIntentSource
+} from './graphIntents'
 import { inputHasLink, outputHasLinks, outputLinks } from './node/slotLinks'
 import { normalizeWidgetsView } from './node/widgetsView'
 import { clearNodeOwnedStoreState } from '@/stores/clearNodeOwnedStoreState'
@@ -798,6 +803,14 @@ export class LGraph
     this.stop()
     this.status = LGraph.STATUS_STOPPED
 
+    if (this.isRootGraph) {
+      emitGraphIntent({
+        type: 'clear',
+        graphId: this.id,
+        nodeIds: this._nodes.map((node) => node.id)
+      })
+    }
+
     try {
       teardownOwnedGraphs(this)
     } finally {
@@ -1449,6 +1462,8 @@ export class LGraph
       })
     }
 
+    emitGraphIntent({ type: 'add_node', graph: this, node })
+
     // to chain actions
     return node
   }
@@ -1516,18 +1531,21 @@ export class LGraph
 
     this.events.dispatch('node:before-removed', { node, successor })
 
+    const removedLinkIds: LinkId[] = []
     if (!successor) {
       const { inputs, outputs } = node
 
-      // disconnect inputs
-      for (const [i] of inputs.entries()) {
-        if (inputHasLink(this, node.id, i)) node.disconnectInput(i, true)
-      }
+      collectingSeveredLinks(removedLinkIds, () => {
+        // disconnect inputs
+        for (const [i] of inputs.entries()) {
+          if (inputHasLink(this, node.id, i)) node.disconnectInput(i, true)
+        }
 
-      // disconnect outputs
-      for (const i of outputs.keys()) {
-        if (outputHasLinks(this, node.id, i)) node.disconnectOutput(i)
-      }
+        // disconnect outputs
+        for (const i of outputs.keys()) {
+          if (outputHasLinks(this, node.id, i)) node.disconnectOutput(i)
+        }
+      })
 
       // Floating links
       for (const link of this.floatingLinks.values()) {
@@ -1581,6 +1599,7 @@ export class LGraph
     }
     this.onNodeRemoved?.(node)
     this.events.dispatch('node:removed', { node })
+    emitGraphIntent({ type: 'remove_node', graph: this, node, removedLinkIds })
 
     // close panels
     this.canvasAction((c) => c.checkPanels())
@@ -1893,6 +1912,7 @@ export class LGraph
       return false
     observeLinkId(this.state, link.id)
     this.getNodeById(link.target_id)?.updateComputedDisabled()
+    emitGraphIntent({ type: 'connect', graph: this, link })
     return true
   }
 
@@ -1905,6 +1925,7 @@ export class LGraph
     unregisterLinkTopology(link)
     layoutStore.deleteLinkLayout(linkId)
     this.getNodeById(link.target_id)?.updateComputedDisabled()
+    emitGraphIntent({ type: 'disconnect', graph: this, link })
     return true
   }
 
@@ -3011,6 +3032,15 @@ export class LGraph
    * adding the configuration.
    */
   configure(
+    data: ISerialisedGraph | SerialisableGraph | null | undefined,
+    keep_old?: boolean
+  ): boolean | undefined {
+    return withGraphIntentSource('load', () =>
+      this.configureFromSerialized(data, keep_old)
+    )
+  }
+
+  private configureFromSerialized(
     data: ISerialisedGraph | SerialisableGraph | null | undefined,
     keep_old?: boolean
   ): boolean | undefined {

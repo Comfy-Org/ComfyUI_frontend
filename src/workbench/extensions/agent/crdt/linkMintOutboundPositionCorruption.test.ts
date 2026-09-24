@@ -4,9 +4,9 @@
  * NOT fixed there: see that PR's "Known issue found while fixing the above"
  * section and https://github.com/Comfy-Org/ComfyUI_frontend/pull/18275.
  *
- * `attachLinkMintPort` mints a `connect` op's `to_slot` from litegraph's LIVE
- * topology (`LinkTopologyView.targetSlot`) with no name lookup at all - see
- * `linkMintPort.ts`'s own doc comment and `linkMintPort.test.ts`. The pinned
+ * `attachDocOpMinter` mints a `connect` op's `to_slot` from litegraph's LIVE
+ * link (`LLink.target_slot`) with no name lookup at all - see
+ * `docOpMinter.ts`'s own doc comment and `docOpMinter.test.ts`. The pinned
  * `@comfyorg/comfy-multi-player` applier then treats that `to_slot` as a raw
  * index into the DESTINATION NODE'S DOCUMENT-ORDER `inputs` array
  * (`applyConnect` -> `claimConcreteInput` -> `ins.get(toIdx)`). The wire
@@ -35,21 +35,28 @@
  * `agentCrdtProjection.tabReturn.test.ts`), it uses `it.fails` so
  * `pnpm test:unit` collects it as an expected failure instead of a red run.
  */
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
 
+import { emitGraphIntent } from '@/lib/litegraph/src/graphIntents'
+import type { LGraph } from '@/lib/litegraph/src/LGraph'
+import type { LLink } from '@/lib/litegraph/src/LLink'
+import { toRootGraphId } from '@/types/graphScopeId'
+import { toNodeId } from '@/types/nodeId'
+
+import { attachDocOpMinter } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
-import { attachLinkMintPort } from './linkMintPort'
-import type { LinkScopeView, LinkTopologyView } from './linkMintPort'
-import { createMintSession } from './mintSession'
 import { mintWireOps } from './opEnvelope'
 
-const ROOT_SCOPE: LinkScopeView = {
-  rootGraphId: 'root-uuid',
-  owningGraphId: 'root-uuid'
-}
+const ROOT_GRAPH_ID = toRootGraphId('root-uuid')
+const rootGraph: LGraph = fromPartial<LGraph>({
+  id: ROOT_GRAPH_ID,
+  isRootGraph: true
+})
+Object.assign(rootGraph, { rootGraph })
 
 const CATALOG: WidgetCatalog = {
   types: {
@@ -153,7 +160,7 @@ function requireInput(
 }
 
 describe('agent CRDT outbound leg: link mint by live position vs. doc order', () => {
-  it.fails('lands the link on the named VIDEO input it was drawn to, not on whatever input the doc happens to hold at that live index', () => {
+  it.fails('lands the link on the named VIDEO input it was drawn to, not on whatever input the doc happens to hold at that live index', async () => {
     // Arrange: the doc host holds node 2 with its inputs in document
     // materialization order (see `buildDocOrderInputs` above).
     const doc = mint(buildSeedWorkflow(), CATALOG)
@@ -161,41 +168,31 @@ describe('agent CRDT outbound leg: link mint by live position vs. doc order', ()
     // Act: the page's litegraph canvas reconnected `ref_videos.ref_video_1`,
     // whose LIVE slot index (after autogrow interleaving) collides with the
     // numeric position `prompt` occupies in the document's inputs.
-    // `attachLinkMintPort` is the real, unmodified production mint port: it
-    // mints `to_slot` straight from that live index. The listener is
-    // captured and invoked AFTER `attachLinkMintPort` returns, the way
-    // production's `registerLinkTopology` bridge fires it, matching
-    // `linkMintPort.test.ts`'s `place()` helper rather than calling it
-    // synchronously from inside the subscription itself.
+    // `attachDocOpMinter` is the real, unmodified production minter: it
+    // mints `to_slot` straight from that live index. The `connect` intent is
+    // the one `LGraph._addLink` announces once the live link exists.
     const minted: GraphOperation[] = []
-    let placed:
-      | ((scope: LinkScopeView, topology: LinkTopologyView) => void)
-      | undefined
-    const port = attachLinkMintPort({
-      events: {
-        onPlaced: (listener) => {
-          placed = listener
-          return () => {
-            placed = undefined
-          }
-        },
-        onDeleted: () => () => undefined
-      },
-      session: createMintSession(),
+    const port = attachDocOpMinter({
       isEnabled: () => true,
       isDocBound: () => true,
-      isIntentionalClear: () => false,
-      enqueue: (operations) => minted.push(...operations)
+      enqueue: (operations) => minted.push(...operations),
+      getGraph: () => rootGraph,
+      boundRootGraphId: () => ROOT_GRAPH_ID
     })
 
-    placed?.(ROOT_SCOPE, {
-      id: 204,
-      originNodeId: 1,
-      originSlot: 0,
-      targetNodeId: 2,
-      targetSlot: REF_VIDEO_1_LIVE_INDEX,
-      type: 'VIDEO'
-    } satisfies LinkTopologyView)
+    emitGraphIntent({
+      type: 'connect',
+      graph: rootGraph,
+      link: fromPartial<LLink>({
+        id: 204,
+        origin_id: toNodeId(1),
+        origin_slot: 0,
+        target_id: toNodeId(2),
+        target_slot: REF_VIDEO_1_LIVE_INDEX,
+        type: 'VIDEO'
+      })
+    })
+    await new Promise<void>((resolve) => queueMicrotask(resolve))
 
     // Today's mint has no name lookup, so it mints whatever `to_slot` the
     // live topology handed it - exactly the value a mint-side, name-aware
@@ -206,9 +203,9 @@ describe('agent CRDT outbound leg: link mint by live position vs. doc order', ()
     expect(minted[0]).toMatchObject({
       op: 'connect',
       link_id: 204,
-      from_node: 1,
+      from_node: toNodeId(1),
       from_slot: 0,
-      to_node: 2,
+      to_node: toNodeId(2),
       link_type: 'VIDEO'
     })
 

@@ -37,8 +37,6 @@ import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorat
 // stays independent of renderer and LiteGraph runtime values.
 // eslint-disable-next-line import-x/no-restricted-paths
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
-// eslint-disable-next-line import-x/no-restricted-paths
-import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
 
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
@@ -117,7 +115,7 @@ import {
   isCrdtDebugEnabled,
   resolveDebugPanelEnabled
 } from './crdt/crdtDebugGate'
-import { attachMintPortWiring } from './crdt/mintPortWiring'
+import { attachDocOpMinter } from './crdt/docOpMinter'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
 const CrdtDevPanel = defineAsyncComponent(
@@ -619,12 +617,10 @@ function boundRootGraphId(): RootGraphId | null {
   const id = boundOrOpenWorkflowFor(bound)?.activeState?.id
   return id === undefined ? null : toRootGraphId(id)
 }
-const mintPortWiring = attachMintPortWiring({
+const docOpMinter = attachDocOpMinter({
   isEnabled: () => agentPanelStore.enabled,
   isDocBound: () => isBoundWorkflowActive.value,
   enqueue: enqueueHumanOperations,
-  layoutChanges: (listener) => layoutStore.onChange(listener),
-  localActorPrefix: ACTOR_CONFIG.USER_PREFIX,
   getGraph: () => (app.isGraphReady ? app.rootGraph : null),
   boundRootGraphId
 })
@@ -869,7 +865,7 @@ start()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   ++activeTabGeneration
-  mintPortWiring.detach()
+  docOpMinter.detach()
   exitNodeSelectionMode()
   stop()
   tabActivity.setEditing(null)

@@ -7,6 +7,7 @@ import * as Y from 'yjs'
 
 import type { INodeFlags } from '@/lib/litegraph/src/interfaces'
 import type { LGraphCanvas } from '@/lib/litegraph/src/LGraphCanvas'
+import { withGraphIntentSource } from '@/lib/litegraph/src/graphIntents'
 import { detachSerialisedLinks } from '@/lib/litegraph/src/linkDeduplication'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
@@ -34,7 +35,6 @@ import {
 } from './agentSubgraphDefinitions'
 import type { PlacementRect } from './batchPlacement'
 import { placementOffset } from './batchPlacement'
-import { runMintPortsSuppressed } from './mintPortWiring'
 
 export type NodeChange = 'add' | 'update' | 'delete'
 
@@ -374,7 +374,7 @@ export class LiveGraphApplier {
     return withActor(context.actor, () => {
       graph.canvasAction((canvas) => canvas.emitBeforeChange())
       try {
-        return runMintPortsSuppressed(fn)
+        return withGraphIntentSource('agent-remote', fn)
       } finally {
         graph.setDirtyCanvas(true, true)
         graph.canvasAction((canvas) => canvas.emitAfterChange())

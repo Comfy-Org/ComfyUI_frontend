@@ -67,7 +67,6 @@ import {
   useManagerState
 } from '@/workbench/extensions/manager/composables/useManagerState'
 import { ManagerTab } from '@/workbench/extensions/manager/types/comfyManagerTypes'
-import { runMintPortsIntentionalClear } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
 import { useWorkflowTemplateSelectorDialog } from './useWorkflowTemplateSelectorDialog'
 
@@ -304,9 +303,7 @@ export function useCoreCommands(): ComfyCommand[] {
             const nonIoNodes = getAllNonIoNodesInSubgraph(subgraph)
             nonIoNodes.forEach((node) => subgraph.remove(node))
           } else {
-            runMintPortsIntentionalClear(() => {
-              app.clean()
-            })
+            app.clean()
           }
           api.dispatchCustomEvent('graphCleared')
         }
