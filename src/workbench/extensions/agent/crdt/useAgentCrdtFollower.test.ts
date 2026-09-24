@@ -753,6 +753,40 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  it('PM-1604 / BE-11437: retries a retryable refusal code with backoff', () => {
+    vi.useFakeTimers()
+    const { unmount } = mountFollower('wf-1')
+    dispatchFrame('doc_subscribed', { ok: false, code: 'doc_not_found' })
+
+    vi.advanceTimersByTime(500)
+    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
+    unmount()
+  })
+
+  it('PM-1604 / BE-11437: does not retry schema_version_mismatch and surfaces it', () => {
+    vi.useFakeTimers()
+    const onSyncError = vi.fn()
+    const { unmount } = mountFollower('wf-1', true, () => null, {
+      onSyncError
+    })
+
+    dispatchFrame('doc_subscribed', {
+      ok: false,
+      code: 'schema_version_mismatch',
+      message: 'Expected schema 2, found 1'
+    })
+
+    vi.advanceTimersByTime(60_000)
+    apiState.target.dispatchEvent(new Event('status'))
+
+    expect(bridge().resubscribe).not.toHaveBeenCalled()
+    expect(bridge().reconcile).not.toHaveBeenCalled()
+    expect(onSyncError).toHaveBeenCalledExactlyOnceWith(
+      'Expected schema 2, found 1'
+    )
+    unmount()
+  })
+
   it('drops to disconnected on a schema error without touching the binding', () => {
     const { unmount, status } = mountFollower('wf-1')
     dispatchFrame('doc_subscribed', { ok: true })

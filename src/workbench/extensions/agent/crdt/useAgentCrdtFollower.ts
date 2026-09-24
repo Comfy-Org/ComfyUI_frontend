@@ -183,6 +183,14 @@ export interface AgentCrdtFollowerEvents {
     nodeIds: readonly NodeId[]
   }) => void
   onReset?: (workflowId: string) => void
+  /**
+   * PM-1604 / BE-11437: the doc-host classified a resync refusal as
+   * permanent (`schema_version_mismatch`) — the lifecycle has already
+   * stopped retrying it, so this is the one chance to tell the person their
+   * canvas is out of sync instead of leaving them to notice a channel that
+   * silently stopped updating.
+   */
+  onSyncError?: (message?: string) => void
 }
 
 // Nothing is re-thrown: an error escaping onBeforeUnmount reaches Vue's
@@ -423,7 +431,12 @@ function startAgentCrdtFollower(
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
     if (!isTargetActive.value) return
-    const ok = event.detail?.ok === true
+    const detail = event.detail as {
+      ok?: unknown
+      code?: unknown
+      message?: unknown
+    } | null
+    const ok = detail?.ok === true
     connected.value = ok
     lastFrameType.value = event.type
     recordDevEvent('doc_subscribed', event.detail ?? null)
@@ -431,7 +444,13 @@ function startAgentCrdtFollower(
       lifecycle.onSubscribeConfirmed()
       resumeHeldOpsIfSubscribed()
     } else {
-      lifecycle.onSubscribeRefused()
+      const code = typeof detail?.code === 'string' ? detail.code : undefined
+      lifecycle.onSubscribeRefused(code)
+      if (code === 'schema_version_mismatch') {
+        events.onSyncError?.(
+          typeof detail?.message === 'string' ? detail.message : undefined
+        )
+      }
       // FE #16637 residual: a refusal is the earliest signal the sender can
       // get that its in-flight batch's doc is gone — don't make it wait out
       // the 10 s result-silence window to notice on its own.

@@ -39,6 +39,13 @@ const DOC_ID_REFRESH_INTERVAL_MS = DOC_ID_TTL_MS / 2
 const SUBSCRIBE_RETRY_BASE_MS = 500
 const SUBSCRIBE_RETRY_MAX_ATTEMPTS = 6
 
+// PM-1604 / BE-11437: the doc-host's terminal classification for a document
+// this build can never read back - unlike every other refusal reason, no
+// amount of backoff retry changes that outcome, so this one code skips the
+// retry ladder entirely and latches the same give-up exit an unanswered ack
+// times out into.
+const SCHEMA_VERSION_MISMATCH_CODE = 'schema_version_mismatch'
+
 /**
  * A `doc_subscribe` that left the transport and was never answered is retried
  * on the same lineage after this long. The ingest relay's own resync budget is
@@ -200,9 +207,13 @@ export class AgentCrdtDocLifecycle {
     if (workflowId !== null) this.persistConfirmedDocId(workflowId)
   }
 
-  onSubscribeRefused(): void {
+  onSubscribeRefused(code?: string): void {
     this.clearAckTimer()
     this.clearStaleProbe()
+    if (code === SCHEMA_VERSION_MISMATCH_CODE) {
+      this.giveUpPermanently(code)
+      return
+    }
     this.scheduleSubscribeRetry()
   }
 
@@ -303,6 +314,21 @@ export class AgentCrdtDocLifecycle {
       clearTimeout(this.ackTimer)
       this.ackTimer = null
     }
+  }
+
+  private giveUpPermanently(code: string): void {
+    this.gaveUp = true
+    recordDevEvent(
+      'subscribe_refused_permanent',
+      { code, terminal: true },
+      { level: 'warn' }
+    )
+    reportError(new Error(`agent doc subscribe permanently refused: ${code}`), {
+      errorType: 'failure_confirming_agent_doc_subscribe',
+      level: 'warning',
+      tags: { feature_area: 'agent', operation: 'sync', outcome: 'gave_up' }
+    })
+    this.onGaveUp()
   }
 
   private giveUp(workflowId: string): void {

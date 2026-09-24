@@ -711,7 +711,14 @@ const {
         if (status.value === 'idle') graphActivity.finishTurn()
       }
     },
-    onReset: graphActivity.resetWorkflow
+    onReset: graphActivity.resetWorkflow,
+    onSyncError: (message) =>
+      toast.add({
+        severity: 'error',
+        summary: t('agent.workflowSyncFailedTitle'),
+        detail: message || t('agent.workflowSyncFailedDetail'),
+        life: 5000
+      })
   }
 )
 // The bound document's serialized root graph id, independent of what is

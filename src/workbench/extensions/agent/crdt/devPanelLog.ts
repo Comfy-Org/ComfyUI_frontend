@@ -35,6 +35,7 @@ export const DEV_EVENT_KINDS = [
   'reconnected',
   'subscribe_retry',
   'subscribe_ack_timeout',
+  'subscribe_refused_permanent',
   'stale_probe',
   'catchup_probe',
   'rebind',

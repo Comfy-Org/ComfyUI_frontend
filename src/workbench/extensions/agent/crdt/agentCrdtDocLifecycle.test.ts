@@ -428,3 +428,56 @@ describe('AgentCrdtDocLifecycle refusal exhaustion', () => {
     ])
   })
 })
+
+describe('AgentCrdtDocLifecycle schema_version_mismatch refusal', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  it('gives up immediately with no retry and reports it once', () => {
+    const { lifecycle, resubscribe, onGaveUp } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+
+    lifecycle.onSubscribeRefused('schema_version_mismatch')
+    vi.advanceTimersByTime(10 * SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(resubscribe).not.toHaveBeenCalled()
+    expect(onGaveUp).toHaveBeenCalledTimes(1)
+    expect(lifecycle.shouldDeferSubscribe()).toBe(true)
+    expect(reportError).toHaveBeenCalledExactlyOnceWith(
+      expect.any(Error),
+      GAVE_UP_REPORT
+    )
+    expect(devEvents()).toEqual([
+      {
+        kind: 'subscribe_refused_permanent',
+        detail: { code: 'schema_version_mismatch', terminal: true }
+      }
+    ])
+  })
+
+  it('a different refusal code still retries with backoff', () => {
+    const { lifecycle, resubscribe, onGaveUp } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+
+    lifecycle.onSubscribeRefused('doc_not_found')
+    vi.advanceTimersByTime(500)
+
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+    expect(onGaveUp).not.toHaveBeenCalled()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it('a reconnect releases the permanent give-up latch', () => {
+    const { lifecycle, resubscribe, onGaveUp } = wire()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    lifecycle.onSubscribeRefused('schema_version_mismatch')
+    expect(onGaveUp).toHaveBeenCalledTimes(1)
+
+    lifecycle.onReconnected()
+    lifecycle.onSubscribeSent(WORKFLOW_ID)
+    vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
+
+    expect(resubscribe).toHaveBeenCalledTimes(1)
+  })
+})
