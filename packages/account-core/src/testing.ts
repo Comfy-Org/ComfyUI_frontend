@@ -64,6 +64,77 @@ function errorResponse(status: number, code: string): Response {
   return jsonResponse(status, { code, message: code })
 }
 
+type RouteHandler = (
+  endpoint: FakeWebSessionEndpoint,
+  headers: Headers
+) => Response
+
+function sessionBody(user: WebSessionUser, now: () => number) {
+  return {
+    user: {
+      id: user.id,
+      email: user.email,
+      name: user.name,
+      email_verified: user.emailVerified,
+      sign_in_provider: user.signInProvider
+    },
+    csrf_token: FAKE_CSRF_TOKEN,
+    expires_at: new Date(now() + DAY_MS).toISOString(),
+    absolute_expires_at: new Date(now() + 7 * DAY_MS).toISOString()
+  }
+}
+
+function routesFor(
+  signInUser: WebSessionUser,
+  now: () => number
+): ReadonlyMap<string, RouteHandler> {
+  const revoke = (endpoint: FakeWebSessionEndpoint) => {
+    endpoint.state = { kind: 'dead', code: 'session_revoked' }
+  }
+  return new Map<string, RouteHandler>([
+    [
+      'POST /api/auth/session',
+      (endpoint, headers) => {
+        if (!headers.get('authorization')?.startsWith('Bearer ')) {
+          return errorResponse(401, 'no_session')
+        }
+        endpoint.state = { kind: 'live', user: signInUser }
+        return jsonResponse(200, { success: true, expiresIn: DAY_MS / 1000 })
+      }
+    ],
+    [
+      'DELETE /api/auth/session',
+      (endpoint) => {
+        revoke(endpoint)
+        return jsonResponse(200, { success: true })
+      }
+    ],
+    [
+      'GET /api/auth/session',
+      ({ state }) =>
+        state.kind === 'live'
+          ? jsonResponse(200, sessionBody(state.user, now))
+          : errorResponse(
+              401,
+              state.kind === 'dead' ? state.code : 'no_session'
+            )
+    ],
+    [
+      'POST /api/auth/sessions/revoke-all',
+      (endpoint, headers) => {
+        if (endpoint.state.kind === 'dead') {
+          return errorResponse(401, endpoint.state.code)
+        }
+        if (headers.get('x-csrf-token') !== FAKE_CSRF_TOKEN) {
+          return errorResponse(403, 'csrf_invalid')
+        }
+        revoke(endpoint)
+        return new Response(null, { status: 204 })
+      }
+    ]
+  ])
+}
+
 /**
  * A `fetch` serving ingest's session routes under `/api/auth`. POST with a
  * bearer proof signs `signInUser` in; DELETE and revoke-all leave the cookie
@@ -79,6 +150,7 @@ export function createFakeWebSessionEndpoint({
   now?: () => number
 }): FakeWebSessionEndpoint {
   const requests: FakeWebSessionRequest[] = []
+  const routes = routesFor(signInUser, now)
   const endpoint: FakeWebSessionEndpoint = {
     state,
     requests,
@@ -87,14 +159,13 @@ export function createFakeWebSessionEndpoint({
       const { pathname } = new URL(
         input instanceof Request ? input.url : String(input)
       )
-      const requestHeaders = new Headers(init.headers)
-      const headers = Object.fromEntries(requestHeaders)
+      const headers = new Headers(init.headers)
       requests.push({
         method,
         path: pathname,
         credentials: init.credentials,
         cache: init.cache,
-        headers
+        headers: Object.fromEntries(headers)
       })
 
       const current = endpoint.state
@@ -104,42 +175,8 @@ export function createFakeWebSessionEndpoint({
       if (current.kind === 'unavailable') {
         return errorResponse(current.status, 'unavailable')
       }
-      const route = `${method} ${pathname}`
-      if (route === 'POST /api/auth/session') {
-        if (!requestHeaders.get('authorization')?.startsWith('Bearer ')) {
-          return errorResponse(401, 'no_session')
-        }
-        endpoint.state = { kind: 'live', user: signInUser }
-        return jsonResponse(200, { success: true, expiresIn: DAY_MS / 1000 })
-      }
-      if (route === 'DELETE /api/auth/session') {
-        endpoint.state = { kind: 'dead', code: 'session_revoked' }
-        return jsonResponse(200, { success: true })
-      }
-      if (current.kind === 'dead') return errorResponse(401, current.code)
-      if (route === 'GET /api/auth/session') {
-        const { user } = current
-        return jsonResponse(200, {
-          user: {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            email_verified: user.emailVerified,
-            sign_in_provider: user.signInProvider
-          },
-          csrf_token: FAKE_CSRF_TOKEN,
-          expires_at: new Date(now() + DAY_MS).toISOString(),
-          absolute_expires_at: new Date(now() + 7 * DAY_MS).toISOString()
-        })
-      }
-      if (route === 'POST /api/auth/sessions/revoke-all') {
-        if (requestHeaders.get('x-csrf-token') !== FAKE_CSRF_TOKEN) {
-          return errorResponse(403, 'csrf_invalid')
-        }
-        endpoint.state = { kind: 'dead', code: 'session_revoked' }
-        return new Response(null, { status: 204 })
-      }
-      return errorResponse(404, 'not_found')
+      const route = routes.get(`${method} ${pathname}`)
+      return route ? route(endpoint, headers) : errorResponse(404, 'not_found')
     }
   }
   return endpoint
