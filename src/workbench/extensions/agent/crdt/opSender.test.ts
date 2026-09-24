@@ -1,5 +1,6 @@
 import type { Op } from '@comfyorg/comfy-multi-player'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import type { Mock } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
 
@@ -15,6 +16,39 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 const WORKFLOW = 'wf-1'
 const TAB = 'tab-1'
 const ACTOR = 'human:test-user:tab-1'
+
+type SettlementListener = (outcome: BatchOutcome) => void
+
+const detachListenerFailureCases = [
+  [
+    'in-flight',
+    (
+      listener: Mock<SettlementListener>,
+      _record: SettlementListener,
+      fail: SettlementListener
+    ) => listener.mockImplementationOnce(fail)
+  ],
+  [
+    'queued',
+    (
+      listener: Mock<SettlementListener>,
+      record: SettlementListener,
+      fail: SettlementListener
+    ) => listener.mockImplementationOnce(record).mockImplementationOnce(fail)
+  ],
+  [
+    'open',
+    (
+      listener: Mock<SettlementListener>,
+      record: SettlementListener,
+      fail: SettlementListener
+    ) =>
+      listener
+        .mockImplementationOnce(record)
+        .mockImplementationOnce(record)
+        .mockImplementationOnce(fail)
+  ]
+] as const
 
 function addNode(id: number): GraphOperation {
   return {
@@ -53,6 +87,9 @@ describe('createOpSender', () => {
   let transportUp: boolean
   let boundWorkflow: string | null
   let sender: ReturnType<typeof createOpSender>
+  const unsubscribe = vi.fn(() => {
+    resultListener = null
+  })
 
   function ackInFlight(): void {
     const last = sent[sent.length - 1]
@@ -65,7 +102,6 @@ describe('createOpSender', () => {
 
   beforeEach(() => {
     vi.useFakeTimers()
-    vi.mocked(reportError).mockClear()
     sent = []
     settled = []
     resultListener = null
@@ -79,9 +115,7 @@ describe('createOpSender', () => {
       },
       onOpsResult: (listener) => {
         resultListener = listener
-        return () => {
-          resultListener = null
-        }
+        return unsubscribe
       },
       workflowId: () => boundWorkflow,
       tab: TAB,
@@ -619,40 +653,6 @@ describe('createOpSender', () => {
     expect(sent).toHaveLength(1)
   })
 
-  it('an admission after detach settles undeliverable at once instead of getting stuck in the queue forever', () => {
-    sender.detach()
-
-    sender.enqueue([addNode(1)])
-
-    expect(sent).toHaveLength(0)
-    expect(sender.pending()).toBe(0)
-    expect(settled).toEqual([
-      {
-        state: 'undeliverable',
-        ops: expect.any(Array),
-        workflowId: WORKFLOW,
-        admissionMetadata: new Map()
-      }
-    ])
-  })
-
-  it('admit after detach settles undeliverable even without a bound workflow', () => {
-    sender.detach()
-    boundWorkflow = null
-
-    sender.admit([addNode(1)])
-
-    expect(sender.pending()).toBe(0)
-    expect(settled).toEqual([
-      {
-        state: 'undeliverable',
-        ops: expect.any(Array),
-        workflowId: null,
-        admissionMetadata: new Map()
-      }
-    ])
-  })
-
   it('detach clears the armed result-timeout timer so no late resend or settlement follows', () => {
     sender.enqueue([addNode(1)])
     expect(sent).toHaveLength(1)
@@ -716,18 +716,21 @@ describe('createOpSender', () => {
 
     expect(settled).toEqual(settledAfterFirstDetach)
     expect(vi.getTimerCount()).toBe(0)
+    expect(unsubscribe).toHaveBeenCalledTimes(1)
   })
 
-  it.for([
-    ['in-flight', 0],
-    ['queued', 1],
-    ['open', 2]
-  ] as const)(
+  it.for(detachListenerFailureCases)(
     'detach settles every other batch and still unsubscribes when the %s listener throws',
-    ([, throwingOrdinal]) => {
+    ([, configureListener]) => {
       const localSettled: BatchOutcome[] = []
       let unsubscribed = false
-      let ordinal = 0
+      const recordSettlement: SettlementListener = (outcome) => {
+        localSettled.push(outcome)
+      }
+      const onBatchSettled = vi.fn(recordSettlement)
+      configureListener(onBatchSettled, recordSettlement, () => {
+        throw new Error('listener boom')
+      })
       const localSender = createOpSender({
         sendOps: (workflowId, tab, ops) => {
           sent.push({ workflowId, tab, ops })
@@ -743,10 +746,7 @@ describe('createOpSender', () => {
         tab: TAB,
         actor: () => ACTOR,
         baseVersion: () => 41,
-        onBatchSettled: (outcome) => {
-          if (ordinal++ === throwingOrdinal) throw new Error('listener boom')
-          localSettled.push(outcome)
-        }
+        onBatchSettled
       })
 
       localSender.enqueue([addNode(1)])

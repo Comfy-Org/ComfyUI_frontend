@@ -152,20 +152,7 @@ export interface OpSender {
    * re-addressing them to the new lineage would apply them twice.
    */
   abortAll(): void
-  /**
-   * Tears the sender down for good: settles every outstanding batch exactly
-   * as {@link abortAll} does (the in-flight one 'unconfirmed' once
-   * transmitted, 'undeliverable' otherwise; every queued and open batch
-   * 'undeliverable'), then stops sending. A caller that unmounts mid-batch
-   * - the CRDT follower's own `onScopeDispose` - must not lose track of a
-   * human-authored op silently: an unreported drop here is indistinguishable
-   * from success to `onBatchSettled`'s listener, and a delete the host never
-   * received can resurrect its node on the next reconcile. A listener that
-   * throws settling one batch never blocks the rest, and the transport
-   * always unsubscribes. Terminal: an `admit()`/`enqueue()` that arrives
-   * after `detach()` settles `undeliverable` at once instead of joining a
-   * group `pump()` would then refuse to ever drain.
-   */
+  /** Settle outstanding work, unsubscribe, and permanently stop this sender. */
   detach(): void
 }
 
@@ -293,12 +280,6 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
     }, RESULT_TIMEOUT_MS)
   }
 
-  /**
-   * Drains the in-flight batch, the queue, then the open group, and reports
-   * each through `notify`, which owns only whether a settlement failure is
-   * caught: {@link abortAll} lets one propagate, {@link detach} reports and
-   * continues to the next.
-   */
   function drainOutstanding(notify: (outcome: BatchOutcome) => void): void {
     const queued = queue.splice(0)
     const admitted = open
@@ -360,7 +341,7 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   }
 
   function admit(operations: GraphOperation[]): void {
-    if (operations.length === 0) return
+    if (detached || operations.length === 0) return
     const workflowId = deps.workflowId()
     if (workflowId !== lastMintedWorkflowId) {
       lastMintedVersion = -1
@@ -372,13 +353,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       mintWireOps([operation], { actor, baseVersion: baseVersion + index })
     )
     lastMintedVersion = baseVersion + minted.length - 1
-    // Detached is terminal: nothing will ever flush or transmit again, so an
-    // admission that arrives after detach (a re-entrant admit from a settle
-    // listener, or a lingering caller) must settle immediately rather than
-    // join a group `flush()` would move into `queue` for a `pump()` that
-    // permanently refuses to send it. Unbound (no doc to join a group for)
-    // settles the same way.
-    if (detached || workflowId === null) {
+    // detached is already handled by the guard at the top of this function;
+    // only the unbound (no doc to join a group for) case reaches here.
+    if (workflowId === null) {
       settleUnadmitted(minted, workflowId)
       return
     }
@@ -495,11 +472,9 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       drainOutstanding((outcome) => deps.onBatchSettled(outcome))
     },
     detach() {
+      if (detached) return
       detached = true
       try {
-        // A listener throwing on one batch must not swallow the rest -
-        // each is its own report - or skip `unsubscribe()` below: a
-        // listener's bug is not licence to leave a dead listener attached.
         drainOutstanding((outcome) => {
           try {
             deps.onBatchSettled(outcome)

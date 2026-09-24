@@ -97,7 +97,14 @@ describe('createOpCoalescer over the op sender', () => {
   })
 
   it('sends nothing but settles the admitted batch undeliverable when detached before the flush', async () => {
-    for (let id = 1; id <= 8; id++) coalescer.enqueue([deleteNode(id)])
+    coalescer.enqueue([deleteNode(1)])
+    coalescer.enqueue([deleteNode(2)])
+    coalescer.enqueue([deleteNode(3)])
+    coalescer.enqueue([deleteNode(4)])
+    coalescer.enqueue([deleteNode(5)])
+    coalescer.enqueue([deleteNode(6)])
+    coalescer.enqueue([deleteNode(7)])
+    coalescer.enqueue([deleteNode(8)])
     sender.detach()
     coalescer.detach()
 
