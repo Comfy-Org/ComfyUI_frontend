@@ -31,6 +31,7 @@ interface ShotRequest {
   readonly resolutionPixels: number
   readonly takes: number
   readonly references: readonly File[]
+  readonly preview?: string
 }
 
 /**
@@ -136,11 +137,16 @@ export function useCinematicStudioRun(modelCount: number) {
       dispatch({ type: 'takeSucceeded', id, output })
     } catch (error) {
       if (signal.aborted) return
-      dispatch({
-        type: 'takeFailed',
-        id,
-        reason: error instanceof WorkshopRouterError ? error.reason : 'client'
-      })
+      dispatch(
+        error instanceof WorkshopRouterError
+          ? {
+              type: 'takeFailed',
+              id,
+              reason: error.reason,
+              requestId: error.requestId ?? undefined
+            }
+          : { type: 'takeFailed', id, reason: 'client' }
+      )
     }
   }
 
@@ -155,7 +161,9 @@ export function useCinematicStudioRun(modelCount: number) {
       ids,
       prompt: request.prompt,
       modelSlug: request.modelSlug,
-      aspect: request.aspect
+      aspect: request.aspect,
+      startedAt: Date.now(),
+      preview: request.preview
     })
     const attempt = new AbortController()
     controller = attempt

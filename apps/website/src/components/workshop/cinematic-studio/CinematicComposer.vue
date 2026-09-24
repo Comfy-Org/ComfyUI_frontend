@@ -62,7 +62,8 @@ const modelOptions = computed(() =>
   models.map((model) => ({
     id: model.slug,
     label: model.name,
-    logo: model.logo
+    logo: model.logo,
+    meta: model.degraded ? tc('cinematic.model.degraded', locale) : undefined
   }))
 )
 const model = computed(() =>

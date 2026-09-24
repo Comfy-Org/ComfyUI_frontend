@@ -34,6 +34,8 @@ const emit = defineEmits<{
   start: [shot: StarterShot]
   again: []
   reference: [url: string, name: string]
+  switchModel: [slug: string]
+  editScene: []
 }>()
 
 const FRAME_HEIGHT = '44svh'
@@ -45,6 +47,9 @@ const siblings = computed(() =>
 const modelName = computed(
   () =>
     models.find((model) => model.slug === current.value?.modelSlug)?.name ?? ''
+)
+const otherModel = computed(() =>
+  models.find((model) => model.slug !== current.value?.modelSlug)
 )
 </script>
 
@@ -64,8 +69,18 @@ const modelName = computed(
               : framedStyle(current.aspect, FRAME_HEIGHT).width
         }"
       >
-        <CinematicTakeFrame :current :height="FRAME_HEIGHT" :locale>
+        <CinematicTakeFrame
+          :key="current.id"
+          :current
+          :other-model="otherModel"
+          :height="FRAME_HEIGHT"
+          :locale
+          @again="emit('again')"
+          @switch-model="emit('switchModel', $event)"
+          @edit-scene="emit('editScene')"
+        >
           <div
+            v-if="current.status === 'done'"
             class="absolute inset-x-0 bottom-0 flex flex-wrap items-end justify-between gap-3 bg-linear-to-t from-primary-comfy-ink/90 via-primary-comfy-ink/50 to-transparent p-4 pt-16 opacity-0 transition-opacity group-focus-within:opacity-100 group-hover:opacity-100 pointer-coarse:opacity-100"
           >
             <CinematicTakeBar
@@ -76,7 +91,6 @@ const modelName = computed(
               @select="emit('select', $event)"
             />
             <CinematicTakeActions
-              v-if="current.status === 'done'"
               :take="current"
               :locale
               @again="emit('again')"

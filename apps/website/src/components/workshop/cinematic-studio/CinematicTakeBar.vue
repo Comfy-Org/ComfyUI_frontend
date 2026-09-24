@@ -6,6 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import type { Locale } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const {
@@ -88,6 +89,7 @@ async function onKeydown(event: KeyboardEvent) {
       :download="current.output.fileName"
       class="grid size-9 place-items-center rounded-lg text-primary-comfy-canvas hover:bg-transparency-white-t8"
       :aria-label="tc('cinematic.stage.download', locale)"
+      :title="t('workshop.output.expires', locale)"
     >
       <Download class="size-4" aria-hidden="true" />
     </a>

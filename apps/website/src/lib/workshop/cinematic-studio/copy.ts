@@ -6,6 +6,46 @@ import type { Locale, LocalizedText } from '../../../i18n/translations'
  * not add to every other page's script budget.
  */
 const copy = {
+  'cinematic.stage.renderingTake': {
+    en: 'Rendering take {take}',
+    'zh-CN': '正在渲染第 {take} 条'
+  },
+  'cinematic.stage.longWait': {
+    en: 'Still going. Some models take about a minute. Nothing is queued; yours already started.',
+    'zh-CN': '仍在进行。部分模型需要约一分钟。没有排队，你的任务已经开始。'
+  },
+  'cinematic.state.failed': {
+    en: 'This take failed',
+    'zh-CN': '这一条生成失败'
+  },
+  'cinematic.state.blocked': {
+    en: 'Blocked by the model’s content policy',
+    'zh-CN': '被模型的内容政策拦截'
+  },
+  'cinematic.state.noCredits': {
+    en: 'Not enough credits for this shot',
+    'zh-CN': '积分不足，无法生成这个镜头'
+  },
+  'cinematic.state.cancelled': {
+    en: 'You stopped this take',
+    'zh-CN': '你已停止这一条'
+  },
+  'cinematic.state.tryOn': {
+    en: 'Try on {model}',
+    'zh-CN': '换用 {model}'
+  },
+  'cinematic.state.editScene': {
+    en: 'Edit scene',
+    'zh-CN': '修改场景'
+  },
+  'cinematic.output.checking': {
+    en: 'Checking…',
+    'zh-CN': '检查中…'
+  },
+  'cinematic.model.degraded': {
+    en: 'Slow now',
+    'zh-CN': '当前较慢'
+  },
   'cinematic.picker.done': {
     en: 'Done',
     'zh-CN': '完成'

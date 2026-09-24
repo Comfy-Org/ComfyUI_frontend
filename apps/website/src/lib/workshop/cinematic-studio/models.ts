@@ -6,7 +6,7 @@ type ModelLookup = (
 ) =>
   | Pick<
       WorkshopModelDetail,
-      'slug' | 'name' | 'provider' | 'execution' | 'incompleteReason'
+      'slug' | 'name' | 'provider' | 'execution' | 'incompleteReason' | 'status'
     >
   | undefined
 
@@ -15,6 +15,7 @@ export interface CinematicModel {
   readonly name: string
   readonly provider: string
   readonly logo: string
+  readonly degraded?: boolean
 }
 
 const CINEMATIC_MODEL_LOGOS: Readonly<Record<string, string>> = {
@@ -38,7 +39,8 @@ export function runnableCinematicModels(
             slug: model.slug,
             name: model.name.replace(/ Text-to-Image$/, ''),
             provider: model.provider ?? '',
-            logo
+            logo,
+            ...(model.status === 'degraded' ? { degraded: true } : {})
           }
         ]
       : []

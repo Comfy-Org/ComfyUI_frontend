@@ -3,6 +3,7 @@ import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import { useCinematicLeaveGuard } from '../../../composables/useCinematicLeaveGuard'
 import { useCinematicPopover } from '../../../composables/useCinematicPopover'
 import { useCinematicShot } from '../../../composables/useCinematicShot'
 import type { DirectionPart } from '../../../lib/workshop/cinematic-studio/catalog'
@@ -10,6 +11,7 @@ import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/mode
 import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import RunLeaveDialog from '../RunLeaveDialog.vue'
 import CinematicComposer from './CinematicComposer.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
 import CinematicPicker from './CinematicPicker.vue'
@@ -72,10 +74,19 @@ function openPopover(key: PopoverKey, part?: DirectionPart) {
   if (!switchingTab) togglePopover(key)
 }
 
+const { leavingTo, leave, stay } = useCinematicLeaveGuard(
+  () => studio.rendering.value,
+  () => studio.cancel()
+)
+
+function focusScene() {
+  document.getElementById('cinematic-scene')?.focus()
+}
+
 function start(shot: StarterShot) {
   starter.value = shot.id
   startShot(shot)
-  document.getElementById('cinematic-scene')?.focus()
+  focusScene()
 }
 
 async function useAsReference(url: string, name: string) {
@@ -88,6 +99,11 @@ async function useAsReference(url: string, name: string) {
 function generate() {
   closePopover()
   generateShot()
+}
+
+function generateOn(slug: string) {
+  modelSlug.value = slug
+  generate()
 }
 </script>
 
@@ -105,6 +121,8 @@ function generate() {
       @start="start"
       @again="generate"
       @reference="useAsReference"
+      @switch-model="generateOn"
+      @edit-scene="focusScene"
     />
 
     <div
@@ -187,5 +205,12 @@ function generate() {
         />
       </div>
     </div>
+
+    <RunLeaveDialog
+      :open="leavingTo !== undefined"
+      :locale
+      @update:open="(value: boolean) => !value && stay()"
+      @leave="leave"
+    />
   </div>
 </template>

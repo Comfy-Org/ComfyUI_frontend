@@ -1,6 +1,7 @@
 import { useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, readonly, shallowRef } from 'vue'
 
+import type { RunFailure } from '../config/workshop-run'
 import type { WorkshopSession } from '../config/workshop-session-state'
 import type { AspectRatio } from '../lib/workshop/cinematic-studio/catalog'
 import type { StudioGate } from '../lib/workshop/cinematic-studio/gate'
@@ -24,19 +25,30 @@ const DEMO_FRAMES = [
 ].map((name) => `/images/cinematic-studio/${name}.jpg`)
 
 const DEMO_RENDER_MS = 1600
+const SLOW_RENDER_MS = 45_000
+
+const DEMO_FAILURES: Readonly<Record<string, RunFailure>> = {
+  fail: 'provider',
+  policy: 'policy',
+  credits: 'noCredits'
+}
 
 interface DemoShot {
   readonly modelSlug: string
   readonly prompt: string
   readonly aspect: AspectRatio
   readonly takes: number
+  readonly preview?: string
+}
+
+function demoScenario(): string | null {
+  return typeof window === 'undefined'
+    ? null
+    : new URLSearchParams(window.location.search).get('demo')
 }
 
 export function isCinematicDemo(): boolean {
-  return (
-    typeof window !== 'undefined' &&
-    new URLSearchParams(window.location.search).get('demo') === '1'
-  )
+  return demoScenario() !== null
 }
 
 /**
@@ -55,28 +67,46 @@ export function useCinematicDemoRun() {
   const timers = new Set<ReturnType<typeof setTimeout>>()
   let frame = 0
 
+  function settle(id: string, index: number, scenario: string | null) {
+    const failure = scenario ? DEMO_FAILURES[scenario] : undefined
+    if (failure && index === 0) {
+      dispatch({ type: 'takeFailed', id, reason: failure, requestId: id })
+      return
+    }
+    const url = DEMO_FRAMES[frame++ % DEMO_FRAMES.length]
+    dispatch({
+      type: 'takeSucceeded',
+      id,
+      output: {
+        kind: 'image',
+        url,
+        fileName: `${id}.jpg`,
+        nsfw: scenario === 'nsfw' && index === 0
+      }
+    })
+  }
+
   function generate(shot: DemoShot) {
     if (rendering.value) return
+    const scenario = demoScenario()
     const ids = Array.from({ length: shot.takes }, () => crypto.randomUUID())
     dispatch({
       type: 'shotStarted',
       ids,
       prompt: shot.prompt,
       modelSlug: shot.modelSlug,
-      aspect: shot.aspect
+      aspect: shot.aspect,
+      startedAt: Date.now(),
+      preview: shot.preview
     })
+    const renderMs = scenario === 'slow' ? SLOW_RENDER_MS : DEMO_RENDER_MS
     ids.forEach((id, index) => {
-      const url = DEMO_FRAMES[frame++ % DEMO_FRAMES.length]
       const timer = setTimeout(
         () => {
           timers.delete(timer)
-          dispatch({
-            type: 'takeSucceeded',
-            id,
-            output: { kind: 'image', url, fileName: `${id}.jpg` }
-          })
+          settle(id, index, scenario)
         },
-        DEMO_RENDER_MS + index * 400
+        renderMs + index * 1200
       )
       timers.add(timer)
     })

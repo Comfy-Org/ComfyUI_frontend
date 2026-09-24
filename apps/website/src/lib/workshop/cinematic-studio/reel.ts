@@ -8,12 +8,18 @@ interface TakeBase {
   readonly prompt: string
   readonly modelSlug: string
   readonly aspect: AspectRatio
+  readonly startedAt: number
+  readonly preview?: string
 }
 
 export type Take =
   | (TakeBase & { readonly status: 'rendering' })
   | (TakeBase & { readonly status: 'done'; readonly output: RunOutput })
-  | (TakeBase & { readonly status: 'failed'; readonly reason: RunFailure })
+  | (TakeBase & {
+      readonly status: 'failed'
+      readonly reason: RunFailure
+      readonly requestId?: string
+    })
   | (TakeBase & { readonly status: 'cancelled' })
 
 export interface Reel {
@@ -28,6 +34,8 @@ export type ReelEvent =
       readonly prompt: string
       readonly modelSlug: string
       readonly aspect: AspectRatio
+      readonly startedAt: number
+      readonly preview?: string
     }
   | {
       readonly type: 'takeSucceeded'
@@ -38,6 +46,7 @@ export type ReelEvent =
       readonly type: 'takeFailed'
       readonly id: string
       readonly reason: RunFailure
+      readonly requestId?: string
     }
   | { readonly type: 'rendersCancelled' }
   | { readonly type: 'selected'; readonly id: string }
@@ -74,6 +83,8 @@ export function reduceReel(reel: Reel, event: ReelEvent): Reel {
         prompt: event.prompt,
         modelSlug: event.modelSlug,
         aspect: event.aspect,
+        startedAt: event.startedAt,
+        preview: event.preview,
         status: 'rendering'
       }))
       return { takes: [...reel.takes, ...added], selectedId: added[0]?.id }
@@ -88,7 +99,8 @@ export function reduceReel(reel: Reel, event: ReelEvent): Reel {
       return settle(reel, event.id, (take) => ({
         ...take,
         status: 'failed',
-        reason: event.reason
+        reason: event.reason,
+        requestId: event.requestId
       }))
     case 'rendersCancelled':
       return {

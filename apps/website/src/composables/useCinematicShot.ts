@@ -8,7 +8,8 @@ import type {
 } from '../lib/workshop/cinematic-studio/catalog'
 import {
   DEFAULT_DIRECTION,
-  RESOLUTIONS
+  RESOLUTIONS,
+  directionOption
 } from '../lib/workshop/cinematic-studio/catalog'
 import type { CinematicModel } from '../lib/workshop/cinematic-studio/models'
 import {
@@ -72,7 +73,8 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
         RESOLUTIONS.find((option) => option.id === resolution.value)?.pixels ??
         2048,
       takes: takes.value,
-      references: references.value
+      references: references.value,
+      preview: directionOption('look', direction.value).preview
     })
   }
 

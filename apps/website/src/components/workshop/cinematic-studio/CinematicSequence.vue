@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { CircleAlert, CircleStop, LoaderCircle, ShieldAlert } from '@lucide/vue'
+
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
@@ -20,6 +22,18 @@ const emit = defineEmits<{ select: [id: string] }>()
 
 const startsShot = (index: number) =>
   index > 0 && takes[index - 1].shot !== takes[index].shot
+
+function statusClass(take: Take): string | undefined {
+  if (take.status !== 'failed') return undefined
+  if (take.reason === 'policy' || take.reason === 'validation')
+    return 'bg-primary-comfy-orange/10 ring-1 ring-primary-comfy-orange/35 ring-inset'
+  if (take.reason === 'noCredits') return undefined
+  return 'bg-primary-comfy-red/10 ring-1 ring-primary-comfy-red/35 ring-inset'
+}
+
+const blocked = (take: Take) =>
+  take.status === 'failed' &&
+  (take.reason === 'policy' || take.reason === 'validation')
 </script>
 
 <template>
@@ -39,8 +53,9 @@ const startsShot = (index: number) =>
       "
       :class="
         cn(
-          'h-14 shrink-0 overflow-hidden rounded-md bg-transparency-white-t8 transition-opacity',
+          'grid h-14 shrink-0 place-items-center overflow-hidden rounded-md bg-transparency-white-t8 transition-opacity',
           startsShot(index) && 'ml-2',
+          statusClass(take),
           take.id === currentId
             ? 'opacity-100 outline-2 outline-offset-2 outline-primary-warm-white'
             : 'opacity-50 hover:opacity-100'
@@ -53,7 +68,27 @@ const startsShot = (index: number) =>
         v-if="take.status === 'done'"
         :src="take.output.url"
         alt=""
-        class="size-full object-cover"
+        :class="cn('size-full object-cover', take.output.nsfw && 'blur-md')"
+      />
+      <LoaderCircle
+        v-else-if="take.status === 'rendering'"
+        class="size-4 text-primary-comfy-yellow motion-safe:animate-spin"
+        aria-hidden="true"
+      />
+      <CircleStop
+        v-else-if="take.status === 'cancelled'"
+        class="size-4 text-primary-comfy-canvas"
+        aria-hidden="true"
+      />
+      <ShieldAlert
+        v-else-if="blocked(take)"
+        class="size-4 text-primary-comfy-orange"
+        aria-hidden="true"
+      />
+      <CircleAlert
+        v-else
+        class="size-4 text-primary-comfy-red"
+        aria-hidden="true"
       />
     </button>
   </nav>

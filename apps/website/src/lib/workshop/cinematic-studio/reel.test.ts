@@ -21,7 +21,8 @@ const started = (ids: string[]): ReelEvent => ({
   ids,
   prompt: 'Wide shot.',
   modelSlug: 'bfl--flux-2-pro--generate-images',
-  aspect: '21:9'
+  aspect: '21:9',
+  startedAt: 0
 })
 
 const play = (events: readonly ReelEvent[], reel: Reel = EMPTY_REEL) =>

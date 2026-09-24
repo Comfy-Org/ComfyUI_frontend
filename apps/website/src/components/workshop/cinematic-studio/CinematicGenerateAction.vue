@@ -73,6 +73,9 @@ const buttonClass = computed(() =>
     >
       {{ t('workshop.run.signIn', locale) }}
     </Button>
+    <Button v-else-if="gate === 'pending'" disabled :class="buttonClass">
+      {{ tc('cinematic.output.checking', locale) }}
+    </Button>
     <Button
       v-else-if="rendering"
       variant="outline"
