@@ -675,14 +675,23 @@ type ChildInputs = Record<string, InputSpec>
 
 type ComboOption = [key: string, childInputs: ChildInputs]
 
+const ARRAY_INDEX_KEY = /^(0|[1-9]\d*)$/
+
 function dynamicCombo(
   defaultOption: ComboOption,
   ...remainingOptions: ComboOption[]
 ): InputSpec {
+  const options = [defaultOption, ...remainingOptions]
+  const hoisted = options.find(([key]) => ARRAY_INDEX_KEY.test(key))
+  if (hoisted)
+    throw new Error(
+      `Option key '${hoisted[0]}' is an array index, so applying the combo would order it ahead of '${defaultOption[0]}' and change which option is the default.`
+    )
+
   return [
     'COMFY_DYNAMICCOMBO_V3',
     {
-      options: [defaultOption, ...remainingOptions].map(([key, inputs]) => ({
+      options: options.map(([key, inputs]) => ({
         key,
         inputs: { required: inputs }
       }))
@@ -704,18 +713,20 @@ function autogrow(template: {
 
 function testNodeDef(
   name: string,
+  displayName: string,
   required: ChildInputs,
-  output: string[]
+  output: string[],
+  outputName: string[] = [...output]
 ): ComfyNodeDefV1 {
   return {
     name,
-    display_name: name,
+    display_name: displayName,
     category: 'testing',
     python_module: 'nodes',
     description: '',
     input: { required },
     output,
-    output_name: [...output],
+    output_name: outputName,
     output_node: false
   }
 }
@@ -727,6 +738,7 @@ function testNodeDef(
  */
 const resizeNodeDef = testNodeDef(
   RESIZE_NODE_TYPE,
+  'Resize Image Mask',
   {
     image: ['IMAGE', {}],
     resize_type: dynamicCombo(
@@ -734,7 +746,8 @@ const resizeNodeDef = testNodeDef(
       ['scale by multiplier', { multiplier: ['FLOAT', {}] }]
     )
   },
-  ['IMAGE']
+  ['IMAGE'],
+  ['resized']
 )
 
 /**
@@ -773,7 +786,7 @@ function savedDynamicComboChildWorkflow(): SerialisableGraph {
           { name: 'image', type: 'IMAGE', link: null },
           { name: 'resize_type.multiplier', type: 'FLOAT', link: 1 }
         ],
-        outputs: [{ name: 'IMAGE', type: 'IMAGE', links: [] }],
+        outputs: [{ name: 'resized', type: 'IMAGE', links: [] }],
         properties: {},
         widgets_values: ['scale by multiplier', 4]
       }
@@ -826,6 +839,7 @@ const REFERENCE_NODE_TYPE = 'test/AutogrowInsideCombo'
  */
 const referenceNodeDef = testNodeDef(
   REFERENCE_NODE_TYPE,
+  'Autogrow Inside Combo',
   {
     model: dynamicCombo([
       'Seedance',
@@ -882,6 +896,7 @@ const GROWN_NODE_TYPE = 'test/AutogrowBeforeOrdinaryChild'
  */
 const grownNodeDef = testNodeDef(
   GROWN_NODE_TYPE,
+  'Autogrow Before Ordinary Child',
   {
     model: dynamicCombo([
       'gpt-image-1',
