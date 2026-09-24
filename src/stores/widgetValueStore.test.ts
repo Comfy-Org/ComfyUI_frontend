@@ -4,7 +4,6 @@ import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 
 import type { UUID } from '@/utils/uuid'
-import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetId } from '@/types/widgetId'
@@ -439,11 +438,6 @@ describe('useWidgetValueStore', () => {
     it('announces each effective write once, direct or through setValue', () => {
       const store = useWidgetValueStore()
       const widget = store.registerWidget(seedA, state('number', 100))!
-      const context: RemoteMutationContext = {
-        source: 'agent-remote',
-        actor: 'agent:test',
-        opId: 'op-1'
-      }
       const values: unknown[][] = []
       const unsubscribe = onGraphIntent((event) => {
         if (event.type === 'set_widget')
@@ -451,7 +445,7 @@ describe('useWidgetValueStore', () => {
       })
 
       widget.value = 200
-      store.setValue(seedA, 300, context)
+      store.setValue(seedA, 300)
       store.setValue(seedA, 300)
       unsubscribe()
       widget.value = 400
@@ -680,78 +674,6 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidget(seedA)?.value).toBe(7)
       expect(store.setValue(seedA, 8)).toBe(true)
       expect(store.getWidget(seedA)?.value).toBe(8)
-    })
-  })
-
-  describe('local-dirty-tracking suppression', () => {
-    it('a context-less write is locally dirty by default', () => {
-      const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 1))!
-
-      registered.value = 2
-
-      expect(store.isLocallyDirty(seedA)).toBe(true)
-    })
-
-    it('withLocalDirtyTrackingSuppressed keeps a context-less write clean', () => {
-      const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 1))!
-
-      store.withLocalDirtyTrackingSuppressed(() => {
-        registered.value = 2
-      })
-
-      expect(store.getWidget(seedA)?.value).toBe(2)
-      expect(store.isLocallyDirty(seedA)).toBe(false)
-    })
-
-    it('begin/end brackets an async window the same way', () => {
-      const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 1))!
-
-      store.beginLocalDirtyTrackingSuppression()
-      registered.value = 2
-      store.endLocalDirtyTrackingSuppression()
-
-      expect(store.isLocallyDirty(seedA)).toBe(false)
-
-      // Once closed, an ordinary context-less write is dirty again.
-      registered.value = 3
-      expect(store.isLocallyDirty(seedA)).toBe(true)
-    })
-
-    it('nests: an inner suppression ending early does not lift the outer one', () => {
-      const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 1))!
-
-      store.beginLocalDirtyTrackingSuppression()
-      store.withLocalDirtyTrackingSuppressed(() => {
-        registered.value = 2
-      })
-      // The inner bracket closed; the outer one, opened first, is still open.
-      registered.value = 3
-      expect(store.isLocallyDirty(seedA)).toBe(false)
-
-      store.endLocalDirtyTrackingSuppression()
-      registered.value = 4
-      expect(store.isLocallyDirty(seedA)).toBe(true)
-    })
-
-    it('endLocalDirtyTrackingSuppression never goes negative', () => {
-      const store = useWidgetValueStore()
-      const registered = store.registerWidget(seedA, state('number', 1))!
-
-      // An unmatched end (e.g. a load whose beforeLoadGraph never ran) must
-      // not leave the counter negative, where a single legitimate begin
-      // later would fail to suppress anything.
-      store.endLocalDirtyTrackingSuppression()
-      store.beginLocalDirtyTrackingSuppression()
-      registered.value = 2
-      expect(store.isLocallyDirty(seedA)).toBe(false)
-
-      store.endLocalDirtyTrackingSuppression()
-      registered.value = 3
-      expect(store.isLocallyDirty(seedA)).toBe(true)
     })
   })
 })

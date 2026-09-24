@@ -349,11 +349,6 @@ export function transferLayoutAttachment(
   return true
 }
 
-/** Release a node's adapter attachment without changing canonical layout state. */
-export function releaseNodeLayoutAttachment(node: LGraphNode): void {
-  takeNodeLayoutAttachment(node)
-}
-
 function takeNodeLayoutAttachment(
   node: LGraphNode
 ): NodeLayoutAttachment | undefined {
