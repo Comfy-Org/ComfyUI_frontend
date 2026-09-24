@@ -18,6 +18,7 @@ import {
   getLocalNodeIdFromExecutionId,
   getNodeByExecutionId,
   getNodeByLocatorId,
+  getNodeByState,
   getRootGraph,
   getSubgraphPathFromExecutionId,
   executionIdFromState,
@@ -1097,6 +1098,27 @@ describe('graphTraversalUtil', () => {
           ROOT_GRAPH_ID
         )
         expect(locatorId).toBeNull()
+      })
+    })
+
+    describe('getNodeByState', () => {
+      it('uses graph identity to disambiguate colon-bearing node IDs', () => {
+        const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+        const nodeId = toNodeId(`${subgraphUuid}:node:5`)
+        const rootNode = createMockNode(nodeId)
+        const interiorNode = createMockNode(nodeId)
+        const subgraph = createMockSubgraph(subgraphUuid, [interiorNode])
+        const graph = createMockGraph([
+          rootNode,
+          createMockNode('456', { isSubgraph: true, subgraph })
+        ])
+
+        expect(
+          getNodeByState(graph, { id: nodeId, graphId: ROOT_GRAPH_ID })
+        ).toBe(rootNode)
+        expect(
+          getNodeByState(graph, { id: nodeId, graphId: subgraphUuid })
+        ).toBe(interiorNode)
       })
     })
 
