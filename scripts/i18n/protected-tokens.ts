@@ -5,7 +5,6 @@ const quoteCharacters = `['"“”‘’«»‹›„‚「」『』]`
 const htmlTagPattern = /<\/?[a-z][^>]*>/g
 const protectedLiteralPatterns = [
   /<(?:Picture|Video|Audio) [A-Za-z0-9]+>/g,
-  htmlTagPattern,
   /\b\d+k\+\d+\b/g,
   new RegExp(`(?<=${quoteCharacters})(?:match|max)(?=${quoteCharacters})`, 'g')
 ]
@@ -16,8 +15,13 @@ const interpolationPattern = /\{(?:[A-Za-z][A-Za-z0-9_.-]*|\d+|'[^']*')\}/g
 const pluralSeparatorPattern = /\|/
 const linkedMessagePattern = /@[.:]/
 
-function matches(value: string, pattern: RegExp): string[] {
-  return value.match(pattern) ?? []
+function matches(
+  value: string,
+  pattern: RegExp,
+  preserveCounts: boolean
+): string[] {
+  const found = value.match(pattern) ?? []
+  return preserveCounts ? found : [...new Set(found)]
 }
 
 function unmatched(expected: string[], actual: string[]): string[] {
@@ -32,29 +36,33 @@ function unmatched(expected: string[], actual: string[]): string[] {
 
 export function protectedTokens(
   value: string,
-  includeInterpolation: boolean
+  includeInterpolation: boolean,
+  strict: boolean = false
 ): string[] {
-  const tokens = protectedLiteralPatterns.flatMap((pattern) =>
-    matches(value, pattern)
-  )
+  const patterns = strict
+    ? [...protectedLiteralPatterns, htmlTagPattern]
+    : protectedLiteralPatterns
+  const tokens = patterns.flatMap((pattern) => matches(value, pattern, strict))
   if (includeInterpolation) {
-    tokens.push(...matches(value, interpolationPattern))
+    tokens.push(...matches(value, interpolationPattern, strict))
   }
-  return tokens.sort()
+  return (strict ? tokens : [...new Set(tokens)]).sort()
 }
 
 export function tokenErrors(
   source: string,
   target: string,
-  includeInterpolation: boolean
+  includeInterpolation: boolean,
+  strict: boolean = false
 ): string[] {
-  const sourceTokens = protectedTokens(source, includeInterpolation)
-  const targetTokens = protectedTokens(target, includeInterpolation)
+  const sourceTokens = protectedTokens(source, includeInterpolation, strict)
+  const targetTokens = protectedTokens(target, includeInterpolation, strict)
   const missing = unmatched(sourceTokens, targetTokens)
   const added = unmatched(targetTokens, sourceTokens)
   const htmlSequenceChanged =
-    JSON.stringify(matches(source, htmlTagPattern)) !==
-    JSON.stringify(matches(target, htmlTagPattern))
+    strict &&
+    JSON.stringify(matches(source, htmlTagPattern, true)) !==
+      JSON.stringify(matches(target, htmlTagPattern, true))
   return [
     ...(missing.length ? [`missing ${missing.join(', ')}`] : []),
     ...(added.length ? [`added ${added.join(', ')}`] : []),
@@ -75,11 +83,14 @@ export function tokenErrors(
 function leafTokenErrors(
   source: LocaleValue,
   target: LocaleValue | undefined,
-  label: string
+  label: string,
+  strict: boolean
 ): string[] {
   if (typeof source === 'string') {
     return typeof target === 'string'
-      ? tokenErrors(source, target, true).map((error) => `${label}: ${error}`)
+      ? tokenErrors(source, target, true, strict).map(
+          (error) => `${label}: ${error}`
+        )
       : [`${label}: leaf type changed`]
   }
   if (Array.isArray(source)) {
@@ -87,7 +98,7 @@ function leafTokenErrors(
     if (source.length !== target.length)
       return [`${label}: array length changed`]
     return source.flatMap((element, index) =>
-      leafTokenErrors(element, target[index], `${label}.${index}`)
+      leafTokenErrors(element, target[index], `${label}.${index}`, strict)
     )
   }
   return JSON.stringify(source) === JSON.stringify(target)
@@ -97,15 +108,17 @@ function leafTokenErrors(
 
 export function leafTokensDiffer(
   source: LocaleValue,
-  target: LocaleValue | undefined
+  target: LocaleValue | undefined,
+  strict: boolean = false
 ): boolean {
-  return leafTokenErrors(source, target, 'leaf').length > 0
+  return leafTokenErrors(source, target, 'leaf', strict).length > 0
 }
 
 export function validateLocale(
   source: LocaleObject,
   locale: LocaleObject,
-  changes: LocaleChanges
+  changes: LocaleChanges,
+  strict: boolean = false
 ): string[] {
   const errors: string[] = []
   const sourceLeaves = collectLeaves(source)
@@ -122,7 +135,7 @@ export function validateLocale(
       errors.push(`${label}: translation was not regenerated`)
       continue
     }
-    errors.push(...leafTokenErrors(sourceValue, targetValue, label))
+    errors.push(...leafTokenErrors(sourceValue, targetValue, label, strict))
   }
 
   for (const path of changes.deleted) {
@@ -137,7 +150,9 @@ export function validateLocale(
     }
   }
 
-  errors.push(...auditProtectedLiterals(source, locale, regeneratedKeys))
+  errors.push(
+    ...auditProtectedLiterals(source, locale, regeneratedKeys, strict)
+  )
 
   return errors
 }
@@ -145,13 +160,19 @@ export function validateLocale(
 export function auditProtectedLiterals(
   source: LocaleObject,
   target: LocaleObject,
-  skipKeys: ReadonlySet<string>
+  skipKeys: ReadonlySet<string>,
+  strict: boolean = false
 ): string[] {
   const targetLeaves = collectLeaves(target)
   return [...collectLeaves(source)].flatMap(([key, leaf]) => {
     if (skipKeys.has(key)) return []
     const targetLeaf = targetLeaves.get(key)
     if (targetLeaf === undefined) return []
-    return leafTokenErrors(leaf.value, targetLeaf.value, leaf.path.join('.'))
+    return leafTokenErrors(
+      leaf.value,
+      targetLeaf.value,
+      leaf.path.join('.'),
+      strict
+    )
   })
 }

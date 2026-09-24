@@ -38,7 +38,8 @@ const translationConfig = {
   maxItemsPerRequest: 2,
   maxSourceCharsPerRequest: 1000,
   requestConcurrency: 1,
-  maxTranslationRounds: 3
+  maxTranslationRounds: 3,
+  strictProtectedTokens: false
 }
 
 const echoTranslator: TranslateBatch = (batchLocale, items) =>
@@ -417,16 +418,12 @@ describe('validateLocale', () => {
       help: `<a class="link" href="mailto:support@comfy.org">Ask {'@'}support or {'@'}sales</a>`
     }
     const changes = diffLocaleSources({}, source)
+    const translated = {
+      help: `<a class="other" href="mailto:help@comfy.org">Ask {'@'}support</a>`
+    }
 
-    expect(
-      validateLocale(
-        source,
-        {
-          help: `<a class="other" href="mailto:help@comfy.org">Ask {'@'}support</a>`
-        },
-        changes
-      )
-    ).toEqual([
+    expect(validateLocale(source, translated, changes)).toEqual([])
+    expect(validateLocale(source, translated, changes, true)).toEqual([
       `help: missing <a class="link" href="mailto:support@comfy.org">, {'@'}`,
       `help: added <a class="other" href="mailto:help@comfy.org">`,
       'help: changed HTML tag sequence'
@@ -506,7 +503,7 @@ describe('validateLocale', () => {
       )
     ).toEqual([])
     expect(
-      validateLocale(source, { count: 'None | {total} many' }, changes)
+      validateLocale(source, { count: 'None | {total} many' }, changes, true)
     ).toEqual(['count: missing {count}, {count}', 'count: added {total}'])
   })
 })

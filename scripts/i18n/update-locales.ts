@@ -324,7 +324,8 @@ function loadLocaleFileStates(
           plan.source,
           existing,
           plan.invalidated,
-          leafTokensDiffer
+          (source, target) =>
+            leafTokensDiffer(source, target, config.strictProtectedTokens)
         ),
         strayPaths
       }
@@ -354,7 +355,10 @@ export function formatUsageSummary(
   return `OpenAI usage: ${requestCount} HTTP requests for ${usages.length} responses; ${inputTokens} input, ${outputTokens} output (${reasoningTokens} reasoning), ${totalTokens} total tokens.`
 }
 
-function reportCheck(states: readonly LocaleFileState[]): number {
+function reportCheck(
+  states: readonly LocaleFileState[],
+  strictProtectedTokens: boolean
+): number {
   let pendingTotal = 0
   let strayTotal = 0
   const auditErrors: string[] = []
@@ -386,7 +390,8 @@ function reportCheck(states: readonly LocaleFileState[]): number {
     for (const error of auditProtectedLiterals(
       state.plan.source,
       state.existing,
-      new Set([...state.plan.invalidated, ...state.plan.knownViolationKeys])
+      new Set([...state.plan.invalidated, ...state.plan.knownViolationKeys]),
+      strictProtectedTokens
     )) {
       auditErrors.push(`${label}: ${error}`)
     }
@@ -523,7 +528,7 @@ async function run(argv: readonly string[]): Promise<void> {
         `${relative(repoRoot, orphan)}: the English source file was removed; this locale file will be deleted`
       )
     }
-    process.exitCode = reportCheck(states)
+    process.exitCode = reportCheck(states, config.strictProtectedTokens)
     return
   }
 
@@ -620,7 +625,8 @@ async function run(argv: readonly string[]): Promise<void> {
     for (const error of validateLocale(
       state.plan.source,
       output,
-      state.plan.changes
+      state.plan.changes,
+      config.strictProtectedTokens
     )) {
       addFailure(
         state.plan.filename,

@@ -381,6 +381,7 @@ export async function translateLocaleItems(
     | 'maxSourceCharsPerRequest'
     | 'requestConcurrency'
     | 'maxTranslationRounds'
+    | 'strictProtectedTokens'
   >
 ): Promise<Map<string, string>> {
   const results = new Map<string, string>()
@@ -415,7 +416,12 @@ export async function translateLocaleItems(
           ? ['no translation returned']
           : value.trim().length === 0
             ? ['empty translation']
-            : tokenErrors(item.source, value, true)
+            : tokenErrors(
+                item.source,
+                value,
+                true,
+                config.strictProtectedTokens
+              )
       if (value !== undefined && errors.length === 0) {
         results.set(item.id, value)
       } else {

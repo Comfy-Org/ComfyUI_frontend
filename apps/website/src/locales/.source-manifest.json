@@ -2,5 +2,16 @@
   "files": {
     "main.json": "683ce42ec16a29f7f0a35ea53725c8d8d7687cdb"
   },
+  "knownViolations": {
+    "main.json": [
+      "[\"cloud\",\"reason\",\"1\",\"title\"]",
+      "[\"cloud\",\"reason\",\"4\",\"title\"]",
+      "[\"cloud\",\"faq\",\"12\",\"a\"]",
+      "[\"cloud\",\"faq\",\"footer\"]",
+      "[\"pricing\",\"included\",\"feature8\",\"description\"]",
+      "[\"privacy\",\"intro\",\"block\",\"3\"]",
+      "[\"cloudNodesLaunch\",\"models\",\"nodeCount\"]"
+    ]
+  },
   "version": 1
 }

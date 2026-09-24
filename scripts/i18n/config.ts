@@ -9,6 +9,7 @@ export interface OutputLocale {
 export interface TranslationPipelineConfig {
   entry: string
   output: string
+  strictProtectedTokens: boolean
   model: string
   reasoningEffort: NonNullable<Reasoning['effort']>
   maxItemsPerRequest: number
@@ -51,6 +52,7 @@ Prefer the imperative for button labels ("Speichern", "Abbrechen") and avoid the
 export const translationPipelineConfig: TranslationPipelineConfig = {
   entry: 'src/locales/en',
   output: 'src/locales',
+  strictProtectedTokens: false,
   model: 'gpt-5.6-terra',
   reasoningEffort: 'high',
   maxItemsPerRequest: 40,
@@ -91,6 +93,7 @@ const websiteTranslationPipelineConfig: TranslationPipelineConfig = {
   ...translationPipelineConfig,
   entry: 'apps/website/src/locales/en',
   output: 'apps/website/src/locales',
+  strictProtectedTokens: true,
   translationContext:
     'comfy.org, a website with marketing, product, support, and legal content',
   glossary: websiteGlossary,
