@@ -8,14 +8,6 @@
  * types promoted together, subgraph-instance id collisions, several
  * instances of one definition in a single op, and coexistence with a
  * pre-existing instance.
- *
- * NOTE: an interior node that is ITSELF a subgraph instance (a subgraph
- * nested inside another subgraph, as opposed to two sibling definitions)
- * does not currently materialize through this pipeline — its `type` still
- * names the un-remapped blueprint definition id, which nothing registers on
- * the live side, so it falls back to a plain, widget-less node. That gap is
- * outside this PR's fix scope; it is called out in the PR description as a
- * follow-up rather than silently asserted around.
  */
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type {
@@ -535,6 +527,89 @@ describe('insert_workflow materializes subgraphs correctly', () => {
     expect(other && promotedWidgetValues(other)).toEqual({ v: 'randomize' })
   })
 
+  it('round-trips a promoted widget through alternating set_widget writes (A -> B -> A)', () => {
+    const graph = new LGraph()
+    onTestFinished(enableSubgraphNodeCreation(graph))
+
+    const blueprintGraph = new LGraph()
+    const subgraph = createTestSubgraph({
+      rootGraph: blueprintGraph,
+      inputs: [{ name: 'value', type: 'NUMBER' }]
+    })
+    blueprintGraph.subgraphs.set(subgraph.id, subgraph)
+    const interior = LiteGraph.createNode('number-widget')!
+    interior.id = toNodeId(7)
+    subgraph.add(interior)
+    subgraph.inputNode.slots[0].connect(interior.inputs[0], interior)
+    const host = createTestSubgraphNode(subgraph, { id: 1 })
+    blueprintGraph.add(host)
+    host.widgets[0].value = 5
+
+    const workflow = serializeBlueprint(blueprintGraph)
+    const hostDoc = mint({ nodes: [], links: [] }, CATALOG)
+    onTestFinished(() => hostDoc.destroy())
+    const deliver = bindProjection('wf-promoted-alternating', graph)
+    deliver(Y.encodeStateAsUpdate(hostDoc), [])
+
+    const insert = insertOp(workflow)
+    let vector = Y.encodeStateVector(hostDoc)
+    expect(applyOps(hostDoc, [insert], CATALOG).outcomes).toEqual([
+      { op_id: insert.op_id, outcome: 'applied' }
+    ])
+    expect(
+      deliver(Y.encodeStateAsUpdate(hostDoc, vector), [insert.op_id])
+    ).toBe(true)
+
+    const [instance] = findSubgraphInstances(graph)
+    expect(instance).toBeDefined()
+    expect(instance.widgets[0]?.value).toBe(5)
+    const promotedWidgetId = instance.inputs[0]?.widgetId
+    expect(promotedWidgetId).toBeDefined()
+
+    // A -> B: write 42 over the initial 5.
+    vector = Y.encodeStateVector(hostDoc)
+    const toB = setWidgetOp(
+      'insert-alternating-to-b',
+      2,
+      String(instance.id),
+      'value',
+      42,
+      0
+    )
+    expect(applyOps(hostDoc, [toB], CATALOG).outcomes).toEqual([
+      { op_id: toB.op_id, outcome: 'applied' }
+    ])
+    expect(deliver(Y.encodeStateAsUpdate(hostDoc, vector), [toB.op_id])).toBe(
+      true
+    )
+    expect(instance.widgets[0]?.value).toBe(42)
+    if (promotedWidgetId) {
+      expect(useWidgetValueStore().getWidget(promotedWidgetId)?.value).toBe(42)
+    }
+
+    // B -> A: write 5 back, over the 42 that just landed.
+    vector = Y.encodeStateVector(hostDoc)
+    const backToA = setWidgetOp(
+      'insert-alternating-back-to-a',
+      3,
+      String(instance.id),
+      'value',
+      5,
+      0
+    )
+    expect(applyOps(hostDoc, [backToA], CATALOG).outcomes).toEqual([
+      { op_id: backToA.op_id, outcome: 'applied' }
+    ])
+    expect(
+      deliver(Y.encodeStateAsUpdate(hostDoc, vector), [backToA.op_id])
+    ).toBe(true)
+    expect(graph._nodes.find((n) => n.id === instance.id)).toBe(instance)
+    expect(instance.widgets[0]?.value).toBe(5)
+    if (promotedWidgetId) {
+      expect(useWidgetValueStore().getWidget(promotedWidgetId)?.value).toBe(5)
+    }
+  })
+
   it('renders a promoted toggle widget on a subgraph instance', () => {
     const graph = new LGraph()
     onTestFinished(enableSubgraphNodeCreation(graph))
@@ -569,5 +644,62 @@ describe('insert_workflow materializes subgraphs correctly', () => {
     expect(promotedWidgetValues(instance)).toEqual({
       enabled: true
     })
+  })
+
+  it('materializes a subgraph instance nested inside another subgraph, with its widget visible', () => {
+    const graph = new LGraph()
+    onTestFinished(enableSubgraphNodeCreation(graph))
+
+    const blueprintGraph = new LGraph()
+    const subgraphB = createTestSubgraph({
+      rootGraph: blueprintGraph,
+      inputs: [{ name: 'value', type: 'NUMBER' }]
+    })
+    blueprintGraph.subgraphs.set(subgraphB.id, subgraphB)
+    const leafB = LiteGraph.createNode('number-widget')
+    if (!leafB) throw new Error('Failed to create number-widget node')
+    leafB.id = toNodeId(90)
+    subgraphB.add(leafB)
+    subgraphB.inputNode.slots[0].connect(leafB.inputs[0], leafB)
+
+    const subgraphA = createTestSubgraph({ rootGraph: blueprintGraph })
+    blueprintGraph.subgraphs.set(subgraphA.id, subgraphA)
+    const interiorHostB = createTestSubgraphNode(subgraphB, {
+      parentGraph: subgraphA,
+      id: 91
+    })
+    interiorHostB.widgets[0].value = 42
+    subgraphA.add(interiorHostB)
+
+    const hostA = createTestSubgraphNode(subgraphA, { id: 1 })
+    blueprintGraph.add(hostA)
+
+    const workflow = serializeBlueprint(blueprintGraph)
+    expect(workflow.definitions?.subgraphs).toHaveLength(2)
+
+    const hostDoc = mint({ nodes: [], links: [] }, CATALOG)
+    onTestFinished(() => hostDoc.destroy())
+    const op = insertOp(workflow)
+    expect(applyOps(hostDoc, [op], CATALOG).outcomes).toEqual([
+      { op_id: op.op_id, outcome: 'applied' }
+    ])
+
+    const deliver = bindProjection('wf-nested-subgraph-instance', graph)
+    expect(deliver(Y.encodeStateAsUpdate(hostDoc), [op.op_id])).toBe(true)
+
+    const rootInstances = findSubgraphInstances(graph)
+    expect(rootInstances).toHaveLength(1)
+    const [rootInstance] = rootInstances
+
+    const interiorInstances = rootInstance.subgraph.nodes.filter(
+      (node): node is SubgraphNode => node instanceof SubgraphNode
+    )
+    expect(interiorInstances).toHaveLength(1)
+    const [interiorInstance] = interiorInstances
+    expect(interiorInstance.has_errors).not.toBe(true)
+    expect(interiorInstance.widgets.map((widget) => widget.name)).toEqual([
+      'value'
+    ])
+    expect(interiorInstance.widgets[0]?.value).toBe(42)
   })
 })

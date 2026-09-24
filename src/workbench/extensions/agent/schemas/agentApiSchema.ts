@@ -187,6 +187,16 @@ const zAgentMessageDeltaData = z
   })
   .passthrough()
 
+// The whole answer so far while the model is still writing it: each draft
+// replaces the last, and an empty text withdraws it.
+const zAgentMessageDraftData = z
+  .object({
+    text: z.string(),
+    message_id: z.string(),
+    thread_id: z.string()
+  })
+  .passthrough()
+
 const zAgentUsage = z
   .object({
     input_tokens: z.number().nullish(),
@@ -235,6 +245,11 @@ const zAgentMessageDeltaEvent = z.object({
   data: zAgentMessageDeltaData
 })
 
+const zAgentMessageDraftEvent = z.object({
+  type: z.literal('agent_message_draft'),
+  data: zAgentMessageDraftData
+})
+
 const zAgentMessageDoneEvent = z.object({
   type: z.literal('agent_message_done'),
   data: zAgentMessageDoneData
@@ -267,6 +282,7 @@ export const zAgentWsEvent = z.discriminatedUnion('type', [
   zAgentThinkingEvent,
   zAgentToolCallEvent,
   zAgentMessageDeltaEvent,
+  zAgentMessageDraftEvent,
   zAgentMessageDoneEvent,
   zAgentActiveTabEvent,
   zAgentAskEvent,

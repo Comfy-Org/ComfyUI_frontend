@@ -28,7 +28,7 @@
         </h2>
       </div>
       <button
-        class="focus-visible:ring-secondary-foreground cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+        class="cursor-pointer rounded-sm border-none bg-transparent p-0 text-muted-foreground transition-colors hover:text-base-foreground focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none"
         :aria-label="$t('g.close')"
         @click="() => handleClose(!topupIsParkedWithoutLink)"
       >
@@ -117,7 +117,7 @@
           size="lg"
           :class="
             cn(
-              'focus-visible:ring-secondary-foreground h-10 w-full text-base font-medium',
+              'h-10 w-full text-base font-medium focus-visible:ring-border-default',
               selectedPreset === amount && 'bg-secondary-background-selected'
             )
           "

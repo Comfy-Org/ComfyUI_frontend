@@ -2,7 +2,7 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const tagVariants = cva({
-  base: 'inline-flex h-6 max-w-full shrink-0 items-center justify-center gap-1 text-xs ring-offset-base-background backdrop-blur-sm data-[state=active]:ring-2 data-[state=active]:ring-base-foreground data-[state=active]:ring-offset-1 data-[selected=true]:ring-2 data-[selected=true]:ring-base-foreground data-[selected=true]:ring-offset-1 [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-base-foreground [&.ProseMirror-selectednode]:ring-offset-1',
+  base: 'inline-flex h-6 max-w-full shrink-0 items-center justify-center gap-1 text-xs ring-offset-base-background backdrop-blur-sm data-[selected=true]:ring-2 data-[selected=true]:ring-base-foreground data-[selected=true]:ring-offset-1 data-[state=active]:ring-2 data-[state=active]:ring-base-foreground data-[state=active]:ring-offset-1 [&.ProseMirror-selectednode]:ring-2 [&.ProseMirror-selectednode]:ring-base-foreground [&.ProseMirror-selectednode]:ring-offset-1',
   variants: {
     shape: {
       square: 'rounded-sm bg-modal-card-tag-background',
