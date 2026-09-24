@@ -1,4 +1,3 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import axios from 'axios'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -17,6 +16,7 @@ import {
   scanNodeModelCandidates,
   verifyAssetSupportedCandidates
 } from '@/platform/missingModel/missingModelScan'
+import { t } from '@/i18n'
 import { useComboWidget } from '@/renderer/extensions/vueNodes/widgets/composables/useComboWidget'
 import type { InputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
 import { addValueControlWidgets } from '@/scripts/widgets'
@@ -48,18 +48,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () =>
-    fromPartial({
-      flags: { assetsEnabled: false }
-    })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
-vi.mock(import('@/i18n'), () => ({
-  t: vi.fn((key: string) =>
-    key === 'widgets.selectModel' ? 'Select model' : key
-  )
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
@@ -129,6 +120,9 @@ function createMockInputSpec(overrides: Partial<InputSpec> = {}): InputSpec {
 }
 
 beforeEach(() => {
+  vi.mocked(t).mockImplementation((key) =>
+    key === 'widgets.selectModel' ? 'Select model' : String(key)
+  )
   vi.spyOn(useAssetsStore().inputAssets, 'loadMore').mockImplementation(
     async () => {
       useAssetsStore().inputAssets.hasMore = false
@@ -273,9 +267,10 @@ describe('useComboWidget', () => {
         options: ['model1.safetensors', 'model2.safetensors']
       })
 
-      expect(
-        vi.mocked(assetService.shouldUseWidgetAssetPicker)
-      ).toHaveBeenCalledWith('CheckpointLoaderSimple', 'ckpt_name')
+      expect(assetService.shouldUseWidgetAssetPicker).toHaveBeenCalledWith(
+        'CheckpointLoaderSimple',
+        'ckpt_name'
+      )
       expect(mockNode.addWidget).toHaveBeenCalledWith(
         'asset',
         'ckpt_name',
@@ -691,7 +686,7 @@ describe('useComboWidget', () => {
       }
 
       const result = options.getOptionLabel(scenario.assetHash)
-      expect(vi.mocked(useAssetsStore().getInputName)).toHaveBeenCalledWith(
+      expect(useAssetsStore().getInputName).toHaveBeenCalledWith(
         scenario.assetHash
       )
       expect(result).toBe('Beautiful Sunset.png')
@@ -797,9 +792,7 @@ describe('useComboWidget', () => {
 
       constructor(mockNode, inputSpec)
 
-      expect(
-        vi.mocked(useAssetsStore().inputAssets.loadMore)
-      ).toHaveBeenCalledTimes(1)
+      expect(useAssetsStore().inputAssets.loadMore).toHaveBeenCalledTimes(1)
     })
 
     it('should stop lazy loading when pagination cannot advance', async () => {
@@ -857,9 +850,7 @@ describe('useComboWidget', () => {
 
       const widget = constructor(mockNode, inputSpec)
 
-      expect(
-        vi.mocked(useAssetsStore().inputAssets.loadMore)
-      ).toHaveBeenCalledTimes(1)
+      expect(useAssetsStore().inputAssets.loadMore).toHaveBeenCalledTimes(1)
       expect(getInputWidgetDefault(mockNode)).toBe('')
       expect(widget.value).toBe('')
 
@@ -893,9 +884,7 @@ describe('useComboWidget', () => {
 
       constructor(mockNode, inputSpec)
 
-      expect(
-        vi.mocked(useAssetsStore().inputAssets.loadMore)
-      ).not.toHaveBeenCalled()
+      expect(useAssetsStore().inputAssets.loadMore).not.toHaveBeenCalled()
     })
   })
 })
