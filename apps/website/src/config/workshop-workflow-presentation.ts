@@ -32,14 +32,10 @@ export function workflowErrorKey(error: WorkshopWorkflowError): TranslationKey {
       return 'workshop.workflow.definitionChanged'
     case 'run_not_found':
       return 'workshop.workflow.runMissing'
-    case 'plan_required':
-      return 'workshop.workflow.planRequired'
     case 'insufficient_credits':
       return 'workshop.error.noCredits'
     case 'rate_limited':
       return 'workshop.error.rateLimit'
-    case 'admission_disabled':
-      return 'workshop.workflow.paused'
     case 'media_unavailable':
       return 'workshop.workflow.mediaUnavailable'
     case 'execution_failed':

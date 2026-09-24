@@ -33,7 +33,6 @@ export interface WorkflowRenderOptions extends WorkflowApiOptions {
   readonly signal?: AbortSignal
   readonly api?: WorkflowApi
   readonly uploadFile?: WorkflowMediaUploader
-  readonly attempt?: WorkflowAttempt
   readonly runId?: string
   readonly onPrepared?: (attempt: WorkflowAttempt) => void | Promise<void>
   readonly onAdmitted?: (run: WorkflowRunSummary) => void | Promise<void>
@@ -97,6 +96,23 @@ function mediaInputBytes(name: string, value: FormValues[string]): number {
   return value.file.size
 }
 
+async function uploadInput(
+  name: string,
+  value: FormValues[string],
+  uploadFile: WorkflowMediaUploader | undefined,
+  signal: AbortSignal
+): Promise<string> {
+  const source =
+    typeof value === 'string'
+      ? value
+      : typeof value === 'object' && !Array.isArray(value)
+        ? value.file
+        : undefined
+  if (!uploadFile || !(typeof source === 'string' || source instanceof File))
+    throw new WorkshopWorkflowError('invalid_input', { [name]: 'badType' })
+  return uploadFile(source, signal)
+}
+
 export async function prepareWorkflowRender(
   model: WorkflowWorkshopModelDetail,
   inputs: FormValues,
@@ -129,17 +145,12 @@ export async function prepareWorkflowRender(
     if (!urlUploadField(field)) continue
     const value = values[field.name]
     if (value === undefined || value === '') continue
-    const source =
-      typeof value === 'string'
-        ? value
-        : typeof value === 'object' && !Array.isArray(value)
-          ? value.file
-          : undefined
-    if (!uploadFile || !(typeof source === 'string' || source instanceof File))
-      throw new WorkshopWorkflowError('invalid_input', {
-        [field.name]: 'badType'
-      })
-    resolved[field.name] = await uploadFile(source, signal)
+    resolved[field.name] = await uploadInput(
+      field.name,
+      value,
+      uploadFile,
+      signal
+    )
   }
   signal.throwIfAborted()
   return workflowRequest(model, resolved)
@@ -193,7 +204,7 @@ export async function renderWorkflow(
     createWorkflowApi({ ...options, definition: options.model.workflow })
   let id = options.runId
   if (!id) {
-    const attempt = options.attempt ?? {
+    const attempt = {
       request: await prepareWorkflowRender(
         options.model,
         inputs,

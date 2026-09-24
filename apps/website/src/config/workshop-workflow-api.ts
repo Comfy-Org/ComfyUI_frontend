@@ -113,6 +113,23 @@ function responseError(status: number): WorkshopWorkflowError {
   )
 }
 
+type WorkflowResponseSchema<T> = {
+  safeParse(value: unknown): { success: true; data: T } | { success: false }
+}
+
+async function parseResponse<T>(
+  response: Response,
+  schema: WorkflowResponseSchema<T>
+): Promise<T> {
+  if (!response.ok) {
+    await response.body?.cancel()
+    throw responseError(response.status)
+  }
+  const parsed = schema.safeParse(await workflowResponseJson(response))
+  if (!parsed.success) throw new WorkshopWorkflowError('response')
+  return parsed.data
+}
+
 export function createWorkflowApi(
   options: WorkflowApiOptions & {
     readonly definition: WorkshopWorkflowDefinition
@@ -120,11 +137,35 @@ export function createWorkflowApi(
 ) {
   const transport = options.fetch ?? globalThis.fetch
 
+  async function send(
+    url: URL,
+    init: RequestInit & { readonly signal: AbortSignal },
+    refresh = false
+  ) {
+    init.signal.throwIfAborted()
+    const token =
+      typeof options.token === 'function'
+        ? await options.token(refresh)
+        : options.token
+    init.signal.throwIfAborted()
+    if (!token) throw new WorkshopWorkflowError('not_authenticated')
+    return transport(url, {
+      ...init,
+      credentials: 'omit',
+      redirect: 'error',
+      cache: 'no-store',
+      headers: {
+        ...(options.authentication === 'api-key'
+          ? { 'X-API-Key': token }
+          : { Authorization: 'Bearer ' + token }),
+        ...(init.body ? { 'Content-Type': 'application/json' } : {})
+      }
+    })
+  }
+
   async function request<T>(
     path: string,
-    schema: {
-      safeParse(value: unknown): { success: true; data: T } | { success: false }
-    },
+    schema: WorkflowResponseSchema<T>,
     signal: AbortSignal,
     method = 'GET',
     body?: unknown
@@ -133,57 +174,23 @@ export function createWorkflowApi(
     const url = new URL(path, WORKSHOP_CLOUD_BASE_URL)
     if (!path.startsWith('/api/') || url.origin !== WORKSHOP_CLOUD_BASE_URL)
       throw new WorkshopWorkflowError('invalid_request')
-    const encoded = body === undefined ? undefined : JSON.stringify(body)
-    if (
-      encoded &&
-      new TextEncoder().encode(encoded).byteLength > WORKFLOW_CONTROL_BYTES
-    )
+    const encoded = JSON.stringify(body)
+    if (new TextEncoder().encode(encoded).byteLength > WORKFLOW_CONTROL_BYTES)
       throw new WorkshopWorkflowError('payload_too_large')
     const requestSignal = combineAbortSignals([
       signal,
       createTimeoutSignal(45_000)
     ])
     try {
-      for (let attempt = 0; attempt < 2; attempt++) {
-        requestSignal.throwIfAborted()
-        const token =
-          typeof options.token === 'function'
-            ? await options.token(attempt > 0)
-            : options.token
-        requestSignal.throwIfAborted()
-        if (!token) throw new WorkshopWorkflowError('not_authenticated')
-        const response = await transport(url, {
-          method,
-          body: encoded,
-          signal: requestSignal,
-          credentials: 'omit',
-          redirect: 'error',
-          cache: 'no-store',
-          headers: {
-            ...(options.authentication === 'api-key'
-              ? { 'X-API-Key': token }
-              : { Authorization: 'Bearer ' + token }),
-            ...(encoded ? { 'Content-Type': 'application/json' } : {})
-          }
-        })
-        if (
-          response.status === 401 &&
-          attempt === 0 &&
-          typeof options.token === 'function'
-        ) {
-          await response.body?.cancel()
-          continue
-        }
-        if (!response.ok) {
-          await response.body?.cancel()
-          throw responseError(response.status)
-        }
-        const parsed = schema.safeParse(await workflowResponseJson(response))
-        if (!parsed.success) throw new WorkshopWorkflowError('response')
-        signal.throwIfAborted()
-        return parsed.data
+      const init = { method, body: encoded, signal: requestSignal }
+      let response = await send(url, init)
+      if (response.status === 401 && typeof options.token === 'function') {
+        await response.body?.cancel()
+        response = await send(url, init, true)
       }
-      throw new WorkshopWorkflowError('not_authenticated')
+      const result = await parseResponse(response, schema)
+      signal.throwIfAborted()
+      return result
     } catch (error) {
       signal.throwIfAborted()
       if (error instanceof WorkshopWorkflowError) throw error

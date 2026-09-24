@@ -23,6 +23,9 @@ const busy = computed(() =>
 const unknownSubmission = computed(
   () => state.phase === 'interrupted' && state.record.stage === 'intent'
 )
+const canResume = computed(
+  () => state.phase === 'interrupted' && !unknownSubmission.value
+)
 const canCancel = computed(() => {
   const observation = 'observation' in state ? state.observation : undefined
   const requested = 'record' in state && state.record.cancelRequested
@@ -60,7 +63,7 @@ const canCancel = computed(() => {
     class="flex flex-wrap gap-2"
   >
     <Button
-      v-if="state.phase === 'interrupted' && !unknownSubmission"
+      v-if="canResume"
       type="button"
       variant="outline"
       class="min-h-11 grow"

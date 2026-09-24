@@ -31,8 +31,7 @@ function admissionRejected(error: WorkshopWorkflowError): boolean {
       'rate_limited',
       'workflow_not_found',
       'definition_changed',
-      'definition_incompatible',
-      'admission_disabled'
+      'definition_incompatible'
     ].includes(error.code)
   )
 }

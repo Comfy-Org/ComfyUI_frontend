@@ -1,3 +1,4 @@
+import { z } from 'zod'
 import {
   zInputUploadResponse,
   zUploadGrantResponse
@@ -21,6 +22,20 @@ export type WorkflowMediaUploader = (
   signal: AbortSignal
 ) => Promise<string>
 
+const uploadGrantSchema = zUploadGrantResponse.extend({
+  upload_path: zUploadGrantResponse.shape.upload_path.regex(
+    /^\/api\/uploads\/[a-zA-Z0-9_-]+$/
+  ),
+  expires_in: zUploadGrantResponse.shape.expires_in.positive()
+})
+const uploadResultSchema = zInputUploadResponse.extend({
+  name: zInputUploadResponse.shape.name
+    .regex(/^[a-zA-Z0-9_-][a-zA-Z0-9._-]{0,255}$/)
+    .refine((value) => !value.includes('..')),
+  subfolder: z.literal(''),
+  type: z.literal('input')
+})
+
 async function downloadInput(
   source: string,
   signal: AbortSignal,
@@ -35,19 +50,28 @@ async function downloadInput(
     cache: 'no-store',
     referrerPolicy: 'no-referrer'
   })
-  const type =
-    response.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase() ??
-    ''
+  const type = (response.headers.get('Content-Type') ?? '')
+    .split(';')[0]
+    .trim()
+    .toLowerCase()
   if (
     !response.ok ||
     !/^(image|audio|video)\//.test(type) ||
-    Number(response.headers.get('Content-Length')) > WORKFLOW_FILE_BYTES
+    Number(response.headers.get('Content-Length')) > WORKFLOW_FILE_BYTES ||
+    !response.body
   ) {
     await response.body?.cancel()
     throw new WorkshopWorkflowError('media_unavailable')
   }
-  const reader = response.body?.getReader()
-  if (!reader) throw new WorkshopWorkflowError('media_unavailable')
+  return inputFile(response.body, type, signal)
+}
+
+async function inputFile(
+  body: ReadableStream<Uint8Array>,
+  type: string,
+  signal: AbortSignal
+): Promise<File> {
+  const reader = body.getReader()
   const chunks: Uint8Array<ArrayBuffer>[] = []
   let size = 0
   try {
@@ -92,16 +116,11 @@ export function createWorkflowUploader(
         throw new WorkshopWorkflowError('invalid_input')
       const grant = await api.request(
         '/api/inputs/upload-url',
-        zUploadGrantResponse,
+        uploadGrantSchema,
         requestSignal,
         'POST',
         { content_type: file.type }
       )
-      if (
-        !/^\/api\/uploads\/[a-zA-Z0-9_-]+$/.test(grant.upload_path) ||
-        grant.expires_in <= 0
-      )
-        throw new WorkshopWorkflowError('response')
       const response = await transport(
         new URL(grant.upload_path, WORKSHOP_CLOUD_BASE_URL),
         {
@@ -121,17 +140,10 @@ export function createWorkflowUploader(
           response.status
         )
       }
-      const result = zInputUploadResponse.safeParse(
+      const result = uploadResultSchema.safeParse(
         await workflowResponseJson(response)
       )
-      if (
-        !result.success ||
-        result.data.type !== 'input' ||
-        result.data.subfolder !== '' ||
-        !/^[a-zA-Z0-9_-][a-zA-Z0-9._-]{0,255}$/.test(result.data.name) ||
-        result.data.name.includes('..')
-      )
-        throw new WorkshopWorkflowError('response')
+      if (!result.success) throw new WorkshopWorkflowError('response')
       signal.throwIfAborted()
       return result.data.name
     } catch (error) {

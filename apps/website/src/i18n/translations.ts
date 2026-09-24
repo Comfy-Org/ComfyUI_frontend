@@ -10601,14 +10601,6 @@ Enterprise`
     'zh-CN': '正在准备输入…'
   },
   'workshop.workflow.submitting': { en: 'Submitting…', 'zh-CN': '正在提交…' },
-  'workshop.workflow.confirming': {
-    en: 'Confirming submission…',
-    'zh-CN': '正在确认提交…'
-  },
-  'workshop.workflow.starting': {
-    en: 'Starting Cloud compute…',
-    'zh-CN': '正在启动 Cloud 计算资源…'
-  },
   'workshop.workflow.queued': { en: 'Queued', 'zh-CN': '排队中' },
   'workshop.workflow.cancelling': {
     en: 'Waiting for cancellation…',
@@ -10669,10 +10661,6 @@ Enterprise`
     en: 'This run is not available in the current account and workspace.',
     'zh-CN': '当前账号和工作区无法访问此运行。'
   },
-  'workshop.workflow.planRequired': {
-    en: 'Your workspace needs a Cloud plan to run this workflow.',
-    'zh-CN': '你的工作区需要 Cloud 套餐才能运行此工作流。'
-  },
   'workshop.workflow.paused': {
     en: 'New workflow runs are temporarily paused. Existing runs can still be followed or cancelled.',
     'zh-CN': '新工作流运行已暂时停用。你仍可查看或取消已有运行。'
@@ -10696,26 +10684,6 @@ Enterprise`
   'workshop.workflow.connectionLost': {
     en: 'The run could not be checked. Reconnect to recover its current status.',
     'zh-CN': '无法查看运行状态。请重新连接以获取最新状态。'
-  },
-  'workshop.workflow.history': {
-    en: 'My runs in this workspace',
-    'zh-CN': '我在此工作区的运行'
-  },
-  'workshop.workflow.historyFailed': {
-    en: 'Run history could not be loaded.',
-    'zh-CN': '无法加载运行历史。'
-  },
-  'workshop.workflow.historyEmpty': {
-    en: 'No runs yet.',
-    'zh-CN': '暂无运行。'
-  },
-  'workshop.workflow.refreshHistory': {
-    en: 'Refresh history',
-    'zh-CN': '刷新历史'
-  },
-  'workshop.workflow.moreHistory': {
-    en: 'Show more runs',
-    'zh-CN': '显示更多运行'
   },
   'workshop.workflow.browserUnavailable': {
     en: 'Running workflows from this page is not available yet.',

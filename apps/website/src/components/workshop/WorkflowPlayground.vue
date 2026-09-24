@@ -118,6 +118,10 @@ const statusLabel = computed(() => {
     : t('workshop.workflow.submitting')
 })
 
+function tabIndex(item: (typeof sections)[number]): number {
+  return section.value === item ? 0 : -1
+}
+
 function selectExample(index: number) {
   const example = initial.examples[index]
   if (!example || formDisabled.value) return
@@ -144,6 +148,14 @@ function applyExample(index: number) {
   section.value = 'playground'
 }
 
+function updateExampleDialog(open: boolean) {
+  if (!open) replacing.value = undefined
+}
+
+function confirmExample() {
+  if (replacing.value !== undefined) applyExample(replacing.value)
+}
+
 function start() {
   if (!canStart.value) return
   void workflow.start(values.value)
@@ -165,7 +177,7 @@ function start() {
       role="tab"
       :aria-selected="section === item"
       :aria-controls="`workflow-panel-${item}`"
-      :tabindex="section === item ? 0 : -1"
+      :tabindex="tabIndex(item)"
       class="min-h-12 cursor-pointer border-b-2 border-transparent px-1 text-sm font-medium text-primary-warm-gray transition-colors hover:text-primary-comfy-yellow aria-selected:border-primary-comfy-yellow aria-selected:text-primary-comfy-canvas aria-selected:hover:text-primary-comfy-yellow"
       @click="section = item"
     >
@@ -313,7 +325,7 @@ function start() {
   </section>
   <ExampleReplaceDialog
     :open="replacing !== undefined"
-    @update:open="(value: boolean) => !value && (replacing = undefined)"
-    @replace="replacing !== undefined && applyExample(replacing)"
+    @update:open="updateExampleDialog"
+    @replace="confirmExample"
   />
 </template>
