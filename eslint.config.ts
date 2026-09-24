@@ -296,6 +296,25 @@ export default defineConfig([
     }
   },
   {
+    name: 'design-system/core-ui-theme-tokens',
+    files: ['src/components/ui/**/*.{ts,vue}'],
+    rules: {
+      'better-tailwindcss/no-restricted-classes': [
+        'error',
+        {
+          restrict: [
+            {
+              pattern:
+                '^(?:.*:)?!?(?:bg|text|border|ring|inset-ring|outline|shadow|inset-shadow|fill|stroke|decoration|accent|caret|divide|placeholder|from|via|to)-(?:button-|modal-|dialog-|interface-|comfy-|nav-|node-|component-|video-|text-(?:primary|secondary)(?:/|$)|input-surface(?:/|$))',
+              message:
+                'Generic UI components must use core semantic theme tokens instead of specialized tokens.'
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
     files: ['apps/billing-web/**/*.{ts,vue}'],
     settings: {
       'better-tailwindcss': {
