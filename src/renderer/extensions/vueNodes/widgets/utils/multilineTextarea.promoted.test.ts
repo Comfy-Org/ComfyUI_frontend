@@ -6,10 +6,15 @@ vi.mock(import('@/scripts/app'))
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import type { ComponentWidget, DOMWidget } from '@/scripts/domWidget'
-import { DOMWidgetImpl } from '@/scripts/domWidget'
+import {
+  DOMWidgetImpl,
+  isComponentWidget,
+  isDOMWidget
+} from '@/scripts/domWidget'
 import { useDomWidgetStore } from '@/stores/domWidgetStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
+import type { WidgetId } from '@/types/widgetId'
 import { widgetId as makeWidgetId } from '@/types/widgetId'
 
 import {
@@ -50,6 +55,16 @@ function promote(
   })
 }
 
+function promoteMultilineDom(
+  source: IBaseWidget = textareaSource()
+): DOMWidget<HTMLTextAreaElement, string> {
+  const widget = promote(source)
+  if (!widget || !isDOMWidget<HTMLTextAreaElement, string>(widget)) {
+    throw new Error('Expected a promoted multiline DOM widget')
+  }
+  return widget
+}
+
 describe('createPromotedMultilineWidget', () => {
   beforeEach(() => {
     useWidgetValueStore().registerWidget(WIDGET_ID, {
@@ -60,13 +75,8 @@ describe('createPromotedMultilineWidget', () => {
   })
 
   it('materializes a promoted textarea as a registered DOM widget', () => {
-    const widget = promote()
+    const domWidget = promoteMultilineDom()
 
-    expect(widget).toBeDefined()
-    const domWidget = widget as unknown as DOMWidget<
-      HTMLTextAreaElement,
-      string
-    >
     expect(domWidget.element).toBeInstanceOf(HTMLTextAreaElement)
     expect(useDomWidgetStore().widgetStates.has(domWidget.id)).toBe(true)
   })
@@ -77,10 +87,7 @@ describe('createPromotedMultilineWidget', () => {
   })
 
   it('writes textarea edits back to the host widget store entry', () => {
-    const widget = promote()
-    const element = (
-      widget as unknown as DOMWidget<HTMLTextAreaElement, string>
-    ).element
+    const element = promoteMultilineDom().element
 
     element.value = 'edited'
     element.dispatchEvent(new Event('input'))
@@ -112,13 +119,39 @@ describe('createPromotedMultilineWidget', () => {
 })
 
 describe('createPromotedDomWidget', () => {
-  function promote(source: IBaseWidget): IBaseWidget | undefined {
+  function promote(
+    source: IBaseWidget,
+    widgetId: WidgetId = WIDGET_ID,
+    name: string = 'preview'
+  ): IBaseWidget | undefined {
     return createPromotedDomWidget({
       subgraphNode: subgraphNode(),
-      input: fromAny({ name: 'preview', widgetId: WIDGET_ID }),
-      widgetId: WIDGET_ID,
+      input: fromAny({ name, widgetId }),
+      widgetId,
       sourceWidget: source
     })
+  }
+
+  function promoteDom(
+    source: IBaseWidget,
+    widgetId: WidgetId = WIDGET_ID,
+    name: string = 'preview'
+  ): DOMWidget<HTMLElement, string> {
+    const widget = promote(source, widgetId, name)
+    if (!widget || !isDOMWidget<HTMLElement, string>(widget)) {
+      throw new Error('Expected a promoted DOM widget')
+    }
+    return widget
+  }
+
+  function promoteComponent(
+    source: IBaseWidget
+  ): ComponentWidget<string | object> {
+    const widget = promote(source)
+    if (!widget || !isComponentWidget<string | object>(widget)) {
+      throw new Error('Expected a promoted component widget')
+    }
+    return widget
   }
 
   it('reuses the interior element for non-textarea DOM widgets', () => {
@@ -130,10 +163,8 @@ describe('createPromotedDomWidget', () => {
       options: {}
     })
 
-    const widget = promote(source)
+    const domWidget = promoteDom(source)
 
-    expect(widget).toBeDefined()
-    const domWidget = widget as unknown as DOMWidget<HTMLElement, string>
     expect(domWidget.element).toBe(element)
     expect(domWidget.type).toBe('kj_preview')
     expect(useDomWidgetStore().widgetStates.has(domWidget.id)).toBe(true)
@@ -154,9 +185,7 @@ describe('createPromotedDomWidget', () => {
       options: {}
     })
 
-    const widget = promote(source) as unknown as ComponentWidget<
-      string | object
-    >
+    const widget = promoteComponent(source)
 
     expect(widget.component).toBe(component)
     expect(widget.value).toBe('queued output')
@@ -177,9 +206,7 @@ describe('createPromotedDomWidget', () => {
       options: {}
     })
 
-    const widget = promote(source) as unknown as ComponentWidget<
-      string | object
-    >
+    const widget = promoteComponent(source)
     widget.value = 'edited'
 
     expect(useWidgetValueStore().getWidget(WIDGET_ID)?.value).toBe('edited')
@@ -199,7 +226,7 @@ describe('createPromotedDomWidget', () => {
       options: {}
     })
 
-    const widget = promote(source) as unknown as DOMWidget<HTMLElement, string>
+    const widget = promoteDom(source)
 
     expect(widget.value).toBe('live')
     widget.value = 'next'
@@ -227,7 +254,7 @@ describe('createPromotedDomWidget', () => {
       source.value = 'direct edit'
     })
 
-    const widget = promote(source) as unknown as DOMWidget<HTMLElement, string>
+    const widget = promoteDom(source)
 
     element.dispatchEvent(new Event('input'))
 
@@ -266,7 +293,7 @@ describe('createPromotedDomWidget', () => {
       options: {}
     })
 
-    const widget = promote(source) as unknown as DOMWidget<HTMLElement, string>
+    const widget = promoteDom(source)
 
     source.value = 'randomized'
 
@@ -278,6 +305,51 @@ describe('createPromotedDomWidget', () => {
     expect(useWidgetValueStore().getWidget(WIDGET_ID)?.value).toBe('randomized')
   })
 
+  it('keeps each host sync independent when hosts share a source widget', () => {
+    const element = document.createElement('div')
+    let interiorValue = 'live'
+    const source = new DOMWidgetImpl<HTMLElement, string>({
+      node: subgraphNode(),
+      name: 'preview',
+      type: 'kj_preview',
+      element,
+      options: {
+        getValue: () => interiorValue,
+        setValue: (value: string) => {
+          interiorValue = value
+        }
+      }
+    })
+    const idA = makeWidgetId('graph-1', toNodeId('node-1'), 'a')
+    const idB = makeWidgetId('graph-1', toNodeId('node-1'), 'b')
+    useWidgetValueStore().registerWidget(idA, {
+      type: 'kj_preview',
+      value: 'live',
+      options: {}
+    })
+    useWidgetValueStore().registerWidget(idB, {
+      type: 'kj_preview',
+      value: 'live',
+      options: {}
+    })
+
+    const widgetA = promoteDom(source, idA, 'a')
+    const widgetB = promoteDom(source, idB, 'b')
+
+    widgetA.onRemove?.()
+    source.value = 'after a removed'
+
+    expect(useWidgetValueStore().getWidget(idA)?.value).toBe('live')
+    expect(useWidgetValueStore().getWidget(idB)?.value).toBe('after a removed')
+    expect(source.callback).toBeDefined()
+
+    widgetB.onRemove?.()
+
+    expect(source.callback).toBeUndefined()
+    source.value = 'after all removed'
+    expect(useWidgetValueStore().getWidget(idB)?.value).toBe('after a removed')
+  })
+
   it('delegates textarea sources to the multiline host widget', () => {
     const element = document.createElement('textarea')
     const source = fromAny<IBaseWidget, unknown>({
@@ -286,10 +358,7 @@ describe('createPromotedDomWidget', () => {
       element
     })
 
-    const widget = promote(source) as unknown as DOMWidget<
-      HTMLTextAreaElement,
-      string
-    >
+    const widget = promoteDom(source)
 
     expect(widget.element).toBeInstanceOf(HTMLTextAreaElement)
     expect(widget.element).not.toBe(element)

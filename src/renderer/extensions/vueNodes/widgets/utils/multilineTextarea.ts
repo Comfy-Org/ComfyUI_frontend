@@ -182,6 +182,51 @@ export function createPromotedMultilineWidget(
  * the overlay is not mounted and the row owns the element instead. Returns
  * undefined to fall back to the store-backed projection.
  */
+type SourceCallbackRegistration = {
+  syncs: Set<() => void>
+  previousCallback: IBaseWidget['callback']
+  dispatcher: IBaseWidget['callback']
+}
+
+// Multiple promoted hosts can resolve the same interior widget from a shared
+// Subgraph definition, so the callback wrapper is shared and the original
+// callback is restored only when the last host releases its sync.
+const sourceCallbackSyncs = new WeakMap<
+  IBaseWidget,
+  SourceCallbackRegistration
+>()
+
+function addSourceCallbackSync(
+  source: IBaseWidget,
+  sync: () => void
+): () => void {
+  let registration = sourceCallbackSyncs.get(source)
+  if (!registration) {
+    const syncs = new Set<() => void>()
+    const previousCallback = source.callback
+    const dispatcher = useChainCallback(previousCallback, () => {
+      for (const fn of syncs) fn()
+    })
+    registration = { syncs, previousCallback, dispatcher }
+    sourceCallbackSyncs.set(source, registration)
+    source.callback = dispatcher
+  }
+  const activeRegistration = registration
+  activeRegistration.syncs.add(sync)
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    activeRegistration.syncs.delete(sync)
+    if (activeRegistration.syncs.size === 0) {
+      if (source.callback === activeRegistration.dispatcher) {
+        source.callback = activeRegistration.previousCallback
+      }
+      sourceCallbackSyncs.delete(source)
+    }
+  }
+}
+
 export function createPromotedDomWidget(
   context: PromotedMultilineWidgetContext
 ): IBaseWidget | undefined {
@@ -258,13 +303,12 @@ export function createPromotedDomWidget(
   )
   // Setter-driven changes (a button assigning its value) never reach the
   // element; chain the same sync onto the interior callback the setter fires.
-  const previousSourceCallback = sourceWidget.callback
-  sourceWidget.callback = useChainCallback(previousSourceCallback, () => {
+  const releaseSourceSync = addSourceCallbackSync(sourceWidget, () => {
     widgetStore.setValue(widgetId, sourceWidget.value)
   })
   widget.onRemove = useChainCallback(widget.onRemove, () => {
     inputListenerController.abort()
-    sourceWidget.callback = previousSourceCallback
+    releaseSourceSync()
   })
   useDomWidgetStore().registerWidget(widget)
 
