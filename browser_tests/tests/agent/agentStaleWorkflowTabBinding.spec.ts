@@ -217,7 +217,7 @@ test.describe(
       })
 
       const topbar = new Topbar(page)
-      const tabs = topbar.workflowTabs.locator('.p-togglebutton')
+      const tabs = topbar.tabs
       await expect(tabs).toHaveCount(1)
       await expect(page.getByTestId('node-title').first()).toBeVisible()
       const initialNodeTitles = await page
