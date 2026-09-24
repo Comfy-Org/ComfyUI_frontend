@@ -6,6 +6,7 @@ import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -47,7 +48,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const openFeedbackDialog = vi.hoisted(() => vi.fn())
-const openWorkflow = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/support/feedbackDialog'), () => ({
   openFeedbackDialog
 }))
@@ -73,15 +73,7 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({
-      openWorkflow,
-      closeWorkflow: vi.fn()
-    })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const consentChecking = await vi.hoisted(async () =>
   (await import('vue')).ref(false)
@@ -470,8 +462,10 @@ describe('WorkflowTabs selection and overflow', () => {
 
     await user.click(screen.getByText('First workflow'))
 
-    expect(openWorkflow).toHaveBeenCalledOnce()
-    expect(openWorkflow).toHaveBeenCalledWith(firstWorkflow)
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      firstWorkflow
+    )
     expect(
       screen.getByRole('button', { name: 'First workflow' })
     ).toHaveAttribute('aria-pressed', 'true')
@@ -482,8 +476,10 @@ describe('WorkflowTabs selection and overflow', () => {
 
     await user.click(screen.getByText('Second workflow'))
 
-    expect(openWorkflow).toHaveBeenCalledOnce()
-    expect(openWorkflow).toHaveBeenCalledWith(secondWorkflow)
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      secondWorkflow
+    )
   })
 
   it('opens another workflow when its tab is activated by keyboard', async () => {
@@ -493,8 +489,10 @@ describe('WorkflowTabs selection and overflow', () => {
     secondTab.focus()
     await user.keyboard('{Enter}')
 
-    expect(openWorkflow).toHaveBeenCalledOnce()
-    expect(openWorkflow).toHaveBeenCalledWith(secondWorkflow)
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      secondWorkflow
+    )
   })
 
   it('opens the selected workflow when its tab is activated by keyboard', async () => {
@@ -504,14 +502,16 @@ describe('WorkflowTabs selection and overflow', () => {
     firstTab.focus()
     await user.keyboard('{Enter}')
 
-    expect(openWorkflow).toHaveBeenCalledOnce()
-    expect(openWorkflow).toHaveBeenCalledWith(firstWorkflow)
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      firstWorkflow
+    )
   })
 
   it('keeps the real workflow selected when another workflow fails to load', async () => {
     const error = new Error('load failed')
     const errorHandler = vi.fn()
-    openWorkflow.mockRejectedValueOnce(error)
+    vi.mocked(useWorkflowService().openWorkflow).mockRejectedValueOnce(error)
     const { user } = renderComponent(errorHandler)
 
     await user.click(screen.getByText('Second workflow'))
@@ -527,7 +527,7 @@ describe('WorkflowTabs selection and overflow', () => {
   })
 
   it('keeps the real workflow selected when another workflow is not opened', async () => {
-    openWorkflow.mockResolvedValueOnce(false)
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValueOnce(false)
     const { user } = renderComponent()
     const secondTab = screen.getByRole('button', { name: 'Second workflow' })
 
