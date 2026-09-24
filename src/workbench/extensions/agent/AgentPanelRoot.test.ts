@@ -3276,16 +3276,14 @@ describe('AgentPanelRoot workflow binding', () => {
     threads: AgentThreadSummary[] = []
   ): unknown[] {
     const bodies: unknown[] = []
+    const resolveAckWorkflowId =
+      typeof ackWorkflowId === 'function' ? ackWorkflowId : () => ackWorkflowId
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url.includes('/messages') && init?.method === 'POST') {
           bodies.push(JSON.parse(String(init.body)))
-          const workflowId =
-            typeof ackWorkflowId === 'function'
-              ? ackWorkflowId()
-              : ackWorkflowId
-          return json(202, ack(workflowId, `m-${bodies.length}`))
+          return json(202, ack(resolveAckWorkflowId(), `m-${bodies.length}`))
         }
         if (url.includes('/messages')) return json(200, [])
         if (url.includes('/agent/threads')) {

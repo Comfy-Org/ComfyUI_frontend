@@ -947,6 +947,36 @@ describe('useAgentSession (v1 composition root)', () => {
     }
   )
 
+  it('tracks one stop while cancellation is already in flight', async () => {
+    const now = vi.spyOn(Date, 'now').mockReturnValue(3_000)
+    let resolveCancellation!: (accepted: AgentCancelAccepted) => void
+    const cancelMessage = vi.fn(
+      () =>
+        new Promise<AgentCancelAccepted>((resolve) => {
+          resolveCancellation = resolve
+        })
+    )
+    const session = useAgentSession({
+      rest: fakeRest({ cancelMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+    await session.sendMessage('go')
+
+    const firstStop = session.stopTurn('button')
+    await session.stopTurn('escape')
+    resolveCancellation({ status: 'cancelling' })
+    await firstStop
+
+    expect(cancelMessage).toHaveBeenCalledExactlyOnceWith('th-1', 'msg-1')
+    expect(telemetry.trackAgentStopClicked).toHaveBeenCalledExactlyOnceWith({
+      method: 'button',
+      turn_id: 'msg-1',
+      turn_elapsed_ms: 0
+    })
+    now.mockRestore()
+  })
+
   it('(d1) a normally completed turn is not editable', async () => {
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest: fakeRest(), events: source })

@@ -610,6 +610,28 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function isStoppingTurn(turnId: TurnId): boolean {
+    return (
+      promptEditState.value.phase === 'stopping' &&
+      promptEditState.value.turnId === turnId
+    )
+  }
+
+  function trackCommittedStop(metadata: AgentStopClickedMetadata | null): void {
+    if (metadata !== null) useTelemetry()?.trackAgentStopClicked(metadata)
+  }
+
+  function handleStopFailure(error: unknown): void {
+    if (error instanceof AgentApiError) {
+      if (error.status === 409) return
+      promptEditState.value = { phase: 'idle' }
+      pushError(error.message)
+      return
+    }
+    promptEditState.value = { phase: 'idle' }
+    pushError(error instanceof Error ? error.message : String(error))
+  }
+
   async function stopTurn(method?: 'button' | 'escape'): Promise<void> {
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
@@ -621,21 +643,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
       }
       return
     }
+    if (isStoppingTurn(turnId)) return
     promptEditState.value = { phase: 'stopping', turnId }
     const stopMetadata = captureStopMetadata(turnId, method)
     try {
       await rest.cancelMessage(threadId, turnId)
-      if (stopMetadata !== null)
-        useTelemetry()?.trackAgentStopClicked(stopMetadata)
+      trackCommittedStop(stopMetadata)
     } catch (error) {
-      if (error instanceof AgentApiError) {
-        if (error.status === 409) return
-        promptEditState.value = { phase: 'idle' }
-        pushError(error.message)
-        return
-      }
-      promptEditState.value = { phase: 'idle' }
-      pushError(error instanceof Error ? error.message : String(error))
+      handleStopFailure(error)
     }
   }
 
