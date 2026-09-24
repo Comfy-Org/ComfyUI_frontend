@@ -126,8 +126,10 @@ export const useSessionCookie = () => {
     } catch (error) {
       // The session cookie is the only credential <img>/media loads carry, so
       // a swallowed creation failure means images break with no other signal.
-      reportError(error, { errorType: 'session_cookie_creation_failure' })
-      console.warn('Failed to create session cookie:', error)
+      reportError(error, {
+        errorType: 'session_cookie_creation_failure',
+        level: 'warning'
+      })
     }
   }
 
@@ -164,8 +166,24 @@ export const useSessionCookie = () => {
         })
       sessionMutationTail = deleteRequest.catch(() => {})
       await deleteRequest
-    } catch (error) {
-      console.warn('Failed to delete session cookie:', error)
+    } catch {
+      // Logout resolves regardless so the client-side sign-out completes, but
+      // a failed DELETE leaves the server-side session cookie alive with no
+      // other signal. The caught error carries the server's message, which can
+      // name the user, so a fixed error is reported in its place.
+      reportError(new Error('Session cookie deletion failed'), {
+        errorType: 'auth_session_cookie_delete_failed',
+        tags: {
+          failure_kind: 'caught_unexpected',
+          feature_area: 'auth',
+          operation: 'auth',
+          outcome: 'failed'
+        },
+        context: {
+          had_pending_session_mutation: pendingSessionMutations > 0
+        },
+        level: 'error'
+      })
     }
   }
 

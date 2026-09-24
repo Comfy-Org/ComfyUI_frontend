@@ -1,143 +1,107 @@
+import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
+import { useAuthStore } from '@/stores/authStore'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
+import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import {
+  remoteConfigErrorStatus,
+  remoteConfigState
+} from '@/platform/remoteConfig/remoteConfig'
+
+import {
+  stubAccountIdentityPort,
+  stubFirebaseAuthHarness
+} from '@/utils/__tests__/stubAccountIdentityPort'
 
 import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
+
+vi.mock(import('firebase/auth'), { spy: true })
+
+beforeEach(() => {
+  stubFirebaseAuthHarness()
+  stubAccountIdentityPort()
+})
 
 async function flushPromises() {
   await new Promise((r) => setTimeout(r, 0))
 }
 
 const mockReportError = vi.hoisted(() => vi.fn())
-vi.mock('@/platform/telemetry/reportError', () => ({
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-const mockIsInitialized = ref(false)
-const mockCurrentUser = ref<object | null>(null)
-const mockLogout = vi.fn()
-
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: () => ({
-    isInitialized: mockIsInitialized,
-    currentUser: mockCurrentUser
-  })
-}))
-
-vi.mock('@/composables/auth/useAuthActions', () => ({
-  useAuthActions: () => ({ logout: mockLogout })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
 const mockRefreshRemoteConfig = vi.fn()
-vi.mock('@/platform/remoteConfig/refreshRemoteConfig', () => ({
+vi.mock(import('@/platform/remoteConfig/refreshRemoteConfig'), () => ({
   refreshRemoteConfig: (options: unknown) => mockRefreshRemoteConfig(options)
 }))
 
-const mockRemoteConfigState = vi.hoisted(() => ({
-  value: 'authenticated' as
-    | 'uninitialized'
-    | 'anonymous'
-    | 'authenticated'
-    | 'error'
-}))
-const mockRemoteConfigErrorStatus = vi.hoisted(() => ({
-  value: null as number | null
-}))
-vi.mock('@/platform/remoteConfig/remoteConfig', () => ({
-  remoteConfigState: mockRemoteConfigState,
-  remoteConfigErrorStatus: mockRemoteConfigErrorStatus
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
-const mockUnifiedCloudAuthEnabled = vi.hoisted(() => ({ value: false }))
-vi.mock('@/composables/useFeatureFlags', () => ({
-  useFeatureFlags: () => ({
-    flags: {
-      get unifiedCloudAuthEnabled() {
-        return mockUnifiedCloudAuthEnabled.value
-      }
-    }
-  })
-}))
-
-const mockMintAtLogin = vi.fn()
-const mockGetUnifiedToken = vi.fn()
-vi.mock('@/platform/workspace/stores/workspaceAuthStore', () => ({
-  useWorkspaceAuthStore: () => ({
-    mintAtLogin: mockMintAtLogin,
-    getUnifiedToken: mockGetUnifiedToken
-  })
-}))
-
-const mockWorkspaceStoreInitialize = vi.fn()
-const mockWorkspaceStoreReset = vi.fn()
-const mockBillingCapabilitiesInitialize = vi.hoisted(() => vi.fn())
-const mockWorkspaceStoreInitState = vi.hoisted(() => ({
-  value: 'uninitialized' as string
-}))
-const mockActiveWorkspaceId = vi.hoisted(() => ({
-  value: 'workspace-123' as string | null
-}))
-vi.mock('@/platform/workspace/stores/teamWorkspaceStore', () => ({
-  useTeamWorkspaceStore: () => ({
-    get initState() {
-      return mockWorkspaceStoreInitState.value
-    },
-    get activeWorkspaceId() {
-      return mockActiveWorkspaceId.value
-    },
-    initialize: mockWorkspaceStoreInitialize,
-    resetForIdentityChange: mockWorkspaceStoreReset
-  })
-}))
-
-const mockApiKeyAuthenticated = ref(false)
-vi.mock('@/stores/apiKeyAuthStore', () => ({
-  useApiKeyAuthStore: () => ({
-    get isAuthenticated() {
-      return mockApiKeyAuthenticated.value
-    },
-    getApiKey: () => (mockApiKeyAuthenticated.value ? 'comfyui-test-key' : null)
-  })
-}))
-
-vi.mock('@/platform/workspace/composables/useBillingCapabilities', () => ({
-  useBillingCapabilities: () => ({
-    initialize: mockBillingCapabilitiesInitialize
-  })
-}))
+vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockIsCloud.value
   }
 }))
 
+beforeEach(() => {
+  useWorkspaceAuthStore().destroy()
+  vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(false)
+  vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(undefined)
+})
+
+beforeEach(() => {
+  vi.mocked(useTeamWorkspaceStore().initialize).mockResolvedValue(undefined)
+  vi.mocked(useTeamWorkspaceStore().resetForIdentityChange).mockImplementation(
+    () => {}
+  )
+  vi.mocked(useApiKeyAuthStore().getApiKey).mockImplementation(() =>
+    useApiKeyAuthStore().isAuthenticated ? 'comfyui-test-key' : null
+  )
+})
+
 describe('WorkspaceAuthGate', () => {
   beforeEach(() => {
     mockIsCloud.value = true
-    mockIsInitialized.value = false
-    mockCurrentUser.value = null
-    mockApiKeyAuthenticated.value = false
-    mockUnifiedCloudAuthEnabled.value = false
-    mockRemoteConfigState.value = 'authenticated'
-    mockRemoteConfigErrorStatus.value = null
-    mockWorkspaceStoreInitState.value = 'uninitialized'
-    mockActiveWorkspaceId.value = 'workspace-123'
+    Object.assign(useAuthStore(), { isInitialized: false })
+    Object.assign(useAuthStore(), { currentUser: null })
+    Object.assign(useApiKeyAuthStore(), { isAuthenticated: false })
+    remoteConfigState.value = 'authenticated'
+    remoteConfigErrorStatus.value = null
+    Object.assign(useTeamWorkspaceStore(), { initState: 'uninitialized' })
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-123'
+    })
     mockRefreshRemoteConfig.mockResolvedValue(undefined)
-    mockBillingCapabilitiesInitialize.mockResolvedValue(undefined)
-    mockWorkspaceStoreInitialize.mockImplementation(async () => {
-      mockWorkspaceStoreInitState.value = 'ready'
+    vi.mocked(useBillingCapabilities().initialize).mockResolvedValue(undefined)
+    vi.mocked(useTeamWorkspaceStore().initialize).mockImplementation(
+      async () => {
+        Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
+      }
+    )
+    vi.mocked(
+      useTeamWorkspaceStore().resetForIdentityChange
+    ).mockImplementation(() => {
+      Object.assign(useTeamWorkspaceStore(), { initState: 'uninitialized' })
     })
-    mockWorkspaceStoreReset.mockImplementation(() => {
-      mockWorkspaceStoreInitState.value = 'uninitialized'
-    })
-    mockMintAtLogin.mockResolvedValue(true)
-    mockGetUnifiedToken.mockReturnValue('cloud-jwt')
+    vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(true)
+    vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
+      'cloud-jwt'
+    )
   })
 
   const i18n = createI18n({
@@ -167,41 +131,41 @@ describe('WorkspaceAuthGate', () => {
 
     it('initializes workspace context in the background for a signed-in user', async () => {
       mockIsCloud.value = false
-      mockIsInitialized.value = true
-      mockCurrentUser.value = { uid: 'user-123' }
+      Object.assign(useAuthStore(), { isInitialized: true })
+      Object.assign(useAuthStore(), { currentUser: { uid: 'user-123' } })
 
       mountComponent()
       await flushPromises()
 
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
-      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
-      expect(mockBillingCapabilitiesInitialize).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
+      expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
     })
 
     it('initializes workspace context after a mid-session sign-in', async () => {
       mockIsCloud.value = false
-      mockIsInitialized.value = true
+      Object.assign(useAuthStore(), { isInitialized: true })
 
       mountComponent()
       await flushPromises()
-      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
 
-      mockCurrentUser.value = { uid: 'user-123' }
+      Object.assign(useAuthStore(), { currentUser: { uid: 'user-123' } })
       await flushPromises()
 
-      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
     })
 
     it('deduplicates mount and auth-hydration initialization', async () => {
       mockIsCloud.value = false
 
       mountComponent()
-      mockCurrentUser.value = { uid: 'user-123' }
-      mockIsInitialized.value = true
+      Object.assign(useAuthStore(), { currentUser: { uid: 'user-123' } })
+      Object.assign(useAuthStore(), { isInitialized: true })
       await flushPromises()
 
-      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
     })
 
     it('cancels pending initialization when unmounted', async () => {
@@ -209,71 +173,71 @@ describe('WorkspaceAuthGate', () => {
 
       const { unmount } = mountComponent()
       unmount()
-      mockCurrentUser.value = { uid: 'user-123' }
-      mockIsInitialized.value = true
+      Object.assign(useAuthStore(), { currentUser: { uid: 'user-123' } })
+      Object.assign(useAuthStore(), { isInitialized: true })
       await flushPromises()
 
-      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
     })
 
     it('cancels pending initialization on logout', async () => {
       mockIsCloud.value = false
-      mockCurrentUser.value = { uid: 'user-123' }
+      Object.assign(useAuthStore(), { currentUser: { uid: 'user-123' } })
 
       mountComponent()
-      mockCurrentUser.value = null
-      mockIsInitialized.value = true
+      Object.assign(useAuthStore(), { currentUser: null })
+      Object.assign(useAuthStore(), { isInitialized: true })
       await flushPromises()
 
-      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
     })
 
     it('initializes workspace context after an API-key sign-in', async () => {
       mockIsCloud.value = false
-      mockIsInitialized.value = true
+      Object.assign(useAuthStore(), { isInitialized: true })
 
       mountComponent()
       await flushPromises()
-      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
 
-      mockApiKeyAuthenticated.value = true
+      Object.assign(useApiKeyAuthStore(), { isAuthenticated: true })
       await flushPromises()
 
-      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledOnce()
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
     })
 
     it('cancels pending initialization on API-key sign-out', async () => {
       mockIsCloud.value = false
-      mockApiKeyAuthenticated.value = true
+      Object.assign(useApiKeyAuthStore(), { isAuthenticated: true })
 
       mountComponent()
-      mockApiKeyAuthenticated.value = false
-      mockIsInitialized.value = true
+      Object.assign(useApiKeyAuthStore(), { isAuthenticated: false })
+      Object.assign(useAuthStore(), { isInitialized: true })
       await flushPromises()
 
-      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
     })
 
     it('resets workspace state when the session identity changes', async () => {
       mockIsCloud.value = false
-      mockIsInitialized.value = true
-      mockApiKeyAuthenticated.value = true
+      Object.assign(useAuthStore(), { isInitialized: true })
+      Object.assign(useApiKeyAuthStore(), { isAuthenticated: true })
 
       mountComponent()
       await flushPromises()
 
-      mockApiKeyAuthenticated.value = false
-      mockCurrentUser.value = { uid: 'user-123' }
+      Object.assign(useApiKeyAuthStore(), { isAuthenticated: false })
+      Object.assign(useAuthStore(), { currentUser: { uid: 'user-123' } })
       await flushPromises()
 
-      expect(mockWorkspaceStoreReset).toHaveBeenCalled()
-      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledTimes(2)
+      expect(useTeamWorkspaceStore().resetForIdentityChange).toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledTimes(2)
     })
   })
 
   describe('cloud builds - unauthenticated user', () => {
     it('hides slot while waiting for Firebase auth', () => {
-      mockIsInitialized.value = false
+      Object.assign(useAuthStore(), { isInitialized: false })
 
       mountComponent()
 
@@ -281,13 +245,13 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('renders slot when Firebase initializes with no user', async () => {
-      mockIsInitialized.value = false
+      Object.assign(useAuthStore(), { isInitialized: false })
 
       mountComponent()
       expect(screen.queryByTestId('slot-content')).not.toBeInTheDocument()
 
-      mockIsInitialized.value = true
-      mockCurrentUser.value = null
+      Object.assign(useAuthStore(), { isInitialized: true })
+      Object.assign(useAuthStore(), { currentUser: null })
       await flushPromises()
 
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
@@ -308,8 +272,8 @@ describe('WorkspaceAuthGate', () => {
 
   describe('cloud builds - authenticated user', () => {
     beforeEach(() => {
-      mockIsInitialized.value = true
-      mockCurrentUser.value = { uid: 'user-123' }
+      Object.assign(useAuthStore(), { isInitialized: true })
+      Object.assign(useAuthStore(), { currentUser: { uid: 'user-123' } })
     })
 
     it('refreshes remote config with auth after Firebase init', async () => {
@@ -324,13 +288,13 @@ describe('WorkspaceAuthGate', () => {
 
     it('mints unified auth after refreshing authenticated flags', async () => {
       mockRefreshRemoteConfig.mockImplementation(async () => {
-        mockUnifiedCloudAuthEnabled.value = true
+        vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
       })
 
       mountComponent()
       await flushPromises()
 
-      expect(mockMintAtLogin).toHaveBeenCalledOnce()
+      expect(useWorkspaceAuthStore().mintAtLogin).toHaveBeenCalledOnce()
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
 
@@ -338,19 +302,19 @@ describe('WorkspaceAuthGate', () => {
       mountComponent()
       await flushPromises()
 
-      expect(mockWorkspaceStoreInitialize).toHaveBeenCalled()
-      expect(mockBillingCapabilitiesInitialize).toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalled()
+      expect(useBillingCapabilities().initialize).toHaveBeenCalled()
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
 
     it('does not block app rendering on billing capabilities', async () => {
-      mockBillingCapabilitiesInitialize.mockImplementationOnce(
+      vi.mocked(useBillingCapabilities().initialize).mockImplementationOnce(
         () => new Promise<void>(() => {})
       )
 
       mountComponent()
       await vi.waitFor(() =>
-        expect(mockBillingCapabilitiesInitialize).toHaveBeenCalledOnce()
+        expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
       )
 
       await flushPromises()
@@ -359,24 +323,25 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('aborts capability initialization when unmounted', async () => {
-      mockBillingCapabilitiesInitialize.mockImplementationOnce(
-        (signal: AbortSignal) =>
+      vi.mocked(useBillingCapabilities().initialize).mockImplementationOnce(
+        (signal) =>
           new Promise<void>((resolve) => {
-            signal.addEventListener('abort', () => resolve(), { once: true })
+            signal?.addEventListener('abort', () => resolve(), { once: true })
           })
       )
 
       const { unmount } = mountComponent()
       await vi.waitFor(() =>
-        expect(mockBillingCapabilitiesInitialize).toHaveBeenCalledOnce()
+        expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
       )
-      const signal = mockBillingCapabilitiesInitialize.mock.calls[0][0]
+      const signal = vi.mocked(useBillingCapabilities().initialize).mock
+        .calls[0][0]
 
       unmount()
       await flushPromises()
 
       expect(signal).toBeInstanceOf(AbortSignal)
-      expect(signal.aborted).toBe(true)
+      expect(signal?.aborted).toBe(true)
       expect(mockReportError).not.toHaveBeenCalled()
     })
 
@@ -399,25 +364,25 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       expect(signal.aborted).toBe(true)
-      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
       expect(mockReportError).not.toHaveBeenCalled()
     })
 
     it('skips workspace init when store is already initialized', async () => {
-      mockWorkspaceStoreInitState.value = 'ready'
+      Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
 
       mountComponent()
       await flushPromises()
 
-      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
   })
 
   describe('error handling', () => {
     beforeEach(() => {
-      mockIsInitialized.value = true
-      mockCurrentUser.value = { uid: 'user-123' }
+      Object.assign(useAuthStore(), { isInitialized: true })
+      Object.assign(useAuthStore(), { currentUser: { uid: 'user-123' } })
     })
 
     it('shows a recoverable error when remote config refresh fails', async () => {
@@ -465,7 +430,7 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when authenticated config is unavailable', async () => {
-      mockRemoteConfigState.value = 'error'
+      remoteConfigState.value = 'error'
 
       mountComponent()
       await flushPromises()
@@ -473,13 +438,13 @@ describe('WorkspaceAuthGate', () => {
       expect(
         screen.getByText("Couldn't load your workspace")
       ).toBeInTheDocument()
-      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
     })
 
     it('requires sign out when authenticated config rejects the credential', async () => {
       const user = userEvent.setup()
-      mockRemoteConfigState.value = 'error'
-      mockRemoteConfigErrorStatus.value = 401
+      remoteConfigState.value = 'error'
+      remoteConfigErrorStatus.value = 401
 
       mountComponent()
       await flushPromises()
@@ -492,12 +457,12 @@ describe('WorkspaceAuthGate', () => {
       ).toBeInTheDocument()
 
       await user.click(screen.getByRole('button', { name: 'Log Out' }))
-      expect(mockLogout).toHaveBeenCalledOnce()
+      expect(useAuthActions().logout).toHaveBeenCalledOnce()
     })
 
     it('shows a recoverable error when unified auth initialization fails', async () => {
-      mockUnifiedCloudAuthEnabled.value = true
-      mockMintAtLogin.mockResolvedValue(false)
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
+      vi.mocked(useWorkspaceAuthStore().mintAtLogin).mockResolvedValue(false)
 
       mountComponent()
       await flushPromises()
@@ -505,11 +470,11 @@ describe('WorkspaceAuthGate', () => {
       expect(
         screen.getByText("Couldn't load your workspace")
       ).toBeInTheDocument()
-      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+      expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
     })
 
     it('shows a recoverable error when workspace store initialization fails', async () => {
-      mockWorkspaceStoreInitialize.mockRejectedValue(
+      vi.mocked(useTeamWorkspaceStore().initialize).mockRejectedValue(
         new Error('Workspace init failed')
       )
 
@@ -522,7 +487,7 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('requires sign out when no workspace is available', async () => {
-      mockWorkspaceStoreInitialize.mockRejectedValue(
+      vi.mocked(useTeamWorkspaceStore().initialize).mockRejectedValue(
         new Error('No workspaces available')
       )
 
@@ -538,8 +503,10 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error when workspace setup clears unified auth', async () => {
-      mockUnifiedCloudAuthEnabled.value = true
-      mockGetUnifiedToken.mockReturnValue(undefined)
+      vi.mocked(useFeatureFlags().flags).unifiedCloudAuthEnabled = true
+      vi.mocked(useWorkspaceAuthStore().getUnifiedToken).mockReturnValue(
+        undefined
+      )
 
       mountComponent()
       await flushPromises()
@@ -550,7 +517,7 @@ describe('WorkspaceAuthGate', () => {
     })
 
     it('shows a recoverable error without a ready workspace context', async () => {
-      mockWorkspaceStoreInitState.value = 'loading'
+      Object.assign(useTeamWorkspaceStore(), { initState: 'loading' })
 
       mountComponent()
       await flushPromises()
@@ -562,13 +529,13 @@ describe('WorkspaceAuthGate', () => {
 
     it('renders the app after retrying a failed initialization', async () => {
       const user = userEvent.setup()
-      mockWorkspaceStoreInitialize
+      vi.mocked(useTeamWorkspaceStore().initialize)
         .mockImplementationOnce(async () => {
-          mockWorkspaceStoreInitState.value = 'error'
+          Object.assign(useTeamWorkspaceStore(), { initState: 'error' })
           throw new Error('Workspace init failed')
         })
         .mockImplementationOnce(async () => {
-          mockWorkspaceStoreInitState.value = 'ready'
+          Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
         })
 
       mountComponent()
@@ -577,7 +544,7 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
-      expect(mockWorkspaceStoreInitialize).toHaveBeenCalledTimes(2)
+      expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledTimes(2)
     })
 
     it('keeps the retry action named while retrying', async () => {
@@ -625,8 +592,8 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       expect(retrySignal.aborted).toBe(true)
-      expect(mockLogout).toHaveBeenCalledOnce()
-      expect(mockWorkspaceStoreInitialize).not.toHaveBeenCalled()
+      expect(useAuthActions().logout).toHaveBeenCalledOnce()
+      expect(useTeamWorkspaceStore().initialize).not.toHaveBeenCalled()
     })
   })
 })

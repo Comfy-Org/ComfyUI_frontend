@@ -1,5 +1,6 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
+import { useElementSize } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -7,56 +8,29 @@ import { createI18n } from 'vue-i18n'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
 import { api } from '@/scripts/api'
+import { app } from '@/scripts/app'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 import { usePainter } from './usePainter'
 
-vi.mock('@vueuse/core', () => ({
-  useElementSize: vi.fn(() => ({
-    width: ref(512),
-    height: ref(512)
-  }))
-}))
+vi.mock(import('@vueuse/core'), { spy: true })
 
-vi.mock('@/composables/maskeditor/StrokeProcessor', () => ({
+vi.mock<unknown>(import('@/composables/maskeditor/StrokeProcessor'), () => ({
   StrokeProcessor: vi.fn(() => ({
     addPoint: vi.fn(() => []),
     endStroke: vi.fn(() => [])
   }))
 }))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => {
-  const store = { addAlert: vi.fn() }
-  return { useToastStore: () => store }
-})
+vi.mock(import('@/scripts/api'))
 
-vi.mock('@/stores/nodeOutputStore', () => {
-  const store = {
-    getNodeImageUrls: vi.fn(() => undefined),
-    nodeOutputs: {},
-    nodePreviewImages: {}
-  }
-  return { useNodeOutputStore: () => store }
-})
-
-vi.mock('@/scripts/api', () => ({
-  api: {
-    apiURL: vi.fn((path: string) => `http://localhost:8188${path}`),
-    fetchApi: vi.fn()
-  }
-}))
-
-const fixture = vi.hoisted((): { node: LGraphNode | null } => ({ node: null }))
-
-vi.mock('@/scripts/app', () => ({
-  app: { canvas: { graph: { getNodeById: () => fixture.node } } }
-}))
+vi.mock(import('@/scripts/app'))
 
 const i18n = createI18n({
   legacy: false,
@@ -85,13 +59,18 @@ function makePaintNode(widgets: PaintWidgetSpec[] = []) {
   }
   node.isInputConnected = mockIsInputConnected
   node.getInputNode = mockGetInputNode
-  fixture.node = node
+  const rootGraph = app.canvas.graph
+  if (!(rootGraph instanceof LGraph)) throw new Error('Expected a root graph')
+  vi.spyOn(rootGraph, 'getNodeById').mockReturnValue(node)
   return { node, callbacks }
 }
 
 function paintNode(): LGraphNode {
-  if (!fixture.node) throw new Error('Expected a paint node')
-  return fixture.node
+  const rootGraph = app.canvas.graph
+  if (!(rootGraph instanceof LGraph)) throw new Error('Expected a root graph')
+  const node = rootGraph.getNodeById(toNodeId('test-node'))
+  if (!(node instanceof LGraphNode)) throw new Error('Expected a paint node')
+  return node
 }
 
 function widgetOf(name: string): IBaseWidget {
@@ -139,6 +118,14 @@ function mountPainter(
 
 describe('usePainter', () => {
   beforeEach(() => {
+    vi.mocked(api.apiURL).mockImplementation(
+      (path) => `http://localhost:8188${path}`
+    )
+    vi.mocked(useElementSize).mockImplementation(() => ({
+      width: ref(512),
+      height: ref(512),
+      stop: vi.fn()
+    }))
     makePaintNode()
     mockIsInputConnected.mockReturnValue(false)
     mockGetInputNode.mockReturnValue(null)
@@ -449,8 +436,7 @@ describe('usePainter', () => {
     it('uploads the current canvas when no cached modelValue is present, even if nothing has been painted yet', async () => {
       makePaintNode([{ name: 'mask', type: 'string', value: '' }])
 
-      const fetchApiMock = vi.mocked(api.fetchApi)
-      fetchApiMock.mockResolvedValueOnce({
+      vi.mocked(api.fetchApi).mockResolvedValueOnce({
         status: 200,
         json: async () => ({ name: 'uploaded.png' })
       } as Response)
@@ -466,13 +452,13 @@ describe('usePainter', () => {
       await nextTick()
 
       const result = await widgetOf('mask').serializeValue!(paintNode(), 0)
-      expect(fetchApiMock).toHaveBeenCalledWith(
+      expect(api.fetchApi).toHaveBeenCalledWith(
         '/upload/image',
         expect.objectContaining({ method: 'POST' })
       )
       expect(result).toBe('uploaded.png [input]')
 
-      const [, init] = fetchApiMock.mock.calls[0]
+      const [, init] = vi.mocked(api.fetchApi).mock.calls[0]
       const body = init?.body as FormData
       expect(body).toBeInstanceOf(FormData)
       expect(body.get('type')).toBe('input')

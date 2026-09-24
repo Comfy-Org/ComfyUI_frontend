@@ -19,6 +19,22 @@ function addNode(id: number): GraphOperation {
   }
 }
 
+function disconnect(linkId: number): GraphOperation {
+  return { op: 'disconnect', link_id: linkId, to_node: 2, to_slot: 0 }
+}
+
+function connect(linkId: number): GraphOperation {
+  return {
+    op: 'connect',
+    link_id: linkId,
+    from_node: 1,
+    from_slot: 0,
+    to_node: 2,
+    to_slot: 0,
+    link_type: 'IMAGE'
+  }
+}
+
 describe('createOpSender', () => {
   let sent: Array<{ workflowId: string; tab: string; ops: Op[] }>
   let settled: BatchOutcome[]
@@ -74,12 +90,28 @@ describe('createOpSender', () => {
     expect(sent[0].workflowId).toBe(WORKFLOW)
     expect(sent[0].tab).toBe(TAB)
     expect(sent[0].ops).toHaveLength(2)
-    for (const op of sent[0].ops) {
+    for (const [index, op] of sent[0].ops.entries()) {
       expect(op.op_id).toMatch(/^[0-9a-f]{32}$/)
       expect(op.actor).toBe(ACTOR)
-      expect(op.base_version).toBe(41)
-      expect(op.stamp).toEqual([41, ACTOR])
+      expect(op.base_version).toBe(41 + index)
+      expect(op.stamp).toEqual([41 + index, ACTOR])
     }
+  })
+
+  it('orders a reconnect after its disconnect before the host sequence advances', () => {
+    sender.admit([disconnect(1)])
+    sender.admit([connect(2)])
+    sender.flush()
+
+    expect(sent[0].ops.map((op) => op.base_version)).toEqual([41, 42])
+  })
+
+  it('restarts local operation versions after a document reset', () => {
+    sender.enqueue([addNode(1)])
+    sender.abortAll()
+    sender.enqueue([addNode(2)])
+
+    expect(sent[1].ops[0].base_version).toBe(41)
   })
 
   it('serializes batches: the next sends only after the result settles the first', () => {
@@ -148,27 +180,23 @@ describe('createOpSender', () => {
     expect(sent[1].workflowId).toBe(WORKFLOW)
   })
 
-  it('settles an in-flight batch undeliverable at the silence resend once its workflow is unbound', () => {
+  it('settles a transmitted in-flight batch unconfirmed at the silence resend once its workflow is unbound', () => {
     sender.enqueue([addNode(1)])
     boundWorkflow = null
 
     vi.advanceTimersByTime(10_000)
 
     expect(sent).toHaveLength(1)
-    expect(settled).toEqual([
-      { state: 'undeliverable', ops: expect.any(Array) }
-    ])
+    expect(settled).toEqual([{ state: 'unconfirmed', ops: expect.any(Array) }])
   })
 
-  it('abortIfUnbound settles an in-flight batch immediately, without waiting the 10s silence window', () => {
+  it('abortIfUnbound settles a transmitted in-flight batch unconfirmed immediately, without waiting the 10s silence window', () => {
     sender.enqueue([addNode(1)])
     boundWorkflow = null
 
     sender.abortIfUnbound()
 
-    expect(settled).toEqual([
-      { state: 'undeliverable', ops: expect.any(Array) }
-    ])
+    expect(settled).toEqual([{ state: 'unconfirmed', ops: expect.any(Array) }])
     // No resend was burned reaching this outcome.
     expect(sent).toHaveLength(1)
   })
@@ -183,7 +211,7 @@ describe('createOpSender', () => {
 
     expect(sent).toHaveLength(2)
     expect(sent[1].workflowId).toBe('wf-2')
-    expect(settled[0].state).toBe('undeliverable')
+    expect(settled[0].state).toBe('unconfirmed')
   })
 
   it('abortIfUnbound cascades through every queued batch minted for the dead workflow, synchronously', () => {
@@ -197,9 +225,10 @@ describe('createOpSender', () => {
     sender.abortIfUnbound()
 
     // No timer advance: settle -> pump -> transmit re-reads the binding and
-    // settles each wf-1 batch in turn until it reaches the wf-2 one.
+    // settles each wf-1 batch in turn until it reaches the wf-2 one. Only the
+    // first had left the client.
     expect(settled.map((outcome) => outcome.state)).toEqual([
-      'undeliverable',
+      'unconfirmed',
       'undeliverable',
       'undeliverable'
     ])
@@ -244,7 +273,7 @@ describe('createOpSender', () => {
 
     expect(sent).toHaveLength(2)
     expect(sent[1].workflowId).toBe('wf-2')
-    expect(settled[0].state).toBe('undeliverable')
+    expect(settled[0].state).toBe('unconfirmed')
   })
 
   it('settles undeliverable after the transport retry budget', () => {
@@ -310,6 +339,59 @@ describe('createOpSender', () => {
     resultListener?.({ ok: true, applied: ['ffff'.repeat(8)], skipped: [] })
 
     expect(settled).toHaveLength(0)
+  })
+
+  it('ignores an anonymous result for another workflow', () => {
+    sender.enqueue([addNode(1)])
+    boundWorkflow = 'wf-2'
+    sender.abortIfUnbound()
+    sender.enqueue([addNode(2)])
+
+    resultListener?.({
+      workflowId: WORKFLOW,
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+
+    expect(settled).toHaveLength(1)
+    expect(sender.pending()).toBe(1)
+  })
+
+  it('late results addressed to the old workflow drain the stale credits', () => {
+    sender.enqueue([addNode(1)])
+    vi.advanceTimersByTime(10_000)
+    vi.advanceTimersByTime(10_000)
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unacknowledged'])
+
+    boundWorkflow = 'wf-2'
+    sender.enqueue([addNode(2)])
+
+    resultListener?.({
+      workflowId: WORKFLOW,
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+    resultListener?.({
+      workflowId: WORKFLOW,
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+    expect(settled).toHaveLength(1)
+
+    resultListener?.({
+      workflowId: 'wf-2',
+      ok: false,
+      applied: [],
+      skipped: []
+    })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unacknowledged',
+      'acknowledged'
+    ])
   })
 
   it('a late anonymous failure from an unacknowledged batch never settles the next batch', () => {
@@ -382,5 +464,216 @@ describe('createOpSender', () => {
     sender.enqueue([addNode(2)])
 
     expect(sent).toHaveLength(1)
+  })
+
+  it('abortAll settles the transmitted batch and every queued batch in mint order', () => {
+    sender.enqueue([addNode(1)])
+    sender.enqueue([addNode(2)])
+    sender.enqueue([addNode(3)])
+    expect(sent).toHaveLength(1)
+
+    sender.abortAll()
+
+    expect(sent).toHaveLength(1)
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'undeliverable',
+      'undeliverable'
+    ])
+    expect(
+      settled.map((outcome) =>
+        outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+      )
+    ).toEqual([[1], [2], [3]])
+    expect(sender.pending()).toBe(0)
+
+    sender.enqueue([addNode(4)])
+    expect(sent).toHaveLength(2)
+  })
+
+  it('abortAll settles each chunk from one oversized admission', () => {
+    sender.enqueue(Array.from({ length: 300 }, (_, index) => addNode(index)))
+
+    sender.abortAll()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'undeliverable'
+    ])
+    expect(
+      settled.map((outcome) =>
+        outcome.ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+      )
+    ).toEqual([
+      Array.from({ length: 256 }, (_, index) => index),
+      Array.from({ length: 44 }, (_, index) => index + 256)
+    ])
+  })
+
+  it('does not attribute a late anonymous result from an aborted batch to the next batch', () => {
+    sender.enqueue([addNode(1)])
+    sender.abortAll()
+    sender.enqueue([addNode(2)])
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(sender.pending()).toBe(1)
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unconfirmed'])
+  })
+
+  it('a late anonymous result from a batch aborted in flight never acknowledges its successor', () => {
+    sender.enqueue([addNode(1)])
+    expect(sent).toHaveLength(1)
+
+    sender.abortAll()
+    expect(settled.map((outcome) => outcome.state)).toEqual(['unconfirmed'])
+
+    sender.enqueue([addNode(2)])
+    sender.enqueue([addNode(3)])
+    expect(sent).toHaveLength(2)
+    expect(
+      sent[1].ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+    ).toEqual([2])
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled).toHaveLength(1)
+    expect(sender.pending()).toBe(2)
+    expect(sent).toHaveLength(2)
+
+    ackInFlight()
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'acknowledged'
+    ])
+    expect(sent).toHaveLength(3)
+    expect(
+      sent[2].ops.map((op) => ('node_id' in op ? op.node_id : undefined))
+    ).toEqual([3])
+  })
+
+  it('a late identified result from a batch aborted in flight retires its credit and leaves the successor to its own result', () => {
+    sender.enqueue([addNode(1)])
+    const abortedOpIds = sent[0].ops.map((op) => op.op_id)
+
+    sender.abortAll()
+    sender.enqueue([addNode(2)])
+    expect(sent).toHaveLength(2)
+
+    resultListener?.({ ok: true, applied: abortedOpIds, skipped: [] })
+    expect(settled).toHaveLength(1)
+    expect(sender.pending()).toBe(1)
+
+    resultListener?.({ ok: false, applied: [], skipped: [] })
+
+    expect(settled.map((outcome) => outcome.state)).toEqual([
+      'unconfirmed',
+      'acknowledged'
+    ])
+    expect(sender.pending()).toBe(0)
+  })
+
+  describe('suspension', () => {
+    function parkSecondBatch(): string {
+      sender.enqueue([addNode(1)])
+      sender.enqueue([addNode(2)])
+      sender.suspend()
+      boundWorkflow = null
+      ackInFlight()
+      return sender.pendingOps()[0].ops[0].op_id
+    }
+
+    it('parks the next batch instead of settling it undeliverable while suspended, and a result still settles the sent one', () => {
+      parkSecondBatch()
+
+      expect(sent).toHaveLength(1)
+      expect(settled.map((outcome) => outcome.state)).toEqual(['acknowledged'])
+      expect(sender.pending()).toBe(1)
+    })
+
+    it('resume transmits the parked batch to its mint-time workflow with the same op ids', () => {
+      const parkedOpId = parkSecondBatch()
+      boundWorkflow = WORKFLOW
+
+      sender.resume()
+
+      expect(sent).toHaveLength(2)
+      expect(sent[1].workflowId).toBe(WORKFLOW)
+      expect(sent[1].ops[0].op_id).toBe(parkedOpId)
+      expect(settled).toHaveLength(1)
+    })
+
+    it('resume after a real retarget still settles the parked batch undeliverable, never re-addressed', () => {
+      parkSecondBatch()
+      boundWorkflow = 'wf-2'
+
+      sender.resume()
+
+      expect(sent).toHaveLength(1)
+      expect(settled.map((outcome) => outcome.state)).toEqual([
+        'acknowledged',
+        'undeliverable'
+      ])
+    })
+
+    it('parks the result-silence resend of a sent batch and resends it on resume', () => {
+      sender.enqueue([addNode(1)])
+      sender.suspend()
+      boundWorkflow = null
+      vi.advanceTimersByTime(10_000)
+      expect(sent).toHaveLength(1)
+      expect(settled).toHaveLength(0)
+
+      boundWorkflow = WORKFLOW
+      sender.resume()
+
+      expect(sent).toHaveLength(2)
+      expect(sent[1].ops[0].op_id).toBe(sent[0].ops[0].op_id)
+    })
+
+    it('detach drops a parked batch', () => {
+      parkSecondBatch()
+
+      sender.detach()
+      boundWorkflow = WORKFLOW
+      sender.resume()
+
+      expect(sent).toHaveLength(1)
+      expect(sender.pending()).toBe(0)
+    })
+
+    it('suspend and resume are idempotent and leave an unsuspended sender sending', () => {
+      sender.suspend()
+      sender.suspend()
+      sender.resume()
+      sender.resume()
+
+      sender.enqueue([addNode(1)])
+
+      expect(sent).toHaveLength(1)
+      expect(settled).toHaveLength(0)
+    })
+
+    it('pendingOps lists the in-flight and queued batches with their workflow, in order, until they settle', () => {
+      sender.enqueue([addNode(1)])
+      sender.enqueue([addNode(2)])
+
+      expect(sender.pendingOps()).toEqual([
+        {
+          workflowId: WORKFLOW,
+          ops: [expect.objectContaining({ op: 'add_node', node_id: 1 })]
+        },
+        {
+          workflowId: WORKFLOW,
+          ops: [expect.objectContaining({ op: 'add_node', node_id: 2 })]
+        }
+      ])
+
+      ackInFlight()
+      ackInFlight()
+
+      expect(sender.pendingOps()).toEqual([])
+    })
   })
 })

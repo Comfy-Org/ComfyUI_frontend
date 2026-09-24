@@ -1,7 +1,7 @@
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useCommandStore } from '@/stores/commandStore'
 import { api } from '@/scripts/api'
 import { useSystemStatsStore } from '@/stores/systemStatsStore'
 import {
@@ -11,9 +11,16 @@ import {
 } from '@/workbench/extensions/manager/composables/useManagerState'
 
 // Mock dependencies that are not stores
-vi.mock('@/i18n', () => ({ t: (key: string) => key }))
+vi.mock(import('@/i18n'))
 
-vi.mock('@/scripts/api', () => ({
+const distribution = vi.hoisted(() => ({ isCloud: false }))
+vi.mock(import('@/platform/distribution/types'), () => ({
+  get isCloud() {
+    return distribution.isCloud
+  }
+}))
+
+vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getClientFeatureFlags: vi.fn(),
     getServerFeature: vi.fn(),
@@ -21,50 +28,22 @@ vi.mock('@/scripts/api', () => ({
   }
 }))
 
-vi.mock('@/composables/useFeatureFlags', () => {
-  const featureFlag = vi.fn()
-  return {
-    useFeatureFlags: vi.fn(() => ({
-      flags: { supportsManagerV4: false },
-      featureFlag
-    }))
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
+
+vi.mock(
+  import('@/workbench/extensions/manager/composables/useManagerDialog'),
+
+  () => {
+    const show = vi.fn()
+    const hide = vi.fn()
+    return {
+      useManagerDialog: vi.fn(() => ({
+        show,
+        hide
+      }))
+    }
   }
-})
-
-vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
-  useSettingsDialog: vi.fn(() => ({
-    show: vi.fn(),
-    hide: vi.fn(),
-    showAbout: vi.fn()
-  }))
-}))
-
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: vi.fn(() => ({
-    execute: vi.fn()
-  }))
-}))
-
-const { toastAddMock } = vi.hoisted(() => ({
-  toastAddMock: vi.fn()
-}))
-
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => ({
-    add: toastAddMock
-  }))
-}))
-
-vi.mock('@/workbench/extensions/manager/composables/useManagerDialog', () => {
-  const show = vi.fn()
-  const hide = vi.fn()
-  return {
-    useManagerDialog: vi.fn(() => ({
-      show,
-      hide
-    }))
-  }
-})
+)
 
 /**
  * Helper to build a minimal systemStats argv-only fixture.
@@ -105,15 +84,7 @@ describe('useManagerState', () => {
   let systemStatsStore: ReturnType<typeof useSystemStatsStore>
 
   beforeEach(() => {
-    // Create a fresh testing pinia and activate it for each test
-    setActivePinia(
-      createTestingPinia({
-        stubActions: false,
-        createSpy: vi.fn
-      })
-    )
-
-    // Initialize stores
+    vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
     systemStatsStore = useSystemStatsStore()
 
     // Reset all mocks
@@ -319,8 +290,8 @@ describe('useManagerState', () => {
       useManagerState()
       useManagerState()
 
-      expect(toastAddMock).toHaveBeenCalledTimes(1)
-      expect(toastAddMock).toHaveBeenCalledWith({
+      expect(useToastStore().add).toHaveBeenCalledTimes(1)
+      expect(useToastStore().add).toHaveBeenCalledWith({
         severity: 'warn',
         summary: 'manager.incompatibleVersion.title',
         detail: 'manager.incompatibleVersion.message',
@@ -339,12 +310,12 @@ describe('useManagerState', () => {
       mockServerFeatures({ supports_v4: true, supports_csrf_post: false })
 
       const managerState = useManagerState()
-      expect(toastAddMock).toHaveBeenCalledTimes(1)
+      expect(useToastStore().add).toHaveBeenCalledTimes(1)
 
       await managerState.openManager()
-      expect(toastAddMock).toHaveBeenCalledTimes(2)
+      expect(useToastStore().add).toHaveBeenCalledTimes(2)
       // second call must still be the upgrade toast, not an error toast
-      expect(toastAddMock).toHaveBeenLastCalledWith({
+      expect(useToastStore().add).toHaveBeenLastCalledWith({
         severity: 'warn',
         summary: 'manager.incompatibleVersion.title',
         detail: 'manager.incompatibleVersion.message',
@@ -363,7 +334,7 @@ describe('useManagerState', () => {
       mockServerFeatures({ supports_v4: true, supports_csrf_post: true })
 
       useManagerState()
-      expect(toastAddMock).not.toHaveBeenCalled()
+      expect(useToastStore().add).not.toHaveBeenCalled()
     })
   })
 
@@ -450,6 +421,46 @@ describe('useManagerState', () => {
 
       const managerState = useManagerState()
       expect(managerState.shouldShowManagerButtons.value).toBe(true)
+    })
+
+    it.for([
+      { argv: ['python', 'main.py'], expected: false },
+      { argv: ['python', 'main.py', '--enable-manager'], expected: true }
+    ])(
+      'shouldShowExtensionsButton follows manager availability off cloud ($argv)',
+      ({ argv, expected }) => {
+        systemStatsStore.$patch({
+          systemStats: systemStatsFixture(argv),
+          isInitialized: true
+        })
+        vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+          supports_manager_v4_ui: true
+        })
+        mockServerFeatures({ supports_v4: true, supports_csrf_post: true })
+
+        expect(useManagerState().shouldShowExtensionsButton.value).toBe(
+          expected
+        )
+      }
+    )
+
+    it('shouldShowExtensionsButton stays true on cloud while Manager is unavailable', () => {
+      distribution.isCloud = true
+      onTestFinished(() => {
+        distribution.isCloud = false
+      })
+      systemStatsStore.$patch({
+        systemStats: systemStatsFixture(['python', 'main.py']),
+        isInitialized: true
+      })
+      vi.mocked(api.getClientFeatureFlags).mockReturnValue({
+        supports_manager_v4_ui: true
+      })
+      mockServerFeatures({ supports_v4: true, supports_csrf_post: true })
+
+      const managerState = useManagerState()
+      expect(managerState.shouldShowManagerButtons.value).toBe(false)
+      expect(managerState.shouldShowExtensionsButton.value).toBe(true)
     })
   })
 })

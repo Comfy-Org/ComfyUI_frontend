@@ -1,3 +1,5 @@
+import { reportError } from '@/platform/telemetry/reportError'
+
 import type {
   DocFrameClient,
   DocOp,
@@ -5,8 +7,14 @@ import type {
   DocSubscribed,
   DocUpdate
 } from './docFrameClient'
+import { wireLog } from './crdtLog'
 import { FollowerDoc } from './followerDoc'
 import { FollowerSchemaError, assertReadableSchema } from './schemaGuard'
+
+/** A document update after the follower bridge has classified its provenance. */
+export interface ClassifiedDocUpdate extends DocUpdate {
+  catchUp: boolean
+}
 
 /**
  * Outbound frames are advisory: the follower's correctness never depends on one
@@ -19,7 +27,18 @@ function trySend(send: () => boolean): boolean {
   try {
     return send()
   } catch (error) {
-    console.warn('[agent-crdt] outbound doc frame dropped', error)
+    reportError(error, {
+      errorType: 'failure_sending_agent_doc_frame',
+      logToConsole: false,
+      tags: {
+        failure_kind: 'caught_unexpected',
+        feature_area: 'agent',
+        operation: 'sync',
+        outcome: 'recovered'
+      },
+      level: 'error'
+    })
+    wireLog.warn('frame_send_failed', 'outbound doc frame dropped', error)
     return false
   }
 }
@@ -69,7 +88,12 @@ export class LayoutFollowerBridge extends EventTarget {
    * never on the first successful open.
    */
   private sentWorkflowId: string | null = null
-  /** Set once a merged doc failed the KA-11 read gate; never rendered after. */
+  /**
+   * The most recent KA-11 read-gate failure, while the merged doc is still
+   * unreadable. Cleared by a lineage break ({@link dropDocForNewLineage}) or
+   * by a later same-lineage frame that merges and leaves the doc readable
+   * again — see {@link onDocUpdate}.
+   */
   private schemaError: FollowerSchemaError | null = null
   /**
    * Highest doc seq APPLIED since the last subscribe left the transport;
@@ -192,6 +216,11 @@ export class LayoutFollowerBridge extends EventTarget {
       this.lastSeq = null
       this.ackSeq = null
       this.catchUpPending = false
+      this.dispatchEvent(
+        new CustomEvent('doc_subscribe_sent', {
+          detail: { workflowId: desired }
+        })
+      )
     }
   }
 
@@ -244,14 +273,7 @@ export class LayoutFollowerBridge extends EventTarget {
     // null the catch-up arrives AT ackSeq, so `<= ackSeq` would drop it and
     // leave the follower on an empty doc (KA-11).
     const isCatchUp = this.catchUpPending && update.seq === this.ackSeq
-    if (!isCatchUp && this.lastSeq !== null && update.seq <= this.lastSeq) {
-      this.dispatchEvent(
-        new CustomEvent('doc_stale', {
-          detail: { workflowId: update.workflowId, seq: update.seq }
-        })
-      )
-      return
-    }
+    if (this.rejectStaleUpdate(update, isCatchUp)) return
 
     // Seq is only a gap detector. A jump withholds the uncertain frame and
     // asks the host for a same-lineage state-vector delta using this EXACT
@@ -261,32 +283,72 @@ export class LayoutFollowerBridge extends EventTarget {
     // N instead: the catch-up (seq N) and the first live frame (seq N+1) are
     // both contiguous with it, so neither trips it, while a first frame at
     // N+2 or beyond is a real drop. Nothing arms it before the ack lands.
-    const baseline = this.lastSeq ?? this.ackSeq
-    if (baseline !== null && update.seq > baseline + 1) {
-      this.dispatchEvent(
-        new CustomEvent('doc_gap', {
-          detail: {
-            workflowId: update.workflowId,
-            expected: baseline + 1,
-            received: update.seq
-          }
-        })
-      )
-      this.resubscribe()
-      return
-    }
+    if (this.rejectSequenceGap(update)) return
     if (this.lastSeq === null || update.seq > this.lastSeq)
       this.lastSeq = update.seq
     if (isCatchUp) this.catchUpPending = false
+
+    // Merge every same-lineage, in-order frame — even one arriving after a
+    // schema-gate failure. Yjs merge is monotonic and a Y.Map key is
+    // last-writer-wins, so a later frame CAN restore a readable
+    // `meta.schema_version` that an earlier one broke (e.g. a repair); never
+    // merging while latched would make that repair permanently unreachable.
     this.follower.applyRemoteUpdate(update.update)
 
-    // KA-11 read-time gate. The merge itself is unconditional — Yjs bytes are
-    // integrated or they are not — but nothing downstream may READ a doc whose
-    // declared schema this build was not written against. Failing closed here,
-    // before the frame is re-dispatched, is what keeps a v2 doc from being
-    // half-projected onto the canvas by a v1 reader.
+    // KA-11 read-time gate, re-checked on every merge rather than only the
+    // first: the frame must merge before its schema can be checked, but
+    // nothing downstream may READ a doc whose declared schema this build was
+    // not written against. Failing closed here, before the frame is
+    // re-dispatched, is what keeps a v2 doc from being half-projected onto
+    // the canvas by a v1 reader. Re-checking every time — instead of
+    // latching forever on the first failure — lets a later same-lineage
+    // frame that restores a readable version un-latch the gate and resume
+    // projecting.
+    if (!this.isReadableUpdate(update)) return
+
+    const classifiedUpdate: ClassifiedDocUpdate = {
+      ...update,
+      catchUp: isCatchUp
+    }
+    this.dispatchEvent(
+      new CustomEvent('doc_update', {
+        detail: classifiedUpdate
+      })
+    )
+  }
+
+  private rejectStaleUpdate(update: DocUpdate, isCatchUp: boolean): boolean {
+    if (isCatchUp || this.lastSeq === null || update.seq > this.lastSeq)
+      return false
+    this.dispatchEvent(
+      new CustomEvent('doc_stale', {
+        detail: { workflowId: update.workflowId, seq: update.seq }
+      })
+    )
+    return true
+  }
+
+  private rejectSequenceGap(update: DocUpdate): boolean {
+    const baseline = this.lastSeq ?? this.ackSeq
+    if (baseline === null || update.seq <= baseline + 1) return false
+    this.dispatchEvent(
+      new CustomEvent('doc_gap', {
+        detail: {
+          workflowId: update.workflowId,
+          expected: baseline + 1,
+          received: update.seq
+        }
+      })
+    )
+    this.resubscribe()
+    return true
+  }
+
+  private isReadableUpdate(update: DocUpdate): boolean {
     try {
       assertReadableSchema(this.follower.doc)
+      this.schemaError = null
+      return true
     } catch (error) {
       if (!(error instanceof FollowerSchemaError)) throw error
       this.schemaError = error
@@ -295,10 +357,8 @@ export class LayoutFollowerBridge extends EventTarget {
           detail: { workflowId: update.workflowId, found: error.found }
         })
       )
-      return
+      return false
     }
-
-    this.dispatchEvent(new CustomEvent('doc_update', { detail: update }))
   }
 
   /**

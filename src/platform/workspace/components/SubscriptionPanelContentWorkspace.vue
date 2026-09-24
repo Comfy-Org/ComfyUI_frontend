@@ -37,7 +37,7 @@
       class="flex flex-col items-start gap-3 rounded-2xl border border-interface-stroke p-6"
     >
       <div class="flex items-center gap-2 text-text-secondary">
-        <i class="pi pi-exclamation-circle text-danger" />
+        <i class="pi pi-exclamation-circle text-destructive-background" />
         <span class="text-sm">{{ $t('subscription.planLoadError') }}</span>
       </div>
       <Button
@@ -409,20 +409,17 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
-import {
-  isEnterprisePlanSlug,
-  isSalesManagedTier,
-  isUnknownTier
-} from '@/platform/cloud/subscription/constants/tierPricing'
+import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
 import { useResubscribe } from '@/platform/workspace/composables/useResubscribe'
+import { useScheduledPlanChange } from '@/platform/workspace/composables/useScheduledPlanChange'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
+import { useSubscriptionOperationView } from '@/platform/workspace/composables/useSubscriptionRail'
 import { useWorkspaceMenuItems } from '@/platform/workspace/composables/useWorkspaceMenuItems'
 import { useWorkspacePlanPricing } from '@/platform/workspace/composables/useWorkspacePlanPricing'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
-import { useBillingOperationStore } from '@/platform/workspace/stores/billingOperationStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   formatSubscriptionDate,
@@ -444,11 +441,7 @@ const { maxAvailable: freeRunsAllowance, quotaEnabled: freeRunsQuotaEnabled } =
   useFreeTierQuota()
 const { t, n, locale } = useI18n()
 
-const billingOperationStore = useBillingOperationStore()
-const isSettingUp = computed(() => billingOperationStore.isSettingUp)
-const subscriptionActionUrl = computed(
-  () => billingOperationStore.subscriptionActionOperation?.actionUrl ?? null
-)
+const { isSettingUp, subscriptionActionUrl } = useSubscriptionOperationView()
 
 function openSubscriptionVerification() {
   if (!subscriptionActionUrl.value) return
@@ -460,7 +453,6 @@ const {
   isFreeTier: isFreeTierPlan,
   isTeamPlan,
   subscription,
-  plans,
   billingStatus,
   subscriptionStatus,
   isLoading,
@@ -579,32 +571,11 @@ const formattedEndDate = computed(() =>
   formatSubscriptionDate(subscription.value?.endDate, locale.value)
 )
 
-const formattedChangeDate = computed(() =>
-  formatSubscriptionDate(subscription.value?.changeAt, locale.value)
-)
-
-const scheduledPlanName = computed(() => {
-  const scheduledPlanSlug = subscription.value?.scheduledPlanSlug
-  if (isEnterprisePlanSlug(scheduledPlanSlug)) {
-    return t('subscription.tiers.enterprise.name')
-  }
-  const scheduledPlan = plans.value.find(
-    (plan) => plan.slug === scheduledPlanSlug
-  )
-  if (!scheduledPlan) return ''
-  if (scheduledPlan.tier === 'ENTERPRISE') {
-    return t('subscription.tiers.enterprise.name')
-  }
-  if (scheduledPlan.slug.startsWith('team')) {
-    return t('subscription.teamPlanName')
-  }
-  if (isUnknownTier(scheduledPlan.tier)) {
-    return t('subscription.unknownTierName')
-  }
-  return t(
-    `subscription.tiers.${resolveSubscriptionTierKey(scheduledPlan.tier)}.name`
-  )
-})
+const {
+  scheduledChange,
+  planName: scheduledPlanName,
+  formattedDate: formattedChangeDate
+} = useScheduledPlanChange()
 
 const showSubscriptionStateCard = computed(
   () => isSubscriptionCancelled.value && !isSubscriptionEnded.value
@@ -641,7 +612,7 @@ const planDateDisplay = computed(() => {
       ? t('subscription.endsOnDate', { date: formattedEndDate.value })
       : ''
   }
-  if (subscription.value?.scheduledPlanSlug || subscription.value?.changeAt) {
+  if (scheduledChange.value) {
     return scheduledPlanName.value && formattedChangeDate.value
       ? t('subscription.changesToPlanOnDate', {
           plan: scheduledPlanName.value,

@@ -1,5 +1,8 @@
+import { useMaskEditorDataStore } from '@/stores/maskEditorDataStore'
+import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { markRaw } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -11,17 +14,7 @@ import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { decodePng } from '@/utils/__fixtures__/decodePng'
 import { useMaskEditorSaver } from './useMaskEditorSaver'
 
-// ---- Module Mocks ----
-
-const mockDataStore: Record<string, unknown> = {
-  sourceNode: null,
-  inputData: null,
-  outputData: null
-}
-
-vi.mock('@/stores/maskEditorDataStore', () => ({
-  useMaskEditorDataStore: vi.fn(() => mockDataStore)
-}))
+let mockDataStore: ReturnType<typeof useMaskEditorDataStore>
 
 const CANVAS_SIZE = 4
 const CANVAS_BYTES = CANVAS_SIZE * CANVAS_SIZE * 4
@@ -73,46 +66,18 @@ function createMockCanvas(seed?: Uint8ClampedArray): HTMLCanvasElement {
     toDataURL: vi.fn(() => 'data:image/png;base64,mock')
   })
   canvasPixels.set(canvas, pixels)
-  return canvas
+  return markRaw(canvas)
 }
 
-const mockEditorStore: Record<string, HTMLCanvasElement | null> = {
-  maskCanvas: null,
-  rgbCanvas: null,
-  imgCanvas: null
-}
+let mockEditorStore: ReturnType<typeof useMaskEditorStore>
 
-vi.mock('@/stores/maskEditorStore', () => ({
-  useMaskEditorStore: vi.fn(() => mockEditorStore)
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    fetchApi: vi.fn(),
-    apiURL: vi.fn((route: string) => `http://localhost:8188${route}`)
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    canvas: { setDirty: vi.fn() },
-    nodeOutputs: {} as Record<string, unknown>,
-    nodePreviewImages: {} as Record<string, string[]>,
-    getPreviewFormatParam: vi.fn(() => ''),
-    getRandParam: vi.fn(() => '')
-  }
-}))
+vi.mock(import('@/platform/distribution/types'), () => ({ isCloud: false }))
 
-vi.mock('@/platform/distribution/types', () => ({ isCloud: false }))
-
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => ({
-    nodeIdToNodeLocatorId: vi.fn((id: string | number) => String(id)),
-    nodeToNodeLocatorId: vi.fn((node: { id: number }) => String(node.id))
-  }))
-}))
-
-vi.mock('@/utils/graphTraversalUtil', () => ({
+vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
 }))
 
@@ -121,8 +86,11 @@ describe('useMaskEditorSaver', () => {
   const originalCreateElement = document.createElement.bind(document)
 
   beforeEach(() => {
-    app.nodeOutputs = {}
-    app.nodePreviewImages = {}
+    vi.mocked(api.apiURL).mockImplementation(
+      (route) => `http://localhost:8188${route}`
+    )
+    mockDataStore = useMaskEditorDataStore()
+    mockEditorStore = useMaskEditorStore()
 
     mockNode = fromAny<LGraphNode, unknown>({
       id: 42,
@@ -149,7 +117,7 @@ describe('useMaskEditorSaver', () => {
       baseLayer: { image: {} as HTMLImageElement, url: 'base.png' },
       maskLayer: { image: {} as HTMLImageElement, url: 'mask.png' },
       sourceRef: { filename: 'original.png', subfolder: '', type: 'input' },
-      nodeId: 42
+      nodeId: toNodeId(42)
     }
     mockDataStore.outputData = null
 
@@ -261,19 +229,17 @@ describe('useMaskEditorSaver', () => {
   })
 
   it('omits subfolder from the upload FormData under the unified contract', async () => {
-    const fetchApiMock = vi.mocked(api.fetchApi)
-
     const { save } = useMaskEditorSaver()
     await save()
 
     // The unified contract uploads to /upload/image with only image + type;
     // subfolder is intentionally omitted (the server assigns it). Assert it
     // here so the next reader knows the omission is deliberate, not accidental.
-    expect(fetchApiMock).toHaveBeenCalledWith(
+    expect(api.fetchApi).toHaveBeenCalledWith(
       '/upload/image',
       expect.objectContaining({ method: 'POST' })
     )
-    const [, init] = fetchApiMock.mock.calls[0]
+    const [, init] = vi.mocked(api.fetchApi).mock.calls[0]
     const body = init?.body as FormData
     expect(body).toBeInstanceOf(FormData)
     expect(body.get('type')).toBe('input')
@@ -300,13 +266,12 @@ describe('useMaskEditorSaver', () => {
     mockEditorStore.maskCanvas = createMockCanvas(maskPixels)
     mockEditorStore.rgbCanvas = createMockCanvas()
 
-    const fetchApiMock = vi.mocked(api.fetchApi)
     const { save } = useMaskEditorSaver()
     await save()
 
-    expect(fetchApiMock).toHaveBeenCalledTimes(4)
+    expect(api.fetchApi).toHaveBeenCalledTimes(4)
     const decodedUploads = []
-    for (const [, init] of fetchApiMock.mock.calls) {
+    for (const [, init] of vi.mocked(api.fetchApi).mock.calls) {
       const body = init?.body as FormData
       const file = body.get('image') as Blob
       try {

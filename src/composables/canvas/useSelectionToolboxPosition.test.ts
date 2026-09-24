@@ -14,13 +14,9 @@ import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { toGroupId } from '@/types/groupId'
 import { toNodeId } from '@/types/nodeId'
 
-const mockApp = vi.hoisted(() => ({
-  canvas: null
-}))
+vi.mock(import('@/scripts/app'))
 
-vi.mock('@/scripts/app', () => ({ app: mockApp }))
-
-vi.mock('@/composables/useVueFeatureFlags', () => ({
+vi.mock<unknown>(import('@/composables/useVueFeatureFlags'), () => ({
   useVueFeatureFlags: () => ({
     shouldRenderVueNodes: { value: false }
   })

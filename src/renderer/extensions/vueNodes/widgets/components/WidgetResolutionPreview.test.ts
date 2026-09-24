@@ -1,21 +1,21 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
-import { setActivePinia } from 'pinia'
 import type { Pinia } from 'pinia'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-const resolveNodeMock = vi.hoisted(() => vi.fn())
-vi.mock('@/utils/litegraphUtil', () => ({ resolveNode: resolveNodeMock }))
-
 import type { IWidgetResolutionPreviewOptions } from '@/lib/litegraph/src/types/widgets'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { toNodeId } from '@/types/nodeId'
 import type { SimplifiedWidget } from '@/types/simplifiedWidget'
 import { widgetId } from '@/types/widgetId'
+import { resolveNode } from '@/utils/litegraphUtil'
 
 import WidgetResolutionPreview from './WidgetResolutionPreview.vue'
+
+vi.mock(import('@/utils/litegraphUtil'))
 
 const GRAPH_ID = 'test-graph'
 const NODE_ID = toNodeId(1)
@@ -33,12 +33,13 @@ const i18n = createI18n({
 let pinia: Pinia
 
 beforeEach(() => {
-  pinia = createTestingPinia({ stubActions: false })
-  setActivePinia(pinia)
-  resolveNodeMock.mockReturnValue({
-    id: NODE_ID,
-    graph: { rootGraph: { id: GRAPH_ID } }
-  })
+  pinia = getActivePinia()!
+  const graph = new LGraph()
+  graph.id = GRAPH_ID
+  const node = new LGraphNode('Resolution')
+  node.id = NODE_ID
+  graph.add(node)
+  vi.mocked(resolveNode).mockReturnValue(node)
 })
 
 function registerSibling(name: string, type: string, value: unknown) {

@@ -4,10 +4,10 @@ import { computed } from 'vue'
 
 import { zAgentRunMode } from '../../schemas/agentApiSchema'
 import type {
-  AgentRunMode,
-  AgentRunModePreference
+  AgentRunModePreference,
+  AgentRunModeValue
 } from '../../schemas/agentApiSchema'
-export type { AgentRunMode } from '../../schemas/agentApiSchema'
+export type { AgentRunModeValue } from '../../schemas/agentApiSchema'
 import {
   AgentApiError,
   createAgentRestClient
@@ -17,7 +17,7 @@ const DEFAULT_PREFERENCE: AgentRunModePreference = {
   mode: 'ask_approval',
   credit_limit: null
 }
-export const DEFAULT_CREDIT_LIMIT = 300
+const DEFAULT_CREDIT_LIMIT = 300
 const PREFERENCE_STORAGE_KEY = 'Comfy.Agent.RunModePreference'
 const LEGACY_MODE_STORAGE_KEY = 'Comfy.Agent.RunMode'
 const LEGACY_CREDIT_LIMIT_STORAGE_KEY = 'Comfy.Agent.RunCreditLimit'
@@ -113,7 +113,7 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
   }
 
   async function save(
-    nextMode: AgentRunMode,
+    nextMode: AgentRunModeValue,
     nextLimit: number | null
   ): Promise<void> {
     const next = zAgentRunMode.parse({

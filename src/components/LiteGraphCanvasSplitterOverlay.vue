@@ -1,18 +1,17 @@
 <template>
   <div
-    class="pointer-events-none absolute top-0 left-0 z-999 flex size-full flex-row"
+    class="pointer-events-none absolute top-0 left-0 z-999 flex size-full flex-col"
   >
-    <div
-      class="pointer-events-none flex min-w-0 flex-1 flex-col overflow-hidden"
-    >
-      <slot name="workflow-tabs" />
+    <slot name="workflow-tabs" />
 
+    <div class="pointer-events-none flex min-h-0 flex-1 flex-row">
       <div
-        class="pointer-events-none flex flex-1 overflow-hidden"
-        :class="{
-          'flex-row': sidebarLocation === 'left',
-          'flex-row-reverse': sidebarLocation === 'right'
-        }"
+        :class="
+          cn(
+            'pointer-events-none flex min-w-0 flex-1 overflow-hidden',
+            sidebarLocation === 'left' ? 'flex-row' : 'flex-row-reverse'
+          )
+        "
       >
         <div class="side-toolbar-container">
           <slot name="side-toolbar" />
@@ -21,6 +20,7 @@
         <Splitter
           :key="splitterRefreshKey"
           class="pointer-events-none flex-1 overflow-hidden border-none bg-transparent"
+          pt:gutter="[.side-bar-panel+&]:bg-interface-stroke/50 has-[+.side-bar-panel]:bg-interface-stroke/50"
           :state-key="
             isSelectMode
               ? sidebarLocation === 'left'
@@ -65,10 +65,18 @@
 
           <!-- Main panel (always present) -->
           <SplitterPanel :size="centerPanelDefaultSize" class="flex flex-col">
-            <slot name="topmenu" :sidebar-panel-visible />
+            <div :class="!graphMeetsAgentPanel && 'mr-(--comfy-canvas-gutter)'">
+              <slot name="topmenu" :sidebar-panel-visible />
+            </div>
 
             <Splitter
-              class="splitter-overlay-bottom pointer-events-none mx-1 mb-1 flex-1 border-none bg-transparent"
+              data-testid="graph-canvas-gutter"
+              :class="
+                cn(
+                  'splitter-overlay-bottom pointer-events-none mb-(--comfy-canvas-gutter) ml-(--comfy-canvas-gutter) flex-1 border-none bg-transparent',
+                  !graphMeetsAgentPanel && 'mr-(--comfy-canvas-gutter)'
+                )
+              "
               layout="vertical"
               :pt:gutter="
                 cn(
@@ -93,7 +101,7 @@
                 v-show="
                   bottomPanelVisible && !focusMode && !agentNodeSelectionActive
                 "
-                class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-(--p-panel-border-color) bg-comfy-menu-bg focus-visible:outline-hidden"
+                class="bottom-panel pointer-events-auto max-w-full overflow-x-auto rounded-lg border border-interface-stroke bg-comfy-menu-bg focus-visible:outline-hidden"
               >
                 <slot name="bottom-panel" />
               </SplitterPanel>
@@ -129,9 +137,12 @@
           </SplitterPanel>
         </Splitter>
       </div>
-    </div>
 
-    <slot name="agent-panel" />
+      <slot
+        name="agent-panel"
+        :has-opaque-neighbor="agentPanelHasOpaqueNeighbor"
+      />
+    </div>
   </div>
 </template>
 
@@ -182,11 +193,32 @@ const { isSelectMode, isBuilderMode } = useAppMode()
 const { activeSidebarTabId, activeSidebarTab } = storeToRefs(sidebarTabStore)
 const { bottomPanelVisible } = storeToRefs(useBottomPanelStore())
 const { isOpen: rightSidePanelVisible } = storeToRefs(rightSidePanelStore)
-const { isOpen: agentPanelOpen } = storeToRefs(agentPanelStore)
+const { isVisible: agentPanelOpen } = storeToRefs(agentPanelStore)
 // The agent docks in its own `agent-panel` slot outside the splitter, so it is
 // not an offside trigger; it only discriminates the saved layout key below.
 const showOffsideSplitter = computed(
   () => rightSidePanelVisible.value || isSelectMode.value
+)
+
+const agentPanelHasOpaqueNeighbor = computed(
+  () =>
+    (sidebarLocation.value === 'right' &&
+      sidebarPanelVisible.value &&
+      !agentNodeSelectionActive.value &&
+      !focusMode.value) ||
+    (sidebarLocation.value === 'left' &&
+      showOffsideSplitter.value &&
+      !agentNodeSelectionActive.value &&
+      !focusMode.value)
+)
+
+/**
+ * The graph's right gutter is what separates it from whatever is drawn beside
+ * it. When that is the agent panel, the panel's own gutter already spaces the
+ * two and a second one reads as a gap.
+ */
+const graphMeetsAgentPanel = computed(
+  () => agentPanelOpen.value && !agentPanelHasOpaqueNeighbor.value
 )
 
 const sidebarPanelVisible = computed(

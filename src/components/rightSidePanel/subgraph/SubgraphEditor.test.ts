@@ -9,7 +9,8 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { LGraphNode } from '@/lib/litegraph/src/litegraph'
-import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 
 import { promotedInputWidget } from '@/core/graph/subgraph/promotedInputWidget'
@@ -23,9 +24,7 @@ type DraggableListProps = ComponentProps<typeof DraggableList>
 type PromotedRow =
   DraggableListProps['modelValue'] extends Array<infer T> ? T : never
 
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({ updatePreviews: vi.fn() })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 const i18n = createI18n({
   legacy: false,
@@ -77,7 +76,7 @@ describe('SubgraphEditor', () => {
         sourcePreviewName: '$$canvas-image-preview'
       }
     )
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),
@@ -124,7 +123,7 @@ describe('SubgraphEditor', () => {
     secondInput.widget = { name: secondWidget.name }
     promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
     promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     let listSetter: ((value: PromotedRow[]) => void) | undefined
     const draggableListStub = {
@@ -193,7 +192,7 @@ describe('SubgraphEditor', () => {
     const sourceInput = sourceNode.addInput('first', 'STRING')
     const sourceWidget = sourceNode.addWidget('text', 'first', '', () => {})
     sourceInput.widget = { name: sourceWidget.name }
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),
@@ -220,6 +219,33 @@ describe('SubgraphEditor', () => {
     ).toEqual(['first'])
   })
 
+  it('excludes Vue-node-ineligible candidates except pseudo-widgets', () => {
+    const subgraph = createTestSubgraph()
+    const host = createTestSubgraphNode(subgraph)
+    const sourceNode = new LGraphNode('SourceNode')
+    subgraph.add(sourceNode)
+    const hiddenWidget = sourceNode.addWidget('text', 'hidden', '', () => {})
+    const pseudoWidget = sourceNode.addWidget('text', '$$preview', '', () => {})
+    if (!hiddenWidget.visibility || !pseudoWidget.visibility) {
+      throw new Error('Missing concrete widget visibility')
+    }
+    hiddenWidget.visibility.surfaces.vueNode = 'never'
+    pseudoWidget.visibility.surfaces.vueNode = 'never'
+    useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = true
+    setCanvasSelection([host])
+
+    render(SubgraphEditor, {
+      container: document.body.appendChild(document.createElement('div')),
+      global: { plugins: [i18n] }
+    })
+
+    expect(
+      within(screen.getByTestId('subgraph-editor-hidden-section'))
+        .getAllByTestId('subgraph-widget-label')
+        .map((element) => element.textContent.trim())
+    ).toEqual(['$$preview'])
+  })
+
   it('demotes linked promoted widgets when "Hide all" is clicked', async () => {
     const subgraph = createTestSubgraph()
     const host = createTestSubgraphNode(subgraph)
@@ -236,7 +262,7 @@ describe('SubgraphEditor', () => {
     secondInput.widget = { name: secondWidget.name }
     promoteValueWidgetViaSubgraphInput(host, firstNode, firstWidget)
     promoteValueWidgetViaSubgraphInput(host, secondNode, secondWidget)
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),
@@ -269,7 +295,7 @@ describe('SubgraphEditor', () => {
     const sourceWidget = sourceNode.addWidget('text', 'first', '', () => {})
     sourceInput.widget = { name: sourceWidget.name }
     promoteValueWidgetViaSubgraphInput(host, sourceNode, sourceWidget)
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),
@@ -296,7 +322,7 @@ describe('SubgraphEditor', () => {
     const sourceInput = sourceNode.addInput('first', 'STRING')
     const sourceWidget = sourceNode.addWidget('text', 'first', '', () => {})
     sourceInput.widget = { name: sourceWidget.name }
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),
@@ -330,7 +356,7 @@ describe('SubgraphEditor', () => {
       sourcePreviewName: '$$canvas-image-preview'
     })
 
-    useCanvasStore().selectedItems = [host]
+    setCanvasSelection([host])
 
     render(SubgraphEditor, {
       container: document.body.appendChild(document.createElement('div')),

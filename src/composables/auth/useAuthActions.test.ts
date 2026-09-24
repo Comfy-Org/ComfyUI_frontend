@@ -1,49 +1,39 @@
+import { useDialogService } from '@/services/dialogService'
+import { useAuthStore } from '@/stores/authStore'
+import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { FirebaseError } from 'firebase/app'
 import { AuthErrorCodes } from 'firebase/auth'
+import type { UserCredential } from 'firebase/auth'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
+
+import { useTelemetry } from '@/platform/telemetry'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useErrorHandling } from '@/composables/useErrorHandling'
+import { st, t } from '@/i18n'
 import enLocale from '@/locales/en/main.json'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+
+vi.mock(import('firebase/auth'), { spy: true })
 
 type ModifiedWorkflow = Pick<ComfyWorkflow, 'path' | 'isModified'>
 
-const mockAuthStore = vi.hoisted(() => ({
-  login: vi.fn(async () => undefined),
-  loginWithGoogle: vi.fn(async () => undefined),
-  loginWithGithub: vi.fn(async () => undefined),
-  register: vi.fn(async () => undefined),
-  logout: vi.fn(async () => undefined),
-  initiateCreditPurchase: vi.fn(
-    async (): Promise<{ checkout_url?: string }> => ({
-      checkout_url: 'https://checkout.stripe.test'
-    })
-  )
-}))
+let mockAuthStore: ReturnType<typeof useAuthStore>
 
-const mockToastStore = vi.hoisted(() => ({
-  add: vi.fn()
-}))
+let mockToastStore: ReturnType<typeof useToastStore>
 
-const mockWorkflowStore = vi.hoisted(() => ({
-  modifiedWorkflows: [] as ModifiedWorkflow[]
-}))
-
-const mockWorkflowService = vi.hoisted(() => ({
-  saveWorkflow: vi.fn(async () => true)
-}))
-
-const mockDialogService = vi.hoisted(() => ({
-  confirm: vi.fn()
-}))
+let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 
 const mockToastErrorHandler = vi.hoisted(() => vi.fn())
-const mockTrackAuthFailed = vi.hoisted(() => vi.fn())
+
 const mockStartPendingTopup = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockBillingState = vi.hoisted(() => ({
-  canAccessSubscriptionFeatures: false
-}))
 const mockClearAllWorkflowStorage = vi.hoisted(() => vi.fn())
 const mockPrepareWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
 
@@ -65,97 +55,85 @@ const accessErrorCodes = [
   'auth/unauthorized-continue-uri'
 ]
 
-vi.mock('@/i18n', () => ({
-  t: (key: string, values?: Record<string, string>) =>
-    values ? `${key}:${Object.values(values).join(':')}` : key,
-  st: (key: string, fallback: string) => {
-    const code = key.replace('auth.errors.', '')
-    return code in authErrorMessages ? key : fallback
-  }
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock('@/platform/distribution/types', () => ({
+vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mockDistributionState.isCloud
   }
 }))
 
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: vi.fn(() => ({
-    trackAuthFailed: mockTrackAuthFailed
-  }))
-}))
+vi.mock(import('@/platform/telemetry'))
 
-vi.mock('@/composables/billing/usePendingTopup', () => ({
+vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => ({ startPendingTopup: mockStartPendingTopup })
 }))
 
-vi.mock('@/platform/updates/common/toastStore', () => ({
-  useToastStore: vi.fn(() => mockToastStore)
-}))
-
-vi.mock('@/platform/workflow/persistence/base/storageIO', () => ({
+vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
   clearAllWorkflowStorage: mockClearAllWorkflowStorage,
   prepareWorkflowLogoutTransition: mockPrepareWorkflowLogoutTransition
 }))
 
-vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
-  useWorkflowStore: vi.fn(() => mockWorkflowStore)
-}))
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
-vi.mock('@/platform/workflow/core/services/workflowService', () => ({
-  useWorkflowService: vi.fn(() => mockWorkflowService)
-}))
+vi.mock(import('@/services/dialogService'))
 
-vi.mock('@/services/dialogService', () => ({
-  useDialogService: vi.fn(() => mockDialogService)
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
-vi.mock('@/stores/authStore', () => ({
-  useAuthStore: vi.fn(() => mockAuthStore)
-}))
-
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: vi.fn(() => ({
-    canAccessSubscriptionFeatures: {
-      value: mockBillingState.canAccessSubscriptionFeatures
-    },
-    isFreeTier: { value: true },
-    type: { value: 'free' }
-  }))
-}))
-
-vi.mock('@/composables/useErrorHandling', () => ({
-  useErrorHandling: () => ({
-    wrapWithErrorHandlingAsync:
-      <TArgs extends unknown[], TReturn>(
-        action: (...args: TArgs) => Promise<TReturn> | TReturn,
-        errorHandler?: (error: unknown) => void
-      ) =>
-      async (...args: TArgs) => {
-        try {
-          return await action(...args)
-        } catch (error) {
-          ;(errorHandler ?? mockToastErrorHandler)(error)
-          return undefined
-        }
-      },
-    toastErrorHandler: mockToastErrorHandler
-  })
-}))
+vi.mock(import('@/composables/useErrorHandling'))
 
 function makeWorkflow(path: string): ModifiedWorkflow {
   return { path, isModified: true } satisfies ModifiedWorkflow
 }
 
 beforeEach(() => {
+  useErrorHandling().wrapWithErrorHandlingAsync =
+    <TArgs extends unknown[], TReturn>(
+      action: (...args: TArgs) => Promise<TReturn> | TReturn,
+      errorHandler?: (error: unknown) => void
+    ) =>
+    async (...args: TArgs) => {
+      try {
+        return await action(...args)
+      } catch (error) {
+        ;(errorHandler ?? mockToastErrorHandler)(error)
+        return undefined
+      }
+    }
+  useErrorHandling().toastErrorHandler = mockToastErrorHandler
+  vi.mocked(t).mockImplementation((key: unknown, values?: unknown) =>
+    typeof values === 'object' && values !== null
+      ? `${String(key)}:${Object.values(values).join(':')}`
+      : String(key)
+  )
+  vi.mocked(st).mockImplementation((key: unknown, fallback: unknown) => {
+    const translationKey = String(key)
+    const code = translationKey.replace('auth.errors.', '')
+    return code in authErrorMessages ? translationKey : String(fallback)
+  })
+  const billingContext = useBillingContext()
+  vi.mocked(useBillingContext).mockReturnValue(billingContext)
+  billingContext.canAccessSubscriptionFeatures = computed(() => false)
+  billingContext.isFreeTier = computed(() => true)
+  stubFirebaseAuthHarness()
+  mockAuthStore = useAuthStore()
+  mockToastStore = useToastStore()
+  mockWorkflowStore = useWorkflowStore()
+  vi.mocked(mockAuthStore.initiateCreditPurchase).mockResolvedValue({
+    checkout_url: 'https://checkout.stripe.test'
+  })
+  vi.mocked(mockAuthStore.logout).mockResolvedValue(undefined)
+  vi.mocked(mockAuthStore.sendPasswordReset).mockResolvedValue(undefined)
+  const credential = fromPartial<UserCredential>({ user: { uid: 'test-user' } })
+  vi.mocked(mockAuthStore.login).mockResolvedValue(credential)
+  vi.mocked(mockAuthStore.register).mockResolvedValue(credential)
+  vi.mocked(mockAuthStore.loginWithGoogle).mockResolvedValue(credential)
   mockDistributionState.isCloud = false
-  mockBillingState.canAccessSubscriptionFeatures = false
 })
 
 describe('useAuthActions.purchaseCreditsDirect', () => {
   beforeEach(() => {
-    mockBillingState.canAccessSubscriptionFeatures = true
+    useBillingContext().canAccessSubscriptionFeatures = computed(() => true)
   })
 
   it('starts top-up tracking before opening Stripe checkout', async () => {
@@ -173,7 +151,7 @@ describe('useAuthActions.purchaseCreditsDirect', () => {
 
   it('does not start tracking or open checkout when no checkout URL is returned', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null)
-    mockAuthStore.initiateCreditPurchase.mockResolvedValueOnce({})
+    vi.mocked(mockAuthStore.initiateCreditPurchase).mockResolvedValueOnce({})
     const { purchaseCreditsDirect } = useAuthActions()
 
     await expect(purchaseCreditsDirect(25)).rejects.toThrow()
@@ -184,7 +162,7 @@ describe('useAuthActions.purchaseCreditsDirect', () => {
 
   it('does not start tracking or open checkout when the purchase request rejects', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null)
-    mockAuthStore.initiateCreditPurchase.mockRejectedValueOnce(
+    vi.mocked(mockAuthStore.initiateCreditPurchase).mockRejectedValueOnce(
       new Error('network down')
     )
     const { purchaseCreditsDirect } = useAuthActions()
@@ -199,18 +177,20 @@ describe('useAuthActions.purchaseCreditsDirect', () => {
 describe('useAuthActions.logout', () => {
   beforeEach(() => {
     mockDistributionState.isCloud = true
-    mockWorkflowStore.modifiedWorkflows = []
+    Object.assign(mockWorkflowStore, { modifiedWorkflows: [] })
   })
 
   it('logs out on non-cloud distributions without prompting when workflows are modified', async () => {
     mockDistributionState.isCloud = false
-    mockWorkflowStore.modifiedWorkflows = [makeWorkflow('a.json')]
+    Object.assign(mockWorkflowStore, {
+      modifiedWorkflows: [makeWorkflow('a.json')]
+    })
     const { logout } = useAuthActions()
 
     await logout()
 
-    expect(mockDialogService.confirm).not.toHaveBeenCalled()
-    expect(mockWorkflowService.saveWorkflow).not.toHaveBeenCalled()
+    expect(useDialogService().confirm).not.toHaveBeenCalled()
+    expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
     expect(mockClearAllWorkflowStorage).not.toHaveBeenCalled()
   })
@@ -220,8 +200,8 @@ describe('useAuthActions.logout', () => {
 
     await logout()
 
-    expect(mockDialogService.confirm).not.toHaveBeenCalled()
-    expect(mockWorkflowService.saveWorkflow).not.toHaveBeenCalled()
+    expect(useDialogService().confirm).not.toHaveBeenCalled()
+    expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
   })
 
@@ -235,7 +215,9 @@ describe('useAuthActions.logout', () => {
 
     expect(mockPrepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
     expect(mockClearAllWorkflowStorage).toHaveBeenCalledExactlyOnceWith()
-    expect(mockAuthStore.logout.mock.invocationCallOrder[0]).toBeLessThan(
+    expect(
+      vi.mocked(mockAuthStore.logout).mock.invocationCallOrder[0]
+    ).toBeLessThan(
       mockPrepareWorkflowLogoutTransition.mock.invocationCallOrder[0]
     )
     expect(
@@ -247,7 +229,9 @@ describe('useAuthActions.logout', () => {
   })
 
   it('does not clear cloud workflows when logout fails', async () => {
-    mockAuthStore.logout.mockRejectedValueOnce(new Error('network failed'))
+    vi.mocked(mockAuthStore.logout).mockRejectedValueOnce(
+      new Error('network failed')
+    )
     const { logout } = useAuthActions()
 
     await logout()
@@ -257,55 +241,60 @@ describe('useAuthActions.logout', () => {
   })
 
   it('cancels sign-out when the dialog is dismissed (null)', async () => {
-    mockWorkflowStore.modifiedWorkflows = [makeWorkflow('a.json')]
-    mockDialogService.confirm.mockResolvedValueOnce(null)
+    Object.assign(mockWorkflowStore, {
+      modifiedWorkflows: [makeWorkflow('a.json')]
+    })
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
     const { logout } = useAuthActions()
 
     await logout()
 
-    expect(mockDialogService.confirm).toHaveBeenCalledTimes(1)
-    expect(mockWorkflowService.saveWorkflow).not.toHaveBeenCalled()
+    expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
+    expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).not.toHaveBeenCalled()
   })
 
   it('signs out without saving when the user picks "Sign out anyway" (false)', async () => {
-    mockWorkflowStore.modifiedWorkflows = [makeWorkflow('a.json')]
-    mockDialogService.confirm.mockResolvedValueOnce(false)
+    Object.assign(mockWorkflowStore, {
+      modifiedWorkflows: [makeWorkflow('a.json')]
+    })
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(false)
     const { logout } = useAuthActions()
 
     await logout()
 
-    expect(mockDialogService.confirm).toHaveBeenCalledTimes(1)
-    expect(mockWorkflowService.saveWorkflow).not.toHaveBeenCalled()
+    expect(useDialogService().confirm).toHaveBeenCalledTimes(1)
+    expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
   })
 
   it('cancels sign-out when saving a workflow is cancelled', async () => {
-    mockWorkflowStore.modifiedWorkflows = [makeWorkflow('a.json')]
-    mockDialogService.confirm.mockResolvedValueOnce(true)
-    mockWorkflowService.saveWorkflow.mockResolvedValueOnce(false)
+    Object.assign(mockWorkflowStore, {
+      modifiedWorkflows: [makeWorkflow('a.json')]
+    })
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
+    vi.mocked(useWorkflowService().saveWorkflow).mockResolvedValueOnce(false)
     const { logout } = useAuthActions()
 
     await logout()
 
-    expect(mockWorkflowService.saveWorkflow).toHaveBeenCalledTimes(1)
+    expect(useWorkflowService().saveWorkflow).toHaveBeenCalledTimes(1)
     expect(mockAuthStore.logout).not.toHaveBeenCalled()
   })
 
   it('does not log out if a workflow save fails', async () => {
-    mockWorkflowStore.modifiedWorkflows = [
-      makeWorkflow('a.json'),
-      makeWorkflow('b.json')
-    ]
-    mockDialogService.confirm.mockResolvedValueOnce(true)
-    mockWorkflowService.saveWorkflow.mockRejectedValueOnce(
+    Object.assign(mockWorkflowStore, {
+      modifiedWorkflows: [makeWorkflow('a.json'), makeWorkflow('b.json')]
+    })
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
+    vi.mocked(useWorkflowService().saveWorkflow).mockRejectedValueOnce(
       new Error('disk full')
     )
     const { logout } = useAuthActions()
 
     await logout()
 
-    expect(mockWorkflowService.saveWorkflow).toHaveBeenCalledTimes(1)
+    expect(useWorkflowService().saveWorkflow).toHaveBeenCalledTimes(1)
     expect(mockAuthStore.logout).not.toHaveBeenCalled()
     expect(mockToastErrorHandler).toHaveBeenCalledExactlyOnceWith(
       new Error('auth.signOut.saveFailed:a.json')
@@ -314,38 +303,42 @@ describe('useAuthActions.logout', () => {
 
   it('saves every modified workflow before signing out when user picks Save (true)', async () => {
     const workflows = [makeWorkflow('a.json'), makeWorkflow('b.json')]
-    mockWorkflowStore.modifiedWorkflows = workflows
-    mockDialogService.confirm.mockResolvedValueOnce(true)
+    Object.assign(mockWorkflowStore, { modifiedWorkflows: workflows })
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(true)
     const { logout } = useAuthActions()
 
     await logout()
 
-    expect(mockWorkflowService.saveWorkflow).toHaveBeenCalledTimes(2)
-    expect(mockWorkflowService.saveWorkflow).toHaveBeenNthCalledWith(
+    expect(useWorkflowService().saveWorkflow).toHaveBeenCalledTimes(2)
+    expect(useWorkflowService().saveWorkflow).toHaveBeenNthCalledWith(
       1,
       workflows[0]
     )
-    expect(mockWorkflowService.saveWorkflow).toHaveBeenNthCalledWith(
+    expect(useWorkflowService().saveWorkflow).toHaveBeenNthCalledWith(
       2,
       workflows[1]
     )
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
     expect(
-      mockWorkflowService.saveWorkflow.mock.invocationCallOrder[1]
-    ).toBeLessThan(mockAuthStore.logout.mock.invocationCallOrder[0])
+      vi.mocked(useWorkflowService().saveWorkflow).mock.invocationCallOrder[1]
+    ).toBeLessThan(vi.mocked(mockAuthStore.logout).mock.invocationCallOrder[0])
     expect(
-      mockWorkflowService.saveWorkflow.mock.invocationCallOrder[0]
-    ).toBeLessThan(mockWorkflowService.saveWorkflow.mock.invocationCallOrder[1])
+      vi.mocked(useWorkflowService().saveWorkflow).mock.invocationCallOrder[0]
+    ).toBeLessThan(
+      vi.mocked(useWorkflowService().saveWorkflow).mock.invocationCallOrder[1]
+    )
   })
 
   it('passes denyLabel "Sign out anyway" to the dialog', async () => {
-    mockWorkflowStore.modifiedWorkflows = [makeWorkflow('a.json')]
-    mockDialogService.confirm.mockResolvedValueOnce(null)
+    Object.assign(mockWorkflowStore, {
+      modifiedWorkflows: [makeWorkflow('a.json')]
+    })
+    vi.mocked(useDialogService().confirm).mockResolvedValueOnce(null)
     const { logout } = useAuthActions()
 
     await logout()
 
-    expect(mockDialogService.confirm).toHaveBeenCalledWith(
+    expect(useDialogService().confirm).toHaveBeenCalledWith(
       expect.objectContaining({
         type: 'dirtyClose',
         title: 'auth.signOut.unsavedChangesTitle',
@@ -358,39 +351,39 @@ describe('useAuthActions.logout', () => {
 
 describe('useAuthActions auth flow error telemetry', () => {
   beforeEach(() => {
-    mockWorkflowStore.modifiedWorkflows = []
+    Object.assign(mockWorkflowStore, { modifiedWorkflows: [] })
   })
 
   it('tracks email sign-in Firebase failures and still shows the error toast', async () => {
     const error = new FirebaseError('auth/user-not-found', 'msg')
-    mockAuthStore.login.mockRejectedValueOnce(error)
+    vi.mocked(mockAuthStore.login).mockRejectedValueOnce(error)
     const { signInWithEmail } = useAuthActions()
 
     await expect(
       signInWithEmail('user@example.com', 'password')
     ).resolves.toBeUndefined()
 
-    expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
       error_code: 'auth/user-not-found',
       auth_action: 'email_sign_in'
     })
     expect(mockToastStore.add).toHaveBeenCalledWith({
       severity: 'error',
       summary: 'g.error',
-      detail: 'auth.errors.auth/user-not-found'
+      detail: 'auth.errors.auth/invalid-credential'
     })
   })
 
   it('tracks unknown errors for email sign-up failures', async () => {
     const error = new Error('network failed')
-    mockAuthStore.register.mockRejectedValueOnce(error)
+    vi.mocked(mockAuthStore.register).mockRejectedValueOnce(error)
     const { signUpWithEmail } = useAuthActions()
 
     await expect(
       signUpWithEmail('user@example.com', 'password')
     ).resolves.toBeUndefined()
 
-    expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
       error_code: 'unknown',
       auth_action: 'email_sign_up'
     })
@@ -398,12 +391,12 @@ describe('useAuthActions auth flow error telemetry', () => {
 
   it('tracks Google sign-up failures separately from sign-in failures', async () => {
     const error = new FirebaseError('auth/popup-closed-by-user', 'msg')
-    mockAuthStore.loginWithGoogle.mockRejectedValueOnce(error)
+    vi.mocked(mockAuthStore.loginWithGoogle).mockRejectedValueOnce(error)
     const { signInWithGoogle } = useAuthActions()
 
     await expect(signInWithGoogle({ isNewUser: true })).resolves.toBeUndefined()
 
-    expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
       error_code: 'auth/popup-closed-by-user',
       auth_action: 'google_sign_up'
     })
@@ -411,12 +404,12 @@ describe('useAuthActions auth flow error telemetry', () => {
 
   it('tracks GitHub sign-up failures separately from sign-in failures', async () => {
     const error = new FirebaseError('auth/popup-closed-by-user', 'msg')
-    mockAuthStore.loginWithGithub.mockRejectedValueOnce(error)
+    vi.mocked(mockAuthStore.loginWithGithub).mockRejectedValueOnce(error)
     const { signInWithGithub } = useAuthActions()
 
     await expect(signInWithGithub({ isNewUser: true })).resolves.toBeUndefined()
 
-    expect(mockTrackAuthFailed).toHaveBeenCalledExactlyOnceWith({
+    expect(useTelemetry()?.trackAuthFailed).toHaveBeenCalledExactlyOnceWith({
       error_code: 'auth/popup-closed-by-user',
       auth_action: 'github_sign_up'
     })
@@ -424,12 +417,12 @@ describe('useAuthActions auth flow error telemetry', () => {
 
   it('does not track auth failures for logout failures', async () => {
     const error = new FirebaseError('auth/network-request-failed', 'msg')
-    mockAuthStore.logout.mockRejectedValueOnce(error)
+    vi.mocked(mockAuthStore.logout).mockRejectedValueOnce(error)
     const { logout } = useAuthActions()
 
     await logout()
 
-    expect(mockTrackAuthFailed).not.toHaveBeenCalled()
+    expect(useTelemetry()?.trackAuthFailed).not.toHaveBeenCalled()
   })
 })
 
@@ -445,6 +438,21 @@ describe('useAuthActions.reportError', () => {
         expect.objectContaining({ detail: `auth.errors.${code}` })
       )
       expect(mockToastErrorHandler).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for(['auth/user-not-found', 'auth/wrong-password'] as const)(
+    'maps %s to the invalid-credential line, so the toast cannot say whether the email has an account',
+    (code) => {
+      const { reportError } = useAuthActions()
+
+      reportError(new FirebaseError(code, 'raw firebase'))
+
+      expect(mockToastStore.add).toHaveBeenCalledWith(
+        expect.objectContaining({
+          detail: 'auth.errors.auth/invalid-credential'
+        })
+      )
     }
   )
 
@@ -510,6 +518,24 @@ describe('useAuthActions.reportError', () => {
     expect(mockToastErrorHandler).not.toHaveBeenCalled()
   })
 
+  it('shows the generic auth copy for a non-auth FirebaseError, never raw SDK text', () => {
+    const { reportError } = useAuthActions()
+
+    reportError(
+      new FirebaseError('app/no-app', 'Firebase: Error (app/no-app).')
+    )
+
+    expect(mockToastStore.add).toHaveBeenCalledWith({
+      severity: 'error',
+      summary: 'g.error',
+      detail: 'auth.errors.generic'
+    })
+    expect(
+      mockToastErrorHandler,
+      'a FirebaseError outside the auth/ namespace still deserves the localized copy, not the raw SDK message'
+    ).not.toHaveBeenCalled()
+  })
+
   it('delegates non-Firebase errors to toastErrorHandler', () => {
     const { reportError } = useAuthActions()
     const networkError = new TypeError('Failed to fetch')
@@ -573,5 +599,26 @@ describe('useAuthActions.reportError', () => {
     reportError(new FirebaseError('auth/popup-blocked', 'raw firebase'))
 
     expect(accessError.value).toBe(false)
+  })
+})
+
+describe('useAuthActions.sendPasswordReset', () => {
+  it('resolves true when the identity layer answers an unknown email as sent', async () => {
+    vi.mocked(mockAuthStore.sendPasswordReset).mockResolvedValueOnce(undefined)
+    const { sendPasswordReset } = useAuthActions()
+
+    await expect(
+      sendPasswordReset('never-registered@example.com'),
+      'an unknown email must resolve like a known one, or CloudForgotPasswordView shows the error copy and leaks that the address is unregistered'
+    ).resolves.toBe(true)
+  })
+
+  it('resolves undefined when the reset genuinely fails, so the caller can show its error', async () => {
+    vi.mocked(mockAuthStore.sendPasswordReset).mockRejectedValueOnce(
+      new FirebaseError('auth/network-request-failed', 'msg')
+    )
+    const { sendPasswordReset } = useAuthActions()
+
+    await expect(sendPasswordReset('user@example.com')).resolves.toBeUndefined()
   })
 })

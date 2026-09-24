@@ -3,7 +3,6 @@ import { useToast } from 'primevue/usetoast'
 import { inject } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { downloadFile } from '@/base/common/downloadUtil'
 import { useCopyToClipboard } from '@/composables/useCopyToClipboard'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isCloud } from '@/platform/distribution/types'
@@ -24,7 +23,7 @@ import {
   getAssetStoredFilename
 } from '../utils/assetMetadataUtils'
 import { getAssetType } from '../utils/assetTypeUtil'
-import { getAssetUrl } from '../utils/assetUrlUtil'
+import { getAssetFileUrl } from '../utils/assetUrlUtil'
 import { clearDeletedAssetWidgetValues } from '../utils/clearDeletedAssetWidgetValues'
 import { clearNodePreviewCacheForValues } from '../utils/clearNodePreviewCacheForValues'
 import { markDeletedAssetsAsMissingMedia } from '../utils/markDeletedAssetsAsMissingMedia'
@@ -39,6 +38,8 @@ import { useAssetExportStore } from '@/stores/assetExportStore'
 import type { AssetId, AssetItem } from '../schemas/assetSchema'
 import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import { assetService } from '../services/assetService'
+import { useAssetDownload } from './useAssetDownload'
+import type { AssetDownload } from './useAssetDownload'
 
 const EXCLUDED_TAGS = new Set(['models', 'input', 'output'])
 
@@ -64,7 +65,7 @@ function createAssetWidgetPath(asset: AssetItem): string {
  */
 function widgetValueVariants(
   name: string | undefined,
-  type: string,
+  type: string | undefined,
   subfolder?: string,
   hash?: string
 ): string[] {
@@ -95,6 +96,7 @@ export function useMediaAssetActions() {
   const workflowActions = useWorkflowActionsService()
   const litegraphService = useLitegraphService()
   const nodeDefStore = useNodeDefStore()
+  const { downloadFiles } = useAssetDownload()
 
   /**
    * Download one or more assets.
@@ -124,28 +126,23 @@ export function useMediaAssetActions() {
       return
     }
 
-    try {
-      targetAssets.forEach((asset) => downloadSingleAsset(asset))
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t('mediaAsset.selection.downloadsStarted', targetAssets.length),
-        life: 2000
-      })
-    } catch (error) {
-      console.error('Failed to download assets:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('g.failedToDownloadImage')
-      })
-    }
+    void downloadFiles(targetAssets.map(createAssetDownload))
   }
 
-  function downloadSingleAsset(asset: AssetItem) {
+  function createAssetDownload(asset: AssetItem): AssetDownload {
+    const url = getAssetFileUrl(asset)
     const filename = getAssetDisplayName(asset)
-    const downloadUrl = asset.preview_url || getAssetUrl(asset)
-    downloadFile(downloadUrl, filename)
+    if (!isCloud) return { mode: 'direct', url, filename }
+
+    // Required: a bare fetch sends no Authorization header and authenticates by
+    // session cookie, which resolves to the personal workspace — an asset owned
+    // by any other workspace then reads as missing.
+    return {
+      mode: 'fetch',
+      url,
+      filename,
+      fetch: (route) => api.fetchApi(route)
+    }
   }
 
   async function expandAssetForDownload(
@@ -172,34 +169,15 @@ export function useMediaAssetActions() {
   }
 
   async function downloadAssetsIndividually(assets: AssetItem[]) {
-    try {
-      const expanded = await Promise.all(assets.map(expandAssetForDownload))
-      const seenAssetIds = new Set<string>()
-      const filesToDownload = expanded.flat().filter((asset) => {
-        if (seenAssetIds.has(asset.id)) return false
-        seenAssetIds.add(asset.id)
-        return true
-      })
+    const expanded = await Promise.all(assets.map(expandAssetForDownload))
+    const seenAssetIds = new Set<string>()
+    const filesToDownload = expanded.flat().filter((asset) => {
+      if (seenAssetIds.has(asset.id)) return false
+      seenAssetIds.add(asset.id)
+      return true
+    })
 
-      filesToDownload.forEach((asset) => downloadSingleAsset(asset))
-
-      toast.add({
-        severity: 'success',
-        summary: t('g.success'),
-        detail: t(
-          'mediaAsset.selection.downloadsStarted',
-          filesToDownload.length
-        ),
-        life: 2000
-      })
-    } catch (error) {
-      console.error('Failed to download assets:', error)
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('g.failedToDownloadImage')
-      })
-    }
+    await downloadFiles(filesToDownload.map(createAssetDownload))
   }
 
   async function downloadAssetsAsZip(assets: AssetItem[]) {
@@ -647,15 +625,6 @@ export function useMediaAssetActions() {
         })
         return uniqBy(operations, (op) => op.id)
       }
-      if (!flags.assetDeletionEnabled) {
-        toast.add({
-          detail: t('mediaAsset.deletionUnsupported'),
-          life: 5000,
-          severity: 'error',
-          summary: t('g.error')
-        })
-        return []
-      }
       return assets.flatMap((asset) => {
         const markDeletionId = asset.id
         const metadata = getOutputAssetMetadata(asset.user_metadata)
@@ -770,9 +739,11 @@ export function useMediaAssetActions() {
     const deleteConfirmed = await dialogService.confirm({
       title: t('mediaAsset.deleteItems'),
       type: 'delete',
-      message: plannedAssetCount
-        ? t('mediaAsset.deletePermanent')
-        : t('mediaAsset.deleteHistoryOnly'),
+      message: !plannedAssetCount
+        ? t('mediaAsset.deleteHistoryOnly')
+        : flags.assetDeletionEnabled
+          ? t('mediaAsset.deletePermanent')
+          : t('mediaAsset.deleteTombstone'),
       itemList: deletionPlan.flatMap(getNames)
     })
     if (!deleteConfirmed) return false

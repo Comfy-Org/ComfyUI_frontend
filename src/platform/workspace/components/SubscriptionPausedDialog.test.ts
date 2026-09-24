@@ -18,6 +18,13 @@ const i18n = createI18n({
             "Update your payment method to restore the workspace's subscription and run workflows.",
           memberDescription:
             "Ask your workspace owner to restore the workspace's subscription.",
+          paymentFailedOwnerTitle: "Your payment didn't go through",
+          paymentFailedMemberTitle:
+            "This workspace's payment didn't go through",
+          paymentFailedOwnerDescription:
+            'Update your payment method to keep running workflows.',
+          paymentFailedMemberDescription:
+            "Ask your workspace owner to update the workspace's payment method.",
           ownerCta: 'Update payment',
           memberCta: 'Ok, got it'
         }
@@ -26,11 +33,15 @@ const i18n = createI18n({
   }
 })
 
-function renderDialog(canManage: boolean, isUpdatingPayment = false) {
+function renderDialog(
+  canManage: boolean,
+  isUpdatingPayment = false,
+  status: 'paused' | 'payment_failed' = 'paused'
+) {
   const onClose = vi.fn()
   const onUpdatePayment = vi.fn()
   render(SubscriptionPausedDialog, {
-    props: { canManage, isUpdatingPayment, onClose, onUpdatePayment },
+    props: { canManage, status, isUpdatingPayment, onClose, onUpdatePayment },
     global: { plugins: [i18n] }
   })
   return { onClose, onUpdatePayment }
@@ -64,6 +75,34 @@ describe('SubscriptionPausedDialog', () => {
 
     expect(onClose).toHaveBeenCalledOnce()
     expect(onUpdatePayment).not.toHaveBeenCalled()
+  })
+
+  it('gives owners outstanding-payment recovery copy', () => {
+    renderDialog(true, false, 'payment_failed')
+
+    expect(
+      screen.getByText("Your payment didn't go through")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText('Update your payment method to keep running workflows.')
+    ).toBeInTheDocument()
+    expect(screen.queryByText('Subscription paused')).not.toBeInTheDocument()
+  })
+
+  it('gives members outstanding-payment guidance without a payment action', () => {
+    renderDialog(false, false, 'payment_failed')
+
+    expect(
+      screen.getByText("This workspace's payment didn't go through")
+    ).toBeInTheDocument()
+    expect(
+      screen.getByText(
+        "Ask your workspace owner to update the workspace's payment method."
+      )
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('button', { name: 'Update payment' })
+    ).not.toBeInTheDocument()
   })
 
   it('closes from the visible close button', async () => {

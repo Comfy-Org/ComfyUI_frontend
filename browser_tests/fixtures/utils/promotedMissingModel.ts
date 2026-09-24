@@ -313,7 +313,7 @@ function setRootHostWidgetValue(
   }
 
   hostNode.widgets_values = {
-    ...(hostNode.widgets_values ?? {}),
+    ...hostNode.widgets_values,
     [PROMOTED_MODEL_WIDGET_NAME]: value
   }
 }

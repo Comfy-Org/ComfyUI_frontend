@@ -168,3 +168,48 @@ export const WithoutFeaturedLabelMobile: Story = {
     viewport: { value: 'mobile', isRotated: false }
   }
 }
+
+const twoUpHeaderlessArgs = {
+  eyebrow: undefined,
+  heading: undefined,
+  description: undefined,
+  featuredOffer: undefined,
+  offers: [
+    {
+      id: 'commercial-licensing',
+      label: 'COMMERCIAL RIGHTS',
+      title: 'Model licensing',
+      description:
+        'Commercial terms for MiniMax today, with local model terms available by provider on request.',
+      cta: {
+        label: 'VIEW MINIMAX LICENSING',
+        href: '/minimax/license/'
+      }
+    },
+    {
+      id: 'forward-deployed-creatives',
+      label: 'HANDS-ON DELIVERY',
+      title: 'Forward deployed creatives',
+      description:
+        'Work with ComfyUI specialists who design production Comfy Workflows alongside your teams, then leave behind workflows you can run, inspect, and extend.',
+      cta: {
+        label: 'VIEW THE OFFERING',
+        href: '/forward-deployed-creatives/'
+      }
+    }
+  ]
+}
+
+export const TwoUpHeaderlessDesktop: Story = {
+  args: twoUpHeaderlessArgs,
+  globals: {
+    viewport: { value: 'desktop', isRotated: false }
+  }
+}
+
+export const TwoUpHeaderlessMobile: Story = {
+  args: twoUpHeaderlessArgs,
+  globals: {
+    viewport: { value: 'mobile', isRotated: false }
+  }
+}

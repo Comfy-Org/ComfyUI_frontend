@@ -8,7 +8,7 @@ const mockLiteGraph = vi.hoisted(() => ({
   vueNodesMode: false
 }))
 
-vi.mock('@/lib/litegraph/src/litegraph', () => ({
+vi.mock<unknown>(import('@/lib/litegraph/src/litegraph'), () => ({
   LiteGraph: mockLiteGraph
 }))
 

@@ -1,4 +1,4 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -6,24 +6,18 @@ import { computed, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { CORE_SETTINGS } from '@/platform/settings/constants/coreSettings'
-import type { Settings } from '@/schemas/apiSchema'
+import { useSettingStore } from '@/platform/settings/settingStore'
+import type { Settings } from '@/platform/settings/types'
+import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 
 import NodeSearchBoxPopover from './NodeSearchBoxPopover.vue'
 
 const coreSettingsById = Object.fromEntries(CORE_SETTINGS.map((s) => [s.id, s]))
 
-const { addNodeOnGraph } = vi.hoisted(() => ({
-  addNodeOnGraph: vi.fn()
-}))
-
-vi.mock('@/services/litegraphService', () => ({
-  useLitegraphService: () => ({
-    getCanvasCenter: vi.fn(() => [0, 0]),
-    addNodeOnGraph
-  })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 type EmitAddFilter = (filter: FuseFilterWithValue<ComfyNodeDefImpl>) => void
 type EmitAddNode = (nodeDef: ComfyNodeDefImpl, dragEvent?: MouseEvent) => void
@@ -80,16 +74,11 @@ describe('NodeSearchBoxPopover', () => {
       template: '<div data-testid="search-content-v2"></div>'
     })
 
-    const pinia = createTestingPinia({
-      stubActions: false,
-      initialState: {
-        setting: {
-          settingValues: settings,
-          settingsById: coreSettingsById
-        },
-        searchBox: { visible: false }
-      }
-    })
+    const pinia = getActivePinia()!
+    const settingStore = useSettingStore()
+    settingStore.settingValues = settings
+    settingStore.settingsById = coreSettingsById
+    useSearchBoxStore().visible = false
 
     const result = render(NodeSearchBoxPopover, {
       global: {
@@ -125,7 +114,7 @@ describe('NodeSearchBoxPopover', () => {
   }
 
   beforeEach(() => {
-    addNodeOnGraph.mockReturnValue(null)
+    vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(null)
   })
 
   describe('addFilter duplicate prevention', () => {
@@ -190,7 +179,7 @@ describe('NodeSearchBoxPopover', () => {
       emitAddNodeV2(nodeDef)
       await nextTick()
 
-      expect(addNodeOnGraph).toHaveBeenCalledWith(
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
         nodeDef,
         expect.objectContaining({ pos: expect.any(Array) }),
         expect.objectContaining({ ghost: true })
@@ -205,7 +194,7 @@ describe('NodeSearchBoxPopover', () => {
       emitAddNodeV2(nodeDef)
       await nextTick()
 
-      expect(addNodeOnGraph).toHaveBeenCalledWith(
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
         nodeDef,
         expect.objectContaining({ pos: expect.any(Array) }),
         expect.objectContaining({ ghost: true })
@@ -220,7 +209,7 @@ describe('NodeSearchBoxPopover', () => {
       emitAddNodeV2(nodeDef)
       await nextTick()
 
-      expect(addNodeOnGraph).toHaveBeenCalledWith(
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
         nodeDef,
         expect.objectContaining({ pos: expect.any(Array) }),
         expect.objectContaining({ ghost: false })
@@ -235,7 +224,7 @@ describe('NodeSearchBoxPopover', () => {
       emitAddNodeV1(nodeDef)
       await nextTick()
 
-      expect(addNodeOnGraph).toHaveBeenCalledWith(
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
         nodeDef,
         expect.objectContaining({ pos: expect.any(Array) }),
         expect.objectContaining({ ghost: false })
@@ -250,7 +239,7 @@ describe('NodeSearchBoxPopover', () => {
       emitAddNodeV1(nodeDef)
       await nextTick()
 
-      expect(addNodeOnGraph).toHaveBeenCalledWith(
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
         nodeDef,
         expect.objectContaining({ pos: expect.any(Array) }),
         expect.objectContaining({ ghost: false })
@@ -266,7 +255,7 @@ describe('NodeSearchBoxPopover', () => {
       emitAddNodeV2(nodeDef, dragEvent)
       await nextTick()
 
-      expect(addNodeOnGraph).toHaveBeenCalledWith(
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
         nodeDef,
         expect.objectContaining({ pos: expect.any(Array) }),
         expect.objectContaining({ ghost: true, dragEvent })

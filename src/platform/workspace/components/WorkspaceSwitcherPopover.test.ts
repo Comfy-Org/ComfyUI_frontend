@@ -1,27 +1,23 @@
-import { createTestingPinia } from '@pinia/testing'
+import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspaceSwitcherPopover from './WorkspaceSwitcherPopover.vue'
 
-vi.mock('@/platform/workspace/composables/useWorkspaceSwitch', () => ({
+vi.mock(import('@/platform/workspace/composables/useWorkspaceSwitch'), () => ({
   useWorkspaceSwitch: () => ({ switchWorkspace: vi.fn() })
 }))
 
-const billingMocks = vi.hoisted(() => ({
-  subscription: {
-    value: null as { tier: string; duration: string } | null
-  }
-}))
-
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({ subscription: billingMocks.subscription })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 const distributionMocks = vi.hoisted(() => ({ isCloud: true }))
 
-vi.mock('@/platform/distribution/types', () => distributionMocks)
+vi.mock(import('@/platform/distribution/types'), () => distributionMocks)
 
 const LONG_WORKSPACE_NAME =
   'Quantum Renaissance Collective for Hyperdimensional Latent Diffusion Research and Experimental Workflow Engineering'
@@ -51,7 +47,14 @@ const i18n = createI18n({
   }
 })
 
-function createWorkspaceState(overrides: Record<string, unknown>) {
+type WorkspaceState = ReturnType<
+  typeof useTeamWorkspaceStore
+>['workspaces'][number]
+
+function createWorkspaceState(
+  overrides: Pick<WorkspaceState, 'id' | 'name' | 'type' | 'role'> &
+    Partial<WorkspaceState>
+): WorkspaceState {
   return {
     created_at: '2026-01-01T00:00:00Z',
     joined_at: '2026-01-01T00:00:00Z',
@@ -67,37 +70,33 @@ function createWorkspaceState(overrides: Record<string, unknown>) {
 function renderComponent(
   overrides: {
     activeWorkspaceId?: string
-    workspaces?: Record<string, unknown>[]
+    workspaces?: WorkspaceState[]
   } = {}
 ) {
+  const store: ReturnType<typeof useTeamWorkspaceStore> & {
+    activeWorkspaceId: string | null
+  } = useTeamWorkspaceStore()
+  store.activeWorkspaceId = overrides.activeWorkspaceId ?? 'ws-personal'
+  store.$patch({
+    isFetchingWorkspaces: false,
+    workspaces: overrides.workspaces ?? [
+      createWorkspaceState({
+        id: 'ws-personal',
+        name: 'Personal Workspace',
+        type: 'personal',
+        role: 'owner'
+      }),
+      createWorkspaceState({
+        id: 'ws-team-long',
+        name: LONG_WORKSPACE_NAME,
+        type: 'team',
+        role: 'member'
+      })
+    ]
+  })
   return render(WorkspaceSwitcherPopover, {
     global: {
-      plugins: [
-        createTestingPinia({
-          createSpy: vi.fn,
-          initialState: {
-            teamWorkspace: {
-              activeWorkspaceId: overrides.activeWorkspaceId ?? 'ws-personal',
-              isFetchingWorkspaces: false,
-              workspaces: overrides.workspaces ?? [
-                createWorkspaceState({
-                  id: 'ws-personal',
-                  name: 'Personal Workspace',
-                  type: 'personal',
-                  role: 'owner'
-                }),
-                createWorkspaceState({
-                  id: 'ws-team-long',
-                  name: LONG_WORKSPACE_NAME,
-                  type: 'team',
-                  role: 'member'
-                })
-              ]
-            }
-          }
-        }),
-        i18n
-      ],
+      plugins: [getActivePinia()!, i18n],
       stubs: {
         WorkspaceProfilePic: true
       }
@@ -117,7 +116,9 @@ describe('WorkspaceSwitcherPopover', () => {
   })
 
   beforeEach(() => {
-    billingMocks.subscription.value = null
+    const billingContext = useBillingContext()
+    billingContext.subscription = computed(() => null)
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
     distributionMocks.isCloud = true
   })
 
@@ -185,7 +186,17 @@ describe('WorkspaceSwitcherPopover', () => {
   })
 
   it('does not render a tier badge on team workspace rows', () => {
-    billingMocks.subscription.value = { tier: 'PRO', duration: 'MONTHLY' }
+    useBillingContext().subscription = computed(() => ({
+      isActive: true,
+      tier: 'PRO',
+      duration: 'MONTHLY',
+      planSlug: null,
+      scheduledChange: null,
+      renewalDate: null,
+      endDate: null,
+      isCancelled: false,
+      hasFunds: true
+    }))
 
     renderComponent({
       activeWorkspaceId: 'ws-team',

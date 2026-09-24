@@ -1,75 +1,47 @@
-import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useAuthActions } from '@/composables/auth/useAuthActions'
+import { useBillingRouting } from '@/composables/billing/useBillingRouting'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
+import { useTelemetry } from '@/platform/telemetry'
 import { AuthStoreError } from '@/stores/authStore'
+import { useDialogStore } from '@/stores/dialogStore'
 
 import TopUpCreditsDialogContentLegacy from './TopUpCreditsDialogContentLegacy.vue'
 
-const mockPurchaseCreditsDirect = vi.fn()
-const mockShowSettings = vi.fn()
 const mockToastAdd = vi.fn()
-const mockCloseDialog = vi.fn()
-const mockTrackTopUpPurchase = vi.fn()
-const mockTrackBillingEvent = vi.fn()
-const mockIsSubscriptionEnabled = vi.fn(() => true)
+
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 
-vi.mock('@/composables/auth/useAuthActions', () => ({
-  useAuthActions: () => ({
-    purchaseCreditsDirect: (amount: number) => mockPurchaseCreditsDirect(amount)
-  })
-}))
+vi.mock(import('@/composables/auth/useAuthActions'))
 
-vi.mock('@/composables/billing/useBillingRouting', () => ({
-  useBillingRouting: () => ({
-    shouldUseWorkspaceBilling: {
-      get value() {
-        return mockShouldUseWorkspaceBilling.value
-      }
-    }
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingRouting'))
 
-vi.mock('@/platform/cloud/subscription/composables/useSubscription', () => ({
-  useSubscription: () => ({
-    isSubscriptionEnabled: mockIsSubscriptionEnabled
-  })
-}))
+vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
-vi.mock('@/platform/settings/composables/useSettingsDialog', () => ({
-  useSettingsDialog: () => ({ show: mockShowSettings })
-}))
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
-vi.mock('@/stores/dialogStore', () => ({
-  useDialogStore: () => ({ closeDialog: mockCloseDialog })
-}))
-
-vi.mock('@/platform/telemetry', () => ({
-  useTelemetry: () => ({
-    trackApiCreditTopupButtonPurchaseClicked: mockTrackTopUpPurchase,
-    trackBillingEvent: mockTrackBillingEvent
-  })
-}))
+vi.mock(import('@/platform/telemetry'))
 
 const mockClearPendingTopup = vi.hoisted(() => vi.fn())
-vi.mock('@/composables/billing/usePendingTopup', () => ({
+vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
   usePendingTopup: () => ({ clearPendingTopup: mockClearPendingTopup })
 }))
 
-vi.mock('@/composables/useExternalLink', () => ({
-  useExternalLink: () => ({
-    buildDocsUrl: () => 'https://docs.comfy.org',
-    docsPaths: { partnerNodesPricing: '' }
+vi.mock<unknown>(
+  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+
+  () => ({
+    useToast: () => ({ add: mockToastAdd })
   })
-}))
+)
 
-vi.mock('primevue/usetoast', () => ({
-  useToast: () => ({ add: mockToastAdd })
-}))
-
-vi.mock('@/base/credits/comfyCredits', () => ({
+vi.mock(import('@/base/credits/comfyCredits'), () => ({
   creditsToUsd: (credits: number) => credits,
   usdToCredits: (usd: number) => usd
 }))
@@ -126,19 +98,24 @@ async function clickBuyCredits() {
 
 describe('TopUpCreditsDialogContentLegacy', () => {
   beforeEach(() => {
-    mockIsSubscriptionEnabled.mockReturnValue(true)
+    useBillingRouting().shouldUseWorkspaceBilling = computed(
+      () => mockShouldUseWorkspaceBilling.value
+    )
+    vi.mocked(useSubscription().isSubscriptionEnabled).mockReturnValue(true)
     mockShouldUseWorkspaceBilling.value = false
   })
 
   it('shows Plan & Credits after a successful Cloud purchase', async () => {
-    mockPurchaseCreditsDirect.mockResolvedValue(undefined)
+    vi.mocked(useAuthActions().purchaseCreditsDirect).mockResolvedValue(
+      undefined
+    )
 
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockPurchaseCreditsDirect).toHaveBeenCalledWith(50)
-    expect(mockCloseDialog).toHaveBeenCalled()
-    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+    expect(useAuthActions().purchaseCreditsDirect).toHaveBeenCalledWith(50)
+    expect(useDialogStore().closeDialog).toHaveBeenCalled()
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
     expect(mockClearPendingTopup).not.toHaveBeenCalled()
   })
 
@@ -148,38 +125,42 @@ describe('TopUpCreditsDialogContentLegacy', () => {
     await user.click(screen.getByRole('button', { name: 'Close' }))
 
     expect(mockClearPendingTopup).toHaveBeenCalled()
-    expect(mockCloseDialog).toHaveBeenCalled()
+    expect(useDialogStore().closeDialog).toHaveBeenCalled()
   })
 
   it('shows Plan & Credits when no billing rail is active', async () => {
-    mockIsSubscriptionEnabled.mockReturnValue(false)
-    mockPurchaseCreditsDirect.mockResolvedValue(undefined)
+    vi.mocked(useSubscription().isSubscriptionEnabled).mockReturnValue(false)
+    vi.mocked(useAuthActions().purchaseCreditsDirect).mockResolvedValue(
+      undefined
+    )
 
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
   })
 
   it('shows the workspace settings panel when workspace billing is active', async () => {
     mockShouldUseWorkspaceBilling.value = true
-    mockPurchaseCreditsDirect.mockResolvedValue(undefined)
+    vi.mocked(useAuthActions().purchaseCreditsDirect).mockResolvedValue(
+      undefined
+    )
 
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockShowSettings).toHaveBeenCalledWith('workspace')
+    expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
   })
 
   it('tracks the failure and surfaces a toast when the purchase rejects', async () => {
-    mockPurchaseCreditsDirect.mockRejectedValue(
+    vi.mocked(useAuthActions().purchaseCreditsDirect).mockRejectedValue(
       new Error('declined for person@example.com')
     )
 
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
@@ -191,7 +172,7 @@ describe('TopUpCreditsDialogContentLegacy', () => {
         summary: 'Purchase Failed'
       })
     )
-    expect(mockShowSettings).not.toHaveBeenCalled()
+    expect(useSettingsDialog().show).not.toHaveBeenCalled()
   })
 
   it('categorizes an auth-store rejection with an HTTP status via the shared classifier', async () => {
@@ -199,12 +180,14 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       'backend rejected the purchase',
       400
     )
-    mockPurchaseCreditsDirect.mockRejectedValue(authStoreError)
+    vi.mocked(useAuthActions().purchaseCreditsDirect).mockRejectedValue(
+      authStoreError
+    )
 
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
@@ -214,12 +197,14 @@ describe('TopUpCreditsDialogContentLegacy', () => {
 
   it('categorizes an auth-store rejection with no HTTP status as a network failure', async () => {
     const authStoreError = new AuthStoreError('offline')
-    mockPurchaseCreditsDirect.mockRejectedValue(authStoreError)
+    vi.mocked(useAuthActions().purchaseCreditsDirect).mockRejectedValue(
+      authStoreError
+    )
 
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',
@@ -228,12 +213,12 @@ describe('TopUpCreditsDialogContentLegacy', () => {
   })
 
   it('uses the same bounded category when the rejection is not an Error', async () => {
-    mockPurchaseCreditsDirect.mockRejectedValue('boom')
+    vi.mocked(useAuthActions().purchaseCreditsDirect).mockRejectedValue('boom')
 
     renderDialog()
     await clickBuyCredits()
 
-    expect(mockTrackBillingEvent).toHaveBeenCalledWith({
+    expect(useTelemetry()?.trackBillingEvent).toHaveBeenCalledWith({
       operation: 'topup',
       stage: 'failed',
       outcome: 'failure',

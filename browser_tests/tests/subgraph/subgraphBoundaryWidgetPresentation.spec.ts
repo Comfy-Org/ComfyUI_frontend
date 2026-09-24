@@ -38,7 +38,7 @@ test.describe(
         )
         await comfyPage.nextFrame()
         await comfyPage.vueNodes.enterSubgraph('11')
-        await comfyPage.vueNodes.waitForNodes(2)
+        await comfyPage.vueNodes.waitForNodes()
       })
 
       test('keeps the editor mounted and restores its value through disconnect, undo, and redo', async ({
@@ -127,7 +127,7 @@ test.describe(
         const nodeRef = await comfyPage.nodeOps.getNodeRefById('1')
         const host = await nodeRef.convertToSubgraph()
         await comfyPage.vueNodes.enterSubgraph(String(host.id))
-        await comfyPage.vueNodes.waitForNodes(1)
+        await comfyPage.vueNodes.waitForNodes()
         await comfyPage.subgraph.promoteWidget(node, 'string_input')
 
         const indicator = node.getByRole('img', {
@@ -150,7 +150,7 @@ test.describe(
         const node = await comfyPage.nodeOps.getNodeRefById('11')
         const host = await node.convertToSubgraph()
         await comfyPage.vueNodes.enterSubgraph(String(host.id))
-        await comfyPage.vueNodes.waitForNodes(1)
+        await comfyPage.vueNodes.waitForNodes()
         await comfyPage.subgraph.promoteWidget(
           comfyPage.vueNodes.getNodeLocator('11'),
           'boolean_input'
@@ -200,21 +200,17 @@ test.describe(
         await comfyPage.workflow.loadWorkflow('vueNodes/linked-int-widget')
       })
 
-      test('keeps a linked seed value and its auxiliary control visible', async ({
+      test('suppresses a linked seed without showing a boundary indicator', async ({
         comfyPage
       }) => {
-        const widget = comfyPage.vueNodes.getWidgetRowByLabel(
-          'KSampler',
-          'seed'
-        )
-        const controls = comfyPage.vueNodes.getInputNumberControls(widget)
+        const widget = comfyPage.vueNodes.getWidgetByName('KSampler', 'seed')
         const node = await comfyPage.nodeOps.getNodeRefById('10')
         const inputSlot = await node.getInput(4)
 
         await expect.poll(() => inputSlot.getLinkCount()).toBe(1)
-        await expect(controls.input).toBeVisible()
-        await expect(controls.input).toHaveValue('67')
-        await expect(controls.valueControl).toBeVisible()
+        await expect(widget).toHaveCount(1)
+        await expect(widget.getByTestId('slot-dot')).toBeVisible()
+        await expect(widget.locator('input, button')).toHaveCount(0)
         await expect(
           widget.getByRole('img', { name: 'seed: Linked input' })
         ).toHaveCount(0)

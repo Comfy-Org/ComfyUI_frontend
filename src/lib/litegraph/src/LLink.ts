@@ -5,6 +5,7 @@ import {
 import type { SubgraphInput } from '@/lib/litegraph/src/subgraph/SubgraphInput'
 import type { SubgraphOutput } from '@/lib/litegraph/src/subgraph/SubgraphOutput'
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useLinkPresentationStore } from '@/stores/linkPresentationStore'
 import { useLinkStore } from '@/stores/linkStore'
 import { graphScopeOf, toOwningGraphId } from '@/types/graphScopeId'
 import type { GraphScope } from '@/types/graphScopeId'
@@ -57,6 +58,16 @@ export function resolveLinkTopology(topology: LinkTopology): LLink | undefined {
  * mutation its live LiteGraph facade. The store remains the identity owner;
  * this only installs the adapter used by graph lookup, painting, and link
  * interactions.
+ *
+ * This adoption is the only one of the three `adoptLinkTopology` call sites
+ * that can run strictly after the topology's own registration bumped
+ * {@link useLinkStore}'s revision (`registerLinkTopology` and
+ * `replaceLinkTopology` register and adopt in the same call, so their
+ * revision bump already postdates their adoption). Something reading
+ * `graph.links` between this topology's registration and this function
+ * materializing it — e.g. a CRDT `connect` mutation's own commit, checking
+ * the slot it just displaced — would otherwise cache "no facade yet"
+ * against that revision forever, since adoption alone never bumps it.
  */
 export function materializeLinkAdapter(
   graph: Pick<LGraph, 'rootGraph' | 'id'>,
@@ -85,6 +96,7 @@ export function materializeLinkAdapter(
     topology.parentId
   )
   adoptLinkTopology(link, scope, registered)
+  useLinkStore().notifyAdapterAdopted()
   return link
 }
 
@@ -718,6 +730,9 @@ export function replaceLinkTopology(
   )
   if (!registered) return false
   if (incumbent) {
+    if (incumbent._graphScope) {
+      useLinkPresentationStore().take(incumbent._graphScope, incumbent.id)
+    }
     linkByTopology.delete(toRaw(incumbent._state))
     incumbent._graphScope = undefined
   }
@@ -743,7 +758,9 @@ function adoptLinkTopology(
  */
 export function unregisterLinkTopology(link: LLink): void {
   if (!link._graphScope) return
-  useLinkStore().deleteLink(link._graphScope, link._state)
+  if (useLinkStore().deleteLink(link._graphScope, link._state)) {
+    useLinkPresentationStore().take(link._graphScope, link.id)
+  }
   linkByTopology.delete(toRaw(link._state))
   link._graphScope = undefined
 }

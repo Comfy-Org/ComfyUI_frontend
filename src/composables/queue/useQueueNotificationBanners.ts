@@ -7,6 +7,8 @@ import type {
 } from '@/scripts/api'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useQueueStore } from '@/stores/queueStore'
+import { resultItemUrlWithTimestamp } from '@/utils/resultItemUrl'
+import { isImageResult } from '@/utils/resultItem'
 import { jobStateFromTask } from '@/utils/queueUtil'
 
 const BANNER_DISMISS_DELAY_MS = 4000
@@ -132,11 +134,9 @@ export const useQueueNotificationBanners = () => {
       }
     }
 
-    pendingNotifications.value = pendingNotifications.value.toSpliced(
-      queuePositionFor(notification),
-      0,
-      notification
-    )
+    const pending = [...pendingNotifications.value]
+    pending.splice(queuePositionFor(notification), 0, notification)
+    pendingNotifications.value = pending
     showNextNotification()
   }
 
@@ -261,8 +261,8 @@ export const useQueueNotificationBanners = () => {
       if (state === 'completed') {
         completedCount++
         const preview = task.previewOutput
-        if (preview?.isImage) {
-          imagePreviews.push(preview.urlWithTimestamp)
+        if (preview && isImageResult(preview)) {
+          imagePreviews.push(resultItemUrlWithTimestamp(preview))
         }
       } else if (state === 'failed') {
         failedCount++

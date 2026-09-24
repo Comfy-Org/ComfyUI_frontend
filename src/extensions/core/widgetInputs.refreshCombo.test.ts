@@ -1,7 +1,5 @@
 import { fromPartial } from '@total-typescript/shoehorn'
-import { createTestingPinia } from '@pinia/testing'
-import { setActivePinia } from 'pinia'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import type { LGraph, LLink } from '@/lib/litegraph/src/litegraph'
 import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
@@ -20,13 +18,7 @@ import {
 } from '@/utils/__tests__/litegraphTestUtils'
 import { createUuidv4 } from '@/utils/uuid'
 
-vi.mock('@/scripts/app', () => ({
-  app: {
-    canvas: { graph_mouse: [0, 0] },
-    configuringGraph: false,
-    registerExtension: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 import { PrimitiveNode } from './widgetInputs'
 
@@ -122,14 +114,10 @@ function defsWithSpec(
 }
 
 describe('PrimitiveNode.refreshComboInNode', () => {
-  beforeEach(() => {
-    setActivePinia(createTestingPinia({ stubActions: false }))
-  })
-
-  it.each<[string, InputSpec]>([
+  it.for<[string, InputSpec]>([
     ['V1', [FRESH_OPTIONS, {}]],
     ['V2', ['COMBO', { options: FRESH_OPTIONS }]]
-  ])('updates options from fresh %s definitions', (_, inputSpec) => {
+  ])('updates options from fresh %s definitions', ([, inputSpec]) => {
     const { node, widget } = setupComboNode()
 
     node.refreshComboInNode(defsWithSpec(inputSpec))

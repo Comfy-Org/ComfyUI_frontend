@@ -1,9 +1,10 @@
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import type { PreviewSubscribeResponse } from '@/platform/workspace/api/workspaceApi'
 
 import SubscriptionTransitionPreviewWorkspace from './SubscriptionTransitionPreviewWorkspace.vue'
@@ -17,11 +18,26 @@ const { mockSubscription } = vi.hoisted(() => ({
   }
 }))
 
-vi.mock('@/composables/billing/useBillingContext', () => ({
-  useBillingContext: () => ({
-    subscription: computed(() => mockSubscription.value)
-  })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
+
+beforeEach(() => {
+  const billingContext = useBillingContext()
+  billingContext.subscription = computed(() =>
+    mockSubscription.value
+      ? {
+          isActive: true,
+          tier: null,
+          duration: null,
+          planSlug: null,
+          scheduledChange: null,
+          renewalDate: null,
+          hasFunds: true,
+          ...mockSubscription.value
+        }
+      : null
+  )
+  vi.mocked(useBillingContext).mockReturnValue(billingContext)
+})
 
 const i18n = createI18n({
   legacy: false,

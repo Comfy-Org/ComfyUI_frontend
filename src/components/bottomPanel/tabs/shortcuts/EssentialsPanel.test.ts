@@ -1,17 +1,25 @@
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useCommandStore } from '@/stores/commandStore'
 import type { ComfyCommandImpl } from '@/stores/commandStore'
 
+beforeEach(() => {
+  useCommandStore().registerCommands(mockCommands)
+})
+
 // Mock ShortcutsList component
-vi.mock('@/components/bottomPanel/tabs/shortcuts/ShortcutsList.vue', () => ({
-  default: {
-    name: 'ShortcutsList',
-    props: ['commands', 'subcategories', 'columns'],
-    template:
-      '<div data-testid="shortcuts-list">{{ JSON.stringify(subcategories) }}</div>'
-  }
-}))
+vi.mock<unknown>(
+  import('@/components/bottomPanel/tabs/shortcuts/ShortcutsList.vue'),
+  () => ({
+    default: {
+      name: 'ShortcutsList',
+      props: ['commands', 'subcategories', 'columns'],
+      template:
+        '<div data-testid="shortcuts-list">{{ JSON.stringify(subcategories) }}</div>'
+    }
+  })
+)
 
 // Mock command store
 const mockCommands: ComfyCommandImpl[] = [
@@ -41,12 +49,6 @@ const mockCommands: ComfyCommandImpl[] = [
     keybinding: null
   }
 ]
-
-vi.mock('@/stores/commandStore', () => ({
-  useCommandStore: () => ({
-    commands: mockCommands
-  })
-}))
 
 describe('EssentialsPanel', () => {
   it('should render ShortcutsList with essentials commands', async () => {

@@ -1,6 +1,6 @@
 import type { Token } from 'marked'
 
-import { ResultItemImpl } from '@/stores/queueStore'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 import type { MediaType } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
@@ -15,16 +15,22 @@ export interface ReplyAsset {
 
 const ASSET_KINDS = new Set<MediaType>(['image', 'video', 'audio', '3D'])
 
-export function classifyAssetUrl(href: string): ReplyAsset | null {
+export function classifyAssetUrl(
+  href: string,
+  baseUrl = window.location.origin
+): ReplyAsset | null {
   let url: URL
   try {
-    url = new URL(href, window.location.origin)
+    url = new URL(href, baseUrl)
   } catch {
     return null
   }
-  const filename =
-    url.searchParams.get('filename') ??
-    decodeURIComponent(url.pathname.split('/').at(-1) ?? '')
+  let filename = url.searchParams.get('filename')
+  try {
+    filename ??= decodeURIComponent(url.pathname.split('/').at(-1) ?? '')
+  } catch {
+    return null
+  }
   if (!filename) return null
   const kind = getMediaTypeFromFilename(filename)
   if (!ASSET_KINDS.has(kind)) return null
@@ -105,14 +111,13 @@ export function htmlReplyAssets(html: string): ReplyAsset[] {
   return out
 }
 
-export function replyAssetResultItem(asset: ReplyAsset): ResultItemImpl {
-  const item = new ResultItemImpl({
+export function replyAssetResultItem(asset: ReplyAsset): AugmentedResultItem {
+  return {
     filename: asset.filename,
     subfolder: '',
     type: 'output',
     nodeId: '',
-    mediaType: asset.kind === 'image' ? 'images' : asset.kind
-  })
-  Object.defineProperty(item, 'url', { get: () => asset.url })
-  return item
+    mediaType: asset.kind === 'image' ? 'images' : asset.kind,
+    url: asset.url
+  }
 }

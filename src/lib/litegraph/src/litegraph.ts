@@ -79,6 +79,7 @@ export interface LGraphNodeConstructor<T extends LGraphNode = LGraphNode> {
 
 // End backwards compat
 
+export type { CanvasInteractionModeReader } from './canvas/CanvasInteractionMode'
 export { LinkConnector } from './canvas/LinkConnector'
 export { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 export { CanvasPointer } from './CanvasPointer'
@@ -160,7 +161,6 @@ export { BaseWidget } from './widgets/BaseWidget'
 export { LegacyWidget } from './widgets/LegacyWidget'
 
 export { isComboWidget } from './widgets/widgetMap'
-/** @knipIgnoreUnusedButUsedByCustomNodes */
 export { isAssetWidget } from './widgets/widgetMap'
 // Additional test-specific exports
 export { LGraphButton } from './LGraphButton'

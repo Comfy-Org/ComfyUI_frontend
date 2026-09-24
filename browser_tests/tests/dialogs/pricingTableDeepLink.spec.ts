@@ -45,11 +45,7 @@ const SELF_EMAIL = 'e2e@test.comfy.org'
 const BOOT_FEATURES = {
   billing_control_enabled: true
 } satisfies RemoteConfig
-// Disable the experimental Asset API: with it on (cloud default) the unmocked
-// asset endpoints 403 and workflow restore throws uncaught, aborting the
-// GraphCanvas onMounted chain before the deep-link loader.
 const BOOT_SETTINGS = {
-  'Comfy.Assets.UseAssetAPI': false,
   'Comfy.TutorialCompleted': true
 }
 
@@ -97,6 +93,7 @@ const ACTIVE_TEAM_STATUS = {
     credits_monthly: 147_700,
     stop_usd: 700
   },
+  scheduled_change: null,
   max_seats: 5,
   occupied_seats: 1
 } satisfies BillingStatusResponse
@@ -111,6 +108,7 @@ const ACTIVE_STANDARD_STATUS = {
   has_funds: true,
   renewal_date: '2099-02-20T00:00:00Z',
   team_credit_stop: null,
+  scheduled_change: null,
   max_seats: 1,
   occupied_seats: 1
 } satisfies BillingStatusResponse
@@ -368,13 +366,20 @@ const TRANSIENT_STATUS_ERROR = {
 
 // The deep-link loader runs at the tail of GraphCanvas onMounted, so the boot
 // chain must not throw before it: a missing settings subpath, prompt exec_info,
-// or queue status each abort that chain.
+// queue status, or an unmocked asset endpoint each abort that chain.
 async function mockGraphBootExtras(page: Page) {
   // Boot only reads these; fall back on any write so an unexpected POST/PUT
   // surfaces instead of being masked by a blanket 200.
   await page.route('**/api/settings/**', (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
     return route.fulfill(jsonRoute({}))
+  })
+  // Cloud always has assets enabled, so the unmocked asset endpoints would 403
+  // and workflow restore would throw uncaught. One glob covers every shape boot
+  // asks for: `/api/assets`, `?query`, `/seed`, `/<id>`.
+  await page.route('**/api/assets**', (route) => {
+    if (route.request().method() !== 'GET') return route.fallback()
+    return route.fulfill(jsonRoute({ assets: [], total: 0, has_more: false }))
   })
   await page.route('**/api/prompt', (route) => {
     if (route.request().method() !== 'GET') return route.fallback()
@@ -785,7 +790,11 @@ test.describe('Pricing table deep link', { tag: '@cloud' }, () => {
       confirmationDialog.getByText('$630', { exact: true }).last()
     ).toBeVisible()
     await expect(
-      confirmationDialog.getByText('1,772,400', { exact: true })
+      // `.last()`: the yearly figure now also renders in the embedded
+      // PricingTableWorkspace behind the dialog (previously it showed the
+      // monthly amount), so scope to the confirm summary like the `$630`
+      // assertion above.
+      confirmationDialog.getByText('1,772,400', { exact: true }).last()
     ).toBeVisible()
     expect(subscribeRequests).toHaveLength(0)
     await expect(page).toHaveURL(/[?&]keep=1(?:&|$)/)

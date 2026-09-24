@@ -4,7 +4,6 @@
 import { defineAsyncComponent } from 'vue'
 import type { Component } from 'vue'
 
-import type { IWidgetOptions } from '@/lib/litegraph/src/types/widgets'
 import type { LinkedWidgetDisplay } from '@/types/simplifiedWidget'
 
 const WidgetButton = defineAsyncComponent(
@@ -340,13 +339,6 @@ export function getLinkedWidgetDisplay(
 export const isEssential = (type: string): boolean => {
   const canonicalType = getCanonicalType(type)
   return widgets.get(canonicalType)?.essential || false
-}
-
-export const shouldRenderAsVue = (widget: {
-  options?: Pick<IWidgetOptions, 'canvasOnly'>
-  type?: string
-}): boolean => {
-  return !widget.options?.canvasOnly && !!widget.type
 }
 
 const EXPANDING_TYPES = [

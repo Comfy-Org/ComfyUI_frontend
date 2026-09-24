@@ -10,7 +10,7 @@ import { api } from '@/scripts/api'
 
 import { useUploadModelWizard } from './useUploadModelWizard'
 
-vi.mock('@/platform/assets/services/assetService', () => ({
+vi.mock<unknown>(import('@/platform/assets/services/assetService'), () => ({
   assetService: {
     getAssetMetadata: vi.fn(),
     uploadAssetAsync: vi.fn(),
@@ -18,34 +18,31 @@ vi.mock('@/platform/assets/services/assetService', () => ({
   }
 }))
 
-vi.mock('@/platform/assets/importSources/civitaiImportSource', () => ({
-  civitaiImportSource: {
-    name: 'Civitai',
-    hostnames: ['civitai.com', 'civitai.red'],
-    fetchMetadata: vi.fn()
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/assets/importSources/civitaiImportSource'),
+  () => ({
+    civitaiImportSource: {
+      name: 'Civitai',
+      hostnames: ['civitai.com', 'civitai.red'],
+      fetchMetadata: vi.fn()
+    }
+  })
+)
 
-vi.mock('@/platform/assets/importSources/huggingfaceImportSource', () => ({
-  huggingfaceImportSource: {
-    name: 'HuggingFace',
-    hostnames: ['huggingface.co'],
-    fetchMetadata: vi.fn()
-  }
-}))
+vi.mock<unknown>(
+  import('@/platform/assets/importSources/huggingfaceImportSource'),
+  () => ({
+    huggingfaceImportSource: {
+      name: 'HuggingFace',
+      hostnames: ['huggingface.co'],
+      fetchMetadata: vi.fn()
+    }
+  })
+)
 
-vi.mock('@/scripts/api', () => ({
-  api: {
-    fetchApi: vi.fn(),
-    addEventListener: vi.fn(),
-    apiURL: vi.fn((path: string) => path),
-    getServerFeature: vi.fn(
-      (_name: string, defaultValue?: unknown) => defaultValue
-    )
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
-vi.mock('@/i18n', () => ({
+vi.mock<unknown>(import('@/i18n'), () => ({
   st: (_key: string, fallback: string) => fallback,
   t: (key: string) => key,
   te: () => false,
@@ -55,6 +52,12 @@ vi.mock('@/i18n', () => ({
 describe('useUploadModelWizard', () => {
   const modelTypes = ref([{ name: 'Checkpoint', value: 'checkpoints' }])
   const mountedApps: App<Element>[] = []
+
+  beforeEach(() => {
+    vi.mocked(api.getServerFeature).mockImplementation(
+      (_name, defaultValue) => defaultValue
+    )
+  })
 
   function setupWithI18n<T>(factory: () => T): T {
     let result: T | undefined
