@@ -276,41 +276,53 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         await expect(gridImages).toHaveCount(4)
       })
 
-      await expect(gridImages.first()).toHaveAttribute(
-        'src',
-        /[?&]preview=webp(%3B|;)75/
-      )
+      await test.step('The grid requests lightweight thumbnails', async () => {
+        await expect(gridImages.first()).toHaveAttribute(
+          'src',
+          /[?&]preview=webp(%3B|;)75/
+        )
+      })
 
       const nodeBoxBefore = await node.root.boundingBox()
       if (!nodeBoxBefore) throw new Error('node has no bounding box')
       const selectedBefore = await comfyPage.nodeOps.getSelectedNodeIds()
-
-      await node.imageGrid
-        .getByRole('button', { name: 'View image 3 of 4' })
-        .dblclick({ delay: 5 })
-
       const lightbox = comfyPage.page.getByRole('dialog', { name: 'Gallery' })
-      await expect(lightbox).toBeVisible()
 
-      const lightboxImage = lightbox.locator('img').first()
-      await expect(lightboxImage).toHaveAttribute(
-        'src',
-        /[?&]filename=example\.png/
-      )
-      await expect(lightboxImage).not.toHaveAttribute('src', /decoy-/)
-      await expect(lightboxImage).not.toHaveAttribute('src', /[?&]preview=/)
-      await expect(lightbox.getByLabel('Previous')).toBeVisible()
-      await expect(lightbox.getByLabel('Next')).toBeVisible()
+      await test.step('Double-click the third cell', async () => {
+        await node.imageGrid
+          .getByRole('button', { name: 'View image 3 of 4' })
+          .dblclick({ delay: 5 })
 
-      expect(downloads).toEqual([])
-      await expect(comfyPage.page.locator('.mask-editor-dialog')).toHaveCount(0)
-      await expect(node.root).toHaveBounds(nodeBoxBefore)
-      await expect
-        .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
-        .toEqual(selectedBefore)
+        await expect(lightbox).toBeVisible()
+      })
 
-      await comfyPage.page.keyboard.press('Escape')
-      await expect(lightbox).toBeHidden()
+      await test.step('It opens that cell at full resolution', async () => {
+        const lightboxImage = lightbox.locator('img').first()
+        await expect(lightboxImage).toHaveAttribute(
+          'src',
+          /[?&]filename=example\.png/
+        )
+        await expect(lightboxImage).not.toHaveAttribute('src', /decoy-/)
+        await expect(lightboxImage).not.toHaveAttribute('src', /[?&]preview=/)
+        await expect(lightbox.getByLabel('Previous')).toBeVisible()
+        await expect(lightbox.getByLabel('Next')).toBeVisible()
+      })
+
+      await test.step('The node is untouched by the gesture', async () => {
+        expect(downloads).toEqual([])
+        await expect(comfyPage.page.locator('.mask-editor-dialog')).toHaveCount(
+          0
+        )
+        await expect(node.root).toHaveBounds(nodeBoxBefore)
+        await expect
+          .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+          .toEqual(selectedBefore)
+      })
+
+      await test.step('Escape closes the lightbox', async () => {
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(lightbox).toBeHidden()
+      })
 
       await test.step('dragging the live preview neither moves nor selects', async () => {
         const previewRegion = node.imagePreview.getByRole('region')

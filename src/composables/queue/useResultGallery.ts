@@ -40,8 +40,13 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
 
     const previewOutput = item.taskRef?.previewOutput
     const previewUrl = previewOutput ? resultItemUrl(previewOutput) : undefined
-    const requestedIndex = previewUrl
-      ? entries.findIndex(({ source }) => resultItemUrl(source) === previewUrl)
+    // The cache can return a different object for the same output, so URL is
+    // the fallback identity; records sharing one are interchangeable here.
+    const requestedIndex = previewOutput
+      ? entries.findIndex(
+          ({ source }) =>
+            source === previewOutput || resultItemUrl(source) === previewUrl
+        )
       : -1
 
     // Falling back to the first item is only right within the clicked job;

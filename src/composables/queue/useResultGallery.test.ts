@@ -175,6 +175,22 @@ describe('useResultGallery', () => {
     expect(galleryActiveIndex.value).toBe(0)
   })
 
+  it('selects the clicked record itself when another shares its url', async () => {
+    const sharedUrl = 'shared.png'
+    const otherJobPreview = createResultItem(sharedUrl)
+    const clickedPreview = createResultItem(sharedUrl)
+    const tasks = [createTask(otherJobPreview), createTask(clickedPreview)]
+
+    const { galleryItems, galleryActiveIndex, onViewItem } = useResultGallery(
+      () => tasks
+    )
+
+    await onViewItem(createJobViewItem('job-shared', tasks[1]))
+
+    expect(galleryItems.value).toEqual([lightboxImage(sharedUrl)])
+    expect(galleryActiveIndex.value).toBe(0)
+  })
+
   it('stays closed rather than opening another job when the clicked preview is unrenderable', async () => {
     const job = createMockJob('task-glb', 3)
     const clickedTask = new TaskItemImpl(job, {}, [
