@@ -4,7 +4,11 @@ import {
   mint,
   nodesMap
 } from '@comfyorg/comfy-multi-player'
-import type { Op, WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import type {
+  Op,
+  WidgetCatalog,
+  WorkflowNode
+} from '@comfyorg/comfy-multi-player'
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import * as Y from 'yjs'
 
@@ -18,6 +22,7 @@ import {
   LLink,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import {
   createTestSubgraph,
   createTestSubgraphData,
@@ -36,14 +41,20 @@ import { useLinkStore } from '@/stores/linkStore'
 import { useNodeDataStore } from '@/stores/nodeDataStore'
 import { usePreviewExposureStore } from '@/stores/previewExposureStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
+import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import type { GraphScope } from '@/types/graphScopeId'
 import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import { toLinkId } from '@/types/linkId'
+import type { NodeId } from '@/types/nodeId'
 import { UNASSIGNED_NODE_ID, toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 
-import { reconcileAgentAdapters } from './agentNodeMaterializer'
+import { AgentCrdtProjection } from './agentCrdtProjection'
+import {
+  reconcileAgentAdapters,
+  subgraphDefinitionReadState
+} from './agentNodeMaterializer'
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
 import { EcsFollowerAdapter } from './ecsFollowerAdapter'
 import { FollowerDoc } from './followerDoc'
@@ -189,12 +200,18 @@ function remoteMutations(scope: GraphScope) {
   })
 }
 
-function nodePayload(id: number, type = 'dummy') {
+function nodePayload(
+  id: number,
+  type = 'dummy'
+): WorkflowNode & ISerialisedNode {
   return {
     id,
     type,
     pos: [0, 0],
     size: [100, 80],
+    flags: {},
+    order: 0,
+    mode: 0,
     inputs: [],
     outputs: []
   }
@@ -1621,6 +1638,7 @@ describe('reconcileAgentAdapters', () => {
       const definitions = readSubgraphDefinitions(follower.doc)
 
       expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
+      expect(subgraphDefinitionReadState(graph, definition.id)).toBe('failed')
       expect(reconcileAgentAdapters(graph, definitions)).toEqual([])
       // Same definition, same failure: one report, not one per frame.
       expect(reportError).toHaveBeenCalledOnce()
@@ -1635,6 +1653,49 @@ describe('reconcileAgentAdapters', () => {
       expect((instance as SubgraphNode).subgraph).toBe(
         graph.subgraphs.get(definition.id)
       )
+    })
+
+    it('keeps failed nodes pending while registering a missing sibling definition', () => {
+      configureShouldThrow = true
+      const failed = createTestSubgraphData({
+        nodes: [nodePayload(7, 'throws-on-configure')]
+      })
+      const missing = createTestSubgraphData({ nodes: [nodePayload(8)] })
+      expect(reconcileAgentAdapters(graph, [failed])).toEqual([])
+      expect(subgraphDefinitionReadState(graph, failed.id)).toBe('failed')
+      const creationsAfterFailure = created.mock.calls.length
+
+      const { follower } = seedDocument(graph, {
+        nodes: [nodePayload(1, failed.id), nodePayload(2, missing.id)],
+        links: [],
+        definitions: { subgraphs: [failed, missing] }
+      })
+      const storedFailed = follower.doc
+        .getMap<unknown>('definitions')
+        .get(failed.id)
+      assert.instanceOf(storedFailed, Y.Map)
+      const failedBody = new Y.Text('expensive body')
+      storedFailed.set('name', failedBody)
+      const failedBodyRead = vi.spyOn(failedBody, 'toJSON')
+      const projection = new AgentCrdtProjection(
+        remoteMutations(graphScopeOf(graph)),
+        () => graph,
+        () => follower.doc
+      )
+
+      expect(projection.reconcileLiveGraph('workflow')).toEqual([toNodeId(2)])
+      expect(failedBodyRead).not.toHaveBeenCalled()
+      expect(created).toHaveBeenCalledTimes(creationsAfterFailure + 1)
+      expect(reportError).toHaveBeenCalledOnce()
+      expect(graph.getNodeById(toNodeId(1))).toBeNull()
+      expect(graph.getNodeById(toNodeId(2))).toBeInstanceOf(SubgraphNode)
+
+      configureShouldThrow = false
+      expect(
+        reconcileAgentAdapters(graph, readSubgraphDefinitions(follower.doc))
+      ).toEqual([toNodeId(1)])
+      expect(graph.getNodeById(toNodeId(1))).toBeInstanceOf(SubgraphNode)
+      projection.destroy()
     })
 
     it('registers a valid sibling when another definition in the same frame fails', () => {
@@ -1724,6 +1785,7 @@ describe('reconcileAgentAdapters', () => {
       // createSubgraphs would silently mint a UUID for it, leaving the root
       // node's `type` pointing at an id the doc never registered.
       expect(graph.subgraphs.size).toBe(0)
+      expect(subgraphDefinitionReadState(graph, definition.id)).toBe('failed')
       expect(created).not.toHaveBeenCalled()
       expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
         errorType: 'agent_subgraph_definitions_failed',
@@ -1738,6 +1800,111 @@ describe('reconcileAgentAdapters', () => {
       })
     })
   })
+})
+
+describe('reserved-bit mint-convention guard', () => {
+  /** Bit 40 set: comfy-cli's `mint_id()` shape. */
+  const AGENT_MINTED_ID = 2 ** 40 + 7
+  /** Large enough for the guard to look, but carrying neither bit 40 nor 41. */
+  const VIOLATING_ID = 2 ** 42
+
+  function seedRemoteNode(graph: LGraph, id: NodeId): GraphScope {
+    const scope = graphScopeOf(graph)
+    remoteMutations(scope).addNode(
+      { ...nodePayload(1), id },
+      { ...REMOTE, opId: `op-${String(id)}` }
+    )
+    return scope
+  }
+
+  function bindGraph(graph: LGraph): () => void {
+    return registerDocBoundRootGraphProbe(() => graph.id)
+  }
+
+  it.for([
+    { bound: true, id: AGENT_MINTED_ID, name: 'an agent-minted id' },
+    {
+      bound: false,
+      id: VIOLATING_ID,
+      name: 'an off-convention id on a graph no doc is bound to'
+    },
+    { bound: true, id: '2e12', name: 'an agent-minted id in exponent form' },
+    {
+      bound: true,
+      id: '2.0e12',
+      name: 'an agent-minted id in decimal-mantissa exponent form'
+    },
+    {
+      bound: true,
+      id: `${VIOLATING_ID}.0001`,
+      name: 'a fractional id that only coerces to the violating floor'
+    },
+    {
+      bound: true,
+      id: (BigInt(Number.MAX_SAFE_INTEGER) + 2n).toString(),
+      name: 'an unsafe integer past Number.MAX_SAFE_INTEGER, even though its rounded value falls in the violating range'
+    }
+  ])('stays silent for $name', ({ bound, id }) => {
+    const graph = new LGraph()
+    const unbind = bound ? bindGraph(graph) : () => {}
+    seedRemoteNode(graph, toNodeId(id))
+
+    expect(reconcileAgentAdapters(graph)).toEqual([toNodeId(id)])
+    unbind()
+
+    expect(graph.getNodeById(toNodeId(id))).toBeTruthy()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  // A bound doc may legally carry a string id (`NodeId` is `string | number`):
+  // a legacy `"named"` node, or a subgraph-scoped `"57:3"` address. Converting
+  // one for the bit test threw and aborted reconciliation before the node was
+  // ever materialized.
+  it('materializes a nonnumeric remote id without reporting a violation', () => {
+    const graph = new LGraph()
+    const unbind = bindGraph(graph)
+    const id = toNodeId('named')
+    seedRemoteNode(graph, id)
+
+    expect(reconcileAgentAdapters(graph)).toEqual([id])
+    unbind()
+
+    expect(graph.getNodeById(id)).toBeTruthy()
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { rawId: VIOLATING_ID, name: 'the canonical integer spelling' },
+    {
+      rawId: `${VIOLATING_ID}.`,
+      name: 'a trailing decimal point with no fractional digits'
+    },
+    {
+      rawId: `.${VIOLATING_ID}e13`,
+      name: 'a leading decimal point with an exponent'
+    }
+  ])(
+    'reports a large remote id carrying neither reserved bit, spelled as $name',
+    ({ rawId }) => {
+      const graph = new LGraph()
+      const unbind = bindGraph(graph)
+      const id = toNodeId(rawId)
+      seedRemoteNode(graph, id)
+
+      expect(reconcileAgentAdapters(graph)).toEqual([id])
+      unbind()
+
+      expect(graph.getNodeById(id)).toBeTruthy()
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.anything(), {
+        errorType: 'agent_node_id_reserved_bit_violation',
+        tags: expect.objectContaining({
+          feature_area: 'agent',
+          outcome: 'degraded'
+        }),
+        context: { graphId: graph.id, nodeId: String(rawId) }
+      })
+    }
+  )
 })
 
 describe('node id write-drop guard', () => {

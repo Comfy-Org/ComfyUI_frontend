@@ -4,10 +4,15 @@ import type {
 } from '@comfyorg/comfyui-desktop-bridge-types'
 import type {
   AddCreditsClickMetadata,
+  AgentConsentNotOfferedMetadata,
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
   AgentNodeTaggedMetadata,
+  AgentOnboardingNotShownMetadata,
+  AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
   AgentWorkflowAppliedMetadata,
@@ -322,6 +327,22 @@ export class HostTelemetrySink implements TelemetryProvider {
     this.capture(TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED)
   }
 
+  trackAgentConsentShown(metadata: AgentConsentShownMetadata): void {
+    this.capture(TelemetryEvents.AGENT_CONSENT_SHOWN, metadata)
+  }
+
+  trackAgentConsentResolved(metadata: AgentConsentResolvedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_CONSENT_RESOLVED, metadata)
+  }
+
+  trackAgentOnboardingShown(): void {
+    this.capture(TelemetryEvents.AGENT_ONBOARDING_SHOWN)
+  }
+
+  trackAgentOnboardingStep(metadata: AgentOnboardingStepMetadata): void {
+    this.capture(TelemetryEvents.AGENT_ONBOARDING_STEP, metadata)
+  }
+
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {
     this.capture(TelemetryEvents.AGENT_MESSAGE_SENT, metadata)
   }
@@ -336,6 +357,16 @@ export class HostTelemetrySink implements TelemetryProvider {
 
   trackAgentWorkflowApplied(metadata: AgentWorkflowAppliedMetadata): void {
     this.capture(TelemetryEvents.AGENT_WORKFLOW_APPLIED, metadata)
+  }
+
+  trackAgentConsentNotOffered(metadata: AgentConsentNotOfferedMetadata): void {
+    this.capture(TelemetryEvents.AGENT_CONSENT_NOT_OFFERED, metadata)
+  }
+
+  trackAgentOnboardingNotShown(
+    metadata: AgentOnboardingNotShownMetadata
+  ): void {
+    this.capture(TelemetryEvents.AGENT_ONBOARDING_NOT_SHOWN, metadata)
   }
 
   trackLinkDedupDrop(metadata: LinkDedupDropMetadata): void {

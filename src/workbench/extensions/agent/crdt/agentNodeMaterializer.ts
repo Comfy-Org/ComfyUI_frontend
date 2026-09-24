@@ -1,8 +1,17 @@
 import { reconcileAutogrowInputs } from '@/core/graph/widgets/dynamicWidgets'
+import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
+import {
+  isReservedBitRangeNodeId,
+  matchesReservedBitConvention
+} from '@/lib/litegraph/src/idAllocation'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import { realignInputLinkSlots } from '@/lib/litegraph/src/linkDeduplication'
 import { materializeLinkAdapter } from '@/lib/litegraph/src/LLink'
-import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraphNode,
+  LiteGraph,
+  SubgraphNode
+} from '@/lib/litegraph/src/litegraph'
 import { topologicalSortSubgraphs } from '@/lib/litegraph/src/subgraph/subgraphDeduplication'
 import type {
   ExportedSubgraph,
@@ -65,15 +74,21 @@ export type MaterializableGraph = Pick<
  * @param subgraphDefinitions explicitly created definitions present in the
  * document. Root nodes typed by a definition id can only materialize once the
  * definition is registered on the root graph.
+ * @param pendingDefinitionIds definition ids whose bodies were deliberately
+ * not read but whose dependent nodes must remain pending.
  * @returns ids that received a new live node.
  */
 export function reconcileAgentAdapters(
   graph: MaterializableGraph,
-  subgraphDefinitions: ExportedSubgraph[] = []
+  subgraphDefinitions: ExportedSubgraph[] = [],
+  pendingDefinitionIds: ReadonlySet<string> = new Set()
 ): NodeId[] {
   return runMintPortsSuppressed(() =>
     useWidgetValueStore().withLocalDirtyTrackingSuppressed(() => {
       const pending = registerSubgraphDefinitions(graph, subgraphDefinitions)
+      for (const id of pendingDefinitionIds) {
+        if (!graph.rootGraph.subgraphs.has(id)) pending.add(id)
+      }
       return reconcile(graph, pending)
     })
   )
@@ -84,6 +99,26 @@ export function reconcileAgentAdapters(
  * a definition that keeps failing across reconcile frames is reported once.
  */
 const reportedDefinitionFailures = new WeakMap<LGraph, Set<string>>()
+
+/**
+ * Whether an id-only projection should pay to read a definition body.
+ *
+ * A failed definition remains absent from `rootGraph.subgraphs`, but retrying
+ * its unchanged body on every unrelated frame only repeats the deep copy and
+ * a failure whose telemetry is already deduplicated. Explicit callers that
+ * supply a fresh body to `reconcileAgentAdapters` still retry registration.
+ */
+export type SubgraphDefinitionReadState = 'registered' | 'failed' | 'missing'
+
+export function subgraphDefinitionReadState(
+  rootGraph: LGraph,
+  definitionId: string
+): SubgraphDefinitionReadState {
+  if (rootGraph.subgraphs.has(definitionId)) return 'registered'
+  if (reportedDefinitionFailures.get(rootGraph)?.has(definitionId))
+    return 'failed'
+  return 'missing'
+}
 
 /**
  * Register explicitly created subgraph definitions the root graph does not
@@ -189,12 +224,18 @@ function tryCreateSubgraph(
 /**
  * Run `fn` with `LGraphNode.configure()` honouring `widgets_values_named`.
  *
- * The op layer stores interior widget values by name and the follower has no
- * widget catalog to project them positionally the way the package's
- * `project()` does. Named restore is otherwise gated behind the experimental
- * `Comfy.Workflow.NamedValuesRestore` setting; enabling it only while the
- * agent's definitions configure lets values land inside `configure()`, before
- * `onConfigure`, exactly as they do for a human-loaded workflow.
+ * The op layer stores widget values by name (both a subgraph definition's
+ * interior values and an ordinary node's `widgets` map, per
+ * `readSemanticNode`) and the follower has no widget catalog to project them
+ * positionally the way the package's `project()` does. Named restore is
+ * otherwise gated behind the experimental `Comfy.Workflow.NamedValuesRestore`
+ * setting; enabling it while a definition configures, or while `materialize`
+ * configures a freshly-created node, lets values land inside `configure()`,
+ * before `onConfigure`, exactly as they do for a human-loaded workflow.
+ * Without it, `configure()` falls back to positional restore against
+ * `info.widgets_values` — for a named payload that's a plain object, not an
+ * array, so nothing restores and the node keeps its constructor defaults
+ * (PM-1580).
  */
 function withNamedValuesRestore<T>(fn: () => T): T {
   const previous = LiteGraph.namedValuesRestore
@@ -275,6 +316,7 @@ function materialize(
   const node =
     LiteGraph.createNode(state.type, state.title) ?? missingNode(state)
   node.id = state.id
+  reportReservedBitViolation(graph, scope, state.id)
 
   const widgets = widgetStore.getNodeWidgets(scope.rootGraphId, state.id).map(
     (widget): WidgetStateInit => ({
@@ -368,7 +410,22 @@ function materialize(
 
   try {
     const savedInputs = serialised.inputs?.map((input) => ({ ...input }))
-    node.configure(withNamedWidgetValues(serialised, widgets))
+    const configureNode = () =>
+      node.configure(withNamedWidgetValues(serialised, widgets))
+    // A SubgraphNode instance restores its promoted-input values through
+    // `_applyPromotedWidgetValues`, not the named-values path — and that
+    // method is the only place `proxyWidgetErrorQuarantine` overrides a
+    // stale value. `SubgraphNode.configure()` skips it precisely when
+    // `widgets_values_named` is set AND `namedValuesRestore` is on, so
+    // forcing the flag here would silently resurrect a quarantined value on
+    // every agent-materialized subgraph instance. Ordinary nodes have no
+    // such guard, so they still need the flag to restore their own
+    // `widgets_values` (PM-1580).
+    if (node instanceof SubgraphNode) {
+      configureNode()
+    } else {
+      withNamedValuesRestore(configureNode)
+    }
     replayUpdatedWidgetCallbacks(node, serialised, widgets)
     // After configure and any widget-driven restructuring, re-point the saved
     // links at their named inputs (CRDT-INPUTS-0030).
@@ -385,6 +442,39 @@ function materialize(
     })
   }
   return true
+}
+
+/**
+ * The disjoint-mint partition (`idAllocation.ts`'s `AGENT_RESERVED_BIT`)
+ * rests on comfy-cli's `mint_id()` always setting bit 40 — a premise this
+ * repo cannot verify and comfy-cli could change without notice. Surface a
+ * remote id that carries NEITHER reserved bit (on a doc-bound graph, at the
+ * size only a modern mint produces) as telemetry instead of leaving the
+ * partition to silently stop holding.
+ *
+ * Only a numeric integer id says anything here: string ids are legal
+ * (`NodeId` is `string | number`, and a bound doc can carry a legacy
+ * `"named"` node or a `"57:3"` subgraph address), predate both mints, and
+ * are not `BigInt`-convertible — reconciliation must not abort on one.
+ */
+function reportReservedBitViolation(
+  graph: MaterializableGraph,
+  scope: GraphScope,
+  nodeId: NodeId
+): void {
+  if (!isRootGraphDocBound(scope.rootGraphId)) return
+  if (!isReservedBitRangeNodeId(nodeId)) return
+  if (matchesReservedBitConvention(nodeId)) return
+  reportError(
+    new Error(
+      `Remote node id ${String(nodeId)} on a CRDT-bound graph carries neither reserved mint bit (the agent's nor this app's)`
+    ),
+    {
+      errorType: 'agent_node_id_reserved_bit_violation',
+      tags: { ...AGENT_ECS_TAGS, outcome: 'degraded' },
+      context: { graphId: graph.id, nodeId: String(nodeId) }
+    }
+  )
 }
 
 /**
