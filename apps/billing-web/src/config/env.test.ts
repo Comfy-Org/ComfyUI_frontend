@@ -32,11 +32,16 @@ describe('billing web environment', () => {
 })
 
 describe('deployed environment resolution', () => {
-  it('resolves the production host with no override to production', () => {
-    expect(resolveDeployedBillingWebEnv(undefined, 'billing.comfy.org')).toBe(
-      'production'
-    )
-  })
+  it.for([
+    ['billing.comfy.org', 'production'],
+    ['stagingbilling.comfy.org', 'staging'],
+    ['testbilling.comfy.org', 'test']
+  ] as [string, BillingWebEnv][])(
+    'resolves %s with no override to %s',
+    ([hostname, expected]) => {
+      expect(resolveDeployedBillingWebEnv(undefined, hostname)).toBe(expected)
+    }
+  )
 
   it('lets an explicit override win over the production host', () => {
     expect(resolveDeployedBillingWebEnv('test', 'billing.comfy.org')).toBe(
@@ -59,8 +64,10 @@ describe('deployed environment resolution', () => {
   it.for([
     'billing.comfy.org.evil.com',
     'evil-billing.comfy.org',
-    'notbilling.comfy.org'
-  ])('does not treat %s as the production host', (hostname) => {
+    'notbilling.comfy.org',
+    'stagingbilling.comfy.org.evil.com',
+    'testbilling.comfy.org.evil.com'
+  ])('does not treat %s as a known host', (hostname) => {
     expect(resolveDeployedBillingWebEnv(undefined, hostname)).toBe('test')
   })
 

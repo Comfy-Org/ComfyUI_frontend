@@ -8,6 +8,7 @@ import { computed } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
 import {
   isFirstRunReplayRequested,
   requestOnboardingReplay
@@ -58,14 +59,7 @@ vi.mocked(VueUse.createSharedComposable).mockImplementation(
   sharedComposable.create
 )
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscription'),
-  () => ({
-    useSubscription: () => ({
-      isSubscriptionEnabled: () => mocks.subscriptionEnabled
-    })
-  })
-)
+vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 
 vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
   useNewUserService: () => ({ isNewUser: () => mocks.isNewUser })
@@ -85,6 +79,9 @@ const { useFirstRunEntry } = await import('./firstRunEntry')
 type FirstRunEntry = ReturnType<typeof useFirstRunEntry>
 
 beforeEach(() => {
+  vi.mocked(useSubscription().isSubscriptionEnabled).mockImplementation(
+    () => mocks.subscriptionEnabled
+  )
   vi.mocked(VueUse.useBreakpoints).mockReturnValue(
     fromAny<ReturnType<typeof VueUse.useBreakpoints>, unknown>({
       greaterOrEqual: () => computed(() => mocks.isDesktopWidth)
@@ -340,7 +337,7 @@ describe('useFirstRunEntry', () => {
         await entry.handleStartupOutcome('fresh')
 
         expect(
-          vi.mocked(useSettingStore().set),
+          useSettingStore().set,
           'Without this the browser reopens on every launch, forever'
         ).toHaveBeenCalledWith('Comfy.TutorialCompleted', true)
       }
@@ -355,7 +352,7 @@ describe('useFirstRunEntry', () => {
         await entry.handleStartupOutcome('fresh')
 
         expect(
-          vi.mocked(useSettingStore().set),
+          useSettingStore().set,
           'Comfy.TutorialCompleted is write-once and server-side; setting it here burns the tour for an account that was only ineligible this boot'
         ).not.toHaveBeenCalled()
       }
@@ -392,7 +389,7 @@ describe('useFirstRunEntry', () => {
     await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
 
     expect(
-      vi.mocked(useSettingStore().set),
+      useSettingStore().set,
       'Without this the template browser reopens on every launch, as it did before this flow existed'
     ).toHaveBeenCalledWith('Comfy.TutorialCompleted', true)
   })
@@ -437,7 +434,7 @@ describe('useFirstRunEntry', () => {
         'the link is the user’s choice; onboarding must not cover it'
       ).toBe(false)
       expect(
-        vi.mocked(useSettingStore().set),
+        useSettingStore().set,
         'no tour ran, so the write-once flag that pays for one must stay unspent for the boot that can lift this'
       ).not.toHaveBeenCalled()
     }
@@ -683,7 +680,7 @@ describe('useFirstRunEntry', () => {
       await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
 
       expect(
-        vi.mocked(useSettingStore().set),
+        useSettingStore().set,
         'writing it here would mark onboarding done for a user whose tour never started, and postpone() exists to offer that user the tour again'
       ).not.toHaveBeenCalled()
     })
@@ -699,7 +696,7 @@ describe('useFirstRunEntry', () => {
         'there is no workflow on the canvas to tour'
       ).not.toHaveBeenCalled()
       expect(
-        vi.mocked(useSettingStore().set),
+        useSettingStore().set,
         'a dead link must not spend the one tour the account gets; the next boot has no URL to honour and offers Getting Started instead'
       ).not.toHaveBeenCalled()
     })
@@ -753,7 +750,7 @@ describe('useFirstRunEntry', () => {
 
     expect(entry.gettingStartedVisible.value).toBe(false)
     expect(useCommandStore().execute).not.toHaveBeenCalled()
-    expect(vi.mocked(useSettingStore().set)).not.toHaveBeenCalled()
+    expect(useSettingStore().set).not.toHaveBeenCalled()
   })
 
   it('keeps the screen up when eligibility changes underneath it', async () => {
@@ -774,14 +771,14 @@ describe('useFirstRunEntry', () => {
     await entry.handleStartupOutcome('fresh')
 
     expect(
-      vi.mocked(useSettingStore().set),
+      useSettingStore().set,
       'Showing the screen must not persist completion; the user has not chosen anything yet'
     ).not.toHaveBeenCalled()
 
     await entry.dismissGettingStarted()
 
     expect(entry.gettingStartedVisible.value).toBe(false)
-    expect(vi.mocked(useSettingStore().set)).toHaveBeenCalledWith(
+    expect(useSettingStore().set).toHaveBeenCalledWith(
       'Comfy.TutorialCompleted',
       true
     )
