@@ -154,20 +154,82 @@ describe('createPromotedDomWidget', () => {
     return widget
   }
 
-  it('reuses the interior element for non-textarea DOM widgets', () => {
+  it('gives each host its own clone of the interior element', () => {
     const element = document.createElement('div')
+    element.textContent = 'interior content'
     const source = fromAny<IBaseWidget, unknown>({
       name: 'preview',
       type: 'kj_preview',
       element,
+      options: {},
+      value: 'live'
+    })
+
+    const widgetA = promoteDom(
+      source,
+      makeWidgetId('g', toNodeId('n'), 'a'),
+      'a'
+    )
+    const widgetB = promoteDom(
+      source,
+      makeWidgetId('g', toNodeId('n'), 'b'),
+      'b'
+    )
+
+    expect(widgetA.element).not.toBe(element)
+    expect(widgetA.element).not.toBe(widgetB.element)
+    expect(widgetA.element.textContent).toBe('interior content')
+    expect(widgetB.element.textContent).toBe('interior content')
+    expect(widgetA.type).toBe('kj_preview')
+    expect(useDomWidgetStore().widgetStates.has(widgetA.id)).toBe(true)
+  })
+
+  it('keeps host clone elements synchronized with a value-bearing source', () => {
+    const element = document.createElement('input')
+    element.value = 'live'
+    let interiorValue = 'live'
+    const source = new DOMWidgetImpl<HTMLInputElement, string>({
+      node: subgraphNode(),
+      name: 'preview',
+      type: 'text',
+      element,
+      options: {
+        getValue: () => interiorValue,
+        setValue: (value: string) => {
+          interiorValue = value
+        }
+      }
+    })
+    const idA = makeWidgetId('graph-1', toNodeId('node-1'), 'a')
+    const idB = makeWidgetId('graph-1', toNodeId('node-1'), 'b')
+    useWidgetValueStore().registerWidget(idA, {
+      type: 'text',
+      value: 'live',
+      options: {}
+    })
+    useWidgetValueStore().registerWidget(idB, {
+      type: 'text',
+      value: 'live',
       options: {}
     })
 
-    const domWidget = promoteDom(source)
+    const hostA = promoteDom(source, idA, 'a')
+    const hostB = promoteDom(source, idB, 'b')
+    const elementA = hostA.element as HTMLInputElement
+    const elementB = hostB.element as HTMLInputElement
+    expect(elementA.value).toBe('live')
+    expect(elementB.value).toBe('live')
 
-    expect(domWidget.element).toBe(element)
-    expect(domWidget.type).toBe('kj_preview')
-    expect(useDomWidgetStore().widgetStates.has(domWidget.id)).toBe(true)
+    source.value = 'from interior'
+    expect(elementA.value).toBe('from interior')
+    expect(elementB.value).toBe('from interior')
+    expect(useWidgetValueStore().getWidget(idA)?.value).toBe('from interior')
+
+    elementB.value = 'from host b'
+    elementB.dispatchEvent(new Event('input'))
+    expect(source.value).toBe('from host b')
+    expect(elementA.value).toBe('from host b')
+    expect(useWidgetValueStore().getWidget(idB)?.value).toBe('from host b')
   })
 
   it('reuses the interior component for component-backed widgets', () => {
@@ -234,7 +296,7 @@ describe('createPromotedDomWidget', () => {
     expect(useWidgetValueStore().getWidget(WIDGET_ID)?.value).toBe('next')
   })
 
-  it('syncs direct edits on the reused element to the host widget store', () => {
+  it('syncs direct edits on the interior element to the host widget store', () => {
     const element = document.createElement('div')
     const source = fromAny<IBaseWidget, unknown>({
       name: 'preview',

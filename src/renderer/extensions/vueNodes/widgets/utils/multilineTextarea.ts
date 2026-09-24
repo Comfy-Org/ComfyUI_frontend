@@ -174,10 +174,11 @@ export function createPromotedMultilineWidget(
 
 /**
  * Builds the host widget for a promoted DOM-backed source widget. Textareas
- * keep the store-backed host-owned element; any other DOM widget reuses the
- * interior element and any component widget reuses the interior component, so
- * the live content renders on the host node instead of staying hidden in the
- * interior node's overlay. The widget is registered with the DOM widget store
+ * keep the store-backed host-owned element; any other DOM widget gets a
+ * host-owned clone of the interior element (synchronized through the source
+ * widget) and any component widget reuses the interior component, so the live
+ * content renders on the host node instead of staying hidden in the interior
+ * node's overlay. The widget is registered with the DOM widget store
  * so the canvas-mode overlay positions it on the host row; in Vue-nodes mode
  * the overlay is not mounted and the row owns the element instead. Returns
  * undefined to fall back to the store-backed projection.
@@ -277,35 +278,58 @@ export function createPromotedDomWidget(
     return widget
   }
 
+  // DomWidget.vue appends widget.element into the host overlay, so two hosts
+  // reusing the interior element would move it out of each other; each host
+  // owns a clone instead.
+  const element = sourceWidget.element.cloneNode(true) as HTMLElement
+  const isValueBearing = 'value' in element
+  const reflectValueToElement = (value: string) => {
+    if (isValueBearing) (element as HTMLInputElement).value = value
+  }
+  reflectValueToElement(sourceWidget.value as string)
+
   const widget = new DOMWidgetImpl<HTMLElement, string>({
     node: subgraphNode,
     name: input.name,
     type: sourceWidget.type,
-    element: sourceWidget.element,
+    element,
     options: {
       hideOnZoom: sourceWidget.options.hideOnZoom ?? true,
       getValue: () => sourceWidget.value as string,
       setValue: (value: string) => {
         sourceWidget.value = value
+        reflectValueToElement(value)
         widgetStore.setValue(widgetId, value)
       },
       getHeight: () => sourceWidget.computedHeight ?? ''
     }
   })
+  const syncToHost = () => {
+    const value = sourceWidget.value as string
+    widgetStore.setValue(widgetId, value)
+    reflectValueToElement(value)
+  }
   // The interior widget's own listeners write direct element edits to
   // sourceWidget, bypassing the host value setter; mirror them into the host
-  // store from the post-callback interior value.
+  // store and clone from the post-callback interior value.
   const inputListenerController = new AbortController()
-  sourceWidget.element.addEventListener(
-    'input',
-    () => widgetStore.setValue(widgetId, sourceWidget.value),
-    { signal: inputListenerController.signal }
-  )
-  // Setter-driven changes (a button assigning its value) never reach the
-  // element; chain the same sync onto the interior callback the setter fires.
-  const releaseSourceSync = addSourceCallbackSync(sourceWidget, () => {
-    widgetStore.setValue(widgetId, sourceWidget.value)
+  sourceWidget.element.addEventListener('input', syncToHost, {
+    signal: inputListenerController.signal
   })
+  // Host-side edits on the clone never reach the interior element's own
+  // listeners; writing the source value replays them through the callback
+  // sync and back to the interior element.
+  if (isValueBearing)
+    element.addEventListener(
+      'input',
+      () => {
+        sourceWidget.value = (element as HTMLInputElement).value
+      },
+      { signal: inputListenerController.signal }
+    )
+  // Setter-driven changes (a button assigning its value) fire no input event;
+  // chain the same sync onto the interior callback the setter calls.
+  const releaseSourceSync = addSourceCallbackSync(sourceWidget, syncToHost)
   widget.onRemove = useChainCallback(widget.onRemove, () => {
     inputListenerController.abort()
     releaseSourceSync()
