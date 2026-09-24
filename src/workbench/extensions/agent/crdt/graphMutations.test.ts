@@ -22,6 +22,7 @@ import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 import { widgetId } from '@/types/widgetId'
 import type { WidgetStateInit } from '@/types/widgetState'
+import { createNodeState } from '@/utils/__tests__/litegraphTestUtils'
 
 import type {
   GraphMutationBatch,
@@ -570,6 +571,145 @@ describe('graphMutations', () => {
       ).toBe(expected)
     }
   )
+
+  // A canvas rename never writes back into the CRDT doc
+  // (useNodeEventHandlers.ts's handleNodeTitleUpdate only touches the live
+  // node), so `prepareNode` compares the incoming title against the title
+  // recorded on the node's `lastSerialization` baseline: an unchanged doc
+  // title is a stale replay and keeps the live rename, while a title that
+  // differs from that baseline is a genuine doc-side change and still wins.
+  it('keeps a locally renamed title through a reconcile carrying the stale doc title', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const live = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    assert.exists(live)
+    live.title = 'My Custom Sampler'
+
+    expect(
+      graph.batch(context, (batch) => {
+        // Same payload the doc minted node(1) with — the doc was never
+        // told about the rename, so this is genuinely what it still holds.
+        batch.reconcileNode(node(1))
+      })
+    ).toBe(true)
+
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.title
+    ).toBe('My Custom Sampler')
+  })
+
+  // A record that predates any CRDT reconcile (e.g. a plain canvas-added
+  // node) has no baseline at all, so an equally titleless payload is not
+  // evidence the doc's title is unchanged — it should fall back through
+  // `nodeTitle`, not pin the node at whatever placeholder title it happens
+  // to carry.
+  it('does not preserve a pre-existing title with no CRDT baseline against an equally titleless payload', () => {
+    const graph = mutations()
+    useNodeDataStore().registerNode(
+      scope,
+      createNodeState({
+        id: toNodeId(5),
+        graphId: scope.owningGraphId,
+        type: 'Type5',
+        title: ''
+      })
+    )
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNode({ id: 5, type: 'Type5' })
+      })
+    ).toBe(true)
+
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(5))?.title
+    ).toBe('Type5')
+  })
+
+  it('still applies a title the doc payload genuinely changed to', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const live = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    assert.exists(live)
+    live.title = 'My Custom Sampler'
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNode({ ...node(1), title: 'Renamed By Agent' })
+      })
+    ).toBe(true)
+
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.title
+    ).toBe('Renamed By Agent')
+  })
+
+  it('uses the replacement payload title on a type-changing reconcile, not a stale local rename', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const existing = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    assert.exists(existing)
+    existing.title = 'Local title'
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNodeFields({
+          ...node(1, { replacement: 2 }),
+          type: 'Replacement'
+        })
+      })
+    ).toBe(true)
+
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.title
+    ).toBe('Node 1')
+  })
+
+  // A host resync carries an explicit (even if empty/undefined) title that
+  // differs from the `lastSerialization` baseline, so it reads as a genuine
+  // doc-side change under the same-session fix above and still overwrites
+  // the live rename. Left as a known, intentionally unfixed repro.
+  it.fails('keeps a live-renamed title across a reconcile the doc never learned about', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const existing = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    assert.exists(existing)
+    existing.title = 'My Renamed Sampler'
+
+    expect(
+      graph.batch({ ...context, opId: 'resync' }, (batch) => {
+        batch.reconcileNode({ ...node(1), title: undefined })
+      })
+    ).toBe(true)
+
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.title
+    ).toBe('My Renamed Sampler')
+  })
+
+  // `assignNodeFields` (nodeDataStore.ts) unconditionally resets `color`/
+  // `bgcolor` to `undefined` before applying the replacement's own fields.
+  // Preservation instead comes from `prepareNode` (graphMutations.ts): for a
+  // same-type incumbent, `resolveNodeColors` copies the incumbent's color
+  // onto the replacement object before it ever reaches `assignNodeFields`,
+  // so the "reset" sees a replacement that already carries the live color.
+  it('keeps a locally set node color through a reconcile whose payload carries none', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const live = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    assert.exists(live)
+    live.color = '#ff0000'
+
+    expect(
+      graph.batch(context, (batch) => {
+        batch.reconcileNode(node(1))
+      })
+    ).toBe(true)
+
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.color
+    ).toBe('#ff0000')
+  })
 
   it('adds the authoritative payload directly to node, widget, and layout stores', () => {
     expect(mutations().addNode(node(7, { seed: 42 }), context)).toBe(true)
