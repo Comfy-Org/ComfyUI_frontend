@@ -27,7 +27,6 @@ import {
   isRootGraphDocBound,
   registerDocBoundRootGraphProbe
 } from '@/lib/litegraph/src/docBoundGraphs'
-import { MAX_ID } from '@/lib/litegraph/src/idAllocation'
 import type { UUID } from '@/utils/uuid'
 import { createUuidv4, zeroUuid } from '@/utils/uuid'
 import { useEntityIdStore } from '@/stores/entityIdStore'
@@ -58,7 +57,7 @@ import {
 } from './__fixtures__/duplicateLinks'
 import { duplicateSubgraphNodeIds } from './__fixtures__/duplicateSubgraphNodeIds'
 import { nestedSubgraphProxyWidgets } from './__fixtures__/nestedSubgraphProxyWidgets'
-import { nodeIdSpaceExhausted } from './__fixtures__/nodeIdSpaceExhausted'
+import { nodeIdsAtFormerLimit } from './__fixtures__/nodeIdsAtFormerLimit'
 import { uniqueSubgraphNodeIds } from './__fixtures__/uniqueSubgraphNodeIds'
 import { test } from './__fixtures__/testExtensions'
 
@@ -1172,26 +1171,6 @@ describe('node:before-removed event', () => {
     expect(fired).not.toHaveBeenCalled()
   })
 
-  it('does not release a group ID on a redundant remove() call, even after a new group has reused it', () => {
-    const graph = new LGraph()
-    const first = new LGraphGroup('first')
-    graph.add(first)
-    const firstId = first.id
-
-    graph.remove(first)
-
-    const second = new LGraphGroup('second')
-    graph.add(second)
-    expect(second.id).toBe(firstId)
-
-    // Redundant: `first` is already detached, not in `graph.groups`.
-    graph.remove(first)
-
-    const third = new LGraphGroup('third')
-    graph.add(third)
-    expect(third.id).not.toBe(second.id)
-  })
-
   it('does not fire node:before-removed when ignore_remove is set', () => {
     const graph = new LGraph()
     const node = new LGraphNode('test')
@@ -1845,85 +1824,6 @@ describe('Shared LGraphState', () => {
   })
 })
 
-describe('ID recycling on removal', () => {
-  it('reuses a removed node id for the next node minted', () => {
-    const graph = new LGraph()
-    const first = new DummyNode()
-    graph.add(first)
-    const removedId = first.id
-
-    graph.remove(first)
-
-    const second = new DummyNode()
-    graph.add(second)
-
-    expect(second.id).toBe(removedId)
-  })
-
-  it('reuses a removed group id for the next group minted', () => {
-    const graph = new LGraph()
-    const first = new LGraphGroup('first')
-    graph.add(first)
-    const removedId = first.id
-
-    graph.remove(first)
-
-    const second = new LGraphGroup('second')
-    graph.add(second)
-
-    expect(second.id).toBe(removedId)
-  })
-
-  it('reuses a removed link id for the next link minted', () => {
-    const graph = new LGraph()
-    const source = new LGraphNode('source')
-    const target = new LGraphNode('target')
-    source.addOutput('out', '*')
-    target.addInput('in', '*')
-    target.addInput('in2', '*')
-    graph.add(source)
-    graph.add(target)
-
-    const firstLink = source.connect(0, target, 0)!
-    const removedId = firstLink.id
-    graph.removeLink(firstLink.id)
-
-    const secondLink = source.connect(0, target, 1)!
-
-    expect(secondLink.id).toBe(removedId)
-  })
-
-  it('reuses a removed reroute id for the next reroute minted', () => {
-    const graph = new LGraph()
-    const first = graph.setReroute({ pos: [0, 0], linkIds: [] })!
-    const removedId = first.id
-
-    graph.removeReroute(first.id)
-
-    const second = graph.setReroute({ pos: [0, 0], linkIds: [] })!
-
-    expect(second.id).toBe(removedId)
-  })
-
-  it('does not recycle a node id kept alive by a successor', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    graph.add(node)
-    const originalId = node.id
-    const successor = new LGraphNode('test')
-    successor.id = node.id
-    graph._nodes.push(successor)
-    graph._nodes_by_id[node.id] = successor
-
-    graph.remove(node, { preserveCanonicalState: true })
-
-    const nextNode = new DummyNode()
-    graph.add(nextNode)
-
-    expect(nextNode.id).not.toBe(originalId)
-  })
-})
-
 describe('persisted duplicate links', () => {
   const onConnectionsChange =
     vi.fn<NonNullable<LGraphNode['onConnectionsChange']>>()
@@ -2440,45 +2340,19 @@ describe('deduplicateSubgraphNodeIds (via configure)', () => {
     })
   })
 
-  it('throws when node ID space is exhausted', () => {
-    expect(() => {
-      const graph = new LGraph()
-      graph.configure(structuredClone(nodeIdSpaceExhausted))
-    }).toThrow('Node ID space exhausted')
-  })
-
-  it('does not let observing an above-MAX_ID node ID cause a later mint to collide with it', () => {
+  it('remaps duplicate node IDs above the former fixed limit', () => {
     const graph = new LGraph()
-    const existing = new LGraphNode('test')
-    existing.id = toNodeId(MAX_ID + 1)
-    graph.add(existing)
 
-    expect(() => graph.add(new LGraphNode('test'))).toThrow(
-      'Node ID space exhausted'
+    graph.configure(structuredClone(nodeIdsAtFormerLimit))
+
+    expect(nodeIdSet(graph, SUBGRAPH_B)).toEqual(
+      new Set([
+        toNodeId(100_000_001),
+        toNodeId(100_000_002),
+        toNodeId(100_000_003)
+      ])
     )
-    expect(graph.getNodeById(toNodeId(MAX_ID + 1))).toBe(existing)
-    expect(graph.nodes).toHaveLength(1)
-  })
-
-  it('asSerialisable() projects only the four counters, not the live free-ID pools', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    graph.add(node)
-    graph.remove(node)
-
-    const serialised = graph.asSerialisable()
-
-    expect(serialised.state).toEqual({
-      lastGroupId: 0,
-      lastNodeId: 1,
-      lastLinkId: 0,
-      lastRerouteId: 0
-    })
-    expect(JSON.stringify(serialised.state)).not.toContain('freeNodeIds')
-
-    // The returned snapshot must not alias the live allocator state.
-    graph.state.freeNodeIds.add(999)
-    expect(serialised.state).not.toHaveProperty('freeNodeIds')
+    expect(graph.state.lastNodeId).toBe(100_000_003)
   })
 
   it('is a no-op when subgraph node IDs are already unique', () => {

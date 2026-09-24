@@ -2,10 +2,10 @@ import { describe, expect, it } from 'vitest'
 
 import {
   AGENT_RESERVED_BIT,
-  MAX_ID,
   cloneLGraphState,
   commitLGraphState,
   createLGraphState,
+  findNextAvailableId,
   isReservedBitRangeNodeId,
   matchesReservedBitConvention,
   mintGroupId,
@@ -15,11 +15,7 @@ import {
   observeGroupId,
   observeLinkId,
   observeNodeId,
-  observeRerouteId,
-  releaseGroupId,
-  releaseLinkId,
-  releaseNodeId,
-  releaseRerouteId
+  observeRerouteId
 } from '@/lib/litegraph/src/idAllocation'
 import { toGroupId } from '@/types/groupId'
 import { toLinkId } from '@/types/linkId'
@@ -64,11 +60,7 @@ describe('idAllocation', () => {
       lastGroupId: 5,
       lastNodeId: 4,
       lastLinkId: 6,
-      lastRerouteId: 7,
-      freeNodeIds: new Set(),
-      freeGroupIds: new Set(),
-      freeLinkIds: new Set(),
-      freeRerouteIds: new Set()
+      lastRerouteId: 7
     })
   })
 
@@ -79,6 +71,99 @@ describe('idAllocation', () => {
     observeNodeId(state, toNodeId('named'))
 
     expect(state.lastNodeId).toBe(12)
+  })
+
+  it.for([
+    {
+      name: 'node',
+      observe: (state: ReturnType<typeof createLGraphState>, value: number) =>
+        observeNodeId(state, toNodeId(value)),
+      mint: mintNodeId
+    },
+    {
+      name: 'group',
+      observe: (state: ReturnType<typeof createLGraphState>, value: number) =>
+        observeGroupId(state, toGroupId(value)),
+      mint: mintGroupId
+    },
+    {
+      name: 'link',
+      observe: (state: ReturnType<typeof createLGraphState>, value: number) =>
+        observeLinkId(state, toLinkId(value)),
+      mint: mintLinkId
+    },
+    {
+      name: 'reroute',
+      observe: (state: ReturnType<typeof createLGraphState>, value: number) =>
+        observeRerouteId(state, toRerouteId(value)),
+      mint: mintRerouteId
+    }
+  ])(
+    'continues $name allocation above the former limit',
+    ({ observe, mint }) => {
+      const state = createLGraphState()
+      observe(state, 100_000_001)
+
+      expect(Number(mint(state))).toBe(100_000_002)
+    }
+  )
+
+  it.for([
+    {
+      name: 'node',
+      setCounter: (state: ReturnType<typeof createLGraphState>) => {
+        state.lastNodeId = Number.MAX_SAFE_INTEGER
+      },
+      mint: mintNodeId
+    },
+    {
+      name: 'group',
+      setCounter: (state: ReturnType<typeof createLGraphState>) => {
+        state.lastGroupId = Number.MAX_SAFE_INTEGER
+      },
+      mint: mintGroupId
+    },
+    {
+      name: 'link',
+      setCounter: (state: ReturnType<typeof createLGraphState>) => {
+        state.lastLinkId = toLinkId(Number.MAX_SAFE_INTEGER)
+      },
+      mint: mintLinkId
+    },
+    {
+      name: 'reroute',
+      setCounter: (state: ReturnType<typeof createLGraphState>) => {
+        state.lastRerouteId = toRerouteId(Number.MAX_SAFE_INTEGER)
+      },
+      mint: mintRerouteId
+    }
+  ])('rejects unsafe $name allocation', ({ setCounter, mint }) => {
+    const state = createLGraphState()
+    setCounter(state)
+
+    expect(() => mint(state)).toThrow('ID space exhausted')
+  })
+
+  it('bounds collision searches by the number of reservations', () => {
+    let calls = 0
+
+    expect(() =>
+      findNextAvailableId(new Set([1, 2]), () => {
+        calls++
+        return 1
+      })
+    ).toThrow('ID space exhausted')
+    expect(calls).toBe(3)
+  })
+
+  it('commits speculative counter updates only when requested', () => {
+    const state = createLGraphState()
+    const workingState = cloneLGraphState(state)
+    mintNodeId(workingState)
+
+    expect(state.lastNodeId).toBe(0)
+    commitLGraphState(state, workingState)
+    expect(state.lastNodeId).toBe(1)
   })
 
   describe('isReservedBitRangeNodeId', () => {
@@ -139,239 +224,6 @@ describe('idAllocation', () => {
 
       expect(() => matchesReservedBitConvention(id)).not.toThrow()
       expect(matchesReservedBitConvention(id)).toBe(false)
-    })
-  })
-
-  describe('id recycling', () => {
-    it.for([
-      {
-        release: (state: ReturnType<typeof createLGraphState>) =>
-          releaseNodeId(state, toNodeId(2)),
-        mint: mintNodeId,
-        expected: ['1', '2', '3', '2', '4'],
-        name: 'node'
-      },
-      {
-        release: (state: ReturnType<typeof createLGraphState>) =>
-          releaseGroupId(state, toGroupId(2)),
-        mint: mintGroupId,
-        expected: [1, 2, 3, 2, 4],
-        name: 'group'
-      },
-      {
-        release: (state: ReturnType<typeof createLGraphState>) =>
-          releaseLinkId(state, toLinkId(2)),
-        mint: mintLinkId,
-        expected: [1, 2, 3, 2, 4],
-        name: 'link'
-      },
-      {
-        release: (state: ReturnType<typeof createLGraphState>) =>
-          releaseRerouteId(state, toRerouteId(2)),
-        mint: mintRerouteId,
-        expected: [1, 2, 3, 2, 4],
-        name: 'reroute'
-      }
-    ])(
-      'reuses a freed $name ID before minting past the counter',
-      ({ release, mint, expected }) => {
-        const state = createLGraphState()
-        expect([mint(state), mint(state), mint(state)]).toEqual(
-          expected.slice(0, 3)
-        )
-
-        release(state)
-        expect(mint(state)).toEqual(expected[3])
-        expect(mint(state)).toEqual(expected[4])
-      }
-    )
-
-    it('ignores releasing a nonnumeric legacy node ID', () => {
-      const state = createLGraphState()
-      releaseNodeId(state, toNodeId('named'))
-      expect(state.freeNodeIds.size).toBe(0)
-    })
-
-    it('never recycles an ID in the agent/CRDT reserved-bit range', () => {
-      const state = createLGraphState()
-      releaseNodeId(state, toNodeId(AGENT_RESERVED_BIT.toString()))
-      expect(state.freeNodeIds.size).toBe(0)
-    })
-
-    it('drops a freed ID from the pool once it is observed as in use again', () => {
-      const state = createLGraphState()
-      mintNodeId(state)
-      releaseNodeId(state, toNodeId(1))
-      expect(state.freeNodeIds.has(1)).toBe(true)
-
-      observeNodeId(state, toNodeId(1))
-      expect(state.freeNodeIds.has(1)).toBe(false)
-    })
-  })
-
-  describe('counter clamping', () => {
-    it.for([
-      {
-        observe: (state: ReturnType<typeof createLGraphState>) =>
-          observeNodeId(state, toNodeId(MAX_ID + 1)),
-        mint: (state: ReturnType<typeof createLGraphState>) =>
-          mintNodeId(state),
-        read: (state: ReturnType<typeof createLGraphState>) => state.lastNodeId,
-        name: 'node'
-      },
-      {
-        observe: (state: ReturnType<typeof createLGraphState>) =>
-          observeGroupId(state, toGroupId(MAX_ID + 1)),
-        mint: (state: ReturnType<typeof createLGraphState>) =>
-          mintGroupId(state),
-        read: (state: ReturnType<typeof createLGraphState>) =>
-          state.lastGroupId,
-        name: 'group'
-      },
-      {
-        observe: (state: ReturnType<typeof createLGraphState>) =>
-          observeLinkId(state, toLinkId(MAX_ID + 1)),
-        mint: (state: ReturnType<typeof createLGraphState>) =>
-          mintLinkId(state),
-        read: (state: ReturnType<typeof createLGraphState>) =>
-          Number(state.lastLinkId),
-        name: 'link'
-      },
-      {
-        observe: (state: ReturnType<typeof createLGraphState>) =>
-          observeRerouteId(state, toRerouteId(MAX_ID + 1)),
-        mint: (state: ReturnType<typeof createLGraphState>) =>
-          mintRerouteId(state),
-        read: (state: ReturnType<typeof createLGraphState>) =>
-          Number(state.lastRerouteId),
-        name: 'reroute'
-      }
-    ])(
-      'records an incoming $name counter above MAX_ID unclamped, but refuses to mint past it',
-      ({ observe, mint, read }) => {
-        const state = createLGraphState()
-        observe(state)
-        expect(read(state)).toBe(MAX_ID + 1)
-        expect(() => mint(state)).toThrow('Node ID space exhausted')
-      }
-    )
-
-    it('rejects a negative counter candidate outright', () => {
-      const state = createLGraphState()
-      observeNodeId(state, toNodeId(-5))
-      expect(state.lastNodeId).toBe(0)
-    })
-
-    it('does not let an observed node ID in the agent/CRDT reserved-bit range drag lastNodeId up', () => {
-      const state = createLGraphState()
-      observeNodeId(state, toNodeId(AGENT_RESERVED_BIT.toString()))
-      expect(state.lastNodeId).toBe(0)
-      expect(mintNodeId(state)).toBe('1')
-    })
-  })
-
-  describe('mint-side MAX_ID enforcement', () => {
-    it.for([
-      {
-        mint: mintNodeId,
-        seed: (state: ReturnType<typeof createLGraphState>) => {
-          state.lastNodeId = MAX_ID
-        },
-        name: 'node'
-      },
-      {
-        mint: mintGroupId,
-        seed: (state: ReturnType<typeof createLGraphState>) => {
-          state.lastGroupId = MAX_ID
-        },
-        name: 'group'
-      },
-      {
-        mint: mintLinkId,
-        seed: (state: ReturnType<typeof createLGraphState>) => {
-          state.lastLinkId = toLinkId(MAX_ID)
-        },
-        name: 'link'
-      },
-      {
-        mint: mintRerouteId,
-        seed: (state: ReturnType<typeof createLGraphState>) => {
-          state.lastRerouteId = toRerouteId(MAX_ID)
-        },
-        name: 'reroute'
-      }
-    ])('refuses to mint a $name ID past MAX_ID', ({ mint, seed }) => {
-      const state = createLGraphState()
-      seed(state)
-      expect(() => mint(state)).toThrow('Node ID space exhausted')
-    })
-  })
-
-  describe('release-side range enforcement', () => {
-    it.for([
-      {
-        release: (state: ReturnType<typeof createLGraphState>) =>
-          releaseNodeId(state, toNodeId(MAX_ID + 1)),
-        read: (state: ReturnType<typeof createLGraphState>) =>
-          state.freeNodeIds,
-        name: 'node'
-      },
-      {
-        release: (state: ReturnType<typeof createLGraphState>) =>
-          releaseGroupId(state, toGroupId(MAX_ID + 1)),
-        read: (state: ReturnType<typeof createLGraphState>) =>
-          state.freeGroupIds,
-        name: 'group'
-      },
-      {
-        release: (state: ReturnType<typeof createLGraphState>) =>
-          releaseLinkId(state, toLinkId(MAX_ID + 1)),
-        read: (state: ReturnType<typeof createLGraphState>) =>
-          state.freeLinkIds,
-        name: 'link'
-      },
-      {
-        release: (state: ReturnType<typeof createLGraphState>) =>
-          releaseRerouteId(state, toRerouteId(MAX_ID + 1)),
-        read: (state: ReturnType<typeof createLGraphState>) =>
-          state.freeRerouteIds,
-        name: 'reroute'
-      }
-    ])(
-      'never pools an above-MAX_ID $name ID for reuse',
-      ({ release, read }) => {
-        const state = createLGraphState()
-        release(state)
-        expect(read(state).size).toBe(0)
-      }
-    )
-  })
-
-  describe('cloneLGraphState / commitLGraphState', () => {
-    it('leaves the original untouched until explicitly committed', () => {
-      const state = createLGraphState()
-      const working = cloneLGraphState(state)
-
-      mintNodeId(working)
-      mintNodeId(working)
-
-      expect(state.lastNodeId).toBe(0)
-      expect(working.lastNodeId).toBe(2)
-
-      commitLGraphState(state, working)
-      expect(state.lastNodeId).toBe(2)
-    })
-
-    it('clones free-id sets so mutating the copy cannot affect the original', () => {
-      const state = createLGraphState()
-      mintNodeId(state)
-      releaseNodeId(state, toNodeId(1))
-
-      const working = cloneLGraphState(state)
-      mintNodeId(working)
-
-      expect(state.freeNodeIds.has(1)).toBe(true)
-      expect(working.freeNodeIds.has(1)).toBe(false)
     })
   })
 })

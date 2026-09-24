@@ -10,7 +10,6 @@ import { toRerouteId } from '@/types/rerouteId'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 
 import type { LGraphState } from '../LGraph'
-import { MAX_ID, createLGraphState } from '../idAllocation'
 import type {
   ExportedSubgraph,
   ISerialisedGroup,
@@ -248,9 +247,12 @@ function chainedLink(id: number, parentId?: number): SerialisableLLink {
 }
 
 function freshState(lastRerouteId = 0): LGraphState {
-  const state = createLGraphState()
-  state.lastRerouteId = toRerouteId(lastRerouteId)
-  return state
+  return {
+    lastGroupId: 0,
+    lastNodeId: 0,
+    lastLinkId: toLinkId(0),
+    lastRerouteId: toRerouteId(lastRerouteId)
+  }
 }
 
 function group(id: number): ISerialisedGroup {
@@ -367,14 +369,13 @@ describe('normalizeSubgraphDefinitions', () => {
     expect(subgraph.floatingLinks).toHaveLength(1)
   })
 
-  it('reuses a freed node ID before minting past the counter', () => {
-    const second = makeSubgraph('second', ['dummy'])
+  it('allocates beyond the former fixed limit', () => {
+    const subgraph = makeSubgraph('sg', ['dummy'])
     const state = freshState()
-    state.lastNodeId = 2
-    state.freeNodeIds.add(5)
+    state.lastNodeId = 100_000_000
 
     const result = normalizeSubgraphDefinitions(
-      [second],
+      [subgraph],
       {
         nodeIds: new Set([toNodeId(1)]),
         groupIds: new Set(),
@@ -384,34 +385,30 @@ describe('normalizeSubgraphDefinitions', () => {
       state
     )
 
-    expect(result.subgraphs[0].nodes![0].id).toBe(5)
-    expect(state.lastNodeId).toBe(2)
-    expect(state.freeNodeIds.has(5)).toBe(false)
+    expect(result.subgraphs[0].nodes![0].id).toBe(100_000_001)
+    expect(state.lastNodeId).toBe(100_000_001)
   })
 
-  it('leaves the passed-in state untouched when a dedup step throws', () => {
-    const first = makeSubgraph('first', ['dummy', 'dummy', 'dummy'])
-    const second = makeSubgraph('second', ['dummy', 'dummy', 'dummy'])
+  it('does not commit earlier counter updates when a later phase fails', () => {
+    const subgraph = makeSubgraph('sg', ['dummy'])
+    subgraph.links = [chainedLink(1)]
     const state = freshState()
-    state.lastNodeId = MAX_ID - 1
-    const snapshotLastNodeId = state.lastNodeId
-    const snapshotFreeNodeIds = new Set(state.freeNodeIds)
+    state.lastLinkId = toLinkId(Number.MAX_SAFE_INTEGER)
+    const initialState = { ...state }
 
     expect(() =>
       normalizeSubgraphDefinitions(
-        [first, second],
+        [subgraph],
         {
           nodeIds: new Set(),
           groupIds: new Set(),
-          linkIds: new Set(),
+          linkIds: new Set([1]),
           rerouteIds: new Set()
         },
         state
       )
-    ).toThrow('Node ID space exhausted')
-
-    expect(state.lastNodeId).toBe(snapshotLastNodeId)
-    expect(state.freeNodeIds).toEqual(snapshotFreeNodeIds)
+    ).toThrow('ID space exhausted')
+    expect(state).toEqual(initialState)
   })
 })
 

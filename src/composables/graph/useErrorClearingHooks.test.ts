@@ -27,8 +27,6 @@ import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNod
 import { app } from '@/scripts/app'
 import { ChangeTracker } from '@/scripts/changeTracker'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
-import { useExecutionStore } from '@/stores/executionStore'
-import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import { seedRequiredInputMissingNodeError } from '@/utils/__tests__/executionErrorTestUtils'
@@ -443,37 +441,6 @@ describe('installErrorClearingHooks lifecycle', () => {
     // Original callbacks should be restored
     expect(node.onConnectionsChange).toBe(originalOnConnectionsChange)
     expect(node.onWidgetChanged).toBe(originalOnWidgetChanged)
-  })
-
-  it('clears execution progress and cached outputs for a removed node, so a later mint of the recycled ID does not inherit them', () => {
-    const graph = new LGraph()
-    const node = new LGraphNode('test')
-    graph.add(node)
-    installErrorClearingHooks(graph)
-
-    const executionStore = useExecutionStore()
-    const nodeOutputStore = useNodeOutputStore()
-    executionStore.nodeProgressStates = {
-      [String(node.id)]: {
-        display_node_id: node.id,
-        node_id: node.id,
-        prompt_id: 'test-prompt',
-        value: 1,
-        max: 2,
-        state: 'running'
-      }
-    }
-    nodeOutputStore.setNodeOutputs(node, 'output.png')
-    expect(nodeOutputStore.getNodeOutputs(node)).toBeDefined()
-
-    graph.remove(node)
-
-    expect(executionStore.nodeProgressStates[String(node.id)]).toBeUndefined()
-
-    const replacement = new LGraphNode('test')
-    replacement.id = node.id
-    graph.add(replacement)
-    expect(nodeOutputStore.getNodeOutputs(replacement)).toBeUndefined()
   })
 
   it('does not double-wrap callbacks when installErrorClearingHooks is called twice', () => {

@@ -507,7 +507,6 @@ describe('link presentation transfer across recreation flows', () => {
     connector.moveInputLink(graph, oldTarget, oldTarget.inputs[0])
     connector.dropOnReroute(reroute, createMockCanvasPointerEvent(100, 100))
 
-    const retargetedIds = new Set<number>()
     for (const target of [first, second]) {
       const link = target.getInputLink(0)
       if (!link) throw new Error('Expected retargeted link')
@@ -516,38 +515,8 @@ describe('link presentation transfer across recreation flows', () => {
         hidden: true,
         label: 'Fan out'
       })
-      retargetedIds.add(Number(link.id))
     }
-    // `original.id` may now be a recycled ID reused by one of the
-    // retargeted links above, which legitimately carries the presentation.
-    if (!retargetedIds.has(Number(original.id))) {
-      expect(store.getPresentation(scope, original.id)).toBeUndefined()
-    }
-  })
-
-  it('clears stale presentation when a released link ID is recycled onto an unrelated link', () => {
-    const graph = createTestRootGraph()
-    const origin = createTestNode(graph, [], ['number'])
-    const target = createTestNode(graph, ['number'])
-    const link = origin.connect(0, target, 0)
-    if (!link) throw new Error('Failed to connect removed test link')
-    const scope = graphScopeOf(graph)
-    useLinkPresentationStore().patch(scope, link.id, {
-      hidden: true,
-      label: 'Stale'
-    })
-
-    graph.removeLink(link.id)
-
-    const otherOrigin = createTestNode(graph, [], ['number'])
-    const otherTarget = createTestNode(graph, ['number'])
-    const recycled = otherOrigin.connect(0, otherTarget, 0)
-    if (!recycled) throw new Error('Failed to connect recycling test link')
-
-    expect(recycled.id).toBe(link.id)
-    expect(
-      useLinkPresentationStore().getPresentation(scope, recycled.id)
-    ).toBeUndefined()
+    expect(store.getPresentation(scope, original.id)).toBeUndefined()
   })
 
   it('preserves each ordinary reroute presentation when moving its source', () => {

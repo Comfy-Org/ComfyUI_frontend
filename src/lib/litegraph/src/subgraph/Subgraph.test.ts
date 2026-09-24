@@ -14,7 +14,6 @@ import {
 } from '@/lib/litegraph/src/constants'
 import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { createUuidv4, Subgraph } from '@/lib/litegraph/src/litegraph'
-import { counterSnapshot } from '@/lib/litegraph/src/idAllocation'
 import { subgraphTest } from './__fixtures__/subgraphFixtures'
 import {
   assertSubgraphStructure,
@@ -104,7 +103,7 @@ describe('Subgraph Construction', () => {
     expect(subgraph.rootGraph.subgraphs.has(clone.id)).toBe(false)
     expect(subgraph.asSerialisable()).toEqual({
       ...sourceBeforeClone,
-      state: counterSnapshot(subgraph.state)
+      state: subgraph.state
     })
   })
 })

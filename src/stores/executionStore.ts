@@ -945,39 +945,6 @@ export const useExecutionStore = defineStore('execution', () => {
     executionErrorStore.clearPromptError(runErrorKey)
   }
 
-  /**
-   * Removes every progress-state entry belonging to `nodeId`, from the live
-   * snapshot and from every retained per-job snapshot. Entries for a node
-   * nested in a subgraph are keyed by a colon-joined execution id
-   * (`parentId:nodeId`), so a key matches when its final segment is `nodeId`.
-   * Called when a node id is released back to the free pool, so a later
-   * mint of that id cannot inherit a deleted node's cached progress.
-   */
-  function clearNodeProgressState(nodeId: string) {
-    const matches = (key: string) =>
-      key === nodeId || key.endsWith(`:${nodeId}`)
-
-    if (Object.keys(nodeProgressStates.value).some(matches)) {
-      const next = { ...nodeProgressStates.value }
-      for (const key of Object.keys(next)) {
-        if (matches(key)) delete next[key]
-      }
-      nodeProgressStates.value = next
-    }
-
-    let changedByJob = false
-    const nextByJob = { ...nodeProgressStatesByJob.value }
-    for (const [jobId, states] of Object.entries(nextByJob)) {
-      const staleKeys = Object.keys(states).filter(matches)
-      if (!staleKeys.length) continue
-      const nextStates = { ...states }
-      for (const key of staleKeys) delete nextStates[key]
-      nextByJob[jobId] = nextStates
-      changedByJob = true
-    }
-    if (changedByJob) nodeProgressStatesByJob.value = nextByJob
-  }
-
   function getNodeIdIfExecuting(nodeId: string | number) {
     const nodeIdStr = String(nodeId)
     return nodeIdStr.includes(':')
@@ -1182,7 +1149,6 @@ export const useExecutionStore = defineStore('execution', () => {
     nodeProgressStates,
     nodeLocationProgressStates,
     nodeProgressStatesByJob,
-    clearNodeProgressState,
     runningJobIds,
     runningWorkflowCount,
     initializingJobIds,

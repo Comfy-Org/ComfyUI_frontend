@@ -45,7 +45,6 @@ import { isFloatingTopology } from '@/types/linkTopology'
 import { toRerouteId } from '@/types/rerouteId'
 import { graphScopeOf, toRootGraphId } from '@/types/graphScopeId'
 import {
-  counterSnapshot,
   createLGraphState,
   mintGroupId,
   mintLinkId,
@@ -54,11 +53,7 @@ import {
   observeGroupId,
   observeLinkId,
   observeNodeId,
-  observeRerouteId,
-  releaseGroupId,
-  releaseLinkId,
-  releaseNodeId,
-  releaseRerouteId
+  observeRerouteId
 } from './idAllocation'
 import type { LGraphState, NodeIdMintMode } from './idAllocation'
 import { isRootGraphDocBound } from './docBoundGraphs'
@@ -1475,7 +1470,6 @@ export class LGraph
       const index = this._groups.indexOf(node)
       if (index != -1) {
         this._groups.splice(index, 1)
-        releaseGroupId(this.state, node.id)
       }
       detachGroupLayout(node)
       node.graph = undefined
@@ -1551,10 +1545,7 @@ export class LGraph
 
     // callback
     node.onRemoved?.()
-    if (!successor) {
-      clearNodeOwnedStoreState(node)
-      releaseNodeId(this.state, node.id)
-    }
+    if (!successor) clearNodeOwnedStoreState(node)
 
     const order = node.order
     if (!successor) {
@@ -1883,7 +1874,6 @@ export class LGraph
   removeFloatingLink(link: LLink): void {
     if (this.floatingLinks.get(link.id) !== link) return
     unregisterLinkTopology(link)
-    releaseLinkId(this.state, link.id)
 
     const reroutes = LLink.getReroutes(this, link)
     for (const reroute of reroutes) {
@@ -1915,7 +1905,6 @@ export class LGraph
     unregisterLinkTopology(link)
     layoutStore.deleteLinkLayout(linkId)
     this.getNodeById(link.target_id)?.updateComputedDisabled()
-    releaseLinkId(this.state, linkId)
     return true
   }
 
@@ -1967,7 +1956,6 @@ export class LGraph
     this.reroutesInternal.delete(id)
     unregisterRerouteChain(reroute)
     detachRerouteLayout(reroute)
-    releaseRerouteId(this.state, id)
   }
 
   /**
@@ -2971,7 +2959,7 @@ export class LGraph
       revision,
       version: LGraph.serialisedSchemaVersion,
       config,
-      state: counterSnapshot(state),
+      state,
       groups,
       nodes,
       ...topology,
@@ -3720,7 +3708,7 @@ export class Subgraph
     return {
       id: this.id,
       version: LGraph.serialisedSchemaVersion,
-      state: counterSnapshot(this.state),
+      state: this.state,
       revision: this.revision,
       config: this.config,
       name: this.name,

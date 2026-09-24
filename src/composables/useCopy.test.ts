@@ -64,7 +64,7 @@ function selectDocumentText(selectedCharacters: number): void {
 function readSerializedClipboardMetadata(dataTransfer: DataTransfer): string {
   const match = dataTransfer
     .getData('text/html')
-    .match(/data-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
+    .match(/data-comfy-metadata="([A-Za-z0-9+/=]+)"/)?.[1]
   expect(match).toBeDefined()
   if (!match) throw new Error('Expected clipboard metadata to be written')
 

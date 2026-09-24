@@ -221,6 +221,8 @@ describe('LinkConnector Integration', () => {
 
   describe('Moving input links', () => {
     test('Should move input links', ({ graph, connector }) => {
+      const nextLinkId = graph.last_link_id + 1
+
       const hasInputNode = graph.getNodeById(toNodeId(2))!
       const disconnectedNode = graph.getNodeById(toNodeId(9))!
 
@@ -248,9 +250,7 @@ describe('LinkConnector Integration', () => {
       expect(connector.renderLinks.length).toBe(0)
       expect(connector.inputLinks.length).toBe(0)
 
-      const newLinkId = disconnectedNode.inputs[0].link
-      expect(newLinkId).not.toBeNull()
-      expect(graph.links.get(newLinkId!)).toBeInstanceOf(LLink)
+      expect(disconnectedNode.inputs[0].link).toBe(nextLinkId)
       expect(hasInputNode.inputs[0].link).toBeNull()
 
       const reroutesAfter = LLink.getReroutes(

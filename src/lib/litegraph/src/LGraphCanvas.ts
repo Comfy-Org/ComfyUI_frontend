@@ -46,6 +46,7 @@ import type { AnimationOptions } from './DragAndScale'
 import {
   cloneLGraphState,
   commitLGraphState,
+  findNextAvailableId,
   mintNodeId,
   observeNodeId
 } from './idAllocation'
@@ -55,7 +56,6 @@ import type { SlotTypeDefaultNodeOpts } from './LiteGraphGlobal'
 import { LGraphNode } from './LGraphNode'
 import type { NodeProperty } from './LGraphNode'
 import { detachSerialisedLinks } from './linkDeduplication'
-import { findNextAvailableId } from './subgraph/subgraphDeduplication'
 import { parseNodeId, serializeNodeId, toNodeId } from '@/types/nodeId'
 import type { SerializedNodeId } from '@/types/nodeId'
 import { LLink, slotFloatingLinks } from './LLink'

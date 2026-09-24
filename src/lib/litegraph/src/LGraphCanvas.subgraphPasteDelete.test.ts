@@ -206,32 +206,6 @@ function terminalState(f: Fixture) {
   }
 }
 
-/**
- * Recycled floating-link IDs are history-dependent, so raw values can differ
- * between the two delete orders even when the underlying structure agrees.
- * Replacing each ID with its rank among this run's own sorted floating-link
- * IDs still proves the real invariant — that a reroute's `floatingLinkIds`
- * entry resolves to one of the graph's *actual* floating links, and to the
- * same relative one in both orders — without asserting the exact recycled
- * value. Reducing to bare counts, by contrast, would equally accept a
- * reroute that references a link the graph doesn't have, or the wrong one
- * among several, as long as the totals matched.
- */
-function withStableFloatingLinkIdentities(
-  state: ReturnType<typeof terminalState>
-) {
-  const sortedIds = [...state.remainingFloatingLinks].sort((a, b) => a - b)
-  const rankOf = (id: LinkId) => sortedIds.indexOf(id)
-  return {
-    ...state,
-    remainingFloatingLinks: sortedIds.map((_, index) => index),
-    remainingReroutes: state.remainingReroutes.map((reroute) => ({
-      linkIds: reroute.linkIds,
-      floatingLinkIds: reroute.floatingLinkIds.map(rankOf)
-    }))
-  }
-}
-
 describe('subgraph copy/paste then delete in both orders', () => {
   beforeEach(() => {
     LiteGraph.registerNodeType(INTERIOR_TYPE, InteriorNode)
@@ -385,11 +359,7 @@ describe('subgraph copy/paste then delete in both orders', () => {
     copyFirst.rootGraph.remove(copyFirst.copy)
     copyFirst.rootGraph.remove(copyFirst.original)
 
-    expect(
-      withStableFloatingLinkIdentities(terminalState(copyFirst))
-    ).toStrictEqual(
-      withStableFloatingLinkIdentities(terminalState(originalFirst))
-    )
+    expect(terminalState(copyFirst)).toStrictEqual(terminalState(originalFirst))
 
     // That shared state is: both definitions released, both instances gone,
     // every real link gone — and the reroute survives on a *real* floating

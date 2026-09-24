@@ -2,9 +2,9 @@ import type { LGraph } from '../LGraph'
 import { isUuidShapedSubgraphId } from '@/schemas/subgraphIdSchema'
 import { toGroupId } from '@/types/groupId'
 import {
-  MAX_ID,
   cloneLGraphState,
   commitLGraphState,
+  findNextAvailableId,
   mintGroupId,
   mintLinkId,
   mintNodeId,
@@ -65,8 +65,6 @@ export function normalizeSubgraphDefinitions(
     clonedSubgraphs[index] = normalizeConfiguredTopology(subgraph)
   }
 
-  // Mint/observe against a disposable copy of `state` so a throw partway
-  // through (e.g. ID space exhaustion) leaves the real allocator untouched.
   const workingState = cloneLGraphState(state)
   deduplicateClonedSubgraphNodeIds(
     clonedSubgraphs,
@@ -328,23 +326,6 @@ function numericSerializedNodeId(id: SerializedNodeId): number | null {
   return Number.isInteger(numericId) && String(numericId) === key
     ? numericId
     : null
-}
-
-/**
- * Finds the next unused ID by repeatedly calling `advance`.
- * Throws if the ID space is exhausted.
- */
-export function findNextAvailableId(
-  usedIds: Set<number>,
-  advance: () => number
-): number {
-  for (;;) {
-    const nextId = advance()
-    if (nextId > MAX_ID) {
-      throw new Error('Node ID space exhausted')
-    }
-    if (!usedIds.has(nextId)) return nextId
-  }
 }
 
 /** Patches origin_id / target_id in serialized links. */
