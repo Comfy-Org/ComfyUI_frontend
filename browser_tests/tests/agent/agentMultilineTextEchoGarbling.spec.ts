@@ -75,10 +75,14 @@ test.describe(
           outcomes.filter((outcome) => outcome.outcome === 'rejected')
         ).toEqual([])
         // The document moved, so the round trip is real rather than a frame
-        // the page sent and dropped.
-        expect(
-          agentConversation.hostWidgetValue(TEXT_NODE_ID, TEXT_WIDGET)
-        ).toBe(`${AGENT_VALUE}!!`)
+        // the page sent and dropped. Polled, because the outcome counter
+        // gating the wait above counts every human op the host judges, not
+        // this widget's.
+        await expect
+          .poll(() =>
+            agentConversation.hostWidgetValue(TEXT_NODE_ID, TEXT_WIDGET)
+          )
+          .toBe(`${AGENT_VALUE}!!`)
         await expect(field).toHaveValue(`${AGENT_VALUE}!!`)
       })
     })
@@ -139,6 +143,9 @@ test.describe(
           await field.press('ArrowRight')
         }
 
+        // Nothing is held before the first keystroke, so the single held op
+        // asserted below can only be X's.
+        expect(agentConversation.heldHumanOpCount()).toBe(0)
         await field.press('X')
         await expect(field).toHaveValue(`${head}X${tail}`)
         await field.press('Y')
@@ -147,7 +154,7 @@ test.describe(
         // X's op is on the host and Y's is still queued behind it, so the
         // release below is unambiguously an echo of the older keystroke.
         await expect.poll(() => agentConversation.heldHumanOpCount()).toBe(1)
-        expect(agentConversation.releaseHeldHumanOps(1)).toBe(1)
+        expect(agentConversation.releaseHeldHumanOps()).toBe(1)
         await expect(field).toHaveValue(`${head}X${tail}`)
 
         await field.press('Z')
@@ -169,12 +176,14 @@ test.describe(
         })
 
         // Guards, so the `test.fail()` below swallows only the defect: the
-        // widget is still there and still holds the characters that were
-        // typed into it. A wipe, a detached node or lost input would be a
+        // widget is still there, it still holds the characters that were
+        // typed into it, and they are scattered rather than merely shortened
+        // - `XZ` would mean Y was dropped with the caret intact, which is a
         // different bug and must not read as this one.
         await expect(field).toBeVisible()
         await expect(field).toHaveValue(/X/)
         await expect(field).toHaveValue(/Z/)
+        await expect(field).not.toHaveValue(/XZ/)
 
         // Known defect, pinned rather than fixed here: Y is destroyed by the
         // echo and Z lands at the end of the prompt instead of beside X.

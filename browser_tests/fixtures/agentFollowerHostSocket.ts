@@ -83,7 +83,7 @@ export class AgentFollowerHostSocket {
   private subscribes = 0
   private readonly createdAt = Date.now()
   private readonly clientFrames: ClientDocFrame[] = []
-  private readonly heldOps: WireOpEnvelope[] = []
+  private readonly heldBatches: WireOpEnvelope[][] = []
   private readonly humanOutcomes: ApplyOutcome[] = []
   private resolveSubscribed: (() => void) | null = null
   private readonly subscribed = new Promise<void>((resolve) => {
@@ -178,7 +178,7 @@ export class AgentFollowerHostSocket {
       return
     }
     if (frame.type === 'doc_ops' && frame.opsResult.ok) {
-      this.heldOps.push(...frame.opsResult.ops)
+      this.heldBatches.push(frame.opsResult.ops)
     }
   }
 
@@ -189,12 +189,22 @@ export class AgentFollowerHostSocket {
    * through `HostDoc.applyWire`.
    */
   heldClientOps(): WireOpEnvelope[] {
-    return [...this.heldOps]
+    return this.heldBatches.flat()
   }
 
-  /** Like {@link heldClientOps}, but drains what it returns. */
-  takeHeldClientOps(count = this.heldOps.length): WireOpEnvelope[] {
-    return this.heldOps.splice(0, count)
+  /**
+   * Judges and broadcasts the oldest held batch down the same path the
+   * `apply` host takes at send time - relay gate, applier, verdict frame,
+   * delta - so a released batch is indistinguishable from one judged when it
+   * arrived, and its outcomes still reach {@link humanOpOutcomes}. Whole
+   * batches only: `opSender` settles an in-flight batch on the first op id it
+   * recognises, so releasing part of one would retire all of it.
+   */
+  releaseHeldClientOps(): WireOpEnvelope[] {
+    const batch = this.heldBatches.shift()
+    if (!batch) return []
+    this.judgeHumanOps({ ok: true, ops: batch })
+    return batch
   }
 
   /**

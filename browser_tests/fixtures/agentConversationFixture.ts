@@ -694,27 +694,23 @@ export class AgentConversationHarness {
     return widgets?.[widget]
   }
 
-  /**
-   * Lets the `hold` host judge the human ops it is sitting on and broadcast
-   * the result, which is what a page's own edit coming back to it IS: same
-   * op ids, and `applyWire` stamps the broadcast with the client's actor
-   * rather than the host's. Holding first and releasing later is therefore a
-   * real echo arriving late, not a synthetic host write standing in for one.
-   *
-   * Returns the number of ops released, so a caller can tell an echo that
-   * landed from one the sender had not flushed yet.
-   */
   heldHumanOpCount(): number {
     return this.hostSocket.heldClientOps().length
   }
 
-  releaseHeldHumanOps(count?: number): number {
-    const ops = this.hostSocket.takeHeldClientOps(count)
-    if (ops.length === 0) return 0
-    const { result, update } = this.host.applyWire(ops)
-    this.hostSocket.send(result)
-    if (update) this.hostSocket.send(update)
-    return ops.length
+  /**
+   * Releases the oldest batch a `hold` host is sitting on, which is what a
+   * page's own edit coming back to it IS: same op ids, and the broadcast
+   * carries the client's actor rather than the host's. Holding first and
+   * releasing later is therefore a real echo arriving late, not a host write
+   * standing in for one - the distinction decides which branch
+   * `useAgentCrdtFollower` takes for the frame.
+   *
+   * Returns the number of ops released, so a caller can tell an echo that
+   * landed from one the sender had not flushed yet.
+   */
+  releaseHeldHumanOps(): number {
+    return this.hostSocket.releaseHeldClientOps().length
   }
 
   // A host-side edit outside the recording, pushed as one `doc_update`. The
