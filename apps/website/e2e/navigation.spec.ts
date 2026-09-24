@@ -36,6 +36,52 @@ const TOP_LEVEL_LABELS = [
   'Company'
 ] as const
 
+const RETIRED_BADGE_PANELS = [
+  {
+    section: 'Products',
+    badged: 'Comfy Agent',
+    bare: [{ label: 'Comfy CLI', href: '/cli' }]
+  },
+  {
+    section: 'Community',
+    badged: 'Events',
+    bare: [
+      { label: 'Affiliates', href: '/affiliates' },
+      { label: 'Learning', href: '/learning' }
+    ]
+  }
+] as const
+
+const BADGE_PALETTES = [
+  {
+    link: 'Developer Platform',
+    label: 'BETA',
+    text: '--color-primary-warm-white',
+    fill: '--color-primary-comfy-plum'
+  },
+  {
+    link: 'Comfy Agent',
+    label: 'NEW',
+    text: '--color-primary-comfy-ink',
+    fill: '--color-primary-comfy-yellow'
+  }
+] as const
+
+async function expectRetiredBadges(
+  panel: Locator,
+  { badged, bare }: (typeof RETIRED_BADGE_PANELS)[number]
+) {
+  await expect(
+    panel.getByRole('link', { name: badged }).getByText('NEW', { exact: true })
+  ).toBeVisible()
+  for (const { label, href } of bare) {
+    const link = panel.getByRole('link', { name: label })
+    await expect(link).toBeVisible()
+    await expect(link).toHaveAttribute('href', href)
+    await expect(link.getByText('NEW', { exact: true })).toHaveCount(0)
+  }
+}
+
 test.describe('Desktop navigation @smoke', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
@@ -122,65 +168,68 @@ test.describe('Desktop dropdown @interaction', () => {
     }
   })
 
-  test('COMMUNITY dropdown badges Events and leaves Affiliates and Learning bare', async ({
-    page
-  }) => {
-    const nav = page.getByRole('navigation', { name: 'Main navigation' })
-    const desktopLinks = nav.getByTestId('desktop-nav-links')
-    await desktopLinks.getByRole('button', { name: 'Community' }).hover()
+  for (const panel of RETIRED_BADGE_PANELS) {
+    test(`${panel.section} dropdown keeps NEW on ${panel.badged} and drops it from the retired entries`, async ({
+      page
+    }) => {
+      const nav = page.getByRole('navigation', { name: 'Main navigation' })
+      const desktopLinks = nav.getByTestId('desktop-nav-links')
+      await desktopLinks.getByRole('button', { name: panel.section }).hover()
 
-    const dropdown = nav.getByTestId('nav-dropdown')
-    await expect(
-      dropdown.getByRole('link', { name: 'Events' }).getByText('NEW', {
-        exact: true
-      })
-    ).toBeVisible()
+      await expectRetiredBadges(nav.getByTestId('nav-dropdown'), panel)
+    })
+  }
 
-    const affiliates = dropdown.getByRole('link', { name: 'Affiliates' })
-    await expect(affiliates).toBeVisible()
-    await expect(affiliates.locator('[data-slot="badge"]')).toHaveCount(0)
-
-    const learning = dropdown.getByRole('link', { name: 'Learning' })
-    await expect(learning).toBeVisible()
-    await expect(learning.locator('[data-slot="badge"]')).toHaveCount(0)
-  })
-
-  test('BETA badge paints the plum token behind warm-white text', async ({
+  test('BETA badges paint plum behind warm-white while NEW stays ink on yellow', async ({
     page
   }) => {
     const nav = page.getByRole('navigation', { name: 'Main navigation' })
     const desktopLinks = nav.getByTestId('desktop-nav-links')
     await desktopLinks.getByRole('button', { name: 'Products' }).hover()
+    const dropdown = nav.getByTestId('nav-dropdown')
 
-    const badge = nav
-      .getByTestId('nav-dropdown')
-      .getByRole('link', { name: 'Developer Platform' })
-      .locator('[data-slot="badge"]')
-    await expect(badge).toBeVisible()
+    for (const { link, label, text, fill } of BADGE_PALETTES) {
+      const badge = dropdown
+        .getByRole('link', { name: link })
+        .getByText(label, { exact: true })
+      await expect(badge).toBeVisible()
 
-    const palette = await page.evaluate(() => {
-      const probe = document.createElement('span')
-      document.body.append(probe)
-      const token = (name: string) => {
-        probe.style.color = `var(${name})`
-        return getComputedStyle(probe).color
-      }
-      const resolved = {
-        text: token('--color-primary-warm-white'),
-        fill: token('--color-primary-comfy-plum')
-      }
-      probe.remove()
-      return resolved
-    })
-
-    await expect
-      .poll(() =>
-        badge.evaluate((el) => ({
-          text: getComputedStyle(el).color,
-          fill: getComputedStyle(el, '::before').backgroundColor
-        }))
+      const expected = await page.evaluate(
+        ([textToken, fillToken]) => {
+          const probe = document.createElement('span')
+          document.body.append(probe)
+          const resolve = (name: string) => {
+            probe.style.color = `var(${name})`
+            return getComputedStyle(probe).color
+          }
+          const resolved = {
+            text: resolve(textToken),
+            fill: resolve(fillToken)
+          }
+          probe.remove()
+          return resolved
+        },
+        [text, fill] as const
       )
-      .toEqual(palette)
+
+      await expect
+        .poll(() =>
+          badge.evaluate((el) => {
+            let host: Element | null = el
+            while (
+              host &&
+              getComputedStyle(host, '::before').backgroundColor ===
+                'rgba(0, 0, 0, 0)'
+            )
+              host = host.parentElement
+            return {
+              text: getComputedStyle(el).color,
+              fill: host && getComputedStyle(host, '::before').backgroundColor
+            }
+          })
+        )
+        .toEqual(expected)
+    }
   })
 
   test('moving mouse away closes dropdown', async ({ page }) => {
@@ -260,6 +309,19 @@ test.describe('Mobile menu @mobile', () => {
       menu.getByRole('link', { name: 'Pricing' }).getByText('NEW')
     ).toHaveCount(0)
   })
+
+  for (const panel of RETIRED_BADGE_PANELS) {
+    test(`${panel.section} drill-down keeps NEW on ${panel.badged} and drops it from the retired entries`, async ({
+      page
+    }) => {
+      await page.getByRole('button', { name: 'Toggle menu' }).click()
+
+      const menu = page.getByRole('dialog')
+      await menu.getByRole('button', { name: panel.section }).click()
+
+      await expectRetiredBadges(menu, panel)
+    })
+  }
 
   test('clicking section with subitems drills down and back works', async ({
     page
