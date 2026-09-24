@@ -288,15 +288,23 @@ describe('popup sign-in close signal', () => {
     }
   )
 
-  it('leaves the outcome to Firebase and never signals when no option is passed', async () => {
+  it('never touches window.open when no option is passed', async () => {
+    const nativeOpen = window.open
+    let openDuringSignIn: typeof window.open | undefined
     sdk.signInWithPopup.mockImplementationOnce(async () => {
+      openDuringSignIn = window.open
       window.open(AUTH_HANDLER_URL, 'unwatched', 'width=1')?.close()
       return testCredential
     })
     const identity = await makeHostBoundIdentity()
 
     await expect(identity.signInWithGoogle()).resolves.toBe(testCredential)
-    await vi.advanceTimersByTimeAsync(750)
+
+    expect(
+      openDuringSignIn,
+      'a caller that wants no signal must not have the global patched underneath it'
+    ).toBe(nativeOpen)
+    expect(window.open).toBe(nativeOpen)
   })
 })
 

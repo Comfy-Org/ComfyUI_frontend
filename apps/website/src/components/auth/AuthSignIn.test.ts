@@ -527,7 +527,16 @@ describe('AuthSignIn', () => {
     ).toContain(t('auth.signIn.error.provisioning', 'en'))
   })
 
-  it('never signs out the identity the attempt that superseded it established', async () => {
+  it('does not leave the visitor holding a late attempt\u2019s account', async () => {
+    // Firebase holds one currentUser, last write wins: whichever sign-in
+    // resolves most recently is the account the page is left on.
+    const signInAs = (uid: string) => {
+      const credential = testCredential(
+        testFirebaseUser({ uid, email: 'user@example.com', displayName: null })
+      )
+      authUser.value = credential.user
+      return credential
+    }
     let closePopup: (() => void) | undefined
     let completeSignIn: ((credential: UserCredential) => void) | undefined
     vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
@@ -536,15 +545,14 @@ describe('AuthSignIn', () => {
         completeSignIn = resolve
       })
     })
-    vi.mocked(signInWorkshopWithEmail).mockResolvedValue(
-      testCredential(
-        testFirebaseUser({
-          uid: 'email-user',
-          email: 'user@example.com',
-          displayName: null
-        })
-      )
+    vi.mocked(signInWorkshopWithEmail).mockImplementation(async () =>
+      signInAs('email-user')
     )
+    // The mint fails, so the page stays put with its Retry instead of leaving.
+    vi.mocked(useWorkshopSession().ensureFresh).mockResolvedValue({
+      status: 'error',
+      code: 'TOKEN_EXCHANGE_FAILED'
+    })
     const user = userEvent.setup()
     render(AuthSignIn)
 
@@ -558,23 +566,68 @@ describe('AuthSignIn', () => {
     await user.type(screen.getByLabelText('Email'), 'user@example.com')
     await user.type(screen.getByLabelText('Password'), 'Password1!')
     await user.click(screen.getByRole('button', { name: /^sign in$/i }))
-    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
+    await screen.findByRole('button', { name: 'Retry session' })
 
-    completeSignIn?.(
+    completeSignIn?.(signInAs('google-user'))
+
+    await waitFor(() =>
+      expect(
+        signOutWorkshop,
+        'the account Firebase now holds is not the one the visitor signed into, so it must not be left there for Retry to mint'
+      ).toHaveBeenCalledOnce()
+    )
+    expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('lets a successor finish minting when the attempt it superseded finally fails', async () => {
+    let closePopup: (() => void) | undefined
+    let failPopup: ((reason: unknown) => void) | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise<UserCredential>((_resolve, reject) => {
+        failPopup = reject
+      })
+    })
+    vi.mocked(signInWorkshopWithGitHub).mockResolvedValue(
       testCredential(
         testFirebaseUser({
-          uid: 'google-user',
+          uid: 'github-user',
           email: 'user@example.com',
           displayName: null
         })
       )
     )
-    await new Promise((resolve) => setTimeout(resolve, 0))
+    // Held in `minting`, the state the superseded attempt must not reset.
+    let completeMint: (() => void) | undefined
+    vi.mocked(useWorkshopSession().ensureFresh).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          completeMint = () => resolve(okSession)
+        })
+    )
+    render(AuthSignIn)
 
-    expect(
-      signOutWorkshop,
-      'signOutWorkshop is global, so a superseded attempt rolling back would sign the visitor out of the session they just got'
-    ).not.toHaveBeenCalled()
+    await clickGoogle()
+    closePopup?.()
+    await waitFor(() =>
+      expect(githubButton().hasAttribute('disabled')).toBe(false)
+    )
+    await userEvent.setup().click(githubButton())
+    await waitFor(() => expect(completeMint).toBeDefined())
+
+    failPopup?.({ code: 'auth/popup-closed-by-user', message: 'x' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    completeMint?.()
+
+    await waitFor(() =>
+      expect(
+        replace,
+        'the superseded attempt must not idle the mint its successor is inside'
+      ).toHaveBeenCalledWith('/')
+    )
+    expect(captureAuthCompleted).toHaveBeenCalledWith(
+      expect.objectContaining({ method: 'github', user_id: 'github-user' })
+    )
   })
 
   it('rolls a late credential back when the visitor has moved on to another attempt', async () => {

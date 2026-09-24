@@ -36,6 +36,8 @@ const FIREBASE_AUTH_HANDLER_PATH = '/__/auth/handler'
  */
 const POPUP_CLOSE_SETTLE_MS = 500
 
+let patchInstalled = false
+
 /**
  * Runs `run` and calls `onPopupClosed` at most once, shortly after the popup
  * it opened is closed without the sign-in having settled. Never fires once
@@ -46,7 +48,10 @@ export function withPopupCloseSignal<T>(
   run: () => Promise<T>,
   onPopupClosed: () => void
 ): Promise<T> {
-  if (typeof window === 'undefined') return run()
+  // Nesting would capture the outer patch as the inner one's "native" and
+  // leave a dead closure installed on the page, so the second caller simply
+  // goes unwatched. Firebase runs one popup at a time regardless.
+  if (typeof window === 'undefined' || patchInstalled) return run()
 
   const nativeOpen = window.open
   let settled = false
@@ -54,6 +59,7 @@ export function withPopupCloseSignal<T>(
 
   const restoreOpen = () => {
     if (window.open === patchedOpen) window.open = nativeOpen
+    patchInstalled = false
   }
 
   const watchForClose = (popup: Window) => {
@@ -89,6 +95,7 @@ export function withPopupCloseSignal<T>(
   }
 
   window.open = patchedOpen
+  patchInstalled = true
   // The popup is opened several awaits into `signInWithPopup` (the resolver
   // initializes first), so the patch has to outlive the synchronous call — and
   // has to come off again when that call throws before ever opening one.

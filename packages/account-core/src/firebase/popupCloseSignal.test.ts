@@ -238,6 +238,33 @@ describe('withPopupCloseSignal', () => {
     await result
   })
 
+  it('leaves window.open intact when a second sign-in overlaps the first', async () => {
+    const outer = pendingSignIn()
+    const inner = pendingSignIn()
+    const onInnerClosed = vi.fn()
+    let innerPopup: Window | undefined
+
+    const outerResult = withPopupCloseSignal(() => outer.signedIn, vi.fn())
+    const innerResult = withPopupCloseSignal(async () => {
+      innerPopup = await openPopupLate()
+      return inner.signedIn
+    }, onInnerClosed)
+
+    await vi.advanceTimersByTimeAsync(0)
+    innerPopup?.close()
+    await vi.advanceTimersByTimeAsync(AFTER_CLOSE_MS * 2)
+    expect(
+      onInnerClosed,
+      'an overlapping call goes unwatched rather than capturing the first patch as its native open'
+    ).not.toHaveBeenCalled()
+
+    outer.settle('outer')
+    inner.settle('inner')
+    await Promise.all([outerResult, innerResult])
+
+    expect(window.open).toBe(nativeOpen)
+  })
+
   it('restores window.open when the sign-in throws before opening a window', async () => {
     const before = window.open
     const failure = new Error('firebase config is not loaded')
