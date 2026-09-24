@@ -169,9 +169,11 @@ describe('StripePaymentForm', () => {
   it('themes Stripe from the theme scope the form renders in, not the page body', async () => {
     document.body.style.setProperty('--base-foreground', 'rgb(20, 20, 20)')
     document.body.style.setProperty('--base-background', 'rgb(255, 255, 255)')
+    document.body.style.fontFamily = 'serif'
     const darkScope = document.createElement('div')
     darkScope.style.setProperty('--base-foreground', 'rgb(250, 250, 250)')
     darkScope.style.setProperty('--base-background', 'rgb(30, 30, 30)')
+    darkScope.style.fontFamily = 'Inter'
     document.body.append(darkScope)
     onTestFinished(() => {
       darkScope.remove()
@@ -186,7 +188,8 @@ describe('StripePaymentForm', () => {
         appearance: expect.objectContaining({
           variables: expect.objectContaining({
             colorText: 'rgb(250, 250, 250)',
-            colorBackground: 'rgb(30, 30, 30)'
+            colorBackground: 'rgb(30, 30, 30)',
+            fontFamily: 'Inter'
           })
         })
       })
