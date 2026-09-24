@@ -61,11 +61,7 @@ function declarationMemberName(node) {
     !ts.isMethodDeclaration(node)
   )
     return undefined
-  if (
-    !node.name ||
-    !ts.isIdentifier(node.name) ||
-    node.name.text.startsWith('__')
-  )
+  if (!ts.isIdentifier(node.name) || node.name.text.startsWith('__'))
     return undefined
   return node.name.text
 }
@@ -134,7 +130,9 @@ if (
     realpathSync(resolve(entryPath))
 ) {
   const directory = sourceDirectory()
-  const names = [...deriveApiMembers(directory)].sort()
+  const names = [...deriveApiMembers(directory)].sort((a, b) =>
+    a.localeCompare(b)
+  )
   const header = readFileSync(join(directory, 'apiSurface.ts'), 'utf8').split(
     'export const API_MEMBERS'
   )[0]
