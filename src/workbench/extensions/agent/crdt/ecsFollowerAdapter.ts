@@ -32,7 +32,7 @@ type NodeRootAction = 'add' | 'update' | 'delete'
 /**
  * A rejected batch (no scope available) arms `reconcileNextFrame`, but that
  * only fires on the next *incoming* frame, which may never arrive (e.g. the
- * user never sends another agent message). These bound retries give the
+ * user never sends another agent message). This timed retry loop gives the
  * scope race a fast, self-driven chance to resolve instead of leaving the
  * stale doc/live mismatch on screen until some unrelated later frame lands.
  */
@@ -858,6 +858,15 @@ export class EcsFollowerAdapter {
         errorType: 'error_agent_reconcile_live_sweep_threw',
         context: { workflowId: session.workflowId }
       })
+      // A timer from an earlier failed sweep may already be armed for this
+      // session (e.g. a second, independent rejection episode committed and
+      // failed its own sweep before the first sweep's retry fired).
+      // Overwriting `liveSweepRetryTimer` here would orphan that earlier
+      // timer: it stays scheduled but nothing can ever `clearTimeout` it
+      // again, so it fires later even after `unbind`/`clearForReset`/
+      // `discardPending` believed they had cancelled recovery. Scheduling is
+      // therefore idempotent: only arm a new timer when none is pending.
+      if (session.liveSweepRetryTimer) return
       session.liveSweepRetryTimer = setTimeout(() => {
         session.liveSweepRetryTimer = null
         if (this.targets.get(session.workflowId) !== session) return

@@ -431,8 +431,10 @@ describe('AgentCrdtProjection self-driven reconcile retry', () => {
       expect(sweepSpy).toHaveBeenCalledTimes(1)
 
       // A later timer retries only the sweep - never the already-committed
-      // mutation - and this time it actually removes the live node.
-      vi.advanceTimersByTime(200)
+      // mutation - and this time it actually removes the live node. The
+      // live-sweep retry runs on the slow (2s) cadence, not the fast (200ms)
+      // batch-retry cadence.
+      vi.advanceTimersByTime(2_000)
       expect(graph.getNodeById(toNodeId(1))).toBeNull()
       expect(sweepSpy).toHaveBeenCalledTimes(2)
 

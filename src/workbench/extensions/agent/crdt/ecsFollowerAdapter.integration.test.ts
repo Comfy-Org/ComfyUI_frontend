@@ -1026,6 +1026,80 @@ describe('EcsFollowerAdapter integration', () => {
     }
   )
 
+  it.for(['clearForReset', 'discardPending', 'unbind'] as const)(
+    'a second, later live-sweep failure cannot orphan an earlier sweep-retry timer past %s',
+    (lifecycleAction) => {
+      vi.useFakeTimers()
+      try {
+        let scopeAvailable = false
+        const mutations = createGraphMutations({
+          placement: inertPlacementPort,
+          getScope: () => (scopeAvailable ? scope : null),
+          layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+        })
+        const onReconcileRetryCommitted = vi.fn(() => {
+          throw new Error('live sweep failed')
+        })
+        const host = mint({ nodes: [], links: [] }, catalog)
+        const follower = new FollowerDoc()
+        const adapter = new EcsFollowerAdapter(
+          mutations,
+          undefined,
+          onReconcileRetryCommitted
+        )
+        adapter.bind('wf', follower)
+        const update = Y.encodeStateAsUpdate(host)
+        follower.applyRemoteUpdate(update)
+
+        // First rejection episode: its batch retry commits at 200ms, and its
+        // live-graph sweep throws, arming a sweep-retry timer 2s out.
+        expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+          false
+        )
+        scopeAvailable = true
+        vi.advanceTimersByTime(200)
+        expect(onReconcileRetryCommitted).toHaveBeenCalledTimes(1)
+
+        // A second, independent rejection episode starts and its own retry
+        // commits well before the first sweep-retry timer would fire; its
+        // sweep also throws. Without idempotent scheduling this overwrites
+        // `liveSweepRetryTimer`, orphaning the first timer so nothing can
+        // ever `clearTimeout` it again.
+        scopeAvailable = false
+        expect(adapter.applyFrame({ workflowId: 'wf', seq: 2, update })).toBe(
+          false
+        )
+        scopeAvailable = true
+        vi.advanceTimersByTime(200)
+        expect(onReconcileRetryCommitted).toHaveBeenCalledTimes(2)
+
+        if (lifecycleAction === 'clearForReset') {
+          adapter.clearForReset('wf', {
+            source: 'agent-remote',
+            actor: 'reset',
+            opId: 'reset'
+          })
+        } else if (lifecycleAction === 'discardPending') {
+          adapter.discardPending('wf')
+        } else {
+          adapter.unbind('wf')
+        }
+
+        // If the first sweep-retry timer were orphaned, it would still fire
+        // ~2s after the first sweep failure and invoke the callback again
+        // even though recovery was just cancelled.
+        vi.advanceTimersByTime(5_000)
+        expect(onReconcileRetryCommitted).toHaveBeenCalledTimes(2)
+
+        if (lifecycleAction !== 'unbind') adapter.unbind('wf')
+        follower.destroy()
+        host.destroy()
+      } finally {
+        vi.useRealTimers()
+      }
+    }
+  )
+
   it('retries from the batch rejection reason when scope appears immediately afterward', () => {
     vi.useFakeTimers()
     try {
