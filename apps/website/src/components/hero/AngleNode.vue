@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { onMounted, onUnmounted, ref, watch } from 'vue'
+import { ref } from 'vue'
 
-import type { CameraWidget } from './camera/CameraWidget'
+import { useCameraWidget } from '../../composables/useCameraWidget'
 import { azimuthLabel, distanceLabel, elevationLabel } from './cameraVocabulary'
 
 const SCENE_PALETTE = {
@@ -23,90 +23,12 @@ const elevation = defineModel<number>('elevation', { default: 0 })
 const zoom = defineModel<number>('zoom', { default: 5 })
 
 const sceneContainer = ref<HTMLElement>()
-const sceneReady = ref(false)
 
-let widget: CameraWidget | null = null
-let unmounted = false
-let syncingFromWidget = false
-let intersecting = true
-let initObserver: IntersectionObserver | null = null
-let pauseObserver: IntersectionObserver | null = null
-
-function syncPause() {
-  if (!widget) return
-  if (document.hidden || !intersecting) widget.pause()
-  else widget.resume()
-}
-
-async function initScene(container: HTMLElement) {
-  await new Promise<void>((resolve) => {
-    if ('requestIdleCallback' in window) requestIdleCallback(() => resolve())
-    else setTimeout(resolve, 200)
-  })
-  if (unmounted || widget) return
-
-  const { CameraWidget: Widget } = await import('./camera/CameraWidget')
-  if (unmounted) return
-
-  widget = new Widget({
-    container,
-    palette: SCENE_PALETTE,
-    initialState: {
-      azimuth: azimuth.value,
-      elevation: elevation.value,
-      distance: zoom.value,
-      imageUrl: '/hero/input.webp'
-    },
-    onStateChange: (state) => {
-      syncingFromWidget = true
-      azimuth.value = state.azimuth
-      elevation.value = state.elevation
-      zoom.value = state.distance
-      syncingFromWidget = false
-    }
-  })
-  sceneReady.value = true
-
-  pauseObserver = new IntersectionObserver(([entry]) => {
-    intersecting = entry.isIntersecting
-    syncPause()
-  })
-  pauseObserver.observe(container)
-  document.addEventListener('visibilitychange', syncPause)
-}
-
-watch(
-  [azimuth, elevation, zoom],
-  ([a, e, z]) => {
-    if (syncingFromWidget || !widget) return
-    widget.setState({ azimuth: a, elevation: e, distance: z })
-  },
-  { flush: 'sync' }
+const { ready: sceneReady } = useCameraWidget(
+  sceneContainer,
+  { azimuth, elevation, zoom },
+  { palette: SCENE_PALETTE, image: () => '/hero/input.webp' }
 )
-
-onMounted(() => {
-  const container = sceneContainer.value
-  if (!container) return
-  initObserver = new IntersectionObserver(
-    ([entry]) => {
-      if (!entry.isIntersecting) return
-      initObserver?.disconnect()
-      initObserver = null
-      void initScene(container)
-    },
-    { rootMargin: '100px' }
-  )
-  initObserver.observe(container)
-})
-
-onUnmounted(() => {
-  unmounted = true
-  initObserver?.disconnect()
-  pauseObserver?.disconnect()
-  document.removeEventListener('visibilitychange', syncPause)
-  widget?.dispose()
-  widget = null
-})
 </script>
 
 <template>

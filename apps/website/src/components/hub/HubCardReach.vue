@@ -18,6 +18,6 @@ const { reach, locale = 'en' } = defineProps<{
     class="pointer-events-none absolute top-4 right-4 z-20 inline-flex h-7 items-center rounded-lg bg-black/45 px-2 text-2xs/4 font-semibold tracking-wide text-primary-comfy-orange backdrop-blur-md"
     data-testid="hub-card-reach"
   >
-    {{ tHub('workshop.v2.card.customNodes', locale) }}
+    {{ tHub('workshop.v2.card.comfyApi', locale) }}
   </span>
 </template>

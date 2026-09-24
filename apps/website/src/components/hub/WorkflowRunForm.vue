@@ -15,6 +15,7 @@ import { leaveForSignIn } from '../../config/workshop-return'
 import type { Locale } from '../../i18n/translations'
 import { tHub } from '../../i18n/hub'
 import Button from '../ui/button/Button.vue'
+import WorkflowRunCamera from './WorkflowRunCamera.vue'
 import WorkflowRunField from './WorkflowRunField.vue'
 import WorkflowRunGate from './WorkflowRunGate.vue'
 import WorkflowRunResult from './WorkflowRunResult.vue'
@@ -69,6 +70,51 @@ const {
 const signInHref = useSignInHref(locale)
 
 const address = (field: WorkflowField) => `${field.node}.${field.input}`
+
+/**
+ * Where the camera stands, when this workflow asks for all three readings of
+ * it. Three boxes of degrees are one question badly asked, so they leave the
+ * list of fields and become the camera itself.
+ */
+const POSE_AXES = ['azimuth', 'elevation', 'zoom'] as const
+
+const posed = computed(() => {
+  const found = new Map(
+    fields.filter((field) => field.pose).map((field) => [field.pose, field])
+  )
+  return POSE_AXES.every((axis) => found.has(axis)) ? found : undefined
+})
+
+/** One axis of the pose, read and written where the answer already lives. */
+const axis = (name: (typeof POSE_AXES)[number]) =>
+  computed({
+    get: () =>
+      Number(values.value[address(posed.value?.get(name) ?? fields[0])]),
+    set: (degrees: number) => {
+      const field = posed.value?.get(name)
+      if (field) values.value[address(field)] = degrees
+    }
+  })
+
+const camera = {
+  azimuth: axis('azimuth'),
+  elevation: axis('elevation'),
+  zoom: axis('zoom')
+}
+
+/** The picture the pose is being chosen for, once the reader has one. */
+const subject = computed(() => {
+  const carrying = fields.find((field) => files.value[address(field)])
+  return carrying ? files.value[address(carrying)]?.previewUrl : undefined
+})
+
+// The rest of the form keeps its place in the run, because the panel names
+// answers by where they stand in it while they go up.
+const asked = computed(() =>
+  fields
+    .map((field, index) => ({ field, index }))
+    .filter(({ field }) => !posed.value || !field.pose)
+)
 
 /** What the reference tool has stood the panel up in, where it was asked for. */
 const scene = previewScene
@@ -144,8 +190,17 @@ const broke = computed(
       </header>
 
       <div class="flex flex-col gap-8 p-5" data-testid="workflow-run-inputs">
+        <WorkflowRunCamera
+          v-if="posed"
+          v-model:azimuth="camera.azimuth.value"
+          v-model:elevation="camera.elevation.value"
+          v-model:zoom="camera.zoom.value"
+          :subject
+          :locale
+        />
+
         <WorkflowRunField
-          v-for="(field, index) in fields"
+          v-for="{ field, index } in asked"
           :key="address(field)"
           v-model="values[address(field)]"
           v-model:file="files[address(field)]"

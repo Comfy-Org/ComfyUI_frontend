@@ -36,10 +36,6 @@ const hub = {
     en: 'Runs on {model}',
     'zh-CN': '运行于 {model}'
   },
-  'workshop.v2.card.ownEndpoint': {
-    en: 'Own endpoint',
-    'zh-CN': '需自建端点'
-  },
   'workshop.v2.sort.label': { en: 'Sort', 'zh-CN': '排序' },
   'workshop.v2.sort.popular': { en: 'Most popular', 'zh-CN': '推荐' },
   'workshop.v2.sort.name': { en: 'Name A to Z', 'zh-CN': '名称 A 到 Z' },
@@ -108,10 +104,10 @@ const hub = {
     en: 'Open weights',
     'zh-CN': '开放权重'
   },
-  'workshop.v2.card.customNodes': {
-    en: 'Custom nodes',
-    'zh-CN': '自定义节点'
-  },
+  // Every workflow has custom nodes; what sets this one apart is that Cloud
+  // cannot run its own. The badge names where it does run instead, under the
+  // brand that product carries.
+  'workshop.v2.card.comfyApi': { en: 'Comfy API', 'zh-CN': 'Comfy API' },
   'workshop.v2.api.title': {
     en: 'Build with this workflow',
     'zh-CN': '用这个工作流开发'
@@ -243,6 +239,10 @@ const hub = {
     'zh-CN': '正在上传…'
   },
   'workshop.v2.run.sentFile': { en: 'Uploaded', 'zh-CN': '已上传' },
+  'workshop.v2.camera.title': { en: 'Camera', 'zh-CN': '镜头' },
+  'workshop.v2.camera.around': { en: 'Around', 'zh-CN': '水平环绕' },
+  'workshop.v2.camera.height': { en: 'Height', 'zh-CN': '高度' },
+  'workshop.v2.camera.distance': { en: 'Distance', 'zh-CN': '距离' },
   'workshop.v2.run.queued': { en: 'Waiting its turn', 'zh-CN': '排队中' },
   'workshop.v2.run.waking': {
     en: 'Waking its server',

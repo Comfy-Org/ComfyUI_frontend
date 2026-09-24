@@ -21,19 +21,21 @@ describe('HubCardReach', () => {
     expect(screen.queryByTestId('hub-card-reach')).toBeNull()
   })
 
-  it('names what a workflow needs before anyone can call it', () => {
+  // Every workflow has custom nodes, so saying so marks nothing. What sets
+  // this one apart is where it runs, which is the product it runs on.
+  it('names where a workflow runs when Cloud cannot run it', () => {
     mount('endpoint')
 
     expect(screen.getByTestId('hub-card-reach').textContent).toContain(
-      'Custom nodes'
+      'Comfy API'
     )
   })
 
-  it('says it in the reader\u2019s language', () => {
+  it('keeps the product\u2019s name in either language', () => {
     render(HubCardReach, { props: { reach: 'endpoint', locale: 'zh-CN' } })
 
     expect(screen.getByTestId('hub-card-reach').textContent).toContain(
-      '自定义节点'
+      'Comfy API'
     )
   })
 })

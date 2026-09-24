@@ -17,6 +17,12 @@ export interface WorkflowField {
   readonly min?: number
   readonly max?: number
   readonly step?: number
+  /**
+   * Which reading of a camera pose this number is. A workflow that asks for
+   * all three is asking where the camera stands, which is one question with
+   * one control rather than three boxes of degrees.
+   */
+  readonly pose?: 'azimuth' | 'elevation' | 'zoom'
 }
 
 /** The templates revision the example inputs below are served from. */
@@ -216,7 +222,8 @@ const FIELDS: Record<string, readonly WorkflowField[]> = {
       kind: 'number',
       min: 0,
       max: 360,
-      step: 1
+      step: 1,
+      pose: 'azimuth'
     },
     {
       node: '3',
@@ -225,7 +232,8 @@ const FIELDS: Record<string, readonly WorkflowField[]> = {
       kind: 'number',
       min: -30,
       max: 60,
-      step: 1
+      step: 1,
+      pose: 'elevation'
     },
     {
       node: '3',
@@ -234,7 +242,8 @@ const FIELDS: Record<string, readonly WorkflowField[]> = {
       kind: 'number',
       min: 0,
       max: 10,
-      step: 0.1
+      step: 0.1,
+      pose: 'zoom'
     }
   ],
   image_flux2_fp8: [

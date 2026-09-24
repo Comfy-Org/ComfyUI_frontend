@@ -120,8 +120,8 @@ const fill = computed(() =>
     <div
       :class="
         cn(
-          'group relative block h-84 short:h-57 sm:short:h-60',
-          compact && 'h-68 short:h-46 sm:short:h-48'
+          'group relative flex min-h-84 short:min-h-57 sm:short:min-h-60',
+          compact && 'min-h-68 short:min-h-56 sm:short:min-h-60'
         )
       "
       data-testid="featured-slide"
@@ -162,11 +162,11 @@ const fill = computed(() =>
       <div
         :class="
           cn(
-            'pointer-events-none relative flex h-full flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18 short:gap-3 short:pt-5 short:pb-14',
+            'pointer-events-none relative flex w-full min-w-0 flex-col justify-end gap-4 p-8 pt-6 pb-16 max-sm:gap-3 max-sm:p-6 max-sm:pb-14 sm:max-w-2xl sm:justify-center lg:p-12 lg:pt-8 lg:pb-18 short:gap-3 short:pt-7 short:pb-14',
             // The progress bar sits 1.25rem from the foot, so the copy clears
             // it by the same measure it keeps from the top.
             compact &&
-              'gap-3 p-7 pt-6 pb-12 max-sm:p-5 max-sm:pb-11 lg:p-9 lg:pt-7 lg:pb-12'
+              'gap-3 p-7 pt-7 pb-12 max-sm:p-5 max-sm:pb-11 lg:p-9 lg:pt-8 lg:pb-12'
           )
         "
       >

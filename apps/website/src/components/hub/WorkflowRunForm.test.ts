@@ -1,5 +1,5 @@
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
+import { fireEvent, render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref, shallowRef } from 'vue'
 
@@ -8,6 +8,7 @@ import { zJobDetailResponse } from '@comfyorg/ingest-types/zod'
 
 import type { RunState } from '../../composables/useWorkflowRun'
 import type { WorkflowField } from '../../config/workflow-fields'
+import type { FileValue } from '../../config/workshop-playground'
 import { useWorkshopCredits } from '../../config/workshop-credits'
 import { previewScene } from '../../lib/hub/run-preview'
 import { RUN_SCENES } from '../../lib/hub/run-scenes'
@@ -47,14 +48,16 @@ const settled = computed(() => true)
 const run = vi.fn()
 const cancel = vi.fn()
 const sending = ref(-1)
+const values = ref<Record<string, string | number>>({})
+const files = ref<Record<string, FileValue | undefined>>({})
 
 // The run itself is the composable's, and it has its own tests. What this
 // component owes is the questions, the one way to start, and the way out.
 vi.mock(import('../../composables/useWorkflowRun'), () => ({
   useWorkflowRun: () => ({
     state,
-    values: ref<Record<string, string | number>>({}),
-    files: ref({}),
+    values,
+    files,
     outputs: ref([]),
     sending,
     busy,
@@ -82,9 +85,63 @@ const sceneNamed = (name: string) => {
   return found
 }
 
-const mount = () => {
+const mount = (props: Record<string, unknown> = {}) => {
   useWorkshopCredits().balance = computed(() => balance.value)
-  return render(WorkflowRunForm, { props: { fields, graph } })
+  return render(WorkflowRunForm, { props: { fields, graph, ...props } })
+}
+
+// The workflow that asks where the camera stands: one subject and the three
+// readings of a pose, exactly as the launch list declares them.
+const CAMERA_FIELDS: readonly WorkflowField[] = [
+  { node: '1', input: 'image', label: 'Your subject', kind: 'image' },
+  {
+    node: '3',
+    input: 'horizontal_angle',
+    label: 'Horizontal angle',
+    kind: 'number',
+    min: 0,
+    max: 360,
+    step: 1,
+    pose: 'azimuth'
+  },
+  {
+    node: '3',
+    input: 'vertical_angle',
+    label: 'Vertical angle',
+    kind: 'number',
+    min: -30,
+    max: 60,
+    step: 1,
+    pose: 'elevation'
+  },
+  {
+    node: '3',
+    input: 'zoom',
+    label: 'Camera distance',
+    kind: 'number',
+    min: 0,
+    max: 10,
+    step: 0.1,
+    pose: 'zoom'
+  }
+]
+
+const CAMERA_GRAPH = {
+  '1': { class_type: 'LoadImage', inputs: { image: 'subject.png' } },
+  '3': {
+    class_type: 'QwenMultiAngle',
+    inputs: { horizontal_angle: 0, vertical_angle: 0, zoom: 5 }
+  }
+}
+
+const atTheCamera = () => {
+  values.value = {
+    '1.image': 'subject.png',
+    '3.horizontal_angle': 0,
+    '3.vertical_angle': 0,
+    '3.zoom': 5
+  }
+  return mount({ fields: CAMERA_FIELDS, graph: CAMERA_GRAPH })
 }
 
 describe('WorkflowRunForm', () => {
@@ -94,6 +151,8 @@ describe('WorkflowRunForm', () => {
     signedIn.value = credential
     balance = ref({ status: 'unknown' })
     sending.value = -1
+    values.value = {}
+    files.value = {}
   })
 
   afterEach(() => {
@@ -231,6 +290,29 @@ describe('WorkflowRunForm', () => {
     expect(screen.queryByTestId('run-gate')).toBeNull()
     expect(screen.getByTestId('workflow-run-button').matches(':disabled')).toBe(
       true
+    )
+  })
+
+  // Three boxes of degrees are one question badly asked. A workflow that wants
+  // all three readings of a pose is asking where the camera stands.
+  it('asks where the camera stands instead of three boxes of degrees', () => {
+    atTheCamera()
+
+    expect(screen.getByTestId('workflow-run-camera')).toBeTruthy()
+    expect(screen.queryByTestId('field-3.vertical_angle')).toBeNull()
+    expect(screen.queryByTestId('field-3.horizontal_angle')).toBeNull()
+    expect(screen.getByRole('group', { name: 'Your subject' })).toBeTruthy()
+  })
+
+  // Whatever the reader sets on the camera is what the graph is sent.
+  it('writes the pose into the answers the graph takes', async () => {
+    atTheCamera()
+
+    await fireEvent.update(screen.getByTestId('camera-elevation'), '30')
+
+    expect(values.value['3.vertical_angle']).toBe(30)
+    expect(screen.getByTestId('camera-reading').textContent).toContain(
+      'elevated shot'
     )
   })
 
