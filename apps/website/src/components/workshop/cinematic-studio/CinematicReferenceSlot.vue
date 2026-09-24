@@ -6,7 +6,7 @@ import { useTemplateRef } from 'vue'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
+import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 
 const { kind, locale = 'en' } = defineProps<{
   kind: 'cast' | 'palette'
@@ -39,7 +39,7 @@ function choose(event: Event) {
         )
       "
       :aria-label="
-        t(
+        tc(
           kind === 'cast'
             ? 'cinematic.reference.castAction'
             : 'cinematic.reference.paletteAction',
@@ -70,7 +70,7 @@ function choose(event: Event) {
         class="relative text-[10px] font-bold tracking-widest text-primary-comfy-canvas uppercase"
       >
         {{
-          t(
+          tc(
             kind === 'cast'
               ? 'cinematic.reference.cast'
               : 'cinematic.reference.palette',
@@ -82,7 +82,7 @@ function choose(event: Event) {
         {{
           file
             ? file.name
-            : t(
+            : tc(
                 kind === 'cast'
                   ? 'cinematic.reference.castHint'
                   : 'cinematic.reference.paletteHint',
@@ -100,7 +100,7 @@ function choose(event: Event) {
       v-if="file"
       type="button"
       class="absolute top-1.5 right-1.5 grid size-7 place-items-center rounded-lg bg-primary-comfy-ink/70 text-primary-warm-white hover:bg-primary-comfy-ink"
-      :aria-label="t('cinematic.reference.remove', locale)"
+      :aria-label="tc('cinematic.reference.remove', locale)"
       @click="file = undefined"
     >
       <X class="size-3.5" aria-hidden="true" />

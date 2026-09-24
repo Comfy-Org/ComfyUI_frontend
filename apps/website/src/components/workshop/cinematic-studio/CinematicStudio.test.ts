@@ -14,6 +14,7 @@ import { useWorkshopSession } from '../../../config/workshop-session-state'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/catalog'
 import { useWorkshopEnabled } from '../../../scripts/posthog'
 import { t } from '../../../i18n/translations'
+import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicStudio from './CinematicStudio.vue'
 
 vi.mock(import('../../../config/workshop-session-state'))
@@ -193,7 +194,7 @@ describe('CinematicStudio', () => {
 
     expect(
       await screen.findByRole('dialog', {
-        name: t('cinematic.api.title')
+        name: tc('cinematic.api.title')
       })
     ).toBeInTheDocument()
   })

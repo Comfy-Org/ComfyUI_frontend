@@ -3,7 +3,7 @@ import ToolLayout from '../../layouts/ToolLayout.astro'
 import CinematicStudioPage from '../../components/workshop/cinematic-studio/CinematicStudioPage.vue'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
 import { CINEMATIC_MODEL_LOGOS } from '../../lib/workshop/cinematic-studio/catalog'
-import { t } from '../../i18n/translations'
+import { tc } from '../../lib/workshop/cinematic-studio/copy'
 
 const models = Object.entries(CINEMATIC_MODEL_LOGOS).flatMap(([slug, logo]) => {
   const model = getRouterWorkshopModelDetail(slug)
@@ -22,11 +22,11 @@ if (!models.length) throw new Error('Cinematic Studio has no runnable models')
 ---
 
 <ToolLayout
-  title={`${t('cinematic.title')} - Comfy`}
-  description={t('cinematic.meta.description')}
+  title={`${tc('cinematic.title')} - Comfy`}
+  description={tc('cinematic.meta.description')}
 >
   <CinematicStudioPage models={models} client:load />
   <noscript>
-    <p class="p-8 text-center">{t('cinematic.unavailable.title')}</p>
+    <p class="p-8 text-center">{tc('cinematic.unavailable.title')}</p>
   </noscript>
 </ToolLayout>

@@ -1,4 +1,4 @@
-import type { TranslationKey } from '../../../i18n/translations'
+import type { CinematicCopyKey } from './copy'
 
 type CameraPart = 'body' | 'lens' | 'focal' | 'aperture'
 export type LookPart = 'shot' | 'light' | 'film' | 'look'
@@ -6,7 +6,7 @@ export type DirectionPart = CameraPart | LookPart | 'grade'
 
 export interface DirectionOption {
   readonly id: string
-  readonly label: TranslationKey
+  readonly label: CinematicCopyKey
   /** Words this choice adds to the prompt. Empty for Auto. */
   readonly phrase: string
   readonly preview?: string
@@ -15,8 +15,8 @@ export interface DirectionOption {
 
 export interface DirectionGroup<P extends DirectionPart = DirectionPart> {
   readonly part: P
-  readonly title: TranslationKey
-  readonly hint: TranslationKey
+  readonly title: CinematicCopyKey
+  readonly hint: CinematicCopyKey
   readonly options: readonly DirectionOption[]
 }
 
@@ -106,7 +106,7 @@ export const cameraGroups: readonly DirectionGroup[] = [
       auto,
       ...['14', '24', '35', '50', '85', '135'].map((mm) => ({
         id: mm,
-        label: `cinematic.option.mm${mm}` as TranslationKey,
+        label: `cinematic.option.mm${mm}` as CinematicCopyKey,
         phrase: `${mm}mm`
       }))
     ]
@@ -125,7 +125,7 @@ export const cameraGroups: readonly DirectionGroup[] = [
         ['8', 'f8']
       ].map(([stop, key]) => ({
         id: stop,
-        label: `cinematic.option.${key}` as TranslationKey,
+        label: `cinematic.option.${key}` as CinematicCopyKey,
         phrase: `f/${stop}`
       }))
     ]
@@ -449,7 +449,7 @@ export const ASPECT_RATIOS = [
   { id: '4:3', label: 'cinematic.aspect.academy' },
   { id: '1:1', label: 'cinematic.aspect.square' },
   { id: '9:16', label: 'cinematic.aspect.vertical' }
-] as const satisfies readonly { id: string; label: TranslationKey }[]
+] as const satisfies readonly { id: string; label: CinematicCopyKey }[]
 
 export type AspectRatio = (typeof ASPECT_RATIOS)[number]['id']
 

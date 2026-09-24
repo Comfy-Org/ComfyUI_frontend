@@ -24,7 +24,7 @@ import {
   cinematicPromptSegments
 } from '../../../lib/workshop/cinematic-studio/prompt'
 import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
+import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import Sheet from '@/components/ui/sheet/Sheet.vue'
 import SheetContent from '@/components/ui/sheet/SheetContent.vue'
 import SheetDescription from '@/components/ui/sheet/SheetDescription.vue'
@@ -32,7 +32,7 @@ import SheetTitle from '@/components/ui/sheet/SheetTitle.vue'
 import ApiTab from '../ApiTab.vue'
 import HeaderAccount from '../HeaderAccount.vue'
 import CinematicPanel from './CinematicPanel.vue'
-import type { PickerKey } from './CinematicPanel.vue'
+import type { PickerKey } from './picker-key'
 import CinematicPicker from './CinematicPicker.vue'
 import CinematicStage from './CinematicStage.vue'
 
@@ -74,9 +74,9 @@ const pickerGroups = computed(() => {
 })
 const pickerTitle = computed(() =>
   picker.value === 'camera'
-    ? t('cinematic.section.camera', locale)
+    ? tc('cinematic.section.camera', locale)
     : pickerGroups.value[0]
-      ? t(pickerGroups.value[0].title, locale)
+      ? tc(pickerGroups.value[0].title, locale)
       : ''
 )
 
@@ -109,7 +109,7 @@ const apiRequest = computedAsync(async () => {
   const model = await studio.loadModel(modelSlug.value)
   try {
     const resolved = resolveModelRouterRender(model, {
-      prompt: prompt.value || t('cinematic.scene.placeholder', locale),
+      prompt: prompt.value || tc('cinematic.scene.placeholder', locale),
       aspect_ratio: aspect.value,
       resolution: resolutionPixels.value
     })
@@ -132,16 +132,16 @@ const apiRequest = computedAsync(async () => {
       <a
         href="/models/"
         class="grid size-8 place-items-center rounded-lg hover:bg-transparency-white-t8"
-        :aria-label="t('cinematic.bar.home', locale)"
+        :aria-label="tc('cinematic.bar.home', locale)"
       >
         <img src="/icons/logo.svg" alt="" class="h-4 w-auto" />
       </a>
       <span class="h-5 w-px bg-transparency-white-t8" aria-hidden="true" />
-      <h1 class="text-sm font-semibold">{{ t('cinematic.title', locale) }}</h1>
+      <h1 class="text-sm font-semibold">{{ tc('cinematic.title', locale) }}</h1>
       <span
         class="rounded-full border border-transparency-white-t20 px-2 py-0.5 text-[10px] font-bold tracking-wider text-primary-comfy-canvas uppercase"
       >
-        {{ t('cinematic.bar.beta', locale) }}
+        {{ tc('cinematic.bar.beta', locale) }}
       </span>
       <span class="flex-1" />
       <button
@@ -150,7 +150,7 @@ const apiRequest = computedAsync(async () => {
         @click="apiOpen = true"
       >
         <Code class="size-4" aria-hidden="true" />
-        {{ t('cinematic.bar.api', locale) }}
+        {{ tc('cinematic.bar.api', locale) }}
       </button>
       <HeaderAccount :locale />
     </header>
@@ -198,14 +198,14 @@ const apiRequest = computedAsync(async () => {
     <Sheet v-model:open="apiOpen">
       <SheetContent
         side="right"
-        :close-label="t('cinematic.picker.close', locale)"
+        :close-label="tc('cinematic.picker.close', locale)"
         class="w-full overflow-y-auto border-l border-transparency-white-t8 p-6 sm:max-w-2xl"
       >
         <SheetTitle class="text-lg font-semibold text-primary-warm-white">
-          {{ t('cinematic.api.title', locale) }}
+          {{ tc('cinematic.api.title', locale) }}
         </SheetTitle>
         <SheetDescription class="text-sm text-primary-comfy-canvas">
-          {{ t('cinematic.api.intro', locale) }}
+          {{ tc('cinematic.api.intro', locale) }}
         </SheetDescription>
         <ApiTab
           v-if="apiRequest"

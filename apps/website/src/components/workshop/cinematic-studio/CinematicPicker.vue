@@ -3,8 +3,6 @@ import { X } from '@lucide/vue'
 import { onKeyStroke } from '@vueuse/core'
 import { computed } from 'vue'
 
-import { cn } from '@comfyorg/tailwind-utils'
-
 import type {
   Direction,
   DirectionGroup,
@@ -12,7 +10,9 @@ import type {
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import { directionOption } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
+import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import CinematicOptionChips from './CinematicOptionChips.vue'
+import CinematicOptionGrid from './CinematicOptionGrid.vue'
 
 const {
   groups,
@@ -55,13 +55,13 @@ const adds = computed(() =>
           {{ title }}
         </h2>
         <p class="text-xs text-primary-warm-gray">
-          {{ t(groups[0].hint, locale) }}
+          {{ tc(groups[0].hint, locale) }}
         </p>
       </div>
       <button
         type="button"
         class="grid size-8 place-items-center rounded-lg text-primary-warm-gray hover:bg-transparency-white-t8"
-        :aria-label="t('cinematic.picker.close', locale)"
+        :aria-label="tc('cinematic.picker.close', locale)"
         @click="emit('close')"
       >
         <X class="size-4" aria-hidden="true" />
@@ -73,72 +73,26 @@ const adds = computed(() =>
         v-for="group in groups"
         :key="group.part"
         role="radiogroup"
-        :aria-label="t(group.title, locale)"
+        :aria-label="tc(group.title, locale)"
         class="flex flex-col gap-3"
       >
         <span v-if="chips" class="text-xs text-primary-warm-gray">
-          {{ t(group.title, locale) }}
+          {{ tc(group.title, locale) }}
         </span>
-        <div v-if="chips" class="flex flex-wrap gap-2">
-          <button
-            v-for="option in group.options"
-            :key="option.id"
-            type="button"
-            role="radio"
-            :aria-checked="direction[group.part] === option.id"
-            :class="
-              cn(
-                'h-8 rounded-lg border px-3 text-sm transition-colors',
-                direction[group.part] === option.id
-                  ? 'border-primary-warm-white bg-primary-warm-white text-primary-comfy-ink'
-                  : 'border-transparency-white-t20 text-primary-comfy-canvas hover:border-primary-warm-white/60'
-              )
-            "
-            @click="emit('choose', group.part, option.id)"
-          >
-            {{ t(option.label, locale) }}
-          </button>
-        </div>
-        <div v-else class="grid grid-cols-2 gap-x-3 gap-y-5">
-          <button
-            v-for="option in group.options"
-            :key="option.id"
-            type="button"
-            role="radio"
-            :aria-checked="direction[group.part] === option.id"
-            class="group flex flex-col gap-2 text-left"
-            @click="emit('choose', group.part, option.id)"
-          >
-            <span
-              :class="
-                cn(
-                  'relative flex aspect-8/5 w-full overflow-hidden rounded-xl bg-transparency-white-t4 ring-1 ring-transparency-white-t8 transition-shadow group-hover:ring-transparency-white-t20',
-                  direction[group.part] === option.id &&
-                    'ring-2 ring-primary-warm-white group-hover:ring-primary-warm-white'
-                )
-              "
-            >
-              <img
-                v-if="option.preview"
-                :src="option.preview"
-                alt=""
-                loading="lazy"
-                class="size-full object-cover"
-              />
-              <template v-else>
-                <span
-                  v-for="(color, index) in option.palette"
-                  :key="index"
-                  class="h-full flex-1"
-                  :style="{ backgroundColor: color }"
-                />
-              </template>
-            </span>
-            <span class="text-sm font-semibold text-primary-warm-white">
-              {{ t(option.label, locale) }}
-            </span>
-          </button>
-        </div>
+        <CinematicOptionChips
+          v-if="chips"
+          :group
+          :selected="direction[group.part]"
+          :locale
+          @choose="emit('choose', group.part, $event)"
+        />
+        <CinematicOptionGrid
+          v-else
+          :group
+          :selected="direction[group.part]"
+          :locale
+          @choose="emit('choose', group.part, $event)"
+        />
       </div>
     </div>
 
@@ -148,8 +102,8 @@ const adds = computed(() =>
       <p class="min-w-0 flex-1 truncate text-xs text-primary-warm-gray">
         {{
           adds
-            ? t('cinematic.picker.adds', locale).replace('{words}', adds)
-            : t('cinematic.picker.addsNothing', locale)
+            ? tc('cinematic.picker.adds', locale).replace('{words}', adds)
+            : tc('cinematic.picker.addsNothing', locale)
         }}
       </p>
       <button
@@ -157,7 +111,7 @@ const adds = computed(() =>
         class="h-9 rounded-lg bg-transparency-white-t8 px-4 text-sm text-primary-warm-white hover:bg-transparency-white-t20"
         @click="emit('close')"
       >
-        {{ t('cinematic.picker.done', locale) }}
+        {{ tc('cinematic.picker.done', locale) }}
       </button>
     </footer>
   </section>

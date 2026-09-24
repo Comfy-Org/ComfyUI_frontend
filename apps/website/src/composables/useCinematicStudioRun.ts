@@ -15,6 +15,7 @@ import { useWorkshopSession } from '../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../config/workshop-snippets'
 import { createWorkshopUrlUploader } from '../config/workshop-url-upload'
 import type { AspectRatio } from '../lib/workshop/cinematic-studio/catalog'
+import { studioGate } from '../lib/workshop/cinematic-studio/gate'
 import type { Reel, ReelEvent } from '../lib/workshop/cinematic-studio/reel'
 import {
   EMPTY_REEL,
@@ -23,15 +24,7 @@ import {
 } from '../lib/workshop/cinematic-studio/reel'
 import { useWorkshopAuthFlag, useWorkshopEnabled } from '../scripts/posthog'
 
-export type StudioGate =
-  | 'unavailable'
-  | 'pending'
-  | 'signedOut'
-  | 'noCredits'
-  | 'memberNoCredits'
-  | 'ready'
-
-export interface ShotRequest {
+interface ShotRequest {
   readonly modelSlug: string
   readonly prompt: string
   readonly aspect: AspectRatio
@@ -60,24 +53,21 @@ export function useCinematicStudioRun() {
   }
   const rendering = computed(() => isRendering(reel.value))
 
-  const gate = computed<StudioGate>(() => {
-    if (
-      !workshopEnabled.value ||
-      import.meta.env.PUBLIC_WORKSHOP_ROUTER_RUN !== '1'
-    )
-      return 'unavailable'
-    if (!mounted.value) return 'pending'
-    if (!authEnabled.value || sessionFailure.value) return 'unavailable'
-    if (!settled.value || (user.value && !session.value)) return 'pending'
-    if (!session.value) return 'signedOut'
-    if (
-      !rendering.value &&
-      balance.value.status === 'ok' &&
-      balance.value.credits <= 0
-    )
-      return session.value.role === 'member' ? 'memberNoCredits' : 'noCredits'
-    return 'ready'
-  })
+  const gate = computed(() =>
+    studioGate({
+      runEnabled:
+        workshopEnabled.value &&
+        import.meta.env.PUBLIC_WORKSHOP_ROUTER_RUN === '1',
+      mounted: mounted.value,
+      authAvailable: authEnabled.value && !sessionFailure.value,
+      sessionSettled: settled.value && !(user.value && !session.value),
+      role: session.value?.role,
+      outOfCredits:
+        !rendering.value &&
+        balance.value.status === 'ok' &&
+        balance.value.credits <= 0
+    })
+  )
 
   const models = new Map<string, Promise<WorkshopModelDetail>>()
   function loadModel(slug: string): Promise<WorkshopModelDetail> {

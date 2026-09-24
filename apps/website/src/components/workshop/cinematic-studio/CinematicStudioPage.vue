@@ -4,7 +4,7 @@ import { defineAsyncComponent, onBeforeUnmount, onMounted, ref } from 'vue'
 import { subscribeToWorkshopBuyCredits } from '../../../config/workshop-buy-credits'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
-import { t } from '../../../i18n/translations'
+import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import WorkshopGate from '../WorkshopGate.vue'
 import CinematicStudio from './CinematicStudio.vue'
 
@@ -39,13 +39,13 @@ onBeforeUnmount(() => stopBuyCreditsRequests?.())
         class="flex h-svh flex-col items-center justify-center gap-3 text-center"
       >
         <p class="text-base font-semibold text-primary-warm-white">
-          {{ t('cinematic.unavailable.title', locale) }}
+          {{ tc('cinematic.unavailable.title', locale) }}
         </p>
         <a
           href="/models/"
           class="text-sm text-primary-comfy-yellow underline underline-offset-4"
         >
-          {{ t('cinematic.unavailable.link', locale) }}
+          {{ tc('cinematic.unavailable.link', locale) }}
         </a>
       </div>
     </template>

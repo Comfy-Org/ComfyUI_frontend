@@ -1,4 +1,6 @@
 ---
+import FontMetricProbe from '../components/common/FontMetricProbe.astro'
+import SiteIcons from '../components/common/SiteIcons.astro'
 import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
 import GoogleTagManager from '../components/common/GoogleTagManager.astro'
@@ -27,17 +29,7 @@ const { title, description, locale = 'en' } = Astro.props
     <meta name="robots" content="noindex, nofollow" />
     <title>{title}</title>
 
-    <script is:inline>
-      try {
-        const probe = new FontFace('__ppformula_metric_probe', 'local(Arial)', {
-          ascentOverride: '50%'
-        })
-        if (probe.ascentOverride === '50%')
-          document.documentElement.classList.remove('ppformula-metric-fallback')
-      } catch {
-        // The class already present on <html> supplies the legacy fallback.
-      }
-    </script>
+    <FontMetricProbe />
     <link
       rel="preload"
       as="font"
@@ -60,12 +52,7 @@ const { title, description, locale = 'en' } = Astro.props
       crossorigin
     />
 
-    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <link rel="shortcut icon" href="/favicon.ico" sizes="48x48" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/site.webmanifest" />
-    <meta name="theme-color" content="#211927" />
+    <SiteIcons />
 
     <GoogleTagManager part="head" />
   </head>

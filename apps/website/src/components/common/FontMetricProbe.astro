@@ -1,0 +1,13 @@
+<!-- Safari through 26.6 ignores @font-face metric overrides. Keep the
+     component-level fallback only where the browser cannot apply them. -->
+<script is:inline>
+  try {
+    const probe = new FontFace('__ppformula_metric_probe', 'local(Arial)', {
+      ascentOverride: '50%'
+    })
+    if (probe.ascentOverride === '50%')
+      document.documentElement.classList.remove('ppformula-metric-fallback')
+  } catch {
+    // The class already present on <html> supplies the legacy fallback.
+  }
+</script>
