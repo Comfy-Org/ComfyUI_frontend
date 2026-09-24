@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 
 const execFileAsync = promisify(execFile)
 const printAgentConfig =
-  "import('./vite.config.mts').then(({ default: config }) => process.stdout.write(JSON.stringify({ headers: config.server?.proxy?.['/api/agent']?.headers, host: config.server?.host })))"
+  "import('./vite.config.mts').then(({ default: config }) => process.stdout.write(JSON.stringify({ headers: config.server?.proxy?.['/api/agent']?.headers, workflowsHeaders: config.server?.proxy?.['/api/workflows']?.headers, host: config.server?.host })))"
 
 async function importConfig(
   devAgentUrl: string,
@@ -51,15 +51,22 @@ describe('dev agent proxy transport', () => {
   })
 })
 
+// Both agent routes — /api/agent and the saved-workflow index at
+// /api/workflows — must carry the same session and credential headers.
+function expectAgentHeaders(stdout: string, headers: Record<string, string>) {
+  expect(JSON.parse(stdout)).toEqual({ headers, workflowsHeaders: headers })
+}
+
 describe('dev agent comfy credential', () => {
   it('forwards the token while keeping the dev server local', async () => {
     const { stdout } = await importConfig('http://127.0.0.1:8095', {
       DEV_AGENT_COMFY_TOKEN: 'comfyui-test-key',
       VITE_REMOTE_DEV: 'true'
     })
-    expect(stdout).toBe(
-      '{"headers":{"X-Comfy-Agent-Session":"test-session-token","X-API-KEY":"comfyui-test-key"}}'
-    )
+    expectAgentHeaders(stdout, {
+      'X-Comfy-Agent-Session': 'test-session-token',
+      'X-API-KEY': 'comfyui-test-key'
+    })
   })
 
   it('refuses to bind all interfaces while holding a comfy credential', async () => {
@@ -74,18 +81,19 @@ describe('dev agent comfy credential', () => {
     const { stdout } = await importConfig('http://127.0.0.1:8095', {
       DEV_AGENT_COMFY_TOKEN: 'a-firebase-jwt'
     })
-    expect(stdout).toBe(
-      '{"headers":{"X-Comfy-Agent-Session":"test-session-token","Authorization":"Bearer a-firebase-jwt"}}'
-    )
+    expectAgentHeaders(stdout, {
+      'X-Comfy-Agent-Session': 'test-session-token',
+      Authorization: 'Bearer a-firebase-jwt'
+    })
   })
 
   it('omits the comfy header when the token is unset', async () => {
     const { stdout } = await importConfig('http://127.0.0.1:8095', {
       DEV_AGENT_COMFY_TOKEN: undefined
     })
-    expect(stdout).toBe(
-      '{"headers":{"X-Comfy-Agent-Session":"test-session-token"}}'
-    )
+    expectAgentHeaders(stdout, {
+      'X-Comfy-Agent-Session': 'test-session-token'
+    })
   })
 })
 
