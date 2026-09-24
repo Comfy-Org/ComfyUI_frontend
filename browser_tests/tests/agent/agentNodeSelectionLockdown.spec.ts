@@ -101,10 +101,13 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
           .toBe(0)
       })
 
-      await test.step('exiting restores the gutter', async () => {
+      await test.step('exiting restores the gutter and the width', async () => {
         await agentPanel.exitNodeSelectionMode()
         await expect(toolbar).not.toHaveCSS('margin-left', '0px')
         await expect(toolbar).toHaveCSS('overflow', 'visible')
+        await expect
+          .poll(async () => (await toolbar.boundingBox())?.width ?? null)
+          .toBeGreaterThan(0)
       })
     })
   })
