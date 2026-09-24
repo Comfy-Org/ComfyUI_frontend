@@ -174,7 +174,6 @@ describe('CinematicStudio', () => {
     await user.click(screen.getByRole('button', { name: /Light/ }))
     const picker = screen.getByRole('dialog', { name: 'Light' })
     await user.click(within(picker).getByRole('radio', { name: 'Neon' }))
-    await user.click(within(picker).getByRole('button', { name: 'Done' }))
 
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.getByRole('button', { name: /Light/ })).toHaveTextContent(
@@ -184,6 +183,22 @@ describe('CinematicStudio', () => {
     expect(screen.getByTestId('cinematic-full-prompt')).toHaveTextContent(
       'Neon light'
     )
+  })
+
+  it('keeps the camera picker open across columns until clicked away', async () => {
+    const user = renderStudio()
+
+    await user.click(screen.getByRole('button', { name: /Large format/ }))
+    const picker = screen.getByRole('dialog', { name: 'Camera' })
+    await user.click(within(picker).getByRole('radio', { name: '85mm' }))
+    await user.click(within(picker).getByRole('radio', { name: 'f/4' }))
+
+    expect(picker).toBeInTheDocument()
+    await user.click(screen.getByLabelText('Scene'))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(
+      screen.getByRole('button', { name: /Large format/ })
+    ).toHaveTextContent(/85mm.*f\/4/)
   })
 
   it('opens the API request from the tool bar instead of a tab', async () => {

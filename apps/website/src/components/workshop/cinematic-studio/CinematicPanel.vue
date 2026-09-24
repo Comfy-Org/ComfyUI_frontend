@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Camera, ChevronDown, ChevronRight } from '@lucide/vue'
+import { ChevronDown, ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -21,6 +21,7 @@ import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicDirectionGrid from './CinematicDirectionGrid.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
+import CinematicOptionIcon from './CinematicOptionIcon.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
 import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
 import CinematicSceneField from './CinematicSceneField.vue'
@@ -153,7 +154,11 @@ const cardClass =
           <span
             class="grid size-10 shrink-0 place-items-center rounded-xl bg-transparency-white-t8 text-primary-warm-white"
           >
-            <Camera class="size-5" aria-hidden="true" />
+            <CinematicOptionIcon
+              part="body"
+              :option="direction.body"
+              class="h-6 w-9"
+            />
           </span>
           <span class="flex min-w-0 flex-1 flex-col gap-1">
             <span class="text-sm font-semibold text-primary-warm-white">

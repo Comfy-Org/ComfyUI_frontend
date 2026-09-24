@@ -194,7 +194,7 @@ const apiRequest = computedAsync(async () => {
         :direction
         :title="pickerTitle"
         :locale
-        class="absolute top-0 bottom-0 left-[380px] z-20"
+        class="absolute top-3 left-[392px] z-20 max-h-[calc(100%-24px)]"
         @choose="choose"
         @close="picker = undefined"
       />

@@ -112,10 +112,6 @@ const copy = {
     en: 'Aperture',
     'zh-CN': '光圈'
   },
-  'cinematic.camera.hint': {
-    en: 'Body, lens and exposure, written into the prompt.',
-    'zh-CN': '机身、镜头与曝光，会写入提示词。'
-  },
   'cinematic.part.shot': {
     en: 'Shot',
     'zh-CN': '景别'
@@ -135,26 +131,6 @@ const copy = {
   'cinematic.part.grade': {
     en: 'Grade',
     'zh-CN': '调色'
-  },
-  'cinematic.hint.shot': {
-    en: 'How close the camera is.',
-    'zh-CN': '摄影机离主体有多近。'
-  },
-  'cinematic.hint.light': {
-    en: 'Quality and direction of the light.',
-    'zh-CN': '光线的质感与方向。'
-  },
-  'cinematic.hint.film': {
-    en: 'Grain, contrast and color response.',
-    'zh-CN': '颗粒、对比度与色彩表现。'
-  },
-  'cinematic.hint.look': {
-    en: 'The genre the frame belongs to.',
-    'zh-CN': '画面所属的类型片风格。'
-  },
-  'cinematic.hint.grade': {
-    en: 'Palette applied to the final frame.',
-    'zh-CN': '应用于最终画面的色板。'
   },
   'cinematic.option.auto': {
     en: 'Auto',
@@ -439,18 +415,6 @@ const copy = {
   'cinematic.picker.close': {
     en: 'Close',
     'zh-CN': '关闭'
-  },
-  'cinematic.picker.done': {
-    en: 'Done',
-    'zh-CN': '完成'
-  },
-  'cinematic.picker.adds': {
-    en: 'Adds “{words}”',
-    'zh-CN': '添加“{words}”'
-  },
-  'cinematic.picker.addsNothing': {
-    en: 'Auto leaves this to the model',
-    'zh-CN': '自动：交给模型决定'
   },
   'cinematic.output.takes': {
     en: 'Takes',

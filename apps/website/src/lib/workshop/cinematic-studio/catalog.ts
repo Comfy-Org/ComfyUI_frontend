@@ -17,7 +17,6 @@ export interface DirectionOption {
 export interface DirectionGroup<P extends DirectionPart = DirectionPart> {
   readonly part: P
   readonly title: CinematicCopyKey
-  readonly hint: CinematicCopyKey
   readonly options: readonly DirectionOption[]
 }
 
@@ -35,7 +34,6 @@ export const cameraGroups: readonly DirectionGroup[] = [
   {
     part: 'body',
     title: 'cinematic.camera.body',
-    hint: 'cinematic.camera.hint',
     options: [
       auto,
       {
@@ -73,7 +71,6 @@ export const cameraGroups: readonly DirectionGroup[] = [
   {
     part: 'lens',
     title: 'cinematic.camera.lens',
-    hint: 'cinematic.camera.hint',
     options: [
       auto,
       {
@@ -102,7 +99,6 @@ export const cameraGroups: readonly DirectionGroup[] = [
   {
     part: 'focal',
     title: 'cinematic.camera.focal',
-    hint: 'cinematic.camera.hint',
     options: [
       auto,
       ...(
@@ -120,7 +116,6 @@ export const cameraGroups: readonly DirectionGroup[] = [
   {
     part: 'aperture',
     title: 'cinematic.camera.aperture',
-    hint: 'cinematic.camera.hint',
     options: [
       auto,
       ...(
@@ -140,7 +135,6 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
   {
     part: 'shot',
     title: 'cinematic.part.shot',
-    hint: 'cinematic.hint.shot',
     options: [
       auto,
       {
@@ -190,7 +184,6 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
   {
     part: 'light',
     title: 'cinematic.part.light',
-    hint: 'cinematic.hint.light',
     options: [
       auto,
       {
@@ -240,7 +233,6 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
   {
     part: 'film',
     title: 'cinematic.part.film',
-    hint: 'cinematic.hint.film',
     options: [
       auto,
       {
@@ -290,7 +282,6 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
   {
     part: 'look',
     title: 'cinematic.part.look',
-    hint: 'cinematic.hint.look',
     options: [
       auto,
       {
@@ -342,7 +333,6 @@ export const lookGroups: readonly DirectionGroup<LookPart>[] = [
 export const gradeGroup: DirectionGroup = {
   part: 'grade',
   title: 'cinematic.part.grade',
-  hint: 'cinematic.hint.grade',
   options: [
     {
       ...auto,
