@@ -10,7 +10,8 @@
  */
 import { readFileSync, readdirSync, realpathSync } from 'node:fs'
 import { join, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import process from 'node:process'
+import { fileURLToPath, URL } from 'node:url'
 import ts from 'typescript'
 
 import { reachableDeclarationNames } from './gen_api_surface.mjs'
