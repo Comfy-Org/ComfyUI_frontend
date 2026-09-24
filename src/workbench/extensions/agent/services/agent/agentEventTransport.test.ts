@@ -432,6 +432,32 @@ describe('agentEventTransport run approval', () => {
   })
 })
 
+describe('agentEventTransport unrenderable ask', () => {
+  it('drops the stand-in notice when its ask resolves', () => {
+    const unrenderable = zAgentWsEvent.parse({
+      type: 'agent_ask',
+      data: {
+        thread_id: 't',
+        message_id: 'm',
+        ask_id: 'ask-9',
+        kind: 'something_new',
+        prompt: 'Pick one',
+        options: [{ id: 'a', label: 'A' }],
+        min_selections: 1,
+        max_selections: 1,
+        allow_other: false
+      }
+    })
+    vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const shown = drive([unrenderable])
+    expect(shown.parts).toMatchObject([{ type: 'notice', askId: 'ask-9' }])
+
+    const resolved = drive([unrenderable, askResolved('ask-9')])
+    expect(resolved.parts).toEqual([])
+  })
+})
+
 describe('agentEventTransport ask_user', () => {
   it('places the question card, with every option, at the decision point', () => {
     const message = drive([delta('before'), askUser(), delta('after')])

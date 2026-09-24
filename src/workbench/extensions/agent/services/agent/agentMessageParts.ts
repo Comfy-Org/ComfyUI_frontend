@@ -38,6 +38,12 @@ export interface NoticePart {
    * on its own.
    */
   retryAfterSeconds?: number
+  /**
+   * Set on the notice that stands in for an ask the panel cannot render, so
+   * it goes when that ask resolves instead of telling the user to stop a turn
+   * that has moved on.
+   */
+  askId?: string
 }
 
 export interface TabLinkPart {
@@ -186,7 +192,8 @@ export function toAskOrNoticePart(ask: AskInput): AskPart | NoticePart {
   return {
     type: 'notice',
     level: 'warning',
-    text: i18n.global.t('agent.askUnavailable')
+    text: i18n.global.t('agent.askUnavailable'),
+    askId: ask.ask_id
   }
 }
 

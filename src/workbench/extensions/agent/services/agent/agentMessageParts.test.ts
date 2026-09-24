@@ -196,7 +196,8 @@ describe('toAskOrNoticePart', () => {
     expect(toAskOrNoticePart(askUser({ kind: undefined }))).toEqual({
       type: 'notice',
       level: 'warning',
-      text: 'The agent asked a question this panel cannot show. Stop the turn to continue.'
+      text: 'The agent asked a question this panel cannot show. Stop the turn to continue.',
+      askId: 'turn-1:call-1'
     })
     expect(warn).toHaveBeenCalledOnce()
   })

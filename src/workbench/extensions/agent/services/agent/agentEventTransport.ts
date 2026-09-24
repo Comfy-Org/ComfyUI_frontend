@@ -145,7 +145,8 @@ export function createAgentEventTransport(
 
   function dropResolvedAsk(askId: string): boolean {
     message.parts = message.parts.filter(
-      (part) => !isAskPart(part) || part.askId !== askId
+      (part) =>
+        !(isAskPart(part) || part.type === 'notice') || part.askId !== askId
     )
     return true
   }
