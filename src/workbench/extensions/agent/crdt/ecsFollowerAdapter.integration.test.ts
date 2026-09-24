@@ -534,12 +534,17 @@ describe('EcsFollowerAdapter integration', () => {
       ).toEqual([toNodeId(99)])
       expect(onReconcileRetryCommitted).not.toHaveBeenCalled()
 
-      // Scope becomes available again, but no new frame ever arrives (e.g.
-      // the user never sends another agent message). The adapter must retry
-      // on its own instead of leaving the stale node stuck until some
-      // unrelated later frame happens to land.
-      scopeAvailable = true
+      // Stay unavailable past the old 20-attempt/4-second retry budget. No
+      // new frame arrives, so recovery must remain armed at its slower rate.
       vi.advanceTimersByTime(5_000)
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(99)])
+
+      scopeAvailable = true
+      vi.advanceTimersByTime(2_000)
 
       expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
       expect(deleteLayouts).toHaveBeenCalledWith(
@@ -548,6 +553,53 @@ describe('EcsFollowerAdapter integration', () => {
         expect.objectContaining({ opId: 'replay' })
       )
       expect(onReconcileRetryCommitted).toHaveBeenCalledExactlyOnceWith('wf')
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('retries from the batch rejection reason when scope appears immediately afterward', () => {
+    vi.useFakeTimers()
+    try {
+      const seedMutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      seedMutations.addNode(
+        { id: 99, type: 'Sink', inputs: [], outputs: [] },
+        { source: 'agent-remote', actor: 'seed', opId: 'seed' }
+      )
+
+      let scopeReads = 0
+      const deleteLayouts = vi.fn()
+      const mutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => (++scopeReads === 1 ? null : scope),
+        layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
+      })
+      const host = mint({ nodes: [], links: [] }, catalog)
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        false
+      )
+      vi.advanceTimersByTime(200)
+
+      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+      expect(deleteLayouts).toHaveBeenCalledWith(
+        scope,
+        [toNodeId(99)],
+        expect.objectContaining({ opId: 'replay' })
+      )
 
       adapter.destroy()
       follower.destroy()
