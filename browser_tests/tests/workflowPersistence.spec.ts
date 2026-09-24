@@ -485,8 +485,10 @@ test.describe('Workflow Persistence', () => {
         await comfyPage.workflow.reloadAndWaitForApp()
         await comfyPage.workflow.openPersistedWorkflow(name)
 
+        await expect
+          .poll(() => getLinkEndpoints(comfyPage))
+          .toEqual(expectedEndpointTuples)
         const reloadedEndpointTuples = await getLinkEndpoints(comfyPage)
-        expect(reloadedEndpointTuples).toEqual(expectedEndpointTuples)
         for (const [originId, , targetId] of reloadedEndpointTuples.filter(
           ([candidateOriginId, , candidateTargetId]) =>
             copiedIds.has(candidateOriginId) || copiedIds.has(candidateTargetId)

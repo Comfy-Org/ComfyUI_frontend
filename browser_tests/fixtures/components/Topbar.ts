@@ -2,6 +2,7 @@ import type { Locator, Page } from '@playwright/test'
 
 import type { WorkspaceStore } from '@e2e/types/globals'
 import { TestIds } from '@e2e/fixtures/selectors'
+import { comfyExpect as expect } from '@e2e/fixtures/utils/customMatchers'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 
 export class Topbar {
@@ -131,11 +132,13 @@ export class Topbar {
     }
   }
 
+  /**
+   * While the pointer rests on a workflow tab, waiting alone never starts the
+   * popover's dismissal, so move the pointer away before asserting it is gone.
+   */
   async dismissWorkflowPopover() {
-    await this.page
-      .locator('.workflow-popover-fade')
-      .waitFor({ state: 'hidden', timeout: 5000 })
-      .catch(() => {})
+    await this.page.mouse.move(0, 0)
+    await expect(this.page.locator('.workflow-popover-fade')).toBeHidden()
   }
 
   async openTopbarMenu() {
