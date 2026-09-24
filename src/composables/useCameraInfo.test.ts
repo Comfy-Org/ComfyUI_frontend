@@ -1,8 +1,6 @@
 import { ref } from 'vue'
-import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
 interface ViewportInstance {
@@ -75,7 +73,7 @@ function widget(node: FakeNode, name: string): FakeWidget {
 }
 
 function nodeRef(node: FakeNode) {
-  return ref(node) as unknown as Ref<LGraphNode | null>
+  return ref(node)
 }
 
 beforeEach(() => {

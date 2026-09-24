@@ -1,4 +1,5 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import * as THREE from 'three'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive } from 'vue'
 
@@ -48,7 +49,9 @@ type WithPrivate = {
 
 function createConfig(properties?: Dictionary<NodeProperty | undefined>) {
   const load3d = {} as Load3d
-  return new Load3DConfiguration(load3d, properties) as unknown as WithPrivate
+  return fromAny<WithPrivate, unknown>(
+    new Load3DConfiguration(load3d, properties)
+  )
 }
 
 function stubSettings(values: Partial<Settings>) {
@@ -188,7 +191,7 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
 
   function makeLoad3dMock(): Load3d {
     loadModelSpy = vi.fn<Load3d['loadModel']>().mockResolvedValue(true)
-    return {
+    return fromAny<Load3d, unknown>({
       loadModel: loadModelSpy,
       clearModel: vi.fn(),
       setUpDirection: vi.fn(),
@@ -207,7 +210,7 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
       setHDRIEnabled: vi.fn(),
       emitModelReady: vi.fn(),
       setConfigurationCleanup: vi.fn()
-    } as unknown as Load3d
+    })
   }
 
   async function flush() {
@@ -245,7 +248,7 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
   it('configure forwards silentOnNotFound: true from settings to loadModel', async () => {
     const config = new Load3DConfiguration(makeLoad3dMock())
     config.configure({
-      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      modelWidget: fromAny<IBaseWidget, unknown>({ value: 'model.glb' }),
       loadFolder: 'output',
       silentOnNotFound: true
     })
@@ -258,7 +261,7 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
   it('configure uses silentOnNotFound: false when setting is omitted', async () => {
     const config = new Load3DConfiguration(makeLoad3dMock())
     config.configure({
-      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      modelWidget: fromAny<IBaseWidget, unknown>({ value: 'model.glb' }),
       loadFolder: 'output'
     })
     await flush()
@@ -271,17 +274,15 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     const load3d = makeLoad3dMock()
     const config = new Load3DConfiguration(load3d)
     const cameraState = {
-      position: { x: 1, y: 2, z: 3 },
-      target: { x: 0, y: 0, z: 0 },
+      position: new THREE.Vector3(1, 2, 3),
+      target: new THREE.Vector3(),
       zoom: 1,
       cameraType: 'perspective' as const
     }
     config.configure({
-      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      modelWidget: fromAny<IBaseWidget, unknown>({ value: 'model.glb' }),
       loadFolder: 'output',
-      cameraState: cameraState as unknown as Parameters<
-        Load3DConfiguration['configure']
-      >[0]['cameraState']
+      cameraState
     })
     await flush()
 
@@ -298,7 +299,7 @@ describe('Load3DConfiguration.silentOnNotFound propagation', () => {
     const load3d = makeLoad3dMock()
     const config = new Load3DConfiguration(load3d)
     config.configure({
-      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      modelWidget: fromAny<IBaseWidget, unknown>({ value: 'model.glb' }),
       loadFolder: 'output'
     })
     await flush()
@@ -572,7 +573,7 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
 
     const config = new Load3DConfiguration(load3d)
     config.configure({
-      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      modelWidget: fromAny<IBaseWidget, unknown>({ value: 'model.glb' }),
       loadFolder: 'output'
     })
     await flush()
@@ -585,7 +586,7 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
   })
 
   it('prefers persisted Scene/Camera/Light Config over settings', async () => {
-    const properties = {
+    const properties = fromAny<Dictionary<NodeProperty | undefined>, unknown>({
       'Scene Config': {
         showGrid: false,
         backgroundColor: '#101010',
@@ -593,7 +594,7 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
       },
       'Camera Config': { cameraType: 'perspective', fov: 60 },
       'Light Config': { intensity: 9 }
-    } as unknown as Dictionary<NodeProperty | undefined>
+    })
     stubSettings({
       'Comfy.Load3D.ShowGrid': true,
       'Comfy.Load3D.BackgroundColor': '282828',
@@ -603,7 +604,7 @@ describe('Load3DConfiguration.configure forwards persisted + settings to load3d'
 
     const config = new Load3DConfiguration(load3d, properties)
     config.configure({
-      modelWidget: { value: 'model.glb' } as unknown as IBaseWidget,
+      modelWidget: fromAny<IBaseWidget, unknown>({ value: 'model.glb' }),
       loadFolder: 'output'
     })
     await flush()
@@ -664,7 +665,7 @@ describe('Load3DConfiguration "none" model handling', () => {
   it('does not load or clear a model when the initial widget value is "none"', async () => {
     const config = new Load3DConfiguration(load3d)
     config.configure({
-      modelWidget: { value: 'none' } as unknown as IBaseWidget,
+      modelWidget: fromAny<IBaseWidget, unknown>({ value: 'none' }),
       loadFolder: 'input'
     })
     await flush()
@@ -794,7 +795,7 @@ describe('Load3DConfiguration "none" model handling', () => {
 
 describe('Load3DConfiguration.onSceneInvalidated', () => {
   function makeLoad3dMock(): Load3d {
-    return {
+    return fromAny<Load3d, unknown>({
       loadModel: vi.fn<Load3d['loadModel']>().mockResolvedValue(true),
       clearModel: vi.fn(),
       setUpDirection: vi.fn(),
@@ -813,7 +814,7 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
       setHDRIEnabled: vi.fn(),
       emitModelReady: vi.fn(),
       setConfigurationCleanup: vi.fn()
-    } as unknown as Load3d
+    })
   }
 
   async function flush() {
@@ -833,7 +834,7 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
     const config = new Load3DConfiguration(makeLoad3dMock())
 
     config.configure({
-      modelWidget: { value: 'none' } as unknown as IBaseWidget,
+      modelWidget: fromAny<IBaseWidget, unknown>({ value: 'none' }),
       loadFolder: 'input',
       width,
       height,
@@ -853,7 +854,7 @@ describe('Load3DConfiguration.onSceneInvalidated', () => {
     const config = new Load3DConfiguration(makeLoad3dMock())
 
     config.configure({
-      modelWidget: { value: 'none' } as unknown as IBaseWidget,
+      modelWidget: fromAny<IBaseWidget, unknown>({ value: 'none' }),
       loadFolder: 'input',
       width,
       height,

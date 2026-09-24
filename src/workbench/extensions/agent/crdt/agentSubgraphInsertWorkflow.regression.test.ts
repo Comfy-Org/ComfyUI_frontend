@@ -22,6 +22,7 @@
  * upstream (comfy-multi-player PR #230) and this test goes green when the
  * dependency is bumped past the release that carries it.
  */
+import { fromAny } from '@total-typescript/shoehorn'
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type {
   Op,
@@ -118,14 +119,14 @@ function blueprint(): WorkflowJSON {
 }
 
 function insertOp(workflow: WorkflowJSON): Op {
-  return {
+  return fromAny<Op, unknown>({
     op_id: 'insert-blueprint-op'.padEnd(32, '0'),
     actor: 'agent:test',
     base_version: 1,
     stamp: [1, 'agent:test'],
     op: 'insert_workflow',
     workflow
-  } as unknown as Op
+  })
 }
 
 beforeEach(() => {

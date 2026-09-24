@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { ComfyApi } from '@/scripts/api'
@@ -67,9 +68,12 @@ describe('ComfyApi event listener error isolation', () => {
     const api = new ComfyApi()
     const handleEvent = vi.fn()
 
-    api.addEventListener('reconnected', {
-      handleEvent
-    } as unknown as () => void)
+    api.addEventListener(
+      'reconnected',
+      fromPartial<() => void>({
+        handleEvent
+      })
+    )
     api.dispatchCustomEvent('reconnected')
 
     expect(handleEvent).toHaveBeenCalledOnce()

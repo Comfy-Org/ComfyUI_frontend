@@ -826,11 +826,7 @@ export const useWorkflowService = () => {
       return
     }
     const workflowJSON = toRaw(loadedWorkflow.initialState)
-    // unknown conversion: ComfyWorkflowJSON is stricter than LiteGraph's
-    // serialisation schema.
-    const items = workflowToClipboardItems(
-      workflowJSON as unknown as SerialisableGraph
-    )
+    const items = workflowToClipboardItems(workflowJSON as SerialisableGraph)
     canvas._deserializeItems(items, options)
   }
 

@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -13,10 +14,10 @@ import {
 
 function gradientCtx() {
   const calls: string[] = []
-  const gradient = {
+  const gradient = fromPartial<CanvasGradient>({
     addColorStop: (offset: number, color: string) =>
       calls.push(`stop:${offset}:${color}`)
-  } as unknown as CanvasGradient
+  })
   const ctx = {
     fillStyle: '' as string | CanvasGradient,
     fillRect: (...args: number[]) => calls.push(`fillRect:${args.join(',')}`),
@@ -29,7 +30,11 @@ function gradientCtx() {
       return gradient
     }
   }
-  return { ctx: ctx as unknown as CanvasRenderingContext2D, calls, gradient }
+  return {
+    ctx: fromPartial<CanvasRenderingContext2D>(ctx),
+    calls,
+    gradient
+  }
 }
 
 describe('normalizeFillSpec', () => {

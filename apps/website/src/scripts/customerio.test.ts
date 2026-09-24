@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type * as CustomerioSdk from '@customerio/cdp-analytics-browser'
@@ -33,7 +34,7 @@ vi.mock(import('@customerio/cdp-analytics-browser'), () => {
   } satisfies MockAnalyticsBrowser
   return {
     AnalyticsBrowser:
-      analyticsBrowser as unknown as typeof CustomerioSdk.AnalyticsBrowser
+      fromPartial<typeof CustomerioSdk.AnalyticsBrowser>(analyticsBrowser)
   }
 })
 

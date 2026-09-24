@@ -1,5 +1,5 @@
 import * as THREE from 'three'
-import { fromAny } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Load3dDeps } from '@/extensions/core/load3d/Load3d'
@@ -270,16 +270,17 @@ describe('Load3d', () => {
         | null
         | undefined
       ctx.modelManager.clearModel.mockImplementation(() => {
-        adapterDuringModelManagerClear = (
-          ctx.load3d as unknown as { adapterRef: { current: unknown } }
-        ).adapterRef.current as { kind: string } | null
+        adapterDuringModelManagerClear = fromAny<
+          { adapterRef: { current: unknown } },
+          unknown
+        >(ctx.load3d).adapterRef.current as { kind: string } | null
       })
 
       ctx.load3d.clearModel()
 
       expect(adapterDuringModelManagerClear).toEqual({ kind: 'splat' })
       expect(
-        (ctx.load3d as unknown as { adapterRef: { current: unknown } })
+        fromAny<{ adapterRef: { current: unknown } }, unknown>(ctx.load3d)
           .adapterRef.current
       ).toBeNull()
     })
@@ -689,10 +690,11 @@ describe('Load3d', () => {
         }
       })
 
-      ;(ctx.load3d as unknown as { startAnimation(): void }).startAnimation()
+      fromAny<{ startAnimation(): void }, unknown>(ctx.load3d).startAnimation()
 
-      const loop = (ctx.load3d as unknown as { renderLoop: { stop(): void } })
-        .renderLoop
+      const loop = fromAny<{ renderLoop: { stop(): void } }, unknown>(
+        ctx.load3d
+      ).renderLoop
       expect(loop).not.toBeNull()
       expect(typeof loop.stop).toBe('function')
 
@@ -738,7 +740,7 @@ describe('Load3d', () => {
 
       expect(stop).toHaveBeenCalledOnce()
       expect(
-        (ctx.load3d as unknown as { renderLoop: unknown }).renderLoop
+        fromAny<{ renderLoop: unknown }, unknown>(ctx.load3d).renderLoop
       ).toBeNull()
     })
   })
@@ -1319,7 +1321,7 @@ describe('Load3d', () => {
 
     it('routes fbx through SkeletonUtils.clone and attaches the source animations', async () => {
       const model = new THREE.Object3D()
-      const clip = { name: 'walk' } as unknown as THREE.AnimationClip
+      const clip = fromPartial<THREE.AnimationClip>({ name: 'walk' })
       model.animations = [clip]
       const cloned = new THREE.Object3D()
       cloneSkinnedMock.mockReturnValueOnce(cloned)
@@ -1349,7 +1351,7 @@ describe('Load3d', () => {
     it('falls back to originalModel.animations when the working model has none (fbx)', async () => {
       const model = new THREE.Object3D()
       const original = new THREE.Object3D()
-      const clip = { name: 'idle' } as unknown as THREE.AnimationClip
+      const clip = fromPartial<THREE.AnimationClip>({ name: 'idle' })
       original.animations = [clip]
       const cloned = new THREE.Object3D()
       cloneSkinnedMock.mockReturnValueOnce(cloned)
@@ -1540,7 +1542,11 @@ describe('Load3d', () => {
         gizmoManager,
         adapterRef: { current: null, capabilities: null }
       }
-      return { container, deps: deps as unknown as Load3dDeps, gizmoManager }
+      return {
+        container,
+        deps: fromPartial<Load3dDeps>(deps),
+        gizmoManager
+      }
     }
 
     it('wires the gizmo pointer NDC source to clientPointToNdc on every construction path', () => {

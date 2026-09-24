@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { GraphScope } from '@/types/graphScopeId'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
 import type { LinkTopology } from '@/types/linkTopology'
@@ -25,15 +26,7 @@ import {
 import type { MintPortWiring, MintableGraph } from './mintPortWiring'
 
 const ROOT_ID = 'root-uuid'
-
-/** Structural stand-in for the two LGraphNode members the wiring reads. */
-interface FakeGraphNode {
-  id?: unknown
-  type?: string
-  isVirtualNode?: boolean
-  serialize?: () => unknown
-  widgets?: { name: string; type: string; serialize?: boolean }[]
-}
+type MintSnapshot = ISerialisedNode & { __incarnation?: string }
 
 /** The doc host's pinned catalog: server classes only. */
 const CATALOG: WidgetCatalog = {
@@ -70,7 +63,7 @@ describe('attachMintPortWiring', () => {
   let enabled: boolean
   let bound: boolean
   let layoutListeners: Set<(change: LayoutChangeView) => void>
-  let graphNodes: Map<string, FakeGraphNode>
+  let graphNodes: Map<string, LGraphNode>
 
   function deliverLayoutChange(change: LayoutChangeView): void {
     for (const listener of layoutListeners) listener(change)
@@ -79,11 +72,17 @@ describe('attachMintPortWiring', () => {
   const graph: MintableGraph = {
     id: ROOT_ID,
     rootGraph: { id: ROOT_ID },
-    getNodeById: (id) =>
-      (graphNodes.get(String(id)) as unknown as LGraphNode | undefined) ?? null,
+    getNodeById: (id) => graphNodes.get(String(id)) ?? null,
     get _nodes() {
-      return [...graphNodes.values()] as LGraphNode[]
+      return [...graphNodes.values()]
     }
+  }
+
+  function graphNode(id: number, snapshot?: MintSnapshot): LGraphNode {
+    const node = new LGraphNode('Test')
+    node.id = toNodeId(id)
+    if (snapshot) vi.spyOn(node, 'serialize').mockReturnValue(snapshot)
+    return node
   }
 
   beforeEach(() => {
@@ -109,8 +108,8 @@ describe('attachMintPortWiring', () => {
   afterEach(() => wiring.detach())
 
   it('mints a root clear through the production intentional-clear entry point', () => {
-    graphNodes.set('1', { id: toNodeId(1) })
-    graphNodes.set('2', { id: toNodeId(2) })
+    graphNodes.set('1', graphNode(1))
+    graphNodes.set('2', graphNode(2))
 
     runMintPortsIntentionalClear(() => {
       deliverLayoutChange({
@@ -336,19 +335,21 @@ describe('attachMintPortWiring', () => {
   })
 
   it('serializes add_node snapshots name-keyed, dropping non-value widgets', () => {
-    graphNodes.set('5', {
-      serialize: () => ({
-        id: 5,
-        type: 'LoadImage',
-        __incarnation: 'source-node-incarnation',
-        widgets_values: ['positional'],
-        widgets_values_named: { image: 'cat.png', upload: 'button-slot' }
-      }),
-      widgets: [
-        { name: 'image', type: 'combo' },
-        { name: 'upload', type: 'button' }
-      ]
+    const node = graphNode(5, {
+      id: 5,
+      type: 'LoadImage',
+      __incarnation: 'source-node-incarnation',
+      pos: [10, 20],
+      size: [270, 100],
+      flags: {},
+      order: 0,
+      mode: 0,
+      widgets_values: ['positional'],
+      widgets_values_named: { image: 'cat.png', upload: 'button-slot' }
     })
+    node.addWidget('text', 'image', 'cat.png', () => undefined)
+    node.addWidget('button', 'upload', 'button-slot', () => undefined)
+    graphNodes.set('5', node)
 
     deliverLayoutChange({
       operation: {
@@ -368,6 +369,11 @@ describe('attachMintPortWiring', () => {
         node: {
           id: 5,
           type: 'LoadImage',
+          pos: [10, 20],
+          size: [270, 100],
+          flags: {},
+          order: 0,
+          mode: 0,
           widgets_values: { image: 'cat.png' }
         }
       }
@@ -383,29 +389,32 @@ describe('attachMintPortWiring', () => {
       type: 'Note',
       widgetsValues: ['a note'],
       named: { text: 'a note' },
-      widgets: [{ name: 'text', type: 'markdown' }]
+      widgetName: 'text'
     },
     {
       name: 'a subgraph blueprint host with a promoted widget',
       type: BLUEPRINT_ID,
       widgetsValues: ['a pasted prompt'],
       named: { text: 'a pasted prompt' },
-      widgets: [{ name: 'text', type: 'text' }]
+      widgetName: 'text'
     }
   ])(
     'keeps add_node widgets_values positional for $name, and the applier takes it',
-    ({ type, widgetsValues, named, widgets }) => {
-      graphNodes.set('7', {
+    ({ type, widgetsValues, named, widgetName }) => {
+      const node = graphNode(7, {
+        id: 7,
         type,
-        isVirtualNode: true,
-        serialize: () => ({
-          id: 7,
-          type,
-          widgets_values: widgetsValues,
-          widgets_values_named: named
-        }),
-        widgets
+        pos: [10, 20],
+        size: [270, 100],
+        flags: {},
+        order: 0,
+        mode: 0,
+        widgets_values: widgetsValues,
+        widgets_values_named: named
       })
+      node.isVirtualNode = true
+      node.addWidget('text', widgetName, widgetsValues[0], () => undefined)
+      graphNodes.set('7', node)
 
       deliverLayoutChange({
         operation: {
@@ -422,7 +431,16 @@ describe('attachMintPortWiring', () => {
           node_id: toNodeId(7),
           class_type: type,
           pos: [10, 20],
-          node: { id: 7, type, widgets_values: widgetsValues }
+          node: {
+            id: 7,
+            type,
+            pos: [10, 20],
+            size: [270, 100],
+            flags: {},
+            order: 0,
+            mode: 0,
+            widgets_values: widgetsValues
+          }
         }
       ])
       const doc = mint({ nodes: [], links: [] }, CATALOG)

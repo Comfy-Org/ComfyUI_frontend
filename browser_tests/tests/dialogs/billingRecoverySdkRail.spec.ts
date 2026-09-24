@@ -130,7 +130,7 @@ async function recordHostedOpens(page: Page) {
   })
   return () =>
     page.evaluate(() => [
-      ...(window as unknown as { __hostedOpens: string[] }).__hostedOpens
+      ...((window as Window & { __hostedOpens?: string[] }).__hostedOpens ?? [])
     ])
 }
 

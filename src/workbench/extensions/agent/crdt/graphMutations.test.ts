@@ -1034,6 +1034,22 @@ describe('graphMutations', () => {
     error.mockRestore()
   })
 
+  it.for(['inputs', 'outputs'] as const)(
+    'rejects malformed %s without shifting serialized slot indexes',
+    (field) => {
+      const error = vi.spyOn(console, 'error').mockImplementation(() => {})
+      const malformed = {
+        ...node(1),
+        [field]: [null, { name: 'slot-1', type: 'IMAGE' }]
+      }
+
+      expect(mutations().addNode(malformed, context)).toBe(false)
+      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+      expect(createLayout).not.toHaveBeenCalled()
+      error.mockRestore()
+    }
+  )
+
   it('reconciles a seeded node while preserving renderer-owned layout', () => {
     const graph = mutations()
     graph.addNode(node(1, { seed: 1, stale: 'old' }), context)

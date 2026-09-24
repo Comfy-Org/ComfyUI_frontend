@@ -1,30 +1,36 @@
+import { fromAny } from '@total-typescript/shoehorn'
+import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 import { nextTick, reactive, toRaw, watch } from 'vue'
 
-import type Load3d from '@/extensions/core/load3d/Load3d'
 import { snapshotLoad3dState } from '@/extensions/core/load3d/load3dSerialize'
-import type { CameraState } from '@/extensions/core/load3d/interfaces'
+import type {
+  CameraState,
+  CameraType,
+  Model3DTransform
+} from '@/extensions/core/load3d/interfaces'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { NodeProperty } from '@/types/nodeState'
 
-function makeNode(props: Record<string, unknown> = {}): LGraphNode {
-  return { properties: { ...props } } as unknown as LGraphNode
+function makeNode(props: Record<string, NodeProperty | undefined> = {}) {
+  return { properties: { ...props } }
 }
 
 const baseCameraState: CameraState = {
-  position: { x: 1, y: 2, z: 3 },
-  target: { x: 0, y: 0, z: 0 },
+  position: new THREE.Vector3(1, 2, 3),
+  target: new THREE.Vector3(),
   zoom: 1,
   cameraType: 'perspective'
-} as unknown as CameraState
+}
 
 function makeLoad3d({
   cameraType = 'perspective',
   fov = 35,
-  modelInfo = { transform: { position: [0, 0, 0] } }
+  modelInfo = makeModelInfo()
 }: {
-  cameraType?: string
+  cameraType?: CameraType
   fov?: number
-  modelInfo?: unknown
+  modelInfo?: Model3DTransform | null
 } = {}) {
   return {
     getCurrentCameraType: vi.fn(() => cameraType),
@@ -32,7 +38,15 @@ function makeLoad3d({
     getCameraState: vi.fn(() => baseCameraState),
     stopRecording: vi.fn(),
     getModelInfo: vi.fn(() => modelInfo)
-  } as unknown as Load3d
+  }
+}
+
+function makeModelInfo(position = { x: 0, y: 0, z: 0 }): Model3DTransform {
+  return {
+    position,
+    quaternion: { x: 0, y: 0, z: 0, w: 1 },
+    scale: { x: 1, y: 1, z: 1 }
+  }
 }
 
 describe('snapshotLoad3dState', () => {
@@ -70,7 +84,7 @@ describe('snapshotLoad3dState', () => {
   })
 
   it('returns model_3d_info as a single-element list when a model is loaded', () => {
-    const info = { transform: { position: [1, 2, 3] } }
+    const info = makeModelInfo({ x: 1, y: 2, z: 3 })
     const result = snapshotLoad3dState(
       makeNode(),
       makeLoad3d({ modelInfo: info })
@@ -91,7 +105,7 @@ describe('snapshotLoad3dState', () => {
       const props = reactive<Record<string, unknown>>({
         'Camera Config': { cameraType: 'perspective', fov: 75, state: null }
       })
-      const node = { properties: props } as unknown as LGraphNode
+      const node = fromAny<LGraphNode, unknown>({ properties: props })
       let triggers = 0
       watch(
         () => props['Camera Config'],
@@ -113,7 +127,7 @@ describe('snapshotLoad3dState', () => {
 
     it('creates Camera Config without notifying watchers when it is absent', async () => {
       const props = reactive<Record<string, unknown>>({})
-      const node = { properties: props } as unknown as LGraphNode
+      const node = fromAny<LGraphNode, unknown>({ properties: props })
       let triggers = 0
       watch(
         () => props['Camera Config'],

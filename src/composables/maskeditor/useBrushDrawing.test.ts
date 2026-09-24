@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 import type { EffectScope } from 'vue'
 import { BrushShape, Tools } from '@/extensions/core/maskeditor/types'
+import { createMockCanvas2DContext } from '@/utils/__tests__/litegraphTestUtils'
 
 let saveStateSpy: ReturnType<typeof vi.spyOn>
 
@@ -73,27 +74,32 @@ function makePointerEvent(
   y: number,
   opts: { buttons?: number; shiftKey?: boolean } = {}
 ): PointerEvent {
-  return {
-    offsetX: x,
-    offsetY: y,
+  const event = new PointerEvent('pointerdown', {
     buttons: opts.buttons ?? 1,
-    shiftKey: opts.shiftKey ?? false,
-    preventDefault: vi.fn()
-  } as unknown as PointerEvent
+    shiftKey: opts.shiftKey ?? false
+  })
+  Object.defineProperties(event, {
+    offsetX: { value: x },
+    offsetY: { value: y }
+  })
+  return event
 }
 
 function makeMockCtx(): CanvasRenderingContext2D {
-  const gradient = { addColorStop: vi.fn() }
-  return {
-    beginPath: vi.fn(),
-    fill: vi.fn(),
-    rect: vi.fn(),
-    arc: vi.fn(),
-    fillStyle: '',
+  const gradient: CanvasGradient = { addColorStop: vi.fn() }
+  return createMockCanvas2DContext({
     drawImage: vi.fn(),
     createRadialGradient: vi.fn(() => gradient),
     globalCompositeOperation: 'source-over'
-  } as unknown as CanvasRenderingContext2D
+  })
+}
+
+function makeCanvas(context?: CanvasRenderingContext2D): HTMLCanvasElement {
+  const canvas = document.createElement('canvas')
+  canvas.width = 200
+  canvas.height = 200
+  if (context) canvas.getContext = vi.fn().mockReturnValue(context)
+  return canvas
 }
 
 let scope: EffectScope | null = null
@@ -116,12 +122,7 @@ beforeEach(() => {
     .spyOn(mockStoreDef.canvasHistory, 'saveState')
     .mockImplementation(() => {})
   const mockCtx = makeMockCtx()
-  const mockCanvas = {
-    getContext: vi.fn().mockImplementation(() => mockStoreDef.rgbCtx),
-    width: 200,
-    height: 200,
-    style: { opacity: '' }
-  } as unknown as HTMLCanvasElement
+  const mockCanvas = makeCanvas(mockCtx)
 
   mockStoreDef.maskCanvas = mockCanvas
   mockStoreDef.maskCtx = mockCtx
@@ -198,10 +199,7 @@ describe('startDrawing shift+click', () => {
     const { startDrawing } = setup()
     await startDrawing(makePointerEvent(50, 50))
     await startDrawing(makePointerEvent(100, 50, { shiftKey: true }))
-    expect(
-      (mockStoreDef.maskCtx as unknown as ReturnType<typeof makeMockCtx>)
-        .beginPath
-    ).toHaveBeenCalled()
+    expect(vi.mocked(mockStoreDef.maskCtx!.beginPath)).toHaveBeenCalled()
   })
 })
 
@@ -253,12 +251,7 @@ describe('handleDrawing', () => {
 describe('drawEnd canvas visibility', () => {
   it('restores rgb canvas opacity when activeLayer is rgb', async () => {
     mockStoreDef.activeLayer = 'rgb'
-    const mockRgbCanvas = {
-      getContext: vi.fn().mockImplementation(() => mockStoreDef.rgbCtx),
-      width: 200,
-      height: 200,
-      style: { opacity: '' }
-    } as unknown as HTMLCanvasElement
+    const mockRgbCanvas = makeCanvas(mockStoreDef.rgbCtx!)
     mockStoreDef.rgbCanvas = mockRgbCanvas
     const { startDrawing, drawEnd } = setup()
     await startDrawing(makePointerEvent(50, 50))
@@ -268,9 +261,7 @@ describe('drawEnd canvas visibility', () => {
 
   it('restores preview canvas opacity to 1 after drawEnd', async () => {
     const gpu = useGPUResources()
-    const mockPreviewCanvas = {
-      style: { opacity: '' }
-    } as unknown as HTMLCanvasElement
+    const mockPreviewCanvas = makeCanvas()
     gpu.previewCanvas.value = mockPreviewCanvas
     const { startDrawing, drawEnd } = setup()
     await startDrawing(makePointerEvent(50, 50))
@@ -306,12 +297,7 @@ describe('drawEnd', () => {
 
   it('restores mask canvas opacity after drawing on mask layer', async () => {
     mockStoreDef.activeLayer = 'mask'
-    const mockMaskCanvas = {
-      getContext: vi.fn().mockImplementation(() => mockStoreDef.maskCtx),
-      width: 200,
-      height: 200,
-      style: { opacity: '' }
-    } as unknown as HTMLCanvasElement
+    const mockMaskCanvas = makeCanvas(mockStoreDef.maskCtx!)
     mockStoreDef.maskCanvas = mockMaskCanvas
     const { startDrawing, drawEnd } = setup()
     await startDrawing(makePointerEvent(50, 50))

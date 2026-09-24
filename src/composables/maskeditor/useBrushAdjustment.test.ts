@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 vi.mock<unknown>(
@@ -15,11 +16,11 @@ import { useMaskEditorStore } from '@/stores/maskEditorStore'
 import { useBrushAdjustment } from './useBrushAdjustment'
 
 function makePointerEvent(offsetX: number, offsetY: number): PointerEvent {
-  return {
+  return fromPartial<PointerEvent>({
     offsetX,
     offsetY,
     preventDefault: vi.fn()
-  } as unknown as PointerEvent
+  })
 }
 
 describe('startBrushAdjustment', () => {

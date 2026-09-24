@@ -8,8 +8,7 @@ import {
   getCompositorInputsFingerprint,
   getCompositorLayers
 } from '@/renderer/extensions/compositor/composables/useCompositorLayers'
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { IBaseWidget } from '@/lib/litegraph/src/types/widgets'
+import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ComfyApp } from '@/scripts/app'
 import type { ComfyExtension } from '@/types/comfy'
 import type { useExtensionService } from '@/services/extensionService'
@@ -29,29 +28,31 @@ vi.mock(import('@/services/extensionService'), () => ({
 }))
 
 const nodeId = toNodeId(11)
-const cacheNode = { id: nodeId } as unknown as LGraphNode
+const cacheNode = new LGraphNode('Cache')
+cacheNode.id = nodeId
+
+class ImageCompositorNode extends LGraphNode {
+  static comfyClass = 'ImageCompositor'
+}
 
 function makeNode() {
   const savedValue = { layers: [] }
-  const compositorWidget = {
-    name: 'compositor',
-    value: savedValue
-  } as unknown as IBaseWidget
+  const graph = new LGraph()
+  const node = new ImageCompositorNode('Image Compositor')
+  node.id = nodeId
+  graph.add(node)
+  const compositorWidget = node.addWidget(
+    'compositor',
+    'compositor',
+    savedValue,
+    () => undefined
+  )
   const priorOnExecuted = vi.fn()
   const priorOnRemoved = vi.fn()
-  const node = {
-    id: nodeId,
-    size: [100, 100],
-    setSize: vi.fn(),
-    onExecuted: priorOnExecuted,
-    onRemoved: priorOnRemoved,
-    constructor: { comfyClass: 'ImageCompositor' },
-    widgets: [compositorWidget],
-    graph: {
-      rootGraph: { id: 'test-graph' },
-      setDirtyCanvas: vi.fn()
-    }
-  } as unknown as LGraphNode
+  node.onExecuted = priorOnExecuted
+  node.onRemoved = priorOnRemoved
+  vi.spyOn(node, 'setSize')
+  vi.spyOn(graph, 'setDirtyCanvas')
   return { node, compositorWidget, priorOnExecuted, priorOnRemoved }
 }
 

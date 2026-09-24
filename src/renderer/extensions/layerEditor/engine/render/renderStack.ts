@@ -224,7 +224,6 @@ function buildInputs(
   const cleanups: Array<() => void> = []
   const placed = makePlaced(deps, region, used)
   const ctx: RenderNodeCtx = {
-    compositor: deps.compositor,
     content: deps.content,
     renderChild: () => null,
     placed,

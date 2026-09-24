@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import {
   afterEach,
   beforeEach,
@@ -273,9 +274,9 @@ describe('useFeatureFlags', () => {
     })
 
     it('refuses a malformed /features value without asking the handshake', () => {
-      remoteConfig.value = {
+      remoteConfig.value = fromAny<typeof remoteConfig.value, unknown>({
         billing_sdk_topup_enabled: 'true'
-      } as unknown as typeof remoteConfig.value
+      })
       vi.mocked(api.getServerFeature).mockReturnValue(true)
 
       expect(useFeatureFlags().flags.billingSdkTopupEnabled).toBe(false)

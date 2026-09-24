@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import { createNodeExecutionId } from '@/types/nodeIdentification'
@@ -316,7 +317,7 @@ describe('useMissingMediaStore', () => {
     it('preserves candidates with a nullish toNodeId(defensive)', () => {
       const store = useMissingMediaStore()
       const orphan = {
-        nodeId: undefined as unknown as string,
+        nodeId: fromAny<string, unknown>(undefined),
         nodeType: 'LoadImage',
         widgetName: 'image',
         mediaType: 'image' as const,

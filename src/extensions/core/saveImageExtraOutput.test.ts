@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it, vi } from 'vitest'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
@@ -36,9 +37,9 @@ async function createNodeWithFilenamePrefix(
 
   const ext = await loadExtension(graph)
 
-  const nodeType = {
+  const nodeType = fromPartial<Parameters<BeforeRegisterNodeDef>[0]>({
     prototype: {}
-  } as unknown as Parameters<BeforeRegisterNodeDef>[0]
+  })
   const nodeData = { name: nodeName } as ComfyNodeDef
 
   await ext.beforeRegisterNodeDef!(

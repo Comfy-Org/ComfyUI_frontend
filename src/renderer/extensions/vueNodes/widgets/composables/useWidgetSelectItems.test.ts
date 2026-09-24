@@ -124,8 +124,8 @@ describe('display label behavior', () => {
   })
 
   it('falls back to value when label function returns undefined', () => {
-    const getOptionLabel = (v?: string | null) => {
-      if (v === 'hash789.png') return undefined as unknown as string
+    const getOptionLabel = (v?: string | null): string | undefined => {
+      if (v === 'hash789.png') return undefined
       return `Labeled: ${v}`
     }
     const { dropdownItems } = useWidgetSelectItems(

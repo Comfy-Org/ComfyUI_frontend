@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import type {
   FirebaseIdentity,
   ResolveFirebaseIdentityOptions
@@ -21,9 +22,11 @@ vi.mock(import('@/config/env'), () => ({
   CLOUD_BASE_URL: 'https://testcloud.comfy.org'
 }))
 
-const testIdentity = createTestIdentity({
-  onUserChanged: () => () => undefined
-}) as unknown as FirebaseIdentity
+const testIdentity = fromAny<FirebaseIdentity, unknown>(
+  createTestIdentity({
+    onUserChanged: () => () => undefined
+  })
+)
 
 beforeEach(() => {
   h.resolveFirebaseIdentity.mockReset()

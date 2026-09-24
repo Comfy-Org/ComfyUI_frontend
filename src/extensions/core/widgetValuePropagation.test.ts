@@ -63,13 +63,13 @@ function createSourceNode(options: {
   })
   return {
     id: SOURCE_NODE_ID,
-    graph: {
+    graph: fromPartial<NonNullable<LGraphNode['graph']>>({
       id: GRAPH_ID,
       rootGraph: { id: GRAPH_ID },
       getNodeById: vi.fn((id: TargetNode['id']) =>
         id === options.targetNode.id ? options.targetNode : null
       )
-    } as unknown as NonNullable<LGraphNode['graph']>,
+    }),
     widgets: options.widgets ?? []
   }
 }

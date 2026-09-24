@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
@@ -361,7 +362,7 @@ describe('useBillingSdkStore', () => {
     async (malformed) => {
       vi.stubEnv('VITE_STRIPE_PUBLISHABLE_KEY', 'pk_build_time')
       remoteConfig.value = {
-        stripe_publishable_key: malformed as unknown as string
+        stripe_publishable_key: fromAny<string, unknown>(malformed)
       }
       mockLoadStripe.mockResolvedValue({})
       useBillingSdkStore()

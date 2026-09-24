@@ -1,4 +1,5 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access, testing-library/prefer-user-event */
+import { fromPartial } from '@total-typescript/shoehorn'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -42,7 +43,7 @@ const box = (over: Partial<BoundingBox> = {}): BoundingBox => ({
   ...over
 })
 
-const fakeCtx = {
+const fakeCtx = fromPartial<CanvasRenderingContext2D>({
   measureText: (s: string) => ({ width: s.length * 7 }),
   setTransform: () => {},
   clearRect: () => {},
@@ -59,7 +60,7 @@ const fakeCtx = {
   fillStyle: '',
   strokeStyle: '',
   lineWidth: 0
-} as unknown as CanvasRenderingContext2D
+})
 
 function prepCanvas(canvas: HTMLCanvasElement) {
   Object.defineProperty(canvas, 'clientWidth', {
@@ -70,8 +71,9 @@ function prepCanvas(canvas: HTMLCanvasElement) {
     value: 100,
     configurable: true
   })
-  canvas.getContext = (() =>
-    fakeCtx) as unknown as HTMLCanvasElement['getContext']
+  canvas.getContext = fromPartial<HTMLCanvasElement['getContext']>(
+    () => fakeCtx
+  )
   canvas.getBoundingClientRect = () => ({
     left: 0,
     top: 0,

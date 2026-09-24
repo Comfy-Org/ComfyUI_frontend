@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
@@ -30,8 +31,8 @@ const mockPanZoom = vi.hoisted(() => ({
 const renderZone = () =>
   render(PointerZone, {
     props: {
-      toolManager: mockToolManager as unknown as ToolManager,
-      panZoom: mockPanZoom as unknown as PanZoom
+      toolManager: fromPartial<ToolManager>(mockToolManager),
+      panZoom: fromPartial<PanZoom>(mockPanZoom)
     }
   })
 

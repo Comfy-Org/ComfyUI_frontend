@@ -1,7 +1,12 @@
 import type { AgentEventSource } from '../../composables/agent/useAgentSession'
 
+interface AgentSocket extends EventTarget {
+  readonly readyState: number
+  close(): void
+}
+
 interface StandaloneAgentEventSourceOptions {
-  createSocket?: (url: string) => WebSocket
+  createSocket?: (url: string) => AgentSocket
   endpoint?: string
   reconnectDelayMs?: number
 }
@@ -13,7 +18,7 @@ export function createStandaloneAgentEventSource({
 }: StandaloneAgentEventSourceOptions = {}): AgentEventSource {
   const listeners = new Set<(raw: unknown) => void>()
   const statusListeners = new Set<(live: boolean) => void>()
-  let socket: WebSocket | null = null
+  let socket: AgentSocket | null = null
   let reconnectTimer: number | null = null
 
   function eventUrl(): string {
@@ -43,6 +48,7 @@ export function createStandaloneAgentEventSource({
     })
     current.addEventListener('message', (event) => {
       if (socket !== current) return
+      if (!(event instanceof MessageEvent)) return
       let frame: unknown = event.data
       if (typeof event.data === 'string') {
         try {

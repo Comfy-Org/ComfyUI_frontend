@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { Mock } from 'vitest'
@@ -340,7 +341,7 @@ describe('useMinimap', () => {
       clientHeight: { value: 800, writable: true }
     })
     moduleMockCanvas.canvas = element
-    useCanvasStore().canvas = moduleMockCanvas as unknown as LGraphCanvas
+    useCanvasStore().canvas = fromAny<LGraphCanvas, unknown>(moduleMockCanvas)
 
     vi.mocked(useSettingStore().get).mockReturnValue(true)
     vi.mocked(useSettingStore().set).mockResolvedValue(undefined)

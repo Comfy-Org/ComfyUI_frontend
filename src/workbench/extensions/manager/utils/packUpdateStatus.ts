@@ -1,10 +1,11 @@
 import { compare, valid } from 'semver'
 
 import type { components } from '@/types/comfyRegistryTypes'
-import type { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
-
 type NodePack = components['schemas']['Node']
-type ComfyManagerStore = ReturnType<typeof useComfyManagerStore>
+interface PackVersionStore {
+  isPackInstalled(id: string | undefined): boolean
+  getInstalledPackVersion(id: string): string | undefined
+}
 
 interface PackUpdateStatus {
   isInstalled: boolean
@@ -29,7 +30,7 @@ export function isNightlyVersion(version: string | undefined): boolean {
  */
 export function getPackUpdateStatus(
   pack: NodePack | undefined,
-  managerStore: ComfyManagerStore
+  managerStore: PackVersionStore
 ): PackUpdateStatus {
   const isInstalled = managerStore.isPackInstalled(pack?.id)
   const installedVersion = managerStore.getInstalledPackVersion(pack?.id ?? '')

@@ -274,7 +274,8 @@ async function setupRail(page: Page, setup: RailSetup): Promise<RailRoutes> {
     ...routes,
     openedUrls: () =>
       page.evaluate(
-        () => (window as unknown as { __openedUrls: string[] }).__openedUrls
+        () =>
+          (window as Window & { __openedUrls?: string[] }).__openedUrls ?? []
       )
   }
 }

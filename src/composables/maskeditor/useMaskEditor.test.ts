@@ -1,7 +1,7 @@
 import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 
 let mockDialogStore: ReturnType<typeof useDialogStore>
 
@@ -21,17 +21,14 @@ vi.mock<unknown>(
 
 import { useMaskEditor } from '@/composables/maskeditor/useMaskEditor'
 
-type NodeShape = {
-  imgs?: unknown[]
-  previewMediaType?: string
-}
+type NodeShape = Partial<Pick<LGraphNode, 'imgs' | 'previewMediaType'>>
 
-const nodeWithImage = (overrides: NodeShape = {}): LGraphNode =>
-  ({
-    imgs: [new Image()],
-    previewMediaType: undefined,
-    ...overrides
-  }) as unknown as LGraphNode
+function nodeWithImage(overrides: NodeShape = {}): LGraphNode {
+  const node = new LGraphNode('Test')
+  node.imgs = overrides.imgs ?? [new Image()]
+  node.previewMediaType = overrides.previewMediaType
+  return node
+}
 
 describe('useMaskEditor', () => {
   let errorSpy: ReturnType<typeof vi.spyOn>

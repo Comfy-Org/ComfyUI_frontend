@@ -34,7 +34,7 @@ async function setupNode() {
   const ext = capturedExtensions.find((e) => e.name === 'Comfy.PreviewAny')
   expect(ext).toBeDefined()
 
-  const nodeType = { prototype: {} } as unknown as Parameters<BeforeRegister>[0]
+  const nodeType = fromPartial<Parameters<BeforeRegister>[0]>({ prototype: {} })
   const nodeData = { name: 'PreviewAny' } as Parameters<BeforeRegister>[1]
   await ext!.beforeRegisterNodeDef!(
     nodeType,

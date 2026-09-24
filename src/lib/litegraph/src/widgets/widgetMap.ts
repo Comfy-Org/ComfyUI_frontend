@@ -169,7 +169,7 @@ function adoptConcreteWidget<C extends BaseWidget>(
     return concrete
 
   Object.defineProperties(widget, Object.fromEntries(descriptors))
-  const adopted = widget as unknown as C
+  const adopted = widget as C
   if (adopted instanceof BaseWidget) adopted.options = rawOptions
   return adopted
 }

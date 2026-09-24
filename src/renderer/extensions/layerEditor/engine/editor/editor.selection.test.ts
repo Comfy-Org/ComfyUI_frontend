@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 
 import type { Compositor, CompositeInput, FBOHandle } from '../compositor'
@@ -31,11 +32,7 @@ class FakeCompositor implements Compositor {
     return {}
   }
   readback(): ImageData {
-    return {
-      width: 1,
-      height: 1,
-      data: new Uint8ClampedArray(4)
-    } as unknown as ImageData
+    return new ImageData(new Uint8ClampedArray(4), 1, 1)
   }
   async toBlob(): Promise<Blob> {
     return new Blob()
@@ -221,7 +218,7 @@ function makePixelCtx(canvas: HTMLCanvasElement): CanvasRenderingContext2D {
       data: new Uint8ClampedArray(w * h * 4)
     })
   }
-  return ctx as unknown as CanvasRenderingContext2D
+  return fromAny<CanvasRenderingContext2D, unknown>(ctx)
 }
 
 const origGetContext = HTMLCanvasElement.prototype.getContext

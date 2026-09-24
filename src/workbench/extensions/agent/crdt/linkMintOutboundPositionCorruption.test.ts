@@ -35,6 +35,7 @@
  * `agentCrdtProjection.tabReturn.test.ts`), it uses `it.fails` so
  * `pnpm test:unit` collects it as an expected failure instead of a red run.
  */
+import { fromAny } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
@@ -139,7 +140,7 @@ function projectedNode(doc: ReturnType<typeof mint>, nodeId: number) {
   if (!Array.isArray(node.outputs)) {
     throw new Error(`node ${nodeId} projected with no outputs array`)
   }
-  return node as unknown as ProjectedNode
+  return fromAny<ProjectedNode, unknown>(node)
 }
 
 function requireInput(

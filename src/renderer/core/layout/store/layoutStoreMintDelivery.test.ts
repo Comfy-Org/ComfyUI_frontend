@@ -16,8 +16,10 @@
  * injected - exactly as the composition root will inject them.
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import type { GraphScope, RootGraphId } from '@/types/graphScopeId'
 import type { LinkTopology } from '@/types/linkTopology'
 import type { GraphOperation } from '@/workbench/extensions/agent/crdt/graphOperations'
@@ -69,13 +71,6 @@ function deleteNodeOp(graphId: string, id: string) {
   }
 }
 
-/** Structural stand-in for the two LGraphNode members the wiring reads. */
-interface FakeGraphNode {
-  id?: unknown
-  serialize?: () => unknown
-  widgets?: { name: string; type: string; serialize?: boolean }[]
-}
-
 async function realDelivery(): Promise<void> {
   // The store's queued flush plus the ports' double-microtask sweep.
   for (let tick = 0; tick < 4; tick++) await Promise.resolve()
@@ -86,7 +81,18 @@ describe('mint ports against the real layout store delivery', () => {
   let wiring: MintPortWiring
   let graphId: string
   let scope: GraphScope
-  let graphNodes: Map<string, FakeGraphNode>
+  let graphNodes: Map<string, LGraphNode>
+
+  function graphNode(
+    id: string,
+    snapshot?: Partial<ISerialisedNode>
+  ): LGraphNode {
+    const node = new LGraphNode('Test')
+    node.id = toNodeId(id)
+    if (snapshot)
+      vi.spyOn(node, 'serialize').mockReturnValue(fromPartial(snapshot))
+    return node
+  }
 
   function linkTopology(id: number, targetId: string): LinkTopology {
     return {
@@ -111,11 +117,9 @@ describe('mint ports against the real layout store delivery', () => {
     const graph: MintableGraph = {
       id: graphId,
       rootGraph: { id: graphId },
-      getNodeById: (id) =>
-        (graphNodes.get(String(id)) as unknown as LGraphNode | undefined) ??
-        null,
+      getNodeById: (id) => graphNodes.get(String(id)) ?? null,
       get _nodes() {
-        return [...graphNodes.values()] as LGraphNode[]
+        return [...graphNodes.values()]
       }
     }
     wiring = attachMintPortWiring({
@@ -134,14 +138,19 @@ describe('mint ports against the real layout store delivery', () => {
   })
 
   it('delivers a local createNode as add_node with the mint-time snapshot', async () => {
-    graphNodes.set('5', {
-      id: toNodeId('5'),
-      serialize: () => ({
+    graphNodes.set(
+      '5',
+      graphNode('5', {
         id: 5,
         type: 'TestNode',
+        pos: [10, 20],
+        size: [100, 60],
+        flags: {},
+        order: 0,
+        mode: 0,
         widgets_values: [7]
       })
-    })
+    )
 
     layoutStore.applyOperation(createNodeOp(graphId, '5'))
     await realDelivery()
@@ -152,7 +161,16 @@ describe('mint ports against the real layout store delivery', () => {
         node_id: toNodeId('5'),
         class_type: 'TestNode',
         pos: [10, 20],
-        node: { id: 5, type: 'TestNode', widgets_values: [7] }
+        node: {
+          id: 5,
+          type: 'TestNode',
+          pos: [10, 20],
+          size: [100, 60],
+          flags: {},
+          order: 0,
+          mode: 0,
+          widgets_values: [7]
+        }
       }
     ])
   })
@@ -192,8 +210,8 @@ describe('mint ports against the real layout store delivery', () => {
   })
 
   it('F2: the intentional-clear capture is consumed by the real clearGraph delivery', async () => {
-    graphNodes.set('5', { id: toNodeId('5') })
-    graphNodes.set('6', { id: toNodeId('6') })
+    graphNodes.set('5', graphNode('5'))
+    graphNodes.set('6', graphNode('6'))
     layoutStore.applyOperation(createNodeOp(graphId, '5'))
     layoutStore.applyOperation(createNodeOp(graphId, '6'))
     await realDelivery()
@@ -221,10 +239,7 @@ describe('mint ports against the real layout store delivery', () => {
   })
 
   it('remote provenance suppresses a real layout apply end to end', async () => {
-    graphNodes.set('5', {
-      id: toNodeId('5'),
-      serialize: () => ({ id: 5, type: 'TestNode' })
-    })
+    graphNodes.set('5', graphNode('5'))
 
     layoutStore.applyOperation({
       ...createNodeOp(graphId, '5'),
@@ -236,10 +251,7 @@ describe('mint ports against the real layout store delivery', () => {
   })
 
   it('re-mints add_node for an id a remote delete removed from the document', async () => {
-    graphNodes.set('5', {
-      id: toNodeId('5'),
-      serialize: () => ({ id: 5, type: 'TestNode' })
-    })
+    graphNodes.set('5', graphNode('5', { id: 5, type: 'TestNode' }))
 
     layoutStore.applyOperation(createNodeOp(graphId, '5'))
     await realDelivery()
@@ -262,7 +274,7 @@ describe('mint ports against the real layout store delivery', () => {
         node_id: toNodeId('5'),
         class_type: 'TestNode',
         pos: [10, 20],
-        node: { id: 5, type: 'TestNode' }
+        node: { id: 5, type: 'TestNode', flags: {} }
       }
     ])
   })
@@ -274,10 +286,7 @@ describe('mint ports against the real layout store delivery', () => {
     // a node this port already relayed, or a later replay re-mints it
     // (id_collision). Mirrors the incidental-clear regression in
     // layoutMintPort.test.ts.
-    graphNodes.set('5', {
-      id: toNodeId('5'),
-      serialize: () => ({ id: 5, type: 'TestNode' })
-    })
+    graphNodes.set('5', graphNode('5', { id: 5, type: 'TestNode' }))
 
     layoutStore.applyOperation(createNodeOp(graphId, '5'))
     await realDelivery()
@@ -291,10 +300,7 @@ describe('mint ports against the real layout store delivery', () => {
     wiring.onAfterGraphConfigure()
     expect(minted).toEqual([])
 
-    graphNodes.set('5', {
-      id: toNodeId('5'),
-      serialize: () => ({ id: 5, type: 'TestNode' })
-    })
+    graphNodes.set('5', graphNode('5', { id: 5, type: 'TestNode' }))
     layoutStore.applyOperation(createNodeOp(graphId, '5'))
     await realDelivery()
 

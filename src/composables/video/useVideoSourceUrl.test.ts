@@ -1,9 +1,10 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h, nextTick, watch } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { NodeSlotType } from '@/lib/litegraph/src/types/globalEnums'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { api } from '@/scripts/api'
@@ -22,7 +23,7 @@ vi.mock(import('@/platform/distribution/cloudPreviewUtil'), () => ({
 }))
 
 function fakeNode(overrides: Record<string, unknown> = {}): LGraphNode {
-  return {
+  return fromAny<LGraphNode, unknown>({
     id: 'node',
     graph: { rootGraph: { id: 'graph' } },
     inputs: [],
@@ -30,7 +31,7 @@ function fakeNode(overrides: Record<string, unknown> = {}): LGraphNode {
     isSubgraphNode: () => false,
     getInputLink: () => null,
     ...overrides
-  } as unknown as LGraphNode
+  })
 }
 
 function mountSource(node: LGraphNode) {
@@ -92,9 +93,13 @@ describe('useVideoSourceUrl', () => {
 
     connected = true
     outputStore.nodeOutputs['upstream'] = { images: [{ filename: 'out.mp4' }] }
-    const fireConnectionsChange =
-      node.onConnectionsChange as unknown as () => void
-    fireConnectionsChange()
+    node.onConnectionsChange?.(
+      NodeSlotType.INPUT,
+      0,
+      true,
+      null,
+      node.inputs[0]
+    )
     await nextTick()
 
     expect(videoUrl.value).toBe('/api/view?filename=out.mp4&type=temp')

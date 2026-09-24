@@ -52,13 +52,9 @@ import { is_all_same_aspect_ratio } from '@/utils/imageUtil'
 
 import { useImagePreviewWidget } from './useImagePreviewWidget'
 
-// TODO(PR #11394): The CanvasRenderingContext2D / LGraphNode surface is too
-// large to migrate to shoehorn fromPartial here without dragging in mountains
-// of unused properties. Leave the `as unknown as` casts in these factories;
-// migrate when the SUT is refactored to depend on a smaller render port.
 function createMockCtx(): CanvasRenderingContext2D {
   const transform = new DOMMatrix()
-  return {
+  return fromAny<CanvasRenderingContext2D, unknown>({
     save: vi.fn(),
     restore: vi.fn(),
     beginPath: vi.fn(),
@@ -78,11 +74,11 @@ function createMockCtx(): CanvasRenderingContext2D {
     textAlign: 'left',
     font: '',
     filter: 'none'
-  } as unknown as CanvasRenderingContext2D
+  })
 }
 
 function createMockNode(overrides: Record<string, unknown> = {}): LGraphNode {
-  return {
+  return fromAny<LGraphNode, unknown>({
     id: 1,
     size: [300, 400],
     pos: [0, 0],
@@ -96,7 +92,7 @@ function createMockNode(overrides: Record<string, unknown> = {}): LGraphNode {
     graph: { setDirtyCanvas: vi.fn(), rootGraph: { id: 'test-graph' } },
     addCustomWidget: vi.fn((w) => w),
     ...overrides
-  } as unknown as LGraphNode
+  })
 }
 
 function createMockImage(width: number, height: number): HTMLImageElement {
@@ -327,7 +323,7 @@ describe('useImagePreviewWidget', () => {
     it('does not draw when node.size is undefined', () => {
       const constructor = useImagePreviewWidget()
       const node = createMockNode({
-        size: undefined as unknown as [number, number],
+        size: fromAny<[number, number], unknown>(undefined),
         imgs: [createMockImage(100, 100)],
         imageIndex: 0
       })

@@ -94,7 +94,7 @@ let lastOffsetY = 0
 const updateMenuPosition = () => {
   if (!isOpen.value) return
 
-  const menuInstance = contextMenu.value as unknown as {
+  const menuInstance = contextMenu.value as {
     container?: HTMLElement
   }
   const menuEl = menuInstance?.container
@@ -146,7 +146,7 @@ useEventListener(
     if (!isOpen.value || !contextMenu.value) return
 
     const target = event.target as Node
-    const contextMenuInstance = contextMenu.value as unknown as {
+    const contextMenuInstance = contextMenu.value as {
       container?: HTMLElement
       $el?: HTMLElement
     }
@@ -284,7 +284,7 @@ function handleSubmenuSelect(subOption: SubMenuOption) {
 }
 
 function constrainMenuHeight() {
-  const menuInstance = contextMenu.value as unknown as {
+  const menuInstance = contextMenu.value as {
     container?: HTMLElement
   }
   const rootList = menuInstance?.container?.querySelector(

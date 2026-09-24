@@ -1,6 +1,6 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { fromPartial } from '@total-typescript/shoehorn'
 import { useResizeObserver } from '@vueuse/core'
 import { createApp, defineComponent, nextTick, ref, computed } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -155,7 +155,7 @@ async function mountHarness(nodeId: NodeId = toNodeId(2)) {
   const el = document.createElement('div')
   document.body.appendChild(el)
   const app = createApp(ImageCropHarness, { nodeId: Number(nodeId) })
-  const vm = app.mount(el) as unknown as CropVm
+  const vm = fromPartial<CropVm>(app.mount(el))
   await nextTick()
   await Promise.resolve()
   harnessCleanups.push(() => {

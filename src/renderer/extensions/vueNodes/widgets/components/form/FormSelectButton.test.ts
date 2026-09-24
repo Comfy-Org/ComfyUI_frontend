@@ -5,11 +5,13 @@ import { describe, expect, it, vi } from 'vitest'
 
 import FormSelectButton from './FormSelectButton.vue'
 
+type SelectOption = string | number | Record<string, unknown>
+
 describe('FormSelectButton Core Component', () => {
   // Type-safe helper for rendering component
   const renderComponent = (
     modelValue: string | null | undefined = null,
-    options: unknown[] = [],
+    options: SelectOption[] = [],
     props: Record<string, unknown> = {}
   ) => {
     return render(FormSelectButton, {
@@ -18,11 +20,7 @@ describe('FormSelectButton Core Component', () => {
       },
       props: {
         modelValue,
-        options: options as unknown as (
-          | string
-          | number
-          | { label: string; value: string | number }
-        )[],
+        options,
         ...props
       }
     })
@@ -116,11 +114,7 @@ describe('FormSelectButton Core Component', () => {
         global: { plugins: [PrimeVue] },
         props: {
           modelValue: 'first',
-          options: options as unknown as (
-            | string
-            | number
-            | { label: string; value: string | number }
-          )[],
+          options,
           'onUpdate:modelValue': onUpdateModelValue
         }
       })
@@ -167,11 +161,7 @@ describe('FormSelectButton Core Component', () => {
         global: { plugins: [PrimeVue] },
         props: {
           modelValue: '10',
-          options: options as unknown as (
-            | string
-            | number
-            | { label: string; value: string | number }
-          )[],
+          options,
           'onUpdate:modelValue': onUpdateModelValue
         }
       })
@@ -217,11 +207,7 @@ describe('FormSelectButton Core Component', () => {
         global: { plugins: [PrimeVue] },
         props: {
           modelValue: 'apple_val',
-          options: options as unknown as (
-            | string
-            | number
-            | { label: string; value: string | number }
-          )[],
+          options,
           'onUpdate:modelValue': onUpdateModelValue
         }
       })
@@ -318,11 +304,7 @@ describe('FormSelectButton Core Component', () => {
         global: { plugins: [PrimeVue] },
         props: {
           modelValue: 'first_id',
-          options: options as unknown as (
-            | string
-            | number
-            | { label: string; value: string | number }
-          )[],
+          options,
           optionValue: 'id',
           'onUpdate:modelValue': onUpdateModelValue
         }
@@ -354,11 +336,7 @@ describe('FormSelectButton Core Component', () => {
         global: { plugins: [PrimeVue] },
         props: {
           modelValue: 'option1',
-          options: options as unknown as (
-            | string
-            | number
-            | { label: string; value: string | number }
-          )[],
+          options,
           disabled: true,
           'onUpdate:modelValue': onUpdateModelValue
         }
@@ -528,7 +506,7 @@ describe('FormSelectButton Core Component', () => {
     })
 
     it('handles mixed type options safely', () => {
-      const mixedOptions: unknown[] = [
+      const mixedOptions: SelectOption[] = [
         'string',
         123,
         { label: 'Object', value: 'obj' }
@@ -610,11 +588,7 @@ describe('FormSelectButton Core Component', () => {
         global: { plugins: [PrimeVue] },
         props: {
           modelValue: 'option1',
-          options: options as unknown as (
-            | string
-            | number
-            | { label: string; value: string | number }
-          )[],
+          options,
           'onUpdate:modelValue': onUpdateModelValue
         }
       })

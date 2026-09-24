@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, ref } from 'vue'
 import type { Ref } from 'vue'
@@ -37,7 +38,7 @@ function fakeContainer({
   rowHeight,
   headerHeight
 }: ContainerShape): HTMLElement {
-  return {
+  return fromPartial<HTMLElement>({
     clientHeight,
     querySelector(selector: string) {
       if (selector === 'tbody tr') {
@@ -53,7 +54,7 @@ function fakeContainer({
       if (selector === 'table') return {}
       return null
     }
-  } as unknown as HTMLElement
+  })
 }
 
 function runInScope(container: Ref<HTMLElement | null>, min?: number) {

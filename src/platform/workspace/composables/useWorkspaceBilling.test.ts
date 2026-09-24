@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { billingOperation } from './billingOperationTestUtils'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -921,7 +922,7 @@ describe('useWorkspaceBilling', () => {
     ] as const)(
       'opens the hosted payment-methods route on %s',
       async ([, railEnabled]) => {
-        const tab = { location: { href: '' } } as unknown as Window
+        const tab = fromAny<Window, unknown>({ location: { href: '' } })
         const openSpy = vi.fn(() => tab)
         vi.stubGlobal('open', openSpy)
         vi.stubEnv('VITE_BILLING_WEB_URL', 'https://billing.comfy.org')
@@ -1000,7 +1001,7 @@ describe('useWorkspaceBilling', () => {
     it('clears a failure from the previous attempt when the hosted route opens', async () => {
       vi.stubGlobal(
         'open',
-        vi.fn(() => ({ location: { href: '' } }) as unknown as Window)
+        vi.fn(() => fromAny<Window, unknown>({ location: { href: '' } }))
       )
       localStorage.setItem('ff:hosted_billing_destination', '"billing_web"')
       mockWorkspaceApi.getPaymentPortalUrl.mockRejectedValue(

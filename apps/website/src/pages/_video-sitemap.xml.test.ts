@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { describe, expect, it } from 'vitest'
 
 import {
@@ -7,7 +8,7 @@ import {
 import { GET, buildVideoSitemap } from './video-sitemap.xml'
 
 function render(site?: URL): Response {
-  return GET({ site } as unknown as Parameters<typeof GET>[0]) as Response
+  return GET(fromPartial<Parameters<typeof GET>[0]>({ site })) as Response
 }
 
 describe('video-sitemap.xml', () => {
@@ -54,7 +55,7 @@ describe('video-sitemap.xml', () => {
   })
 
   it('falls back to the default origin when the site is not configured', () => {
-    const xml = GET({ site: undefined } as unknown as Parameters<typeof GET>[0])
+    const xml = GET(fromPartial<Parameters<typeof GET>[0]>({ site: undefined }))
     expect(xml).toBeInstanceOf(Response)
   })
 })

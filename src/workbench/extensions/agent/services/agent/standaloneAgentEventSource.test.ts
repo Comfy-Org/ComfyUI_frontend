@@ -44,7 +44,7 @@ function sourceHarness(endpoint = '/api/agent/events') {
     createSocket(url) {
       const socket = new FakeSocket(url)
       sockets.push(socket)
-      return socket as unknown as WebSocket
+      return socket
     }
   })
   return { source, sockets }

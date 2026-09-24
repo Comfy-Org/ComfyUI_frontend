@@ -1,8 +1,8 @@
+import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useLinkStore } from '@/stores/linkStore'
-import { fromPartial } from '@total-typescript/shoehorn'
 import * as VueUse from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope, nextTick, shallowRef } from 'vue'
@@ -140,7 +140,7 @@ function resetCounters() {
 function instrumentedNode(index: number): LGraphNode {
   const position: [number, number] = [index * 20, index * 10]
   const size: [number, number] = [100, 50]
-  return {
+  return fromAny<LGraphNode, unknown>({
     id: String(index),
     get pos() {
       counters.digestNodeReads++
@@ -156,7 +156,7 @@ function instrumentedNode(index: number): LGraphNode {
     size,
     mode: 0,
     outputs: []
-  } as unknown as LGraphNode
+  })
 }
 
 function createGraph(graphSize: number, edgeCount: number) {
@@ -194,7 +194,7 @@ function createGraph(graphSize: number, edgeCount: number) {
   )
 
   return {
-    graph: {
+    graph: fromAny<LGraph, unknown>({
       id: 'root',
       rootGraph: { id: 'root' },
       _nodes: nodes,
@@ -205,7 +205,7 @@ function createGraph(graphSize: number, edgeCount: number) {
       onConnectionChange: null,
       getNodeById: (id: string) => nodes.find((node) => node.id === id),
       setDirtyCanvas: () => counters.dirtyRequests++
-    } as unknown as LGraph,
+    }),
     nodes
   }
 }
@@ -236,11 +236,11 @@ async function runCell(
   vi.mocked(context.strokeRect).mockImplementation(() => {
     counters.executionColorUpdates++
   })
-  const canvasElement = {
+  const canvasElement = fromAny<HTMLCanvasElement, unknown>({
     width: 250,
     height: 200,
     getContext: (kind: string) => (kind === '2d' ? context : null)
-  } as unknown as HTMLCanvasElement
+  })
   const graphCanvasElement = document.createElement('canvas')
   graphCanvasElement.width = 1000
   graphCanvasElement.height = 800
@@ -307,7 +307,7 @@ async function runCell(
   } else if (operation === 'geometry') {
     nodes[0].pos = [10_001, 10_001]
   } else {
-    const mutableLinks = graph.links as unknown as Map<string, unknown>
+    const mutableLinks = fromAny<Map<string, unknown>, unknown>(graph.links)
     mutableLinks.set('new-link', {
       get origin_id() {
         counters.linkDigestEntries++

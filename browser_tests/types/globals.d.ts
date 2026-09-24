@@ -4,6 +4,7 @@ import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { LiteGraphGlobal } from '@/lib/litegraph/src/LiteGraphGlobal'
 import type { ComfyApp } from '@/scripts/app'
 import type { useWorkspaceStore } from '@/stores/workspaceStore'
+import type { RawPromptEvent } from '@e2e/fixtures/customNode/promptEventScope'
 
 /**
  * Helper type for accessing nodes by ID in browser tests.
@@ -41,7 +42,17 @@ declare global {
     TestCommand?: boolean
     changeCount?: number
     widgetValue?: unknown
+    value?: unknown
     __commandExecutionCounts?: Record<string, number>
+    __cnEvents?: RawPromptEvent[]
+    __cnPairCursor?: string
+    __cnSelfCheckTimer?: ReturnType<typeof setInterval>
+    __cnTapInstalled?: boolean
+    __graphReadyHeartbeat?: boolean
+    __perfLongtaskState?: {
+      observer: PerformanceObserver
+      tbtMs: number
+    }
 
     // Feature flags test globals
     __capturedMessages?: CapturedMessages

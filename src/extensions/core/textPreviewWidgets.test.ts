@@ -67,9 +67,12 @@ const { addTextPreviewWidgets, updateTextPreviewWidgets } =
   await import('./textPreviewWidgets')
 
 function makeNode(): LGraphNode & { widgets: MockWidget[] } {
-  return { id: '1', widgets: [] } as unknown as LGraphNode & {
-    widgets: MockWidget[]
-  }
+  return fromAny<
+    LGraphNode & {
+      widgets: MockWidget[]
+    },
+    unknown
+  >({ id: '1', widgets: [] })
 }
 
 describe('addTextPreviewWidgets', () => {

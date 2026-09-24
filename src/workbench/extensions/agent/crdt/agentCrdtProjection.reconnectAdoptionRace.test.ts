@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { applyOps, mint } from '@comfyorg/comfy-multi-player'
 import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
 import { beforeEach, describe, expect, it } from 'vitest'
@@ -142,7 +143,7 @@ function withConfiguringGraph<T>(fn: () => T): T {
   try {
     return fn()
   } finally {
-    delete (app as unknown as Record<string, unknown>).configuringGraph
+    delete fromAny<Record<string, unknown>, unknown>(app).configuringGraph
   }
 }
 

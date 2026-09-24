@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import {
   OPAQUE_WIDGETS_KEY,
   applyOps,
@@ -162,7 +163,7 @@ function promotedWorkflow(options: FixtureOptions = {}): WorkflowJSON {
   if (options.emptyHostWidgets && hostNode) hostNode.widgets_values = []
   // Same cast the production path takes: serialized litegraph JSON is the
   // workflow shape cmp mints from.
-  return serialized as unknown as WorkflowJSON
+  return fromAny<WorkflowJSON, unknown>(serialized)
 }
 
 function startFollower(options: FixtureOptions = {}) {

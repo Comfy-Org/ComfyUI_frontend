@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import userEvent from '@testing-library/user-event'
 import { fireEvent, render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -33,7 +34,7 @@ vi.mock(import('../../../composables/useDownloadUrl'), async () => {
   // The component reads only isMobileUa; the rest of the real return is unused.
   return {
     useDownloadUrl:
-      useDownloadUrl as unknown as typeof DownloadUrlModule.useDownloadUrl
+      fromPartial<typeof DownloadUrlModule.useDownloadUrl>(useDownloadUrl)
   }
 })
 

@@ -384,12 +384,11 @@ export function findSubgraphPathById(
  * is the target, or `null` if not found.
  */
 export function findSubgraphNodePathById(
-  rootGraph: LGraph,
+  rootGraph: Pick<LGraph, '_nodes'>,
   targetUuid: string
 ): string[] | null {
-  const stack: { graph: LGraph | Subgraph; path: string[] }[] = [
-    { graph: rootGraph, path: [] }
-  ]
+  const stack: { graph: Pick<LGraph, '_nodes'> | Subgraph; path: string[] }[] =
+    [{ graph: rootGraph, path: [] }]
 
   while (stack.length > 0) {
     const { graph, path } = stack.pop()!

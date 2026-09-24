@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { useModelToNodeStore } from '@/stores/modelToNodeStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -171,10 +172,10 @@ describe('resolveModelNodeFromAsset', () => {
 
   describe('invalid assets', () => {
     it('fails when the asset does not match the schema', () => {
-      const invalid = {
+      const invalid = fromPartial<AssetItem>({
         id: 'asset-123',
         tags: ['models', 'checkpoints']
-      } as unknown as AssetItem
+      })
 
       const result = resolveModelNodeFromAsset(invalid)
 

@@ -1,3 +1,4 @@
+import { fromAny } from '@total-typescript/shoehorn'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { markRaw } from 'vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -143,7 +144,7 @@ describe('keybindingService - Escape key handling', () => {
 
   it('does not throw when Escape fires with a non-Element target (e.g. document, in Safari when nothing has focus)', async () => {
     const event = createKeyboardEvent('Escape', {
-      target: document as unknown as Element
+      target: fromAny<Element, unknown>(document)
     })
 
     await expect(keybindingService.keybindHandler(event)).resolves.not.toThrow()

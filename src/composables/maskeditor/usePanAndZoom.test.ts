@@ -1,3 +1,4 @@
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { usePanAndZoom } from '@/composables/maskeditor/usePanAndZoom'
@@ -6,40 +7,30 @@ import { useMaskEditorStore } from '@/stores/maskEditorStore'
 let mockStore: ReturnType<typeof useMaskEditorStore>
 
 function createMockElement(width = 1200, height = 800): HTMLElement {
-  return {
-    clientWidth: width,
-    clientHeight: height,
-    style: {} as CSSStyleDeclaration,
-    getBoundingClientRect: () =>
-      ({
-        left: 0,
-        top: 0,
-        width,
-        height,
-        right: width,
-        bottom: height
-      }) as DOMRect
-  } as unknown as HTMLElement
+  const element = document.createElement('div')
+  Object.defineProperties(element, {
+    clientWidth: { value: width },
+    clientHeight: { value: height }
+  })
+  vi.spyOn(element, 'getBoundingClientRect').mockReturnValue(
+    new DOMRect(0, 0, width, height)
+  )
+  return element
 }
 
 function createMockCanvas(width: number, height: number): HTMLCanvasElement {
-  return {
-    width,
-    height,
-    getContext: vi.fn().mockImplementation(() => null),
-    clientWidth: width,
-    clientHeight: height,
-    style: {} as CSSStyleDeclaration,
-    getBoundingClientRect: () =>
-      ({
-        left: 0,
-        top: 0,
-        width,
-        height,
-        right: width,
-        bottom: height
-      }) as DOMRect
-  } as unknown as HTMLCanvasElement
+  const canvas = document.createElement('canvas')
+  canvas.width = width
+  canvas.height = height
+  Object.defineProperties(canvas, {
+    clientWidth: { value: width },
+    clientHeight: { value: height }
+  })
+  vi.spyOn(canvas, 'getContext').mockReturnValue(null)
+  vi.spyOn(canvas, 'getBoundingClientRect').mockReturnValue(
+    new DOMRect(0, 0, width, height)
+  )
+  return canvas
 }
 
 function createMockImage(width: number, height: number): HTMLImageElement {
@@ -55,10 +46,10 @@ function createTouchList(...points: { x: number; y: number }[]): TouchList {
 }
 
 function createTouchEvent(touches: TouchList): TouchEvent {
-  return {
+  return fromPartial<TouchEvent>({
     touches,
     preventDefault: vi.fn()
-  } as unknown as TouchEvent
+  })
 }
 
 async function initComposable() {

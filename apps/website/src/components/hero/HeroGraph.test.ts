@@ -1,4 +1,5 @@
 /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -25,7 +26,7 @@ class FakeCameraWidget implements CameraWidgetContract {
 
 vi.mock(import('./camera/CameraWidget'), () => ({
   CameraWidget:
-    FakeCameraWidget as unknown as typeof CameraWidgetModule.CameraWidget
+    fromPartial<typeof CameraWidgetModule.CameraWidget>(FakeCameraWidget)
 }))
 
 const EM_PX = 10

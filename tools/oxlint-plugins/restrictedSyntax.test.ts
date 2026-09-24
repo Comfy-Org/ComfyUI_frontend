@@ -1,7 +1,9 @@
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+
+import { noUnknownDoubleAssertion } from './restrictedSyntax'
 
 interface Diagnostic {
   readonly code: string
@@ -67,6 +69,59 @@ void asserted
 `
   },
   {
+    file: path.join(probeDirs.source, 'doubleAssertion.test.ts'),
+    source: `import { fromAny } from '@total-typescript/shoehorn'
+import { fromPartial } from '@total-typescript/shoehorn'
+interface Fixture { value: string; required: boolean }
+const fixture = { value: 'ok' } as unknown as Fixture
+const unresolved = value as unknown as Fixture
+const text = 'as unknown as'
+const single = value as Fixture
+void fixture
+void unresolved
+void text
+void single
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'aliasedDoubleAssertion.test.ts'),
+    source: `import { fromAny as coerce } from '@total-typescript/shoehorn'
+const fixture = value as unknown as Fixture
+void fixture
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'typeOnlyDoubleAssertion.test.ts'),
+    source: `import type { fromAny } from '@total-typescript/shoehorn'
+const fixture = value as unknown as Fixture
+void fixture
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'missingHelper.test.ts'),
+    source: `const fixture = value as unknown as Fixture
+const other = anotherValue as unknown as OtherFixture
+void fixture
+void other
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'collidingHelpers.test.ts'),
+    source: `const fromAny = 'occupied'
+const fromAnyRuntime = 'also occupied'
+const fixture = value as unknown as Fixture
+void fromAny
+void fromAnyRuntime
+void fixture
+`
+  },
+  {
+    file: path.join(probeDirs.source, 'doubleAssertion.ts'),
+    source: `const fixture = value as unknown as Fixture
+void fixture
+`
+  },
+  {
     file: path.join(probeDirs.source, 'computed.ts'),
     source: `const measured = computed(() => element.getBoundingClientRect())
 const styled = computed(() => window.getComputedStyle(element))
@@ -118,7 +173,6 @@ canvas[selected] = value
     const source = `import type { JobId } from '@/schemas/apiSchema'
 export { TaskOutput } from '@/schemas/apiSchema'
 export * from '@/schemas/apiSchema'
-void (0 as unknown as JobId)
 `
     return {
       file,
@@ -131,7 +185,6 @@ void (0 as unknown as JobId)
     file: path.join(probeDirs.source, 'generated.ts'),
     source: `import type { GetI18nResponse } from '@comfyorg/ingest-types'
 export type { GetI18nResponse } from '@comfyorg/ingest-types'
-void (0 as unknown as GetI18nResponse)
 `
   },
   {
@@ -172,7 +225,10 @@ void z
   },
   {
     file: path.join(probeDirs.browserTests, 'allowed.spec.ts'),
-    source: "test('allowed', () => {})\n"
+    source: `const fixture = value as unknown as Fixture
+void fixture
+test('allowed', () => {})
+`
   }
 ]
 
@@ -202,6 +258,22 @@ function parseDiagnostics(output: string): Diagnostic[] {
     throw new Error('Oxlint returned diagnostics in an unexpected shape')
   }
   return report.diagnostics
+}
+
+function fixProbe(file: string): number | null {
+  const result = spawnSync(
+    process.execPath,
+    [
+      path.resolve('node_modules/oxlint/bin/oxlint'),
+      '--fix',
+      '--config',
+      path.resolve('.oxlintrc.json'),
+      file
+    ],
+    { encoding: 'utf8', windowsHide: true }
+  )
+  if (result.error) throw result.error
+  return result.status
 }
 
 describe('restricted syntax rules', () => {
@@ -262,6 +334,106 @@ describe('restricted syntax rules', () => {
         'Do not use Error type assertions. Use `instanceof Error` narrowing or `toError()` from @/utils/errorUtil instead. See issue #11429.'
       ])
     )
+  })
+
+  it('rejects unknown double assertions and fixes test fixtures', () => {
+    const doubleAssertionFindings = findingsFor('no-unknown-double-assertion')
+    expect(doubleAssertionFindings).toHaveLength(9)
+    expect(
+      doubleAssertionFindings.every(({ severity }) => severity === 'error')
+    ).toBe(true)
+
+    const fixture = path.join(probeDirs.source, 'doubleAssertion.test.ts')
+    expect(fixProbe(fixture)).toBe(0)
+    expect(readFileSync(fixture, 'utf8')).toContain(
+      "const fixture = fromAny<Fixture, unknown>({ value: 'ok' })"
+    )
+    expect(readFileSync(fixture, 'utf8')).toContain(
+      'const unresolved = fromAny<Fixture, unknown>(value)'
+    )
+
+    const aliasedFixture = path.join(
+      probeDirs.source,
+      'aliasedDoubleAssertion.test.ts'
+    )
+    expect(fixProbe(aliasedFixture)).toBe(0)
+    expect(readFileSync(aliasedFixture, 'utf8')).toContain(
+      'const fixture = coerce<Fixture, unknown>(value)'
+    )
+
+    const missingHelper = path.join(probeDirs.source, 'missingHelper.test.ts')
+    const typeOnlyHelper = path.join(
+      probeDirs.source,
+      'typeOnlyDoubleAssertion.test.ts'
+    )
+    expect(fixProbe(missingHelper)).toBe(1)
+    expect(fixProbe(typeOnlyHelper)).toBe(0)
+    expect(readFileSync(missingHelper, 'utf8')).toContain(
+      "import { fromAny } from '@total-typescript/shoehorn'"
+    )
+    expect(readFileSync(missingHelper, 'utf8')).toContain(
+      'const fixture = fromAny<Fixture, unknown>(value)'
+    )
+    expect(readFileSync(missingHelper, 'utf8')).toContain(
+      'const other = fromAny<OtherFixture, unknown>(anotherValue)'
+    )
+    expect(readFileSync(typeOnlyHelper, 'utf8')).toContain(
+      "import { fromAny as fromAnyRuntime } from '@total-typescript/shoehorn'"
+    )
+    expect(readFileSync(typeOnlyHelper, 'utf8')).toContain(
+      'const fixture = fromAnyRuntime<Fixture, unknown>(value)'
+    )
+    const collidingHelpers = path.join(
+      probeDirs.source,
+      'collidingHelpers.test.ts'
+    )
+    expect(fixProbe(collidingHelpers)).toBe(0)
+    expect(readFileSync(collidingHelpers, 'utf8')).toContain(
+      "import { fromAny as fromAnyRuntime2 } from '@total-typescript/shoehorn'"
+    )
+    expect(readFileSync(collidingHelpers, 'utf8')).toContain(
+      'const fixture = fromAnyRuntime2<Fixture, unknown>(value)'
+    )
+    expect(
+      doubleAssertionFindings.some(({ filename }) =>
+        filename.endsWith('doubleAssertion.ts')
+      )
+    ).toBe(true)
+    expect(
+      doubleAssertionFindings.some(({ filename }) =>
+        filename.endsWith('allowed.spec.ts')
+      )
+    ).toBe(true)
+  })
+
+  it('does not autofix browser tests with Windows path separators', () => {
+    let reports = 0
+    let fixes = 0
+    const visitors = noUnknownDoubleAssertion.create({
+      filename: 'C:\\repo\\browser_tests\\workflow.spec.ts',
+      sourceCode: {
+        getAncestors: () => [],
+        getText: () => 'value'
+      },
+      report: ({ fix }) => {
+        reports++
+        if (fix) fixes++
+      }
+    })
+    const inner = Object.freeze({
+      type: 'TSAsExpression',
+      expression: { type: 'Identifier' },
+      typeAnnotation: { type: 'TSUnknownKeyword' }
+    })
+    visitors.Program({ type: 'Program' })
+    visitors.TSAsExpression({
+      type: 'TSAsExpression',
+      expression: inner,
+      typeAnnotation: { type: 'TSTypeReference' }
+    })
+    visitors['Program:exit']()
+
+    expect({ reports, fixes }).toEqual({ reports: 1, fixes: 0 })
   })
 
   it('reports only static DOM access nested inside computed calls', () => {

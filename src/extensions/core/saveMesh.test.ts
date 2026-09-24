@@ -100,13 +100,13 @@ function makeNode(
   }> = {}
 ): LGraphNode {
   const { comfyClass = 'SaveGLB', properties = {} } = overrides
-  return {
+  return fromAny<LGraphNode, unknown>({
     constructor: { comfyClass },
     size: [400, 550],
     setSize: vi.fn(),
     widgets: [{ name: 'image', value: '' }],
     properties
-  } as unknown as LGraphNode
+  })
 }
 
 describe('saveMesh', () => {

@@ -199,19 +199,13 @@ const confirmPaymentHeading = (page: Page) =>
 async function trackGraphReadyHeartbeat(page: Page) {
   await page.addInitScript(() => {
     new BroadcastChannel('comfyui-tab-count').onmessage = () => {
-      ;(
-        window as unknown as { __graphReadyHeartbeat?: boolean }
-      ).__graphReadyHeartbeat = true
+      window.__graphReadyHeartbeat = true
     }
   })
 }
 
 function graphReadyHeartbeatSeen(page: Page) {
-  return page.evaluate(
-    () =>
-      (window as unknown as { __graphReadyHeartbeat?: boolean })
-        .__graphReadyHeartbeat === true
-  )
+  return page.evaluate(() => window.__graphReadyHeartbeat === true)
 }
 
 test.describe('Redirect checkout recovery', { tag: '@cloud' }, () => {
