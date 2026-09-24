@@ -318,6 +318,100 @@ describe('EcsFollowerAdapter integration', () => {
     host.destroy()
   })
 
+  it.fails('retypes a same-id node even when its old link is stale', () => {
+    const host = mint(
+      {
+        nodes: [
+          {
+            id: 1,
+            type: 'Source',
+            widgets_values: { seed: 1, stale: 9 },
+            inputs: [],
+            outputs: [{ name: 'out', type: 'IMAGE', links: [9] }]
+          },
+          {
+            id: 2,
+            type: 'Sink',
+            inputs: [{ name: 'in', type: 'IMAGE', link: 9 }],
+            outputs: []
+          }
+        ],
+        links: [[9, 1, 0, 2, 0, 'IMAGE']]
+      },
+      catalog
+    )
+    const follower = new FollowerDoc()
+    const mutations = createGraphMutations({
+      placement: inertPlacementPort,
+      getScope: () => scope,
+      layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+    })
+    const adapter = new EcsFollowerAdapter(mutations)
+    adapter.bind('wf', follower)
+    onTestFinished(() => {
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    })
+    const bootstrap = Y.encodeStateAsUpdate(host)
+    follower.applyRemoteUpdate(bootstrap)
+    expect(
+      adapter.applyFrame({ workflowId: 'wf', seq: 1, update: bootstrap })
+    ).toBe(true)
+
+    const before = Y.encodeStateVector(host)
+    const operations: Parameters<typeof applyOps>[1] = [
+      {
+        op_id: 'retype',
+        actor: 'agent:test',
+        base_version: 2,
+        stamp: [2, 'agent:test'],
+        op: 'add_node',
+        node_id: 1,
+        class_type: 'Sink',
+        pos: [0, 0],
+        node: {
+          id: 1,
+          type: 'Sink',
+          inputs: [{ name: 'in', type: 'IMAGE', link: null }],
+          outputs: []
+        }
+      }
+    ]
+    expect(applyOps(host, operations, catalog).outcomes).toEqual([
+      { op_id: 'retype', outcome: 'applied' }
+    ])
+    const update = Y.encodeStateAsUpdate(host, before)
+    follower.applyRemoteUpdate(update)
+    const consoleError = vi
+      .spyOn(console, 'error')
+      .mockImplementation(() => undefined)
+    adapter.applyFrame({ workflowId: 'wf', seq: 2, update })
+    consoleError.mockRestore()
+
+    const retyped = useNodeDataStore()
+      .getGraphNodesFor('root', 'root')
+      .find(({ id }) => id === toNodeId(1))
+    expect(retyped).toMatchObject({
+      type: 'Sink',
+      inputs: [{ name: 'in', type: 'IMAGE', link: null }],
+      outputs: []
+    })
+    expect(
+      useWidgetValueStore().getWidget(widgetId('root', toNodeId(1), 'seed'))
+    ).toBeUndefined()
+    expect(
+      useLinkStore().getTopology(scope.rootGraphId, toLinkId(9))
+    ).toBeUndefined()
+    expect(
+      useNodeDataStore()
+        .getGraphNodesFor('root', 'root')
+        .find(({ id }) => id === toNodeId(2))
+    ).toMatchObject({
+      inputs: [{ name: 'in', type: 'IMAGE', link: null }]
+    })
+  })
+
   it('retries authoritative reconciliation after a rejected first batch', () => {
     const deleteLayouts = vi.fn()
     let scopeAvailable = false
@@ -440,12 +534,17 @@ describe('EcsFollowerAdapter integration', () => {
       ).toEqual([toNodeId(99)])
       expect(onReconcileRetryCommitted).not.toHaveBeenCalled()
 
-      // Scope becomes available again, but no new frame ever arrives (e.g.
-      // the user never sends another agent message). The adapter must retry
-      // on its own instead of leaving the stale node stuck until some
-      // unrelated later frame happens to land.
-      scopeAvailable = true
+      // Stay unavailable past the old 20-attempt/4-second retry budget. No
+      // new frame arrives, so recovery must remain armed at its slower rate.
       vi.advanceTimersByTime(5_000)
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor('root', 'root')
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(99)])
+
+      scopeAvailable = true
+      vi.advanceTimersByTime(2_000)
 
       expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
       expect(deleteLayouts).toHaveBeenCalledWith(
@@ -454,6 +553,53 @@ describe('EcsFollowerAdapter integration', () => {
         expect.objectContaining({ opId: 'replay' })
       )
       expect(onReconcileRetryCommitted).toHaveBeenCalledExactlyOnceWith('wf')
+
+      adapter.destroy()
+      follower.destroy()
+      host.destroy()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('retries from the batch rejection reason when scope appears immediately afterward', () => {
+    vi.useFakeTimers()
+    try {
+      const seedMutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => scope,
+        layout: { createNode: vi.fn(), deleteNodes: vi.fn() }
+      })
+      seedMutations.addNode(
+        { id: 99, type: 'Sink', inputs: [], outputs: [] },
+        { source: 'agent-remote', actor: 'seed', opId: 'seed' }
+      )
+
+      let scopeReads = 0
+      const deleteLayouts = vi.fn()
+      const mutations = createGraphMutations({
+        placement: inertPlacementPort,
+        getScope: () => (++scopeReads === 1 ? null : scope),
+        layout: { createNode: vi.fn(), deleteNodes: deleteLayouts }
+      })
+      const host = mint({ nodes: [], links: [] }, catalog)
+      const follower = new FollowerDoc()
+      const adapter = new EcsFollowerAdapter(mutations)
+      adapter.bind('wf', follower)
+      const update = Y.encodeStateAsUpdate(host)
+      follower.applyRemoteUpdate(update)
+
+      expect(adapter.applyFrame({ workflowId: 'wf', seq: 1, update })).toBe(
+        false
+      )
+      vi.advanceTimersByTime(200)
+
+      expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+      expect(deleteLayouts).toHaveBeenCalledWith(
+        scope,
+        [toNodeId(99)],
+        expect.objectContaining({ opId: 'replay' })
+      )
 
       adapter.destroy()
       follower.destroy()

@@ -569,6 +569,24 @@ describe('graphMutations', () => {
     }
   )
 
+  it.fails('keeps a live-renamed title across a reconcile the doc never learned about', () => {
+    const graph = mutations()
+    graph.addNode(node(1), context)
+    const existing = useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))
+    assert.exists(existing)
+    existing.title = 'My Renamed Sampler'
+
+    expect(
+      graph.batch({ ...context, opId: 'resync' }, (batch) => {
+        batch.reconcileNode({ ...node(1), title: undefined })
+      })
+    ).toBe(true)
+
+    expect(
+      useNodeDataStore().getNode(scope.rootGraphId, toNodeId(1))?.title
+    ).toBe('My Renamed Sampler')
+  })
+
   it('adds the authoritative payload directly to node, widget, and layout stores', () => {
     expect(mutations().addNode(node(7, { seed: 42 }), context)).toBe(true)
 
@@ -919,6 +937,20 @@ describe('graphMutations', () => {
     error.mockRestore()
   })
 
+  it('leaves node stores untouched when a layout commit throws', () => {
+    createLayout.mockImplementationOnce(() => {
+      throw new Error('layout commit failed')
+    })
+
+    expect(() =>
+      mutations().batch(context, (batch) => {
+        batch.addNode(node(1))
+        batch.addNode(node(2))
+      })
+    ).toThrow('layout commit failed')
+    expect(useNodeDataStore().getGraphNodesFor('root', 'root')).toEqual([])
+  })
+
   it('rejects a sibling-owned node collision before committing earlier writes', () => {
     const siblingScope = {
       rootGraphId: scope.rootGraphId,
@@ -1083,6 +1115,40 @@ describe('graphMutations', () => {
     const [reconciled] = useNodeDataStore().getGraphNodesFor('root', 'root')
     expect(reconciled.color).toBe('#00ff00')
     expect(reconciled.inputs[0].localized_name).toBeUndefined()
+  })
+
+  it('preserves a locally newer widget value across a reconcile of the same node', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { text: 'a photo of a pier' }), context)
+    const id = widgetId(scope.rootGraphId, toNodeId(1), 'text')
+    useWidgetValueStore().setValue(id, 'a photo of a pier at sunset')
+
+    expect(
+      graph.batch({ ...context, opId: 'resync' }, (batch) => {
+        batch.reconcileNode({
+          ...node(1, { text: 'a photo of a pier' }),
+          title: 'Reconciled'
+        })
+      })
+    ).toBe(true)
+
+    expect(useWidgetValueStore().getWidget(id)?.value).toBe(
+      'a photo of a pier at sunset'
+    )
+  })
+
+  it.fails('preserves a locally newer widget value across a direct setWidget op', () => {
+    const graph = mutations()
+    graph.addNode(node(1, { text: 'a photo of a pier' }), context)
+    const id = widgetId(scope.rootGraphId, toNodeId(1), 'text')
+    useWidgetValueStore().setValue(id, 'a photo of a pier at sunset')
+
+    expect(
+      graph.setWidget(toNodeId(1), 'text', 'a photo of a pier', context)
+    ).toBe(true)
+    expect(useWidgetValueStore().getWidget(id)?.value).toBe(
+      'a photo of a pier at sunset'
+    )
   })
 
   it('resyncs scalar fields without touching slots, widgets, or layout', () => {

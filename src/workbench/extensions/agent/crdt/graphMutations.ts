@@ -181,6 +181,8 @@ export interface GraphMutations {
     context: RemoteMutationContext,
     define: (batch: GraphMutationBatch) => void
   ): boolean
+  /** Reason the most recent synchronous `batch` call returned `false`. */
+  lastBatchRejection?(): 'no-scope' | 'validation' | null
   /**
    * Cheap, side-effect-free check for whether `batch` would currently be
    * rejected for lack of scope. Callers that retry a rejected `batch` (e.g.
@@ -916,7 +918,7 @@ function removeIncidentLinks(
   links: Map<LinkId, LinkTopology>,
   nodeId: NodeId
 ): void {
-  for (const [id, topology] of [...links]) {
+  for (const [id, topology] of Array.from(links)) {
     if (topology.originNodeId === nodeId || topology.targetNodeId === nodeId) {
       removeSimulatedLink(nodes, links, id)
     }
@@ -1252,7 +1254,7 @@ function createAutogrowMemory() {
         rollbackMutation(mutationIndex) {
           journal.delete(mutationIndex)
           pending.delete(mutationIndex)
-          for (const index of [...pending.keys()]) {
+          for (const index of Array.from(pending.keys())) {
             if (index > mutationIndex) pending.delete(index)
           }
           for (const [index, writes] of [...journal].sort(
@@ -1275,6 +1277,7 @@ function createAutogrowMemory() {
  * provenance on every participating store action.
  */
 export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
+  let lastBatchRejection: 'no-scope' | 'validation' | null = null
   const nodeStore = useNodeDataStore()
   const linkStore = useLinkStore()
   const linkPresentationStore = useLinkPresentationStore()
@@ -2264,12 +2267,19 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
   }
 
   const graphMutations: GraphMutations = {
+    lastBatchRejection() {
+      return lastBatchRejection
+    },
     hasScope() {
       return deps.getScope() !== null
     },
     batch(context, define) {
+      lastBatchRejection = null
       const scope = deps.getScope()
-      if (!scope) return false
+      if (!scope) {
+        lastBatchRejection = 'no-scope'
+        return false
+      }
       const queued: QueuedMutation[] = []
       define({
         addNode(payload) {
@@ -2309,7 +2319,10 @@ export function createGraphMutations(deps: GraphMutationsDeps): GraphMutations {
         .map((node) => node.id)
       const memory = autogrowMemory.draft()
       const prepared = prepare(memory, scope, queued)
-      if (typeof prepared === 'string') return fail(prepared)
+      if (typeof prepared === 'string') {
+        lastBatchRejection = 'validation'
+        return fail(prepared)
+      }
       offsetInsertedBatch(scope, existingIds, prepared)
       commit(scope, prepared, context, memory)
       return true

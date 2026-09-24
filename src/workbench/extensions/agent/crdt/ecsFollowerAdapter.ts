@@ -13,6 +13,7 @@ import type {
 import { isIncompatibleLinkType } from './graphMutations'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { RemoteMutationContext } from '@/types/graphMutationContext'
+import { parseLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
 
 import { readSubgraphDefinitions } from './agentSubgraphDefinitions'
@@ -35,8 +36,9 @@ type NodeRootAction = 'add' | 'update' | 'delete'
  * scope race a fast, self-driven chance to resolve instead of leaving the
  * stale doc/live mismatch on screen until some unrelated later frame lands.
  */
-const RECONCILE_RETRY_LIMIT = 20
+const RECONCILE_FAST_RETRY_LIMIT = 20
 const RECONCILE_RETRY_INTERVAL_MS = 200
+const RECONCILE_SLOW_RETRY_INTERVAL_MS = 2_000
 
 /**
  * Node-map keys whose by-key edits trigger a field resync. Structural keys
@@ -226,6 +228,17 @@ function reportInvalidHostTarget(
   )
 }
 
+function resolveLinkId(raw: unknown): number | null {
+  return typeof raw === 'number' && raw >= 0 && Number.isSafeInteger(raw)
+    ? raw
+    : null
+}
+
+function resolveLinkMapKey(id: string): number | null {
+  const linkId = parseLinkId(id)
+  return linkId !== undefined && linkId >= 0 ? linkId : null
+}
+
 function readSemanticLink(
   doc: Y.Doc,
   id: string,
@@ -235,11 +248,13 @@ function readSemanticLink(
   const raw = linksMap(doc).get(id)
   const tuple = raw instanceof Y.Array ? raw.toArray() : raw
   if (!Array.isArray(tuple) || tuple.length < 5) return null
-  const linkId = Number(tuple[0] ?? id)
+  const linkId = resolveLinkId(tuple[0])
+  const mapLinkId = resolveLinkMapKey(id)
   const originSlot = Number(tuple[2])
   const targetSlot = Number(tuple[4])
   if (
-    !Number.isInteger(linkId) ||
+    linkId === null ||
+    mapLinkId !== linkId ||
     tuple[1] == null ||
     tuple[3] == null ||
     !Number.isInteger(originSlot) ||
@@ -366,7 +381,7 @@ interface TargetSession {
   onLinksChanged: (event: Y.YMapEvent<unknown>) => void
   reconcileNextFrame: boolean
   applying: boolean
-  /** Pending fast-retry of a rejected batch; see {@link RECONCILE_RETRY_LIMIT}. */
+  /** Pending retry of a batch rejected while workflow scope is unavailable. */
   reconcileRetryTimer: ReturnType<typeof setTimeout> | null
   reconcileRetryAttempt: number
   /**
@@ -474,7 +489,8 @@ export class EcsFollowerAdapter {
   }
 
   destroy(): void {
-    for (const workflowId of [...this.targets.keys()]) this.unbind(workflowId)
+    for (const workflowId of Array.from(this.targets.keys()))
+      this.unbind(workflowId)
   }
 
   private createSession(
@@ -565,9 +581,11 @@ export class EcsFollowerAdapter {
           : null
       ])
     )
-    const removedLinkIds = [...changedLinks].flatMap(([id, link]) =>
-      link && !isIncompatibleLinkType(link) ? [] : [Number(id)]
-    )
+    const removedLinkIds = [...changedLinks].flatMap(([id, link]) => {
+      if (link && !isIncompatibleLinkType(link)) return []
+      const linkId = resolveLinkMapKey(id)
+      return linkId === null ? [] : [linkId]
+    })
     const committed = session.mutations.batch(frameContext(update), (batch) => {
       // A SubgraphNode host that is already live must never be rebuilt from
       // its doc entry: `reconcileNode` (and delete + `addNode`) replaces the
@@ -734,10 +752,13 @@ export class EcsFollowerAdapter {
         session.reconcileRetryAttempt = 0
       }
       session.lastRejectedFrame = update
-      // `batch()` returns false both for a transient scope race and for a
-      // deterministic `prepare()` validation rejection; only the former can
-      // ever be fixed by waiting, so only arm the retry for it.
-      if (session.mutations.hasScope?.() !== true) {
+      // Read the rejection captured by the same `batch()` call so scope
+      // becoming available immediately afterward cannot hide the race.
+      const rejection = session.mutations.lastBatchRejection?.()
+      if (
+        rejection === 'no-scope' ||
+        (rejection === undefined && session.mutations.hasScope?.() !== true)
+      ) {
         this.scheduleReconcileRetry(session)
       }
     }
@@ -745,16 +766,17 @@ export class EcsFollowerAdapter {
   }
 
   /**
-   * Bounded fast-retry for a rejected batch: rather than only reconciling on
-   * whatever frame happens to arrive next (which may be a long time away, or
-   * never), replay the pending reconcile on a short timer until scope
-   * resolves or the retry budget runs out. The ordinary next-frame reconcile
-   * remains the fallback once the budget is exhausted.
+   * Retry a scope-rejected batch quickly at first, then at a low steady rate
+   * until scope returns or the target is reset/unbound. This keeps recovery
+   * armed even when no later frame arrives.
    */
   private scheduleReconcileRetry(session: TargetSession): void {
     if (session.reconcileRetryTimer) return
-    if (session.reconcileRetryAttempt >= RECONCILE_RETRY_LIMIT) return
     session.reconcileRetryAttempt += 1
+    const delay =
+      session.reconcileRetryAttempt <= RECONCILE_FAST_RETRY_LIMIT
+        ? RECONCILE_RETRY_INTERVAL_MS
+        : RECONCILE_SLOW_RETRY_INTERVAL_MS
     session.reconcileRetryTimer = setTimeout(() => {
       session.reconcileRetryTimer = null
       if (this.targets.get(session.workflowId) !== session) return
@@ -792,7 +814,7 @@ export class EcsFollowerAdapter {
       }
       session.retryInFlight = false
       if (committed) this.onReconcileRetryCommitted(session.workflowId)
-    }, RECONCILE_RETRY_INTERVAL_MS)
+    }, delay)
   }
 
   private clearReconcileRetry(session: TargetSession): void {

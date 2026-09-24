@@ -394,6 +394,66 @@ const events: readonly ComfyEvent[] = [
     })
   },
   {
+    id: 'sf-tech-week-tool-panel',
+    category: 'meetup',
+    organizer: 'partner',
+    coords: { lat: 37.7749, lng: -122.4194 },
+    title: {
+      en: 'SF Tech Week: ComfyUI Panel with TOOL ft. Yannik Marek',
+      'zh-CN':
+        'SF Tech Week：与 TOOL 共同举办的 ComfyUI 圆桌讨论（特邀 Yannik Marek）'
+    },
+    description: {
+      en: 'Comfy joins TOOL for a panel during San Francisco Tech Week, featuring Yannik Marek from the Comfy team.',
+      'zh-CN':
+        'Comfy 将与 TOOL 一起参加 San Francisco Tech Week 期间的一场圆桌讨论，Comfy 团队的 Yannik Marek 将作为嘉宾出席。'
+    },
+    location: { en: 'San Francisco, CA', 'zh-CN': '美国加州旧金山' },
+    dateLabel: {
+      en: 'October 6, 2026 · San Francisco Tech Week',
+      'zh-CN': '2026年10月6日 · San Francisco Tech Week'
+    },
+    startDateTime: '2026-10-06',
+    link: {
+      href: {
+        en: 'https://partiful.com/e/hFOQv0LDW2a1vehxwDRt',
+        'zh-CN': 'https://partiful.com/e/hFOQv0LDW2a1vehxwDRt'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' }
+  },
+  {
+    id: 'la-tech-week-tool-panel',
+    category: 'meetup',
+    organizer: 'partner',
+    coords: { lat: 34.0211, lng: -118.3965 },
+    title: {
+      en: 'LA Tech Week: ComfyUI Panel with TOOL ft. Justin Offermann',
+      'zh-CN':
+        'LA Tech Week：与 TOOL 共同举办的 ComfyUI 圆桌讨论（特邀 Justin Offermann）'
+    },
+    description: {
+      en: 'Comfy joins TOOL for a panel during LA Tech Week, featuring Justin Offermann from the Comfy team.',
+      'zh-CN':
+        'Comfy 将与 TOOL 一起参加 LA Tech Week 期间的一场圆桌讨论，Comfy 团队的 Justin Offermann 将作为嘉宾出席。'
+    },
+    location: { en: 'Los Angeles, CA', 'zh-CN': '美国加州洛杉矶' },
+    dateLabel: {
+      en: 'October 15, 2026 · LA Tech Week',
+      'zh-CN': '2026年10月15日 · LA Tech Week'
+    },
+    startDateTime: '2026-10-15',
+    link: {
+      href: {
+        en: 'https://partiful.com/e/dkPwnLH0yWh0rkO85wfH',
+        'zh-CN': 'https://partiful.com/e/dkPwnLH0yWh0rkO85wfH'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' }
+  },
+  {
     id: 'la-august-meetup',
     category: 'meetup',
     organizer: 'community',
