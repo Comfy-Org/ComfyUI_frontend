@@ -124,6 +124,7 @@ import {
   createLiveWidgetProjection,
   owningGraph
 } from './crdt/liveWidgetProjection'
+import { sharedPendingDeleteRetentionStore } from './crdt/pendingDeleteRetentionStore'
 import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { useAgentCrdtFollower } from './crdt/useAgentCrdtFollower'
 
@@ -278,6 +279,25 @@ watch(
   onboardingKey,
   (key) => {
     if (key) adoptSharedOnboardingFlag(key)
+  },
+  { immediate: true }
+)
+// The shared retention store (ADR CRDT-WRITE-0035) is page-lifetime, not
+// scoped to this panel's own mount: it must not carry an identified
+// confirmed delete from one signed-in user or workspace into the next one's
+// session, even across a dock close/reopen that unmounts and remounts this
+// component in between. `onboardingKey` already resolves to null-vs-a-real
+// scope on exactly the identity/workspace change this store needs to react
+// to, so this reuses it rather than tracking a second copy of the same scope
+// key. The store itself owns the last-seen scope and decides idempotently
+// whether a given resolution is an actual change (see
+// {@link PendingDeleteRetentionStore.noteResolvedScope}), so this reports
+// every resolution, `immediate` included, rather than only transitions this
+// one mount's watcher happens to observe.
+watch(
+  onboardingKey,
+  (key) => {
+    sharedPendingDeleteRetentionStore.noteResolvedScope(key)
   },
   { immediate: true }
 )
@@ -654,16 +674,15 @@ const {
   status: crdtStatus,
   debugSnapshot: crdtDebugSnapshot,
   enqueueHumanOperations
-} = useAgentCrdtFollower(
-  boundWorkflowId,
-  graphMutations,
-  () => resolvedUserInfo.value?.id ?? null,
-  isBoundWorkflowActive,
+} = useAgentCrdtFollower(boundWorkflowId, graphMutations, {
+  userId: () => resolvedUserInfo.value?.id ?? null,
+  isTargetActive: isBoundWorkflowActive,
   // `app.isGraphReady` is a plain getter; reading `canvasStore.canvas` (set
   // right after `app.setup()`) makes the follower's graph watch fire once the
   // root graph exists.
-  () => (canvasStore.canvas && app.isGraphReady ? app.rootGraph : null),
-  {
+  getGraph: () =>
+    canvasStore.canvas && app.isGraphReady ? app.rootGraph : null,
+  events: {
     onMaterialized({ workflowId, nodeIds }) {
       if (app.isGraphReady) {
         graphActivity.recordMaterialized(
@@ -675,7 +694,9 @@ const {
     },
     onReset: graphActivity.resetWorkflow
   }
-)
+  // No `retentionStore` override: the composable's own default is the
+  // module-level shared store ADR CRDT-WRITE-0035 requires.
+})
 // The bound document's serialized root graph id, independent of what is
 // currently on the canvas: `beforeLoadNewGraph` persists the outgoing
 // workflow's `activeState` before the shared renderer graph is rewritten, so

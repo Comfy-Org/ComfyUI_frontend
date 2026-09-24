@@ -255,11 +255,17 @@ describe('R-73 cross-workflow pending operation characterization', () => {
     // (the composable calls sender.abortIfUnbound() after retargeting the
     // bridge), so B's batch goes out at once instead of queueing behind A for
     // the 10 s result-silence window.
+    // Exact map, not `expect.any(Map)`: an empty map, workflow B's map, or a
+    // wrong op/value pairing would all pass a looser check. This also
+    // exercises the meaningful-null capture (`delete_node` with no bound
+    // item id) that `expect.any(Map)` could never distinguish from omission.
     expect(devLogState.recordDevEvent).toHaveBeenCalledWith(
       'human_ops_settled',
       {
         state: 'unconfirmed',
-        ops: [expect.objectContaining({ op_id: operationAId })]
+        ops: [expect.objectContaining({ op_id: operationAId })],
+        workflowId: 'wf-a',
+        admissionMetadata: new Map([[operationAId, null]])
       }
     )
     await enqueue([deleteNode('b-pending')])
@@ -303,6 +309,22 @@ describe('R-73 cross-workflow pending operation characterization', () => {
       }
     )
     expect(operationBId).not.toBe(operationAId)
+
+    // B's own settlement carries only B's own op id - proof of isolation
+    // that a routing-only assertion (`expect.any(Map)`, or checking status
+    // alone) cannot give: neither A's entry leaked into B's map, nor did
+    // B's batch pick up A's `admissionMetadata` by mistake.
+    dispatchOpsResult({
+      workflowId: 'wf-b',
+      ok: true,
+      applied: [operationBId],
+      skipped: []
+    })
+    const bSettled = devLogState.recordDevEvent.mock.calls
+      .filter(([event]) => event === 'human_ops_settled')
+      .map(([, outcome]) => outcome)
+      .find((outcome) => outcome.workflowId === 'wf-b')
+    expect([...bSettled.admissionMetadata.keys()]).toEqual([operationBId])
   })
 
   it('does not settle workflow B from an anonymous workflow A result', async () => {

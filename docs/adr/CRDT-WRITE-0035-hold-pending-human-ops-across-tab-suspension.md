@@ -53,9 +53,84 @@ Distinguish a paused subscription from a lost one, and hold rather than drop.
 - `opSender` exposes `pendingOps()`; `EcsFollowerAdapter` takes an optional
   `LocalIntent` port and its full reconcile skips a document node with a
   pending human `delete_node`, including that node's incident links, so the
-  batch still commits. An acknowledged delete stays pending until the document
-  no longer holds the node. The port is the seam a pending `add_node` guard
-  plugs into.
+  batch still commits. The port is the seam a pending `add_node` guard plugs
+  into.
+- Retained delete intent lives in a `PendingDeleteRetentionStore`
+  (`pendingDeleteRetentionStore.ts`), injected into `useAgentCrdtFollower`
+  rather than owned by the follower it backs. A follower instance is
+  disposed and replaced more often than the intent it should keep suppressing
+  survives for: the `productGate` toggle recreates one internally, and the
+  docked agent panel closing and reopening recreates the composable call
+  itself. Production shares one eagerly-created instance
+  (`sharedPendingDeleteRetentionStore`) across every follower
+  `AgentPanelRoot.vue` creates, so a delete retained by a disposed follower
+  still suppresses resurrection on a freshly mounted one's very first
+  reconcile; tests inject a fresh store per case instead.
+- `opSender` captures opaque per-op `admissionMetadata` at admission time,
+  when the op's `op_id` is minted - before the op reaches the wire, and
+  therefore before any `doc_update` can react to it - but the sender itself
+  neither recognizes `delete_node` nor knows what the metadata means; only
+  the retention coordinator's own callback does, reading a `delete_node`'s
+  target identity (the Yjs `client:clock` occupying that node id) and
+  returning undefined for every other op. This keeps transport batching and retry
+  independent of Yjs/delete policy: a future caller can carry its own
+  opaque value through the same seam without opSender changing. A doc-diff-
+  based capture (observing the id disappear from the document) cannot do
+  this safely: a delete and a same-id recreate arriving in one atomic Yjs
+  transaction never shows up as a removal in that diff, so a doc-diff
+  capture has nothing to attribute a later settle to and falls back to
+  reading whatever identity is current - the newly recreated one, not the
+  deleted one. The metadata is stored keyed by that exact `op_id` and handed
+  back on the batch's `BatchOutcome` (`admissionMetadata`), so a settling
+  batch binds each `delete_node` op to the identity captured for THAT op,
+  never to a position in a shared queue.
+- The retention policy is a state machine keyed by how a `delete_node` op
+  settled and whether an identity was captured for it, not something to read
+  off the Consequences section below. A `docNodeIds` read is `authoritative`
+  only once the follower's bound document has produced its own frame since
+  last being (re)bound and that read itself succeeded; the transient empty
+  snapshot between a lineage replacement and that document's own catch-up
+  frame is not, an unreadable snapshot (an internal Yjs-shape break) is not
+  either, and neither may release a retention on the strength of the
+  document appearing to no longer hold the node (see `useAgentCrdtFollower.ts`'s
+  `docCaughtUp` and `readDocNodeIds`). Every rule below that turns on the
+  document's own contents applies only to an authoritative read:
+  - `confirmed-applied`, with a captured identity (`acknowledged`, the op id
+    is in `applied`): retained until an authoritative read shows the
+    document no longer holds the node, or a different Yjs item identity now
+    occupies that node id. No expiry - the outcome is already certain.
+  - `confirmed-applied`, with no captured identity: the op's target did not
+    yet exist in the follower's own doc at admission time (typically a
+    locally-added node whose `add_node` had not yet reached this doc), so
+    there is nothing to compare a later occupant of the id against. Without
+    that comparison, "the document still holds the deleted node" and "a
+    different item now occupies that id" are indistinguishable, so this is
+    bounded by the same expiry as `unknown` instead of held forever - an
+    unbounded, identity-less record would risk suppressing an unrelated
+    later node at that id indefinitely.
+  - `unknown` (`unconfirmed` or `unacknowledged`): retained under the same
+    document-agrees release condition, plus a bounded expiry
+    (`PENDING_DELETE_EXPIRY_MS`, reusing `STALE_AFTER_MS`) that releases it
+    on its own if the document never agrees.
+  - `undeliverable`, and `acknowledged` with the op id in `skipped`: never
+    retained. The transport never carried the op, or the host explicitly
+    rejected it, so there is no delete to protect from resurrection.
+- `follower_replaced` alone never clears a workflow's retained deletes -
+  among follower-replacement events, only `doc_reset` does (whose handler
+  runs first and always precedes `follower_replaced` for a true lineage
+  break). `follower_replaced` also fires, with no preceding `doc_reset`, on
+  an ordinary local switch to a DIFFERENT workflow's lineage
+  (`LayoutFollowerBridge.subscribe`); clearing retention there would erase a
+  destination workflow's already-confirmed delete before its first
+  post-switch reconcile can consult it, on nothing more than the coincidence
+  of revisiting a workflow that was active before.
+- Separately, a signed-in principal or active workspace teardown clears
+  EVERY workflow's retained deletes (`clearAll()`, reported to the shared
+  store by `AgentPanelRoot.vue` resolving a new scope) - a retention
+  confirmed under one principal or workspace must never leak into the next
+  one's session. This is independent of the follower-replacement events
+  above: it fires on an identity/workspace change alone, whether or not any
+  follower is replaced at the same time.
 
 Alternatives considered:
 
@@ -84,12 +159,19 @@ Alternatives considered:
   result-silence resend, so the held delete can trail the return by tens of
   seconds.
 - The never-retarget invariant and its tests are untouched.
+- Retained delete intent survives the agent panel closing and reopening (and
+  the product-gate toggle recreating a follower internally): the reconcile
+  that runs on a freshly mounted follower's very first frame still sees a
+  delete retained by the follower it replaced, instead of resurrecting the
+  node before that follower has any state of its own.
 
 ### Negative
 
-- Parked ops live in memory until the tab returns, the session retargets, or
-  the follower is torn down; they die with the page or when the panel
-  unmounts.
+- Parked ops (the sender's own in-flight/queued batches) live in memory until
+  the tab returns, the session retargets, or the follower is torn down; they
+  die with the page or when the panel unmounts. Retained delete intent is
+  the exception, per the positive consequence above: it lives in the
+  injected store, not the follower, so it outlives that teardown.
 - The eager abort on a null subscription is kept for the refusal path, so a
   refused resubscribe on return still drops the held batch.
 - A delayed batch carries the `base_version` it was minted with. The applier
@@ -99,10 +181,13 @@ Alternatives considered:
 - The incremental frame path still upserts a pending-deleted node when another
   actor edits it before the delete lands; only the full reconcile consults
   local intent.
-- Terminal `unacknowledged` or `unconfirmed` deletes leave local intent. A later
-  full reconcile converges to the host document and can restore a node whose
-  delete never applied. Immediate catch-up and lost-write feedback remain
-  follow-up work; unknown outcomes are not hidden indefinitely.
+- A bounded retention (`unknown`, and `confirmed-applied` with no captured
+  identity) suppresses its node for up to `PENDING_DELETE_EXPIRY_MS` even
+  when the delete never actually reached the host, so a node a lagging
+  reconcile would otherwise restore stays hidden past the doc's own answer
+  for that window. `undeliverable` deletes get no suppression and no
+  feedback that the delete was lost; immediate catch-up and lost-write
+  feedback for a genuinely lost `undeliverable` delete remain follow-up work.
 
 ## Notes
 
