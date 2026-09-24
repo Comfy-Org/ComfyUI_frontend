@@ -3,7 +3,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
@@ -50,9 +49,7 @@ function addTab(path: string, isTemporary = false): LoadedComfyWorkflow {
   return tab
 }
 
-function setup(
-  listCloudWorkflows: (() => Promise<CloudWorkflowEntry[]>) | null
-) {
+function setup(listCloudWorkflows: () => Promise<CloudWorkflowEntry[]>) {
   const scope = effectScope()
   const warnWorkflowUnavailable = vi.fn()
   const selection = scope.run(() => {
@@ -79,48 +76,7 @@ describe('Agent workflow target selection', () => {
     workflowService.saveWorkflowAs.mockClear()
   })
 
-  it('without a cloud index (standalone), an unbound saved tab becomes the target as-is', async () => {
-    const tab = addTab('workflows/saved.json')
-    const { selection, warnWorkflowUnavailable } = setup(null)
-
-    await expect(selection.selectTarget(tab.path)).resolves.toBe(true)
-
-    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(tab.path)
-    expect(workflowService.openWorkflow).toHaveBeenCalledWith(tab)
-    expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
-    expect(warnWorkflowUnavailable).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toEqual([])
-    // No workflow exists for the tab yet: the agent mints one on its first
-    // turn and the ack binds it. Nothing is bound in advance.
-    expect(
-      useAgentWorkflowTabBindingStore().workflowIdFor(tab.path)
-    ).toBeUndefined()
-  })
-
-  it('without a cloud index, a temporary tab is not saved to acquire an id', async () => {
-    const tab = addTab('workflows/Unsaved Workflow.json', true)
-    const { selection, warnWorkflowUnavailable } = setup(null)
-
-    await expect(selection.selectTarget(tab.path)).resolves.toBe(true)
-
-    expect(workflowService.saveWorkflowAs).not.toHaveBeenCalled()
-    expect(warnWorkflowUnavailable).not.toHaveBeenCalled()
-    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(tab.path)
-  })
-
-  it('without a cloud index, a tab already bound to a workflow keeps that binding', async () => {
-    const tab = addTab('workflows/bound.json')
-    useAgentWorkflowTabBindingStore().bind('wf-bound', tab.path)
-    const { selection } = setup(null)
-
-    await expect(selection.selectTarget(tab.path)).resolves.toBe(true)
-
-    expect(useAgentWorkflowTabBindingStore().workflowIdFor(tab.path)).toBe(
-      'wf-bound'
-    )
-  })
-
-  it('with a cloud index (cloud), an unresolved saved tab is still refused', async () => {
+  it('an unresolved saved tab is refused until the saved-workflow index names it', async () => {
     const tab = addTab('workflows/saved.json')
     const { selection, warnWorkflowUnavailable } = setup(async () => [])
 

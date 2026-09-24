@@ -379,6 +379,21 @@ export default defineConfig({
 
       ...(DEV_AGENT_URL && DEV_AGENT_SESSION_TOKEN
         ? {
+            // The saved-workflow index lives where ingest serves it in the
+            // cloud; the local agent answers the same contract.
+            '/api/workflows': {
+              target: DEV_AGENT_URL,
+              headers: {
+                Authorization: `Bearer ${DEV_AGENT_SESSION_TOKEN}`
+              },
+              rewrite: (path: string) => path.replace(/^\/api/, ''),
+              bypass: (req, res) => {
+                if (!res || !isCrossOrigin(req)) return null
+                res.statusCode = 403
+                res.end('The agent proxy serves the dev server origin only')
+                return false
+              }
+            },
             '/api/agent': {
               target: DEV_AGENT_URL,
               ws: true,
