@@ -39,7 +39,7 @@ import { registerMinimapDecorationLayer } from '@/platform/canvas/minimapDecorat
 import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { ACTOR_CONFIG } from '@/renderer/core/layout/constants'
- 
+
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
