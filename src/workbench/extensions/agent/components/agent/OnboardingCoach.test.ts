@@ -5,9 +5,16 @@ import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 import { useOnboardingOverlayStore } from '@/platform/onboarding/onboardingOverlayStore'
+import { useTelemetry } from '@/platform/telemetry'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { CoachStep } from '../../composables/agent/useOnboarding'
 
 import OnboardingCoach from './OnboardingCoach.vue'
+
+vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 const KEY = 'coach-test'
 const STEPS: CoachStep[] = [
@@ -216,7 +223,8 @@ describe('OnboardingCoach', () => {
     })
   })
 
-  it('does not mark the tour complete when its target is absent', async () => {
+  it('neither completes the tour nor signals the overlay while its target is absent', async () => {
+    const overlay = useOnboardingOverlayStore()
     render(OnboardingCoach, {
       props: { steps: STEPS, storageKey: KEY },
       global: { plugins: [i18n] }
@@ -225,6 +233,7 @@ describe('OnboardingCoach', () => {
     await nextTick()
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(localStorage.getItem(KEY)).toBe('false')
+    expect(overlay.active).toBe(false)
   })
 
   it('signals the onboarding overlay while running and clears it when dismissed', async () => {
@@ -270,5 +279,101 @@ describe('OnboardingCoach', () => {
       name: lateSteps[0].title
     })
     await waitFor(() => expect(dialog).toBeVisible())
+    expect(useOnboardingOverlayStore().active).toBe(true)
+  })
+
+  describe('reporting a step whose target never mounts', () => {
+    const renderMissing = (target: string) =>
+      render(OnboardingCoach, {
+        props: {
+          steps: [{ ...STEPS[0], target }],
+          storageKey: `coach-missing-${target}`
+        },
+        global: { plugins: [i18n] }
+      })
+
+    it('reports only once the grace period has passed', async () => {
+      renderMissing('#never-a')
+
+      await vi.advanceTimersByTimeAsync(7_000)
+      expect(reportError).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(1_000)
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        errorType: 'failure_locating_agent_coach_target',
+        level: 'warning',
+        context: { target: '#never-a', step: 1 }
+      })
+      expect(
+        useTelemetry()!.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'target_missing', step: 1 })
+    })
+
+    it('reports a target once per session however often the panel remounts', async () => {
+      renderMissing('#never-b').unmount()
+      renderMissing('#never-b')
+      await vi.advanceTimersByTimeAsync(8_000)
+      renderMissing('#never-b')
+      await vi.advanceTimersByTimeAsync(8_000)
+
+      expect(reportError).toHaveBeenCalledOnce()
+    })
+
+    it('re-arms for a later step whose target is missing', async () => {
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+      const found = document.createElement('div')
+      found.id = 'found-e'
+      document.body.appendChild(found)
+      render(OnboardingCoach, {
+        props: {
+          steps: [
+            { ...STEPS[0], target: '#found-e' },
+            { ...STEPS[1], target: '#never-e' }
+          ],
+          storageKey: 'coach-missing-rearm'
+        },
+        global: { plugins: [i18n] }
+      })
+      await user.click(await screen.findByRole('button', { name: 'Next' }))
+
+      await vi.advanceTimersByTimeAsync(8_000)
+
+      expect(reportError).toHaveBeenCalledExactlyOnceWith(expect.any(Error), {
+        errorType: 'failure_locating_agent_coach_target',
+        level: 'warning',
+        context: { target: '#never-e', step: 2 }
+      })
+    })
+
+    it('stays quiet when the target arrives inside the grace period', async () => {
+      renderMissing('#late-c')
+      await vi.advanceTimersByTimeAsync(5_000)
+      const target = document.createElement('div')
+      target.id = 'late-c'
+      document.body.appendChild(target)
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('stays quiet for a user who already finished the tour', async () => {
+      localStorage.setItem('coach-missing-#never-f', 'true')
+      renderMissing('#never-f')
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
+
+    it('stays quiet when the panel closes before the grace period ends', async () => {
+      const { unmount } = renderMissing('#never-d')
+      await vi.advanceTimersByTimeAsync(5_000)
+      unmount()
+
+      await vi.advanceTimersByTimeAsync(10_000)
+
+      expect(reportError).not.toHaveBeenCalled()
+    })
   })
 })

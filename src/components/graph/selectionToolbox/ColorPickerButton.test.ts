@@ -29,7 +29,7 @@ function createMockPositionable(): Positionable {
   return fromPartial<Positionable>({ id: toGroupId(1), pos: [0, 0] })
 }
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({ app: {} }))
+vi.mock(import('@/scripts/app'))
 
 describe('ColorPickerButton', () => {
   const i18n = createI18n({
