@@ -134,6 +134,17 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     })
   })
 
+  // A bfcache restore resumes this same frozen interval rather than starting
+  // a new one, so the pagehide report above already closed it out. Starting
+  // a fresh interval here keeps a later close()/pagehide measuring only the
+  // time since resume, instead of re-including (and double counting) the
+  // span already reported.
+  useEventListener(window, 'pageshow', (event: PageTransitionEvent) => {
+    if (!event.persisted || !isVisible.value) return
+    openedAt = Date.now()
+    teardownReported = false
+  })
+
   function toggle(): void {
     if (isOpen.value) close('topbar_button')
     else open()
