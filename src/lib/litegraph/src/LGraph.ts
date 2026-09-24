@@ -3013,15 +3013,6 @@ export class LGraph
     data: ISerialisedGraph | SerialisableGraph | null | undefined,
     keep_old?: boolean
   ): boolean | undefined {
-    return withGraphIntentSource('load', () =>
-      this.configureFromSerialized(data, keep_old)
-    )
-  }
-
-  private configureFromSerialized(
-    data: ISerialisedGraph | SerialisableGraph | null | undefined,
-    keep_old?: boolean
-  ): boolean | undefined {
     data = runtimeOptional(data)
     if (!data) return
     const options: LGraphEventMap['configuring'] = {
@@ -3043,344 +3034,357 @@ export class LGraph
       return false
     }
 
-    beginNamedValuesShadowDiffLoad()
-    try {
-      // TODO: Finish typing configure()
-      data = normalizeConfiguredTopology(data)
-      if (options.clearGraph) this.clear()
-      else detachGraphLayouts([this])
+    const payload = data
+    return withGraphIntentSource('load', () => {
+      beginNamedValuesShadowDiffLoad()
+      try {
+        // TODO: Finish typing configure()
+        const data = normalizeConfiguredTopology(payload)
+        if (options.clearGraph) this.clear()
+        else detachGraphLayouts([this])
 
-      this._configureBase(data)
+        this._configureBase(data)
 
-      if (options.clearGraph) {
-        const topologyScope = graphScopeOf(this)
-        if (this.isRootGraph) {
-          useLinkStore().clearGraph(topologyScope.rootGraphId)
-          useLinkPresentationStore().clearGraph(topologyScope.rootGraphId)
-          useRerouteStore().clearGraph(topologyScope.rootGraphId)
-          useNodeDataStore().clearGraph(this.id)
-          useWidgetValueStore().clearGraph(this.id)
-          usePreviewExposureStore().clearGraph(this.id)
-          layoutStore.clearGraph(this.id)
+        if (options.clearGraph) {
+          const topologyScope = graphScopeOf(this)
+          if (this.isRootGraph) {
+            useLinkStore().clearGraph(topologyScope.rootGraphId)
+            useLinkPresentationStore().clearGraph(topologyScope.rootGraphId)
+            useRerouteStore().clearGraph(topologyScope.rootGraphId)
+            useNodeDataStore().clearGraph(this.id)
+            useWidgetValueStore().clearGraph(this.id)
+            usePreviewExposureStore().clearGraph(this.id)
+            layoutStore.clearGraph(this.id)
+          } else {
+            useLinkStore().clearOwner(topologyScope)
+            useLinkPresentationStore().clearOwner(topologyScope)
+            useRerouteStore().clearOwner(topologyScope)
+            useNodeDataStore().clearOwner(topologyScope)
+          }
+        }
+
+        let reroutes: SerialisableReroute[] | undefined
+        /**
+         * Links restored from this payload, in case node-id remints during the
+         * node-creation pass require their endpoints to be remapped
+         * (ADR-CRDT-MINT-0018). Only payload links are candidates; incumbent links are
+         * never touched.
+         */
+        const addedLinkIds: LinkId[] = []
+        // TODO: Determine whether this should this fall back to 0.4.
+        if (data.version === 0.4) {
+          const { extra } = data
+          // Deprecated - old schema version, links are arrays
+          if (Array.isArray(data.links)) {
+            for (const linkData of data.links) {
+              const link = LLink.createFromArray(linkData)
+              if (this._addLink(link)) addedLinkIds.push(link.id)
+            }
+          }
+          // #region `extra` embeds for v0.4
+
+          // LLink parentIds
+          if (Array.isArray(extra?.linkExtensions)) {
+            for (const linkEx of extra.linkExtensions) {
+              const link = this.links.get(linkEx.id)
+              if (link) link.parentId = linkEx.parentId
+            }
+          }
+
+          for (const [linkId, presentation] of Object.entries(
+            extra?.linkPresentation ?? {}
+          )) {
+            const id = parseLinkId(linkId)
+            if (id === undefined || !this.links.has(id)) continue
+            useLinkPresentationStore().patch(
+              graphScopeOf(this),
+              id,
+              presentation
+            )
+          }
+
+          // Reroutes
+          reroutes = extra?.reroutes
+
+          // #endregion `extra` embeds for v0.4
         } else {
-          useLinkStore().clearOwner(topologyScope)
-          useLinkPresentationStore().clearOwner(topologyScope)
-          useRerouteStore().clearOwner(topologyScope)
-          useNodeDataStore().clearOwner(topologyScope)
-        }
-      }
+          // New schema - one version so far, no check required.
 
-      let reroutes: SerialisableReroute[] | undefined
-      /**
-       * Links restored from this payload, in case node-id remints during the
-       * node-creation pass require their endpoints to be remapped
-       * (ADR-CRDT-MINT-0018). Only payload links are candidates; incumbent links are
-       * never touched.
-       */
-      const addedLinkIds: LinkId[] = []
-      // TODO: Determine whether this should this fall back to 0.4.
-      if (data.version === 0.4) {
-        const { extra } = data
-        // Deprecated - old schema version, links are arrays
-        if (Array.isArray(data.links)) {
-          for (const linkData of data.links) {
-            const link = LLink.createFromArray(linkData)
-            if (this._addLink(link)) addedLinkIds.push(link.id)
+          // State - use max to prevent ID collisions across root and subgraphs
+          const configuredState = runtimeOptional(data.state)
+          if (configuredState) {
+            const { lastGroupId, lastLinkId, lastNodeId, lastRerouteId } =
+              configuredState
+            const { state } = this
+            const runtimeLastGroupId = runtimeOptional(lastGroupId)
+            const runtimeLastLinkId = runtimeOptional(lastLinkId)
+            const runtimeLastNodeId = runtimeOptional(lastNodeId)
+            const runtimeLastRerouteId = runtimeOptional(lastRerouteId)
+            if (runtimeLastGroupId != null)
+              state.lastGroupId = Math.max(
+                state.lastGroupId,
+                runtimeLastGroupId
+              )
+            if (runtimeLastLinkId != null)
+              state.lastLinkId = toLinkId(
+                Math.max(state.lastLinkId, runtimeLastLinkId)
+              )
+            if (runtimeLastNodeId != null)
+              state.lastNodeId = Math.max(state.lastNodeId, runtimeLastNodeId)
+            if (runtimeLastRerouteId != null)
+              state.lastRerouteId = toRerouteId(
+                Math.max(state.lastRerouteId, runtimeLastRerouteId)
+              )
           }
-        }
-        // #region `extra` embeds for v0.4
 
-        // LLink parentIds
-        if (Array.isArray(extra?.linkExtensions)) {
-          for (const linkEx of extra.linkExtensions) {
-            const link = this.links.get(linkEx.id)
-            if (link) link.parentId = linkEx.parentId
+          // Links
+          if (Array.isArray(data.links)) {
+            for (const linkData of data.links) {
+              const link = LLink.create(linkData)
+              if (this._addLink(link)) {
+                addedLinkIds.push(link.id)
+                useLinkPresentationStore().patch(graphScopeOf(this), link.id, {
+                  hidden: linkData.hidden,
+                  label: linkData.label
+                })
+              }
+            }
           }
-        }
 
-        for (const [linkId, presentation] of Object.entries(
-          extra?.linkPresentation ?? {}
-        )) {
-          const id = parseLinkId(linkId)
-          if (id === undefined || !this.links.has(id)) continue
-          useLinkPresentationStore().patch(graphScopeOf(this), id, presentation)
+          reroutes = data.reroutes
         }
 
         // Reroutes
-        reroutes = extra?.reroutes
-
-        // #endregion `extra` embeds for v0.4
-      } else {
-        // New schema - one version so far, no check required.
-
-        // State - use max to prevent ID collisions across root and subgraphs
-        const configuredState = runtimeOptional(data.state)
-        if (configuredState) {
-          const { lastGroupId, lastLinkId, lastNodeId, lastRerouteId } =
-            configuredState
-          const { state } = this
-          const runtimeLastGroupId = runtimeOptional(lastGroupId)
-          const runtimeLastLinkId = runtimeOptional(lastLinkId)
-          const runtimeLastNodeId = runtimeOptional(lastNodeId)
-          const runtimeLastRerouteId = runtimeOptional(lastRerouteId)
-          if (runtimeLastGroupId != null)
-            state.lastGroupId = Math.max(state.lastGroupId, runtimeLastGroupId)
-          if (runtimeLastLinkId != null)
-            state.lastLinkId = toLinkId(
-              Math.max(state.lastLinkId, runtimeLastLinkId)
-            )
-          if (runtimeLastNodeId != null)
-            state.lastNodeId = Math.max(state.lastNodeId, runtimeLastNodeId)
-          if (runtimeLastRerouteId != null)
-            state.lastRerouteId = toRerouteId(
-              Math.max(state.lastRerouteId, runtimeLastRerouteId)
-            )
-        }
-
-        // Links
-        if (Array.isArray(data.links)) {
-          for (const linkData of data.links) {
-            const link = LLink.create(linkData)
-            if (this._addLink(link)) {
-              addedLinkIds.push(link.id)
-              useLinkPresentationStore().patch(graphScopeOf(this), link.id, {
-                hidden: linkData.hidden,
-                label: linkData.label
-              })
-            }
+        if (Array.isArray(reroutes)) {
+          for (const rerouteData of reroutes) {
+            this.setReroute(rerouteData)
           }
         }
 
-        reroutes = data.reroutes
-      }
+        const nodesData = data.nodes
 
-      // Reroutes
-      if (Array.isArray(reroutes)) {
-        for (const rerouteData of reroutes) {
-          this.setReroute(rerouteData)
-        }
-      }
-
-      const nodesData = data.nodes
-
-      // copy all stored fields
-      for (const i in data) {
-        if (LGraph.ConfigureProperties.has(i) || !GRAPH_CANONICAL_FIELDS.has(i))
-          continue
-
-        // @ts-expect-error #574 Legacy property assignment
-        this[i] = data[i]
-      }
-
-      // Normalize cloned subgraph definitions before configuring them.
-      const subgraphs = data.definitions?.subgraphs
-      let effectiveNodesData = nodesData
-      if (subgraphs) {
-        const normalized = this.isRootGraph
-          ? normalizeSubgraphDefinitions(
-              subgraphs,
-              {
-                nodeIds: this.collectReservedNodeIds(nodesData),
-                groupIds: collectReservedGroupIds(this, data.groups),
-                linkIds: collectReservedLinkIds(this, data.floatingLinks),
-                rerouteIds: collectReservedRerouteIds(this)
-              },
-              this.state,
-              nodesData
-            )
-          : undefined
-
-        const finalSubgraphs = normalized?.subgraphs ?? subgraphs
-        effectiveNodesData = normalized?.rootNodes ?? nodesData
-
-        this.createNormalizedSubgraphs(finalSubgraphs)
-      }
-
-      let error = false
-      const nodeDataMap = new Map<NodeId, ISerialisedNode>()
-      const realignmentDataMap = new Map<
-        NodeId,
-        Pick<ISerialisedNode, 'id' | 'inputs'>
-      >()
-
-      /**
-       * Requested (serialized) id → final id for nodes whose id was
-       * reminted on collision during `this.add` (ADR-CRDT-MINT-0018). Payload links
-       * name nodes by requested id, so their endpoints must follow the
-       * remint. Ambiguous requested ids (claimed by >1 payload node) are
-       * never recorded — see {@link recordUnambiguousRemint}.
-       */
-      const remintedIds = new Map<NodeId, NodeId>()
-
-      // create nodes
-      this._nodes = []
-      if (effectiveNodesData) {
-        const requestedIdCounts = countRequestedNodeIds(effectiveNodesData)
-
-        for (const n_info of effectiveNodesData) {
-          // stored info
-          let node = LiteGraph.createNode(n_info.type, n_info.title)
-          if (!node) {
-            if (LiteGraph.debug)
-              console.warn('Node not found or has errors:', n_info.type)
-
-            // in case of error we create a replacement node to avoid losing info
-            node = new LGraphNode('', n_info.type)
-            node.last_serialization = n_info
-            node.has_errors = true
-            error = true
-            // continue;
-          }
-
-          // id it or it will create a new id
-          const requestedId = toNodeId(n_info.id)
-          node.id = requestedId
-          // add before configure, otherwise configure cannot create links
-          this.add(node, true)
-          if (node.id !== requestedId) {
-            recordUnambiguousRemint(
-              remintedIds,
-              requestedIdCounts,
-              requestedId,
-              node.id
-            )
-          }
-          nodeDataMap.set(node.id, n_info)
-          realignmentDataMap.set(node.id, {
-            id: n_info.id,
-            inputs: n_info.inputs?.map((input) => ({ ...input }))
-          })
-        }
-
-        // Follow remints: repoint this payload's link endpoints from
-        // requested ids to the reminted ids before nodes configure their
-        // slots against those links.
-        if (remintedIds.size > 0) {
-          const endpointUpdates: EndpointUpdate[] = []
-          for (const linkId of addedLinkIds) {
-            const link = this.links.get(linkId)
-            if (!link) continue
-            const patch = getRemintedEndpointPatch(link, remintedIds)
-            if (patch) endpointUpdates.push({ topology: link._state, patch })
-          }
-          if (endpointUpdates.length > 0) {
-            const result = useLinkStore().updateEndpoints(
-              graphScopeOf(this),
-              endpointUpdates
-            )
-            if (!result.ok) {
-              console.error(
-                'Failed to remap node-id link endpoints',
-                result.error
-              )
-              error = true
-            }
-          }
-        }
-
-        // configure nodes afterwards so they can reach each other
-        for (const [id, nodeData] of nodeDataMap) {
-          const node = this.getNodeById(id)
-          node?.configure(nodeData)
-
-          if (LiteGraph.alwaysSnapToGrid && node) {
-            const snapTo = this.getSnapToGridSize()
-            node.snapToGrid(snapTo)
-
-            const snappedSize: Point = [node.size[0], node.size[1]]
-            snapPoint(snappedSize, snapTo, 'ceil')
-            node.size = snappedSize
-          }
-        }
-      }
-
-      // Floating links
-      if (Array.isArray(data.floatingLinks)) {
-        for (const linkData of data.floatingLinks) {
-          const floatingLink = LLink.create(linkData)
-          const patch = getRemintedEndpointPatch(floatingLink, remintedIds)
-          if (patch) Object.assign(floatingLink._state, patch)
+        // copy all stored fields
+        for (const i in data) {
           if (
-            this.links.has(floatingLink.id) ||
-            this.floatingLinks.has(floatingLink.id)
-          ) {
-            floatingLink.id = toLinkId(-1)
+            LGraph.ConfigureProperties.has(i) ||
+            !GRAPH_CANONICAL_FIELDS.has(i)
+          )
+            continue
+
+          // @ts-expect-error #574 Legacy property assignment
+          this[i] = data[i]
+        }
+
+        // Normalize cloned subgraph definitions before configuring them.
+        const subgraphs = data.definitions?.subgraphs
+        let effectiveNodesData = nodesData
+        if (subgraphs) {
+          const normalized = this.isRootGraph
+            ? normalizeSubgraphDefinitions(
+                subgraphs,
+                {
+                  nodeIds: this.collectReservedNodeIds(nodesData),
+                  groupIds: collectReservedGroupIds(this, data.groups),
+                  linkIds: collectReservedLinkIds(this, data.floatingLinks),
+                  rerouteIds: collectReservedRerouteIds(this)
+                },
+                this.state,
+                nodesData
+              )
+            : undefined
+
+          const finalSubgraphs = normalized?.subgraphs ?? subgraphs
+          effectiveNodesData = normalized?.rootNodes ?? nodesData
+
+          this.createNormalizedSubgraphs(finalSubgraphs)
+        }
+
+        let error = false
+        const nodeDataMap = new Map<NodeId, ISerialisedNode>()
+        const realignmentDataMap = new Map<
+          NodeId,
+          Pick<ISerialisedNode, 'id' | 'inputs'>
+        >()
+
+        /**
+         * Requested (serialized) id → final id for nodes whose id was
+         * reminted on collision during `this.add` (ADR-CRDT-MINT-0018). Payload links
+         * name nodes by requested id, so their endpoints must follow the
+         * remint. Ambiguous requested ids (claimed by >1 payload node) are
+         * never recorded — see {@link recordUnambiguousRemint}.
+         */
+        const remintedIds = new Map<NodeId, NodeId>()
+
+        // create nodes
+        this._nodes = []
+        if (effectiveNodesData) {
+          const requestedIdCounts = countRequestedNodeIds(effectiveNodesData)
+
+          for (const n_info of effectiveNodesData) {
+            // stored info
+            let node = LiteGraph.createNode(n_info.type, n_info.title)
+            if (!node) {
+              if (LiteGraph.debug)
+                console.warn('Node not found or has errors:', n_info.type)
+
+              // in case of error we create a replacement node to avoid losing info
+              node = new LGraphNode('', n_info.type)
+              node.last_serialization = n_info
+              node.has_errors = true
+              error = true
+              // continue;
+            }
+
+            // id it or it will create a new id
+            const requestedId = toNodeId(n_info.id)
+            node.id = requestedId
+            // add before configure, otherwise configure cannot create links
+            this.add(node, true)
+            if (node.id !== requestedId) {
+              recordUnambiguousRemint(
+                remintedIds,
+                requestedIdCounts,
+                requestedId,
+                node.id
+              )
+            }
+            nodeDataMap.set(node.id, n_info)
+            realignmentDataMap.set(node.id, {
+              id: n_info.id,
+              inputs: n_info.inputs?.map((input) => ({ ...input }))
+            })
           }
-          if (this.addFloatingLink(floatingLink)) {
-            useLinkPresentationStore().patch(
-              graphScopeOf(this),
-              floatingLink.id,
-              { hidden: linkData.hidden, label: linkData.label }
-            )
-          }
-        }
-      }
 
-      realignInputLinkSlots(this, realignmentDataMap.entries())
-
-      // Drop reroutes that no live link or floating link passes through
-      for (const reroute of this.reroutes.values()) {
-        if (reroute.totalLinks === 0) {
-          this._removeReroute(reroute.id)
-        }
-      }
-
-      // groups
-      this._groups.length = 0
-      const groupData = data.groups
-      if (groupData) {
-        for (const data of groupData) {
-          // TODO: Search/remove these global object refs
-          const group = new LiteGraph.LGraphGroup()
-          group.configure(data)
-          this.add(group)
-        }
-      }
-
-      this.updateExecutionOrder()
-
-      for (const node of this._nodes) {
-        if (!(node instanceof SubgraphNode)) continue
-        if (node.properties.proxyWidgets !== undefined) {
-          const nodeData = nodeDataMap.get(node.id)
-          if (LGraph.proxyWidgetMigrationFlush) {
-            LGraph.proxyWidgetMigrationFlush(node, nodeData)
-          } else if (import.meta.env.DEV || import.meta.env.MODE === 'test') {
-            console.warn(
-              '[SubgraphNode] Legacy proxyWidgets were not migrated because no migration flush hook is wired',
-              {
-                hostNodeId: node.id,
-                proxyWidgets: node.properties.proxyWidgets
+          // Follow remints: repoint this payload's link endpoints from
+          // requested ids to the reminted ids before nodes configure their
+          // slots against those links.
+          if (remintedIds.size > 0) {
+            const endpointUpdates: EndpointUpdate[] = []
+            for (const linkId of addedLinkIds) {
+              const link = this.links.get(linkId)
+              if (!link) continue
+              const patch = getRemintedEndpointPatch(link, remintedIds)
+              if (patch) endpointUpdates.push({ topology: link._state, patch })
+            }
+            if (endpointUpdates.length > 0) {
+              const result = useLinkStore().updateEndpoints(
+                graphScopeOf(this),
+                endpointUpdates
+              )
+              if (!result.ok) {
+                console.error(
+                  'Failed to remap node-id link endpoints',
+                  result.error
+                )
+                error = true
               }
-            )
+            }
+          }
+
+          // configure nodes afterwards so they can reach each other
+          for (const [id, nodeData] of nodeDataMap) {
+            const node = this.getNodeById(id)
+            node?.configure(nodeData)
+
+            if (LiteGraph.alwaysSnapToGrid && node) {
+              const snapTo = this.getSnapToGridSize()
+              node.snapToGrid(snapTo)
+
+              const snappedSize: Point = [node.size[0], node.size[1]]
+              snapPoint(snappedSize, snapTo, 'ceil')
+              node.size = snappedSize
+            }
           }
         }
-        LGraph.autoExposePreviewNodes?.(node)
-      }
 
-      for (const node of this._nodes) node.updateComputedDisabled()
-
-      this.onConfigure?.(extensionConfigureView(this, data))
-      this.incrementVersion()
-
-      // Ensure the primary canvas is set to the correct graph
-      const { primaryCanvas } = this
-      const subgraphId = primaryCanvas?.subgraph?.id
-      if (subgraphId) {
-        const subgraph = this.subgraphs.get(subgraphId)
-        if (subgraph) {
-          primaryCanvas.setGraph(subgraph)
-        } else {
-          primaryCanvas.setGraph(this)
+        // Floating links
+        if (Array.isArray(data.floatingLinks)) {
+          for (const linkData of data.floatingLinks) {
+            const floatingLink = LLink.create(linkData)
+            const patch = getRemintedEndpointPatch(floatingLink, remintedIds)
+            if (patch) Object.assign(floatingLink._state, patch)
+            if (
+              this.links.has(floatingLink.id) ||
+              this.floatingLinks.has(floatingLink.id)
+            ) {
+              floatingLink.id = toLinkId(-1)
+            }
+            if (this.addFloatingLink(floatingLink)) {
+              useLinkPresentationStore().patch(
+                graphScopeOf(this),
+                floatingLink.id,
+                { hidden: linkData.hidden, label: linkData.label }
+              )
+            }
+          }
         }
-      }
 
-      this.setDirtyCanvas(true, true)
-      return error
-    } finally {
-      endNamedValuesShadowDiffLoad()
-      this.events.dispatch('configured')
-    }
+        realignInputLinkSlots(this, realignmentDataMap.entries())
+
+        // Drop reroutes that no live link or floating link passes through
+        for (const reroute of this.reroutes.values()) {
+          if (reroute.totalLinks === 0) {
+            this._removeReroute(reroute.id)
+          }
+        }
+
+        // groups
+        this._groups.length = 0
+        const groupData = data.groups
+        if (groupData) {
+          for (const data of groupData) {
+            // TODO: Search/remove these global object refs
+            const group = new LiteGraph.LGraphGroup()
+            group.configure(data)
+            this.add(group)
+          }
+        }
+
+        this.updateExecutionOrder()
+
+        for (const node of this._nodes) {
+          if (!(node instanceof SubgraphNode)) continue
+          if (node.properties.proxyWidgets !== undefined) {
+            const nodeData = nodeDataMap.get(node.id)
+            if (LGraph.proxyWidgetMigrationFlush) {
+              LGraph.proxyWidgetMigrationFlush(node, nodeData)
+            } else if (import.meta.env.DEV || import.meta.env.MODE === 'test') {
+              console.warn(
+                '[SubgraphNode] Legacy proxyWidgets were not migrated because no migration flush hook is wired',
+                {
+                  hostNodeId: node.id,
+                  proxyWidgets: node.properties.proxyWidgets
+                }
+              )
+            }
+          }
+          LGraph.autoExposePreviewNodes?.(node)
+        }
+
+        for (const node of this._nodes) node.updateComputedDisabled()
+
+        this.onConfigure?.(extensionConfigureView(this, data))
+        this.incrementVersion()
+
+        // Ensure the primary canvas is set to the correct graph
+        const { primaryCanvas } = this
+        const subgraphId = primaryCanvas?.subgraph?.id
+        if (subgraphId) {
+          const subgraph = this.subgraphs.get(subgraphId)
+          if (subgraph) {
+            primaryCanvas.setGraph(subgraph)
+          } else {
+            primaryCanvas.setGraph(this)
+          }
+        }
+
+        this.setDirtyCanvas(true, true)
+        return error
+      } finally {
+        endNamedValuesShadowDiffLoad()
+        this.events.dispatch('configured')
+      }
+    })
   }
 
   private _canvas?: LGraphCanvas
