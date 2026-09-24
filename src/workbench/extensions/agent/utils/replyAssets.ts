@@ -112,6 +112,10 @@ export function htmlReplyAssets(html: string): ReplyAsset[] {
   return out
 }
 
+/**
+ * Videos deliberately omit `advancedPreviewUrl`: that URL needs a subfolder
+ * and type, and a reply asset only ever knows its href and filename.
+ */
 export function replyAssetLightboxItem(asset: ReplyAsset): LightboxItem {
   switch (asset.kind) {
     case 'image':
