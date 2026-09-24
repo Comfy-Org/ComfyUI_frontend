@@ -20,14 +20,13 @@ import {
   usePreviewSubscribe
 } from '@comfyorg/account-ui/billing'
 import type { StripePaymentCopy } from '@comfyorg/account-ui/billing/stripe'
-import { StripePaymentForm } from '@comfyorg/account-ui/billing/stripe'
 import {
   billingIntentPath,
   buildBillingEntryUrl,
   buildReturnUrl
 } from '@comfyorg/billing-contract'
 
-import CheckoutSubmit from '@/components/CheckoutSubmit.vue'
+import CheckoutPayment from '@/components/CheckoutPayment.vue'
 import EmbeddedCheckout from '@/components/EmbeddedCheckout.vue'
 import HostedSurface from '@/components/HostedSurface.vue'
 import { useBilledWorkspace } from '@/composables/useBilledWorkspace'
@@ -354,42 +353,21 @@ const subscriptionPath = computed(() => ({
             @cancel="checkout.cancel()"
             @continue-verification="checkout.continueVerification()"
           />
-          <StripePaymentForm
-            v-else-if="needsPaymentMethod"
+          <CheckoutPayment
+            v-else
+            v-model:confirmed="reactivationConfirmed"
+            :needs-payment-method="needsPaymentMethod"
             :publishable-key="publishableKey"
             :amount-cents="amountCents"
             :currency="currency"
             :copy="paymentCopy"
             :payment-method-configuration-id="paymentMethodConfigurationId"
-            :is-loading="checkout.submitting.value"
+            :submitting="checkout.submitting.value"
             :can-submit="canSubmit"
+            :reactivation-required="reactivationRequired"
+            :failure="submitFailure"
             @confirm="confirm"
-          >
-            <template #submit="{ disabled, loading: submitting }">
-              <CheckoutSubmit
-                v-model:confirmed="reactivationConfirmed"
-                :amount-cents="amountCents"
-                :disabled="disabled"
-                :submitting="submitting"
-                :reactivation-required="reactivationRequired"
-                :failure="submitFailure"
-              />
-            </template>
-          </StripePaymentForm>
-          <form
-            v-else
-            class="flex min-h-0 flex-col gap-6 xl:flex-1"
-            @submit.prevent="confirm()"
-          >
-            <CheckoutSubmit
-              v-model:confirmed="reactivationConfirmed"
-              :amount-cents="amountCents"
-              :disabled="!canSubmit"
-              :submitting="checkout.submitting.value"
-              :reactivation-required="reactivationRequired"
-              :failure="submitFailure"
-            />
-          </form>
+          />
         </template>
         <template #done>
           <a
