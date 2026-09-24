@@ -62,6 +62,8 @@ export interface ScopedReaderDefinition<
   ) => BillingResult<TSnapshot>
   /** The request budget, for a read that bounds itself or lets its caller. */
   readonly timeoutMs?: (options: TOptions | undefined) => number | undefined
+  /** See `BillingRequest.bypassHttpCache`. */
+  readonly bypassHttpCache?: boolean
   /**
    * The published snapshot this call may be served from instead of asking.
    * Absent for a reader that always requests.
@@ -126,6 +128,7 @@ export function createScopedReader<
     parse,
     project,
     timeoutMs,
+    bypassHttpCache,
     cached,
     publish = publishAsRead
   } = definition
@@ -150,7 +153,8 @@ export function createScopedReader<
     const billingRequest: BillingRequest = {
       method: 'GET',
       route: resolvedRoute,
-      ...(budget === undefined ? {} : { timeoutMs: budget })
+      ...(budget === undefined ? {} : { timeoutMs: budget }),
+      ...(bypassHttpCache === true ? { bypassHttpCache } : {})
     }
     const response = await readValidatedBillingResponse(
       transport,

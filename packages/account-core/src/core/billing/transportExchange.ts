@@ -66,6 +66,7 @@ export async function exchangeBillingRequest(
         ? {}
         : { body: JSON.stringify(request.body) }),
       ...(credentials === undefined ? {} : { credentials }),
+      ...(request.bypassHttpCache === true ? { cache: 'no-cache' } : {}),
       signal
     })
   } catch {

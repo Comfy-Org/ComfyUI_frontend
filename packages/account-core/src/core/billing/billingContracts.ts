@@ -112,6 +112,11 @@ interface BillingRequestBase {
   readonly signal?: AbortSignal
   /** Total budget for session minting, retries, and reading the response. */
   readonly timeoutMs?: number
+  /**
+   * Skips the browser's HTTP cache, for a read whose freshness the SDK
+   * already decides and that the server marks cacheable.
+   */
+  readonly bypassHttpCache?: boolean
 }
 
 export type BillingRequest = BillingRequestBase &

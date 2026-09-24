@@ -209,6 +209,9 @@ export function createCapabilitiesReader(
     route: CAPABILITIES_ROUTE,
     parse: (body) => CapabilitiesBodySchema.safeParse(body),
     timeoutMs: () => CAPABILITIES_TIMEOUT_MS,
+    // The server marks this answer `max-age=30`, so without this a refresh
+    // after a mutation is served the browser's pre-mutation copy.
+    bypassHttpCache: true,
     cached: (snapshot, scope, readOptions) =>
       freshSnapshot(snapshot, scope, readOptions?.forceRefresh === true, now()),
     project: projectCapabilities,
