@@ -457,10 +457,12 @@ const events: readonly ComfyEvent[] = [
     id: 'machine-cinema-wip-salon',
     category: 'meetup',
     organizer: 'partner',
-    // TODO: date, time, and location are a best guess (luma.com is
-    // unreachable from this session) — confirm against
-    // https://luma.com/machine-tclv before merging.
-    coords: { lat: 37.7749, lng: -122.4194 },
+    // TODO: date and time are still a best guess (luma.com is unreachable
+    // from this session) — confirm against https://luma.com/machine-tclv
+    // before merging. Location confirmed as Los Angeles from Allyson's
+    // Luma link-preview screenshot on this PR (comment #5819753977, whose
+    // title reads "Machine Cinema LA - Work in Progress Salon").
+    coords: { lat: 34.0522, lng: -118.2437 },
     title: {
       en: 'Machine Cinema: Work in Progress Salon',
       'zh-CN': 'Machine Cinema：作品进程沙龙'
@@ -470,7 +472,7 @@ const events: readonly ComfyEvent[] = [
       'zh-CN':
         'Comfy 将参加 Machine Cinema 举办的作品进程沙龙，AI 创作者们在此分享正在进行中的项目，并接受观众提问。'
     },
-    location: { en: 'San Francisco, CA', 'zh-CN': '美国加州旧金山' },
+    location: { en: 'Los Angeles, CA', 'zh-CN': '美国加州洛杉矶' },
     dateLabel: {
       en: 'October 8, 2026 · 6-9 PM PT',
       'zh-CN': '2026年10月8日 · 下午6点至9点（PT）'
