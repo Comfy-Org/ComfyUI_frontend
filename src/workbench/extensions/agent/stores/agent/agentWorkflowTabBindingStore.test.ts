@@ -197,6 +197,33 @@ describe('agentWorkflowTabBindingStore', () => {
     expect(bindings.matchesWorkflow('wf-first', replacement)).toBe(false)
   })
 
+  it('keeps in-session binds for saved drafts that share a default name', async () => {
+    const workflows = useWorkflowStore()
+    const first = workflows.createTemporary()
+    const second = workflows.createTemporary('Unsaved Workflow (2).json')
+    const third = workflows.createTemporary('Unsaved Workflow (3).json')
+    workflows.openWorkflowsInBackground({
+      right: [first.path, second.path, third.path]
+    })
+    first.size = 1
+    second.size = 1
+    third.size = 1
+    const bindings = useAgentWorkflowTabBindingStore()
+    bindings.bind('wf-1', first.path)
+    bindings.bind('wf-2', second.path)
+    bindings.bind('wf-3', third.path)
+    await nextTick()
+
+    expect([
+      bindings.tabPathFor('wf-1'),
+      bindings.tabPathFor('wf-2'),
+      bindings.tabPathFor('wf-3')
+    ]).toEqual([first.path, second.path, third.path])
+    expect(bindings.matchesWorkflow('wf-1', first)).toBe(true)
+    expect(bindings.matchesWorkflow('wf-2', second)).toBe(true)
+    expect(bindings.matchesWorkflow('wf-3', third)).toBe(true)
+  })
+
   it('prunes bindings not confirmed within the TTL at store creation', () => {
     seedBindings({
       'wf-expired': {

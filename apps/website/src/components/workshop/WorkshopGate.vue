@@ -7,7 +7,10 @@ import {
   useWorkshopEnabledSettled
 } from '../../scripts/posthog'
 
-const { keepMounted = false } = defineProps<{ keepMounted?: boolean }>()
+const { keepMounted = false, allowed = true } = defineProps<{
+  keepMounted?: boolean
+  allowed?: boolean
+}>()
 const enabled = useWorkshopEnabled()
 const settled = useWorkshopEnabledSettled()
 const mounted = useMounted()
@@ -16,7 +19,7 @@ type GateView = 'loading' | 'granted' | 'denied'
 const view = computed<GateView>(() =>
   !mounted.value || !settled.value
     ? 'loading'
-    : enabled.value
+    : enabled.value && allowed
       ? 'granted'
       : 'denied'
 )
@@ -33,9 +36,9 @@ watch(
 
 <template>
   <div
-    v-if="granted && (enabled || keepMounted)"
-    v-show="enabled"
-    :aria-hidden="!enabled"
+    v-if="granted && ((enabled && allowed) || keepMounted)"
+    v-show="enabled && allowed"
+    :aria-hidden="!enabled || !allowed"
   >
     <slot />
   </div>

@@ -597,9 +597,14 @@ const earlierClass = (active: boolean) =>
         class="border-t border-transparency-white-t8 px-5 py-2 text-xs text-primary-warm-gray"
         data-testid="output-example-hint"
       >
-        {{
-          t('workshop.output.exampleHint', locale).replace('{model}', modelName)
-        }}
+        <slot name="example-hint">
+          {{
+            t('workshop.output.exampleHint', locale).replace(
+              '{model}',
+              modelName
+            )
+          }}
+        </slot>
       </p>
       <div
         v-if="state.status === 'succeeded'"
