@@ -21,8 +21,18 @@ function projection(
   return { noChargeConfirmed: false, ...overrides }
 }
 
+const serverAddedAction: string = 'offer_bank_transfer'
+const UNKNOWN_RECOVERY_ACTION = serverAddedAction as BillingRecoveryAction
+
 function failedWithUnknownRecoveryAction(): PaymentProjection {
-  const serverAddedAction: string = 'offer_bank_transfer'
+  return projection({
+    step: 'declined',
+    reasonKey: 'card_declined',
+    recoveryAction: UNKNOWN_RECOVERY_ACTION
+  })
+}
+
+function nonRetryableWithUnknownRecoveryAction(): PaymentProjection {
   const operation: BillingOperationState = {
     id: 'op-1',
     kind: 'subscription',
@@ -32,8 +42,8 @@ function failedWithUnknownRecoveryAction(): PaymentProjection {
     attemptStartedAt: 0,
     phase: 'failed',
     declineReason: 'card_declined',
-    recoveryAction: serverAddedAction as BillingRecoveryAction,
-    retryable: true
+    recoveryAction: UNKNOWN_RECOVERY_ACTION,
+    retryable: false
   }
   return projectPaymentStep(operation, 'preview')
 }
@@ -186,6 +196,18 @@ describe('CheckoutSteps', () => {
     })
 
     expect(slotActions).toEqual(['retry'])
+  })
+
+  it('links to support and offers no retry for a non-retryable failure with a recovery action this build does not know', () => {
+    render(CheckoutSteps, {
+      props: { projection: nonRetryableWithUnknownRecoveryAction() }
+    })
+
+    expect(
+      screen.getByText(DEFAULT_PAYMENT_COPY['billing.recovery.contact_support'])
+    ).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Contact support' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
   })
 
   it('offers no action on success, and none fires while disabled', async () => {

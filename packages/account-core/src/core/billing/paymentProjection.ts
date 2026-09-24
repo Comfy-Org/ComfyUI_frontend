@@ -62,6 +62,24 @@ const PROCESSING_REASONS: ReadonlySet<PaymentReasonKey> = new Set([
   'generic'
 ])
 
+const RECOVERY_ACTIONS: Readonly<Record<BillingRecoveryAction, true>> = {
+  retry: true,
+  replace_payment_method: true,
+  authenticate_payment: true,
+  contact_support: true
+}
+
+/** A recovery action this build cannot act on reads as none named. */
+function knownRecoveryAction(
+  action: string | undefined
+): BillingRecoveryAction | undefined {
+  return action !== undefined && isRecoveryAction(action) ? action : undefined
+}
+
+function isRecoveryAction(action: string): action is BillingRecoveryAction {
+  return Object.hasOwn(RECOVERY_ACTIONS, action)
+}
+
 function stepForReason(reason: PaymentReasonKey): PaymentStep {
   return PROCESSING_REASONS.has(reason) ? 'processing_error' : 'declined'
 }
@@ -76,13 +94,12 @@ function projectPending(
     state.declineReason ??
     (state.challenge?.status === 'failed' ? 'authentication_failed' : undefined)
   if (reason !== undefined) {
+    const recoveryAction = knownRecoveryAction(state.recoveryAction)
     return {
       ...base,
       step: stepForReason(reason),
       reasonKey: reason,
-      ...(state.recoveryAction === undefined
-        ? {}
-        : { recoveryAction: state.recoveryAction })
+      ...(recoveryAction === undefined ? {} : { recoveryAction })
     }
   }
   const parked = state.challenge !== undefined || state.actionUrl !== undefined
@@ -104,7 +121,7 @@ export function projectPaymentStep(
       return { ...base, step: 'success' }
     case 'failed': {
       const recoveryAction =
-        operation.recoveryAction ??
+        knownRecoveryAction(operation.recoveryAction) ??
         (operation.retryable ? undefined : 'contact_support')
       return {
         ...base,

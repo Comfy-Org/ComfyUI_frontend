@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import type {
   BillingOperationState,
+  BillingRecoveryAction,
   PendingBillingOperation
 } from './operationState.js'
 import type { HostPaymentStep, PaymentProjection } from './paymentProjection.js'
@@ -50,6 +51,9 @@ function terminal(
 ): BillingOperationState {
   return { ...IDENTITY, phase }
 }
+
+const serverAddedAction: string = 'offer_bank_transfer'
+const UNKNOWN_RECOVERY_ACTION = serverAddedAction as BillingRecoveryAction
 
 interface Row {
   readonly name: string
@@ -187,6 +191,14 @@ const ROWS: readonly Row[] = [
     expected: { recoveryAction: 'contact_support' }
   },
   {
+    name: 'a non-retryable failure with a recovery action this build does not know reads as contact_support',
+    operation: failed('card_declined', {
+      recoveryAction: UNKNOWN_RECOVERY_ACTION,
+      retryable: false
+    }),
+    expected: { step: 'declined', recoveryAction: 'contact_support' }
+  },
+  {
     name: 'a processing failure is a processing error',
     operation: failed('processing_error'),
     expected: { step: 'processing_error', reasonKey: 'processing_error' }
@@ -250,6 +262,15 @@ describe('projectPaymentStep', () => {
     expect(
       projectPaymentStep(
         failed('generic', { recoveryAction: undefined }),
+        'preview'
+      ).recoveryAction
+    ).toBeUndefined()
+  })
+
+  it('names no recovery for a retryable failure with a recovery action this build does not know', () => {
+    expect(
+      projectPaymentStep(
+        failed('card_declined', { recoveryAction: UNKNOWN_RECOVERY_ACTION }),
         'preview'
       ).recoveryAction
     ).toBeUndefined()
