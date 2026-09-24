@@ -202,6 +202,56 @@ describe('SubscriptionView', () => {
     expect(fake.readPlans).toHaveBeenCalledTimes(2)
   })
 
+  it('says when a cancelled plan ends, as the server reports it', async () => {
+    await renderSubscription({
+      status: {
+        is_active: true,
+        has_funds: true,
+        max_seats: 1,
+        occupied_seats: 1,
+        scheduled_change: null,
+        team_credit_stop: null,
+        subscription_status: 'canceled',
+        cancel_at: '2026-10-24T12:00:00.000Z'
+      }
+    })
+
+    expect(await screen.findByText('Ends on Oct 24, 2026')).toBeInTheDocument()
+  })
+
+  it('shows the end date once a cancellation lands, without a reload', async () => {
+    const fake = await renderSubscription({
+      capabilities: { can_cancel: true },
+      cancel: { status: 'ok', value: { phase: 'succeeded' } }
+    })
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Cancel subscription' })
+    )
+    expect(screen.queryByText(/^Ends on/)).not.toBeInTheDocument()
+
+    fake.readStatus.mockResolvedValue({
+      status: 'ok',
+      value: {
+        status: {
+          is_active: true,
+          has_funds: true,
+          max_seats: 1,
+          occupied_seats: 1,
+          scheduled_change: null,
+          team_credit_stop: null,
+          cancel_at: '2026-10-24T12:00:00.000Z'
+        },
+        scope: { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' },
+        readAt: 0
+      }
+    })
+    await userEvent.click(
+      screen.getByRole('button', { name: 'Confirm cancellation' })
+    )
+
+    expect(await screen.findByText('Ends on Oct 24, 2026')).toBeInTheDocument()
+  })
+
   it('keeps the plan when the customer backs out of cancelling', async () => {
     const fake = await renderSubscription({
       capabilities: { can_cancel: true }
