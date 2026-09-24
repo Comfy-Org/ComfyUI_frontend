@@ -25,6 +25,25 @@ describe('VideoPlayer', () => {
     expect(await screen.findByRole('button', { name: 'Unmute' })).toBeTruthy()
   })
 
+  // With autoplayUnmuted, the watcher unmutes the element directly to attempt
+  // sound-on playback. When that play() resolves, `muted.value` must follow
+  // `el.muted` so the button reflects the unmuted state.
+  it('shows Mute once autoplay-unmuted playback succeeds', async () => {
+    vi.spyOn(HTMLMediaElement.prototype, 'paused', 'get').mockReturnValue(false)
+    vi.spyOn(HTMLMediaElement.prototype, 'play').mockResolvedValue(undefined)
+
+    render(VideoPlayer, {
+      props: {
+        src: 'https://example.com/clip.mp4',
+        autoplay: true,
+        autoplayUnmuted: true,
+        muteOnly: true
+      }
+    })
+
+    expect(await screen.findByRole('button', { name: 'Mute' })).toBeTruthy()
+  })
+
   // A server-rendered autoplay video can already be playing (and muted) when
   // hydration binds the element, after its play/volumechange events fired.
   // The element-bind watcher must sync the controls to that reality.
