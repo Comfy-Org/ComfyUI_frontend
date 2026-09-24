@@ -1,9 +1,20 @@
-import { linksMap, mint, nodesMap } from '@comfyorg/comfy-multi-player'
-import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
+import {
+  applyOps,
+  linksMap,
+  mint,
+  nodesMap
+} from '@comfyorg/comfy-multi-player'
+import type {
+  Op,
+  WidgetCatalog,
+  WorkflowJSON
+} from '@comfyorg/comfy-multi-player'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import * as Y from 'yjs'
 
 import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
 import { toLinkId } from '@/types/linkId'
 import { toNodeId } from '@/types/nodeId'
@@ -227,5 +238,154 @@ describe('LiveGraphApplier', () => {
     applier.clear({ actor: 'agent:reset', opIds: [] })
 
     expect(actors).toEqual(['agent:remote', 'agent:reset'])
+  })
+})
+
+type OpBody = DistributiveOmit<Op, keyof OpEnvelope>
+type OpEnvelope = Pick<Op, 'op_id' | 'actor' | 'base_version' | 'stamp'>
+type DistributiveOmit<T, K extends PropertyKey> = T extends unknown
+  ? Omit<T, K>
+  : never
+
+function envelope(body: OpBody): Op {
+  const stamp: OpEnvelope = {
+    op_id: 'bracket-op'.padEnd(32, '0'),
+    actor: 'agent:test',
+    base_version: 1,
+    stamp: [1, 'agent:test']
+  }
+  return { ...stamp, ...body }
+}
+
+/**
+ * A canvas that only records the undo bracket: `emitBeforeChange` /
+ * `emitAfterChange` are what the change tracker listens for, `setDirty` and
+ * `clear` are the only other canvas calls a frame makes.
+ */
+function recordingCanvas() {
+  const events: Array<'before' | 'after'> = []
+  const canvas = fromPartial<LGraphCanvas>({
+    emitBeforeChange: () => events.push('before'),
+    emitAfterChange: () => events.push('after'),
+    setDirty: () => {},
+    clear: () => {},
+    deselect: () => {},
+    checkPanels: () => {}
+  })
+  return { canvas, events }
+}
+
+describe('LiveGraphApplier change bracket', () => {
+  const seed: WorkflowJSON = {
+    nodes: [
+      sourceNode(1, {
+        outputs: [{ name: 'image', type: 'IMAGE', links: [7] }]
+      }),
+      {
+        ...sinkNode(2),
+        inputs: [{ name: 'image', type: 'IMAGE', link: 7 }]
+      },
+      sourceNode(3)
+    ],
+    links: [[7, 1, 0, 2, 0, 'IMAGE']]
+  }
+
+  it.for<{ name: string; op: Op }>([
+    {
+      name: 'add_node',
+      op: envelope({
+        op: 'add_node',
+        node_id: 9,
+        class_type: 'TestSink',
+        pos: [0, 300],
+        node: sinkNode(9)
+      })
+    },
+    {
+      name: 'delete_node',
+      op: envelope({
+        op: 'delete_node',
+        node_id: 1,
+        removed_links: [7]
+      })
+    },
+    {
+      name: 'connect',
+      op: envelope({
+        op: 'connect',
+        link_id: 8,
+        from_node: 3,
+        from_slot: 0,
+        to_node: 2,
+        to_slot: 0,
+        link_type: 'IMAGE'
+      })
+    },
+    {
+      name: 'disconnect',
+      op: envelope({
+        op: 'disconnect',
+        link_id: 7,
+        to_node: 2,
+        to_slot: 0
+      })
+    },
+    {
+      name: 'set_widget',
+      op: envelope({
+        op: 'set_widget',
+        node_id: 1,
+        widget: 'steps',
+        value: 35
+      })
+    },
+    {
+      name: 'set_node_field',
+      op: envelope({
+        op: 'set_node_field',
+        node_id: 1,
+        field: 'title',
+        value: 'Renamed'
+      })
+    },
+    {
+      name: 'clear',
+      op: envelope({ op: 'clear', removed_nodes: [1, 2, 3] })
+    }
+  ])(
+    'applies a $name frame inside exactly one before/after bracket that changes the graph',
+    ({ op }) => {
+      const { graph, doc, applier, collector } = setup(seed)
+      applier.syncFromDoc(doc, CONTEXT)
+      collector.take()
+      const { canvas, events } = recordingCanvas()
+      graph.list_of_graphcanvas = [canvas]
+      const before = graph.serialize()
+
+      expect(applyOps(doc, [op], CATALOG).outcomes).toEqual([
+        { op_id: op.op_id, outcome: 'applied' }
+      ])
+      applier.applyChanges(doc, collector.take(), CONTEXT)
+
+      expect(events).toEqual(['before', 'after'])
+      expect(graph.serialize()).not.toEqual(before)
+    }
+  )
+
+  it('brackets a document reset and a full sync once each, and never without a graph', () => {
+    const { graph, doc, applier } = setup(seed)
+    const { canvas, events } = recordingCanvas()
+    graph.list_of_graphcanvas = [canvas]
+
+    applier.syncFromDoc(doc, CONTEXT)
+    applier.clear(CONTEXT)
+
+    expect(events).toEqual(['before', 'after', 'before', 'after'])
+    expect(graph._nodes).toEqual([])
+
+    const detached = new LiveGraphApplier({ getGraph: () => null })
+    detached.syncFromDoc(doc, CONTEXT)
+    detached.clear(CONTEXT)
+    expect(events).toHaveLength(4)
   })
 })
