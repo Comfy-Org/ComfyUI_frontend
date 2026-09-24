@@ -6,7 +6,6 @@
     "components.d.ts",
     "coverage/*",
     "dist/*",
-    "packages/ingest-types/src/types.gen.ts",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
     "scripts/registry-census/detection-proof/**",
@@ -138,6 +137,12 @@
     "vue/no-import-compiler-macros": "error"
   },
   "overrides": [
+    {
+      "files": ["packages/ingest-types/src/types.gen.ts"],
+      "rules": {
+        "comfy/no-duplicate-ingest-type": "off"
+      }
+    },
     {
       "files": [
         "**/*.{test,spec}.{ts,tsx}",

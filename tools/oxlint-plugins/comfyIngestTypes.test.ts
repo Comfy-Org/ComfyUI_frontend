@@ -284,7 +284,7 @@ describe('comfy/no-duplicate-ingest-type', () => {
   })
 
   it('never reports the generated declarations it enforces', () => {
-    expect(lint(['packages/ingest-types/src'])).toEqual([])
+    expect(lint(['packages/ingest-types/src/types.gen.ts'])).toEqual([])
   })
 
   it.for(['AgentTurnAccepted', 'AgentCancelAccepted'])(
