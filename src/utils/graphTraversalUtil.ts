@@ -641,6 +641,17 @@ export function executionIdFromState(
   return getExecutionIdByNode(rootGraph, node) ?? fallback
 }
 
+export function getNodeByState(
+  rootGraph: LGraph,
+  state: Pick<NodeState, 'id' | 'graphId'>
+): LGraphNode | null {
+  const graph =
+    state.graphId === rootGraph.id
+      ? rootGraph
+      : findSubgraphByUuid(rootGraph, state.graphId)
+  return graph?.getNodeById(state.id) ?? null
+}
+
 /**
  * Get a node by its locator ID from anywhere in the graph hierarchy.
  * For subgraph nodes, the format is `<subgraph-definition-uuid>:<node-id>` where

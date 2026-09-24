@@ -31,39 +31,61 @@ function assetsQueryInternal(
 
   let nextCursor: string | undefined
   const seenCursors = new Set<string | undefined>()
+  let loadGeneration = 0
   const morePages = ref(true)
   const backingOff = refAutoReset(false, 2000)
   const hasMore = computed(() => morePages.value && !backingOff.value)
   const items = ref<AssetItem[]>([])
 
   const { enqueue, preempt, running: isLoading } = usePreemptableQueue()
+  let loadMorePromise: Promise<boolean> | undefined
+  let invalidationQueue = Promise.resolve()
   async function doLoadMore(signal?: AbortSignal) {
     if (!hasMore.value) return
-    if (seenCursors.has(nextCursor)) {
-      morePages.value = false
-      return
-    }
+    const requestedCursor = nextCursor ?? params.after
+    if (seenCursors.has(requestedCursor)) return
 
     const assetResponse = await doQuery(
       {
-        after: nextCursor ?? params.after
+        after: requestedCursor
       },
       signal
     )
     if (!assetResponse) return
-    seenCursors.add(nextCursor)
+
+    const knownIds = new Set(items.value.map(({ id }) => id))
+    const newItems = assetResponse.assets.filter(({ id }) => {
+      if (knownIds.has(id)) return false
+      knownIds.add(id)
+      return true
+    })
+    seenCursors.add(requestedCursor)
     nextCursor = assetResponse.next_cursor
-    morePages.value = assetResponse.has_more
-    items.value.push(...assetResponse.assets)
+    morePages.value =
+      assetResponse.has_more &&
+      nextCursor !== undefined &&
+      !seenCursors.has(nextCursor)
+    items.value.push(...newItems)
+    loadGeneration++
   }
 
   function loadMore() {
-    return enqueue('loadMore', doLoadMore)
+    if (!loadMorePromise) {
+      const startingGeneration = loadGeneration
+      const operation = enqueue('loadMore', doLoadMore).then(
+        () => loadGeneration > startingGeneration
+      )
+      loadMorePromise = operation.finally(() => {
+        loadMorePromise = undefined
+      })
+    }
+    return loadMorePromise
   }
 
   function loadNew() {
     return enqueue('loadNew', async function (signal: AbortSignal) {
       const knownIds = new Set(items.value.map((item) => item.id))
+      const seenIds = new Set(knownIds)
       const newItems: AssetItem[] = []
       let headCursor: string | undefined
       const seenHeadCursors = new Set<string | undefined>()
@@ -75,17 +97,24 @@ function assetsQueryInternal(
         if (!assetResponse) return
 
         const { assets, has_more, next_cursor } = assetResponse
+        const reachedKnownId = assets.some((asset) => {
+          if (knownIds.has(asset.id)) return true
+          if (!seenIds.has(asset.id)) {
+            seenIds.add(asset.id)
+            newItems.push(asset)
+          }
+          return false
+        })
+        if (reachedKnownId || !has_more || next_cursor === undefined) break
         headCursor = next_cursor
-        const newFromPage = assets.filter(({ id }) => !knownIds.has(id))
-        newItems.push(...newFromPage)
-        if (newFromPage.length !== assets.length || !has_more) break
       }
       items.value.splice(0, 0, ...newItems)
     })
   }
 
-  async function invalidate(stale?: string[]) {
+  async function applyInvalidation(stale?: string[]) {
     if (stale) {
+      await preempt(() => Promise.resolve())
       const ids = new Set(stale)
       items.value = items.value.filter((item) => !ids.has(item.id))
       return
@@ -98,6 +127,12 @@ function assetsQueryInternal(
       await until(backingOff).toBe(false)
       await doLoadMore()
     })
+  }
+
+  function invalidate(stale?: string[]) {
+    const operation = invalidationQueue.then(() => applyInvalidation(stale))
+    invalidationQueue = operation
+    return operation
   }
 
   async function doQuery(
@@ -124,18 +159,29 @@ function assetsQueryInternal(
     const jsonresp = await resp
       .json()
       .catch((e) => onError('failed to decode asset json response', e))
-    if (!jsonresp) return
+    if (!jsonresp) {
+      morePages.value = false
+      return
+    }
 
     const parseResult = assetResponseSchema.safeParse(jsonresp)
     if (!parseResult.success) {
       onError('Failed to parse asset response', fromZodError(parseResult.error))
+      morePages.value = false
       return
     }
     return parseResult.data
   }
 
   void loadMore()
-  return { hasMore, invalidate, isLoading, items, loadMore, loadNew }
+  return {
+    hasMore,
+    invalidate,
+    isLoading,
+    items,
+    loadMore,
+    loadNew
+  }
 }
 
 const sharedState: SharedPagedListState<ListAssetsData['query'], AssetItem> = {

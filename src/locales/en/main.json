@@ -4044,7 +4044,6 @@
       "signInCaption": "Partner nodes require an account",
       "signInToRun": "Sign in to run"
     },
-    "share": "Share",
     "shareTooltip": "Share workflow"
   },
   "shareNoOutputs": {
