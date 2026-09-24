@@ -27,14 +27,20 @@ interface AgentEventSourceOptions {
   getToken?: () => Promise<string | undefined>
   createSocket?: (url: string) => WebSocket
   endpoint?: string
+  /** First reconnect delay; it doubles per failed connect, up to the max. */
   reconnectDelayMs?: number
+  maxReconnectDelayMs?: number
+  /** Jitter source in [0, 1); the delay is scaled into [50%, 100%]. */
+  random?: () => number
 }
 
 export function createAgentEventSource({
   getToken = async () => undefined,
   createSocket = (url) => new WebSocket(url),
   endpoint = '/api/agent/events',
-  reconnectDelayMs = 1000
+  reconnectDelayMs = 1000,
+  maxReconnectDelayMs = 30_000,
+  random = Math.random
 }: AgentEventSourceOptions = {}): AgentEventSocket {
   const listeners = new Set<(raw: unknown) => void>()
   const statusListeners = new Set<(live: boolean) => void>()
@@ -44,6 +50,10 @@ export function createAgentEventSource({
   // last listener leaves opens nothing, and starts over if one has returned.
   let connectGeneration = 0
   let connecting = false
+  // Connects since the last one that opened. A refused upgrade (expired
+  // token, backend down) backs off exponentially with jitter, so an outage
+  // does not have every open panel retrying in lockstep once a second.
+  let failedConnects = 0
 
   function eventUrl(token: string | undefined): string {
     const url = new URL(endpoint, window.location.href)
@@ -58,10 +68,18 @@ export function createAgentEventSource({
 
   function scheduleReconnect(): void {
     if (listeners.size === 0 || reconnectTimer !== null) return
-    reconnectTimer = window.setTimeout(() => {
-      reconnectTimer = null
-      void connect()
-    }, reconnectDelayMs)
+    const ceiling = Math.min(
+      maxReconnectDelayMs,
+      reconnectDelayMs * 2 ** failedConnects
+    )
+    failedConnects += 1
+    reconnectTimer = window.setTimeout(
+      () => {
+        reconnectTimer = null
+        void connect()
+      },
+      ceiling * (0.5 + 0.5 * random())
+    )
   }
 
   async function connect(): Promise<void> {
@@ -90,7 +108,9 @@ export function createAgentEventSource({
     const current = createSocket(url)
     socket = current
     current.addEventListener('open', () => {
-      if (socket === current) notifyStatus(true)
+      if (socket !== current) return
+      failedConnects = 0
+      notifyStatus(true)
     })
     current.addEventListener('message', (event) => {
       if (socket !== current) return

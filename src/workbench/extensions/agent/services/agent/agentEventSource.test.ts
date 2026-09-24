@@ -51,6 +51,8 @@ function sourceHarness(
   const source = createAgentEventSource({
     endpoint,
     getToken,
+    // No jitter: every reconnect waits its full delay.
+    random: () => 1,
     createSocket(url) {
       const socket = new FakeSocket(url)
       sockets.push(socket)
@@ -224,6 +226,56 @@ describe('createAgentEventSource', () => {
 
     expect(status.mock.calls).toEqual([[true], [false]])
     expect(sockets[0].readyState).toBe(WebSocket.CLOSED)
+  })
+})
+
+describe('createAgentEventSource reconnect backoff', () => {
+  it('doubles the delay per refused connect and resets once a socket opens', async () => {
+    vi.useFakeTimers()
+    const { source, sockets } = sourceHarness()
+
+    source.subscribe(vi.fn())
+    await connected()
+    sockets[0].error()
+    await vi.advanceTimersByTimeAsync(1000)
+    await connected()
+    sockets[1].error()
+    await vi.advanceTimersByTimeAsync(1999)
+    expect(sockets).toHaveLength(2)
+    await vi.advanceTimersByTimeAsync(1)
+    await connected()
+    expect(sockets).toHaveLength(3)
+
+    sockets[2].open()
+    sockets[2].close()
+    await vi.advanceTimersByTimeAsync(1000)
+    await connected()
+    expect(sockets).toHaveLength(4)
+  })
+
+  it('caps the delay and spreads it with jitter', async () => {
+    vi.useFakeTimers()
+    const sockets: FakeSocket[] = []
+    const source = createAgentEventSource({
+      reconnectDelayMs: 1000,
+      maxReconnectDelayMs: 4000,
+      random: () => 0,
+      createSocket(url) {
+        const socket = new FakeSocket(url)
+        sockets.push(socket)
+        return socket as unknown as WebSocket
+      }
+    })
+
+    source.subscribe(vi.fn())
+    await connected()
+    for (const wait of [500, 1000, 2000, 2000]) {
+      sockets.at(-1)!.error()
+      await vi.advanceTimersByTimeAsync(wait)
+      await connected()
+    }
+
+    expect(sockets).toHaveLength(5)
   })
 })
 
