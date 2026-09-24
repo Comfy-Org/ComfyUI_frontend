@@ -809,6 +809,35 @@ describe('AgentPanel extension flag gate', () => {
     expect(agentStore.open).not.toHaveBeenCalled()
   })
 
+  it('remembers a seen card per workspace across a switch away and back', async () => {
+    mocks.flagEnabled = true
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+    let decide = (_: boolean) => {}
+    startupDecision = new Promise<boolean>((resolve) => {
+      decide = resolve
+    })
+
+    await loadEntryAndSetup()
+    openDialog(CONSENT_DIALOG_KEY)
+    await flush()
+    closeDialog(CONSENT_DIALOG_KEY)
+    decide(true)
+    await flush()
+
+    Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-b' })
+    Object.assign(consentStore, { identity: 'account-a/workspace-b/1' })
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+
+    Object.assign(workspaceStore, { activeWorkspaceId: 'workspace-a' })
+    Object.assign(consentStore, { identity: 'account-a/workspace-a/2' })
+    await flush()
+    await flush()
+
+    expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+  })
+
   it('does not re-read consent on every dialog close while the read keeps failing', async () => {
     mocks.flagEnabled = true
     Object.assign(consentStore, { accepted: false, isChecking: false })

@@ -218,11 +218,17 @@ export function registerAgentPanelExtension(): void {
         if (reason !== 'first_run_screen') offerHeld.value = true
       }
 
-      let consentCardSeenBy: string | null = null
+      const consentScope = (): string | null => {
+        const userId = resolvedUserInfo.value?.id
+        const workspaceId = workspaceStore.activeWorkspaceId
+        return userId && workspaceId ? `${userId}.${workspaceId}` : null
+      }
+      const consentCardSeenIn = new Set<string>()
       whenever(
         () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
         () => {
-          consentCardSeenBy = consentStore.identity
+          const scope = consentScope()
+          if (scope) consentCardSeenIn.add(scope)
         }
       )
 
@@ -236,11 +242,8 @@ export function registerAgentPanelExtension(): void {
       const offerConsentUnprompted = (): void => {
         if (autoShowInFlight) return
         if (!offerEligible()) return
-        if (
-          consentCardSeenBy !== null &&
-          consentCardSeenBy === consentStore.identity
-        )
-          return
+        const scope = consentScope()
+        if (scope && consentCardSeenIn.has(scope)) return
         // Must precede prepareAutoShow, which burns the one-shot key.
         const held = screenHolder()
         if (held) {
