@@ -2,7 +2,7 @@
   <svg viewBox="0 0 760 420" class="autoscale-art size-full">
     <g transform="translate(380 210) scale(0.68) translate(-380 -210)">
       <path
-        class="ring-echo ring-echo--outer"
+        class="echo-ring echo-ring--outer"
         d="M427.6,-62.5 Q380.0,-90.0 332.4,-62.5 L167.8,32.5 Q120.2,60.0 120.2,115.0 L120.2,305.0 Q120.2,360.0 167.8,387.5 L332.4,482.5 Q380.0,510.0 427.6,482.5 L592.2,387.5 Q639.8,360.0 639.8,305.0 L639.8,115.0 Q639.8,60.0 592.2,32.5 Z"
         fill="none"
         stroke="#5d4fa3"
@@ -10,7 +10,7 @@
         opacity="0.75"
       />
       <path
-        class="ring-echo ring-echo--middle"
+        class="echo-ring echo-ring--middle"
         d="M416.4,16.0 Q380.0,-5.0 343.6,16.0 L230.2,81.5 Q193.8,102.5 193.8,144.5 L193.8,275.5 Q193.8,317.5 230.2,338.5 L343.6,404.0 Q380.0,425.0 416.4,404.0 L529.8,338.5 Q566.2,317.5 566.2,275.5 L566.2,144.5 Q566.2,102.5 529.8,81.5 Z"
         fill="none"
         stroke="#5d4fa3"
@@ -19,7 +19,7 @@
       />
 
       <path
-        class="ring-echo ring-echo--inner"
+        class="echo-ring echo-ring--inner"
         d="M406.0,85.0 Q380.0,70.0 354.0,85.0 L284.7,125.0 Q258.8,140.0 258.8,170.0 L258.8,250.0 Q258.8,280.0 284.7,295.0 L354.0,335.0 Q380.0,350.0 406.0,335.0 L475.3,295.0 Q501.2,280.0 501.2,250.0 L501.2,170.0 Q501.2,140.0 475.3,125.0 Z"
         fill="none"
         stroke="var(--color-primary-comfy-yellow)"
@@ -36,17 +36,17 @@
 </template>
 
 <style scoped>
-.ring-echo {
+.echo-ring {
   transform-box: fill-box;
   transform-origin: center;
   animation: autoscale-ringecho 3s cubic-bezier(0.4, 0, 0.2, 1) infinite both;
 }
 
-.ring-echo--middle {
+.echo-ring--middle {
   animation-delay: 1s;
 }
 
-.ring-echo--outer {
+.echo-ring--outer {
   animation-delay: 2s;
 }
 
@@ -85,7 +85,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ring-echo,
+  .echo-ring,
   .core {
     animation: none;
     opacity: 1;

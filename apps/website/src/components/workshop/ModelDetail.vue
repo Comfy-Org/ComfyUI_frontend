@@ -17,6 +17,7 @@ import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
 import { useWorkshopFormDraft } from '../../composables/useWorkshopFormDraft'
 import { useWorkshopDelivery } from '../../composables/useWorkshopDelivery'
 import { sameFormValues } from '../../lib/workshop/form-values'
+import { validateWorkshopMediaInputs } from '../../config/workshop-media-validation'
 import { leaveForSignIn } from '../../config/workshop-return'
 import { useSignInHref } from '../../composables/useSignInHref'
 import { useTablist } from '../../composables/useTablist'
@@ -582,7 +583,7 @@ function failRun(error: unknown, attempt: ActiveRun): void {
       ...attempt.analytics,
       status: 'failed',
       duration_ms: Date.now() - attempt.startedAt,
-      ...workshopFailureAnalytics(failure),
+      ...workshopFailureAnalytics(failure, schema.value),
       ...(credentialFailures.has(attempt)
         ? { failure_stage: 'credential' }
         : {})
@@ -599,7 +600,10 @@ async function run() {
       name: 'run_validation_failed',
       properties: {
         ...modelAnalytics,
-        field_error_codes: workshopFieldErrorCodes(fieldErrors)
+        field_error_codes: workshopFieldErrorCodes(fieldErrors),
+        field_error_names: schema.value
+          .filter((field) => Object.hasOwn(fieldErrors, field.name))
+          .map((field) => field.name)
       }
     })
     runState.value = transition(runState.value, {
@@ -627,6 +631,12 @@ async function run() {
   requestId.value = null
   runState.value = transition(runState.value, { type: 'start', at: startedAt })
   try {
+    await validateWorkshopMediaInputs(
+      schema.value,
+      values.value,
+      attempt.controller.signal
+    )
+    if (!runIsActive(attempt)) return
     finishRun(await renderRun(startedFor, attempt), attempt)
   } catch (error) {
     failRun(error, attempt)
@@ -1016,7 +1026,13 @@ function useInCode() {
       role="tabpanel"
       aria-labelledby="tab-api"
     >
-      <ApiTab :contract="model.execution" :values :locale />
+      <ApiTab
+        :contract="model.execution"
+        :values
+        :workspace-id="session?.workspace.id"
+        :locale
+        :model-slug="model.slug"
+      />
     </section>
 
     <RunLeaveDialog

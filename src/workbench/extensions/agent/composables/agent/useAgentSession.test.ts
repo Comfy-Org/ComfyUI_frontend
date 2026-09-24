@@ -640,7 +640,7 @@ describe('useAgentSession (v1 composition root)', () => {
       workflow: {
         current: () => undefined,
         adopted: () => {},
-        draft: () => ({ content: { nodes: [] }, version: 1 })
+        draft: () => ({ content: { nodes: [] } })
       }
     })
     session.start()
@@ -1692,7 +1692,7 @@ describe('useAgentSession (v1 composition root)', () => {
     })
     session.start()
     session.bindWorkflow('wf-dead')
-    abandon = () => void session.newChat()
+    abandon = () => session.newChat()
 
     expect(await session.sendMessage('run it')).toBe(false)
 
