@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted, ref, watch } from 'vue'
+import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
 import CopyTextButton from '@/components/ui/copy-text-button/CopyTextButton.vue'
@@ -8,7 +8,6 @@ import { apiKeysLink } from '../../config/routes'
 import type { FormValues } from '../../config/workshop-playground'
 import { urlUploadField } from '../../config/workshop-playground'
 import { initialWorkshopPageState } from '../../config/workshop-page-state'
-import { workshopIdempotencyKey } from '../../config/workshop-snippets'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workspaceLinkedHref } from '../../config/workshop-workspace-link'
 import {
@@ -29,7 +28,6 @@ const keyHref = computed(() =>
     session.value?.workspace.id
   )
 )
-const idempotencyKey = ref('REPLACE-WITH-A-UUID')
 const request = computed(() => {
   if (model.type !== 'CLOUD') return undefined
   try {
@@ -38,16 +36,7 @@ const request = computed(() => {
     return undefined
   }
 })
-const requestJson = computed(() => JSON.stringify(request.value))
-onMounted(() => {
-  idempotencyKey.value = workshopIdempotencyKey()
-})
-watch(requestJson, () => {
-  idempotencyKey.value = workshopIdempotencyKey()
-})
-const code = computed(() =>
-  request.value ? workflowCurl(request.value, idempotencyKey.value) : ''
-)
+const code = computed(() => (request.value ? workflowCurl(request.value) : ''))
 const hasMedia = initialWorkshopPageState(model).schema.some((field) =>
   urlUploadField(field)
 )

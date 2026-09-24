@@ -1,5 +1,7 @@
 import { z } from 'astro/zod'
 
+import { workflowSchema } from './workshop-workflow-catalog-schema'
+
 import type { WorkshopFormDefinition } from './workshop-form-definition'
 import { fieldsForDefinition } from './workshop-form-definition'
 import {
@@ -33,6 +35,8 @@ export const workshopWorkflowDefinitionSchema = z.object({
     })
     .catchall(z.json()),
   inputs: z.record(z.string(), workshopInputDefinitionSchema),
+  cloud: workflowSchema.shape.cloud.optional(),
+  outputs: workflowSchema.shape.outputs.optional(),
   template: workshopTemplateSchema.optional()
 })
 

@@ -9,7 +9,6 @@ import {
   urlUploadField
 } from '../../config/workshop-playground'
 import { WorkshopWorkflowError } from '../../config/workshop-workflow-api'
-import type { WorkflowRunSummary } from '../../config/workshop-workflow-response'
 import {
   workflowErrorKey,
   workflowStatusKey
@@ -25,7 +24,6 @@ import {
 import PlaygroundForm from './PlaygroundForm.vue'
 import WorkflowResults from './WorkflowResults.vue'
 import WorkflowRunControls from './WorkflowRunControls.vue'
-import WorkflowHistory from './WorkflowHistory.vue'
 import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
 
@@ -58,7 +56,7 @@ const workflow = useWorkflowRun(model, scope, (inputs) => {
     )
   }
 })
-const { state, observation, history, signedIn, identitySettled } = workflow
+const { state, observation, signedIn, identitySettled } = workflow
 watch(
   () => 'record' in state.value,
   (active) => emit('recovery', active)
@@ -92,15 +90,13 @@ const canStart = computed(
     !draft.pending.value
 )
 const cancelRequested = computed(
-  () =>
-    ('record' in state.value && state.value.record.cancelRequested) ||
-    Boolean(observation.value?.run.cancelRequestedAt)
+  () => 'record' in state.value && state.value.record.cancelRequested
 )
 const error = computed(() =>
   'error' in state.value
     ? state.value.error
-    : observation.value?.run.error
-      ? new WorkshopWorkflowError(observation.value.run.error.code)
+    : observation.value?.run.state === 'failed'
+      ? new WorkshopWorkflowError('execution_failed')
       : undefined
 )
 const fieldErrors = computed(() => error.value?.fieldErrors ?? {})
@@ -111,18 +107,13 @@ const statusLabel = computed(() => {
   if (state.value.phase === 'interrupted')
     return t('workshop.workflow.interrupted')
   return observation.value
-    ? t(workflowStatusKey(observation.value.run, observation.value.runtime))
+    ? t(workflowStatusKey(observation.value.run))
     : t('workshop.workflow.submitting')
 })
 
 function start() {
   if (!canStart.value) return
   void workflow.start(values.value)
-}
-
-function openRun(run: WorkflowRunSummary) {
-  if (busy.value) return
-  void workflow.open(run)
 }
 </script>
 
@@ -207,6 +198,7 @@ function openRun(run: WorkflowRunSummary) {
             :status-label="statusLabel"
             @resume="workflow.resume()"
             @cancel="workflow.cancel()"
+            @dismiss="workflow.dismiss()"
           />
           <a
             v-if="cloudHref"
@@ -232,15 +224,6 @@ function openRun(run: WorkflowRunSummary) {
         :refresh-output="workflow.refreshOutput"
         @retry="start"
         @retry-delivery="workflow.retryDelivery()"
-      />
-      <WorkflowHistory
-        v-if="signedIn"
-        :history="history"
-        :busy="busy"
-        :selected-run-id="selectedRunId"
-        @open="openRun"
-        @refresh="workflow.loadHistory()"
-        @more="workflow.loadHistory(true)"
       />
     </div>
   </div>

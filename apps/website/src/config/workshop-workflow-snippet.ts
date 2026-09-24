@@ -1,9 +1,11 @@
 import type { WorkflowWorkshopModelDetail } from './models-catalogue'
-import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
+import type { PromptRequest } from '@comfyorg/ingest-types'
+import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 import { initialWorkshopPageState } from './workshop-page-state'
 import type { FormValues } from './workshop-playground'
 import { urlUploadField } from './workshop-playground'
 import { workflowRequest } from './workflow-render'
+import { workflowCloudRequest } from './workshop-workflow-api'
 
 export function workflowSnippetRequest(
   model: WorkflowWorkshopModelDetail,
@@ -16,22 +18,17 @@ export function workflowSnippetRequest(
       urlUploadField(field) &&
       (field.required || inputs[field.name] !== undefined)
     )
-      inputs[field.name] =
-        `https://upload.invalid/${encodeURIComponent(field.name)}`
+      inputs[field.name] = `UPLOADED_${field.name}_FILENAME`
   }
-  return workflowRequest(model, inputs)
+  return workflowCloudRequest(model.workflow, workflowRequest(model, inputs))
 }
 
-export function workflowCurl(
-  request: ReturnType<typeof workflowRequest>,
-  idempotencyKey: string
-): string {
+export function workflowCurl(request: PromptRequest): string {
   const quote = (value: string) => `'${value.replaceAll("'", "'\\''")}'`
   return [
-    `curl --fail-with-body --max-time 60 --request POST ${quote(`${WORKSHOP_ROUTER_BASE_URL}/v1/workshop/workflow-runs`)} \\`,
-    `  --header 'Authorization: Bearer YOUR_API_KEY' \\`,
+    `curl --fail-with-body --max-time 60 --request POST ${quote(`${WORKSHOP_CLOUD_BASE_URL}/api/prompt`)} \\`,
+    `  --header 'X-API-Key: YOUR_API_KEY' \\`,
     `  --header 'Content-Type: application/json' \\`,
-    `  --header ${quote(`Idempotency-Key: ${idempotencyKey}`)} \\`,
     `  --data ${quote(JSON.stringify(request, null, 2))}`
   ].join('\n')
 }

@@ -9,7 +9,6 @@ import { prepareWorkflowRender, renderWorkflow } from './workflow-render'
 import type { WorkflowAttempt } from './workflow-render'
 
 const id = 'bafc696e-e5d4-42f1-9a3d-d01f82a0629b'
-const path = `/v1/workshop/workflow-runs/${id}`
 const workflow = {
   id: 'workflows/test',
   definitionVersion: '1',
@@ -34,6 +33,28 @@ const workflow = {
       hidden: false,
       advanced: false,
       control: 'toggle'
+    }
+  },
+  cloud: {
+    workflow: {
+      '1': {
+        class_type: 'Example',
+        inputs: { text: '', seed: 0, enabled: false }
+      }
+    },
+    inputBindings: {
+      prompt: {
+        encoding: 'scalar',
+        targets: [{ nodeId: '1', inputName: 'text' }]
+      },
+      seed: {
+        encoding: 'scalar',
+        targets: [{ nodeId: '1', inputName: 'seed' }]
+      },
+      enabled: {
+        encoding: 'scalar',
+        targets: [{ nodeId: '1', inputName: 'enabled' }]
+      }
     }
   },
   inputSchema: {
@@ -68,22 +89,13 @@ const model: WorkflowWorkshopModelDetail = {
   defaults: {}
 }
 
-function observation(state: WorkflowRun['run']['state']): WorkflowRun {
-  const now = new Date().toISOString()
+function observation(status: 'pending' | 'completed') {
   return {
-    run: {
-      id,
-      workflowId: workflow.id,
-      definitionVersion: '1',
-      state,
-      outputState: state === 'succeeded' ? 'failed' : 'pending',
-      statusUrl: path,
-      createdAt: now,
-      updatedAt: now
-    },
-    outputs: [],
-    runtime: { state: 'unknown' },
-    retryOutputDeliveryUrl: `${path}/outputs/retry`
+    id,
+    status,
+    create_time: Date.now(),
+    update_time: Date.now(),
+    outputs: {}
   }
 }
 
@@ -155,72 +167,67 @@ describe('shared workflow rendering', () => {
     }
   )
 
-  it('persists the exact intent before POST and replays it after a lost admission response', async () => {
+  it('records prepared inputs before submission and never retries an unknown POST outcome', async () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
-      .mockRejectedValueOnce(new TypeError('connection lost'))
-      .mockResolvedValueOnce(
-        Response.json(observation('submitting').run, { status: 202 })
-      )
-      .mockResolvedValueOnce(Response.json(observation('succeeded')))
-    const api = createWorkflowApi({ fetch, token: 'caller' })
-    let saved: WorkflowAttempt | undefined
-    const options = {
-      model,
-      api,
+      .mockRejectedValue(new TypeError('connection lost'))
+    const api = createWorkflowApi({
+      fetch,
       token: 'caller',
-      onPrepared: (attempt: WorkflowAttempt) => {
-        expect(fetch).not.toHaveBeenCalled()
-        saved = structuredClone(attempt)
-      }
-    }
-    await expect(renderWorkflow('test', {}, options)).rejects.toMatchObject({
-      code: 'network'
+      definition: workflow
     })
+    let saved: WorkflowAttempt | undefined
+    await expect(
+      renderWorkflow(
+        'test',
+        {},
+        {
+          model,
+          api,
+          token: 'caller',
+          onPrepared: (attempt) => {
+            expect(fetch).not.toHaveBeenCalled()
+            saved = structuredClone(attempt)
+          }
+        }
+      )
+    ).rejects.toMatchObject({ code: 'network' })
     expect(saved?.request.appInputs).toEqual({
       prompt: '',
       seed: 0,
       enabled: false
     })
-    const result = await renderWorkflow(
-      'test',
-      { prompt: 'later edit' },
-      { model, token: 'renewed', api, attempt: saved }
-    )
-    expect(result.run.run.state).toBe('succeeded')
-    expect(fetch.mock.calls[1][1]?.body).toBe(fetch.mock.calls[0][1]?.body)
-    expect(
-      new Headers(fetch.mock.calls[1][1]?.headers).get('Idempotency-Key')
-    ).toBe(saved?.idempotencyKey)
-    expect(
-      fetch.mock.calls.filter(([, init]) => init?.method === 'POST')
-    ).toHaveLength(2)
+    expect(fetch).toHaveBeenCalledOnce()
+    expect(fetch.mock.calls[0][1]?.method).toBe('POST')
+    expect(JSON.parse(String(fetch.mock.calls[0][1]?.body))).toEqual({
+      prompt: {
+        '1': {
+          class_type: 'Example',
+          inputs: { text: '', seed: 0, enabled: false }
+        }
+      }
+    })
   })
 
-  it('resumes an admitted version after the page catalog changes, without another POST', async () => {
+  it('resumes a known Cloud job without another submission', async () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
-      .mockResolvedValue(Response.json(observation('succeeded')))
-    const changed = {
-      ...model,
-      workflow: { ...workflow, definitionVersion: '2' }
-    }
+      .mockResolvedValue(Response.json(observation('completed')))
     const result = await renderWorkflow(
       'test',
       {},
-      { model: changed, token: 'caller', fetch, runId: id }
+      { model, token: 'caller', fetch, runId: id }
     )
-    expect(result.run.run.definitionVersion).toBe('1')
+    expect(result.run.run.id).toBe(id)
+    expect(result.run.run.state).toBe('succeeded')
     expect(fetch).toHaveBeenCalledOnce()
     expect(fetch.mock.calls[0][1]?.method).toBe('GET')
   })
 
-  it('waits for confirmed cancellation and detaches a disconnected observer without cancelling the job', async () => {
-    const queued = observation('queued')
-    queued.run.cancelRequestedAt = new Date().toISOString()
+  it('detaches a disconnected observer without cancelling the Cloud job', async () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()
-      .mockResolvedValue(Response.json(queued))
+      .mockResolvedValue(Response.json(observation('pending')))
     const controller = new AbortController()
     const observed = Promise.withResolvers<WorkflowRun>()
     const pending = renderWorkflow(

@@ -9,7 +9,7 @@ const runId = 'bafc696e-e5d4-42f1-9a3d-d01f82a0629b'
 
 function record(): SavedWorkflow {
   return {
-    version: 1,
+    version: 2,
     stage: 'run',
     runId,
     workflowId,
@@ -23,7 +23,7 @@ describe('workflow recovery storage', () => {
     { name: 'a partial JSON write', raw: '{"version":1' },
     {
       name: 'an unsupported record version',
-      raw: JSON.stringify({ ...record(), version: 2 })
+      raw: JSON.stringify({ ...record(), version: 3 })
     },
     {
       name: 'an invalid run identifier',

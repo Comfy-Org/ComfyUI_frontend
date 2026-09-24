@@ -19,7 +19,7 @@ const bindingSchema = z.discriminatedUnion('encoding', [
     })
     .strict()
 ])
-const workflowSchema = z
+export const workflowSchema = z
   .object({
     id: z.string().regex(/^workflows\/[a-z0-9]+(?:-[a-z0-9]+)*$/),
     type: z.literal('CLOUD'),

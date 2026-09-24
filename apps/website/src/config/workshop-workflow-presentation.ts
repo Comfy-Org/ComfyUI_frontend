@@ -1,27 +1,16 @@
 import type { TranslationKey } from '../i18n/translations'
 import type { WorkshopWorkflowError } from './workshop-workflow-api'
-import type {
-  WorkflowRun,
-  WorkflowRunSummary
-} from './workshop-workflow-response'
+import type { WorkflowRunSummary } from './workshop-workflow-response'
 
-export function workflowStatusKey(
-  run: WorkflowRunSummary,
-  runtime?: WorkflowRun['runtime']
-): TranslationKey {
-  if (run.state === 'cancelled') return 'workshop.output.cancelled'
+export function workflowStatusKey(run: WorkflowRunSummary): TranslationKey {
+  if (run.state === 'cancelled') return 'workshop.workflow.cancelRequested'
   if (run.state === 'failed') return 'workshop.workflow.failed'
   if (run.state === 'succeeded')
     return run.outputState === 'pending'
       ? 'workshop.workflow.delivering'
       : 'workshop.output.complete'
-  if (run.cancelRequestedAt) return 'workshop.workflow.cancelling'
   if (run.state === 'running') return 'workshop.run.running'
-  if (runtime?.state === 'starting') return 'workshop.workflow.starting'
-  if (run.state === 'queued') return 'workshop.workflow.queued'
-  return run.state === 'submission_unknown'
-    ? 'workshop.workflow.confirming'
-    : 'workshop.workflow.submitting'
+  return 'workshop.workflow.queued'
 }
 
 export function workflowErrorKey(error: WorkshopWorkflowError): TranslationKey {
@@ -51,7 +40,6 @@ export function workflowErrorKey(error: WorkshopWorkflowError): TranslationKey {
       return 'workshop.error.rateLimit'
     case 'admission_disabled':
       return 'workshop.workflow.paused'
-    case 'upload_pending':
     case 'media_unavailable':
       return 'workshop.workflow.mediaUnavailable'
     case 'execution_failed':
@@ -60,6 +48,8 @@ export function workflowErrorKey(error: WorkshopWorkflowError): TranslationKey {
       return 'workshop.workflow.deliveryFailed'
     case 'persistence':
       return 'workshop.workflow.storageFailed'
+    case 'submission_unknown':
+      return 'workshop.workflow.submissionUnknown'
     default:
       return 'workshop.workflow.connectionLost'
   }

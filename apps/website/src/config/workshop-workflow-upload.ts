@@ -1,181 +1,143 @@
-import type { operations } from '@comfyorg/registry-types'
-import type { z } from 'astro/zod'
+import {
+  zInputUploadResponse,
+  zUploadGrantResponse
+} from '@comfyorg/ingest-types/zod'
 
+import { combineAbortSignals, createTimeoutSignal } from '../utils/abortSignal'
+import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
+import { outputExtension } from './workshop-output-media'
 import type { WorkflowApi } from './workshop-workflow-api'
-import { WorkshopWorkflowError } from './workshop-workflow-api'
+import {
+  WorkshopWorkflowError,
+  workflowResponseJson
+} from './workshop-workflow-api'
 import {
   WORKFLOW_FILE_BYTES,
-  workflowAccessSchema,
-  workflowUploadSchema
+  workflowHttpsUrl
 } from './workshop-workflow-response'
 
-type WorkflowUploadGrant = z.infer<typeof workflowUploadSchema>
+export type WorkflowMediaUploader = (
+  source: File | string,
+  signal: AbortSignal
+) => Promise<string>
 
-function validateWorkflowFile(file: File): void {
-  if (
-    file.size < 1 ||
-    file.size > WORKFLOW_FILE_BYTES ||
-    !/^(image|video|audio)\//.test(file.type)
-  )
+async function downloadInput(
+  source: string,
+  signal: AbortSignal,
+  transport: typeof fetch
+): Promise<File> {
+  if (!workflowHttpsUrl.safeParse(source).success)
     throw new WorkshopWorkflowError('invalid_input')
-}
-
-function workflowUploadHeaders(
-  file: File,
-  grant: WorkflowUploadGrant
-): Headers {
-  const upload = grant.workflow_upload
-  const accessPath = `/customers/storage/${upload.id}/access`
-  const headers = new Headers(upload.uploadHeaders)
+  const response = await transport(source, {
+    signal,
+    credentials: 'omit',
+    redirect: 'error',
+    cache: 'no-store',
+    referrerPolicy: 'no-referrer'
+  })
+  const type =
+    response.headers.get('Content-Type')?.split(';')[0].trim().toLowerCase() ??
+    ''
   if (
-    upload.accessUrl !== accessPath ||
-    Date.parse(upload.uploadExpiresAt) <= Date.now() ||
-    Date.parse(upload.assetExpiresAt) <= Date.now() ||
-    headers.get('content-type') !== file.type ||
-    headers.get('x-goog-if-generation-match') !== '0' ||
-    headers.get('x-goog-content-length-range') !==
-      `${file.size},${file.size}` ||
-    [...headers.keys()].some(
-      (key) =>
-        ![
-          'content-type',
-          'cache-control',
-          'x-goog-if-generation-match',
-          'x-goog-content-length-range'
-        ].includes(key.toLowerCase())
-    )
-  )
-    throw new WorkshopWorkflowError('response')
-  return headers
+    !response.ok ||
+    !/^(image|audio|video)\//.test(type) ||
+    Number(response.headers.get('Content-Length')) > WORKFLOW_FILE_BYTES
+  ) {
+    await response.body?.cancel()
+    throw new WorkshopWorkflowError('media_unavailable')
+  }
+  const reader = response.body?.getReader()
+  if (!reader) throw new WorkshopWorkflowError('media_unavailable')
+  const chunks: Uint8Array<ArrayBuffer>[] = []
+  let size = 0
+  try {
+    for (;;) {
+      signal.throwIfAborted()
+      const { done, value } = await reader.read()
+      if (done) break
+      size += value.byteLength
+      if (size > WORKFLOW_FILE_BYTES)
+        throw new WorkshopWorkflowError('payload_too_large')
+      chunks.push(new Uint8Array(value))
+    }
+  } catch (error) {
+    await reader.cancel().catch(() => {})
+    throw error
+  } finally {
+    reader.releaseLock()
+  }
+  return new File(chunks, 'workflow-input.' + outputExtension(type), { type })
 }
 
 export function createWorkflowUploader(
   api: WorkflowApi,
   transport = globalThis.fetch
-) {
-  const completed = new WeakMap<File, { url: string; expiresAt: number }>()
-  const granted = new WeakMap<File, WorkflowUploadGrant>()
-
-  async function finalize(
-    file: File,
-    grant: WorkflowUploadGrant,
-    signal: AbortSignal
-  ) {
-    const upload = grant.workflow_upload
-    const finalized = await api.request(
-      upload.accessUrl,
-      workflowAccessSchema,
-      signal
-    )
-    if (
-      finalized.refreshUrl !== upload.accessUrl ||
-      finalized.sizeBytes !== file.size ||
-      finalized.mimeType !== file.type ||
-      Date.parse(finalized.expiresAt) <= Date.now()
-    )
-      throw new WorkshopWorkflowError('response')
+): WorkflowMediaUploader {
+  return async (source, signal) => {
     signal.throwIfAborted()
-    completed.set(file, {
-      url: upload.inputUrl,
-      expiresAt: Date.parse(upload.assetExpiresAt)
-    })
-    granted.delete(file)
-    return upload.inputUrl
-  }
-
-  async function recover(
-    file: File,
-    grant: WorkflowUploadGrant,
-    signal: AbortSignal
-  ): Promise<string | undefined> {
-    try {
-      return await finalize(file, grant, signal)
-    } catch (error) {
-      signal.throwIfAborted()
-      if (
-        !(error instanceof WorkshopWorkflowError) ||
-        error.code !== 'upload_pending'
-      )
-        throw error
-      return undefined
-    }
-  }
-
-  async function pendingGrant(
-    file: File,
-    previous: WorkflowUploadGrant | undefined,
-    signal: AbortSignal
-  ): Promise<WorkflowUploadGrant> {
-    if (
-      previous &&
-      Date.parse(previous.workflow_upload.uploadExpiresAt) > Date.now()
-    )
-      return previous
-    const body = {
-      purpose: 'workshop_workflow',
-      file_name: 'workflow-input',
-      content_type: file.type,
-      size_bytes: file.size
-    } satisfies operations['createCustomerStorageResource']['requestBody']['content']['application/json']
-    return api.request(
-      '/customers/storage',
-      workflowUploadSchema,
+    const requestSignal = combineAbortSignals([
       signal,
-      'POST',
-      body
-    )
-  }
-
-  async function put(
-    file: File,
-    grant: WorkflowUploadGrant,
-    headers: Headers,
-    signal: AbortSignal
-  ): Promise<void> {
-    const controller = new AbortController()
-    const abort = () => controller.abort(signal.reason)
-    signal.addEventListener('abort', abort, { once: true })
-    const timer = setTimeout(() => controller.abort(), 120_000)
+      createTimeoutSignal(120_000)
+    ])
     try {
+      const file =
+        typeof source === 'string'
+          ? await downloadInput(source, requestSignal, transport)
+          : source
+      if (
+        !file.size ||
+        file.size > WORKFLOW_FILE_BYTES ||
+        !/^(image|video|audio)\//.test(file.type)
+      )
+        throw new WorkshopWorkflowError('invalid_input')
+      const grant = await api.request(
+        '/api/inputs/upload-url',
+        zUploadGrantResponse,
+        requestSignal,
+        'POST',
+        { content_type: file.type }
+      )
+      if (
+        !/^\/api\/uploads\/[a-zA-Z0-9_-]+$/.test(grant.upload_path) ||
+        grant.expires_in <= 0
+      )
+        throw new WorkshopWorkflowError('response')
+      const response = await transport(
+        new URL(grant.upload_path, WORKSHOP_CLOUD_BASE_URL),
+        {
+          method: 'PUT',
+          body: file,
+          signal: requestSignal,
+          credentials: 'omit',
+          redirect: 'error',
+          headers: { 'Content-Type': file.type }
+        }
+      )
+      if (!response.ok) {
+        await response.body?.cancel()
+        throw new WorkshopWorkflowError(
+          'media_unavailable',
+          {},
+          response.status
+        )
+      }
+      const result = zInputUploadResponse.safeParse(
+        await workflowResponseJson(response)
+      )
+      if (
+        !result.success ||
+        result.data.type !== 'input' ||
+        result.data.subfolder !== '' ||
+        !/^[a-zA-Z0-9_-][a-zA-Z0-9._-]{0,255}$/.test(result.data.name) ||
+        result.data.name.includes('..')
+      )
+        throw new WorkshopWorkflowError('response')
       signal.throwIfAborted()
-      const result = await transport(grant.upload_url, {
-        method: 'PUT',
-        body: file,
-        headers,
-        signal: controller.signal,
-        credentials: 'omit',
-        redirect: 'error'
-      })
-      await result.body?.cancel()
-      if (!result.ok)
-        throw new WorkshopWorkflowError('delivery_failed', {}, result.status)
-    } finally {
-      clearTimeout(timer)
-      signal.removeEventListener('abort', abort)
-    }
-  }
-
-  return async (file: File, signal: AbortSignal): Promise<string> => {
-    signal.throwIfAborted()
-    validateWorkflowFile(file)
-    const previous = completed.get(file)
-    if (previous && previous.expiresAt > Date.now() + 60_000)
-      return previous.url
-    const existing = granted.get(file)
-    if (existing) {
-      const recovered = await recover(file, existing, signal)
-      if (recovered) return recovered
-    }
-    const grant = await pendingGrant(file, existing, signal)
-    const headers = workflowUploadHeaders(file, grant)
-    granted.set(file, grant)
-    try {
-      await put(file, grant, headers, signal)
-      return await finalize(file, grant, signal)
+      return result.data.name
     } catch (error) {
       signal.throwIfAborted()
       if (error instanceof WorkshopWorkflowError) throw error
-      throw new WorkshopWorkflowError('delivery_failed')
+      throw new WorkshopWorkflowError('media_unavailable')
     }
   }
 }

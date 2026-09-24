@@ -55,7 +55,7 @@ const outputState = computed<RunState>(() => {
       completedAt: Date.parse(result.run.completedAt ?? result.run.updatedAt)
     }
   }
-  if (result?.run.state === 'cancelled') return { status: 'cancelled' }
+  if (result?.run.state === 'cancelled') return { status: 'idle' }
   if (result?.run.state === 'failed')
     return { status: 'failed', reason: 'provider', fieldErrors: {} }
   if (busy) return runningState.value
@@ -78,7 +78,7 @@ const exampleState = computed<RunState>(() => {
 const retryableDelivery = computed(
   () =>
     observation.value?.run.state === 'succeeded' &&
-    ['partial', 'failed', 'expired'].includes(observation.value.run.outputState)
+    ['partial', 'failed'].includes(observation.value.run.outputState)
 )
 const refreshing = ref<ReadonlySet<string>>(new Set())
 const failedMedia = ref<ReadonlySet<string>>(new Set())
@@ -87,9 +87,7 @@ const unavailableOutputs = computed(() => {
   const items = observation.value?.outputs ?? []
   const labels = outputLabels(items)
   return items.flatMap((output, index) =>
-    failedMedia.value.has(output.id) ||
-    output.delivery.state === 'failed' ||
-    output.delivery.state === 'expired'
+    failedMedia.value.has(output.id) || output.delivery.state === 'failed'
       ? [{ output, label: labels[index] }]
       : []
   )
@@ -140,6 +138,13 @@ function onDelivery(url: string, status: 'succeeded' | 'failed' | 'cancelled') {
   >
     <template #example-hint>{{ t('workshop.workflow.exampleHint') }}</template>
   </PlaygroundOutput>
+  <p
+    v-if="observation?.run.state === 'cancelled'"
+    role="status"
+    class="text-sm text-primary-warm-gray"
+  >
+    {{ t('workshop.workflow.cancelRequested') }}
+  </p>
   <div
     v-if="retryableDelivery || failedMedia.size"
     class="space-y-3 rounded-xl border border-transparency-white-t20 p-4"

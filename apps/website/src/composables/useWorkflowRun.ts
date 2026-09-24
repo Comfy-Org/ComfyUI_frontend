@@ -1,8 +1,6 @@
 import { computed, onMounted, onScopeDispose, shallowRef } from 'vue'
 import { useEventListener } from '@vueuse/core'
 
-import type { components } from '@comfyorg/registry-types'
-
 import type { WorkflowWorkshopModelDetail } from '../config/models-catalogue'
 import type { FormValues } from '../config/workshop-playground'
 import { useWorkshopSession } from '../config/workshop-session-state'
@@ -14,9 +12,6 @@ import {
 import { createWorkflowController } from '../config/workshop-workflow-controller'
 import type { WorkflowState } from '../config/workshop-workflow-state'
 import { workflowStorage } from '../config/workshop-workflow-storage'
-import type { WorkflowRunSummary } from '../config/workshop-workflow-response'
-
-type HistoryPage = components['schemas']['WorkshopWorkflowRunPage']
 
 export function useWorkflowRun(
   model: WorkflowWorkshopModelDetail,
@@ -25,10 +20,6 @@ export function useWorkflowRun(
 ) {
   const session = useWorkshopSession()
   const state = shallowRef<WorkflowState>({ phase: 'idle' })
-  const history = shallowRef<{
-    status: 'ready' | 'loading' | 'failed'
-    page: HistoryPage
-  }>({ status: 'ready', page: { items: [] } })
   const lifetime = new AbortController()
   let controller: ReturnType<typeof createWorkflowController> | undefined
 
@@ -41,6 +32,7 @@ export function useWorkflowRun(
   }
 
   const api = createWorkflowApi({
+    definition: model.workflow,
     token: async (refresh) => {
       const owner = sameCaller()
       if (!owner || lifetime.signal.aborted)
@@ -61,36 +53,10 @@ export function useWorkflowRun(
     }
   })
 
-  async function loadHistory(more = false) {
-    if (!sameCaller() || history.value.status === 'loading') return
-    const previous = history.value.page
-    history.value = { status: 'loading', page: previous }
-    try {
-      const page = await api.history(
-        lifetime.signal,
-        model.workflowId,
-        more ? previous.nextCursor : undefined
-      )
-      lifetime.signal.throwIfAborted()
-      if (!sameCaller()) return
-      history.value = {
-        status: 'ready',
-        page: {
-          ...page,
-          items: more ? [...previous.items, ...page.items] : page.items
-        }
-      }
-    } catch {
-      if (!lifetime.signal.aborted && sameCaller())
-        history.value = { status: 'failed', page: previous }
-    }
-  }
-
   async function settle(command?: Promise<void>) {
     await command
     if (lifetime.signal.aborted || !sameCaller()) return
-    if (state.value.phase === 'settled')
-      await Promise.allSettled([loadHistory(), refreshWorkshopCredits()])
+    if (state.value.phase === 'settled') await refreshWorkshopCredits()
   }
 
   onMounted(async () => {
@@ -111,7 +77,7 @@ export function useWorkflowRun(
           if (!lifetime.signal.aborted && sameCaller()) state.value = next
         }
       })
-      await Promise.allSettled([settle(controller.resume()), loadHistory()])
+      await settle(controller.resume())
     } catch {
       if (!lifetime.signal.aborted && sameCaller())
         state.value = {
@@ -122,7 +88,11 @@ export function useWorkflowRun(
   })
 
   useEventListener('online', () => {
-    if (state.value.phase === 'interrupted') void settle(controller?.resume())
+    if (
+      state.value.phase === 'interrupted' &&
+      state.value.record.stage === 'run'
+    )
+      void settle(controller?.resume())
   })
   onScopeDispose(() => {
     controller?.dispose()
@@ -131,8 +101,6 @@ export function useWorkflowRun(
 
   return {
     state,
-    history,
-    loadHistory,
     identitySettled: session.settled,
     signedIn: computed(() => Boolean(sameCaller())),
     observation: computed(() =>
@@ -141,8 +109,8 @@ export function useWorkflowRun(
     start: (inputs: FormValues) => settle(controller?.start(inputs)),
     resume: () => settle(controller?.resume()),
     cancel: () => settle(controller?.cancel()),
+    dismiss: () => controller?.dismiss(),
     retryDelivery: () => settle(controller?.retryDelivery()),
-    refreshOutput: (id: string) => controller?.refreshOutput(id),
-    open: (run: WorkflowRunSummary) => settle(controller?.open(run))
+    refreshOutput: (id: string) => controller?.refreshOutput(id)
   }
 }

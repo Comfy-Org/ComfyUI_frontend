@@ -9,19 +9,14 @@ import type {
   WorkflowStorage
 } from './workshop-workflow-storage'
 import { savedWorkflowRunId } from './workshop-workflow-storage'
-import type {
-  WorkflowAccess,
-  WorkflowRun,
-  WorkflowRunSummary
-} from './workshop-workflow-response'
+import type { WorkflowAccess, WorkflowRun } from './workshop-workflow-response'
 import { workflowOutputState } from './workshop-workflow-response'
-import { createWorkflowUploader } from './workshop-workflow-upload'
+import type { WorkflowMediaUploader } from './workshop-workflow-upload'
 import { transitionWorkflow } from './workshop-workflow-state'
 import type { WorkflowEvent, WorkflowState } from './workshop-workflow-state'
 
 function admissionRejected(error: WorkshopWorkflowError): boolean {
   if (error.status === undefined) return false
-  if (error.status === 503) return error.code === 'admission_disabled'
   return (
     error.status >= 400 &&
     error.status < 500 &&
@@ -30,6 +25,10 @@ function admissionRejected(error: WorkshopWorkflowError): boolean {
       'invalid_input',
       'payload_too_large',
       'unsupported_media_type',
+      'not_authenticated',
+      'access_denied',
+      'insufficient_credits',
+      'rate_limited',
       'workflow_not_found',
       'definition_changed',
       'definition_incompatible',
@@ -72,12 +71,12 @@ export function createWorkflowController(options: {
   readonly model: WorkflowWorkshopModelDetail
   readonly api: WorkflowApi
   readonly storage: WorkflowStorage
+  readonly uploadFile?: WorkflowMediaUploader
   readonly onChange: (state: WorkflowState) => void
 }) {
   let state: WorkflowState = { phase: 'idle' }
   let operation: AbortController | undefined
   const lifetime = new AbortController()
-  const uploadFile = createWorkflowUploader(options.api)
 
   function dispatch(event: WorkflowEvent) {
     if (lifetime.signal.aborted) return
@@ -91,8 +90,9 @@ export function createWorkflowController(options: {
 
   function persist(event: WorkflowEvent) {
     const next = transitionWorkflow(state, event)
+    if (event.type === 'admitted') dispatch(event)
     if ('record' in next) options.storage.write(next.record)
-    dispatch(event)
+    if (event.type !== 'admitted') dispatch(event)
   }
 
   function failure(error: unknown) {
@@ -106,7 +106,13 @@ export function createWorkflowController(options: {
         cause = normalizeFailure(storageError)
       }
     }
-    dispatch({ type: 'failed', error: cause })
+    dispatch({
+      type: 'failed',
+      error:
+        record()?.stage === 'intent'
+          ? new WorkshopWorkflowError('submission_unknown')
+          : cause
+    })
   }
 
   async function observeCancellation(
@@ -133,15 +139,14 @@ export function createWorkflowController(options: {
         api: options.api,
         token: '',
         signal,
-        uploadFile,
-        attempt: resume?.stage === 'intent' ? resume.attempt : undefined,
+        uploadFile: options.uploadFile,
         runId: savedWorkflowRunId(resume),
         onPrepared: (attempt) => {
           signal.throwIfAborted()
           persist({
             type: 'restore',
             record: {
-              version: 1,
+              version: 2,
               stage: 'intent',
               attempt,
               cancelRequested: record()?.cancelRequested ?? false
@@ -167,7 +172,23 @@ export function createWorkflowController(options: {
 
   async function resume() {
     const saved = record() ?? options.storage.read()
-    if (saved) await execute({}, saved)
+    if (!saved) return
+    if (saved.stage === 'intent') {
+      dispatch({ type: 'restore', record: saved })
+      dispatch({
+        type: 'failed',
+        error: new WorkshopWorkflowError('submission_unknown')
+      })
+      return
+    }
+    if (saved.definitionVersion !== options.model.workflow.definitionVersion) {
+      dispatch({
+        type: 'failed',
+        error: new WorkshopWorkflowError('definition_changed')
+      })
+      return
+    }
+    await execute({}, saved)
   }
 
   async function cancel() {
@@ -240,26 +261,16 @@ export function createWorkflowController(options: {
     cancel,
     retryDelivery,
     refreshOutput,
-    async open(run: WorkflowRunSummary) {
+    dismiss() {
       if (
-        run.workflowId !== options.model.workflowId ||
-        state.phase === 'active' ||
-        state.phase === 'preparing' ||
-        state.phase === 'interrupted' ||
-        lifetime.signal.aborted
+        operation ||
+        state.phase !== 'interrupted' ||
+        record()?.stage !== 'intent'
       )
         return
-      const saved: SavedWorkflow = {
-        version: 1,
-        stage: 'run',
-        runId: run.id,
-        workflowId: run.workflowId,
-        definitionVersion: run.definitionVersion,
-        cancelRequested: false
-      }
       try {
-        options.storage.write(saved)
-        await execute({}, saved)
+        options.storage.clear()
+        dispatch({ type: 'detach' })
       } catch (error) {
         failure(error)
       }

@@ -1,22 +1,20 @@
-import type { z } from 'astro/zod'
+import { z } from 'astro/zod'
+import { zJobCancelResponse, zPromptResponse } from '@comfyorg/ingest-types/zod'
+import type { PromptRequest } from '@comfyorg/ingest-types'
 
-import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
+import { combineAbortSignals, createTimeoutSignal } from '../utils/abortSignal'
+import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
+import type { WorkshopWorkflowDefinition } from './workshop-workflow-definition'
 import type { FieldErrors } from './workshop-playground'
 import {
   WORKFLOW_CONTROL_BYTES,
-  workflowAccessSchema,
-  workflowErrorSchema,
-  workflowHistorySchema,
-  workflowIdSchema,
-  workflowRunPath,
-  workflowRunIdSchema,
-  workflowRunSchema,
-  workflowRuntimeSchema,
-  workflowSummarySchema
+  cloudWorkflowResult,
+  workflowRunIdSchema
 } from './workshop-workflow-response'
 import type {
   WorkflowErrorCode,
-  WorkflowRunRequest
+  WorkflowRunRequest,
+  WorkflowRunSummary
 } from './workshop-workflow-response'
 
 export class WorkshopWorkflowError extends Error {
@@ -25,12 +23,13 @@ export class WorkshopWorkflowError extends Error {
     readonly fieldErrors: FieldErrors = {},
     readonly status?: number
   ) {
-    super(`Workflow request failed: ${code}`)
+    super('Workflow request failed: ' + code)
   }
 }
 
 export interface WorkflowApiOptions {
   readonly token: string | ((refresh?: boolean) => Promise<string>)
+  readonly authentication?: 'session' | 'api-key'
   readonly fetch?: typeof fetch
 }
 
@@ -67,204 +66,188 @@ export async function workflowResponseJson(
   }
 }
 
-function workflowRequestUrl(path: string): URL {
-  const base = new URL(WORKSHOP_ROUTER_BASE_URL)
-  const url = new URL(path, base)
+export function workflowCloudRequest(
+  definition: WorkshopWorkflowDefinition,
+  request: WorkflowRunRequest
+): PromptRequest {
   if (
-    !path.startsWith('/') ||
-    path.startsWith('//') ||
-    url.origin !== base.origin
+    !definition.cloud ||
+    request.workflowId !== definition.id ||
+    request.definitionVersion !== definition.definitionVersion
   )
-    throw new WorkshopWorkflowError('invalid_request')
-  return url
-}
-
-function workflowRequestBody(body: unknown): string | undefined {
-  const encoded = body === undefined ? undefined : JSON.stringify(body)
-  if (
-    encoded !== undefined &&
-    new TextEncoder().encode(encoded).byteLength > WORKFLOW_CONTROL_BYTES
-  )
-    throw new WorkshopWorkflowError('payload_too_large')
-  return encoded
-}
-
-async function parseWorkflowResponse<T>(
-  response: Response,
-  schema: z.ZodType<T>
-): Promise<T> {
-  const body = await workflowResponseJson(response)
-  if (!response.ok) {
-    const parsed = workflowErrorSchema.safeParse(body)
-    if (!parsed.success)
-      throw new WorkshopWorkflowError('response', {}, response.status)
-    const { code, fieldId } = parsed.data.error
-    throw new WorkshopWorkflowError(
-      code,
-      fieldId ? { [fieldId]: 'rejected' } : {},
-      response.status
-    )
-  }
-  const parsed = schema.safeParse(body)
-  if (!parsed.success) throw new WorkshopWorkflowError('response')
-  return parsed.data
-}
-
-export function createWorkflowApi(options: WorkflowApiOptions) {
-  const transport = options.fetch ?? globalThis.fetch
-
-  async function authenticatedRequest(
-    url: URL,
-    init: RequestInit,
-    signal: AbortSignal
-  ): Promise<Response> {
-    for (let attempt = 0; attempt < 2; attempt++) {
-      signal.throwIfAborted()
-      const token =
-        typeof options.token === 'function'
-          ? await options.token(attempt > 0)
-          : options.token
-      signal.throwIfAborted()
-      if (!token) throw new WorkshopWorkflowError('not_authenticated')
-      const headers = new Headers(init.headers)
-      headers.set('Authorization', `Bearer ${token}`)
-      const response = await transport(url, { ...init, headers })
+    throw new WorkshopWorkflowError('definition_incompatible')
+  const prompt = structuredClone(definition.cloud.workflow)
+  for (const [name, value] of Object.entries(request.appInputs)) {
+    if (!Object.hasOwn(definition.cloud.inputBindings, name))
+      throw new WorkshopWorkflowError('invalid_input', { [name]: 'rejected' })
+    const binding = definition.cloud.inputBindings[name]
+    for (const target of binding.targets) {
+      const node = prompt[target.nodeId]
       if (
-        response.status === 401 &&
-        attempt === 0 &&
-        typeof options.token === 'function'
-      ) {
-        await response.body?.cancel()
-        continue
-      }
-      return response
+        !Object.hasOwn(prompt, target.nodeId) ||
+        !Object.hasOwn(node.inputs, target.inputName)
+      )
+        throw new WorkshopWorkflowError('definition_incompatible')
+      node.inputs[target.inputName] = value
     }
-    throw new WorkshopWorkflowError('not_authenticated')
   }
+  return { prompt }
+}
+
+function responseError(status: number): WorkshopWorkflowError {
+  const codes: Record<number, WorkflowErrorCode> = {
+    400: 'invalid_input',
+    401: 'not_authenticated',
+    402: 'insufficient_credits',
+    403: 'access_denied',
+    404: 'run_not_found',
+    413: 'payload_too_large',
+    415: 'unsupported_media_type',
+    422: 'invalid_input',
+    429: 'rate_limited'
+  }
+  return new WorkshopWorkflowError(
+    codes[status] ?? 'execution_failed',
+    {},
+    status
+  )
+}
+
+export function createWorkflowApi(
+  options: WorkflowApiOptions & {
+    readonly definition: WorkshopWorkflowDefinition
+  }
+) {
+  const transport = options.fetch ?? globalThis.fetch
 
   async function request<T>(
     path: string,
-    schema: z.ZodType<T>,
+    schema: {
+      safeParse(value: unknown): { success: true; data: T } | { success: false }
+    },
     signal: AbortSignal,
     method = 'GET',
-    body?: unknown,
-    idempotencyKey?: string
+    body?: unknown
   ): Promise<T> {
-    const url = workflowRequestUrl(path)
-    const encoded = workflowRequestBody(body)
-    const deadline = new AbortController()
-    const abort = () => deadline.abort(signal.reason)
-    const timer = setTimeout(() => deadline.abort(), 45_000)
-    signal.addEventListener('abort', abort, { once: true })
+    signal.throwIfAborted()
+    const url = new URL(path, WORKSHOP_CLOUD_BASE_URL)
+    if (!path.startsWith('/api/') || url.origin !== WORKSHOP_CLOUD_BASE_URL)
+      throw new WorkshopWorkflowError('invalid_request')
+    const encoded = body === undefined ? undefined : JSON.stringify(body)
+    if (
+      encoded &&
+      new TextEncoder().encode(encoded).byteLength > WORKFLOW_CONTROL_BYTES
+    )
+      throw new WorkshopWorkflowError('payload_too_large')
+    const requestSignal = combineAbortSignals([
+      signal,
+      createTimeoutSignal(45_000)
+    ])
     try {
-      const response = await authenticatedRequest(
-        url,
-        {
+      for (let attempt = 0; attempt < 2; attempt++) {
+        requestSignal.throwIfAborted()
+        const token =
+          typeof options.token === 'function'
+            ? await options.token(attempt > 0)
+            : options.token
+        requestSignal.throwIfAborted()
+        if (!token) throw new WorkshopWorkflowError('not_authenticated')
+        const response = await transport(url, {
           method,
           body: encoded,
-          signal: deadline.signal,
+          signal: requestSignal,
           credentials: 'omit',
           redirect: 'error',
           cache: 'no-store',
           headers: {
-            ...(encoded === undefined
-              ? {}
-              : { 'Content-Type': 'application/json' }),
-            ...(idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : {})
+            ...(options.authentication === 'api-key'
+              ? { 'X-API-Key': token }
+              : { Authorization: 'Bearer ' + token }),
+            ...(encoded ? { 'Content-Type': 'application/json' } : {})
           }
-        },
-        signal
-      )
-      const result = await parseWorkflowResponse(response, schema)
-      signal.throwIfAborted()
-      return result
+        })
+        if (
+          response.status === 401 &&
+          attempt === 0 &&
+          typeof options.token === 'function'
+        ) {
+          await response.body?.cancel()
+          continue
+        }
+        if (!response.ok) {
+          await response.body?.cancel()
+          throw responseError(response.status)
+        }
+        const parsed = schema.safeParse(await workflowResponseJson(response))
+        if (!parsed.success) throw new WorkshopWorkflowError('response')
+        signal.throwIfAborted()
+        return parsed.data
+      }
+      throw new WorkshopWorkflowError('not_authenticated')
     } catch (error) {
       signal.throwIfAborted()
       if (error instanceof WorkshopWorkflowError) throw error
       throw new WorkshopWorkflowError('network')
-    } finally {
-      clearTimeout(timer)
-      signal.removeEventListener('abort', abort)
+    }
+  }
+
+  async function read(id: string, signal: AbortSignal) {
+    const job = await request(
+      '/api/jobs/' +
+        workflowRunIdSchema.parse(id) +
+        '?short_link=ephemeral_tool_chain',
+      z.unknown(),
+      signal
+    )
+    try {
+      return cloudWorkflowResult(job, options.definition, id)
+    } catch {
+      throw new WorkshopWorkflowError('response')
     }
   }
 
   return {
     request,
-    async submit(body: WorkflowRunRequest, key: string, signal: AbortSignal) {
-      if (!/^[\x21-\x7e]{1,128}$/.test(key))
-        throw new WorkshopWorkflowError('invalid_request')
-      const run = await request(
-        '/v1/workshop/workflow-runs',
-        workflowSummarySchema,
+    async submit(
+      body: WorkflowRunRequest,
+      signal: AbortSignal
+    ): Promise<WorkflowRunSummary> {
+      const result = await request(
+        '/api/prompt',
+        zPromptResponse,
         signal,
         'POST',
-        body,
-        key
+        workflowCloudRequest(options.definition, body)
       )
-      if (
-        run.workflowId !== body.workflowId ||
-        run.definitionVersion !== body.definitionVersion
-      )
-        throw new WorkshopWorkflowError('response')
-      return run
+      if (!result.prompt_id) throw new WorkshopWorkflowError('response')
+      const now = new Date().toISOString()
+      return {
+        id: result.prompt_id,
+        workflowId: body.workflowId,
+        definitionVersion: body.definitionVersion,
+        state: 'queued',
+        outputState: 'pending',
+        createdAt: now,
+        updatedAt: now
+      }
     },
-    async read(id: string, signal: AbortSignal) {
-      const result = await request(
-        workflowRunPath(id),
-        workflowRunSchema,
-        signal
-      )
-      if (result.run.id !== id) throw new WorkshopWorkflowError('response')
-      return result
-    },
+    read,
     async cancel(id: string, signal: AbortSignal) {
-      const result = await request(
-        `${workflowRunPath(id)}/cancel`,
-        workflowRunSchema,
+      await request(
+        '/api/jobs/' + workflowRunIdSchema.parse(id) + '/cancel',
+        zJobCancelResponse,
         signal,
         'POST'
       )
-      if (result.run.id !== id) throw new WorkshopWorkflowError('response')
-      return result
+      return read(id, signal)
     },
-    async retryDelivery(id: string, signal: AbortSignal) {
-      const result = await request(
-        `${workflowRunPath(id)}/outputs/retry`,
-        workflowRunSchema,
-        signal,
-        'POST'
-      )
-      if (result.run.id !== id) throw new WorkshopWorkflowError('response')
-      return result
-    },
+    retryDelivery: read,
     async access(id: string, outputId: string, signal: AbortSignal) {
-      const output = workflowRunIdSchema.parse(outputId)
-      const path = `${workflowRunPath(id)}/outputs/${output}/access`
-      const access = await request(path, workflowAccessSchema, signal)
-      if (
-        access.refreshUrl !== path ||
-        Date.parse(access.expiresAt) <= Date.now()
-      )
-        throw new WorkshopWorkflowError('response')
-      return access
-    },
-    history(signal: AbortSignal, workflowId?: string, cursor?: string) {
-      const query = new URLSearchParams({ limit: '20' })
-      if (workflowId)
-        query.set('workflowId', workflowIdSchema.parse(workflowId))
-      if (cursor) query.set('cursor', cursor)
-      return request(
-        `/v1/workshop/workflow-runs?${query}`,
-        workflowHistorySchema,
-        signal
-      )
-    },
-    runtime(workflowId: string, signal: AbortSignal) {
-      return request(
-        `/v1/workshop/workflows/${encodeURIComponent(workflowIdSchema.parse(workflowId))}/runtime`,
-        workflowRuntimeSchema,
-        signal
-      )
+      const result = await read(id, signal)
+      const output = result.outputs.find((item) => item.id === outputId)
+      if (output?.delivery.state !== 'ready')
+        throw new WorkshopWorkflowError('delivery_failed')
+      return output.delivery.access
     }
   }
 }

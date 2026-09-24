@@ -36,6 +36,8 @@ function workflowPageFor(
     definitionVersion: entry.definitionVersion,
     inputSchema: entry.inputSchema,
     inputs: page.inputs,
+    cloud: entry.cloud,
+    outputs: entry.outputs,
     template: page.template
   }
   const modality = entry.outputs[0]?.kind

@@ -10,7 +10,7 @@ import {
 } from './workshop-workflow-response'
 
 const base = z.object({
-  version: z.literal(1),
+  version: z.literal(2),
   cancelRequested: z.boolean()
 })
 const savedWorkflowSchema = z.discriminatedUnion('stage', [
@@ -19,8 +19,7 @@ const savedWorkflowSchema = z.discriminatedUnion('stage', [
       stage: z.literal('intent'),
       attempt: z
         .object({
-          request: workflowRequestSchema,
-          idempotencyKey: z.string().regex(/^[\x21-\x7e]{1,128}$/)
+          request: workflowRequestSchema
         })
         .strict()
     })
@@ -55,7 +54,7 @@ export function workflowStorage(
   scope: string,
   workflowId: string
 ) {
-  const key = `comfy-workflow-run:${JSON.stringify([scope, workflowId])}`
+  const key = `comfy-cloud-workflow-run:${JSON.stringify([scope, workflowId])}`
   return {
     clear() {
       try {

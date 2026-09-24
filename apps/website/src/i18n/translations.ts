@@ -10553,33 +10553,32 @@ Enterprise`
     'zh-CN': '打开完整尺寸的工作流预览'
   },
   'workshop.workflow.apiHint': {
-    en: 'This request uses the same inputs and defaults as the Playground. Keep the request and Idempotency-Key unchanged when retrying. A new key starts a new run in your Cloud workspace.',
+    en: 'The request below uses the same prepared graph and settings as the Playground. Each submission can start a paid run; do not automatically retry a submission whose outcome is unknown.',
     'zh-CN':
-      '此请求使用与体验区相同的输入和默认值。重试时请保持请求和 Idempotency-Key 不变。使用新密钥会在你的 Cloud 工作区中开始一次新运行。'
+      '以下请求使用与体验区相同的预设图和设置。每次提交都可能开始一次付费运行；如果提交结果未知，请勿自动重试。'
   },
   'workshop.workflow.apiUploads': {
     en: 'Upload media first',
     'zh-CN': '先上传媒体'
   },
   'workshop.workflow.apiUploadGrant': {
-    en: 'Request POST /customers/storage with purpose "workshop_workflow", file_name, content_type and size_bytes using the same account and workspace credential.',
+    en: 'POST /api/inputs/upload-url with {"content_type":"image/png"} on the Cloud origin, using your workspace credential.',
     'zh-CN':
-      '使用同一账号和工作区凭证向 POST /customers/storage 发送请求，提供 purpose "workshop_workflow"、file_name、content_type 和 size_bytes。'
+      '使用工作区凭证向 Cloud 的 POST /api/inputs/upload-url 发送 {"content_type":"image/png"}。'
   },
   'workshop.workflow.apiUploadPut': {
-    en: 'PUT the file bytes to upload_url with exactly the returned workflow_upload.uploadHeaders. Send no account credential to that URL.',
+    en: 'PUT the raw file bytes to the returned upload_path on the same Cloud origin. Do not send an account credential with this PUT.',
     'zh-CN':
-      '将文件字节 PUT 到 upload_url，严格使用返回的 workflow_upload.uploadHeaders。不要向该 URL 发送账号凭证。'
+      '将文件原始字节 PUT 到同一 Cloud 地址返回的 upload_path。此 PUT 不要携带账号凭证。'
   },
   'workshop.workflow.apiUploadFinalize': {
-    en: 'GET workflow_upload.accessUrl with your credential to finalize the upload. Replace each https://upload.invalid/ placeholder with its workflow_upload.inputUrl.',
-    'zh-CN':
-      '使用凭证 GET workflow_upload.accessUrl 以完成上传。将每个 https://upload.invalid/ 占位值替换为对应的 workflow_upload.inputUrl。'
+    en: 'The PUT response contains name. Replace the corresponding UPLOADED_*_FILENAME value below with that name.',
+    'zh-CN': 'PUT 响应包含 name。用此名称替换下方对应的 UPLOADED_*_FILENAME。'
   },
   'workshop.workflow.apiPoll': {
-    en: 'The API returns 202 with a run ID and statusUrl. GET that statusUrl with your credential to follow execution and retrieve the selected output URLs. Their refreshUrl renews access while the file is retained; it does not start another run.',
+    en: 'POST /api/prompt returns prompt_id. Poll GET /api/jobs/{prompt_id}?short_link=ephemeral_tool_chain with your credential. Selected outputs contain temporary short_url links; read the job again to refresh them.',
     'zh-CN':
-      'API 返回 202、运行 ID 和 statusUrl。使用凭证 GET statusUrl 以查看执行状态并获取选定的输出 URL。文件保留期间可通过 refreshUrl 更新访问链接，不会开始新运行。'
+      'POST /api/prompt 返回 prompt_id。使用凭证轮询 GET /api/jobs/{prompt_id}?short_link=ephemeral_tool_chain。选定输出包含临时 short_url 链接；再次读取运行即可刷新链接。'
   },
   'workshop.workflow.exampleHint': {
     en: 'An example from this template.',
@@ -10632,12 +10631,27 @@ Enterprise`
     'zh-CN': '重新连接此运行'
   },
   'workshop.workflow.resumeHint': {
-    en: 'You can return to this page to follow the same run. Leaving the page does not cancel it.',
-    'zh-CN': '你可以返回此页面查看同一次运行。离开页面不会取消运行。'
+    en: 'Once Cloud returns a job ID, this tab can reconnect to it after a refresh. Leaving the page does not cancel the job.',
+    'zh-CN':
+      'Cloud 返回运行 ID 后，此标签页可在刷新后重新连接。离开页面不会取消运行。'
   },
   'workshop.workflow.inputSize': {
     en: 'Use files up to 25 MiB each, with at most 50 MiB of inputs per run.',
     'zh-CN': '单个文件不得超过 25 MiB，每次运行的输入总大小不得超过 50 MiB。'
+  },
+  'workshop.workflow.submissionUnknown': {
+    en: 'Cloud may have accepted this run, but its response was lost. Check your Cloud history before starting another run.',
+    'zh-CN':
+      'Cloud 可能已接受运行，但响应丢失。开始新运行前请检查 Cloud 历史记录。'
+  },
+  'workshop.workflow.checkCloud': { en: 'Check Cloud', 'zh-CN': '查看 Cloud' },
+  'workshop.workflow.dismissUnknown': {
+    en: 'Return to inputs',
+    'zh-CN': '返回输入'
+  },
+  'workshop.workflow.cancelRequested': {
+    en: 'Cancellation requested. Check Cloud for the final job status.',
+    'zh-CN': '已请求取消。请在 Cloud 中查看最终运行状态。'
   },
   'workshop.workflow.signInAgain': {
     en: 'Sign in again to reconnect to this run.',

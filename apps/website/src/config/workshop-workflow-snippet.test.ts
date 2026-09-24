@@ -4,6 +4,9 @@ import { execFileSync } from 'node:child_process'
 import { describe, expect, it } from 'vitest'
 
 import { prepareWorkflowRender } from './workflow-render'
+import { workflowCloudRequest } from './workshop-workflow-api'
+import { initialWorkshopPageState } from './workshop-page-state'
+import { urlUploadField } from './workshop-playground'
 import { workflowDetailsBySlug } from './workshop-workflow-content'
 import {
   workflowCurl,
@@ -14,35 +17,40 @@ describe('workflow API snippets', () => {
   it.for([...workflowDetailsBySlug.values()])(
     'matches browser defaults for $slug',
     async (model) => {
-      const request = workflowSnippetRequest(model, {})
+      const initial = initialWorkshopPageState(model)
+      const inputs = Object.fromEntries(
+        initial.schema
+          .filter(urlUploadField)
+          .map((field) => [field.name, 'https://media.example/' + field.name])
+      )
+      const request = workflowSnippetRequest(model, inputs)
       const prepared = await prepareWorkflowRender(
         model,
-        request.appInputs,
-        new AbortController().signal
+        inputs,
+        new AbortController().signal,
+        async (source) =>
+          'UPLOADED_' + new URL(String(source)).pathname.slice(1) + '_FILENAME'
       )
-      expect(request).toEqual(prepared)
-      expect(Object.keys(request.appInputs)).toEqual(
-        Object.keys(model.workflow.inputs)
-      )
+      expect(request).toEqual(workflowCloudRequest(model.workflow, prepared))
     }
   )
 
-  it('quotes the exact request and idempotency key without executing prompt text', () => {
+  it('quotes the exact Cloud request without executing prompt text', () => {
     const model = workflowDetailsBySlug.get('workflows/change-material')
     if (!model) throw new Error('Missing fixture')
     const request = workflowSnippetRequest(model, {
       prompt:
         "Keep 'single quotes', $(printf changed), `printf changed`, and\nnewlines."
     })
-    const key = 'a51d2d84-8dc1-4649-bc0f-44b7d51ab320'
-    const code = workflowCurl(request, key)
+    const code = workflowCurl(request)
     const args = execFileSync(
       'sh',
       ['-c', `curl() { printf '%s\\n' "$@"; }\n${code}`],
       { encoding: 'utf8' }
     )
     expect(JSON.parse(args.split('--data\n')[1])).toEqual(request)
-    expect(args).toContain(`Idempotency-Key: ${key}\n`)
+    expect(args).toContain('X-API-Key: YOUR_API_KEY\n')
+    expect(args).toContain('/api/prompt')
     expect(args).not.toContain('base64')
   })
 })

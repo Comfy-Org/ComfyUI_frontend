@@ -55,6 +55,7 @@ export function workflow_render(
   return render(slug, inputs, {
     ...options,
     model: modelFor(slug),
+    authentication: options.authentication ?? 'api-key',
     token: options.token ?? process.env.COMFY_API_KEY ?? ''
   })
 }

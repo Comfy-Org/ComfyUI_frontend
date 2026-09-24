@@ -91,7 +91,7 @@ export function transitionWorkflow(
       return {
         ...state,
         record: {
-          version: 1,
+          version: 2,
           stage: 'run',
           runId: event.run.id,
           workflowId: event.run.workflowId,

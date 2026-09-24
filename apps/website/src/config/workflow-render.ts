@@ -1,11 +1,9 @@
 import type { WorkflowWorkshopModelDetail } from './models-catalogue'
 import { initialWorkshopPageState } from './workshop-page-state'
-import { workshopIdempotencyKey } from './workshop-snippets'
 import type { FieldSchema, FormValues } from './workshop-playground'
 import { urlUploadField, validateForm } from './workshop-playground'
 import { validateWorkshopInput } from './workshop-json-schema'
-import type { WorkshopUrlEncoder } from './workshop-url-input'
-import { resolveWorkshopUrlInputs } from './workshop-url-input'
+import type { WorkflowMediaUploader } from './workshop-workflow-upload'
 import type { WorkflowApi, WorkflowApiOptions } from './workshop-workflow-api'
 import {
   createWorkflowApi,
@@ -28,17 +26,15 @@ import { createWorkflowUploader } from './workshop-workflow-upload'
 
 export interface WorkflowAttempt {
   readonly request: WorkflowRunRequest
-  readonly idempotencyKey: string
 }
 
 export interface WorkflowRenderOptions extends WorkflowApiOptions {
   readonly model: WorkflowWorkshopModelDetail
   readonly signal?: AbortSignal
   readonly api?: WorkflowApi
-  readonly uploadFile?: WorkshopUrlEncoder
+  readonly uploadFile?: WorkflowMediaUploader
   readonly attempt?: WorkflowAttempt
   readonly runId?: string
-  readonly idempotencyKey?: string
   readonly onPrepared?: (attempt: WorkflowAttempt) => void | Promise<void>
   readonly onAdmitted?: (run: WorkflowRunSummary) => void | Promise<void>
   readonly onUpdate?: (result: WorkflowRun) => void
@@ -105,10 +101,10 @@ export async function prepareWorkflowRender(
   model: WorkflowWorkshopModelDetail,
   inputs: FormValues,
   signal: AbortSignal,
-  uploadFile?: WorkshopUrlEncoder
+  uploadFile?: WorkflowMediaUploader
 ): Promise<WorkflowRunRequest> {
   signal.throwIfAborted()
-  if (model.type !== 'CLOUD' || model.incompleteReason)
+  if (model.type !== 'CLOUD' || model.incompleteReason || !model.workflow.cloud)
     throw new WorkshopWorkflowError('definition_incompatible')
   const initial = initialWorkshopPageState(model)
   const values = { ...initial.values, ...inputs }
@@ -120,20 +116,31 @@ export async function prepareWorkflowRender(
   if (Object.keys(errors).length)
     throw new WorkshopWorkflowError('invalid_input', errors)
   validateMediaSelection(initial.schema, values)
-  let uploadBytes = 0
-  const resolved = await resolveWorkshopUrlInputs(
-    initial.schema,
-    values,
-    signal,
-    uploadFile &&
-      (async (file, uploadSignal) => {
-        uploadBytes += file.size
-        if (uploadBytes > WORKFLOW_INPUT_BYTES)
-          throw new WorkshopWorkflowError('invalid_input')
-        return uploadFile(file, uploadSignal)
-      }),
-    true
+  const validation = Object.fromEntries(
+    Object.entries(values).map(([name, value]) => [
+      name,
+      typeof value === 'object' ? 'https://upload.invalid/input' : value
+    ])
   )
+  if (!validateWorkshopInput(validation, model.workflow.inputSchema))
+    throw new WorkshopWorkflowError('invalid_input')
+  const resolved = { ...values }
+  for (const field of initial.schema) {
+    if (!urlUploadField(field)) continue
+    const value = values[field.name]
+    if (value === undefined || value === '') continue
+    const source =
+      typeof value === 'string'
+        ? value
+        : typeof value === 'object' && !Array.isArray(value)
+          ? value.file
+          : undefined
+    if (!uploadFile || !(typeof source === 'string' || source instanceof File))
+      throw new WorkshopWorkflowError('invalid_input', {
+        [field.name]: 'badType'
+      })
+    resolved[field.name] = await uploadFile(source, signal)
+  }
   signal.throwIfAborted()
   return workflowRequest(model, resolved)
 }
@@ -143,8 +150,6 @@ export function workflowRequest(
   inputs: FormValues
 ): WorkflowRunRequest {
   const appInputs = scalarInputs(inputs)
-  if (!validateWorkshopInput(appInputs, model.workflow.inputSchema))
-    throw new WorkshopWorkflowError('invalid_input')
   const request = {
     workflowId: model.workflow.id,
     definitionVersion: model.workflow.definitionVersion,
@@ -183,7 +188,9 @@ export async function renderWorkflow(
   signal.throwIfAborted()
   if (slug !== options.model.slug || options.model.type !== 'CLOUD')
     throw new WorkshopWorkflowError('definition_incompatible')
-  const api = options.api ?? createWorkflowApi(options)
+  const api =
+    options.api ??
+    createWorkflowApi({ ...options, definition: options.model.workflow })
   let id = options.runId
   if (!id) {
     const attempt = options.attempt ?? {
@@ -192,18 +199,13 @@ export async function renderWorkflow(
         inputs,
         signal,
         options.uploadFile ?? createWorkflowUploader(api, options.fetch)
-      ),
-      idempotencyKey: options.idempotencyKey ?? workshopIdempotencyKey()
+      )
     }
     if (attempt.request.workflowId !== options.model.workflowId)
       throw new WorkshopWorkflowError('invalid_request')
     await options.onPrepared?.(attempt)
     signal.throwIfAborted()
-    const run = await api.submit(
-      attempt.request,
-      attempt.idempotencyKey,
-      signal
-    )
+    const run = await api.submit(attempt.request, signal)
     await options.onAdmitted?.(run)
     signal.throwIfAborted()
     id = run.id

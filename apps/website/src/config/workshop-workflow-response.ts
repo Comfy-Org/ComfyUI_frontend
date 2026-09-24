@@ -1,50 +1,31 @@
 import { z } from 'astro/zod'
+import { zJobDetailResponse } from '@comfyorg/ingest-types/zod'
 
-import type { components } from '@comfyorg/registry-types'
-
+import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
+import type { WorkshopWorkflowDefinition } from './workshop-workflow-definition'
 import type { RunOutput } from './workshop-run'
-
-type Schemas = components['schemas']
-export type WorkflowRun = Schemas['WorkshopWorkflowRun']
-export type WorkflowRunSummary = Schemas['WorkshopWorkflowRunSummary']
-export type WorkflowRunRequest = Schemas['WorkshopWorkflowRunRequest']
-export type WorkflowAccess = Schemas['WorkshopMediaAccess']
-export type WorkflowErrorCode = Schemas['WorkshopErrorCode']
 
 export const WORKFLOW_CONTROL_BYTES = 256 * 1024
 export const WORKFLOW_FILE_BYTES = 25 * 1024 * 1024
 export const WORKFLOW_INPUT_BYTES = 50 * 1024 * 1024
-export const workflowIdSchema = z
-  .string()
-  .regex(/^workflows\/[a-z0-9]+(?:-[a-z0-9]+)*$/)
+export const workflowIdSchema = z.string().regex(/^workflows\/[a-z0-9-]+$/)
 export const workflowRunIdSchema = z.uuid()
-export const workflowInputsSchema = z
-  .record(
-    z.string().min(1).max(256),
-    z.union([
-      z.string().max(WORKFLOW_CONTROL_BYTES),
-      z.number().min(-Number.MAX_SAFE_INTEGER).max(Number.MAX_SAFE_INTEGER),
-      z.boolean()
-    ])
-  )
-  .refine((inputs) => Object.keys(inputs).length <= 128)
-export const workflowRequestSchema: z.ZodType<WorkflowRunRequest> = z
+export const workflowInputsSchema = z.record(
+  z.string().min(1).max(256),
+  z.union([
+    z.string().max(WORKFLOW_CONTROL_BYTES),
+    z.number().finite(),
+    z.boolean()
+  ])
+)
+export const workflowRequestSchema = z
   .object({
     workflowId: workflowIdSchema,
     definitionVersion: z.string().min(1).max(64),
     appInputs: workflowInputsSchema
   })
   .strict()
-  .refine(
-    (request) =>
-      new TextEncoder().encode(JSON.stringify(request)).byteLength <=
-      WORKFLOW_CONTROL_BYTES
-  )
-const timestamp = z.iso.datetime({ offset: true })
-const apiPath = z
-  .string()
-  .max(2048)
-  .regex(/^\/(v1\/workshop\/|customers\/storage\/)[a-zA-Z0-9/_-]+$/)
+export type WorkflowRunRequest = z.infer<typeof workflowRequestSchema>
 export const workflowHttpsUrl = z
   .url()
   .max(8192)
@@ -55,192 +36,158 @@ export const workflowHttpsUrl = z
     )
   })
 
-const errorCode = z.enum([
-  'invalid_request',
-  'invalid_input',
-  'payload_too_large',
-  'unsupported_media_type',
-  'not_authenticated',
-  'access_denied',
-  'workflow_not_found',
-  'run_not_found',
-  'definition_changed',
-  'definition_incompatible',
-  'idempotency_conflict',
-  'plan_required',
-  'insufficient_credits',
-  'rate_limited',
-  'admission_disabled',
-  'upload_pending',
-  'media_unavailable',
-  'run_not_complete',
-  'execution_failed',
-  'delivery_failed',
-  'temporarily_unavailable',
-  'internal_error'
-])
-const errorDetail = z
-  .object({
-    code: errorCode,
-    message: z.string().max(1024),
-    fieldId: z.string().min(1).max(256).optional()
-  })
-  .strict()
-export const workflowErrorSchema: z.ZodType<Schemas['WorkshopErrorResponse']> =
-  z
-    .object({
-      error: errorDetail,
-      supportId: z.uuid().optional()
-    })
-    .strict()
+export type WorkflowErrorCode =
+  | 'invalid_request'
+  | 'invalid_input'
+  | 'payload_too_large'
+  | 'unsupported_media_type'
+  | 'not_authenticated'
+  | 'access_denied'
+  | 'workflow_not_found'
+  | 'run_not_found'
+  | 'definition_changed'
+  | 'definition_incompatible'
+  | 'plan_required'
+  | 'insufficient_credits'
+  | 'rate_limited'
+  | 'admission_disabled'
+  | 'media_unavailable'
+  | 'execution_failed'
+  | 'delivery_failed'
+  | 'submission_unknown'
 
-export const workflowSummarySchema: z.ZodType<WorkflowRunSummary> = z
-  .object({
-    id: workflowRunIdSchema,
-    workflowId: workflowIdSchema,
-    definitionVersion: z.string().min(1).max(64),
-    state: z.enum([
-      'submitting',
-      'submission_unknown',
-      'queued',
-      'running',
-      'succeeded',
-      'failed',
-      'cancelled'
-    ]),
-    outputState: z.enum(['pending', 'ready', 'partial', 'failed', 'expired']),
-    statusUrl: apiPath,
-    createdAt: timestamp,
-    updatedAt: timestamp,
-    observedAt: timestamp.optional(),
-    startedAt: timestamp.optional(),
-    completedAt: timestamp.optional(),
-    cancelRequestedAt: timestamp.optional(),
-    error: errorDetail.optional()
-  })
-  .strict()
-  .refine((run) => run.statusUrl === workflowRunPath(run.id))
+export interface WorkflowAccess {
+  readonly url: string
+  readonly mimeType: string
+}
+export interface WorkflowRunSummary {
+  readonly id: string
+  readonly workflowId: string
+  readonly definitionVersion: string
+  readonly state: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
+  readonly outputState: 'pending' | 'ready' | 'partial' | 'failed'
+  readonly createdAt: string
+  readonly updatedAt: string
+  readonly startedAt?: string
+  readonly completedAt?: string
+}
+export interface WorkflowRun {
+  readonly run: WorkflowRunSummary
+  readonly outputs: readonly {
+    readonly id: string
+    readonly bindingId: string
+    readonly fileIndex: number
+    readonly kind: 'image' | 'video' | 'audio'
+    readonly fileName: string
+    readonly delivery:
+      | { readonly state: 'ready'; readonly access: WorkflowAccess }
+      | { readonly state: 'failed' }
+  }[]
+}
 
-export const workflowAccessSchema: z.ZodType<WorkflowAccess> = z
-  .object({
-    url: workflowHttpsUrl,
-    expiresAt: timestamp,
-    refreshUrl: apiPath,
-    mimeType: z
-      .string()
-      .max(127)
-      .regex(/^(image|video|audio)\/[a-zA-Z0-9.+-]+$/),
-    sizeBytes: z
-      .number()
-      .int()
-      .min(1)
-      .max(64 * 1024 * 1024),
-    assetExpiresAt: timestamp.optional()
-  })
-  .strict()
+const cloudOutput = z.object({
+  filename: z.string().min(1).max(512),
+  short_url: z.string().max(8192)
+})
 
-export const workflowRuntimeSchema: z.ZodType<
-  Schemas['WorkshopRuntimeObservation']
-> = z.union([
-  z
-    .object({ state: z.literal('unknown'), observedAt: timestamp.optional() })
-    .strict(),
-  z
-    .object({
-      state: z.enum(['ready', 'starting', 'idle', 'unavailable']),
-      observedAt: timestamp
-    })
-    .strict()
-])
-
-const outputSchema: z.ZodType<Schemas['WorkshopWorkflowOutput']> = z
-  .object({
-    id: workflowRunIdSchema,
-    bindingId: z.string().min(1).max(256),
-    fileIndex: z.number().int().min(0).max(15),
-    kind: z.enum(['image', 'video', 'audio']),
-    accessUrl: apiPath,
-    delivery: z.discriminatedUnion('state', [
-      z
-        .object({ state: z.literal('ready'), access: workflowAccessSchema })
-        .strict(),
-      z
-        .object({
-          state: z.enum(['pending', 'failed', 'expired']),
-          error: errorDetail.optional()
-        })
-        .strict()
-    ])
-  })
-  .strict()
-  .refine(
-    (output) =>
-      output.delivery.state !== 'ready' ||
-      (output.delivery.access.refreshUrl === output.accessUrl &&
-        output.delivery.access.mimeType.startsWith(`${output.kind}/`))
+function outputAccess(value: unknown): z.infer<typeof cloudOutput> | undefined {
+  const parsed = cloudOutput.safeParse(value)
+  if (!parsed.success) return
+  const url = new URL(parsed.data.short_url, WORKSHOP_CLOUD_BASE_URL)
+  if (
+    url.origin !== WORKSHOP_CLOUD_BASE_URL ||
+    !/^\/api\/s\/[a-zA-Z0-9_-]+$/.test(url.pathname) ||
+    url.search ||
+    url.hash ||
+    url.username ||
+    url.password
   )
+    return
+  return { ...parsed.data, short_url: url.href }
+}
 
-export const workflowRunSchema: z.ZodType<WorkflowRun> = z
-  .object({
-    run: workflowSummarySchema,
-    runtime: workflowRuntimeSchema,
-    outputs: z.array(outputSchema).max(16),
-    retryOutputDeliveryUrl: apiPath
-  })
-  .strict()
-  .refine((result) => {
-    const path = workflowRunPath(result.run.id)
-    const ids = new Set<string>()
-    const positions = new Set<string>()
-    let bytes = 0
-    for (const output of result.outputs) {
-      const position = JSON.stringify([output.bindingId, output.fileIndex])
-      if (
-        ids.has(output.id) ||
-        positions.has(position) ||
-        output.accessUrl !== `${path}/outputs/${output.id}/access`
-      )
-        return false
-      ids.add(output.id)
-      positions.add(position)
-      if (output.delivery.state === 'ready') {
-        if (result.run.state !== 'succeeded') return false
-        bytes += output.delivery.access.sizeBytes
-      }
-    }
-    return (
-      bytes <= 128 * 1024 * 1024 &&
-      result.retryOutputDeliveryUrl === `${path}/outputs/retry`
-    )
-  })
+function timestamp(value: bigint): string {
+  const number = Number(value)
+  if (!Number.isSafeInteger(number)) throw new Error('Invalid Cloud timestamp')
+  return new Date(number).toISOString()
+}
 
-export const workflowHistorySchema: z.ZodType<
-  Schemas['WorkshopWorkflowRunPage']
-> = z
-  .object({
-    items: z.array(workflowSummarySchema).max(100),
-    nextCursor: z.string().min(1).max(2048).optional()
-  })
-  .strict()
-
-export const workflowUploadSchema = z
-  .object({
-    upload_url: workflowHttpsUrl,
-    workflow_upload: z
-      .object({
-        id: workflowRunIdSchema,
-        inputUrl: workflowHttpsUrl,
-        uploadHeaders: z.record(z.string(), z.string().max(2048)),
-        uploadExpiresAt: timestamp,
-        assetExpiresAt: timestamp,
-        accessUrl: apiPath
-      })
-      .strict() satisfies z.ZodType<Schemas['WorkshopUploadGrant']>
-  })
-  .strict() satisfies z.ZodType<Schemas['CustomerStorageResourceResponse']>
-
-export function workflowRunPath(id: string): string {
-  return `/v1/workshop/workflow-runs/${workflowRunIdSchema.parse(id)}`
+export function cloudWorkflowResult(
+  value: unknown,
+  definition: WorkshopWorkflowDefinition,
+  runId: string
+): WorkflowRun {
+  const job = zJobDetailResponse.parse(value)
+  if (job.id !== runId) throw new Error('Unexpected Cloud job')
+  const outputs: WorkflowRun['outputs'] =
+    job.status === 'completed'
+      ? (definition.outputs ?? []).flatMap<WorkflowRun['outputs'][number]>(
+          (binding) => {
+            const node = z
+              .record(z.string(), z.unknown())
+              .safeParse(job.outputs?.[binding.nodeId])
+            const items = node.success ? node.data[binding.key] : undefined
+            if (!Array.isArray(items) || !items.length)
+              return [
+                {
+                  id: binding.id,
+                  bindingId: binding.id,
+                  fileIndex: 0,
+                  kind: binding.kind,
+                  fileName: binding.id,
+                  delivery: { state: 'failed' as const }
+                }
+              ]
+            if (items.length > 16) throw new Error('Too many Cloud outputs')
+            return items.map((item: unknown, fileIndex) => {
+              const selected = outputAccess(item)
+              return {
+                id: binding.id + ':' + fileIndex,
+                bindingId: binding.id,
+                fileIndex,
+                kind: binding.kind,
+                fileName: selected?.filename ?? binding.id,
+                delivery: selected
+                  ? {
+                      state: 'ready' as const,
+                      access: {
+                        url: selected.short_url,
+                        mimeType: binding.kind + '/*'
+                      }
+                    }
+                  : { state: 'failed' as const }
+              }
+            })
+          }
+        )
+      : []
+  if (outputs.length > 16) throw new Error('Too many Cloud outputs')
+  const states = {
+    pending: 'queued',
+    in_progress: 'running',
+    completed: 'succeeded',
+    failed: 'failed',
+    cancelled: 'cancelled'
+  } as const
+  return {
+    run: {
+      id: job.id,
+      workflowId: definition.id,
+      definitionVersion: definition.definitionVersion,
+      state: states[job.status],
+      outputState:
+        job.status === 'completed' ? workflowOutputState(outputs) : 'pending',
+      createdAt: timestamp(job.create_time),
+      updatedAt: timestamp(job.update_time),
+      ...(job.execution_start_time === undefined
+        ? {}
+        : { startedAt: timestamp(job.execution_start_time) }),
+      ...(job.execution_end_time === undefined
+        ? {}
+        : { completedAt: timestamp(job.execution_end_time) })
+    },
+    outputs
+  }
 }
 
 export function workflowOutputs(result: WorkflowRun): RunOutput[] {
@@ -251,15 +198,7 @@ export function workflowOutputs(result: WorkflowRun): RunOutput[] {
             id: output.id,
             kind: output.kind,
             url: output.delivery.access.url,
-            download: {
-              url: output.delivery.access.url,
-              expiresAt: Date.parse(output.delivery.access.expiresAt)
-            },
-            ...(output.delivery.access.assetExpiresAt
-              ? { expiresAt: Date.parse(output.delivery.access.assetExpiresAt) }
-              : {}),
-            byteLength: output.delivery.access.sizeBytes,
-            fileName: `${result.run.id}-${output.id}`
+            fileName: output.fileName
           }
         ]
       : []
@@ -267,27 +206,18 @@ export function workflowOutputs(result: WorkflowRun): RunOutput[] {
 }
 
 export function workflowSettled(result: WorkflowRun): boolean {
-  return (
-    result.run.state === 'failed' ||
-    result.run.state === 'cancelled' ||
-    (result.run.state === 'succeeded' && result.run.outputState !== 'pending')
-  )
+  return ['failed', 'cancelled', 'succeeded'].includes(result.run.state)
 }
 
 export function workflowOutputState(
   outputs: WorkflowRun['outputs']
-): WorkflowRun['run']['outputState'] {
+): WorkflowRunSummary['outputState'] {
   const ready = outputs.filter(
     (output) => output.delivery.state === 'ready'
   ).length
-  if (ready === outputs.length && ready > 0) return 'ready'
-  if (ready > 0) return 'partial'
-  if (
-    outputs.length > 0 &&
-    outputs.every((output) => output.delivery.state === 'expired')
-  )
-    return 'expired'
-  return outputs.some((output) => output.delivery.state === 'failed')
-    ? 'failed'
-    : 'pending'
+  return ready === outputs.length && ready > 0
+    ? 'ready'
+    : ready > 0
+      ? 'partial'
+      : 'failed'
 }

@@ -3,91 +3,52 @@ import { readFileSync } from 'node:fs'
 import type { BrowserContext, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { components } from '@comfyorg/registry-types'
+import type { JobDetailResponse } from '@comfyorg/ingest-types'
 
 import { test } from './fixtures/modelsAccount'
 
-type Schemas = components['schemas']
 const workflowId = 'workflows/remove-background'
 const runId = 'd982ea52-a2d8-4212-ad8a-ff3030ce42bf'
-const outputIds = [
-  '2d24ee32-f12d-51a6-bf3c-c8bb0d38d443',
-  '9fa2f8bc-314a-51a6-9f32-f4624501fc92'
-]
 const uploadId = '8b9a8b50-9fd5-4bbe-a03a-2a387f09713b'
-const path = `/v1/workshop/workflow-runs/${runId}`
-const inputUrl = `https://storage.googleapis.com/inputs/${uploadId}`
-const uploadUrl = `${inputUrl}?upload=signature`
-const uploadPath = `/customers/storage/${uploadId}/access`
+const path = '/api/jobs/' + runId
+const uploadPath = '/api/uploads/' + uploadId
+const inputName = 'uploaded-photo.webp'
 const image = readFileSync('e2e/assets/placeholder-1x1.webp')
 
 async function setup(context: BrowserContext) {
   let enabled = true
+  let generation = 0
   await context.route('https://apis.google.com/js/api.js*', (route) =>
     route.abort('blockedbyclient')
   )
-  const now = Date.now()
-  const expiresAt = new Date(now + 3_600_000).toISOString()
-  const summary: Schemas['WorkshopWorkflowRunSummary'] = {
+  let current: Omit<JobDetailResponse, 'create_time' | 'update_time'> & {
+    create_time: number
+    update_time: number
+  } = {
     id: runId,
-    workflowId,
-    definitionVersion: '1',
-    state: 'queued',
-    outputState: 'pending',
-    statusUrl: path,
-    createdAt: new Date(now).toISOString(),
-    updatedAt: new Date(now).toISOString()
+    status: 'pending',
+    create_time: Date.now(),
+    update_time: Date.now(),
+    outputs: {}
   }
-  let current: Schemas['WorkshopWorkflowRun'] = {
-    run: summary,
-    runtime: { state: 'unknown' },
-    outputs: [],
-    retryOutputDeliveryUrl: `${path}/outputs/retry`
-  }
-  const commands: Array<{
-    method: string
-    path: string
-    body: unknown
-    key?: string
-  }> = []
+  const commands: Array<{ method: string; path: string; body: unknown }> = []
   const uploads: Buffer[] = []
-  const access = (
-    index: number,
-    renewed = false
-  ): Schemas['WorkshopMediaAccess'] => ({
-    url: `https://storage.googleapis.com/results/${outputIds[index]}.webp?signature=${renewed ? 'renewed' : 'initial'}`,
-    expiresAt: renewed ? expiresAt : new Date(now + 60_000).toISOString(),
-    refreshUrl: `${path}/outputs/${outputIds[index]}/access`,
-    mimeType: 'image/webp',
-    sizeBytes: image.byteLength
-  })
+  const access = (index: number) =>
+    'https://testcloud.comfy.org/api/s/output-' + index + '-' + generation
   function succeed(partial: boolean) {
+    generation++
     current = {
       ...current,
-      run: {
-        ...current.run,
-        state: 'succeeded',
-        outputState: partial ? 'partial' : 'ready',
-        updatedAt: new Date(Date.now()).toISOString(),
-        completedAt: new Date(Date.now()).toISOString()
-      },
-      outputs: outputIds.map((id, index) => ({
-        id,
-        bindingId: 'image',
-        fileIndex: index,
-        kind: 'image',
-        accessUrl: `${path}/outputs/${id}/access`,
-        delivery:
-          partial && index === 1
-            ? {
-                state: 'failed',
-                error: {
-                  code: 'delivery_failed',
-                  message: 'Output unavailable'
-                }
-              }
-            : { state: 'ready', access: access(index) }
-      }))
+      status: 'completed',
+      update_time: Date.now(),
+      outputs: {
+        '18': {
+          images: [0, 1].map((index) => ({
+            filename: 'output-' + index + '.webp',
+            ...(partial && index === 1 ? {} : { short_url: access(index) })
+          }))
+        }
+      }
     }
   }
   await context.route('**/t.comfy.org/**', (route) =>
@@ -104,92 +65,43 @@ async function setup(context: BrowserContext) {
         })
       : route.abort('blockedbyclient')
   )
-  await context.route('**/customers/storage', (route) => {
-    expect(route.request().postDataJSON()).toMatchObject({
-      purpose: 'workshop_workflow',
-      content_type: 'image/webp',
-      size_bytes: image.byteLength
+  await context.route('**/api/inputs/upload-url', (route) => {
+    expect(route.request().postDataJSON()).toEqual({
+      content_type: 'image/webp'
     })
-    return route.fulfill({
-      json: {
-        upload_url: uploadUrl,
-        workflow_upload: {
-          id: uploadId,
-          inputUrl,
-          accessUrl: uploadPath,
-          uploadExpiresAt: expiresAt,
-          assetExpiresAt: expiresAt,
-          uploadHeaders: {
-            'Content-Type': 'image/webp',
-            'x-goog-if-generation-match': '0',
-            'x-goog-content-length-range': `${image.byteLength},${image.byteLength}`
-          }
-        }
-      } satisfies Schemas['CustomerStorageResourceResponse']
-    })
+    return route.fulfill({ json: { upload_path: uploadPath, expires_in: 900 } })
   })
-  await context.route(uploadUrl, (route) => {
+  await context.route('**' + uploadPath, (route) => {
     expect(route.request().method()).toBe('PUT')
     expect(route.request().headers()).not.toHaveProperty('authorization')
+    expect(route.request().headers()).not.toHaveProperty('x-api-key')
     const bytes = route.request().postDataBuffer()
     if (!bytes) throw new Error('Missing uploaded bytes')
     uploads.push(bytes)
-    return route.fulfill({ status: 200, body: '' })
-  })
-  await context.route(`**${uploadPath}`, (route) =>
-    route.fulfill({
-      json: {
-        url: `${inputUrl}?signature=read`,
-        expiresAt,
-        refreshUrl: uploadPath,
-        mimeType: 'image/webp',
-        sizeBytes: image.byteLength
-      } satisfies Schemas['WorkshopMediaAccess']
+    return route.fulfill({
+      json: { name: inputName, subfolder: '', type: 'input' }
     })
-  )
-  await context.route('https://storage.googleapis.com/results/**', (route) =>
+  })
+  await context.route('**/api/s/**', (route) =>
     route.fulfill({ contentType: 'image/webp', body: image })
   )
-  await context.route('**/v1/workshop/workflow-runs**', (route) => {
+  await context.route(/\/api\/(prompt|jobs\/)/, (route) => {
     const request = route.request()
     const url = new URL(request.url())
     const method = request.method()
-    const body: unknown = request.postData()
-      ? request.postDataJSON()
-      : undefined
     commands.push({
       method,
       path: url.pathname,
-      body,
-      key: request.headers()['idempotency-key']
+      body: request.postData() ? request.postDataJSON() : undefined
     })
-    if (url.pathname === '/v1/workshop/workflow-runs') {
-      if (method === 'GET')
-        return route.fulfill({
-          json: {
-            items: commands.some((entry) => entry.method === 'POST')
-              ? [current.run]
-              : []
-          } satisfies Schemas['WorkshopWorkflowRunPage']
-        })
-      return route.fulfill({ status: 202, json: summary })
+    if (url.pathname === '/api/prompt') {
+      expect(request.headers()).toHaveProperty('authorization')
+      return route.fulfill({ json: { prompt_id: runId } })
     }
     if (url.pathname.endsWith('/cancel'))
-      current = {
-        ...current,
-        run: {
-          ...current.run,
-          cancelRequestedAt: new Date(Date.now()).toISOString()
-        }
-      }
-    if (url.pathname.endsWith('/outputs/retry')) succeed(false)
-    const index = outputIds.findIndex(
-      (id) => url.pathname === `${path}/outputs/${id}/access`
-    )
-    return route.fulfill({
-      status: method === 'POST' ? 202 : 200,
-      json: index >= 0 ? access(index, true) : current
-    })
+      return route.fulfill({ json: { cancelled: true } })
+    expect(url.searchParams.get('short_link')).toBe('ephemeral_tool_chain')
+    return route.fulfill({ json: current })
   })
   return {
     commands,
@@ -200,14 +112,7 @@ async function setup(context: BrowserContext) {
       enabled = false
     },
     cancel() {
-      current = {
-        ...current,
-        run: {
-          ...current.run,
-          state: 'cancelled',
-          completedAt: new Date(Date.now()).toISOString()
-        }
-      }
+      current = { ...current, status: 'cancelled', update_time: Date.now() }
     }
   }
 }
@@ -237,7 +142,7 @@ async function signInAndRun(
   await expect(page.getByTestId('workflow-run')).toHaveText('Queued')
 }
 
-test('workflow refresh, partial output delivery and expired downloads retain one run @mobile', async ({
+test('Cloud upload, refresh, partial delivery and downloads retain one run @mobile', async ({
   page,
   context,
   modelsAccount
@@ -246,23 +151,13 @@ test('workflow refresh, partial output delivery and expired downloads retain one
   await signInAndRun(page, modelsAccount)
   const submissions = () =>
     cloud.commands.filter(
-      (command) =>
-        command.method === 'POST' &&
-        command.path === '/v1/workshop/workflow-runs'
+      (command) => command.method === 'POST' && command.path === '/api/prompt'
     )
   expect(cloud.uploads).toEqual([image])
-  expect(submissions()).toEqual([
-    {
-      method: 'POST',
-      path: '/v1/workshop/workflow-runs',
-      key: expect.any(String),
-      body: {
-        workflowId,
-        definitionVersion: '1',
-        appInputs: { image: inputUrl }
-      }
-    }
-  ])
+  expect(submissions()).toHaveLength(1)
+  expect(submissions()[0].body).toMatchObject({
+    prompt: { '17': { class_type: 'LoadImage', inputs: { image: inputName } } }
+  })
 
   await page.reload()
   await expect(page.getByTestId('workflow-run')).toHaveText('Queued')
@@ -270,7 +165,8 @@ test('workflow refresh, partial output delivery and expired downloads retain one
   expect(submissions()).toHaveLength(1)
   await page.getByRole('tab', { name: 'API', exact: true }).click()
   const snippet = await page.getByTestId('workflow-api-snippet').textContent()
-  expect(snippet).toContain('Idempotency-Key:')
+  expect(snippet).toContain('/api/prompt')
+  expect(snippet).toContain('X-API-Key:')
   await page.setViewportSize({ width: 320, height: 851 })
   await page.getByRole('tab', { name: 'Workflow', exact: true }).click()
   await expect(
@@ -298,26 +194,33 @@ test('workflow refresh, partial output delivery and expired downloads retain one
     'data-state',
     'succeeded'
   )
+  cloud.succeed(false)
   await page.getByRole('button', { name: 'Retry output delivery' }).click()
   const secondFile = page.getByRole('button', { name: 'Image 2' })
   await secondFile.click()
   await expect(
     page.getByRole('img', { name: 'Output', exact: true })
-  ).toHaveAttribute('src', cloud.access(1).url)
-  await page.clock.fastForward(65_000)
-  await page.getByRole('link', { name: 'Refresh download link' }).click()
+  ).toHaveAttribute('src', cloud.access(1))
+  cloud.succeed(false)
+  await page
+    .getByRole('img', { name: 'Output', exact: true })
+    .dispatchEvent('error')
   await expect(
-    page.getByRole('link', { name: 'Download', exact: true })
-  ).toHaveAttribute('href', cloud.access(1, true).url)
+    page.getByRole('img', { name: 'Output', exact: true })
+  ).toHaveAttribute('src', cloud.access(1))
+  const downloaded = page.waitForEvent('download')
+  await page.getByRole('link', { name: 'Download', exact: true }).click()
+  const download = await downloaded
+  expect(download.suggestedFilename()).toBe('output-1.webp')
+  const downloadedPath = await download.path()
+  if (!downloadedPath) throw new Error('Missing download')
+  expect(readFileSync(downloadedPath)).toEqual(image)
   expect(submissions()).toHaveLength(1)
   expect(
-    cloud.commands.filter((command) => command.path.endsWith('/outputs/retry'))
-  ).toHaveLength(1)
-  expect(
-    cloud.commands.filter((command) =>
-      command.path.endsWith(`/${outputIds[1]}/access`)
+    cloud.commands.every(
+      (command) => command.path === '/api/prompt' || command.path === path
     )
-  ).toHaveLength(1)
+  ).toBe(true)
 })
 
 test('workflow cancellation survives disabled admission and hides on sign-out', async ({
@@ -344,17 +247,21 @@ test('workflow cancellation survives disabled admission and hides on sign-out', 
   await page.clock.fastForward(2100)
   await expect(page.getByTestId('playground-output')).toHaveAttribute(
     'data-state',
-    'cancelled'
+    'idle'
   )
+  await expect(
+    page.getByText(
+      'Cancellation requested. Check Cloud for the final job status.',
+      { exact: true }
+    )
+  ).toBeVisible()
   await expect(page.getByTestId('workflow-run')).toBeDisabled()
   await page.locator('[data-testid="header-account"]:visible').click()
   await page.getByTestId('account-sign-out').click()
   await expect(page.getByTestId('workflow-hero')).not.toBeVisible()
   expect(
     cloud.commands.filter(
-      (command) =>
-        command.method === 'POST' &&
-        command.path === '/v1/workshop/workflow-runs'
+      (command) => command.method === 'POST' && command.path === '/api/prompt'
     )
   ).toHaveLength(1)
 })
