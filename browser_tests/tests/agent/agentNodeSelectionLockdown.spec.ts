@@ -69,7 +69,10 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
     })
   })
 
-  for (const location of ['left', 'right'] as const) {
+  for (const [location, gutterMargin] of [
+    ['left', 'margin-left'],
+    ['right', 'margin-right']
+  ] as const) {
     test.describe(`${location} floating sidebar`, () => {
       test.use({
         initialSettings: {
@@ -84,8 +87,6 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
         comfyPage
       }) => {
         const toolbar = comfyPage.menu.sideToolbar
-        const gutterMargin =
-          location === 'left' ? 'margin-left' : 'margin-right'
 
         await test.step('the rail starts inset by its gutter', async () => {
           await expect(toolbar).toContainClass('floating-sidebar')
