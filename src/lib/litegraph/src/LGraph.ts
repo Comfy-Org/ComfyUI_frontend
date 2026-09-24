@@ -623,7 +623,7 @@ export class LGraph
   readonly events = new CustomEventTarget<LGraphEventMap>()
   readonly _subgraphs: Map<SubgraphId, Subgraph> = new Map()
   _nodes: (LGraphNode | SubgraphNode)[] = []
-  _nodes_by_id: Partial<Record<NodeId, LGraphNode>> = {}
+  _nodes_by_id: Partial<Record<NodeId, LGraphNode>> = Object.create(null)
   _nodes_in_order: LGraphNode[] = []
   _nodes_executable: LGraphNode[] | null = null
   _groups: LGraphGroup[] = []
@@ -833,7 +833,7 @@ export class LGraph
 
     this._subgraphs.clear()
     this._nodes = []
-    this._nodes_by_id = {}
+    this._nodes_by_id = Object.create(null)
     this._nodes_in_order = []
     this._nodes_executable = null
     this._groups = []

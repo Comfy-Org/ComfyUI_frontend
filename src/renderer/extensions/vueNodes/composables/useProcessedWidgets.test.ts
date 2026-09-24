@@ -20,6 +20,7 @@ import { useLinkStore } from '@/stores/linkStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import type { WidgetRenderState } from '@/stores/widgetValueStore'
 import {
+  createLeafNodeLocatorId,
   createNodeExecutionId,
   createNodeLocatorId
 } from '@/types/nodeIdentification'
@@ -546,6 +547,18 @@ describe('computeProcessedWidgets', () => {
 
     expect(useWidgetValueStore().getWidget(id)?.value).toBe('after')
     expect(clearErrorSpy).not.toHaveBeenCalled()
+  })
+
+  it('resolves the widget locator for a root-owned opaque id whole', () => {
+    const nodeId = toNodeId('insert:abc123:root:node:5')
+    const id = widgetId(GRAPH_ID, nodeId, 'text')
+    registerWidgetState(id, { type: 'text', value: 'before' })
+
+    const [processed] = processWidgets({ widgetIds: [id], nodeId })
+
+    expect(processed.simplified.nodeLocatorId).toBe(
+      createLeafNodeLocatorId(null, nodeId)
+    )
   })
 
   it('applies advanced border styling to advanced widgets', () => {
