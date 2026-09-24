@@ -31,47 +31,60 @@ function runScopeAction(
   action: ScopeAction
 ): Promise<DroppedScope | undefined> {
   return page.evaluate((action) => {
-    const vueApp = document.getElementById('vue-app')
-    if (vueApp === null) throw new Error('#vue-app is not mounted')
-    // Vue attaches `__vue_app__` to the mount element at runtime; no public
-    // type covers it, so this is the one unavoidable boundary cast.
-    const pinia = (
-      vueApp as unknown as {
-        __vue_app__: {
-          config: {
-            globalProperties: { $pinia: { _s: Map<string, unknown> } }
+    function getPinia(): { _s: Map<string, unknown> } {
+      const vueApp = document.getElementById('vue-app')
+      if (vueApp === null) throw new Error('#vue-app is not mounted')
+      // Vue attaches `__vue_app__` to the mount element at runtime; no public
+      // type covers it, so this is the one unavoidable boundary cast.
+      return (
+        vueApp as unknown as {
+          __vue_app__: {
+            config: {
+              globalProperties: { $pinia: { _s: Map<string, unknown> } }
+            }
           }
         }
-      }
-    ).__vue_app__.config.globalProperties.$pinia
-    const store: unknown = pinia._s.get('agentWorkflowTabBinding')
-    if (
-      typeof store !== 'object' ||
-      store === null ||
-      !('tabPathFor' in store) ||
-      !('bind' in store) ||
-      !('unbindWorkflow' in store)
-    )
-      throw new Error('agentWorkflowTabBinding store is not mounted')
-    const binding = store as AgentWorkflowTabBindingStore
+      ).__vue_app__.config.globalProperties.$pinia
+    }
 
-    const workflowStoreRaw: unknown = pinia._s.get('workflow')
-    if (
-      typeof workflowStoreRaw !== 'object' ||
-      workflowStoreRaw === null ||
-      !('getWorkflowByPath' in workflowStoreRaw)
-    )
-      throw new Error('workflow store is not mounted')
-    const workflows = workflowStoreRaw as WorkflowStore
+    function getBindingStore(pinia: {
+      _s: Map<string, unknown>
+    }): AgentWorkflowTabBindingStore {
+      const store: unknown = pinia._s.get('agentWorkflowTabBinding')
+      if (
+        typeof store !== 'object' ||
+        store === null ||
+        !('tabPathFor' in store) ||
+        !('bind' in store) ||
+        !('unbindWorkflow' in store)
+      )
+        throw new Error('agentWorkflowTabBinding store is not mounted')
+      return store as AgentWorkflowTabBindingStore
+    }
 
-    if (action.kind === 'drop') {
-      const tabPath = binding.tabPathFor(action.workflowId)
+    function getWorkflows(pinia: { _s: Map<string, unknown> }): WorkflowStore {
+      const workflowStoreRaw: unknown = pinia._s.get('workflow')
+      if (
+        typeof workflowStoreRaw !== 'object' ||
+        workflowStoreRaw === null ||
+        !('getWorkflowByPath' in workflowStoreRaw)
+      )
+        throw new Error('workflow store is not mounted')
+      return workflowStoreRaw as WorkflowStore
+    }
+
+    function dropScope(
+      binding: AgentWorkflowTabBindingStore,
+      workflows: WorkflowStore,
+      workflowId: string
+    ): DroppedScope {
+      const tabPath = binding.tabPathFor(workflowId)
       if (tabPath === undefined)
-        throw new Error(`no bound tab path for workflow ${action.workflowId}`)
+        throw new Error(`no bound tab path for workflow ${workflowId}`)
       const tab = workflows.getWorkflowByPath(tabPath)
       if (!tab) throw new Error(`no open tab at ${tabPath} to drop scope from`)
       const filename = tab.filename
-      binding.unbindWorkflow(action.workflowId)
+      binding.unbindWorkflow(workflowId)
       // Dropping the binding alone is not enough: `boundOrOpenWorkflowFor`
       // (useAgentWorkflowResolver's `resolveWorkflow`) falls back to
       // re-deriving the same scope by matching this still-open tab's name
@@ -84,9 +97,24 @@ function runScopeAction(
       return { tabPath, filename }
     }
 
-    const tab = workflows.getWorkflowByPath(action.tabPath)
-    if (tab) tab.filename = action.filename
-    binding.bind(action.workflowId, action.tabPath)
+    function restoreScope(
+      binding: AgentWorkflowTabBindingStore,
+      workflows: WorkflowStore,
+      restore: Extract<ScopeAction, { kind: 'restore' }>
+    ): void {
+      const tab = workflows.getWorkflowByPath(restore.tabPath)
+      if (tab) tab.filename = restore.filename
+      binding.bind(restore.workflowId, restore.tabPath)
+    }
+
+    const pinia = getPinia()
+    const binding = getBindingStore(pinia)
+    const workflows = getWorkflows(pinia)
+
+    if (action.kind === 'drop')
+      return dropScope(binding, workflows, action.workflowId)
+
+    restoreScope(binding, workflows, action)
     return undefined
   }, action)
 }
