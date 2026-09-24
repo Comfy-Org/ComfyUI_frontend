@@ -1,7 +1,8 @@
-import { applyOps, mint } from '@comfyorg/comfy-multi-player'
-import type { WidgetCatalog } from '@comfyorg/comfy-multi-player'
+import { applyOps, mint, project } from '@comfyorg/comfy-multi-player'
+import type { WidgetCatalog, WorkflowJSON } from '@comfyorg/comfy-multi-player'
 import { fromPartial } from '@total-typescript/shoehorn'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { z } from 'zod'
 
 import { isRootGraphDocBound } from '@/lib/litegraph/src/docBoundGraphs'
 import {
@@ -14,14 +15,17 @@ import {
   createTestSubgraphNode
 } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { reportError } from '@/platform/telemetry/reportError'
+import { transformInputSpecV1ToV2 } from '@/schemas/nodeDef/migration'
+import { useLitegraphService } from '@/services/litegraphService'
 import { toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 import { createUuidv4 } from '@/utils/uuid'
 
 import { attachDocOpMinter } from './docOpMinter'
-import type { DocOpMinter } from './docOpMinter'
+import type { DocOpMinter, DocOpMinterDeps } from './docOpMinter'
 import type { GraphOperation } from './graphOperations'
+import { readDocSlotNames } from './liveGraphApplier'
 import { mintWireOps } from './opEnvelope'
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -45,6 +49,31 @@ class TestSink extends LGraphNode {
   }
 }
 
+const IMAGES_GROUP = 'model.images'
+
+/** Mirrors the GPT Image node's `model.images.image_N` autogrow group. */
+class TestAutogrowSink extends LGraphNode {
+  constructor() {
+    super('Test Autogrow Sink')
+    useLitegraphService().addNodeInput(
+      this,
+      transformInputSpecV1ToV2(
+        [
+          'COMFY_AUTOGROW_V3',
+          {
+            template: {
+              input: { required: { image: ['IMAGE', {}] } },
+              names: ['image_1', 'image_2', 'image_3'],
+              min: 0
+            }
+          }
+        ],
+        { name: IMAGES_GROUP, isOptional: false }
+      )
+    )
+  }
+}
+
 class TestNote extends LGraphNode {
   override isVirtualNode = true
   constructor() {
@@ -57,8 +86,34 @@ class TestNote extends LGraphNode {
 const CATALOG: WidgetCatalog = {
   types: {
     TestSource: { widget_order: ['steps'] },
-    TestSink: { widget_order: [] }
+    TestSink: { widget_order: [] },
+    TestAutogrowSink: { widget_order: [] }
   }
+}
+
+/** The bound document's view of `graph`, as the host holds it. */
+function mintDocFrom(graph: LGraph) {
+  const serialized = graph.serialize() as unknown as WorkflowJSON
+  return mint(serialized, CATALOG)
+}
+
+const zDocInputs = z.array(
+  z.object({ name: z.string(), link: z.number().nullable() })
+)
+
+function applyMinted(doc: ReturnType<typeof mint>, ops: GraphOperation[]) {
+  return applyOps(
+    doc,
+    mintWireOps(ops, { actor: 'human:user:tab', baseVersion: 1 }),
+    CATALOG
+  ).outcomes.map((outcome) => outcome.outcome)
+}
+
+function docInputs(doc: ReturnType<typeof mint>, nodeId: unknown) {
+  const node = project(doc, CATALOG).nodes.find(
+    (candidate) => String(candidate.id) === String(nodeId)
+  )
+  return node ? zDocInputs.parse(node.inputs) : null
 }
 
 function afterFlush(): Promise<void> {
@@ -81,6 +136,7 @@ function seedGraph(graph: LGraph) {
 beforeEach(() => {
   LiteGraph.registerNodeType('TestSource', TestSource)
   LiteGraph.registerNodeType('TestSink', TestSink)
+  LiteGraph.registerNodeType('TestAutogrowSink', TestAutogrowSink)
   LiteGraph.registerNodeType('TestNote', TestNote)
 })
 
@@ -91,6 +147,7 @@ describe('attachDocOpMinter', () => {
   let minter: DocOpMinter
   let enabled: boolean
   let bound: boolean
+  let docInputNames: DocOpMinterDeps['docInputNames']
 
   beforeEach(() => {
     vi.mocked(reportError).mockClear()
@@ -99,12 +156,14 @@ describe('attachDocOpMinter', () => {
     minted = []
     enabled = true
     bound = true
+    docInputNames = () => null
     minter = attachDocOpMinter({
       isEnabled: () => enabled,
       isDocBound: () => bound,
       enqueue: (operations) => minted.push(...operations),
       getGraph: () => graph,
-      boundRootGraphId: () => rootGraphId
+      boundRootGraphId: () => rootGraphId,
+      docInputNames: (nodeId) => docInputNames(nodeId)
     })
   })
 
@@ -300,7 +359,8 @@ describe('attachDocOpMinter', () => {
       isDocBound: () => true,
       enqueue,
       getGraph: () => graph,
-      boundRootGraphId: () => rootGraphId
+      boundRootGraphId: () => rootGraphId,
+      docInputNames: () => null
     })
 
     const added = new TestSink()
@@ -355,6 +415,135 @@ describe('attachDocOpMinter', () => {
     )
     expect(outcomes).toEqual([expect.objectContaining({ outcome: 'applied' })])
     doc.destroy()
+  })
+
+  describe("link ops address the document's own input order", () => {
+    /** A sink whose live input order (`mask`, `image`) is the reverse of the document's. */
+    function seedReorderedSink() {
+      const source = new TestSource()
+      const sink = new LGraphNode('Reordered Sink')
+      sink.addInput('mask', 'MASK')
+      sink.addInput('image', 'IMAGE')
+      withGraphIntentSource('load', () => {
+        graph.add(source)
+        graph.add(sink)
+        source.connect(0, sink, 1)
+      })
+      return { source, sink }
+    }
+
+    it.for([
+      {
+        action: 'connect',
+        act: (source: LGraphNode, sink: LGraphNode) => {
+          sink.disconnectInput(1)
+          source.connect(0, sink, 1)
+        }
+      },
+      {
+        action: 'disconnect',
+        act: (_source: LGraphNode, sink: LGraphNode) => {
+          sink.disconnectInput(1)
+        }
+      }
+    ])(
+      "$action mints the doc index of the live slot's name, not its live index",
+      async ({ action, act }) => {
+        const { source, sink } = seedReorderedSink()
+        docInputNames = (nodeId) =>
+          nodeId === sink.id ? ['image', 'mask'] : null
+
+        act(source, sink)
+        await afterFlush()
+
+        expect(minted.at(-1)).toMatchObject({
+          op: action,
+          to_node: sink.id,
+          to_slot: 0
+        })
+      }
+    )
+
+    it('falls back to the live index while the document has no such node yet', async () => {
+      const { source, sink } = seedReorderedSink()
+      docInputNames = () => null
+
+      sink.disconnectInput(1)
+      source.connect(0, sink, 1)
+      await afterFlush()
+
+      expect(minted).toEqual([
+        expect.objectContaining({ op: 'disconnect', to_slot: 1 }),
+        expect.objectContaining({ op: 'connect', to_slot: 1 })
+      ])
+    })
+
+    it('mints nothing for a link on a slot the document lacks, reporting once', async () => {
+      const { source, sink } = seedReorderedSink()
+      docInputNames = (nodeId) => (nodeId === sink.id ? ['mask'] : null)
+
+      source.connect(0, sink, 1)
+      await afterFlush()
+
+      expect(minted).toEqual([])
+      expect(
+        vi.mocked(reportError).mock.calls.map(([, meta]) => meta.errorType)
+      ).toEqual(['agent_crdt_link_slot_not_in_doc'])
+    })
+
+    it('grows an autogrow slot the document lacks instead of naming a live index, and the applier appends it', async () => {
+      const sources = [new TestSource(), new TestSource(), new TestSource()]
+      const sink = new TestAutogrowSink()
+      withGraphIntentSource('load', () => {
+        for (const source of sources) graph.add(source)
+        graph.add(sink)
+        sources[0].connect(0, sink, 0)
+      })
+      const doc = mintDocFrom(graph)
+      docInputNames = (nodeId) =>
+        readDocSlotNames(doc, String(nodeId), 'inputs')
+      expect(docInputs(doc, sink.id)).toEqual([
+        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
+        { name: `${IMAGES_GROUP}.image_2`, link: null }
+      ])
+
+      sources[1].connect(0, sink, 1)
+      await afterFlush()
+      expect(minted).toEqual([
+        expect.objectContaining({ op: 'connect', to_slot: 1 })
+      ])
+      expect(applyMinted(doc, minted)).toEqual(['applied'])
+      minted.length = 0
+
+      expect(sink.inputs.map(({ name }) => name)).toEqual([
+        `${IMAGES_GROUP}.image_1`,
+        `${IMAGES_GROUP}.image_2`,
+        `${IMAGES_GROUP}.image_3`
+      ])
+      sources[2].connect(0, sink, 2)
+      await afterFlush()
+
+      const handWired = sink.inputs[2].link
+      expect(minted).toEqual([
+        {
+          op: 'connect',
+          link_id: handWired,
+          from_node: sources[2].id,
+          from_slot: 0,
+          to_node: sink.id,
+          to_slot: null,
+          link_type: 'IMAGE',
+          grow: { name: `${IMAGES_GROUP}.image_3`, type: 'IMAGE' }
+        }
+      ])
+      expect(applyMinted(doc, minted)).toEqual(['applied'])
+      expect(docInputs(doc, sink.id)).toEqual([
+        { name: `${IMAGES_GROUP}.image_1`, link: sink.inputs[0].link },
+        { name: `${IMAGES_GROUP}.image_2`, link: sink.inputs[1].link },
+        { name: `${IMAGES_GROUP}.image_3`, link: handWired }
+      ])
+      doc.destroy()
+    })
   })
 
   it('mints a live subgraph-interior widget write with the subgraph-node path', async () => {

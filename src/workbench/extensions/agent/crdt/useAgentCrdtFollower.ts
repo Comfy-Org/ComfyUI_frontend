@@ -39,6 +39,7 @@ import type {
   LiveGraphApplierDeps,
   RemoteApplyContext
 } from './liveGraphApplier'
+import { readDocSlotNames } from './liveGraphApplier'
 import { createOpCoalescer } from './opCoalescer'
 import { createOpSender } from './opSender'
 import type { OpsResultView } from './opSender'
@@ -285,7 +286,9 @@ export function useAgentCrdtFollower(
         schemaError: null
       }),
     enqueueHumanOperations: (operations: GraphOperation[]) =>
-      follower.value?.enqueueHumanOperations(operations)
+      follower.value?.enqueueHumanOperations(operations),
+    docInputNames: (nodeId: NodeId) =>
+      follower.value?.docInputNames(nodeId) ?? null
   }
 }
 
@@ -779,6 +782,8 @@ function startAgentCrdtFollower(
     status: readonly(status),
     debugSnapshot,
     enqueueHumanOperations: (operations: GraphOperation[]) =>
-      coalescer.enqueue(operations)
+      coalescer.enqueue(operations),
+    docInputNames: (nodeId: NodeId) =>
+      readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs')
   }
 }

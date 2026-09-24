@@ -16,11 +16,14 @@ import type {
   WorkflowNode
 } from '@comfyorg/comfy-multi-player'
 
+import { liveAutogrowGroupOf } from '@/core/graph/widgets/dynamicWidgets'
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
+import type { INodeInputSlot } from '@/lib/litegraph/src/interfaces'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { LLink } from '@/lib/litegraph/src/LLink'
 import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { RootGraphId } from '@/types/graphScopeId'
@@ -48,6 +51,12 @@ export interface DocOpMinterDeps {
    * switch is loading another workflow into the shared canvas graph.
    */
   boundRootGraphId(): RootGraphId | null
+  /**
+   * The bound document's input slot names for a node, in document order, or
+   * null when the document holds no such node (its `add_node` is still in
+   * flight, or no document is subscribed).
+   */
+  docInputNames(nodeId: NodeId): readonly (string | undefined)[] | null
 }
 
 export interface DocOpMinter {
@@ -158,6 +167,25 @@ function withoutCancelledAdd(
 function owningGraphIdOf(graph: LGraph, event: IntentOf<'set_widget'>): string {
   if (event.graphId !== graph.id) return event.graphId
   return findNodeInHierarchy(graph, event.nodeId)?.graph?.id ?? graph.id
+}
+
+/**
+ * The document input register a live link's target slot names, resolved by
+ * NAME against the bound document's own input order: the live order drifts
+ * from it (an autogrow slot disconnected and regrown lands at the tail of
+ * its group live, while the document keeps its order), and the applier
+ * indexes the document's array. The live index stands in only while the
+ * document has no such node yet. Undefined when the document has the node
+ * but no slot by that name.
+ */
+function docInputIndex(
+  docNames: readonly (string | undefined)[] | null,
+  input: INodeInputSlot | undefined,
+  liveIndex: number
+): number | undefined {
+  if (docNames === null || input === undefined) return liveIndex
+  const index = docNames.indexOf(input.name)
+  return index === -1 ? undefined : index
 }
 
 export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
@@ -302,33 +330,78 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     })
   }
 
+  function reportSlotNotInDoc(
+    action: 'connect' | 'disconnect',
+    link: LLink,
+    input: INodeInputSlot
+  ): void {
+    reportOnce(
+      `${action}:${link.target_id}:${input.name}`,
+      `${action} targets input ${input.name} of node ${String(link.target_id)}, which the bound document does not carry; the bound doc diverges from the local graph`,
+      'agent_crdt_link_slot_not_in_doc',
+      { action, linkId: link.id, nodeId: link.target_id, input: input.name }
+    )
+  }
+
   function mintConnect(event: IntentOf<'connect'>): void {
     if (!isMintableRootScope(event.graph, 'connect', event.link.id)) return
     const { link } = event
-    schedule({
-      kind: 'op',
-      operation: {
-        op: 'connect',
-        link_id: link.id,
-        from_node: link.origin_id,
-        from_slot: link.origin_slot,
-        to_node: link.target_id,
-        to_slot: link.target_slot,
-        link_type: String(link.type)
-      }
-    })
+    const target = event.graph.getNodeById(link.target_id)
+    const input = target?.inputs[link.target_slot]
+    const docNames = deps.docInputNames(link.target_id)
+    const toSlot = docInputIndex(docNames, input, link.target_slot)
+    const connect = {
+      op: 'connect',
+      link_id: link.id,
+      from_node: link.origin_id,
+      from_slot: link.origin_slot,
+      to_node: link.target_id,
+      link_type: String(link.type)
+    } as const
+    if (toSlot !== undefined) {
+      schedule({ kind: 'op', operation: { ...connect, to_slot: toSlot } })
+      return
+    }
+    if (target && input && liveAutogrowGroupOf(target, input.name)) {
+      schedule({
+        kind: 'op',
+        operation: {
+          ...connect,
+          to_slot: null,
+          grow: {
+            name: input.name,
+            type: String(input.type),
+            ...(input.widget ? { widget: input.widget.name } : {})
+          }
+        }
+      })
+      return
+    }
+    if (input) reportSlotNotInDoc('connect', link, input)
   }
 
   function mintDisconnect(event: IntentOf<'disconnect'>): void {
     if (!isMintableRootScope(event.graph, 'disconnect', event.link.id)) return
     const { link } = event
+    const input = event.graph.getNodeById(link.target_id)?.inputs[
+      link.target_slot
+    ]
+    const toSlot = docInputIndex(
+      deps.docInputNames(link.target_id),
+      input,
+      link.target_slot
+    )
+    if (toSlot === undefined) {
+      if (input) reportSlotNotInDoc('disconnect', link, input)
+      return
+    }
     schedule({
       kind: 'op',
       operation: {
         op: 'disconnect',
         link_id: link.id,
         to_node: link.target_id,
-        to_slot: link.target_slot
+        to_slot: toSlot
       }
     })
   }

@@ -238,21 +238,35 @@ function isLinkTuple(tuple: unknown, id: LinkId): tuple is readonly unknown[] {
   )
 }
 
+/**
+ * A document node's slot names in document order (an unnamed slot record is
+ * `undefined` at its position), or null when the document has no such node
+ * or no slot list for it.
+ */
+export function readDocSlotNames(
+  doc: Y.Doc,
+  nodeId: string,
+  kind: 'inputs' | 'outputs'
+): readonly (string | undefined)[] | null {
+  const slots = nodesMap(doc).get(nodeId)?.get(kind)
+  const list: unknown = slots instanceof Y.Array ? slots.toJSON() : slots
+  if (!Array.isArray(list)) return null
+  return list.map((entry: unknown) => {
+    const name =
+      typeof entry === 'object' && entry !== null && 'name' in entry
+        ? entry.name
+        : undefined
+    return typeof name === 'string' ? name : undefined
+  })
+}
+
 function readDocSlotName(
   doc: Y.Doc,
   nodeId: string,
   kind: 'inputs' | 'outputs',
   slot: number
 ): string | undefined {
-  const slots = nodesMap(doc).get(nodeId)?.get(kind)
-  const list: unknown = slots instanceof Y.Array ? slots.toJSON() : slots
-  if (!Array.isArray(list)) return undefined
-  const entry: unknown = list[slot]
-  const name =
-    typeof entry === 'object' && entry !== null && 'name' in entry
-      ? entry.name
-      : undefined
-  return typeof name === 'string' ? name : undefined
+  return readDocSlotNames(doc, nodeId, kind)?.[slot]
 }
 
 function docLinksIncident(doc: Y.Doc, nodeId: string): DocLink[] {
