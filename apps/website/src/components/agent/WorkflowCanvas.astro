@@ -1,0 +1,34 @@
+---
+import '../../styles/workflow-canvas.css'
+import productWorkflowKeyframes from '../../styles/product-workflow-keyframes.css?raw'
+import WorkflowScene from './WorkflowScene.astro'
+import {
+  productWorkflow,
+  productWorkflowAgentRest,
+  productWorkflowUserRest,
+  productWorkflowHoldDuration,
+  productWorkflowSize
+} from './productWorkflow'
+---
+
+<section class="wf-showcase" aria-label="Comfy Agent building workflows">
+  <workflow-examples>
+    <WorkflowScene
+      workflow={productWorkflow}
+      width={productWorkflowSize.width}
+      height={productWorkflowSize.height}
+      motionCss={productWorkflowKeyframes}
+      holdDuration={productWorkflowHoldDuration}
+      agentRest={productWorkflowAgentRest}
+      userRest={productWorkflowUserRest}
+    />
+  </workflow-examples>
+</section>
+
+<script>
+  import { WorkflowExamples } from './workflowExamples'
+
+  if (!customElements.get('workflow-examples')) {
+    customElements.define('workflow-examples', WorkflowExamples)
+  }
+</script>

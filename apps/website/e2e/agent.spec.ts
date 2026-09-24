@@ -60,7 +60,24 @@ async function assertLandingPage(page: Page, path: string, locale: Locale) {
 
 test.describe('Agent landing — desktop @smoke', () => {
   test('renders the English page at /agent', async ({ page }) => {
-    await assertLandingPage(page, PATH_EN, 'en')
+    await page.goto(PATH_EN)
+    await expect(
+      page.getByRole('heading', {
+        level: 1,
+        name: 'Comfy Agent: The first agent for craft'
+      })
+    ).toBeVisible()
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+      'href',
+      'https://comfy.org/agent/'
+    )
+    await expect(page.locator('meta[name="robots"]')).toHaveCount(0)
+    await expect(
+      page.getByRole('link', { name: 'Try Comfy Agent', exact: true }).first()
+    ).toHaveAttribute('href', 'https://cloud.comfy.org')
+    await expect(
+      page.getByRole('heading', { name: 'One canvas, every industry' })
+    ).toBeVisible()
   })
 
   test('renders the Chinese page at /zh-CN/agent', async ({ page }) => {

@@ -58,8 +58,11 @@ describe('hreflangAlternates', () => {
     '/zh-CN/terms-of-service/',
     '/p/supported-models/',
     '/p/supported-models/flux-1-dev/',
+    '/agent/',
+    '/zh-CN/agent/',
+    '/comfy-agent/',
     '/404'
-  ])('emits nothing for English-only route %s', (pathname) => {
+  ])('emits nothing for %s without indexable translations', (pathname) => {
     expect(hreflangAlternates(pathname, ORIGIN)).toEqual([])
   })
 })
@@ -81,9 +84,12 @@ describe('sitemapAlternates', () => {
     expect(hreflangAlternates('/zh-CN/ja/', ORIGIN)).toEqual([])
   })
 
-  it('leaves English-only entries without links', () => {
-    expect(sitemapAlternates('https://comfy.org/affiliates/')).toBeUndefined()
-  })
+  it.for(['/affiliates/', '/agent/'])(
+    'leaves %s without links to unindexable translations',
+    (pathname) => {
+      expect(sitemapAlternates(`${ORIGIN}${pathname}`)).toBeUndefined()
+    }
+  )
 })
 
 describe('og locale', () => {

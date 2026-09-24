@@ -29,6 +29,7 @@ const EMBED_HOSTS = new Set([
 ])
 const SCRIPT_HOSTS = new Set(['js-na2.hsforms.net'])
 const MEDIA_PATTERNS = [
+  /^https:\/\/media\.comfy\.org\/website\/comfy-agent\/[^/?]+\.svg(?:\?.*)?$/i,
   /^https:\/\/(?:media|comfy-hub-assets)\.comfy\.org\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
   /^https:\/\/raw\.githubusercontent\.com\/Comfy-Org\/workflow_templates\/main\/templates\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
   /^https:\/\/cdn\.jsdelivr\.net\/gh\/Comfy-Org\/workflow_templates@(?:main|[0-9a-f]{40})\/(?:input|output|templates)\/.*\.(?:webp|webm|mp4|png|jpg|jpeg|gif|avif|vtt)(?:\?.*)?$/i,
