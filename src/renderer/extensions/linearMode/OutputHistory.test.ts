@@ -23,7 +23,7 @@ import OutputHistory from './OutputHistory.vue'
 
 const mediaRef = ref<AssetItem[]>([])
 const hasMoreRef = ref(false)
-const loadMoreFn = vi.fn<() => Promise<boolean>>()
+const loadMoreFn = vi.fn()
 
 const selectFirstHistoryFn = vi.fn(() => {
   const first = mediaRef.value.at(0)

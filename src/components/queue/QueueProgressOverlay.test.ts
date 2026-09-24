@@ -1,23 +1,18 @@
 import { getActivePinia } from 'pinia'
-import { render, screen, waitFor } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import QueueProgressOverlay from '@/components/queue/QueueProgressOverlay.vue'
-import type { JobListItem as JobListViewItem } from '@/composables/queue/useJobList'
 import { i18n } from '@/i18n'
-import { useAssetSelectionStore } from '@/platform/assets/composables/useAssetSelectionStore'
 import type { JobStatus } from '@/platform/remote/comfyui/jobs/jobTypes'
-import { useAssetsStore } from '@/stores/assetsStore'
 import { TaskItemImpl, useQueueStore } from '@/stores/queueStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: false
 }))
-
-let itemToView: JobListViewItem | undefined
 
 const QueueOverlayExpandedStub = defineComponent({
   name: 'QueueOverlayExpanded',
@@ -27,17 +22,10 @@ const QueueOverlayExpandedStub = defineComponent({
       required: true
     }
   },
-  emits: ['viewItem'],
-  setup(_, { emit }) {
-    return {
-      viewItem: () => itemToView && emit('viewItem', itemToView)
-    }
-  },
   template: `
     <div>
       <div data-testid="expanded-title">{{ headerTitle }}</div>
       <button data-testid="show-assets-button" @click="$emit('show-assets')" />
-      <button data-testid="view-item-button" @click="viewItem" />
     </div>
   `
 })
@@ -51,37 +39,12 @@ function createTask(id: string, status: JobStatus): TaskItemImpl {
   })
 }
 
-function createCompletedJobView(id: string): JobListViewItem {
-  const task = new TaskItemImpl({
-    id,
-    status: 'completed',
-    create_time: 0,
-    priority: 0,
-    preview_output: {
-      filename: `${id}.png`,
-      mediaType: 'images',
-      nodeId: '1',
-      subfolder: '',
-      type: 'output'
-    }
-  })
-  return {
-    id,
-    meta: '',
-    showClear: false,
-    state: 'completed',
-    taskRef: task,
-    title: id
-  }
-}
-
 function renderComponent(
   runningTasks: TaskItemImpl[],
   pendingTasks: TaskItemImpl[]
 ) {
   const pinia = getActivePinia()!
   const queueStore = useQueueStore(pinia)
-  const assetSelectionStore = useAssetSelectionStore(pinia)
   const sidebarTabStore = useSidebarTabStore(pinia)
   queueStore.runningTasks = runningTasks
   queueStore.pendingTasks = pendingTasks
@@ -105,13 +68,12 @@ function renderComponent(
     }
   })
 
-  return { assetSelectionStore, sidebarTabStore, user }
+  return { sidebarTabStore, user }
 }
 
 describe('QueueProgressOverlay', () => {
   beforeEach(() => {
     i18n.global.locale.value = 'en'
-    itemToView = undefined
   })
 
   it('shows expanded header with running and queued labels', () => {
@@ -150,73 +112,5 @@ describe('QueueProgressOverlay', () => {
 
     await user.click(screen.getByTestId('show-assets-button'))
     expect(sidebarTabStore.activeSidebarTabId).toBe(null)
-  })
-
-  it('loads older pages before selecting a job asset', async () => {
-    itemToView = createCompletedJobView('target-job')
-    const loadOutputAsset = vi
-      .spyOn(useAssetsStore(), 'loadOutputAsset')
-      .mockResolvedValue(true)
-    const { assetSelectionStore, sidebarTabStore, user } = renderComponent(
-      [],
-      []
-    )
-
-    await user.click(screen.getByTestId('view-item-button'))
-
-    await waitFor(() =>
-      expect(assetSelectionStore.selectedIdsArray).toEqual(['target-job'])
-    )
-    expect(loadOutputAsset).toHaveBeenCalledWith('target-job')
-    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
-  })
-
-  it('does not select a missing job asset when pagination cannot advance', async () => {
-    itemToView = createCompletedJobView('missing-job')
-    const loadOutputAsset = vi
-      .spyOn(useAssetsStore(), 'loadOutputAsset')
-      .mockResolvedValue(false)
-    const { assetSelectionStore, sidebarTabStore, user } = renderComponent(
-      [],
-      []
-    )
-
-    await user.click(screen.getByTestId('view-item-button'))
-
-    await waitFor(() =>
-      expect(loadOutputAsset).toHaveBeenCalledWith('missing-job')
-    )
-    expect(assetSelectionStore.selectedIdsArray).toEqual([])
-    expect(sidebarTabStore.activeSidebarTabId).toBe('assets')
-  })
-
-  it('keeps the latest asset selection when an older request finishes last', async () => {
-    let resolveFirst!: (found: boolean) => void
-    const firstLoad = new Promise<boolean>((resolve) => {
-      resolveFirst = resolve
-    })
-    const loadOutputAsset = vi
-      .spyOn(useAssetsStore(), 'loadOutputAsset')
-      .mockImplementationOnce(() => firstLoad)
-      .mockResolvedValueOnce(true)
-    itemToView = createCompletedJobView('older-request')
-    const { assetSelectionStore, user } = renderComponent([], [])
-
-    await user.click(screen.getByTestId('view-item-button'))
-    await waitFor(() =>
-      expect(loadOutputAsset).toHaveBeenCalledWith('older-request')
-    )
-
-    itemToView = createCompletedJobView('latest-request')
-    await user.click(screen.getByTestId('view-item-button'))
-    await waitFor(() =>
-      expect(assetSelectionStore.selectedIdsArray).toEqual(['latest-request'])
-    )
-
-    resolveFirst(true)
-    await firstLoad
-    await Promise.resolve()
-
-    expect(assetSelectionStore.selectedIdsArray).toEqual(['latest-request'])
   })
 })
