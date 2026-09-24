@@ -111,8 +111,8 @@ function parseUserWorkflowReferences(
  *
  * A restored (non-live) row has no transport left to ever settle its tool
  * parts, so a `pending`/`running` status there would otherwise spin forever;
- * only `isLive` (the row is backed by a live transport or recovery polling)
- * keeps it in `streaming` state.
+ * only `isLive` (the row is backed by a live transport) keeps it in
+ * `streaming` state. A later socket reconnect may start recovery polling.
  */
 function toolCallPartState(
   status: unknown,
@@ -203,8 +203,8 @@ function parseToolCalls(
 /**
  * Appends a persisted assistant row's tool-call and text parts onto its
  * running message. `isLive` is true when this row will be handed a live
- * `AgentEventTransport` or recovery polling, so
- * its still-in-flight tool parts may legitimately stay `streaming`.
+ * `AgentEventTransport`, so its still-in-flight tool parts may legitimately
+ * stay `streaming`. A later socket reconnect may start recovery polling.
  *
  * `message.parts` is shared across every assistant row of one turn (via
  * `assistants.get(turnId)` in `recordAssistantRow`), but `parseToolCalls`
