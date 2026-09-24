@@ -6,7 +6,7 @@ import type {
   BillingPlansData,
   BillingResult,
   PlansSnapshot
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 
 import type { BillingClient } from './billingClient'
 import { useBillingClient } from './billingClient'

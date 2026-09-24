@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import type { Router } from 'vue-router'
 
-import type { SavedPaymentMethod } from '@comfyorg/account/billing'
+import type { SavedPaymentMethod } from '@comfyorg/account-core/billing'
 import { BILLING_CLIENT_KEY } from '@comfyorg/account-ui/billing'
 import { parseBillingEntry } from '@comfyorg/billing-contract'
 

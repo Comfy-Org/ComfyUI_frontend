@@ -5,7 +5,7 @@ import { computed, ref } from 'vue'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import type { Settings } from '@/schemas/apiSchema'
+import type { Settings } from '@/platform/settings/types'
 import { useColorPaletteService } from '@/services/colorPaletteService'
 import { useDialogService } from '@/services/dialogService'
 import type { SidebarTabExtension, ToastManager } from '@/types/extensionTypes'
@@ -43,7 +43,10 @@ function workspaceStoreSetup() {
     get: <T = unknown>(key: string): T | undefined =>
       useSettingStore().get(key as keyof Settings) as T | undefined,
     set: (key: string, value: unknown) =>
-      useSettingStore().set(key as keyof Settings, value)
+      useSettingStore().set(
+        key as keyof Settings,
+        value as Settings[keyof Settings]
+      )
   }))
   const workflow = computed(() => useWorkflowStore())
   const colorPalette = useColorPaletteService()

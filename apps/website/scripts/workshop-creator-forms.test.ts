@@ -100,20 +100,23 @@ describe('sibling page modes', () => {
     expect(form.inputs).not.toHaveProperty('ratio')
   })
 
-  it('gives GPT Image 2 a generate page without images and an edit page that requires them', () => {
+  it.for(['edit', 'reference-video'])(
+    'declares Kling %s source-video bounds',
+    (mode) => {
+      expect(
+        formFor('kling/kling-v3-omni', { mode }).inputs.video_url
+      ).toMatchObject({
+        maxVideoDurationSeconds: 15.5,
+        videoWidthPixels: { minimum: 700, maximum: 4553 }
+      })
+    }
+  )
+
+  it('keeps unsupported GPT Image edit media out of Router forms', () => {
     const id = 'openai/gpt-image-2'
+    expect(files(id, {})).toEqual([])
     expect(files(id, { mode: 'generate' })).toEqual([])
-    expect(files(id, { mode: 'edit' })).toEqual(['images*'])
-    expect(formFor(id, { mode: 'edit' }).files[0]).toMatchObject({
-      label: 'Source images',
-      maxItems: 10
-    })
-    const parameters = object.parse(formFor(id, { mode: 'edit' }).parameters)
-    expect(
-      object.parse(object.parse(parameters.properties).size)
-    ).toMatchObject({
-      enum: expect.arrayContaining(['2048x2048', '3840x2160'])
-    })
+    expect(() => formFor(id, { mode: 'edit' })).toThrow()
   })
 
   it('gives Veo a text page without frames and an animate page that requires the first frame', () => {

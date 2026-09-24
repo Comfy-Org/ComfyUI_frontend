@@ -32,7 +32,6 @@ const team = fromPartial<
 
 describe('useBillingRouting', () => {
   beforeEach(() => {
-    vi.mocked(useFeatureFlags().flags).legacyBillingMigrationEnabled = false
     const refs = storeToRefs(useTeamWorkspaceStore())
     mockActiveWorkspace = refs.activeWorkspace
     mockActiveWorkspaceBillingRail = refs.activeWorkspaceBillingRail

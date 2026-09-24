@@ -18,27 +18,16 @@ import { createMockCanvasRenderingContext2D } from '@/utils/__tests__/litegraphT
 import { createUuidv4 } from '@/utils/uuid'
 import type { UUID } from '@/utils/uuid'
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    canvas: { _deserializeItems: vi.fn() }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock<unknown>(import('@/scripts/defaultGraph'), () => ({
   defaultGraph: {},
   blankGraph: {}
 }))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    prompt: vi.fn(),
-    confirm: vi.fn()
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: () => ({ updatePreviews: () => ({}) })
-}))
+vi.mock(import('@/services/litegraphService'))
 
 vi.mock<unknown>(
   import('@/renderer/core/thumbnail/useWorkflowThumbnail'), // eslint-disable-line import-x/no-restricted-paths
@@ -100,6 +89,7 @@ function stubWorkflow(initialState: SerialisableGraph): ComfyWorkflow {
 
 beforeEach(() => {
   LiteGraph.registerNodeType(PROBE_NODE_TYPE, InsertWorkflowProbeNode)
+  vi.mocked(app.canvas._deserializeItems).mockImplementation(() => undefined)
   const canvasPrototype: {
     getContext(
       contextId: '2d',

@@ -127,7 +127,6 @@ const flushPromises = () =>
   new Promise<void>((resolve) => setTimeout(resolve, 0))
 
 beforeEach(() => {
-  vi.mocked(useFeatureFlags().flags).supportsModelTypeTags = false
   vi.mocked(useModelToNodeStore().getCategoryForNodeType).mockImplementation(
     () => 'checkpoints'
   )

@@ -21,6 +21,17 @@ const probeDirs = {
   browserTests: path.resolve('browser_tests/tests/__restricted_syntax_probes__')
 }
 
+const removedModuleFiles = [
+  path.join(probeDirs.source, 'deprecated.ts'),
+  path.join(probeDirs.source, 'deprecated.test.ts'),
+  path.join(probeDirs.source, 'deprecated.stories.ts'),
+  path.join(probeDirs.source, 'deprecated.vue'),
+  path.join(probeDirs.app, 'deprecated.tsx'),
+  path.join(probeDirs.schemas, 'deprecated.ts'),
+  path.join(probeDirs.fixtureData, 'deprecated.ts'),
+  path.join(probeDirs.browserTests, 'deprecated.spec.ts')
+]
+
 const probes = [
   {
     file: path.join(probeDirs.source, 'assertion.tsx'),
@@ -38,9 +49,7 @@ void asserted
   {
     file: path.join(probeDirs.source, 'ignored.test.ts'),
     source: `const asserted = value as Error
-import type { JobId } from '@/schemas/apiSchema'
 void asserted
-void (0 as unknown as JobId)
 `
   },
   {
@@ -70,12 +79,24 @@ computed(() => element.getBoundingClientRect())
 </script>
 `
   },
-  {
-    file: path.join(probeDirs.source, 'deprecated.ts'),
-    source: `import type { JobId } from '@/schemas/apiSchema'
+  ...removedModuleFiles.map((file) => {
+    const source = `import type { JobId } from '@/schemas/apiSchema'
 export { TaskOutput } from '@/schemas/apiSchema'
 export * from '@/schemas/apiSchema'
 void (0 as unknown as JobId)
+`
+    return {
+      file,
+      source: file.endsWith('.vue')
+        ? `<script lang="ts">\n${source}</script>\n`
+        : source
+    }
+  }),
+  {
+    file: path.join(probeDirs.source, 'generated.ts'),
+    source: `import type { GetI18nResponse } from '@comfyorg/ingest-types'
+export type { GetI18nResponse } from '@comfyorg/ingest-types'
+void (0 as unknown as GetI18nResponse)
 `
   },
   {
@@ -258,21 +279,32 @@ describe('restricted syntax rules', () => {
     ])
   })
 
-  it('preserves warning policies added after the original PR', () => {
-    const apiSchemaFindings = findingsFor('no-deprecated-api-schema')
+  it.for(removedModuleFiles)(
+    'rejects removed-module imports and re-exports in %s',
+    (file) => {
+      const diagnostics = findingsFor('no-deprecated-api-schema').filter(
+        ({ filename }) => path.resolve(filename) === file
+      )
+      expect(diagnostics.map(({ severity }) => severity)).toEqual([
+        'error',
+        'error',
+        'error'
+      ])
+    }
+  )
+
+  it('allows generated contracts', () => {
+    expect(
+      findings.filter(({ filename }) => filename.endsWith('generated.ts'))
+    ).toEqual([])
+  })
+
+  it('keeps the server-response schema recommendation at warning severity', () => {
     const zodSchemaFindings = findingsFor('no-new-zod-server-response-schema')
-    expect(apiSchemaFindings).toHaveLength(3)
     expect(zodSchemaFindings).toHaveLength(3)
     expect(
-      [...apiSchemaFindings, ...zodSchemaFindings].every(
-        ({ severity }) => severity === 'warning'
-      )
+      zodSchemaFindings.every(({ severity }) => severity === 'warning')
     ).toBe(true)
-    expect(new Set(apiSchemaFindings.map(({ message }) => message))).toEqual(
-      new Set([
-        'apiSchema is deprecated. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'
-      ])
-    )
     expect(new Set(zodSchemaFindings.map(({ message }) => message))).toEqual(
       new Set([
         'Avoid introducing new hand-written zod schemas under src/schemas/ for server responses. Use generated types from @comfyorg/ingest-types instead. Only keep a hand-written schema if the ComfyUI webserver clearly diverges from the cloud ingest spec.'

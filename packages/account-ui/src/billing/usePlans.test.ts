@@ -1,4 +1,4 @@
-import { PLANS_ROUTE } from '@comfyorg/account/billing'
+import { PLANS_ROUTE } from '@comfyorg/account-core/billing'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { Answer } from './__fixtures__/billingHarness'

@@ -11,7 +11,6 @@ vi.mock(import('@/composables/billing/useBillingContext'))
 vi.mock(import('@/composables/useFeatureFlags'))
 describe('usePaymentReturnUrlLoader', () => {
   beforeEach(() => {
-    vi.mocked(useFeatureFlags().flags).embeddedCheckoutEnabled = false
     window.history.replaceState({}, '', '/')
   })
 

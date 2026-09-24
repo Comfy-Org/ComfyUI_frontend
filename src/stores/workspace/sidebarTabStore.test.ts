@@ -84,7 +84,6 @@ vi.mock(
 
 describe('useSidebarTabStore', () => {
   beforeEach(() => {
-    vi.mocked(useFeatureFlags().flags).assetsEnabled = false
     vi.mocked(useMenuItemStore().registerCommands).mockImplementation(() => {})
     mockOpenModelLibraryBrowser.mockClear()
   })

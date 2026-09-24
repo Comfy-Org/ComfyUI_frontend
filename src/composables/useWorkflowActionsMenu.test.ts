@@ -17,6 +17,7 @@ import { useWorkflowActionsMenu as useWorkflowActionsMenuComposable } from '@/co
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import type { WorkflowMenuAction } from '@/types/workflowMenuItem'
 import { toNodeId } from '@/types/nodeId'
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 
 const i18n = createI18n({
   legacy: false,
@@ -30,13 +31,6 @@ let mockBookmarkStore: ReturnType<typeof useWorkflowBookmarkStore>
 
 let mockWorkflowStore: ReturnType<typeof useWorkflowStore>
 
-const mockWorkflowService = vi.hoisted(() => ({
-  openWorkflow: vi.fn(),
-  duplicateWorkflow: vi.fn(),
-  saveWorkflowAs: vi.fn(),
-  deleteWorkflow: vi.fn()
-}))
-
 let mockCommandStore: ReturnType<typeof useCommandStore>
 
 let mockSubgraphStore: ReturnType<typeof useSubgraphStore>
@@ -45,12 +39,7 @@ let mockMenuItemStore: ReturnType<typeof useMenuItemStore>
 
 let mockAppModeStore: ReturnType<typeof useAppModeStore>
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: vi.fn(() => mockWorkflowService)
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 function useWorkflowActionsMenu(
@@ -87,7 +76,6 @@ function findItem(items: MenuItems, label: string): WorkflowMenuAction {
 
 describe('useWorkflowActionsMenu', () => {
   beforeEach(() => {
-    vi.mocked(useFeatureFlags().flags).linearToggleEnabled = false
     mockBookmarkStore = useWorkflowBookmarkStore()
     mockWorkflowStore = useWorkflowStore()
     mockCommandStore = useCommandStore()
@@ -263,7 +251,7 @@ describe('useWorkflowActionsMenu', () => {
     const { menuItems } = useWorkflowActionsMenu(vi.fn(), { isRoot: true })
     await findItem(menuItems.value, 'breadcrumbsMenu.duplicate').command?.()
 
-    expect(mockWorkflowService.duplicateWorkflow).toHaveBeenCalledWith(
+    expect(useWorkflowService().duplicateWorkflow).toHaveBeenCalledWith(
       mockWorkflowStore.activeWorkflow
     )
   })
@@ -282,7 +270,7 @@ describe('useWorkflowActionsMenu', () => {
       'breadcrumbsMenu.deleteWorkflow'
     ).command?.()
 
-    expect(mockWorkflowService.deleteWorkflow).toHaveBeenCalledWith(
+    expect(useWorkflowService().deleteWorkflow).toHaveBeenCalledWith(
       mockWorkflowStore.activeWorkflow
     )
   })
@@ -378,7 +366,7 @@ describe('useWorkflowActionsMenu', () => {
     })
     await findItem(menuItems.value, 'g.rename').command?.()
 
-    expect(mockWorkflowService.openWorkflow).toHaveBeenCalledWith(
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
       customWorkflow.value
     )
     expect(startRename).toHaveBeenCalled()

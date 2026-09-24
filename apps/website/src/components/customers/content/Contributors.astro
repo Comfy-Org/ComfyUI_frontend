@@ -20,19 +20,17 @@ const { label, people } = Astro.props
   >
     {label}
   </span>
-  {
-    people.map((person, i) => (
-      <>
-        <p
-          class={cn(
-            'text-sm font-semibold text-primary-comfy-canvas',
-            i === 0 ? 'mt-2' : 'mt-4'
-          )}
-        >
-          {person.name}
-        </p>
-        <p class="text-xs text-primary-comfy-canvas">{person.role}</p>
-      </>
-    ))
-  }
+  {people.map((person, i) => (
+    <>
+      <p
+        class={cn(
+          'text-sm font-semibold text-primary-comfy-canvas',
+          i === 0 ? 'mt-2' : 'mt-4'
+        )}
+      >
+        {person.name}
+      </p>
+      <p class="text-xs text-primary-comfy-canvas">{person.role}</p>
+    </>
+  ))}
 </div>

@@ -1,4 +1,4 @@
-import { fromPartial } from '@total-typescript/shoehorn'
+import { computed } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
@@ -34,20 +34,13 @@ vi.mock<unknown>(import('@datadog/browser-rum'), () => ({
   }
 }))
 
-vi.mock(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: vi.fn()
-}))
-
-const onUserLogout = vi.fn<(callback: () => void) => void>()
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 beforeEach(() => {
-  vi.mocked(useCurrentUser).mockReturnValue(
-    fromPartial({
-      resolvedUserInfo: { value: { id: 'restored-user' } },
-      userEmail: { value: 'restored@example.com' },
-      onUserLogout
-    })
-  )
+  useCurrentUser().resolvedUserInfo = computed(() => ({
+    id: 'restored-user'
+  }))
+  useCurrentUser().userEmail = computed(() => 'restored@example.com')
 })
 
 const workflowExecutionIntent = {
@@ -70,25 +63,20 @@ describe('DatadogRumTelemetryProvider', () => {
       email: 'new@example.com'
     })
     expect(setUser).toHaveBeenNthCalledWith(3, { id: 'user-without-email' })
-    expect(onUserLogout).toHaveBeenCalledOnce()
-    onUserLogout.mock.calls[0][0]()
+    expect(useCurrentUser().onUserLogout).toHaveBeenCalledOnce()
+    vi.mocked(useCurrentUser().onUserLogout).mock.calls[0][0]()
     expect(clearUser).toHaveBeenCalledOnce()
   })
 
   it('does not identify an unresolved user or send email without an account ID', () => {
-    vi.mocked(useCurrentUser).mockReturnValue(
-      fromPartial({
-        resolvedUserInfo: { value: null },
-        userEmail: { value: null },
-        onUserLogout
-      })
-    )
+    useCurrentUser().resolvedUserInfo = computed(() => null)
+    useCurrentUser().userEmail = computed(() => null)
     const provider = new DatadogRumTelemetryProvider()
     provider.trackUserLoggedIn()
     provider.trackAuth({ email: 'unresolved@example.com' })
 
     expect(setUser).not.toHaveBeenCalled()
-    expect(onUserLogout).not.toHaveBeenCalled()
+    expect(useCurrentUser().onUserLogout).not.toHaveBeenCalled()
   })
 
   it('records fetch timeouts as RUM actions', () => {

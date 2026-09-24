@@ -80,6 +80,11 @@ export interface ModelConfig {
   gizmo?: GizmoConfig
 }
 
+/** `Model Config` as persisted in node properties by older workflows. */
+export type StoredModelConfig = Omit<Partial<ModelConfig>, 'gizmo'> & {
+  gizmo?: Partial<GizmoConfig>
+}
+
 type CustomUpConfig =
   | { hasCustomUp?: false }
   | { hasCustomUp: true; useCustomUp: boolean }
@@ -181,8 +186,8 @@ export interface LightingManagerInterface extends BaseManager {
 }
 
 export interface ViewHelperManagerInterface extends BaseManager {
-  viewHelper: ViewHelper
-  viewHelperContainer: HTMLDivElement
+  viewHelper: ViewHelper | null
+  viewHelperContainer: HTMLDivElement | null
   createViewHelper(container: Element | HTMLElement): void
   update(delta: number): void
   handleResize(): void

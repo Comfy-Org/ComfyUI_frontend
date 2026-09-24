@@ -6,18 +6,20 @@ import type { PropType } from 'vue'
 import { computed, defineComponent, h, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
+import type { AgentConsentTrigger } from '@/platform/telemetry/types'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { useExtensionStore } from '@/stores/extensionStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import WorkflowTabs from './WorkflowTabs.vue'
 
 vi.mock(import('firebase/auth'))
 vi.mock(import('@/platform/telemetry'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 const distribution = vi.hoisted(() => ({
   isCloud: false,
@@ -44,15 +46,9 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/composables/auth/useCurrentUser'), () => ({
-  useCurrentUser: () => ({
-    isLoggedIn: { value: false },
-    userEmail: { value: undefined }
-  })
-}))
+vi.mock(import('@/composables/auth/useCurrentUser'))
 
 const openFeedbackDialog = vi.hoisted(() => vi.fn())
-const openWorkflow = vi.hoisted(() => vi.fn())
 vi.mock(import('@/platform/support/feedbackDialog'), () => ({
   openFeedbackDialog
 }))
@@ -78,22 +74,14 @@ vi.mock<unknown>(
   }
 )
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({
-      openWorkflow,
-      closeWorkflow: vi.fn()
-    })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const consentChecking = await vi.hoisted(async () =>
   (await import('vue')).ref(false)
 )
 
 const withConsent = vi.hoisted(() =>
-  vi.fn<(onAccept: () => void) => Promise<void>>()
+  vi.fn<(trigger: AgentConsentTrigger, onAccept: () => void) => Promise<void>>()
 )
 const telemetry = {
   trackAgentEntryButtonClicked: vi.fn(),
@@ -183,7 +171,7 @@ beforeEach(() => {
   })
   useAgentPanelStore().isOpen = false
   useAgentPanelStore().consentAccepted = false
-  withConsent.mockImplementation(async (onAccept) => {
+  withConsent.mockImplementation(async (_trigger, onAccept) => {
     useAgentPanelStore().consentAccepted = true
     onAccept()
   })
@@ -234,7 +222,7 @@ describe('WorkflowTabs agent entry button', () => {
     renderComponent()
 
     expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.queryByRole('button', { name: enMessages.agent.entryButton })
     ).toBeNull()
   })
 
@@ -243,8 +231,25 @@ describe('WorkflowTabs agent entry button', () => {
     renderComponent()
 
     expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.queryByRole('button', { name: enMessages.agent.entryButton })
     ).toBeNull()
+  })
+
+  // The separator divides the button off from the avatar, so it must leave
+  // with it rather than trailing the icon group.
+  it('takes the separator away with the button when the flag is off', () => {
+    useAgentPanelStore().enabled = false
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('agent-entry-separator')
+    ).not.toBeInTheDocument()
+  })
+
+  it('divides the button from the avatar while the flag is on', () => {
+    renderComponent()
+
+    expect(screen.getByTestId('agent-entry-separator')).toBeInTheDocument()
   })
 
   // Two entry controls once shipped side by side after a merge, which broke
@@ -253,48 +258,45 @@ describe('WorkflowTabs agent entry button', () => {
     renderComponent()
 
     expect(
-      screen.getAllByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.getAllByRole('button', { name: enMessages.agent.entryButton })
     ).toHaveLength(1)
   })
 
-  it('waits for consent and hides the entry button once the panel is visible', async () => {
+  it('waits for consent and marks the entry button pressed once the panel is visible', async () => {
     const { user } = renderComponent()
 
     const button = screen.getByRole('button', {
-      name: enMessages.agent.askComfyAgent
+      name: enMessages.agent.entryButton
     })
 
     await user.click(button)
 
     expect(withConsent).toHaveBeenCalledOnce()
+    expect(withConsent.mock.calls[0][0]).toBe('button_click')
     expect(useAgentPanelStore().isVisible).toBe(true)
-    expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
-    ).toBeNull()
+    expect(button).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('re-renders the entry button once the panel closes', async () => {
+  it('closes the visible panel when the entry button is clicked again', async () => {
     useAgentPanelStore().consentAccepted = true
     useAgentPanelStore().open()
-    renderComponent()
+    const { user } = renderComponent()
 
+    await user.click(
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
+    )
+
+    expect(useAgentPanelStore().isVisible).toBe(false)
     expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
-    ).toBeNull()
-
-    useAgentPanelStore().close('close_button')
-    await nextTick()
-
-    expect(
-      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
-    ).toBeInTheDocument()
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
+    ).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('does not activate or report an opening when the flag turns off during consent', async () => {
     const store = useAgentPanelStore()
     let finishConsent!: () => void
     withConsent.mockImplementationOnce(
-      (onAccept) =>
+      (_trigger, onAccept) =>
         new Promise<void>((resolve) => {
           finishConsent = () => {
             store.consentAccepted = true
@@ -305,7 +307,7 @@ describe('WorkflowTabs agent entry button', () => {
     )
     const { user } = renderComponent()
     await user.click(
-      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
     )
     expect(withConsent).toHaveBeenCalledOnce()
 
@@ -322,7 +324,7 @@ describe('WorkflowTabs agent entry button', () => {
     store.enabled = true
     await nextTick()
     expect(
-      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
     ).toBeEnabled()
   })
 
@@ -336,7 +338,7 @@ describe('WorkflowTabs agent entry button', () => {
     )
     const { user } = renderComponent()
     const button = screen.getByRole('button', {
-      name: enMessages.agent.askComfyAgent
+      name: enMessages.agent.entryButton
     })
 
     await user.click(button)
@@ -353,20 +355,20 @@ describe('WorkflowTabs agent entry button', () => {
     expect(useAgentPanelStore().isVisible).toBe(true)
   })
 
-  it('hides the restored panel entry while consent is checked and accepted', async () => {
+  it('hides the restored panel entry while consent is checked, then shows it pressed', async () => {
     useAgentPanelStore().isOpen = true
     consentChecking.value = true
     renderComponent()
     expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.queryByRole('button', { name: enMessages.agent.entryButton })
     ).not.toBeInTheDocument()
 
     useAgentPanelStore().consentAccepted = true
     consentChecking.value = false
     await nextTick()
     expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
-    ).not.toBeInTheDocument()
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
+    ).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('offers the entry after the restored consent check finishes without acceptance', async () => {
@@ -374,19 +376,19 @@ describe('WorkflowTabs agent entry button', () => {
     consentChecking.value = true
     renderComponent()
     expect(
-      screen.queryByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.queryByRole('button', { name: enMessages.agent.entryButton })
     ).not.toBeInTheDocument()
 
     consentChecking.value = false
     await nextTick()
     expect(
-      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
     ).toBeInTheDocument()
   })
 
   it('keeps a hidden restored intent reachable and clears it before requesting consent', async () => {
     useAgentPanelStore().open()
-    withConsent.mockImplementationOnce(async (onAccept) => {
+    withConsent.mockImplementationOnce(async (_trigger, onAccept) => {
       expect(useAgentPanelStore().isOpen).toBe(false)
       useAgentPanelStore().consentAccepted = true
       onAccept()
@@ -394,7 +396,7 @@ describe('WorkflowTabs agent entry button', () => {
     const { user } = renderComponent()
 
     await user.click(
-      screen.getByRole('button', { name: enMessages.agent.askComfyAgent })
+      screen.getByRole('button', { name: enMessages.agent.entryButton })
     )
 
     expect(withConsent).toHaveBeenCalledOnce()
@@ -411,6 +413,32 @@ describe('WorkflowTabs agent entry button', () => {
     await nextTick()
 
     expect(actions).toHaveAttribute('data-agent-gate-settled', 'true')
+  })
+})
+
+describe('WorkflowTabs environment badge separator', () => {
+  // Production serves no environment badge, and a separator with nothing on
+  // its left reads as a stray line against the tab strip.
+  it('omits the separator when no badge is present', () => {
+    renderComponent()
+
+    expect(
+      screen.queryByTestId('environment-badge-separator')
+    ).not.toBeInTheDocument()
+  })
+
+  it('divides the badge from the icon buttons once a badge appears', async () => {
+    renderComponent()
+
+    useExtensionStore().registerExtension({
+      name: 'Test.Environment.Badge',
+      topbarBadges: [{ text: 'Staging Environment', variant: 'warning' }]
+    })
+    await nextTick()
+
+    expect(
+      screen.getByTestId('environment-badge-separator')
+    ).toBeInTheDocument()
   })
 })
 
@@ -436,8 +464,10 @@ describe('WorkflowTabs selection and overflow', () => {
 
     await user.click(screen.getByText('First workflow'))
 
-    expect(openWorkflow).toHaveBeenCalledOnce()
-    expect(openWorkflow).toHaveBeenCalledWith(firstWorkflow)
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      firstWorkflow
+    )
     expect(
       screen.getByRole('button', { name: 'First workflow' })
     ).toHaveAttribute('aria-pressed', 'true')
@@ -448,8 +478,10 @@ describe('WorkflowTabs selection and overflow', () => {
 
     await user.click(screen.getByText('Second workflow'))
 
-    expect(openWorkflow).toHaveBeenCalledOnce()
-    expect(openWorkflow).toHaveBeenCalledWith(secondWorkflow)
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      secondWorkflow
+    )
   })
 
   it('opens another workflow when its tab is activated by keyboard', async () => {
@@ -459,8 +491,10 @@ describe('WorkflowTabs selection and overflow', () => {
     secondTab.focus()
     await user.keyboard('{Enter}')
 
-    expect(openWorkflow).toHaveBeenCalledOnce()
-    expect(openWorkflow).toHaveBeenCalledWith(secondWorkflow)
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      secondWorkflow
+    )
   })
 
   it('opens the selected workflow when its tab is activated by keyboard', async () => {
@@ -470,14 +504,16 @@ describe('WorkflowTabs selection and overflow', () => {
     firstTab.focus()
     await user.keyboard('{Enter}')
 
-    expect(openWorkflow).toHaveBeenCalledOnce()
-    expect(openWorkflow).toHaveBeenCalledWith(firstWorkflow)
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledOnce()
+    expect(useWorkflowService().openWorkflow).toHaveBeenCalledWith(
+      firstWorkflow
+    )
   })
 
   it('keeps the real workflow selected when another workflow fails to load', async () => {
     const error = new Error('load failed')
     const errorHandler = vi.fn()
-    openWorkflow.mockRejectedValueOnce(error)
+    vi.mocked(useWorkflowService().openWorkflow).mockRejectedValueOnce(error)
     const { user } = renderComponent(errorHandler)
 
     await user.click(screen.getByText('Second workflow'))
@@ -493,7 +529,7 @@ describe('WorkflowTabs selection and overflow', () => {
   })
 
   it('keeps the real workflow selected when another workflow is not opened', async () => {
-    openWorkflow.mockResolvedValueOnce(false)
+    vi.mocked(useWorkflowService().openWorkflow).mockResolvedValueOnce(false)
     const { user } = renderComponent()
     const secondTab = screen.getByRole('button', { name: 'Second workflow' })
 

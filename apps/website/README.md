@@ -4,14 +4,15 @@ Marketing/brand website built with Astro + Vue.
 
 ## Linting
 
-From the repository root, run `pnpm lint:website` to check website Astro,
-JavaScript, TypeScript, and Vue files, or `pnpm lint:website:fix` to apply
-automatic fixes. Astro uses the recommended Astro ESLint rules and the shared
-Tailwind rules with the website's theme.
+From the repository root, `pnpm lint` checks website Astro, JavaScript,
+TypeScript, and Vue files along with the rest of the repository, and
+`pnpm lint:fix` applies automatic fixes. To lint only this folder, run
+`pnpm exec eslint apps/website`. Astro uses the recommended Astro ESLint rules
+and the shared Tailwind rules with the website's theme.
 
-Root `pnpm lint` includes this command, so the shared lint CI checks it on
-pull requests and in the merge queue. Pre-commit checks staged Astro files
-with ESLint and runs the website typecheck. `astro check` remains part of
+The shared lint CI runs `pnpm lint` on pull requests and in the merge queue.
+Pre-commit checks staged Astro files with ESLint and runs the website
+typecheck. `astro check` remains part of
 `pnpm typecheck:website` for compiler and type diagnostics.
 
 ## Model-page generation tests
@@ -20,6 +21,18 @@ See [MODEL_TESTING.md](MODEL_TESTING.md) for setup, maximum account concurrency,
 parallel image/audio/video sweeps, targeted retests and result commits.
 [MODELS_TEST_RESULTS.md](MODELS_TEST_RESULTS.md) records every published page's
 latest check and last successful generation.
+
+## Formatting
+
+Run `pnpm format:astro` from the repository root to format Astro files, or
+`pnpm format:astro:check` to check them. Both are included in the root format
+commands and shared CI checks. Pre-commit formats staged Astro files after
+ESLint fixes.
+
+Astro files use Prettier with the official Astro plugin; other formats continue
+to use Oxfmt. The website's `.prettierrc.json` matches the repository's style
+and preserves whitespace around inline HTML elements. The Astro editor
+extension also reads this configuration.
 
 ## Ashby careers integration
 

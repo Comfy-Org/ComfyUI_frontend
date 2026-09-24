@@ -1,0 +1,41 @@
+{
+  "number": 4242,
+  "title": "",
+  "state": "OPEN",
+  "isDraft": false,
+  "author": {
+    "login": "dana-comfy"
+  },
+  "labels": [],
+  "headRefName": "",
+  "headRefOid": "",
+  "baseRefName": "main",
+  "mergeable": "MERGEABLE",
+  "mergeStateStatus": "CLEAN",
+  "reviewDecision": "APPROVED",
+  "body": "",
+  "latestReviews": [
+    {
+      "author": {
+        "login": "frontend-reviewer"
+      },
+      "state": "APPROVED",
+      "submittedAt": ""
+    },
+    {
+      "author": {
+        "login": "website-reviewer"
+      },
+      "state": "APPROVED",
+      "submittedAt": ""
+    },
+    {
+      "author": {
+        "login": "coderabbitai"
+      },
+      "state": "APPROVED",
+      "submittedAt": ""
+    }
+  ],
+  "url": "https://github.com/example/site/pull/4242"
+}

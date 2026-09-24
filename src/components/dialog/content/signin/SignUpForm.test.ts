@@ -14,7 +14,6 @@ import { useAuthStore } from '@/stores/authStore'
 
 import SignUpForm from './SignUpForm.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
 
 const mockTurnstileEnabled = ref(false)
 const mockTurnstileToken = ref('')

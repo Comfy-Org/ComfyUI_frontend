@@ -7,7 +7,7 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
 
 test.describe(
@@ -27,7 +27,7 @@ test.describe(
         timeout: 8_000
       })
       await expect(
-        page.getByRole('button', { name: OPEN_AGENT_LABEL })
+        page.getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
       ).toHaveCount(0)
       await expect(page.getByTestId('docked-agent-panel')).toHaveCount(0)
       await expect
@@ -37,20 +37,23 @@ test.describe(
         .toBe('true')
     })
 
-    test('persists open and closed state and hides the entry button while open', async ({
+    test('persists open and closed state and keeps the entry button pressed while open', async ({
       page
     }) => {
       await bootAgentApp(page, true)
 
-      const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
+      const openButton = page.getByRole('button', {
+        name: OPEN_AGENT_LABEL,
+        exact: true
+      })
       const panel = page.getByTestId('docked-agent-panel')
 
       await expect(openButton).toBeVisible()
       await openButton.click()
       await expect(panel).toBeVisible()
       await expect(
-        page.getByRole('button', { name: OPEN_AGENT_LABEL })
-      ).toHaveCount(0)
+        page.getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+      ).toHaveAttribute('aria-pressed', 'true')
       await expect
         .poll(() =>
           page.evaluate((key) => localStorage.getItem(key), OPEN_STORAGE_KEY)
@@ -60,7 +63,7 @@ test.describe(
       await panel.getByRole('button', { name: enMessages.g.close }).click()
       await expect(panel).toHaveCount(0)
       await expect(
-        page.getByRole('button', { name: OPEN_AGENT_LABEL })
+        page.getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
       ).toBeVisible()
       await expect
         .poll(() =>
@@ -74,7 +77,10 @@ test.describe(
     }) => {
       await bootAgentApp(page, true)
 
-      const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
+      const openButton = page.getByRole('button', {
+        name: OPEN_AGENT_LABEL,
+        exact: true
+      })
       await openButton.focus()
       await openButton.press('Enter')
 
@@ -100,7 +106,9 @@ test.describe(
     }) => {
       await bootAgentApp(page, true)
 
-      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+      await page
+        .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+        .click()
       const panel = page.getByTestId('docked-agent-panel')
       await expect(panel).toBeVisible()
 
@@ -122,7 +130,9 @@ test.describe(
     test('restores an open panel after a browser reload', async ({ page }) => {
       await bootAgentApp(page, true)
 
-      await page.getByRole('button', { name: OPEN_AGENT_LABEL }).click()
+      await page
+        .getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+        .click()
       await expect(page.getByTestId('docked-agent-panel')).toBeVisible()
       await expect
         .poll(() =>
@@ -136,8 +146,8 @@ test.describe(
       ).toHaveAttribute('data-agent-gate-settled', 'true', { timeout: 8_000 })
       await expect(page.getByTestId('docked-agent-panel')).toBeVisible()
       await expect(
-        page.getByRole('button', { name: OPEN_AGENT_LABEL })
-      ).toHaveCount(0)
+        page.getByRole('button', { name: OPEN_AGENT_LABEL, exact: true })
+      ).toHaveAttribute('aria-pressed', 'true')
     })
 
     test('keeps one Agent panel mounted while switching workflow tabs', async ({
@@ -146,7 +156,10 @@ test.describe(
     }) => {
       await bootAgentApp(page, agentFlagEnabled)
 
-      const openButton = page.getByRole('button', { name: OPEN_AGENT_LABEL })
+      const openButton = page.getByRole('button', {
+        name: OPEN_AGENT_LABEL,
+        exact: true
+      })
       await openButton.click()
 
       const panel = page.getByTestId('docked-agent-panel')

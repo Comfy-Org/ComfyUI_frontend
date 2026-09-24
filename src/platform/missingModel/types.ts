@@ -1,5 +1,6 @@
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 /**
  * A single (node, widget, model) binding detected by the missing model pipeline.
@@ -8,7 +9,9 @@ import type { SerializedNodeId } from '@/types/nodeId'
 export interface MissingModelCandidate {
   /** Undefined for workflow-level models not tied to a specific node. */
   nodeId?: SerializedNodeId
+  /** Stored owner of nodeType/embedded url; promotedSources tracks active consumers. */
   sourceExecutionId?: NodeExecutionId
+  promotedSources?: PromotedWidgetExecutionSource[]
   nodeType: string
   widgetName: string
   isAssetSupported: boolean

@@ -38,15 +38,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({
-      saveWorkflow: vi.fn(),
-      renameWorkflow: vi.fn()
-    })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 const mockShareServiceData = vi.hoisted(() => ({
   items: [
@@ -132,7 +124,6 @@ describe('ShareWorkflowDialogContent', () => {
   const onClose = vi.fn()
 
   beforeEach(() => {
-    vi.mocked(useFeatureFlags().flags).comfyHubUploadEnabled = false
     vi.mocked(useFeatureFlags().flags).comfyHubProfileGateEnabled = true
     Object.assign(useWorkflowStore(), {
       activeWorkflow: {
@@ -193,10 +184,6 @@ describe('ShareWorkflowDialogContent', () => {
             template:
               '<section data-testid="publish-intro"><button data-testid="publish-intro-cta" @click="$props.onCreateProfile()">Start publishing</button></section>',
             props: ['onCreateProfile']
-          },
-          Input: {
-            template: '<input v-bind="$attrs" />',
-            methods: { focus() {}, select() {} }
           }
         }
       }

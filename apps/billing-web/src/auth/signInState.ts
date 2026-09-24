@@ -4,8 +4,8 @@
  * also fires, a mint failing after the credential succeeded — are decided in
  * one tested place instead of by handler timing.
  */
-import type { AuthErrorClassification } from '@comfyorg/account/firebaseAuthError'
-import { classifyAuthError } from '@comfyorg/account/firebaseAuthError'
+import type { AuthErrorClassification } from '@comfyorg/account-core/firebaseAuthError'
+import { classifyAuthError } from '@comfyorg/account-core/firebaseAuthError'
 
 export type SignInProvider = 'google' | 'github' | 'email'
 

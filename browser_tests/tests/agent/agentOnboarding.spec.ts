@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 
 import {
   agentTest as test,
@@ -16,7 +17,7 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
       onboardingCompleted: false
     })
     await page
-      .getByRole('button', { name: enMessages.agent.askComfyAgent })
+      .getByRole('button', { name: enMessages.agent.entryButton, exact: true })
       .click()
     const steps = [
       [enMessages.agent.coachTitle, enMessages.agent.coachBody],
@@ -45,14 +46,19 @@ test.describe('Agent onboarding tour', { tag: ['@cloud', '@ui'] }, () => {
     await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect
       .poll(() =>
-        page.evaluate(() => localStorage.getItem('Comfy.AgentPanel.onboarded'))
+        page.evaluate(() =>
+          localStorage.getItem(
+            'Comfy.AgentPanel.onboarded.test-user-e2e.ws-personal'
+          )
+        )
       )
       .toBe('true')
 
     await page.reload()
+    await waitForCloudApp(page)
+    await expect(page.locator('#agent-panel-root')).toBeVisible()
     await expect(
       page.getByRole('dialog', { name: enMessages.agent.coachTitle })
     ).toHaveCount(0)
-    await expect(page.locator('#agent-panel-root')).toBeVisible()
   })
 })

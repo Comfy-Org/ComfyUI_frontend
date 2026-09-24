@@ -12,8 +12,9 @@
  */
 import { z } from 'zod'
 
-import type { SessionClient } from '@comfyorg/account/session'
+import type { SessionClient } from '@comfyorg/account-core/session'
 
+import { createTimeoutSignal } from '../utils/abortSignal'
 import { workshopSessionClient } from './workshop-account'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
 
@@ -38,7 +39,7 @@ export function createBillingSdkTopupReader(
       const response = await fetchImpl(featuresUrl, {
         headers: { Authorization: `Bearer ${token}` },
         cache: 'no-store',
-        signal: AbortSignal.timeout(FEATURES_TIMEOUT_MS)
+        signal: createTimeoutSignal(FEATURES_TIMEOUT_MS)
       })
       if (!response.ok) return false
       const parsed = zBillingSdkTopupFeature.safeParse(await response.json())

@@ -41,7 +41,7 @@
           aria-controls="results-list"
           :aria-label="t('g.addNode')"
           :placeholder="t('g.addNode')"
-          class="text-foreground h-6 min-w-[min(300px,80vw)] flex-1 border-none bg-transparent font-inter text-sm outline-none placeholder:text-muted-foreground"
+          class="h-6 min-w-[min(300px,80vw)] flex-1 border-none bg-transparent font-inter text-sm text-base-foreground outline-none placeholder:text-muted-foreground"
           @keydown.enter.prevent="emit('selectCurrent')"
           @keydown.down.prevent="emit('navigateDown')"
           @keydown.up.prevent="emit('navigateUp')"
