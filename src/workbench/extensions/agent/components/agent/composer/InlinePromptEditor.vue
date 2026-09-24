@@ -78,6 +78,24 @@ const plugins = [
     'Mod-z': undo,
     'Mod-Shift-z': redo,
     'Mod-y': redo,
+    ArrowRight: (state, dispatch) => {
+      if (state.selection.empty) return false
+      dispatch?.(
+        state.tr.setSelection(
+          TextSelection.create(state.doc, state.selection.to)
+        )
+      )
+      return true
+    },
+    ArrowLeft: (state, dispatch) => {
+      if (state.selection.empty) return false
+      dispatch?.(
+        state.tr.setSelection(
+          TextSelection.create(state.doc, state.selection.from)
+        )
+      )
+      return true
+    },
     'Shift-Enter': (state, dispatch) => {
       dispatch?.(state.tr.insertText('\n').scrollIntoView())
       return true

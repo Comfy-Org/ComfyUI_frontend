@@ -3,6 +3,7 @@ import { expect, mergeTests } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
 
 const test = mergeTests(agentTest, workflowSelectionTest)
@@ -60,19 +61,18 @@ test.describe(
           exact: true
         })
         .click()
-      const tabs = page.getByTestId('workflow-tab')
-      await expect(tabs).toHaveCount(2)
-      const activeTab = page.locator('.workflow-tabs .p-togglebutton-checked')
-      await tabs.first().click()
-      await expect(activeTab).toHaveText('Unsaved Workflow')
+      const topbar = new Topbar(page)
+      await expect(topbar.tabs).toHaveCount(2)
+      await topbar.getTab(0).click()
+      await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow')
 
       // A pinned target surviving a plain tab switch is intentional (asserted
       // elsewhere in agentWorkflowSelection.spec.ts); it is not the bug here.
       await expect(targetPicker).toHaveText('Unsaved Workflow')
 
       // Now bring tab B on screen and start a new chat from there.
-      await tabs.last().click()
-      await expect(activeTab).toHaveText('Unsaved Workflow (2)')
+      await topbar.getTab(1).click()
+      await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
       const panelBeforeNewChat = await panel.screenshot({
         path: testInfo.outputPath('before-new-chat.png')
       })
@@ -81,7 +81,7 @@ test.describe(
         .click()
       const composer = panel.getByRole('textbox', { includeHidden: true })
       await expect(composer).toHaveText('')
-      await expect(activeTab).toHaveText('Unsaved Workflow (2)')
+      await expect(topbar.getActiveTab()).toHaveText('Unsaved Workflow (2)')
       await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
 
       await testInfo.attach('before-new-chat', {
@@ -135,8 +135,9 @@ test.describe(
           exact: true
         })
         .click()
-      const activeTab = page.locator('.workflow-tabs .p-togglebutton-checked')
-      await expect(activeTab).toHaveText('Unsaved Workflow (2)')
+      await expect(new Topbar(page).getActiveTab()).toHaveText(
+        'Unsaved Workflow (2)'
+      )
 
       await panel
         .getByRole('button', { name: enMessages.agent.newChat })
