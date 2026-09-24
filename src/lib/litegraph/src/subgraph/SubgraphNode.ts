@@ -316,6 +316,18 @@ export class SubgraphNode extends LGraphNode implements BaseLGraph {
     if (widget.type === 'button') {
       const instance = toConcreteWidget(widget, this, false)
       if (instance) {
+        // setNodeId re-enters through node.widgets; cache first so
+        // _projectPromotedWidget returns this instance instead of recursing.
+        input._widget = instance
+        // The concrete widget's class accessor would write the store entry
+        // without claiming the host override; route through the projection.
+        Object.defineProperty(instance, 'disabled', {
+          configurable: true,
+          get: () => widget.disabled,
+          set: (value) => {
+            widget.disabled = value
+          }
+        })
         instance.setNodeId(this.id)
         hostWidget = instance
       }

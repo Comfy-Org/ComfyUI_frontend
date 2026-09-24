@@ -942,6 +942,25 @@ describe('SubgraphWidgetPromotion', () => {
       expect(widget.disabled).toBe(false)
     })
 
+    it('keeps a disabled override set on a promoted button widget', () => {
+      const subgraph = createTestSubgraph({
+        inputs: [{ name: 'action', type: 'button' }]
+      })
+      const { node, widget } = createNodeWithWidget(
+        'Test Node',
+        'button',
+        'Run'
+      )
+      widget.disabled = false
+      const host = setupPromotedWidget(subgraph, node)
+
+      host.widgets[0].disabled = true
+      host.arrange()
+
+      expect(promotedWidgetStateByName(host, 'action').disabled).toBe(true)
+      expect(widget.disabled).toBe(false)
+    })
+
     it('calls the interior callback with its owning node', () => {
       const subgraph = createTestSubgraph({
         inputs: [{ name: 'value', type: 'number' }]
