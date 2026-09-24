@@ -83,15 +83,22 @@ export interface PaymentCopyKeys {
   readonly safety?: typeof SAFETY_KEY
 }
 
+function recoveryCopyKey(
+  action: BillingRecoveryAction | undefined
+): PaymentCopyKey | undefined {
+  if (action === undefined) return undefined
+  const key = `billing.recovery.${action}` as const
+  return key in DEFAULT_PAYMENT_COPY ? key : undefined
+}
+
 export function paymentCopyKeys(
   projection: PaymentProjection
 ): PaymentCopyKeys {
   return {
     header: `billing.step.${projection.step}.header`,
     body:
-      projection.recoveryAction === undefined
-        ? `billing.step.${projection.step}.body`
-        : `billing.recovery.${projection.recoveryAction}`,
+      recoveryCopyKey(projection.recoveryAction) ??
+      `billing.step.${projection.step}.body`,
     ...(projection.reasonKey === undefined
       ? {}
       : { reason: `billing.reason.${projection.reasonKey}` as const }),

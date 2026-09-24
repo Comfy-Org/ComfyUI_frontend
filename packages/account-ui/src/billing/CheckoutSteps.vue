@@ -105,6 +105,7 @@ function paymentActions(
     case 'authenticate_payment':
       return ['retry']
     case undefined:
+    default:
       return STEP_ACTIONS[projection.step] ?? []
   }
 }

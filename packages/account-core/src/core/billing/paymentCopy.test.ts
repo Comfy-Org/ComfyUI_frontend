@@ -1,10 +1,31 @@
 import { describe, expect, it } from 'vitest'
 
+import type {
+  BillingOperationState,
+  BillingRecoveryAction
+} from './operationState.js'
 import {
   DEFAULT_PAYMENT_COPY,
   createPaymentCopy,
   paymentCopyKeys
 } from './paymentCopy.js'
+import { projectPaymentStep } from './paymentProjection.js'
+
+function failedWithUnknownRecoveryAction(): BillingOperationState {
+  const serverAddedAction: string = 'offer_bank_transfer'
+  return {
+    id: 'op-1',
+    kind: 'subscription',
+    scope: { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' },
+    presentation: 'embedded',
+    observedAt: 0,
+    attemptStartedAt: 0,
+    phase: 'failed',
+    declineReason: 'card_declined',
+    recoveryAction: serverAddedAction as BillingRecoveryAction,
+    retryable: true
+  }
+}
 
 describe('createPaymentCopy', () => {
   it('accepts host overrides but never the safety line', () => {
@@ -71,4 +92,13 @@ describe('paymentCopyKeys', () => {
       ).toBe(`billing.recovery.${recoveryAction}`)
     }
   )
+
+  it('falls back to the step body for a recovery action this build does not know', () => {
+    const keys = paymentCopyKeys(
+      projectPaymentStep(failedWithUnknownRecoveryAction(), 'preview')
+    )
+
+    expect(keys.body).toBe('billing.step.declined.body')
+    expect(createPaymentCopy()[keys.body]).toBeTruthy()
+  })
 })

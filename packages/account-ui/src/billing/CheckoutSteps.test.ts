@@ -3,8 +3,15 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { h } from 'vue'
 
-import type { PaymentProjection } from '@comfyorg/account-core/billing'
-import { DEFAULT_PAYMENT_COPY } from '@comfyorg/account-core/billing'
+import type {
+  BillingOperationState,
+  BillingRecoveryAction,
+  PaymentProjection
+} from '@comfyorg/account-core/billing'
+import {
+  DEFAULT_PAYMENT_COPY,
+  projectPaymentStep
+} from '@comfyorg/account-core/billing'
 
 import CheckoutSteps from './CheckoutSteps.vue'
 
@@ -12,6 +19,23 @@ function projection(
   overrides: Partial<PaymentProjection> & Pick<PaymentProjection, 'step'>
 ): PaymentProjection {
   return { noChargeConfirmed: false, ...overrides }
+}
+
+function failedWithUnknownRecoveryAction(): PaymentProjection {
+  const serverAddedAction: string = 'offer_bank_transfer'
+  const operation: BillingOperationState = {
+    id: 'op-1',
+    kind: 'subscription',
+    scope: { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' },
+    presentation: 'embedded',
+    observedAt: 0,
+    attemptStartedAt: 0,
+    phase: 'failed',
+    declineReason: 'card_declined',
+    recoveryAction: serverAddedAction as BillingRecoveryAction,
+    retryable: true
+  }
+  return projectPaymentStep(operation, 'preview')
 }
 
 describe('CheckoutSteps', () => {
@@ -135,6 +159,33 @@ describe('CheckoutSteps', () => {
       screen.getByRole('link', { name: 'Contact support' }).getAttribute('href')
     ).toBe('https://support.example/new')
     expect(screen.queryByRole('button')).toBeNull()
+  })
+
+  it('falls back to the step body and actions for a recovery action this build does not know', async () => {
+    const { emitted } = render(CheckoutSteps, {
+      props: { projection: failedWithUnknownRecoveryAction() }
+    })
+
+    expect(
+      screen.getByText(DEFAULT_PAYMENT_COPY['billing.step.declined.body'])
+    ).toBeTruthy()
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }))
+    expect(emitted('retry')).toHaveLength(1)
+  })
+
+  it('hands the actions slot an array for a recovery action this build does not know', () => {
+    let slotActions: unknown
+    render(CheckoutSteps, {
+      props: { projection: failedWithUnknownRecoveryAction() },
+      slots: {
+        actions: (scope: { actions: unknown }) => {
+          slotActions = scope.actions
+          return [h('span', 'Host actions')]
+        }
+      }
+    })
+
+    expect(slotActions).toEqual(['retry'])
   })
 
   it('offers no action on success, and none fires while disabled', async () => {
