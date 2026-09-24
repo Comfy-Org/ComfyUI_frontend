@@ -21,6 +21,7 @@ import { onGraphIntent } from '@/lib/litegraph/src/graphIntents'
 import type { GraphIntentEvent } from '@/lib/litegraph/src/graphIntents'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import type { ISerialisedNode } from '@/lib/litegraph/src/types/serialisation'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { RootGraphId } from '@/types/graphScopeId'
 import type { NodeId } from '@/types/nodeId'
@@ -79,25 +80,21 @@ type PendingOp =
  * without minting, so the document must not record it.
  */
 function wireNodeSnapshot(node: LGraphNode): WorkflowNode | null {
-  let serialized: Record<string, unknown>
+  let serialized: ISerialisedNode
   try {
-    serialized = node.serialize() as unknown as Record<string, unknown>
+    serialized = node.serialize()
   } catch {
     return null
   }
-  delete serialized.__incarnation
-  const named = serialized.widgets_values_named
-  if (named != null && typeof named === 'object') {
-    if (!node.isVirtualNode)
-      serialized.widgets_values = valueWidgetsOnly(node, named)
-    delete serialized.widgets_values_named
-  }
-  const flags = serialized.flags
-  if (flags != null && typeof flags === 'object' && 'ghost' in flags) {
-    const { ghost: _ghost, ...rest } = flags
-    serialized.flags = rest
-  }
-  return serialized as unknown as WorkflowNode
+  const {
+    widgets_values_named: named,
+    flags: { ghost: _ghost, ...flags },
+    ...rest
+  } = serialized
+  const snapshot = { ...rest, flags } satisfies WorkflowNode
+  return named && !node.isVirtualNode
+    ? { ...snapshot, widgets_values: valueWidgetsOnly(node, named) }
+    : snapshot
 }
 
 function valueWidgetsOnly(
