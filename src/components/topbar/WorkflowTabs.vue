@@ -111,7 +111,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { whenever } from '@vueuse/core'
+import { useResizeObserver, whenever } from '@vueuse/core'
 import { computed, nextTick, onUpdated, ref, watch } from 'vue'
 
 import AgentEntryButton from '@/components/topbar/AgentEntryButton.vue'
@@ -236,9 +236,13 @@ const onCloseWorkflow = async (option: WorkflowOption) => {
   await closeWorkflows([option])
 }
 
+const WHEEL_LINE_HEIGHT_PX = 16
+
 function handleWheel(event: WheelEvent) {
   if (event.deltaX) return
-  tabStripRef.value?.scrollBy({ left: event.deltaY })
+  const unit =
+    event.deltaMode === WheelEvent.DOM_DELTA_LINE ? WHEEL_LINE_HEIGHT_PX : 1
+  tabStripRef.value?.scrollBy({ left: event.deltaY * unit })
 }
 
 async function revealActiveTab() {
@@ -257,6 +261,7 @@ watch(
 const { isOverflowing, checkOverflow } = useOverflowObserver(tabStripRef)
 
 whenever(isOverflowing, () => void revealActiveTab())
+useResizeObserver(tabStripRef, () => void revealActiveTab())
 
 function handleTabResize(event: TransitionEvent) {
   if (event.propertyName !== 'flex-shrink') return

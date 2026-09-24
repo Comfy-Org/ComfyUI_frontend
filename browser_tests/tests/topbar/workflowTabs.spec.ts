@@ -317,6 +317,20 @@ test.describe('Workflow tabs', () => {
     )
 
     test(
+      'Keeps the active tab visible when the viewport narrows',
+      { tag: '@ui' },
+      async ({ comfyPage }) => {
+        const topbar = comfyPage.menu.topbar
+        await topbar.openBlankWorkflows(10)
+        await expect(topbar.tabs.last()).toBeInViewport({ ratio: 1 })
+
+        await comfyPage.page.setViewportSize({ width: 600, height: 720 })
+
+        await expect(topbar.tabs.last()).toBeInViewport({ ratio: 1 })
+      }
+    )
+
+    test(
       'Compact inactive tabs do not reveal a close button on hover',
       { tag: '@ui' },
       async ({ comfyPage }) => {

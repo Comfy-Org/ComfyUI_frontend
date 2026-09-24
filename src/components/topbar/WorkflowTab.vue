@@ -6,7 +6,7 @@
         data-testid="workflow-tab"
         :class="
           cn(
-            'workflow-tab group/tab relative h-full duration-200 ease-[cubic-bezier(0.19,1,0.22,1)] motion-safe:transition-[flex-shrink,min-width]',
+            'workflow-tab group/tab relative h-full motion-safe:transition-[flex-shrink,min-width] motion-safe:duration-200 motion-safe:ease-[cubic-bezier(0.19,1,0.22,1)]',
             isActiveTab ? 'min-w-22.5 shrink-0' : 'min-w-16 shrink'
           )
         "
