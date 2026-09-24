@@ -1,7 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import type { FieldSchema, FieldValue } from './workshop-playground'
-import { readWorkshopVideoMetadata } from './workshop-media-metadata'
+import {
+  readWorkshopImageMetadata,
+  readWorkshopVideoMetadata
+} from './workshop-media-metadata'
 import { validateWorkshopMediaInputs } from './workshop-media-validation'
 
 vi.mock(import('./workshop-media-metadata'))
@@ -24,11 +27,83 @@ const videoField: FieldSchema = {
   }
 }
 
+const imageField: FieldSchema = {
+  kind: 'text',
+  name: 'reference_image',
+  label: 'Reference image',
+  required: true,
+  multiline: false,
+  presentation: {
+    label: 'Reference image',
+    help: '',
+    hidden: false,
+    advanced: false,
+    control: 'media',
+    urlUpload: 'image',
+    imageAspectRatio: { minimum: 0.39, maximum: 2.5 }
+  }
+}
+
 function metadata(durationSeconds: number, widthPixels = 1920) {
   return { durationSeconds, widthPixels, heightPixels: 1080 }
 }
 
 describe('Workshop media validation', () => {
+  it.for([
+    { widthPixels: 390, heightPixels: 1000 },
+    { widthPixels: 2500, heightPixels: 1000 }
+  ])('allows an image at an aspect-ratio boundary', async (size) => {
+    vi.mocked(readWorkshopImageMetadata).mockResolvedValue(size)
+
+    await expect(
+      validateWorkshopMediaInputs(
+        [imageField],
+        { reference_image: 'https://media.example/source.png' },
+        new AbortController().signal
+      )
+    ).resolves.toBeUndefined()
+  })
+
+  it.for([
+    { widthPixels: 389, heightPixels: 1000 },
+    { widthPixels: 2501, heightPixels: 1000 }
+  ])('rejects an image outside the aspect-ratio range', async (size) => {
+    vi.mocked(readWorkshopImageMetadata).mockResolvedValue(size)
+
+    await expect(
+      validateWorkshopMediaInputs(
+        [imageField],
+        { reference_image: 'https://media.example/source.png' },
+        new AbortController().signal
+      )
+    ).rejects.toMatchObject({
+      reason: 'validation',
+      stage: 'input_preparation',
+      fieldErrors: { reference_image: 'imageAspectRatioOutOfRange' }
+    })
+  })
+
+  it('attributes an unreadable remote image to its field', async () => {
+    const cause = new DOMException(
+      'Image metadata unavailable',
+      'NotSupportedError'
+    )
+    vi.mocked(readWorkshopImageMetadata).mockRejectedValue(cause)
+
+    await expect(
+      validateWorkshopMediaInputs(
+        [imageField],
+        { reference_image: 'https://media.example/source.png' },
+        new AbortController().signal
+      )
+    ).rejects.toMatchObject({
+      reason: 'client',
+      stage: 'input_preparation',
+      fieldErrors: { reference_image: 'imageUnreadable' },
+      cause
+    })
+  })
+
   it.for([4.2, 15.5])('allows a %s-second video', async (duration) => {
     vi.mocked(readWorkshopVideoMetadata).mockResolvedValue(metadata(duration))
 
