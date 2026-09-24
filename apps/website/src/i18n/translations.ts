@@ -10089,6 +10089,18 @@ Enterprise`
     en: 'This input is incompatible with the other settings.',
     'zh-CN': '此输入与其他设置不兼容。'
   },
+  'workshop.form.imageAspectRatioOutOfRange': {
+    en: 'Use an image with an aspect ratio between {minimum} and {maximum}.',
+    'zh-CN': '请使用宽高比在 {minimum} 到 {maximum} 之间的图片。'
+  },
+  'workshop.form.imageLayerDecompositionUnsupported': {
+    en: 'This image is too complex to separate into layers. Choose a simpler image.',
+    'zh-CN': '此图片过于复杂，无法分离图层。请选择更简单的图片。'
+  },
+  'workshop.form.imageUnreadable': {
+    en: 'Could not read the image dimensions. Select a readable image or use an accessible image link.',
+    'zh-CN': '无法读取图片尺寸。请选择可读取的图片或使用可访问的图片链接。'
+  },
   'workshop.form.videoTooLong': {
     en: 'Use a video that is {seconds} seconds or shorter.',
     'zh-CN': '请使用时长不超过 {seconds} 秒的视频。'

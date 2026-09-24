@@ -167,6 +167,27 @@ export function creatorFormFor(
           file('reference_images', 'Reference images', 4)
         }
       }
+      if (
+        id === 'byteplus/dreamina-seedance-2-5-260628' &&
+        !['text', 'edit'].includes(model.options.mode)
+      ) {
+        const imageFields = model.options.urlMedia
+          ? model.options.mode === 'reference'
+            ? [
+                'reference_image_url',
+                'reference_image_url_2',
+                'reference_image_url_3',
+                'reference_image_url_4'
+              ]
+            : ['first_frame_url', 'last_frame_url']
+          : ['first_frame', 'last_frame', 'reference_images']
+        for (const name of imageFields)
+          rules[name] = {
+            ...rules[name],
+            imageAspectRatio: { minimum: 0.39, maximum: 2.5 },
+            help: 'Use an image with an aspect ratio between 0.39 and 2.50.'
+          }
+      }
       request = {
         kind: 'callback',
         callback: 'seedance',

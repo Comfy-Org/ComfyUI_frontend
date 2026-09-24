@@ -28,6 +28,13 @@ export const workshopInputDefinitionSchema = z.object({
     })
     .refine(({ minimum, maximum }) => minimum <= maximum)
     .optional(),
+  imageAspectRatio: z
+    .object({
+      minimum: z.number().positive(),
+      maximum: z.number().positive()
+    })
+    .refine(({ minimum, maximum }) => minimum <= maximum)
+    .optional(),
   formConstraint: z
     .object({
       schema: z.record(z.string(), z.json()),

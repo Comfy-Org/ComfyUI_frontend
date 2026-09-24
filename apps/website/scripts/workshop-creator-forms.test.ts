@@ -100,6 +100,34 @@ describe('sibling page modes', () => {
     expect(form.inputs).not.toHaveProperty('ratio')
   })
 
+  it.for([
+    {
+      mode: 'first-last',
+      fields: ['first_frame_url', 'last_frame_url']
+    },
+    {
+      mode: 'reference',
+      fields: [
+        'reference_image_url',
+        'reference_image_url_2',
+        'reference_image_url_3',
+        'reference_image_url_4'
+      ]
+    }
+  ] as const)(
+    'declares Seedance 2.5 $mode image aspect-ratio bounds',
+    ({ mode, fields }) => {
+      const form = formFor('byteplus/dreamina-seedance-2-5-260628', {
+        mode,
+        urlMedia: true
+      })
+      for (const field of fields)
+        expect(form.inputs[field]).toMatchObject({
+          imageAspectRatio: { minimum: 0.39, maximum: 2.5 }
+        })
+    }
+  )
+
   it.for(['edit', 'reference-video'])(
     'declares Kling %s source-video bounds',
     (mode) => {

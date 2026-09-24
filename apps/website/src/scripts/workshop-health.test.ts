@@ -239,6 +239,17 @@ describe('Workshop health', () => {
         field_error_names: ['image'],
         field_error_codes: ['fileUnreadable']
       }
+    },
+    {
+      name: 'provider-declined layer separation on a complex image',
+      failure: {
+        reason: 'validation',
+        request_id: 'router-request',
+        http_status: 400,
+        router_error_type: 'invalid_input',
+        field_error_names: ['images'],
+        field_error_codes: ['imageLayerDecompositionUnsupported']
+      }
     }
   ] satisfies Array<{ name: string; failure: FailureDetails }>)(
     'excludes $name from service failures',

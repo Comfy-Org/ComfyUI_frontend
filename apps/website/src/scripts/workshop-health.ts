@@ -18,6 +18,15 @@ function isAccountRefusal(failure: FailedRun): boolean {
 
 function isActionableInputIssue(failure: FailedRun): boolean {
   if (
+    failure.reason === 'validation' &&
+    failure.field_error_names?.length &&
+    failure.field_error_codes?.length &&
+    failure.field_error_codes.every(
+      (code) => code === 'imageLayerDecompositionUnsupported'
+    )
+  )
+    return true
+  if (
     [failure.request_id, failure.http_status, failure.router_error_type].some(
       (value) => value !== undefined
     )

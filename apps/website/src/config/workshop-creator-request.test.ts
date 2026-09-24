@@ -141,7 +141,7 @@ describe('creator file failure diagnostics', () => {
   })
 
   it('identifies the creator file widget when the real encoder cannot read its input', async () => {
-    const { creator } = modelFor('vertexai/gemini-3-pro-image').execution
+    const { creator } = modelFor('byteplus/seedream-5-0-pro-260628').execution
     assert.isDefined(creator)
     const image = upload()
     assert.instanceOf(image.file, File)
@@ -467,7 +467,7 @@ describe('creator widgets to native Router requests', () => {
     ).rejects.toMatchObject({ fieldErrors: { first_frame: 'required' } })
   })
 
-  it('uses raw Gemini Base64 plus MIME metadata, and nested configuration', async () => {
+  it('uploads Gemini images with MIME metadata and nested configuration', async () => {
     const body = await prepare('vertexai/gemini-3-pro-image', {
       prompt: hostilePrompt,
       images: [upload()],
@@ -481,7 +481,12 @@ describe('creator widgets to native Router requests', () => {
           role: 'user',
           parts: [
             { text: hostilePrompt },
-            { inlineData: { data: 'AAH/Ig==', mimeType: 'image/png' } }
+            {
+              fileData: {
+                fileUri: 'https://storage.example/image-1.png',
+                mimeType: 'image/png'
+              }
+            }
           ]
         }
       ],
@@ -494,6 +499,25 @@ describe('creator widgets to native Router requests', () => {
     expect(
       (await prepare('vertexai/gemini-2.5-flash-image')).generationConfig
     ).not.toHaveProperty('imageConfig.imageSize')
+  })
+
+  it('uploads a large Gemini image without allocating Base64 request data', async () => {
+    const file = new File(
+      [new Uint8Array(6 * 1024 * 1024)],
+      'large-reference.png',
+      { type: 'image/png' }
+    )
+    const read = vi.spyOn(file, 'arrayBuffer')
+
+    await expect(
+      prepare('vertexai/gemini-3-pro-image', {
+        images: [{ name: file.name, size: file.size, type: file.type, file }]
+      })
+    ).resolves.toHaveProperty(
+      'contents.0.parts.1.fileData.fileUri',
+      'https://storage.example/image-1.png'
+    )
+    expect(read).not.toHaveBeenCalled()
   })
 
   it('omits unused Seedream references and preserves the selected image order', async () => {
@@ -685,7 +709,7 @@ describe('creator widgets to native Router requests', () => {
   })
 
   it('does not mutate inputs, accepts cancellation, and rejects oversized encoding before allocation', async () => {
-    const id = 'vertexai/gemini-3-pro-image'
+    const id = 'byteplus/seedream-5-0-pro-260628'
     const values = Object.freeze({ ...valuesFor(id), images: [upload()] })
     const before = structuredClone({
       ...values,

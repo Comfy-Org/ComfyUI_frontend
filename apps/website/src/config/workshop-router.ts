@@ -109,12 +109,20 @@ function failureFor(
 
 function providerFieldErrors(
   contract: WorkshopContract,
+  requestBody: Readonly<Record<string, unknown>>,
   body: string,
   bodyComplete: boolean
 ): FieldErrors {
-  if (!bodyComplete || contract.id !== 'kling/kling-v3-omni' || !body.trim())
-    return {}
-  return isKlingHdrRefusal(body) ? { video_url: 'videoHdrUnsupported' } : {}
+  if (!bodyComplete || !body.trim()) return {}
+  if (contract.id === 'kling/kling-v3-omni' && isKlingHdrRefusal(body))
+    return { video_url: 'videoHdrUnsupported' }
+  if (
+    contract.id === 'byteplus/seedream-5-0-pro-260628' &&
+    requestBody.layer_decomposition === true &&
+    isSeedreamLayerRefusal(body)
+  )
+    return { images: 'imageLayerDecompositionUnsupported' }
+  return {}
 }
 
 function parseJsonObject(body: string): object | undefined {
@@ -137,6 +145,20 @@ function isKlingHdrRefusal(body: string): boolean {
     Reflect.get(data, 'task_status') === 'failed' &&
     Reflect.get(data, 'task_status_msg') ===
       'VideoNormalize failed, HDR video is not supported'
+  )
+}
+
+function isSeedreamLayerRefusal(body: string): boolean {
+  const payload = parseJsonObject(body)
+  if (!payload) return false
+  const error = Reflect.get(payload, 'error')
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    Reflect.get(error, 'code') === 'InvalidParameter' &&
+    Reflect.get(error, 'param') === 'image' &&
+    String(Reflect.get(error, 'message')).trim().toLowerCase() ===
+      'the image content is too complex to decompose into layers'
   )
 }
 
@@ -288,6 +310,7 @@ export async function settleRouterResponse(
       const details = await failureDetails(response)
       const fieldErrors = providerFieldErrors(
         options.contract,
+        options.body,
         details.response.body,
         details.bodyComplete
       )

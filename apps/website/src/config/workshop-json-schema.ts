@@ -9,6 +9,7 @@ export type WorkshopJsonParseResult =
 
 const ajv = new Ajv({ allErrors: true, strict: false })
 addFormats(ajv)
+ajv.addFormat('byte', { type: 'string', validate: isBase64 })
 ajv.addFormat('http-image-url', { type: 'string', validate: isHttpImageSource })
 ajv.addFormat('uint32', {
   type: 'number',
@@ -19,6 +20,25 @@ const validators = new WeakMap<
   Readonly<Record<string, unknown>>,
   ValidateFunction
 >()
+
+function isBase64(value: string): boolean {
+  if (value.length % 4 !== 0) return false
+  const padding = value.endsWith('==') ? 2 : value.endsWith('=') ? 1 : 0
+  for (let index = 0; index < value.length - padding; index++) {
+    const code = value.charCodeAt(index)
+    if (
+      !(
+        (code >= 48 && code <= 57) ||
+        (code >= 65 && code <= 90) ||
+        (code >= 97 && code <= 122) ||
+        code === 43 ||
+        code === 47
+      )
+    )
+      return false
+  }
+  return !value.slice(0, -padding || undefined).includes('=')
+}
 
 export function validatorFor(
   schema: Readonly<Record<string, unknown>>
