@@ -14,11 +14,14 @@ import { getExecutionContext } from '@/platform/telemetry/utils/getExecutionCont
 import type {
   AddCreditsClickMetadata,
   AgentConsentNotOfferedMetadata,
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageSentMetadata,
   AgentMessageFeedbackMetadata,
   AgentNodeTaggedMetadata,
   AgentOnboardingNotShownMetadata,
+  AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
   AgentWorkflowAppliedMetadata,
@@ -697,7 +700,36 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
   }
 
   trackAgentPanelClosed(metadata: AgentPanelClosedMetadata): void {
+    if (metadata.source === 'pagehide') {
+      this.captureOnTeardown(TelemetryEvents.AGENT_PANEL_CLOSED, metadata)
+      return
+    }
     this.trackEvent(TelemetryEvents.AGENT_PANEL_CLOSED, metadata)
+  }
+
+  /**
+   * A normal `capture()` batches for its next flush, which a pagehide-time
+   * event may never see - the tab can be gone before that timer runs. Forces
+   * an immediate `sendBeacon` send instead, the one transport browsers keep
+   * alive past teardown. Does not queue for later: if PostHog has not loaded
+   * yet, the page may already be gone before it does.
+   */
+  private captureOnTeardown(
+    eventName: TelemetryEventName,
+    properties: TelemetryEventProperties
+  ): void {
+    if (!this.isEnabled) return
+    if (this.disabledEvents.has(eventName)) return
+    if (!this.isInitialized || !this.posthog) return
+
+    try {
+      this.posthog.capture(eventName, properties, {
+        transport: 'sendBeacon',
+        send_instantly: true
+      })
+    } catch (error) {
+      console.error('Failed to track PostHog teardown event:', error)
+    }
   }
 
   trackAgentEntryButtonClicked(
@@ -708,6 +740,22 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
 
   trackAgentCloseButtonClicked(): void {
     this.trackEvent(TelemetryEvents.AGENT_CLOSE_BUTTON_CLICKED, {})
+  }
+
+  trackAgentConsentShown(metadata: AgentConsentShownMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_CONSENT_SHOWN, metadata)
+  }
+
+  trackAgentConsentResolved(metadata: AgentConsentResolvedMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_CONSENT_RESOLVED, metadata)
+  }
+
+  trackAgentOnboardingShown(): void {
+    this.trackEvent(TelemetryEvents.AGENT_ONBOARDING_SHOWN, {})
+  }
+
+  trackAgentOnboardingStep(metadata: AgentOnboardingStepMetadata): void {
+    this.trackEvent(TelemetryEvents.AGENT_ONBOARDING_STEP, metadata)
   }
 
   trackAgentMessageSent(metadata: AgentMessageSentMetadata): void {

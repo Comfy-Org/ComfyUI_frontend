@@ -6,6 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { effectScope } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 
 import type {
   BillingStatusResponse,
@@ -31,8 +32,6 @@ const mockBillingPlans = vi.hoisted(() => ({
   error: { value: null as string | null },
   fetchPlans: vi.fn()
 }))
-
-const mockShow = vi.hoisted(() => vi.fn())
 
 const mockReportError = vi.hoisted(() => vi.fn())
 
@@ -81,13 +80,8 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(
-  import('@/platform/cloud/subscription/composables/useSubscriptionDialog'),
-  () => ({
-    useSubscriptionDialog: () => ({
-      show: mockShow
-    })
-  })
+vi.mock(
+  import('@/platform/cloud/subscription/composables/useSubscriptionDialog')
 )
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
@@ -1075,9 +1069,7 @@ describe('useWorkspaceBilling', () => {
       document.dispatchEvent(new Event('visibilitychange'))
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
       expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(useBillingCapabilities().refresh)).toHaveBeenCalledTimes(
-        1
-      )
+      expect(useBillingCapabilities().refresh).toHaveBeenCalledTimes(1)
 
       // One-shot: switching tabs later must not keep refetching.
       document.dispatchEvent(new Event('visibilitychange'))
@@ -1103,9 +1095,7 @@ describe('useWorkspaceBilling', () => {
       window.dispatchEvent(new Event('focus'))
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
       expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(useBillingCapabilities().refresh)).toHaveBeenCalledTimes(
-        1
-      )
+      expect(useBillingCapabilities().refresh).toHaveBeenCalledTimes(1)
 
       document.dispatchEvent(new Event('visibilitychange'))
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
@@ -1154,9 +1144,7 @@ describe('useWorkspaceBilling', () => {
       window.dispatchEvent(new Event('focus'))
       expect(mockWorkspaceApi.getBillingStatus).toHaveBeenCalledTimes(1)
       expect(mockWorkspaceApi.getBillingBalance).toHaveBeenCalledTimes(1)
-      expect(vi.mocked(useBillingCapabilities().refresh)).toHaveBeenCalledTimes(
-        1
-      )
+      expect(useBillingCapabilities().refresh).toHaveBeenCalledTimes(1)
     })
 
     it('removes pending return listeners when its scope is disposed', async () => {
@@ -1179,7 +1167,7 @@ describe('useWorkspaceBilling', () => {
       document.dispatchEvent(new Event('visibilitychange'))
 
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
-      expect(vi.mocked(useBillingCapabilities().refresh)).not.toHaveBeenCalled()
+      expect(useBillingCapabilities().refresh).not.toHaveBeenCalled()
     })
 
     it('does not watch for a return when the portal window is blocked', async () => {
@@ -1200,7 +1188,7 @@ describe('useWorkspaceBilling', () => {
       document.dispatchEvent(new Event('visibilitychange'))
 
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
-      expect(vi.mocked(useBillingCapabilities().refresh)).not.toHaveBeenCalled()
+      expect(useBillingCapabilities().refresh).not.toHaveBeenCalled()
     })
 
     it('does not watch for a return when no portal was opened', async () => {
@@ -1215,7 +1203,7 @@ describe('useWorkspaceBilling', () => {
 
       document.dispatchEvent(new Event('visibilitychange'))
       expect(mockWorkspaceApi.getBillingStatus).not.toHaveBeenCalled()
-      expect(vi.mocked(useBillingCapabilities().refresh)).not.toHaveBeenCalled()
+      expect(useBillingCapabilities().refresh).not.toHaveBeenCalled()
     })
   })
 
@@ -1864,7 +1852,7 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       await billing.requireActiveSubscription()
 
-      expect(mockShow).toHaveBeenCalledTimes(1)
+      expect(useSubscriptionDialog().show).toHaveBeenCalledTimes(1)
     })
 
     it('does nothing when subscription is active', async () => {
@@ -1873,7 +1861,7 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       await billing.requireActiveSubscription()
 
-      expect(mockShow).not.toHaveBeenCalled()
+      expect(useSubscriptionDialog().show).not.toHaveBeenCalled()
     })
   })
 
@@ -1882,7 +1870,7 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       billing.showSubscriptionDialog()
 
-      expect(mockShow).toHaveBeenCalledTimes(1)
+      expect(useSubscriptionDialog().show).toHaveBeenCalledTimes(1)
     })
   })
 
