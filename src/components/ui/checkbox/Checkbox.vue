@@ -19,7 +19,7 @@ const forwarded = useForwardPropsEmits(restProps, emits)
     v-bind="forwarded"
     :class="
       cn(
-        'flex size-5 shrink-0 items-center justify-center rounded-sm border border-node-component-header-icon transition-colors',
+        'flex size-5 shrink-0 items-center justify-center rounded-sm border border-border-default transition-colors',
         'focus-visible:ring-1 focus-visible:ring-border-default focus-visible:outline-none',
         'disabled:cursor-not-allowed disabled:opacity-50',
         'data-[state=checked]:border-primary-background data-[state=checked]:bg-primary-background',

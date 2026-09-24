@@ -1,4 +1,5 @@
 import { useSettingStore } from '@/platform/settings/settingStore'
+import { useAuthStore } from '@/stores/authStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { fromAny } from '@total-typescript/shoehorn'
 import * as VueUse from '@vueuse/core'
@@ -6,7 +7,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
+import {
+  isFirstRunReplayRequested,
+  requestOnboardingReplay
+} from '@/platform/onboarding/onboardingReplay'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { StartupOutcome } from '@/platform/workflow/persistence/base/draftTypes'
 import type { SharedWorkflowUrlLoadStatus } from '@/platform/workflow/sharing/composables/useSharedWorkflowUrlLoader'
@@ -40,6 +46,8 @@ const sharedComposable = vi.hoisted(() => {
   return { create, reset: () => reset() }
 })
 
+const OWNER_ID = 'account-a'
+
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return mocks.isCloud
@@ -58,6 +66,7 @@ vi.mock<unknown>(import('@/services/useNewUserService'), () => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
+vi.mock(import('@/platform/auth/firebaseIdentity'), { spy: true })
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
@@ -87,14 +96,15 @@ describe('useFirstRunEntry', () => {
     mocks.isDesktopWidth = true
     mocks.subscriptionEnabled = true
     mocks.isNewUser = true
+    vi.mocked(firebaseIdentity.onUserChanged).mockReturnValue(() => undefined)
+    vi.mocked(firebaseIdentity.onTokenChanged).mockReturnValue(() => undefined)
+    Object.assign(useAuthStore(), { userId: OWNER_ID })
     vi.mocked(useFeatureFlags().flags).onboardingTourEnabled = true
     useSettingStore().settingValues = {}
     vi.mocked(useSettingStore().set).mockImplementation(async (key, value) => {
       Object.assign(useSettingStore().settingValues, { [key]: value })
     })
     sharedComposable.reset()
-    // beginTour reports whether a tour actually started; default to the
-    // ordinary case so only tests about a refused start have to say so.
     mocks.beginTour.mockResolvedValue(true)
   })
 
@@ -450,7 +460,7 @@ describe('useFirstRunEntry', () => {
     expect(
       mocks.beginTour,
       'opening a template link on a phone and returning on a laptop is ordinary behaviour'
-    ).toHaveBeenCalledWith('image_z_image_turbo')
+    ).toHaveBeenCalledWith('image_z_image_turbo', expect.any(Function))
     expect(
       useSettingStore().settingValues['Comfy.TutorialCompleted'],
       'the flag is spent on the boot that finally delivered the tour, not before'
@@ -470,6 +480,122 @@ describe('useFirstRunEntry', () => {
       useCommandStore().execute,
       'nor may the template browser cover their restored workflow'
     ).not.toHaveBeenCalled()
+  })
+
+  describe('a requested replay', () => {
+    beforeEach(() => {
+      mocks.isNewUser = false
+      useSettingStore().settingValues['Comfy.TutorialCompleted'] = true
+    })
+
+    it('onboards over restored work, because this user asked for onboarding', async () => {
+      requestOnboardingReplay(OWNER_ID)
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('restored')
+
+      expect(entry.gettingStartedVisible.value).toBe(true)
+    })
+
+    it('onboards a returning user whose tutorial is already complete', async () => {
+      requestOnboardingReplay(OWNER_ID)
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('fresh')
+
+      expect(entry.gettingStartedVisible.value).toBe(true)
+    })
+
+    it('is spent by the boot that shows the screen', async () => {
+      requestOnboardingReplay(OWNER_ID)
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('restored')
+
+      expect(isFirstRunReplayRequested(OWNER_ID)).toBe(false)
+    })
+
+    it('stands until a boot can show the screen, so eligibility this boot lacked is not lost', async () => {
+      requestOnboardingReplay(OWNER_ID)
+      mocks.subscriptionEnabled = false
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('fresh')
+
+      expect(entry.gettingStartedVisible.value).toBe(false)
+      expect(isFirstRunReplayRequested(OWNER_ID)).toBe(true)
+    })
+
+    const cannotServe = [
+      ['not on cloud', () => void (mocks.isCloud = false)],
+      ['subscription disabled', () => void (mocks.subscriptionEnabled = false)],
+      ['below the md breakpoint', () => void (mocks.isDesktopWidth = false)],
+      [
+        'the tour flag off',
+        () => {
+          vi.mocked(useFeatureFlags().flags).onboardingTourEnabled = false
+        }
+      ]
+    ] as const
+
+    it.for(cannotServe)(
+      'never covers restored work with the template browser when %s',
+      async ([, disqualify]) => {
+        requestOnboardingReplay(OWNER_ID)
+        disqualify()
+        const entry = useFirstRunEntry()
+
+        await entry.handleStartupOutcome('restored')
+
+        expect(entry.gettingStartedVisible.value).toBe(false)
+        expect(useCommandStore().execute).not.toHaveBeenCalled()
+        expect(isFirstRunReplayRequested(OWNER_ID)).toBe(true)
+      }
+    )
+
+    it('is spent by a link that delivers the tour instead of the screen', async () => {
+      requestOnboardingReplay(OWNER_ID)
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('url-intent')
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+      expect(mocks.beginTour).toHaveBeenCalled()
+      expect(
+        isFirstRunReplayRequested(OWNER_ID),
+        'the replay was served as a tour, so a later reload must not re-offer it'
+      ).toBe(false)
+    })
+
+    it('stands when the link refused to start a tour, which served nothing', async () => {
+      requestOnboardingReplay(OWNER_ID)
+      mocks.beginTour.mockResolvedValue(false)
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('url-intent')
+      await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
+
+      expect(isFirstRunReplayRequested(OWNER_ID)).toBe(true)
+    })
+
+    it('leaves the invariant intact for everyone who did not ask', async () => {
+      const entry = useFirstRunEntry()
+
+      await entry.handleStartupOutcome('restored')
+
+      expect(entry.gettingStartedVisible.value).toBe(false)
+    })
+
+    it('hides an active replay when the account changes', async () => {
+      requestOnboardingReplay(OWNER_ID)
+      const entry = useFirstRunEntry()
+      await entry.handleStartupOutcome('restored')
+
+      Object.assign(useAuthStore(), { userId: 'account-b' })
+
+      expect(entry.gettingStartedVisible.value).toBe(false)
+      expect(entry.firstRunTookScreen.value).toBe(false)
+    })
   })
 
   /**
@@ -515,7 +641,7 @@ describe('useFirstRunEntry', () => {
         expect(
           mocks.beginTour,
           'a share link is the case no pin can ever cover'
-        ).toHaveBeenCalledWith(undefined)
+        ).toHaveBeenCalledWith(undefined, expect.any(Function))
       }
     )
 
@@ -524,7 +650,10 @@ describe('useFirstRunEntry', () => {
 
       await entry.handleUrlWorkflow('url-intent', 'image_z_image_turbo')
 
-      expect(mocks.beginTour).toHaveBeenCalledWith('image_z_image_turbo')
+      expect(mocks.beginTour).toHaveBeenCalledWith(
+        'image_z_image_turbo',
+        expect.any(Function)
+      )
     })
 
     it('drops the template pins when a share link replaced the graph', async () => {
@@ -539,7 +668,7 @@ describe('useFirstRunEntry', () => {
       expect(
         mocks.beginTour,
         'pinned ids are graph-local, so validating them against a stranger workflow spotlights whichever node happens to share the id'
-      ).toHaveBeenCalledWith(undefined)
+      ).toHaveBeenCalledWith(undefined, expect.any(Function))
     })
 
     it('leaves the completion flag alone when the engine refused to start', async () => {

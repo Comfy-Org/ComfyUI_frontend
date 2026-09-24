@@ -2,11 +2,9 @@
 import { defineAsyncComponent, h, shallowRef } from 'vue'
 import type { FunctionalComponent } from 'vue'
 
-import {
-  fetchModelsCatalogue,
-  fetchModelsPage
-} from '../../config/models-page-data'
+import { fetchModelsCatalogue } from '../../config/models-catalogue-data'
 import { t } from '../../i18n/translations'
+import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
 
 import WorkshopGate from './WorkshopGate.vue'
 import WorkshopLoading from './WorkshopLoading.vue'
@@ -16,6 +14,7 @@ const { slug } = defineProps<{
 }>()
 
 const loadingLabel = t('workshop.load.pending', 'en')
+const workflowsEnabled = useWorkshopWorkflowsEnabled()
 
 const Loading: FunctionalComponent = () =>
   h(WorkshopLoading, { label: loadingLabel, 'data-testid': 'models-loading' })
@@ -52,11 +51,19 @@ function createContent() {
   return defineAsyncComponent({
     loader: async () => {
       if (slug) {
-        const [{ default: ModelPage }, page] = await Promise.all([
-          import('./ModelPage.vue'),
-          fetchModelsPage(slug)
-        ])
-        return () => h(ModelPage, { page })
+        const preload = slug.startsWith('workflows/')
+          ? import('./WorkflowPage.vue')
+          : import('./ModelPage.vue')
+        void preload.catch(() => undefined)
+        const { fetchModelsPage } =
+          await import('../../config/models-page-data')
+        const { model, ...page } = await fetchModelsPage(slug)
+        if (model.routerId === undefined) {
+          const { default: WorkflowPage } = await import('./WorkflowPage.vue')
+          return () => h(WorkflowPage, { model })
+        }
+        const { default: ModelPage } = await import('./ModelPage.vue')
+        return () => h(ModelPage, { page: { ...page, model } })
       }
       const [{ default: ModelsCatalogue }, models] = await Promise.all([
         import('./ModelsCatalogue.vue'),
@@ -69,7 +76,14 @@ function createContent() {
             class:
               'max-w-10xl mx-auto px-6 pt-8 pb-16 max-sm:pt-5 max-sm:pb-10 lg:px-8 lg:pt-12 lg:pb-24'
           },
-          [h(ModelsCatalogue, { models })]
+          [
+            h(ModelsCatalogue, {
+              models: models.filter(
+                (model) =>
+                  model.routerId !== undefined || workflowsEnabled.value
+              )
+            })
+          ]
         )
     },
     loadingComponent: Loading,
@@ -86,7 +100,10 @@ const Content = shallowRef(createContent())
 </script>
 
 <template>
-  <WorkshopGate :keep-mounted="Boolean(slug)">
+  <WorkshopGate
+    :keep-mounted="Boolean(slug)"
+    :allowed="!slug?.startsWith('workflows/') || workflowsEnabled"
+  >
     <component :is="Content" />
     <template #loading>
       <WorkshopLoading :label="loadingLabel" />
