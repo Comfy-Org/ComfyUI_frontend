@@ -75,6 +75,68 @@ describe('CheckoutSteps', () => {
     }
   )
 
+  it.for([
+    {
+      recoveryAction: 'retry',
+      body: 'billing.recovery.retry',
+      button: 'Try again'
+    },
+    {
+      recoveryAction: 'replace_payment_method',
+      body: 'billing.recovery.replace_payment_method',
+      button: 'Use a different payment method'
+    },
+    {
+      recoveryAction: 'authenticate_payment',
+      body: 'billing.recovery.authenticate_payment',
+      button: 'Try again'
+    }
+  ] as const)(
+    'for recovery $recoveryAction shows its line and a "$button" that emits retry',
+    async ({ recoveryAction, body, button }) => {
+      const { emitted } = render(CheckoutSteps, {
+        props: {
+          projection: projection({
+            step: 'processing_error',
+            reasonKey: 'generic',
+            recoveryAction
+          })
+        }
+      })
+
+      expect(screen.getByText(DEFAULT_PAYMENT_COPY[body])).toBeTruthy()
+      expect(screen.queryByRole('link', { name: 'Contact support' })).toBeNull()
+      await userEvent.click(screen.getByRole('button', { name: button }))
+      expect(emitted('retry')).toHaveLength(1)
+    }
+  )
+
+  it('for recovery contact_support links to support and offers no retry', () => {
+    render(CheckoutSteps, {
+      props: {
+        projection: projection({
+          step: 'processing_error',
+          reasonKey: 'generic',
+          recoveryAction: 'contact_support'
+        }),
+        supportUrl: 'https://support.example/new'
+      }
+    })
+
+    expect(
+      screen.getByText(DEFAULT_PAYMENT_COPY['billing.recovery.contact_support'])
+    ).toBeTruthy()
+    expect(
+      screen.queryByText(
+        DEFAULT_PAYMENT_COPY['billing.step.processing_error.body']
+      )
+    ).toBeNull()
+    expect(
+      screen.getByRole('link', { name: 'Contact support' }).getAttribute('href')
+    ).toBe('https://support.example/new')
+    expect(screen.queryByRole('button')).toBeNull()
+  })
+
   it('offers no action on success, and none fires while disabled', async () => {
     render(CheckoutSteps, {
       props: { projection: projection({ step: 'success' }) }

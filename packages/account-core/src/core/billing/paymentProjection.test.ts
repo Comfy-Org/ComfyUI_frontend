@@ -29,18 +29,19 @@ function pending(
   }
 }
 
+type FailedOperation = Extract<BillingOperationState, { phase: 'failed' }>
+
 function failed(
-  declineReason: Extract<
-    BillingOperationState,
-    { phase: 'failed' }
-  >['declineReason']
+  declineReason: FailedOperation['declineReason'],
+  overrides: Partial<Pick<FailedOperation, 'recoveryAction' | 'retryable'>> = {}
 ): BillingOperationState {
   return {
     ...IDENTITY,
     phase: 'failed',
     declineReason,
     recoveryAction: 'replace_payment_method',
-    retryable: true
+    retryable: true,
+    ...overrides
   }
 }
 
@@ -166,6 +167,26 @@ const ROWS: readonly Row[] = [
     expected: { step: 'processing_error', reasonKey: 'generic' }
   },
   {
+    name: 'a non-retryable failure carries the server-sent contact_support',
+    operation: failed('generic', {
+      recoveryAction: 'contact_support',
+      retryable: false
+    }),
+    expected: {
+      step: 'processing_error',
+      reasonKey: 'generic',
+      recoveryAction: 'contact_support'
+    }
+  },
+  {
+    name: 'a non-retryable failure without a named recovery reads as contact_support',
+    operation: failed('generic', {
+      recoveryAction: undefined,
+      retryable: false
+    }),
+    expected: { recoveryAction: 'contact_support' }
+  },
+  {
     name: 'a processing failure is a processing error',
     operation: failed('processing_error'),
     expected: { step: 'processing_error', reasonKey: 'processing_error' }
@@ -223,6 +244,15 @@ describe('projectPaymentStep', () => {
     expect(projection).toMatchObject(expected)
     expect(projection.operationId).toBe(operation?.id)
     expect(projection.noChargeConfirmed).toBe(false)
+  })
+
+  it('names no recovery for a retryable failure the server gave none', () => {
+    expect(
+      projectPaymentStep(
+        failed('generic', { recoveryAction: undefined }),
+        'preview'
+      ).recoveryAction
+    ).toBeUndefined()
   })
 
   it('never confirms that nothing was charged, whatever the operation reports', () => {

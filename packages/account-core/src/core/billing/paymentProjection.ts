@@ -41,6 +41,11 @@ export type PaymentReasonKey =
 export interface PaymentProjection {
   readonly step: PaymentStep
   readonly reasonKey?: PaymentReasonKey
+  /**
+   * What the server tells the customer to do next. A failed operation the
+   * server marks non-retryable without naming a recovery reads as
+   * `contact_support`, so no dead end ever offers a retry.
+   */
   readonly recoveryAction?: BillingRecoveryAction
   /** Present whenever an operation backs the projection; the id support can act on. */
   readonly operationId?: string
@@ -97,15 +102,17 @@ export function projectPaymentStep(
       return projectPending(operation, hostStep)
     case 'succeeded':
       return { ...base, step: 'success' }
-    case 'failed':
+    case 'failed': {
+      const recoveryAction =
+        operation.recoveryAction ??
+        (operation.retryable ? undefined : 'contact_support')
       return {
         ...base,
         step: stepForReason(operation.declineReason),
         reasonKey: operation.declineReason,
-        ...(operation.recoveryAction === undefined
-          ? {}
-          : { recoveryAction: operation.recoveryAction })
+        ...(recoveryAction === undefined ? {} : { recoveryAction })
       }
+    }
     case 'reconciliation_needed':
       return { ...base, step: 'processing_error', reasonKey: 'generic' }
     case 'timed_out':

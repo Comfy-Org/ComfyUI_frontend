@@ -52,4 +52,23 @@ describe('paymentCopyKeys', () => {
       body: 'billing.step.verifying.body'
     })
   })
+
+  it.for([
+    'retry',
+    'replace_payment_method',
+    'authenticate_payment',
+    'contact_support'
+  ] as const)(
+    'reads the body from the server recovery action %s',
+    (recoveryAction) => {
+      expect(
+        paymentCopyKeys({
+          step: 'processing_error',
+          reasonKey: 'generic',
+          recoveryAction,
+          noChargeConfirmed: false
+        }).body
+      ).toBe(`billing.recovery.${recoveryAction}`)
+    }
+  )
 })
