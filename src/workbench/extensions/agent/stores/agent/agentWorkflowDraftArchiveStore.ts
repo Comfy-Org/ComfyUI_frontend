@@ -1,13 +1,24 @@
 import { defineStore } from 'pinia'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import { isStorageAvailable } from '@/platform/workflow/persistence/base/storageIO'
 import {
   StorageKeys,
   getWorkspaceId
 } from '@/platform/workflow/persistence/base/storageKeys'
 
+/**
+ * Matches the agent binding TTL: past it the chat can no longer name the tab
+ * either, so a surviving graph would have nothing to reconnect to. The cap is
+ * deliberately small next to `workflowDraftStoreV2`'s 32, since these graphs
+ * are a second copy competing for the same origin budget. Recency is the close
+ * time rather than the read time, so the eight kept are the eight the user had
+ * open most recently.
+ */
 const ARCHIVE_TTL_MS = 30 * 24 * 60 * 60 * 1000
 const MAX_ARCHIVED_DRAFTS = 8
+
+type WriteOutcome = 'stored' | 'over-quota' | 'refused'
 
 interface ArchiveEntry {
   filename: string
@@ -50,6 +61,26 @@ function oldestFirst(index: ArchiveIndex): string[] {
     .map(([workflowId]) => workflowId)
 }
 
+function isQuotaExceeded(error: unknown): boolean {
+  return (
+    error instanceof DOMException &&
+    (error.name === 'QuotaExceededError' ||
+      error.name === 'NS_ERROR_DOM_QUOTA_REACHED' ||
+      error.code === 22 ||
+      error.code === 1014)
+  )
+}
+
+function write(key: string, value: string): WriteOutcome {
+  if (!isStorageAvailable()) return 'refused'
+  try {
+    localStorage.setItem(key, value)
+    return 'stored'
+  } catch (error) {
+    return isQuotaExceeded(error) ? 'over-quota' : 'refused'
+  }
+}
+
 /**
  * Keeps the graph of an unsaved workflow that an agent chat thread is pinned
  * to, so closing its tab does not strand the thread.
@@ -74,15 +105,12 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
     }
 
     function writeIndex(workspaceId: string, index: ArchiveIndex): boolean {
-      try {
-        localStorage.setItem(
+      return (
+        write(
           StorageKeys.agentDraftArchiveIndex(workspaceId),
           JSON.stringify(index)
-        )
-        return true
-      } catch {
-        return false
-      }
+        ) === 'stored'
+      )
     }
 
     function readPayload(
@@ -102,16 +130,11 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
       workspaceId: string,
       workflowId: string,
       content: string
-    ): boolean {
-      try {
-        localStorage.setItem(
-          StorageKeys.agentDraftArchivePayload(workspaceId, workflowId),
-          content
-        )
-        return true
-      } catch {
-        return false
-      }
+    ): WriteOutcome {
+      return write(
+        StorageKeys.agentDraftArchivePayload(workspaceId, workflowId),
+        content
+      )
     }
 
     function evict(
@@ -127,7 +150,7 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
             StorageKeys.agentDraftArchivePayload(workspaceId, workflowId)
           )
         } catch {
-          continue
+          // Losing one payload does not invalidate the rest of the sweep.
         }
       }
       return remaining
@@ -147,9 +170,11 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
 
     /**
      * Archives `content` under `workflowId`, dropping expired entries and then
-     * the least recently archived graphs until the write fits. Returns `false`
-     * once eviction is exhausted, which leaves a smaller archive rather than an
-     * index promising payloads it no longer has.
+     * the oldest graphs until the write fits. Returns `false` once eviction is
+     * exhausted or storage refuses the write outright, leaving a smaller
+     * archive rather than an index promising payloads it no longer has. Only
+     * a quota rejection evicts: any other refusal would clear the archive
+     * without ever freeing the thing that is actually blocking.
      */
     function archive(
       workflowId: string,
@@ -174,14 +199,19 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
         )
       )
 
-      while (!writePayload(workspaceId, workflowId, draft.content)) {
+      let outcome = writePayload(workspaceId, workflowId, draft.content)
+      while (outcome === 'over-quota') {
         const oldest = oldestFirst(index).at(0)
         if (oldest === undefined) {
           reportQuotaExhausted(draft.content.length)
-          writeIndex(workspaceId, index)
-          return false
+          break
         }
         index = evict(workspaceId, index, [oldest])
+        outcome = writePayload(workspaceId, workflowId, draft.content)
+      }
+      if (outcome !== 'stored') {
+        writeIndex(workspaceId, index)
+        return false
       }
 
       if (

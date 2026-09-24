@@ -200,6 +200,7 @@ const {
   storedWorkflowFor,
   openWorkflowFor,
   recoverWorkflowFor,
+  forgetRecoveredWorkflow,
   availableWorkflowReferences,
   openTabsSnapshot
 } = workflowResolver
@@ -868,13 +869,19 @@ function onOpenApprovalWorkflow(
   enqueueActiveTab({ workflow_id: workflowId, name: workflowName })
 }
 
+let referenceNavigationGeneration = 0
+
 async function onNavigateToReferenceWorkflow(
   workflowId: string
 ): Promise<void> {
+  const generation = ++referenceNavigationGeneration
+  const isCurrent = () => generation === referenceNavigationGeneration
   let recovered: ComfyWorkflow | null = null
   const abandonRecovered = async () => {
-    if (recovered !== null)
-      await workflowService.closeWorkflow(recovered, { warnIfUnsaved: false })
+    if (recovered === null) return
+    const stranded = recovered
+    recovered = null
+    await workflowService.closeWorkflow(stranded, { warnIfUnsaved: false })
   }
   try {
     let target = openWorkflowFor(workflowId)
@@ -883,6 +890,9 @@ async function onNavigateToReferenceWorkflow(
         refreshCloudWorkflowIds(),
         workflowStore.syncWorkflows()
       ])
+      // Recovery mints a tab, so a superseded click must stop before it and
+      // not leave a second copy of the same graph behind.
+      if (!isCurrent()) return
       target = storedWorkflowFor(workflowId)
     }
     if (target === null) {
@@ -891,13 +901,18 @@ async function onNavigateToReferenceWorkflow(
     }
     if (target === null || !(await workflowService.openWorkflow(target))) {
       await abandonRecovered()
-      warnWorkflowUnavailable()
+      if (isCurrent()) warnWorkflowUnavailable()
+      return
+    }
+    if (!isCurrent()) {
+      await abandonRecovered()
       return
     }
     bindingStore.bind(workflowId, target.path)
+    if (recovered !== null) forgetRecoveredWorkflow(workflowId)
   } catch {
     await abandonRecovered()
-    warnWorkflowUnavailable()
+    if (isCurrent()) warnWorkflowUnavailable()
   }
 }
 
@@ -989,6 +1004,7 @@ start()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   ++activeTabGeneration
+  ++referenceNavigationGeneration
   mintPortWiring.detach()
   exitNodeSelectionMode()
   stop()

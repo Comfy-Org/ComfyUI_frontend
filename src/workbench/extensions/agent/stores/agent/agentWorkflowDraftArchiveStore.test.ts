@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import {
+  markStorageUnavailable,
+  resetStorageAvailable
+} from '@/platform/workflow/persistence/base/storageIO'
 
 import { useAgentWorkflowDraftArchiveStore } from './agentWorkflowDraftArchiveStore'
 
@@ -27,12 +31,15 @@ function draft(workflowId: string) {
   }
 }
 
-function rejectWrites(matches: (key: string) => boolean): void {
+function rejectWrites(
+  matches: (key: string) => boolean,
+  error: unknown = new DOMException('full', 'QuotaExceededError')
+): void {
   const setItem = localStorage.setItem.bind(localStorage)
   const spy = vi
     .spyOn(localStorage, 'setItem')
     .mockImplementation((key, value) => {
-      if (matches(key)) throw new DOMException('full', 'QuotaExceededError')
+      if (matches(key)) throw error
       setItem(key, value)
     })
   onTestFinished(() => spy.mockRestore())
@@ -142,6 +149,32 @@ describe('agentWorkflowDraftArchiveStore', () => {
       expect.any(Error),
       expect.objectContaining({ errorType: 'storage_quota_exhausted' })
     )
+  })
+
+  // A non-quota rejection is not capacity pressure, so evicting against it
+  // would empty the archive without ever unblocking the write.
+  it('keeps older graphs when a write fails for a reason eviction cannot fix', () => {
+    const archive = useAgentWorkflowDraftArchiveStore()
+    archive.archive('wf-old', draft('wf-old'))
+    rejectWrites(
+      (key) => key === `${PAYLOAD_PREFIX}wf-new`,
+      new TypeError('serialization failed')
+    )
+
+    expect(archive.archive('wf-new', draft('wf-new'))).toBe(false)
+
+    expect(archive.read('wf-old')).toMatchObject(draft('wf-old'))
+    expect(archive.read('wf-new')).toBeNull()
+    expect(vi.mocked(reportError)).not.toHaveBeenCalled()
+  })
+
+  it('refuses to write while workflow storage is marked unavailable', () => {
+    const archive = useAgentWorkflowDraftArchiveStore()
+    markStorageUnavailable()
+    onTestFinished(() => resetStorageAvailable())
+
+    expect(archive.archive('wf-1', draft('wf-1'))).toBe(false)
+    expect(archive.read('wf-1')).toBeNull()
   })
 
   it('drops an index entry whose payload went missing', () => {

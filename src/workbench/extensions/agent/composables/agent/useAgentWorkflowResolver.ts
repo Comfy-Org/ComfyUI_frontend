@@ -194,6 +194,16 @@ export function useAgentWorkflowResolver({
     }
   }
 
+  /**
+   * Drops the archived copy once the thread is reconnected to a live tab. The
+   * tab's own draft takes over from here, and closing it archives again — so
+   * keeping this copy would only let a pre-save snapshot outlive the workflow
+   * it was recovered into and come back as a fork of it.
+   */
+  function forgetRecoveredWorkflow(workflowId: string): void {
+    draftArchive.discard(workflowId)
+  }
+
   const availableWorkflowReferences = computed<WorkflowReferenceOption[]>(
     () => {
       const seenIds = new Set<string>()
@@ -256,6 +266,7 @@ export function useAgentWorkflowResolver({
     storedWorkflowFor,
     openWorkflowFor,
     recoverWorkflowFor,
+    forgetRecoveredWorkflow,
     availableWorkflowReferences,
     openTabsSnapshot,
     nextSaveFilename

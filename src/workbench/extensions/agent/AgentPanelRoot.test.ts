@@ -6169,6 +6169,132 @@ describe('AgentPanelRoot workflow binding', () => {
     ).toHaveTextContent(current.filename)
   })
 
+  async function openSentReferenceTo(workflowId: string): Promise<void> {
+    const conversation = useAgentConversationStore()
+    const historyMessageId = 'history-message' as TurnId
+    conversation.startTurn(historyMessageId)
+    conversation.recordUser(
+      historyMessageId,
+      'Compare these',
+      undefined,
+      undefined,
+      [{ id: workflowId, name: 'reference', textOffset: 0 }]
+    )
+    conversation.ingest({
+      type: 'agent_message_done',
+      data: { message_id: 'history-message', thread_id: 'th-history' }
+    })
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Open reference' })
+    )
+  }
+
+  it('opens a reference whose unsaved tab was closed by rebuilding it from the archive', async () => {
+    const current = makeTab('wf-cloud-current')
+    mockMessagesEndpoint('wf-cloud-current', [
+      { id: 'wf-cloud-current', name: 'current' }
+    ])
+    useAgentWorkflowDraftArchiveStore().archive('wf-reference', {
+      filename: 'Agent draft.json',
+      content: JSON.stringify(blankGraph)
+    })
+    renderWithSelectedTarget()
+
+    await openSentReferenceTo('wf-reference')
+
+    await vi.waitFor(() =>
+      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-reference')).toBe(
+        'workflows/Agent draft.json'
+      )
+    )
+    expect(
+      workflowStore.getWorkflowByPath('workflows/Agent draft.json')?.isTemporary
+    ).toBe(true)
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
+    expect(useToastStore().messagesToAdd).not.toContainEqual(
+      expect.objectContaining({
+        detail: i18n.global.t('agent.targetNavigationUnavailable')
+      })
+    )
+  })
+
+  it('closes a rebuilt reference the canvas then refuses to open', async () => {
+    makeTab('wf-cloud-current')
+    mockMessagesEndpoint('wf-cloud-current', [
+      { id: 'wf-cloud-current', name: 'current' }
+    ])
+    useAgentWorkflowDraftArchiveStore().archive('wf-reference', {
+      filename: 'Agent draft.json',
+      content: JSON.stringify(blankGraph)
+    })
+    renderWithSelectedTarget()
+    workflowService.openWorkflow.mockResolvedValueOnce(false)
+
+    await openSentReferenceTo('wf-reference')
+
+    await vi.waitFor(() =>
+      expect(useToastStore().messagesToAdd).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({
+            detail: i18n.global.t('agent.targetNavigationUnavailable')
+          })
+        ])
+      )
+    )
+    expect(
+      workflowStore.getWorkflowByPath('workflows/Agent draft.json')
+    ).toBeNull()
+  })
+
+  // Recovery mints a tab, so a second click while the first is still in flight
+  // would otherwise leave a duplicate the chat is not bound to.
+  it('does not mint a second copy when a reference is opened twice in a row', async () => {
+    makeTab('wf-cloud-current')
+    mockMessagesEndpoint('wf-cloud-current', [
+      { id: 'wf-cloud-current', name: 'current' }
+    ])
+    useAgentWorkflowDraftArchiveStore().archive('wf-reference', {
+      filename: 'Agent draft.json',
+      content: JSON.stringify(blankGraph)
+    })
+    let releaseSync!: () => void
+    const syncing = new Promise<void>((resolve) => {
+      releaseSync = () => resolve()
+    })
+    vi.mocked(workflowStore.syncWorkflows).mockReturnValue(syncing)
+    renderWithSelectedTarget()
+    const conversation = useAgentConversationStore()
+    const historyMessageId = 'history-message' as TurnId
+    conversation.startTurn(historyMessageId)
+    conversation.recordUser(
+      historyMessageId,
+      'Compare these',
+      undefined,
+      undefined,
+      [{ id: 'wf-reference', name: 'reference', textOffset: 0 }]
+    )
+    conversation.ingest({
+      type: 'agent_message_done',
+      data: { message_id: 'history-message', thread_id: 'th-history' }
+    })
+    const open = await screen.findByRole('button', { name: 'Open reference' })
+
+    await userEvent.click(open)
+    await userEvent.click(open)
+    releaseSync()
+
+    await vi.waitFor(() =>
+      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-reference')).toBe(
+        'workflows/Agent draft.json'
+      )
+    )
+    expect(
+      workflowStore.workflows.filter((tab) =>
+        tab.path.startsWith('workflows/Agent draft')
+      )
+    ).toHaveLength(1)
+  })
+
   it('sends every open tab that has a cloud id with the message', async () => {
     makeTab('wf-42')
     const bodies = mockMessagesEndpoint('wf-42')

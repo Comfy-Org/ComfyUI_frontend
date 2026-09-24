@@ -1,6 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
+import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentWorkflowDraftArchiveStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowDraftArchiveStore'
 
 import { useAgentDockMount } from './useAgentDockMount'
 
@@ -61,5 +65,42 @@ describe('useAgentDockMount', () => {
     expect(loadDockedAgentPanel).toHaveBeenCalledOnce()
     store.close('close_button')
     expect(docked.value).toBe(false)
+  })
+
+  // FE-2911: the panel is behind a persisted open flag, so a user who never
+  // opens it still closes chat-bound tabs. Archiving cannot wait for the panel
+  // or those graphs are gone before chat asks for them back.
+  it('archives a bound unsaved tab closed while the panel stays unmounted', async () => {
+    vi.stubGlobal('__DISTRIBUTION__', 'cloud')
+    const graphId = '3d4d7f1e-3c8b-4a0a-9a3c-1d2e3f4a5b6c'
+    localStorage.setItem(
+      'Comfy.Agent.WorkflowTabBindings.v2',
+      JSON.stringify({
+        'wf-minted': {
+          tabPath: 'workflows/Agent draft.json',
+          graphId,
+          confirmedAt: Date.now()
+        }
+      })
+    )
+
+    const { docked } = useAgentDockMount()
+
+    const workflows = useWorkflowStore()
+    const draft = workflows.createTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: graphId
+    })
+    workflows.openWorkflowsInBackground({ right: [draft.path] })
+    await nextTick()
+    await workflows.closeWorkflow(draft)
+    await nextTick()
+
+    expect(docked.value).toBe(false)
+    expect(useAgentWorkflowDraftArchiveStore().read('wf-minted')).toMatchObject(
+      {
+        filename: 'Agent draft.json'
+      }
+    )
   })
 })

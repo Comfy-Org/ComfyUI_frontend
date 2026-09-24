@@ -2,6 +2,7 @@ import type { Component, ComputedRef } from 'vue'
 import { computed, defineAsyncComponent } from 'vue'
 
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { useAgentWorkflowTabBindingStore } from '@/workbench/extensions/agent/stores/agent/agentWorkflowTabBindingStore'
 
 interface AgentDockMount {
   docked: ComputedRef<boolean>
@@ -24,6 +25,12 @@ export function useAgentDockMount(): AgentDockMount {
     return { docked: computed(() => false), DockedAgentPanel: null }
   }
   const agentPanelStore = useAgentPanelStore()
+  // Tab bookkeeping has to outlive the panel. Instantiating the binding store
+  // installs its open-tabs watcher, and that watcher is what archives the
+  // graph of a bound unsaved tab as it closes. The panel mounts only once the
+  // user opens it — often after those tabs were already closed, sometimes
+  // never — so waiting for it would lose exactly the graphs chat needs back.
+  useAgentWorkflowTabBindingStore()
   return {
     docked: computed(() => agentPanelStore.isVisible),
     DockedAgentPanel: defineAsyncComponent(

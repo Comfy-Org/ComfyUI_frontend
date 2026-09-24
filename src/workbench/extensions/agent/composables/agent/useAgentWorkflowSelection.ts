@@ -43,7 +43,8 @@ export function useAgentWorkflowSelection({
     cloudWorkflowName,
     nextSaveFilename,
     boundOrOpenWorkflowFor,
-    recoverWorkflowFor
+    recoverWorkflowFor,
+    forgetRecoveredWorkflow
   } = resolver
   const editableWorkflowId = computed(() =>
     selectedTarget.value ? cloudIdFor(selectedTarget.value) : undefined
@@ -232,6 +233,7 @@ export function useAgentWorkflowSelection({
         return
       }
       commitWorkflowTarget(target, workflowId)
+      if (recovered !== null) forgetRecoveredWorkflow(workflowId)
     } catch {
       await abandonRecovered()
       if (!isCurrent()) return
