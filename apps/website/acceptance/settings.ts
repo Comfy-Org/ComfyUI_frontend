@@ -47,12 +47,3 @@ export function requiredSetting(name: string): string {
   if (!value) throw new Error(`Missing ${name}; live acceptance cannot run`)
   return value
 }
-
-export function expectedCharge(slug: string, variant: string): number {
-  const prices = z
-    .record(z.number().finite().positive())
-    .parse(JSON.parse(requiredSetting('WORKSHOP_EXPECTED_CHARGES_JSON')))
-  const price = prices[`${slug}/${variant}`]
-  if (!price) throw new Error(`Missing reviewed charge for ${slug}/${variant}`)
-  return price
-}

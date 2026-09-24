@@ -1,6 +1,6 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
-import { expectedCharge, liveSettings } from '../acceptance/settings'
+import { liveSettings } from '../acceptance/settings'
 
 describe('live acceptance destinations', () => {
   it.for([
@@ -54,24 +54,6 @@ describe('live acceptance destinations', () => {
           WORKSHOP_SITE_URL: site
         })
       ).toThrow()
-    }
-  )
-})
-
-describe('reviewed billing expectations', () => {
-  it('requires the price for the exact page and input variant', () => {
-    vi.stubEnv('WORKSHOP_EXPECTED_CHARGES_JSON', '{"image/own":4.5}')
-    expect(expectedCharge('image', 'own')).toBe(4.5)
-    expect(() => expectedCharge('image', 'advanced')).toThrow(
-      'Missing reviewed charge'
-    )
-  })
-
-  it.for(['{}', '{"image/own":0}', '{"image/own":-1}', '{"image/own":"4.5"}'])(
-    'cannot pass with an absent or invalid price: %s',
-    (json) => {
-      vi.stubEnv('WORKSHOP_EXPECTED_CHARGES_JSON', json)
-      expect(() => expectedCharge('image', 'own')).toThrow()
     }
   )
 })

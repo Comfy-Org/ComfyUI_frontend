@@ -3,35 +3,34 @@ import { expect } from '@playwright/test'
 import { modelCases } from '../../acceptance/cases'
 import {
   runAndVerify,
-  signIn,
   test,
   useAdvancedInputs,
   useOwnInputs
 } from '../../acceptance/fixtures'
-import { expectedCharge } from '../../acceptance/settings'
 
 for (const model of modelCases) {
   test(`${model.slug}: defaults, own inputs, advanced settings${model.smoke ? ' @smoke' : ''}`, async ({
     page,
-    billing
+    submissions
   }, testInfo) => {
-    expectedCharge(model.slug, 'defaults')
-    expectedCharge(model.slug, 'own')
-    expectedCharge(model.slug, 'advanced')
-    await signIn(page, `/models/${model.slug}/`)
+    await page.goto(`/models/${model.slug}/`)
+    await expect(page.getByTestId('run-button')).toHaveAttribute(
+      'data-gate',
+      'ready'
+    )
     const defaults = await runAndVerify(
       page,
-      billing,
+      submissions,
       model,
       'defaults',
       testInfo
     )
     await useOwnInputs(page, model)
-    const own = await runAndVerify(page, billing, model, 'own', testInfo)
+    const own = await runAndVerify(page, submissions, model, 'own', testInfo)
     await useAdvancedInputs(page, model)
     const advanced = await runAndVerify(
       page,
-      billing,
+      submissions,
       model,
       'advanced',
       testInfo
