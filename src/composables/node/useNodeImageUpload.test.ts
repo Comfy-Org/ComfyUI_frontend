@@ -2,6 +2,7 @@ import { fromAny } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
+import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
@@ -176,6 +177,41 @@ describe('useNodeImageUpload', () => {
     await capturedDragOnDrop([createFile()])
     expect(onUploadError).toHaveBeenCalled()
     expect(onUploadComplete).not.toHaveBeenCalled()
+  })
+
+  it('shows a file-too-large toast on a 413 with no known upload limit', async () => {
+    vi.mocked(api.getServerFeature).mockReturnValue(undefined)
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(failResponse(413))
+
+    await capturedDragOnDrop([createFile()])
+
+    expect(t).toHaveBeenCalledWith('g.uploadFileTooLarge')
+    expect(useToastStore().addAlert).toHaveBeenCalledWith(
+      'g.uploadFileTooLarge'
+    )
+  })
+
+  it('shows a file-too-large toast with the limit on a 413 when the server reports one', async () => {
+    vi.mocked(api.getServerFeature).mockReturnValue(104_857_600)
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(failResponse(413))
+
+    await capturedDragOnDrop([createFile()])
+
+    expect(t).toHaveBeenCalledWith('g.uploadFileTooLargeWithLimit', {
+      limit: 100
+    })
+  })
+
+  it('shows a status-derived toast without a dangling separator for other failures', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      new Response(null, { status: 500, statusText: '' })
+    )
+
+    await capturedDragOnDrop([createFile()])
+
+    expect(t).toHaveBeenCalledWith('g.uploadFailed', {
+      reason: 'HTTP 500'
+    })
   })
 
   it('resets isUploading even when upload fails', async () => {

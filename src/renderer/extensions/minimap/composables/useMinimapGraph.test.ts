@@ -23,12 +23,7 @@ import {
 
 vi.mock(import('@vueuse/core'), { spy: true })
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 describe('useMinimapGraph', () => {
   let mockGraph: LGraph
