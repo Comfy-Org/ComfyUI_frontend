@@ -3,8 +3,8 @@ import { render, screen } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
 import { h } from 'vue'
 
-import type { PaymentProjection } from '@comfyorg/account/billing'
-import { DEFAULT_PAYMENT_COPY } from '@comfyorg/account/billing'
+import type { PaymentProjection } from '@comfyorg/account-core/billing'
+import { DEFAULT_PAYMENT_COPY } from '@comfyorg/account-core/billing'
 
 import CheckoutSteps from './CheckoutSteps.vue'
 

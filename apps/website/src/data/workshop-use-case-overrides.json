@@ -1,6 +1,5 @@
 {
   "byteplus/seedance-2-5-reference": "animate-images",
   "openai/gpt-image-1": "generate-images",
-  "openai/gpt-image-1.5": "generate-images",
-  "openai/gpt-image-2": "generate-images"
+  "openai/gpt-image-1.5": "generate-images"
 }

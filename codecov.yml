@@ -16,6 +16,16 @@ coverage:
           - apps/website/src/**
         flag_coverage_not_uploaded_behavior: pass
 
+      billing-web:
+        target: auto
+        threshold: '1%'
+        informational: true
+        flags:
+          - billing-web-unit
+        paths:
+          - apps/billing-web/src/**
+        flag_coverage_not_uploaded_behavior: pass
+
     patch:
       default:
         informational: true
@@ -31,6 +41,17 @@ coverage:
           - apps/website/src/**
         flag_coverage_not_uploaded_behavior: pass
 
+      # Likewise for billing-web.
+      billing-web:
+        target: '80%'
+        threshold: '0%'
+        informational: true
+        flags:
+          - billing-web-unit
+        paths:
+          - apps/billing-web/src/**
+        flag_coverage_not_uploaded_behavior: pass
+
 # Coverage is instrumented over src/** only (see `coverage.include` in
 # vite.config.mts), so build and developer tooling has no coverage data to
 # report. Without this, changing a file under tools/ counts every one of its
@@ -38,6 +59,8 @@ coverage:
 ignore:
   - 'tools/**'
   - 'scripts/**'
+  - 'apps/website/src/**/__mocks__/**'
+  - 'apps/website/src/**/__fixtures__/**'
 
 comment:
   layout: 'header, diff, flags, files'
@@ -61,7 +84,8 @@ flags:
     paths:
       - apps/website/src/**
     carryforward: false
-  billing-web:
+  # Likewise for billing-web.
+  billing-web-unit:
     paths:
       - apps/billing-web/src/**
     carryforward: false

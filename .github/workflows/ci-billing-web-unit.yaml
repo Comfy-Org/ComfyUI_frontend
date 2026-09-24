@@ -48,7 +48,7 @@ jobs:
           working-directory: ./apps/billing-web
           files: ./coverage/lcov.info
           disable_search: true
-          flags: billing-web
+          flags: billing-web-unit
           # Re-root LCOV paths to prevent collisions with root-app coverage.
           network_prefix: apps/billing-web/
           token: ${{ secrets.CODECOV_TOKEN }}

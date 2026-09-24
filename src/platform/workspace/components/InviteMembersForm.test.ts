@@ -69,6 +69,14 @@ function submitButton() {
   return screen.getByRole('button', { name: 'Send invites' })
 }
 
+type SubmittedPayload = [string[], WorkspacePendingInvite[]]
+
+function submittedPayloads(
+  emitted: () => Record<string, unknown[] | undefined>
+): SubmittedPayload[] {
+  return (emitted().submitted ?? []) as SubmittedPayload[]
+}
+
 describe('InviteMembersForm', () => {
   beforeEach(() => {
     vi.useRealTimers()
@@ -124,7 +132,12 @@ describe('InviteMembersForm', () => {
       count: 2
     })
     expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
-    expect(emitted().submitted).toEqual([[['a@b.com', 'c@d.com']]])
+    expect(submittedPayloads(emitted)).toHaveLength(1)
+    expect(submittedPayloads(emitted)[0][0]).toEqual(['a@b.com', 'c@d.com'])
+    expect(submittedPayloads(emitted)[0][1].map((i) => i.email)).toEqual([
+      'a@b.com',
+      'c@d.com'
+    ])
   })
 
   it('completes submission when the billing refresh fails', async () => {
@@ -138,7 +151,9 @@ describe('InviteMembersForm', () => {
     await user.type(emailInput(), 'a@b.com{Enter}')
     await user.click(submitButton())
 
-    await waitFor(() => expect(emitted().submitted).toEqual([[['a@b.com']]]))
+    await waitFor(() =>
+      expect(submittedPayloads(emitted)[0][0]).toEqual(['a@b.com'])
+    )
     expect(submitButton()).toBeEnabled()
     expect(useBillingContext().fetchStatus).toHaveBeenCalledOnce()
     await waitFor(() => expect(consoleError).toHaveBeenCalledWith(refreshError))
@@ -166,7 +181,7 @@ describe('InviteMembersForm', () => {
     await user.click(submitButton())
 
     await waitFor(() =>
-      expect(emitted().submitted).toEqual([[['stale@example.com']]])
+      expect(submittedPayloads(emitted)[0][0]).toEqual(['stale@example.com'])
     )
   })
 
@@ -230,7 +245,7 @@ describe('InviteMembersForm', () => {
     await waitFor(() =>
       expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledTimes(3)
     )
-    expect(emitted().submitted).toEqual([[['ok@x.com', 'fail@x.com']]])
+    expect(submittedPayloads(emitted)[0][0]).toEqual(['ok@x.com', 'fail@x.com'])
     expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenCalledTimes(2)
     expect(useTelemetry()?.trackWorkspaceInviteSent).toHaveBeenLastCalledWith({
       source: 'post_upgrade_success',
@@ -331,7 +346,7 @@ describe('InviteMembersForm', () => {
     expect(useTeamWorkspaceStore().createInvite).toHaveBeenCalledWith(
       'new@example.com'
     )
-    expect(emitted().submitted).toEqual([[['new@example.com']]])
+    expect(submittedPayloads(emitted)[0][0]).toEqual(['new@example.com'])
   })
 
   it('caps unlimited workspaces to one invite batch', async () => {

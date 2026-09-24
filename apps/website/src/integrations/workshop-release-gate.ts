@@ -74,6 +74,11 @@ export function workshopReleaseGate(): AstroIntegration {
                 context: 'client',
                 access: 'public',
                 default: process.env.VERCEL_ENV ?? ''
+              }),
+              WORKSHOP_RELEASE: envField.string({
+                context: 'client',
+                access: 'public',
+                default: process.env.VERCEL_GIT_COMMIT_SHA ?? 'local'
               })
             }
           },

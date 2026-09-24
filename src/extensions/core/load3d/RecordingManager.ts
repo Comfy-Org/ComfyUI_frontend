@@ -119,10 +119,6 @@ export class RecordingManager {
 
       this.recordingStream = this.recordingCanvas.captureStream(30)
 
-      if (!this.recordingStream) {
-        throw new Error('Failed to capture stream from canvas')
-      }
-
       this.mediaRecorder = new MediaRecorder(this.recordingStream, {
         mimeType: 'video/webm;codecs=vp9',
         videoBitsPerSecond: 5000000

@@ -1,39 +1,97 @@
 import type {
   BillingDeclineReason,
   BillingOperationIdentity,
+  BillingOperationKind,
   BillingOperationLifecycle,
   BillingOperationState,
+  BillingPresentationState,
+  BillingServerCode,
   FailedBillingOperation,
   PendingBillingOperation
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
+import { readBillingErrorCode } from '@comfyorg/account-core/billing'
 import { vi } from 'vitest'
 
 import type { BillingSdk } from './createBillingSdk'
 
-const IDENTITY = {
+/** A server code minted the one sanctioned way, so a test cannot invent one. */
+export function serverCode(code: string): BillingServerCode | undefined {
+  return readBillingErrorCode({ code, message: 'server text' })
+}
+
+const IDENTITY_CORE = {
   id: 'op-1',
   kind: 'topup',
   scope: { userId: 'uid-1', workspaceId: 'ws-1', role: 'owner' },
-  presentation: 'hosted',
   observedAt: 0,
   attemptStartedAt: 0
+} as const
+
+const IDENTITY = {
+  ...IDENTITY_CORE,
+  presentation: 'hosted',
+  hostedDestination: 'stripe'
 } as const satisfies BillingOperationIdentity
 
+/** The presentation stays a variant, so a hosted override carries a destination. */
+type PendingOverrides = Partial<
+  Omit<PendingBillingOperation, 'presentation' | 'hostedDestination'>
+> &
+  Partial<BillingPresentationState>
+
 export function pendingTopup(
-  overrides: Partial<PendingBillingOperation> = {}
+  overrides: PendingOverrides = {}
 ): PendingBillingOperation {
+  const { presentation, hostedDestination, ...rest } = overrides
+  const identity: BillingOperationIdentity =
+    presentation === 'embedded'
+      ? { ...IDENTITY_CORE, presentation }
+      : {
+          ...IDENTITY_CORE,
+          presentation: 'hosted',
+          hostedDestination: hostedDestination ?? IDENTITY.hostedDestination
+        }
   return {
-    ...IDENTITY,
+    ...identity,
     phase: 'pending',
     customerActionSeen: false,
-    ...overrides
+    ...rest
   }
+}
+
+/** A subscribe the lifecycle is still driving, for the store's own effects. */
+export function pendingSubscription(
+  overrides: PendingOverrides = {}
+): PendingBillingOperation {
+  return pendingTopup({ kind: 'subscription', ...overrides })
 }
 
 export function failedTopup(
   declineReason: BillingDeclineReason = 'card_declined'
 ): FailedBillingOperation {
   return { ...IDENTITY, phase: 'failed', declineReason, retryable: true }
+}
+
+/** A settled subscription-rail operation, for a command result's `operation`. */
+export function settledOperation<
+  P extends 'succeeded' | 'timed_out' | 'reconciliation_needed'
+>(
+  phase: P,
+  kind: BillingOperationKind = 'cancel'
+): BillingOperationIdentity & { readonly phase: P } {
+  return { ...IDENTITY, kind, phase }
+}
+
+export function failedOperation(
+  kind: BillingOperationKind = 'cancel'
+): FailedBillingOperation {
+  return {
+    ...IDENTITY,
+    kind,
+    phase: 'failed',
+    declineReason: 'generic',
+    retryable: false
+  }
 }
 
 export function settledTopup<
@@ -78,9 +136,19 @@ export function fakeBillingSdk() {
     status: fakeReader(),
     credits: fakeReader(),
     capabilities: fakeReader(),
+    plans: fakeReader(),
+    paymentMethods: fakeReader(),
+    events: fakeReader(),
     topup: {
       createTopupCheckout: vi.fn(),
       createHostedTopupCheckout: vi.fn()
+    },
+    commands: {
+      subscribe: vi.fn(),
+      previewSubscribe: vi.fn(),
+      resubscribe: vi.fn(),
+      cancelSubscription: vi.fn(),
+      openPaymentPortal: vi.fn()
     },
     driveChallenge: vi.fn(async () => 'completed' as const),
     dispose: vi.fn()
@@ -93,7 +161,7 @@ export function fakeBillingSdk() {
         ...snapshot.filter((current) => current.id !== state.id),
         state
       ]
-      for (const listener of [...listeners]) listener(state)
+      for (const listener of Array.from(listeners)) listener(state)
     }
   }
 }

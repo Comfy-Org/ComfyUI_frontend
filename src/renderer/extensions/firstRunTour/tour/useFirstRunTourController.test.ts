@@ -204,8 +204,8 @@ describe('useFirstRunTourController', () => {
     useWorkflowStore().activeWorkflow = null
     useCanvasStore().linearMode = false
     useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = true
-    vi.mocked(useSettingStore().set).mockImplementation(async (_key, value) => {
-      useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = value
+    vi.mocked(useSettingStore().set).mockImplementation(async (key, value) => {
+      Object.assign(useSettingStore().settingValues, { [key]: value })
       return Promise.resolve()
     })
     mocks.steps = []
@@ -363,6 +363,28 @@ describe('useFirstRunTourController', () => {
         useSettingStore().settingValues['Comfy.VueNodes.Enabled'],
         'the renderer switch thrown for a tour that never opened is handed back'
       ).toBe(false)
+    })
+
+    it('cancels before starting when its caller becomes ineligible', async () => {
+      useSettingStore().settingValues['Comfy.VueNodes.Enabled'] = false
+      let cancelled = false
+      const controller = await freshController()
+
+      const starting = controller.beginTour(
+        'image_z_image_turbo',
+        () => cancelled
+      )
+      await vi.advanceTimersByTimeAsync(0)
+      cancelled = true
+      await vi.advanceTimersByTimeAsync(INTRO_PREVIEW_MS)
+
+      await expect(starting).resolves.toBe(false)
+      expect(
+        vi.mocked(useOnboardingTourStore().startTour)
+      ).not.toHaveBeenCalled()
+      expect(useSettingStore().settingValues['Comfy.VueNodes.Enabled']).toBe(
+        false
+      )
     })
 
     it('leaves the workflow undimmed before taking the screen over', async () => {

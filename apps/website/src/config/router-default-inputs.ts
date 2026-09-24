@@ -106,6 +106,13 @@ const defaults: Readonly<Partial<Record<string, RouterRenderParameters>>> = {
     mask_image: `data:image/png;base64,${defaultMedia.partialMask}`
   },
   'bria--remove-video-background--edit-videos': sourceVideo,
+  'byteplus--seedance-2-image-to-video--animate-images': {
+    first_frame: image
+  },
+  'byteplus--seedance-2-reference--generate-videos': {
+    reference_images: [image]
+  },
+  'byteplus--seedance-2-5-edit-video--edit-videos': { source_videos: [video] },
   'byteplus--seedance-1-0-lite-first-last-frame--animate-images': {
     first_frame: image
   },
@@ -115,6 +122,10 @@ const defaults: Readonly<Partial<Record<string, RouterRenderParameters>>> = {
   'byteplus--seedance-1-0-lite-image-to-video--animate-images': {
     first_frame: image
   },
+  'byteplus--seedream-4--edit-images': sourceImage,
+  'byteplus--seedream-4-5--edit-images': sourceImage,
+  'byteplus--seedream-5-lite--edit-images': sourceImage,
+  'byteplus--seedream-5-pro--edit-images': sourceImage,
   'freepik--magnific-skin-enhancer--edit-images': {
     source_images: [portrait]
   },
@@ -127,13 +138,18 @@ const defaults: Readonly<Partial<Record<string, RouterRenderParameters>>> = {
     source_images: [portrait],
     source_audio: [audio]
   },
-  'kling--camera-control-image-to-video--animate-images': sourceImage,
   'kling--lip-sync-audio-to-video--edit-videos': {
     source_videos: ['https://assets.sync.so/docs/example-video.mp4'],
     source_audio: [audio]
   },
   'luma--photon-1-image-modify--edit-images': sourceImage,
+  'openai--gpt-image-2--edit-images': sourceImage,
+  'openai--gpt-image-2.5-flare--edit-images': sourceImage,
+  'openai--gpt-image-2.5-sunburst--edit-images': sourceImage,
   'runway--gen4-turbo-image-to-video--animate-images': sourceImage,
+  'vertexai--gemini-2.5-flash-image--edit-images': sourceImage,
+  'vertexai--gemini-3-pro-image--edit-images': sourceImage,
+  'vertexai--gemini-nano-banana-2--edit-images': sourceImage,
   'vertexai--veo-3--animate-images': { first_frame: image },
   'wan--happyhorse-image-to-video--animate-images': sourceImage,
   'wan--happyhorse-video-edit--edit-videos': sourceVideo,

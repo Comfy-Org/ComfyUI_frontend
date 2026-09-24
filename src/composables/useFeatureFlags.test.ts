@@ -22,21 +22,12 @@ import {
   remoteConfig,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
+import { useTelemetry } from '@/platform/telemetry'
 import { api } from '@/scripts/api'
 import { getSessionOverride } from '@/utils/sessionFeatureFlagOverride'
 
-const telemetry = vi.hoisted(() => ({
-  enabled: true,
-  trackFeatureFlagEvaluation: vi.fn()
-}))
-const mockTrackFeatureFlagEvaluation = telemetry.trackFeatureFlagEvaluation
-
 // Mock the API module
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    getServerFeature: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 vi.mock(import('@/utils/sessionFeatureFlagOverride'), () => ({
   getSessionOverride: vi.fn()
@@ -48,12 +39,7 @@ vi.mock(import('@/platform/distribution/types'), () => ({
   isNightly: false
 }))
 
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: () =>
-    telemetry.enabled
-      ? { trackFeatureFlagEvaluation: telemetry.trackFeatureFlagEvaluation }
-      : null
-}))
+vi.mock(import('@/platform/telemetry'))
 
 describe('useFeatureFlags', () => {
   describe('flags object', () => {
@@ -231,6 +217,10 @@ describe('useFeatureFlags', () => {
   })
 
   describe('billingSdkTopupEnabled', () => {
+    afterEach(() => {
+      remoteConfig.value = {}
+    })
+
     it.for([
       ['missing', undefined, false],
       ['malformed', 'true', false],
@@ -249,6 +239,44 @@ describe('useFeatureFlags', () => {
       vi.mocked(api.getServerFeature).mockImplementation(() => {
         throw new Error('feature service unavailable')
       })
+
+      expect(useFeatureFlags().flags.billingSdkTopupEnabled).toBe(false)
+    })
+
+    // `/features` is the channel the cloud staged rollout actually publishes
+    // on, and boot awaits it; the WebSocket handshake lands after the billing
+    // gate has already chosen a rail.
+    it.for([
+      { source: 'topup', config: { billing_sdk_topup_enabled: true } },
+      {
+        source: 'subscription',
+        config: { billing_sdk_subscription_enabled: true }
+      }
+    ])('reads the $source flag off /features', ({ config }) => {
+      vi.mocked(api.getServerFeature).mockReturnValue(undefined)
+      remoteConfig.value = config
+
+      const { flags } = useFeatureFlags()
+
+      expect(
+        'billing_sdk_topup_enabled' in config
+          ? flags.billingSdkTopupEnabled
+          : flags.billingSdkSubscriptionEnabled
+      ).toBe(true)
+    })
+
+    it('falls back to the handshake while /features omits the key', () => {
+      remoteConfig.value = {}
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
+
+      expect(useFeatureFlags().flags.billingSdkTopupEnabled).toBe(true)
+    })
+
+    it('refuses a malformed /features value without asking the handshake', () => {
+      remoteConfig.value = {
+        billing_sdk_topup_enabled: 'true'
+      } as unknown as typeof remoteConfig.value
+      vi.mocked(api.getServerFeature).mockReturnValue(true)
 
       expect(useFeatureFlags().flags.billingSdkTopupEnabled).toBe(false)
     })
@@ -274,6 +302,59 @@ describe('useFeatureFlags', () => {
         })
 
         expect(useFeatureFlags().flags.billingSdkTopupRailEnabled).toBe(
+          expected
+        )
+      }
+    )
+  })
+
+  describe('billingSdkSubscriptionEnabled', () => {
+    it.for([
+      ['missing', undefined, false],
+      ['malformed', 'true', false],
+      ['true', true, true]
+    ] as const)('is fail-closed for %s values', ([, value, expected]) => {
+      vi.mocked(api.getServerFeature).mockReturnValue(value)
+
+      expect(useFeatureFlags().flags.billingSdkSubscriptionEnabled).toBe(
+        expected
+      )
+      expect(api.getServerFeature).toHaveBeenCalledWith(
+        ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED,
+        false
+      )
+    })
+
+    it('is false when feature lookup throws', () => {
+      vi.mocked(api.getServerFeature).mockImplementation(() => {
+        throw new Error('feature service unavailable')
+      })
+
+      expect(useFeatureFlags().flags.billingSdkSubscriptionEnabled).toBe(false)
+    })
+  })
+
+  describe('billingSdkSubscriptionRailEnabled', () => {
+    afterEach(() => {
+      vi.mocked(distributionTypes).isCloud = false
+    })
+
+    it.for([
+      { auth: 'off', unifiedCloudAuth: false, expected: false },
+      { auth: 'on', unifiedCloudAuth: true, expected: true }
+    ])(
+      'follows the SDK flag only while unified auth is $auth',
+      ({ unifiedCloudAuth, expected }) => {
+        vi.mocked(distributionTypes).isCloud = true
+        vi.mocked(api.getServerFeature).mockImplementation((path) => {
+          if (path === ServerFeatureFlag.BILLING_SDK_SUBSCRIPTION_ENABLED)
+            return true
+          if (path === ServerFeatureFlag.UNIFIED_CLOUD_AUTH)
+            return unifiedCloudAuth
+          return false
+        })
+
+        expect(useFeatureFlags().flags.billingSdkSubscriptionRailEnabled).toBe(
           expected
         )
       }
@@ -750,7 +831,6 @@ describe('useFeatureFlags', () => {
 
   describe('feature flag telemetry', () => {
     afterEach(() => {
-      telemetry.enabled = true
       vi.mocked(distributionTypes).isCloud = false
       remoteConfigState.value = 'unloaded'
       remoteConfig.value = {}
@@ -770,28 +850,30 @@ describe('useFeatureFlags', () => {
 
       const stop = startFeatureFlagTelemetry()
       onTestFinished(stop)
-      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
         false
       )
-      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         ServerFeatureFlag.UNIFIED_CLOUD_AUTH,
         false
       )
-      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         ServerFeatureFlag.CHURNKEY_APP_ID,
         'app_test'
       )
-      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         'assets',
         true
       )
 
-      mockTrackFeatureFlagEvaluation.mockClear()
+      const currentTelemetry = useTelemetry()
+      if (!currentTelemetry) throw new Error('Expected telemetry mock')
+      vi.mocked(currentTelemetry.trackFeatureFlagEvaluation).mockClear()
       remoteConfig.value = { partner_node_governance_enabled: true }
       await nextTick()
 
-      expect(mockTrackFeatureFlagEvaluation).toHaveBeenCalledWith(
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).toHaveBeenCalledWith(
         ServerFeatureFlag.PARTNER_NODE_GOVERNANCE_ENABLED,
         true
       )
@@ -804,17 +886,19 @@ describe('useFeatureFlags', () => {
       expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
       expect(flags.nodeLibraryEssentialsEnabled).toBe(false)
 
-      expect(mockTrackFeatureFlagEvaluation).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackFeatureFlagEvaluation).not.toHaveBeenCalled()
     })
 
     it('is a no-op without a telemetry dispatcher', () => {
-      telemetry.enabled = false
+      const trackFeatureFlagEvaluation =
+        useTelemetry()?.trackFeatureFlagEvaluation
+      vi.mocked(useTelemetry).mockReturnValue(null)
       vi.mocked(api.getServerFeature).mockReturnValue(false)
 
       const stop = startFeatureFlagTelemetry()
       onTestFinished(stop)
 
-      expect(mockTrackFeatureFlagEvaluation).not.toHaveBeenCalled()
+      expect(trackFeatureFlagEvaluation).not.toHaveBeenCalled()
     })
   })
 

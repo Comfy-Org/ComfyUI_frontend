@@ -26,11 +26,7 @@ vi.mock(import('@/core/graph/subgraph/promotionUtils'), () => ({
 
 vi.mock(import('@/platform/telemetry'))
 
-vi.mock<unknown>(import('@/services/dialogService'), () => ({
-  useDialogService: () => ({
-    prompt: vi.fn()
-  })
-}))
+vi.mock(import('@/services/dialogService'))
 
 vi.mock<unknown>(import('@/components/button/MoreButton.vue'), () => ({
   default: (_: unknown, { slots }: { slots: Slots }) =>

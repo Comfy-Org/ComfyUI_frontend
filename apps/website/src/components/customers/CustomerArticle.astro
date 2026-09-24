@@ -68,11 +68,9 @@ const contentComponents = {
 
     <div class="flex-1">
       <Content components={contentComponents} />
-      {
-        entry.data.readMore && (
-          <ReadMore href={entry.data.readMore} locale={locale} />
-        )
-      }
+      {entry.data.readMore && (
+        <ReadMore href={entry.data.readMore} locale={locale} />
+      )}
     </div>
   </div>
 </section>

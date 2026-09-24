@@ -11,7 +11,12 @@ import type {
   FieldValue,
   FormValues
 } from '../../config/workshop-playground'
-import { urlUploadField, validateForm } from '../../config/workshop-playground'
+import {
+  MAX_UPLOAD_BYTES,
+  urlUploadField,
+  validateForm
+} from '../../config/workshop-playground'
+import { formatWorkshopUploadLimit } from '../../config/workshop-limits'
 import { isHttpImageSource } from '../../config/workshop-image-source'
 import { workshopExampleFile } from '../../config/workshop-example-file'
 import type { Locale, TranslationKey } from '../../i18n/translations'
@@ -23,12 +28,19 @@ import DialogueInput from './DialogueInput.vue'
 const {
   field,
   errors,
+  attention,
   locale = 'en',
   disabled = false,
   fileUploadsDisabled = false
 } = defineProps<{
   field: FieldSchema
   errors: FieldErrors
+  /**
+   * The id of a notice about this field's upload. Deliberately not an error:
+   * errors abort the run, and this marks something the reader may well decide
+   * to leave as it is.
+   */
+  attention?: string
   locale?: Locale
   disabled?: boolean
   fileUploadsDisabled?: boolean
@@ -44,6 +56,11 @@ const errorKey: Record<FieldErrorCode, TranslationKey> = {
   outOfRange: 'workshop.form.outOfRange',
   badOption: 'workshop.form.badOption',
   uploadFailed: 'workshop.form.uploadFailed',
+  fileUnreadable: 'workshop.form.fileUnreadable',
+  incompatible: 'workshop.form.incompatible',
+  videoTooLong: 'workshop.form.videoTooLong',
+  videoWidthOutOfRange: 'workshop.form.videoWidthOutOfRange',
+  videoUnreadable: 'workshop.form.videoUnreadable',
   rejected: 'workshop.form.rejected'
 }
 
@@ -58,9 +75,50 @@ watch(
   }
 )
 const fieldError = computed(() =>
-  edited.value
+  edited.value ||
+  (field.presentation?.formConstraint &&
+    errors[field.name] === field.presentation.formConstraint.error)
     ? validateForm([field], values.value)[field.name]
     : errors[field.name]
+)
+
+function localizedError(error: FieldErrorCode): string {
+  if (error === 'incompatible' && field.hint) return field.hint
+  return t(errorKey[error], locale)
+}
+
+function uploadLimit(): number {
+  if (field.kind === 'file') return field.maxBytes ?? MAX_UPLOAD_BYTES
+  return urlUploadField(field)?.maxBytes ?? MAX_UPLOAD_BYTES
+}
+
+function videoDurationLimit(): string {
+  return String(field.presentation?.maxVideoDurationSeconds ?? '')
+}
+
+function videoWidthMinimum(): string {
+  return String(field.presentation?.videoWidthPixels?.minimum ?? '')
+}
+
+function videoWidthMaximum(): string {
+  return String(field.presentation?.videoWidthPixels?.maximum ?? '')
+}
+
+function messageForError(error: FieldErrorCode): string {
+  const replacements: Record<string, string> = {
+    limit: formatWorkshopUploadLimit(uploadLimit(), locale),
+    seconds: videoDurationLimit(),
+    minimum: videoWidthMinimum(),
+    maximum: videoWidthMaximum()
+  }
+  return Object.entries(replacements).reduce(
+    (message, [name, value]) => message.replace(`{${name}}`, value),
+    localizedError(error)
+  )
+}
+
+const errorMessage = computed(() =>
+  fieldError.value ? messageForError(fieldError.value) : ''
 )
 const invalid = () => fieldError.value !== undefined
 const describedBy = computed(
@@ -68,7 +126,8 @@ const describedBy = computed(
     [
       ...(field.hint ? [`help-${field.name}`] : []),
       ...(declaredDefault.value !== undefined ? [`default-${field.name}`] : []),
-      ...(invalid() ? [`error-${field.name}`] : [])
+      ...(invalid() ? [`error-${field.name}`] : []),
+      ...(attention ? [attention] : [])
     ].join(' ') || undefined
 )
 
@@ -200,6 +259,47 @@ function sliderFill(field: {
   return `${Math.min(Math.max(ratio, 0), 1) * 100}%`
 }
 
+const SLIDER_POSITIONS = 1000
+
+function fractionDigits(step: number) {
+  const text = String(step)
+  return text.includes('e') ? 3 : (text.split('.')[1]?.length ?? 0)
+}
+
+// A range with no declared step reports the thumb's pixel position in full
+// double precision, so dragging a 0-to-1 field lands on 0.367299194177281.
+// A thousandth of the span is finer than the control can be aimed and is a
+// number a reader can take in, so the slider moves on that grid while the box
+// still accepts whatever the provider allows.
+const sliderStep = computed(() => {
+  if (field.kind !== 'number') return undefined
+  if (field.step !== 'any') return field.step
+  const span = (field.max ?? 0) - (field.min ?? 0)
+  if (span <= 0) return field.step
+  const digits = Math.min(
+    12,
+    Math.max(0, Math.ceil(Math.log10(SLIDER_POSITIONS / span)))
+  )
+  return 10 ** -digits
+})
+
+// A resolution needs four digits and a seed needs ten, so one width either
+// wastes the row or hides most of the number. `ch` cannot do this: the face
+// carries tracking the unit does not count.
+const valueBoxWidth = computed(() => {
+  if (field.kind !== 'number') return undefined
+  const bounds = [field.min, field.max].filter(
+    (bound): bound is number => bound !== undefined
+  )
+  const step = sliderStep.value
+  const digits = typeof step === 'number' ? fractionDigits(step) : 3
+  const characters =
+    Math.max(4, ...bounds.map((bound) => String(bound).length)) +
+    (digits > 0 ? digits + 1 : 0)
+  if (characters <= 5) return 'w-20'
+  return characters <= 8 ? 'w-28' : 'w-40'
+})
+
 function numberValue(fallback?: number): number | undefined {
   const value = values.value[field.name]
   return typeof value === 'number' ? value : fallback
@@ -243,12 +343,33 @@ function booleanValue(fallback = false): boolean {
             :label="field.hint"
           />
         </div>
-        <span
+        <input
           v-if="field.kind === 'number' && isSlider"
-          class="text-xs text-primary-warm-white tabular-nums"
-        >
-          {{ numberValue(field.defaultValue) }}
-        </span>
+          type="number"
+          :min="field.min"
+          :max="field.max"
+          :step="field.step"
+          :value="numberValue() ?? ''"
+          :disabled
+          :aria-label="
+            t('workshop.field.exactValue', locale).replace(
+              '{label}',
+              field.label
+            )
+          "
+          :aria-required="field.required || undefined"
+          :aria-invalid="invalid()"
+          :aria-describedby="describedBy"
+          :data-testid="`field-${field.name}-value`"
+          :class="
+            cn(
+              inputClass,
+              'h-8 rounded-lg px-2 text-right text-xs tabular-nums',
+              valueBoxWidth
+            )
+          "
+          @input="onNumber"
+        />
       </div>
       <p v-if="field.hint" :id="`help-${field.name}`" class="sr-only">
         {{ field.hint }}
@@ -274,6 +395,7 @@ function booleanValue(fallback = false): boolean {
       :locale
       :disabled="disabled || fileUploadsDisabled"
       :invalid="invalid()"
+      :attention="attention !== undefined"
       :described-by="describedBy"
     />
     <DialogueInput
@@ -369,7 +491,7 @@ function booleanValue(fallback = false): boolean {
       type="range"
       :min="field.min"
       :max="field.max"
-      :step="field.step"
+      :step="sliderStep"
       :value="numberValue(field.defaultValue)"
       :disabled
       :aria-invalid="invalid()"
@@ -465,6 +587,7 @@ function booleanValue(fallback = false): boolean {
       :locale
       :disabled="disabled || fileUploadsDisabled"
       :invalid="invalid()"
+      :attention="attention !== undefined"
       :described-by="describedBy"
     />
     <datalist
@@ -485,7 +608,7 @@ function booleanValue(fallback = false): boolean {
       role="alert"
       :data-testid="`error-${field.name}`"
     >
-      {{ t(errorKey[fieldError], locale) }}
+      {{ errorMessage }}
     </p>
   </div>
 </template>

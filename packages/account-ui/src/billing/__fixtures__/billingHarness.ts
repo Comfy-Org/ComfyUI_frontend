@@ -12,24 +12,29 @@ import type {
   BillingResult,
   BillingStatusData,
   BillingTransport
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import {
   OPERATION_POLL_TIMING,
+  PAYMENT_METHODS_ROUTE,
+  PLANS_ROUTE,
   TOPUP_ROUTE,
   createBillingCommands,
+  createBillingEventsReader,
   createBillingOperationLifecycle,
   createBillingStatusReader,
   createCapabilitiesReader,
   createCreditsReader,
+  createPaymentMethodsReader,
+  createPlansReader,
   createTopupCommand,
   operationRoute,
   sessionBillingScopeSource
-} from '@comfyorg/account/billing'
+} from '@comfyorg/account-core/billing'
 import type {
   AccountCredential,
   SessionClient,
   SessionSnapshot
-} from '@comfyorg/account/session'
+} from '@comfyorg/account-core/session'
 
 import type { BillingClient } from '../billingClient'
 
@@ -77,7 +82,7 @@ function fakeSession() {
       listeners.add(listener)
       return () => listeners.delete(listener)
     },
-    attachIdentity: outsideBillingContract('attachIdentity'),
+    dispose: outsideBillingContract('dispose'),
     getToken: outsideBillingContract('getToken'),
     ensureFresh: outsideBillingContract('ensureFresh'),
     remint: outsideBillingContract('remint'),
@@ -88,7 +93,7 @@ function fakeSession() {
     session,
     moveTo(workspace: AccountCredential['workspace']) {
       snapshot = authenticated(credential(workspace))
-      for (const listener of [...listeners]) listener(snapshot)
+      for (const listener of Array.from(listeners)) listener(snapshot)
     }
   }
 }
@@ -132,6 +137,29 @@ export function balance(amountMicros: number) {
   return { amount_micros: amountMicros, currency: 'USD' }
 }
 
+const PLAN = {
+  availability: { available: true },
+  credits_cents: 2000,
+  duration: 'MONTHLY',
+  max_seats: 1,
+  price_cents: 2000,
+  seat_summary: {
+    seat_count: 1,
+    total_cost_cents: 2000,
+    total_credits_cents: 2000
+  },
+  slug: 'creator_monthly',
+  tier: 'CREATOR'
+}
+
+const CATALOG = { current_plan_slug: 'free', plans: [PLAN] }
+
+/** The default card is second, so picking it cannot be picking the first. */
+export const SAVED_CARDS = [
+  { brand: 'visa', id: 'pm_1', is_default: false, last4: '4242', type: 'card' },
+  { brand: 'amex', id: 'pm_2', is_default: true, last4: '1881', type: 'card' }
+]
+
 export const BASELINE_MICROS = 12_500_000
 const TOPPED_UP_MICROS = 22_500_000
 
@@ -158,17 +186,21 @@ export const NO_RESPONSE: BillingResult<BillingHttpResponse> = {
   code: 'REQUEST_FAILED'
 }
 
-type Answer =
-  | BillingResult<BillingHttpResponse>
-  | Promise<BillingResult<BillingHttpResponse>>
+/** What the session transport answers once the scope moved under a request. */
+export const SCOPE_CHANGED: BillingResult<BillingHttpResponse> = {
+  status: 'error',
+  code: 'SUPERSEDED'
+}
 
-/**
- * Answers per route are consumed in order; the last one repeats. A promise
- * answer holds its request open until the test resolves it.
- */
+export type Answer = BillingResult<BillingHttpResponse>
+
+/** A pending answer lets a test settle two reads out of the order they began. */
+type QueuedAnswer = Answer | Promise<Answer>
+
+/** Answers per route are consumed in order; the last one repeats. */
 function fakeTransport() {
   const calls: BillingRequest[] = []
-  const queues = new Map<string, Answer[]>()
+  const queues = new Map<string, QueuedAnswer[]>()
   const keyOf = (method: string, route: string) => `${method} ${route}`
   const transport: BillingTransport = vi.fn(async (request) => {
     calls.push(request)
@@ -182,7 +214,7 @@ function fakeTransport() {
   return {
     transport,
     calls,
-    answer(method: 'GET' | 'POST', route: string, ...answers: Answer[]) {
+    answer(method: 'GET' | 'POST', route: string, ...answers: QueuedAnswer[]) {
       queues.set(keyOf(method, route), answers)
     },
     routes: () => calls.map((call) => `${call.method} ${call.route}`)
@@ -203,6 +235,9 @@ export function createBillingHarness(options: HarnessOptions = {}) {
   const capabilities = createCapabilitiesReader(readerOptions)
   const credits = createCreditsReader(readerOptions)
   const statusReader = createBillingStatusReader(readerOptions)
+  const plans = createPlansReader(readerOptions)
+  const paymentMethods = createPaymentMethodsReader(readerOptions)
+  const events = createBillingEventsReader(readerOptions)
   const lifecycle = createBillingOperationLifecycle({
     transport,
     scopeSource,
@@ -216,6 +251,9 @@ export function createBillingHarness(options: HarnessOptions = {}) {
     capabilities,
     credits,
     status: statusReader,
+    plans,
+    paymentMethods,
+    events,
     topup: createTopupCommand({
       transport,
       lifecycle,
@@ -239,6 +277,8 @@ export function createBillingHarness(options: HarnessOptions = {}) {
     httpOk(capabilitiesBody(options.capabilities))
   )
   answer('GET', '/billing/status', httpOk(STATUS_DATA))
+  answer('GET', PLANS_ROUTE, httpOk(CATALOG))
+  answer('GET', PAYMENT_METHODS_ROUTE, httpOk(SAVED_CARDS))
   answer(
     'GET',
     '/billing/balance',

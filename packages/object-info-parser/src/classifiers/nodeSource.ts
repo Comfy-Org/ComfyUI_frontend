@@ -38,7 +38,7 @@ export function getNodeSource(
   }
   const modules = python_module.split('.')
   if (essentials_category) {
-    const moduleName = modules[1] ?? modules[0] ?? 'essentials'
+    const moduleName = modules[1] ?? modules[0]
     const displayName = shortenNodeName(moduleName.split('@')[0])
     return {
       type: NodeSourceType.Essentials,

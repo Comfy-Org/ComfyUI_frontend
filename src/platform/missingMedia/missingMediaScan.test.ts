@@ -1,6 +1,7 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
@@ -65,9 +66,7 @@ vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => {
   }
 })
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/assets/services/assetService'))
 vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'))
@@ -170,6 +169,7 @@ function makeHistoryJob(
 }
 
 beforeEach(() => {
+  vi.mocked(useFeatureFlags().flags).assetsEnabled = true
   seedMediaNodeDefs()
 })
 

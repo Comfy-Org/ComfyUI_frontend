@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent } from 'vue'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import type { NodeExecutionOutput } from '@/schemas/apiSchema'
+import type { NodeExecutionOutput } from '@/platform/remote/comfyui/execution/types'
 import type { ComfyApp } from '@/scripts/app'
 
 interface MockWidget {

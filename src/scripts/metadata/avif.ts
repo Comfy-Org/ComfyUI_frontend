@@ -281,7 +281,7 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
 
   if (tiffHeaderOffset !== -1) {
     const exifData = itemData.subarray(tiffHeaderOffset)
-    const data: Record<string, any> = parseExifData(exifData)
+    const data: Record<string, unknown> = parseExifData(exifData)
     for (const key in data) {
       const value = data[key]
       if (typeof value === 'string') {
@@ -323,7 +323,7 @@ function parseAvifMetadata(buffer: ArrayBuffer): ComfyMetadata {
       }
     }
   } else {
-    console.log('Warning: TIFF header not found in EXIF data.')
+    console.warn('TIFF header not found in EXIF data.')
   }
 
   return metadata

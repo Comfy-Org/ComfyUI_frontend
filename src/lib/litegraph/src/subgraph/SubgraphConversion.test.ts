@@ -16,6 +16,7 @@ import {
 } from '@/lib/litegraph/src/litegraph'
 import type {
   LGraph,
+  LLink,
   Positionable,
   SubgraphNode
 } from '@/lib/litegraph/src/litegraph'
@@ -23,6 +24,7 @@ import {
   createTestNode,
   createTestWidgetNode
 } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import type { reportError } from '@/platform/telemetry/reportError'
 import { useLinkStore } from '@/stores/linkStore'
 import { useRerouteStore } from '@/stores/rerouteStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
@@ -39,8 +41,14 @@ import {
   resetSubgraphFixtureState
 } from './__fixtures__/subgraphHelpers'
 
+const mockReportError = vi.hoisted(() => vi.fn<typeof reportError>())
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: mockReportError
+}))
+
 beforeEach(() => {
   resetSubgraphFixtureState()
+  mockReportError.mockClear()
 })
 
 function expectUnpackRejected(graph: LGraph, subgraphNode: SubgraphNode): void {
@@ -50,11 +58,31 @@ function expectUnpackRejected(graph: LGraph, subgraphNode: SubgraphNode): void {
   const afterChange = vi.spyOn(graph, 'afterChange')
 
   expect(graph.unpackSubgraph(subgraphNode)).toBe(false)
-  expect(graph.getNodeById(subgraphNode.id)).toBeDefined()
+  expect(graph.getNodeById(subgraphNode.id)).toBe(subgraphNode)
   expect(graph.nodes.length).toBe(nodeCount)
   expect(JSON.stringify(graph.serialize())).toBe(before)
   expect(beforeChange).not.toHaveBeenCalled()
   expect(afterChange).not.toHaveBeenCalled()
+}
+
+function expectUnresolvableLinkReported(
+  subgraphNode: SubgraphNode,
+  malformedLink: LLink
+) {
+  expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+    new Error('Cannot unpack subgraph: unresolvable inner link'),
+    {
+      errorType: 'error_unpacking_subgraph_link',
+      context: {
+        subgraphNodeId: subgraphNode.id,
+        linkId: malformedLink.id,
+        originId: malformedLink.origin_id,
+        originSlot: malformedLink.origin_slot,
+        targetId: malformedLink.target_id,
+        targetSlot: malformedLink.target_slot
+      }
+    }
+  )
 }
 
 describe('SubgraphConversion', () => {
@@ -174,7 +202,7 @@ describe('SubgraphConversion', () => {
     it('keeps a shared definition link registered while copying it to the parent', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
+      const graph = subgraph.rootGraph
       graph.add(subgraphNode)
       graph.add(createTestSubgraphNode(subgraph))
 
@@ -577,7 +605,7 @@ describe('SubgraphConversion', () => {
         outputs: [{ name: 'value', type: 'number' }]
       })
       const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
+      const graph = subgraph.rootGraph
       graph.add(subgraphNode)
 
       const innerNode1 = createTestNode(subgraph, [], ['number'])
@@ -600,7 +628,7 @@ describe('SubgraphConversion', () => {
         outputs: [{ name: 'value', type: 'number' }]
       })
       const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
+      const graph = subgraph.rootGraph
       graph.add(subgraphNode)
 
       const inner = createTestNode(subgraph, [], ['number'])
@@ -626,7 +654,7 @@ describe('SubgraphConversion', () => {
     it('Should leave the graph untouched when a subgraph link is malformed', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
+      const graph = subgraph.rootGraph
       graph.add(subgraphNode)
 
       const innerNode1 = createTestNode(subgraph, [], ['number'])
@@ -636,11 +664,12 @@ describe('SubgraphConversion', () => {
 
       innerLink.target_id = toNodeId(9999)
       expectUnpackRejected(graph, subgraphNode)
+      expectUnresolvableLinkReported(subgraphNode, innerLink)
     })
     it('Should leave the graph untouched when a subgraph link has an invalid origin slot', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
+      const graph = subgraph.rootGraph
       graph.add(subgraphNode)
 
       const innerNode1 = createTestNode(subgraph, [], ['number'])
@@ -650,21 +679,26 @@ describe('SubgraphConversion', () => {
 
       innerLink.origin_slot = 9999
       expectUnpackRejected(graph, subgraphNode)
+      expectUnresolvableLinkReported(subgraphNode, innerLink)
     })
-    it('Should leave the graph untouched when a subgraph link has an invalid target slot', () => {
-      const subgraph = createTestSubgraph()
-      const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
-      graph.add(subgraphNode)
+    it.for([9999, 0.5])(
+      'Should leave the graph untouched when a subgraph link has invalid target slot %s',
+      (invalidSlot) => {
+        const subgraph = createTestSubgraph()
+        const subgraphNode = createTestSubgraphNode(subgraph)
+        const graph = subgraph.rootGraph
+        graph.add(subgraphNode)
 
-      const innerNode1 = createTestNode(subgraph, [], ['number'])
-      const innerNode2 = createTestNode(subgraph, ['number'], [])
-      const innerLink = innerNode1.connect(0, innerNode2, 0)
-      assert(innerLink)
+        const innerNode1 = createTestNode(subgraph, [], ['number'])
+        const innerNode2 = createTestNode(subgraph, ['number'], [])
+        const innerLink = innerNode1.connect(0, innerNode2, 0)
+        assert(innerLink)
 
-      innerLink.target_slot = 9999
-      expectUnpackRejected(graph, subgraphNode)
-    })
+        innerLink.target_slot = invalidSlot
+        expectUnpackRejected(graph, subgraphNode)
+        expectUnresolvableLinkReported(subgraphNode, innerLink)
+      }
+    )
     it.for([9999, 0.5])(
       'Should leave the graph untouched when a subgraph input link has invalid boundary slot %s',
       (invalidSlot) => {
@@ -672,7 +706,7 @@ describe('SubgraphConversion', () => {
           inputs: [{ name: 'value', type: 'number' }]
         })
         const subgraphNode = createTestSubgraphNode(subgraph)
-        const graph = subgraphNode.graph!
+        const graph = subgraph.rootGraph
         graph.add(subgraphNode)
 
         const innerNode = createTestNode(subgraph, ['number'])
@@ -683,6 +717,7 @@ describe('SubgraphConversion', () => {
         assert(innerLink)
         innerLink.origin_slot = invalidSlot
         expectUnpackRejected(graph, subgraphNode)
+        expectUnresolvableLinkReported(subgraphNode, innerLink)
       }
     )
     it.for([9999, 0.5])(
@@ -692,7 +727,7 @@ describe('SubgraphConversion', () => {
           outputs: [{ name: 'value', type: 'number' }]
         })
         const subgraphNode = createTestSubgraphNode(subgraph)
-        const graph = subgraphNode.graph!
+        const graph = subgraph.rootGraph
         graph.add(subgraphNode)
 
         const innerNode = createTestNode(subgraph, [], ['number'])
@@ -703,21 +738,35 @@ describe('SubgraphConversion', () => {
         assert(innerLink)
         innerLink.target_slot = invalidSlot
         expectUnpackRejected(graph, subgraphNode)
+        expectUnresolvableLinkReported(subgraphNode, innerLink)
       }
     )
     it('Should report success when unpacking an intact subgraph', () => {
       const subgraph = createTestSubgraph()
       const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
+      const graph = subgraph.rootGraph
       graph.add(subgraphNode)
 
-      const innerNode1 = createTestNode(subgraph, [], ['number'])
-      const innerNode2 = createTestNode(subgraph, ['number'], [])
+      const innerNode1 = createTestNode(subgraph, [], ['number'], 'source')
+      const innerNode2 = createTestNode(subgraph, ['number'], [], 'target')
       assert(innerNode1.connect(0, innerNode2, 0))
 
       expect(graph.unpackSubgraph(subgraphNode)).toBe(true)
       expect(graph.getNodeById(subgraphNode.id)).toBeNull()
-      expect(graph.nodes.length).toBe(2)
+      expect(graph.nodes.map((node) => node.title)).toEqual([
+        'source',
+        'target'
+      ])
+      expect(
+        [...graph.links.values()].map((link) => ({
+          origin: graph.getNodeById(link.origin_id)?.title,
+          originSlot: link.origin_slot,
+          target: graph.getNodeById(link.target_id)?.title,
+          targetSlot: link.target_slot
+        }))
+      ).toEqual([
+        { origin: 'source', originSlot: 0, target: 'target', targetSlot: 0 }
+      ])
     })
     it('Should map reroutes onto split outputs', () => {
       const subgraph = createTestSubgraph({
@@ -727,7 +776,7 @@ describe('SubgraphConversion', () => {
         ]
       })
       const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
+      const graph = subgraph.rootGraph
       graph.add(subgraphNode)
 
       const inner = createTestNode(subgraph, [], ['number', 'number'])
@@ -769,7 +818,7 @@ describe('SubgraphConversion', () => {
         ]
       })
       const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
+      const graph = subgraph.rootGraph
       graph.add(subgraphNode)
 
       const inner1 = createTestNode(subgraph, ['number', 'number'])
@@ -813,7 +862,7 @@ describe('SubgraphConversion', () => {
           inputs: [{ name: 'value', type: 'number' }]
         })
         const subgraphNode = createTestSubgraphNode(subgraph)
-        const graph = subgraphNode.graph!
+        const graph = subgraph.rootGraph
         graph.add(subgraphNode)
 
         for (let i = 0; i < interiorNodeCount; i++) {
@@ -838,22 +887,31 @@ describe('SubgraphConversion', () => {
 
       it('Should not report a missing link for a promoted widget input', () => {
         const { graph, subgraphNode } = createPromotedWidgetSubgraph()
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
         graph.unpackSubgraph(subgraphNode)
 
-        expect(errorSpy).not.toHaveBeenCalled()
+        expect(mockReportError).not.toHaveBeenCalled()
       })
 
       it('Should report a missing host input and continue unpacking', () => {
         const { graph, subgraphNode } = createPromotedWidgetSubgraph()
+        const [link] = subgraphNode.subgraph.links.values()
+        assert(link)
         subgraphNode.removeInput(0)
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
         graph.unpackSubgraph(subgraphNode)
 
-        expect(errorSpy).toHaveBeenCalledWith(
-          'Missing host input when unpacking subgraph'
+        expect(mockReportError).toHaveBeenCalledExactlyOnceWith(
+          expect.objectContaining({
+            message: 'Missing host input when unpacking subgraph'
+          }),
+          {
+            errorType: 'subgraph_unpack_missing_host_input',
+            context: {
+              linkId: link.id,
+              subgraphNodeId: subgraphNode.id
+            }
+          }
         )
         expect(graph.nodes.length).toBe(1)
       })
@@ -866,7 +924,7 @@ describe('SubgraphConversion', () => {
           ]
         })
         const subgraphNode = createTestSubgraphNode(subgraph)
-        const graph = subgraphNode.graph!
+        const graph = subgraph.rootGraph
         graph.add(subgraphNode)
 
         for (let slot = 0; slot < 2; slot++) {
@@ -882,11 +940,10 @@ describe('SubgraphConversion', () => {
         assert(secondWidgetId)
         useWidgetValueStore().setValue(secondWidgetId, 'second host')
         subgraphNode.removeInput(0)
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
         graph.unpackSubgraph(subgraphNode)
 
-        expect(errorSpy).toHaveBeenCalledTimes(1)
+        expect(mockReportError).toHaveBeenCalledTimes(1)
         expect(readUnpackedWidgetValues(graph)).toEqual([
           'interior 0',
           'second host'
@@ -931,16 +988,15 @@ describe('SubgraphConversion', () => {
           inputs: [{ name: 'value', type: 'number' }]
         })
         const subgraphNode = createTestSubgraphNode(subgraph)
-        const graph = subgraphNode.graph!
+        const graph = subgraph.rootGraph
         graph.add(subgraphNode)
 
         const inner = createTestNode(subgraph, ['number'])
         subgraph.inputNode.slots[0].connect(inner.inputs[0], inner)
-        const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {})
 
         graph.unpackSubgraph(subgraphNode)
 
-        expect(errorSpy).not.toHaveBeenCalled()
+        expect(mockReportError).not.toHaveBeenCalled()
         expect(graph.nodes.length).toBe(1)
       })
     })
@@ -950,7 +1006,7 @@ describe('SubgraphConversion', () => {
         outputs: [{ name: 'value', type: 'number' }]
       })
       const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
+      const graph = subgraph.rootGraph
       graph.add(subgraphNode)
 
       const inner = createTestNode(subgraph, [], ['number'])
@@ -982,7 +1038,7 @@ describe('SubgraphConversion', () => {
         outputs: [{ name: 'value', type: 'number' }]
       })
       const subgraphNode = createTestSubgraphNode(subgraph)
-      const graph = subgraphNode.graph!
+      const graph = subgraph.rootGraph
       graph.add(subgraphNode)
 
       const inner = createTestNode(subgraph, [], ['number'])

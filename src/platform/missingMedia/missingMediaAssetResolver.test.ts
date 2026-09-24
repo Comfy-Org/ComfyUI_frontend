@@ -1,6 +1,7 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { assetService } from '@/platform/assets/services/assetService'
 import { fetchHistoryPage } from '@/platform/remote/comfyui/jobs/fetchJobs'
@@ -10,9 +11,7 @@ import {
   resolveMissingMediaAssetSources
 } from './missingMediaAssetResolver'
 
-vi.mock<unknown>(import('@/composables/useFeatureFlags'), () => ({
-  useFeatureFlags: () => ({ flags: { assetsEnabled: true } })
-}))
+vi.mock(import('@/composables/useFeatureFlags'))
 
 vi.mock(import('@/platform/assets/services/assetService'))
 vi.mock(import('@/platform/remote/comfyui/jobs/fetchJobs'))
@@ -71,6 +70,7 @@ function makeAssetPage(
 
 describe('resolveMissingMediaAssetSources', () => {
   beforeEach(() => {
+    vi.mocked(useFeatureFlags().flags).assetsEnabled = true
     vi.mocked(assetService.getAllAssetsByTag).mockResolvedValue([])
     vi.mocked(assetService.getAssetsPageByTag).mockResolvedValue(
       makeAssetPage([])
