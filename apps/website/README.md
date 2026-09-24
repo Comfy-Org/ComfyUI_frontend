@@ -275,16 +275,18 @@ admission controls remain authoritative. Local development also accepts
 helper. Node scripts import `workflow_render` and `workflow_for_model` from
 `scripts/workflow-render.ts`; `COMFY_API_KEY` supplies the credential unless a
 token option is given. File inputs use the form's `{ file, name, size, type }`
-shape and are uploaded through grants/direct PUT. URL inputs must already refer
-to caller-owned finalized uploads. The helper returns the run and compatible
-output objects; selected links carry their expiry and refresh endpoint.
+shape and are uploaded through Cloud's existing `/api/inputs/upload-url` grant
+and raw PUT. HTTPS inputs are downloaded within the file limit, then uploaded
+the same way; browser URL inputs require source CORS permission. The returned
+asset name is mapped into the prepared graph for `POST /api/prompt`.
 
-Persist `onPrepared`'s attempt before submission and `onAdmitted`'s public run ID
-before polling. Retry an uncertain submission with `{ attempt }`; resume an
-admitted run with `{ runId }`. Aborting the helper stops observation. Explicit
-cancel uses the run API and waits for Cloud confirmation. Output delivery retry
-and link refresh do not submit inference. The page's API tab shows the exact
-wire request, required idempotency header and upload steps.
+Persist `onAdmitted`'s job ID and resume with `{ runId }`. Do not automatically
+retry an uncertain submission: the existing prompt endpoint does not promise
+idempotency. Aborting the helper stops observation. Explicit cancel calls the
+job-scoped endpoint and is presented as requested, without claiming confirmed
+execution shutdown. Polling `/api/jobs/{id}?short_link=ephemeral_tool_chain`
+returns temporary output links; rereading that job refreshes delivery without
+submitting inference. The API tab shows the native request and upload steps.
 
 Prepare graph previews separately with
 `pnpm --filter @comfyorg/website exec tsx scripts/prepare-workflow-previews.ts`.
@@ -293,9 +295,10 @@ SVG plus original workflow JSON into `public/workflows/prepared/`. New source
 repositories require offline preparation; neither the website build nor run
 admission invokes this tool.
 
-Real Cloud staging, native model availability, direct GCS PUT/CORS and caller
-billing must be verified before enabling the workflow rollout. See
-[the acceptance corpus](../../docs/testing/workshop-cloud-workflows.md).
+The shared helper completed a real production background-removal run through
+upload, generation and PNG download on 2026-09-23. Staging browser execution,
+the other prepared workflows and caller billing still need acceptance checks.
+Additional backend infrastructure is deferred and requires Cloud team agreement.
 
 ### Models analytics
 
