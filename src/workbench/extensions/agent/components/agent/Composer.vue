@@ -83,7 +83,7 @@ const emit = defineEmits<{
     attachments: ComposerAttachment[],
     workflowReferences?: WorkflowReference[]
   ]
-  stop: []
+  stop: [method: 'button' | 'escape']
   attach: []
   openAssets: []
   selectNodes: []
@@ -137,7 +137,7 @@ const composer = useComposer({
     } else emit('send', text, attachments)
   },
   isRunning: () => running.value,
-  onStop: () => emit('stop')
+  onStop: () => emit('stop', 'button')
 })
 
 const editorRef =
@@ -218,7 +218,7 @@ function onComposerKeydown(event: KeyboardEvent): void {
   ) {
     event.preventDefault()
     event.stopPropagation()
-    emit('stop')
+    emit('stop', 'escape')
   }
 }
 
@@ -250,7 +250,7 @@ const primaryActionShortcut = computed(() =>
 )
 
 function onPrimaryAction(): void {
-  if (running.value) emit('stop')
+  if (running.value) emit('stop', 'button')
   else composer.submit()
 }
 
@@ -301,7 +301,7 @@ function handleEscapeOverride(event: KeyboardEvent): boolean {
   if (focusedElsewhere) return false
 
   event.preventDefault()
-  if (!event.repeat) emit('stop')
+  if (!event.repeat) emit('stop', 'escape')
   return true
 }
 

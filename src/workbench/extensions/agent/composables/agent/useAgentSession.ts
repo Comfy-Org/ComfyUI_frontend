@@ -2,6 +2,7 @@ import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@/platform/telemetry'
 import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
@@ -69,6 +70,7 @@ type PromptEditState =
 export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
+  onThreadStarted?: (source: 'new_chat_button' | 'first_open') => void
   workflow?: {
     // origin, when given, pins resolution to the tab that initiated the send
     // instead of the target selected when this is called - it is read
@@ -76,7 +78,11 @@ export interface AgentSessionDeps {
     // describe the pre-await originating tab, not a later switch. See
     // TurnOrigin for why "no origin tab" is a value rather than an omission.
     current(origin?: TurnOrigin): WorkflowTurnContext | undefined
-    adopted(workflowId: string, sent: WorkflowTurnContext | undefined): void
+    adopted(
+      workflowId: string,
+      sent: WorkflowTurnContext | undefined,
+      previousWorkflowId: string | null
+    ): void
     restored?(
       workflowId: string | undefined,
       isCurrent: () => boolean
@@ -101,6 +107,7 @@ let sessionGeneration = 0
  * newChat/loadThread clear it.
  */
 let rememberedWorkflowId: string | null = null
+const turnStartedAt = new Map<TurnId, number>()
 
 function parseAdmissionError(error: unknown) {
   if (!(error instanceof AgentApiError)) return undefined
@@ -121,7 +128,7 @@ function disownsWorkflow(error: unknown): boolean {
 }
 
 export function useAgentSession(deps: AgentSessionDeps) {
-  const { rest, events, workflow } = deps
+  const { rest, events, onThreadStarted, workflow } = deps
 
   const conversationStore = useAgentConversationStore()
   const bindingStore = useAgentWorkflowTabBindingStore()
@@ -136,6 +143,9 @@ export function useAgentSession(deps: AgentSessionDeps) {
   const promptEditState = ref<PromptEditState>({ phase: 'idle' })
   const sending = ref(false)
   const answeringAskIds = ref<ReadonlySet<string>>(new Set())
+  const pendingThreadSource = ref<'new_chat_button' | 'first_open' | null>(
+    'first_open'
+  )
 
   function setAskAnswering(askId: string, answering: boolean): void {
     const next = new Set(answeringAskIds.value)
@@ -398,6 +408,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     tags?: SentTag[],
     workflowReferences?: WorkflowReference[]
   ): void {
+    const startsThread = conversationStore.threadId === null
     conversationStore.setThreadId(ack.thread_id)
     localStorage.setItem(THREAD_STORAGE_KEY, ack.thread_id)
     if (ack.workflow_id !== undefined) {
@@ -407,7 +418,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
         wfContext?.id !== undefined ||
         (ack.workflow_id !== boundAtAck &&
           bindingStore.tabPathFor(ack.workflow_id) === undefined)
-      if (shouldAdopt) workflow?.adopted(ack.workflow_id, wfContext)
+      if (shouldAdopt) workflow?.adopted(ack.workflow_id, wfContext, boundAtAck)
     }
     const turnId = ack.message_id as TurnId
     conversationStore.recordUser(
@@ -422,9 +433,16 @@ export function useAgentSession(deps: AgentSessionDeps) {
       workflowReferences
     )
     conversationStore.startTurn(turnId)
+    turnStartedAt.set(turnId, Date.now())
+    if (startsThread && pendingThreadSource.value !== null) {
+      onThreadStarted?.(pendingThreadSource.value)
+      pendingThreadSource.value = null
+    }
     if (wasStopRequestedWhileSending()) {
       stopRequestedWhileSending.value = false
-      void stopTurn()
+      const method = stopMethodWhileSending.value
+      stopMethodWhileSending.value = null
+      void stopTurn(method ?? undefined)
     }
   }
 
@@ -570,19 +588,30 @@ export function useAgentSession(deps: AgentSessionDeps) {
   }
 
   const stopRequestedWhileSending = ref(false)
+  const stopMethodWhileSending = ref<'button' | 'escape' | null>(null)
   const wasStopRequestedWhileSending = () => stopRequestedWhileSending.value
 
-  async function stopTurn(): Promise<void> {
+  async function stopTurn(method?: 'button' | 'escape'): Promise<void> {
     const threadId = conversationStore.threadId
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
       // The POST has not acked yet; remember the intent and cancel on ack.
-      if (sending.value) stopRequestedWhileSending.value = true
+      if (sending.value) {
+        stopRequestedWhileSending.value = true
+        stopMethodWhileSending.value = method ?? null
+      }
       return
     }
     promptEditState.value = { phase: 'stopping', turnId }
     try {
       await rest.cancelMessage(threadId, turnId)
+      const startedAt = turnStartedAt.get(turnId)
+      if (method !== undefined && startedAt !== undefined)
+        useTelemetry()?.trackAgentStopClicked({
+          method,
+          turn_id: turnId,
+          turn_elapsed_ms: Math.max(0, Date.now() - startedAt)
+        })
     } catch (error) {
       if (error instanceof AgentApiError) {
         if (error.status === 409) return
@@ -598,7 +627,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
   async function answerAsk(
     askId: string,
     selection: 'run' | 'cancel'
-  ): Promise<void> {
+  ): Promise<boolean> {
     const currentThreadId = conversationStore.threadId
     const messageId = conversationStore.activeTurnId
     if (
@@ -606,11 +635,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       messageId === null ||
       answeringAskIds.value.has(askId)
     )
-      return
+      return false
     setAskAnswering(askId, true)
     try {
       await rest.answerAsk(currentThreadId, askId, [selection])
       // Keep the actions disabled until the canonical resolution frame arrives.
+      return true
     } catch (error) {
       setAskAnswering(askId, false)
       if (error instanceof AgentApiError && error.status === 409) {
@@ -624,16 +654,17 @@ export function useAgentSession(deps: AgentSessionDeps) {
             selected: null
           }
         })
-        return
+        return false
       }
       reportError(error, { errorType: 'agent_ask_answer_failed' })
       pushError(error instanceof Error ? error.message : String(error))
+      return false
     }
   }
 
   let loadGeneration = 0
 
-  function newChat(): void {
+  function newChat(source?: 'new_chat_button'): void {
     loadGeneration++
     promptEditState.value = { phase: 'idle' }
     conversationStore.stashActiveTurn()
@@ -641,13 +672,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     boundWorkflowId.value = null
     rememberedWorkflowId = null
     localStorage.removeItem(THREAD_STORAGE_KEY)
+    pendingThreadSource.value = source ?? null
   }
 
   function listThreads() {
     return rest.listThreads()
   }
 
-  async function loadThread(threadId: string): Promise<void> {
+  async function loadThread(threadId: string): Promise<boolean> {
     const generation = ++loadGeneration
     promptEditState.value = { phase: 'idle' }
     const isCurrent = () =>
@@ -659,6 +691,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     localStorage.setItem(THREAD_STORAGE_KEY, threadId)
     const hydrated = await hydrateFromServer(threadId, isCurrent)
     if (hydrated && isCurrent()) conversationStore.resumeBackgroundTurn()
+    return hydrated && isCurrent()
   }
 
   function onRaw(raw: unknown): void {
@@ -699,6 +732,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return
       default:
         conversationStore.ingest(event)
+        if (event.type === 'agent_message_done')
+          turnStartedAt.delete(event.data.message_id as TurnId)
         if (
           event.type === 'agent_message_done' &&
           promptEditState.value.phase === 'stopping' &&

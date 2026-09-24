@@ -80,6 +80,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     id: number
     phase: 'pending' | 'failed'
     stopRequested: boolean
+    stopMethod: 'button' | 'escape' | null
     revision: number
     origin: AgentInputMethod
     snapshot: SubmittedDraft
@@ -356,6 +357,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       id,
       phase: 'pending',
       stopRequested: false,
+      stopMethod: null,
       revision,
       origin,
       snapshot
@@ -363,10 +365,10 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     return id
   }
 
-  function requestSubmissionStop(): boolean {
+  function requestSubmissionStop(method: 'button' | 'escape'): boolean {
     const pending = submission.value
     if (pending?.phase !== 'pending') return false
-    submission.value = { ...pending, stopRequested: true }
+    submission.value = { ...pending, stopRequested: true, stopMethod: method }
     return true
   }
 

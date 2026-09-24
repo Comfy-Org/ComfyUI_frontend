@@ -1258,7 +1258,9 @@ describe('AgentPanelRoot attach flow', () => {
         name: i18n.global.t('agent.attachFiles')
       })
     )
-    expect(telemetry.trackAgentAttachButtonClicked).toHaveBeenCalled()
+    expect(
+      telemetry.trackAgentAttachButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({ method: 'menu' })
 
     const file = new File(['x'], 'cat.png', { type: 'image/png' })
     const input = screen.getByTestId<HTMLInputElement>('agent-file-input')
@@ -1478,6 +1480,7 @@ describe('AgentPanelRoot attach flow', () => {
     ['notes.md', ''],
     ['prompt.txt', 'text/plain']
   ])('attaches a dropped %s and uploads it', async ([name, type]) => {
+    telemetry.trackAgentAttachButtonClicked.mockClear()
     const uploaded = stubUploadFetch()
     renderWithSelectedTarget()
     await nextTick()
@@ -1494,6 +1497,9 @@ describe('AgentPanelRoot attach flow', () => {
       )
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual([name]))
+    expect(
+      telemetry.trackAgentAttachButtonClicked
+    ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
   })
 
   it('names every approved format in the picker accept list', async () => {
@@ -2791,8 +2797,22 @@ describe('AgentPanelRoot feedback capture', () => {
     )
 
     expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-9', vote: 'up', workflow_id: 'wf-rated' }],
-      [{ message_id: 'turn-9', vote: null, workflow_id: 'wf-rated' }]
+      [
+        {
+          message_id: 'turn-9',
+          turn_id: 'turn-9',
+          vote: 'up',
+          workflow_id: 'wf-rated'
+        }
+      ],
+      [
+        {
+          message_id: 'turn-9',
+          turn_id: 'turn-9',
+          vote: null,
+          workflow_id: 'wf-rated'
+        }
+      ]
     ])
   })
 
@@ -2834,7 +2854,14 @@ describe('AgentPanelRoot feedback capture', () => {
     )
 
     expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-10', vote: 'up', workflow_id: 'wf-last' }]
+      [
+        {
+          message_id: 'turn-10',
+          turn_id: 'turn-10',
+          vote: 'up',
+          workflow_id: 'wf-last'
+        }
+      ]
     ])
   })
 
@@ -2864,8 +2891,97 @@ describe('AgentPanelRoot feedback capture', () => {
     )
 
     expect(telemetry.trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-11', vote: 'up', workflow_id: null }]
+      [
+        {
+          message_id: 'turn-11',
+          turn_id: 'turn-11',
+          vote: 'up',
+          workflow_id: null
+        }
+      ]
     ])
+  })
+})
+
+describe('AgentPanelRoot run approval telemetry', () => {
+  it('tracks one shown event and one committed resolution', async () => {
+    const fetchMock = vi.fn(async (url: string, init?: RequestInit) => {
+      if (url.includes('/asks/') && init?.method === 'POST')
+        return json(200, { status: 'answered' })
+      if (url.includes('/agent/threads')) return json(200, agentThreadList())
+      if (url.includes('/workflows'))
+        return json(200, {
+          data: [],
+          pagination: {
+            offset: 0,
+            limit: 100,
+            total: 0,
+            has_more: false
+          }
+        })
+      return json(200, {})
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    telemetry.trackAgentRunApprovalShown.mockClear()
+    telemetry.trackAgentRunApprovalResolved.mockClear()
+    let currentTime = 1_000
+    const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)
+
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const store = useAgentConversationStore()
+    store.setThreadId('th-1')
+    const turnId = 'turn-approval' as TurnId
+    store.recordUser(turnId, 'run it')
+    store.startTurn(turnId)
+    store.ingest(
+      zAgentWsEventForTest({
+        type: 'agent_ask',
+        data: {
+          thread_id: 'th-1',
+          message_id: turnId,
+          ask_id: 'turn-approval:call-1',
+          kind: 'run_approval',
+          context: {
+            workflow_id: 'workflow-1',
+            workflow_name: 'Portrait workflow'
+          },
+          prompt: 'Run it?',
+          options: [
+            { id: 'run', label: 'Run' },
+            { id: 'cancel', label: 'Cancel' }
+          ],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      })
+    )
+
+    expect(await screen.findByRole('button', { name: 'Run' })).toBeVisible()
+    await nextTick()
+    expect(
+      telemetry.trackAgentRunApprovalShown
+    ).toHaveBeenCalledExactlyOnceWith({
+      turn_id: 'turn-approval',
+      workflow_id: 'workflow-1'
+    })
+
+    currentTime = 1_275
+    await userEvent.click(screen.getByRole('button', { name: 'Run' }))
+    await vi.waitFor(() =>
+      expect(
+        telemetry.trackAgentRunApprovalResolved
+      ).toHaveBeenCalledExactlyOnceWith({
+        decision: 'run',
+        time_to_decide_ms: 275
+      })
+    )
+    expect(
+      fetchMock.mock.calls.filter(
+        ([url, init]) => url.includes('/asks/') && init?.method === 'POST'
+      )
+    ).toHaveLength(1)
+    now.mockRestore()
   })
 })
 
@@ -4688,6 +4804,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await renderAndSend('work here')
     const mint = vi.spyOn(workflowStore, 'createNewTemporary')
+    telemetry.trackAgentWorkflowBound.mockClear()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-77',
@@ -4716,6 +4833,12 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(telemetry.trackAgentWorkflowApplied).toHaveBeenCalledWith({
       workflow_id: 'wf-77',
       target: 'active_tab_open'
+    })
+    expect(telemetry.trackAgentWorkflowBound).toHaveBeenCalledExactlyOnceWith({
+      thread_id: 'th-1',
+      workflow_id: 'wf-77',
+      prev_workflow_id: 'wf-42',
+      bind_source: 'active_tab'
     })
   })
   it.for(['saved', 'new'] as const)(

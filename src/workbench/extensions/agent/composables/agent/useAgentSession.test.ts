@@ -6,6 +6,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
+import { useTelemetry } from '@/platform/telemetry'
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
@@ -37,6 +38,10 @@ import { useAgentSession } from './useAgentSession'
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: vi.fn()
 }))
+vi.mock(import('@/platform/telemetry'))
+const telemetryProvider = useTelemetry()
+assert.exists(telemetryProvider)
+const telemetry = vi.mocked(telemetryProvider)
 
 function fakeRest(overrides: Partial<AgentRestClient> = {}): AgentRestClient {
   const base: AgentRestClient = {
@@ -213,6 +218,7 @@ describe('useAgentSession (v1 composition root)', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.mocked(reportError).mockClear()
+    telemetry.trackAgentStopClicked.mockClear()
   })
 
   it('(a) posts to new, adopts ids, records the user turn, and renders a settled reply', async () => {
@@ -243,6 +249,27 @@ describe('useAgentSession (v1 composition root)', () => {
       streaming: false
     })
     expect(session.isStreaming.value).toBe(false)
+  })
+
+  it('tracks each durable thread start once with its initiating source', async () => {
+    const onThreadStarted = vi.fn()
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest(),
+      events: source,
+      onThreadStarted
+    })
+    session.start()
+
+    await session.sendMessage('first')
+    expect(onThreadStarted).toHaveBeenCalledExactlyOnceWith('first_open')
+
+    session.newChat('new_chat_button')
+    await session.sendMessage('second')
+    expect(onThreadStarted.mock.calls).toEqual([
+      ['first_open'],
+      ['new_chat_button']
+    ])
   })
 
   it('(b) a second send posts to the adopted threadId, not new', async () => {
@@ -466,7 +493,10 @@ describe('useAgentSession (v1 composition root)', () => {
     const duplicate = session.answerAsk('turn-1:call-1', 'run')
 
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
-    await Promise.all([first, duplicate])
+    await expect(Promise.all([first, duplicate])).resolves.toEqual([
+      true,
+      false
+    ])
     expect(answerAsk).toHaveBeenCalledTimes(1)
     expect(answerAsk).toHaveBeenCalledWith('th-1', 'turn-1:call-1', ['run'])
     expect(session.answeringAskIds.value.has('turn-1:call-1')).toBe(true)
@@ -790,6 +820,7 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(session.notices.value).toHaveLength(0)
     expect(session.isStreaming.value).toBe(true)
     expect(session.editableTurnId.value).toBeNull()
+    expect(telemetry.trackAgentStopClicked).not.toHaveBeenCalled()
 
     emit(delta('msg-1', ' Stopped at your request.'))
     emit(done('msg-1'))
@@ -806,6 +837,31 @@ describe('useAgentSession (v1 composition root)', () => {
 
     session.newChat()
     expect(session.editableTurnId.value).toBeNull()
+  })
+
+  it('tracks one committed stop with its method, turn, and elapsed time', async () => {
+    let currentTime = 1_000
+    const now = vi.spyOn(Date, 'now').mockImplementation(() => currentTime)
+    const cancelMessage = vi.fn(
+      async (): Promise<AgentCancelAccepted> => ({ status: 'cancelling' })
+    )
+    const { source } = fakeEvents()
+    const session = useAgentSession({
+      rest: fakeRest({ cancelMessage }),
+      events: source
+    })
+    session.start()
+
+    await session.sendMessage('go')
+    currentTime = 1_450
+    await session.stopTurn('escape')
+
+    expect(telemetry.trackAgentStopClicked).toHaveBeenCalledExactlyOnceWith({
+      method: 'escape',
+      turn_id: 'msg-1',
+      turn_elapsed_ms: 450
+    })
+    now.mockRestore()
   })
 
   it('(d1) a normally completed turn is not editable', async () => {
@@ -1135,7 +1191,7 @@ describe('useAgentSession (v1 composition root)', () => {
     await session.sendMessage('hello')
 
     expect(vi.mocked(postMessage).mock.calls[0][1]).not.toHaveProperty('draft')
-    expect(adopted).toHaveBeenCalledWith('wf-1', undefined)
+    expect(adopted).toHaveBeenCalledWith('wf-1', undefined, null)
     expect(session.boundWorkflowId.value).toBe('wf-1')
   })
 
@@ -1357,10 +1413,14 @@ describe('useAgentSession (v1 composition root)', () => {
     releasePrepare()
     await sendPromise
 
-    expect(adopted).toHaveBeenCalledWith('wf-1', {
-      id: 'wf-a',
-      tabPath: 'tab-a'
-    })
+    expect(adopted).toHaveBeenCalledWith(
+      'wf-1',
+      {
+        id: 'wf-a',
+        tabPath: 'tab-a'
+      },
+      null
+    )
     expect(vi.mocked(postMessage).mock.calls[0][1]).toMatchObject({
       workflowId: 'wf-a',
       tabs: { current_tab: 'wf-a' }
@@ -1487,7 +1547,7 @@ describe('useAgentSession (v1 composition root)', () => {
       { workflow_id: 'wf-b', name: 'tab-b' }
     ])
     // The ack echoes wf-b; with no origin tab there is nothing to bind it to.
-    expect(adopted).toHaveBeenCalledWith('wf-b', undefined)
+    expect(adopted).toHaveBeenCalledWith('wf-b', undefined, null)
   })
 
   it('(h6) a bind landing in the prepare()/POST window makes an echoed id read as an echo', async () => {
