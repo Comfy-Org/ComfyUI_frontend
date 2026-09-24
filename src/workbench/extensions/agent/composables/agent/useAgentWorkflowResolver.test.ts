@@ -43,14 +43,21 @@ function setup(
     getWorkflowByPath(path: string): ComfyWorkflow | null {
       return this.workflows.find((candidate) => candidate.path === path) ?? null
     },
+    // Mirrors the real store: a minted tab has no change tracker until it is
+    // opened, so its document id is readable only from `originalContent`.
     createNewTemporary(
       filename?: string,
       workflowData?: ComfyWorkflowJSON
     ): ComfyWorkflow {
+      const name = filename ?? 'Unsaved Workflow.json'
       const created = workflow(
-        `workflows/${filename ?? 'Unsaved Workflow.json'}`,
-        (filename ?? 'Unsaved Workflow.json').replace(/\.json$/, ''),
-        { isTemporary: true, activeState: workflowData ?? null }
+        `workflows/${name}`,
+        name.replace(/\.json$/, ''),
+        {
+          isTemporary: true,
+          activeState: null,
+          originalContent: JSON.stringify(workflowData ?? {})
+        }
       )
       this.workflows.push(created)
       return created
@@ -381,11 +388,14 @@ describe('Agent unsaved workflow recovery', () => {
 
     const recovered = await resolver.recoverWorkflowFor('cloud-draft')
 
-    expect(recovered?.path).toBe('workflows/Agent draft.json')
-    expect(recovered?.isTemporary).toBe(true)
-    expect(recovered?.activeState).toMatchObject({ id: graph.id })
+    expect(recovered?.minted).toBe(true)
+    expect(recovered?.workflow.path).toBe('workflows/Agent draft.json')
+    expect(recovered?.workflow.isTemporary).toBe(true)
+    expect(
+      JSON.parse(recovered?.workflow.originalContent ?? 'null')
+    ).toMatchObject({ id: graph.id })
     expect(workflows.getWorkflowByPath('workflows/Agent draft.json')).toEqual(
-      recovered
+      recovered?.workflow
     )
   })
 
@@ -406,9 +416,33 @@ describe('Agent unsaved workflow recovery', () => {
       resolver.recoverWorkflowFor('cloud-draft')
     ])
 
-    expect(first).not.toBeNull()
-    expect(second).toEqual(first)
+    expect(first?.minted).toBe(true)
+    expect(second?.minted).toBe(false)
+    expect(second?.workflow).toEqual(first?.workflow)
     expect(workflows.workflows).toHaveLength(1)
+  })
+
+  // Agent-minted tabs fall back to the same default filename every new
+  // workflow gets, so the path alone cannot prove two tabs are one document.
+  it('refuses to adopt an unrelated draft parked at the recovered path', async () => {
+    const { resolver, draftArchive, workflows } = setup([])
+    const stranger = workflows.createNewTemporary('Agent draft.json', {
+      ...blankGraph,
+      id: '99999999-8888-7777-6666-555555555555'
+    })
+    draftArchive.archive('cloud-draft', {
+      filename: 'Agent draft.json',
+      content: JSON.stringify({
+        ...blankGraph,
+        id: '11111111-2222-3333-4444-555555555555'
+      })
+    })
+
+    const recovered = await resolver.recoverWorkflowFor('cloud-draft')
+
+    expect(recovered?.minted).toBe(true)
+    expect(recovered?.workflow).not.toEqual(stranger)
+    expect(workflows.workflows).toHaveLength(2)
   })
 
   it('recovers nothing for a workflow that was never archived', async () => {

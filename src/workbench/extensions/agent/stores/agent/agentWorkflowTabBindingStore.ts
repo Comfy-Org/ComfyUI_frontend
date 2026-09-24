@@ -66,7 +66,12 @@ function liveBindings(
   )
 }
 
-function graphIdOf(tab: ComfyWorkflow): string | undefined {
+/**
+ * The document id of a tab, readable before it has ever been loaded — an
+ * unopened tab has no change tracker, so `activeState` is null and only the
+ * serialized content carries the id.
+ */
+export function graphIdOf(tab: ComfyWorkflow): string | undefined {
   const activeId = tab.activeState?.id
   if (activeId !== undefined) return activeId
   if (typeof tab.originalContent !== 'string') return undefined

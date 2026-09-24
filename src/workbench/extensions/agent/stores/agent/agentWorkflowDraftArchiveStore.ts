@@ -9,15 +9,16 @@ import {
 } from '@/platform/workflow/persistence/base/storageKeys'
 
 /**
- * Matches the agent binding TTL: past it the chat can no longer name the tab
- * either, so a surviving graph would have nothing to reconnect to. The cap is
- * deliberately small next to `workflowDraftStoreV2`'s 32, since these graphs
- * are a second copy competing for the same origin budget. Recency is the close
- * time rather than the read time, so the eight kept are the eight the user had
- * open most recently.
+ * Both bounds exist to cap the origin budget, not because a thread stops
+ * wanting its graph — these entries compete with `workflowDraftStoreV2`'s 32
+ * live drafts for the same ~5MB. Past either bound recovery simply misses and
+ * the chat reports the workflow unavailable, exactly as it did before this
+ * archive existed. The TTL matches the agent binding TTL for consistency
+ * within the subsystem. Recency is the close time rather than the read time,
+ * so what survives is what the user had open most recently.
  */
 const ARCHIVE_TTL_MS = 30 * 24 * 60 * 60 * 1000
-const MAX_ARCHIVED_DRAFTS = 8
+const MAX_ARCHIVED_DRAFTS = 16
 
 type WriteOutcome = 'stored' | 'over-quota' | 'refused'
 

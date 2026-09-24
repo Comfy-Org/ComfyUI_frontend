@@ -2,7 +2,7 @@ import { computed, ref } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
 import { areWorkflowIdsEquivalent } from '@/platform/workflow/core/utils/workflowId'
-import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -12,6 +12,7 @@ import type {
   OpenTabsSnapshot
 } from '../../services/agent/agentRestClient'
 import type { useAgentWorkflowDraftArchiveStore } from '../../stores/agent/agentWorkflowDraftArchiveStore'
+import { graphIdOf } from '../../stores/agent/agentWorkflowTabBindingStore'
 import type { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import type {
   WorkflowReferenceMetadata,
@@ -32,6 +33,12 @@ type WorkflowResolverDeps = {
     'read' | 'discard'
   >
   listCloudWorkflows: AgentRestClient['listCloudWorkflows']
+}
+
+export interface RecoveredWorkflow {
+  workflow: ComfyWorkflow
+  /** False when an in-flight recovery of the same workflow minted the tab. */
+  minted: boolean
 }
 
 export function useAgentWorkflowResolver({
@@ -170,11 +177,12 @@ export function useAgentWorkflowResolver({
   /**
    * Last resort for a chat thread whose workflow resolves to nothing: rebuilds
    * the unsaved graph archived when its tab was closed. The caller must bind
-   * `workflowId` to the returned tab, which is what reconnects the thread.
+   * `workflowId` to the returned tab, which is what reconnects the thread, and
+   * may only discard the tab when `minted` says this call created it.
    */
   async function recoverWorkflowFor(
     workflowId: string
-  ): Promise<ComfyWorkflow | null> {
+  ): Promise<RecoveredWorkflow | null> {
     const archived = draftArchive.read(workflowId)
     if (archived === null) return null
     let invalidReason = 'archived graph is not a workflow'
@@ -193,33 +201,35 @@ export function useAgentWorkflowResolver({
       draftArchive.discard(workflowId)
       return null
     }
-    return (
-      alreadyRecovered(archived.filename, graph) ??
-      workflows.createNewTemporary(archived.filename, graph)
-    )
+    const existing = alreadyRecovered(graph)
+    return existing !== null
+      ? { workflow: existing, minted: false }
+      : {
+          workflow: workflows.createNewTemporary(archived.filename, graph),
+          minted: true
+        }
   }
 
   /**
-   * A concurrent recovery of the same workflow has already minted the tab.
-   * Without this, `createNewTemporary` would side-step it onto a suffixed path
-   * and leave a second copy of the graph that no thread is bound to.
+   * The tab a concurrent recovery of the same workflow already minted. Matched
+   * on document id rather than path, because `createNewTemporary` side-steps
+   * an occupied filename and the duplicate would land somewhere unpredictable.
+   * Both ids must be readable: `areWorkflowIdsEquivalent` treats a missing one
+   * as a match, which would hand back an unrelated draft for the thread to
+   * bind, edit, and close.
    */
-  function alreadyRecovered(
-    filename: string,
-    graph: ComfyWorkflowJSON
-  ): ComfyWorkflow | null {
-    const existing = workflows.getWorkflowByPath(
-      `${ComfyWorkflow.basePath}${filename}`
+  function alreadyRecovered(graph: ComfyWorkflowJSON): ComfyWorkflow | null {
+    if (graph.id === undefined) return null
+    return (
+      workflows.workflows.find((candidate) => {
+        if (!candidate.isTemporary) return false
+        const candidateId = graphIdOf(candidate)
+        return (
+          candidateId !== undefined &&
+          areWorkflowIdsEquivalent(candidateId, graph.id, candidate.legacyId)
+        )
+      }) ?? null
     )
-    return existing !== null &&
-      existing.isTemporary &&
-      areWorkflowIdsEquivalent(
-        existing.activeState?.id,
-        graph.id,
-        existing.legacyId
-      )
-      ? existing
-      : null
   }
 
   function parseArchivedGraph(content: string): unknown {

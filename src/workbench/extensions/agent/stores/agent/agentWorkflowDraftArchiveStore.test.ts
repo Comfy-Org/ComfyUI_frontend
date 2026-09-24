@@ -16,7 +16,7 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
 const INDEX_KEY = 'Comfy.Workflow.AgentDraftArchiveIndex.v1:personal'
 const PAYLOAD_PREFIX = 'Comfy.Workflow.AgentDraftArchive.v1:personal:'
 const DAY_MS = 24 * 60 * 60 * 1000
-const MAX_ARCHIVED_DRAFTS = 8
+const MAX_ARCHIVED_DRAFTS = 16
 
 function storedIndex(): Record<
   string,

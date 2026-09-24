@@ -43,6 +43,7 @@ export function useAgentWorkflowSelection({
     cloudWorkflowName,
     nextSaveFilename,
     boundOrOpenWorkflowFor,
+    storedWorkflowFor,
     recoverWorkflowFor,
     forgetRecoveredWorkflow
   } = resolver
@@ -203,16 +204,25 @@ export function useAgentWorkflowSelection({
     if (workflowId === undefined) return
     await refreshCloudWorkflowIds()
     if (!isCurrent()) return
-    const bound = boundOrOpenWorkflowFor(workflowId)
-    let recovered = bound === null ? await recoverWorkflowFor(workflowId) : null
-    const target = bound ?? recovered
-    // Only ever discards a tab the user has not seen. Once `openWorkflow`
-    // succeeds the recovered graph is on the canvas, and closing it there
-    // would yank the user onto a replacement they never asked for.
+    let resolved = boundOrOpenWorkflowFor(workflowId)
+    if (resolved === null) {
+      // A workflow saved in an earlier session outranks the archive, which
+      // would otherwise reconnect the thread to a fork of the pre-save graph.
+      await workflowStore.syncWorkflows()
+      if (!isCurrent()) return
+      resolved = storedWorkflowFor(workflowId)
+    }
+    const recovery =
+      resolved === null ? await recoverWorkflowFor(workflowId) : null
+    const target = resolved ?? recovery?.workflow ?? null
+    let minted = recovery?.minted === true ? recovery.workflow : null
+    // Only ever discards a tab this call created and the user has not seen.
+    // Once `openWorkflow` succeeds the recovered graph is on the canvas, and
+    // closing it would yank the user onto a replacement they never asked for.
     const abandonUnopenedRecovery = async () => {
-      if (recovered === null) return
-      const unopened = recovered
-      recovered = null
+      if (minted === null) return
+      const unopened = minted
+      minted = null
       await workflowService.closeWorkflow(unopened, { warnIfUnsaved: false })
     }
     if (!isCurrent()) {
@@ -236,7 +246,7 @@ export function useAgentWorkflowSelection({
       // The thread keeps its tab even when the user has moved on, so coming
       // back to it finds the graph rather than starting the hunt again.
       bindingStore.bind(workflowId, target.path)
-      if (recovered !== null) forgetRecoveredWorkflow(workflowId)
+      if (recovery !== null) forgetRecoveredWorkflow(workflowId)
       if (!isCurrent()) return
       commitWorkflowTarget(target, workflowId)
     } catch {
