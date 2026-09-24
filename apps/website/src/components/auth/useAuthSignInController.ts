@@ -53,6 +53,7 @@ const AUTH_INIT_TIMEOUT_MS = 16_000
  *  unbounded and cancellable, never timed out. */
 const OPERATION_TIMEOUT_MS = 16_000
 const OPERATION_TIMED_OUT = Symbol('operation-timed-out')
+const POPUP_CLOSED = Symbol('popup-closed')
 
 /** Race a non-interactive step against its deadline; a late resolve of the
  *  loser is discarded, so the continuation is suppressed. */
@@ -239,9 +240,23 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     dispatch({ type: 'mintSucceeded' })
   }
 
+  /** A window that closed with an identity already published closed on a
+   *  sign-in that is still completing, not on an abandonment, so only the
+   *  promise can finish that one. */
+  async function awaitPopup(
+    attempt: Promise<UserCredential>,
+    closed: Promise<typeof POPUP_CLOSED>
+  ): Promise<UserCredential | typeof POPUP_CLOSED> {
+    const settled = await Promise.race([attempt, closed])
+    return settled === POPUP_CLOSED && user.value ? await attempt : settled
+  }
+
   async function completeSignIn(
     provider: AuthSignInProvider,
-    authenticate: (firebase: WorkshopFirebase) => Promise<UserCredential>
+    authenticate: (
+      firebase: WorkshopFirebase,
+      onPopupClosed: () => void
+    ) => Promise<UserCredential>
   ) {
     if (state.value.step === 'pending' || state.value.step === 'minting') return
     dispatch({ type: 'signInStarted', provider })
@@ -299,12 +314,26 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
         return
       }
       firebase = loaded
-      // The user-driven popup is left unbounded and cancellable; email is a
-      // non-interactive round-trip, so it is bounded like the other steps.
+      // The user-driven popup is still never timed out; it is released early
+      // only on the window actually closing. Email is a non-interactive
+      // round-trip, so it stays bounded like the other steps.
+      const popupClosed = Promise.withResolvers<typeof POPUP_CLOSED>()
+      const attempt = authenticate(firebase, () =>
+        popupClosed.resolve(POPUP_CLOSED)
+      )
+      // Releasing the controls leaves this promise running for another 8-10s:
+      // a late success still publishes an identity the user watch mints, and
+      // a late rejection is nobody's failure once the attempt is superseded.
+      void attempt.catch(() => {})
       const authResult =
         provider === 'email'
-          ? await withinOperationDeadline(authenticate(firebase))
-          : await authenticate(firebase)
+          ? await withinOperationDeadline(attempt)
+          : await awaitPopup(attempt, popupClosed.promise)
+      if (authResult === POPUP_CLOSED) {
+        signIn.abandon()
+        await abandon()
+        return
+      }
       // No identity is persisted when the email round-trip outran its deadline.
       if (authResult === OPERATION_TIMED_OUT) {
         if (!live()) await abandon()
@@ -382,10 +411,10 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   }
 
   function signInWith(provider: 'google' | 'github') {
-    return completeSignIn(provider, (firebase) =>
+    return completeSignIn(provider, (firebase, onPopupClosed) =>
       provider === 'google'
-        ? firebase.signInWorkshopWithGoogle()
-        : firebase.signInWorkshopWithGitHub()
+        ? firebase.signInWorkshopWithGoogle({ onPopupClosed })
+        : firebase.signInWorkshopWithGitHub({ onPopupClosed })
     )
   }
 

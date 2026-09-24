@@ -346,6 +346,96 @@ describe('AuthSignIn', () => {
     })
   })
 
+  it('hands the controls back when the visitor closes the pop-up, without waiting out Firebase', async () => {
+    let closePopup: (() => void) | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise(() => {})
+    })
+    render(AuthSignIn)
+    render(AuthToast)
+
+    await clickGoogle()
+    const useEmail = screen.getByRole('button', {
+      name: /use email instead/i
+    })
+    expect(useEmail.hasAttribute('disabled')).toBe(true)
+
+    closePopup?.()
+
+    await waitFor(() =>
+      expect(
+        useEmail.hasAttribute('disabled'),
+        'Firebase takes 8-10s to reject a dismissed pop-up; the controls must not wait for it'
+      ).toBe(false)
+    )
+    expect(
+      toasts.value,
+      'closing the pop-up is the visitor changing their mind, not a failure to report'
+    ).toHaveLength(0)
+    expect(captureAuthFailed).not.toHaveBeenCalled()
+  })
+
+  it('drops the late pop-up rejection instead of disturbing the attempt started next', async () => {
+    let closePopup: (() => void) | undefined
+    let failPopup: ((reason: unknown) => void) | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise<UserCredential>((_resolve, reject) => {
+        failPopup = reject
+      })
+    })
+    vi.mocked(signInWorkshopWithGitHub).mockReturnValue(new Promise(() => {}))
+    render(AuthSignIn)
+    render(AuthToast)
+
+    await clickGoogle()
+    closePopup?.()
+    const github = screen.getByRole('button', {
+      name: /^sign in with github$/i
+    })
+    await waitFor(() => expect(github.hasAttribute('disabled')).toBe(false))
+
+    await userEvent.setup().click(github)
+    expect(github.hasAttribute('disabled')).toBe(true)
+
+    failPopup?.({ code: 'auth/popup-closed-by-user', message: 'x' })
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      github.hasAttribute('disabled'),
+      'the superseded attempt must not idle the one the visitor is waiting on'
+    ).toBe(true)
+    expect(toasts.value).toHaveLength(0)
+  })
+
+  it('still signs the visitor in when an abandoned pop-up turns out to have succeeded', async () => {
+    let closePopup: (() => void) | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise(() => {})
+    })
+    render(AuthSignIn)
+
+    await clickGoogle()
+    closePopup?.()
+    await waitFor(() =>
+      expect(
+        screen
+          .getByRole('button', { name: /use email instead/i })
+          .hasAttribute('disabled')
+      ).toBe(false)
+    )
+
+    authUser.value = testFirebaseUser({
+      uid: 'user-1',
+      email: 'user@example.com',
+      displayName: null
+    })
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
+  })
+
   it('reports a sign-up page open and names sign-up actions in failures', async () => {
     vi.mocked(signInWorkshopWithGoogle).mockRejectedValue(
       new Error('not a firebase error')
