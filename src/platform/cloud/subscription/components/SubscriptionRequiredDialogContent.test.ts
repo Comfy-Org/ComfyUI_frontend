@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import type { PaymentIntentSource } from '@/platform/telemetry/types'
@@ -63,6 +63,10 @@ function renderComponent(props: {
 describe('SubscriptionRequiredDialogContent', () => {
   beforeEach(() => {
     window.__CONFIG__ = { subscription_required: true }
+  })
+
+  afterEach(() => {
+    delete (window as { __CONFIG__?: unknown }).__CONFIG__
   })
 
   // `PricingTable`'s `reason` prop is the payment intent source, so binding it
