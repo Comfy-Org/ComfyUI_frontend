@@ -14,7 +14,6 @@ function mockPagedList<T>(initial: T[] = [], genNew?: () => T): PagedList<T> {
     items,
     loadMore: vi.fn(async () => {
       if (genNew) items.value = [...items.value, genNew()]
-      return genNew !== undefined
     }),
     loadNew: vi.fn(async () => {})
   }
@@ -49,7 +48,6 @@ describe('WrappedList', () => {
       },
       async loadMore() {
         this.items.value.push(3)
-        return true
       },
       async loadNew() {
         this.items.value.unshift(0)

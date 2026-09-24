@@ -126,7 +126,6 @@ beforeEach(() => {
   vi.spyOn(useAssetsStore().inputAssets, 'loadMore').mockImplementation(
     async () => {
       useAssetsStore().inputAssets.hasMore = false
-      return true
     }
   )
 })
@@ -795,32 +794,6 @@ describe('useComboWidget', () => {
       expect(useAssetsStore().inputAssets.loadMore).toHaveBeenCalledTimes(1)
     })
 
-    it('should stop lazy loading when pagination cannot advance', async () => {
-      const scenario = cloudInputScenarios[0]
-      mockDistributionState.isCloud = true
-      useAssetsStore().inputAssets.items = []
-      useAssetsStore().inputAssets.isLoading = false
-      useAssetsStore().inputAssets.hasMore = true
-      const loadMore = vi.mocked(useAssetsStore().inputAssets.loadMore)
-      loadMore.mockResolvedValueOnce(false).mockImplementationOnce(async () => {
-        useAssetsStore().inputAssets.hasMore = false
-        return true
-      })
-
-      const constructor = useComboWidget()
-      const mockNode = createMockNode('LoadImage')
-      const inputSpec = createMockInputSpec({
-        name: 'image',
-        options: [scenario.assetHash]
-      })
-
-      constructor(mockNode, inputSpec)
-      await loadMore.mock.results[0]?.value
-      await Promise.resolve()
-
-      expect(loadMore).toHaveBeenCalledTimes(1)
-    })
-
     it('should keep empty cloud input value after lazy-loaded inputs resolve a default', async () => {
       const scenario = cloudInputScenarios[0]
       mockDistributionState.isCloud = true
@@ -837,7 +810,6 @@ describe('useComboWidget', () => {
             })
           ]
           useAssetsStore().inputAssets.hasMore = false
-          return true
         }
       )
 

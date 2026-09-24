@@ -65,12 +65,6 @@ export function useRegistrySearch(inputs: {
       await doLoadMore()
     })
 
-  async function loadMore() {
-    const startingPage = pageNumber
-    await enqueue('loadMore', doLoadMore)
-    return pageNumber > startingPage
-  }
-
   watch(
     () => [toValue(inputs.query), toValue(inputs.searchMode)],
     () => void reload(),
@@ -81,7 +75,7 @@ export function useRegistrySearch(inputs: {
     items,
     hasMore: computed(() => morePages.value),
     isLoading,
-    loadMore,
+    loadMore: () => enqueue('loadMore', doLoadMore),
     loadNew: reload,
     invalidate: reload,
     suggestions

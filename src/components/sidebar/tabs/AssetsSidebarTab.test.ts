@@ -14,12 +14,12 @@ beforeEach(() => {
     items: [],
     hasMore: false,
     isLoading: false,
-    loadMore: vi.fn(async () => false),
+    loadMore: vi.fn(async () => {}),
     loadNew: vi.fn(async () => {}),
     invalidate: vi.fn(async () => {})
   }
   vi.spyOn(store.inputAssets, 'loadNew').mockResolvedValue(undefined)
-  vi.spyOn(store.inputAssets, 'loadMore').mockResolvedValue(false)
+  vi.spyOn(store.inputAssets, 'loadMore').mockResolvedValue(undefined)
 })
 
 const folderAsset = vi.hoisted(() => ({

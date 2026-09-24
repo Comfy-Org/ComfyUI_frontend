@@ -219,15 +219,9 @@ watch(
   }
 )
 
-useInfiniteScroll(
-  outputsRef,
-  async () => {
-    await outputs.loadMore()
-  },
-  {
-    canLoadMore: () => toValue(outputs.hasMore)
-  }
-)
+useInfiniteScroll(outputsRef, () => outputs.loadMore(), {
+  canLoadMore: () => toValue(outputs.hasMore)
+})
 
 function navigateToAdjacent(direction: 1 | -1) {
   const items = selectableItems.value

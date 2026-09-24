@@ -6,8 +6,7 @@ export interface PagedList<T> {
   invalidate: (items?: string[]) => Promise<void>
   isLoading: Readonly<MaybeRef<boolean>>
   items: Readonly<MaybeRef<T[]>>
-  /** Returns whether pagination advanced. Page-walking callers must stop on false. */
-  loadMore: () => Promise<boolean>
+  loadMore: () => Promise<void>
   loadNew: () => Promise<void>
 }
 
@@ -28,8 +27,8 @@ export class WrappedList<T, U> implements PagedList<U> {
   get isLoading() {
     return this.childList.isLoading
   }
-  loadMore() {
-    return this.childList.loadMore()
+  async loadMore() {
+    await this.childList.loadMore()
   }
   async loadNew() {
     await this.childList.loadNew()
@@ -100,8 +99,8 @@ class SharedPagedList<T> implements PagedList<T> {
   get items() {
     return this.childList.items
   }
-  loadMore() {
-    return this.childList.loadMore()
+  async loadMore() {
+    await this.childList.loadMore()
   }
   async loadNew() {
     await Promise.all(this.overlapping().map((l) => l.loadNew()))
