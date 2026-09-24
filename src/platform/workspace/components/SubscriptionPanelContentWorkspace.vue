@@ -409,7 +409,10 @@ import Button from '@/components/ui/button/Button.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'
-import { isSalesManagedTier } from '@/platform/cloud/subscription/constants/tierPricing'
+import {
+  isSalesManagedTier,
+  isWithinSalesManagedEndingNotice
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import type { TierBenefit } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { getCommonTierBenefits } from '@/platform/cloud/subscription/utils/tierBenefits'
 import { isCloud } from '@/platform/distribution/types'
@@ -577,8 +580,26 @@ const {
   formattedDate: formattedChangeDate
 } = useScheduledPlanChange()
 
+const isNonCatalogPlan = computed(() =>
+  isSalesManagedTier(subscription.value?.tier)
+)
+
+// A sales-managed end date sits quiet until the notice window: no amber card
+// or Canceled badge at any point, and no "Ends on" line until the date is
+// near. Wall-clock check, re-evaluated on data refresh rather than a timer.
+const isQuietSalesManagedEnding = computed(
+  () =>
+    isNonCatalogPlan.value &&
+    !isWithinSalesManagedEndingNotice(subscription.value?.endDate)
+)
+
+// Sales-managed plans never show the amber card; inside the notice window the
+// muted ending banner carries the message instead.
 const showSubscriptionStateCard = computed(
-  () => isSubscriptionCancelled.value && !isSubscriptionEnded.value
+  () =>
+    isSubscriptionCancelled.value &&
+    !isSubscriptionEnded.value &&
+    !isNonCatalogPlan.value
 )
 
 const subscriptionStateCardTitle = computed(() =>
@@ -599,7 +620,7 @@ const planStatusBadge = computed(() => {
       label: t('subscription.inactive.badge'),
       severity: 'secondary' as const
     }
-  if (isSubscriptionCancelled.value)
+  if (isSubscriptionCancelled.value && !isNonCatalogPlan.value)
     return { label: t('subscription.canceled'), severity: 'warn' as const }
   return null
 })
@@ -608,6 +629,7 @@ const planDateDisplay = computed(() => {
   if (!canAccessSubscriptionFeatures.value || isSubscriptionEnded.value)
     return ''
   if (isSubscriptionCancelled.value) {
+    if (isQuietSalesManagedEnding.value) return ''
     return formattedEndDate.value
       ? t('subscription.endsOnDate', { date: formattedEndDate.value })
       : ''
@@ -637,10 +659,6 @@ const subscriptionTierName = computed(() => {
 
 const isEnterprisePlan = computed(
   () => subscription.value?.tier === 'ENTERPRISE'
-)
-
-const isNonCatalogPlan = computed(() =>
-  isSalesManagedTier(subscription.value?.tier)
 )
 
 const planDisplayName = computed(() => {

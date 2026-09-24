@@ -3,6 +3,10 @@ import { computed, ref, watch } from 'vue'
 
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import {
+  isSalesManagedTier,
+  isWithinSalesManagedEndingNotice
+} from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
@@ -18,6 +22,7 @@ export interface BillingBannerInputs {
   billingControlEnabled: boolean
   v1PaymentRecovery: boolean
   isTeamPlan: boolean
+  isSalesManaged: boolean
   isLoaded: boolean
   canAccessSubscriptionFeatures: boolean
   billingStatus: BillingStatus | null
@@ -44,15 +49,24 @@ export function deriveBillingBanner(
     }
   }
 
-  if (!inputs.isTeamPlan) return null
+  // Sales-managed workspaces participate only in the ending notice below;
+  // their payment and credit lifecycles are handled by sales, not banners.
+  if (!inputs.isTeamPlan && !inputs.isSalesManaged) return null
   if (!inputs.canAccessSubscriptionFeatures) return null
   if (!inputs.billingControlEnabled) return null
 
-  if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
+  if (
+    inputs.isTeamPlan &&
+    inputs.hasFunds === false &&
+    !inputs.outOfCreditsDismissed
+  ) {
     return 'outOfCredits'
   }
   if (inputs.isCancelled && inputs.endDate && inputs.canManage) {
-    return 'ending'
+    // A self-serve cancellation is user-initiated news, shown at once. A
+    // sales-managed end date can sit months out; stay quiet until it is close.
+    if (!inputs.isSalesManaged) return 'ending'
+    if (isWithinSalesManagedEndingNotice(inputs.endDate)) return 'ending'
   }
   if (inputs.hasScheduledChange && !inputs.isCancelled) {
     return 'planChange'
@@ -81,6 +95,7 @@ function useBillingBannerInternal() {
       billingControlEnabled: flags.billingControlEnabled,
       v1PaymentRecovery: flags.v1PaymentRecovery,
       isTeamPlan: isTeamPlan.value,
+      isSalesManaged: isSalesManagedTier(subscription.value?.tier),
       isLoaded: subscription.value !== null,
       canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
       billingStatus: billingStatus.value,
