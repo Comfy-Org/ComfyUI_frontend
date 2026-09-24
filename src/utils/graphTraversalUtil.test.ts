@@ -21,6 +21,7 @@ import {
   getRootGraph,
   getSubgraphPathFromExecutionId,
   executionIdFromState,
+  locatorIdFromState,
   mapAllNodes,
   mapSubgraphNodes,
   mapUniqueNodes,
@@ -1055,6 +1056,47 @@ describe('graphTraversalUtil', () => {
         })
 
         expect(execId).toBe('123:999')
+      })
+    })
+
+    describe('locatorIdFromState', () => {
+      it('should return the bare id for a root-graph node', () => {
+        const locatorId = locatorIdFromState(
+          { id: toNodeId(123), graphId: ROOT_GRAPH_ID },
+          ROOT_GRAPH_ID
+        )
+        expect(locatorId).toBe('123')
+      })
+
+      it('should return the subgraph-prefixed id for a subgraph-owned node', () => {
+        const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+        const locatorId = locatorIdFromState(
+          { id: toNodeId(999), graphId: subgraphUuid },
+          ROOT_GRAPH_ID
+        )
+        expect(locatorId).toBe(`${subgraphUuid}:999`)
+      })
+
+      it('regression: resolves a non-null locator id for a root-level id carrying a colon that is not a subgraph-scope prefix (PM-1580)', () => {
+        // comfy-multi-player's insert_workflow remaps every inserted node's
+        // id to a derived string with colons unrelated to subgraph scoping
+        // (insert:<opId>:root:node:<originalId>).
+        const rawId = 'insert:abc123:root:node:5'
+        const locatorId = locatorIdFromState(
+          { id: toNodeId(rawId), graphId: ROOT_GRAPH_ID },
+          ROOT_GRAPH_ID
+        )
+        expect(locatorId).toBe(rawId)
+      })
+
+      it('still rejects a colon-bearing id when the node really is subgraph-owned (no regression)', () => {
+        const subgraphUuid = 'a1b2c3d4-e5f6-7890-abcd-ef1234567890'
+        const rawId = 'insert:abc123:root:node:5'
+        const locatorId = locatorIdFromState(
+          { id: toNodeId(rawId), graphId: subgraphUuid },
+          ROOT_GRAPH_ID
+        )
+        expect(locatorId).toBeNull()
       })
     })
 

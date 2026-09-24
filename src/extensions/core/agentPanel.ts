@@ -4,7 +4,9 @@ import { computed, ref, watch } from 'vue'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
+import type { AgentConsentNotOfferedReason } from '@/platform/telemetry/types'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useFirstRunEntry } from '@/renderer/extensions/firstRunTour/gettingStarted/firstRunEntry'
 import {
@@ -37,12 +39,22 @@ function writeAutoShown(key: string, shown: boolean): boolean {
   }
 }
 
-function prepareAutoShow(key: string): boolean {
+function wasAutoShown(key: string): boolean {
   try {
-    if (localStorage.getItem(key) === 'true') return false
-    return writeAutoShown(key, false)
+    return localStorage.getItem(key) === 'true'
   } catch {
     return false
+  }
+}
+
+function prepareAutoShow(
+  key: string
+): 'ready' | 'already_offered' | 'storage_unavailable' {
+  try {
+    if (localStorage.getItem(key) === 'true') return 'already_offered'
+    return writeAutoShown(key, false) ? 'ready' : 'storage_unavailable'
+  } catch {
+    return 'storage_unavailable'
   }
 }
 
@@ -169,17 +181,43 @@ export function registerAgentPanelExtension(): void {
         { immediate: true, flush: 'sync' }
       )
 
-      const screenIsClear = computed(
-        () =>
-          onboardingTourStore.activeTour === null &&
-          dialogStore.dialogStack.length === 0
-      )
-      const offerHeld = ref(false)
-      const holdIfScreenBusy = (): boolean => {
-        if (screenIsClear.value) return false
-        offerHeld.value = true
-        return true
+      const screenBusyReason = (): 'tour_active' | 'dialog_open' | null =>
+        onboardingTourStore.activeTour !== null
+          ? 'tour_active'
+          : dialogStore.dialogStack.length > 0
+            ? 'dialog_open'
+            : null
+      const screenIsClear = computed(() => screenBusyReason() === null)
+      const screenHolder = (): AgentConsentNotOfferedReason | null =>
+        firstRunTookScreen.value ? 'first_run_screen' : screenBusyReason()
+
+      const reportedWithheld = new Set<string>()
+      const withholdOffer = (
+        reason: AgentConsentNotOfferedReason,
+        userId = resolvedUserInfo.value?.id,
+        workspaceId = workspaceStore.activeWorkspaceId
+      ): void => {
+        if (!userId || !workspaceId) return
+        if (
+          wasAutoShown(`${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`)
+        )
+          return
+        const key = `${userId}.${workspaceId}:${reason}`
+        if (reportedWithheld.has(key)) return
+        reportedWithheld.add(key)
+        useTelemetry()?.trackAgentConsentNotOffered({ reason })
       }
+
+      const offerHeld = ref(false)
+      const holdOffer = (
+        reason: AgentConsentNotOfferedReason,
+        userId?: string,
+        workspaceId?: string
+      ): void => {
+        withholdOffer(reason, userId, workspaceId)
+        if (reason !== 'first_run_screen') offerHeld.value = true
+      }
+
       let consentCardSeenBy: string | null = null
       whenever(
         () => dialogStore.isDialogOpen(CONSENT_DIALOG_KEY),
@@ -188,25 +226,35 @@ export function registerAgentPanelExtension(): void {
         }
       )
 
+      const offerEligible = (): boolean =>
+        agentPanelStore.enabled &&
+        isLoggedIn.value &&
+        !consentStore.isChecking &&
+        !consentStore.accepted
+
       let autoShowInFlight = false
       const offerConsentUnprompted = (): void => {
         if (autoShowInFlight) return
-        if (!agentPanelStore.enabled || !isLoggedIn.value) return
-        if (consentStore.isChecking || consentStore.accepted) return
-        if (firstRunTookScreen.value) return
+        if (!offerEligible()) return
         if (
           consentCardSeenBy !== null &&
           consentCardSeenBy === consentStore.identity
         )
           return
         // Must precede prepareAutoShow, which burns the one-shot key.
-        if (holdIfScreenBusy()) return
+        const held = screenHolder()
+        if (held) {
+          holdOffer(held)
+          return
+        }
 
         const userId = resolvedUserInfo.value?.id
         const workspaceId = workspaceStore.activeWorkspaceId
         if (!userId || !workspaceId || workspaceStore.isSwitching) return
         const key = `${CONSENT_AUTO_SHOWN_PREFIX}.${userId}.${workspaceId}`
-        if (!prepareAutoShow(key)) return
+        const autoShow = prepareAutoShow(key)
+        if (autoShow === 'storage_unavailable') withholdOffer(autoShow)
+        if (autoShow !== 'ready') return
 
         const offeredIdentity = consentStore.identity
         autoShowInFlight = true
@@ -220,7 +268,11 @@ export function registerAgentPanelExtension(): void {
             onShown: () => {
               writeAutoShown(key, true)
             },
-            canShow: () => !firstRunTookScreen.value && !holdIfScreenBusy()
+            canShow: () => {
+              const heldAtMount = screenHolder()
+              if (heldAtMount) holdOffer(heldAtMount, userId, workspaceId)
+              return heldAtMount === null
+            }
           }
         ).finally(() => {
           autoShowInFlight = false
@@ -234,6 +286,7 @@ export function registerAgentPanelExtension(): void {
         whenStartupDecided()
           .then((decided) => {
             if (decided) offerConsentUnprompted()
+            else if (offerEligible()) withholdOffer('boot_undecided')
           })
           .catch((error: unknown) => {
             reportError(error, {
