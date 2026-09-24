@@ -9,6 +9,7 @@ import {
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
+import { AGENT_SOCKET_URL } from '@e2e/fixtures/agentSocket'
 import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { VueNodeHelpers } from '@e2e/fixtures/VueNodeHelpers'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -185,7 +186,7 @@ test.describe(
       const host = new HostDoc(WORKFLOW_ID, seed, catalog)
       let socketSend: ((frame: unknown) => void) | null = null
       let subscribedTo: string | null = null
-      await page.routeWebSocket(/\/ws/, (socket) => {
+      await page.routeWebSocket(AGENT_SOCKET_URL, (socket) => {
         socketSend = (frame) => socket.send(JSON.stringify(frame))
         socket.onMessage((raw) => {
           const frame: unknown = JSON.parse(raw.toString())
@@ -209,10 +210,6 @@ test.describe(
           subscribedTo = workflow_id
           socketSend!(host.subscribed())
           socketSend!(host.catchUp(state_vector_b64))
-        })
-        socketSend({
-          type: 'status',
-          data: { status: { exec_info: { queue_remaining: 0 } }, sid: 's' }
         })
       })
       await page.route('**/api/agent/threads', (route) =>

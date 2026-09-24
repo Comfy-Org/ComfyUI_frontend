@@ -6,6 +6,8 @@ import { AgentFollowerHostSocket } from '@e2e/fixtures/agentFollowerHostSocket'
 import { HostDoc } from '@e2e/fixtures/agentConversationHostDoc'
 
 const WORKFLOW_ID = 'wf-1'
+const AGENT_EVENTS_URL = 'ws://127.0.0.1:8188/api/agent/events?token=abc'
+const COMFY_WS_URL = 'ws://127.0.0.1:8188/ws?clientId=1'
 
 // A fake `Page` whose `routeWebSocket` hands back a fake `WebSocketRoute`
 // synchronously, so `AgentFollowerHostSocket` runs against the real class
@@ -14,7 +16,9 @@ function fakeRoutedPage(): {
   page: Page
   emitClientFrame: (frame: unknown) => void
   sentFrames: () => Array<{ type: string; data: Record<string, unknown> }>
+  routedUrls: () => Array<string | RegExp>
 } {
+  const routedUrls: Array<string | RegExp> = []
   let onMessage: ((raw: string | Buffer) => void) | null = null
   const sentFrames: Array<{ type: string; data: Record<string, unknown> }> = []
   const socket = fromPartial<WebSocketRoute>({
@@ -27,18 +31,68 @@ function fakeRoutedPage(): {
   })
   const page = fromPartial<Page>({
     routeWebSocket: async (
-      _url: string | RegExp,
+      url: string | RegExp,
       handler: (route: WebSocketRoute) => unknown
     ) => {
-      handler(socket)
+      routedUrls.push(url)
+      // Only the agent socket is under test; the quiet `/ws` stub gets a
+      // socket of its own so its status frame is not mixed in.
+      if (url instanceof RegExp && url.test(AGENT_EVENTS_URL)) handler(socket)
+      else handler(fromPartial<WebSocketRoute>({ send: () => {} }))
     }
   })
   return {
     page,
     emitClientFrame: (frame: unknown) => onMessage?.(JSON.stringify(frame)),
-    sentFrames: () => [...sentFrames]
+    sentFrames: () => [...sentFrames],
+    routedUrls: () => [...routedUrls]
   }
 }
+
+describe('AgentFollowerHostSocket transport', () => {
+  it('serves agent frames on the agent socket and sends nothing there on open', async () => {
+    const host = new HostDoc(
+      WORKFLOW_ID,
+      { nodes: [], links: [] },
+      { types: {} }
+    )
+    const { page, sentFrames, routedUrls } = fakeRoutedPage()
+    await new AgentFollowerHostSocket(page, WORKFLOW_ID, host).install()
+
+    const patterns = routedUrls().filter(
+      (url): url is RegExp => url instanceof RegExp
+    )
+    const agent = patterns.filter((url) => url.test(AGENT_EVENTS_URL))
+    expect(agent).toHaveLength(1)
+    expect(agent[0].test('ws://127.0.0.1:8188/api/agent/events')).toBe(true)
+    expect(agent[0].test(COMFY_WS_URL)).toBe(false)
+    // ComfyUI's /ws is stubbed by a separate route, never the agent one.
+    expect(patterns.some((url) => url.test(COMFY_WS_URL))).toBe(true)
+    expect(sentFrames()).toEqual([])
+  })
+
+  it('answers a doc_subscribe with doc_subscribed and a catch-up doc_update', async () => {
+    const host = new HostDoc(
+      WORKFLOW_ID,
+      { nodes: [], links: [] },
+      { types: {} }
+    )
+    const { page, emitClientFrame, sentFrames } = fakeRoutedPage()
+    const hostSocket = new AgentFollowerHostSocket(page, WORKFLOW_ID, host)
+    await hostSocket.install()
+
+    emitClientFrame({
+      type: 'doc_subscribe',
+      data: { workflow_id: WORKFLOW_ID, state_vector_b64: 'AA==' }
+    })
+
+    expect(sentFrames().map((frame) => frame.type)).toEqual([
+      'doc_subscribed',
+      'doc_update'
+    ])
+    expect(hostSocket.subscribeCount()).toBe(1)
+  })
+})
 
 describe('AgentFollowerHostSocket human doc_ops handling', () => {
   it('answers a malformed doc_ops batch with ok:false and never reaches the applier', async () => {
@@ -52,7 +106,6 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
       page,
       WORKFLOW_ID,
       host,
-      'sid-1',
       'apply'
     )
     await hostSocket.install()
@@ -87,7 +140,6 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
       page,
       WORKFLOW_ID,
       host,
-      'sid-1',
       'apply'
     )
     await hostSocket.install()
@@ -115,7 +167,7 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
     expect(hostSocket.humanOpOutcomes()).toEqual([
       { op_id: 'a'.repeat(32), outcome: 'applied' }
     ])
-    expect(sentFrames().slice(1)).toEqual([
+    expect(sentFrames()).toEqual([
       {
         type: 'doc_ops_result',
         data: expect.objectContaining({ ok: true })
@@ -156,7 +208,6 @@ describe('AgentFollowerHostSocket human doc_ops handling', () => {
         page,
         WORKFLOW_ID,
         host,
-        'sid-1',
         'apply'
       )
       await hostSocket.install()

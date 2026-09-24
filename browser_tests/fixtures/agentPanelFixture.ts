@@ -14,6 +14,7 @@ import { AGENT_CONSENT_SETTING_ID } from '@/platform/settings/constants/agent'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { AgentTurnAccepted } from '@/workbench/extensions/agent/schemas/agentApiSchema'
 
+import { mockAgentIdentity } from '@e2e/fixtures/agentSocket'
 import { cloudAppFixture, waitForCloudApp } from '@e2e/fixtures/cloudAppFixture'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
@@ -69,6 +70,8 @@ async function mockAgentBoot(
     objectInfo
   })
   await mockBilling(page)
+  // The canvas follower stays inactive until the agent names its user.
+  await mockAgentIdentity(page)
   const storedConsent: GlobalSetting = {
     key: AGENT_CONSENT_SETTING_ID,
     value: true,

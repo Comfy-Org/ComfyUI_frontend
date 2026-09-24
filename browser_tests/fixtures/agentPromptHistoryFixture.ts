@@ -24,7 +24,7 @@ export const promptHistoryTest = base.extend<{
     historyRequestThreadIds: string[]
   }
 }>({
-  promptHistory: async ({ page, workflowSelection, getWebSocket }, use) => {
+  promptHistory: async ({ page, workflowSelection, getAgentSocket }, use) => {
     // Workflow selection boots the app before these agent-specific routes.
     void workflowSelection
     const requests: AgentPostMessageRequest[] = []
@@ -115,7 +115,7 @@ export const promptHistoryTest = base.extend<{
           type: 'agent_message_done',
           data: { message_id: messageId, thread_id: threadId }
         }
-        const socket = await getWebSocket()
+        const socket = await getAgentSocket()
         socket.send(JSON.stringify(done))
       }
     )
