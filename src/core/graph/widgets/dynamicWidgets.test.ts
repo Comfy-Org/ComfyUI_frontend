@@ -675,17 +675,20 @@ type ChildInputs = Record<string, InputSpec>
 
 type ComboOption = [key: string, childInputs: ChildInputs]
 
-const ARRAY_INDEX_KEY = /^(0|[1-9]\d*)$/
-
 function dynamicCombo(
   defaultOption: ComboOption,
   ...remainingOptions: ComboOption[]
 ): InputSpec {
   const options = [defaultOption, ...remainingOptions]
-  const hoisted = options.find(([key]) => ARRAY_INDEX_KEY.test(key))
-  if (hoisted)
+  const declaredKeys = options.map(([key]) => key)
+  const realizedKeys = Object.keys(
+    Object.fromEntries(declaredKeys.map((key) => [key, null]))
+  )
+  if (realizedKeys.length !== declaredKeys.length)
+    throw new Error(`Duplicate option keys: ${declaredKeys.join(', ')}`)
+  if (realizedKeys[0] !== defaultOption[0])
     throw new Error(
-      `Option key '${hoisted[0]}' is an array index, so applying the combo would order it ahead of '${defaultOption[0]}' and change which option is the default.`
+      `Applying the combo would order option '${realizedKeys[0]}' ahead of '${defaultOption[0]}', changing which option is the default.`
     )
 
   return [
