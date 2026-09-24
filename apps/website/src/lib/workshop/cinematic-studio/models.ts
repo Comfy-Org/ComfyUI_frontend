@@ -44,3 +44,12 @@ export function runnableCinematicModels(
       : []
   })
 }
+
+export function cinematicStudioHref(
+  slug: string,
+  studioRoute: string
+): string | undefined {
+  return slug in CINEMATIC_MODEL_LOGOS
+    ? `${studioRoute}?model=${encodeURIComponent(slug)}`
+    : undefined
+}

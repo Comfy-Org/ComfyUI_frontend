@@ -10609,6 +10609,10 @@ Enterprise`
       '用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。'
   },
   'workshop.cinematic.cta': { en: 'Open studio', 'zh-CN': '打开工作室' },
+  'workshop.cinematic.openInStudio': {
+    en: 'Open in Cinematic Studio',
+    'zh-CN': '在 Cinematic Studio 中打开'
+  },
   'workshop.hub.tag.partnerNodes': {
     en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'
