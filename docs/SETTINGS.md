@@ -22,12 +22,7 @@ function getDefaultValue<K extends keyof Settings>(
 
   const versionedDefault = getVersionedDefaultValue(key, param)
 
-  if (versionedDefault) {
-    return versionedDefault
-  }
-
-  const defaultValue = param.defaultValue
-  return resolveDefaultValue(defaultValue)
+  return versionedDefault ?? resolveDefaultValue(param.defaultValue)
 }
 ```
 

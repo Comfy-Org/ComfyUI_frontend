@@ -46,7 +46,7 @@ describe('CreditTopUpOption', () => {
     // eslint-disable-next-line testing-library/no-node-access
     const rootDiv = container.firstElementChild as HTMLElement
     expect(rootDiv).toHaveClass(
-      'bg-component-node-disabled',
+      'bg-node-component-disabled',
       'border-transparent'
     )
   })

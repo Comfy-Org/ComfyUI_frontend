@@ -169,7 +169,6 @@ import { computed, defineAsyncComponent, provide, ref, toRef } from 'vue'
 import IconGroup from '@/components/button/IconGroup.vue'
 import LoadingOverlay from '@/components/common/LoadingOverlay.vue'
 import Button from '@/components/ui/button/Button.vue'
-import { getOutputAssetMetadata } from '@/platform/assets/schemas/assetMetadataSchema'
 import { useAssetsStore } from '@/stores/assetsStore'
 import {
   formatDuration,
@@ -180,17 +179,16 @@ import {
 } from '@/utils/formatUtil'
 
 import { getAssetType } from '../composables/media/assetMappers'
-import { resolvePreviewUrl } from '../utils/assetPreviewUtil'
+import { startAssetDrag } from '../utils/assetDragUtil'
 import { getAssetFileUrl, getAssetUrl } from '../utils/assetUrlUtil'
 import { useMediaAssetActions } from '../composables/useMediaAssetActions'
 import type { AssetItem } from '../schemas/assetSchema'
 import {
   getAssetDisplayName,
-  getAssetUrlFilename,
   resolveDisplayImageDimensions
 } from '../utils/assetMetadataUtils'
 import type { MediaKind } from '../schemas/mediaAssetSchema'
-import { MediaAssetKey, MIME_ASSET_INFO } from '../schemas/mediaAssetSchema'
+import { MediaAssetKey } from '../schemas/mediaAssetSchema'
 import MediaTitle from './MediaTitle.vue'
 
 type PreviewKind = ReturnType<typeof getMediaTypeFromFilename>
@@ -372,39 +370,6 @@ function handleDownload() {
 }
 
 function dragStart(e: DragEvent) {
-  if (e.ctrlKey || e.metaKey) {
-    e.preventDefault()
-    return
-  }
-
-  if (!asset) return
-
-  const { dataTransfer } = e
-  if (!dataTransfer) return
-
-  const output = getOutputAssetMetadata(asset.user_metadata)?.allOutputs?.[0]
-  const url = URL.parse(resolvePreviewUrl(asset), location.href)
-  const assetInfo = {
-    ...(output?.filename
-      ? {
-          filename: output.filename,
-          subfolder: output.subfolder,
-          type: output.type,
-          display_name: output.display_name
-        }
-      : {
-          filename: asset.name,
-          type: assetType.value,
-          display_name: asset.display_name
-        }),
-    attachment_ref: getAssetUrlFilename(asset),
-    media_kind: fileKind.value,
-    preview_url: fileKind.value === 'image' ? url?.toString() : undefined
-  }
-  dataTransfer.items.add(JSON.stringify(assetInfo), MIME_ASSET_INFO)
-
-  if (!url) return
-
-  dataTransfer.items.add(url.toString(), 'text/uri-list')
+  startAssetDrag(e, asset)
 }
 </script>
