@@ -1,11 +1,20 @@
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
-import { useNodeVideo } from '@/composables/node/useNodeImage'
+import { useNodeImage, useNodeVideo } from '@/composables/node/useNodeImage'
+import { useTelemetry } from '@/platform/telemetry'
 import { useCanvasInteractions } from '@/renderer/core/canvas/useCanvasInteractions'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockMediaNode } from '@/renderer/extensions/vueNodes/widgets/composables/domWidgetTestUtils'
 
 vi.mock(import('@/renderer/core/canvas/useCanvasInteractions'))
+vi.mock(import('@/platform/telemetry'))
+vi.mock(import('@/platform/telemetry/imageFailureDiagnostics'), () => ({
+  describeImageLoadFailure: vi.fn(async () => ({
+    source: 'node_image_preview' as const,
+    probe_outcome: 'probed' as const,
+    status: 404
+  }))
+}))
 vi.mock(import('@/utils/imageUtil'), () => ({
   fitDimensionsToNodeWidth: () => ({ minHeight: 256, minWidth: 256 })
 }))
@@ -74,5 +83,100 @@ describe('useNodeVideo', () => {
     expect(useCanvasInteractions().handleWheel).not.toHaveBeenCalled()
     expect(useCanvasInteractions().handlePointerMove).not.toHaveBeenCalled()
     expect(useCanvasInteractions().handlePointerDown).not.toHaveBeenCalled()
+  })
+})
+
+describe('canvas node media failure telemetry', () => {
+  function stubImages() {
+    const created: HTMLImageElement[] = []
+    vi.stubGlobal(
+      'Image',
+      class {
+        onload: (() => void) | null = null
+        onerror: (() => void) | null = null
+        #src = ''
+        get src() {
+          return this.#src
+        }
+        set src(value: string) {
+          this.#src = value
+          created.push(this as unknown as HTMLImageElement)
+        }
+      }
+    )
+    return created
+  }
+
+  // Advances just enough to drain microtasks. `runAllTimersAsync` would fire
+  // the 8192ms media timeout and turn an error into a spurious stall.
+  const flush = () => vi.advanceTimersByTimeAsync(1)
+
+  it('reports one failure per url after retries are spent, not one per attempt', async () => {
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      '/api/view?filename=gone.png&type=output'
+    ])
+    const created = stubImages()
+    const node = createMockMediaNode({
+      size: [400, 400],
+      graph: { setDirtyCanvas: vi.fn() }
+    })
+
+    const { showPreview } = useNodeImage(node)
+    showPreview()
+
+    await flush()
+    created[0].onerror?.(new Event('error'))
+    await flush()
+    created[1].onerror?.(new Event('error'))
+    await flush()
+
+    expect(created.length).toBe(2) // initial attempt + one retry
+    expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalledTimes(1)
+    expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: 'canvas_node_image',
+        attempts: 2,
+        timed_out: false
+      })
+    )
+  })
+
+  it('distinguishes a stalled load from a rejected one', async () => {
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      '/api/view?filename=slow.png&type=output'
+    ])
+    stubImages()
+    const node = createMockMediaNode({
+      size: [400, 400],
+      graph: { setDirtyCanvas: vi.fn() }
+    })
+
+    const { showPreview } = useNodeImage(node)
+    showPreview()
+    // Never fire onerror — let the media timeout win both attempts.
+    await vi.runAllTimersAsync()
+
+    expect(useTelemetry()?.trackImageLoadFailed).toHaveBeenCalledWith(
+      expect.objectContaining({ source: 'canvas_node_image', timed_out: true })
+    )
+  })
+
+  it('stays silent when the image loads', async () => {
+    vi.mocked(useNodeOutputStore().getNodeImageUrls).mockReturnValue([
+      '/api/view?filename=ok.png&type=output'
+    ])
+    const created = stubImages()
+    const node = createMockMediaNode({
+      size: [400, 400],
+      graph: { setDirtyCanvas: vi.fn() }
+    })
+
+    const { showPreview } = useNodeImage(node)
+    showPreview()
+    await flush()
+    created[0].onload?.(new Event('load'))
+    await flush()
+
+    expect(useTelemetry()?.trackImageLoadFailed).not.toHaveBeenCalled()
   })
 })
