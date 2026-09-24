@@ -37,7 +37,7 @@ const extraFileExtensions = ['.vue']
 // Only utilities that resolve a theme token are checked, so a class like
 // `text-danger` with no `--color-danger` fails lint while custom CSS hooks
 // (`side-bar-button`, `lg-node`, PrimeIcons `pi-*`) stay allowed.
-const tailwindTokenUtilityPrefixes = [
+const tailwindTokenUtilityPrefixPattern = [
   'accent',
   'animate',
   'bg',
@@ -59,10 +59,10 @@ const tailwindTokenUtilityPrefixes = [
   'text',
   'to',
   'via'
-]
-const nonTokenUtilityClassPattern = `^(?!(?:.*:)?!?(?:${tailwindTokenUtilityPrefixes.join('|')})-)`
+].join('|')
+const nonTokenUtilityClassPattern = `^(?!(?:.*:)?!?(?:${tailwindTokenUtilityPrefixPattern})-)`
 
-const themeColorUtilityPatterns = [
+const themeColorUtilityPattern = [
   'accent',
   'bg',
   'border(?:-[trblsexy])?',
@@ -81,8 +81,8 @@ const themeColorUtilityPatterns = [
   'text',
   'to',
   'via'
-]
-const specializedThemeTokenPatterns = [
+].join('|')
+const specializedThemeTokenPattern = [
   'button-',
   'comfy-',
   'component-',
@@ -94,8 +94,8 @@ const specializedThemeTokenPatterns = [
   'node-',
   'text-(?:primary|secondary)(?:/|$)',
   'video-'
-]
-const specializedThemeClassPattern = `^(?:.*:)?!?(?:${themeColorUtilityPatterns.join('|')})-(?:${specializedThemeTokenPatterns.join('|')})`
+].join('|')
+const specializedThemeClassPattern = `^(?:.*:)?!?(?:${themeColorUtilityPattern})-(?:${specializedThemeTokenPattern})`
 
 const commonGlobals = {
   ...globals.browser,
