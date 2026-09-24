@@ -44,6 +44,14 @@ describe('WorkflowRunFailure', () => {
     }
   )
 
+  // The colour marks the state; the sentence stays in the colour everything
+  // else is read in, however long it runs.
+  it('marks a refusal with a sign of its own', () => {
+    mount('timeout')
+
+    expect(screen.getByTestId('workflow-run-error-mark')).toBeTruthy()
+  })
+
   it('names each refusal, so support is told which one it was', () => {
     mount('rateLimit')
 

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { CircleX } from '@lucide/vue'
 import { computed } from 'vue'
 
 import { useSignInHref } from '../../composables/useSignInHref'
@@ -97,14 +98,20 @@ const press = computed<
 </script>
 
 <template>
-  <!-- The same shape a model's playground gives a refusal: the panel says it,
-    centred, and offers the one thing worth pressing. -->
+  <!-- Red marks the state, not the sentence: a refusal is read, not scanned,
+    and a paragraph of red is harder to read than the thing it is telling you.
+    The panel offers the one thing worth pressing beneath it. -->
   <div
     class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
     data-testid="workflow-run-error"
     :data-reason="reason"
   >
-    <p class="text-sm text-primary-comfy-red">{{ trouble }}</p>
+    <CircleX
+      class="size-8 text-primary-comfy-red"
+      aria-hidden="true"
+      data-testid="workflow-run-error-mark"
+    />
+    <p class="max-w-sm text-sm text-primary-warm-white">{{ trouble }}</p>
 
     <Button
       v-if="offer === 'signIn'"

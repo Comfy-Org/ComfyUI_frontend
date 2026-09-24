@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, defineAsyncComponent, onMounted, ref, shallowRef } from 'vue'
 
 import { usePersonalWorkspace } from '../../composables/usePersonalWorkspace'
 import { useSignInHref } from '../../composables/useSignInHref'
@@ -7,6 +7,7 @@ import { useWorkflowRun } from '../../composables/useWorkflowRun'
 import type { WorkflowGraph } from '../../config/workflow-execution'
 import type { WorkflowField } from '../../config/workflow-fields'
 import type { RunWayOut } from '../../lib/hub/run-failure'
+import type { RunScene } from '../../lib/hub/run-scenes'
 import { requestWorkshopBuyCredits } from '../../config/workshop-buy-credits'
 import { useWorkshopCredits } from '../../config/workshop-credits'
 import { leaveForSignIn } from '../../config/workshop-return'
@@ -99,6 +100,25 @@ const broke = computed(
     balance.value.status === 'ok' &&
     balance.value.credits <= 0
 )
+
+/**
+ * `?states` stands each state of the panel up on this page, where design
+ * decisions about it are actually made. The scenes are a chunk of their own,
+ * so a visitor without the flag never downloads them.
+ */
+const WorkflowRunStates = defineAsyncComponent(
+  () => import('./WorkflowRunStates.vue')
+)
+
+const previewing = ref(false)
+onMounted(() => {
+  previewing.value = new URLSearchParams(location.search).has('states')
+})
+
+const scene = shallowRef<RunScene>()
+
+const shown = computed(() => scene.value?.state ?? state.value)
+const shownOutputs = computed(() => scene.value?.outputs ?? outputs.value)
 </script>
 
 <template>
@@ -181,13 +201,19 @@ const broke = computed(
     </div>
 
     <WorkflowRunResult
-      :state
-      :outputs
-      :sample
-      :cold-start="coldStart"
-      :member-workspace="memberWorkspace"
+      :state="shown"
+      :outputs="shownOutputs"
+      :sample="scene ? scene.sample : sample"
+      :cold-start="scene?.coldStart ?? coldStart"
+      :member-workspace="scene ? scene.memberWorkspace : memberWorkspace"
       :locale
       @press="ways[$event]()"
+    />
+
+    <WorkflowRunStates
+      v-if="previewing"
+      v-model="scene"
+      class="lg:col-span-12"
     />
   </section>
 </template>

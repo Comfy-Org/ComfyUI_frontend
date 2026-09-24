@@ -127,7 +127,7 @@ const showSample = computed(() => sample && state.phase === 'idle')
       class="flex flex-1 flex-col items-center justify-center gap-4 p-6 text-center"
       data-testid="workflow-run-cancelled"
     >
-      <p class="text-sm text-primary-comfy-canvas">
+      <p class="max-w-sm text-sm text-primary-comfy-canvas">
         {{ tHub('workshop.v2.run.cancelled', locale) }}
       </p>
       <Button variant="outline" size="sm" @click="$emit('press', 'retry')">
