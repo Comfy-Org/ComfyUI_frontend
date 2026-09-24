@@ -1,30 +1,21 @@
-import { render, screen, within } from '@testing-library/vue'
+import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { readonly, ref, createSSRApp, h, nextTick } from 'vue'
-import type { Ref } from 'vue'
+import { createSSRApp, h, readonly, ref } from 'vue'
 import { renderToString } from 'vue/server-renderer'
 
 import { workshopModels } from '../../config/workshop-browse-content'
-import './ModelPage.vue'
+import './ModelDetail.vue'
 import './ModelsCatalogue.vue'
 import { prepareModelPage } from '../../routes/models/model-page'
-import {
-  useWorkshopEnabled,
-  useWorkshopEnabledSettled,
-  useWorkshopAuthFlag
-} from '../../scripts/posthog'
+import { useWorkshopAuthFlag, useWorkshopEnabled } from '../../scripts/posthog'
 import ModelsPage from './ModelsPage.vue'
 
 vi.mock(import('../../scripts/posthog'))
 
-let enabled: Ref<boolean>
-let settled: Ref<boolean>
-
+// Every case runs as a visitor Workshop is switched off for: the page is
+// public, so that visitor gets the same content and only the Run gate differs.
 beforeEach(() => {
-  enabled = ref(false)
-  vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(enabled))
-  settled = ref(true)
-  vi.mocked(useWorkshopEnabledSettled).mockReturnValue(readonly(settled))
+  vi.mocked(useWorkshopEnabled).mockReturnValue(readonly(ref(false)))
   vi.mocked(useWorkshopAuthFlag).mockReturnValue(readonly(ref(false)))
 })
 
@@ -33,58 +24,62 @@ const modelPage = await prepareModelPage(modelSlug)
 
 describe('Models page entry', () => {
   it.for([undefined, modelSlug])(
-    'server-renders only public content for %s',
+    'server-renders the static slot and fetches nothing for %s',
     async (slug) => {
+      const fetchData = vi.fn<typeof fetch>()
+      vi.stubGlobal('fetch', fetchData)
       const html = await renderToString(
         createSSRApp({
           render: () =>
-            h(
-              ModelsPage,
-              { slug },
-              {
-                fallback: () => h('h1', 'Public Models')
-              }
-            )
+            h(ModelsPage, { slug }, { loading: () => h('h1', 'Every model') })
         })
       )
-      expect(html).toContain('workshop-loading')
-      expect(html).not.toContain('Public Models')
+      expect(html).toContain('Every model')
       expect(html).not.toContain('workshop-search')
-      expect(html).not.toContain('model-hero')
       expect(html).not.toContain('model-detail')
+      expect(fetchData).not.toHaveBeenCalled()
     }
   )
 
+  it('server-renders a compact frame when the page passes no slot', async () => {
+    const html = await renderToString(
+      createSSRApp({ render: () => h(ModelsPage, { slug: modelSlug }) })
+    )
+    expect(html).toContain('data-testid="models-loading"')
+    expect(html).not.toContain('min-h-svh')
+  })
+
   it.for([
     { slug: undefined, visible: 'workshop-search' },
-    { slug: modelSlug, visible: 'model-hero' }
-  ])('mounts $visible only after enablement', async ({ slug, visible }) => {
-    const fetchData = vi
-      .fn<typeof fetch>()
-      .mockResolvedValue(Response.json(slug ? modelPage : workshopModels))
-    vi.stubGlobal('fetch', fetchData)
-    render(ModelsPage, {
-      props: { slug },
-      slots: { fallback: '<h1>Public Models</h1>' }
-    })
-    expect(screen.queryByTestId(visible)).toBeNull()
-    expect(fetchData).not.toHaveBeenCalled()
-    enabled.value = true
-    expect(await screen.findByTestId(visible)).toBeTruthy()
-    expect(screen.queryByRole('heading', { name: 'Public Models' })).toBeNull()
-    if (slug) {
-      expect(screen.getByTestId('model-detail')).toBeTruthy()
-      expect(screen.getByTestId('related-models').textContent).toContain(
-        'Browse all'
+    { slug: modelSlug, visible: 'model-detail' }
+  ])(
+    'replaces the static slot with $visible without Workshop being enabled',
+    async ({ slug, visible }) => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn<typeof fetch>()
+          .mockResolvedValue(Response.json(slug ? modelPage : workshopModels))
       )
-      expect(
-        within(screen.getByTestId('model-hero')).getByRole('link', {
-          name: 'Generate images'
-        })
-      ).toHaveAttribute('href', '/models?useCase=generate-images')
+      render(ModelsPage, {
+        props: { slug },
+        slots: { loading: '<h1>Every model</h1>' }
+      })
+      expect(screen.getByRole('heading', { name: 'Every model' })).toBeTruthy()
+      expect(await screen.findByTestId(visible)).toBeTruthy()
+      expect(screen.queryByRole('heading', { name: 'Every model' })).toBeNull()
     }
-    enabled.value = false
-    await nextTick()
-    expect(screen.getByRole('heading', { name: 'Public Models' })).toBeTruthy()
+  )
+
+  it('shows the playground with its Run button unavailable while Workshop is disabled', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>().mockResolvedValue(Response.json(modelPage))
+    )
+    render(ModelsPage, { props: { slug: modelSlug } })
+    const run = await screen.findByTestId('run-button')
+    expect(run).toHaveAttribute('data-gate', 'unavailable')
+    expect(run).toBeDisabled()
+    expect(screen.getByTestId('playground-input')).toBeTruthy()
   })
 })

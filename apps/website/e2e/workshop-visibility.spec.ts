@@ -4,7 +4,7 @@ import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 import { MODEL_PATH } from './fixtures/modelsAccount'
 
-test('public HTML excludes catalogue and playground markup', async ({
+test('public HTML carries the catalogue and the model, never the island markup', async ({
   request
 }) => {
   for (const path of ['/', '/models/', MODEL_PATH]) {
@@ -12,20 +12,19 @@ test('public HTML excludes catalogue and playground markup', async ({
     expect(response.ok()).toBe(true)
     const html = await response.text()
     expect(html).not.toMatch(
-      /data-testid="(?:workshop-search|model-discovery|model-hero|model-detail)"/
+      /data-testid="(?:workshop-search|model-discovery|model-detail)"/
     )
     if (path === '/models/') {
+      expect(html).toContain('data-testid="models-directory"')
       expect(html).not.toContain('noindex')
+    }
+    if (path === MODEL_PATH) {
+      expect(html).toContain('data-testid="model-hero"')
     }
   }
 })
 
-test('keeps the public site when PostHog is unavailable', async ({ page }) => {
-  const dataRequests: string[] = []
-  page.on('request', (request) => {
-    if (/\/models\/.*(?:page|catalogue)\.json$/.test(request.url()))
-      dataRequests.push(request.url())
-  })
+test('keeps the site usable when PostHog is unavailable', async ({ page }) => {
   await page.goto('/')
   await expect(
     page.getByRole('link', { name: 'Models', exact: true })
@@ -42,17 +41,18 @@ test('keeps the public site when PostHog is unavailable', async ({ page }) => {
   ).toHaveAttribute('href', '/seedance-2.5')
 
   await page.goto('/models/')
-  await expect(
-    page.getByRole('link', { name: /Grok Imagine/i }).first()
-  ).toBeVisible()
-  await expect(page.getByTestId('workshop-search')).toHaveCount(0)
+  await expect(page.getByTestId('workshop-search')).toBeVisible()
+  await expect(page.getByText(/Grok Imagine in ComfyUI/i)).toHaveCount(0)
   await page.goto(MODEL_PATH)
-  await expect(page.getByTestId('model-hero')).toHaveCount(0)
-  await expect(page.getByTestId('model-detail')).toHaveCount(0)
-  expect(dataRequests).toEqual([])
+  await expect(page.getByTestId('model-hero')).toBeVisible()
+  await expect(page.getByTestId('model-detail')).toBeVisible()
+  await expect(page.getByTestId('run-button')).toHaveAttribute(
+    'data-gate',
+    'unavailable'
+  )
 })
 
-test('keeps the public Models page when the flag is disabled', async ({
+test('loads the catalogue when the flag is disabled', async ({
   context,
   page
 }) => {
@@ -71,13 +71,11 @@ test('keeps the public Models page when the flag is disabled', async ({
   )
   await page.goto('/models/')
   await response
-  await expect(page.getByTestId('workshop-search')).toHaveCount(0)
-  await expect(
-    page.getByRole('link', { name: /Grok Imagine/i }).first()
-  ).toBeVisible()
+  await expect(page.getByTestId('workshop-search')).toBeVisible()
+  await expect(page.getByText(/Grok Imagine in ComfyUI/i)).toHaveCount(0)
 })
 
-test('does not initialize Firebase on public pages', async ({
+test('does not initialize Firebase while Workshop is disabled', async ({
   context,
   page
 }) => {
@@ -105,23 +103,34 @@ test('does not initialize Firebase on public pages', async ({
     page,
     page.getByRole('navigation', { name: 'Main navigation' })
   )
-  await expect(
-    page.getByRole('link', { name: /Grok Imagine/i }).first()
-  ).toBeVisible()
+  await expect(page.getByTestId('workshop-search')).toBeVisible()
+  await page.goto(MODEL_PATH)
+  await waitForIsland(page, page.getByTestId('model-detail'))
+  await expect(page.getByTestId('run-button')).toHaveAttribute(
+    'data-gate',
+    'unavailable'
+  )
   expect(firebaseRequests).toEqual([])
 })
 
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false })
 
-  test('renders the public Models page without exposing the catalogue', async ({
-    page
-  }) => {
+  test('renders the whole catalogue as links', async ({ page }) => {
     await page.goto('/models/')
-    await expect(page.getByTestId('workshop-loading')).toBeHidden()
+    await expect(page.getByTestId('models-directory')).toBeVisible()
     await expect(page.getByTestId('workshop-search')).toHaveCount(0)
     await expect(
-      page.getByRole('link', { name: /Grok Imagine/i }).first()
-    ).toBeVisible()
+      page.getByRole('heading', { name: /Grok Imagine in ComfyUI/i })
+    ).toHaveCount(0)
+  })
+
+  test('renders the model hero and hides the playground frame', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    await expect(page.getByTestId('model-hero')).toBeVisible()
+    await expect(page.getByTestId('models-loading')).toBeHidden()
+    await expect(page.getByTestId('model-detail')).toHaveCount(0)
   })
 })
