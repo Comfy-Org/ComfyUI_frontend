@@ -21,7 +21,10 @@ import type { NodeId } from '@/types/nodeId'
 import { toNodeId } from '@/types/nodeId'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
-import type { MaterializableGraph } from './agentNodeMaterializer'
+import type {
+  MaterializableGraph,
+  subgraphDefinitionReadState as subgraphDefinitionReadStateFn
+} from './agentNodeMaterializer'
 import { recordDevEvent } from './devPanelLog'
 import type { DocFrameTransport } from './docFrameClient'
 import type { GraphOperation } from './graphOperations'
@@ -69,7 +72,10 @@ const adapterState = vi.hoisted(() => ({
 }))
 
 const materializerState = vi.hoisted(() => ({
-  reconcileAgentAdapters: vi.fn(() => [] as NodeId[])
+  reconcileAgentAdapters: vi.fn(() => [] as NodeId[]),
+  subgraphDefinitionReadState: vi.fn<typeof subgraphDefinitionReadStateFn>(
+    (rootGraph, id) => (rootGraph.subgraphs.has(id) ? 'registered' : 'missing')
+  )
 }))
 
 // The reader is module-mocked too: these tests only check that the composable
@@ -146,7 +152,8 @@ vi.mock<unknown>(import('./ecsFollowerAdapter'), () => ({
 }))
 
 vi.mock(import('./agentNodeMaterializer'), () => ({
-  reconcileAgentAdapters: materializerState.reconcileAgentAdapters
+  reconcileAgentAdapters: materializerState.reconcileAgentAdapters,
+  subgraphDefinitionReadState: materializerState.subgraphDefinitionReadState
 }))
 
 vi.mock(import('./agentSubgraphDefinitions'), () => ({
@@ -276,6 +283,10 @@ describe('useAgentCrdtFollower', () => {
     bridgeState.current = null
     clientState.transport = null
     materializerState.reconcileAgentAdapters.mockReset().mockReturnValue([])
+    materializerState.subgraphDefinitionReadState.mockImplementation(
+      (rootGraph, id) =>
+        rootGraph.subgraphs.has(id) ? 'registered' : 'missing'
+    )
     definitionsState.readSubgraphDefinitionIds.mockClear()
     definitionsState.readSubgraphDefinitions.mockClear()
   })
@@ -994,7 +1005,8 @@ describe('useAgentCrdtFollower', () => {
       // Definitions come from the doc the bridge currently follows, so a
       // doc_reset remint (which swaps the FollowerDoc) is read fresh.
       expect(definitionsState.readSubgraphDefinitions).toHaveBeenCalledWith(
-        bridge().follower.doc
+        bridge().follower.doc,
+        new Set()
       )
       unmount()
     })
@@ -1017,6 +1029,24 @@ describe('useAgentCrdtFollower', () => {
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         registeredGraph,
         []
+      )
+      unmount()
+    })
+
+    it('does not deep-copy a definition body after registration already failed', () => {
+      materializerState.subgraphDefinitionReadState.mockReturnValue('failed')
+      const { unmount } = mountFollower('wf-1', true, () => fakeGraph)
+
+      dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 9 })
+
+      expect(
+        materializerState.subgraphDefinitionReadState
+      ).toHaveBeenCalledWith(fakeGraph.rootGraph, fakeDefinitions[0].id)
+      expect(definitionsState.readSubgraphDefinitions).not.toHaveBeenCalled()
+      expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
+        fakeGraph,
+        [],
+        new Set([fakeDefinitions[0].id])
       )
       unmount()
     })
@@ -1159,7 +1189,8 @@ describe('useAgentCrdtFollower', () => {
         definitionsState.readSubgraphDefinitionIds
       ).toHaveBeenLastCalledWith(replacementDoc)
       expect(definitionsState.readSubgraphDefinitions).toHaveBeenLastCalledWith(
-        replacementDoc
+        replacementDoc,
+        new Set()
       )
       expect(materializerState.reconcileAgentAdapters).toHaveBeenCalledWith(
         fakeGraph,

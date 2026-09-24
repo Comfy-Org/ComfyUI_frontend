@@ -188,6 +188,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
   const queue: OpGroup[] = []
   let open: OpGroup | null = null
   let inFlight: InFlight | null = null
+  let lastMintedVersion = -1
+  let lastMintedWorkflowId: string | null = null
   let detached = false
   let suspended = false
 
@@ -359,11 +361,17 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
 
   function admit(operations: GraphOperation[]): void {
     if (operations.length === 0) return
-    const minted = mintWireOps(operations, {
-      actor: deps.actor(),
-      baseVersion: deps.baseVersion()
-    })
     const workflowId = deps.workflowId()
+    if (workflowId !== lastMintedWorkflowId) {
+      lastMintedVersion = -1
+      lastMintedWorkflowId = workflowId
+    }
+    const baseVersion = Math.max(deps.baseVersion(), lastMintedVersion + 1)
+    const actor = deps.actor()
+    const minted = operations.flatMap((operation, index) =>
+      mintWireOps([operation], { actor, baseVersion: baseVersion + index })
+    )
+    lastMintedVersion = baseVersion + minted.length - 1
     // Detached is terminal: nothing will ever flush or transmit again, so an
     // admission that arrives after detach (a re-entrant admit from a settle
     // listener, or a lingering caller) must settle immediately rather than
@@ -482,6 +490,8 @@ export function createOpSender(deps: OpSenderDeps): OpSender {
       }
     },
     abortAll() {
+      lastMintedVersion = -1
+      lastMintedWorkflowId = null
       drainOutstanding((outcome) => deps.onBatchSettled(outcome))
     },
     detach() {
