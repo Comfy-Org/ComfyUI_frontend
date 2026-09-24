@@ -70,7 +70,6 @@ const otherModel = computed(() =>
         }"
       >
         <CinematicTakeFrame
-          :key="current.id"
           :current
           :other-model="otherModel"
           :height="FRAME_HEIGHT"

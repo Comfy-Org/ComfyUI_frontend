@@ -174,18 +174,68 @@ describe('CinematicStudio', () => {
     ).toBeInTheDocument()
   })
 
-  it('reports a failed take in the stage', async () => {
-    vi.mocked(router_render).mockRejectedValue(
-      new WorkshopRouterError('provider')
-    )
+  it('offers a failed take again on another model', async () => {
+    vi.mocked(router_render)
+      .mockRejectedValueOnce(new WorkshopRouterError('provider', 'request-9'))
+      .mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()
 
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
     await user.click(generateButton())
 
-    expect(await screen.findByRole('status')).toHaveTextContent(
-      t('workshop.error.provider')
+    const notice = await screen.findByRole('status')
+    expect(notice).toHaveTextContent(t('workshop.error.provider'))
+    expect(notice).toHaveTextContent('request-9')
+    await user.click(
+      within(notice).getByRole('button', {
+        name: tc('cinematic.state.tryOn').replace('{model}', second.name)
+      })
     )
+
+    await screen.findByAltText(/A diner at dawn/)
+    expect(vi.mocked(router_render).mock.calls[1][0]).toBe(second.slug)
+  })
+
+  it('sends a take blocked by content policy back to the scene', async () => {
+    vi.mocked(router_render).mockRejectedValue(
+      new WorkshopRouterError('policy')
+    )
+    const user = renderStudio()
+
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+    const notice = await screen.findByRole('status')
+    expect(
+      within(notice).queryByRole('button', { name: t('workshop.error.retry') })
+    ).toBeNull()
+    await user.click(
+      within(notice).getByRole('button', {
+        name: tc('cinematic.state.editScene')
+      })
+    )
+
+    expect(screen.getByLabelText('Scene')).toHaveFocus()
+  })
+
+  it('hides a sensitive take until the viewer chooses to see it', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => ({
+      ...rendered(slug),
+      outputs: [
+        { kind: 'image', url: 'blob:shot', fileName: 'shot.png', nsfw: true }
+      ]
+    }))
+    const user = renderStudio()
+
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+    const reveal = await screen.findByRole('button', {
+      name: t('workshop.output.reveal')
+    })
+    expect(screen.getByText(t('workshop.output.nsfw'))).toBeInTheDocument()
+
+    await user.click(reveal)
+
+    expect(screen.queryByText(t('workshop.output.nsfw'))).toBeNull()
   })
 
   it('does not offer to generate when no model can run', () => {
@@ -220,7 +270,7 @@ describe('CinematicStudio', () => {
       screen.getByRole('button', { name: tc('cinematic.firstRun.desert') })
     ).toHaveAttribute('aria-pressed', 'true')
     expect(
-      screen.getByRole('button', { name: /^Extreme wide/ })
+      screen.getByRole('button', { name: 'Shot: Extreme wide' })
     ).toBeInTheDocument()
   })
 
@@ -228,9 +278,10 @@ describe('CinematicStudio', () => {
     vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
     const user = renderStudio()
 
-    await user.click(screen.getByRole('button', { name: /Practical night/ }))
+    await user.click(
+      screen.getByRole('button', { name: 'Light: Practical night' })
+    )
     const picker = screen.getByRole('dialog', { name: 'Direction' })
-    await user.click(within(picker).getByRole('button', { name: /^Light/ }))
     await user.click(within(picker).getByRole('radio', { name: 'Neon' }))
     expect(
       within(picker).getByRole('button', { name: 'Film' })
@@ -242,7 +293,10 @@ describe('CinematicStudio', () => {
     await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(
-      screen.getByRole('button', { name: 'Medium · Neon · Western' })
+      screen.getByRole('button', { name: 'Light: Neon' })
+    ).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: 'Look: Western' })
     ).toBeInTheDocument()
     await user.click(generateButton())
     await screen.findByAltText(/A diner at dawn/)
@@ -333,10 +387,10 @@ describe('CinematicStudio', () => {
 
   it('moves focus into a picker and back to its chip on Escape', async () => {
     const user = renderStudio()
-    const chip = screen.getByRole('button', { name: /Practical night/ })
+    const chip = screen.getByRole('button', { name: 'Light: Practical night' })
 
     await user.click(chip)
-    expect(screen.getByRole('radio', { name: 'Medium' })).toHaveFocus()
+    expect(screen.getByRole('radio', { name: 'Practical night' })).toHaveFocus()
 
     await user.keyboard('{Escape}')
 

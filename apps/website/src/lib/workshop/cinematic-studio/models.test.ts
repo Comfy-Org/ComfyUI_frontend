@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { workshopContract } from '../../../config/workshop-contract-catalog'
-import { runnableCinematicModels } from './models'
+import { cinematicStudioHref, runnableCinematicModels } from './models'
 
 const SEEDREAM = 'byteplus--seedream-4-5--generate-images'
 const FLUX = 'bfl--flux-2-pro--generate-images'
@@ -31,5 +31,20 @@ describe('runnableCinematicModels', () => {
         logo: '/icons/ai-models/bytedance.svg'
       }
     ])
+  })
+})
+
+describe('cinematicStudioHref', () => {
+  it('links a supported model to the studio with it preselected', () => {
+    expect(
+      cinematicStudioHref(
+        'bfl--flux-2-pro--generate-images',
+        '/cinematic-studio'
+      )
+    ).toBe('/cinematic-studio?model=bfl--flux-2-pro--generate-images')
+  })
+
+  it('does not link a model the studio cannot run', () => {
+    expect(cinematicStudioHref('kling-ai', '/cinematic-studio')).toBeUndefined()
   })
 })

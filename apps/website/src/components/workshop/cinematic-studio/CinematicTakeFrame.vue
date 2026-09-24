@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { EyeOff } from '@lucide/vue'
-import { ref } from 'vue'
+import { ref, watch } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -30,6 +30,12 @@ const emit = defineEmits<{
 }>()
 
 const revealed = ref(false)
+watch(
+  () => current.id,
+  () => {
+    revealed.value = false
+  }
+)
 
 const TONE = {
   neutral:
