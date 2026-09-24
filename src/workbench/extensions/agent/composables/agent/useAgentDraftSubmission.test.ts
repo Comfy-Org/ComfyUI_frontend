@@ -5,9 +5,22 @@ import type { EffectScope } from 'vue'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
+import type { WorkflowReference } from '../../types/workflowReference'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
+import type { SubmissionMeta } from './useAgentDraftSubmission'
 import { useAgentDraftSubmission } from './useAgentDraftSubmission'
+import type { SelectedNode } from './useCanvasSelection'
 import { useCanvasSelection } from './useCanvasSelection'
+import type { ComposerAttachment } from './useComposer'
+
+type ComposerStore = ReturnType<typeof useAgentComposerStore>
+type Send = (
+  text: string,
+  attachments: ComposerAttachment[],
+  nodes: SelectedNode[],
+  references: WorkflowReference[],
+  meta: SubmissionMeta
+) => Promise<boolean>
 
 const scopes: EffectScope[] = []
 afterEach(() => {
@@ -61,7 +74,7 @@ function setup() {
       resolveSend = resolve
     })
     const pending = { promise, resolve: resolveSend }
-    const send = vi.fn(() => pending.promise)
+    const send = vi.fn<Send>(() => pending.promise)
     const options = {
       canSubmit: () => canSubmit.value,
       onSubmit: vi.fn(),
@@ -126,7 +139,8 @@ describe('Agent draft submission', () => {
       'Compare these',
       original.attachments,
       original.nodes,
-      original.references
+      original.references,
+      { clientMessageId: expect.any(String), inputMethod: 'typed' }
     )
     composer.setText('Next prompt')
     pending.resolve(true)
@@ -317,9 +331,46 @@ describe('Agent draft submission', () => {
       'Compare these',
       original.attachments,
       [],
-      original.references
+      original.references,
+      { clientMessageId: expect.any(String), inputMethod: 'typed' }
     )
     expect(composer.draft).toBe(original.draft)
     expect(selection.staged.value).toEqual([])
+  })
+
+  it('gives each send attempt its own client message id', async () => {
+    const { composer, submit, send } = setup()
+    send.mockResolvedValue(true)
+
+    await submit()
+    composer.setText('and again')
+    await submit()
+
+    const [first, second] = send.mock.calls.map((call) => call[4])
+    expect(first.clientMessageId).toEqual(expect.any(String))
+    expect(second.clientMessageId).not.toBe(first.clientMessageId)
+  })
+
+  it.for([
+    {
+      origin: 'suggestion',
+      mark: (store: ComposerStore) => store.markSuggestedPrompt()
+    },
+    {
+      origin: 'edited',
+      mark: (store: ComposerStore) =>
+        store.replacePrompt({ text: 'Compare these', workflowReferences: [] })
+    }
+  ])('reports the $origin the draft came from', async ({ origin, mark }) => {
+    const { composer, submit, send } = setup()
+    send.mockResolvedValue(true)
+    mark(composer)
+
+    await submit()
+
+    expect(send.mock.calls[0][4]).toEqual({
+      clientMessageId: expect.any(String),
+      inputMethod: origin
+    })
   })
 })

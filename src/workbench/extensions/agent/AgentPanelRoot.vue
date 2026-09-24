@@ -18,6 +18,7 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
+import type { AgentMessageSentMetadata } from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LiveAutogrowGroupAnswer } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
@@ -585,6 +586,37 @@ function warnWorkflowUnavailable(): void {
   })
 }
 
+/**
+ * The sent message, held from the moment the user sends until the cloud ids
+ * are refreshed, alongside the turn's origin. Scoped to one `sendMessage`
+ * call, so a send never hands these fields to the next one.
+ */
+let pendingSend: {
+  metadata: AgentMessageSentMetadata
+  origin: TurnOrigin
+} | null = null
+
+/**
+ * A freshly opened tab has no cloud id until `refreshCloudWorkflowIds()` lands,
+ * and the turn is posted with the id resolved by that refresh (QAF-19).
+ * Reporting before it would file the first send of a session — the one the
+ * activation funnel is measuring — against no workflow at all.
+ *
+ * Resolved through the turn's own origin rather than the live selection,
+ * because `performSend` posts the origin tab's id: switching target or
+ * starting a new chat while the refresh is in flight must not retarget the
+ * report at a workflow the turn was never sent against.
+ */
+function reportPendingSend(): void {
+  const sent = pendingSend
+  if (!sent) return
+  pendingSend = null
+  useTelemetry()?.trackAgentMessageSent({
+    ...sent.metadata,
+    workflow_id: targetWorkflowTurnContext(sent.origin)?.id ?? null
+  })
+}
+
 const {
   sendMessage,
   stopTurn,
@@ -613,7 +645,13 @@ const {
     adopted: onWorkflowAdopted,
     restored: onWorkflowRestored,
     prepare: async () => {
-      await refreshCloudWorkflowIds()
+      try {
+        await refreshCloudWorkflowIds()
+      } finally {
+        // In `finally` so a refresh that fails still reports the send, with
+        // whichever id the client already had, rather than losing the event.
+        reportPendingSend()
+      }
     },
     tabs: openTabsSnapshot,
     activeTab: enqueueActiveTab,
@@ -1068,15 +1106,34 @@ const { submit: onSend } = useAgentDraftSubmission({
     replace: replaceSelectionTags,
     exit: exitNodeSelectionMode
   },
-  send: (text, attachments, nodes, references) => {
-    useTelemetry()?.trackAgentMessageSent({
-      attachment_count: attachments.length,
-      node_tag_count: nodes.length
-    })
+  send: async (text, attachments, nodes, references, meta) => {
+    // The same origin `performSend` pins the turn to, taken in the same tick,
+    // so the report follows the tab the turn is posted against. Everything but
+    // the workflow id is captured now, like the thread; the id here is only
+    // the fallback for a send that never reaches the refresh.
+    const originContext = targetWorkflowTurnContext()
+    pendingSend = {
+      metadata: {
+        attachment_count: attachments.length,
+        node_tag_count: nodes.length,
+        thread_id: threadId.value,
+        workflow_id: originContext?.id ?? null,
+        client_message_id: meta.clientMessageId,
+        input_method: meta.inputMethod
+      },
+      origin:
+        originContext === undefined ? null : { tabPath: originContext.tabPath }
+    }
     const selectionWorkflow = selectedTarget.value
-    return sendMessage(text, attachments, nodes, references, () =>
-      selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined
-    )
+    try {
+      return await sendMessage(text, attachments, nodes, references, () =>
+        selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined
+      )
+    } finally {
+      // Normally already consumed by the refresh. A send rejected before it
+      // gets that far still reports here, so the funnel counts the attempt.
+      reportPendingSend()
+    }
   },
   stop: stopTurn
 })
