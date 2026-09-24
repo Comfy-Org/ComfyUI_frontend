@@ -51,8 +51,11 @@ const definedEntriesOf = <V>(
   values: Record<string, V> | undefined
 ): Record<string, Exclude<V, undefined>> =>
   Object.fromEntries(
-    Object.entries(values ?? {}).filter(([, value]) => value !== undefined)
-  ) as Record<string, Exclude<V, undefined>>
+    Object.entries(values ?? {}).filter(
+      (entry): entry is [string, Exclude<V, undefined>] =>
+        entry[1] !== undefined
+    )
+  )
 
 function dispatch(
   error: Error,
