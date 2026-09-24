@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import './agentPanel.css'
 
+import type { GetFeaturesResponse } from '@comfyorg/ingest-types'
 import { useClipboard } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
 import {
@@ -26,11 +27,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import type { LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useAppMode } from '@/composables/useAppMode'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
-import {
-  fetchDroppedAsset,
-  getDroppedAsset,
-  hasVideoType
-} from '@/utils/eventUtils'
+import { fetchDroppedAsset, getDroppedAsset } from '@/utils/eventUtils'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { AGENT_ATTACH_ACCEPT, isAgentAttachable } from './utils/attachableFiles'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
@@ -57,16 +54,20 @@ import { isLGraphNode } from '@/utils/litegraphUtil'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
+import { isCloud } from '@/platform/distribution/types'
 import { parseNodeId } from '@/types/nodeId'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useAccountPreconditionDialog } from '@/platform/cloud/subscription/composables/useAccountPreconditionDialog'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
+import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import {
   adoptSharedOnboardingFlag,
-  scopedOnboardingKey
+  hasSeenCoach,
+  scopedOnboardingKey,
+  trackCoachDeferral
 } from './composables/agent/useOnboarding'
-import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 import AgentPanel from './components/agent/AgentPanel.vue'
 import AgentGraphActivityBar from './components/AgentGraphActivityBar.vue'
@@ -101,12 +102,14 @@ import { useAgentWorkflowTabBindingStore } from './stores/agent/agentWorkflowTab
 import { createAgentRestClient } from './services/agent/agentRestClient'
 import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
-import { resolveAgentPaywallPresentation } from './services/agent/agentPaywallPresentation'
+import {
+  DEFAULT_AGENT_PAYWALL_PRESENTATION,
+  resolveAgentPaywallPresentation
+} from './services/agent/agentPaywallPresentation'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { useAgentChatHistoryStore } from './stores/agent/agentChatHistoryStore'
 import { agentMessageText } from './utils/agentMessageText'
 import { useAgentComposerStore } from './stores/agent/agentComposerStore'
-import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentConsentStore } from './stores/agent/agentConsentStore'
 import { useAgentPanelStore } from './stores/agent/agentPanelStore'
 import { useAgentGraphActivityStore } from './stores/agent/agentGraphActivityStore'
@@ -137,25 +140,20 @@ watch(
   (hasFunds) => conversationStore.setPaywallsResolved(hasFunds === true),
   { immediate: true }
 )
-const {
-  canTopUp,
-  canSubscribeSelfServe,
-  isReady: billingCapabilitiesReady
-} = useBillingCapabilities()
-const paywallPresentation = computed(() =>
-  resolveAgentPaywallPresentation({
+const { canTopUp, canSubscribeSelfServe, hasResolvedCapabilities } =
+  useBillingCapabilities()
+const paywallPresentation = computed(() => {
+  if (isCloud && !hasResolvedCapabilities.value && !canTopUp.value) {
+    return DEFAULT_AGENT_PAYWALL_PRESENTATION
+  }
+  return resolveAgentPaywallPresentation({
+    distribution: isCloud ? 'cloud' : 'local',
     role: workspaceRole.value,
     tier: subscriptionTier.value,
-    // The initial false/false pair is not an authoritative sales-managed
-    // result while the shared capability source initializes in the background.
-    canTopUp: billingCapabilitiesReady.value
-      ? canTopUp.value
-      : workspaceRole.value === 'owner',
-    canSubscribeSelfServe: billingCapabilitiesReady.value
-      ? canSubscribeSelfServe.value
-      : workspaceRole.value === 'owner'
+    canTopUp: canTopUp.value,
+    canSubscribeSelfServe: canSubscribeSelfServe.value
   })
-)
+})
 const sidebarTabStore = useSidebarTabStore()
 const { isBuilderMode } = useAppMode()
 
@@ -278,6 +276,20 @@ watch(
   { immediate: true }
 )
 const { activeTour } = storeToRefs(useOnboardingTourStore())
+const coachDeferredBy = computed(() =>
+  canvasStore.linearMode
+    ? 'app_mode'
+    : activeTour.value !== null
+      ? 'tour_active'
+      : null
+)
+watch(
+  [consentAccepted, onboardingKey, coachDeferredBy],
+  ([accepted, key, reason]) => {
+    if (accepted && key && !hasSeenCoach(key)) trackCoachDeferral(key, reason)
+  },
+  { immediate: true }
+)
 const graphMutationsByWorkflow = new Map<
   string,
   ReturnType<typeof createGraphMutations>
@@ -676,6 +688,52 @@ const { activeTurnId: conversationTurnId } = storeToRefs(
   useAgentConversationStore()
 )
 
+// PM-1575: a chat tool-call's own `status` says nothing about whether its
+// effect has actually reached the canvas -- the CRDT doc_update travels a
+// separate, unrelated listener (see agentEventTransport.ts's file header).
+// Gate the transport's tool-call "done" affordance on canvas catch-up only
+// while the CRDT follower is actually active, and re-check any parts it held
+// back every time the bound workflow applies a fresh update.
+//
+// `agentPanelStore.enabled` alone is NOT that signal: it is the product
+// feature flag ("is the agent panel available at all"), which is on in any
+// environment or test that exercises the panel, whether or not a CRDT doc
+// subscription for the bound workflow actually exists yet. Gating on it
+// alone deferred every mutating tool call (add_node, set_widget, ...) to
+// 'streaming' even when no doc_subscribed frame had ever been received --
+// e.g. in agentPanel.spec.ts and every other spec that drives chat events
+// without also standing up a doc host -- so nothing was ever going to call
+// notifyCanvasCaughtUp() to rescue it, and the row (and the composing
+// "Working..." status derived from every part being settled) stayed stuck
+// until the 30s STALE_AFTER_MS fallback. `crdtStatus.value.connected` is the
+// actual "the follower is subscribed and could receive a doc_update" signal
+// (flipped true only by a real `doc_subscribed { ok: true }` frame); a
+// disabled panel never starts the follower, so this implies `enabled` too.
+// Read `outcomes.appliedLive`, never `outcomes.applied`: `applied` also
+// counts a subscribe's own one-time catch-up frame, which lands whenever the
+// follower (re)subscribes to the bound workflow and has nothing to do with
+// any tool call in flight. Gating on raw `applied` made the FIRST
+// canvas-mutating tool call after any (re)subscribe -- effectively every
+// tool call, since a `running` frame is never sent in practice, see
+// agentEventTransport.ts's file header -- read that unrelated catch-up as
+// its own matching update and settle to 'done' immediately, defeating the
+// wait this gate exists for.
+conversationStore.setCanvasSyncGate(
+  () => crdtStatus.value.connected,
+  () => crdtStatus.value.outcomes.appliedLive
+)
+watch(
+  () => crdtStatus.value.outcomes.appliedLive,
+  (applied, previouslyApplied) => {
+    // `useAgentCrdtFollower`'s status falls back to a disabled status with
+    // `applied: 0` when the follower is torn down, and a restarted follower
+    // counts from 0 again -- so toggling the panel mid-turn can drive this
+    // DOWN, not just up. A decrease is not a catch-up: nothing was applied,
+    // so it must not release parts that are still genuinely waiting.
+    if (applied > previouslyApplied) conversationStore.notifyCanvasCaughtUp()
+  }
+)
+
 // The resumed turn's own workflow outlives a panel remount (the session
 // binds it at ack; only newChat/loadThread reset it), while the active tab
 // may have changed since - prefer the bound tab over active-tab derivation.
@@ -871,6 +929,15 @@ onBeforeUnmount(() => {
   tabActivity.setEditing(null)
   tabActivity.setCreating(false)
   agentMinimapLayer.dispose()
+  // PM-1575: the store singleton outlives this component. Without resetting
+  // the gate here, a remount's own setCanvasSyncGate() call is the only
+  // thing standing between the old (now torn-down) follower's gate and a
+  // turn resumed in the meantime reading it -- reset to the always-safe
+  // default instead of leaving whatever this instance last set.
+  conversationStore.setCanvasSyncGate(
+    () => false,
+    () => 0
+  )
 })
 
 const history = useAgentChatHistoryStore()
@@ -878,10 +945,20 @@ const history = useAgentChatHistoryStore()
 const { copy } = useClipboard({ legacy: true })
 
 function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
+  const message = entries.value.find(
+    (entry) => entry.role === 'assistant' && entry.id === turnId
+  )
+  const workflowId =
+    message?.role === 'assistant'
+      ? (message.parts
+          .flatMap((part) => (part.type === 'tabLink' ? [part.workflowId] : []))
+          .at(-1) ?? null)
+      : null
+
   useTelemetry()?.trackAgentMessageFeedback({
     message_id: turnId,
     vote,
-    workflow_id: boundWorkflowId.value
+    workflow_id: workflowId
   })
 }
 
@@ -981,7 +1058,10 @@ const { submit: onSend } = useAgentDraftSubmission({
       attachment_count: attachments.length,
       node_tag_count: nodes.length
     })
-    return sendMessage(text, attachments, nodes, references)
+    const selectionWorkflow = selectedTarget.value
+    return sendMessage(text, attachments, nodes, references, () =>
+      selectionWorkflow ? cloudIdFor(selectionWorkflow) : undefined
+    )
   },
   stop: stopTurn
 })
@@ -1115,24 +1195,33 @@ function onSelectNodes(): void {
 }
 
 const assetsStore = useAssetsStore()
+let inputAssetRefresh: Promise<unknown> = Promise.resolve()
 
 const attachment = useAttachment({
-  upload: async (file) => {
-    const uploaded = await rest.uploadImage(file, file.name)
-    // The library caches input assets; without this refresh a just-uploaded
-    // file is neither listed in the Assets tab nor mentionable this session.
-    void assetsStore.inputAssets.loadNew()
-    return { ref: uploaded.name }
+  upload: async (file, signal) => {
+    const uploaded = await rest.uploadImage(file, file.name, signal)
+    const filename = uploaded.name ?? file.name
+    return {
+      ref: filename,
+      url: api.apiURL(
+        `/view?filename=${encodeURIComponent(filename)}&type=input`
+      )
+    }
   },
-  maxBytes: (file) => {
-    const serverLimit = api.getServerFeature(
-      'max_upload_size',
-      MAX_ATTACHMENT_BYTES
-    )
-    return hasVideoType(file)
-      ? serverLimit
-      : Math.min(MAX_ATTACHMENT_BYTES, serverLimit)
+  // The library caches input assets; without this refresh a just-uploaded file
+  // is neither listed in the Assets tab nor mentionable this session. One run
+  // per settled batch, chained, because the query queue coalesces an
+  // overlapping refresh into the in-flight one instead of scheduling a
+  // trailing pass.
+  onUploaded: () => {
+    inputAssetRefresh = inputAssetRefresh
+      .then(() => assetsStore.inputAssets.loadNew())
+      .catch(() => undefined)
   },
+  maxBytes: () =>
+    api.getServerFeature<GetFeaturesResponse['max_upload_size']>(
+      'max_upload_size'
+    ) ?? MAX_ATTACHMENT_BYTES,
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
   onError: (message) =>
@@ -1141,6 +1230,8 @@ const attachment = useAttachment({
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment
 })
+
+onBeforeUnmount(() => attachment.cancelAllUploads())
 
 function onAttach(): void {
   exitNodeSelectionMode()
@@ -1228,11 +1319,11 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
     return
   }
 
-  const file = await attachment.addDeferredFile(asset.name, async () => {
+  const result = await attachment.addDeferredFile(asset.name, async () => {
     const file = await fetchDroppedAsset(asset)
     return file && isAgentAttachable(file) ? file : undefined
   })
-  if (!file)
+  if (result === 'unsupported')
     toast.add({
       severity: 'warn',
       detail: t('agent.assetNotAttachable'),
@@ -1340,12 +1431,7 @@ function onPanelDrop(event: DragEvent): void {
       </template>
     </AgentPanel>
     <OnboardingCoach
-      v-if="
-        consentAccepted &&
-        onboardingKey &&
-        !canvasStore.linearMode &&
-        activeTour === null
-      "
+      v-if="consentAccepted && onboardingKey && coachDeferredBy === null"
       :steps="coachSteps"
       :storage-key="onboardingKey"
     />

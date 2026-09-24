@@ -12,7 +12,8 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import { buildAgentTooltipConfig } from '@/composables/useTooltipConfig'
+import Button from '@/components/ui/button/Button.vue'
+import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { reportError } from '@/platform/telemetry/reportError'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 
@@ -89,20 +90,19 @@ const options: {
 
 <template>
   <DropdownMenuRoot :open :modal="false" @update:open="onOpenChange">
-    <DropdownMenuTrigger
-      v-tooltip.top="buildAgentTooltipConfig(triggerTooltip)"
-      :class="
-        cn(
-          'text-agent-fg-muted hover:bg-agent-surface-hover flex h-8 cursor-pointer items-center gap-1 rounded-sm px-2 text-xs transition-colors',
-          open && 'bg-agent-surface-hover text-agent-fg'
-        )
-      "
-    >
-      <span>{{ triggerLabel }}</span>
-      <span
-        data-testid="run-mode-chevron"
-        class="icon-[lucide--chevron-down] size-4"
-      />
+    <DropdownMenuTrigger as-child>
+      <Button
+        v-tooltip.top="buildTooltipConfig(triggerTooltip)"
+        variant="muted-textonly"
+        size="md"
+        :class="cn('gap-1', open && 'bg-secondary-background-hover')"
+      >
+        <span>{{ triggerLabel }}</span>
+        <span
+          data-testid="run-mode-chevron"
+          class="icon-[lucide--chevron-down] size-4"
+        />
+      </Button>
     </DropdownMenuTrigger>
     <DropdownMenuPortal>
       <DropdownMenuContent
@@ -110,16 +110,19 @@ const options: {
         align="end"
         :side-offset="8"
         :aria-describedby="descriptionId"
-        class="agent-scope border-agent-border bg-agent-surface-raised z-1100 flex w-80 flex-col gap-2.5 rounded-[10px] border p-2.5 shadow-lg outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+        class="agent-scope z-1100 flex w-80 flex-col gap-2.5 rounded-lg border border-border-default bg-secondary-background p-2.5 text-base-foreground shadow-lg outline-none data-[side=bottom]:slide-in-from-top-2 data-[side=top]:slide-in-from-bottom-2 data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
       >
         <div class="flex flex-col gap-0.5">
-          <div aria-hidden="true" class="text-agent-fg text-sm/5 font-medium">
+          <div
+            aria-hidden="true"
+            class="text-sm/5 font-medium text-base-foreground"
+          >
             {{ t('agent.runPermissions') }}
           </div>
           <div
             :id="descriptionId"
             aria-hidden="true"
-            class="text-agent-fg-muted text-xs/4"
+            class="text-xs/4 text-muted-foreground"
           >
             {{ t('agent.runPermissionsDescription') }}
           </div>
@@ -140,12 +143,14 @@ const options: {
             as-child
             @select.prevent
           >
-            <button
-              type="button"
+            <Button
+              :variant="
+                store.mode === option.mode ? 'tertiary' : 'muted-textonly'
+              "
+              size="unset"
               :class="
                 cn(
-                  'hover:bg-agent-surface-hover flex w-full cursor-pointer items-start gap-3 rounded-[10px] px-2.5 py-2 text-left whitespace-normal data-disabled:pointer-events-none',
-                  store.mode === option.mode && 'bg-charcoal-500',
+                  'w-full items-start gap-3 px-2.5 py-2 text-left whitespace-normal data-disabled:pointer-events-none',
                   savingMode !== null &&
                     savingMode !== option.mode &&
                     'opacity-50'
@@ -154,14 +159,17 @@ const options: {
             >
               <span
                 :class="
-                  cn('text-agent-fg-muted mt-0.5 size-4 shrink-0', option.icon)
+                  cn(
+                    'mt-0.5 size-4 shrink-0 text-muted-foreground',
+                    option.icon
+                  )
                 "
               />
               <span class="min-w-0 flex-1">
-                <span class="text-agent-fg block text-sm/5">
+                <span class="block text-sm/5 text-base-foreground">
                   {{ t(option.title) }}
                 </span>
-                <span class="text-agent-fg-muted mt-0.5 block text-xs/4">
+                <span class="mt-0.5 block text-xs/4 text-muted-foreground">
                   {{ t(option.description) }}
                 </span>
               </span>
@@ -171,13 +179,13 @@ const options: {
                   cn(
                     'mt-0.5 size-4 shrink-0',
                     savingMode === option.mode
-                      ? 'text-agent-fg-muted icon-[lucide--loader-circle] motion-safe:animate-spin'
+                      ? 'icon-[lucide--loader-circle] text-muted-foreground motion-safe:animate-spin'
                       : store.mode === option.mode &&
-                          'text-agent-fg icon-[lucide--check]'
+                          'icon-[lucide--check] text-base-foreground'
                   )
                 "
               />
-            </button>
+            </Button>
           </DropdownMenuRadioItem>
         </DropdownMenuRadioGroup>
       </DropdownMenuContent>

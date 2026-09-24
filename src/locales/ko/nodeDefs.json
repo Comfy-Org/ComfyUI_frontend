@@ -18447,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "그리기 전에 모델이 사용하는 추론의 양입니다. 수준이 높을수록 세부 묘사가 향상되지만 더 많은 토큰이 소모됩니다. Arrow 2 모델에서만 사용됩니다."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "노드가 다시 실행되어야 하는지 결정하는 시드입니다. 실제 결과는 시드와 관계없이 비결정적입니다."
@@ -18485,6 +18489,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "원하는 SVG 출력에 대한 텍스트 설명입니다."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "그리기 전에 모델이 사용하는 추론의 양입니다. 수준이 높을수록 세부 묘사가 향상되지만 더 많은 토큰이 소모됩니다. Arrow 2 모델에서만 사용됩니다."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19156,7 +19164,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 일관된 스타일의 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다."
+        "tooltip": "생성에 사용할 모델입니다. recraftv4_styles 모델은 일관된 스타일의 생성을 위해 설계되었으며 항상 style_id 또는 style_references가 필요합니다. recraftv4_1_flash는 가장 빠르고 저렴한 모델이며 스타일을 전혀 지원하지 않습니다."
       },
       "model_size": {
         "name": "size"
@@ -24049,6 +24057,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 채팅 템플릿에서 시스템 프롬프트를 대체합니다. 기본 템플릿을 사용하지 않는 경우 무시됩니다."
+      },
       "thinking": {
         "name": "생각 중",
         "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
@@ -24065,6 +24077,10 @@
     "outputs": {
       "0": {
         "name": "생성된 텍스트",
+        "tooltip": null
+      },
+      "1": {
+        "name": "사고 과정",
         "tooltip": null
       }
     }
@@ -24115,6 +24131,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "모델의 채팅 템플릿에서 시스템 프롬프트를 대체합니다. 기본 템플릿을 사용하지 않는 경우 무시됩니다."
+      },
       "thinking": {
         "name": "생각 중",
         "tooltip": "모델이 지원하는 경우 생각 모드로 작동합니다."
@@ -24131,6 +24151,10 @@
     "outputs": {
       "0": {
         "name": "생성된 텍스트",
+        "tooltip": null
+      },
+      "1": {
+        "name": "사고 과정",
         "tooltip": null
       }
     }

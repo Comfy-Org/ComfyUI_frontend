@@ -18447,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Modelin çizimden önce ne kadar akıl yürütme yapacağı. Daha yüksek seviyeler ayrıntıyı iyileştirir ve daha fazla token maliyetine yol açar. Yalnızca Arrow 2 modelleri tarafından kullanılır."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "Düğümün tekrar çalıştırılıp çalıştırılmayacağını belirleyen tohum; gerçek sonuçlar tohumdan bağımsız olarak deterministik değildir."
@@ -18485,6 +18489,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "İstenen SVG çıktısının metin açıklaması."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Modelin çizimden önce ne kadar akıl yürütme yapacağı. Daha yüksek seviyeler ayrıntıyı iyileştirir ve daha fazla token maliyetine yol açar. Yalnızca Arrow 2 modelleri tarafından kullanılır."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19156,7 +19164,7 @@
       },
       "model": {
         "name": "model",
-        "tooltip": "Üretim için kullanılacak model. recraftv4_styles modelleri, stil tutarlı üretim için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir."
+        "tooltip": "Üretim için kullanılacak model. recraftv4_styles modelleri, stil tutarlılığı olan üretim için tasarlanmıştır ve her zaman bir style_id veya style_references gerektirir; recraftv4_1_flash en hızlı ve en ucuz modeldir ve hiçbir stili desteklemez."
       },
       "model_size": {
         "name": "boyut"
@@ -24049,6 +24057,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Modelin sohbet şablonundaki sistem istemini değiştirir. Varsayılan şablon kullanılmadığında yoksayılır."
+      },
       "thinking": {
         "name": "düşünme",
         "tooltip": "Model destekliyorsa düşünme modunda çalış."
@@ -24065,6 +24077,10 @@
     "outputs": {
       "0": {
         "name": "oluşturulan_metin",
+        "tooltip": null
+      },
+      "1": {
+        "name": "düşünme",
         "tooltip": null
       }
     }
@@ -24115,6 +24131,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Modelin sohbet şablonundaki sistem istemini değiştirir. Varsayılan şablon kullanılmadığında yoksayılır."
+      },
       "thinking": {
         "name": "düşünme",
         "tooltip": "Model destekliyorsa düşünme modunda çalış."
@@ -24131,6 +24151,10 @@
     "outputs": {
       "0": {
         "name": "üretilen_metin",
+        "tooltip": null
+      },
+      "1": {
+        "name": "düşünme",
         "tooltip": null
       }
     }

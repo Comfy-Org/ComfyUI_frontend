@@ -24,6 +24,7 @@ import type { Ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import Tag from '@/components/chip/Tag.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { registerEscapeOverride } from '@/platform/keybindings/escapeOverride'
@@ -461,32 +462,28 @@ defineExpose({
         data-testid="composer-node-section"
         class="flex flex-wrap items-center gap-2 border-b border-border-default p-3"
       >
-        <span
+        <Tag
           v-for="tag in selectionTags"
           :key="selectedNodeKey(tag)"
-          class="inline-flex h-7 items-center gap-1 rounded-lg border border-border-default bg-secondary-background-hover px-2.5 text-xs/4 font-medium text-base-foreground transition-colors hover:bg-tertiary-background-hover"
+          :label="tag.title"
+          removable
+          :remove-label="
+            t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
+          "
+          :remove-tooltip="t('agent.remove')"
+          class="max-w-64"
+          @remove="emit('removeTag', selectedNodeKey(tag))"
         >
-          <span class="flex items-center gap-1">
+          <template #icon>
             <span class="icon-[comfy--node] size-3.5 text-muted-foreground" />
-            <span class="max-w-40 truncate">{{ tag.title }}</span>
-            <span
-              v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
-              :class="duplicateIdClass"
-              >#{{ tag.id }}</span
-            >
-          </span>
-          <button
-            v-tooltip.top="buildTooltipConfig(t('agent.remove'))"
-            type="button"
-            :aria-label="
-              t('agent.removeNodeLabel', { node: `${tag.title} #${tag.id}` })
-            "
-            class="flex size-3.5 cursor-pointer items-center justify-center text-muted-foreground transition-colors hover:text-base-foreground"
-            @click.stop="emit('removeTag', selectedNodeKey(tag))"
+          </template>
+          <span
+            v-if="graphDupes.has(tag.title) || tagDupes.has(tag.title)"
+            :class="duplicateIdClass"
           >
-            <span class="icon-[lucide--x] size-3.5 shrink-0" />
-          </button>
-        </span>
+            #{{ tag.id }}
+          </span>
+        </Tag>
       </div>
 
       <div
@@ -558,11 +555,13 @@ defineExpose({
               :collision-padding="8"
             >
               <template #trigger>
-                <button
+                <Button
                   type="button"
+                  variant="link"
+                  size="unset"
                   :aria-disabled="!!nodeReferenceDisabledReason || undefined"
                   :aria-description="nodeReferenceDisabledReason"
-                  class="pointer-events-auto -ml-1 inline-flex h-5 shrink-0 cursor-pointer items-center gap-1 rounded-lg px-1 align-top text-[14px]/[20px] text-muted-foreground transition-colors hover:text-base-foreground focus-visible:text-base-foreground focus-visible:outline-1 focus-visible:outline-base-foreground aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                  class="pointer-events-auto -ml-1 h-5 shrink-0 gap-1 px-1 align-top text-sm/5 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                   @click="onSelectNodes"
                 >
                   <span
@@ -572,7 +571,7 @@ defineExpose({
                     class="underline decoration-dashed underline-offset-2"
                     >{{ placeholderHint.mentionNodes }}</span
                   >
-                </button>
+                </Button>
               </template>
             </AccessibleTooltip>
           </div>
@@ -581,12 +580,15 @@ defineExpose({
 
       <div class="flex items-center justify-between px-3 py-2">
         <DropdownMenuRoot v-model:open="addMenuOpen">
-          <DropdownMenuTrigger
-            v-tooltip.top="buildTooltipConfig(t('agent.addToPrompt'))"
-            :aria-label="t('agent.addToPrompt')"
-            class="flex size-8 cursor-pointer items-center justify-center rounded-xl text-muted-foreground transition-colors hover:bg-secondary-background-hover hover:text-base-foreground"
-          >
-            <span class="icon-[lucide--plus] size-4" />
+          <DropdownMenuTrigger as-child>
+            <Button
+              v-tooltip.top="buildTooltipConfig(t('agent.addToPrompt'))"
+              variant="muted-textonly"
+              size="icon"
+              :aria-label="t('agent.addToPrompt')"
+            >
+              <span class="icon-[lucide--plus] size-4" />
+            </Button>
           </DropdownMenuTrigger>
           <DropdownMenuPortal>
             <DropdownMenuContent

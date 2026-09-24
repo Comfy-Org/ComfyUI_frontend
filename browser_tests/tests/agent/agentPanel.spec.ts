@@ -27,7 +27,7 @@ import {
 
 const test = mergeTests(agentTest, webSocketFixture)
 
-const OPEN_AGENT_LABEL = enMessages.agent.askComfyAgent
+const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 
 function pushEvent(ws: WebSocketRoute, event: AgentWsEvent): void {
   ws.send(JSON.stringify(event))
@@ -39,7 +39,7 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
   test.describe('flag off', () => {
     test.use({ agentFlagEnabled: false })
 
-    test('does not expose the Ask Comfy Agent button', async ({
+    test('does not expose the Agent button', async ({
       comfyPage,
       postedMessages
     }) => {
@@ -95,13 +95,16 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
     await expect(panel.getByText(THINKING_TEXT)).toBeVisible()
 
     pushEvent(ws, TOOL_CALL_EVENT)
-    const firstSummary = panel.getByRole('button', {
-      name: 'Ran 1 tool call for 1.3 seconds'
+    const summary = panel.getByRole('button', {
+      name: enMessages.agent.worked,
+      exact: true
     })
-    await expect(firstSummary).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'true')
+    await expect(summary).toHaveCount(0)
     await expect(panel.getByText('Set widget')).toBeVisible()
-    await expect(panel.getByText(THINKING_TEXT)).toBeHidden()
+    await expect(panel.getByText(THINKING_TEXT, { exact: true })).toBeVisible()
+    await expect(
+      panel.getByText(enMessages.agent.working, { exact: true })
+    ).toBeVisible()
 
     pushEvent(ws, INTERMEDIATE_MESSAGE_EVENT)
     await expect(
@@ -109,73 +112,106 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         'The first graph edit is complete. I will check the remaining work.'
       )
     ).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(panel.getByText('Set widget')).toBeHidden()
+    await expect(summary).toHaveCount(0)
+    await expect(panel.getByText('Set widget')).toBeVisible()
+    await expect(
+      panel.getByText(enMessages.agent.working, { exact: true })
+    ).toHaveCount(0)
 
     pushEvent(ws, RESUMED_THINKING_EVENT)
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
     ).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(panel.getByText('Set widget')).toBeHidden()
+    await expect(summary).toHaveCount(0)
+    await expect(panel.getByText('Set widget')).toBeVisible()
 
     pushEvent(ws, OPEN_TAB_TOOL_EVENT)
 
-    const secondSummary = panel.getByRole('button', {
-      name: 'Ran 1 tool call for 0.5 seconds'
-    })
-    await expect(secondSummary).toBeVisible()
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(panel.getByText('Set widget')).toBeHidden()
+    await expect(summary).toHaveCount(0)
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
-    ).toHaveCount(0)
+    ).toBeVisible()
 
     pushEvent(ws, RESIZE_IMAGE_TOOL_EVENT)
 
-    const finalSummary = panel.getByRole('button', {
-      name: 'Ran 2 tool calls for 0.7 seconds'
-    })
-    await expect(finalSummary).toBeVisible()
-    await expect(finalSummary).toHaveAttribute('aria-expanded', 'true')
-    await expect(
-      panel.getByRole('button', {
-        name: /^Ran \d+ tool calls?(?: for \d+(?:\.\d+)? seconds)?$/
-      })
-    ).toHaveCount(2)
-    await expect(firstSummary).toHaveCount(1)
-    await expect(secondSummary).toHaveCount(0)
+    await expect(summary).toHaveCount(0)
 
-    const toolRows = panel.getByRole('listitem')
-    await expect(toolRows).toHaveCount(2)
-    await expect(toolRows.filter({ hasText: 'Set widget' })).toHaveCount(0)
-    await expect(
-      toolRows.filter({ hasText: 'Opened a new tab' }).getByText('0.5s')
-    ).toBeVisible()
-    await expect(
-      toolRows.filter({ hasText: 'Resize image node' }).getByText('0.2s')
-    ).toBeVisible()
+    const activityRows = panel.getByRole('listitem')
+    await expect(activityRows).toHaveCount(5)
+    await expect(activityRows.filter({ hasText: 'Set widget' })).toBeVisible()
+    await expect(panel.getByText('0.5s', { exact: true })).toHaveCount(0)
+    await expect(panel.getByText('0.2s', { exact: true })).toHaveCount(0)
 
     pushEvent(ws, MESSAGE_DELTA_EVENT)
     await expect(
       panel.locator('strong', { hasText: 'fully ready' })
     ).toBeVisible()
+    await expect(activityRows).toHaveCount(5)
 
     pushEvent(ws, RESUMED_THINKING_EVENT)
     await expect(
       panel.getByText('Checking the remaining edits.', { exact: true })
-    ).toBeVisible()
-    await expect(finalSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
-    await expect(panel.getByText('Opened a new tab')).toBeHidden()
+    ).toHaveCount(2)
+    await expect(activityRows).toHaveCount(6)
+    await expect(summary).toHaveCount(0)
+    await expect(panel.getByText('Opened a new tab')).toBeVisible()
 
     pushEvent(ws, MESSAGE_DONE_EVENT)
     await expect(panel.getByRole('button', { name: 'Send' })).toBeVisible()
     await expect(panel.getByRole('button', { name: 'Stop' })).toHaveCount(0)
+    await expect(summary).toHaveCount(1)
+    await expect(summary).toHaveAttribute('aria-expanded', 'false')
+    await expect(activityRows).toHaveCount(0)
     await expect(
-      panel.getByRole('button', { name: /ran 2 tool calls/i })
-    ).toHaveAttribute('aria-expanded', 'false')
-    await expect(firstSummary).toHaveAttribute('aria-expanded', 'false')
+      panel.locator('strong', { hasText: 'fully ready' })
+    ).toBeVisible()
+
+    await summary.click()
+    await expect(summary).toHaveAttribute('aria-expanded', 'true')
+    await expect(activityRows).toHaveCount(6)
+    await expect(panel.getByText(THINKING_TEXT, { exact: true })).toBeVisible()
+    await expect(
+      panel.getByText('Checking the remaining edits.', { exact: true })
+    ).toHaveCount(2)
+    await expect(panel.getByText('Set widget')).toBeVisible()
+    await expect(panel.getByText('Opened a new tab')).toBeVisible()
+    await expect(panel.getByText('Resize image node')).toBeVisible()
+  })
+
+  test('shows an admission paywall without losing the rejected prompt', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    await page.route('**/api/agent/threads/*/messages', (route) =>
+      route.fulfill({
+        status: 402,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          error: {
+            message: 'Add credits to continue.',
+            type: 'PAYMENT_REQUIRED',
+            reason: 'no_funds'
+          }
+        })
+      })
+    )
+
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
+
+    const prompt = 'Build a product photo workflow'
+    await panel.getByRole('textbox', { name: /^Describe ideas/ }).fill(prompt)
+    await panel.getByRole('button', { name: 'Send' }).click()
+
+    await expect(panel.getByTestId('user-message-bubble')).toHaveText(prompt)
+    await expect(
+      panel.getByRole('textbox', { name: /^Describe ideas/ })
+    ).toHaveText(prompt)
+    const paywall = panel.getByRole('alert')
+    await expect(paywall).toContainText(enMessages.agent.paywall.title)
+    await expect(paywall).toContainText('Add credits to continue.')
   })
 
   test.describe('composer sizing', () => {
@@ -303,6 +339,62 @@ test.describe('In-App Agent panel', { tag: '@cloud' }, () => {
         return Math.abs(leftInset - rightInset)
       })
       .toBeLessThanOrEqual(1)
+  })
+
+  test('uses the server upload limit for Agent file attachments', async ({
+    comfyPage,
+    agentPanel
+  }) => {
+    test.setTimeout(60_000)
+    const page = comfyPage.page
+    let uploadCount = 0
+    await page.route('**/api/upload/image', async (route) => {
+      uploadCount += 1
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          name: 'uploaded_movie.mp4',
+          subfolder: '',
+          type: 'input'
+        })
+      })
+    })
+    await page.evaluate(() => {
+      window.app!.api.serverFeatureFlags.value = {
+        ...window.app!.api.serverFeatureFlags.value,
+        max_upload_size: 24 * 1024 * 1024
+      }
+    })
+
+    await agentPanel.open()
+    const panel = page.locator('#agent-panel-root')
+    const fileInput = panel.getByTestId('agent-file-input')
+
+    const uploadResponse = page.waitForResponse('**/api/upload/image')
+    await fileInput.setInputFiles({
+      name: 'movie.mp4',
+      mimeType: 'video/mp4',
+      buffer: Buffer.alloc(21 * 1024 * 1024)
+    })
+    expect((await uploadResponse).ok()).toBe(true)
+    await expect(
+      panel.getByTestId('composer-asset-section').getByText('movie.mp4')
+    ).toBeVisible()
+    await expect.poll(() => uploadCount).toBe(1)
+
+    await fileInput.setInputFiles({
+      name: 'too-large.mp4',
+      mimeType: 'video/mp4',
+      buffer: Buffer.alloc(25 * 1024 * 1024)
+    })
+    await expect(
+      page.getByText('too-large.mp4 is larger than 24 MB')
+    ).toBeVisible()
+    await expect(panel.getByText('too-large.mp4', { exact: true })).toHaveCount(
+      0
+    )
+    await expect.poll(() => uploadCount).toBe(1)
   })
 
   test('exits node selection when the active workflow changes', async ({
