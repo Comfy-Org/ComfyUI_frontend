@@ -201,15 +201,18 @@ function exportsPiniaStore(
   resolved: string,
   text: string,
   dependencies: Map<string, number>
-): boolean {
+): boolean | undefined {
   if (!MAY_EXPORT_STORE.test(text)) return false
   const source = ts.createSourceFile(resolved, text, ts.ScriptTarget.Latest)
-  return (
-    definesStore(source) ||
-    valueReexportSpecifiers(source).some((specifier) =>
-      isPiniaModule(specifier, resolved, dependencies)
-    )
-  )
+  if (definesStore(source)) return true
+
+  let hasUnresolvedReexport = false
+  for (const specifier of valueReexportSpecifiers(source)) {
+    const result = isPiniaModule(specifier, resolved, dependencies)
+    if (result) return true
+    if (result === undefined) hasUnresolvedReexport = true
+  }
+  return hasUnresolvedReexport ? undefined : false
 }
 
 function addDependencies(
@@ -247,10 +250,14 @@ function isPiniaModule(
   specifier: string,
   importer: string,
   parentDependencies?: Map<string, number>
-): boolean {
+): boolean | undefined {
   if (PINIA_MODULES.has(specifier)) return true
   const module = resolveExistingLocalModule(specifier, importer)
-  if (!module) return false
+  if (!module) {
+    return specifier.startsWith('.') || specifier.startsWith('@/')
+      ? undefined
+      : false
+  }
   const { resolved, mtimeMs } = module
   parentDependencies?.set(resolved, mtimeMs)
   const cached = piniaModules.get(resolved)
@@ -268,7 +275,8 @@ function isPiniaModule(
     readFileSync(resolved, 'utf8'),
     dependencies
   )
-  piniaModules.set(resolved, { mtimeMs, result, dependencies })
+  if (result === undefined) piniaModules.delete(resolved)
+  else piniaModules.set(resolved, { mtimeMs, result, dependencies })
   addDependencies(parentDependencies, dependencies)
   return result
 }
@@ -300,7 +308,7 @@ function mocksPiniaModule(argument: Node, importer: string): boolean {
   const source = literal(
     argument.type === 'ImportExpression' ? argument.source : argument
   )
-  return source !== undefined && isPiniaModule(source, importer)
+  return source !== undefined && isPiniaModule(source, importer) === true
 }
 
 function spiesOnPiniaStore(
@@ -310,7 +318,8 @@ function spiesOnPiniaStore(
   argument: Node
 ): boolean {
   const target = importedReference(context, argument)
-  if (!target || !isPiniaModule(target.source, context.filename)) return false
+  if (!target || isPiniaModule(target.source, context.filename) !== true)
+    return false
   if (PINIA_MODULES.has(target.source)) return true
   const name =
     method === 'spyOn' ? literal(node.arguments[1]) : target.path.at(-1)
