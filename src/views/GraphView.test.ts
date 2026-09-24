@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -10,6 +10,7 @@ import type * as DistributionTypes from '@/platform/distribution/types'
 import type * as I18nModule from '@/i18n'
 
 const apiMock = vi.hoisted(() => new EventTarget())
+const loadNewOutputAssets = vi.hoisted(() => vi.fn(async () => {}))
 const distribution = vi.hoisted(
   (): {
     isCloud: typeof DistributionTypes.isCloud
@@ -105,7 +106,10 @@ vi.mock('@/composables/useAppMode', () => ({
   useAppMode: () => ({ isBuilderMode: ref(false) })
 }))
 vi.mock('@/stores/assetsStore', () => ({
-  useAssetsStore: () => ({ updateHistory: vi.fn() })
+  useAssetsStore: () => ({
+    updateHistory: vi.fn(),
+    outputAssets: { loadNew: loadNewOutputAssets }
+  })
 }))
 vi.mock('@/stores/commandStore', () => ({
   useCommandStore: () => ({ registerCommands: vi.fn() })
@@ -223,6 +227,16 @@ describe('GraphView - reconnect wiring', () => {
     const refreshOnReconnect = useReconnectQueueRefresh()
     expect(onReconnected).toHaveBeenCalledTimes(1)
     expect(refreshOnReconnect).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('GraphView - output assets refresh', () => {
+  it('reloads output assets on execution_success while the assets sidebar is inactive', async () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    apiMock.dispatchEvent(new Event('execution_success'))
+
+    await waitFor(() => expect(loadNewOutputAssets).toHaveBeenCalledTimes(1))
   })
 })
 
