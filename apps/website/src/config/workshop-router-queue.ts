@@ -1,3 +1,4 @@
+import { combineAbortSignals, createTimeoutSignal } from '../utils/abortSignal'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import type {
   AttemptContext,
@@ -136,9 +137,9 @@ async function routerFetch(
             'Idempotency-Key': options.idempotencyKey
           })
     },
-    signal: AbortSignal.any([
+    signal: combineAbortSignals([
       context.signal,
-      AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+      createTimeoutSignal(REQUEST_TIMEOUT_MS)
     ])
   })
 }
@@ -261,7 +262,8 @@ async function settleQueuedResult(
       {
         cause: error,
         requestSettlement:
-          errorType && TERMINAL_RESULT_ERRORS.has(errorType)
+          error.reason === 'policy' ||
+          (errorType && TERMINAL_RESULT_ERRORS.has(errorType))
             ? 'terminal'
             : 'pending'
       }
@@ -393,6 +395,13 @@ export async function runWorkshopRouter(
         advance(active, context)
       )
     }
+    if (state.phase === 'synchronous')
+      return await runSynchronousWorkshopRouter(options, context)
+    return {
+      outputs: state.outputs,
+      requestId: state.requestId,
+      deadlineCollections: 0
+    }
   } catch (error) {
     const requestId = runRequestId(state)
     if (options.signal.reason === WORKSHOP_USER_CANCEL && requestId)
@@ -400,12 +409,7 @@ export async function runWorkshopRouter(
     options.signal.throwIfAborted()
     if (error instanceof WorkshopRouterError) throw error
     return throwRunFailure(error, context, requestId)
-  }
-  if (state.phase === 'synchronous')
-    return runSynchronousWorkshopRouter(options, context)
-  return {
-    outputs: state.outputs,
-    requestId: state.requestId,
-    deadlineCollections: 0
+  } finally {
+    context.controller.abort()
   }
 }

@@ -7,6 +7,7 @@ import {
   runWorkshopRouter,
   WORKSHOP_USER_CANCEL
 } from './workshop-router-queue'
+import { workshopFailureAnalytics } from '../scripts/workshop-analytics'
 
 const MODEL = 'bfl/flux-2-pro'
 const REQUEST_ID = '6f1a1a6e-6a53-4a5f-9d3a-2b3b0a1f9c21'
@@ -78,6 +79,30 @@ async function settle<T>(run: Promise<T>): Promise<T> {
   const settled = await outcome
   if ('error' in settled) throw settled.error
   return settled.value
+}
+
+async function withoutStaticAbortSignalHelpers<T>(
+  action: () => Promise<T>
+): Promise<T> {
+  const nativeAny = Object.getOwnPropertyDescriptor(AbortSignal, 'any')
+  const nativeTimeout = Object.getOwnPropertyDescriptor(AbortSignal, 'timeout')
+  Object.defineProperty(AbortSignal, 'any', {
+    configurable: true,
+    value: undefined
+  })
+  Object.defineProperty(AbortSignal, 'timeout', {
+    configurable: true,
+    value: undefined
+  })
+  try {
+    return await action()
+  } finally {
+    if (nativeAny) Object.defineProperty(AbortSignal, 'any', nativeAny)
+    else Reflect.deleteProperty(AbortSignal, 'any')
+    if (nativeTimeout)
+      Object.defineProperty(AbortSignal, 'timeout', nativeTimeout)
+    else Reflect.deleteProperty(AbortSignal, 'timeout')
+  }
 }
 
 function requestedUrls(calls: ReturnType<typeof stubFetch>) {
@@ -167,6 +192,22 @@ describe('queued Router delivery', () => {
       'logical-run'
     )
     expect(submit?.body).toBe('{"prompt":"Private prompt"}')
+  })
+
+  it('runs when Safari lacks the static AbortSignal helpers', async () => {
+    const calls = stubFetch(admitted(), result())
+    const controller = new AbortController()
+
+    const rendered = await withoutStaticAbortSignalHelpers(() =>
+      runWorkshopRouter(options(controller.signal))
+    )
+
+    expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
+    expect(calls).toHaveBeenCalledTimes(2)
+    expect(
+      calls.mock.calls.every(([, init]) => init?.signal?.aborted === true)
+    ).toBe(true)
+    expect(controller.signal.aborted).toBe(false)
   })
 
   it('keeps collecting the same run when the connection drops mid-generation', async () => {
@@ -320,11 +361,78 @@ describe('queued Router delivery', () => {
 
   it('reports the stored failure of a finished run', async () => {
     stubFetch(admitted(), pending(), refusal(502, 'provider_error'))
-    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+    const failure: unknown = await settle(runWorkshopRouter(options())).catch(
+      (error: unknown) => error
+    )
+
+    assert.instanceOf(failure, WorkshopRouterError)
+    expect(failure).toMatchObject({
       reason: 'provider',
       requestId: REQUEST_ID,
       response: { status: 502 },
       requestSettlement: 'terminal'
+    })
+    expect(workshopFailureAnalytics(failure)).not.toHaveProperty(
+      'exception_name'
+    )
+  })
+
+  it('reports a stored provider moderation payload as a terminal policy refusal', async () => {
+    stubFetch(
+      admitted(),
+      Response.json(
+        {
+          code: 'DataInspectionFailed',
+          message:
+            'Green net check failed for image (input): Input data may contain inappropriate content.'
+        },
+        {
+          status: 502,
+          headers: { 'X-Comfy-Error-Type': 'provider_error' }
+        }
+      )
+    )
+
+    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+      reason: 'policy',
+      requestId: REQUEST_ID,
+      response: { status: 502, errorType: 'provider_error' },
+      requestSettlement: 'terminal'
+    })
+  })
+
+  it('settles a successful HTTP result with a BFL moderation status', async () => {
+    stubFetch(
+      admitted(),
+      Response.json({
+        id: 'bfl-task',
+        status: 'Content Moderated',
+        result: null
+      })
+    )
+
+    await expect(settle(runWorkshopRouter(options()))).rejects.toMatchObject({
+      reason: 'policy',
+      requestId: REQUEST_ID,
+      response: { status: 200, errorType: null },
+      requestSettlement: 'terminal'
+    })
+  })
+
+  it('retains a queued response parser exception for analytics', async () => {
+    const malformed = () =>
+      new Response('{', { headers: { 'Content-Type': 'application/json' } })
+    stubFetch(admitted(), malformed(), malformed(), malformed())
+
+    const failure: unknown = await settle(runWorkshopRouter(options())).catch(
+      (error: unknown) => error
+    )
+
+    assert.instanceOf(failure, WorkshopRouterError)
+    expect(workshopFailureAnalytics(failure)).toMatchObject({
+      reason: 'response',
+      request_id: REQUEST_ID,
+      exception_name: 'SyntaxError'
     })
   })
 

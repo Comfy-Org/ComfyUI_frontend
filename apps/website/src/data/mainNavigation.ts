@@ -117,8 +117,7 @@ export function getMainNavigation(
             },
             {
               label: t('nav.comfyCli', locale),
-              href: routes.cli,
-              badge: 'new'
+              href: routes.cli
             },
             // TODO: no page yet — re-enable when landing pages ship
             // { label: t('nav.appMode', locale), href: '#' },
@@ -169,13 +168,11 @@ export function getMainNavigation(
             },
             {
               label: t('nav.affiliates', locale),
-              href: routes.affiliates,
-              badge: 'new'
+              href: routes.affiliates
             },
             {
               label: t('nav.learning', locale),
-              href: routes.learning,
-              badge: 'new'
+              href: routes.learning
             }
           ]
         },

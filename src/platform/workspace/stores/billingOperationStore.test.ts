@@ -11,6 +11,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { useTelemetry } from '@/platform/telemetry'
+import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import type { BillingOpStatusResponse } from '@/platform/workspace/api/workspaceApi'
@@ -40,25 +41,11 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-vi.mock<unknown>(import('@/platform/workspace/api/workspaceApi'), () => ({
-  workspaceApi: {
-    getBillingOpStatus: vi.fn()
-  }
-}))
+vi.mock(import('@/platform/workspace/api/workspaceApi'))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
-const mockSettingsDialogShow = vi.fn()
-
-vi.mock(import('@/platform/settings/composables/useSettingsDialog'), () => ({
-  useSettingsDialog: () => ({
-    show: mockSettingsDialogShow,
-    hide: vi.fn(),
-    showAbout: vi.fn()
-  })
-}))
+vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 vi.mock(import('@/platform/telemetry'))
 
@@ -472,7 +459,7 @@ describe('billingOperationStore', () => {
       const operation = store.getOperation('op-1')
       expect(operation?.status).toBe('succeeded')
       expect(store.hasPendingOperations).toBe(false)
-      expect(vi.mocked(useBillingCapabilities().refresh)).toHaveBeenCalledOnce()
+      expect(useBillingCapabilities().refresh).toHaveBeenCalledOnce()
 
       expect(billing.reconcileSubscriptionSuccess).toHaveBeenCalledOnce()
       expect(billing.fetchStatus).not.toHaveBeenCalled()
@@ -501,7 +488,7 @@ describe('billingOperationStore', () => {
       expect(useDialogStore().closeDialog).not.toHaveBeenCalledWith({
         key: 'subscription-required'
       })
-      expect(mockSettingsDialogShow).not.toHaveBeenCalled()
+      expect(useSettingsDialog().show).not.toHaveBeenCalled()
     })
 
     it('closes the top-up dialog and opens settings on topup success', async () => {
@@ -519,7 +506,7 @@ describe('billingOperationStore', () => {
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'top-up-credits'
       })
-      expect(mockSettingsDialogShow).toHaveBeenCalledWith('workspace')
+      expect(useSettingsDialog().show).toHaveBeenCalledWith('workspace')
     })
 
     it('opens Credits settings after a polled local topup succeeds', async () => {
@@ -535,7 +522,7 @@ describe('billingOperationStore', () => {
 
       await vi.advanceTimersByTimeAsync(0)
 
-      expect(mockSettingsDialogShow).toHaveBeenCalledWith('credits')
+      expect(useSettingsDialog().show).toHaveBeenCalledWith('credits')
     })
 
     it('fires purchase telemetry on subscription success', async () => {
@@ -2804,7 +2791,7 @@ describe('billingOperationStore', () => {
       await vi.advanceTimersByTimeAsync(0)
       await terminal
 
-      expect(mockSettingsDialogShow).not.toHaveBeenCalled()
+      expect(useSettingsDialog().show).not.toHaveBeenCalled()
       expect(useToastStore().add).not.toHaveBeenCalled()
     })
 

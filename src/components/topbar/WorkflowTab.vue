@@ -11,7 +11,10 @@
         @mouseup="handleMouseUp"
         @click="handleClick"
       >
-        <i v-if="isBuilderState" class="bg-text-subtle icon-[lucide--hammer]" />
+        <i
+          v-if="isBuilderState"
+          class="icon-[lucide--hammer] bg-muted-foreground"
+        />
         <i
           v-else-if="workflowOption.workflow.initialMode === 'app'"
           class="icon-[lucide--panels-top-left] bg-primary-background"
