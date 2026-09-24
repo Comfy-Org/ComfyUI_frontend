@@ -1559,60 +1559,62 @@ export class ComfyApp {
       const snapTo = LiteGraph.alwaysSnapToGrid
         ? this.rootGraph.getSnapToGridSize()
         : 0
-      forEachNode(this.rootGraph, (node) => {
-        const size = node.computeSize()
-        size[0] = Math.max(node.size[0], size[0])
-        size[1] = Math.max(node.size[1], size[1])
-        snapPoint(size, snapTo, 'ceil')
-        node.setSize(size)
-        if (node.widgets) {
-          // If you break something in the backend and want to patch workflows in the frontend
-          // This is the place to do this
-          for (const widget of node.widgets) {
-            if (node.type == 'KSampler' || node.type == 'KSamplerAdvanced') {
-              if (widget.name == 'sampler_name') {
-                if (
-                  typeof widget.value === 'string' &&
-                  widget.value.startsWith('sample_')
-                ) {
-                  widget.value = widget.value.slice(7)
+      withGraphIntentSource('load', () =>
+        forEachNode(this.rootGraph, (node) => {
+          const size = node.computeSize()
+          size[0] = Math.max(node.size[0], size[0])
+          size[1] = Math.max(node.size[1], size[1])
+          snapPoint(size, snapTo, 'ceil')
+          node.setSize(size)
+          if (node.widgets) {
+            // If you break something in the backend and want to patch workflows in the frontend
+            // This is the place to do this
+            for (const widget of node.widgets) {
+              if (node.type == 'KSampler' || node.type == 'KSamplerAdvanced') {
+                if (widget.name == 'sampler_name') {
+                  if (
+                    typeof widget.value === 'string' &&
+                    widget.value.startsWith('sample_')
+                  ) {
+                    widget.value = widget.value.slice(7)
+                  }
                 }
               }
-            }
-            if (
-              node.type == 'KSampler' ||
-              node.type == 'KSamplerAdvanced' ||
-              node.type == 'PrimitiveNode'
-            ) {
-              if (widget.name == 'control_after_generate') {
-                if (widget.value === true) {
-                  widget.value = 'randomize'
-                } else if (widget.value === false) {
-                  widget.value = 'fixed'
-                }
-              }
-            }
-            if (widget.type == 'combo') {
-              const values = widget.options.values as
-                | (string | number | boolean)[]
-                | undefined
               if (
-                values &&
-                values.length > 0 &&
-                (widget.value == null ||
-                  (reset_invalid_values &&
-                    !values.includes(
-                      widget.value as string | number | boolean
-                    )))
+                node.type == 'KSampler' ||
+                node.type == 'KSamplerAdvanced' ||
+                node.type == 'PrimitiveNode'
               ) {
-                widget.value = values[0]
+                if (widget.name == 'control_after_generate') {
+                  if (widget.value === true) {
+                    widget.value = 'randomize'
+                  } else if (widget.value === false) {
+                    widget.value = 'fixed'
+                  }
+                }
+              }
+              if (widget.type == 'combo') {
+                const values = widget.options.values as
+                  | (string | number | boolean)[]
+                  | undefined
+                if (
+                  values &&
+                  values.length > 0 &&
+                  (widget.value == null ||
+                    (reset_invalid_values &&
+                      !values.includes(
+                        widget.value as string | number | boolean
+                      )))
+                ) {
+                  widget.value = values[0]
+                }
               }
             }
           }
-        }
 
-        useExtensionService().invokeExtensions('loadedGraphNode', node)
-      })
+          useExtensionService().invokeExtensions('loadedGraphNode', node)
+        })
+      )
 
       await useExtensionService().invokeExtensionsAsync(
         'afterConfigureGraph',

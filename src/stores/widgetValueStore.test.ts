@@ -157,6 +157,19 @@ describe('useWidgetValueStore', () => {
       expect(store.getWidget(seedA)?.type).toBe('string')
     })
 
+    it('keeps the incumbent value on a same-type re-registration without announcing the init value', () => {
+      const store = useWidgetValueStore()
+      store.registerWidget(seedA, state('number', 20))
+      const intents: GraphIntentEvent[] = []
+      const unsubscribe = onGraphIntent((event) => intents.push(event))
+
+      const registered = store.registerWidget(seedA, state('number', 10))!
+      unsubscribe()
+
+      expect(registered.value).toBe(20)
+      expect(intents).toEqual([])
+    })
+
     it('does not accept caller-owned identity during re-registration', () => {
       const store = useWidgetValueStore()
       store.registerWidget(seedA, state('number', 5))

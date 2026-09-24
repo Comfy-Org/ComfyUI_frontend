@@ -252,11 +252,11 @@ export const useWidgetValueStore = defineStore('widgetValue', () => {
     // widget type at an old address, overwrite). Without it a text widget
     // rendered as the prior int type until the next full reload (#13073, #13773).
     if (existing && existing.state.type === init.type) {
-      const value = existing.state.value
-      Object.assign(existing.state, init, {
+      Object.assign(existing.state, {
+        ...init,
         name: init.name ?? storageName,
         nodeId,
-        value,
+        value: existing.state.value,
         y: init.y ?? existing.state.y
       })
       Object.assign(existing.render, renderState)
