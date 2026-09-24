@@ -27,11 +27,14 @@ function pendingSignIn(): SignInHarness {
 
 let popupCount = 0
 
-/** A real popup window, the way `signInWithPopup` opens one: several awaits
- *  into the call, never synchronously with it. */
-async function openPopupLate(): Promise<Window> {
+const AUTH_HANDLER_URL =
+  'https://example.firebaseapp.com/__/auth/handler?providerId=google.com'
+
+/** A real popup window, the way `signInWithPopup` opens one: at the auth
+ *  handler, several awaits into the call, never synchronously with it. */
+async function openPopupLate(url = AUTH_HANDLER_URL): Promise<Window> {
   await Promise.resolve()
-  const popup = window.open('', `popup-${(popupCount += 1)}`, 'width=1')
+  const popup = window.open(url, `popup-${(popupCount += 1)}`, 'width=1')
   if (!popup) throw new Error('happy-dom did not provide a popup window')
   return popup
 }
@@ -174,22 +177,25 @@ describe('withPopupCloseSignal', () => {
     expect(window.open).toBe(before)
   })
 
-  it('observes only the first window opened during the call', async () => {
+  it('watches Firebase\u2019s window, not another the page opened meanwhile', async () => {
     const onPopupClosed = vi.fn()
     const signIn = pendingSignIn()
-    let firebasePopup: Window | undefined
     let unrelatedPopup: Window | undefined
+    let firebasePopup: Window | undefined
 
     const result = withPopupCloseSignal(async () => {
+      unrelatedPopup = await openPopupLate('https://example.com/pricing')
       firebasePopup = await openPopupLate()
-      unrelatedPopup = await openPopupLate()
       return signIn.signedIn
     }, onPopupClosed)
 
     await vi.advanceTimersByTimeAsync(0)
     unrelatedPopup?.close()
     await vi.advanceTimersByTimeAsync(AFTER_CLOSE_MS * 2)
-    expect(onPopupClosed).not.toHaveBeenCalled()
+    expect(
+      onPopupClosed,
+      'an unrelated window closing says nothing about the sign-in'
+    ).not.toHaveBeenCalled()
 
     firebasePopup?.close()
     await vi.advanceTimersByTimeAsync(AFTER_CLOSE_MS)
@@ -197,5 +203,18 @@ describe('withPopupCloseSignal', () => {
 
     signIn.settle('credential')
     await result
+  })
+
+  it('restores window.open when the sign-in throws before opening a window', async () => {
+    const before = window.open
+    const failure = new Error('firebase config is not loaded')
+
+    expect(() =>
+      withPopupCloseSignal(() => {
+        throw failure
+      }, vi.fn())
+    ).toThrow(failure)
+
+    expect(window.open).toBe(before)
   })
 })

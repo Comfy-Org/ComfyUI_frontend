@@ -20,6 +20,15 @@
 const POPUP_CLOSE_POLL_MS = 250
 
 /**
+ * Firebase always points its popup at the auth handler on the configured auth
+ * domain. Matching it means an unrelated `window.open` from elsewhere on the
+ * page during the call is ignored rather than watched in its place; if the SDK
+ * ever stops using this route, nothing matches and the wait simply falls back
+ * to Firebase's own timing.
+ */
+const FIREBASE_AUTH_HANDLER_PATH = '/__/auth/handler'
+
+/**
  * A closed window is not proof of abandonment — on some flows the OAuth
  * helper closes the popup itself once it has handed the credential back — so
  * a sign-in that is already resolving is given this long to settle first and
@@ -63,21 +72,30 @@ export function withPopupCloseSignal<T>(
     timer = setTimeout(poll, POPUP_CLOSE_POLL_MS)
   }
 
-  // Only the first window opened during the call is Firebase's, and the patch
-  // comes off the moment it arrives, so nothing else on the page is observed.
   const patchedOpen: typeof window.open = (...args) => {
     const opened = nativeOpen.apply(window, args)
+    if (!String(args[0] ?? '').includes(FIREBASE_AUTH_HANDLER_PATH)) {
+      return opened
+    }
     restoreOpen()
     if (opened) watchForClose(opened)
     return opened
   }
 
-  window.open = patchedOpen
-  // The popup is opened several awaits into `signInWithPopup` (the resolver
-  // initializes first), so the patch has to outlive the synchronous call.
-  return run().finally(() => {
+  const stopWatching = () => {
     settled = true
     restoreOpen()
     clearTimeout(timer)
-  })
+  }
+
+  window.open = patchedOpen
+  // The popup is opened several awaits into `signInWithPopup` (the resolver
+  // initializes first), so the patch has to outlive the synchronous call — and
+  // has to come off again when that call throws before ever opening one.
+  try {
+    return run().finally(stopWatching)
+  } catch (error) {
+    stopWatching()
+    throw error
+  }
 }

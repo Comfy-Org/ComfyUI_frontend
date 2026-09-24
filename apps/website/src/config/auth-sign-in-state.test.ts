@@ -42,6 +42,50 @@ describe('authSignInTransition', () => {
     })
   })
 
+  it('detaches a dismissed popup from the controls without ending the attempt', () => {
+    const detached = authSignInTransition(pending, { type: 'signInDetached' })
+    expect(detached).toEqual({ step: 'detached', provider: 'google' })
+
+    expect(
+      authSignInTransition(detached, { type: 'userRestored', email: 'a@b.co' }),
+      'the detached attempt still owes a provisioning step the restore path does not run'
+    ).toBe(detached)
+
+    expect(
+      authSignInTransition(detached, {
+        type: 'credentialSucceeded',
+        email: 'a@b.co'
+      }),
+      'Firebase can still answer a dismissed popup with a credential'
+    ).toEqual({ step: 'minting', email: 'a@b.co', origin: 'interactive' })
+  })
+
+  it('lets the visitor start a fresh attempt while an old one is detached', () => {
+    const detached = authSignInTransition(pending, { type: 'signInDetached' })
+
+    expect(
+      authSignInTransition(detached, {
+        type: 'signInStarted',
+        provider: 'email'
+      })
+    ).toEqual({ step: 'pending', provider: 'email' })
+    expect(authSignInTransition(detached, { type: 'signInAbandoned' })).toEqual(
+      idle
+    )
+  })
+
+  it('only detaches an attempt that is still waiting on its popup', () => {
+    const minting = authSignInTransition(pending, {
+      type: 'credentialSucceeded',
+      email: 'a@b.co'
+    })
+
+    expect(authSignInTransition(idle, { type: 'signInDetached' })).toBe(idle)
+    expect(authSignInTransition(minting, { type: 'signInDetached' })).toBe(
+      minting
+    )
+  })
+
   it('keeps a mid-popup restore event from short-circuiting the attempt', () => {
     expect(
       authSignInTransition(pending, {
