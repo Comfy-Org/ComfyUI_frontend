@@ -16,7 +16,9 @@
     "packages/ingest-types/openapi-ts.config.ts",
     // Playwright loads these by path string from playwright.config.ts, so the
     // reference is not in the import graph.
-    "browser_tests/global{Setup,Teardown}.ts"
+    "browser_tests/global{Setup,Teardown}.ts",
+    // Opt-in session E2E config, run only as `playwright test --config`.
+    "playwright.session.config.ts"
   ],
 
   "ignorePatterns": [
