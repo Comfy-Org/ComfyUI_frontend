@@ -46,6 +46,7 @@ const {
   values,
   files,
   outputs,
+  sending,
   busy,
   session,
   settled,
@@ -125,13 +126,15 @@ const shownOutputs = computed(() => scene.value?.outputs ?? outputs.value)
 
       <div class="flex flex-col gap-8 p-5" data-testid="workflow-run-inputs">
         <WorkflowRunField
-          v-for="field in fields"
+          v-for="(field, index) in fields"
           :key="address(field)"
           v-model="values[address(field)]"
           v-model:file="files[address(field)]"
           :field
           :name="address(field)"
           :disabled="busy"
+          :sending="index === sending"
+          :sent="sending >= 0 && index < sending"
           :locale
         />
       </div>

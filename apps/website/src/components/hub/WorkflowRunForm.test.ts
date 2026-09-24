@@ -44,6 +44,7 @@ const session = computed(() => signedIn.value)
 const settled = computed(() => true)
 const run = vi.fn()
 const cancel = vi.fn()
+const sending = ref(-1)
 
 // The run itself is the composable's, and it has its own tests. What this
 // component owes is the questions, the one way to start, and the way out.
@@ -53,6 +54,7 @@ vi.mock(import('../../composables/useWorkflowRun'), () => ({
     values: ref<Record<string, string | number>>({}),
     files: ref({}),
     outputs: ref([]),
+    sending,
     busy,
     session,
     settled,
@@ -83,6 +85,7 @@ describe('WorkflowRunForm', () => {
     inFlight.value = false
     signedIn.value = credential
     balance = ref({ status: 'unknown' })
+    sending.value = -1
   })
 
   it('asks one question per answer the graph needs', () => {
@@ -170,6 +173,26 @@ describe('WorkflowRunForm', () => {
     expect(screen.getByTestId('workflow-run-personal')).toBeTruthy()
     expect(screen.queryByTestId('workflow-run-credits')).toBeNull()
     expect(screen.getByTestId('run-gate').textContent).toContain('Comfy Design')
+  })
+
+  // An upload can take a while, and the panel only says that files are going
+  // up. The row the reader is looking at says which one, and which are there.
+  it.for([
+    { case: 'is on its way up', at: 0, said: 'Going up now…' },
+    { case: 'is already there', at: 1, said: 'Uploaded' }
+  ])('says when an answer $case', ({ at, said }) => {
+    sending.value = at
+    mount()
+
+    expect(screen.getByTestId('field-travel-1.image').textContent).toContain(
+      said
+    )
+  })
+
+  it('says nothing about travel while nothing is going up', () => {
+    mount()
+
+    expect(screen.queryByTestId('field-travel-1.image')).toBeNull()
   })
 
   // A balance that has not arrived is not a balance of nothing.

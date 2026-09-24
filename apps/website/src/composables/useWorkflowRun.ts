@@ -244,6 +244,13 @@ export function useWorkflowRun(
     )
   }
 
+  /**
+   * Which answer is on its way up, by its place in the form. A file can take
+   * a while and the panel only says that files are going; the row the reader
+   * is looking at should say which one, and which are already there.
+   */
+  const sending = ref(-1)
+
   async function run() {
     if (
       busy.value ||
@@ -268,12 +275,17 @@ export function useWorkflowRun(
           `Upload ${missing.label.toLowerCase()} before running.`
         )
       const bindings = []
-      for (const field of fields) bindings.push(await bindingFor(field, signal))
+      for (const [index, field] of fields.entries()) {
+        sending.value = index
+        bindings.push(await bindingFor(field, signal))
+      }
+      sending.value = -1
       state.value = { phase: 'submitting', startedAt }
       sent = true
       jobId = await client.submit(bindWorkflowInputs(graph, bindings), signal)
       await poll(jobId, signal, startedAt)
     } catch (error) {
+      sending.value = -1
       if (!signal.aborted) state.value = failed(error, jobId, sent)
     }
   }
@@ -325,6 +337,7 @@ export function useWorkflowRun(
     state,
     values,
     outputs,
+    sending,
     busy,
     session,
     settled,

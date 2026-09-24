@@ -7,6 +7,7 @@ import type { WorkflowField } from '../../config/workflow-fields'
 import { WORKFLOW_MAX_UPLOAD_BYTES } from '../../config/workflow-fields'
 import type { FileValue } from '../../config/workshop-playground'
 import type { Locale } from '../../i18n/translations'
+import { tHub } from '../../i18n/hub'
 import FileSourceInput from '../workshop/FileSourceInput.vue'
 
 // One answer the workflow needs, asked in the words the reader understands
@@ -16,12 +17,18 @@ const {
   field,
   name,
   disabled = false,
+  sending = false,
+  sent = false,
   locale = 'en'
 } = defineProps<{
   field: WorkflowField
   /** The graph address this answer belongs to, used as the control's id. */
   name: string
   disabled?: boolean
+  /** This answer is on its way to Cloud right now. */
+  sending?: boolean
+  /** It is already there, and the run has moved on to a later answer. */
+  sent?: boolean
   locale?: Locale
 }>()
 
@@ -30,6 +37,14 @@ const file = defineModel<FileValue | undefined>('file')
 
 const inputClass =
   'w-full rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4 px-4 text-sm text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:border-primary-comfy-yellow focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 disabled:opacity-50'
+
+const travel = computed(() =>
+  sending
+    ? 'workshop.v2.run.sendingFile'
+    : sent
+      ? 'workshop.v2.run.sentFile'
+      : undefined
+)
 
 const upload = computed(() =>
   field.kind === 'image' || field.kind === 'video' || field.kind === 'audio'
@@ -59,13 +74,16 @@ const upload = computed(() =>
       </p>
     </div>
 
-    <FileSourceInput
-      v-if="upload"
-      v-model="file"
-      :field="upload"
-      :locale
-      :disabled
-    />
+    <template v-if="upload">
+      <FileSourceInput v-model="file" :field="upload" :locale :disabled />
+      <p
+        v-if="travel"
+        class="text-xs text-primary-warm-gray"
+        :data-testid="`field-travel-${name}`"
+      >
+        {{ tHub(travel, locale) }}
+      </p>
+    </template>
 
     <textarea
       v-else-if="field.kind === 'text'"

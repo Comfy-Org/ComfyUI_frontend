@@ -238,6 +238,11 @@ const hub = {
     en: 'Finding your run again',
     'zh-CN': '正在重新连接你的运行'
   },
+  'workshop.v2.run.sendingFile': {
+    en: 'Going up now…',
+    'zh-CN': '正在上传…'
+  },
+  'workshop.v2.run.sentFile': { en: 'Uploaded', 'zh-CN': '已上传' },
   'workshop.v2.run.queued': { en: 'Waiting its turn', 'zh-CN': '排队中' },
   'workshop.v2.run.waking': {
     en: 'Waking its server',
