@@ -3050,6 +3050,37 @@ describe('AgentPanelRoot workflow binding', () => {
     ])
   })
 
+  it('reports the workflow the turn was posted against, not the id known before it resolved', async () => {
+    // No binding, and the cloud index does not list the tab until the send's
+    // own refresh — so the id is genuinely unresolved at the moment the user
+    // hits Send, the state a first send of a session starts from.
+    makeTab()
+    let listed = false
+    const bodies = mockMessagesEndpoint('wf-77', () =>
+      listed ? [{ id: 'wf-77', name: 'current' }] : []
+    )
+    telemetry.trackAgentMessageSent.mockClear()
+    renderWithSelectedTarget()
+    await screen.findByRole('textbox')
+    listed = true
+
+    await sendFromComposer('build me a workflow')
+
+    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-77' })
+    expect(telemetry.trackAgentMessageSent.mock.calls).toEqual([
+      [
+        {
+          attachment_count: 0,
+          node_tag_count: 0,
+          thread_id: null,
+          workflow_id: 'wf-77',
+          client_message_id: 'client-message-1',
+          input_method: 'typed'
+        }
+      ]
+    ])
+  })
+
   function setupWorkflowContext({
     targetId,
     references

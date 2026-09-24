@@ -609,10 +609,13 @@ export interface AgentConsentShownMetadata extends Record<string, unknown> {
   trigger: AgentConsentTrigger
 }
 /**
- * Only a deliberate choice resolves the card. Dismissing it (Escape, overlay
- * click) leaves consent unset and emits nothing, so `agent_consent_shown`
- * without a matching resolution is the dismissal count rather than a
- * fabricated `rejected`.
+ * Only consent the user actually gave or refused resolves the card, so this
+ * never reports a decision that did not stick. An `agent_consent_shown` with
+ * no matching resolution is an *unresolved* offer, not a dismissal: it covers
+ * dismissing the card (Escape, overlay click), an acceptance whose save
+ * failed, and — signed out — accepting the card but abandoning the sign-in
+ * that has to follow. Splitting those three apart needs a signal this event
+ * does not carry.
  */
 export interface AgentConsentResolvedMetadata extends Record<string, unknown> {
   decision: 'accepted' | 'rejected'
