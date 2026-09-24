@@ -344,4 +344,46 @@ describe('Agent workflow resolution', () => {
       { id: 'cloud-zimage', name: 'image_z_image_turbo' }
     ])
   })
+
+  it.for(['boundOrOpenWorkflowFor', 'storedWorkflowFor'] as const)(
+    'rejects a stale %s binding when the target name is duplicated in the cloud index',
+    async (resolve) => {
+      const portrait = workflow('workflows/portrait.json', 'Portrait')
+      const { resolver, bindings } = setup(
+        [portrait],
+        [
+          { id: 'cloud-zimage', name: 'image_z_image_turbo' },
+          { id: 'cloud-zimage-copy', name: 'image_z_image_turbo' },
+          { id: 'cloud-portrait', name: 'Portrait' }
+        ]
+      )
+      bindings.bind('cloud-zimage', portrait.path)
+      await resolver.refreshCloudWorkflowIds()
+
+      expect(resolver.cloudIdFor(portrait)).toBe('cloud-portrait')
+      expect(resolver[resolve]('cloud-zimage')).toBeNull()
+      expect(bindings.tabPathFor('cloud-zimage')).toBeUndefined()
+    }
+  )
+
+  it.for(['boundOrOpenWorkflowFor', 'storedWorkflowFor'] as const)(
+    'rejects a stale %s binding when the bound name is duplicated in the cloud index',
+    async (resolve) => {
+      const portrait = workflow('workflows/portrait.json', 'Portrait')
+      const { resolver, bindings } = setup(
+        [portrait],
+        [
+          { id: 'cloud-zimage', name: 'image_z_image_turbo' },
+          { id: 'cloud-portrait', name: 'Portrait' },
+          { id: 'cloud-portrait-copy', name: 'Portrait' }
+        ]
+      )
+      bindings.bind('cloud-zimage', portrait.path)
+      await resolver.refreshCloudWorkflowIds()
+
+      expect(resolver[resolve]('cloud-zimage')).toBeNull()
+      expect(resolver.cloudIdFor(portrait)).toBeUndefined()
+      expect(bindings.tabPathFor('cloud-zimage')).toBeUndefined()
+    }
+  )
 })
