@@ -379,6 +379,106 @@ describe('SubscriptionView', () => {
     ).toBeInTheDocument()
   })
 
+  describe('a team plan priced by credit stop', () => {
+    const TEAM_CATALOG: BillingPlansData = {
+      current_plan_slug: undefined,
+      plans: [
+        planOf({
+          slug: 'team_per_credit_monthly',
+          tier: 'TEAM',
+          max_seats: 50n,
+          price_cents: 0n,
+          credits_cents: 0n
+        })
+      ],
+      team_credit_stops: {
+        default_stop_index: 1,
+        stops: [
+          {
+            id: 'team_200',
+            credits: 42_200n,
+            monthly: { list_price_cents: 20_000n, price_cents: 20_000n },
+            yearly: { list_price_cents: 20_000n, price_cents: 20_000n }
+          },
+          {
+            id: 'team_700',
+            credits: 147_700n,
+            monthly: { list_price_cents: 70_000n, price_cents: 66_500n },
+            yearly: { list_price_cents: 70_000n, price_cents: 63_000n }
+          }
+        ]
+      }
+    }
+
+    const TEAM_STATUS = {
+      is_active: true,
+      has_funds: true,
+      max_seats: 50,
+      occupied_seats: 1,
+      scheduled_change: null,
+      team_credit_stop: null
+    }
+
+    it('prices the plan at the stop the server marks as default', async () => {
+      await renderSubscription({
+        plans: { status: 'ok', value: TEAM_CATALOG },
+        status: TEAM_STATUS
+      })
+
+      expect(await screen.findByText('$665.00')).toBeInTheDocument()
+      expect(screen.getByText('147,700 credits a month')).toBeInTheDocument()
+      expect(screen.queryByText('$0.00')).not.toBeInTheDocument()
+    })
+
+    it('prices the plan at the stop the workspace is subscribed to', async () => {
+      await renderSubscription({
+        plans: { status: 'ok', value: TEAM_CATALOG },
+        status: {
+          ...TEAM_STATUS,
+          team_credit_stop: {
+            id: 'team_200',
+            credits_monthly: 42_200n,
+            stop_usd: 200n
+          }
+        }
+      })
+
+      expect(await screen.findByText('$200.00')).toBeInTheDocument()
+      expect(screen.getByText('42,200 credits a month')).toBeInTheDocument()
+    })
+
+    it('quotes the chosen stop and carries it into checkout', async () => {
+      const fake = await renderSubscription({
+        plans: { status: 'ok', value: TEAM_CATALOG },
+        status: TEAM_STATUS
+      })
+
+      await userEvent.selectOptions(
+        await screen.findByRole('combobox', {
+          name: 'Monthly credits for Team · Monthly'
+        }),
+        'team_200'
+      )
+      await userEvent.click(
+        screen.getByRole('button', { name: 'Choose Team · Monthly' })
+      )
+
+      expect(fake.previewSubscribe).toHaveBeenCalledWith(
+        { planSlug: 'team_per_credit_monthly', teamCreditStopId: 'team_200' },
+        expect.anything()
+      )
+      await userEvent.click(
+        await screen.findByRole('button', { name: 'Continue to checkout' })
+      )
+      await waitFor(() =>
+        expect(fake.router.currentRoute.value.query).toMatchObject({
+          plan: 'team_per_credit_monthly',
+          team_credit_stop_id: 'team_200'
+        })
+      )
+    })
+  })
+
   it('explains a failed catalog read with copy of our own', async () => {
     await renderSubscription({
       plans: { status: 'error', code: 'REQUEST_FAILED' }
