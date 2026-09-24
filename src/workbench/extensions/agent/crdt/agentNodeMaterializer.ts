@@ -358,6 +358,13 @@ function materialize(
   }
   if (!added) return rollback('LGraph.add returned no node')
 
+  // This is a rendering-layer materialization of the same logical node, not
+  // a content change: the record's CRDT reconcile baseline must survive it,
+  // or the next reconcile sees a node with no baseline at all and treats an
+  // unrelated local edit (e.g. a title set outside the doc) as unproven,
+  // replaying the doc's possibly-stale value over it.
+  added._state.titleReconcileBaseline = state.titleReconcileBaseline
+
   // Only report once the node this id now belongs to is actually live: a
   // failed add rolls the orphan back onto the id via `rollback()`/`restore()`,
   // so a report emitted before this point would claim a drop that a
