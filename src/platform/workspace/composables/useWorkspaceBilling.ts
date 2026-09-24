@@ -28,7 +28,8 @@ import {
   WorkspaceApiError,
   workspaceApi
 } from '@/platform/workspace/api/workspaceApi'
-import { hostedBillingRoute } from '@/platform/workspace/billing/hostedBillingRoutes'
+import { openHostedBillingTab } from '@/platform/workspace/billing/openHostedBillingTab'
+import { registerRefreshOnReturn } from '@/platform/workspace/billing/refreshOnReturn'
 import { useBillingSdkStore } from '@/platform/workspace/billing/sdk/billingSdkStore'
 import type {
   SettledSubscribeResponse,
@@ -467,36 +468,20 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  // A cancellation or card change made in the portal tab or window never
-  // pushes back to this one — status has no return refetch and capability
-  // reads are paced — so the next return to the app re-reads everything the
+  // A cancellation or card change made in the portal window never pushes
+  // back to this one — status has no return refetch and capability reads
+  // are paced — so the next return to the app re-reads everything the
   // portal could have changed.
   let stopPortalReturnRefresh: (() => void) | null = null
   function refreshOnPortalReturn() {
     stopPortalReturnRefresh?.()
-
-    const stopListening = () => {
-      document.removeEventListener('visibilitychange', onReturn)
-      window.removeEventListener('focus', onReturn)
-      stopPortalReturnRefresh = null
-    }
-    const onReturn = (event: Event) => {
-      if (
-        event.type === 'visibilitychange' &&
-        document.visibilityState !== 'visible'
-      ) {
-        return
-      }
-      stopListening()
-      void Promise.allSettled([
+    stopPortalReturnRefresh = registerRefreshOnReturn(() =>
+      Promise.allSettled([
         fetchStatus(),
         fetchBalance(),
         useBillingCapabilities().refresh()
       ])
-    }
-    stopPortalReturnRefresh = stopListening
-    document.addEventListener('visibilitychange', onReturn)
-    window.addEventListener('focus', onReturn)
+    )
   }
 
   if (getCurrentScope()) {
@@ -541,14 +526,8 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
   // before them was refused. Each step opens a different destination, so a
   // block on one says nothing about the next.
   async function manageSubscription(): Promise<void> {
-    const hosted = hostedBillingRoute(
-      flags.hostedBillingDestination,
-      'payment-methods'
-    )
-    if (hosted.kind === 'billing_web') {
-      error.value = null
-      if (openPortalWindow(hosted.url.href)) return
-    }
+    error.value = null
+    if (openHostedBillingTab('payment-methods')) return
 
     const rail = useSubscriptionRail()
     if (rail) {

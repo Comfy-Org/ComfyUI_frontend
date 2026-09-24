@@ -4,12 +4,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
-import type { api } from '@/scripts/api'
+import { api } from '@/scripts/api'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import type { Mock } from 'vitest'
 
-const mockFetchApi = vi.hoisted(() => vi.fn<typeof api.fetchApi>())
 let mockInvalidateInputs: Mock<
   ReturnType<typeof useAssetsStore>['inputAssets']['invalidate']
 >
@@ -33,18 +32,9 @@ vi.mock(import('@/composables/node/useNodePaste'), () => ({
   useNodePaste: vi.fn()
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string) => key
-}))
+vi.mock(import('@/i18n'))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({
-  api: {
-    fetchApi: mockFetchApi,
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    getServerFeature: vi.fn()
-  }
-}))
+vi.mock(import('@/scripts/api'))
 
 function createMockNode(): LGraphNode {
   return fromAny<LGraphNode, unknown>({
@@ -98,12 +88,12 @@ describe('useNodeImageUpload', () => {
       folder: 'output',
       onUploadComplete
     })
-    mockFetchApi.mockResolvedValueOnce(successResponse('image.png'))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(successResponse('image.png'))
     const file = createFile('image.png')
 
     await handleUpload(file)
 
-    const body = mockFetchApi.mock.calls[0][1]?.body
+    const body = vi.mocked(api.fetchApi).mock.calls[0][1]?.body
     if (!(body instanceof FormData)) {
       throw new Error('Image upload must send multipart form data')
     }
@@ -119,7 +109,7 @@ describe('useNodeImageUpload', () => {
   ])(
     'sets isUploading true during $mediaType upload and false after',
     async ({ filename, mimeType }) => {
-      mockFetchApi.mockResolvedValueOnce(successResponse(filename))
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(successResponse(filename))
 
       const promise = capturedDragOnDrop([createFile(filename, mimeType)])
       expect(node.isUploading).toBe(true)
@@ -130,7 +120,7 @@ describe('useNodeImageUpload', () => {
   )
 
   it('clears node.imgs on upload start', async () => {
-    mockFetchApi.mockResolvedValueOnce(successResponse('test.png'))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(successResponse('test.png'))
 
     const promise = capturedDragOnDrop([createFile()])
     expect(node.imgs).toBeUndefined()
@@ -139,7 +129,7 @@ describe('useNodeImageUpload', () => {
   })
 
   it('calls onUploadStart with files', async () => {
-    mockFetchApi.mockResolvedValueOnce(successResponse('test.png'))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(successResponse('test.png'))
     const files = [createFile()]
 
     await capturedDragOnDrop(files)
@@ -147,7 +137,7 @@ describe('useNodeImageUpload', () => {
   })
 
   it('invalidates input assets and only then calls onUploadComplete on success', async () => {
-    mockFetchApi.mockResolvedValueOnce(successResponse('test.png'))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(successResponse('test.png'))
     let invalidateResolve!: () => void
     mockInvalidateInputs.mockImplementationOnce(
       () =>
@@ -165,21 +155,23 @@ describe('useNodeImageUpload', () => {
     invalidateResolve()
     await drop
     expect(onUploadComplete).toHaveBeenCalledWith(['test.png'])
-    expect(mockFetchApi).toHaveBeenCalledWith(
+    expect(api.fetchApi).toHaveBeenCalledWith(
       '/upload/image',
       expect.objectContaining({ timeoutMs: 120_000 })
     )
   })
 
   it('includes subfolder in returned path', async () => {
-    mockFetchApi.mockResolvedValueOnce(successResponse('test.png', 'pasted'))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(
+      successResponse('test.png', 'pasted')
+    )
 
     await capturedDragOnDrop([createFile()])
     expect(onUploadComplete).toHaveBeenCalledWith(['pasted/test.png'])
   })
 
   it('calls onUploadError when all uploads fail', async () => {
-    mockFetchApi.mockResolvedValueOnce(failResponse())
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(failResponse())
 
     await capturedDragOnDrop([createFile()])
     expect(onUploadError).toHaveBeenCalled()
@@ -187,14 +179,14 @@ describe('useNodeImageUpload', () => {
   })
 
   it('resets isUploading even when upload fails', async () => {
-    mockFetchApi.mockRejectedValueOnce(new Error('Network error'))
+    vi.mocked(api.fetchApi).mockRejectedValueOnce(new Error('Network error'))
 
     await capturedDragOnDrop([createFile()])
     expect(node.isUploading).toBe(false)
   })
 
   it('rejects concurrent uploads with a toast', async () => {
-    mockFetchApi.mockImplementation(
+    vi.mocked(api.fetchApi).mockImplementation(
       () =>
         new Promise((resolve) =>
           setTimeout(() => resolve(successResponse('a.png')), 50)
@@ -213,7 +205,7 @@ describe('useNodeImageUpload', () => {
   })
 
   it('calls setDirtyCanvas on start and finish', async () => {
-    mockFetchApi.mockResolvedValueOnce(successResponse('test.png'))
+    vi.mocked(api.fetchApi).mockResolvedValueOnce(successResponse('test.png'))
 
     await capturedDragOnDrop([createFile()])
     expect(node.graph?.setDirtyCanvas).toHaveBeenCalledTimes(2)
