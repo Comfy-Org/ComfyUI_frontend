@@ -10093,9 +10093,13 @@ Enterprise`
     en: 'Use a video that is {seconds} seconds or shorter.',
     'zh-CN': '请使用时长不超过 {seconds} 秒的视频。'
   },
+  'workshop.form.videoWidthOutOfRange': {
+    en: 'Use a video between {minimum} and {maximum} pixels wide.',
+    'zh-CN': '请使用宽度在 {minimum} 到 {maximum} 像素之间的视频。'
+  },
   'workshop.form.videoUnreadable': {
-    en: 'Could not read the video duration. Select a playable video or use an accessible video link.',
-    'zh-CN': '无法读取视频时长。请选择可播放的视频或使用可访问的视频链接。'
+    en: 'Could not read the video details. Select a playable video or use an accessible video link.',
+    'zh-CN': '无法读取视频详情。请选择可播放的视频或使用可访问的视频链接。'
   },
   'workshop.form.draftRestoreFailed': {
     en: 'We could not restore all of your saved inputs. Check the form and pick your files again.',

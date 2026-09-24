@@ -1055,6 +1055,50 @@ describe('PostHogTelemetryProvider', () => {
         {}
       )
     })
+
+    it('captures a close_button agent panel close through the normal queue', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentPanelClosed({
+        source: 'close_button',
+        open_duration_ms: 5000
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_PANEL_CLOSED,
+        { source: 'close_button', open_duration_ms: 5000 }
+      )
+    })
+
+    it('captures a pagehide agent panel close with an immediate sendBeacon send', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentPanelClosed({
+        source: 'pagehide',
+        open_duration_ms: 5000
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_PANEL_CLOSED,
+        { source: 'pagehide', open_duration_ms: 5000 },
+        { transport: 'sendBeacon', send_instantly: true }
+      )
+    })
+
+    it('drops a pagehide agent panel close before PostHog has initialized', async () => {
+      const provider = createProvider()
+
+      provider.trackAgentPanelClosed({
+        source: 'pagehide',
+        open_duration_ms: 5000
+      })
+
+      await vi.dynamicImportSettled()
+
+      expect(hoisted.mockCapture).not.toHaveBeenCalled()
+    })
   })
 
   describe('disabled events', () => {
