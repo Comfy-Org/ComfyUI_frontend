@@ -459,6 +459,124 @@ describe('AuthSignIn', () => {
     )
   })
 
+  it('holds the controls when the window closes on a sign-in that already signed in', async () => {
+    let closePopup: (() => void) | undefined
+    let completeSignIn: ((credential: UserCredential) => void) | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise<UserCredential>((resolve) => {
+        completeSignIn = resolve
+      })
+    })
+    render(AuthSignIn)
+
+    await clickGoogle()
+    const credential = testCredential(
+      testFirebaseUser({
+        uid: 'user-1',
+        email: 'user@example.com',
+        displayName: null
+      })
+    )
+    // The OAuth helper closes its own window once the identity is published;
+    // that close is a sign-in completing, not one the visitor walked away from.
+    authUser.value = credential.user
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    closePopup?.()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      useEmailButton().hasAttribute('disabled'),
+      'there is nothing to hand back while the sign-in is still completing'
+    ).toBe(true)
+
+    completeSignIn?.(credential)
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
+  })
+
+  it('still shows the provisioning banner when a detached sign-in cannot create the customer', async () => {
+    let closePopup: (() => void) | undefined
+    let completeSignIn: ((credential: UserCredential) => void) | undefined
+    const user = testFirebaseUser({
+      uid: 'user-1',
+      email: 'a@b.co',
+      displayName: null
+    })
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise<UserCredential>((resolve) => {
+        completeSignIn = resolve
+      })
+    })
+    vi.mocked(isWorkshopProvisioningError).mockReturnValue(true)
+    vi.mocked(provisionWorkshopCustomer).mockRejectedValue({ user })
+    render(AuthSignIn)
+
+    await clickGoogle()
+    closePopup?.()
+    await waitFor(() =>
+      expect(useEmailButton().hasAttribute('disabled')).toBe(false)
+    )
+
+    completeSignIn?.(testCredential(user))
+
+    const alert = await screen.findByRole('alert')
+    expect(
+      alert.textContent,
+      'a dismissed pop-up must not silence a failure that leaves the visitor signed in with no customer'
+    ).toContain(t('auth.signIn.error.provisioning', 'en'))
+  })
+
+  it('never signs out the identity the attempt that superseded it established', async () => {
+    let closePopup: (() => void) | undefined
+    let completeSignIn: ((credential: UserCredential) => void) | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise<UserCredential>((resolve) => {
+        completeSignIn = resolve
+      })
+    })
+    vi.mocked(signInWorkshopWithEmail).mockResolvedValue(
+      testCredential(
+        testFirebaseUser({
+          uid: 'email-user',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
+    )
+    const user = userEvent.setup()
+    render(AuthSignIn)
+
+    await clickGoogle()
+    closePopup?.()
+    await waitFor(() =>
+      expect(useEmailButton().hasAttribute('disabled')).toBe(false)
+    )
+
+    await openEmailForm(user)
+    await user.type(screen.getByLabelText('Email'), 'user@example.com')
+    await user.type(screen.getByLabelText('Password'), 'Password1!')
+    await user.click(screen.getByRole('button', { name: /^sign in$/i }))
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
+
+    completeSignIn?.(
+      testCredential(
+        testFirebaseUser({
+          uid: 'google-user',
+          email: 'user@example.com',
+          displayName: null
+        })
+      )
+    )
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(
+      signOutWorkshop,
+      'signOutWorkshop is global, so a superseded attempt rolling back would sign the visitor out of the session they just got'
+    ).not.toHaveBeenCalled()
+  })
+
   it('rolls a late credential back when the visitor has moved on to another attempt', async () => {
     let closePopup: (() => void) | undefined
     let completeSignIn: ((credential: UserCredential) => void) | undefined

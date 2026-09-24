@@ -5,6 +5,7 @@
  * state and calls the returned commands; it holds no flow logic of its own.
  */
 import {
+  classifyAuthError,
   isFirebaseAuthErrorLike,
   severityForAuthError
 } from '@comfyorg/account-core/firebaseAuthError'
@@ -146,6 +147,10 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   // identity after the controls recover; the next attempt waits on this before
   // authenticating so the stale sign-out cannot clear the newer identity.
   let pendingRollback: Promise<unknown> | undefined
+  // Attempts are numbered so a detached one, which outlives the controls it
+  // held, can tell whether it is still the attempt that owns the identity.
+  let attemptCount = 0
+  let authenticatedAttempt = 0
 
   function dispatch(event: AuthSignInEvent) {
     const before = state.value
@@ -193,8 +198,9 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0)
       return
     event.preventDefault()
-    // A remount mid-attempt would leave the abandoned attempt free to finish
-    // the sign-in and redirect, so the links hold still like the buttons do.
+    // The links hold still while the buttons do. A detached attempt is
+    // deliberately not held: the scope guard abandons it on the remount, and
+    // its `live()` checks stop it before it can publish or redirect.
     if (busy.value) return
     onSwitchMode(next)
   }
@@ -254,11 +260,15 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     dispatch({ type: 'signInStarted', provider })
     const live = liveWhile(signIn.capture())
     let firebase: WorkshopFirebase | undefined
+    const attemptNumber = ++attemptCount
     let authenticated = false
     let detached = false
     // Detaching hands the controls to the visitor; from then on this attempt
-    // idles the page only while nothing newer has taken the controls over.
-    const ownsControls = () => !detached || live()
+    // idles the page only while nothing newer has taken the controls over —
+    // except a `minting` state, which only this attempt can have started and
+    // which disables every control until something clears it.
+    const ownsControls = () =>
+      !detached || live() || state.value.step === 'minting'
     // Roll a persisted identity back before the reducer leaves `pending`, so no
     // retry can start while the sign-out is still in flight: `signOutWorkshop`
     // is global, and an unawaited one from an abandoned attempt would clear the
@@ -266,7 +276,10 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     // frees the controls, and best-effort so a rejection stays handled.
     const abandon = async () => {
       reportAuthCompleted = undefined
-      if (authenticated) {
+      // A detached attempt can still authenticate after a later one has, and
+      // the sign-out is global: rolling back then would clear the identity the
+      // newer attempt established rather than this attempt's own.
+      if (authenticated && authenticatedAttempt === attemptNumber) {
         const rollback = firebase!.signOutWorkshop().catch(() => {})
         pendingRollback = rollback
         void rollback.finally(() => {
@@ -344,6 +357,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       // The identity is persisted the moment the credential resolves, so an
       // abandon from here on must roll it back even if the flag has since flipped.
       authenticated = true
+      authenticatedAttempt = Math.max(authenticatedAttempt, attemptNumber)
       if (!live()) {
         await abandon()
         return
@@ -396,9 +410,10 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
         error_code: isFirebaseAuthErrorLike(error) ? error.code : 'unknown',
         auth_action: `${provider}_${mode === 'signUp' ? 'sign_up' : 'sign_in'}`
       })
-      // A dismissal the visitor performed, and already saw the page recover
-      // from, is recorded but never toasted back at them.
-      if (detached) {
+      // Only the dismissal the visitor performed goes untoasted, and only once
+      // they have already seen the page recover from it. Every other failure
+      // still has something to say, whenever it arrives.
+      if (detached && classifyAuthError(error).kind === 'popup-dismissed') {
         abandonAttempt()
         return
       }

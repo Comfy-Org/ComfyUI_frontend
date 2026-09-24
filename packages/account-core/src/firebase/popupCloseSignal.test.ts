@@ -205,6 +205,39 @@ describe('withPopupCloseSignal', () => {
     await result
   })
 
+  it('stops observing as soon as the handler window is captured', async () => {
+    const onPopupClosed = vi.fn()
+    const signIn = pendingSignIn()
+    let patchedWhileOpening: boolean | undefined
+    let restoredAfterCapture: boolean | undefined
+    let laterWindow: Window | undefined
+
+    const result = withPopupCloseSignal(async () => {
+      patchedWhileOpening = window.open !== nativeOpen
+      await openPopupLate()
+      restoredAfterCapture = window.open === nativeOpen
+      laterWindow = await openPopupLate()
+      return signIn.signedIn
+    }, onPopupClosed)
+
+    await vi.advanceTimersByTimeAsync(0)
+    expect(
+      patchedWhileOpening,
+      'the window opens several awaits into the call, so the patch has to outlive it'
+    ).toBe(true)
+    expect(restoredAfterCapture).toBe(true)
+
+    laterWindow?.close()
+    await vi.advanceTimersByTimeAsync(AFTER_CLOSE_MS * 2)
+    expect(
+      onPopupClosed,
+      'only the window this sign-in is waiting on can report its dismissal'
+    ).not.toHaveBeenCalled()
+
+    signIn.settle('credential')
+    await result
+  })
+
   it('restores window.open when the sign-in throws before opening a window', async () => {
     const before = window.open
     const failure = new Error('firebase config is not loaded')
