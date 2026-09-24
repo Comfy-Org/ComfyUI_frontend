@@ -897,6 +897,56 @@ describe('useAgentSession (v1 composition root)', () => {
     now.mockRestore()
   })
 
+  it.for(['button', 'escape'] as const)(
+    'tracks a %s stop after restoring a pending approval without a start time',
+    async (method) => {
+      const history: AgentMessages = [
+        historyRow(1, 'user', 'restored-turn', 'Run it'),
+        {
+          ...historyRow(
+            2,
+            'assistant',
+            'restored-turn',
+            '',
+            'restored-approval'
+          ),
+          status: 'streaming',
+          pending_ask: {
+            message_id: 'restored-approval',
+            ask_id: 'restored-turn:call-1',
+            kind: 'run_approval',
+            context: { workflow_id: 'wf-1' },
+            prompt: 'Run it?',
+            options: [
+              { id: 'run', label: 'Run' },
+              { id: 'cancel', label: 'Cancel' }
+            ],
+            min_selections: 1,
+            max_selections: 1,
+            allow_other: false
+          }
+        }
+      ]
+      const rest = fakeRest({ getMessages: vi.fn(async () => history) })
+      const session = useAgentSession({ rest, events: fakeEvents().source })
+      session.start()
+
+      await session.loadThread('th-1')
+      expect(session.isStreaming.value).toBe(true)
+      await session.stopTurn(method)
+
+      expect(rest.cancelMessage).toHaveBeenCalledExactlyOnceWith(
+        'th-1',
+        'restored-approval'
+      )
+      expect(telemetry.trackAgentStopClicked).toHaveBeenCalledExactlyOnceWith({
+        method,
+        turn_id: 'restored-approval',
+        turn_elapsed_ms: null
+      })
+    }
+  )
+
   it('(d1) a normally completed turn is not editable', async () => {
     const { source, emit } = fakeEvents()
     const session = useAgentSession({ rest: fakeRest(), events: source })

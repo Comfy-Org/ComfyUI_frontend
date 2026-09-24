@@ -3269,7 +3269,7 @@ describe('AgentPanelRoot workflow binding', () => {
   }
 
   function mockMessagesEndpoint(
-    ackWorkflowId: string,
+    ackWorkflowId: string | (() => string),
     cloudWorkflows:
       | { id: string; name: string }[]
       | (() => { id: string; name: string }[]) = [],
@@ -3281,7 +3281,11 @@ describe('AgentPanelRoot workflow binding', () => {
       vi.fn(async (url: string, init?: RequestInit) => {
         if (url.includes('/messages') && init?.method === 'POST') {
           bodies.push(JSON.parse(String(init.body)))
-          return json(202, ack(ackWorkflowId, `m-${bodies.length}`))
+          const workflowId =
+            typeof ackWorkflowId === 'function'
+              ? ackWorkflowId()
+              : ackWorkflowId
+          return json(202, ack(workflowId, `m-${bodies.length}`))
         }
         if (url.includes('/messages')) return json(200, [])
         if (url.includes('/agent/threads')) {
@@ -4808,6 +4812,52 @@ describe('AgentPanelRoot workflow binding', () => {
       )
     })
     expect(subscribedStaleDoc).toBe(false)
+  })
+
+  it('reports a selected binding once when the next turn acknowledges it', async () => {
+    setupWorkflowContext({
+      targetId: 'wf-42',
+      references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
+    })
+    let acknowledgedWorkflowId = 'wf-42'
+    mockMessagesEndpoint(() => acknowledgedWorkflowId)
+    await renderAndSend('work here')
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().activeTurnId).toBe('m-1')
+    )
+    ws.emit('agent_message_done', {
+      message_id: 'm-1',
+      thread_id: 'th-1',
+      usage: null
+    })
+    await screen.findByRole('button', { name: 'Send' })
+    telemetry.trackAgentWorkflowBound.mockClear()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'other' })
+    )
+    await vi.waitFor(() =>
+      expect(useAgentPanelStore().selectedWorkflow?.path).toBe(
+        'workflows/other.json'
+      )
+    )
+    acknowledgedWorkflowId = 'wf-other'
+    await sendFromComposer('continue there')
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().activeTurnId).toBe('m-2')
+    )
+
+    expect(telemetry.trackAgentWorkflowBound).toHaveBeenCalledExactlyOnceWith({
+      thread_id: 'th-1',
+      workflow_id: 'wf-other',
+      prev_workflow_id: 'wf-42',
+      bind_source: 'selector_chip'
+    })
   })
 
   it('agent_active_tab opens an unknown workflow as a blank named tab', async () => {

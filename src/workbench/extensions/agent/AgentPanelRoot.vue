@@ -1026,17 +1026,23 @@ async function onAnswerAsk(
   if (await answerAsk(askId, selection)) trackApprovalResolved(askId, selection)
 }
 
+const lastReportedWorkflowByThread = new Map<string, string>()
+
 function trackWorkflowBound(
   workflowId: string,
   previousWorkflowId: string | null,
   bindSource: 'active_tab' | 'selector_chip' | 'minted' | 'restored'
 ): void {
   const currentThreadId = threadId.value
-  if (currentThreadId === null || workflowId === previousWorkflowId) return
+  if (currentThreadId === null) return
+  const lastReportedWorkflowId =
+    lastReportedWorkflowByThread.get(currentThreadId) ?? previousWorkflowId
+  if (workflowId === lastReportedWorkflowId) return
+  lastReportedWorkflowByThread.set(currentThreadId, workflowId)
   useTelemetry()?.trackAgentWorkflowBound({
     thread_id: currentThreadId,
     workflow_id: workflowId,
-    prev_workflow_id: previousWorkflowId,
+    prev_workflow_id: lastReportedWorkflowId,
     bind_source: bindSource
   })
 }

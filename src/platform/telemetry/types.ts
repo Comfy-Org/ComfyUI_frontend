@@ -678,7 +678,7 @@ export interface AgentWorkflowAppliedMetadata extends Record<string, unknown> {
 export interface AgentStopClickedMetadata extends Record<string, unknown> {
   method: 'button' | 'escape'
   turn_id: string
-  turn_elapsed_ms: number
+  turn_elapsed_ms: number | null
 }
 export interface AgentWorkflowBoundMetadata extends Record<string, unknown> {
   thread_id: string

@@ -600,12 +600,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     turnId: TurnId,
     method: 'button' | 'escape' | undefined
   ): AgentStopClickedMetadata | null {
+    if (method === undefined) return null
     const startedAt = turnStartedAt.get(turnId)
-    if (method === undefined || startedAt === undefined) return null
     return {
       method,
       turn_id: turnId,
-      turn_elapsed_ms: Math.max(0, Date.now() - startedAt)
+      turn_elapsed_ms:
+        startedAt === undefined ? null : Math.max(0, Date.now() - startedAt)
     }
   }
 
