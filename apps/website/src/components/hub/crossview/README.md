@@ -7,14 +7,14 @@ and the [CrossViewWarp node](https://github.com/cseti007/ComfyUI-CrossViewWarp).
 
 Everything lives in this folder. It touches the rest of the site in six places:
 
-| File                                                    | What                                                                             |
-| ------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `src/pages/hub/workflow/[name].astro`                   | one branch that renders `CrossViewPlayground` for this template                  |
-| `src/config/workshop-launch.ts`                         | the card, second in _Create & edit videos_                                       |
-| `src/data/hubTemplates.json`, `hubTemplateDetails.json` | its catalogue rows                                                               |
+| File                                                    | What                                                                                                             |
+| ------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `src/pages/hub/workflow/[name].astro`                   | one branch that renders `CrossViewPlayground` for this template                                                  |
+| `src/config/workshop-launch.ts`                         | the card, second in _Create & edit videos_                                                                       |
+| `src/data/hubTemplates.json`, `hubTemplateDetails.json` | its catalogue rows                                                                                               |
 | `public/hub/crossview/`                                 | card thumbnail and the generate graph the Details tab draws (the worked example's videos are on media.comfy.org) |
-| `scripts/crossview-dev-proxy.ts`                        | the local key-holding proxy, dev only                                            |
-| `package.json`                                          | a `dev:crossview-proxy` script that runs it                                      |
+| `scripts/crossview-dev-proxy.ts`                        | the local key-holding proxy, dev only                                                                            |
+| `package.json`                                          | a `dev:crossview-proxy` script that runs it                                                                      |
 
 Deleting those and this folder removes the demo.
 
