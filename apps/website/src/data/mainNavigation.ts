@@ -136,13 +136,14 @@ export function getMainNavigation(
       label: t('nav.community', locale),
       badge: 'new',
       featured: {
-        imageSrc: 'https://media.comfy.org/website/nav/featured-demo-card.jpg',
+        imageSrc:
+          'https://media.comfy.org/website/learning/advertising3-thumb.png',
         imageAlt: t('nav.featuredCommunityAlt', locale),
         title: t('nav.featuredCommunityTitle', locale),
         cta: {
           label: t('cta.watchDemo', locale),
           ariaLabel: t('nav.featuredCommunityCtaAria', locale),
-          href: 'https://comfy.org/workflows/537cf7f1f745-537cf7f1f745/'
+          href: `${routes.learning}/ads/product-photography`
         }
       },
       columns: [

@@ -4365,16 +4365,16 @@ Enterprise`
     'zh-CN': '探索 Gemini Omni 1.1 Flash 版本'
   },
   'nav.featuredCommunityTitle': {
-    en: 'Sky Replacement',
-    'zh-CN': '天空替换'
+    en: 'Product Photography',
+    'zh-CN': '产品摄影'
   },
   'nav.featuredCommunityAlt': {
-    en: 'Sky Replacement workflow demo image',
-    'zh-CN': '天空替换工作流演示图片'
+    en: 'Product Photography workflow demo image',
+    'zh-CN': '产品摄影工作流演示图片'
   },
   'nav.featuredCommunityCtaAria': {
-    en: 'Watch the Sky Replacement demo',
-    'zh-CN': '观看天空替换演示'
+    en: 'Watch the Product Photography demo',
+    'zh-CN': '观看产品摄影演示'
   },
   'nav.featuredCompanyTitle': {
     en: 'Customer story: Black Math',

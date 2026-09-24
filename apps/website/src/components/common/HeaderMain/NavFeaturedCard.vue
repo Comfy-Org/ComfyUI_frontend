@@ -28,7 +28,7 @@ defineProps<{ featured: NavFeatured }>()
       />
       <img
         v-else
-        class="aspect-4/3 w-62 max-w-none rounded-xl"
+        class="aspect-4/3 w-62 max-w-none rounded-xl object-cover"
         :src="featured.imageSrc"
         :alt="featured.imageAlt ?? ''"
         width="744"
