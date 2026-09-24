@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Reel } from '../../../lib/workshop/cinematic-studio/reel'
 import {
   selectedTake,
   takesOfShot
 } from '../../../lib/workshop/cinematic-studio/reel'
 import type { Locale } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicSequence from './CinematicSequence.vue'
 import CinematicTakeBar from './CinematicTakeBar.vue'
@@ -15,11 +15,11 @@ import CinematicTakeFrame from './CinematicTakeFrame.vue'
 
 const {
   reel,
-  models,
+  modelName,
   locale = 'en'
 } = defineProps<{
   reel: Reel
-  models: readonly CinematicModel[]
+  modelName: string
   locale?: Locale
 }>()
 
@@ -32,19 +32,24 @@ const siblings = computed(() =>
 </script>
 
 <template>
-  <main
-    class="flex min-w-0 flex-1 flex-col bg-black/25"
+  <section
+    class="flex min-w-0 flex-col overflow-hidden rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
     :aria-label="tc('cinematic.stage.label', locale)"
   >
+    <header
+      class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+    >
+      {{ t('workshop.output.title', locale) }}
+    </header>
     <div
-      class="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 px-10 pt-10"
+      class="flex min-h-72 flex-col items-center justify-center gap-4 p-4 sm:p-6 lg:min-h-112"
     >
       <template v-if="current">
         <CinematicTakeFrame :current :locale />
         <CinematicTakeBar
           :current
           :siblings
-          :models
+          :model-name="modelName"
           :locale
           @select="emit('select', $event)"
         />
@@ -66,5 +71,5 @@ const siblings = computed(() =>
       :locale
       @select="emit('select', $event)"
     />
-  </main>
+  </section>
 </template>

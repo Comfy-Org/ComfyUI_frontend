@@ -1,4 +1,3 @@
-import type { WorkshopModelDetail } from '../../../config/models-catalogue'
 import type { CinematicCopyKey } from './copy'
 
 type CameraPart = 'body' | 'lens' | 'focal' | 'aperture'
@@ -419,29 +418,6 @@ export function directionOption(
   )
 }
 
-type RunnableModel = Pick<
-  WorkshopModelDetail,
-  'slug' | 'name' | 'provider' | 'execution'
->
-
-export interface CinematicModel {
-  readonly slug: string
-  readonly name: string
-  readonly provider: string
-  readonly logo: string
-}
-
-/** Image models the studio can route to, by Router page slug. */
-const CINEMATIC_MODEL_LOGOS: Readonly<Record<string, string>> = {
-  'byteplus--seedream-4-5--generate-images': '/icons/ai-models/bytedance.svg',
-  'vertexai--gemini-3-pro-image--generate-images':
-    '/icons/ai-models/gemini.svg',
-  'bfl--flux-2-pro--generate-images': '/icons/ai-models/bfl.svg',
-  'krea--krea-2-large--generate-images': '/icons/ai-models/krea.svg',
-  'qwen--qwen-image-3.0-pro-text-to-image--generate-images':
-    '/icons/ai-models/qwen.svg'
-}
-
 export const ASPECT_RATIOS = [
   { id: '21:9', label: 'cinematic.aspect.scope' },
   { id: '16:9', label: 'cinematic.aspect.widescreen' },
@@ -461,25 +437,3 @@ export const RESOLUTIONS = [
 export type Resolution = (typeof RESOLUTIONS)[number]['id']
 
 export const MAX_TAKES = 4
-
-export function runnableCinematicModels(
-  lookup: (slug: string) => RunnableModel | undefined
-): readonly CinematicModel[] {
-  const models = Object.entries(CINEMATIC_MODEL_LOGOS).flatMap(
-    ([slug, logo]) => {
-      const model = lookup(slug)
-      return model?.execution
-        ? [
-            {
-              slug: model.slug,
-              name: model.name,
-              provider: model.provider ?? '',
-              logo
-            }
-          ]
-        : []
-    }
-  )
-  if (!models.length) throw new Error('Cinematic Studio has no runnable models')
-  return models
-}

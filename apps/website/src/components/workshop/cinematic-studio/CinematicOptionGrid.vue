@@ -22,7 +22,7 @@ const emit = defineEmits<{ choose: [id: string] }>()
   <div
     role="radiogroup"
     :aria-label="tc(group.title, locale)"
-    class="grid grid-cols-3 gap-x-3 gap-y-4"
+    class="grid grid-cols-2 gap-x-3 gap-y-4 sm:grid-cols-3"
   >
     <button
       v-for="option in group.options"

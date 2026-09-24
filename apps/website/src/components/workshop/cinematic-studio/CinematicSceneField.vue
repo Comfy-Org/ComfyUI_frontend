@@ -17,7 +17,7 @@ const enhance = defineModel<boolean>('enhance', { required: true })
 
 const showFullPrompt = ref(false)
 const labelClass =
-  'text-[11px] font-bold tracking-widest text-primary-warm-gray uppercase'
+  'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
 const segmentClass: Record<PromptSegment['source'], string> = {
   scene: 'text-primary-warm-white',
   direction: 'text-primary-comfy-canvas',
@@ -27,7 +27,7 @@ const segmentClass: Record<PromptSegment['source'], string> = {
 </script>
 
 <template>
-  <section class="flex flex-col gap-2.5 p-4">
+  <section class="flex flex-col gap-2.5 p-5">
     <div class="flex items-center justify-between">
       <label for="cinematic-scene" :class="labelClass">
         {{ tc('cinematic.section.scene', locale) }}

@@ -1,5 +1,4 @@
 ---
-import SiteIcons from '../components/common/SiteIcons.astro'
 import Analytics from '@vercel/analytics/astro'
 import '../styles/global.css'
 import AuthHeroCarousel from '../components/auth/AuthHeroCarousel.vue'
@@ -34,7 +33,12 @@ const { title, description, locale, showTermsNotice = false } = Astro.props
     <meta name="robots" content="noindex, nofollow" />
     <title>{title}</title>
 
-    <SiteIcons />
+    <link rel="icon" type="image/png" href="/favicon-96x96.png" sizes="96x96" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" sizes="48x48" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="theme-color" content="#211927" />
 
     <GoogleTagManager part="head" />
   </head>

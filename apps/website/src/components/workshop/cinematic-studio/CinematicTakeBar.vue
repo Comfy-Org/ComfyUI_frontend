@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { Download } from '@lucide/vue'
-import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -12,22 +10,16 @@ import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 const {
   current,
   siblings,
-  models,
+  modelName,
   locale = 'en'
 } = defineProps<{
   current: Take
   siblings: readonly Take[]
-  models: readonly CinematicModel[]
+  modelName: string
   locale?: Locale
 }>()
 
 const emit = defineEmits<{ select: [id: string] }>()
-
-const modelName = computed(
-  () =>
-    models.find((model) => model.slug === current.modelSlug)?.name ??
-    current.modelSlug
-)
 </script>
 
 <template>

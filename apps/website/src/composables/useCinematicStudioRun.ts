@@ -2,7 +2,6 @@ import { useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, readonly, shallowRef, watch } from 'vue'
 
 import type { WorkshopModelDetail } from '../config/models-catalogue'
-import { fetchModelsPage } from '../config/models-page-data'
 import { router_render } from '../config/router-render'
 import {
   refreshWorkshopCredits,
@@ -25,7 +24,6 @@ import {
 import { useWorkshopAuthFlag, useWorkshopEnabled } from '../scripts/posthog'
 
 interface ShotRequest {
-  readonly modelSlug: string
   readonly prompt: string
   readonly aspect: AspectRatio
   readonly resolutionPixels: number
@@ -35,10 +33,9 @@ interface ShotRequest {
 
 /**
  * Runs a shot as one Router request per take, through the same render path,
- * credentials and credit gate as a model page. Models load lazily from their
- * page data, so the studio never ships the catalogue to the client.
+ * credentials and credit gate as the rest of the model page.
  */
-export function useCinematicStudioRun() {
+export function useCinematicStudioRun(model: WorkshopModelDetail) {
   const { user, session, sessionFailure, settled, ensureFresh } =
     useWorkshopSession()
   const { balance } = useWorkshopCredits()
@@ -69,16 +66,6 @@ export function useCinematicStudioRun() {
     })
   )
 
-  const models = new Map<string, Promise<WorkshopModelDetail>>()
-  function loadModel(slug: string): Promise<WorkshopModelDetail> {
-    const cached = models.get(slug)
-    if (cached) return cached
-    const loading = fetchModelsPage(slug).then((page) => page.model)
-    loading.catch(() => models.delete(slug))
-    models.set(slug, loading)
-    return loading
-  }
-
   let controller: AbortController | undefined
 
   async function tokenFor(startedFor: WorkshopSession, signal: AbortSignal) {
@@ -95,7 +82,6 @@ export function useCinematicStudioRun() {
 
   async function renderTake(
     id: string,
-    model: WorkshopModelDetail,
     request: ShotRequest,
     startedFor: WorkshopSession,
     signal: AbortSignal
@@ -153,23 +139,15 @@ export function useCinematicStudioRun() {
       type: 'shotStarted',
       ids,
       prompt: request.prompt,
-      modelSlug: request.modelSlug,
+      modelSlug: model.slug,
       aspect: request.aspect
     })
     const attempt = new AbortController()
     controller = attempt
     try {
-      const model = await loadModel(request.modelSlug)
       await Promise.all(
-        ids.map((id) =>
-          renderTake(id, model, request, startedFor, attempt.signal)
-        )
+        ids.map((id) => renderTake(id, request, startedFor, attempt.signal))
       )
-    } catch {
-      if (!attempt.signal.aborted)
-        ids.forEach((id) =>
-          dispatch({ type: 'takeFailed', id, reason: 'unavailable' })
-        )
     } finally {
       if (controller === attempt) controller = undefined
       void refreshWorkshopCredits({ force: true })
@@ -203,7 +181,6 @@ export function useCinematicStudioRun() {
     gate,
     session,
     rendering,
-    loadModel,
     generate,
     cancel,
     select: (id: string) => dispatch({ type: 'selected', id })

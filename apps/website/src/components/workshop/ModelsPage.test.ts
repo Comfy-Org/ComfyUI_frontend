@@ -88,3 +88,30 @@ describe('Models page entry', () => {
     expect(screen.getByRole('heading', { name: 'Public Models' })).toBeTruthy()
   })
 })
+
+describe('Models page playground', () => {
+  it.for([
+    {
+      slug: 'byteplus--seedream-4-5--generate-images',
+      shown: 'cinematic',
+      hidden: 'playground-input'
+    },
+    { slug: modelSlug, shown: 'playground-input', hidden: 'cinematic' }
+  ])(
+    'opens $slug on its $shown playground',
+    async ({ slug, shown, hidden }) => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn<typeof fetch>()
+          .mockResolvedValue(Response.json(await prepareModelPage(slug)))
+      )
+      enabled.value = true
+      render(ModelsPage, { props: { slug } })
+
+      expect(await screen.findByTestId(shown)).toBeTruthy()
+      expect(screen.getByTestId('model-tabs')).toBeTruthy()
+      expect(screen.queryByTestId(hidden)).toBeNull()
+    }
+  )
+})

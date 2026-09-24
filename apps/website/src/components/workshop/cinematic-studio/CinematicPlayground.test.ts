@@ -5,39 +5,23 @@ import { computed, ref } from 'vue'
 
 import type { AccountCredential } from '@comfyorg/account-core/session'
 
-import type { ModelsPageData } from '../../../config/models-page-data'
-import { fetchModelsPage } from '../../../config/models-page-data'
+import type { WorkshopModelDetail } from '../../../config/models-catalogue'
 import { router_render } from '../../../config/router-render'
 import { useWorkshopCredits } from '../../../config/workshop-credits'
 import { WorkshopRouterError } from '../../../config/workshop-router-errors'
 import { useWorkshopSession } from '../../../config/workshop-session-state'
-import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/catalog'
 import { useWorkshopEnabled } from '../../../scripts/posthog'
 import { t } from '../../../i18n/translations'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import CinematicStudio from './CinematicStudio.vue'
+import CinematicPlayground from './CinematicPlayground.vue'
 
 vi.mock(import('../../../config/workshop-session-state'))
 vi.mock(import('../../../config/workshop-credits'))
 vi.mock(import('../../../scripts/posthog'))
-vi.mock(import('../../../config/models-page-data'), () => ({
-  fetchModelsPage: vi.fn()
-}))
 vi.mock(import('../../../config/router-render'), () => ({
-  router_render: vi.fn(),
-  resolveModelRouterRender: vi.fn()
+  router_render: vi.fn()
 }))
 
-const models: CinematicModel[] = [
-  {
-    slug: 'bfl--flux-2-pro--generate-images',
-    name: 'FLUX.2 Pro',
-    provider: 'Black Forest Labs',
-    logo: '/icons/ai-models/bfl.svg'
-  }
-]
-
-const detail: ModelsPageData['model'] = {
+const model: WorkshopModelDetail = {
   slug: 'bfl--flux-2-pro--generate-images',
   name: 'FLUX.2 Pro',
   workflowCount: 0,
@@ -47,18 +31,6 @@ const detail: ModelsPageData['model'] = {
   fields: [],
   defaults: {},
   examples: []
-}
-
-const page: ModelsPageData = {
-  kind: 'page',
-  model: detail,
-  related: [],
-  relatedHeading: '',
-  relatedHeadingShort: '',
-  tags: [],
-  shownTags: [],
-  restTags: [],
-  restTagCount: 0
 }
 
 const credential: AccountCredential = {
@@ -73,13 +45,13 @@ const credential: AccountCredential = {
 const signedIn = ref<AccountCredential>()
 
 function renderStudio() {
-  render(CinematicStudio, { props: { models } })
+  render(CinematicPlayground, { props: { model } })
   return userEvent.setup()
 }
 
 const generateButton = () => screen.getByTestId('cinematic-generate')
 
-describe('CinematicStudio', () => {
+describe('CinematicPlayground', () => {
   beforeEach(() => {
     vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
     vi.mocked(useWorkshopEnabled).mockReturnValue(computed(() => true))
@@ -94,7 +66,6 @@ describe('CinematicStudio', () => {
       credits: 100
     }))
     signedIn.value = credential
-    vi.mocked(fetchModelsPage).mockResolvedValue(page)
     vi.mocked(router_render).mockReset()
   })
 
@@ -109,8 +80,8 @@ describe('CinematicStudio', () => {
 
   it('renders one Router request per take with the directed prompt', async () => {
     vi.mocked(router_render).mockImplementation(async () => ({
-      slug: detail.slug,
-      routerId: detail.routerId,
+      slug: model.slug,
+      routerId: model.routerId,
       expectedKind: 'image',
       requestId: 'request-1',
       deadlineCollections: 0,
@@ -125,7 +96,7 @@ describe('CinematicStudio', () => {
     expect(await screen.findByRole('tab', { name: 'B' })).toBeInTheDocument()
     expect(router_render).toHaveBeenCalledTimes(2)
     const [slug, parameters, options] = vi.mocked(router_render).mock.calls[0]
-    expect(slug).toBe(detail.slug)
+    expect(slug).toBe(model.slug)
     expect(parameters).toMatchObject({
       aspect_ratio: '21:9',
       resolution: 2048,
@@ -137,7 +108,7 @@ describe('CinematicStudio', () => {
       .mocked(router_render)
       .mock.calls.map(([, , callOptions]) => callOptions.idempotencyKey)
     expect(new Set(keys).size).toBe(2)
-    expect(options.model).toBe(detail)
+    expect(options.model).toEqual(model)
     expect(screen.getByAltText(/A diner at dawn/)).toHaveAttribute(
       'src',
       'blob:shot'
@@ -202,23 +173,10 @@ describe('CinematicStudio', () => {
     ).toHaveTextContent(/85mm.*f\/4/)
   })
 
-  it('opens the API request from the tool bar instead of a tab', async () => {
-    const user = renderStudio()
-    expect(screen.queryByRole('tablist')).toBeNull()
-
-    await user.click(screen.getByRole('button', { name: 'API' }))
-
-    expect(
-      await screen.findByRole('dialog', {
-        name: tc('cinematic.api.title')
-      })
-    ).toBeInTheDocument()
-  })
-
   it('sends a character reference with the prompt that names it', async () => {
     vi.mocked(router_render).mockResolvedValue({
-      slug: detail.slug,
-      routerId: detail.routerId,
+      slug: model.slug,
+      routerId: model.routerId,
       expectedKind: 'image',
       requestId: 'request-1',
       deadlineCollections: 0,

@@ -1,12 +1,11 @@
 <script setup lang="ts">
-import { ChevronDown, ChevronRight } from '@lucide/vue'
+import { ChevronRight } from '@lucide/vue'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type {
   AspectRatio,
-  CinematicModel,
   Direction,
   Resolution
 } from '../../../lib/workshop/cinematic-studio/catalog'
@@ -17,10 +16,10 @@ import {
 import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
 import type { PromptSegment } from '../../../lib/workshop/cinematic-studio/prompt'
 import type { Locale } from '../../../i18n/translations'
+import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicDirectionGrid from './CinematicDirectionGrid.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
-import CinematicMenu from './CinematicMenu.vue'
 import CinematicOptionIcon from './CinematicOptionIcon.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
 import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
@@ -28,7 +27,6 @@ import CinematicSceneField from './CinematicSceneField.vue'
 import type { PickerKey } from './picker-key'
 
 const {
-  models,
   promptSegments,
   gate,
   workspaceName,
@@ -36,7 +34,6 @@ const {
   openPicker,
   locale = 'en'
 } = defineProps<{
-  models: readonly CinematicModel[]
   promptSegments: readonly PromptSegment[]
   gate: StudioGate
   workspaceName?: string
@@ -51,7 +48,6 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-const modelSlug = defineModel<string>('modelSlug', { required: true })
 const scene = defineModel<string>('scene', { required: true })
 const enhance = defineModel<boolean>('enhance', { required: true })
 const direction = defineModel<Direction>('direction', { required: true })
@@ -61,18 +57,6 @@ const takes = defineModel<number>('takes', { required: true })
 const cast = defineModel<File | undefined>('cast')
 const palette = defineModel<File | undefined>('palette')
 
-const model = computed(
-  () =>
-    models.find((candidate) => candidate.slug === modelSlug.value) ?? models[0]
-)
-const modelOptions = computed(() =>
-  models.map((candidate) => ({
-    id: candidate.slug,
-    label: candidate.name,
-    meta: candidate.provider,
-    logo: candidate.logo
-  }))
-)
 const cameraBody = computed(() => directionOption('body', direction.value))
 const cameraSpecs = computed(() =>
   cameraGroups
@@ -84,7 +68,7 @@ const canGenerate = computed(
   () => gate === 'ready' && scene.value.trim().length > 0
 )
 const labelClass =
-  'text-[11px] font-bold tracking-widest text-primary-warm-gray uppercase'
+  'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
 const cardClass =
   'flex w-full items-center gap-3 rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4 p-2.5 text-left transition-colors hover:border-primary-warm-white/50'
 </script>
@@ -92,42 +76,14 @@ const cardClass =
 <template>
   <aside
     :aria-label="tc('cinematic.panel.label', locale)"
-    class="flex h-full w-[380px] shrink-0 flex-col border-r border-transparency-white-t8 bg-primary-comfy-ink"
+    class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
   >
-    <div
-      class="flex flex-1 flex-col divide-y divide-transparency-white-t8 overflow-y-auto"
+    <header
+      class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
     >
-      <section class="flex flex-col gap-2.5 p-4">
-        <h2 :class="labelClass">{{ tc('cinematic.section.model', locale) }}</h2>
-        <CinematicMenu
-          v-model="modelSlug"
-          :options="modelOptions"
-          :heading="tc('cinematic.model.heading', locale)"
-          side="bottom"
-          :trigger-class="cardClass"
-        >
-          <span
-            class="grid size-10 shrink-0 place-items-center rounded-xl bg-transparency-white-t8"
-          >
-            <img :src="model.logo" alt="" class="size-5" />
-          </span>
-          <span class="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span
-              class="truncate text-sm font-semibold text-primary-warm-white"
-            >
-              {{ model.name }}
-            </span>
-            <span class="truncate text-xs text-primary-warm-gray">
-              {{ model.provider }} · {{ tc('cinematic.model.router', locale) }}
-            </span>
-          </span>
-          <ChevronDown
-            class="size-4 text-primary-warm-gray"
-            aria-hidden="true"
-          />
-        </CinematicMenu>
-      </section>
-
+      {{ t('workshop.input.title', locale) }}
+    </header>
+    <div class="flex flex-col divide-y divide-transparency-white-t8">
       <CinematicSceneField
         v-model:scene="scene"
         v-model:enhance="enhance"
@@ -135,7 +91,7 @@ const cardClass =
         :locale
       />
 
-      <section class="flex flex-col gap-2.5 p-4">
+      <section class="flex flex-col gap-2.5 p-5">
         <h2 :class="labelClass">
           {{ tc('cinematic.section.camera', locale) }}
         </h2>
@@ -183,7 +139,7 @@ const cardClass =
         </button>
       </section>
 
-      <section class="flex flex-col gap-2.5 p-4">
+      <section class="flex flex-col gap-2.5 p-5">
         <h2 :class="labelClass">
           {{ tc('cinematic.section.direction', locale) }}
         </h2>
@@ -195,7 +151,7 @@ const cardClass =
         />
       </section>
 
-      <section class="flex flex-col gap-2.5 p-4">
+      <section class="flex flex-col gap-2.5 p-5">
         <div class="flex items-center justify-between">
           <h2 :class="labelClass">
             {{ tc('cinematic.section.references', locale) }}
@@ -209,17 +165,22 @@ const cardClass =
           <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
         </div>
       </section>
+      <section class="flex flex-col gap-2.5 p-5">
+        <h2 :class="labelClass">
+          {{ tc('cinematic.section.output', locale) }}
+        </h2>
+        <CinematicOutputControls
+          v-model:aspect="aspect"
+          v-model:resolution="resolution"
+          v-model:takes="takes"
+          :locale
+        />
+      </section>
     </div>
 
     <footer
-      class="flex flex-col gap-2.5 border-t border-transparency-white-t8 bg-primary-comfy-ink p-4"
+      class="sticky bottom-0 z-10 mt-auto flex flex-col gap-2.5 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
     >
-      <CinematicOutputControls
-        v-model:aspect="aspect"
-        v-model:resolution="resolution"
-        v-model:takes="takes"
-        :locale
-      />
       <CinematicGenerateAction
         :gate
         :workspace-name="workspaceName"

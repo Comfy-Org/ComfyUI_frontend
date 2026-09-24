@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { ArrowRight } from '@lucide/vue'
-import { computed } from 'vue'
+import { computed, defineAsyncComponent } from 'vue'
 
 import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
 import type { ModelsPageData } from '../../config/models-page-data'
 import { t } from '../../i18n/translations'
+import { hasCinematicPlayground } from '../../lib/workshop/cinematic-studio/models'
 import { useWorkshopEnabled } from '../../scripts/posthog'
 import CatalogueBackLink from './CatalogueBackLink.vue'
 import ModelPrice from './ModelPrice.vue'
@@ -15,6 +16,10 @@ import ModelSupport from './ModelSupport.vue'
 import SplitReveal from './SplitReveal.vue'
 import TagOverflow from './TagOverflow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
+
+const CinematicPlayground = defineAsyncComponent(
+  () => import('./cinematic-studio/CinematicPlayground.vue')
+)
 
 const { page } = defineProps<{ page: ModelsPageData }>()
 const routes = getRoutes()
@@ -100,7 +105,11 @@ const restTags = computed(() =>
     </header>
 
     <div class="sm:px-8 lg:px-10">
-      <ModelDetail :model="page.model" />
+      <ModelDetail :model="page.model">
+        <template v-if="hasCinematicPlayground(page.model.slug)" #playground>
+          <CinematicPlayground :model="page.model" />
+        </template>
+      </ModelDetail>
 
       <section
         class="mt-24 border-t border-transparency-white-t8 pt-12"

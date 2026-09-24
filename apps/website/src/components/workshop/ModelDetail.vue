@@ -118,7 +118,9 @@ const initialPageState = initialWorkshopPageState(model)
 const examples = initialPageState.examples
 // A workflow page describes one workflow, so the model's other examples would
 // be beside the point there.
-const showsExamples = computed(() => !slots.details && examples.length > 0)
+const showsExamples = computed(
+  () => !slots.details && !slots.playground && examples.length > 0
+)
 const firstExample = initialPageState.firstExample
 const activeExample = ref<PlaygroundExample | undefined>(
   initialPageState.activeExample
@@ -745,7 +747,17 @@ function useInCode() {
     </div>
 
     <section
-      v-if="activeSection === 'playground'"
+      v-if="slots.playground"
+      v-show="activeSection === 'playground'"
+      id="panel-playground"
+      role="tabpanel"
+      aria-labelledby="tab-playground"
+      data-testid="playground-tab"
+    >
+      <slot name="playground" />
+    </section>
+    <section
+      v-else-if="activeSection === 'playground'"
       id="panel-playground"
       role="tabpanel"
       aria-labelledby="tab-playground"

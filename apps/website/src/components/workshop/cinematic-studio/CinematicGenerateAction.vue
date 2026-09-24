@@ -35,7 +35,8 @@ const signInHref = useSignInHref(locale)
       v-if="gate === 'signedOut'"
       as="a"
       :href="signInHref"
-      class="h-12 w-full"
+      size="lg"
+      class="w-full px-5"
       @click="leaveForSignIn($event, signInHref)"
     >
       {{ t('workshop.run.signIn', locale) }}
@@ -49,7 +50,7 @@ const signInHref = useSignInHref(locale)
           )
         }}
       </p>
-      <Button class="h-12 w-full" @click="requestWorkshopBuyCredits">
+      <Button size="lg" class="w-full px-5" @click="requestWorkshopBuyCredits">
         {{ t('workshop.run.buyCredits', locale) }}
       </Button>
     </template>
@@ -67,14 +68,16 @@ const signInHref = useSignInHref(locale)
     <Button
       v-else-if="rendering"
       variant="outline"
-      class="h-12 w-full"
+      size="lg"
+      class="w-full px-5"
       @click="emit('cancel')"
     >
       {{ tc('cinematic.output.cancel', locale) }}
     </Button>
     <Button
       v-else
-      class="h-12 w-full justify-between px-5"
+      size="lg"
+      class="w-full justify-between px-5"
       :disabled="!canGenerate"
       data-testid="cinematic-generate"
       @click="emit('generate')"

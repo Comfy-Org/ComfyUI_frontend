@@ -6,51 +6,13 @@ import type { Locale, LocalizedText } from '../../../i18n/translations'
  * not add to every other page's script budget.
  */
 const copy = {
-  'cinematic.bar.home': {
-    en: 'Back to Models',
-    'zh-CN': '返回模型'
-  },
-  'cinematic.bar.beta': {
-    en: 'Beta',
-    'zh-CN': '测试版'
-  },
-  'cinematic.bar.api': {
-    en: 'API',
-    'zh-CN': 'API'
-  },
-  'cinematic.api.title': {
-    en: 'Call this studio from your code',
-    'zh-CN': '在代码中调用此工作室'
-  },
-  'cinematic.unavailable.title': {
-    en: 'Cinematic Studio is not open yet',
-    'zh-CN': '电影工作室尚未开放'
-  },
-  'cinematic.unavailable.link': {
-    en: 'Browse models',
-    'zh-CN': '浏览模型'
-  },
-  'cinematic.title': {
-    en: 'Cinematic Studio',
-    'zh-CN': '电影工作室'
-  },
-  'cinematic.meta.description': {
-    en: 'Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router.',
-    'zh-CN':
-      '导演电影感静帧：选择摄影机、景别、光线、胶片与调色，然后通过 Comfy Router 运行任意图像模型。'
-  },
-  'cinematic.api.intro': {
-    en: 'The same request the Playground sends, with the prompt your direction builds. Every control becomes a field.',
-    'zh-CN':
-      '与试用页发送的请求相同，提示词由你的导演设置生成。每个控件都对应一个字段。'
-  },
   'cinematic.panel.label': {
     en: 'Shot settings',
     'zh-CN': '镜头设置'
   },
-  'cinematic.section.model': {
-    en: 'Model',
-    'zh-CN': '模型'
+  'cinematic.section.output': {
+    en: 'Format',
+    'zh-CN': '画幅'
   },
   'cinematic.section.scene': {
     en: 'Scene',
@@ -67,14 +29,6 @@ const copy = {
   'cinematic.section.references': {
     en: 'References',
     'zh-CN': '参考'
-  },
-  'cinematic.model.heading': {
-    en: 'Model · via Comfy Router',
-    'zh-CN': '模型 · 通过 Comfy Router'
-  },
-  'cinematic.model.router': {
-    en: 'Router',
-    'zh-CN': 'Router'
   },
   'cinematic.scene.placeholder': {
     en: 'Describe the moment. Who, where, what is happening.',

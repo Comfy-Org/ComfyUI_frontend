@@ -25,10 +25,10 @@ const startsShot = (index: number) =>
 <template>
   <nav
     :aria-label="tc('cinematic.stage.sequence', locale)"
-    class="flex h-24 shrink-0 items-center gap-3 overflow-x-auto border-t border-transparency-white-t8 bg-primary-comfy-ink px-5"
+    class="flex h-20 shrink-0 items-center gap-3 overflow-x-auto border-t border-transparency-white-t8 px-4 sm:h-24 sm:px-5"
   >
     <span
-      class="mr-2 shrink-0 text-[11px] font-bold tracking-widest text-primary-warm-gray uppercase"
+      class="mr-2 shrink-0 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
     >
       {{ tc('cinematic.stage.sequence', locale) }}
     </span>
