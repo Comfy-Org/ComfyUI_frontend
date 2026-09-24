@@ -52,6 +52,12 @@ interface SentTag {
 export interface WorkflowTurnContext {
   id?: string
   tabPath: string
+  /**
+   * A saved tab the saved-workflow index has not named. Its identity is kept
+   * so the send can refuse it: sent without an id it would be attributed to
+   * whatever workflow the thread used last, i.e. another canvas.
+   */
+  unresolved?: true
 }
 
 /**
@@ -284,6 +290,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
     )
   }
 
+  function recordUnresolvedTarget(text: string): void {
+    conversationStore.recordFailedSend(
+      nextLocalErrorId(),
+      text,
+      i18n.global.t('agent.targetNotResolved')
+    )
+  }
+
   function postTurn(
     threadId: string,
     text: string,
@@ -472,6 +486,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       const wfContext = workflow?.current(origin)
       if (workflowTargetChanged(originContext, wfContext)) {
         recordUnavailableTarget(text)
+        return false
+      }
+      // Still unnamed after preparation refreshed the index: the turn has no
+      // workflow to belong to, so it is not sent at all.
+      if (wfContext?.unresolved) {
+        recordUnresolvedTarget(text)
         return false
       }
       sentContext = wfContext

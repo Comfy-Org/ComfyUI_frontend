@@ -2,12 +2,11 @@
  * Which workflow a turn is attributed to, and whether a tab may adopt the
  * workflow the agent mints for it.
  *
- * In the cloud a saved tab resolves its workflow through ingest's workflow
- * list; a saved tab that does NOT resolve means the list has not loaded, and
- * sending a tab-only context would let the agent mint a second workflow for a
- * tab that already has one. Standalone has no such list — the tab binding is
- * the only source of truth — so an unbound saved tab is simply a tab the agent
- * has not been given a workflow for yet, exactly like a temporary one.
+ * Every backend serves the saved-workflow index (GET /workflows), so a saved
+ * tab that does NOT resolve means the list has not loaded. Sending it tab-only
+ * would let the agent mint a second workflow for it; sending nothing would let
+ * the turn land on the thread's previous workflow. It is marked unresolved so
+ * the send refuses it instead.
  */
 import { describe, expect, it } from 'vitest'
 
@@ -25,7 +24,7 @@ describe('turnContextFor', () => {
     ).toEqual({ id: 'wf-1', tabPath: 'workflows/a.json' })
   })
 
-  it('withholds the context for an unresolved saved tab until the saved-workflow index names it', () => {
+  it('marks an unresolved saved tab so the send can refuse it', () => {
     expect(
       turnContextFor({
         id: undefined,
@@ -33,7 +32,7 @@ describe('turnContextFor', () => {
         isTemporary: false,
         hasOrigin: true
       })
-    ).toBeUndefined()
+    ).toEqual({ tabPath: 'workflows/a.json', unresolved: true })
   })
 
   it('always sends a tab-only context for a temporary tab', () => {
