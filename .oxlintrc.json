@@ -6,6 +6,7 @@
     "components.d.ts",
     "coverage/*",
     "dist/*",
+    "packages/ingest-types/src/types.gen.ts",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
     "scripts/registry-census/detection-proof/**",
