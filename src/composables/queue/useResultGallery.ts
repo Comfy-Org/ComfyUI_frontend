@@ -30,8 +30,9 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     if (targetOutputs === null && targetTask) return
 
     // Use target's outputs if available, otherwise fall back to all previews
-    const items = targetOutputs?.length
-      ? targetOutputs
+    const showingTargetOutputs = Boolean(targetOutputs?.length)
+    const items = showingTargetOutputs
+      ? targetOutputs!
       : tasks.map((t) => t.previewOutput).filter((o) => !!o)
 
     if (!items.length) return
@@ -39,12 +40,23 @@ export function useResultGallery(getFilteredTasks: () => TaskItemImpl[]) {
     const lightboxItems = resultItemsToLightboxItems(items)
     if (!lightboxItems.length) return
 
-    galleryItems.value = lightboxItems
     const previewOutput = item.taskRef?.previewOutput
-    galleryActiveIndex.value = findLightboxIndexByUrl(
-      lightboxItems,
-      previewOutput ? resultItemUrl(previewOutput) : undefined
-    )
+    const requestedIndex = previewOutput
+      ? findLightboxIndexByUrl(lightboxItems, resultItemUrl(previewOutput))
+      : undefined
+
+    // Falling back to the first item is only right within the clicked job;
+    // across jobs it would open a different job's media.
+    if (
+      requestedIndex === undefined &&
+      previewOutput &&
+      !showingTargetOutputs
+    ) {
+      return
+    }
+
+    galleryItems.value = lightboxItems
+    galleryActiveIndex.value = requestedIndex ?? 0
   }
 
   return {

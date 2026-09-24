@@ -16,15 +16,19 @@ describe('findLightboxIndexByUrl', () => {
   ]
 
   it.for([
+    ['a', 0],
     ['b', 1],
-    ['missing', 0],
-    [undefined, 0]
-  ] as const satisfies readonly (readonly [string | undefined, number])[])(
+    ['c', 2]
+  ] as const satisfies readonly (readonly [string, number])[])(
     'resolves %s to index %i',
     ([url, expected]) => {
       expect(findLightboxIndexByUrl(items, url)).toBe(expected)
     }
   )
+
+  it('reports a miss rather than silently selecting the first item', () => {
+    expect(findLightboxIndexByUrl(items, 'dropped')).toBeUndefined()
+  })
 })
 
 describe('fileLightboxItem', () => {

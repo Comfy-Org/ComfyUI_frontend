@@ -82,9 +82,8 @@ export function resultItemsToLightboxItems(
 
 export function findLightboxIndexByUrl(
   items: readonly LightboxItem[],
-  url?: string
-): number {
-  if (!url) return 0
+  url: string
+): number | undefined {
   const index = items.findIndex((item) => item.url === url)
-  return index >= 0 ? index : 0
+  return index >= 0 ? index : undefined
 }

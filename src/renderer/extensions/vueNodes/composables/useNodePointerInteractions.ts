@@ -75,8 +75,6 @@ export function useNodePointerInteractions(
   function onPointermove(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event, isMiddleButtonHeld)) return
 
-    if (nodePointerSequenceId !== event.pointerId) return
-
     if (agentNodeSelectionStore.isActive) return
 
     // Don't activate drag while resizing
