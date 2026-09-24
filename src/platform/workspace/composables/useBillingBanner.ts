@@ -9,6 +9,7 @@ import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isWithinEnterpriseEndingNotice } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
+import type { SubscriptionInfo } from '@/composables/billing/types'
 import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
@@ -35,50 +36,45 @@ export interface BillingBannerInputs {
   hasScheduledChange: boolean
 }
 
-// The single billing banner slot, in priority order: paused > paymentFailed >
-// outOfCredits > ending > planChange. Payment recovery and the existing
-// billing-control notices have independent rollout gates.
-export function deriveBillingBanner(
+// An Enterprise cancel_at is an agreed end date — an operator pilot term or
+// a sales-mediated cancellation. The two are deliberately not distinguished:
+// cancel_at alone cannot tell them apart (cloud's
+// common/repository/billing/repository.go), and the rendering is truthful
+// for both — quiet until the 14-day window, then the ending notice.
+// Decision recorded on FE-2035. Enterprise payment and credit lifecycles
+// are handled by sales, so paused/paymentFailed/outOfCredits never apply.
+function deriveEnterpriseBanner(
   inputs: BillingBannerInputs,
-  now: number = Date.now()
+  now: number
 ): BillingBannerKind | null {
-  if (!inputs.isLoaded) return null
+  if (!inputs.canAccessSubscriptionFeatures) return null
+  if (!inputs.billingControlEnabled) return null
+  const withinEndingNotice =
+    inputs.isCancelled &&
+    inputs.canManage &&
+    isWithinEnterpriseEndingNotice(inputs.endDate, now)
+  return withinEndingNotice ? 'ending' : null
+}
 
-  // An Enterprise cancel_at is an agreed end date — an operator pilot term or
-  // a sales-mediated cancellation. The two are deliberately not distinguished:
-  // cancel_at alone cannot tell them apart (cloud's
-  // common/repository/billing/repository.go), and the rendering is truthful
-  // for both — quiet until the 14-day window, then this ending notice.
-  // Decision recorded on FE-2035. Enterprise payment and credit lifecycles
-  // are handled by sales, so paused/paymentFailed/outOfCredits never apply —
-  // this branch takes precedence over any team-plan reading of the same
-  // subscription.
-  if (inputs.isEnterprise) {
-    if (!inputs.canAccessSubscriptionFeatures) return null
-    if (!inputs.billingControlEnabled) return null
-    if (
-      inputs.isCancelled &&
-      inputs.endDate &&
-      inputs.canManage &&
-      isWithinEnterpriseEndingNotice(inputs.endDate, now)
-    ) {
-      return 'ending'
-    }
-    return null
+// Payment recovery reaches personal workspaces too; only paused stays
+// team-shaped. Its rollout gate is independent of billing control.
+function derivePaymentRecoveryBanner(
+  inputs: BillingBannerInputs
+): BillingBannerKind | null {
+  if (!inputs.v1PaymentRecovery) return null
+  if (inputs.isTeamPlan && inputs.billingStatus === 'paused') return 'paused'
+  if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
+    return 'paymentFailed'
   }
+  return null
+}
 
-  // Everything below is the self-serve path, unchanged: payment recovery
-  // reaches personal workspaces too, the billing-control notices stay
-  // team-only, and a cancellation there is user-initiated news, so the
-  // ending notice shows at once. Any other tier (including unrecognized
-  // ones) gets no banner at all.
-  if (inputs.v1PaymentRecovery) {
-    if (inputs.isTeamPlan && inputs.billingStatus === 'paused') return 'paused'
-    if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
-      return 'paymentFailed'
-    }
-  }
-
+// The team-only billing-control notices. A self-serve cancellation is
+// user-initiated news, so its ending notice shows at once. Any other tier
+// (including unrecognized ones) gets no banner at all.
+function deriveTeamNoticeBanner(
+  inputs: BillingBannerInputs
+): BillingBannerKind | null {
   if (!inputs.isTeamPlan) return null
   if (!inputs.canAccessSubscriptionFeatures) return null
   if (!inputs.billingControlEnabled) return null
@@ -92,8 +88,40 @@ export function deriveBillingBanner(
   if (inputs.hasScheduledChange && !inputs.isCancelled) {
     return 'planChange'
   }
-
   return null
+}
+
+// The single billing banner slot, in priority order: paused > paymentFailed >
+// outOfCredits > ending > planChange. The Enterprise policy takes precedence
+// over any team-plan reading of the same subscription.
+export function deriveBillingBanner(
+  inputs: BillingBannerInputs,
+  now: number = Date.now()
+): BillingBannerKind | null {
+  if (!inputs.isLoaded) return null
+  if (inputs.isEnterprise) return deriveEnterpriseBanner(inputs, now)
+  return derivePaymentRecoveryBanner(inputs) ?? deriveTeamNoticeBanner(inputs)
+}
+
+function readSubscriptionInputs(
+  subscription: SubscriptionInfo | null
+): Pick<
+  BillingBannerInputs,
+  | 'isEnterprise'
+  | 'isLoaded'
+  | 'hasFunds'
+  | 'isCancelled'
+  | 'endDate'
+  | 'hasScheduledChange'
+> {
+  return {
+    isEnterprise: subscription?.tier === 'ENTERPRISE',
+    isLoaded: subscription !== null,
+    hasFunds: subscription?.hasFunds ?? null,
+    isCancelled: subscription?.isCancelled ?? false,
+    endDate: subscription?.endDate ?? null,
+    hasScheduledChange: subscription?.scheduledChange != null
+  }
 }
 
 function useBillingBannerInternal() {
@@ -114,27 +142,20 @@ function useBillingBannerInternal() {
   // instead of waiting for an unrelated billing ref to change.
   const now = useTimestamp({ interval: 60_000 })
 
-  const kind = computed<BillingBannerKind | null>(() => {
-    if (!isCloud) return null
-    return deriveBillingBanner(
-      {
-        billingControlEnabled: flags.billingControlEnabled,
-        v1PaymentRecovery: flags.v1PaymentRecovery,
-        isTeamPlan: isTeamPlan.value,
-        isEnterprise: subscription.value?.tier === 'ENTERPRISE',
-        isLoaded: subscription.value !== null,
-        canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
-        billingStatus: billingStatus.value,
-        hasFunds: subscription.value?.hasFunds ?? null,
-        isCancelled: subscription.value?.isCancelled ?? false,
-        endDate: subscription.value?.endDate ?? null,
-        canManage: permissions.value.canManageSubscription,
-        outOfCreditsDismissed: dismissed.value,
-        hasScheduledChange: subscription.value?.scheduledChange != null
-      },
-      now.value
-    )
-  })
+  const bannerInputs = computed<BillingBannerInputs>(() => ({
+    billingControlEnabled: flags.billingControlEnabled,
+    v1PaymentRecovery: flags.v1PaymentRecovery,
+    isTeamPlan: isTeamPlan.value,
+    canAccessSubscriptionFeatures: canAccessSubscriptionFeatures.value,
+    billingStatus: billingStatus.value,
+    canManage: permissions.value.canManageSubscription,
+    outOfCreditsDismissed: dismissed.value,
+    ...readSubscriptionInputs(subscription.value)
+  }))
+
+  const kind = computed<BillingBannerKind | null>(() =>
+    isCloud ? deriveBillingBanner(bannerInputs.value, now.value) : null
+  )
 
   // Dismiss silences only the out-of-credits banner, and only for the current
   // exhaustion episode: reset once the workspace is funded again so a later

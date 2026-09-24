@@ -120,65 +120,66 @@ interface BannerView {
   dismissible: boolean
 }
 
-const banner = computed<BannerView | null>(() => {
-  const bs = 'workspacePanel.billingStatus'
-  switch (kind.value) {
-    case 'paused':
-      return {
-        muted: false,
-        title: t(`${bs}.paused.title`),
-        body: canManage.value
-          ? t(`${bs}.paused.body`)
-          : t(`${bs}.paused.memberBody`),
-        action: canManage.value ? 'updatePayment' : null,
+const bs = 'workspacePanel.billingStatus'
+
+const pausedView = (): BannerView => ({
+  muted: false,
+  title: t(`${bs}.paused.title`),
+  body: canManage.value ? t(`${bs}.paused.body`) : t(`${bs}.paused.memberBody`),
+  action: canManage.value ? 'updatePayment' : null,
+  dismissible: false
+})
+
+const paymentFailedView = (): BannerView => ({
+  muted: false,
+  title: t(`${bs}.warning.title`),
+  body: t(`${bs}.warning.bodyNoDate`),
+  action: 'updatePayment',
+  dismissible: false
+})
+
+const outOfCreditsBody = (): string => {
+  if (canTopUp.value) {
+    return cycleResetDate.value
+      ? t(`${bs}.outOfCredits.body`, { date: cycleResetDate.value })
+      : t(`${bs}.outOfCredits.bodyNoDate`)
+  }
+  return canSubscribeSelfServe.value
+    ? t(`${bs}.outOfCredits.upgradeBody`)
+    : t(`${bs}.outOfCredits.memberBody`)
+}
+
+const outOfCreditsView = (): BannerView => ({
+  muted: false,
+  title: t(`${bs}.outOfCredits.title`),
+  body: outOfCreditsBody(),
+  action: canTopUp.value || canSubscribeSelfServe.value ? 'addCredits' : null,
+  dismissible: true
+})
+
+// An Enterprise contract renews through sales, not self-serve reactivation,
+// so it gets its own copy and never a Reactivate action — even where the
+// legacy rail would resolve canReactivatePlan true.
+const endingView = (): BannerView =>
+  isEnterprisePlan.value
+    ? {
+        muted: true,
+        title: t(`${bs}.ending.enterpriseTitle`, { date: planEndDate.value }),
+        body: t(`${bs}.ending.enterpriseBody`),
+        action: null,
         dismissible: false
       }
-    case 'paymentFailed':
-      return {
-        muted: false,
-        title: t(`${bs}.warning.title`),
-        body: t(`${bs}.warning.bodyNoDate`),
-        action: 'updatePayment',
-        dismissible: false
-      }
-    case 'outOfCredits':
-      return {
-        muted: false,
-        title: t(`${bs}.outOfCredits.title`),
-        body: canTopUp.value
-          ? cycleResetDate.value
-            ? t(`${bs}.outOfCredits.body`, { date: cycleResetDate.value })
-            : t(`${bs}.outOfCredits.bodyNoDate`)
-          : canSubscribeSelfServe.value
-            ? t(`${bs}.outOfCredits.upgradeBody`)
-            : t(`${bs}.outOfCredits.memberBody`),
-        action:
-          canTopUp.value || canSubscribeSelfServe.value ? 'addCredits' : null,
-        dismissible: true
-      }
-    case 'ending':
-      // An Enterprise contract renews through sales, not self-serve
-      // reactivation, so it gets its own copy and never a Reactivate action —
-      // even where the legacy rail would resolve canReactivatePlan true.
-      if (isEnterprisePlan.value) {
-        return {
-          muted: true,
-          title: t(`${bs}.ending.enterpriseTitle`, { date: planEndDate.value }),
-          body: t(`${bs}.ending.enterpriseBody`),
-          action: null,
-          dismissible: false
-        }
-      }
-      return {
+    : {
         muted: true,
         title: t(`${bs}.ending.title`, { date: planEndDate.value }),
         body: t(`${bs}.ending.body`),
         action: canReactivatePlan.value ? 'reactivate' : null,
         dismissible: false
       }
-    case 'planChange':
-      if (!canShowScheduledChange.value) return null
-      return {
+
+const planChangeView = (): BannerView | null =>
+  canShowScheduledChange.value
+    ? {
         muted: true,
         title: t(`${bs}.planChange.title`, {
           plan: scheduledPlanName.value,
@@ -188,6 +189,20 @@ const banner = computed<BannerView | null>(() => {
         action: null,
         dismissible: false
       }
+    : null
+
+const banner = computed<BannerView | null>(() => {
+  switch (kind.value) {
+    case 'paused':
+      return pausedView()
+    case 'paymentFailed':
+      return paymentFailedView()
+    case 'outOfCredits':
+      return outOfCreditsView()
+    case 'ending':
+      return endingView()
+    case 'planChange':
+      return planChangeView()
     default:
       return null
   }
