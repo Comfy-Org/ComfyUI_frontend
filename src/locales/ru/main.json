@@ -2223,8 +2223,10 @@
     "star": "Звезда"
   },
   "imageCompare": {
+    "afterAlt": "Изображение после",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "Изображение до",
     "noImages": "Нет изображений для сравнения"
   },
   "imageCrop": {
@@ -3280,6 +3282,7 @@
     "mask": "маска",
     "merging": "слияние",
     "mesh": "сетка",
+    "ming image": "ming image",
     "minimax": "minimax",
     "minimax music": "музыка minimax",
     "mochi": "mochi",
@@ -4809,6 +4812,7 @@
     },
     "clearAllFilters": "Сбросить все фильтры",
     "error": {
+      "loading": "Не удалось открыть шаблон. Пожалуйста, попробуйте ещё раз.",
       "templateNotFound": "Шаблон \"{templateName}\" не найден"
     },
     "filtersApplied": "{count} фильтр применён | {count} фильтра применено | {count} фильтров применено",
@@ -5089,6 +5093,7 @@
   },
   "workspace": {
     "addedToWorkspace": "Вас добавили в:",
+    "deepLinkStayed": "Не удалось открыть это рабочее пространство. Вы всё ещё находитесь в {workspaceName}.",
     "inviteAccepted": "Приглашение принято",
     "inviteFailed": "Не удалось принять приглашение",
     "switchFailed": "Не удалось переключить рабочее пространство. Пожалуйста, попробуйте еще раз.",

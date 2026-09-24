@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Bearbeitet oder kombiniert bis zu 5 Referenzbilder mithilfe eines Text-Prompts mit dem Hunyuan-Image-Modell von Tencent.",
+    "display_name": "Tencent HY Image: Bearbeiten",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_aspect_ratio": {
+        "name": "Seitenverhältnis"
+      },
+      "model_height": {
+        "name": "Höhe"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_reference_detail": {
+        "name": "Referenzdetails"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_watermark": {
+        "name": "Wasserzeichen"
+      },
+      "model_width": {
+        "name": "Breite"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Erzeugt Bilder aus einem Text-Prompt mit dem Hunyuan-Image-Modell von Tencent.",
+    "display_name": "Tencent HY Image: Text zu Bild",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_aspect_ratio": {
+        "name": "Seitenverhältnis"
+      },
+      "model_height": {
+        "name": "Höhe"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_watermark": {
+        "name": "Wasserzeichen"
+      },
+      "model_width": {
+        "name": "Breite"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -18366,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "Reasoning-Aufwand",
+        "tooltip": "Wie viel Reasoning das Modell vor dem Zeichnen aufwendet. Höhere Stufen verbessern den Detailgrad und kosten mehr Tokens. Wird nur von den Arrow-2-Modellen verwendet."
+      },
       "seed": {
         "name": "Seed",
         "tooltip": "Seed, um festzulegen, ob der Node erneut ausgeführt werden soll; die tatsächlichen Ergebnisse sind unabhängig vom Seed nicht deterministisch."
@@ -18404,6 +18489,10 @@
       "prompt": {
         "name": "Prompt",
         "tooltip": "Textbeschreibung der gewünschten SVG-Ausgabe."
+      },
+      "reasoning_effort": {
+        "name": "Reasoning-Aufwand",
+        "tooltip": "Wie viel Reasoning das Modell vor dem Zeichnen aufwendet. Höhere Stufen verbessern den Detailgrad und kosten mehr Tokens. Wird nur von den Arrow-2-Modellen verwendet."
       },
       "reference_images": {
         "name": "Referenzbilder",
@@ -19075,7 +19164,7 @@
       },
       "model": {
         "name": "Modell",
-        "tooltip": "Das für die Generierung zu verwendende Modell. Die recraftv4_styles-Modelle sind für stilkonsistente Generierung ausgelegt und erfordern immer eine style_id oder style_references."
+        "tooltip": "Das für die Generierung zu verwendende Modell. Die recraftv4_styles-Modelle sind für stilkonsistente Generierung ausgelegt und benötigen immer eine style_id oder style_references; recraftv4_1_flash ist das schnellste und günstigste Modell und unterstützt überhaupt keine Stile."
       },
       "model_size": {
         "name": "Größe"
@@ -23799,6 +23888,30 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Textkodierung Ming Image Edit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "Bilder",
+        "tooltip": "Optionale Referenzbilder, die der Text-Encoder sieht und die als unverrauschte Frames an die latent-Sequenz angehängt werden. Spätere Bilder werden auf die Größe des ersten Bildes skaliert, und das gesampelte latent sollte dieselbe Größe haben."
+      },
+      "prompt": {
+        "name": "Prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Ohne VAE konditionieren die Bilder den Text-Encoder nur über den Vision-Tower."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImage21": {
     "display_name": "Text kodieren Qwen Image 2.1",
     "inputs": {
@@ -23968,6 +24081,10 @@
       "sampling_mode_top_p": {
         "name": "Top P"
       },
+      "system_prompt": {
+        "name": "System-Prompt",
+        "tooltip": "Ersetzt den System-Prompt in der Chat-Vorlage des Modells. Wird ignoriert, wenn die Standardvorlage nicht verwendet wird."
+      },
       "thinking": {
         "name": "Thinking",
         "tooltip": "Im Thinking-Modus arbeiten, falls das Modell diesen unterstützt."
@@ -23984,6 +24101,10 @@
     "outputs": {
       "0": {
         "name": "Generierter Text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Überlegungen",
         "tooltip": null
       }
     }
@@ -24034,6 +24155,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Ersetzt den System-Prompt in der Chat-Vorlage des Modells. Wird ignoriert, wenn die Standardvorlage nicht verwendet wird."
+      },
       "thinking": {
         "name": "thinking",
         "tooltip": "Verwenden Sie den Denkmodus, wenn das Modell ihn unterstützt."
@@ -24050,6 +24175,10 @@
     "outputs": {
       "0": {
         "name": "generated_text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Denken",
         "tooltip": null
       }
     }

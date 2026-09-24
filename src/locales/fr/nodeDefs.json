@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Modifie ou combine jusqu’à 5 images de référence, guidé par une invite textuelle, à l’aide du modèle Hunyuan Image de Tencent.",
+    "display_name": "Tencent HY Image : Modifier",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "hauteur"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_watermark": {
+        "name": "filigrane"
+      },
+      "model_width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Génère des images à partir d’une invite textuelle à l’aide du modèle Hunyuan Image de Tencent.",
+    "display_name": "Tencent HY Image : Texte vers image",
+    "inputs": {
+      "control_after_generate": {
+        "name": "contrôle après la génération"
+      },
+      "model": {
+        "name": "modèle",
+        "tooltip": "Modèle à utiliser."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "hauteur"
+      },
+      "model_prompt": {
+        "name": "invite"
+      },
+      "model_resolution": {
+        "name": "résolution"
+      },
+      "model_seed": {
+        "name": "graine"
+      },
+      "model_watermark": {
+        "name": "filigrane"
+      },
+      "model_width": {
+        "name": "largeur"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -18366,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Quantité de raisonnement que le modèle effectue avant de dessiner. Des niveaux plus élevés améliorent les détails et coûtent davantage de jetons. Utilisé uniquement par les modèles Arrow 2."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "Graine pour déterminer si le nœud doit être relancé ; les résultats réels restent non déterministes quel que soit le seed."
@@ -18404,6 +18489,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "Description textuelle du SVG souhaité."
+      },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Quantité de raisonnement que le modèle effectue avant de dessiner. Des niveaux plus élevés améliorent les détails et coûtent davantage de jetons. Utilisé uniquement par les modèles Arrow 2."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19075,7 +19164,7 @@
       },
       "model": {
         "name": "modèle",
-        "tooltip": "Le modèle à utiliser pour la génération. Les modèles recraftv4_styles sont conçus pour une génération cohérente en matière de style et nécessitent toujours un style_id ou des style_references."
+        "tooltip": "Le modèle à utiliser pour la génération. Les modèles recraftv4_styles sont conçus pour une génération cohérente en matière de style et nécessitent toujours un style_id ou des style_references ; recraftv4_1_flash est le modèle le plus rapide et le moins coûteux, et ne prend aucun style en charge."
       },
       "model_size": {
         "name": "taille"
@@ -23799,6 +23888,30 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "Encodage de texte Ming Image Edit",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "images",
+        "tooltip": "Images de référence facultatives, visibles par l’encodeur de texte et ajoutées à la séquence latente en tant qu’images nettes. Les images suivantes sont redimensionnées selon la première, et le latent échantillonné doit correspondre à sa taille."
+      },
+      "prompt": {
+        "name": "invite"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "Sans VAE, les images ne conditionnent l’encodeur de texte qu’au travers de l’encodeur visuel."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImage21": {
     "display_name": "Encodage de texte Qwen Image 2.1",
     "inputs": {
@@ -23968,6 +24081,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Remplace l’invite système dans le modèle de conversation du modèle. Ignoré lorsque le modèle par défaut n’est pas utilisé."
+      },
       "thinking": {
         "name": "réflexion",
         "tooltip": "Fonctionner en mode réflexion si le modèle le permet."
@@ -23984,6 +24101,10 @@
     "outputs": {
       "0": {
         "name": "texte_généré",
+        "tooltip": null
+      },
+      "1": {
+        "name": "réflexion",
         "tooltip": null
       }
     }
@@ -24034,6 +24155,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "invite_système",
+        "tooltip": "Remplace l’invite système dans le modèle de discussion du modèle. Ignoré lorsque le modèle par défaut n’est pas utilisé."
+      },
       "thinking": {
         "name": "réflexion",
         "tooltip": "Fonctionner en mode réflexion si le modèle le permet."
@@ -24050,6 +24175,10 @@
     "outputs": {
       "0": {
         "name": "texte_généré",
+        "tooltip": null
+      },
+      "1": {
+        "name": "réflexion",
         "tooltip": null
       }
     }
