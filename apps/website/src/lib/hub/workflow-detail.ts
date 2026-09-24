@@ -5,6 +5,8 @@ import hubTemplates from '../../data/hubTemplates.json'
 import { modelIdentity, modelName } from './model-identity'
 import { launchesHere } from '../../config/workshop-launch'
 import { runsHere } from './runs-here'
+import type { WorkflowReach } from './workflow-reach'
+import { workflowReach } from './workflow-reach'
 import { partnerModelFor } from './template-use-case'
 import type { HubTemplate, HubTemplateDetails } from './types'
 import { hubTemplateDetailsSchema, hubTemplatesSchema } from './types'
@@ -178,4 +180,17 @@ export function getHubWorkflowPage(name: string): HubWorkflowPage | undefined {
     related: relatedTo(template),
     downloadUrl: `https://raw.githubusercontent.com/Comfy-Org/workflow_templates/main/templates/${encodeURIComponent(template.name)}.json`
   }
+}
+
+/**
+ * One workflow of each kind, so the reference tool can take a reader to a
+ * page that genuinely is that kind rather than dress one up as another. What
+ * a kind changes — whether a playground exists at all, what the badge says —
+ * is decided when the page is built, so only a real page of it is honest.
+ */
+export function workflowByReach(): Partial<Record<WorkflowReach, string>> {
+  const found: Partial<Record<WorkflowReach, string>> = {}
+  for (const template of templates)
+    found[workflowReach(template.name, runsHere(template))] ??= template.name
+  return found
 }

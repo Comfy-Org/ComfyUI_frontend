@@ -5,6 +5,7 @@ import HubPageHeader from '../../../components/hub/HubPageHeader.vue'
 import WorkflowAbout from '../../../components/hub/WorkflowAbout.vue'
 import WorkflowRun from '../../../components/hub/WorkflowRun.vue'
 import WorkflowRunForm from '../../../components/hub/WorkflowRunForm.vue'
+import WorkflowRunStates from '../../../components/hub/WorkflowRunStates.vue'
 import WorkflowApiTab from '../../../components/hub/WorkflowApiTab.vue'
 import WorkflowTabs from '../../../components/hub/WorkflowTabs.vue'
 import { catalogSearch, useCaseFor } from '../../../config/models-catalogue'
@@ -26,7 +27,8 @@ import { tagDisplayName, usefulTags } from '../../../lib/hub/tag-aliases'
 import {
   getHubWorkflowPage,
   listHubWorkflows,
-  summarisePorts
+  summarisePorts,
+  workflowByReach
 } from '../../../lib/hub/workflow-detail'
 import { workflowDisplayTitle } from '../../../lib/hub/workflow-title'
 import { workflowReach } from '../../../lib/hub/workflow-reach'
@@ -99,6 +101,7 @@ const cloudUrl = `${WORKSHOP_CLOUD_BASE_URL}/?template=${encodeURIComponent(temp
 // that promise for the few whose packs it does not carry. Those lead with the
 // copy into a workspace where they can be deployed instead.
 const reach = workflowReach(template.name, page.runsInline)
+const reachExamples = workflowByReach()
 
 // A workflow that reaches neither a model nor its own bindings would open on
 // an empty Playground. None does; the build stops rather than ship one.
@@ -221,5 +224,11 @@ const tags = usefulTags(template.tags)
         testid="workflow-related"
       />
     )}
+
+    <WorkflowRunStates
+      examples={reachExamples}
+      hasPanel={!runnable && !!runForm && reach !== 'endpoint'}
+      client:load
+    />
   </main>
 </BaseLayout>
