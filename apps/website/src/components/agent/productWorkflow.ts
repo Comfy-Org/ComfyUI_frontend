@@ -3,13 +3,13 @@ import type { MotionEdge, Point } from './workflowMotion'
 
 export const productWorkflowSize = { width: 1739, height: 599 }
 export const productWorkflowHoldDuration = 10
-export const productWorkflowUserRest = { x: 92, y: 41 }
-export const productWorkflowAgentRest = { x: 1548, y: 512 }
+export const productWorkflowUserRest = { x: 24, y: 67 }
+export const productWorkflowAgentRest = { x: 1638, y: 521 }
 
 const variants = [
-  { id: 'white', label: 'White', y: 48.56 },
-  { id: 'gold', label: 'Gold', y: 225.03 },
-  { id: 'purple', label: 'Purple', y: 405 }
+  { id: 'white', label: 'White' },
+  { id: 'gold', label: 'Gold' },
+  { id: 'purple', label: 'Purple' }
 ]
 
 const nodes: WorkflowGraphNode[] = [
@@ -17,21 +17,21 @@ const nodes: WorkflowGraphNode[] = [
     id: 'base',
     label: 'Base scene',
     kind: 'landscape',
-    x: 24,
-    y: 146.1,
-    width: 240,
-    height: 168.69,
+    x: 6,
+    y: 144.1,
+    width: 200,
+    height: 146.19,
     image: 'conditioner/base-scene.webp',
     alt: 'Grayscale bottle scene with pillars and floating particle spheres',
-    output: { x: 264, y: 230.45 },
-    clickPoint: { x: 144, y: 230.45 }
+    output: { x: 205.17, y: 163.45 },
+    clickPoint: { x: 106, y: 217.2 }
   },
   {
     id: 'products',
     label: 'Product references',
     kind: 'products',
-    x: 24,
-    y: 350,
+    x: 2,
+    y: 315,
     width: 240,
     height: 110,
     images: [
@@ -42,79 +42,109 @@ const nodes: WorkflowGraphNode[] = [
       { src: 'conditioner/bottle-gold.webp', alt: 'Gold conditioner bottle' },
       { src: 'conditioner/bottle-white.webp', alt: 'White conditioner bottle' }
     ],
-    output: { x: 264, y: 405 },
-    clickPoint: { x: 144, y: 405 }
+    output: { x: 241, y: 334 },
+    clickPoint: { x: 122, y: 370 }
   },
   {
     id: 'keygen',
-    label: 'Generate keyframes',
+    label: 'Generate images',
     kind: 'processor',
-    x: 309,
-    y: 197,
-    width: 183,
+    x: 284,
+    y: 236,
+    width: 174,
     height: 126,
-    text: 'Create three product scenes from the base composition and bottle references.',
-    input: { x: 309, y: 260 },
-    output: { x: 492, y: 260 },
-    clickPoint: { x: 400.5, y: 260 }
+    text: 'Create 3 product scenes from the base composition and bottle references.',
+    input: { x: 283.05, y: 259 },
+    output: { x: 459.91, y: 258 },
+    clickPoint: { x: 371, y: 299 }
   },
-  ...variants.map<WorkflowGraphNode>((variant) => ({
-    id: `keyframe-${variant.id}`,
-    label: `${variant.label} keyframe`,
+  {
+    id: 'keyframe-white',
+    label: 'White keyframe',
     kind: 'landscape',
-    x: 546,
-    y: variant.y,
+    x: 512,
+    y: 75.56,
     width: 204,
     height: 148.44,
-    image: `conditioner/keyframe-${variant.id}.webp`,
-    alt: `Generated product scene for the ${variant.id} conditioner bottle`,
-    input: { x: 546, y: variant.y + 16 },
-    output: { x: 750, y: variant.y + 16 },
-    clickPoint: { x: 648, y: variant.y + 16 },
-    selectionPoint: { x: 648, y: variant.y + 74.22 }
-  })),
+    image: 'conditioner/keyframe-white.webp',
+    alt: 'Generated product scene for the white conditioner bottle',
+    input: { x: 512, y: 91.56 },
+    output: { x: 716, y: 91.56 },
+    clickPoint: { x: 614, y: 91.56 },
+    selectionPoint: { x: 614, y: 149.78 }
+  },
+  {
+    id: 'keyframe-gold',
+    label: 'Gold keyframe',
+    kind: 'landscape',
+    x: 510,
+    y: 245.03,
+    width: 204,
+    height: 148.44,
+    image: 'conditioner/keyframe-gold.webp',
+    alt: 'Generated product scene for the gold conditioner bottle',
+    input: { x: 510, y: 261.03 },
+    output: { x: 714, y: 261.03 },
+    clickPoint: { x: 612, y: 261.03 },
+    selectionPoint: { x: 612, y: 319.25 }
+  },
+  {
+    id: 'keyframe-purple',
+    label: 'Purple keyframe',
+    kind: 'landscape',
+    x: 512,
+    y: 416,
+    width: 204,
+    height: 148.44,
+    image: 'conditioner/keyframe-purple.webp',
+    alt: 'Generated product scene for the purple conditioner bottle',
+    input: { x: 512, y: 432 },
+    output: { x: 716, y: 432 },
+    clickPoint: { x: 614, y: 432 },
+    selectionPoint: { x: 614, y: 490.22 }
+  },
   {
     id: 'motionref',
     label: 'Motion reference',
     kind: 'landscape',
-    x: 776,
-    y: 162.59,
-    width: 219,
-    height: 156.88,
+    x: 749,
+    y: 170.59,
+    width: 199,
+    height: 145.63,
     video: 'conditioner/motion-reference.mp4',
     loopVideo: true,
     poster: 'conditioner/motion-reference-poster.webp',
     alt: 'Grayscale bottle animation used as the motion reference',
-    output: { x: 995, y: 241.03 },
-    clickPoint: { x: 885.5, y: 241.03 }
+    output: { x: 948, y: 195.03 },
+    clickPoint: { x: 848.5, y: 243.41 }
   },
   {
     id: 'videogen',
     label: 'Generate video',
     kind: 'processor',
-    x: 1044,
-    y: 245.03,
-    width: 192,
-    height: 130,
-    text: 'Use the reference video to create a stylish video ad.',
-    input: { x: 1044, y: 310.03 },
-    output: { x: 1236, y: 310.03 },
-    clickPoint: { x: 1140, y: 310.03 }
+    x: 998,
+    y: 319.03,
+    width: 152,
+    height: 119,
+    text: 'Use the motion reference and keyframe to render a video ad.',
+    input: { x: 1000.38, y: 340.03 },
+    output: { x: 1151.58, y: 340.03 },
+    clickPoint: { x: 1074, y: 378.53 }
   },
   {
     id: 'result-purple',
     label: 'Final output',
     kind: 'featured',
-    x: 1267,
-    y: 146.59,
-    width: 448,
-    height: 285.69,
+    x: 1198,
+    y: 148.59,
+    width: 540,
+    height: 337.44,
     video: 'conditioner/result-purple.mp4',
     loopVideo: true,
     poster: 'conditioner/keyframe-purple.webp',
     alt: 'Final purple fig conditioner video ad',
-    input: { x: 1267, y: 289.44 },
-    clickPoint: { x: 1491, y: 289.44 }
+    input: { x: 1206.1, y: 176.22 },
+    clickPoint: { x: 1468, y: 317.32 }
   }
 ]
 
@@ -150,20 +180,20 @@ export const productWorkflow: WorkflowGraph = {
   id: 'conditioner',
   nodes,
   edges: [
-    connection('base', 'keygen', 286.5),
-    connection('products', 'keygen', 286.5),
-    ...variants.map((variant) =>
-      connection('keygen', `keyframe-${variant.id}`, 519)
-    ),
+    connection('base', 'keygen', 263.5),
+    connection('products', 'keygen', 275.5),
+    connection('keygen', 'keyframe-white', 500),
+    connection('keygen', 'keyframe-gold', 519),
+    connection('keygen', 'keyframe-purple', 497),
     connection('keyframe-purple', 'videogen', {
-      control1: { x: 888, y: 391 },
-      control2: { x: 936, y: 378.03 }
+      control1: { x: 872.19, y: 432 },
+      control2: { x: 868.19, y: 340.03 }
     }),
     connection('motionref', 'videogen', {
-      control1: { x: 1015, y: 288.03 },
-      control2: { x: 1029, y: 277.03 }
+      control1: { x: 986, y: 214.03 },
+      control2: { x: 964.38, y: 330.03 }
     }),
-    connection('videogen', 'result-purple', 1251.5)
+    connection('videogen', 'result-purple', 1174.5)
   ],
   steps: [
     {

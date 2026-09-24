@@ -160,7 +160,7 @@ test('the product workflow animates without a picker or JavaScript @smoke', asyn
   await expect(videoExample.locator('.wf-typed-character')).toHaveCount(0)
   await expect(
     videoExample.getByText(
-      'Use the reference video to create a stylish video ad.',
+      'Use the motion reference and keyframe to render a video ad.',
       { exact: true }
     )
   ).toHaveCSS('opacity', '1')

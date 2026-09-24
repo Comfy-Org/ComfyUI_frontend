@@ -162,14 +162,14 @@ describe('conditioner workflow', () => {
   it.for([
     {
       processor: 'keygen',
-      text: 'Create three product scenes from the base composition and bottle references.',
+      text: 'Create 3 product scenes from the base composition and bottle references.',
       output: 'keyframe-white',
       inputCount: 2,
       outputCount: 3
     },
     {
       processor: 'videogen',
-      text: 'Use the reference video to create a stylish video ad.',
+      text: 'Use the motion reference and keyframe to render a video ad.',
       output: 'result-purple',
       inputCount: 2,
       outputCount: 1
@@ -276,24 +276,18 @@ describe('conditioner workflow', () => {
   })
 
   it.for(['white', 'gold', 'purple'])(
-    'keeps the %s keyframe the same size as other previews and smaller than the reference',
+    'keeps the %s keyframe the same size as the other keyframes',
     (variant) => {
       const keyframe = productWorkflow.nodes.find(
         (node) => node.id === `keyframe-${variant}`
-      )
-      const reference = productWorkflow.nodes.find(
-        (node) => node.id === 'motionref'
       )
       const firstKeyframe = productWorkflow.nodes.find(
         (node) => node.id === 'keyframe-white'
       )
       assert.exists(keyframe)
-      assert.exists(reference)
       assert.exists(firstKeyframe)
       expect(keyframe.width).toBe(firstKeyframe.width)
       expect(keyframe.height).toBe(firstKeyframe.height)
-      expect(keyframe.width).toBeLessThan(reference.width)
-      expect(keyframe.height).toBeLessThan(reference.height)
     }
   )
 
@@ -359,10 +353,8 @@ describe('conditioner workflow', () => {
       )
     )
     expect(reference.output.x).toBe(reference.x + reference.width)
-    expect(reference.output.y).toBeCloseTo(
-      reference.y + reference.height / 2,
-      2
-    )
+    expect(reference.output.y).toBeGreaterThan(reference.y)
+    expect(reference.output.y).toBeLessThan(reference.y + reference.height)
   })
 
   it('connects every animated wire exactly once through its node ports', () => {
@@ -389,18 +381,24 @@ describe('conditioner workflow', () => {
   })
 
   it('connects right-side outputs to left-side inputs across the workflow', () => {
-    const misplacedPorts = productWorkflow.nodes.flatMap((node) =>
-      [node.input, node.output].filter(
-        (point) =>
-          point &&
-          ((point.x !== node.x && point.x !== node.x + node.width) ||
-            Math.abs(
-              point.y -
-                (node.y +
-                  (node.id.startsWith('keyframe-') ? 16 : node.height / 2))
-            ) > 0.01)
-      )
-    )
+    // Dots may sit slightly inside or outside the card edge, never mid-card.
+    const edgeTolerance = 12
+    const nearEdge = (x: number, edge: number) =>
+      Math.abs(x - edge) <= edgeTolerance
+    const misplacedPorts = productWorkflow.nodes.flatMap((node) => [
+      ...(node.input &&
+      (!nearEdge(node.input.x, node.x) ||
+        node.input.y <= node.y ||
+        node.input.y >= node.y + node.height)
+        ? [node.input]
+        : []),
+      ...(node.output &&
+      (!nearEdge(node.output.x, node.x + node.width) ||
+        node.output.y <= node.y ||
+        node.output.y >= node.y + node.height)
+        ? [node.output]
+        : [])
+    ])
     const misplacedClicks = productWorkflow.nodes.filter(
       (node) =>
         !node.clickPoint ||
@@ -413,10 +411,9 @@ describe('conditioner workflow', () => {
       const source = productWorkflow.nodes.find((node) => node.id === edge.from)
       const target = productWorkflow.nodes.find((node) => node.id === edge.to)
       return (
-        !source ||
-        !target ||
-        source.output?.x !== source.x + source.width ||
-        target.input?.x !== target.x ||
+        !source?.output ||
+        !target?.input ||
+        target.input.x <= source.output.x ||
         target.x + target.width / 2 <= source.x + source.width / 2
       )
     })

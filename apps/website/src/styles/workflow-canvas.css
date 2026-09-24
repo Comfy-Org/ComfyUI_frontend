@@ -2,9 +2,10 @@
   --wf-accent: #f2ff59;
   --wf-duration: 21s;
   position: relative;
+  left: -1px;
   isolation: isolate;
   max-width: 1440px;
-  margin: 64px auto 0;
+  margin: 28px auto 0;
   padding: 0 40px;
   color: #eee;
 }
