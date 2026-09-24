@@ -132,45 +132,6 @@ export const MESSAGE_DONE_EVENT: AgentWsEvent = {
   }
 }
 
-type AgentAskData = Extract<AgentWsEvent, { type: 'agent_ask' }>['data']
-
-/** An `agent_ask` frame for the first turn, with the ask fields to vary. */
-export function agentAskEvent(
-  ask: Pick<
-    AgentAskData,
-    | 'ask_id'
-    | 'kind'
-    | 'context'
-    | 'prompt'
-    | 'options'
-    | 'min_selections'
-    | 'max_selections'
-    | 'allow_other'
-  >
-): AgentWsEvent {
-  return {
-    type: 'agent_ask',
-    data: { ...ask, thread_id: THREAD_ID, message_id: TURN_ID }
-  }
-}
-
-/** The server's canonical resolution of `askId`, which removes its card. */
-export function agentAskResolvedEvent(
-  askId: string,
-  selected: string[]
-): AgentWsEvent {
-  return {
-    type: 'agent_ask_resolved',
-    data: {
-      thread_id: THREAD_ID,
-      message_id: TURN_ID,
-      ask_id: askId,
-      status: 'answered',
-      selected
-    }
-  }
-}
-
 function agentFeatures(agentFlag: boolean): RemoteConfig {
   return {
     posthog_project_token: 'phc_e2e_agent_panel',
