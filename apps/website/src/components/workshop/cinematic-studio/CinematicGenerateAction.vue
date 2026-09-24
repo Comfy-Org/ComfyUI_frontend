@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { ArrowRight } from '@lucide/vue'
 import {
   TooltipContent,
   TooltipPortal,
@@ -56,12 +55,12 @@ const note = computed(() => {
   return undefined
 })
 const buttonClass = computed(() =>
-  wide ? 'w-full rounded-full px-5' : 'rounded-full px-5'
+  wide ? 'w-full rounded-full px-5' : 'shrink-0 rounded-full px-6'
 )
 </script>
 
 <template>
-  <div :class="cn('flex flex-col gap-2.5', !wide && 'items-end')">
+  <div :class="cn('flex flex-col gap-2.5', !wide && 'shrink-0 items-end')">
     <p v-if="wide && note" class="text-xs text-content-secondary">
       {{ note }}
     </p>
@@ -93,16 +92,15 @@ const buttonClass = computed(() =>
           >
             {{ t('workshop.run.buyCredits', locale) }}
           </Button>
-          <span v-else :class="cn('inline-flex', wide && 'w-full')">
+          <span v-else :class="cn('inline-flex shrink-0', wide && 'w-full')">
             <Button
-              :class="cn(buttonClass, 'pr-4 pl-5')"
+              :class="buttonClass"
               :disabled="!canGenerate"
               :aria-description="note"
               data-testid="cinematic-generate"
               @click="emit('generate')"
             >
               {{ tc('cinematic.output.generate', locale) }}
-              <ArrowRight aria-hidden="true" />
             </Button>
           </span>
         </TooltipTrigger>

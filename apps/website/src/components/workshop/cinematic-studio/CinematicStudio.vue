@@ -81,7 +81,7 @@ function generate() {
 
 <template>
   <div
-    class="flex min-h-[calc(100svh-5rem)] flex-col lg:min-h-[calc(100svh-7rem)]"
+    class="mb-12 flex min-h-[calc(100svh-5rem)] flex-col lg:mb-20 lg:min-h-[calc(100svh-7rem)]"
     data-testid="cinematic"
   >
     <CinematicStage
