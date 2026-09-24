@@ -17,6 +17,7 @@ import { reportError } from '@/platform/telemetry/reportError'
 import { toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
+import { createUuidv4 } from '@/utils/uuid'
 
 import { attachDocOpMinter } from './docOpMinter'
 import type { DocOpMinter } from './docOpMinter'
@@ -220,13 +221,19 @@ describe('attachDocOpMinter', () => {
 
   it('mints nothing when a workflow is loaded through LGraph.configure', async () => {
     const seeded = new LGraph()
-    seedGraph(seeded)
+    const { source, sink } = seedGraph(seeded)
+    const workflow = { ...seeded.serialize(), id: createUuidv4() }
+    rootGraphId = toRootGraphId(workflow.id)
 
-    graph.configure(seeded.serialize())
+    graph.configure(workflow)
+    await afterFlush()
+    expect(minted).toEqual([])
+
     graph.clear()
     await afterFlush()
-
-    expect(minted).toEqual([])
+    expect(minted).toEqual([
+      { op: 'clear', removed_nodes: [source.id, sink.id] }
+    ])
   })
 
   it('mints nothing while the gate is closed, without blocking the edit', async () => {
