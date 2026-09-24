@@ -24,6 +24,7 @@ import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/ag
 import type { MaterializableGraph } from './agentNodeMaterializer'
 import type { BatchOutcome } from './opSender'
 import type { DocFrameTransport } from './docFrameClient'
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 
 const bridgeState = vi.hoisted(() => {
   class FakeBridge extends EventTarget {
@@ -85,23 +86,6 @@ const telemetryState = vi.hoisted(() => ({
   reportError: vi.fn<typeof reportErrorFn>()
 }))
 
-const apiState = vi.hoisted(() => {
-  const target = new EventTarget()
-  return {
-    target,
-    api: {
-      socket: { readyState: 1, send: vi.fn() },
-      addCustomEventListener: vi.fn(),
-      removeCustomEventListener: vi.fn(),
-      addEventListener: (type: string, listener: EventListener) =>
-        target.addEventListener(type, listener),
-      removeEventListener: vi.fn((type: string, listener: EventListener) =>
-        target.removeEventListener(type, listener)
-      )
-    }
-  }
-})
-
 vi.mock<unknown>(import('./layoutFollowerBridge'), () => ({
   LayoutFollowerBridge: class {
     constructor() {
@@ -160,7 +144,6 @@ vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: telemetryState.reportError
 }))
 
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiState.api }))
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: { graph: null, canvas: null }
 }))
@@ -210,7 +193,7 @@ function mountFollower(
   initiallyActive = true,
   getGraph: () => MaterializableGraph | null = () => null,
   events: Parameters<typeof useAgentCrdtFollower>[5] = {},
-  baseTransport?: DocFrameTransport
+  baseTransport: DocFrameTransport = agentSocket.transport
 ): {
   unmount: () => void
   workflowId: Ref<string | null>
@@ -251,12 +234,35 @@ function reportedTeardownErrors(): unknown[] {
     .map(([cause]) => cause)
 }
 
+// The agent's one socket; its open edge is the follower's reconnect signal.
+let agentSocket = createFakeAgentSocket()
+
 function dispatchFrame(type: string, detail: unknown): void {
   bridge().dispatchEvent(new CustomEvent(type, { detail }))
 }
 
+type FollowerArgs = Parameters<typeof useAgentCrdtFollower>
+
+function followOnAgentSocket(
+  workflowId: FollowerArgs[0],
+  graphMutations: FollowerArgs[1],
+  userId?: FollowerArgs[2],
+  isTargetActive?: FollowerArgs[3]
+) {
+  return useAgentCrdtFollower(
+    workflowId,
+    graphMutations,
+    userId,
+    isTargetActive,
+    undefined,
+    undefined,
+    agentSocket.transport
+  )
+}
+
 describe('useAgentCrdtFollower', () => {
   beforeEach(() => {
+    agentSocket = createFakeAgentSocket()
     useAgentPanelStore().enabled = true
     sessionStorage.clear()
     bridgeState.current = null
@@ -336,7 +342,7 @@ describe('useAgentCrdtFollower', () => {
     first.dispatchEvent(
       new CustomEvent('doc_update', { detail: { workflowId: 'wf-1', seq: 42 } })
     )
-    apiState.target.dispatchEvent(new Event('reconnected'))
+    agentSocket.open()
     vi.advanceTimersByTime(STALE_AFTER_MS * 2)
     workflowId.value = 'wf-2'
     await nextTick()
@@ -609,7 +615,7 @@ describe('useAgentCrdtFollower', () => {
       dispatchFrame('doc_subscribed', { ok: true, workflow_id: 'wf-1', seq: 1 })
       expect(status().connected).toBe(true)
 
-      apiState.target.dispatchEvent(new Event('reconnected'))
+      agentSocket.open()
 
       expect(status().connected).toBe(false)
       expect(status().terminal).toBeNull()
@@ -800,7 +806,7 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: true })
     expect(status().connected).toBe(true)
 
-    apiState.target.dispatchEvent(new Event('reconnected'))
+    agentSocket.open()
 
     expect(status().connected).toBe(false)
     expect(bridge().resubscribe).toHaveBeenCalled()
@@ -843,28 +849,6 @@ describe('useAgentCrdtFollower', () => {
       'wf-1',
       bridge().follower
     )
-    unmount()
-  })
-
-  it('re-drives subscription intent on every status frame', () => {
-    const { unmount } = mountFollower('wf-1')
-
-    apiState.target.dispatchEvent(new Event('status'))
-
-    expect(bridge().reconcile).toHaveBeenCalled()
-    unmount()
-  })
-
-  it('does not bypass refused-subscribe backoff on status frames', () => {
-    vi.useFakeTimers()
-    const { unmount } = mountFollower('wf-1')
-    dispatchFrame('doc_subscribed', { ok: false })
-
-    apiState.target.dispatchEvent(new Event('status'))
-    expect(bridge().reconcile).not.toHaveBeenCalled()
-
-    vi.advanceTimersByTime(500)
-    expect(bridge().resubscribe).toHaveBeenCalledTimes(1)
     unmount()
   })
 
@@ -1435,7 +1419,7 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
+        const { enqueueHumanOperations } = followOnAgentSocket(
           workflowId,
           graphMutations
         )
@@ -1471,7 +1455,7 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
+        const { enqueueHumanOperations } = followOnAgentSocket(
           workflowId,
           graphMutations
         )
@@ -1509,7 +1493,7 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
+        const { enqueueHumanOperations } = followOnAgentSocket(
           workflowId,
           graphMutations
         )
@@ -1548,7 +1532,7 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
+        const { enqueueHumanOperations } = followOnAgentSocket(
           workflowId,
           graphMutations
         )
@@ -1610,7 +1594,7 @@ describe('useAgentCrdtFollower', () => {
     >['enqueueHumanOperations']
     const host = defineComponent({
       setup() {
-        const { enqueueHumanOperations } = useAgentCrdtFollower(
+        const { enqueueHumanOperations } = followOnAgentSocket(
           workflowId,
           graphMutations
         )
@@ -1719,7 +1703,7 @@ describe('useAgentCrdtFollower', () => {
       let enqueue!: Enqueue
       const host = defineComponent({
         setup() {
-          const { enqueueHumanOperations } = useAgentCrdtFollower(
+          const { enqueueHumanOperations } = followOnAgentSocket(
             workflowId,
             graphMutations,
             () => null,
@@ -1983,7 +1967,7 @@ describe('useAgentCrdtFollower', () => {
     // recovery; the heartbeat stays disarmed until the next confirm.
     dispatchFrame('doc_subscribed', { ok: true })
     bridge().resubscribe.mockClear()
-    apiState.target.dispatchEvent(new Event('reconnected'))
+    agentSocket.open()
     const reconnectResubscribes = bridge().resubscribe.mock.calls.length
     vi.advanceTimersByTime(STALE_AFTER_MS * 2)
     expect(bridge().resubscribe.mock.calls.length).toBe(reconnectResubscribes)
@@ -2022,7 +2006,7 @@ describe('useAgentCrdtFollower', () => {
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
 
-    apiState.target.dispatchEvent(new Event('reconnected'))
+    agentSocket.open()
     expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
     dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
@@ -2059,10 +2043,7 @@ describe('useAgentCrdtFollower', () => {
     dispatchFrame('doc_subscribed', { ok: false })
     vi.advanceTimersByTime(30_000)
     expect(bridge().resubscribe).toHaveBeenCalledTimes(2)
-    apiState.target.dispatchEvent(new Event('status'))
-    expect(bridge().reconcile).not.toHaveBeenCalled()
-
-    apiState.target.dispatchEvent(new Event('reconnected'))
+    agentSocket.open()
     expect(bridge().resubscribe).toHaveBeenCalledTimes(3)
     dispatchFrame('doc_subscribe_sent', { workflowId: 'wf-1' })
     vi.advanceTimersByTime(SUBSCRIBE_ACK_TIMEOUT_MS)
@@ -2070,12 +2051,33 @@ describe('useAgentCrdtFollower', () => {
     unmount()
   })
 
+  // A transport whose socket-open subscription fails to detach.
+  function transportFailingToStop(failure: unknown): DocFrameTransport {
+    return {
+      ...agentSocket.transport,
+      onConnected: () => () => {
+        throw failure
+      }
+    }
+  }
+
   it('tears down totally on unmount, reporting every cleanup failure instead of throwing', () => {
     const hookErrors: unknown[] = []
+    const listenerFailure = new Error('listener removal failed')
+    const clientFailure = new Error('client destroy failed')
+    const transport = transportFailingToStop(listenerFailure)
     const workflowId = ref<string | null>('wf-1')
     const host = defineComponent({
       setup() {
-        useAgentCrdtFollower(workflowId, graphMutations)
+        useAgentCrdtFollower(
+          workflowId,
+          graphMutations,
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          transport
+        )
         return () => null
       }
     })
@@ -2087,12 +2089,6 @@ describe('useAgentCrdtFollower', () => {
           }
         }
       }
-    })
-    const listenerFailure = new Error('listener removal failed')
-    const clientFailure = new Error('client destroy failed')
-    apiState.api.removeEventListener.mockImplementation((type, listener) => {
-      if (type === 'reconnected') throw listenerFailure
-      apiState.target.removeEventListener(type, listener)
     })
     clientState.destroy.mockImplementation(() => {
       throw clientFailure
@@ -2108,18 +2104,18 @@ describe('useAgentCrdtFollower', () => {
     expect(adapterState.destroy).toHaveBeenCalled()
     expect(bridge().destroy).toHaveBeenCalled()
     expect(clientState.destroy).toHaveBeenCalled()
-    expect(apiState.api.removeEventListener).toHaveBeenCalledWith(
-      'status',
-      expect.any(Function)
-    )
   })
 
   it('reports cleanup failures that throw a nullish value', () => {
-    const { unmount } = mountFollower('wf-1')
-    apiState.api.removeEventListener.mockImplementation((type, listener) => {
-      if (type === 'reconnected') throw null
-      if (type === 'status') throw undefined
-      apiState.target.removeEventListener(type, listener)
+    const { unmount } = mountFollower(
+      'wf-1',
+      true,
+      () => null,
+      {},
+      transportFailingToStop(null)
+    )
+    clientState.destroy.mockImplementation(() => {
+      throw undefined
     })
 
     unmount()

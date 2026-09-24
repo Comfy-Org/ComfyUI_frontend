@@ -4,12 +4,12 @@ import { expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
-import { api } from '@/scripts/api'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
 import { parseWireOps } from '@e2e/fixtures/agentWireFrame'
 
 import type { GraphMutations } from './graphMutations'
+import { createFakeAgentSocket } from './__fixtures__/agentSocket'
 import { useAgentCrdtFollower } from './useAgentCrdtFollower'
 
 // The frame the sender actually put on the wire, narrowed the same way a
@@ -42,12 +42,8 @@ const WORKFLOW_ID = 'wf-1'
 // the class is absent from the pinned catalog, so its named widget values
 // cannot be projected and the add is rejected.
 it.fails('surfaces a human add_node the doc host rejected instead of swallowing the result', () => {
-  const previousSocket = api.socket
-  const send = vi.fn<(frame: string) => void>()
-  api.socket = fromPartial<WebSocket>({ readyState: WebSocket.OPEN, send })
-  onTestFinished(() => {
-    api.socket = previousSocket
-  })
+  const agentSocket = createFakeAgentSocket()
+  const { send } = agentSocket
   const store = useAgentPanelStore()
   store.enabled = true
   onTestFinished(() => {
@@ -59,7 +55,12 @@ it.fails('surfaces a human add_node the doc host rejected instead of swallowing 
       setup() {
         follower = useAgentCrdtFollower(
           ref<string | null>(WORKFLOW_ID),
-          fromPartial<GraphMutations>({})
+          fromPartial<GraphMutations>({}),
+          undefined,
+          undefined,
+          undefined,
+          undefined,
+          agentSocket.transport
         )
         return () => null
       }
@@ -90,26 +91,20 @@ it.fails('surfaces a human add_node the doc host rejected instead of swallowing 
   const { type, op_id } = sentOp(send.mock.calls[1][0])
   expect(type).toBe('doc_ops')
 
-  // The transport listens on `api`; a frame from the socket is a CustomEvent there.
-  EventTarget.prototype.dispatchEvent.call(
-    api,
-    new CustomEvent('doc_ops_result', {
-      detail: {
-        v: 1,
-        workflow_id: WORKFLOW_ID,
-        ok: false,
-        applied: [],
-        skipped: [],
-        failed: {
-          index: 0,
-          op_id,
-          code: 'uncatalogued_widget_write',
-          message:
-            'add_node(Note): named widgets_values for a class absent from the pinned catalog cannot be projected'
-        }
-      }
-    })
-  )
+  agentSocket.receive('doc_ops_result', {
+    v: 1,
+    workflow_id: WORKFLOW_ID,
+    ok: false,
+    applied: [],
+    skipped: [],
+    failed: {
+      index: 0,
+      op_id,
+      code: 'uncatalogued_widget_write',
+      message:
+        'add_node(Note): named widgets_values for a class absent from the pinned catalog cannot be projected'
+    }
+  })
 
   expect(reportError).toHaveBeenCalled()
 })
