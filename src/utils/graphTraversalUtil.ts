@@ -625,17 +625,18 @@ export function executionIdFromState(
   const localNodeId = parseNodeId(state.id)
   if (!localNodeId) return null
 
-  // A root-owned node has no ancestor path to encode, so its raw id can be
-  // kept whole even when it contains a colon that isn't a subgraph-scope
-  // prefix (comfy-multi-player's insert_workflow remapped ids, PM-1580) —
-  // see `createLeafNodeExecutionId`. A node that IS meant to live inside a
-  // subgraph still goes through the strict, segment-splitting path.
-  const fallback = subgraphIdFromState(state, rootGraph.id)
-    ? createNodeExecutionId([localNodeId])
-    : createLeafNodeExecutionId(localNodeId)
+  // A node's raw id can contain a colon that isn't a subgraph-scope prefix
+  // (comfy-multi-player's insert_workflow remapped ids, PM-1580), so the
+  // fallback always goes through the colon-tolerant leaf path — see
+  // `createLeafNodeExecutionId`. This is a degraded (non-hierarchical) id,
+  // used only when the node can't be resolved via graph identity below.
+  const fallback = createLeafNodeExecutionId(localNodeId)
 
-  const locatorId = locatorIdFromState(state, rootGraph.id)
-  const node = locatorId && getNodeByLocatorId(rootGraph, locatorId)
+  // Resolve via graph identity (state.graphId), not by parsing the id
+  // string: a colon-bearing id is ambiguous to parse (it may collide with
+  // the `<subgraph-uuid>:<local-id>` locator shape) and graph identity is
+  // the only unambiguous way to tell a root-owned id from a subgraph one.
+  const node = getNodeByState(rootGraph, state)
   if (!node) return fallback
 
   return getExecutionIdByNode(rootGraph, node) ?? fallback
@@ -645,10 +646,10 @@ export function getNodeByState(
   rootGraph: LGraph,
   state: Pick<NodeState, 'id' | 'graphId'>
 ): LGraphNode | null {
-  const graph =
-    state.graphId === rootGraph.id
-      ? rootGraph
-      : findSubgraphByUuid(rootGraph, state.graphId)
+  const subgraphId = subgraphIdFromState(state, rootGraph.id)
+  const graph = subgraphId
+    ? findSubgraphByUuid(rootGraph, subgraphId)
+    : rootGraph
   return graph?.getNodeById(state.id) ?? null
 }
 

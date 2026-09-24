@@ -27,8 +27,8 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import {
-  createNodeExecutionId,
-  createNodeLocatorId
+  createLeafNodeLocatorId,
+  createNodeExecutionId
 } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
@@ -179,6 +179,22 @@ function isWidgetVisible(
   })
 }
 
+/**
+ * Looks up a node's error record by execution id, guarding against an
+ * execution id that happens to name an inherited `Object.prototype` property
+ * (e.g. `constructor`, `toString`): a plain-object index would otherwise
+ * return that inherited function instead of `undefined`, and callers that
+ * assume a truthy result has an `.errors` array would throw.
+ */
+function getOwnNodeError<T>(
+  errors: Record<string, T> | null | undefined,
+  executionId: string
+): T | undefined {
+  return errors && Object.hasOwn(errors, executionId)
+    ? errors[executionId]
+    : undefined
+}
+
 function hasWidgetError(
   widget: { name: string; errorTarget?: WidgetErrorTarget },
   nodeExecId: NodeExecutionId | null,
@@ -199,7 +215,10 @@ function hasWidgetError(
   const target = widget.errorTarget
   if (!target) return hasHostError
 
-  const sourceErrors = executionErrorStore.lastNodeErrors?.[target.executionId]
+  const sourceErrors = getOwnNodeError(
+    executionErrorStore.lastNodeErrors,
+    target.executionId
+  )
   return (
     hasHostError ||
     !!sourceErrors?.errors.some(
@@ -336,11 +355,15 @@ function widgetNodeLocatorId(
     )
     if (sourceLocator) return sourceLocator
   }
-  if (!bareWidgetId || bareWidgetId.includes(':')) return undefined
-  return createNodeLocatorId(
-    subgraphIdFromState(ctx.nodeData, ctx.rootGraphId),
-    bareWidgetId
-  )
+  if (!bareWidgetId) return undefined
+  const subgraphId = subgraphIdFromState(ctx.nodeData, ctx.rootGraphId)
+  // A colon in `bareWidgetId` is only ambiguous when it needs a subgraph
+  // prefix: `<subgraphId>:<bareWidgetId>` would then collide with the
+  // `<subgraph-uuid>:<local-id>` locator shape. A root-owned id has no
+  // prefix to collide with, so it can be kept whole (comfy-multi-player's
+  // insert_workflow remapped ids, PM-1580) via the leaf-tolerant path.
+  if (subgraphId && bareWidgetId.includes(':')) return undefined
+  return createLeafNodeLocatorId(subgraphId, bareWidgetId) ?? undefined
 }
 
 interface WidgetProcessingContext {
@@ -524,7 +547,7 @@ export function computeProcessedWidgets({
     slotMetadata,
     nodeExecId,
     nodeErrors: nodeExecId
-      ? executionErrorStore.lastNodeErrors?.[nodeExecId]
+      ? getOwnNodeError(executionErrorStore.lastNodeErrors, nodeExecId)
       : undefined,
     widgetValueStore,
     executionErrorStore,
