@@ -2,7 +2,14 @@ import { fromPartial } from '@total-typescript/shoehorn'
 vi.mock(import('firebase/auth'))
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
-import { computed, effectScope, nextTick, reactive, ref } from 'vue'
+import {
+  computed,
+  defineComponent,
+  effectScope,
+  nextTick,
+  reactive,
+  ref
+} from 'vue'
 import type { EffectScope } from 'vue'
 let setupScope: EffectScope
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
@@ -19,6 +26,7 @@ import type { useExtensionService } from '@/services/extensionService'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
+import { useDialogStore } from '@/stores/dialogStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import type { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -31,6 +39,17 @@ let nodeSelectionStore: Mocked<ReturnType<typeof useAgentNodeSelectionStore>>
 let workflowStore: ReturnType<typeof useWorkflowStore>
 let consentStore: ReturnType<typeof useAgentConsentStore>
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
+
+const DESKTOP_APPROVAL_KEY = 'global-desktop-login-confirm'
+const EmptyDialog = defineComponent(() => () => null)
+
+function openDialog(key = DESKTOP_APPROVAL_KEY): void {
+  useDialogStore().showDialog({ key, component: EmptyDialog })
+}
+
+function closeDialog(key = DESKTOP_APPROVAL_KEY): void {
+  useDialogStore().closeDialog({ key })
+}
 
 const currentUser = ref<{ id: string } | null>({ id: 'account-a' })
 const isAuthInitialized = ref(true)
@@ -767,6 +786,39 @@ describe('AgentPanel extension flag gate', () => {
 
     expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
     expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBeNull()
+  })
+
+  it('offers in the same session once the dialog that held it closes', async () => {
+    agentFlagEnabled.value = true
+    openDialog()
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
+    expect(localStorage.getItem(AUTO_SHOWN_KEY)).toBe('true')
+  })
+
+  it('keeps waiting when a tour ends while a dialog is still open', async () => {
+    agentFlagEnabled.value = true
+    activeTour.value = 'appMode'
+    openDialog()
+    Object.assign(consentStore, { accepted: false, isChecking: false })
+
+    await loadEntryAndSetup()
+    activeTour.value = null
+    await flush()
+    expect(useAgentConsent().withConsent).not.toHaveBeenCalled()
+
+    closeDialog()
+    await vi.waitFor(() =>
+      expect(useAgentConsent().withConsent).toHaveBeenCalledOnce()
+    )
   })
 
   it('stays silent when the account already accepted', async () => {
