@@ -1,5 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+
 import { useAgentComposerStore } from './agentComposerStore'
 
 describe('composer reference ownership', () => {
@@ -92,5 +94,81 @@ describe('composer draft reset (PM-1331)', () => {
 
     expect(store.nodes).toEqual([])
     expect(store.draft).toBe('')
+  })
+})
+
+describe('composer prompt origin (PM-1474 F11)', () => {
+  it('starts out typed and stays typed while the user writes', () => {
+    const store = useAgentComposerStore()
+
+    expect(store.promptOrigin).toBe('typed')
+    store.setText('make me a workflow')
+    expect(store.promptOrigin).toBe('typed')
+  })
+
+  it('records a suggestion chip, and keeps it across a later reword', () => {
+    const store = useAgentComposerStore()
+    store.markSuggestedPrompt()
+    expect(store.promptOrigin).toBe('suggestion')
+
+    store.setText('upscale this image, but in anime style')
+
+    expect(store.promptOrigin).toBe('suggestion')
+  })
+
+  it('records a prompt reopened through the conversation edit action', () => {
+    const store = useAgentComposerStore()
+    store.replacePrompt({ text: 'the earlier prompt', workflowReferences: [] })
+
+    expect(store.promptOrigin).toBe('edited')
+  })
+
+  it('resets to typed once the message is on its way, so the next one is its own', () => {
+    const store = useAgentComposerStore()
+    store.markSuggestedPrompt()
+
+    store.startSubmission({
+      prompt: store.prompt,
+      attachments: [],
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    })
+
+    expect(store.promptOrigin).toBe('typed')
+  })
+
+  it('gives the origin back when a failed send returns the draft to the composer', () => {
+    const store = useAgentComposerStore()
+    store.setText('Upscale this image')
+    store.markSuggestedPrompt()
+    const id = store.startSubmission({
+      prompt: store.prompt,
+      attachments: [],
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    })
+    store.settleSubmission(id, false)
+
+    expect(store.takeFailedSubmission()).toBeDefined()
+
+    expect(store.promptOrigin).toBe('suggestion')
+  })
+
+  it('leaves the origin alone when the failed draft is too stale to restore', () => {
+    const store = useAgentComposerStore()
+    store.markSuggestedPrompt()
+    const id = store.startSubmission({
+      prompt: store.prompt,
+      attachments: [],
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    })
+    store.settleSubmission(id, false)
+    // The user has moved on and written something of their own since.
+    store.setText('never mind, do this instead')
+
+    expect(store.takeFailedSubmission()).toBeUndefined()
+
+    expect(store.promptOrigin).toBe('typed')
   })
 })
