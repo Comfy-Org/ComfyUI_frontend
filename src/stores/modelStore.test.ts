@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick, reactive } from 'vue'
+import { nextTick, reactive, watch } from 'vue'
 
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetService } from '@/platform/assets/services/assetService'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
@@ -639,6 +640,60 @@ describe('useModelStore', () => {
       const names = Object.keys(folder!.models)
       expect(names).toContain('0/asset-only.safetensors')
       expect(names).not.toContain('0/sdxl.safetensors')
+    })
+
+    it('eagerly loads the rebuilt folders when a load follows the flag flip', async () => {
+      enableMocks(false)
+      store = useModelStore()
+      await store.loadModelFolders()
+
+      // Registered after the store's watcher, like the sidebar's.
+      const { flags } = useFeatureFlags()
+      const eagerLoads: Promise<unknown>[] = []
+      watch(
+        () => flags.assetsEnabled,
+        (enabled) => {
+          if (enabled) eagerLoads.push(store.loadModels())
+        }
+      )
+
+      featureState.serverFeatures.assets = true
+      await vi.waitFor(() => expect(eagerLoads).toHaveLength(1))
+      await Promise.all(eagerLoads)
+
+      expect(store.modelFolders.map((folder) => folder.state)).toStrictEqual([
+        ResourceState.Loaded,
+        ResourceState.Loaded
+      ])
+      expect(api.getModels).not.toHaveBeenCalled()
+      expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
+    })
+
+    it('eagerly loads the rebuilt folders when a load starts mid-rebuild', async () => {
+      enableMocks(false)
+      store = useModelStore()
+      await store.loadModelFolders()
+      const folders = await api.getModelFolders()
+      let releaseRebuild!: () => void
+      vi.mocked(api.getModelFolders).mockReturnValueOnce(
+        new Promise((resolve) => {
+          releaseRebuild = () => resolve(folders)
+        })
+      )
+
+      featureState.serverFeatures.assets = true
+      await vi.waitFor(() =>
+        expect(api.getModelFolders).toHaveBeenCalledTimes(3)
+      )
+      const eagerLoad = store.loadModels()
+      releaseRebuild()
+      await eagerLoad
+
+      expect(store.modelFolders.map((folder) => folder.state)).toStrictEqual([
+        ResourceState.Loaded,
+        ResourceState.Loaded
+      ])
+      expect(api.getModels).not.toHaveBeenCalled()
     })
   })
 
