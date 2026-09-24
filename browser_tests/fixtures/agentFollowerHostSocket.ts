@@ -192,6 +192,11 @@ export class AgentFollowerHostSocket {
     return [...this.heldOps]
   }
 
+  /** Like {@link heldClientOps}, but drains what it returns. */
+  takeHeldClientOps(count = this.heldOps.length): WireOpEnvelope[] {
+    return this.heldOps.splice(0, count)
+  }
+
   /**
    * Make the host REFUSE every subscribe, as it does when `docService` is nil,
    * when it is overloaded, or at the per-session document cap. No catch-up
