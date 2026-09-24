@@ -410,10 +410,14 @@ export class GroupNodeConfig {
     ] = {})
     for (const inputName of inputNames) {
       const inputSpec = inputs[inputName]
+      // The type is either a string (e.g. 'INT') or, for a combo widget, an
+      // array of options (e.g. [['euler', 'ddim']]) — both are valid V1
+      // input specs. Rejecting the array form here misclassified every combo
+      // widget as a plain input slot.
       const isValidSpec =
         Array.isArray(inputSpec) &&
         inputSpec.length >= 1 &&
-        typeof inputSpec[0] === 'string'
+        (typeof inputSpec[0] === 'string' || Array.isArray(inputSpec[0]))
       if (
         isValidSpec &&
         useWidgetStore().inputIsWidget(inputSpec as InputSpec)
@@ -518,7 +522,15 @@ export class GroupNodeConfig {
     const nodeInputs: Record<string, string> = (this.nodeInputs[nodeIdx] = {})
     for (let i = 0; i < slots.length; i++) {
       const inputName = slots[i]
-      const link = linksTo[i]
+      // `linksTo` is keyed by this inner node's own original input-slot
+      // index, which rarely lines up with `i` (this input's position within
+      // the *filtered* `slots` list). Look the real slot index up by name so
+      // an internally-linked input isn't matched against a different slot's
+      // link (or missed/misread entirely) and either wrongly hidden or
+      // wrongly exposed on the group node.
+      const slotIndex = node.inputs?.findIndex((inp) => inp.name === inputName)
+      const link =
+        slotIndex != null && slotIndex >= 0 ? linksTo[slotIndex] : undefined
       if (link) {
         this.checkPrimitiveConnection(link, inputName, inputs)
         // This input is linked so we can skip it

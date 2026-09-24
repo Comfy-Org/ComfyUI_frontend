@@ -1,4 +1,6 @@
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it, vi } from 'vitest'
 
 import { t } from '@/i18n'
@@ -7,8 +9,12 @@ import type { LGraph } from '@/lib/litegraph/src/litegraph'
 import { LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import type { ComfyNode } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
+import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import { app } from '@/scripts/app'
+import { ComfyWidgets } from '@/scripts/widgets'
+import { useLitegraphService } from '@/services/litegraphService'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
+import { useWidgetStore } from '@/stores/widgetStore'
 
 import type { MissingNodeType } from '@/types/comfy'
 
@@ -529,5 +535,173 @@ describe('group node extension beforeConfigureGraph', () => {
       isGroupNode.mockRestore()
       getHandler.mockRestore()
     }
+  })
+})
+
+describe('GroupNodeHandler.convertToNodes', () => {
+  function nodeDef(
+    def: Partial<ComfyNodeDef> & { name: string }
+  ): ComfyNodeDef {
+    return fromPartial<ComfyNodeDef>({
+      display_name: def.name,
+      category: 'testing',
+      python_module: 'nodes',
+      description: '',
+      output: [],
+      output_name: [],
+      output_node: false,
+      input: { required: {} },
+      ...def
+    })
+  }
+
+  // Real ComfyUI node defs for the inner nodes of
+  // browser_tests/assets/groupnodes/group_node_v1.3.3.json, trimmed to the
+  // inputs that matter for widget/slot classification.
+  const REAL_NODE_DEFS: Record<string, ComfyNodeDef> = {
+    EmptyLatentImage: nodeDef({
+      name: 'EmptyLatentImage',
+      input: {
+        required: {
+          width: ['INT', { default: 512 }],
+          height: ['INT', { default: 512 }],
+          batch_size: ['INT', { default: 1 }]
+        }
+      },
+      output: ['LATENT'],
+      output_name: ['LATENT']
+    }),
+    CheckpointLoaderSimple: nodeDef({
+      name: 'CheckpointLoaderSimple',
+      input: { required: { ckpt_name: [['v1-5-pruned-emaonly.ckpt'], {}] } },
+      output: ['MODEL', 'CLIP', 'VAE'],
+      output_name: ['MODEL', 'CLIP', 'VAE']
+    }),
+    CLIPTextEncode: nodeDef({
+      name: 'CLIPTextEncode',
+      input: {
+        required: {
+          text: ['STRING', { multiline: true }],
+          clip: ['CLIP', {}]
+        }
+      },
+      output: ['CONDITIONING'],
+      output_name: ['CONDITIONING']
+    }),
+    KSampler: nodeDef({
+      name: 'KSampler',
+      input: {
+        required: {
+          model: ['MODEL', {}],
+          seed: ['INT', { default: 0 }],
+          steps: ['INT', { default: 20 }],
+          cfg: ['FLOAT', { default: 8.0 }],
+          sampler_name: [['euler', 'euler_ancestral', 'dpmpp_2m'], {}],
+          scheduler: [['normal', 'karras'], {}],
+          positive: ['CONDITIONING', {}],
+          negative: ['CONDITIONING', {}],
+          latent_image: ['LATENT', {}],
+          denoise: ['FLOAT', { default: 1.0 }]
+        }
+      },
+      output: ['LATENT'],
+      output_name: ['LATENT']
+    }),
+    VAEDecode: nodeDef({
+      name: 'VAEDecode',
+      input: {
+        required: { samples: ['LATENT', {}], vae: ['VAE', {}] }
+      },
+      output: ['IMAGE'],
+      output_name: ['IMAGE']
+    }),
+    SaveImage: nodeDef({
+      name: 'SaveImage',
+      input: {
+        required: {
+          images: ['IMAGE', {}],
+          filename_prefix: ['STRING', { default: 'ComfyUI' }]
+        }
+      }
+    })
+  }
+
+  async function registerRealNodeDefs() {
+    useWidgetStore().registerCustomWidgets(ComfyWidgets)
+    vi.mocked(app.registerNodeDef).mockImplementation(async (id, def) => {
+      await useLitegraphService().registerNodeDef(id, def)
+    })
+    await groupNodeExtension!.addCustomNodeDefs?.(REAL_NODE_DEFS, app)
+    for (const [name, def] of Object.entries(REAL_NODE_DEFS)) {
+      await useLitegraphService().registerNodeDef(name, def)
+    }
+  }
+
+  // QA found this broken on 2026-09-10 while running the 1.54 test plan (see
+  // the e2e regression test in browser_tests/tests/groupNode.spec.ts): a
+  // KSampler's combo widgets (sampler_name, scheduler) were misclassified as
+  // plain input slots, which then shifted every widget value after them by
+  // two positions on conversion, so denoise received sampler_name's value
+  // ('euler') and filename_prefix received scheduler's ('normal').
+  it('preserves KSampler widget values through the real v1.3.3 fixture', async () => {
+    await registerRealNodeDefs()
+
+    const fixture = JSON.parse(
+      readFileSync(
+        join(
+          process.cwd(),
+          'browser_tests',
+          'assets',
+          'groupnodes',
+          'group_node_v1.3.3.json'
+        ),
+        'utf-8'
+      )
+    )
+    const groupNodeData: GroupNodeWorkflowData =
+      fixture.extra.groupNodes.group_node
+
+    const config = new GroupNodeConfig('group_node', groupNodeData)
+    await config.registerType()
+
+    // The app mock stubs out selectItems/selectNodes; make it behave like
+    // the real LGraphCanvas so deserialiseAndCreate's selection is visible
+    // to convertToNodes via app.canvas.selected_nodes.
+    Object.assign(app.canvas, {
+      selectNodes(nodes: { id: number | string }[]) {
+        app.canvas.selected_nodes = {}
+        for (const n of nodes) {
+          vi.mocked(app.canvas).selected_nodes[n.id] = fromAny(n)
+        }
+      }
+    })
+
+    const outerNodeInfo = fixture.nodes[0]
+    const outerNode = LiteGraph.createNode(outerNodeInfo.type)
+    if (!outerNode) throw new Error('Failed to create outer group node')
+    outerNode.configure(outerNodeInfo)
+    app.rootGraph.add(outerNode)
+
+    const handler = GroupNodeHandler.getHandler(outerNode)
+    if (!handler) throw new Error('No GroupNodeHandler for outer node')
+
+    const innerNodes = handler.convertToNodes()
+    const widgetValues = (node: (typeof innerNodes)[number] | undefined) =>
+      Object.fromEntries((node?.widgets ?? []).map((w) => [w.name, w.value]))
+
+    const ksampler = innerNodes.find((n) => n.comfyClass === 'KSampler')
+    const saveImage = innerNodes.find((n) => n.comfyClass === 'SaveImage')
+
+    expect(widgetValues(ksampler)).toMatchObject({
+      seed: 156680208700286,
+      steps: 20,
+      cfg: 8,
+      sampler_name: 'euler',
+      scheduler: 'normal',
+      denoise: 1
+    })
+    expect(widgetValues(saveImage)).toMatchObject({
+      filename_prefix: 'ComfyUI'
+    })
   })
 })
