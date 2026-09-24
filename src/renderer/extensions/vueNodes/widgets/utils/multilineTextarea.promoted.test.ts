@@ -320,6 +320,8 @@ describe('createPromotedDomWidget', () => {
         }
       }
     })
+    const originalCallback = vi.fn()
+    source.callback = originalCallback
     const idA = makeWidgetId('graph-1', toNodeId('node-1'), 'a')
     const idB = makeWidgetId('graph-1', toNodeId('node-1'), 'b')
     useWidgetValueStore().registerWidget(idA, {
@@ -336,18 +338,24 @@ describe('createPromotedDomWidget', () => {
     const widgetA = promoteDom(source, idA, 'a')
     const widgetB = promoteDom(source, idB, 'b')
 
+    source.value = 'both active'
+    expect(useWidgetValueStore().getWidget(idA)?.value).toBe('both active')
+    expect(useWidgetValueStore().getWidget(idB)?.value).toBe('both active')
+    expect(originalCallback).toHaveBeenCalledTimes(1)
+
     widgetA.onRemove?.()
     source.value = 'after a removed'
 
-    expect(useWidgetValueStore().getWidget(idA)?.value).toBe('live')
+    expect(useWidgetValueStore().getWidget(idA)?.value).toBe('both active')
     expect(useWidgetValueStore().getWidget(idB)?.value).toBe('after a removed')
-    expect(source.callback).toBeDefined()
+    expect(originalCallback).toHaveBeenCalledTimes(2)
 
     widgetB.onRemove?.()
 
-    expect(source.callback).toBeUndefined()
+    expect(source.callback).toBe(originalCallback)
     source.value = 'after all removed'
     expect(useWidgetValueStore().getWidget(idB)?.value).toBe('after a removed')
+    expect(originalCallback).toHaveBeenCalledTimes(3)
   })
 
   it('delegates textarea sources to the multiline host widget', () => {
