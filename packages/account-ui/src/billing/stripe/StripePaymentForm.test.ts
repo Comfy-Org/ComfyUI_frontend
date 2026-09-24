@@ -16,13 +16,15 @@ const stripeMocks = vi.hoisted(() => {
   const addressMount = vi.fn()
   const addressDestroy = vi.fn()
   const addressOn = vi.fn()
+  const addressGetValue = vi.fn()
   const submit = vi.fn()
   const update = vi.fn()
   const paymentElement = { mount, destroy, on }
   const addressElement = {
     mount: addressMount,
     destroy: addressDestroy,
-    on: addressOn
+    on: addressOn,
+    getValue: addressGetValue
   }
   const create = vi.fn((type: string) =>
     type === 'address' ? addressElement : paymentElement
@@ -40,6 +42,7 @@ const stripeMocks = vi.hoisted(() => {
     addressMount,
     addressDestroy,
     addressOn,
+    addressGetValue,
     submit,
     update,
     create,
@@ -61,6 +64,18 @@ const COPY: StripePaymentCopy = {
   alipayRenewalNote: 'Alipay renewal note',
   unavailable: 'Stripe is unavailable',
   genericError: 'Error'
+}
+
+const BILLING_ADDRESS = {
+  name: 'Ada Lovelace',
+  address: {
+    line1: '1 Main St',
+    line2: null,
+    city: 'San Francisco',
+    state: 'CA',
+    postal_code: '94107',
+    country: 'US'
+  }
 }
 
 /** What the host would send to its telemetry sink. */
@@ -122,7 +137,8 @@ describe('StripePaymentForm', () => {
         ? {
             mount: stripeMocks.addressMount,
             destroy: stripeMocks.addressDestroy,
-            on: stripeMocks.addressOn
+            on: stripeMocks.addressOn,
+            getValue: stripeMocks.addressGetValue
           }
         : {
             mount: stripeMocks.mount,
@@ -131,6 +147,11 @@ describe('StripePaymentForm', () => {
           }
     )
     stripeMocks.submit.mockResolvedValue({})
+    stripeMocks.addressGetValue.mockResolvedValue({
+      complete: true,
+      isNewAddress: true,
+      value: BILLING_ADDRESS
+    })
     stripeMocks.update.mockResolvedValue(undefined)
     stripeMocks.createConfirmationToken.mockResolvedValue({
       confirmationToken: { id: 'ctoken_1' }
@@ -367,10 +388,41 @@ describe('StripePaymentForm', () => {
     )
 
     expect(stripeMocks.submit).toHaveBeenCalledTimes(1)
-    expect(stripeMocks.createConfirmationToken).toHaveBeenCalledWith({
-      elements: stripeMocks.elements
-    })
+    expect(stripeMocks.createConfirmationToken).toHaveBeenCalledWith(
+      expect.objectContaining({ elements: stripeMocks.elements })
+    )
     expect(emitted().confirm).toEqual([['ctoken_1']])
+  })
+
+  it('mints the token with the Address Element billing address the Payment Element leaves out', async () => {
+    const user = userEvent.setup()
+    renderForm()
+
+    await waitFor(() =>
+      expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+    )
+    await user.click(screen.getByRole('button', { name: 'Pay and subscribe' }))
+
+    await waitFor(() =>
+      expect(stripeMocks.createConfirmationToken).toHaveBeenCalledWith({
+        elements: stripeMocks.elements,
+        params: {
+          payment_method_data: {
+            billing_details: {
+              name: 'Ada Lovelace',
+              address: {
+                line1: '1 Main St',
+                line2: '',
+                city: 'San Francisco',
+                state: 'CA',
+                postal_code: '94107',
+                country: 'US'
+              }
+            }
+          }
+        }
+      })
+    )
   })
 
   it('collects a billing address alongside the payment element', async () => {

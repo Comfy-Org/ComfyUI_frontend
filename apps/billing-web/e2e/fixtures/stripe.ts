@@ -2,7 +2,8 @@
  * A fake `js.stripe.com` at the network boundary: enough of `window.Stripe`
  * for `StripePaymentForm` and the embedded-challenge port to run their real
  * code against, without a request ever reaching Stripe. Elements are inert
- * (`mount`/`on`/`destroy` no-ops); `createConfirmationToken` and
+ * (`mount`/`on`/`destroy` no-ops, `getValue` a fixed billing address);
+ * `createConfirmationToken` and
  * `handleNextAction` always succeed, which is all the current specs need —
  * a decline or a timeout is modelled on the mocked Cloud's operation, not
  * on the payment provider.
@@ -23,7 +24,28 @@ const FAKE_STRIPE_JS = `
     nextActionCalls: []
   }
   function fakeElement() {
-    return { mount() {}, unmount() {}, destroy() {}, on() {} }
+    return {
+      mount() {},
+      unmount() {},
+      destroy() {},
+      on() {},
+      getValue: () =>
+        Promise.resolve({
+          complete: true,
+          isNewAddress: true,
+          value: {
+            name: 'E2E Customer',
+            address: {
+              line1: '1 Main St',
+              line2: null,
+              city: 'San Francisco',
+              state: 'CA',
+              postal_code: '94107',
+              country: 'US'
+            }
+          }
+        })
+    }
   }
   function fakeElements() {
     return {

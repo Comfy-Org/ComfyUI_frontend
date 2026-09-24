@@ -59,6 +59,7 @@
  * design system, no i18n runtime and no telemetry sink.
  */
 import type {
+  ConfirmationTokenCreateParams,
   Stripe,
   StripeAddressElement,
   StripeElements,
@@ -190,9 +191,7 @@ function mountPaymentElement(
 
 /**
  * A full billing address feeds AVS to the issuer and Radar. In billing mode
- * every field is required, and because the address shares the Payment
- * Element's group, createConfirmationToken folds it into the token's
- * billing_details.
+ * every field is required; `addressBillingDetails` carries it into the token.
  */
 function mountAddressElement(
   elements: StripeElements,
@@ -315,6 +314,26 @@ onBeforeUnmount(() => {
   addressElement?.destroy()
 })
 
+/**
+ * `address: 'never'` on the Payment Element makes the caller supply the
+ * billing address when minting the token, so it is read from the Address
+ * Element and passed explicitly.
+ */
+async function addressBillingDetails(): Promise<
+  ConfirmationTokenCreateParams | undefined
+> {
+  if (!addressElement) return undefined
+  const { value } = await addressElement.getValue()
+  return {
+    payment_method_data: {
+      billing_details: {
+        name: value.name,
+        address: { ...value.address, line2: value.address.line2 ?? '' }
+      }
+    }
+  }
+}
+
 async function mintConfirmationToken(
   elements: StripeElements,
   client: Stripe
@@ -332,7 +351,11 @@ async function mintConfirmationToken(
     failSubmit('validation', submitResult.error)
     return undefined
   }
-  const result = await client.createConfirmationToken({ elements })
+  const params = await addressBillingDetails()
+  const result = await client.createConfirmationToken({
+    elements,
+    ...(params && { params })
+  })
   if (result.error) {
     failSubmit('token_creation', result.error)
     return undefined
