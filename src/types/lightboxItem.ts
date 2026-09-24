@@ -3,9 +3,8 @@
  *
  * Deliberately free of queue/result-domain fields so callers that only hold a
  * URL (node previews, dropzones, chat attachments) do not have to fabricate
- * identifiers to open the lightbox. Owners of richer records adapt them at
- * their own boundary via `resultItemsToLightboxItems`; URL-only callers use
- * `fileLightboxItem`.
+ * identifiers to open the lightbox. Each caller adapts whatever records it
+ * owns at its own boundary.
  */
 export interface LightboxImageItem {
   readonly kind: 'image'

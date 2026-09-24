@@ -139,4 +139,14 @@ describe('replyAssetLightboxItem', () => {
       mimeType: 'video/mp4'
     })
   })
+
+  it('renders 3D assets as unsupported rather than guessing a player', () => {
+    expect(
+      replyAssetLightboxItem({
+        url: 'https://x/y?filename=a.glb',
+        filename: 'a.glb',
+        kind: '3D'
+      })
+    ).toEqual({ kind: 'unsupported', url: 'https://x/y?filename=a.glb' })
+  })
 })

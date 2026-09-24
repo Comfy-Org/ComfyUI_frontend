@@ -117,18 +117,23 @@ export function htmlReplyAssets(html: string): ReplyAsset[] {
  * and type, and a reply asset only ever knows its href and filename.
  */
 export function replyAssetLightboxItem(asset: ReplyAsset): LightboxItem {
-  switch (asset.kind) {
+  const { kind, url, filename } = asset
+  switch (kind) {
     case 'image':
-      return { kind: 'image', url: asset.url, alt: asset.filename }
+      return { kind: 'image', url, alt: filename }
     case 'video':
       return {
         kind: 'video',
-        url: asset.url,
-        mimeType: htmlVideoTypeForFilename(asset.filename)
+        url,
+        mimeType: htmlVideoTypeForFilename(filename)
       }
     case 'audio':
-      return { kind: 'audio', url: asset.url }
-    default:
-      return { kind: 'unsupported', url: asset.url }
+      return { kind: 'audio', url }
+    case '3D':
+      return { kind: 'unsupported', url }
+    default: {
+      const unhandledKind: never = kind
+      return unhandledKind
+    }
   }
 }
