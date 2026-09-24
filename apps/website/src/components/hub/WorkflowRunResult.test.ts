@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
@@ -89,8 +89,9 @@ describe('WorkflowRunResult', () => {
     expect(screen.getByTestId('workflow-run-elapsed').textContent).toContain(
       '1:14'
     )
-    expect(screen.getAllByText('Generating…', { exact: true })).toHaveLength(1)
-    expect(screen.queryByText('Waiting its turn')).toBeNull()
+    const panel = within(screen.getByTestId('workflow-run-waiting'))
+    expect(panel.getAllByText('Generating…', { exact: true })).toHaveLength(1)
+    expect(panel.queryByText('Waiting its turn')).toBeNull()
   })
 
   // The one workflow that wakes a server of its own is waiting on that, not
@@ -108,8 +109,38 @@ describe('WorkflowRunResult', () => {
       }
     })
 
-    expect(screen.getByText('Waking its server')).toBeTruthy()
-    expect(screen.getByText('The first run takes longer.')).toBeTruthy()
+    const panel = within(screen.getByTestId('workflow-run-waiting'))
+    expect(panel.getByText('Waking its server')).toBeTruthy()
+    expect(panel.getByText('The first run takes longer.')).toBeTruthy()
+  })
+
+  // A reader who is not watching the panel is told the same things, at the
+  // same moments, as one who is.
+  it.for([
+    {
+      state: { phase: 'tracking', job: JOB, startedAt: Date.now() },
+      said: 'Generating…'
+    },
+    {
+      state: { phase: 'cancelled' },
+      said: 'This run was cancelled before it finished.'
+    },
+    {
+      state: { phase: 'error', reason: 'timeout', retrySafe: true },
+      said: 'We stopped waiting for the result.'
+    }
+  ] as const)('says $said out loud', ({ state, said }) => {
+    mount(state)
+
+    const status = screen.getByTestId('workflow-run-said')
+    expect(status.getAttribute('role')).toBe('status')
+    expect(status.textContent).toContain(said)
+  })
+
+  it('says nothing before a run has been asked for', () => {
+    mount({ phase: 'idle' })
+
+    expect(screen.getByTestId('workflow-run-said').textContent.trim()).toBe('')
   })
 
   // Before a run, the panel shows what this workflow makes and marks it as

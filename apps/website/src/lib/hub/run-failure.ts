@@ -1,4 +1,7 @@
 import type { RunFailure, RunGate } from '../../config/workshop-run'
+import type { Locale } from '../../i18n/translations'
+import type { HubKey } from '../../i18n/hub'
+import { tHub } from '../../i18n/hub'
 
 /**
  * What stopped a run, in the model half's own words, so that a reader
@@ -71,3 +74,38 @@ export function failureAction(
  * button and nothing at all is a real answer, so neither is one of these.
  */
 export type RunWayOut = 'resume' | 'retry' | 'credits' | 'personal'
+
+// The four the model half words around a model rather than a workflow are said
+// again in the Hub's own copy; the rest is the same sentence either way.
+const SAYING: Record<WorkflowFailure, HubKey> = {
+  validation: 'workshop.v2.run.rejected',
+  upload: 'workshop.error.upload',
+  network: 'workshop.error.network',
+  client: 'workshop.error.client',
+  concurrency: 'workshop.error.concurrency',
+  rateLimit: 'workshop.error.rateLimit',
+  policy: 'workshop.v2.run.blocked',
+  noCredits: 'workshop.error.noCredits',
+  unavailable: 'workshop.v2.run.unavailable',
+  timeout: 'workshop.error.timeout',
+  provider: 'workshop.v2.run.failed',
+  signedOut: 'workshop.v2.run.expired'
+}
+
+/**
+ * What a refusal says, in one place, because the panel shows it and also reads
+ * it out to anyone not looking at the panel. Two copies would drift.
+ */
+export function refusalSaying(
+  reason: WorkflowFailure,
+  locale: Locale,
+  said: { message?: string; memberWorkspace?: string } = {}
+): string {
+  if (said.message) return said.message
+  if (reason === 'noCredits' && said.memberWorkspace !== undefined)
+    return tHub('workshop.error.memberNoCredits', locale).replace(
+      '{workspace}',
+      () => said.memberWorkspace ?? ''
+    )
+  return tHub(SAYING[reason], locale)
+}

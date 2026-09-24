@@ -8,6 +8,7 @@ import { formatElapsed } from '../../config/workshop-run'
 import type { Locale } from '../../i18n/translations'
 import { tHub } from '../../i18n/hub'
 import type { RunWayOut } from '../../lib/hub/run-failure'
+import { refusalSaying } from '../../lib/hub/run-failure'
 import { runHint, runSaying } from '../../lib/hub/run-progress'
 import Button from '../ui/button/Button.vue'
 import WorkflowRunFailure from './WorkflowRunFailure.vue'
@@ -63,6 +64,25 @@ const hint = computed(() => runHint(state.phase, queued.value, coldStart))
 
 const failure = computed(() => (state.phase === 'error' ? state : undefined))
 
+/**
+ * The panel read out loud, for a reader who is not watching it. A model's
+ * playground says where its run stands the same way; a workflow's run is the
+ * same wait for the same person, so it says so too.
+ */
+const announcement = computed(() => {
+  const refused = failure.value
+  if (refused)
+    return refusalSaying(refused.reason, locale, {
+      message: refused.message,
+      memberWorkspace
+    })
+  if (state.phase === 'cancelled')
+    return tHub('workshop.v2.run.cancelled', locale)
+  if (state.phase === 'finished')
+    return tHub('workshop.output.complete', locale)
+  return progress.value ? tHub(progress.value, locale) : ''
+})
+
 const showSample = computed(() => sample && state.phase === 'idle')
 </script>
 
@@ -72,6 +92,9 @@ const showSample = computed(() => sample && state.phase === 'idle')
     data-testid="workflow-run-result"
     :data-state="state.phase"
   >
+    <p role="status" class="sr-only" data-testid="workflow-run-said">
+      {{ announcement }}
+    </p>
     <header
       class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
     >

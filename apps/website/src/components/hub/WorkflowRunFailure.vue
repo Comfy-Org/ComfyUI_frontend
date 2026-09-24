@@ -12,7 +12,7 @@ import type {
   RunWayOut,
   WorkflowFailure
 } from '../../lib/hub/run-failure'
-import { failureAction } from '../../lib/hub/run-failure'
+import { failureAction, refusalSaying } from '../../lib/hub/run-failure'
 import Button from '../ui/button/Button.vue'
 
 // Why a run stopped, and the one thing worth pressing about it. Each refusal
@@ -41,32 +41,9 @@ const {
 
 defineEmits<{ press: [RunWayOut] }>()
 
-// The four the model half words around a model rather than a workflow are
-// said again in the Hub's own copy; the rest is the same sentence either way.
-const saying: Record<WorkflowFailure, HubKey> = {
-  validation: 'workshop.v2.run.rejected',
-  upload: 'workshop.error.upload',
-  network: 'workshop.error.network',
-  client: 'workshop.error.client',
-  concurrency: 'workshop.error.concurrency',
-  rateLimit: 'workshop.error.rateLimit',
-  policy: 'workshop.v2.run.blocked',
-  noCredits: 'workshop.error.noCredits',
-  unavailable: 'workshop.v2.run.unavailable',
-  timeout: 'workshop.error.timeout',
-  provider: 'workshop.v2.run.failed',
-  signedOut: 'workshop.v2.run.expired'
-}
-
-const trouble = computed(() => {
-  if (message) return message
-  if (reason === 'noCredits' && memberWorkspace !== undefined)
-    return tHub('workshop.error.memberNoCredits', locale).replace(
-      '{workspace}',
-      () => memberWorkspace
-    )
-  return tHub(saying[reason], locale)
-})
+const trouble = computed(() =>
+  refusalSaying(reason, locale, { message, memberWorkspace })
+)
 
 // A run that may still be running outranks everything else on offer: a second
 // one would be a second charge to find out what the first did.
