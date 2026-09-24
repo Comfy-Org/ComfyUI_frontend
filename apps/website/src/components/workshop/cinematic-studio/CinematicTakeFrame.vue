@@ -4,7 +4,7 @@ import { failureLabelKey } from '../../../lib/workshop/failure-label'
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import { aspectStyle } from './aspect-style'
+import { framedStyle } from './aspect-style'
 
 const { current, locale = 'en' } = defineProps<{
   current: Take
@@ -22,8 +22,8 @@ function statusText(take: Take) {
 
 <template>
   <figure
-    class="relative flex max-h-[70vh] w-full max-w-5xl items-center justify-center overflow-hidden rounded-md bg-transparency-white-t4"
-    :style="aspectStyle(current.aspect)"
+    class="relative flex max-w-5xl items-center justify-center overflow-hidden rounded-md bg-transparency-white-t4"
+    :style="framedStyle(current.aspect, '70vh')"
   >
     <img
       v-if="current.status === 'done'"

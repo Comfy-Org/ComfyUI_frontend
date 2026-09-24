@@ -133,6 +133,7 @@ function generate() {
     >
       <CinematicStage
         :reel="studio.reel.value"
+        :aspect
         :model-name="model.name"
         :locale
         @select="studio.select"

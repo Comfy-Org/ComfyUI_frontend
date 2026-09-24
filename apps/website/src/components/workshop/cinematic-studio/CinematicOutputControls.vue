@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Maximize, Minus, Plus, RectangleHorizontal } from '@lucide/vue'
+import { Maximize, Minus, Plus } from '@lucide/vue'
 import { computed } from 'vue'
 
 import type {
@@ -13,6 +13,7 @@ import {
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { framedStyle } from './aspect-style'
 import CinematicMenu from './CinematicMenu.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
@@ -86,10 +87,12 @@ const resolutionValue = computed({
       :heading="tc('cinematic.output.aspect', locale)"
       trigger-class="h-10 justify-center gap-1.5 border border-transparency-white-t20 text-sm text-primary-warm-white hover:border-primary-warm-white/50"
     >
-      <RectangleHorizontal
-        class="size-3.5 text-primary-warm-gray"
-        aria-hidden="true"
-      />
+      <span class="grid size-3.5 place-items-center" aria-hidden="true">
+        <span
+          class="block max-h-full rounded-xs border-[1.5px] border-primary-warm-gray"
+          :style="framedStyle(aspect, '0.875rem')"
+        />
+      </span>
       {{ aspect }}
     </CinematicMenu>
     <CinematicMenu

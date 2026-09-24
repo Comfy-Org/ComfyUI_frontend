@@ -37,7 +37,7 @@ const grade = computed(() => directionOption('grade', direction))
 </script>
 
 <template>
-  <div class="grid grid-cols-2 gap-2">
+  <div class="grid grid-cols-2 gap-2 md:grid-cols-4 lg:grid-cols-2">
     <button
       v-for="tile in tiles"
       :key="tile.key"
@@ -79,7 +79,7 @@ const grade = computed(() => directionOption('grade', direction))
       :aria-expanded="openPicker === 'grade'"
       :class="
         cn(
-          'col-span-2 flex items-center gap-3 rounded-xl bg-transparency-white-t4 p-2 text-left ring-1 ring-transparency-white-t20 ring-inset hover:ring-primary-warm-white/50',
+          'col-span-2 flex items-center gap-3 rounded-xl bg-transparency-white-t4 p-2 text-left ring-1 ring-transparency-white-t20 ring-inset hover:ring-primary-warm-white/50 md:col-span-4 lg:col-span-2',
           openPicker === 'grade' && 'ring-2 ring-primary-warm-white'
         )
       "

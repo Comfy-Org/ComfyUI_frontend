@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Sparkles } from '@lucide/vue'
+
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { DirectionGroup } from '../../../lib/workshop/cinematic-studio/catalog'
@@ -49,6 +51,12 @@ const emit = defineEmits<{ choose: [id: string] }>()
           loading="lazy"
           class="size-full object-cover"
         />
+        <span
+          v-else-if="!option.palette"
+          class="grid size-full place-items-center text-primary-warm-gray"
+        >
+          <Sparkles class="size-5" aria-hidden="true" />
+        </span>
         <template v-else>
           <span
             v-for="(color, index) in option.palette"

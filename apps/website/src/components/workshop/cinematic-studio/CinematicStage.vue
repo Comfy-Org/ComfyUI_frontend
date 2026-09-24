@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
+import type { AspectRatio } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Reel } from '../../../lib/workshop/cinematic-studio/reel'
 import {
   selectedTake,
@@ -9,16 +10,19 @@ import {
 import type { Locale } from '../../../i18n/translations'
 import { t } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { framedStyle } from './aspect-style'
 import CinematicSequence from './CinematicSequence.vue'
 import CinematicTakeBar from './CinematicTakeBar.vue'
 import CinematicTakeFrame from './CinematicTakeFrame.vue'
 
 const {
   reel,
+  aspect,
   modelName,
   locale = 'en'
 } = defineProps<{
   reel: Reel
+  aspect: AspectRatio
   modelName: string
   locale?: Locale
 }>()
@@ -55,7 +59,17 @@ const siblings = computed(() =>
         />
       </template>
 
-      <div v-else class="flex flex-col items-center gap-2 text-center">
+      <div
+        v-else
+        class="flex max-w-3xl flex-col items-center justify-center gap-2 rounded-md border border-dashed border-transparency-white-t20 p-6 text-center transition-[aspect-ratio] duration-300"
+        :style="framedStyle(aspect, '60vh')"
+        data-testid="cinematic-frame-preview"
+      >
+        <span
+          class="text-xs font-bold tracking-wider text-primary-warm-gray uppercase"
+        >
+          {{ aspect }}
+        </span>
         <p class="text-base font-semibold text-primary-warm-white">
           {{ tc('cinematic.stage.emptyTitle', locale) }}
         </p>
