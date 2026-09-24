@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import {
   markStorageUnavailable,
@@ -58,6 +59,7 @@ describe('agentWorkflowDraftArchiveStore', () => {
   beforeEach(() => {
     localStorage.clear()
     vi.mocked(reportError).mockClear()
+    useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
   })
 
   it('round-trips an archived graph and forgets it once discarded', () => {
@@ -166,6 +168,50 @@ describe('agentWorkflowDraftArchiveStore', () => {
     expect(archive.read('wf-old')).toMatchObject(draft('wf-old'))
     expect(archive.read('wf-new')).toBeNull()
     expect(vi.mocked(reportError)).not.toHaveBeenCalled()
+  })
+
+  // Comfy.Workflow.Persist is the user's control over graphs being kept in
+  // localStorage, and this archive is another writer of exactly that data.
+  it('neither writes nor reads graphs while workflow persistence is off', () => {
+    const archive = useAgentWorkflowDraftArchiveStore()
+    archive.archive('wf-1', draft('wf-1'))
+    useSettingStore().settingValues['Comfy.Workflow.Persist'] = false
+
+    expect(archive.archive('wf-2', draft('wf-2'))).toBe(false)
+    expect(archive.read('wf-2')).toBeNull()
+    expect(archive.read('wf-1')).toBeNull()
+    expect(localStorage.getItem(`${PAYLOAD_PREFIX}wf-2`)).toBeNull()
+
+    useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
+    expect(archive.read('wf-1')).toMatchObject(draft('wf-1'))
+  })
+
+  it('sweeps payloads the index no longer names', () => {
+    const archive = useAgentWorkflowDraftArchiveStore()
+    localStorage.setItem(`${PAYLOAD_PREFIX}wf-orphan`, '{"graph":"orphan"}')
+
+    archive.archive('wf-1', draft('wf-1'))
+
+    expect(localStorage.getItem(`${PAYLOAD_PREFIX}wf-orphan`)).toBeNull()
+    expect(archive.read('wf-1')).toMatchObject(draft('wf-1'))
+  })
+
+  it('keeps the previous graph when its replacement cannot be written', () => {
+    const archive = useAgentWorkflowDraftArchiveStore()
+    archive.archive('wf-1', { filename: 'first.json', content: '{"v":1}' })
+    rejectWrites(
+      (key) => key === `${PAYLOAD_PREFIX}wf-1`,
+      new TypeError('serialization failed')
+    )
+
+    expect(
+      archive.archive('wf-1', { filename: 'second.json', content: '{"v":2}' })
+    ).toBe(false)
+
+    expect(archive.read('wf-1')).toMatchObject({
+      filename: 'first.json',
+      content: '{"v":1}'
+    })
   })
 
   it('refuses to write while workflow storage is marked unavailable', () => {

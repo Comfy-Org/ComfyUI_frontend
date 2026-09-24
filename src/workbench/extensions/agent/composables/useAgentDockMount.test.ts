@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
@@ -32,6 +33,7 @@ function getAsyncLoader(component: unknown): () => Promise<unknown> {
 describe('useAgentDockMount', () => {
   beforeEach(() => {
     localStorage.clear()
+    useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
   })
 
   it('returns an inert mount on non-cloud distributions', () => {

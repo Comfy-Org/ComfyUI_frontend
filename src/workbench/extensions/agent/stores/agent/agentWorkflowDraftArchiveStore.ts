@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { isStorageAvailable } from '@/platform/workflow/persistence/base/storageIO'
 import {
@@ -156,30 +157,64 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
       return remaining
     }
 
-    function reportQuotaExhausted(contentBytes: number): void {
+    function reportQuotaExhausted(content: string): void {
       reportError(
         new Error('localStorage quota exhausted archiving agent draft'),
         {
           errorType: 'storage_quota_exhausted',
           level: 'warning',
           tags: { store: 'agentWorkflowDraftArchive' },
-          context: { contentBytes }
+          context: {
+            contentBytes: new TextEncoder().encode(content).length
+          }
         }
       )
+    }
+
+    /**
+     * Deletes payloads the index no longer names. Nothing else enumerates
+     * these keys, so a payload orphaned by a corrupt index or a half-applied
+     * write would otherwise hold its share of the origin budget forever and
+     * push `workflowDraftStoreV2` toward the quota path.
+     */
+    function sweepOrphanPayloads(
+      workspaceId: string,
+      index: ArchiveIndex
+    ): void {
+      const prefix = `${StorageKeys.prefixes.agentDraftArchivePayload}${workspaceId}:`
+      try {
+        for (let i = localStorage.length - 1; i >= 0; i--) {
+          const key = localStorage.key(i)
+          if (key === null || !key.startsWith(prefix)) continue
+          if (!Object.hasOwn(index, key.slice(prefix.length)))
+            localStorage.removeItem(key)
+        }
+      } catch {
+        return
+      }
+    }
+
+    function persistenceEnabled(): boolean {
+      return useSettingStore().get('Comfy.Workflow.Persist')
     }
 
     /**
      * Archives `content` under `workflowId`, dropping expired entries and then
      * the oldest graphs until the write fits. Returns `false` once eviction is
      * exhausted or storage refuses the write outright, leaving a smaller
-     * archive rather than an index promising payloads it no longer has. Only
-     * a quota rejection evicts: any other refusal would clear the archive
-     * without ever freeing the thing that is actually blocking.
+     * archive rather than an index promising payloads it no longer has.
+     *
+     * Only a quota rejection evicts: any other refusal would clear the archive
+     * without freeing what is actually blocking. The previous copy of this
+     * workflow is never removed up front either — the write overwrites that
+     * key anyway, so removing it early would only turn a failed write into a
+     * lost snapshot.
      */
     function archive(
       workflowId: string,
       draft: { filename: string; content: string }
     ): boolean {
+      if (!persistenceEnabled()) return false
       const workspaceId = getWorkspaceId()
       const now = Date.now()
       const stored = readIndex(workspaceId)
@@ -187,23 +222,27 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
         workspaceId,
         stored,
         Object.entries(stored).flatMap(([id, entry]) =>
-          id === workflowId || !isLive(entry, now) ? [id] : []
+          id !== workflowId && !isLive(entry, now) ? [id] : []
         )
       )
+      const capacity =
+        MAX_ARCHIVED_DRAFTS - (Object.hasOwn(index, workflowId) ? 0 : 1)
+      const replaceable = () =>
+        oldestFirst(index).filter((id) => id !== workflowId)
       index = evict(
         workspaceId,
         index,
-        oldestFirst(index).slice(
+        replaceable().slice(
           0,
-          Math.max(0, Object.keys(index).length - (MAX_ARCHIVED_DRAFTS - 1))
+          Math.max(0, Object.keys(index).length - capacity)
         )
       )
 
       let outcome = writePayload(workspaceId, workflowId, draft.content)
       while (outcome === 'over-quota') {
-        const oldest = oldestFirst(index).at(0)
+        const oldest = replaceable().at(0)
         if (oldest === undefined) {
-          reportQuotaExhausted(draft.content.length)
+          reportQuotaExhausted(draft.content)
           break
         }
         index = evict(workspaceId, index, [oldest])
@@ -211,19 +250,20 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
       }
       if (outcome !== 'stored') {
         writeIndex(workspaceId, index)
+        sweepOrphanPayloads(workspaceId, index)
         return false
       }
 
-      if (
-        writeIndex(workspaceId, {
-          ...index,
-          [workflowId]: { filename: draft.filename, archivedAt: now }
-        })
-      )
-        return true
-
-      evict(workspaceId, index, [workflowId])
-      return false
+      const updated: ArchiveIndex = {
+        ...index,
+        [workflowId]: { filename: draft.filename, archivedAt: now }
+      }
+      if (!writeIndex(workspaceId, updated)) {
+        evict(workspaceId, index, [workflowId])
+        return false
+      }
+      sweepOrphanPayloads(workspaceId, updated)
+      return true
     }
 
     function discard(workflowId: string): void {
@@ -234,6 +274,7 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
     }
 
     function read(workflowId: string): ArchivedWorkflowDraft | null {
+      if (!persistenceEnabled()) return null
       const workspaceId = getWorkspaceId()
       const index = readIndex(workspaceId)
       if (!Object.hasOwn(index, workflowId)) return null

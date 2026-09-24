@@ -1,8 +1,10 @@
 import { computed, ref } from 'vue'
 
 import { reportError } from '@/platform/telemetry/reportError'
-import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import { areWorkflowIdsEquivalent } from '@/platform/workflow/core/utils/workflowId'
+import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 
 import type {
@@ -175,15 +177,49 @@ export function useAgentWorkflowResolver({
   ): Promise<ComfyWorkflow | null> {
     const archived = draftArchive.read(workflowId)
     if (archived === null) return null
+    let invalidReason = 'archived graph is not a workflow'
     const graph = await validateComfyWorkflow(
       parseArchivedGraph(archived.content),
-      () => {}
+      (reason) => {
+        invalidReason = reason
+      }
     )
     if (graph === null) {
+      reportError(new Error(invalidReason), {
+        errorType: 'agent_archived_workflow_draft_invalid',
+        level: 'warning',
+        context: { workflowId, filename: archived.filename }
+      })
       draftArchive.discard(workflowId)
       return null
     }
-    return workflows.createNewTemporary(archived.filename, graph)
+    return (
+      alreadyRecovered(archived.filename, graph) ??
+      workflows.createNewTemporary(archived.filename, graph)
+    )
+  }
+
+  /**
+   * A concurrent recovery of the same workflow has already minted the tab.
+   * Without this, `createNewTemporary` would side-step it onto a suffixed path
+   * and leave a second copy of the graph that no thread is bound to.
+   */
+  function alreadyRecovered(
+    filename: string,
+    graph: ComfyWorkflowJSON
+  ): ComfyWorkflow | null {
+    const existing = workflows.getWorkflowByPath(
+      `${ComfyWorkflow.basePath}${filename}`
+    )
+    return existing !== null &&
+      existing.isTemporary &&
+      areWorkflowIdsEquivalent(
+        existing.activeState?.id,
+        graph.id,
+        existing.legacyId
+      )
+      ? existing
+      : null
   }
 
   function parseArchivedGraph(content: string): unknown {

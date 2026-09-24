@@ -40,6 +40,7 @@ import { app } from '@/scripts/app'
 import { blankGraph } from '@/scripts/defaultGraph'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -313,6 +314,7 @@ beforeEach(() => {
     })
   )
   workflowStore = useWorkflowStore()
+  useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
   canvasStore = useCanvasStore()
   workflowService.saveWorkflow.mockImplementation(async (tab) => {
     tab.isModified = false
@@ -3842,6 +3844,77 @@ describe('AgentPanelRoot workflow binding', () => {
       workflowStore.getWorkflowByPath('workflows/Agent draft.json')
     ).toBeNull()
     expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+  })
+
+  // Closing a graph the canvas already drew would drop the user onto a
+  // replacement they never asked for.
+  it('keeps a recovered workflow the user can already see when the chat moves on', async () => {
+    makeTab('wf-42')
+    useAgentWorkflowDraftArchiveStore().archive('wf-history', {
+      filename: 'Agent draft.json',
+      content: JSON.stringify(blankGraph)
+    })
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/messages'))
+          return json(200, [
+            {
+              id: 'history-user',
+              thread_id: 'th-history',
+              seq: 1,
+              role: 'user',
+              status: 'complete',
+              turn_id: 'history-turn',
+              workflow_id: 'wf-history',
+              content: { text: 'Historical prompt' }
+            }
+          ])
+        if (url.includes('/agent/threads'))
+          return json(
+            200,
+            agentThreadList([
+              agentThread({
+                id: 'th-history',
+                title: 'Earlier chat',
+                last_message_at: '2026-09-01T00:00:00Z'
+              })
+            ])
+          )
+        if (url.includes('/workflows'))
+          return json(200, {
+            data: [],
+            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
+          })
+        return json(200, {})
+      })
+    )
+    renderWithSelectedTarget()
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.showChatHistory')
+      })
+    )
+    const openWorkflow = workflowService.openWorkflow.getMockImplementation()
+    assert.exists(openWorkflow)
+    workflowService.openWorkflow.mockImplementationOnce(async (tab) => {
+      const opened = await openWorkflow(tab)
+      useAgentPanelStore().setWorkflowTarget(null)
+      return opened
+    })
+
+    await userEvent.click(await screen.findByText('Earlier chat'))
+    await screen.findAllByText('Historical prompt')
+
+    await vi.waitFor(() =>
+      expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-history')).toBe(
+        'workflows/Agent draft.json'
+      )
+    )
+    expect(workflowService.closeWorkflow).not.toHaveBeenCalled()
+    expect(
+      workflowStore.getWorkflowByPath('workflows/Agent draft.json')
+    ).not.toBeNull()
   })
 
   it('does not commit a pending selection after its tab closes', async () => {

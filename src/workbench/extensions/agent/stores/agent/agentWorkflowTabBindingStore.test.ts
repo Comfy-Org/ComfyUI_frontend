@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, onTestFinished, vi } from 'vitest'
 import { nextTick } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { blankGraph } from '@/scripts/defaultGraph'
@@ -33,6 +34,7 @@ function storedBindings(): unknown {
 describe('agentWorkflowTabBindingStore', () => {
   beforeEach(() => {
     localStorage.clear()
+    useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
   })
 
   it.for(['before', 'after'])(

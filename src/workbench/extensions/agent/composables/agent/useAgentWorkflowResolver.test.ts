@@ -2,6 +2,7 @@ import { fromPartial } from '@total-typescript/shoehorn'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { reactive } from 'vue'
 
+import { useSettingStore } from '@/platform/settings/settingStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
@@ -72,6 +73,7 @@ function setup(
 describe('Agent workflow resolution', () => {
   beforeEach(() => {
     localStorage.clear()
+    useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
   })
 
   it('does not resolve a new temporary tab through a reused persisted path', () => {
@@ -366,6 +368,7 @@ describe('Agent workflow resolution', () => {
 describe('Agent unsaved workflow recovery', () => {
   beforeEach(() => {
     localStorage.clear()
+    useSettingStore().settingValues['Comfy.Workflow.Persist'] = true
   })
 
   it('rebuilds a closed unsaved workflow from its archived graph', async () => {
@@ -384,6 +387,28 @@ describe('Agent unsaved workflow recovery', () => {
     expect(workflows.getWorkflowByPath('workflows/Agent draft.json')).toEqual(
       recovered
     )
+  })
+
+  // The thread target and a reference chip can race for the same id, and each
+  // handler guards only its own generation.
+  it('hands concurrent recoveries of one workflow the same tab', async () => {
+    const { resolver, draftArchive, workflows } = setup([])
+    draftArchive.archive('cloud-draft', {
+      filename: 'Agent draft.json',
+      content: JSON.stringify({
+        ...blankGraph,
+        id: '11111111-2222-3333-4444-555555555555'
+      })
+    })
+
+    const [first, second] = await Promise.all([
+      resolver.recoverWorkflowFor('cloud-draft'),
+      resolver.recoverWorkflowFor('cloud-draft')
+    ])
+
+    expect(first).not.toBeNull()
+    expect(second).toEqual(first)
+    expect(workflows.workflows).toHaveLength(1)
   })
 
   it('recovers nothing for a workflow that was never archived', async () => {

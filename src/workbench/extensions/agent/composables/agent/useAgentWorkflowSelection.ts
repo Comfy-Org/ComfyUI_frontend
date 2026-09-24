@@ -204,15 +204,19 @@ export function useAgentWorkflowSelection({
     await refreshCloudWorkflowIds()
     if (!isCurrent()) return
     const bound = boundOrOpenWorkflowFor(workflowId)
-    const recovered =
-      bound === null ? await recoverWorkflowFor(workflowId) : null
+    let recovered = bound === null ? await recoverWorkflowFor(workflowId) : null
     const target = bound ?? recovered
-    const abandonRecovered = async () => {
-      if (recovered !== null)
-        await workflowService.closeWorkflow(recovered, { warnIfUnsaved: false })
+    // Only ever discards a tab the user has not seen. Once `openWorkflow`
+    // succeeds the recovered graph is on the canvas, and closing it there
+    // would yank the user onto a replacement they never asked for.
+    const abandonUnopenedRecovery = async () => {
+      if (recovered === null) return
+      const unopened = recovered
+      recovered = null
+      await workflowService.closeWorkflow(unopened, { warnIfUnsaved: false })
     }
     if (!isCurrent()) {
-      await abandonRecovered()
+      await abandonUnopenedRecovery()
       return
     }
     if (target === null) {
@@ -222,20 +226,21 @@ export function useAgentWorkflowSelection({
     }
     try {
       const opened = await workflowService.openWorkflow(target)
-      if (!isCurrent()) {
-        await abandonRecovered()
-        return
-      }
       if (!opened) {
-        await abandonRecovered()
+        await abandonUnopenedRecovery()
+        if (!isCurrent()) return
         panelStore.setWorkflowTarget(null)
         warnWorkflowUnavailable()
         return
       }
-      commitWorkflowTarget(target, workflowId)
+      // The thread keeps its tab even when the user has moved on, so coming
+      // back to it finds the graph rather than starting the hunt again.
+      bindingStore.bind(workflowId, target.path)
       if (recovered !== null) forgetRecoveredWorkflow(workflowId)
+      if (!isCurrent()) return
+      commitWorkflowTarget(target, workflowId)
     } catch {
-      await abandonRecovered()
+      await abandonUnopenedRecovery()
       if (!isCurrent()) return
       warnWorkflowUnavailable()
     }

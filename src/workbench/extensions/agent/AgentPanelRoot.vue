@@ -877,11 +877,11 @@ async function onNavigateToReferenceWorkflow(
   const generation = ++referenceNavigationGeneration
   const isCurrent = () => generation === referenceNavigationGeneration
   let recovered: ComfyWorkflow | null = null
-  const abandonRecovered = async () => {
+  const abandonUnopenedRecovery = async () => {
     if (recovered === null) return
-    const stranded = recovered
+    const unopened = recovered
     recovered = null
-    await workflowService.closeWorkflow(stranded, { warnIfUnsaved: false })
+    await workflowService.closeWorkflow(unopened, { warnIfUnsaved: false })
   }
   try {
     let target = openWorkflowFor(workflowId)
@@ -900,18 +900,14 @@ async function onNavigateToReferenceWorkflow(
       target = recovered
     }
     if (target === null || !(await workflowService.openWorkflow(target))) {
-      await abandonRecovered()
+      await abandonUnopenedRecovery()
       if (isCurrent()) warnWorkflowUnavailable()
-      return
-    }
-    if (!isCurrent()) {
-      await abandonRecovered()
       return
     }
     bindingStore.bind(workflowId, target.path)
     if (recovered !== null) forgetRecoveredWorkflow(workflowId)
   } catch {
-    await abandonRecovered()
+    await abandonUnopenedRecovery()
     if (isCurrent()) warnWorkflowUnavailable()
   }
 }
