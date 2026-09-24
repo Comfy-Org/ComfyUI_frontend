@@ -25,6 +25,8 @@ const i18n = createI18n({
       },
       subscription: {
         required: { title: 'Subscription required' },
+        plansForWorkspace: 'Plans for {workspace}',
+        personalWorkspace: 'Personal',
         perMonth: 'per month',
         haveQuestions: 'Questions?',
         contactUs: 'Contact us',
@@ -34,8 +36,6 @@ const i18n = createI18n({
   }
 })
 
-// Records the attribution value handed down, which is all this component owes
-// the pricing table.
 const PricingTableStub = {
   name: 'PricingTable',
   props: ['reason'],
@@ -61,33 +61,27 @@ function renderComponent(props: {
 }
 
 describe('SubscriptionRequiredDialogContent', () => {
+  const originalConfig = window.__CONFIG__
+
   beforeEach(() => {
     window.__CONFIG__ = { subscription_required: true }
   })
 
   afterEach(() => {
-    delete (window as { __CONFIG__?: unknown }).__CONFIG__
+    window.__CONFIG__ = originalConfig
   })
 
-  // `PricingTable`'s `reason` prop is the payment intent source, so binding it
-  // to this component's `reason` would re-attribute every purchase the top-up
-  // fall-through sends here to the copy that fall-through rewrote.
-  it.for([
-    { reason: 'out_of_credits', paymentIntentSource: 'agent_paywall' },
-    { reason: 'subscribe_to_run', paymentIntentSource: 'subscribe_to_run' }
-  ] as const)(
-    'gives the pricing table $paymentIntentSource, not the $reason copy',
-    ({ reason, paymentIntentSource }) => {
-      renderComponent({ reason, paymentIntentSource })
+  it('gives the pricing table the source, not the copy reason', () => {
+    renderComponent({
+      reason: 'out_of_credits',
+      paymentIntentSource: 'agent_paywall'
+    })
 
-      expect(screen.getByTestId('pricing-table')).toHaveTextContent(
-        paymentIntentSource
-      )
-    }
-  )
+    expect(screen.getByTestId('pricing-table')).toHaveTextContent(
+      'agent_paywall'
+    )
+  })
 
-  // The other arm of this component is the only place its `reason` reaches
-  // copy, and it must keep reading `reason` rather than the source.
   it('still branches the legacy panel copy on the reason', () => {
     window.__CONFIG__ = { subscription_required: false }
 

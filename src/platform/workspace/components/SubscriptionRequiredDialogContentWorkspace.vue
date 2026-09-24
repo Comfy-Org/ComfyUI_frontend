@@ -142,7 +142,6 @@ const {
 } = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
-  /** Required, because `useSubscriptionDialog` owns resolving it. */
   paymentIntentSource: PaymentIntentSource | undefined
   isPersonal?: boolean
   initialCheckout?: SubscriptionCheckoutSelection

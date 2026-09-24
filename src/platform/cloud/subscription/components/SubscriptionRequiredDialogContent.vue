@@ -168,7 +168,6 @@ import type { PaymentIntentSource } from '@/platform/telemetry/types'
 const { onClose, reason, paymentIntentSource, onChooseTeam } = defineProps<{
   onClose: () => void
   reason?: PaymentIntentSource
-  /** Required, because `useSubscriptionDialog` owns resolving it. */
   paymentIntentSource: PaymentIntentSource | undefined
   onChooseTeam?: () => void
 }>()
