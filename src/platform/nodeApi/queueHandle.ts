@@ -261,9 +261,7 @@ function executionIds(
   return ids
 }
 
-function normalizeRejectionError(
-  error: PromptRejectedEventPayload['response']['error']
-): RunRejectionError {
+function normalizeRejectionError(error: unknown): RunRejectionError {
   if (typeof error === 'string') {
     return Object.freeze({
       type: 'prompt_rejected',
@@ -271,10 +269,22 @@ function normalizeRejectionError(
       details: ''
     })
   }
+  if (typeof error === 'object' && error !== null) {
+    const type = 'type' in error ? error.type : undefined
+    const message = 'message' in error ? error.message : undefined
+    const details = 'details' in error ? error.details : undefined
+    if (typeof type === 'string' && typeof message === 'string') {
+      return Object.freeze({
+        type,
+        message,
+        details: typeof details === 'string' ? details : ''
+      })
+    }
+  }
   return Object.freeze({
-    type: error.type,
-    message: error.message,
-    details: error.details
+    type: 'prompt_rejected',
+    message: 'Prompt rejected',
+    details: ''
   })
 }
 
