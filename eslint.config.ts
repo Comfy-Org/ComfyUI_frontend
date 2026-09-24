@@ -62,6 +62,41 @@ const tailwindTokenUtilityPrefixes = [
 ]
 const nonTokenUtilityClassPattern = `^(?!(?:.*:)?!?(?:${tailwindTokenUtilityPrefixes.join('|')})-)`
 
+const themeColorUtilityPatterns = [
+  'bg',
+  'text',
+  'border(?:-[trblsexy])?',
+  'ring',
+  'inset-ring',
+  'outline',
+  'shadow',
+  'inset-shadow',
+  'fill',
+  'stroke',
+  'decoration',
+  'accent',
+  'caret',
+  'divide',
+  'placeholder',
+  'from',
+  'via',
+  'to'
+]
+const specializedThemeTokenPatterns = [
+  'button-',
+  'modal-',
+  'dialog-',
+  'interface-',
+  'comfy-',
+  'nav-',
+  'node-',
+  'component-',
+  'video-',
+  'text-(?:primary|secondary)(?:/|$)',
+  'input-surface(?:/|$)'
+]
+const specializedThemeClassPattern = `^(?:.*:)?!?(?:${themeColorUtilityPatterns.join('|')})-(?:${specializedThemeTokenPatterns.join('|')})`
+
 const commonGlobals = {
   ...globals.browser,
   __COMFYUI_FRONTEND_VERSION__: 'readonly',
@@ -304,8 +339,7 @@ export default defineConfig([
         {
           restrict: [
             {
-              pattern:
-                '^(?:.*:)?!?(?:bg|text|border|ring|inset-ring|outline|shadow|inset-shadow|fill|stroke|decoration|accent|caret|divide|placeholder|from|via|to)-(?:button-|modal-|dialog-|interface-|comfy-|nav-|node-|component-|video-|text-(?:primary|secondary)(?:/|$)|input-surface(?:/|$))',
+              pattern: specializedThemeClassPattern,
               message:
                 'Generic UI components must use core semantic theme tokens instead of specialized tokens.'
             }

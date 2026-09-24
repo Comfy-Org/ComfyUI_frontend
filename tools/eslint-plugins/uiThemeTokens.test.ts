@@ -18,7 +18,8 @@ describe('UI theme token restrictions', () => {
     'hover:bg-modal-card-background-hovered',
     'data-[state=active]:bg-interface-menu-component-surface-hovered',
     'data-[state=active]:text-text-primary',
-    'data-[state=inactive]:hover:bg-button-hover-surface'
+    'data-[state=inactive]:hover:bg-button-hover-surface',
+    'border-t-node-component-border'
   ])(
     'rejects the specialized token in %s',
     { timeout: 15_000 },
