@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest'
+import { assert, describe, expect, it, vi } from 'vitest'
 import { nextTick, ref, watch } from 'vue'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
@@ -84,6 +84,9 @@ const partTexts = (store: ReturnType<typeof useAgentConversationStore>) =>
   store.messages.flatMap((m) =>
     m.parts.flatMap((p) => (p.type === 'text' ? [p.text] : []))
   )
+
+/** cloud's storage-key hash shape: `<64 hex><ext>` (common/assets/manager_impl.go). */
+const storedRef = `${'9f2c'.repeat(16)}.png`
 
 describe('useAgentConversationStore', () => {
   it('publishes a turn identity before its live status', () => {
@@ -719,6 +722,91 @@ describe('useAgentConversationStore', () => {
       role: 'user',
       attachments: [{ name: 'ComfyUI_00002_.png', ref: 'ComfyUI_00002_.png' }]
     })
+  })
+
+  it("surfaces a live turn's attachments on its user entry", () => {
+    const store = useAgentConversationStore()
+    store.startTurn(T1)
+
+    store.recordUser(T1, 'upscale this', [
+      { name: 'Beach photo.png', ref: storedRef, previewUrl: 'blob:b' }
+    ])
+
+    expect(store.entries[0]).toMatchObject({
+      role: 'user',
+      attachments: [
+        { name: 'Beach photo.png', ref: storedRef, previewUrl: 'blob:b' }
+      ]
+    })
+  })
+
+  it('revokes the live blob preview yet still restores the same turn from history', () => {
+    const revoke = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const user = historyRow(1, 'user', 'server-turn', 'upscale this')
+    user.content = { text: 'upscale this', attachments: ['beach.png'] }
+    const store = useAgentConversationStore()
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this', [
+      { name: 'beach.png', ref: 'beach.png', previewUrl: 'blob:beach' }
+    ])
+
+    store.hydrate([user, historyRow(2, 'assistant', 'server-turn', 'Done')])
+
+    expect(revoke).toHaveBeenCalledWith('blob:beach')
+    const [restored] = store.entries
+    assert(restored.role === 'user')
+    expect(restored.attachments).toEqual([
+      { name: 'beach.png', ref: 'beach.png' }
+    ])
+  })
+
+  /**
+   * PM-1643 / PM-717. Switching threads mid-turn stashes the turn; returning
+   * hydrates the rows the service already holds, which mid-turn is both of
+   * them — `StartTurn` writes the user row and the streaming assistant row in
+   * one transaction, under a `turn_id` that is a fresh server uuid, while the
+   * ack hands the client the assistant ROW's id as its live turn id
+   * (services/agent/server/agent_handler.go, internal/persist/turnstart.go).
+   * Being distinct, the hydrated turn survives resume's own id filter; the
+   * two dedupe paths behind it then decline in turn, `removeHydratedCopy` on
+   * `hydratedAssistantTurnIds` holding the hydrated assistant row and the
+   * drop-the-stash branch on `entry.settled`, which a stash leaves false. So
+   * both copies stay and only the hydrated one carries attachments. The
+   * `'server-turn'` idiom is the one the settled-turn case below already uses.
+   */
+  it.fails('resumes a thread-switched turn once, with its attachments', () => {
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => {})
+    const userRow = historyRow(1, 'user', 'server-turn', 'upscale this')
+    userRow.content = { text: 'upscale this', attachments: ['beach.png'] }
+    const assistantRow = historyRow(2, 'assistant', 'server-turn', '', 't1')
+    assistantRow.status = 'streaming'
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this', [
+      { name: 'beach.png', ref: 'beach.png', previewUrl: 'blob:beach' }
+    ])
+    store.ingest(delta('t1', 'working on it'))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([userRow, assistantRow])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['working on it'])
+    expect(store.isStreaming).toBe(true)
+    expect(store.entries.filter((entry) => entry.role === 'user')).toEqual([
+      expect.objectContaining({
+        text: 'upscale this',
+        attachments: [expect.objectContaining({ name: 'beach.png' })]
+      })
+    ])
+    expect(store.entries.map((entry) => entry.role)).toEqual([
+      'user',
+      'assistant'
+    ])
   })
 
   it('hydrates persisted tool calls into the same parts array the live work-summary UI reads', () => {

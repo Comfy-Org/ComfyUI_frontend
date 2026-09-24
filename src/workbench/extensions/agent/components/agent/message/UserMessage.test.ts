@@ -6,6 +6,9 @@ import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 
+import type { AgentMessages } from '../../../schemas/agentApiSchema'
+import { toTurnId } from '../../../schemas/agentApiSchema'
+import { normalizeAgentTranscript } from '../../../services/agent/agentTranscript'
 import UserMessage from './UserMessage.vue'
 
 const clipboard = vi.hoisted(() => ({
@@ -197,6 +200,73 @@ describe('UserMessage', () => {
       }
     ])
   })
+
+  /**
+   * PM-1643 / PM-717 item 3. Dragging a library asset in attaches it under
+   * `getAssetUrlFilename`, i.e. `asset.hash` (assetDragUtil.ts,
+   * assetMetadataUtils.ts). Cloud keys an upload as
+   * `hash + filepath.Ext(filename)`, so an extensionless name yields a bare
+   * digest for a key. `/api/upload/image` cannot get there — it runs
+   * `ensureUploadExtension`, which appends `.bin` — but `POST /api/assets`
+   * normalizes no extension, only `ValidateFilePath`, which permits a name
+   * without one; bare hex is a first-class storage-key shape there
+   * (common/assets/repository_impl.go). A later name-only
+   * `PUT /api/assets/{id}` then sets `Name` and never touches `Hash`, leaving
+   * a displayable name — which is what clears the non-'other' gate on the
+   * drag — over an extensionless ref. Create-time cannot desynchronize the
+   * two, since the row's name and the hash's extension come off the same
+   * string, so this needs that direct PUT and no shipped client issues one
+   * today; the component gap it exposes does not depend on the route. Live an image also carries the
+   * `previewUrl` captured at drop, and video and audio still reach the grid
+   * on the reconstructed `/view` URL because the gate read their displayable
+   * name; after a refresh only the ref survives, `getMediaTypeFromFilename`
+   * finds no extension on it and answers 'other', and all three drop to a
+   * grey tile.
+   *
+   * The service resolved and persisted the kind on `attachment_refs`, so the
+   * fact needed to classify it did survive the round trip — `UserMessage` is
+   * simply not given it, because `parseUserAttachments` drops it. Closing the
+   * sibling pin in agentTranscript.test.ts is therefore necessary but not
+   * sufficient for this one: the component must also prefer the resolved kind
+   * over the extension it infers.
+   *
+   * Run over the service's whole kind vocabulary so that assuming any single
+   * kind for an unclassifiable ref cannot discharge it. Props come from the
+   * real parser rather than being written by hand, so no assumption about the
+   * repaired `UserAttachment` shape is baked in. Only `kind` is asserted: a
+   * repair that also restores the human-readable filename would change
+   * `filename` here, and should retire this pin rather than be failed by it.
+   */
+  it.fails.for(['image', 'video', 'audio'])(
+    'previews a rehydrated %s asset whose ref has no extension',
+    (kind) => {
+      const bareDigest = 'a'.repeat(64)
+      const persisted: AgentMessages[number] = {
+        id: 'row-1',
+        thread_id: 'thread-1',
+        seq: 1,
+        role: 'user',
+        status: 'complete',
+        turn_id: 'turn-a',
+        content: {
+          text: 'upscale this',
+          attachments: [bareDigest],
+          attachment_refs: [{ name: bareDigest, id: 'asset-9', kind }]
+        }
+      }
+      const { userAttachments } = normalizeAgentTranscript([persisted])
+
+      renderMessage({
+        text: 'upscale this',
+        attachments: userAttachments.get(toTurnId('turn-a'))
+      })
+
+      const grid = screen.queryByTestId('reply-asset-group')
+      expect(JSON.parse(grid?.dataset.assets ?? '[]')).toEqual([
+        expect.objectContaining({ kind })
+      ])
+    }
+  )
 
   it('keeps non-media attachments as compact tiles beside the grid', () => {
     renderMessage({

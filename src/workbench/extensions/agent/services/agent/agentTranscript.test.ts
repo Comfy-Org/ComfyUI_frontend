@@ -203,6 +203,114 @@ describe('normalizeAgentTranscript', () => {
     }
   )
 
+  it.for([
+    {
+      label: 'several files in their recorded order',
+      attachments: ['poster.png', 'clip.mp4', 'score.mp3'],
+      expected: [
+        { name: 'poster.png', ref: 'poster.png' },
+        { name: 'clip.mp4', ref: 'clip.mp4' },
+        { name: 'score.mp3', ref: 'score.mp3' }
+      ]
+    },
+    {
+      label: 'the same filename twice, uncollapsed',
+      attachments: ['crop.png', 'crop.png'],
+      expected: [
+        { name: 'crop.png', ref: 'crop.png' },
+        { name: 'crop.png', ref: 'crop.png' }
+      ]
+    }
+  ])('restores $label', ({ attachments, expected }) => {
+    const message = row(1, 'user', 'turn-a', 'use these', 'row-1')
+    message.content = { text: 'use these', attachments }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual(expected)
+  })
+
+  it('restores an attachment-only turn that carries no prompt text', () => {
+    const message = row(1, 'user', 'turn-a', '', 'row-1')
+    message.content = { attachments: ['silent.png'] }
+
+    const transcript = normalizeAgentTranscript([message])
+
+    expect(transcript.userTexts.get(toTurnId('turn-a'))).toBe('')
+    expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+      { name: 'silent.png', ref: 'silent.png' }
+    ])
+  })
+
+  it("keeps a turn's attachments off a sibling turn that has none", () => {
+    const withFile = row(1, 'user', 'turn-a', 'first', 'row-1')
+    withFile.content = { text: 'first', attachments: ['only-here.png'] }
+
+    const transcript = normalizeAgentTranscript([
+      withFile,
+      row(2, 'assistant', 'turn-a', 'Got it', 'row-2'),
+      row(3, 'user', 'turn-b', 'second', 'row-3'),
+      row(4, 'assistant', 'turn-b', 'Sure', 'row-4')
+    ])
+
+    expect(transcript.userAttachments).toEqual(
+      new Map([['turn-a', [{ name: 'only-here.png', ref: 'only-here.png' }]]])
+    )
+  })
+
+  /**
+   * PM-1643 / PM-717 item 3: what a rehydrated turn still cannot say about its
+   * files after #18192. Both pins ask this parser only for what the service's
+   * own reader of these rows already does — `contentAttachments` in cloud's
+   * services/agent/internal/persist/threads.go.
+   */
+  describe('unrestored persisted attachment shapes', () => {
+    /**
+     * `attachmentRefsForRow` (services/agent/server/agent_handler.go) resolves
+     * each name to a library asset id and to the coarse kind behind its MIME
+     * type, and `contentAttachments` reads both back. Dropping them here
+     * leaves the transcript unable to say anything about a file beyond its
+     * stored name; what the renderer would do with either is out of scope for
+     * this pin, which only asks that the resolution survive the parse.
+     */
+    it.fails('keeps the resolved asset id and media kind the server persisted on a ref', () => {
+      const bareDigest = 'a'.repeat(64)
+      const message = row(1, 'user', 'turn-a', 'check this clip', 'row-1')
+      message.content = {
+        text: 'check this clip',
+        attachments: [bareDigest],
+        attachment_refs: [{ name: bareDigest, id: 'asset-42', kind: 'video' }]
+      }
+
+      const transcript = normalizeAgentTranscript([message])
+
+      expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+        expect.objectContaining({ id: 'asset-42', kind: 'video' })
+      ])
+    })
+
+    /**
+     * Reachable through the API rather than through this client: the writer
+     * stores `attachments` verbatim and has never filtered it, so a blank name
+     * posted by any client persists. `contentAttachments` then drops it — a
+     * blank names no file — where this keeps it as an attachment, giving the
+     * turn a tile with an empty caption and no resolvable preview. The row is
+     * shown without a sibling `attachment_refs`, the pre-`attachment_refs`
+     * legacy shape; a current writer would emit one naming `real.png`, which
+     * this parser ignores anyway whenever `attachments` is an array.
+     */
+    it.fails('drops a blank name persisted under attachments', () => {
+      const message = row(1, 'user', 'turn-a', '', 'row-1')
+      message.content = { attachments: ['', 'real.png'] }
+
+      const transcript = normalizeAgentTranscript([message])
+
+      expect(transcript.userAttachments.get(toTurnId('turn-a'))).toEqual([
+        { name: 'real.png', ref: 'real.png' }
+      ])
+    })
+  })
+
   it('restores persisted tool calls as ToolPart entries ahead of the reply text', () => {
     const message = row(1, 'assistant', 'turn-a', 'Done', 'row-1')
     message.content = {
