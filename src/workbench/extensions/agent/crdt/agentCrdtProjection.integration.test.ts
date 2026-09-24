@@ -332,8 +332,8 @@ describe('AgentCrdtProjection self-driven reconcile retry', () => {
       // rejected: nothing is swept, and the stale node stays live.
       const before = Y.encodeStateVector(host)
       host.transact(() => {
-        for (const id of [...nodesMap(host).keys()]) nodesMap(host).delete(id)
-        for (const id of [...linksMap(host).keys()]) linksMap(host).delete(id)
+        nodesMap(host).clear()
+        linksMap(host).clear()
       })
       scopeAvailable = false
       const deleteAllUpdate = Y.encodeStateAsUpdate(host, before)
