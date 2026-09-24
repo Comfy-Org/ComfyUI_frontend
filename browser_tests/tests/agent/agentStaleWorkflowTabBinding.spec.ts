@@ -8,6 +8,7 @@ import type {
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { UserDataFullInfo } from '@/platform/remote/comfyui/types'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type {
   AgentTurnAccepted,
   CloudWorkflowEntry
@@ -23,8 +24,8 @@ import { loadAgentConversation } from '@e2e/fixtures/data/agent/agentConversatio
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
-const LEGACY_BINDING_KEY = 'Comfy.Agent.WorkflowTabBindings'
-const THREAD_KEY = 'Comfy.Agent.ThreadId'
+const BINDING_KEY = StorageKeys.agentWorkflowTabBindings('personal')
+const THREAD_KEY = StorageKeys.agentThread('personal')
 const DEFAULT_TAB_PATH = 'workflows/Unsaved Workflow.json'
 const DEFAULT_TAB_NAME = 'Unsaved Workflow'
 const THREAD_ID = '6f4b1e2a-7c3d-4e5f-8a9b-0c1d2e3f4a5b'
@@ -32,7 +33,7 @@ const TURN_ID = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d'
 const EARLIER_REQUEST = 'Earlier request'
 
 // A browser tab closed without the SPA's own cleanup never runs
-// agentWorkflowTabBindingStore's unbind(), so its legacy record still names
+// agentWorkflowTabBindingStore's unbind(), so its persisted record still names
 // the abandoned tab's workflow under the default path every unsaved tab
 // reuses, and the thread pointer survives beside it. On the next boot the
 // thread hydrates and names that workflow. The binding store must refuse to
@@ -66,7 +67,7 @@ test.describe(
           localStorage.setItem(threadKey, threadId)
         },
         [
-          LEGACY_BINDING_KEY,
+          BINDING_KEY,
           THREAD_KEY,
           staleWorkflowId,
           DEFAULT_TAB_PATH,
