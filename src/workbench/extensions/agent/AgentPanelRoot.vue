@@ -18,7 +18,11 @@ import { useI18n } from 'vue-i18n'
 
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import { useTelemetry } from '@/platform/telemetry'
-import type { AgentMessageSentMetadata } from '@/platform/telemetry/types'
+import type {
+  AgentMessageSentMetadata,
+  AgentRunApprovalDecision,
+  AgentStopMethod
+} from '@/platform/telemetry/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import type { LiveAutogrowGroupAnswer } from '@/workbench/extensions/agent/crdt/graphMutations'
 import { createGraphMutations } from '@/workbench/extensions/agent/crdt/graphMutations'
@@ -253,7 +257,9 @@ const {
 } = useAgentWorkflowSelection({
   resolver: workflowResolver,
   canSelectTarget: () => !isSending.value && status.value === 'idle',
-  warnWorkflowUnavailable
+  warnWorkflowUnavailable,
+  onTargetBound: (workflowId, previousWorkflowId, source) =>
+    reportWorkflowBound(workflowId, previousWorkflowId, source)
 })
 const tabActivity = useWorkflowTabActivityStore()
 const CREATING_TAB_MIN_DURATION_MS = 500
@@ -614,7 +620,8 @@ const workflowTabs = computed<ActiveTab[]>(() =>
 
 function onWorkflowAdopted(
   workflowId: string,
-  sent: WorkflowTurnContext | undefined
+  sent: WorkflowTurnContext | undefined,
+  previousWorkflowId: string | null
 ): void {
   if (sent === undefined) return
   // An unbound tab adopts a workflow only when it was minted for this turn:
@@ -627,6 +634,11 @@ function onWorkflowAdopted(
   if (adoptable) {
     bindingStore.bind(workflowId, sent.tabPath)
     tabActivity.setEditing(sent.tabPath)
+    reportWorkflowBound(
+      workflowId,
+      previousWorkflowId,
+      sent.id === undefined ? 'minted' : 'active_tab'
+    )
   }
 }
 
@@ -686,11 +698,15 @@ const {
   loadThread,
   boundWorkflowId,
   bindWorkflow,
+  reportWorkflowBound,
   answerAsk,
   answeringAskIds
 } = useAgentSession({
   rest,
   events,
+  onThreadStarted: (source) =>
+    useTelemetry()?.trackAgentThreadStarted({ source }),
+  onAskResolved: forgetApproval,
   workflow: {
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
@@ -894,16 +910,21 @@ watch(
 let activeTabGeneration = 0
 let activeTabChain: Promise<void> = Promise.resolve()
 
-function enqueueActiveTab(data: AgentActiveTabData): void {
+function enqueueActiveTab(data: AgentActiveTabData): Promise<boolean> {
   const generation = ++activeTabGeneration
-  activeTabChain = activeTabChain.then(() => onAgentActiveTab(data, generation))
+  const result = activeTabChain.then(() => onAgentActiveTab(data, generation))
+  activeTabChain = result.then(() => undefined)
+  return result
 }
 
-function onOpenApprovalWorkflow(
+async function onOpenApprovalWorkflow(
+  askId: string,
   workflowId: string,
   workflowName?: string
-): void {
-  enqueueActiveTab({ workflow_id: workflowId, name: workflowName })
+): Promise<void> {
+  const decidedAt = Date.now()
+  if (await enqueueActiveTab({ workflow_id: workflowId, name: workflowName }))
+    trackApprovalResolved(askId, 'open_workflow', decidedAt)
 }
 
 async function onNavigateToReferenceWorkflow(
@@ -946,28 +967,30 @@ function agentTabFilename(name: string | undefined): string | undefined {
 async function onAgentActiveTab(
   data: AgentActiveTabData,
   generation: number
-): Promise<void> {
+): Promise<boolean> {
+  const previousWorkflowId = boundWorkflowId.value
   const stale = () => generation !== activeTabGeneration
-  if (stale()) return
+  if (stale()) return false
   try {
     const bound = boundOrOpenWorkflowFor(data.workflow_id)
     if (bound) {
       const opened = await workflowService.openWorkflow(bound)
-      if (stale()) return
+      if (stale()) return false
       if (!opened) {
         warnWorkflowUnavailable()
-        return
+        return false
       }
       // boundOrOpenWorkflowFor can resolve by cloud name, which leaves no binding behind
       // for everything downstream that only reads tabPathFor.
       bindingStore.bind(data.workflow_id, bound.path)
       if (status.value !== 'idle') tabActivity.setEditing(bound.path)
       bindWorkflow(data.workflow_id)
+      reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
       useTelemetry()?.trackAgentWorkflowApplied({
         workflow_id: data.workflow_id,
         target: 'active_tab_switch'
       })
-      return
+      return true
     }
     const creatingStartedAt = Date.now()
     tabActivity.setCreating(true)
@@ -975,7 +998,7 @@ async function onAgentActiveTab(
       CREATING_TAB_MIN_DURATION_MS - (Date.now() - creatingStartedAt)
     if (remainingCreatingTime > 0)
       await new Promise((resolve) => setTimeout(resolve, remainingCreatingTime))
-    if (stale()) return
+    if (stale()) return false
     const tab = workflowStore.createNewTemporary(
       agentTabFilename(data.name),
       agentTabGraph
@@ -991,25 +1014,69 @@ async function onAgentActiveTab(
     if (stale() || !opened) {
       await workflowService.closeWorkflow(tab, { warnIfUnsaved: false })
       if (!stale()) warnWorkflowUnavailable()
-      return
+      return false
     }
     if (status.value !== 'idle') tabActivity.setEditing(tab.path)
     bindingStore.bind(data.workflow_id, tab.path)
     bindWorkflow(data.workflow_id)
+    reportWorkflowBound(data.workflow_id, previousWorkflowId, 'active_tab')
     useTelemetry()?.trackAgentWorkflowApplied({
       workflow_id: data.workflow_id,
       target: 'active_tab_open'
     })
+    return true
   } catch (error) {
-    if (stale()) return
+    if (stale()) return false
     bindWorkflow(data.workflow_id)
     surfaceAgentError(
       'agent_api_failed',
       error instanceof Error ? error.message : String(error)
     )
+    return false
   } finally {
     tabActivity.setCreating(false)
   }
+}
+
+function onApprovalShown(
+  askId: string,
+  turnId: string,
+  workflowId: string | null
+): void {
+  if (!conversationStore.recordApprovalShown(askId, Date.now())) return
+  useTelemetry()?.trackAgentRunApprovalShown({
+    turn_id: turnId,
+    workflow_id: workflowId
+  })
+}
+
+function trackApprovalResolved(
+  askId: string,
+  decision: AgentRunApprovalDecision,
+  decidedAt = Date.now(),
+  shownAt = conversationStore.approvalShownAt(askId)
+): void {
+  if (shownAt === undefined) return
+  if (decision !== 'open_workflow')
+    conversationStore.forgetApprovalTiming(askId)
+  useTelemetry()?.trackAgentRunApprovalResolved({
+    decision,
+    time_to_decide_ms: Math.max(0, decidedAt - shownAt)
+  })
+}
+
+function forgetApproval(askId: string): void {
+  conversationStore.forgetApproval(askId)
+}
+
+async function onAnswerAsk(
+  askId: string,
+  selection: 'run' | 'cancel'
+): Promise<void> {
+  const shownAt = conversationStore.approvalShownAt(askId)
+  const decidedAt = Date.now()
+  if (await answerAsk(askId, selection))
+    trackApprovalResolved(askId, selection, decidedAt, shownAt)
 }
 
 start()
@@ -1050,6 +1117,7 @@ function onFeedback(turnId: string, vote: 'up' | 'down' | null): void {
 
   useTelemetry()?.trackAgentMessageFeedback({
     message_id: turnId,
+    turn_id: turnId,
     vote,
     workflow_id: workflowId
   })
@@ -1085,7 +1153,8 @@ async function onSelectHistory(id: string): Promise<void> {
   cancelWorkflowSelection()
   agentPanelStore.resetWorkflowTarget()
   exitNodeSelectionMode()
-  await loadThread(id)
+  if (await loadThread(id))
+    useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
   void refreshHistory()
 }
 
@@ -1174,12 +1243,13 @@ const { submit: onSend } = useAgentDraftSubmission({
       // gets that far still reports here, so the funnel counts the attempt.
       reportPendingSend()
     }
-  },
-  stop: stopTurn
+  }
 })
 
-function onStop(): void {
-  if (!composerStore.requestSubmissionStop()) void stopTurn()
+// The session owns the acknowledgement boundary: a stop that lands before the
+// POST acks is remembered there and committed at ack (see stopPendingAck).
+function onStop(method: AgentStopMethod): void {
+  void stopTurn(method)
 }
 
 function onRenameChat(title: string): void {
@@ -1193,10 +1263,10 @@ function onRenameHistory(id: string, title: string): void {
 function onDeleteHistory(id: string): void {
   history.remove(id)
   // Deleting the open chat also ends it; a dead thread must not stay editable.
-  if (id === threadId.value) onNewChat()
+  if (id === threadId.value) onNewChat('history_delete')
 }
 
-function onNewChat(): void {
+function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
   exitNodeSelectionMode()
@@ -1206,7 +1276,7 @@ function onNewChat(): void {
   // chat's target - unlike onSelectHistory(), which resets to 'uninitialized'
   // so restoreTarget() can re-apply the loaded thread's own binding.
   agentPanelStore.setWorkflowTarget(workflowStore.activeWorkflow)
-  newChat()
+  newChat(source)
 }
 
 const panelRef = ref<InstanceType<typeof AgentPanel>>()
@@ -1336,7 +1406,7 @@ onBeforeUnmount(() => attachment.cancelAllUploads())
 
 function onAttach(): void {
   exitNodeSelectionMode()
-  useTelemetry()?.trackAgentAttachButtonClicked()
+  useTelemetry()?.trackAgentAttachButtonClicked({ method: 'menu' })
   fileInput.value?.click()
 }
 
@@ -1399,7 +1469,7 @@ function onPanelDragLeave(): void {
   if (assetDragDepth === 0) assetDragActive.value = false
 }
 
-async function attachDroppedAsset(event: DragEvent): Promise<void> {
+async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
   const asset = event.dataTransfer && getDroppedAsset(event.dataTransfer)
   if (!asset) {
     toast.add({
@@ -1407,17 +1477,18 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
       detail: t('agent.assetNotAttachable'),
       life: 5000
     })
-    return
+    return false
   }
 
   if (asset.ref && asset.kind !== 'other') {
-    panelRef.value?.addAttachment({
-      id: `asset:${asset.ref}`,
-      name: asset.name,
-      ref: asset.ref,
-      previewUrl: asset.previewUrl
-    })
-    return
+    return (
+      panelRef.value?.addAttachment({
+        id: `asset:${asset.ref}`,
+        name: asset.name,
+        ref: asset.ref,
+        previewUrl: asset.previewUrl
+      }) ?? false
+    )
   }
 
   const result = await attachment.addDeferredFile(asset.name, async () => {
@@ -1430,19 +1501,23 @@ async function attachDroppedAsset(event: DragEvent): Promise<void> {
       detail: t('agent.assetNotAttachable'),
       life: 5000
     })
+  return result === 'uploaded'
 }
 
 function onPanelDragOver(event: DragEvent): void {
   if (isAttachableDrag(event)) event.preventDefault()
 }
 
-function onPanelDrop(event: DragEvent): void {
+async function onPanelDrop(event: DragEvent): Promise<void> {
   clearAssetDrag()
   // A dropped asset card carries a URI, not a File, so the claim must happen
   // before the async fetch resolves it into one.
   if ((event.dataTransfer?.files.length ?? 0) === 0 && isAssetDrag(event)) {
     event.preventDefault()
-    void attachDroppedAsset(event)
+    void attachDroppedAsset(event).then((attached) => {
+      if (attached)
+        useTelemetry()?.trackAgentAttachButtonClicked({ method: 'drag_drop' })
+    })
     return
   }
   // Anything the composer cannot attach still belongs to the graph loader, which
@@ -1452,7 +1527,8 @@ function onPanelDrop(event: DragEvent): void {
   )
   if (files.length === 0) return
   event.preventDefault()
-  void attachment.addFiles(files)
+  if (await attachment.addFiles(files))
+    useTelemetry()?.trackAgentAttachButtonClicked({ method: 'drag_drop' })
 }
 </script>
 
@@ -1513,11 +1589,12 @@ function onPanelDrop(event: DragEvent): void {
       @request-workflow-references="onRequestWorkflowReferences"
       @remove-workflow-reference="composerStore.removeWorkflowReference"
       @feedback="onFeedback"
-      @answer-ask="answerAsk"
+      @answer-ask="onAnswerAsk"
+      @approval-shown="onApprovalShown"
       @open-workflow="onOpenApprovalWorkflow"
       @open-reference-workflow="onNavigateToReferenceWorkflow"
       @paywall-action="onPaywallAction"
-      @new-chat="onNewChat"
+      @new-chat="onNewChat('new_chat_button')"
       @toggle-size="agentPanelStore.toggleMaximize()"
       @close="onClosePanel"
       @open-history="refreshHistory()"

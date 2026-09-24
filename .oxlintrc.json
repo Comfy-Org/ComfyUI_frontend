@@ -6,6 +6,8 @@
     "components.d.ts",
     "coverage/*",
     "dist/*",
+    "packages/ingest-types/src/types.gen.ts",
+    "packages/ingest-types/src/zod.gen.ts",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
     "scripts/registry-census/detection-proof/**",
@@ -27,6 +29,7 @@
   "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
+    "comfy/no-js-private-class-members": "error",
     "comfy/no-render-in-watch-effect": "error",
     "no-async-promise-executor": "off",
     "no-console": [
@@ -170,6 +173,26 @@
       "excludeFiles": ["**/*.test.ts", "**/*.spec.ts"],
       "rules": {
         "comfy/no-dom-in-computed": "warn"
+      }
+    },
+    {
+      "files": [
+        "src/composables/graph/**/*.{ts,vue}",
+        "src/lib/litegraph/src/**/*.{ts,vue}",
+        "src/renderer/core/canvas/**/*.{ts,vue}",
+        "src/renderer/extensions/vueNodes/**/*.{ts,vue}"
+      ],
+      "excludeFiles": [
+        "**/*.test.ts",
+        "**/*.spec.ts",
+        "src/lib/litegraph/src/CurveEditor.ts",
+        "src/lib/litegraph/src/LGraph.ts",
+        "src/lib/litegraph/src/LGraphCanvas.ts",
+        "src/lib/litegraph/src/LGraphNode.ts",
+        "src/renderer/core/canvas/litegraph/selectionAdapter.ts"
+      ],
+      "rules": {
+        "comfy/no-direct-selection-write": "error"
       }
     },
     {
