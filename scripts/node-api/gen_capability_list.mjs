@@ -11,8 +11,10 @@
  * banner exists to stop conversions against unbuilt API; stale, it does the
  * opposite and is far more expensive.
  */
+import console from 'node:console'
 import { readFileSync, writeFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import process from 'node:process'
+import { fileURLToPath, URL } from 'node:url'
 
 const API = fileURLToPath(
   new URL('../../src/platform/nodeApi/comfyApi.ts', import.meta.url)
@@ -27,22 +29,6 @@ export function implementedCapabilities() {
   const source = readFileSync(API, 'utf8')
   const block = /const CAPABILITIES[\s\S]*?\n\]\)/.exec(source)?.[0] ?? ''
   return [...block.matchAll(/\[\s*'([^']+)'/g)].map((m) => m[1]).sort()
-}
-
-function render(names) {
-  const line = names.map((n) => `\`${n}\``).join(', ')
-  // Wrapped to the doc's width, each line prefixed as a blockquote.
-  const out = []
-  let current = `${START} `
-  for (const part of line.split(', ')) {
-    if (`${current}${part}, `.length > 78) {
-      out.push(current.trimEnd())
-      current = '> '
-    }
-    current += `${part}, `
-  }
-  out.push(current.trimEnd().replace(/,$/, '.'))
-  return out.join('\n')
 }
 
 function renderReference(names) {
