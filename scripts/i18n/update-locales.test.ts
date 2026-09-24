@@ -15,7 +15,11 @@ import {
   pathKey,
   rebuildLocale
 } from './locale-tree'
-import { leafTokensDiffer, validateLocale } from './protected-tokens'
+import {
+  auditProtectedLiterals,
+  leafTokensDiffer,
+  validateLocale
+} from './protected-tokens'
 import type { TranslateBatch, TranslationItem } from './translate'
 import {
   chunkItems,
@@ -505,6 +509,21 @@ describe('validateLocale', () => {
     expect(
       validateLocale(source, { count: 'None | {total} many' }, changes, true)
     ).toEqual(['count: missing {count}, {count}', 'count: added {total}'])
+  })
+
+  it('reports new violations on a key with a baselined violation', () => {
+    const source = { help: 'Ask {name}' }
+    const translated = { help: 'Demandez {other}' }
+
+    expect(
+      auditProtectedLiterals(
+        source,
+        translated,
+        new Set(),
+        true,
+        new Set(['help: missing {name}'])
+      )
+    ).toEqual(['help: added {other}'])
   })
 })
 

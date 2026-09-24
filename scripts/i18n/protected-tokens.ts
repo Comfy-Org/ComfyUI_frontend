@@ -161,7 +161,8 @@ export function auditProtectedLiterals(
   source: LocaleObject,
   target: LocaleObject,
   skipKeys: ReadonlySet<string>,
-  strict: boolean = false
+  strict: boolean = false,
+  knownViolations: ReadonlySet<string> = new Set()
 ): string[] {
   const targetLeaves = collectLeaves(target)
   return [...collectLeaves(source)].flatMap(([key, leaf]) => {
@@ -173,6 +174,6 @@ export function auditProtectedLiterals(
       targetLeaf.value,
       leaf.path.join('.'),
       strict
-    )
+    ).filter((error) => !knownViolations.has(error))
   })
 }

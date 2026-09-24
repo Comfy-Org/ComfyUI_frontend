@@ -81,21 +81,24 @@ const fieldError = computed(() =>
     ? validateForm([field], values.value)[field.name]
     : errors[field.name]
 )
+
+function uploadLimit(): number {
+  if (field.kind === 'file') return field.maxBytes ?? MAX_UPLOAD_BYTES
+  return urlUploadField(field)?.maxBytes ?? MAX_UPLOAD_BYTES
+}
+
+function messageForError(error: FieldErrorCode): string {
+  if (error === 'incompatible' && field.hint) return field.hint
+  return t(errorKey[error], locale, {
+    limit: formatWorkshopUploadLimit(uploadLimit(), locale),
+    seconds: field.presentation?.maxVideoDurationSeconds ?? '',
+    minimum: field.presentation?.videoWidthPixels?.minimum ?? '',
+    maximum: field.presentation?.videoWidthPixels?.maximum ?? ''
+  })
+}
+
 const errorMessage = computed(() =>
-  fieldError.value
-    ? fieldError.value === 'incompatible' && field.hint
-      ? field.hint
-      : t(errorKey[fieldError.value], locale, {
-          limit: formatWorkshopUploadLimit(
-            (field.kind === 'file' ? field : urlUploadField(field))?.maxBytes ??
-              MAX_UPLOAD_BYTES,
-            locale
-          ),
-          seconds: field.presentation?.maxVideoDurationSeconds ?? '',
-          minimum: field.presentation?.videoWidthPixels?.minimum ?? '',
-          maximum: field.presentation?.videoWidthPixels?.maximum ?? ''
-        })
-    : ''
+  fieldError.value ? messageForError(fieldError.value) : ''
 )
 const invalid = () => fieldError.value !== undefined
 const describedBy = computed(

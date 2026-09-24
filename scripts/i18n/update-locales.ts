@@ -54,9 +54,8 @@ import { isMainModule } from '../isMainModule'
 
 interface SourceManifest {
   files: Record<string, string>
-  // Transitional baseline: leaf path keys per entry file whose committed
-  // translations violated token validation when the manifest was recorded.
-  // The check exempts them; a successful locale run heals and drops them.
+  // Transitional baseline: exact locale-scoped validation errors per entry
+  // file. A successful locale run heals and drops them.
   knownViolations?: Record<string, string[]>
   version: 1
 }
@@ -68,7 +67,7 @@ interface SourcePlan {
   invalidated: Set<string>
   previousLeafCount: number
   degraded: boolean
-  knownViolationKeys: ReadonlySet<string>
+  knownViolations: ReadonlySet<string>
 }
 
 interface LocaleFileState {
@@ -199,8 +198,9 @@ function loadManifest(filename: string): SourceManifest {
         typeof manifest.knownViolations !== 'object' ||
         Array.isArray(manifest.knownViolations) ||
         !Object.values(manifest.knownViolations).every(
-          (keys) =>
-            Array.isArray(keys) && keys.every((key) => typeof key === 'string')
+          (errors) =>
+            Array.isArray(errors) &&
+            errors.every((error) => typeof error === 'string')
         )))
   ) {
     throw new Error(`${filename} has an invalid source manifest`)
@@ -387,11 +387,18 @@ function reportCheck(
     // the check. Degraded plans (recorded source unavailable) cannot tell
     // staleness from corruption, so they skip the audit.
     if (state.plan.degraded) continue
+    const localePrefix = `${state.locale.code}: `
+    const knownViolations = new Set(
+      [...state.plan.knownViolations]
+        .filter((error) => error.startsWith(localePrefix))
+        .map((error) => error.slice(localePrefix.length))
+    )
     for (const error of auditProtectedLiterals(
       state.plan.source,
       state.existing,
-      new Set([...state.plan.invalidated, ...state.plan.knownViolationKeys]),
-      strictProtectedTokens
+      state.plan.invalidated,
+      strictProtectedTokens,
+      knownViolations
     )) {
       auditErrors.push(`${label}: ${error}`)
     }
@@ -474,7 +481,7 @@ async function run(argv: readonly string[]): Promise<void> {
       ),
       previousLeafCount: collectLeaves(previous).size,
       degraded: recorded === undefined,
-      knownViolationKeys: new Set(manifest.knownViolations?.[filename] ?? [])
+      knownViolations: new Set(manifest.knownViolations?.[filename] ?? [])
     }
   })
 
