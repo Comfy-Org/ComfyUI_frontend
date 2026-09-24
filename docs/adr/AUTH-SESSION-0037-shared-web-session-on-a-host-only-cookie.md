@@ -44,8 +44,12 @@ the cloud app already sets a cookie there for media loads.
    server treats it as a request and re-checks membership every time.
 5. **Unsafe cookie requests carry a stored CSRF token and a trusted Origin.**
    The token is a per-session random value read from `GET /api/auth/session`.
-   Ingest refuses any cookie request, reads included, whose Origin is not on
-   an exact trusted-origins list kept separate from CORS.
+   Ingest refuses any cookie request, reads included, that carries an Origin
+   not on an exact trusted-origins list kept separate from CORS. A
+   same-origin read carries no Origin, so there the browser's
+   `Sec-Fetch-Site: same-origin` label stands in for it; a request with
+   neither is refused on the session routes. Unsafe methods always need the
+   CSRF token as well.
 6. **A new session on every real sign-in.** Signing in replaces whatever
    session the browser held.
 7. **Tokens and API keys stay.** CLI, MCP, API keys, Desktop's login handoff,
