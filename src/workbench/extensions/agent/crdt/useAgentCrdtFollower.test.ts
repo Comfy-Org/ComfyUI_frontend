@@ -2481,7 +2481,7 @@ describe('useAgentCrdtFollower', () => {
       unmount()
     })
 
-    it('P1: never resends a held batch into a reactivation ack that fails continuity', async () => {
+    it('round 6: a held batch resumes once the tab reactivates, even when the resubscribe finds the doc has moved on', async () => {
       const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
       enqueue([deleteNode('1')])
       await Promise.resolve()
@@ -2497,24 +2497,30 @@ describe('useAgentCrdtFollower', () => {
       expect(clientState.sendOps).toHaveBeenCalledTimes(1)
 
       bridge().subscribedWorkflowId = 'wf-1'
-      // Continuity fails: this correlation never projected anything (the
-      // watermark is still null), so any numbered ack seq mismatches it.
+      // This correlation never projected anything (the watermark is still
+      // null), so any numbered seq the resubscribe reports differs from it.
+      // ADR-CRDT-RECONCILE-0035 (a), round 6: that is ordinary same-lineage
+      // progress, not proof of a lineage break, so it no longer blocks the
+      // held batch.
       dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 5 })
 
-      // The held batch must never reach the wire once continuity has
-      // failed: resuming first and invalidating after would let it
-      // transmit into a doc this ack cannot vouch for.
-      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
-      expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      expect(clientState.sendOps).toHaveBeenCalledTimes(2)
+      expect(clientState.sendOps).toHaveBeenLastCalledWith(
+        'wf-1',
+        expect.any(String),
+        [expect.objectContaining({ op: 'delete_node', node_id: '2' })]
+      )
+      expect(await settledStates()).toEqual(['acknowledged'])
       unmount()
     })
 
-    it('P1: a replacement-lineage doc_update racing the reactivation ack does not pass continuity', async () => {
+    it('a replacement-lineage doc_update racing the reactivation resubscribe does not borrow its watermark', async () => {
       // DrJKL's repro (review 5284988677): project seq 1, reactivate, receive
-      // a REPLACEMENT-lineage doc_update(seq=9) before its own ack, then
-      // doc_subscribed(seq=9) — the live watermark now reads 9 too, but that
-      // is the stray update's doing, not proof this ack's lineage matches
-      // what was projected before the tab went away.
+      // a REPLACEMENT-lineage doc_update(seq=9) before the resubscribe
+      // completes, then the resubscribe reports seq 9 too — the live
+      // watermark now reads 9, but that is the stray update's doing, not
+      // proof this resubscribe's lineage matches what was projected before
+      // the tab went away.
       const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
       dispatchFrame('doc_update', { workflowId: 'wf-1', seq: 1 })
 
@@ -2535,20 +2541,26 @@ describe('useAgentCrdtFollower', () => {
       adapterState.reconcileFromDoc.mockClear()
       dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 9 })
 
-      // Must invalidate — never accept the stray update's watermark as this
-      // ack's continuity proof, and never resend the held batch into it.
+      // Must not accept the stray update's watermark as this resubscribe's
+      // own continuity proof: the forced reconcile a genuinely already-
+      // current resubscribe would run must not fire here.
       expect(adapterState.reconcileFromDoc).not.toHaveBeenCalled()
-      expect(clientState.sendOps).toHaveBeenCalledTimes(1)
-      expect(await settledStates()).toEqual(['acknowledged', 'undeliverable'])
+      // Round 6: continuity being unproven no longer blocks the held batch
+      // — it resumes normally, since a changed seq is ordinary progress, not
+      // proof of a lineage break.
+      expect(clientState.sendOps).toHaveBeenCalledTimes(2)
+      expect(await settledStates()).toEqual(['acknowledged'])
       unmount()
     })
 
-    it('P1: reverts a transmitted add that its own abort settlement just re-parked during invalidation', async () => {
-      // A lookup returning empty also passes if an incorrect implementation
-      // merely calls `pendingOps.reset()` after the abort — that would emit
-      // no `reverted` event and leave the optimistic node on the canvas. This
-      // test proves the user-facing rollback itself: the event fires and the
-      // node is actually removed, not only that the tracker forgot it.
+    it('round 6: a transmitted add still awaiting its result survives a reactivation whose resubscribe finds an advanced seq', async () => {
+      // Before round 6 this scenario forced the sender to abort the
+      // still-in-flight add (settling it delivery_unknown) and then
+      // immediately reverted every delivery_unknown entry unconditionally.
+      // ADR-CRDT-RECONCILE-0035 (a) now says a changed seq at reactivation is
+      // ordinary same-lineage progress: this test proves the add is left
+      // exactly where it was, not settled or reverted just because the
+      // resubscribe's continuity is unproven.
       const nodeId = toNodeId(5)
       const nodesById: Partial<Record<NodeId, object>> = { [nodeId]: {} }
       const remove = vi.fn((node: object) => {
@@ -2577,8 +2589,6 @@ describe('useAgentCrdtFollower', () => {
       await Promise.resolve()
       const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id as string
       expect(opId).toBeDefined()
-      // Transmitted, still unacknowledged: `abortAll()` will settle it
-      // `unconfirmed` (parked as delivery_unknown), not `undeliverable`.
       expect(clientState.sendOps).toHaveBeenCalledTimes(1)
 
       isTargetActive.value = false
@@ -2588,22 +2598,215 @@ describe('useAgentCrdtFollower', () => {
       isTargetActive.value = true
       await nextTick()
       bridge().subscribedWorkflowId = 'wf-1'
-      // Continuity fails: this correlation never projected anything, so any
-      // numbered ack seq mismatches the initial null watermark.
+      // This correlation never projected anything, so any numbered seq the
+      // resubscribe reports differs from the initial null watermark.
       dispatchFrame('doc_subscribed', { ok: true, workflowId: 'wf-1', seq: 5 })
 
-      // The abort settles the still-in-flight add as delivery_unknown from
-      // underneath the invalidation sweep; it must still be reverted, not
-      // survive as a stale-lineage parked entry — and the tracker forgetting
-      // it is verified below, but only as a consequence of the real rollback.
-      expect(pendingAddType()?.('5')).toBeUndefined()
-      expect(recordDevEvent).toHaveBeenCalledWith(
+      expect(pendingAddType()?.('5')).toBe('Test')
+      expect(recordDevEvent).not.toHaveBeenCalledWith(
         'pending_ops',
-        expect.objectContaining({ type: 'reverted', opIds: [opId] })
+        expect.objectContaining({ type: 'reverted' })
       )
-      expect(remove).toHaveBeenCalledTimes(1)
-      expect(nodesById[nodeId]).toBeUndefined()
+      expect(remove).not.toHaveBeenCalled()
+      expect(nodesById[nodeId]).toBeDefined()
       unmount()
+    })
+
+    describe('round 6: a parked add survives a reactivation whose resubscribe reports an advanced seq', () => {
+      function addNode(nodeId: number) {
+        return {
+          op: 'add_node' as const,
+          node_id: nodeId,
+          class_type: 'Test',
+          pos: [0, 0] as [number, number],
+          node: { id: nodeId, type: 'Test', inputs: [], outputs: [] }
+        }
+      }
+
+      /**
+       * Parks `add_node(5)` as `delivery_unknown` (one silent send, one
+       * silent resend), then reactivates and reports an advanced seq the
+       * resubscribe cannot establish continuity with, returning the parked
+       * op's id.
+       */
+      async function parkThenReactivate(
+        isTargetActive: Ref<boolean>,
+        enqueue: Enqueue
+      ): Promise<string> {
+        enqueue([addNode(5)])
+        await Promise.resolve()
+        const opId = clientState.sendOps.mock.lastCall?.[2][0]?.op_id as string
+        vi.advanceTimersByTime(10_000)
+        vi.advanceTimersByTime(10_000)
+        expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+          type: 'delivery_unknown',
+          opIds: [opId]
+        })
+
+        isTargetActive.value = false
+        await nextTick()
+        bridge().subscribe.mockImplementation(() => {})
+        isTargetActive.value = true
+        await nextTick()
+        bridge().subscribedWorkflowId = 'wf-1'
+        dispatchFrame('doc_subscribed', {
+          ok: true,
+          workflowId: 'wf-1',
+          seq: 5
+        })
+        return opId
+      }
+
+      it('resolves applied when node 5 is present in the reactivation snapshot', async () => {
+        vi.useFakeTimers()
+        const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+        const opId = await parkThenReactivate(isTargetActive, enqueue)
+
+        const doc = new Y.Doc()
+        doc.getMap('nodes').set('5', new Y.Map([['type', 'Test']]))
+        bridge().follower.doc = doc
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 5,
+          catchUp: true
+        })
+
+        expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+          type: 'cleared',
+          opIds: [opId]
+        })
+        expect(recordDevEvent).not.toHaveBeenCalledWith(
+          'pending_ops',
+          expect.objectContaining({ type: 'reverted' })
+        )
+        unmount()
+      })
+
+      it('stays parked, not reverted, when node 5 is absent from the reactivation snapshot', async () => {
+        vi.useFakeTimers()
+        const { unmount, isTargetActive, enqueue, pendingAddType } =
+          mountWriter('wf-1')
+        vi.mocked(recordDevEvent).mockClear()
+        const opId = await parkThenReactivate(isTargetActive, enqueue)
+        vi.mocked(recordDevEvent).mockClear()
+
+        // The reactivation snapshot's doc does not hold node 5.
+        bridge().follower.doc = new Y.Doc()
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 5,
+          catchUp: true
+        })
+
+        expect(recordDevEvent).not.toHaveBeenCalledWith(
+          'pending_ops',
+          expect.objectContaining({ type: 'reverted' })
+        )
+        expect(recordDevEvent).not.toHaveBeenCalledWith('pending_ops', {
+          type: 'cleared',
+          opIds: [opId]
+        })
+        expect(pendingAddType()?.('5')).toBe('Test')
+        unmount()
+      })
+
+      it('resolves applied once a later same-lineage doc_update carries the op id', async () => {
+        vi.useFakeTimers()
+        const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+        const opId = await parkThenReactivate(isTargetActive, enqueue)
+
+        // The reactivation snapshot itself doesn't have node 5 yet.
+        bridge().follower.doc = new Y.Doc()
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 5,
+          catchUp: true
+        })
+        expect(recordDevEvent).not.toHaveBeenCalledWith('pending_ops', {
+          type: 'cleared',
+          opIds: [opId]
+        })
+
+        // A later doc_update carries this exact op id in its effect list.
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 6,
+          update: new Uint8Array(),
+          opIds: [opId]
+        })
+        expect(recordDevEvent).toHaveBeenCalledWith('pending_ops', {
+          type: 'cleared',
+          opIds: [opId]
+        })
+        unmount()
+      })
+
+      it('reverts on an explicit host rejection, not on the reactivation snapshot finding it absent', async () => {
+        vi.useFakeTimers()
+        const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+        const opId = await parkThenReactivate(isTargetActive, enqueue)
+
+        bridge().follower.doc = new Y.Doc()
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 5,
+          catchUp: true
+        })
+        expect(recordDevEvent).not.toHaveBeenCalledWith(
+          'pending_ops',
+          expect.objectContaining({ type: 'reverted' })
+        )
+
+        // A late, explicit host rejection for the exact op id.
+        dispatchFrame('doc_ops_result', {
+          workflowId: 'wf-1',
+          ok: true,
+          applied: [],
+          skipped: [],
+          failed: { op_id: opId, code: 'rejected' }
+        })
+
+        expect(recordDevEvent).toHaveBeenCalledWith(
+          'pending_ops',
+          expect.objectContaining({ type: 'reverted', opIds: [opId] })
+        )
+        unmount()
+      })
+
+      it('reverts once an ordinary later catch-up (e.g. after the connection recovers) still finds it absent', async () => {
+        // Round 6 disables revert-on-absence for exactly the ONE catch-up a
+        // continuity-unproven reactivation implies; every catch-up after
+        // that reverts on absence as usual, including one driven by a later
+        // resubscribe once the connection recovers.
+        vi.useFakeTimers()
+        const { unmount, isTargetActive, enqueue } = mountWriter('wf-1')
+        const opId = await parkThenReactivate(isTargetActive, enqueue)
+
+        bridge().follower.doc = new Y.Doc()
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 5,
+          catchUp: true
+        })
+        expect(recordDevEvent).not.toHaveBeenCalledWith(
+          'pending_ops',
+          expect.objectContaining({ type: 'reverted' })
+        )
+
+        // A later, ordinary catch-up (not itself a reactivation ack) whose
+        // doc still does not hold node 5.
+        dispatchFrame('doc_update', {
+          workflowId: 'wf-1',
+          seq: 6,
+          catchUp: true
+        })
+
+        expect(recordDevEvent).toHaveBeenCalledWith(
+          'pending_ops',
+          expect.objectContaining({ type: 'reverted', opIds: [opId] })
+        )
+        unmount()
+      })
     })
 
     it('keeps a human delete pending for the reconcile until the doc no longer holds the node', async () => {

@@ -331,9 +331,10 @@ describe('useAgentCrdtFollower — lineage break through the real bridge/transpo
     expect(adapterState.reconcileFromDoc).not.toHaveBeenCalled()
   })
 
-  it('C3(ii): an ack whose seq diverges after reactivation conservatively invalidates instead of trusting the ledger', async () => {
+  it('C3(ii): an ack whose seq diverges after reactivation skips the forced reconcile and no longer destructively invalidates the ledger (round 6)', async () => {
+    const { recordDevEvent } = await import('./devPanelLog')
     const isTargetActive = ref(true)
-    mountFollower('wf-1', isTargetActive)
+    const { enqueue } = mountFollower('wf-1', isTargetActive)
 
     transport().deliver('doc_subscribed', {
       v: 1,
@@ -343,6 +344,20 @@ describe('useAgentCrdtFollower — lineage break through the real bridge/transpo
     })
     transport().deliver('doc_update', hostUpdateFrame('wf-1', 1))
 
+    enqueue([
+      {
+        op: 'add_node',
+        node_id: 5,
+        class_type: 'Test',
+        pos: [0, 0],
+        node: { id: 5, type: 'Test', inputs: [], outputs: [] }
+      }
+    ])
+    await Promise.resolve()
+    expect(transport().framesOfType('doc_ops')).toHaveLength(1)
+    const intent = adapterState.intent
+    if (!intent) throw new Error('the adapter was never constructed')
+
     isTargetActive.value = false
     await nextTick()
     isTargetActive.value = true
@@ -350,6 +365,7 @@ describe('useAgentCrdtFollower — lineage break through the real bridge/transpo
     expect(transport().framesOfType('doc_subscribe')).toHaveLength(2)
 
     adapterState.reconcileFromDoc.mockClear()
+    vi.mocked(recordDevEvent).mockClear()
     // A remint under the SAME workflow id while this tab was away (the gap
     // this frontend has no generation token to detect directly): the ack's
     // seq no longer matches what this correlation last projected.
@@ -360,9 +376,28 @@ describe('useAgentCrdtFollower — lineage break through the real bridge/transpo
       seq: 9
     })
 
-    // Continuity failed: the forced reconcile an already-current ack would
-    // otherwise run must NOT run against a doc this ack cannot vouch for.
+    // Continuity is unproven: the forced reconcile an already-current ack
+    // would run must still not fire -- the guaranteed catch-up `doc_update`
+    // this seq gap implies runs the barrier instead (ADR-CRDT-RECONCILE-0035
+    // (a)).
     expect(adapterState.reconcileFromDoc).not.toHaveBeenCalled()
+    // Round 6: there is no destructive invalidation on a bare seq mismatch
+    // anymore. The still in-flight add is left exactly where it was --
+    // neither the sender nor the ledger settles or reverts it just because
+    // this ack's continuity is unproven.
+    expect([...intent.pendingAdds('wf-1')]).toEqual(['5'])
+    expect(
+      vi
+        .mocked(recordDevEvent)
+        .mock.calls.some(
+          ([event, detail]) =>
+            event === 'pending_ops' &&
+            typeof detail === 'object' &&
+            detail !== null &&
+            'type' in detail &&
+            detail.type === 'reverted'
+        )
+    ).toBe(false)
   })
 
   it("C3: pendingAdds/pendingConnects retain nothing while a reactivation's continuity is still unknown (a frame can outrun its own resume's ack)", async () => {
