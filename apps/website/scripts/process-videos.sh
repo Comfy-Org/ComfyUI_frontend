@@ -15,10 +15,10 @@
 #
 # Defaults to widths "1280" if omitted.
 #
-# Output naming matches buildVideoSources() in src/utils/video.ts:
+# Output naming:
 #   <name>-<width>.webm
 #   <name>-<width>.mp4
-#   <name>-poster.jpg          (single 1280w poster, suitable for SiteVideo)
+#   <name>-poster.jpg          (single 1280w poster)
 #
 # Requires ffmpeg and ffprobe on PATH. Tested with ffmpeg 6.x and 7.x.
 
