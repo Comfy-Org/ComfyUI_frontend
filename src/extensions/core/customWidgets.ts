@@ -189,7 +189,7 @@ function onBranchSelectorCreated(this: LGraphNode) {
     comboWidget.callback?.(comboWidget.value)
   }
 
-  let stopWatch: () => void
+  let stopWatch: (() => void) | undefined
   this.onAdded = useChainCallback(this.onAdded, () => {
     stopWatch?.()
     stopWatch = watch(labels, onLabelUpdate, { immediate: true })
