@@ -155,8 +155,12 @@ const cardClass =
               class="h-6 w-9"
             />
           </span>
-          <span class="flex min-w-0 flex-1 flex-col gap-1">
-            <span class="text-sm font-semibold text-primary-warm-white">
+          <span
+            class="flex min-w-0 flex-1 flex-wrap items-center gap-x-2 gap-y-1"
+          >
+            <span
+              class="text-sm font-semibold whitespace-nowrap text-primary-warm-white"
+            >
               {{ tc(cameraBody.label, locale) }}
             </span>
             <span

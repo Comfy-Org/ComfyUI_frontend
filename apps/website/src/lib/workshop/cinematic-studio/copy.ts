@@ -58,10 +58,6 @@ const copy = {
     en: 'Beta',
     'zh-CN': '测试版'
   },
-  'cinematic.tagline': {
-    en: 'Direct a shot, run it on any image model',
-    'zh-CN': '导演一个镜头，用任意图像模型运行'
-  },
   'cinematic.meta.description': {
     en: 'Direct cinematic stills: pick the camera, shot, light, film and grade, then run any image model through the Comfy Router.',
     'zh-CN':
@@ -90,10 +86,6 @@ const copy = {
   'cinematic.composer.format': {
     en: 'Format',
     'zh-CN': '画幅'
-  },
-  'cinematic.firstRun.title': {
-    en: 'Direct a shot',
-    'zh-CN': '导演一个镜头'
   },
   'cinematic.firstRun.body': {
     en: 'Describe the moment. Pick the camera, the light and the look. Switch models any time.',
@@ -132,8 +124,8 @@ const copy = {
     'zh-CN': 'AI 提示词'
   },
   'cinematic.scene.enhanceHint': {
-    en: 'Adds film-still wording',
-    'zh-CN': '添加电影静帧描述'
+    en: 'Adds “cinematic film still” to the prompt',
+    'zh-CN': '在提示词中加入“电影静帧”描述'
   },
   'cinematic.camera.body': {
     en: 'Body',

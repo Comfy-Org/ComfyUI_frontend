@@ -13,9 +13,14 @@ const emit = defineEmits<{ start: [shot: StarterShot] }>()
   <div class="flex max-w-4xl flex-col items-center gap-8 text-center">
     <div class="flex flex-col items-center gap-3">
       <h1
-        class="text-3xl font-semibold tracking-tight text-primary-warm-white lg:text-5xl"
+        class="flex items-center gap-3 text-3xl font-semibold tracking-tight text-primary-warm-white lg:text-5xl"
       >
-        {{ tc('cinematic.firstRun.title', locale) }}
+        {{ tc('cinematic.title', locale) }}
+        <span
+          class="rounded-full border border-transparency-white-t20 px-2 py-0.5 font-mono text-[10px] font-normal tracking-wider text-primary-comfy-canvas uppercase lg:text-xs"
+        >
+          {{ tc('cinematic.beta', locale) }}
+        </span>
       </h1>
       <p class="max-w-xl text-sm text-primary-comfy-canvas lg:text-base">
         {{ tc('cinematic.firstRun.body', locale) }}

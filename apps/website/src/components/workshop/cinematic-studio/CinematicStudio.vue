@@ -74,22 +74,6 @@ function generate() {
     class="flex min-h-[calc(100svh-5rem)] flex-col lg:min-h-[calc(100svh-7rem)]"
     data-testid="cinematic"
   >
-    <div
-      class="flex h-12 shrink-0 items-center gap-3 border-y border-transparency-white-t8 px-4 sm:px-8 lg:px-14"
-    >
-      <h1 class="text-sm font-semibold text-primary-warm-white sm:text-[15px]">
-        {{ tc('cinematic.title', locale) }}
-      </h1>
-      <span
-        class="rounded-full border border-transparency-white-t20 px-2 py-0.5 font-mono text-[10px] tracking-wider text-primary-comfy-canvas uppercase"
-      >
-        {{ tc('cinematic.beta', locale) }}
-      </span>
-      <p class="truncate text-[13px] text-primary-warm-gray max-sm:hidden">
-        {{ tc('cinematic.tagline', locale) }}
-      </p>
-    </div>
-
     <CinematicStage
       :reel="studio.reel.value"
       :models

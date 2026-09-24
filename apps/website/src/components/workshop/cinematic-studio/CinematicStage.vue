@@ -43,6 +43,7 @@ const modelName = computed(
     :aria-label="tc('cinematic.stage.label', locale)"
   >
     <template v-if="current">
+      <h1 class="sr-only">{{ tc('cinematic.title', locale) }}</h1>
       <CinematicTakeFrame :current :locale />
       <div
         class="flex w-full max-w-5xl flex-wrap items-center justify-between gap-3"
