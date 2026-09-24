@@ -247,6 +247,7 @@ export function creatorFormFor(
           4,
           model.options.mode === 'edit'
         )
+      rules.images = { ...rules.images, urlUpload: 'image' }
       settings(
         'generationConfig',
         ['temperature', 'topP', 'topK', 'maxOutputTokens'],

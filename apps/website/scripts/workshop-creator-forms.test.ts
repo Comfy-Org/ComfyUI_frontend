@@ -84,6 +84,26 @@ describe('sibling page modes', () => {
     }
   )
 
+  it.for([
+    { mode: 'image', fields: ['first_frame'] },
+    {
+      mode: 'mixed',
+      fields: ['first_frame', 'last_frame', 'reference_images']
+    }
+  ] as const)(
+    'preserves Seedance 2.5 $mode image bounds for file inputs',
+    ({ mode, fields }) => {
+      const form = formFor('byteplus/dreamina-seedance-2-5-260628', {
+        mode,
+        urlMedia: false
+      })
+      for (const field of fields)
+        expect(form.inputs[field]).toMatchObject({
+          imageAspectRatio: { minimum: 0.39, maximum: 2.5 }
+        })
+    }
+  )
+
   it('Seedance 2.5 edit page requires a source video and offers no frame or reference slots', () => {
     const form = formFor('byteplus/dreamina-seedance-2-5-260628', {
       mode: 'edit',
@@ -93,6 +113,9 @@ describe('sibling page modes', () => {
       expect.arrayContaining(['prompt', 'video_url'])
     )
     expect(form.inputs.video_url.urlUpload).toBe('video')
+    expect(object.parse(form.parameters.properties)).not.toHaveProperty(
+      'duration'
+    )
     expect(form.inputs).not.toHaveProperty('first_frame_url')
     expect(form.inputs).not.toHaveProperty('last_frame_url')
     expect(form.inputs).not.toHaveProperty('reference_image_url')

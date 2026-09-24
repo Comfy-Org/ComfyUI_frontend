@@ -37,15 +37,23 @@ function hasOnlyFieldError(failure: FailedRun, code: string): boolean {
   )
 }
 
-function isLayerDecompositionInputIssue(failure: FailedRun): boolean {
+const ACTIONABLE_PROVIDER_INPUT_CODES = new Set([
+  'imageLayerDecompositionUnsupported',
+  'videoHdrUnsupported'
+])
+
+function isProviderInputIssue(failure: FailedRun): boolean {
   return (
     failure.reason === 'validation' &&
-    hasOnlyFieldError(failure, 'imageLayerDecompositionUnsupported')
+    hasFieldErrors(failure) &&
+    failure.field_error_codes?.every((code) =>
+      ACTIONABLE_PROVIDER_INPUT_CODES.has(code)
+    ) === true
   )
 }
 
 function isActionableInputIssue(failure: FailedRun): boolean {
-  if (isLayerDecompositionInputIssue(failure)) return true
+  if (isProviderInputIssue(failure)) return true
   if (hasRouterOutcome(failure)) return false
   if (!hasFieldErrors(failure)) return false
   if (failure.reason === 'validation') return true

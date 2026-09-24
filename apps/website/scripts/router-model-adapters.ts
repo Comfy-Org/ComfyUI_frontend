@@ -49,11 +49,47 @@ function withGrokReferenceResolutionConstraint(
   }
 }
 
+function withSeedanceEditDurationConstraint(
+  contract: WorkshopContract
+): WorkshopContract {
+  const allOf = Array.isArray(contract.inputSchema.allOf)
+    ? contract.inputSchema.allOf
+    : []
+  return {
+    ...contract,
+    inputSchema: {
+      ...contract.inputSchema,
+      allOf: [
+        ...allOf,
+        {
+          if: {
+            required: ['content'],
+            properties: {
+              content: {
+                contains: {
+                  required: ['type', 'role', 'video_url'],
+                  properties: {
+                    type: { const: 'video_url' },
+                    role: { const: 'reference_video' }
+                  }
+                }
+              }
+            }
+          },
+          then: { properties: { duration: { const: -1 } } }
+        }
+      ]
+    }
+  }
+}
+
 export function adaptRouterModel(contract: WorkshopContract): WorkshopContract {
   if (['wan/wan3.0-video', 'wan/wan3.0-video-prime'].includes(contract.id))
     return { ...contract, rehostUrlInputs: true }
   if (contract.id === 'xai/grok-imagine-video-1.5')
     return withGrokReferenceResolutionConstraint(contract)
+  if (contract.id === 'byteplus/dreamina-seedance-2-5-260628')
+    return withSeedanceEditDurationConstraint(contract)
   if (contract.id === 'byteplus/seedream-5-0-pro-260628') {
     const slug = 'byteplus--seedream-5-pro-layer-separation--edit-images'
     const edit =

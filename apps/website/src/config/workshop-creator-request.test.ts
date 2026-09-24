@@ -750,4 +750,36 @@ describe('creator widgets to native Router requests', () => {
     ).rejects.toMatchObject({ fieldErrors: { images: 'requestTooLarge' } })
     expect(read).not.toHaveBeenCalled()
   })
+
+  it('uploads Gemini images that exceed the inline request limit', async () => {
+    const id = 'vertexai/gemini-3-pro-image'
+    const large = new File([new Uint8Array(8 * 1024 * 1024)], 'large.png', {
+      type: 'image/png'
+    })
+    const values = {
+      ...valuesFor(id),
+      images: [
+        { name: large.name, size: large.size, type: large.type, file: large }
+      ]
+    }
+
+    expect(validateForm(schemaForModel(modelFor(id)), values)).toEqual({})
+    await expect(prepare(id, values)).resolves.toMatchObject({
+      contents: [
+        {
+          parts: [
+            { text: expect.any(String) },
+            {
+              fileData: {
+                fileUri: expect.stringMatching(
+                  /^https:\/\/storage\.example\/image-/
+                ),
+                mimeType: 'image/png'
+              }
+            }
+          ]
+        }
+      ]
+    })
+  })
 })
