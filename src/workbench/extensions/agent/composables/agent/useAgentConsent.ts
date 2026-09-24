@@ -9,7 +9,7 @@ import { useDialogService } from '@/services/dialogService'
 import { useDialogStore } from '@/stores/dialogStore'
 import { useAgentConsentStore } from '@/workbench/extensions/agent/stores/agent/agentConsentStore'
 
-const CONSENT_DIALOG_KEY = 'agent-consent'
+export const CONSENT_DIALOG_KEY = 'agent-consent'
 const DOCS_URL = 'https://docs.comfy.org/agent-tools/in-app-agent'
 const CONSENT_MEDIA_BASE = 'https://media.comfy.org/website/comfy-agent'
 const CONSENT_VIDEO_SRC = `${CONSENT_MEDIA_BASE}/agent-consent-1280.webm`
