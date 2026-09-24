@@ -69,19 +69,20 @@ function derivePaymentRecoveryBanner(
   return null
 }
 
-// The team-only billing-control notices. A self-serve cancellation is
-// user-initiated news, so its ending notice shows at once. Any other tier
-// (including unrecognized ones) gets no banner at all.
-function deriveTeamNoticeBanner(
+function teamNoticesApply(inputs: BillingBannerInputs): boolean {
+  return (
+    inputs.isTeamPlan &&
+    inputs.canAccessSubscriptionFeatures &&
+    inputs.billingControlEnabled
+  )
+}
+
+// A self-serve cancellation is user-initiated news, so its ending notice
+// shows at once. A scheduled change is suppressed while cancelled — the
+// ending notice already owns that window.
+function deriveLifecycleNotice(
   inputs: BillingBannerInputs
 ): BillingBannerKind | null {
-  if (!inputs.isTeamPlan) return null
-  if (!inputs.canAccessSubscriptionFeatures) return null
-  if (!inputs.billingControlEnabled) return null
-
-  if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
-    return 'outOfCredits'
-  }
   if (inputs.isCancelled && inputs.endDate && inputs.canManage) {
     return 'ending'
   }
@@ -89,6 +90,18 @@ function deriveTeamNoticeBanner(
     return 'planChange'
   }
   return null
+}
+
+// The team-only billing-control notices. Any other tier (including
+// unrecognized ones) gets no banner at all.
+function deriveTeamNoticeBanner(
+  inputs: BillingBannerInputs
+): BillingBannerKind | null {
+  if (!teamNoticesApply(inputs)) return null
+  if (inputs.hasFunds === false && !inputs.outOfCreditsDismissed) {
+    return 'outOfCredits'
+  }
+  return deriveLifecycleNotice(inputs)
 }
 
 // The single billing banner slot, in priority order: paused > paymentFailed >
