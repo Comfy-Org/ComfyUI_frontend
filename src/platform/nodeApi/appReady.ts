@@ -76,7 +76,7 @@ let documentId: UUID | undefined
 /** Called by the host each time a workflow finishes being configured. */
 export function notifyWorkflowLoaded(): void {
   documentId = createUuidv4()
-  for (const listener of [...workflowLoaded]) run(listener)
+  for (const listener of Array.from(workflowLoaded)) run(listener)
 }
 
 export function onWorkflowLoaded(listener: () => void): Unsubscribe {
