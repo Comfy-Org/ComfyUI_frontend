@@ -32,7 +32,6 @@ const tooltipDirectiveStub = {
 }
 
 vi.mock(import('@/scripts/api'))
-const fetchApi = vi.mocked(api.fetchApi)
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -518,8 +517,8 @@ describe('Composer', () => {
   describe('run permissions popover', () => {
     beforeEach(() => {
       localStorage.clear()
-      fetchApi.mockReset()
-      fetchApi.mockImplementation(async () =>
+      vi.mocked(api.fetchApi).mockReset()
+      vi.mocked(api.fetchApi).mockImplementation(async () =>
         jsonResponse(404, { error: 'not found' })
       )
     })
@@ -586,13 +585,17 @@ describe('Composer', () => {
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
       expect(
-        fetchApi.mock.calls.filter(([, init]) => init?.method === 'PUT')
+        vi
+          .mocked(api.fetchApi)
+          .mock.calls.filter(([, init]) => init?.method === 'PUT')
       ).toHaveLength(1)
       expect(useAgentRunModeStore().mode).toBe('ask_approval')
     })
 
     it('keeps the popover open on the unchanged mode when the save fails', async () => {
-      fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        jsonResponse(500, { error: 'failed' })
+      )
       mount()
 
       await userEvent.click(screen.getByRole('button', { name: 'Ask' }))
@@ -622,7 +625,7 @@ describe('Composer', () => {
 
     it('blocks a second pick while the write is in flight', async () => {
       let resolvePut!: (response: Response) => void
-      fetchApi.mockReturnValueOnce(
+      vi.mocked(api.fetchApi).mockReturnValueOnce(
         new Promise<Response>((resolve) => {
           resolvePut = resolve
         })
@@ -650,18 +653,20 @@ describe('Composer', () => {
       expect(ask).not.toHaveAttribute('aria-busy')
       expect(ask).toBeChecked()
       await userEvent.click(ask)
-      expect(fetchApi).toHaveBeenCalledTimes(1)
+      expect(api.fetchApi).toHaveBeenCalledTimes(1)
 
       resolvePut(jsonResponse(200, { mode: 'auto', credit_limit: null }))
       await vi.waitFor(() => expect(store.mode).toBe('auto'))
-      expect(fetchApi).toHaveBeenCalledTimes(1)
+      expect(api.fetchApi).toHaveBeenCalledTimes(1)
       expect(
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
     })
 
     it('takes a retry after a failed save', async () => {
-      fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        jsonResponse(500, { error: 'failed' })
+      )
       mount()
       const store = useAgentRunModeStore()
 
@@ -674,7 +679,7 @@ describe('Composer', () => {
 
       await userEvent.click(auto)
       await vi.waitFor(() => expect(store.mode).toBe('auto'))
-      expect(fetchApi).toHaveBeenCalledTimes(2)
+      expect(api.fetchApi).toHaveBeenCalledTimes(2)
     })
 
     it('commits the focused mode on Enter', async () => {
@@ -698,7 +703,7 @@ describe('Composer', () => {
       const pendingGet = new Promise<Response>((resolve) => {
         resolveGet = resolve
       })
-      fetchApi.mockImplementation(async (_route, init) =>
+      vi.mocked(api.fetchApi).mockImplementation(async (_route, init) =>
         init?.method === 'PUT'
           ? jsonResponse(200, { mode: 'auto', credit_limit: null })
           : pendingGet
@@ -759,7 +764,7 @@ describe('Composer', () => {
 
     it('leaves a menu reopened during the write open once it settles', async () => {
       let resolvePut!: (response: Response) => void
-      fetchApi.mockReturnValueOnce(
+      vi.mocked(api.fetchApi).mockReturnValueOnce(
         new Promise<Response>((resolve) => {
           resolvePut = resolve
         })
