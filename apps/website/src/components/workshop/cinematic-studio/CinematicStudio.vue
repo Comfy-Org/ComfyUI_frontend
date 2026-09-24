@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -58,9 +58,19 @@ const popoverClass = computed(() =>
   )
 )
 
+const starter = ref<string>()
+
 function start(shot: StarterShot) {
+  starter.value = shot.id
   startShot(shot)
   document.getElementById('cinematic-scene')?.focus()
+}
+
+async function useAsReference(url: string, name: string) {
+  const response = await fetch(url)
+  cast.value = new File([await response.blob()], name, {
+    type: response.headers.get('content-type') ?? 'image/png'
+  })
 }
 
 function generate() {
@@ -78,12 +88,15 @@ function generate() {
       :reel="studio.reel.value"
       :models
       :locale
+      :starter
       @select="studio.select"
       @start="start"
+      @again="generate"
+      @reference="useAsReference"
     />
 
     <div
-      class="sticky bottom-0 z-30 bg-linear-to-t from-primary-comfy-ink via-primary-comfy-ink/90 to-transparent px-3 pt-4 pb-4 sm:px-6 sm:pb-6"
+      class="sticky bottom-0 z-50 bg-linear-to-t from-primary-comfy-ink via-primary-comfy-ink/90 to-transparent px-3 pt-4 pb-4 sm:px-6 sm:pb-6"
     >
       <div class="relative mx-auto w-full max-w-6xl">
         <div
@@ -149,7 +162,7 @@ function generate() {
           :aspect
           :resolution
           :takes
-          :references="references.length"
+          :references
           :gate="studio.gate.value"
           :workspace-name="studio.session.value?.workspace.name"
           :rendering="studio.rendering.value"

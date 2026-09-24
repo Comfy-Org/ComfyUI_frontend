@@ -1,5 +1,6 @@
 <script setup lang="ts">
-import { ChevronDown, Plus, SlidersHorizontal } from '@lucide/vue'
+import { ChevronDown, Plus } from '@lucide/vue'
+import { useObjectUrl } from '@vueuse/core'
 import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -15,6 +16,7 @@ import type { StudioGate } from '../../../lib/workshop/cinematic-studio/gate'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { framedStyle } from './aspect-style'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicOptionIcon from './CinematicOptionIcon.vue'
@@ -38,7 +40,7 @@ const {
   aspect: AspectRatio
   resolution: Resolution
   takes: number
-  references: number
+  references: readonly File[]
   gate: StudioGate
   workspaceName?: string
   rendering: boolean
@@ -59,7 +61,6 @@ const modelOptions = computed(() =>
   models.map((model) => ({
     id: model.slug,
     label: model.name,
-    meta: model.provider,
     logo: model.logo
   }))
 )
@@ -87,6 +88,7 @@ const lookPreview = computed(
     directionOption('shot', direction).preview
 )
 const formatLabel = computed(() => `${aspect} · ${resolution} · ×${takes}`)
+const referencePreview = useObjectUrl(() => references[0])
 const canGenerate = computed(
   () => gate === 'ready' && scene.value.trim().length > 0
 )
@@ -105,11 +107,11 @@ const chipClass = (key: PopoverKey) =>
 
 <template>
   <div
-    class="flex w-full flex-col gap-3 rounded-3xl border border-transparency-white-t8 bg-primary-comfy-ink-light p-3 shadow-[0_20px_60px_rgb(0_0_0/0.35)]"
+    class="flex w-full flex-col overflow-hidden rounded-3xl border border-transparency-white-t8 bg-primary-comfy-ink-light shadow-[0_20px_60px_rgb(0_0_0/0.35)]"
     role="group"
     :aria-label="tc('cinematic.composer.label', locale)"
   >
-    <div class="flex items-start gap-2.5 px-1 pt-0.5">
+    <div class="flex items-start gap-2.5 px-4 pt-3.5 pb-3">
       <button
         type="button"
         aria-haspopup="dialog"
@@ -117,18 +119,25 @@ const chipClass = (key: PopoverKey) =>
         :aria-label="tc('cinematic.composer.references', locale)"
         :class="
           cn(
-            'relative grid size-9 shrink-0 place-items-center rounded-xl border border-dashed border-transparency-white-t20 text-primary-comfy-canvas hover:border-primary-warm-white/50 hover:text-primary-warm-white',
-            openPopover === 'references' && 'border-primary-warm-white'
+            'relative grid size-9 shrink-0 place-items-center overflow-visible rounded-xl border border-dashed border-transparency-white-t20 text-primary-comfy-canvas hover:border-primary-warm-white/50 hover:text-primary-warm-white',
+            openPopover === 'references' && 'border-primary-warm-white',
+            referencePreview && 'border-solid'
           )
         "
         @click="emit('open', 'references')"
       >
-        <Plus class="size-4" aria-hidden="true" />
+        <img
+          v-if="referencePreview"
+          :src="referencePreview"
+          alt=""
+          class="size-full rounded-[inherit] object-cover"
+        />
+        <Plus v-else class="size-4" aria-hidden="true" />
         <span
-          v-if="references"
+          v-if="references.length > 1"
           class="absolute -top-1.5 -right-1.5 grid size-4 place-items-center rounded-full bg-primary-comfy-yellow text-[10px] font-bold text-primary-comfy-ink"
         >
-          {{ references }}
+          {{ references.length }}
         </span>
       </button>
       <label for="cinematic-scene" class="sr-only">
@@ -145,7 +154,9 @@ const chipClass = (key: PopoverKey) =>
       />
     </div>
 
-    <div class="flex flex-wrap items-center gap-2">
+    <div
+      class="flex flex-wrap items-center gap-2 border-t border-transparency-white-t8 px-3 py-2.5"
+    >
       <div
         class="-mx-1 scrollbar-hide flex min-w-0 flex-1 basis-full items-center gap-1.5 overflow-x-auto px-1 py-0.5 sm:basis-auto"
       >
@@ -208,8 +219,13 @@ const chipClass = (key: PopoverKey) =>
           :class="chipClass('format')"
           @click="emit('open', 'format')"
         >
-          <SlidersHorizontal class="size-3.5 shrink-0" aria-hidden="true" />
-          <span class="font-mono text-xs">{{ formatLabel }}</span>
+          <span class="grid size-4 place-items-center" aria-hidden="true">
+            <span
+              class="block max-h-full rounded-xs border-[1.5px] border-current"
+              :style="framedStyle(aspect, '1rem')"
+            />
+          </span>
+          {{ formatLabel }}
         </button>
       </div>
       <CinematicGenerateAction

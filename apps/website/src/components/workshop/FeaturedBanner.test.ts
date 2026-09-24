@@ -69,6 +69,20 @@ describe('FeaturedBanner', () => {
     )
   })
 
+  it('leads with Cinematic Studio when the catalogue promotes it', () => {
+    render(FeaturedBanner, { props: { models: [base, kling], studio: true } })
+
+    expect(screen.getByRole('heading', { level: 2 }).textContent).toBe(
+      'Cinematic Studio'
+    )
+    expect(screen.getByRole('link', { name: 'Open studio' })).toHaveAttribute(
+      'href',
+      '/cinematic-studio'
+    )
+    expect(screen.queryByTestId('featured-docs-link')).toBeNull()
+    expect(screen.getByRole('button', { name: 'Flux' })).toBeTruthy()
+  })
+
   it('localizes the task without leaving its English suffix in the model name', () => {
     render(FeaturedBanner, {
       props: {

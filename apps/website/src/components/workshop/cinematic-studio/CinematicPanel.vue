@@ -66,7 +66,6 @@ const modelOptions = computed(() =>
   models.map((model) => ({
     id: model.slug,
     label: model.name,
-    meta: model.provider,
     logo: model.logo
   }))
 )

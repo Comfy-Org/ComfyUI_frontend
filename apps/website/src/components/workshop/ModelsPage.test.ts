@@ -88,27 +88,3 @@ describe('Models page entry', () => {
     expect(screen.getByRole('heading', { name: 'Public Models' })).toBeTruthy()
   })
 })
-
-describe('Models page Cinematic Studio banner', () => {
-  it.for([
-    {
-      slug: 'byteplus--seedream-4-5--generate-images',
-      href: '/cinematic-studio?model=byteplus--seedream-4-5--generate-images'
-    },
-    { slug: modelSlug, href: null }
-  ])('links $slug to the studio: $href', async ({ slug, href }) => {
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn<typeof fetch>()
-        .mockResolvedValue(Response.json(await prepareModelPage(slug)))
-    )
-    enabled.value = true
-    render(ModelsPage, { props: { slug } })
-
-    await screen.findByTestId('model-hero')
-    expect(
-      screen.queryByTestId('cinematic-banner')?.getAttribute('href') ?? null
-    ).toBe(href)
-  })
-})

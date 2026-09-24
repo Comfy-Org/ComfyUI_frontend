@@ -63,18 +63,27 @@ const BODIES: Record<string, readonly string[]> = {
   ]
 }
 
+/** A lens in three-quarter view: front glass, barrel, rear flange. */
+const LENS_BODY = [
+  ellipse(8, 12, 4.5, 9),
+  ellipse(8, 12, 2.6, 6),
+  'M8 3L23 4.5',
+  'M8 21L23 19.5',
+  'M23 4.5a2.2 7.5 0 0 1 0 15'
+]
+
 const LENS = (extra: readonly string[] = [], badge?: string): CameraIcon => ({
-  paths: [...barrel(3, 19, 8), ...extra],
+  paths: [...LENS_BODY, ...extra],
   badge
 })
 
 const LENSES: Record<string, CameraIcon> = {
   auto: LENS(),
-  prime: LENS(['M13 4v16'], 'PR'),
-  anamorphic: LENS([ellipse(3, 12, 1.4, 4.5)], 'AM'),
-  vintage: LENS(['M10 4v16', 'M13 4v16', 'M16 4v16'], 'VT'),
-  macro: LENS([ellipse(3, 12, 1, 2.5)], 'MC'),
-  tilt: LENS(['M11 4l5 16'], 'TS')
+  prime: LENS(['M16 3.8a2 8.2 0 0 1 0 16.4'], 'PR'),
+  anamorphic: LENS([ellipse(8, 12, 1.2, 4)], 'AM'),
+  vintage: LENS(['M13.5 3.6a2 8.4 0 0 1 0 16.8', 'M18 4a2 8 0 0 1 0 16'], 'VT'),
+  macro: LENS([ellipse(8, 12, 0.9, 2)], 'MC'),
+  tilt: LENS(['M14 3.7l4 16.4'], 'TS')
 }
 
 function focalIcon(id: string): CameraIcon {

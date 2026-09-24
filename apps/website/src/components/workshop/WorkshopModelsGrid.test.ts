@@ -222,7 +222,7 @@ describe('WorkshopModelsGrid', () => {
       within(pagination)
         .getAllByRole('button')
         .map((button) => button.getAttribute('aria-label'))
-    ).toEqual(['Seedream 5 Pro', 'Seedance 2 Fast'])
+    ).toEqual(['Cinematic Studio', 'Seedream 5 Pro', 'Seedance 2 Fast'])
   })
 
   it('does not manufacture a return shelf before a model is opened', () => {

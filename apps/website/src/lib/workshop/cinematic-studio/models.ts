@@ -27,10 +27,6 @@ const CINEMATIC_MODEL_LOGOS: Readonly<Record<string, string>> = {
     '/icons/ai-models/qwen.svg'
 }
 
-export function isCinematicModel(slug: string): boolean {
-  return Object.hasOwn(CINEMATIC_MODEL_LOGOS, slug)
-}
-
 export function runnableCinematicModels(
   lookup: ModelLookup
 ): readonly CinematicModel[] {

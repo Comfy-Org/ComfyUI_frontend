@@ -6,7 +6,6 @@ import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
 import type { ModelsPageData } from '../../config/models-page-data'
 import { t } from '../../i18n/translations'
-import { isCinematicModel } from '../../lib/workshop/cinematic-studio/models'
 import { useWorkshopEnabled } from '../../scripts/posthog'
 import CatalogueBackLink from './CatalogueBackLink.vue'
 import ModelPrice from './ModelPrice.vue'
@@ -101,37 +100,6 @@ const restTags = computed(() =>
     </header>
 
     <div class="sm:px-8 lg:px-10">
-      <a
-        v-if="isCinematicModel(page.model.slug)"
-        :href="`${routes.cinematicStudio}?model=${page.model.slug}`"
-        class="group mb-8 flex items-center gap-4 rounded-2xl border border-transparency-white-t8 bg-primary-comfy-ink-light p-2.5 pr-5 transition-colors hover:border-transparency-white-t20"
-        data-testid="cinematic-banner"
-      >
-        <img
-          src="/images/cinematic-studio/neon-street.jpg"
-          alt=""
-          class="h-14 w-28 shrink-0 rounded-lg object-cover max-sm:hidden"
-        />
-        <span class="flex min-w-0 flex-1 flex-col gap-1">
-          <span class="text-sm font-semibold text-primary-warm-white">
-            {{ t('workshop.model.cinematicTitle') }}
-          </span>
-          <span class="text-xs text-primary-comfy-canvas">
-            {{ t('workshop.model.cinematicBody') }}
-          </span>
-        </span>
-        <span
-          class="inline-flex shrink-0 items-center gap-2 text-xs font-bold tracking-wider text-primary-comfy-yellow uppercase"
-        >
-          <span class="max-sm:sr-only">{{
-            t('workshop.model.cinematicCta')
-          }}</span>
-          <ArrowRight
-            class="size-4 transition-transform group-hover:translate-x-0.5"
-            aria-hidden="true"
-          />
-        </span>
-      </a>
       <ModelDetail :model="page.model" />
 
       <section

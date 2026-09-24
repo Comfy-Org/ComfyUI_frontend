@@ -9,6 +9,7 @@ import {
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
 import type { WorkshopModel } from '../../config/models-catalogue'
+import { getRoutes } from '../../config/routes'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { Locale } from '../../i18n/translations'
@@ -22,23 +23,58 @@ import Button from '@/components/ui/button/Button.vue'
 const AUTOPLAY_MS = 7000
 const CAPABILITY_LIMIT = 3
 
-const { models, locale = 'en' } = defineProps<{
+const {
+  models,
+  studio = false,
+  locale = 'en'
+} = defineProps<{
   models: readonly WorkshopModel[]
+  studio?: boolean
   locale?: Locale
 }>()
 
-const slides = computed(() =>
-  models.map((model) => {
-    const task = taskLabelFor(model, locale)
-    return {
-      model,
-      task,
-      name: bannerName(model.name, taskLabelFor(model, 'en')),
-      docsHref: modelDocsHref(model),
-      capabilities: model.capabilities.slice(0, CAPABILITY_LIMIT)
-    }
-  })
-)
+interface Slide {
+  readonly key: string
+  readonly href: string
+  readonly label: string
+  readonly name: string
+  readonly task: string
+  readonly summary?: string
+  readonly cta: string
+  readonly docsHref?: string
+  readonly capabilities: readonly string[]
+  readonly video?: string
+  readonly image?: string
+}
+
+const studioSlide = computed<Slide>(() => ({
+  key: 'cinematic-studio',
+  href: getRoutes(locale).cinematicStudio,
+  label: t('nav.cinematicStudio', locale),
+  name: t('nav.cinematicStudio', locale),
+  task: t('workshop.cinematic.badge', locale),
+  summary: t('workshop.cinematic.summary', locale),
+  cta: t('workshop.cinematic.cta', locale),
+  capabilities: [],
+  image: '/images/cinematic-studio/neon-street.jpg'
+}))
+
+const slides = computed<readonly Slide[]>(() => [
+  ...(studio ? [studioSlide.value] : []),
+  ...models.map((model) => ({
+    key: model.slug,
+    href: model.href,
+    label: model.name,
+    name: bannerName(model.name, taskLabelFor(model, 'en')),
+    task: taskLabelFor(model, locale),
+    summary: model.summary,
+    cta: t('workshop.hub.tryNow', locale),
+    docsHref: modelDocsHref(model),
+    capabilities: model.capabilities.slice(0, CAPABILITY_LIMIT),
+    video: model.thumbnail?.kind === 'video' ? model.thumbnail.url : undefined,
+    image: model.thumbnailUrl
+  }))
+])
 
 const activeIndex = ref(0)
 const active = computed(
@@ -59,11 +95,9 @@ const onScreen = useElementVisibility(banner, { initialValue: true })
 const visibility = useDocumentVisibility()
 const video = useTemplateRef<HTMLVideoElement>('video')
 // The video fills the banner, so the banner's observer is its observer.
-const previewSrc = usePreviewVideo(
-  video,
-  () => active.value.model.thumbnail?.url,
-  { visible: () => onScreen.value }
-)
+const previewSrc = usePreviewVideo(video, () => active.value.video, {
+  visible: () => onScreen.value
+})
 
 // Clicking a bar leaves it focused, so pausing on any focus would stop the
 // rotation for good. Only a keyboard visitor, who needs the time, stops it.
@@ -117,15 +151,15 @@ const fill = computed(() =>
       data-testid="featured-slide"
     >
       <a
-        :href="active.model.href"
+        :href="active.href"
         tabindex="-1"
         aria-hidden="true"
         class="absolute inset-0"
         data-testid="featured-slide-link"
       ></a>
       <video
-        v-if="active.model.thumbnail?.kind === 'video'"
-        :key="active.model.slug"
+        v-if="active.video"
+        :key="active.key"
         ref="video"
         :src="previewSrc"
         class="pointer-events-none absolute inset-0 size-full object-cover"
@@ -137,9 +171,9 @@ const fill = computed(() =>
         data-testid="featured-video"
       />
       <img
-        v-else-if="active.model.thumbnailUrl"
-        :key="active.model.slug"
-        :src="active.model.thumbnailUrl"
+        v-else-if="active.image"
+        :key="active.key"
+        :src="active.image"
         alt=""
         class="pointer-events-none absolute inset-0 size-full object-cover"
         decoding="async"
@@ -178,15 +212,15 @@ const fill = computed(() =>
         </h2>
 
         <p
-          v-if="active.model.summary"
+          v-if="active.summary"
           class="line-clamp-2 max-w-prose shrink-0 text-content-secondary max-sm:line-clamp-1 short:hidden"
         >
-          {{ active.model.summary }}
+          {{ active.summary }}
         </p>
 
         <div class="pointer-events-auto flex w-fit items-center gap-3">
-          <Button as="a" :href="active.model.href" class="w-fit">
-            {{ t('workshop.hub.tryNow', locale) }}
+          <Button as="a" :href="active.href" class="w-fit">
+            {{ active.cta }}
           </Button>
           <Button
             v-if="active.docsHref"
@@ -211,9 +245,9 @@ const fill = computed(() =>
     >
       <button
         v-for="(slide, index) in slides"
-        :key="slide.model.slug"
+        :key="slide.key"
         type="button"
-        :aria-label="slide.model.name"
+        :aria-label="slide.label"
         :aria-current="index === activeIndex ? 'true' : undefined"
         class="group pointer-events-auto max-w-12 min-w-0 flex-1 cursor-pointer rounded-full py-3 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         @click="goTo(index)"

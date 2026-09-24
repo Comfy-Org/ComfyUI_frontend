@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { workshopContract } from '../../../config/workshop-contract-catalog'
-import { isCinematicModel, runnableCinematicModels } from './models'
+import { runnableCinematicModels } from './models'
 
 const SEEDREAM = 'byteplus--seedream-4-5--generate-images'
 const FLUX = 'bfl--flux-2-pro--generate-images'
@@ -31,15 +31,5 @@ describe('runnableCinematicModels', () => {
         logo: '/icons/ai-models/bytedance.svg'
       }
     ])
-  })
-})
-
-describe('isCinematicModel', () => {
-  it.for([
-    { slug: SEEDREAM, expected: true },
-    { slug: 'kling--kling-3--generate-video', expected: false },
-    { slug: 'toString', expected: false }
-  ])('$slug → $expected', ({ slug, expected }) => {
-    expect(isCinematicModel(slug)).toBe(expected)
   })
 })

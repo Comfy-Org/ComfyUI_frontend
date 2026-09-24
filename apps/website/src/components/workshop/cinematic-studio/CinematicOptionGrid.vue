@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Sparkles } from '@lucide/vue'
+import { CircleDashed } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -55,7 +55,7 @@ const emit = defineEmits<{ choose: [id: string] }>()
           v-else-if="!option.palette"
           class="grid size-full place-items-center text-primary-warm-gray"
         >
-          <Sparkles class="size-5" aria-hidden="true" />
+          <CircleDashed class="size-6" aria-hidden="true" />
         </span>
         <template v-else>
           <span

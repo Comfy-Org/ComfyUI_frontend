@@ -9,6 +9,8 @@ import type {
   DirectionPart
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { Locale } from '../../../i18n/translations'
+import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import Button from '@/components/ui/button/Button.vue'
 import CinematicOptionGrid from './CinematicOptionGrid.vue'
 import CinematicOptionList from './CinematicOptionList.vue'
 import CinematicPickerTabs from './CinematicPickerTabs.vue'
@@ -44,6 +46,12 @@ const activeGroup = computed(
 function choose(part: DirectionPart, id: string) {
   emit('choose', part, id)
   if (!multiple) emit('close')
+  if (tabbed) advance(part)
+}
+
+function advance(part: DirectionPart) {
+  const next = groups[groups.findIndex((group) => group.part === part) + 1]
+  if (next) activePart.value = next.part
 }
 </script>
 
@@ -53,8 +61,6 @@ function choose(part: DirectionPart, id: string) {
       v-if="multiple"
       v-model="activePart"
       :groups
-      :direction
-      :show-choice="tabbed"
       :locale
       :class="cn('mb-3', tabbed ? 'grid-cols-5' : 'grid-cols-4 sm:hidden')"
     />
@@ -66,6 +72,11 @@ function choose(part: DirectionPart, id: string) {
       :locale
       @choose="choose(activeGroup.part, $event)"
     />
+    <div v-if="tabbed" class="mt-3 flex justify-end">
+      <Button size="sm" class="rounded-full" @click="emit('close')">
+        {{ tc('cinematic.picker.done', locale) }}
+      </Button>
+    </div>
     <div v-else-if="multiple" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <CinematicOptionList
         v-for="group in groups"

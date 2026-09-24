@@ -9521,15 +9521,6 @@ Enterprise`
   'nav.workshop': { en: 'Models', 'zh-CN': '模型' },
   'nav.comfyWorkshop': { en: 'Browse Models', 'zh-CN': '浏览模型' },
   'nav.cinematicStudio': { en: 'Cinematic Studio', 'zh-CN': '电影工作室' },
-  'workshop.model.cinematicTitle': {
-    en: 'Direct this model in Cinematic Studio',
-    'zh-CN': '在电影工作室中导演这个模型'
-  },
-  'workshop.model.cinematicBody': {
-    en: 'Camera, light and grade as controls, and switch to other image models any time.',
-    'zh-CN': '用摄影机、光线与调色作为控件，并可随时切换到其他图像模型。'
-  },
-  'workshop.model.cinematicCta': { en: 'Open studio', 'zh-CN': '打开工作室' },
   'nav.signIn': { en: 'Sign in', 'zh-CN': '登录' },
   'nav.signOut': { en: 'Log out', 'zh-CN': '退出登录' },
   'nav.accountMenu': { en: 'Account menu', 'zh-CN': '账户菜单' },
@@ -10611,6 +10602,13 @@ Enterprise`
     'zh-CN': '在 platform.comfy.org 上为 {workspace} 添加积分'
   },
   'workshop.hub.tryNow': { en: 'Try now', 'zh-CN': '立即试用' },
+  'workshop.cinematic.badge': { en: 'New · Beta', 'zh-CN': '新 · 测试版' },
+  'workshop.cinematic.summary': {
+    en: 'Direct a shot with a real camera, light and grade, then run it on any image model.',
+    'zh-CN':
+      '用真实的摄影机、光线与调色导演一个镜头，然后在任意图像模型上运行。'
+  },
+  'workshop.cinematic.cta': { en: 'Open studio', 'zh-CN': '打开工作室' },
   'workshop.hub.tag.partnerNodes': {
     en: 'Partner Nodes',
     'zh-CN': '合作伙伴节点'

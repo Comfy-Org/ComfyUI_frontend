@@ -6,6 +6,18 @@ import type { Locale, LocalizedText } from '../../../i18n/translations'
  * not add to every other page's script budget.
  */
 const copy = {
+  'cinematic.picker.done': {
+    en: 'Done',
+    'zh-CN': '完成'
+  },
+  'cinematic.stage.again': {
+    en: 'Generate again',
+    'zh-CN': '再生成一次'
+  },
+  'cinematic.stage.useAsReference': {
+    en: 'Use as reference',
+    'zh-CN': '用作参考'
+  },
   'cinematic.ux.heading': {
     en: 'Layout to review',
     'zh-CN': '评审布局'
@@ -192,7 +204,7 @@ const copy = {
     'zh-CN': '手持'
   },
   'cinematic.option.prime': {
-    en: 'Spherical prime',
+    en: 'Spherical',
     'zh-CN': '球面定焦'
   },
   'cinematic.option.anamorphic': {

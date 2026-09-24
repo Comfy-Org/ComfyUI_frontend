@@ -218,6 +218,7 @@ const menuItemClass =
     <FeaturedBanner
       v-if="browsing && featured.length"
       :models="featured"
+      studio
       :locale
       class="mb-10 short:mb-6"
     />

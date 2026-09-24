@@ -12,20 +12,28 @@ import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import CinematicFirstRun from './CinematicFirstRun.vue'
 import CinematicSequence from './CinematicSequence.vue'
+import CinematicTakeActions from './CinematicTakeActions.vue'
 import CinematicTakeBar from './CinematicTakeBar.vue'
 import CinematicTakeFrame from './CinematicTakeFrame.vue'
 
 const {
   reel,
   models,
+  starter,
   locale = 'en'
 } = defineProps<{
   reel: Reel
   models: readonly CinematicModel[]
+  starter?: string
   locale?: Locale
 }>()
 
-const emit = defineEmits<{ select: [id: string]; start: [shot: StarterShot] }>()
+const emit = defineEmits<{
+  select: [id: string]
+  start: [shot: StarterShot]
+  again: []
+  reference: [url: string, name: string]
+}>()
 
 const current = computed(() => selectedTake(reel))
 const siblings = computed(() =>
@@ -55,6 +63,13 @@ const modelName = computed(
           :locale
           @select="emit('select', $event)"
         />
+        <CinematicTakeActions
+          v-if="current.status === 'done'"
+          :take="current"
+          :locale
+          @again="emit('again')"
+          @reference="(url, name) => emit('reference', url, name)"
+        />
         <CinematicSequence
           :takes="reel.takes"
           :current-id="current.id"
@@ -63,6 +78,11 @@ const modelName = computed(
         />
       </div>
     </template>
-    <CinematicFirstRun v-else :locale @start="emit('start', $event)" />
+    <CinematicFirstRun
+      v-else
+      :selected="starter"
+      :locale
+      @start="emit('start', $event)"
+    />
   </section>
 </template>

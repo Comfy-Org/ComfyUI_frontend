@@ -36,6 +36,8 @@ const [first, second] = models
 const { fetchData } = vi.hoisted(() => ({ fetchData: vi.fn<typeof fetch>() }))
 
 async function servePageData(input: RequestInfo | URL) {
+  if (String(input).startsWith('blob:'))
+    return new Response(new Blob(['shot'], { type: 'image/png' }))
   const slug = decodeURIComponent(String(input).split('/')[2])
   const page = await prepareModelPage(slug)
   return Response.json(page)
@@ -214,6 +216,9 @@ describe('CinematicStudio', () => {
 
     expect(screen.getByDisplayValue(/^A lone rider/)).toHaveFocus()
     expect(
+      screen.getByRole('button', { name: tc('cinematic.firstRun.desert') })
+    ).toHaveAttribute('aria-pressed', 'true')
+    expect(
       screen.getByRole('button', { name: /^Extreme wide/ })
     ).toBeInTheDocument()
   })
@@ -226,6 +231,9 @@ describe('CinematicStudio', () => {
     const picker = screen.getByRole('dialog', { name: 'Direction' })
     await user.click(within(picker).getByRole('button', { name: /^Light/ }))
     await user.click(within(picker).getByRole('radio', { name: 'Neon' }))
+    expect(
+      within(picker).getByRole('button', { name: 'Film' })
+    ).toHaveAttribute('aria-pressed', 'true')
     await user.click(within(picker).getByRole('button', { name: /^Look/ }))
     await user.click(within(picker).getByRole('radio', { name: 'Western' }))
 
@@ -333,6 +341,28 @@ describe('CinematicStudio', () => {
 
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(chip).toHaveFocus()
+  })
+
+  it('reruns a finished shot and reuses it as the next reference', async () => {
+    vi.mocked(router_render).mockImplementation(async (slug) => rendered(slug))
+    const user = renderStudio()
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+    await user.click(generateButton())
+    await screen.findByAltText(/A diner at dawn/)
+
+    await user.click(
+      screen.getByRole('button', { name: tc('cinematic.stage.useAsReference') })
+    )
+    await user.click(
+      screen.getByRole('button', { name: tc('cinematic.stage.again') })
+    )
+
+    await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
+    const [, parameters] = vi.mocked(router_render).mock.calls[1]
+    expect(parameters?.reference_images).toEqual([expect.any(File)])
+    expect(parameters?.prompt).toContain(
+      'Keep the character from reference image 1.'
+    )
   })
 
   describe('layout switch', () => {
