@@ -3,8 +3,6 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useKeyboard } from '@/composables/maskeditor/useKeyboard'
 import { useMaskEditorStore } from '@/stores/maskEditorStore'
 
-let mockCanvasHistory: ReturnType<typeof useMaskEditorStore>['canvasHistory']
-
 const dispatchKeyDown = (
   init: KeyboardEventInit & { key: string }
 ): KeyboardEvent => {
@@ -21,9 +19,12 @@ describe('useKeyboard', () => {
   let keyboard: ReturnType<typeof useKeyboard>
 
   beforeEach(() => {
-    mockCanvasHistory = useMaskEditorStore().canvasHistory
-    vi.spyOn(mockCanvasHistory, 'undo').mockImplementation(() => {})
-    vi.spyOn(mockCanvasHistory, 'redo').mockImplementation(() => {})
+    vi.spyOn(useMaskEditorStore().canvasHistory, 'undo').mockImplementation(
+      () => {}
+    )
+    vi.spyOn(useMaskEditorStore().canvasHistory, 'redo').mockImplementation(
+      () => {}
+    )
     keyboard = useKeyboard()
     keyboard.addListeners()
   })
@@ -103,36 +104,36 @@ describe('useKeyboard', () => {
     it('should call undo on Ctrl+Z without shift', () => {
       dispatchKeyDown({ key: 'z', ctrlKey: true })
 
-      expect(mockCanvasHistory.undo).toHaveBeenCalledTimes(1)
-      expect(mockCanvasHistory.redo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.undo).toHaveBeenCalledTimes(1)
+      expect(useMaskEditorStore().canvasHistory.redo).not.toHaveBeenCalled()
     })
 
     it('should call undo on Meta+Z without shift', () => {
       dispatchKeyDown({ key: 'z', metaKey: true })
 
-      expect(mockCanvasHistory.undo).toHaveBeenCalledTimes(1)
+      expect(useMaskEditorStore().canvasHistory.undo).toHaveBeenCalledTimes(1)
     })
 
     it('should call redo on Ctrl+Shift+Z', () => {
       dispatchKeyDown({ key: 'Z', ctrlKey: true, shiftKey: true })
 
-      expect(mockCanvasHistory.redo).toHaveBeenCalledTimes(1)
-      expect(mockCanvasHistory.undo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.redo).toHaveBeenCalledTimes(1)
+      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
     })
 
     it('should call redo on Ctrl+Y', () => {
       dispatchKeyDown({ key: 'y', ctrlKey: true })
 
-      expect(mockCanvasHistory.redo).toHaveBeenCalledTimes(1)
-      expect(mockCanvasHistory.undo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.redo).toHaveBeenCalledTimes(1)
+      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
     })
 
     it('should not trigger undo or redo when alt is held', () => {
       dispatchKeyDown({ key: 'z', ctrlKey: true, altKey: true })
       dispatchKeyDown({ key: 'y', ctrlKey: true, altKey: true })
 
-      expect(mockCanvasHistory.undo).not.toHaveBeenCalled()
-      expect(mockCanvasHistory.redo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.redo).not.toHaveBeenCalled()
     })
 
     it('should not trigger undo or redo without ctrl or meta', () => {
@@ -140,15 +141,15 @@ describe('useKeyboard', () => {
       dispatchKeyDown({ key: 'y' })
       dispatchKeyDown({ key: 'Z', shiftKey: true })
 
-      expect(mockCanvasHistory.undo).not.toHaveBeenCalled()
-      expect(mockCanvasHistory.redo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.redo).not.toHaveBeenCalled()
     })
 
     it('should ignore Ctrl+Shift+Y', () => {
       dispatchKeyDown({ key: 'Y', ctrlKey: true, shiftKey: true })
 
-      expect(mockCanvasHistory.redo).not.toHaveBeenCalled()
-      expect(mockCanvasHistory.undo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.redo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
     })
   })
 
@@ -172,7 +173,7 @@ describe('useKeyboard', () => {
       dispatchKeyDown({ key: 'z', ctrlKey: true })
 
       expect(keyboard.isKeyDown('a')).toBe(false)
-      expect(mockCanvasHistory.undo).not.toHaveBeenCalled()
+      expect(useMaskEditorStore().canvasHistory.undo).not.toHaveBeenCalled()
     })
 
     it('should stop clearing keys on window blur after removal', () => {

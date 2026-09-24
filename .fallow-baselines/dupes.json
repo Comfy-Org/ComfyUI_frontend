@@ -1,6 +1,5 @@
 {
   "clone_groups": [
-    "apps/website/src/pages/zh-CN/cloud/pricing.astro:25-32|apps/website/src/pages/zh-CN/cloud/supported-nodes.astro:37-44|apps/website/src/pages/zh-CN/cloud/supported-nodes/[pack].astro:65-73",
     "browser_tests/fixtures/utils/litegraphUtils.ts:113-117|browser_tests/fixtures/utils/litegraphUtils.ts:146-149|browser_tests/fixtures/utils/litegraphUtils.ts:159-162",
     "scripts/cicd/extract-playwright-counts.ts:168-177|scripts/cicd/extract-playwright-counts.ts:206-215|scripts/cicd/extract-playwright-counts.ts:233-242",
     "src/components/actionbar/ComfyActionbar.vue:419-424|src/components/queue/QueueProgressOverlay.vue:270-277|src/components/sidebar/tabs/JobHistorySidebarTab.vue:165-170",

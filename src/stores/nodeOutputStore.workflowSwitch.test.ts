@@ -22,15 +22,7 @@ vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((_rootGraph: unknown, id: string) => id)
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    getPreviewFormatParam: vi.fn(() => ''),
-    getRandParam: vi.fn(() => ''),
-    rootGraph: { getNodeById: vi.fn() },
-    nodeOutputs: {} as Record<string, unknown>,
-    nodePreviewImages: {} as Record<string, string[]>
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 const createMockNode = (id: number): LGraphNode =>
   fromAny<LGraphNode, unknown>({ id: toNodeId(id), type: 'KSampler' })

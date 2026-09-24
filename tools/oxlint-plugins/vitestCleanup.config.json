@@ -24,6 +24,7 @@
         "**/tools/**/*.test.{ts,tsx}"
       ],
       "rules": {
+        "comfy/no-import-actual": "error",
         "comfy/no-module-scope-vitest-mocks": "error",
         "comfy/no-persistent-litegraph-registration": "error",
         "comfy/no-redundant-litegraph-cleanup": "error",

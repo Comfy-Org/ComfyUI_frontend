@@ -1,60 +1,125 @@
 import type { AstroIntegration } from 'astro'
+import { envField } from 'astro/config'
 // Both imported statically. A dynamic `import()` inside the hook throws
 // "Vite module runner has been closed" — by `astro:build:done` the runner that
 // resolves module specifiers is gone, so anything not already loaded fails.
 import { existsSync } from 'node:fs'
-import { rm } from 'node:fs/promises'
+import { readdir, rm } from 'node:fs/promises'
 import { fileURLToPath } from 'node:url'
 import { join } from 'node:path'
 
-import { isWorkshopInBuild, isWorkshopRoute } from '../config/workshop-release'
+import { workshopClientBoundary } from './workshop-client-boundary'
 
-/**
- * Keeps Workshop out of a release build.
- *
- * Workshop is unfinished, and `noindex` does not stop a page being deployed —
- * it only asks a crawler to stay away, while the page stays live at a URL
- * anyone can share. A deployed build must not contain those routes at all.
- *
- * This runs at `astro:build:done` and removes the emitted directory. The
- * earlier attempt filtered the route list at `astro:routes:resolved`, which
- * does not work: that hook reports the resolved routes, and mutating the
- * array does not stop them being generated. Deleting the output is
- * unambiguous, and the assertion below makes a silent failure impossible.
- *
- * Preview builds are release builds too — a preview answers "what goes out if
- * we release right now?", so it excludes Workshop for the same reason. Local
- * development keeps it, and so does any build asked for it explicitly. See
- * `config/workshop-release.ts` for the switch.
- */
+import {
+  assertWorkshopCloudEnvForBuild,
+  isWorkshopInBuild,
+  isLegacyWorkshopRoute
+} from '../config/workshop-release'
+
+export function modelsBuildRoutes(enabled: boolean) {
+  const entry = (name: string) =>
+    fileURLToPath(new URL(`../routes/models/${name}`, import.meta.url))
+  return [
+    {
+      pattern: '/models',
+      entrypoint: entry(enabled ? 'index.astro' : 'showcase.astro')
+    },
+    ...(enabled
+      ? [
+          { pattern: '/models/[slug]', entrypoint: entry('[slug].astro') },
+          { pattern: '/models/showcase', entrypoint: entry('showcase.astro') },
+          {
+            pattern: '/checkout-opening',
+            entrypoint: entry('checkout-opening.astro')
+          },
+          {
+            pattern: '/zh-CN/checkout-opening',
+            entrypoint: entry('checkout-opening.astro')
+          },
+          {
+            pattern: '/checkout-return',
+            entrypoint: entry('checkout-return.astro')
+          },
+          {
+            pattern: '/zh-CN/checkout-return',
+            entrypoint: entry('checkout-return.astro')
+          },
+          {
+            pattern: '/models/[slug]/page.json',
+            entrypoint: entry('page.json.ts')
+          },
+          {
+            pattern: '/models/catalogue.json',
+            entrypoint: entry('catalogue.json.ts')
+          }
+        ]
+      : [])
+  ]
+}
+
 export function workshopReleaseGate(): AstroIntegration {
   return {
     name: 'workshop-release-gate',
     hooks: {
+      'astro:config:setup': ({ injectRoute, updateConfig, command }) => {
+        updateConfig({
+          env: {
+            schema: {
+              WORKSHOP_LOCAL_DEV: envField.boolean({
+                context: 'client',
+                access: 'public',
+                default: command === 'dev' && !process.env.VERCEL_ENV
+              }),
+              WORKSHOP_DEPLOY_ENV: envField.string({
+                context: 'client',
+                access: 'public',
+                default: process.env.VERCEL_ENV ?? ''
+              }),
+              WORKSHOP_RELEASE: envField.string({
+                context: 'client',
+                access: 'public',
+                default: process.env.VERCEL_GIT_COMMIT_SHA ?? 'local'
+              })
+            }
+          },
+          vite: {
+            plugins: [workshopClientBoundary()]
+          }
+        })
+        for (const route of modelsBuildRoutes(isWorkshopInBuild()))
+          injectRoute(route)
+      },
+      'astro:build:start': () => {
+        assertWorkshopCloudEnvForBuild()
+      },
       'astro:build:done': async ({ dir, pages, logger }) => {
-        if (isWorkshopInBuild()) return
-
         const built = pages.filter((page) =>
-          isWorkshopRoute(`/${page.pathname}`)
+          isLegacyWorkshopRoute(`/${page.pathname}`)
         ).length
 
         const root = fileURLToPath(dir)
         const workshopOutput = join(root, 'workshop')
         await rm(workshopOutput, { recursive: true, force: true })
-
-        // The whole point of this integration is that nothing ships. If the
-        // directory is somehow still there, fail the build rather than let a
-        // release go out with it.
         if (existsSync(workshopOutput)) {
           throw new Error(
-            'workshop-release-gate could not remove the Workshop output; refusing to ship it.'
+            'workshop-release-gate could not remove the retired Workshop output; refusing to ship it.'
           )
         }
+        logger.info(`Removed ${built} retired Workshop pages.`)
+        if (isWorkshopInBuild()) return
 
+        // Keep the established /models/index.html and its markdown twin, but
+        // reject a newly added Models page that bypasses route registration.
+        const modelEntries = existsSync(join(root, 'models'))
+          ? await readdir(join(root, 'models'))
+          : []
+        if (modelEntries.some((name) => name !== 'index.html')) {
+          throw new Error(
+            'workshop-release-gate found an ungated Models route; refusing to ship it.'
+          )
+        }
         logger.warn(
-          `Workshop is excluded from this build: removed ${built} generated page${
-            built === 1 ? '' : 's'
-          }. Set WORKSHOP_IN_BUILD=1 to include it.`
+          'Models detail routes are excluded from this build. Set WORKSHOP_IN_BUILD=1 to include them.'
         )
       }
     }

@@ -1,82 +1,37 @@
-import type { Mock } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import PrimeVue from 'primevue/config'
 import Tooltip from 'primevue/tooltip'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
+import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
-// Import after mocks
 import ColorPickerButton from '@/components/graph/selectionToolbox/ColorPickerButton.vue'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
+import type { Positionable } from '@/lib/litegraph/src/litegraph'
 import {
-  ComfyWorkflow,
-  useWorkflowStore
-} from '@/platform/workflow/management/stores/workflowStore'
+  LGraph,
+  LGraphCanvas,
+  LGraphGroup
+} from '@/lib/litegraph/src/litegraph'
+import type { CanvasEventDetail } from '@/lib/litegraph/src/types/events'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { ChangeTracker } from '@/scripts/changeTracker'
-import { defaultGraph } from '@/scripts/defaultGraph'
-import { createMockPositionable } from '@/utils/__tests__/litegraphTestUtils'
+import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { graphScopeOf } from '@/types/graphScopeId'
+import { toGroupId } from '@/types/groupId'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import {
+  createMockCanvasRenderingContext2D,
+  createTestCanvas
+} from '@/utils/__tests__/litegraphTestUtils'
 
-function createMockWorkflow(
-  overrides: Partial<LoadedComfyWorkflow> = {}
-): LoadedComfyWorkflow {
-  const workflow = new ComfyWorkflow({
-    path: 'workflows/color-picker-test.json',
-    modified: 0,
-    size: 0
-  })
-
-  const changeTracker = Object.assign(
-    new ChangeTracker(workflow, structuredClone(defaultGraph)),
-    {
-      captureCanvasState: vi.fn() as Mock
-    }
-  )
-
-  const workflowOverrides = {
-    changeTracker,
-    ...overrides
-  } satisfies Partial<LoadedComfyWorkflow>
-
-  return Object.assign(workflow, workflowOverrides)
+function createMockPositionable(): Positionable {
+  return fromPartial<Positionable>({ id: toGroupId(1), pos: [0, 0] })
 }
 
-// Mock the litegraph module
-vi.mock<unknown>(import('@/lib/litegraph/src/litegraph'), async () => {
-  const actual = await vi.importActual('@/lib/litegraph/src/litegraph')
-  return {
-    ...actual,
-    LGraphCanvas: {
-      node_colors: {
-        red: { bgcolor: '#ff0000' },
-        green: { bgcolor: '#00ff00' },
-        blue: { bgcolor: '#0000ff' }
-      }
-    },
-    LiteGraph: {
-      NODE_DEFAULT_BGCOLOR: '#353535'
-    },
-    isColorable: vi.fn(() => true)
-  }
-})
-
-// Mock the colorUtil module
-vi.mock(import('@/utils/colorUtil'), () => ({
-  adjustColor: vi.fn((color: string) => color + '_light')
-}))
-
-// Mock the litegraphUtil module
-vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
-  getItemsColorOption: vi.fn(() => null),
-  isLGraphNode: vi.fn((item) => item?.type === 'LGraphNode'),
-  isLGraphGroup: vi.fn((item) => item?.type === 'LGraphGroup')
-}))
+vi.mock(import('@/scripts/app'))
 
 describe('ColorPickerButton', () => {
-  let canvasStore: ReturnType<typeof useCanvasStore>
-  let workflowStore: ReturnType<typeof useWorkflowStore>
-
   const i18n = createI18n({
     legacy: false,
     locale: 'en',
@@ -90,17 +45,6 @@ describe('ColorPickerButton', () => {
         }
       }
     }
-  })
-
-  beforeEach(() => {
-    canvasStore = useCanvasStore()
-    workflowStore = useWorkflowStore()
-
-    // Set up default store state
-    canvasStore.selectedItems = []
-
-    // Mock workflow store
-    workflowStore.activeWorkflow = createMockWorkflow()
   })
 
   function renderComponent() {
@@ -119,13 +63,13 @@ describe('ColorPickerButton', () => {
   }
 
   it('should render when nodes are selected', () => {
-    canvasStore.selectedItems = [createMockPositionable()]
+    setCanvasSelection([createMockPositionable()])
     renderComponent()
     expect(screen.getByTestId('color-picker-button')).toBeInTheDocument()
   })
 
   it('should toggle color picker visibility on button click', async () => {
-    canvasStore.selectedItems = [createMockPositionable()]
+    setCanvasSelection([createMockPositionable()])
     const { user } = renderComponent()
     const button = screen.getByTestId('color-picker-button')
 
@@ -140,4 +84,56 @@ describe('ColorPickerButton', () => {
     await user.click(button)
     expect(screen.queryByTestId('noColor')).not.toBeInTheDocument()
   })
+
+  it.for([
+    { subType: 'after-change', color: '#533' },
+    { subType: 'before-change', color: '#335' }
+  ] as const)(
+    'shows $color after $subType without reselection',
+    async ({ subType, color }) => {
+      const graph = new LGraph()
+      const group = new LGraphGroup()
+      group.color = LGraphCanvas.node_colors.blue.groupcolor
+      graph.add(group)
+      const canvas = createTestCanvas(
+        graph,
+        createMockCanvasRenderingContext2D()
+      )
+      document.body.append(canvas.canvas)
+      onTestFinished(() => {
+        canvas.unbindEvents()
+        canvas.canvas.remove()
+      })
+      const store = useCanvasStore()
+      store.canvas = canvas
+      await nextTick()
+      canvas.select(group)
+      canvas.onSelectionChange = vi.fn()
+      renderComponent()
+
+      group.color = LGraphCanvas.node_colors.red.groupcolor
+      document.dispatchEvent(
+        new CustomEvent<CanvasEventDetail>('litegraph:canvas', {
+          detail: { subType }
+        })
+      )
+      await nextTick()
+
+      expect(screen.getByTestId('color-picker-current-color')).toHaveStyle({
+        color
+      })
+      expect({
+        keys: useSelectionStore().selectedKeys(graphScopeOf(graph)),
+        legacyItems: [...canvas.selectedItems],
+        vueItems: store.selectedItems,
+        selected: group.selected
+      }).toEqual({
+        keys: [`group:${group.id}`],
+        legacyItems: [group],
+        vueItems: [group],
+        selected: true
+      })
+      expect(canvas.onSelectionChange).not.toHaveBeenCalled()
+    }
+  )
 })

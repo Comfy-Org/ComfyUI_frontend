@@ -229,6 +229,18 @@ describe('NodeDef Migration', () => {
     expect(chartInput).toMatchObject({ chartType: 'bar', data: { labels: [] } })
   })
 
+  it('should default a dynamic combo with no supplied options to an empty options array', () => {
+    // Synthetic subgraph-blueprint nodedefs (subgraphStore.ts) promote a
+    // boundary input's type into a bare [type, undefined] tuple.
+    const result = transformInputSpecV1ToV2(
+      ['COMFY_DYNAMICCOMBO_V3', undefined],
+      { name: 'model' }
+    )
+
+    expect(result.type).toBe('COMFY_DYNAMICCOMBO_V3')
+    expect(result.options).toEqual([])
+  })
+
   it('should preserve chartType across a V2 to V1 round trip', () => {
     const inputSpec = transformInputSpecV1ToV2(['CHART', { type: 'bar' }], {
       name: 'chartInput'
