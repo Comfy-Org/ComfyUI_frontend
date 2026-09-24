@@ -38,7 +38,7 @@ interface ArchiveEntry {
 
 type ArchiveIndex = Record<string, ArchiveEntry>
 
-export interface ArchivedWorkflowDraft extends ArchiveEntry {
+interface ArchivedWorkflowDraft extends ArchiveEntry {
   content: string
 }
 
@@ -244,19 +244,73 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
       return useSettingStore().get('Comfy.Workflow.Persist')
     }
 
+    function withoutStale(
+      workspaceId: string,
+      index: ArchiveIndex,
+      keep: string,
+      now: number
+    ): ArchiveIndex {
+      return evict(
+        workspaceId,
+        index,
+        Object.entries(index).flatMap(([id, entry]) =>
+          id !== keep && !isLive(entry, now) ? [id] : []
+        )
+      )
+    }
+
+    /**
+     * A browser quota rejection means the whole origin is full, not that this
+     * archive is over budget, so it frees at most what the incoming graph
+     * needs. Evicting the rest would destroy every other thread's recovery
+     * data to store one graph — and still fail if the pressure is elsewhere.
+     */
+    function writeWithinQuota(
+      workspaceId: string,
+      workflowId: string,
+      content: string,
+      bytes: number,
+      index: ArchiveIndex
+    ): { outcome: WriteOutcome; index: ArchiveIndex } {
+      let remaining = index
+      let freed = 0
+      let outcome = writePayload(workspaceId, workflowId, content)
+      while (outcome === 'over-quota' && freed < bytes) {
+        const oldest = oldestFirst(remaining, workflowId).at(0)
+        if (oldest === undefined) break
+        freed += remaining[oldest].bytes
+        remaining = evict(workspaceId, remaining, [oldest])
+        outcome = writePayload(workspaceId, workflowId, content)
+      }
+      return { outcome, index: remaining }
+    }
+
+    /**
+     * The payload key was already overwritten, so without putting the old
+     * graph back a failed index write loses both copies. Restoring it keeps
+     * whatever the still-stored index promises.
+     */
+    function restoreReplacedPayload(
+      workspaceId: string,
+      workflowId: string,
+      replaced: string | null,
+      index: ArchiveIndex
+    ): void {
+      if (
+        replaced !== null &&
+        writePayload(workspaceId, workflowId, replaced) === 'stored'
+      )
+        return
+      evict(workspaceId, index, [workflowId])
+    }
+
     /**
      * Archives `content` under `workflowId`, dropping expired entries and then
      * the oldest graphs until the incoming one fits the count and byte budgets.
      * Returns `false` when the graph is too large to archive at all or storage
      * refuses the write, leaving a smaller archive rather than an index
-     * promising payloads it no longer has.
-     *
-     * A browser quota rejection means the whole origin is full, not that this
-     * archive is over budget, so it frees at most about what the incoming
-     * graph needs. Evicting the rest would destroy every other thread's
-     * recovery data to store one graph — and still fail if the pressure is
-     * coming from elsewhere. The previous copy of this workflow is never
-     * removed up front either: the write overwrites that key anyway, so
+     * promising payloads it no longer has. The previous copy of this workflow
+     * is never evicted up front: the write overwrites that key anyway, so
      * removing it early would only turn a failed write into a lost snapshot.
      */
     function archive(
@@ -271,26 +325,25 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
       }
       const workspaceId = getWorkspaceId()
       const now = Date.now()
-      const stored = readIndex(workspaceId)
-      let index = evict(
+      const live = withoutStale(
         workspaceId,
-        stored,
-        Object.entries(stored).flatMap(([id, entry]) =>
-          id !== workflowId && !isLive(entry, now) ? [id] : []
-        )
+        readIndex(workspaceId),
+        workflowId,
+        now
       )
-      index = evict(workspaceId, index, overBudget(index, workflowId, bytes))
-
+      const trimmed = evict(
+        workspaceId,
+        live,
+        overBudget(live, workflowId, bytes)
+      )
       const replaced = readPayload(workspaceId, workflowId)
-      let freed = 0
-      let outcome = writePayload(workspaceId, workflowId, draft.content)
-      while (outcome === 'over-quota' && freed < bytes) {
-        const oldest = oldestFirst(index, workflowId).at(0)
-        if (oldest === undefined) break
-        freed += index[oldest].bytes
-        index = evict(workspaceId, index, [oldest])
-        outcome = writePayload(workspaceId, workflowId, draft.content)
-      }
+      const { outcome, index } = writeWithinQuota(
+        workspaceId,
+        workflowId,
+        draft.content,
+        bytes,
+        trimmed
+      )
       if (outcome !== 'stored') {
         if (outcome === 'over-quota')
           reportArchiveRefused('quota_exhausted', workflowId, bytes)
@@ -307,15 +360,7 @@ export const useAgentWorkflowDraftArchiveStore = defineStore(
         sweepOrphanPayloads(workspaceId, updated)
         return true
       }
-
-      // The payload key was already overwritten, so without putting the old
-      // graph back a failed index write loses both copies. Restoring it keeps
-      // whatever the still-stored index promises.
-      if (
-        replaced === null ||
-        writePayload(workspaceId, workflowId, replaced) !== 'stored'
-      )
-        evict(workspaceId, index, [workflowId])
+      restoreReplacedPayload(workspaceId, workflowId, replaced, index)
       return false
     }
 

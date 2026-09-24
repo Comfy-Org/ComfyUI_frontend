@@ -50,7 +50,7 @@ describe('bootstrapStore', () => {
       return Promise.resolve()
     })
     vi.mocked(useWorkflowStore().loadWorkflows).mockResolvedValue(undefined)
-    vi.mocked(useWorkflowStore().syncWorkflows).mockResolvedValue(undefined)
+    vi.mocked(useWorkflowStore().syncWorkflows).mockResolvedValue(true)
     vi.mocked(useUserStore().initialize).mockResolvedValue(undefined)
   })
 

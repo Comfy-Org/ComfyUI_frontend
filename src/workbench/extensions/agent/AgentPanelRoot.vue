@@ -871,54 +871,71 @@ function onOpenApprovalWorkflow(
 
 let referenceNavigationGeneration = 0
 
+interface ReferenceTarget {
+  target: ComfyWorkflow | null
+  /** Set only when this attempt created the tab, so only it may close it. */
+  minted: ComfyWorkflow | null
+  recovered: boolean
+}
+
+async function closeMintedReference(
+  minted: ComfyWorkflow | null
+): Promise<void> {
+  if (minted !== null)
+    await workflowService.closeWorkflow(minted, { warnIfUnsaved: false })
+}
+
+async function findReferenceWorkflow(
+  workflowId: string,
+  isCurrent: () => boolean
+): Promise<ReferenceTarget | null> {
+  const open = openWorkflowFor(workflowId)
+  if (open !== null) return { target: open, minted: null, recovered: false }
+  const [indexRefreshed, synced] = await Promise.all([
+    refreshCloudWorkflowIds(),
+    workflowStore.syncWorkflows()
+  ])
+  // Recovery mints a tab, so a superseded click must stop before it and not
+  // leave a second copy of the same graph behind.
+  if (!isCurrent()) return null
+  const stored = storedWorkflowFor(workflowId)
+  if (stored !== null) return { target: stored, minted: null, recovered: false }
+  // Neither lookup throws on failure, so a stale list would otherwise read as
+  // proof the workflow was never saved and hand the thread an archived fork.
+  if (!indexRefreshed || !synced)
+    return { target: null, minted: null, recovered: false }
+  const recovery = await recoverWorkflowFor(workflowId)
+  if (recovery === null) return { target: null, minted: null, recovered: false }
+  const minted = recovery.minted ? recovery.workflow : null
+  if (!isCurrent()) {
+    await closeMintedReference(minted)
+    return null
+  }
+  return { target: recovery.workflow, minted, recovered: true }
+}
+
 async function onNavigateToReferenceWorkflow(
   workflowId: string
 ): Promise<void> {
   const generation = ++referenceNavigationGeneration
   const isCurrent = () => generation === referenceNavigationGeneration
-  let recovered = false
   let minted: ComfyWorkflow | null = null
-  const abandonUnopenedRecovery = async () => {
-    if (minted === null) return
-    const unopened = minted
-    minted = null
-    await workflowService.closeWorkflow(unopened, { warnIfUnsaved: false })
-  }
   try {
-    let target = openWorkflowFor(workflowId)
-    let indexRefreshed = true
-    if (target === null) {
-      ;[indexRefreshed] = await Promise.all([
-        refreshCloudWorkflowIds(),
-        workflowStore.syncWorkflows()
-      ])
-      // Recovery mints a tab, so a superseded click must stop before it and
-      // not leave a second copy of the same graph behind.
-      if (!isCurrent()) return
-      target = storedWorkflowFor(workflowId)
-    }
-    if (target === null && indexRefreshed) {
-      const recovery = await recoverWorkflowFor(workflowId)
-      recovered = recovery !== null
-      minted = recovery?.minted === true ? recovery.workflow : null
-      target = recovery?.workflow ?? null
-      if (!isCurrent()) {
-        await abandonUnopenedRecovery()
-        return
-      }
-    }
-    if (target === null || !(await workflowService.openWorkflow(target))) {
-      await abandonUnopenedRecovery()
-      if (isCurrent()) warnWorkflowUnavailable()
+    const found = await findReferenceWorkflow(workflowId, isCurrent)
+    if (found === null) return
+    minted = found.minted
+    const { target } = found
+    if (target !== null && (await workflowService.openWorkflow(target))) {
+      minted = null
+      bindingStore.bind(workflowId, target.path)
+      if (found.recovered) forgetRecoveredWorkflow(workflowId)
       return
     }
-    minted = null
-    bindingStore.bind(workflowId, target.path)
-    if (recovered) forgetRecoveredWorkflow(workflowId)
   } catch {
-    await abandonUnopenedRecovery()
-    if (isCurrent()) warnWorkflowUnavailable()
+    // Shared with the not-found and refused-open paths below.
   }
+  await closeMintedReference(minted)
+  if (isCurrent()) warnWorkflowUnavailable()
 }
 
 function agentTabFilename(name: string | undefined): string | undefined {

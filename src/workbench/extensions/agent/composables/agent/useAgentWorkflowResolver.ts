@@ -35,7 +35,7 @@ type WorkflowResolverDeps = {
   listCloudWorkflows: AgentRestClient['listCloudWorkflows']
 }
 
-export interface RecoveredWorkflow {
+interface RecoveredWorkflow {
   workflow: ComfyWorkflow
   /** False when an in-flight recovery of the same workflow minted the tab. */
   minted: boolean

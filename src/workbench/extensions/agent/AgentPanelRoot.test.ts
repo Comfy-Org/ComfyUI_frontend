@@ -378,7 +378,7 @@ beforeEach(() => {
   workflowService.saveWorkflow.mockClear()
   workflowService.saveWorkflowAs.mockClear()
   workflowService.openWorkflow.mockClear()
-  vi.mocked(workflowStore.syncWorkflows).mockResolvedValue(undefined)
+  vi.mocked(workflowStore.syncWorkflows).mockResolvedValue(true)
   focusNodeInstance.mockReset()
   socketSend.mockReset()
   vi.mocked(reportError).mockClear()
@@ -3700,18 +3700,11 @@ describe('AgentPanelRoot workflow binding', () => {
     }
   )
 
-  // FE-2911: the tab the thread was pinned to was unsaved and closed, so
-  // nothing open, stored or in Cloud carries `wf-history` any more. The graph
-  // archived on close is the only thing left to reconnect the thread to.
-  it('reconnects a historical chat to the unsaved workflow archived when its tab closed', async () => {
-    makeTab('wf-42')
-    useAgentWorkflowDraftArchiveStore().archive('wf-history', {
-      filename: 'Agent draft.json',
-      content: JSON.stringify({
-        ...blankGraph,
-        id: '3d4d7f1e-3c8b-4a0a-9a3c-1d2e3f4a5b6c'
-      })
-    })
+  // One historical thread pinned to `wf-history`, with nothing in Cloud — the
+  // starting point for every recovery case below.
+  function stubHistoricalThread({
+    cloudIndex = 'ok'
+  }: { cloudIndex?: 'ok' | 'error' } = {}): void {
     vi.stubGlobal(
       'fetch',
       vi.fn(async (url: string) => {
@@ -3739,14 +3732,31 @@ describe('AgentPanelRoot workflow binding', () => {
               })
             ])
           )
-        if (url.includes('/workflows'))
+        if (url.includes('/workflows')) {
+          if (cloudIndex === 'error') throw new Error('index unavailable')
           return json(200, {
             data: [],
             pagination: { offset: 0, limit: 100, total: 0, has_more: false }
           })
+        }
         return json(200, {})
       })
     )
+  }
+
+  // FE-2911: the tab the thread was pinned to was unsaved and closed, so
+  // nothing open, stored or in Cloud carries `wf-history` any more. The graph
+  // archived on close is the only thing left to reconnect the thread to.
+  it('reconnects a historical chat to the unsaved workflow archived when its tab closed', async () => {
+    makeTab('wf-42')
+    useAgentWorkflowDraftArchiveStore().archive('wf-history', {
+      filename: 'Agent draft.json',
+      content: JSON.stringify({
+        ...blankGraph,
+        id: '3d4d7f1e-3c8b-4a0a-9a3c-1d2e3f4a5b6c'
+      })
+    })
+    stubHistoricalThread()
     renderWithSelectedTarget()
     await userEvent.click(
       screen.getByRole('button', {
@@ -3776,47 +3786,50 @@ describe('AgentPanelRoot workflow binding', () => {
     )
   })
 
+  // Both the Cloud index refresh and the workflow sync swallow their own
+  // failures, so a stale list must not read as proof the workflow was never
+  // saved — recovering then would fork a workflow that still exists.
+  it.for([
+    { label: 'the Cloud index', refreshed: false, synced: true },
+    { label: 'the workflow list', refreshed: true, synced: false }
+  ])(
+    'does not recover from the archive when $label is stale',
+    async ({ refreshed, synced }) => {
+      makeTab('wf-42')
+      useAgentWorkflowDraftArchiveStore().archive('wf-history', {
+        filename: 'Agent draft.json',
+        content: JSON.stringify(blankGraph)
+      })
+      stubHistoricalThread({ cloudIndex: refreshed ? 'ok' : 'error' })
+      vi.mocked(workflowStore.syncWorkflows).mockResolvedValueOnce(synced)
+      renderWithSelectedTarget()
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+
+      await userEvent.click(await screen.findByText('Earlier chat'))
+
+      await vi.waitFor(() =>
+        expect(useAgentPanelStore().selectedWorkflow).toBeNull()
+      )
+      expect(
+        workflowStore.getWorkflowByPath('workflows/Agent draft.json')
+      ).toBeNull()
+      expect(
+        useAgentWorkflowDraftArchiveStore().read('wf-history')
+      ).not.toBeNull()
+    }
+  )
+
   it('does not strand a recovered workflow that then refuses to open', async () => {
     makeTab('wf-42')
     useAgentWorkflowDraftArchiveStore().archive('wf-history', {
       filename: 'Agent draft.json',
       content: JSON.stringify(blankGraph)
     })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        if (url.includes('/messages'))
-          return json(200, [
-            {
-              id: 'history-user',
-              thread_id: 'th-history',
-              seq: 1,
-              role: 'user',
-              status: 'complete',
-              turn_id: 'history-turn',
-              workflow_id: 'wf-history',
-              content: { text: 'Historical prompt' }
-            }
-          ])
-        if (url.includes('/agent/threads'))
-          return json(
-            200,
-            agentThreadList([
-              agentThread({
-                id: 'th-history',
-                title: 'Earlier chat',
-                last_message_at: '2026-09-01T00:00:00Z'
-              })
-            ])
-          )
-        if (url.includes('/workflows'))
-          return json(200, {
-            data: [],
-            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-          })
-        return json(200, {})
-      })
-    )
+    stubHistoricalThread()
     workflowService.openWorkflow.mockResolvedValueOnce(false)
     renderWithSelectedTarget()
     await userEvent.click(
@@ -3854,41 +3867,7 @@ describe('AgentPanelRoot workflow binding', () => {
       filename: 'Agent draft.json',
       content: JSON.stringify(blankGraph)
     })
-    vi.stubGlobal(
-      'fetch',
-      vi.fn(async (url: string) => {
-        if (url.includes('/messages'))
-          return json(200, [
-            {
-              id: 'history-user',
-              thread_id: 'th-history',
-              seq: 1,
-              role: 'user',
-              status: 'complete',
-              turn_id: 'history-turn',
-              workflow_id: 'wf-history',
-              content: { text: 'Historical prompt' }
-            }
-          ])
-        if (url.includes('/agent/threads'))
-          return json(
-            200,
-            agentThreadList([
-              agentThread({
-                id: 'th-history',
-                title: 'Earlier chat',
-                last_message_at: '2026-09-01T00:00:00Z'
-              })
-            ])
-          )
-        if (url.includes('/workflows'))
-          return json(200, {
-            data: [],
-            pagination: { offset: 0, limit: 100, total: 0, has_more: false }
-          })
-        return json(200, {})
-      })
-    )
+    stubHistoricalThread()
     renderWithSelectedTarget()
     await userEvent.click(
       screen.getByRole('button', {
@@ -6331,8 +6310,8 @@ describe('AgentPanelRoot workflow binding', () => {
       content: JSON.stringify(blankGraph)
     })
     let releaseSync!: () => void
-    const syncing = new Promise<void>((resolve) => {
-      releaseSync = () => resolve()
+    const syncing = new Promise<boolean>((resolve) => {
+      releaseSync = () => resolve(true)
     })
     vi.mocked(workflowStore.syncWorkflows).mockReturnValue(syncing)
     renderWithSelectedTarget()

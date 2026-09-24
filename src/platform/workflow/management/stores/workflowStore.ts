@@ -76,7 +76,8 @@ interface WorkflowStore {
   persistedWorkflows: ComfyWorkflow[]
   modifiedWorkflows: ComfyWorkflow[]
   getWorkflowByPath: (path: string) => ComfyWorkflow | null
-  syncWorkflows: (dir?: string) => Promise<void>
+  /** Resolves `false` when the sync request failed and the list is stale. */
+  syncWorkflows: (dir?: string) => Promise<boolean>
   isSyncLoading: boolean
   reorderWorkflows: (from: number, to: number) => void
 
@@ -410,6 +411,7 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const {
     isReady: isSyncReady,
     isLoading: isSyncLoading,
+    error: syncError,
     execute: executeSyncWorkflows
   } = useAsyncState(
     async (dir: string = '') => {
@@ -466,8 +468,11 @@ export const useWorkflowStore = defineStore('workflow', () => {
     { immediate: false }
   )
 
-  async function syncWorkflows(dir: string = '') {
-    return executeSyncWorkflows(0, dir)
+  // useAsyncState swallows rejections by default, so callers that need to
+  // know whether the list is authoritative have to read the error ref.
+  async function syncWorkflows(dir: string = ''): Promise<boolean> {
+    await executeSyncWorkflows(0, dir)
+    return syncError.value === undefined
   }
 
   async function loadWorkflows(): Promise<void> {

@@ -191,75 +191,139 @@ export function useAgentWorkflowSelection({
     if (!workflowSelection.value) void refreshCloudWorkflowIds()
   }
 
+  type RestoreOutcome =
+    | { kind: 'superseded' }
+    | { kind: 'unavailable' }
+    | {
+        kind: 'resolved'
+        target: ComfyWorkflow
+        /** Set only when this attempt created the tab, so only it may close it. */
+        minted: ComfyWorkflow | null
+        recovered: boolean
+      }
+
+  function isRestoreCurrent(
+    generation: number,
+    isSessionCurrent: () => boolean
+  ): boolean {
+    return (
+      generation === targetSelectionGeneration &&
+      isSessionCurrent() &&
+      canRestoreWorkflow.value
+    )
+  }
+
+  async function abandonMinted(minted: ComfyWorkflow | null): Promise<void> {
+    if (minted !== null)
+      await workflowService.closeWorkflow(minted, { warnIfUnsaved: false })
+  }
+
+  type SavedLookup =
+    | { kind: 'superseded' }
+    | { kind: 'found'; target: ComfyWorkflow }
+    | { kind: 'missing'; authoritative: boolean }
+
+  /**
+   * `authoritative` is false when the Cloud index or the workflow list came
+   * back stale. Both swallow their own failures, so without carrying that out
+   * "nothing resolved" cannot be told apart from "we could not look".
+   */
+  async function findSavedTarget(
+    workflowId: string,
+    isCurrent: () => boolean
+  ): Promise<SavedLookup> {
+    const indexRefreshed = await refreshCloudWorkflowIds()
+    if (!isCurrent()) return { kind: 'superseded' }
+    const bound = boundOrOpenWorkflowFor(workflowId)
+    if (bound !== null) return { kind: 'found', target: bound }
+    // A workflow saved in an earlier session outranks the archive, which
+    // would otherwise reconnect the thread to a fork of the pre-save graph.
+    const synced = await workflowStore.syncWorkflows()
+    if (!isCurrent()) return { kind: 'superseded' }
+    const stored = storedWorkflowFor(workflowId)
+    return stored !== null
+      ? { kind: 'found', target: stored }
+      : { kind: 'missing', authoritative: indexRefreshed && synced }
+  }
+
+  async function resolveRestoredTarget(
+    workflowId: string,
+    isCurrent: () => boolean
+  ): Promise<RestoreOutcome> {
+    const saved = await findSavedTarget(workflowId, isCurrent)
+    if (saved.kind === 'superseded') return { kind: 'superseded' }
+    if (saved.kind === 'found')
+      return {
+        kind: 'resolved',
+        target: saved.target,
+        minted: null,
+        recovered: false
+      }
+    // Recovery only ever holds graphs that were never saved, so "nothing
+    // resolved" has to be authoritative before it can mean "never saved".
+    if (!saved.authoritative) return { kind: 'unavailable' }
+    const recovery = await recoverWorkflowFor(workflowId)
+    if (recovery === null) return { kind: 'unavailable' }
+    const minted = recovery.minted ? recovery.workflow : null
+    if (!isCurrent()) {
+      await abandonMinted(minted)
+      return { kind: 'superseded' }
+    }
+    return {
+      kind: 'resolved',
+      target: recovery.workflow,
+      minted,
+      recovered: true
+    }
+  }
+
+  async function applyRestoredTarget(
+    workflowId: string,
+    {
+      target,
+      minted,
+      recovered
+    }: Extract<RestoreOutcome, { kind: 'resolved' }>,
+    isCurrent: () => boolean
+  ): Promise<void> {
+    try {
+      if (!(await workflowService.openWorkflow(target))) {
+        await abandonMinted(minted)
+        if (isCurrent()) {
+          panelStore.setWorkflowTarget(null)
+          warnWorkflowUnavailable()
+        }
+        return
+      }
+      // The thread keeps its tab even when the user has moved on, so coming
+      // back to it finds the graph rather than starting the hunt again.
+      bindingStore.bind(workflowId, target.path)
+      if (recovered) forgetRecoveredWorkflow(workflowId)
+      if (isCurrent()) commitWorkflowTarget(target, workflowId)
+    } catch {
+      await abandonMinted(minted)
+      if (isCurrent()) warnWorkflowUnavailable()
+    }
+  }
+
   async function onWorkflowRestored(
     workflowId: string | undefined,
     isSessionCurrent: () => boolean
   ): Promise<void> {
     if (!canRestoreWorkflow.value || !isSessionCurrent()) return
+    // Bumped before the id check so switching to a thread with no workflow
+    // still cancels whatever restore was in flight.
     const generation = ++targetSelectionGeneration
-    const isCurrent = () =>
-      generation === targetSelectionGeneration &&
-      isSessionCurrent() &&
-      canRestoreWorkflow.value
     if (workflowId === undefined) return
-    const indexRefreshed = await refreshCloudWorkflowIds()
-    if (!isCurrent()) return
-    let resolved = boundOrOpenWorkflowFor(workflowId)
-    if (resolved === null) {
-      // A workflow saved in an earlier session outranks the archive, which
-      // would otherwise reconnect the thread to a fork of the pre-save graph.
-      await workflowStore.syncWorkflows()
-      if (!isCurrent()) return
-      resolved = storedWorkflowFor(workflowId)
-    }
-    // Recovery only ever holds graphs that were never saved, so "nothing
-    // resolved" has to be authoritative before it can mean "never saved".
-    // A failed index refresh leaves it unproven.
-    const recovery =
-      resolved === null && indexRefreshed
-        ? await recoverWorkflowFor(workflowId)
-        : null
-    const target = resolved ?? recovery?.workflow ?? null
-    let minted = recovery?.minted === true ? recovery.workflow : null
-    // Only ever discards a tab this call created and the user has not seen.
-    // Once `openWorkflow` succeeds the recovered graph is on the canvas, and
-    // closing it would yank the user onto a replacement they never asked for.
-    const abandonUnopenedRecovery = async () => {
-      if (minted === null) return
-      const unopened = minted
-      minted = null
-      await workflowService.closeWorkflow(unopened, { warnIfUnsaved: false })
-    }
-    if (!isCurrent()) {
-      await abandonUnopenedRecovery()
-      return
-    }
-    if (target === null) {
+    const isCurrent = () => isRestoreCurrent(generation, isSessionCurrent)
+    const outcome = await resolveRestoredTarget(workflowId, isCurrent)
+    if (outcome.kind === 'superseded') return
+    if (outcome.kind === 'unavailable') {
       panelStore.setWorkflowTarget(null)
       warnWorkflowUnavailable()
       return
     }
-    try {
-      const opened = await workflowService.openWorkflow(target)
-      if (!opened) {
-        await abandonUnopenedRecovery()
-        if (!isCurrent()) return
-        panelStore.setWorkflowTarget(null)
-        warnWorkflowUnavailable()
-        return
-      }
-      minted = null
-      // The thread keeps its tab even when the user has moved on, so coming
-      // back to it finds the graph rather than starting the hunt again.
-      bindingStore.bind(workflowId, target.path)
-      if (recovery !== null) forgetRecoveredWorkflow(workflowId)
-      if (!isCurrent()) return
-      commitWorkflowTarget(target, workflowId)
-    } catch {
-      await abandonUnopenedRecovery()
-      if (!isCurrent()) return
-      warnWorkflowUnavailable()
-    }
+    await applyRestoredTarget(workflowId, outcome, isCurrent)
   }
 
   function cancelSelection(): void {
