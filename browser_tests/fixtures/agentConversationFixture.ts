@@ -685,6 +685,15 @@ export class AgentConversationHarness {
     return Object.keys(this.host.graph().nodes)
   }
 
+  /** What the host document holds for one widget; undefined when it has none. */
+  hostWidgetValue(nodeId: string, widget: string): unknown {
+    const widgets = z
+      .record(z.string(), z.unknown())
+      .optional()
+      .parse(this.host.graph().nodes[nodeId]?.widgets)
+    return widgets?.[widget]
+  }
+
   // A host-side edit outside the recording, pushed as one `doc_update`. The
   // follower applies frames in order, so a rendered effect of this edit
   // proves every earlier frame (a catch-up included) has been applied too.
@@ -922,11 +931,7 @@ export class AgentConversationHarness {
   }
 
   async resyncWidget(nodeId: string, widget: string): Promise<void> {
-    const widgets = z
-      .record(z.string(), z.unknown())
-      .optional()
-      .parse(this.host.graph().nodes[nodeId]?.widgets)
-    const value = widgets?.[widget]
+    const value = this.hostWidgetValue(nodeId, widget)
     if (value === undefined)
       throw new Error(`Host widget ${nodeId}.${widget} does not exist`)
     const operation = {
