@@ -131,12 +131,6 @@ export const MESSAGE_DONE_EVENT: AgentWsEvent = {
   }
 }
 
-/** The two options every `permission` ask carries. */
-export const PERMISSION_ASK_OPTIONS = [
-  { id: 'allow', label: 'Allow' },
-  { id: 'deny', label: 'Deny' }
-]
-
 type AgentAskData = Extract<AgentWsEvent, { type: 'agent_ask' }>['data']
 
 /** An `agent_ask` frame for the first turn, with the ask fields to vary. */

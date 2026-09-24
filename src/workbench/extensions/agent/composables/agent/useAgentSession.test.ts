@@ -2687,9 +2687,8 @@ describe('thread resume (B17)', () => {
   })
 })
 
-describe('useAgentSession credential refresh in the standalone agent harness', () => {
+describe('useAgentSession credential refresh', () => {
   beforeEach(() => {
-    vi.stubEnv('VITE_AGENT_STANDALONE', 'true')
     vi.useFakeTimers()
   })
 
