@@ -1,4 +1,5 @@
 import {
+  appliedOpIds,
   applyOps,
   linksMap,
   mint,
@@ -350,7 +351,123 @@ describe('AgentCrdtProjection self-driven reconcile retry', () => {
 // the same doc update as the clear — one turn's "replace" lands as one CRDT
 // frame — driven through the same `AgentCrdtProjection`/`EcsFollowerAdapter`
 // chain a real turn uses.
-describe('AgentCrdtProjection self-driven reconcile retry — template replace', () => {
+//
+// `buildReplaceFrame` below builds that one doc update (clear the old
+// template's nodes/links, `add_node` the new one) the same way for both
+// tests: a single successful delivery below, and a scope-dropped delivery
+// in the retry test. `createGraphMutations().batch()` checks `getScope()`
+// before it ever calls back into the incremental delete+add builder
+// (`ecsFollowerAdapter`'s `nodeActions` branch), so a batch rejected for
+// "no scope" never reaches that builder at all — it always recovers through
+// the full-reconcile branch instead (see the retry test below). Proving the
+// incremental path itself composes the delete-then-add correctly needs a
+// delivery where scope never drops.
+function buildReplaceFrame(host: ReturnType<typeof mint>, before: Uint8Array) {
+  host.transact(() => {
+    for (const id of [...nodesMap(host).keys()]) nodesMap(host).delete(id)
+    for (const id of [...linksMap(host).keys()]) linksMap(host).delete(id)
+  })
+  const baseVersion = appliedOpIds(host).length
+  const insertOp = {
+    op_id: 'insert-template-b',
+    actor: 'agent:test',
+    base_version: baseVersion,
+    stamp: [baseVersion, 'agent:test'],
+    op: 'add_node',
+    node_id: 3,
+    class_type: 'TestSource',
+    pos: [400, 20],
+    node: {
+      id: 3,
+      type: 'TestSource',
+      title: 'Flux Sampler',
+      pos: [400, 20],
+      size: [180, 90],
+      inputs: [],
+      outputs: [{ name: 'image', type: 'IMAGE', links: [] }]
+    }
+  } satisfies Op
+  const applied = applyOps(host, [insertOp], CATALOG)
+  expect(applied.outcomes).toEqual([
+    { op_id: insertOp.op_id, outcome: 'applied' }
+  ])
+  return Y.encodeStateAsUpdate(host, before)
+}
+
+describe('AgentCrdtProjection template replace', () => {
+  it('replaces the old template with the new one in a single batch when scope never drops', () => {
+    const { graph, source, note } = buildLiveGraph()
+    const scope = graphScopeOf(graph)
+    const mutations = createGraphMutations({
+      getScope: () => scope,
+      layout,
+      placement: inertPlacementPort
+    })
+    const host = mint(
+      toWorkflowJson(structuredClone(graph.serialize())),
+      CATALOG
+    )
+    const follower = new FollowerDoc()
+    const projection = new AgentCrdtProjection(
+      mutations,
+      () => graph,
+      () => follower.doc
+    )
+    projection.bind(WORKFLOW_ID, follower)
+    let seq = 0
+    const deliver = (update: Uint8Array) => {
+      follower.applyRemoteUpdate(update)
+      const applied = projection.applyFrame({
+        workflowId: WORKFLOW_ID,
+        seq: ++seq,
+        update,
+        actor: 'agent:comfy:host',
+        opIds: []
+      })
+      if (applied) projection.reconcileLiveGraph(WORKFLOW_ID)
+      return applied
+    }
+
+    try {
+      // Turn 1: the old template loads and catches up onto the live graph.
+      expect(deliver(Y.encodeStateAsUpdate(host))).toBe(true)
+      expect(graph.getNodeById(toNodeId(1))).toBe(source)
+      expect(graph.getNodeById(toNodeId(2))).toBe(note)
+
+      // Turn 2: "replace that with a different template," scope resolved
+      // throughout. This is the incremental delete+add path a real replace
+      // turn takes (`ecsFollowerAdapter`'s `nodeActions` branch: delete(1),
+      // delete(2), addNode(3) queued into the SAME `batch()` call) — not the
+      // full-reconcile fallback the retry test below proves.
+      const before = Y.encodeStateVector(host)
+      const replaceFrame = buildReplaceFrame(host, before)
+      expect(deliver(replaceFrame)).toBe(true)
+
+      expect(graph.getNodeById(toNodeId(1))).toBeNull()
+      expect(graph.getNodeById(toNodeId(2))).toBeNull()
+      expect(graph.getNodeById(toNodeId(3))?.title).toBe('Flux Sampler')
+      expect(
+        useNodeDataStore()
+          .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+          .map(({ id }) => id)
+      ).toEqual([toNodeId(3)])
+      expect(layout.deleteNodes.mock.calls.flatMap(([, ids]) => ids)).toEqual([
+        toNodeId(1),
+        toNodeId(2)
+      ])
+      expect(layout.createNode).toHaveBeenCalledWith(
+        scope,
+        toNodeId(3),
+        { position: { x: 400, y: 20 }, size: { width: 180, height: 90 } },
+        expect.anything()
+      )
+    } finally {
+      projection.destroy()
+      follower.destroy()
+      host.destroy()
+    }
+  })
+
   it('replaces the old template with the new one once the dropped frame retries, instead of leaving the old template stuck forever', () => {
     vi.useFakeTimers()
     try {
@@ -387,78 +504,61 @@ describe('AgentCrdtProjection self-driven reconcile retry — template replace',
         return applied
       }
 
-      // Turn 1: the old template loads and catches up onto the live graph.
-      deliver(Y.encodeStateAsUpdate(host))
-      expect(graph.getNodeById(toNodeId(1))).toBe(source)
-      expect(graph.getNodeById(toNodeId(2))).toBe(note)
+      try {
+        // Turn 1: the old template loads and catches up onto the live graph.
+        expect(deliver(Y.encodeStateAsUpdate(host))).toBe(true)
+        expect(graph.getNodeById(toNodeId(1))).toBe(source)
+        expect(graph.getNodeById(toNodeId(2))).toBe(note)
 
-      // Turn 2: "replace that with a different template." The agent's
-      // replace lands as one frame that both clears the old template and
-      // adds the new one's node. Scope briefly can't resolve the bound
-      // workflow tab, so the whole batch is rejected: nothing is swept, and
-      // both templates' worth of edits are dropped together.
-      const before = Y.encodeStateVector(host)
-      host.transact(() => {
-        for (const id of [...nodesMap(host).keys()]) nodesMap(host).delete(id)
-        for (const id of [...linksMap(host).keys()]) linksMap(host).delete(id)
-      })
-      const insertOp = {
-        op_id: 'insert-template-b',
-        actor: 'agent:test',
-        base_version: 10,
-        stamp: [10, 'agent:test'],
-        op: 'add_node',
-        node_id: 3,
-        class_type: 'TestSource',
-        pos: [400, 20],
-        node: {
-          id: 3,
-          type: 'TestSource',
-          title: 'Flux Sampler',
-          pos: [400, 20],
-          size: [180, 90],
-          inputs: [],
-          outputs: [{ name: 'image', type: 'IMAGE', links: [] }]
-        }
-      } satisfies Op
-      applyOps(host, [insertOp], CATALOG)
-      scopeAvailable = false
-      const replaceFrame = Y.encodeStateAsUpdate(host, before)
-      expect(deliver(replaceFrame)).toBe(false)
-      expect(graph.getNodeById(toNodeId(1))).toBe(source)
-      expect(graph.getNodeById(toNodeId(3))).toBeNull()
+        // Turn 2: "replace that with a different template." The agent's
+        // replace lands as one frame that both clears the old template and
+        // adds the new one's node. Scope briefly can't resolve the bound
+        // workflow tab, so `createGraphMutations().batch()` bails on its
+        // `getScope()` check before the incremental delete+add builder ever
+        // runs: nothing is swept, and both templates' worth of edits are
+        // dropped together.
+        const before = Y.encodeStateVector(host)
+        const replaceFrame = buildReplaceFrame(host, before)
+        scopeAvailable = false
+        expect(deliver(replaceFrame)).toBe(false)
+        expect(graph.getNodeById(toNodeId(1))).toBe(source)
+        expect(graph.getNodeById(toNodeId(3))).toBeNull()
 
-      // Scope recovers, but no further frame ever arrives (e.g. the user
-      // never sends another agent message). The self-driven retry must
-      // replay the dropped replace and sweep the live graph through the
-      // same pipeline a normal frame gets, proving the old template
-      // actually gets removed and the new one actually gets added — not
-      // that the old template is stuck on screen forever (Jo's report) and
-      // not that only half of the replace ever lands.
-      scopeAvailable = true
-      vi.advanceTimersByTime(5_000)
+        // Scope recovers, but no further frame ever arrives (e.g. the user
+        // never sends another agent message). The self-driven retry must
+        // replay the dropped replace and sweep the live graph through the
+        // same pipeline a normal frame gets, proving the old template
+        // actually gets removed and the new one actually gets added — not
+        // that the old template is stuck on screen forever (Jo's report) and
+        // not that only half of the replace ever lands. (The retry always
+        // recovers through the full-reconcile branch, `reconcileNode` rather
+        // than `addNode` for node 3 — see the single-batch test above for
+        // the incremental path.)
+        scopeAvailable = true
+        vi.advanceTimersByTime(5_000)
 
-      expect(graph.getNodeById(toNodeId(1))).toBeNull()
-      expect(graph.getNodeById(toNodeId(2))).toBeNull()
-      expect(graph.getNodeById(toNodeId(3))?.title).toBe('Flux Sampler')
-      expect(
-        useNodeDataStore()
-          .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
-          .map(({ id }) => id)
-      ).toEqual([toNodeId(3)])
-      expect(layout.deleteNodes.mock.calls.flatMap(([, ids]) => ids)).toEqual(
-        expect.arrayContaining([toNodeId(1), toNodeId(2)])
-      )
-      expect(layout.createNode).toHaveBeenCalledWith(
-        scope,
-        toNodeId(3),
-        expect.anything(),
-        expect.anything()
-      )
-
-      projection.destroy()
-      follower.destroy()
-      host.destroy()
+        expect(graph.getNodeById(toNodeId(1))).toBeNull()
+        expect(graph.getNodeById(toNodeId(2))).toBeNull()
+        expect(graph.getNodeById(toNodeId(3))?.title).toBe('Flux Sampler')
+        expect(
+          useNodeDataStore()
+            .getGraphNodesFor(scope.rootGraphId, scope.owningGraphId)
+            .map(({ id }) => id)
+        ).toEqual([toNodeId(3)])
+        expect(layout.deleteNodes.mock.calls.flatMap(([, ids]) => ids)).toEqual(
+          [toNodeId(1), toNodeId(2)]
+        )
+        expect(layout.createNode).toHaveBeenCalledWith(
+          scope,
+          toNodeId(3),
+          { position: { x: 400, y: 20 }, size: { width: 180, height: 90 } },
+          expect.anything()
+        )
+      } finally {
+        projection.destroy()
+        follower.destroy()
+        host.destroy()
+      }
     } finally {
       vi.useRealTimers()
     }
