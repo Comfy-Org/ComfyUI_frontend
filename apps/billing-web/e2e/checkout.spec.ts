@@ -146,6 +146,47 @@ test('a 3DS challenge is driven by the fake and settles as success', async ({
   expect(polls).toBeGreaterThanOrEqual(2)
 })
 
+test('a challenge whose authentication state lags the client secret is still driven in-session', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  withEmbeddedPaymentMethod(cloud)
+  const challenge = challengeRequiredOperation(
+    'op_subscribe',
+    'seti_e2e_secret'
+  )
+  let polls = 0
+  cloud.reply('GET', '/billing/ops/op_subscribe', () => {
+    polls += 1
+    if (polls === 1) {
+      return {
+        body: {
+          ...challenge,
+          phase: 'awaiting_invoice_payment',
+          authentication_state: 'processing'
+        }
+      }
+    }
+    return {
+      body:
+        polls === 2
+          ? { ...challenge, phase: 'awaiting_invoice_payment' }
+          : succeededOperation('op_subscribe')
+    }
+  })
+  await signIn(CHECKOUT)
+
+  await page.getByRole('button', { name: 'Pay and subscribe' }).click()
+
+  await expect(
+    page.getByRole('heading', { name: "You're all set" })
+  ).toBeVisible()
+  expect(await fakeStripeNextActionCalls(page)).toEqual([
+    { clientSecret: 'seti_e2e_secret' }
+  ])
+})
+
 test('reloading on the result page while pending recovers it and shows the settled outcome', async ({
   page,
   cloud,
