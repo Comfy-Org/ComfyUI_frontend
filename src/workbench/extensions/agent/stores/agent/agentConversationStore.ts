@@ -2,6 +2,7 @@ import { defineStore } from 'pinia'
 import { computed, ref } from 'vue'
 
 import type { AgentMessages, TurnId } from '../../schemas/agentApiSchema'
+import { toTurnId } from '../../schemas/agentApiSchema'
 import type {
   AgentChatEvent,
   AgentEventTransport
@@ -480,7 +481,7 @@ export const useAgentConversationStore = defineStore(
       hydratedTurnIds = new Map(
         history
           .filter((row) => row.role === 'assistant')
-          .map((row) => [row.id, row.turn_id as TurnId])
+          .map((row) => [row.id, toTurnId(row.turn_id)])
       )
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
