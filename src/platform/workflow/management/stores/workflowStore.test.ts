@@ -124,6 +124,25 @@ describe('useWorkflowStore', () => {
       expect(store.workflows.length).toBe(2)
     })
 
+    it('reports success and failure per call, not from shared async state', async () => {
+      expect(await syncRemoteWorkflows(['a.json'])).toBe(true)
+
+      // A slow failing sync must not read a faster later success as its own:
+      // useAsyncState shares its error/state refs across overlapping runs.
+      let releaseFailing!: () => void
+      const failing = new Promise((_, reject) => {
+        releaseFailing = () => reject(new Error('offline'))
+      })
+      vi.mocked(api.listUserDataFullInfo).mockReturnValueOnce(
+        failing as Promise<never>
+      )
+      const failed = store.syncWorkflows()
+      expect(await syncRemoteWorkflows(['a.json', 'b.json'])).toBe(true)
+      releaseFailing()
+
+      expect(await failed).toBe(false)
+    })
+
     it('should exclude temporary workflows', async () => {
       const workflow = store.createTemporary('c.json')
       await syncRemoteWorkflows(['a.json', 'b.json'])

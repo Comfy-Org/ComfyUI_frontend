@@ -411,10 +411,9 @@ export const useWorkflowStore = defineStore('workflow', () => {
   const {
     isReady: isSyncReady,
     isLoading: isSyncLoading,
-    error: syncError,
     execute: executeSyncWorkflows
   } = useAsyncState(
-    async (dir: string = '') => {
+    async (dir: string = ''): Promise<boolean> => {
       await syncEntities(
         dir ? 'workflows/' + dir : 'workflows',
         workflowLookup.value,
@@ -463,16 +462,22 @@ export const useWorkflowStore = defineStore('workflow', () => {
           return true
         }
       )
+      return true
     },
-    undefined,
+    false,
     { immediate: false }
   )
 
-  // useAsyncState swallows rejections by default, so callers that need to
-  // know whether the list is authoritative have to read the error ref.
+  /**
+   * Resolves `false` when this call's own sync failed and the list is stale.
+   *
+   * Reads the value this execution resolved with rather than the shared
+   * `error` ref: `useAsyncState` records a failure only for its latest
+   * execution, so an older sync that failed while a newer one was running
+   * would otherwise report that newer run's success.
+   */
   async function syncWorkflows(dir: string = ''): Promise<boolean> {
-    await executeSyncWorkflows(0, dir)
-    return syncError.value === undefined
+    return (await executeSyncWorkflows(0, dir)) === true
   }
 
   async function loadWorkflows(): Promise<void> {

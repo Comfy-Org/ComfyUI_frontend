@@ -319,6 +319,10 @@ export function useAgentWorkflowSelection({
     const outcome = await resolveRestoredTarget(workflowId, isCurrent)
     if (outcome.kind === 'superseded') return
     if (outcome.kind === 'unavailable') {
+      // Clearing the target flips canRestoreWorkflow off, which would cancel
+      // whichever restore superseded this one. Both `unavailable` returns sit
+      // behind an await, so the check belongs here rather than at each.
+      if (!isCurrent()) return
       panelStore.setWorkflowTarget(null)
       warnWorkflowUnavailable()
       return
