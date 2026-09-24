@@ -5,6 +5,18 @@ import { prefersReducedMotion } from '../../../composables/useReducedMotion'
 import type { NavFeatured } from '../../../data/mainNavigation'
 
 defineProps<{ featured: NavFeatured }>()
+
+const WCAG_AUTOPLAY_LIMIT_SECONDS = 5
+const MAX_TIMEUPDATE_INTERVAL_SECONDS = 0.25
+
+function pauseBeforeAutoplayLimit({ currentTarget }: Event) {
+  if (
+    currentTarget instanceof HTMLVideoElement &&
+    currentTarget.currentTime >=
+      WCAG_AUTOPLAY_LIMIT_SECONDS - MAX_TIMEUPDATE_INTERVAL_SECONDS
+  )
+    currentTarget.pause()
+}
 </script>
 
 <template>
@@ -25,6 +37,7 @@ defineProps<{ featured: NavFeatured }>()
         :autoplay="!prefersReducedMotion()"
         muted
         playsinline
+        @timeupdate="pauseBeforeAutoplayLimit"
       />
       <img
         v-else

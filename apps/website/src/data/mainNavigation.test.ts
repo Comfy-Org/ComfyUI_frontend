@@ -34,26 +34,48 @@ describe('getMainNavigation', () => {
     })
   })
 
-  it.for([
+  const featuredCards = [
     {
-      nav: 'Products',
+      position: 0,
       imageSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webp',
-      videoSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webm',
-      href: getRoutes('en').geminiOmni
+      videoSrc: 'https://media.comfy.org/website/gemini-omni/card-5.webm'
     },
     {
-      nav: 'Community',
+      position: 1,
       imageSrc:
         'https://media.comfy.org/website/learning/advertising3-thumb.png',
-      videoSrc: undefined,
+      videoSrc: undefined
+    }
+  ] as const
+
+  it.for([
+    { locale: 'en', card: featuredCards[0], href: '/gemini-omni' },
+    { locale: 'zh-CN', card: featuredCards[0], href: '/zh-CN/gemini-omni' },
+    { locale: 'ja', card: featuredCards[0], href: '/gemini-omni' },
+    {
+      locale: 'en',
+      card: featuredCards[1],
+      href: '/learning/ads/product-photography'
+    },
+    {
+      locale: 'zh-CN',
+      card: featuredCards[1],
+      href: '/zh-CN/learning/ads/product-photography'
+    },
+    {
+      locale: 'ja',
+      card: featuredCards[1],
       href: '/learning/ads/product-photography'
     }
-  ])('features the current launch in the $nav card', (card) => {
-    const featured = getMainNavigation('en').find(
-      (item) => item.label === card.nav
-    )?.featured
-    expect(featured?.imageSrc).toBe(card.imageSrc)
-    expect(featured?.videoSrc).toBe(card.videoSrc)
-    expect(featured?.cta.href).toBe(card.href)
-  })
+  ] as const)(
+    'links the featured card to $href for $locale',
+    ({ locale, card, href }) => {
+      const { imageSrc, videoSrc, cta } = getMainNavigation(locale).flatMap(
+        (item) => (item.featured ? [item.featured] : [])
+      )[card.position]
+      expect(imageSrc).toBe(card.imageSrc)
+      expect(videoSrc).toBe(card.videoSrc)
+      expect(cta.href).toBe(href)
+    }
+  )
 })

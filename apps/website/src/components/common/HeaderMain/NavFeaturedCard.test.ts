@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, onTestFinished, vi } from 'vitest'
 
 import type { NavFeatured } from '../../../data/mainNavigation'
 import NavFeaturedCard from './NavFeaturedCard.vue'
@@ -17,6 +17,18 @@ const featured: NavFeatured = {
   cta: { label: 'Explore', href: '/launch' }
 }
 
+function renderVideoCard() {
+  render(NavFeaturedCard, {
+    props: {
+      featured: { ...featured, videoSrc: 'https://example.com/clip.webm' }
+    }
+  })
+  const video = screen.getByLabelText('Featured clip')
+  if (!(video instanceof HTMLVideoElement))
+    throw new Error('Expected the featured media to be a video')
+  return video
+}
+
 describe('NavFeaturedCard', () => {
   it('renders the image when no video is set', () => {
     render(NavFeaturedCard, { props: { featured } })
@@ -25,14 +37,8 @@ describe('NavFeaturedCard', () => {
     ).toBe(featured.imageSrc)
   })
 
-  it('plays the video with the image as its poster when a video is set', () => {
-    render(NavFeaturedCard, {
-      props: {
-        featured: { ...featured, videoSrc: 'https://example.com/clip.webm' }
-      }
-    })
-    const video = screen.getByLabelText('Featured clip')
-    expect(video.tagName).toBe('VIDEO')
+  it('renders a non-looping video with the image as its poster when a video is set', () => {
+    const video = renderVideoCard()
     expect(video.getAttribute('src')).toBe('https://example.com/clip.webm')
     expect(video.getAttribute('poster')).toBe(featured.imageSrc)
     expect(video.hasAttribute('loop')).toBe(false)
@@ -43,17 +49,27 @@ describe('NavFeaturedCard', () => {
     { reduced: false, autoplay: true },
     { reduced: true, autoplay: false }
   ])(
-    'autoplays the video only without reduced motion (reduced: $reduced)',
+    'sets autoplay only without reduced motion (reduced: $reduced)',
     ({ reduced, autoplay }) => {
       motion.reduced = reduced
-      render(NavFeaturedCard, {
-        props: {
-          featured: { ...featured, videoSrc: 'https://example.com/clip.webm' }
-        }
+      onTestFinished(() => {
+        motion.reduced = false
       })
-      expect(
-        screen.getByLabelText('Featured clip').hasAttribute('autoplay')
-      ).toBe(autoplay)
+      expect(renderVideoCard().hasAttribute('autoplay')).toBe(autoplay)
+    }
+  )
+
+  it.for([
+    { currentTime: 4, paused: false },
+    { currentTime: 4.75, paused: true }
+  ])(
+    'is paused $paused once playback reaches $currentTime seconds',
+    async ({ currentTime, paused }) => {
+      const video = renderVideoCard()
+      await video.play()
+      video.currentTime = currentTime
+      video.dispatchEvent(new Event('timeupdate'))
+      expect(video.paused).toBe(paused)
     }
   )
 })
