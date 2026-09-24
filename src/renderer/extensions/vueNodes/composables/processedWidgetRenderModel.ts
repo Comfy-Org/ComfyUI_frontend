@@ -179,6 +179,21 @@ function isWidgetVisible(
   })
 }
 
+/**
+ * `lastNodeErrors` is a plain record keyed by execution id; a node whose id
+ * is `constructor`/`toString`/`valueOf` (accepted by `parseNodeId`) would
+ * otherwise resolve to the inherited `Object.prototype` member instead of
+ * `undefined` when it has no recorded error.
+ */
+function getOwnNodeErrors<T>(
+  nodeErrors: Record<string, T> | null | undefined,
+  id: string
+): T | undefined {
+  return nodeErrors && Object.hasOwn(nodeErrors, id)
+    ? nodeErrors[id]
+    : undefined
+}
+
 function hasWidgetError(
   widget: { name: string; errorTarget?: WidgetErrorTarget },
   nodeExecId: NodeExecutionId | null,
@@ -199,7 +214,10 @@ function hasWidgetError(
   const target = widget.errorTarget
   if (!target) return hasHostError
 
-  const sourceErrors = executionErrorStore.lastNodeErrors?.[target.executionId]
+  const sourceErrors = getOwnNodeErrors(
+    executionErrorStore.lastNodeErrors,
+    target.executionId
+  )
   return (
     hasHostError ||
     !!sourceErrors?.errors.some(
@@ -526,7 +544,7 @@ export function computeProcessedWidgets({
     slotMetadata,
     nodeExecId,
     nodeErrors: nodeExecId
-      ? executionErrorStore.lastNodeErrors?.[nodeExecId]
+      ? getOwnNodeErrors(executionErrorStore.lastNodeErrors, nodeExecId)
       : undefined,
     widgetValueStore,
     executionErrorStore,

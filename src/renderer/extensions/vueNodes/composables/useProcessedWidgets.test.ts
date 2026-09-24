@@ -405,6 +405,32 @@ describe('widget error state', () => {
     )
     expect(processWidgetNamed('ckpt_name').hasError).toBe(true)
   })
+
+  it('does not crash on an inherited Object.prototype member id', () => {
+    useExecutionErrorStore().recordNodeErrors({
+      [createNodeExecutionId([toNodeId(2)])]: {
+        errors: [
+          {
+            type: 'required_input_missing',
+            message: 'seed is required',
+            details: '',
+            extra_info: { input_name: 'seed' }
+          }
+        ],
+        class_type: 'TestNode',
+        dependent_outputs: []
+      }
+    })
+    const id = widgetId(GRAPH_ID, toNodeId('constructor'), 'seed')
+    registerWidgetState(id, { type: 'combo' })
+
+    const [processed] = processWidgets({
+      widgetIds: [id],
+      nodeId: toNodeId('constructor')
+    })
+
+    expect(processed.hasError).toBe(false)
+  })
 })
 
 describe('promoted subgraph widgets', () => {
