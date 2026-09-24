@@ -642,7 +642,7 @@ describe('useModelStore', () => {
       expect(names).not.toContain('0/sdxl.safetensors')
     })
 
-    it('eagerly loads the rebuilt folders when a load follows the flag flip', async () => {
+    it('eagerly loads the rebuilt folders when a watcher registered after the store loads on the flag flip', async () => {
       enableMocks(false)
       store = useModelStore()
       await store.loadModelFolders()
