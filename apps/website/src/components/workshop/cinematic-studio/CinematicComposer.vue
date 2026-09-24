@@ -17,6 +17,7 @@ import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/mode
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { framedStyle } from './aspect-style'
+import CinematicDirectionChips from './CinematicDirectionChips.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicOptionIcon from './CinematicOptionIcon.vue'
@@ -49,7 +50,7 @@ const {
 }>()
 
 const emit = defineEmits<{
-  open: [key: PopoverKey]
+  open: [key: PopoverKey, part?: DirectionPart]
   generate: []
   cancel: []
 }>()
@@ -68,26 +69,13 @@ const model = computed(() =>
   models.find((candidate) => candidate.slug === modelSlug.value)
 )
 
-function summary(parts: readonly DirectionPart[], fallback: string) {
-  const chosen = parts
-    .map((part) => directionOption(part, direction))
-    .filter((option) => option.id !== 'auto')
-    .map((option) => tc(option.label, locale))
-  return chosen.length ? chosen.join(' · ') : fallback
-}
-
-const cameraLabel = computed(() =>
-  summary(['body', 'focal'], tc('cinematic.section.camera', locale))
+const bodyLabel = computed(() =>
+  tc(directionOption('body', direction).label, locale)
 )
-const directionLabel = computed(() =>
-  summary(['shot', 'light', 'look'], tc('cinematic.section.direction', locale))
-)
-const lookPreview = computed(
-  () =>
-    directionOption('look', direction).preview ??
-    directionOption('shot', direction).preview
-)
-const formatLabel = computed(() => `${aspect} · ${resolution} · ×${takes}`)
+const focalLabel = computed(() => {
+  const focal = directionOption('focal', direction)
+  return focal.id === 'auto' ? undefined : tc(focal.label, locale)
+})
 const referencePreview = useObjectUrl(() => references[0])
 const canGenerate = computed(
   () => gate === 'ready' && scene.value.trim().length > 0
@@ -188,40 +176,40 @@ const chipClass = (key: PopoverKey) =>
           <CinematicOptionIcon
             part="body"
             :option="direction.body"
-            class="h-3.5 w-6 shrink-0"
+            class="h-4 w-7 shrink-0"
           />
-          <span class="truncate">{{ cameraLabel }}</span>
+          {{ bodyLabel }}
+          <span v-if="focalLabel" class="text-primary-warm-gray">
+            {{ focalLabel }}
+          </span>
         </button>
-        <button
-          type="button"
-          aria-haspopup="dialog"
-          :aria-expanded="openPopover === 'direction'"
-          :class="chipClass('direction')"
-          @click="emit('open', 'direction')"
-        >
-          <img
-            v-if="lookPreview"
-            :src="lookPreview"
-            alt=""
-            class="size-5 shrink-0 rounded-md object-cover ring-1 ring-transparency-white-t20"
-          />
-          <span class="truncate">{{ directionLabel }}</span>
-        </button>
+        <CinematicDirectionChips
+          :direction
+          :open="openPopover === 'direction'"
+          :locale
+          @open="emit('open', 'direction', $event)"
+        />
         <button
           type="button"
           aria-haspopup="dialog"
           :aria-expanded="openPopover === 'format'"
-          :aria-label="`${tc('cinematic.composer.format', locale)}: ${formatLabel}`"
-          :class="chipClass('format')"
+          :aria-label="`${tc('cinematic.composer.format', locale)}: ${aspect}, ${resolution}, ×${takes}`"
+          :class="cn(chipClass('format'), 'gap-0 px-0')"
           @click="emit('open', 'format')"
         >
-          <span class="grid size-4 place-items-center" aria-hidden="true">
-            <span
-              class="block max-h-full rounded-xs border-[1.5px] border-current"
-              :style="framedStyle(aspect, '1rem')"
-            />
+          <span class="flex items-center gap-2 px-3">
+            <span class="grid size-4 place-items-center" aria-hidden="true">
+              <span
+                class="block max-h-full rounded-xs border-[1.5px] border-current"
+                :style="framedStyle(aspect, '1rem')"
+              />
+            </span>
+            {{ aspect }}
           </span>
-          {{ formatLabel }}
+          <span class="h-4 w-px bg-transparency-white-t8" aria-hidden="true" />
+          <span class="px-3">{{ resolution }}</span>
+          <span class="h-4 w-px bg-transparency-white-t8" aria-hidden="true" />
+          <span class="px-3">×{{ takes }}</span>
         </button>
       </div>
       <CinematicGenerateAction

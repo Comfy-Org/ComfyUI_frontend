@@ -5,6 +5,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 import { useCinematicPopover } from '../../../composables/useCinematicPopover'
 import { useCinematicShot } from '../../../composables/useCinematicShot'
+import type { DirectionPart } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
 import type { Locale } from '../../../i18n/translations'
@@ -60,6 +61,17 @@ const popoverClass = computed(() =>
 
 const starter = ref<string>()
 
+const directionStart = ref<DirectionPart>()
+
+function openPopover(key: PopoverKey, part?: DirectionPart) {
+  const switchingTab =
+    key === 'direction' &&
+    popover.value === 'direction' &&
+    part !== directionStart.value
+  directionStart.value = part
+  if (!switchingTab) togglePopover(key)
+}
+
 function start(shot: StarterShot) {
   starter.value = shot.id
   startShot(shot)
@@ -98,7 +110,7 @@ function generate() {
     <div
       class="sticky bottom-0 z-50 bg-linear-to-t from-primary-comfy-ink via-primary-comfy-ink/90 to-transparent px-3 pt-4 pb-4 sm:px-6 sm:pb-6"
     >
-      <div class="relative mx-auto w-full max-w-6xl">
+      <div class="relative mx-auto w-full max-w-7xl">
         <div
           v-if="popover"
           class="fixed inset-0 z-40 bg-black/60 lg:hidden"
@@ -106,8 +118,9 @@ function generate() {
         />
         <CinematicPicker
           v-if="popover && pickerGroups(popover).length"
-          :key="popover"
+          :key="`${popover}-${directionStart}`"
           :groups="pickerGroups(popover)"
+          :start="directionStart"
           :direction
           :title="popoverTitle(popover, locale)"
           :locale
@@ -168,7 +181,7 @@ function generate() {
           :rendering="studio.rendering.value"
           :open-popover="popover"
           :locale
-          @open="togglePopover"
+          @open="openPopover"
           @generate="generate"
           @cancel="studio.cancel"
         />

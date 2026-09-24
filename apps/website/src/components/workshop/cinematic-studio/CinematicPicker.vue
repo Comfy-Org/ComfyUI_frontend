@@ -20,11 +20,13 @@ const {
   groups,
   direction,
   title,
+  start,
   locale = 'en'
 } = defineProps<{
   groups: readonly DirectionGroup[]
   direction: Direction
   title: string
+  start?: DirectionPart
   locale?: Locale
 }>()
 
@@ -38,7 +40,7 @@ const visual = groups.some((group) =>
   group.options.some((option) => option.preview || option.palette)
 )
 const tabbed = multiple && visual
-const activePart = ref(groups[0].part)
+const activePart = ref(start ?? groups[0].part)
 const activeGroup = computed(
   () => groups.find((group) => group.part === activePart.value) ?? groups[0]
 )
