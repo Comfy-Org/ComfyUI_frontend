@@ -31,7 +31,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'FE-2898 billing-web on session; C3 BE-17063, C5 BE-17066, C11 BE-17136 on staging'
+        'FE-2898 billing-web on session; C3 BE-17063, C5 BE-17066, C11 BE-17136 on testcloud'
       )
       await signInOnCloud(cloudTab, sessionAccount)
       await billingTab.goto(entryLink('checkout', { plan: PLAN }))
@@ -47,7 +47,10 @@ test.describe(
       sessionAccount,
       teamWorkspaceId
     }) => {
-      test.fixme(true, 'FE-2898 billing-web on session; C5 BE-17066 on staging')
+      test.fixme(
+        true,
+        'FE-2898 billing-web on session; C5 BE-17066 on testcloud'
+      )
       await signInOnCloud(cloudTab, sessionAccount)
       const [workspaceId] = await Promise.all([
         billingTab.nextWorkspaceId(cloudTab.origin),
@@ -66,7 +69,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'FE-2898 billing-web on session, FE-2903 account-switch notice (open question 11); a second staging account'
+        'FE-2898 billing-web on session, FE-2903 account-switch notice (open question 11); a second test account'
       )
       await signInOnCloud(cloudTab, sessionAccount)
       const read = billingTab.waitForResponse('GET', sessionEndpoint(cloudTab))
@@ -81,7 +84,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'FE-2898 billing-web on session, FE-2897 lifecycle; C1 BE-17061 on staging'
+        'FE-2898 billing-web on session, FE-2897 lifecycle; C1 BE-17061 on testcloud'
       )
       await signInOnCloud(cloudTab, sessionAccount)
       await billingTab.goto(entryLink('subscription'))
@@ -101,7 +104,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'FE-2898 billing-web on session, FE-2895 authorize(); C5 BE-17066 on staging'
+        'FE-2898 billing-web on session, FE-2895 authorize(); C5 BE-17066 on testcloud'
       )
       await signInOnCloud(cloudTab, sessionAccount)
       await billingTab.goto(entryLink('checkout', { plan: PLAN }))
@@ -119,7 +122,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'FE-2898 billing-web on session, FE-2895 workspace header; C5 BE-17066 on staging'
+        'FE-2898 billing-web on session, FE-2895 workspace header; C5 BE-17066 on testcloud'
       )
       await signInOnCloud(cloudTab, sessionAccount)
       const teamTab = new SessionTab(await context.newPage(), billingTab.origin)
@@ -136,7 +139,10 @@ test.describe(
     test('[SO1] signed out, a checkout link keeps every parameter through sign-in', async ({
       billingTab
     }) => {
-      test.fixme(true, 'FE-2898 billing-web on session; C3 BE-17063 on staging')
+      test.fixme(
+        true,
+        'FE-2898 billing-web on session; C3 BE-17063 on testcloud'
+      )
       await billingTab.goto(entryLink('checkout', { plan: PLAN }))
       await expect(billingTab.page).toHaveURL(
         new RegExp(`/sign-in\\?returnTo=.*plan%3D${PLAN}`)
@@ -146,7 +152,10 @@ test.describe(
     test('[SO2] signed out, subscription, payment-method and result links keep their parameters', async ({
       billingTab
     }) => {
-      test.fixme(true, 'FE-2898 billing-web on session; C3 BE-17063 on staging')
+      test.fixme(
+        true,
+        'FE-2898 billing-web on session; C3 BE-17063 on testcloud'
+      )
       for (const intent of ['subscription', 'payment-methods', 'result']) {
         await billingTab.goto(entryLink(intent))
         await expect(billingTab.page).toHaveURL(
@@ -171,7 +180,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'FE-2898 billing-web on session; C5 BE-17066 on staging; a workspace the account is not in'
+        'FE-2898 billing-web on session; C5 BE-17066 on testcloud; a workspace the account is not in'
       )
       await signInOnCloud(cloudTab, sessionAccount)
       const refused = billingTab.page.waitForResponse(
@@ -189,7 +198,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'FE-2894 boot rules, FE-2903 Cloud lifecycle; C3 BE-17063 on staging'
+        'FE-2894 boot rules, FE-2903 Cloud lifecycle; C3 BE-17063 on testcloud'
       )
       await cloudTab.goto(`/?workspace=${teamWorkspaceId}`)
       await expect(cloudTab.page).toHaveURL(/\/login/)

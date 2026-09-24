@@ -38,7 +38,7 @@ describe('parseCrossOriginSessionEnv', () => {
     [
       'an origin with a path',
       'SESSION_E2E_CLOUD_URL',
-      'https://stagingcloud.comfy.org/cloud'
+      'https://testcloud.comfy.org/cloud'
     ],
     [
       'a remote upstream',
@@ -52,10 +52,10 @@ describe('parseCrossOriginSessionEnv', () => {
 
 describe('session env helpers', () => {
   const env = parseCrossOriginSessionEnv({
-    SESSION_E2E_CLOUD_URL: 'https://stagingcloud.comfy.org',
+    SESSION_E2E_CLOUD_URL: 'https://testcloud.comfy.org',
     SESSION_E2E_WEBSITE_URL: 'https://www.comfy.org/',
     SESSION_E2E_WEBSITE_UPSTREAM: 'http://localhost:4321/',
-    SESSION_E2E_BILLING_URL: 'https://stagingbilling.comfy.org',
+    SESSION_E2E_BILLING_URL: 'https://testbilling.comfy.org',
     SESSION_E2E_EXTRA_ORIGINS: 'https://challenges.cloudflare.com'
   })
 
@@ -70,8 +70,8 @@ describe('session env helpers', () => {
       'https://challenges.cloudflare.com',
       'https://identitytoolkit.googleapis.com',
       'https://securetoken.googleapis.com',
-      'https://stagingbilling.comfy.org',
-      'https://stagingcloud.comfy.org',
+      'https://testbilling.comfy.org',
+      'https://testcloud.comfy.org',
       'https://www.comfy.org'
     ])
   })

@@ -18,7 +18,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'FE-2896 website header, FE-2894 boot rules; C3 BE-17063 and C11 BE-17136 on staging'
+        'FE-2896 website header, FE-2894 boot rules; C3 BE-17063 and C11 BE-17136 on testcloud'
       )
       await signInOnCloud(cloudTab, sessionAccount)
       const read = websiteTab.waitForResponse('GET', sessionEndpoint(cloudTab))
@@ -35,7 +35,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'FE-2897 create on sign-in, FE-2903 Cloud lifecycle; C1 BE-17061 and C3 BE-17063 on staging'
+        'FE-2897 create on sign-in, FE-2903 Cloud lifecycle; C1 BE-17061 and C3 BE-17063 on testcloud'
       )
       await websiteTab.goto('/')
       const read = cloudTab.waitForResponse('GET', sessionEndpoint(cloudTab))
@@ -50,7 +50,7 @@ test.describe(
       sessionAccount,
       teamWorkspaceId
     }) => {
-      test.fixme(true, 'FE-2904 workspace header; C5 BE-17066 on staging')
+      test.fixme(true, 'FE-2904 workspace header; C5 BE-17066 on testcloud')
       await signInOnCloud(cloudTab, sessionAccount)
       const teamTab = new SessionTab(await context.newPage(), cloudTab.origin, {
         workspace: teamWorkspaceId
@@ -70,7 +70,7 @@ test.describe(
       sessionAccount,
       teamWorkspaceId
     }) => {
-      test.fixme(true, 'FE-2905 media workspace_id; C7 BE-17068 on staging')
+      test.fixme(true, 'FE-2905 media workspace_id; C7 BE-17068 on testcloud')
       await signInOnCloud(cloudTab, sessionAccount)
       const media = cloudTab.page.waitForResponse(
         (response) =>
@@ -88,7 +88,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'FE-2897 lifecycle, FE-2903 Cloud lifecycle, FE-2905 socket; C6 BE-17067 on staging'
+        'FE-2897 lifecycle, FE-2903 Cloud lifecycle, FE-2905 socket; C6 BE-17067 on testcloud'
       )
       await signInOnCloud(cloudTab, sessionAccount)
       const socket = await cloudTab.sockets.waitForSocket((url) =>
@@ -109,7 +109,7 @@ test.describe(
       sessionAccount,
       teamWorkspaceId
     }) => {
-      test.fixme(true, 'FE-2904 403 handling; C5 BE-17066 on staging')
+      test.fixme(true, 'FE-2904 403 handling; C5 BE-17066 on testcloud')
       await signInOnCloud(cloudTab, sessionAccount)
       await cloudTab.goto(`/?workspace=${teamWorkspaceId}`)
       const refused = cloudTab.page.waitForResponse(
@@ -128,7 +128,7 @@ test.describe(
       websiteTab,
       sessionAccount
     }) => {
-      test.fixme(true, 'FE-2897 lifecycle; C2 BE-17064 revoke-all on staging')
+      test.fixme(true, 'FE-2897 lifecycle; C2 BE-17064 revoke-all on testcloud')
       await signInOnCloud(cloudTab, sessionAccount)
       const revokeAll = cloudTab.waitForResponse(
         'POST',
@@ -167,7 +167,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'FE-2903 Cloud lifecycle, FE-2907 staging steps; C1 BE-17061, C3 BE-17063 and BE-17135 on staging'
+        'FE-2903 Cloud lifecycle, FE-2907 rollout steps; C1 BE-17061, C3 BE-17063 and BE-17135 on testcloud'
       )
       await signInOnCloud(cloudTab, sessionAccount)
       const read = cloudTab.waitForResponse('GET', sessionEndpoint(cloudTab))

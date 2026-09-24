@@ -143,7 +143,7 @@ export const crossOriginSessionFixture = base.extend<
     })
     expect(
       blocked.filter((entry) => entry.startsWith('Production ')),
-      'A staging session run reached production'
+      'A session E2E run reached production'
     ).toEqual([])
   },
   context: async (

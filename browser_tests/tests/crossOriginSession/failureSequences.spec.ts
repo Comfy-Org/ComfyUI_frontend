@@ -22,7 +22,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'FE-2894 boot rules; C1 BE-17061 revoked-cookie rule on staging'
+        'FE-2894 boot rules; C1 BE-17061 revoked-cookie rule on testcloud'
       )
       await signInOnCloud(cloudTab, sessionAccount)
       const signOut = cloudTab.waitForResponse(
@@ -42,7 +42,7 @@ test.describe(
       cloudTab,
       sessionAccount
     }) => {
-      test.fixme(true, 'FE-2903 Cloud lifecycle; C1 BE-17061 on staging')
+      test.fixme(true, 'FE-2903 Cloud lifecycle; C1 BE-17061 on testcloud')
       await signInOnCloud(cloudTab, sessionAccount)
       const signOut = cloudTab.waitForResponse(
         'DELETE',
@@ -60,7 +60,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'FE-2897 lifecycle, FE-2903 Cloud lifecycle, FE-2898 billing-web; C1 BE-17061 on staging'
+        'FE-2897 lifecycle, FE-2903 Cloud lifecycle, FE-2898 billing-web; C1 BE-17061 on testcloud'
       )
       await signInOnCloud(cloudTab, sessionAccount)
       const [cloudRead, websiteRead] = await Promise.all([
@@ -78,7 +78,7 @@ test.describe(
       cloudTab,
       sessionAccount
     }) => {
-      test.fixme(true, 'FE-2892 web session client; C3 BE-17063 on staging')
+      test.fixme(true, 'FE-2892 web session client; C3 BE-17063 on testcloud')
       await signInOnCloud(cloudTab, sessionAccount)
       const read = cloudTab.waitForResponse('GET', sessionEndpoint(cloudTab))
       await cloudTab.page.reload()
@@ -92,7 +92,7 @@ test.describe(
       cloudTab,
       sessionAccount
     }) => {
-      test.fixme(true, 'C0 BE-17071 and C5 BE-17066 on staging')
+      test.fixme(true, 'C0 BE-17071 and C5 BE-17066 on testcloud')
       await signInOnCloud(cloudTab, sessionAccount)
       const preview = await openPreviewPage(context)
       expect(
@@ -110,7 +110,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'C5 BE-17066 link-click exception on staging; target a real short link and the consent page'
+        'C5 BE-17066 link-click exception on testcloud; target a real short link and the consent page'
       )
       await signInOnCloud(cloudTab, sessionAccount)
       await websiteTab.goto('/')
@@ -127,7 +127,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'FE-2895 authorize(); C5 BE-17066 on staging; a second staging account for the valid-header half'
+        'FE-2895 authorize(); C5 BE-17066 on testcloud; a second test account for the valid-header half'
       )
       await signInOnCloud(cloudTab, sessionAccount)
       const status = await cloudTab.page.evaluate(async (url) => {
@@ -144,7 +144,7 @@ test.describe(
       cloudTab,
       sessionAccount
     }) => {
-      test.fixme(true, 'C1 BE-17061 on staging')
+      test.fixme(true, 'C1 BE-17061 on testcloud')
       await signInOnCloud(cloudTab, sessionAccount)
       const legacyCookies = (await context.cookies(cloudTab.origin)).filter(
         (cookie) => !cookie.name.startsWith('__Host-')
@@ -168,7 +168,7 @@ test.describe(
       websiteTab,
       sessionAccount
     }) => {
-      test.fixme(true, 'FE-2897 lifecycle; C2 BE-17064 on staging')
+      test.fixme(true, 'FE-2897 lifecycle; C2 BE-17064 on testcloud')
       await signInOnCloud(cloudTab, sessionAccount)
       const revokeAll = cloudTab.waitForResponse(
         'POST',
@@ -189,7 +189,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'FE-2895 authorize(), FE-2904 API client; C5 BE-17066 on staging; a second staging account to switch to'
+        'FE-2895 authorize(), FE-2904 API client; C5 BE-17066 on testcloud; a second test account to switch to'
       )
       await signInOnCloud(cloudTab, sessionAccount)
       await cloudTab.page.route(
@@ -212,7 +212,7 @@ test.describe(
       sessionAccount,
       teamWorkspaceId
     }) => {
-      test.fixme(true, 'FE-2904 API client; C5 BE-17066 on staging')
+      test.fixme(true, 'FE-2904 API client; C5 BE-17066 on testcloud')
       await signInOnCloud(cloudTab, sessionAccount)
       await cloudTab.goto(`/?workspace=${teamWorkspaceId}`)
       const refused = cloudTab.page.waitForResponse(
@@ -229,7 +229,7 @@ test.describe(
       sessionAccount,
       teamWorkspaceId
     }) => {
-      test.fixme(true, 'FE-2905 socket on session; C6 BE-17067 on staging')
+      test.fixme(true, 'FE-2905 socket on session; C6 BE-17067 on testcloud')
       await signInOnCloud(cloudTab, sessionAccount)
       await cloudTab.goto(`/?workspace=${teamWorkspaceId}`)
       const socket = await cloudTab.sockets.waitForSocket(
@@ -246,7 +246,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'C0 BE-17071 and C5 BE-17066 on staging; swap in the custom-node proxy route once C5 names it'
+        'C0 BE-17071 and C5 BE-17066 on testcloud; swap in the custom-node proxy route once C5 names it'
       )
       await signInOnCloud(cloudTab, sessionAccount)
       const preview = await openPreviewPage(context)
@@ -262,7 +262,7 @@ test.describe(
     }) => {
       test.fixme(
         true,
-        'FE-2894 boot rules, FE-2897 heartbeat; C1 BE-17061 on staging; other browsers and Desktop stay manual'
+        'FE-2894 boot rules, FE-2897 heartbeat; C1 BE-17061 on testcloud; other browsers and Desktop stay manual'
       )
       await signInOnCloud(cloudTab, sessionAccount)
       await cloudTab.page.evaluate(() => localStorage.clear())

@@ -1,16 +1,18 @@
-# Cross-origin session E2E (staging)
+# Cross-origin session E2E (testcloud)
 
 Opt-in suite for the shared web session (`unified_web_session`, TDD section 17,
 FE-2906). It never runs in the default `playwright.config.ts` run or in CI; it
-runs only through `playwright.session.config.ts` against staging.
+runs only through `playwright.session.config.ts` against the test environment
+(testcloud). The web session backend is not on staging yet; point the variables
+at staging instead once it is. Any non-production `comfy.org` origin works.
 
-- Cloud and platform are the real staging deployments, so the cross-origin calls
-  and the cookie are real.
-- The website has no staging host. The harness serves a locally running website
+- Cloud (`testcloud.comfy.org`) and platform are the real test deployments, so
+  the cross-origin calls and the cookie are real.
+- The website has no test host. The harness serves a locally running website
   under a `comfy.org` name, so the browser sends that name as `Origin` and the
-  staging trusted-origin list is exercised. This proves Origin and trusted-origin
+  test environment's trusted-origin list is exercised. This proves Origin and trusted-origin
   behaviour only, not TLS, DNS or the website's hosting.
-- billing-web can be the staging deployment, or local the same way as the
+- billing-web can be the test deployment (`testbilling.comfy.org`), or local the same way as the
   website.
 
 All tabs share one browser context, so they share the cookie jar.
@@ -34,18 +36,18 @@ Put these in `.env` (loaded automatically) or inject them with `op run`. Never
 commit credentials. Production hosts are rejected, and a request to one fails
 the test.
 
-| Variable                        | Example                             | Needed by                              |
-| ------------------------------- | ----------------------------------- | -------------------------------------- |
-| `SESSION_E2E_CLOUD_URL`         | `https://stagingcloud.comfy.org`    | Cloud tab                              |
-| `SESSION_E2E_WEBSITE_URL`       | `https://www.comfy.org`             | Website tab; must be on staging's list |
-| `SESSION_E2E_WEBSITE_UPSTREAM`  | `http://localhost:4321`             | Website tab                            |
-| `SESSION_E2E_BILLING_URL`       | `https://stagingbilling.comfy.org`  | billing-web tab                        |
-| `SESSION_E2E_BILLING_UPSTREAM`  | `http://localhost:5174`             | Optional: serve billing-web locally    |
-| `SESSION_E2E_PLATFORM_URL`      | staging platform origin             | Platform tab                           |
-| `SESSION_E2E_EMAIL`             | a dedicated staging account         | Signed-in tests                        |
-| `SESSION_E2E_PASSWORD`          |                                     | Signed-in tests                        |
-| `SESSION_E2E_TEAM_WORKSPACE_ID` | a team workspace the account owns   | Workspace tests                        |
-| `SESSION_E2E_EXTRA_ORIGINS`     | `https://challenges.cloudflare.com` | Third-party origins a run must reach   |
+| Variable                        | Example                             | Needed by                            |
+| ------------------------------- | ----------------------------------- | ------------------------------------ |
+| `SESSION_E2E_CLOUD_URL`         | `https://testcloud.comfy.org`       | Cloud tab                            |
+| `SESSION_E2E_WEBSITE_URL`       | `https://www.comfy.org`             | Website tab; must be on test's list  |
+| `SESSION_E2E_WEBSITE_UPSTREAM`  | `http://localhost:4321`             | Website tab                          |
+| `SESSION_E2E_BILLING_URL`       | `https://testbilling.comfy.org`     | billing-web tab                      |
+| `SESSION_E2E_BILLING_UPSTREAM`  | `http://localhost:5174`             | Optional: serve billing-web locally  |
+| `SESSION_E2E_PLATFORM_URL`      | test platform origin                | Platform tab                         |
+| `SESSION_E2E_EMAIL`             | a dedicated test-env account        | Signed-in tests                      |
+| `SESSION_E2E_PASSWORD`          |                                     | Signed-in tests                      |
+| `SESSION_E2E_TEAM_WORKSPACE_ID` | a team workspace the account owns   | Workspace tests                      |
+| `SESSION_E2E_EXTRA_ORIGINS`     | `https://challenges.cloudflare.com` | Third-party origins a run must reach |
 
 A test whose variables are missing is skipped with the names it needs.
 Unlisted third-party requests are aborted and attached as `blocked-egress.json`.
@@ -62,7 +64,7 @@ email-verified `@comfy.org` account. The server rule (BE-17135) still requires
 ## Run locally
 
 ```sh
-PUBLIC_WORKSHOP_CLOUD_ENV=staging pnpm --filter @comfyorg/website dev --port 4321
+PUBLIC_WORKSHOP_CLOUD_ENV=test pnpm --filter @comfyorg/website dev --port 4321
 
 pnpm exec playwright test --config playwright.session.config.ts --list
 pnpm exec playwright test --config playwright.session.config.ts --project=session-flag-off
@@ -80,7 +82,7 @@ that the Firebase recorder saw the sign-in.
 Every other row calls `test.fixme(true, reason)` first, naming the tickets and
 backend slices it waits for, then sketches the steps against the API contract in
 TDD section 9. Finish the steps and drop the `fixme` once the blockers are live
-on staging. Ids are stable; keep them.
+on testcloud. Ids are stable; keep them.
 
 - `E2E-01`..`E2E-09`: the section 17 end-to-end rows, including flag off.
 - `FS-xx`: the failure sequences, numbered in TDD order. FS-03, FS-04, FS-05,

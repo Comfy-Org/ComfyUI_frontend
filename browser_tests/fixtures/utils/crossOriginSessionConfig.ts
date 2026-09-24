@@ -29,7 +29,7 @@ const origin = z
   }, 'Use an origin without a path, query, credentials, or fragment')
   .transform((value) => new URL(value).origin)
 
-const stagingComfyOrigin = origin.refine((value) => {
+const nonProductionComfyOrigin = origin.refine((value) => {
   const url = new URL(value)
   return (
     url.protocol === 'https:' &&
@@ -53,12 +53,12 @@ const originList = z
   .pipe(z.array(origin))
 
 const crossOriginSessionEnvSchema = z.object({
-  SESSION_E2E_CLOUD_URL: stagingComfyOrigin.optional(),
-  SESSION_E2E_WEBSITE_URL: stagingComfyOrigin.optional(),
+  SESSION_E2E_CLOUD_URL: nonProductionComfyOrigin.optional(),
+  SESSION_E2E_WEBSITE_URL: nonProductionComfyOrigin.optional(),
   SESSION_E2E_WEBSITE_UPSTREAM: upstream.optional(),
-  SESSION_E2E_BILLING_URL: stagingComfyOrigin.optional(),
+  SESSION_E2E_BILLING_URL: nonProductionComfyOrigin.optional(),
   SESSION_E2E_BILLING_UPSTREAM: upstream.optional(),
-  SESSION_E2E_PLATFORM_URL: stagingComfyOrigin.optional(),
+  SESSION_E2E_PLATFORM_URL: nonProductionComfyOrigin.optional(),
   SESSION_E2E_EMAIL: z.string().email().optional(),
   SESSION_E2E_PASSWORD: z.string().min(1).optional(),
   SESSION_E2E_TEAM_WORKSPACE_ID: z.string().min(1).optional(),
