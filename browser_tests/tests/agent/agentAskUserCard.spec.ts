@@ -22,11 +22,11 @@ const test = mergeTests(agentTest, webSocketFixture)
 test.describe('Agent ask_user card', { tag: '@cloud' }, () => {
   test.use({ connectWebSocketToServer: false })
 
-  test.beforeEach(async ({ agentPanel, getWebSocket }) => {
+  test.beforeEach(async ({ agentPanel, getAgentSocket }) => {
     await agentPanel.open()
     await agentPanel.selectWorkflow()
     await agentPanel.sendPrompt('Make a winter animal scene')
-    const ws = await getWebSocket()
+    const ws = await getAgentSocket()
     // A frame the panel only renders once the turn is active, so the ask
     // below cannot race the turn's acceptance.
     ws.send(JSON.stringify(THINKING_EVENT))
@@ -36,13 +36,13 @@ test.describe('Agent ask_user card', { tag: '@cloud' }, () => {
   test('a multi-select ask holds its limit, counts Other text, and posts the trimmed answer', async ({
     agentPanel,
     askAnswers,
-    getWebSocket
+    getAgentSocket
   }) => {
     const panel = agentPanel.root
     const prompt = 'Which animals should be in the scene?'
     const other = agentPanel.askOtherInput
     const submit = agentPanel.askSubmitButton
-    const ws = await getWebSocket()
+    const ws = await getAgentSocket()
 
     await test.step('every option and its description is shown', async () => {
       ws.send(
@@ -107,9 +107,9 @@ test.describe('Agent ask_user card', { tag: '@cloud' }, () => {
   test('two options at the limit lock Other and post in option order', async ({
     agentPanel,
     askAnswers,
-    getWebSocket
+    getAgentSocket
   }) => {
-    const ws = await getWebSocket()
+    const ws = await getAgentSocket()
 
     ws.send(
       JSON.stringify(
@@ -138,10 +138,10 @@ test.describe('Agent ask_user card', { tag: '@cloud' }, () => {
   test('a required single choice renders radios and drops duplicate options', async ({
     agentPanel,
     askAnswers,
-    getWebSocket
+    getAgentSocket
   }) => {
     const panel = agentPanel.root
-    const ws = await getWebSocket()
+    const ws = await getAgentSocket()
 
     ws.send(
       JSON.stringify(
@@ -175,10 +175,10 @@ test.describe('Agent ask_user card', { tag: '@cloud' }, () => {
 
   test('an ask without a kind shows a notice instead of a question card', async ({
     agentPanel,
-    getWebSocket
+    getAgentSocket
   }) => {
     const panel = agentPanel.root
-    const ws = await getWebSocket()
+    const ws = await getAgentSocket()
 
     ws.send(
       JSON.stringify(
