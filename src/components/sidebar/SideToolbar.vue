@@ -10,21 +10,21 @@
         {
           'small-sidebar': isSmall,
           'connected-sidebar pointer-events-auto': isConnected,
-          'floating-sidebar py-(--comfy-canvas-gutter) [--sidebar-item-radius:var(--radius-lg)]':
-            !isConnected,
+          'floating-sidebar py-(--comfy-canvas-gutter)': !isConnected,
           'ml-(--comfy-canvas-gutter)':
-            !isConnected && sidebarLocation === 'left',
+            !isConnected && !isHidden && sidebarLocation === 'left',
           'mr-(--comfy-canvas-gutter)':
-            !isConnected && sidebarLocation === 'right',
+            !isConnected && !isHidden && sidebarLocation === 'right',
           'overflowing-sidebar': isOverflowing,
-          'border-r border-interface-stroke/50 shadow-interface': isConnected,
+          'overflow-hidden border-r border-interface-stroke/50 shadow-interface':
+            isConnected,
           'pointer-events-none overflow-hidden opacity-0': isHidden,
           '-translate-x-8': isHidden && sidebarLocation === 'left',
           'translate-x-8': isHidden && sidebarLocation === 'right'
         }
       )
     "
-    :style="{ maxWidth }"
+    :style="{ maxWidth: isHidden ? '0px' : 'var(--sidebar-width)' }"
   >
     <div
       :class="
@@ -160,11 +160,6 @@ const tabs = computed(() => {
 })
 const selectedTab = computed(() => workspaceStore.sidebarTab.activeSidebarTab)
 const isHidden = computed(() => agentNodeSelectionStore.isActionBarsHidden)
-const maxWidth = computed(() => {
-  if (isHidden.value) return '0px'
-  if (isConnected.value) return 'var(--sidebar-width)'
-  return 'calc(var(--sidebar-width) + 2 * var(--sidebar-padding))'
-})
 
 /**
  * Handle sidebar tab icon click.
@@ -217,7 +212,7 @@ const isOverflowing = ref(false)
 const groupClasses = computed(() =>
   cn(
     'sidebar-item-group flex shrink-0 flex-col items-center overflow-hidden',
-    !isConnected.value && 'pointer-events-auto floating-panel'
+    !isConnected.value && 'pointer-events-auto floating-panel p-0'
   )
 )
 
@@ -305,7 +300,7 @@ onMounted(() => {
  * but need to reference sidebar dimensions for proper positioning.
  */
 :root {
-  --sidebar-padding: var(--spacing);
+  --sidebar-padding: 4px;
   --sidebar-icon-size: 1rem;
 
   --sidebar-default-floating-width: 48px;
@@ -342,6 +337,10 @@ onMounted(() => {
 .connected-sidebar {
   padding: var(--sidebar-padding) 0;
   background-color: var(--comfy-menu-bg);
+}
+
+.connected-sidebar .sidebar-item-group {
+  border: 1px solid transparent;
 }
 
 .overflowing-sidebar :deep(.comfy-menu-button-wrapper) {

@@ -7,6 +7,8 @@ import { readPanelStyle } from '@e2e/fixtures/utils/panelStyle'
 
 const test = mergeTests(comfyPageFixture, canvasMenuFixture)
 
+const CONNECTED_TOOLBAR_WIDTH = 56
+
 for (const location of ['left', 'right'] as const) {
   const locationSettings = {
     'Comfy.Graph.CanvasMenu': true,
@@ -17,7 +19,7 @@ for (const location of ['left', 'right'] as const) {
   test.describe(`${location} floating sidebar`, { tag: ['@ui'] }, () => {
     test.use({ initialSettings: locationSettings })
 
-    test('keeps the connected gap to the top menu when switched to floating', async ({
+    test('keeps the top menu in place when switched to floating', async ({
       comfyPage
     }) => {
       const toolbar = comfyPage.menu.sideToolbar
@@ -25,25 +27,48 @@ for (const location of ['left', 'right'] as const) {
         location === 'left'
           ? comfyPage.appMode.workflowActions.viewModeToggle
           : comfyPage.actionbar.card
-      const gapToTopMenu = async () => {
+      const viewport = comfyPage.page.viewportSize()
+      if (!viewport) throw new Error('Viewport size is not set')
+      const readLayout = async () => {
         const [toolbarBox, neighborBox] = await Promise.all([
           toolbar.boundingBox(),
           neighbor.boundingBox()
         ])
         if (!toolbarBox || !neighborBox) return null
-        return location === 'left'
-          ? neighborBox.x - (toolbarBox.x + toolbarBox.width)
-          : toolbarBox.x - (neighborBox.x + neighborBox.width)
+        return {
+          toolbar: toolbarBox,
+          neighbor: neighborBox,
+          toolbarInnerEdge:
+            location === 'left' ? toolbarBox.x + toolbarBox.width : toolbarBox.x
+        }
       }
 
       await expect(toolbar).toContainClass('connected-sidebar')
+      await expect(toolbar).toHaveCSS('overflow', 'hidden')
       await expect(neighbor).toBeVisible()
-      const connectedGap = await gapToTopMenu()
-      expect(connectedGap).toBeGreaterThan(0)
+      const connected = await readLayout()
+      if (!connected) throw new Error('Connected layout not ready')
+      expect(connected.toolbar).toMatchObject({
+        x: location === 'left' ? 0 : viewport.width - CONNECTED_TOOLBAR_WIDTH,
+        width: CONNECTED_TOOLBAR_WIDTH
+      })
 
       await comfyPage.settings.setSetting('Comfy.Sidebar.Style', 'floating')
       await expect(toolbar).toContainClass('floating-sidebar')
-      await expect.poll(gapToTopMenu).toBe(connectedGap)
+      await expect(toolbar).toHaveCSS('overflow', 'visible')
+      await expect
+        .poll(async () => {
+          const floating = await readLayout()
+          if (!floating) return null
+          return {
+            neighbor: floating.neighbor,
+            toolbarInnerEdge: floating.toolbarInnerEdge
+          }
+        })
+        .toEqual({
+          neighbor: connected.neighbor,
+          toolbarInnerEdge: connected.toolbarInnerEdge
+        })
     })
 
     test.describe('floating', () => {
@@ -95,7 +120,7 @@ test.describe('floating sidebar panel style', { tag: ['@ui'] }, () => {
     }
   })
 
-  test('shares the floating panel style of the view mode toggle', async ({
+  test('shares the floating panel style of the view mode toggle, full bleed', async ({
     comfyPage
   }) => {
     const group = comfyPage.menu.sideToolbar.getByTestId(
@@ -109,6 +134,6 @@ test.describe('floating sidebar panel style', { tag: ['@ui'] }, () => {
       readPanelStyle(group),
       readPanelStyle(toggle)
     ])
-    expect(groupStyle).toEqual(toggleStyle)
+    expect(groupStyle).toEqual({ ...toggleStyle, padding: '0px' })
   })
 })

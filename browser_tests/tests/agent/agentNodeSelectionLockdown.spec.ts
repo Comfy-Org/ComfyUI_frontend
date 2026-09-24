@@ -69,6 +69,46 @@ test.describe('Agent node selection mode lockdown', { tag: '@cloud' }, () => {
     })
   })
 
+  test.describe('floating sidebar', () => {
+    test.use({
+      initialSettings: {
+        'Comfy.Sidebar.Size': 'small',
+        'Comfy.Sidebar.Style': 'floating'
+      }
+    })
+
+    test('collapses the floating sidebar without leaving its gutter', async ({
+      agentPanel,
+      comfyPage
+    }) => {
+      const toolbar = comfyPage.menu.sideToolbar
+
+      await test.step('the rail starts inset by its gutter', async () => {
+        await expect(toolbar).toContainClass('floating-sidebar')
+        await expect(toolbar).not.toHaveCSS('margin-left', '0px')
+        await expect(toolbar).toHaveCSS('overflow', 'visible')
+      })
+
+      await test.step('enter node selection mode', async () => {
+        await agentPanel.enterNodeSelectionMode()
+      })
+
+      await test.step('the rail takes no width while hidden', async () => {
+        await expect(toolbar).toHaveCSS('margin-left', '0px')
+        await expect(toolbar).toHaveCSS('overflow', 'hidden')
+        await expect
+          .poll(async () => (await toolbar.boundingBox())?.width ?? null)
+          .toBe(0)
+      })
+
+      await test.step('exiting restores the gutter', async () => {
+        await agentPanel.exitNodeSelectionMode()
+        await expect(toolbar).not.toHaveCSS('margin-left', '0px')
+        await expect(toolbar).toHaveCSS('overflow', 'visible')
+      })
+    })
+  })
+
   test.describe('with Vue nodes', { tag: '@vue-nodes' }, () => {
     test.use({ objectInfo: 'server' })
 
