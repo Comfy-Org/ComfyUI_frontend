@@ -2223,8 +2223,10 @@
     "star": "ستاره"
   },
   "imageCompare": {
+    "afterAlt": "تصویر پس از",
     "batchLabelA": "A:",
     "batchLabelB": "B:",
+    "beforeAlt": "تصویر پیش از",
     "noImages": "تصویری برای مقایسه وجود ندارد"
   },
   "imageCrop": {
@@ -3280,6 +3282,7 @@
     "mask": "ماسک",
     "merging": "ادغام",
     "mesh": "mesh",
+    "ming image": "تصویر مینگ",
     "minimax": "minimax",
     "minimax music": "minimax music",
     "mochi": "mochi",
@@ -4809,6 +4812,7 @@
     },
     "clearAllFilters": "حذف همه فیلترها",
     "error": {
+      "loading": "باز کردن قالب ممکن نشد. لطفاً دوباره تلاش کنید.",
       "templateNotFound": "قالب \"{templateName}\" یافت نشد"
     },
     "filtersApplied": "{count} فیلتر اعمال شد | {count} فیلتر اعمال شدند",
@@ -5089,6 +5093,7 @@
   },
   "workspace": {
     "addedToWorkspace": "شما به این مورد افزوده شده‌اید:",
+    "deepLinkStayed": "باز کردن آن فضای کاری ممکن نشد. شما همچنان در {workspaceName} هستید.",
     "inviteAccepted": "دعوت پذیرفته شد",
     "inviteFailed": "پذیرش دعوت ناموفق بود",
     "switchFailed": "تغییر ورک‌اسپیس ناموفق بود. لطفاً دوباره تلاش کنید.",

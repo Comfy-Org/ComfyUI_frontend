@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "با استفاده از مدل Hunyuan Image شرکت Tencent، حداکثر ۵ تصویر مرجع را با راهنمایی یک prompt متنی ویرایش یا ترکیب می‌کند.",
+    "display_name": "Tencent HY Image: ویرایش",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که باید استفاده شود."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_height": {
+        "name": "ارتفاع"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_reference_detail": {
+        "name": "جزئیات مرجع"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "واترمارک"
+      },
+      "model_width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "با استفاده از مدل Hunyuan Image شرکت Tencent، از یک prompt متنی تصویر تولید می‌کند.",
+    "display_name": "Tencent HY Image: متن به تصویر",
+    "inputs": {
+      "control_after_generate": {
+        "name": "کنترل پس از تولید"
+      },
+      "model": {
+        "name": "مدل",
+        "tooltip": "مدلی که باید استفاده شود."
+      },
+      "model_aspect_ratio": {
+        "name": "نسبت تصویر"
+      },
+      "model_height": {
+        "name": "ارتفاع"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_resolution": {
+        "name": "وضوح"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_watermark": {
+        "name": "واترمارک"
+      },
+      "model_width": {
+        "name": "عرض"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -18366,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "تلاش استدلال",
+        "tooltip": "میزان استدلالی که مدل پیش از ترسیم صرف می‌کند. سطوح بالاتر جزئیات را بهبود می‌دهند و token بیشتری هزینه دارند. فقط توسط مدل‌های Arrow 2 استفاده می‌شود."
+      },
       "seed": {
         "name": "seed",
         "tooltip": "Seed برای تعیین اجرای مجدد node؛ نتایج واقعی صرف‌نظر از seed غیرقطعی هستند."
@@ -18404,6 +18489,10 @@
       "prompt": {
         "name": "prompt",
         "tooltip": "توضیح متنی برای خروجی SVG مورد نظر."
+      },
+      "reasoning_effort": {
+        "name": "تلاش استدلال",
+        "tooltip": "میزان استدلالی که مدل پیش از ترسیم صرف می‌کند. سطوح بالاتر جزئیات را بهبود می‌دهند و token بیشتری هزینه دارند. فقط توسط مدل‌های Arrow 2 استفاده می‌شود."
       },
       "reference_images": {
         "name": "reference_images",
@@ -19075,7 +19164,7 @@
       },
       "model": {
         "name": "مدل",
-        "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکپارچه ساخته شده‌اند و همیشه به style_id یا style_references نیاز دارند."
+        "tooltip": "مدلی که برای تولید استفاده می‌شود. مدل‌های recraftv4_styles برای تولید با سبک یکپارچه ساخته شده‌اند و همیشه به style_id یا style_references نیاز دارند؛ recraftv4_1_flash سریع‌ترین و ارزان‌ترین مدل است و اصلاً از سبک‌ها پشتیبانی نمی‌کند."
       },
       "model_size": {
         "name": "اندازه"
@@ -23799,6 +23888,30 @@
       }
     }
   },
+  "TextEncodeMingImageEdit": {
+    "display_name": "کدگذاری متن برای ویرایش تصویر Ming",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "تصاویر",
+        "tooltip": "تصاویر مرجع اختیاری که توسط رمزگذار متن دیده می‌شوند و به‌صورت فریم‌های پاک به توالی latent افزوده می‌شوند. تصاویر بعدی به اندازهٔ تصویر اول تغییر اندازه داده می‌شوند و latent نمونه‌برداری‌شده باید با اندازهٔ آن مطابقت داشته باشد."
+      },
+      "prompt": {
+        "name": "prompt"
+      },
+      "vae": {
+        "name": "vae",
+        "tooltip": "بدون VAE، تصاویر فقط از طریق برج بینایی رمزگذار متن را شرطی می‌کنند."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "TextEncodeQwenImage21": {
     "display_name": "کدگذاری متن Qwen Image 2.1",
     "inputs": {
@@ -23968,6 +24081,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "prompt_سیستم",
+        "tooltip": "prompt سیستم را در قالب گفت‌وگوی مدل جایگزین می‌کند. هنگامی که از قالب پیش‌فرض استفاده نشود، نادیده گرفته می‌شود."
+      },
       "thinking": {
         "name": "تفکر",
         "tooltip": "در حالت تفکر عمل کنید اگر مدل از آن پشتیبانی می‌کند."
@@ -23984,6 +24101,10 @@
     "outputs": {
       "0": {
         "name": "متن تولید شده",
+        "tooltip": null
+      },
+      "1": {
+        "name": "تفکر",
         "tooltip": null
       }
     }
@@ -24034,6 +24155,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "اعلان سیستمی را در قالب چت مدل جایگزین می‌کند. وقتی از قالب پیش‌فرض استفاده نشود، نادیده گرفته می‌شود."
+      },
       "thinking": {
         "name": "تفکر",
         "tooltip": "در حالت تفکر عمل کنید اگر مدل از آن پشتیبانی می‌کند."
@@ -24050,6 +24175,10 @@
     "outputs": {
       "0": {
         "name": "متن تولید شده",
+        "tooltip": null
+      },
+      "1": {
+        "name": "تفکر",
         "tooltip": null
       }
     }

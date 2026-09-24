@@ -2223,8 +2223,10 @@
     "star": "כוכב"
   },
   "imageCompare": {
+    "afterAlt": "תמונת אחרי",
     "batchLabelA": "א:",
     "batchLabelB": "ב:",
+    "beforeAlt": "תמונת לפני",
     "noImages": "אין תמונות להשוואה"
   },
   "imageCrop": {
@@ -3280,6 +3282,7 @@
     "mask": "mask",
     "merging": "merging",
     "mesh": "רשת",
+    "ming image": "תמונת ming",
     "minimax": "minimax",
     "minimax music": "מוזיקת minimax",
     "mochi": "mochi",
@@ -4809,6 +4812,7 @@
     },
     "clearAllFilters": "נקה את כל המסננים",
     "error": {
+      "loading": "לא ניתן היה לפתוח את התבנית. נסו שוב.",
       "templateNotFound": "התבנית \"{templateName}\" לא נמצאה"
     },
     "filtersApplied": "{count} מסנן הופעל | {count} מסננים הופעלו",
@@ -5089,6 +5093,7 @@
   },
   "workspace": {
     "addedToWorkspace": "נוספת אל:",
+    "deepLinkStayed": "לא ניתן היה לפתוח את סביבת העבודה הזו. אתם עדיין נמצאים ב־{workspaceName}.",
     "inviteAccepted": "ההזמנה התקבלה",
     "inviteFailed": "קבלת ההזמנה נכשלה",
     "switchFailed": "המעבר לסביבת העבודה נכשל. אנא נסה שוב.",

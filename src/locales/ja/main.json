@@ -2223,8 +2223,10 @@
     "star": "星"
   },
   "imageCompare": {
+    "afterAlt": "後の画像",
     "batchLabelA": "A：",
     "batchLabelB": "B：",
+    "beforeAlt": "前の画像",
     "noImages": "比較する画像がありません"
   },
   "imageCrop": {
@@ -3280,6 +3282,7 @@
     "mask": "マスク",
     "merging": "マージ",
     "mesh": "メッシュ",
+    "ming image": "ming image",
     "minimax": "minimax",
     "minimax music": "minimax music",
     "mochi": "mochi",
@@ -4809,6 +4812,7 @@
     },
     "clearAllFilters": "すべてのフィルターをクリア",
     "error": {
+      "loading": "テンプレートを開けませんでした。もう一度お試しください。",
       "templateNotFound": "テンプレート「{templateName}」が見つかりません"
     },
     "filtersApplied": "{count} 件のフィルターが適用されました",
@@ -5089,6 +5093,7 @@
   },
   "workspace": {
     "addedToWorkspace": "次のワークスペースに追加されました：",
+    "deepLinkStayed": "そのワークスペースを開けませんでした。引き続き{workspaceName}にいます。",
     "inviteAccepted": "招待を承諾しました",
     "inviteFailed": "招待の承諾に失敗しました",
     "switchFailed": "ワークスペースの切り替えに失敗しました。もう一度お試しください。",
