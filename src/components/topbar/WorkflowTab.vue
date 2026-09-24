@@ -6,8 +6,8 @@
         data-testid="workflow-tab"
         :class="
           cn(
-            'workflow-tab group/tab relative h-full motion-safe:transition-[flex-shrink,min-width] motion-safe:duration-200 motion-safe:ease-[cubic-bezier(0.19,1,0.22,1)]',
-            isActiveTab ? 'min-w-22.5 shrink-0' : 'min-w-16 shrink'
+            'workflow-tab group/tab relative h-full min-w-22.5 motion-safe:transition-[flex-shrink] motion-safe:duration-200 motion-safe:ease-[cubic-bezier(0.19,1,0.22,1)]',
+            isActiveTab ? 'shrink-0' : 'shrink'
           )
         "
         v-bind="$attrs"
