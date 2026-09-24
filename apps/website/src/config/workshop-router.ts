@@ -1,4 +1,6 @@
+import { combineAbortSignals } from '../utils/abortSignal'
 import type { WorkshopContract } from './workshop-contract'
+import { workshopContentPolicyBody } from './workshop-content-policy'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { serializeRouterInput } from './workshop-request'
 import { parseRouterResponse, releaseRouterOutputs } from './workshop-response'
@@ -53,28 +55,42 @@ export function waitFor(ms: number, signal: AbortSignal): Promise<void> {
 async function failureDetails(response: Response) {
   const reader = response.body?.getReader()
   let body = ''
+  let bodyComplete = reader === undefined
   if (reader) {
     const decoder = new TextDecoder()
     let remaining = 16_384
     try {
       while (remaining > 0) {
         const { done, value } = await reader.read()
-        if (done) break
-        body += decoder.decode(value.subarray(0, remaining), { stream: true })
-        remaining -= value.byteLength
+        if (done) {
+          bodyComplete = true
+          break
+        }
+        const included = value.subarray(0, remaining)
+        body += decoder.decode(included, { stream: true })
+        remaining -= included.byteLength
+        if (included.byteLength < value.byteLength) break
       }
       body += decoder.decode()
     } catch (cause) {
-      return { response: workshopResponseDetails(response), cause }
+      return {
+        response: workshopResponseDetails(response),
+        bodyComplete: false,
+        cause
+      }
     } finally {
       await reader.cancel().catch(() => {})
       reader.releaseLock()
     }
   }
-  return { response: workshopResponseDetails(response, body) }
+  return { response: workshopResponseDetails(response, body), bodyComplete }
 }
 
-function failureFor(response: Response): RunFailure {
+function failureFor(
+  response: Response,
+  body: string,
+  bodyComplete: boolean
+): RunFailure {
   const bucket = response.headers.get('X-Comfy-Error-Type')
   if (bucket === 'insufficient_credits') return 'noCredits'
   if (bucket === 'content_policy_violation') return 'policy'
@@ -83,9 +99,10 @@ function failureFor(response: Response): RunFailure {
   if (response.status === 402) return 'noCredits'
   if (response.status === 429) return 'rateLimit'
   if (response.status === 409) return 'conflict'
-  if (response.status === 400 || response.status === 422) return 'validation'
   if ([401, 403, 404].includes(response.status)) return 'unavailable'
   if (response.status === 504) return 'timeout'
+  if (bodyComplete && workshopContentPolicyBody(body)) return 'policy'
+  if (response.status === 400 || response.status === 422) return 'validation'
   return 'provider'
 }
 
@@ -184,7 +201,45 @@ export function throwRunFailure(
     requestId,
     {},
     undefined,
-    'request'
+    'request',
+    { cause: error }
+  )
+}
+
+function attributedResponseError(
+  error: unknown,
+  requestId: string | null,
+  response: Response
+): WorkshopRouterError {
+  const responseDetails = workshopResponseDetails(response)
+  if (!(error instanceof WorkshopRouterError))
+    return new WorkshopRouterError(
+      'response',
+      requestId,
+      {},
+      responseDetails,
+      'response',
+      { cause: error }
+    )
+  const attributedRequestId = error.requestId ?? requestId
+  const attributedResponse = error.response ?? responseDetails
+  if (
+    attributedRequestId === error.requestId &&
+    attributedResponse === error.response
+  )
+    return error
+  return new WorkshopRouterError(
+    error.reason,
+    attributedRequestId,
+    error.fieldErrors,
+    attributedResponse,
+    error.stage,
+    {
+      ...(error.cause === undefined ? {} : { cause: error.cause }),
+      ...(error.requestSettlement
+        ? { requestSettlement: error.requestSettlement }
+        : {})
+    }
   )
 }
 
@@ -198,12 +253,12 @@ export async function settleRouterResponse(
     if (!response.ok) {
       const details = await failureDetails(response)
       throw new WorkshopRouterError(
-        failureFor(response),
+        failureFor(response, details.response.body, details.bodyComplete),
         requestId,
         {},
         details.response,
         'request',
-        { cause: details.cause }
+        details.cause === undefined ? undefined : { cause: details.cause }
       )
     }
     const outputs = await parseRouterResponse(
@@ -227,14 +282,7 @@ export async function settleRouterResponse(
         workshopResponseDetails(response),
         'response'
       )
-    if (error instanceof WorkshopRouterError) throw error
-    throw new WorkshopRouterError(
-      'response',
-      requestId,
-      {},
-      workshopResponseDetails(response),
-      'response'
-    )
+    throw attributedResponseError(error, requestId, response)
   }
 }
 
@@ -350,7 +398,7 @@ export function createAttemptContext(
     options,
     body: serializeRouterInput(options.body),
     controller,
-    signal: AbortSignal.any([controller.signal, options.signal]),
+    signal: combineAbortSignals([controller.signal, options.signal]),
     deadlineAt: Date.now() + TOTAL_RUN_TIMEOUT_MS
   }
 }
@@ -383,5 +431,7 @@ export async function runSynchronousWorkshopRouter(
     options.signal.throwIfAborted()
     if (error instanceof WorkshopRouterError) throw error
     return throwRunFailure(error, context, state.requestId)
+  } finally {
+    context.controller.abort()
   }
 }

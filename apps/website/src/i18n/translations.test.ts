@@ -67,13 +67,13 @@ describe('tAround', () => {
     }
   )
 
-  it('keeps copy after repeated occurrences of the slot', () => {
-    const [, after] = tAround('models.faq.whatIs.localAnswer', 'en', 'name', {
-      description: 'a model',
-      count: 3
-    })
-
-    expect(after).toContain('ready to load and customize.')
+  it('rejects messages that repeat the markup slot', () => {
+    expect(() =>
+      tAround('models.faq.whatIs.localAnswer', 'en', 'name', {
+        description: 'a model',
+        count: 3
+      })
+    ).toThrow('repeats slot {name}')
   })
 })
 

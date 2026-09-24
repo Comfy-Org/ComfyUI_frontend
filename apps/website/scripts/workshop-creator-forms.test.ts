@@ -100,6 +100,18 @@ describe('sibling page modes', () => {
     expect(form.inputs).not.toHaveProperty('ratio')
   })
 
+  it.for(['edit', 'reference-video'])(
+    'declares Kling %s source-video bounds',
+    (mode) => {
+      expect(
+        formFor('kling/kling-v3-omni', { mode }).inputs.video_url
+      ).toMatchObject({
+        maxVideoDurationSeconds: 15.5,
+        videoWidthPixels: { minimum: 700, maximum: 4553 }
+      })
+    }
+  )
+
   it('keeps unsupported GPT Image edit media out of Router forms', () => {
     const id = 'openai/gpt-image-2'
     expect(files(id, {})).toEqual([])

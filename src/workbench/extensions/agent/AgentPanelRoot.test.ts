@@ -24,11 +24,9 @@ setupInlinePromptEditorDom()
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
-import type {
-  LGraph,
-  LGraphNode,
-  Subgraph
-} from '@/lib/litegraph/src/litegraph'
+import type { Subgraph } from '@/lib/litegraph/src/litegraph'
+import { LGraph, LGraphCanvas, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestSubgraph } from '@/lib/litegraph/src/subgraph/__fixtures__/subgraphHelpers'
 import { toRootGraphId } from '@/types/graphScopeId'
 import { toNodeId } from '@/types/nodeId'
 
@@ -50,9 +48,16 @@ import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/
 import { reportError } from '@/platform/telemetry/reportError'
 // eslint-disable-next-line import-x/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
-import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
+import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
+import { registerTour } from '@/platform/onboarding/onboardingTours'
+import {
+  saveSelection,
+  savedSelectionKeys,
+  setCanvasSelection
+} from '@/utils/__tests__/canvasSelectionTestUtils'
 import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import {
+  createMockCanvasRenderingContext2D,
   createMockLoadedWorkflow,
   createMockChangeTracker,
   createMockLGraphNode
@@ -130,17 +135,15 @@ const appMock = vi.hoisted(() => {
     rootGraph: graph,
     isGraphReady: false,
     canvas: undefined as
+      | LGraphCanvas
       | {
           graph: {
             nodes: unknown[]
-            getNodeById: (id: string) => unknown | null
+            getNodeById: (id: string) => unknown
           }
           selectedItems: Set<LGraphNode>
           selectItems: ReturnType<typeof vi.fn>
           deselect: (node: LGraphNode) => void
-          multi_select: boolean
-          allow_dragnodes: boolean
-          selectOnly: boolean
           canvas: HTMLCanvasElement
         }
       | undefined
@@ -160,10 +163,14 @@ let executionErrors: Mocked<ReturnType<typeof useExecutionErrorStore>>
 vi.mock(import('@/platform/workflow/core/services/workflowService'))
 const workflowService = vi.mocked(useWorkflowService())
 
-vi.mock<unknown>(import('@/utils/litegraphUtil'), () => ({
-  isLGraphNode: (item: unknown) =>
-    (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
-}))
+vi.mock<unknown>(import('@/utils/litegraphUtil'), async () => {
+  const { LGraphNode } = await import('@/lib/litegraph/src/litegraph')
+  return {
+    isLGraphNode: (item: unknown): item is LGraphNode =>
+      item instanceof LGraphNode ||
+      (item as { isNodeFake?: boolean } | null)?.isNodeFake === true
+  }
+})
 
 vi.mock(import('@/composables/auth/useCurrentUser'))
 
@@ -175,6 +182,11 @@ vi.mock(import('@/platform/telemetry'))
 const telemetryProvider = useTelemetry()
 assert.exists(telemetryProvider)
 const telemetry = vi.mocked(telemetryProvider)
+
+// Counts up rather than returning a constant, so a cached id would show up as a
+// repeat instead of passing.
+const nextClientMessageId = vi.hoisted(() => vi.fn())
+vi.mock<unknown>(import('uuid'), () => ({ v4: nextClientMessageId }))
 
 vi.mock(import('@/platform/distribution/types'), () => ({
   isCloud: true
@@ -200,6 +212,7 @@ const paywallCapabilities = vi.hoisted(() => ({
 const paywallBilling = vi.hoisted(() => ({
   tier: 'STANDARD' as SubscriptionTier | null
 }))
+const paywallHasFunds = ref(false)
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'), {
   spy: true
@@ -249,6 +262,10 @@ function syncFakeSelection() {
 }
 
 beforeEach(() => {
+  let clientMessageIds = 0
+  nextClientMessageId.mockImplementation(
+    () => `client-message-${++clientMessageIds}`
+  )
   useCurrentUser().isLoggedIn = computed(() => true)
   useCurrentUser().userDisplayName = computed(() => 'Jo Rivera')
   useCurrentUser().resolvedUserInfo = computed(() => ({
@@ -275,6 +292,9 @@ beforeEach(() => {
   )
   vi.mocked(useBillingContext).mockReturnValue(
     fromPartial({
+      subscription: computed(() =>
+        fromPartial({ hasFunds: paywallHasFunds.value })
+      ),
       tier: computed(() => paywallBilling.tier)
     })
   )
@@ -373,6 +393,7 @@ beforeEach(() => {
   paywallCapabilities.isReady = true
   paywallCapabilities.hasResolvedCapabilities = true
   paywallBilling.tier = 'STANDARD'
+  paywallHasFunds.value = false
 })
 
 const zAgentWsEventForTest = (raw: unknown): AgentChatEvent =>
@@ -525,6 +546,99 @@ describe('AgentPanelRoot onboarding', () => {
     expect(localStorage.getItem(SCOPED_KEY)).not.toBe('true')
   })
 
+  it('reports a coach held back by another tour', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-tour'
+    })
+    const firstRunHolds = ref(true)
+    registerTour(
+      'firstRun',
+      () =>
+        Promise.resolve([
+          { kind: 'spotlight', name: 'run', placement: 'center' }
+        ]),
+      firstRunHolds
+    )
+    const tourStore = useOnboardingTourStore()
+    tourStore.replayTour('firstRun')
+    await vi.waitFor(() => expect(tourStore.activeTour).toBe('firstRun'))
+    try {
+      render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+      expect(
+        screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+      ).not.toBeInTheDocument()
+      expect(
+        telemetry.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'tour_active' })
+    } finally {
+      firstRunHolds.value = false
+    }
+  })
+
+  it('stays quiet when App Mode pauses a coach that was already on screen', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-interrupted'
+    })
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(
+      await screen.findByRole('dialog', { name: 'Meet your Comfy Agent' })
+    ).toBeInTheDocument()
+
+    canvasStore.linearMode = true
+    await vi.waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
+      ).not.toBeInTheDocument()
+    )
+
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+  })
+
+  it('reports the deferral once the workspace resolves after mount', async () => {
+    Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-late'
+    })
+
+    await vi.waitFor(() =>
+      expect(
+        telemetry.trackAgentOnboardingNotShown
+      ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
+    )
+  })
+
+  it('reports a deferral once however often the panel remounts', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-remount'
+    })
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } }).unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(
+      telemetry.trackAgentOnboardingNotShown
+    ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
+  })
+
+  it('says nothing about App Mode to a user who already finished the tour', async () => {
+    Object.assign(useTeamWorkspaceStore(), {
+      activeWorkspaceId: 'workspace-seen'
+    })
+    localStorage.setItem(
+      'Comfy.AgentPanel.onboarded.account-a.workspace-seen',
+      'true'
+    )
+    canvasStore.linearMode = true
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+
+    expect(telemetry.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
+  })
+
   it('walks through the four cards and leaves the composer usable after Done', async () => {
     render(
       defineComponent({
@@ -644,6 +758,25 @@ describe('AgentPanelRoot paywall actions', () => {
 
     expect(openAccountPrecondition).toHaveBeenCalledExactlyOnceWith(
       'subscription'
+    )
+  })
+
+  it('dismisses the paywall after billing confirms funds are available', async () => {
+    paywallCapabilities.canTopUp = false
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    useAgentConversationStore().recordPaywall(
+      toTurnId('msg-paywall'),
+      'continue'
+    )
+
+    expect(
+      await screen.findByRole('button', { name: 'Subscribe' })
+    ).toBeInTheDocument()
+
+    paywallHasFunds.value = true
+
+    await vi.waitFor(() =>
+      expect(screen.queryByText('Out of credits')).not.toBeInTheDocument()
     )
   })
 
@@ -915,9 +1048,6 @@ function setupNodeSelectionCanvas() {
     deselect,
     deselectAll,
     animateToBounds: vi.fn(),
-    multi_select: false,
-    allow_dragnodes: true,
-    selectOnly: false,
     canvas: canvasElement
   }
   appMock.canvas = canvas
@@ -971,6 +1101,42 @@ function showRootGraph(
   canvasStore.currentGraph = fromPartial(graph)
 }
 
+function setupOwnedSelectionCanvas() {
+  const rootGraph = new LGraph()
+  const subgraph = createTestSubgraph({ rootGraph, id: SUBGRAPH_UUID })
+  rootGraph.subgraphs.set(subgraph.id, subgraph)
+  const rootNode = new LGraphNode('Root node')
+  rootNode.id = toNodeId(3)
+  rootGraph.add(rootNode)
+  const subgraphNode = new LGraphNode('KSampler')
+  subgraphNode.id = toNodeId(12)
+  subgraph.add(subgraphNode)
+
+  const canvasElement = document.createElement('canvas')
+  canvasElement.getContext = vi
+    .fn()
+    .mockReturnValue(createMockCanvasRenderingContext2D())
+  canvasElement.getBoundingClientRect = vi
+    .fn()
+    .mockReturnValue({ left: 0, top: 0, width: 800, height: 600 })
+  const canvas = new LGraphCanvas(canvasElement, rootGraph, {
+    skip_render: true
+  })
+  canvas.onSelectionChange = () => syncFakeSelection()
+
+  appMock.graph.nodes = rootGraph.nodes
+  Object.assign(appMock.rootGraph, { subgraphs: rootGraph.subgraphs })
+  appMock.canvas = canvas
+  canvasStore.canvas = canvas
+  viewGraph(canvas, subgraph)
+  return { canvas, rootGraph, subgraph, rootNode, subgraphNode }
+}
+
+function viewGraph(canvas: LGraphCanvas, graph: LGraph): void {
+  canvas.setGraph(graph)
+  canvasStore.currentGraph = graph
+}
+
 function renderCanvasNodeButtons(
   nodes: LGraphNode[],
   onClick: (node: LGraphNode) => void
@@ -1009,7 +1175,7 @@ async function enterNodeSelectionMode(): Promise<void> {
 async function startVueNodeSelection() {
   const state = setupNodeSelectionCanvas()
   const selectClickedNode = vi.fn((node: LGraphNode) => {
-    if (!state.canvas.multi_select) state.selectedItems.clear()
+    if (!useAgentNodeSelectionStore().isActive) state.selectedItems.clear()
     if (state.selectedItems.has(node)) state.selectedItems.delete(node)
     else state.selectedItems.add(node)
     syncFakeSelection()
@@ -1115,7 +1281,11 @@ describe('AgentPanelRoot attach flow', () => {
     })
     expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith({
       attachment_count: 1,
-      node_tag_count: 0
+      node_tag_count: 0,
+      thread_id: null,
+      workflow_id: 'wf-42',
+      client_message_id: 'client-message-1',
+      input_method: 'typed'
     })
 
     expect(screen.getByAltText('cat.png')).toBeInTheDocument()
@@ -2712,7 +2882,7 @@ describe('AgentPanelRoot lifecycle', () => {
       screen.getByRole('button', { name: i18n.global.t('agent.close') })
     )
 
-    expect(selection.canvas.multi_select).toBe(false)
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
     expect(telemetry.trackAgentCloseButtonClicked).toHaveBeenCalled()
     expect(telemetry.trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'close_button',
@@ -2728,7 +2898,7 @@ describe('AgentPanelRoot lifecycle', () => {
 
     selection.unmount()
 
-    expect(selection.canvas.multi_select).toBe(false)
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
@@ -2813,15 +2983,145 @@ describe('AgentPanelRoot workflow binding', () => {
   })
 
   function makeTab(id?: string): LoadedComfyWorkflow {
-    const tab = addTab('workflows/current.json', {
-      ...(id === undefined
+    const tab = addTab(
+      'workflows/current.json',
+      id === undefined
         ? {}
-        : { activeState: fromPartial<ComfyWorkflowJSON>({ id }) })
-    })
+        : { activeState: fromPartial<ComfyWorkflowJSON>({ id }) }
+    )
     workflowStore.activeWorkflow = tab
     if (id !== undefined) useAgentWorkflowTabBindingStore().bind(id, tab.path)
     return tab
   }
+
+  it.for([
+    { existingThread: null, thread_id: null },
+    { existingThread: 'th-1', thread_id: 'th-1' }
+  ])(
+    'sends the message with thread_id $thread_id and the targeted workflow',
+    async ({ existingThread, thread_id }) => {
+      makeTab('wf-42')
+      if (existingThread !== null)
+        useAgentConversationStore().setThreadId(existingThread)
+      mockMessagesEndpoint('wf-42')
+      telemetry.trackAgentMessageSent.mockClear()
+      renderWithSelectedTarget()
+
+      await sendFromComposer('build me a workflow')
+
+      expect(telemetry.trackAgentMessageSent.mock.calls).toEqual([
+        [
+          {
+            attachment_count: 0,
+            node_tag_count: 0,
+            thread_id,
+            workflow_id: 'wf-42',
+            client_message_id: 'client-message-1',
+            input_method: 'typed'
+          }
+        ]
+      ])
+    }
+  )
+
+  it('reports a message sent from an empty-state suggestion chip as a suggestion', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+    telemetry.trackAgentMessageSent.mockClear()
+    renderWithSelectedTarget()
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'List my saved workflows' })
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Send' }))
+    await screen.findByRole('button', { name: 'Stop' })
+
+    expect(telemetry.trackAgentMessageSent.mock.calls).toEqual([
+      [
+        {
+          attachment_count: 0,
+          node_tag_count: 0,
+          thread_id: null,
+          workflow_id: 'wf-42',
+          client_message_id: 'client-message-1',
+          input_method: 'suggestion'
+        }
+      ]
+    ])
+  })
+
+  it('keeps the report on the turn’s own workflow when the target changes mid-send', async () => {
+    makeTab('wf-42')
+    const other = addTab('workflows/other.json', {
+      activeState: fromPartial<ComfyWorkflowJSON>({ id: 'wf-99' })
+    })
+    useAgentWorkflowTabBindingStore().bind('wf-99', other.path)
+    // Switch target only while the send's own refresh is in flight — not the
+    // one on mount. The turn is pinned to the tab it started on, so the report
+    // has to stay there too.
+    let sending = false
+    const bodies = mockMessagesEndpoint('wf-42', () => {
+      if (sending)
+        useAgentPanelStore().setWorkflowTarget(
+          fromPartial<ComfyWorkflow>(other)
+        )
+      return [
+        { id: 'wf-42', name: 'current' },
+        { id: 'wf-99', name: 'other' }
+      ]
+    })
+    telemetry.trackAgentMessageSent.mockClear()
+    renderWithSelectedTarget()
+    await screen.findByRole('textbox')
+    sending = true
+
+    await sendFromComposer('build me a workflow')
+
+    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
+    expect(telemetry.trackAgentMessageSent.mock.calls).toEqual([
+      [
+        {
+          attachment_count: 0,
+          node_tag_count: 0,
+          thread_id: null,
+          workflow_id: 'wf-42',
+          client_message_id: 'client-message-1',
+          input_method: 'typed'
+        }
+      ]
+    ])
+  })
+
+  it('reports the workflow the turn was posted against, not the id known before it resolved', async () => {
+    // No binding, and the cloud index does not list the tab until the send's
+    // own refresh — so the id is genuinely unresolved at the moment the user
+    // hits Send, the state a first send of a session starts from.
+    makeTab()
+    let listed = false
+    const bodies = mockMessagesEndpoint('wf-77', () =>
+      listed ? [{ id: 'wf-77', name: 'current' }] : []
+    )
+    telemetry.trackAgentMessageSent.mockClear()
+    renderWithSelectedTarget()
+    await screen.findByRole('textbox')
+    listed = true
+
+    await sendFromComposer('build me a workflow')
+
+    expect(bodies[0]).toMatchObject({ workflow_id: 'wf-77' })
+    expect(telemetry.trackAgentMessageSent.mock.calls).toEqual([
+      [
+        {
+          attachment_count: 0,
+          node_tag_count: 0,
+          thread_id: null,
+          workflow_id: 'wf-77',
+          client_message_id: 'client-message-1',
+          input_method: 'typed'
+        }
+      ]
+    ])
+  })
 
   function setupWorkflowContext({
     targetId,
@@ -4034,6 +4334,35 @@ describe('AgentPanelRoot workflow binding', () => {
 
     const activity = useWorkflowTabActivityStore()
     expect(activity.editingTabPath).toBe('workflows/current.json')
+  })
+
+  // PM-1575 regression: the canvas-sync gate was wired to
+  // `agentPanelStore.enabled` (the panel feature flag), not to whether a CRDT
+  // doc subscription is actually connected. This suite -- like
+  // agentPanel.spec.ts and most of this file -- never sends a
+  // `doc_subscribed` frame, so the follower never connects; with the wrong
+  // gate, a mutating tool call's own successful frame was held at
+  // 'streaming' forever, since nothing was ever going to call
+  // `notifyCanvasCaughtUp()` to release it. The composing "Working..."
+  // status (every part settled, turn still streaming) never appeared.
+  it('settles a mutating tool call immediately when no CRDT doc subscription is connected', async () => {
+    makeTab('wf-42')
+    mockMessagesEndpoint('wf-42')
+
+    await renderAndSend('add a node')
+
+    ws.emit('agent_tool_call', {
+      tool_call_id: 'call-add-node',
+      tool_name: 'add_node',
+      status: 'success',
+      duration_ms: 90,
+      thread_id: 'th-1',
+      message_id: 'm-1'
+    })
+
+    expect(
+      await screen.findByText(i18n.global.t('agent.working'))
+    ).toBeInTheDocument()
   })
 
   it('moves the spinner to the tab the agent creates mid-turn', async () => {
@@ -6515,7 +6844,11 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(bodies[0]).toMatchObject({ selection: { node_ids: ['7'] } })
     expect(telemetry.trackAgentMessageSent).toHaveBeenCalledWith({
       attachment_count: 0,
-      node_tag_count: 1
+      node_tag_count: 1,
+      thread_id: null,
+      workflow_id: null,
+      client_message_id: 'client-message-1',
+      input_method: 'typed'
     })
     expect(screen.getByText('VAEDecode #7')).toBeInTheDocument()
     expect(screen.queryByText(/KSampler/)).not.toBeInTheDocument()
@@ -6671,9 +7004,8 @@ describe('AgentPanelRoot workflow binding', () => {
   it('merges an off-view subgraph reference with the current root selection', async () => {
     makeTab()
     mockMessagesEndpoint('wf-42')
-    const state = setupNodeSelectionCanvas()
-    const subgraphNode = nestSelectionCanvasInSubgraph(state)
-    state.nodes[1].id = toNodeId('shared')
+    const { canvas, rootGraph, rootNode, subgraphNode } =
+      setupOwnedSelectionCanvas()
 
     renderWithSelectedTarget()
     useAgentPanelStore().isOpen = true
@@ -6681,24 +7013,50 @@ describe('AgentPanelRoot workflow binding', () => {
     await openMentionPicker()
     await userEvent.click(await screen.findByText('KSampler'))
 
-    const rootNode: LGraphNode = createMockLGraphNode({
-      isNodeFake: true,
-      id: 'shared',
-      title: 'Root node',
-      boundingRect: {}
-    })
-    appMock.graph.nodes = [subgraphNode, rootNode]
-    showRootGraph(state, [rootNode])
-    state.selectedItems.clear()
-    state.selectedItems.add(rootNode)
+    viewGraph(canvas, rootGraph)
+    canvas.select(rootNode)
     syncFakeSelection()
-    state.selectItems.mockClear()
+    const selectItems = vi.spyOn(canvas, 'selectItems')
     await nextTick()
 
     await enterNodeSelectionMode()
 
-    expect(state.selectItems).toHaveBeenCalledWith([rootNode, state.nodes[1]])
-    expect([...state.selectedItems]).toEqual([rootNode, state.nodes[1]])
+    expect(selectItems).toHaveBeenCalledWith([rootNode, subgraphNode])
+    expect([...canvas.selectedItems]).toEqual([rootNode])
+    expect(subgraphNode.selected).toBeFalsy()
+    expect(screen.getByText('Root node')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+  })
+
+  it('keeps every staged reference and the incoming graph saved selection when the viewed graph is replaced while picking', async () => {
+    makeTab()
+    mockMessagesEndpoint('wf-42')
+    const { canvas, rootGraph, subgraph, rootNode, subgraphNode } =
+      setupOwnedSelectionCanvas()
+
+    renderWithSelectedTarget()
+    useAgentPanelStore().isOpen = true
+
+    await openMentionPicker()
+    await userEvent.click(await screen.findByText('KSampler'))
+
+    viewGraph(canvas, rootGraph)
+    canvas.select(rootNode)
+    syncFakeSelection()
+    await nextTick()
+    await enterNodeSelectionMode()
+    expect(screen.getByText('Root node')).toBeInTheDocument()
+    expect(screen.getByText('KSampler')).toBeInTheDocument()
+    saveSelection(subgraph, subgraphNode)
+
+    viewGraph(canvas, subgraph)
+    syncFakeSelection()
+    await nextTick()
+
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    expect(canvas.selectedItems.size).toBe(0)
+    expect(savedSelectionKeys(rootGraph)).toEqual([])
+    expect(savedSelectionKeys(subgraph)).toEqual(['node:12'])
     expect(screen.getByText('Root node')).toBeInTheDocument()
     expect(screen.getByText('KSampler')).toBeInTheDocument()
   })
@@ -6955,7 +7313,7 @@ describe('AgentPanelRoot workflow binding', () => {
     mockMessagesEndpoint('wf-42')
     const state = setupNodeSelectionCanvas()
     const selectLegacyNode = (node: LGraphNode) => {
-      if (!state.canvas.multi_select) state.selectedItems.clear()
+      if (!useAgentNodeSelectionStore().isActive) state.selectedItems.clear()
       state.selectedItems.add(node)
       syncFakeSelection()
     }
@@ -7040,9 +7398,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const bodies = mockMessagesEndpoint('wf-42')
     const selection = await startVueNodeSelection()
 
-    expect(selection.canvas.multi_select).toBe(true)
-    expect(selection.canvas.allow_dragnodes).toBe(false)
-    expect(selection.canvas.selectOnly).toBe(true)
+    expect(useAgentNodeSelectionStore().isActive).toBe(true)
     expect(selection.focus).toHaveBeenCalledOnce()
     expect(selection.selectClickedNode).toHaveBeenCalledTimes(2)
     expect(await screen.findByText('VAE Decode')).toBeInTheDocument()
@@ -7050,9 +7406,7 @@ describe('AgentPanelRoot workflow binding', () => {
 
     await sendFromComposer('explain this')
 
-    expect(selection.canvas.multi_select).toBe(false)
-    expect(selection.canvas.allow_dragnodes).toBe(true)
-    expect(selection.canvas.selectOnly).toBe(false)
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
     expect(bodies[0]).toMatchObject({
       selection: { node_ids: ['9', '12'] }
     })
@@ -7068,9 +7422,6 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
 
     expect(useAgentNodeSelectionStore().isActive).toBe(false)
-    expect(selection.canvas.multi_select).toBe(false)
-    expect(selection.canvas.allow_dragnodes).toBe(true)
-    expect(selection.canvas.selectOnly).toBe(false)
     expect(canvasStore.selectedItems).toEqual([])
     expect([...selection.selectedItems]).toEqual([])
     expect(screen.getByText('VAE Decode')).toBeInTheDocument()
@@ -7090,7 +7441,7 @@ describe('AgentPanelRoot workflow binding', () => {
     canvasStore.currentGraph = fromPartial(nextGraph)
     await nextTick()
 
-    expect(selection.canvas.multi_select).toBe(false)
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
@@ -7104,16 +7455,13 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
 
     expect(useAgentNodeSelectionStore().isActive).toBe(false)
-    expect(selection.canvas.multi_select).toBe(false)
-    expect(selection.canvas.allow_dragnodes).toBe(true)
-    expect(selection.canvas.selectOnly).toBe(false)
     await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
   it('keeps node selection active when the active workflow is renamed', async () => {
     makeTab()
     mockMessagesEndpoint('wf-42')
-    const selection = await startVueNodeSelection()
+    await startVueNodeSelection()
 
     const active = workflowStore.activeWorkflow
     if (!active) throw new Error('expected an active workflow')
@@ -7122,9 +7470,20 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
 
     expect(useAgentNodeSelectionStore().isActive).toBe(true)
-    expect(selection.canvas.multi_select).toBe(true)
-    expect(selection.canvas.allow_dragnodes).toBe(false)
-    expect(selection.canvas.selectOnly).toBe(true)
+  })
+
+  it('ends node selection when the target workflow changes', async () => {
+    makeTab()
+    mockMessagesEndpoint('wf-42')
+    const selection = await startVueNodeSelection()
+
+    useAgentPanelStore().setWorkflowTarget(
+      fromPartial<ComfyWorkflow>(addTab('workflows/other.json'))
+    )
+    await nextTick()
+
+    expect(useAgentNodeSelectionStore().isActive).toBe(false)
+    await expectLaterClickCannotRestoreAccumulatedNodes(selection)
   })
 
   it('keeps each workflow node selection separate after a graph load', async () => {
@@ -7183,12 +7542,9 @@ describe('AgentPanelRoot workflow binding', () => {
         nodes: [{ id: 12, title: 'KSampler' }],
         getNodeById: () => null
       },
-      selectedItems: new Set(),
+      selectedItems: new Set<LGraphNode>(),
       selectItems: vi.fn(),
       deselect: vi.fn(),
-      multi_select: false,
-      allow_dragnodes: true,
-      selectOnly: false,
       canvas: document.createElement('canvas')
     }
 

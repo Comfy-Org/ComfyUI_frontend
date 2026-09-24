@@ -113,7 +113,7 @@ export async function mapWithConcurrency<T, R>(
   concurrency: number,
   task: (item: T) => Promise<R>
 ): Promise<R[]> {
-  const results: R[] = new Array(items.length)
+  const results: R[] = []
   let next = 0
   let firstFailure: { reason: unknown } | undefined
   const workers = Array.from(
@@ -161,11 +161,11 @@ export function chunkItems(
 
 export function buildSystemPrompt(
   locale: OutputLocale,
+  translationContext: string,
   glossary: string
 ): string {
-  return `Translate each source from English into ${locale.name} for ComfyUI,
-a node-based generative AI application. Return each translation
-under its item's id.
+  return `Translate each source from English into ${locale.name} for
+${translationContext}. Return each translation under its item's id.
 
 Use context to resolve meaning. Preserve the source's meaning,
 tone, and level of detail. Keep code identifiers unchanged.
@@ -270,6 +270,7 @@ interface OpenAiTranslatorOptions {
   apiKey: string
   model: string
   reasoningEffort: TranslationPipelineConfig['reasoningEffort']
+  translationContext: string
   glossary: string
   maxTruncationSplitDepth: number
   fetchFn?: typeof fetch
@@ -297,7 +298,11 @@ export function createOpenAiTranslator(
       reasoning: { effort: options.reasoningEffort },
       store: false,
       text: { format: zodTextFormat(schema, 'translations') },
-      instructions: buildSystemPrompt(locale, options.glossary),
+      instructions: buildSystemPrompt(
+        locale,
+        options.translationContext,
+        options.glossary
+      ),
       input: JSON.stringify({ items })
     })
     let body: unknown

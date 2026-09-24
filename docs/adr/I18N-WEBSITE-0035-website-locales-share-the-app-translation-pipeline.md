@@ -60,8 +60,9 @@ existing script, parameterised by target.
   Everything else (manifest, diffing, validation, chunking, retries) is
   unchanged and shared.
 - `apps/website/src/i18n/translations.ts` keeps its API and import path and
-  now reads the JSON catalogs, so consumers are untouched. Locale codes live
-  in `apps/website/src/locales/localeConfig.ts`, mirroring the app.
+  now reads the JSON catalogs. Consumers that interpolated after translation
+  migrate to named values passed into `t`. Locale codes live in
+  `apps/website/src/locales/localeConfig.ts`, mirroring the app.
 - `pnpm locale:website:check` joins the shared lint/format CI step; an
   `i18n: Update Website` workflow runs the translation on demand, mirroring
   the core workflow's checkout-and-commit pattern.
@@ -100,8 +101,8 @@ Alternatives considered:
 - `locale:check` catches placeholder drift in website translations in CI, and
   a unit test compiles every message with vue-i18n so syntax errors fail
   before a page renders.
-- Consumers interpolate through the compiler, so a missing or renamed
-  placeholder is a visible empty value rather than a leaked `{name}`.
+- Consumers interpolate through the compiler, while the wrapper keeps a
+  missing named value visible as `{name}` so incomplete calls are apparent.
 
 ### Negative
 

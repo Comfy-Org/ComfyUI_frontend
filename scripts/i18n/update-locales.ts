@@ -409,12 +409,15 @@ function isTranslationTarget(
   return name !== undefined && Object.hasOwn(translationTargets, name)
 }
 
-/** `--target <name>` selects which catalogs to translate; the app is the default. */
+/** `--target <name>` or `--target=<name>` selects the catalogs. */
 export function resolveTargetConfig(
   argv: readonly string[]
 ): TranslationPipelineConfig {
   const flagIndex = argv.indexOf('--target')
-  const name = flagIndex === -1 ? 'app' : argv.at(flagIndex + 1)
+  const inlineTarget = argv.find((arg) => arg.startsWith('--target='))
+  const name =
+    inlineTarget?.slice('--target='.length) ??
+    (flagIndex === -1 ? 'app' : argv.at(flagIndex + 1))
   if (!isTranslationTarget(name)) {
     throw new Error(
       `Unknown translation target "${name ?? ''}"; expected one of: ${Object.keys(translationTargets).join(', ')}.`
@@ -538,6 +541,7 @@ async function run(argv: readonly string[]): Promise<void> {
         fetchFn: counter.fetch,
         model: config.model,
         reasoningEffort: config.reasoningEffort,
+        translationContext: config.translationContext,
         glossary: config.glossary,
         maxTruncationSplitDepth: config.maxTruncationSplitDepth,
         onUsage: (usage) => {

@@ -59,6 +59,7 @@ const errorKey: Record<FieldErrorCode, TranslationKey> = {
   fileUnreadable: 'workshop.form.fileUnreadable',
   incompatible: 'workshop.form.incompatible',
   videoTooLong: 'workshop.form.videoTooLong',
+  videoWidthOutOfRange: 'workshop.form.videoWidthOutOfRange',
   videoUnreadable: 'workshop.form.videoUnreadable',
   rejected: 'workshop.form.rejected'
 }
@@ -90,7 +91,9 @@ const errorMessage = computed(() =>
               MAX_UPLOAD_BYTES,
             locale
           ),
-          seconds: field.presentation?.maxVideoDurationSeconds ?? ''
+          seconds: field.presentation?.maxVideoDurationSeconds ?? '',
+          minimum: field.presentation?.videoWidthPixels?.minimum ?? '',
+          maximum: field.presentation?.videoWidthPixels?.maximum ?? ''
         })
     : ''
 )

@@ -140,7 +140,7 @@ describe('locale file update', () => {
       stable: 'translated keep me'
     })
     expect(translatedCount).toBe(5)
-    expect(Object.keys(output)).toEqual([...Object.keys(output)].sort())
+    expect(Object.keys(output)).toEqual(Object.keys(output).sort())
   })
 
   it('retranslates existing translations that were corrupted or blanked', async () => {
@@ -412,6 +412,27 @@ describe('validateLocale', () => {
     ).toEqual(["help: missing {'@'}, {0}, {username}"])
   })
 
+  it('protects repeated tokens and HTML markup', () => {
+    const source = {
+      help: `<a class="link" href="mailto:support@comfy.org">Ask {'@'}support or {'@'}sales</a>`
+    }
+    const changes = diffLocaleSources({}, source)
+
+    expect(
+      validateLocale(
+        source,
+        {
+          help: `<a class="other" href="mailto:help@comfy.org">Ask {'@'}support</a>`
+        },
+        changes
+      )
+    ).toEqual([
+      `help: missing <a class="link" href="mailto:support@comfy.org">, {'@'}`,
+      `help: added <a class="other" href="mailto:help@comfy.org">`,
+      'help: changed HTML tag sequence'
+    ])
+  })
+
   it('flags corruption on unchanged keys, including array leaves', () => {
     const source = {
       list: ['Use {name}', 'Second'],
@@ -474,7 +495,7 @@ describe('validateLocale', () => {
     ).toEqual(['send: added linked message @'])
   })
 
-  it('compares placeholder names as a set across plural forms', () => {
+  it('compares placeholder counts across plural forms', () => {
     const source = { count: 'No items | {count} item | {count} items' }
     const changes = diffLocaleSources({}, source)
     expect(
@@ -486,7 +507,7 @@ describe('validateLocale', () => {
     ).toEqual([])
     expect(
       validateLocale(source, { count: 'None | {total} many' }, changes)
-    ).toEqual(['count: missing {count}', 'count: added {total}'])
+    ).toEqual(['count: missing {count}, {count}', 'count: added {total}'])
   })
 })
 
@@ -515,6 +536,12 @@ describe('resolveTargetConfig', () => {
     },
     {
       argv: ['--target', 'website', '--check'],
+      entry: 'apps/website/src/locales/en',
+      output: 'apps/website/src/locales',
+      locales: ['zh-CN', 'ja']
+    },
+    {
+      argv: ['--target=website', '--check'],
       entry: 'apps/website/src/locales/en',
       output: 'apps/website/src/locales',
       locales: ['zh-CN', 'ja']
@@ -628,7 +655,10 @@ describe('createOpenAiTranslator', () => {
     overrides: Partial<
       Pick<
         Parameters<typeof createOpenAiTranslator>[0],
-        'maxTruncationSplitDepth' | 'onUsage' | 'glossary'
+        | 'maxTruncationSplitDepth'
+        | 'onUsage'
+        | 'translationContext'
+        | 'glossary'
       >
     > = {}
   ) {
@@ -654,6 +684,7 @@ describe('createOpenAiTranslator', () => {
       apiKey: 'key',
       model: 'test-model',
       reasoningEffort: 'low',
+      translationContext: 'a test application',
       glossary: '',
       maxTruncationSplitDepth: 3,
       fetchFn,
@@ -1180,6 +1211,9 @@ describe('createOpenAiTranslator', () => {
       })
       expect(request).toMatchObject({
         instructions: expect.stringContaining(glossary)
+      })
+      expect(request).toMatchObject({
+        instructions: expect.stringContaining('a test application')
       })
       expect(request).toMatchObject({
         instructions: expect.stringContaining(targetLocale.guidance)

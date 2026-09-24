@@ -865,6 +865,9 @@
       "card": {
         "geminiOmniFlash": "Gemini\nOmni 1.1 Flash",
         "gptImage2": "GPT Image 2",
+        "chatgptImages25": "ChatGPT Images 2.5",
+        "klingAi30": "KlingAI 3.0",
+        "flux3": "Flux 3",
         "grokImagine": "Grok Video",
         "minimaxH3": "MiniMax H3",
         "nanoBananaPro": "Nano Banana Pro",
@@ -2239,8 +2242,8 @@
   },
   "launches": {
     "banner": {
-      "cta": "启动 Comfy MCP",
-      "text": "现在，让你的智能体成为创意技术专家。"
+      "cta": "试用 Comfy Router",
+      "text": "一个 API，调用前沿媒体模型。"
     },
     "cta": {
       "heading": "Comfy 的全部内容，一处尽享。",
@@ -3217,8 +3220,8 @@
       "ariaLabel": "合作伙伴模型的示例输出"
     },
     "modelsHero": {
-      "heading": "1000+ 媒体 AI 模型，尽在一个 API。",
-      "subtitle": "使用最先进的图像、视频、3D 和音频模型。生产环境就绪。",
+      "heading": "一个 API，接入所有前沿媒体模型。",
+      "subtitle": "一次集成前沿的图像、视频、3D 和音频模型，然后为每个任务选择供应商，获得更好的可用性和价格。",
       "getApiKey": "获取 API 密钥"
     },
     "pricing": {
@@ -4408,7 +4411,8 @@
       "tooLarge": "文件超过 {limit}",
       "uploadFailed": "上传失败。请重试或粘贴可访问的网址。",
       "videoTooLong": "请使用时长不超过 {seconds} 秒的视频。",
-      "videoUnreadable": "无法读取视频时长。请选择可播放的视频或使用可访问的视频链接。"
+      "videoWidthOutOfRange": "请使用宽度在 {minimum} 到 {maximum} 像素之间的视频。",
+      "videoUnreadable": "无法读取视频详情。请选择可播放的视频或使用可访问的视频链接。"
     },
     "hero": {
       "eyebrow": "模型",

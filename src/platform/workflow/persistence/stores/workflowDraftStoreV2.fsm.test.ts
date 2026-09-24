@@ -13,11 +13,7 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    loadGraphData: vi.fn().mockResolvedValue(undefined)
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 // ── Model & Real ────────────────────────────────────────────────────
 

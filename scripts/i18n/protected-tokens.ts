@@ -2,8 +2,10 @@ import type { LocaleChanges, LocaleObject, LocaleValue } from './locale-tree'
 import { collectLeaves, getLeaf, pathKey } from './locale-tree'
 
 const quoteCharacters = `['"“”‘’«»‹›„‚「」『』]`
+const htmlTagPattern = /<\/?[a-z][^>]*>/g
 const protectedLiteralPatterns = [
   /<(?:Picture|Video|Audio) [A-Za-z0-9]+>/g,
+  htmlTagPattern,
   /\b\d+k\+\d+\b/g,
   new RegExp(`(?<=${quoteCharacters})(?:match|max)(?=${quoteCharacters})`, 'g')
 ]
@@ -14,8 +16,18 @@ const interpolationPattern = /\{(?:[A-Za-z][A-Za-z0-9_.-]*|\d+|'[^']*')\}/g
 const pluralSeparatorPattern = /\|/
 const linkedMessagePattern = /@[.:]/
 
-function uniqueMatches(value: string, pattern: RegExp): string[] {
-  return [...new Set(value.match(pattern) ?? [])].sort()
+function matches(value: string, pattern: RegExp): string[] {
+  return value.match(pattern) ?? []
+}
+
+function unmatched(expected: string[], actual: string[]): string[] {
+  const remaining = [...actual]
+  return expected.filter((token) => {
+    const index = remaining.indexOf(token)
+    if (index === -1) return true
+    remaining.splice(index, 1)
+    return false
+  })
 }
 
 export function protectedTokens(
@@ -23,12 +35,12 @@ export function protectedTokens(
   includeInterpolation: boolean
 ): string[] {
   const tokens = protectedLiteralPatterns.flatMap((pattern) =>
-    uniqueMatches(value, pattern)
+    matches(value, pattern)
   )
   if (includeInterpolation) {
-    tokens.push(...uniqueMatches(value, interpolationPattern))
+    tokens.push(...matches(value, interpolationPattern))
   }
-  return [...new Set(tokens)].sort()
+  return tokens.sort()
 }
 
 export function tokenErrors(
@@ -38,8 +50,11 @@ export function tokenErrors(
 ): string[] {
   const sourceTokens = protectedTokens(source, includeInterpolation)
   const targetTokens = protectedTokens(target, includeInterpolation)
-  const missing = sourceTokens.filter((token) => !targetTokens.includes(token))
-  const added = targetTokens.filter((token) => !sourceTokens.includes(token))
+  const missing = unmatched(sourceTokens, targetTokens)
+  const added = unmatched(targetTokens, sourceTokens)
+  const htmlSequenceChanged =
+    JSON.stringify(matches(source, htmlTagPattern)) !==
+    JSON.stringify(matches(target, htmlTagPattern))
   return [
     ...(missing.length ? [`missing ${missing.join(', ')}`] : []),
     ...(added.length ? [`added ${added.join(', ')}`] : []),
@@ -52,7 +67,8 @@ export function tokenErrors(
       : []),
     ...(linkedMessagePattern.test(target) && !linkedMessagePattern.test(source)
       ? ['added linked message @']
-      : [])
+      : []),
+    ...(htmlSequenceChanged ? ['changed HTML tag sequence'] : [])
   ]
 }
 

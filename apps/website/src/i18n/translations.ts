@@ -87,6 +87,9 @@ export function tAround(
     [slot]: marker
   })
   const markerIndex = message.indexOf(marker)
+  if (message.indexOf(marker, markerIndex + marker.length) !== -1) {
+    throw new Error(`Translation ${key} repeats slot ${marker}`)
+  }
   return markerIndex === -1
     ? [message, '']
     : [

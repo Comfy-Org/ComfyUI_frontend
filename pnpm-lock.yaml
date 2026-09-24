@@ -22,8 +22,8 @@ catalogs:
       specifier: ^7.0.2
       version: 7.0.2
     '@comfyorg/comfy-multi-player':
-      specifier: https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/b475423a0f8b019bbac261ce218dfc016e9aa634
-      version: 0.3.3
+      specifier: 0.3.6
+      version: 0.3.6
     '@comfyorg/comfyui-desktop-bridge-types':
       specifier: 0.2.0
       version: 0.2.0
@@ -460,8 +460,8 @@ catalogs:
       specifier: ^6.2.1
       version: 6.2.1
     yjs:
-      specifier: ^13.6.27
-      version: 13.6.31
+      specifier: ^13.6.32
+      version: 13.6.32
     zod:
       specifier: ^3.23.8
       version: 3.25.76
@@ -514,7 +514,7 @@ importers:
         version: link:packages/billing-contract
       '@comfyorg/comfy-multi-player':
         specifier: 'catalog:'
-        version: https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/b475423a0f8b019bbac261ce218dfc016e9aa634
+        version: 0.3.6
       '@comfyorg/comfyui-desktop-bridge-types':
         specifier: 'catalog:'
         version: 0.2.0
@@ -706,7 +706,7 @@ importers:
         version: 6.2.1(three@0.184.0)
       yjs:
         specifier: 'catalog:'
-        version: 13.6.31
+        version: 13.6.32
       zod:
         specifier: 'catalog:'
         version: 3.25.76
@@ -1309,6 +1309,9 @@ importers:
 
   packages/billing-contract:
     devDependencies:
+      '@comfyorg/account-core':
+        specifier: workspace:^
+        version: link:../account-core
       '@types/node':
         specifier: 'catalog:'
         version: 25.9.5
@@ -1964,9 +1967,8 @@ packages:
     resolution: {integrity: sha512-y7/yvZ2TPAnR9+jnc00klvNNLkJiXFFrQA/hlLCcxA9a2A4zQIOimyFQ9XfwYKiGD1fb5GY8vbKIIgO8d5Tb2A==}
     engines: {node: '>= 20.12.0'}
 
-  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/b475423a0f8b019bbac261ce218dfc016e9aa634':
-    resolution: {gitHosted: true, integrity: sha512-YhGP8rTlRGZjSgZVAfvdJOWaKvR7dF6Oo6w+IicyK+4f7XqQk30yW5hUFoHaGLFJH6RGwDvSey0/BS2Iq2r/PA==, tarball: https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/b475423a0f8b019bbac261ce218dfc016e9aa634}
-    version: 0.3.3
+  '@comfyorg/comfy-multi-player@0.3.6':
+    resolution: {integrity: sha512-6mC4E43YH+58gV4I+tmUR4pIYxqUeiY8ShS1WjjDEYxsBKGbzU1rRNGZHKgrzP3cOKGzK/JSP663/SIN50kfeQ==}
 
   '@comfyorg/comfyui-desktop-bridge-types@0.2.0':
     resolution: {integrity: sha512-V5Wj5KXDzTDm5GJAa0xBISjmndNIY5P79pRHQbLkkqJxgp/GPb/QGvcI+xG4ogol0ODJ4j/UBnUmkzpSafw8Aw==}
@@ -9920,8 +9922,8 @@ packages:
     resolution: {integrity: sha512-2rAgRKu54VsHkqI0/tYkmluGXHD4KW7yZoycuqDQ15QOTnc2VVfy0nN/1eMhnQLO00A+dwtK20xuCnc1YGeUyg==}
     engines: {node: ^20.19.0 || ^22.12.0 || >=23}
 
-  yjs@13.6.31:
-    resolution: {integrity: sha512-Eq+5BRfbeGyqGVrTJL3bEcr8gKkxPuyuoHmAwpk52fDb8kOVMrfVSTRPd6yiGgX5Fskb96qCRjzjbRjrL4YEnw==}
+  yjs@13.6.32:
+    resolution: {integrity: sha512-lfiJIIC4Xayt5ItynE407ehlE03pCjeOc4hkR4yxxvvNJ4kuiN25B0g+Qp8XagYz361LLL7DCzR5bvFJ81QKtQ==}
     engines: {node: '>=16.0.0', npm: '>=8.0.0'}
 
   yocto-queue@0.1.0:
@@ -10614,9 +10616,9 @@ snapshots:
       fast-wrap-ansi: 0.2.2
       sisteransi: 1.0.5
 
-  '@comfyorg/comfy-multi-player@https://codeload.github.com/Comfy-Org/comfy-multi-player/tar.gz/b475423a0f8b019bbac261ce218dfc016e9aa634':
+  '@comfyorg/comfy-multi-player@0.3.6':
     dependencies:
-      yjs: 13.6.31
+      yjs: 13.6.32
 
   '@comfyorg/comfyui-desktop-bridge-types@0.2.0': {}
 
@@ -19224,7 +19226,7 @@ snapshots:
       y18n: 5.0.8
       yargs-parser: 22.0.0
 
-  yjs@13.6.31:
+  yjs@13.6.32:
     dependencies:
       lib0: 0.2.117
 

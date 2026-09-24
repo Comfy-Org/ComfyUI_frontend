@@ -1027,6 +1027,7 @@ function useInCode() {
       <ApiTab
         :contract="model.execution"
         :values
+        :workspace-id="session?.workspace.id"
         :locale
         :model-slug="model.slug"
       />

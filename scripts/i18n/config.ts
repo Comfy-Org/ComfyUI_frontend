@@ -17,6 +17,7 @@ export interface TranslationPipelineConfig {
   localeFileConcurrency: number
   requestConcurrency: number
   maxTranslationRounds: number
+  translationContext: string
   glossary: string
   outputLocales: OutputLocale[]
 }
@@ -58,6 +59,7 @@ export const translationPipelineConfig: TranslationPipelineConfig = {
   localeFileConcurrency: 3,
   requestConcurrency: 2,
   maxTranslationRounds: 3,
+  translationContext: 'ComfyUI, a node-based generative AI application',
   glossary,
   outputLocales: [
     {
@@ -89,6 +91,8 @@ const websiteTranslationPipelineConfig: TranslationPipelineConfig = {
   ...translationPipelineConfig,
   entry: 'apps/website/src/locales/en',
   output: 'apps/website/src/locales',
+  translationContext:
+    'comfy.org, a website with marketing, product, support, and legal content',
   glossary: websiteGlossary,
   outputLocales: [
     {

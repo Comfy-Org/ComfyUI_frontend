@@ -476,7 +476,7 @@ export class Reroute
     const network = this.network.deref()
     if (!network) return
 
-    for (const linkId of [...this.floatingLinkIds]) {
+    for (const linkId of Array.from(this.floatingLinkIds)) {
       const floatingLink = network.floatingLinks.get(linkId)
       if (floatingLink) network.removeFloatingLink(floatingLink)
     }

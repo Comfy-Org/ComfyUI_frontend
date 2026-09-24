@@ -245,7 +245,8 @@
       "fileUnreadable": "This file can no longer be read. Select it again.",
       "incompatible": "This input is incompatible with the other settings.",
       "videoTooLong": "Use a video that is {seconds} seconds or shorter.",
-      "videoUnreadable": "Could not read the video duration. Select a playable video or use an accessible video link.",
+      "videoWidthOutOfRange": "Use a video between {minimum} and {maximum} pixels wide.",
+      "videoUnreadable": "Could not read the video details. Select a playable video or use an accessible video link.",
       "draftRestoreFailed": "We could not restore all of your saved inputs. Check the form and pick your files again.",
       "requestTooLarge": "Your files and prompt exceed the 10 MiB request limit after encoding. Encoding makes files about one-third larger. Use smaller files or a shorter prompt.",
       "badType": "File type not supported",
@@ -1187,7 +1188,10 @@
         "wan3": "Wan 3.0",
         "qwenImageEdit": "Qwen\nImage Edit",
         "wan22TextToVideo": "Wan 2.2",
-        "gptImage2": "GPT Image 2"
+        "gptImage2": "GPT Image 2",
+        "chatgptImages25": "ChatGPT Images 2.5",
+        "klingAi30": "KlingAI 3.0",
+        "flux3": "Flux 3"
       },
       "ctaDesktop": "EXPLORE WORKFLOWS WITH THE LATEST MODELS",
       "ctaMobile": "EXPLORE WORKFLOWS"
@@ -3417,8 +3421,8 @@
       "visualAlt": "Comfy"
     },
     "banner": {
-      "text": "Now turn your agent into a creative technologist.",
-      "cta": "Start Comfy MCP"
+      "text": "One API for frontier media models.",
+      "cta": "Try Comfy Router"
     },
     "cta": {
       "heading": "Everything Comfy ships. All in one place.",
@@ -4391,8 +4395,8 @@
       "worker": "Worker"
     },
     "modelsHero": {
-      "heading": "1000+ media AI models in one API.",
-      "subtitle": "Use state-of-the-art models for image, video, 3D, and audio. Ready for production.",
+      "heading": "One API for frontier media models.",
+      "subtitle": "Integrate frontier image, video, 3D and audio models once. Then choose the provider for each job for better availability and prices.",
       "getApiKey": "Get your API key"
     },
     "builderHero": {
