@@ -2957,7 +2957,7 @@
     "reactivateToUseCredits": "Reactivate your plan to use these credits",
     "salesManagedInactiveCreditsNote": "Spendable once your plan is restored.",
     "salesManagedCreditsEndedNote": "Plan credits ended with your subscription.",
-    "inactiveEnterpriseDescription": "You can't run workflows or add new members. Contact your Comfy account manager to restore access.",
+    "inactiveEnterpriseDescription": "You can't run workflows or add new members. Contact sales to restore access.",
     "teamPerks": {
       "inviteMembers": "Invite members",
       "concurrentRuns": "Members can run workflows concurrently",

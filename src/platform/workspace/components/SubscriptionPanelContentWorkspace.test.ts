@@ -595,7 +595,7 @@ describe('SubscriptionPanelContentWorkspace', () => {
 
         expect(
           screen.getByText(
-            "You can't run workflows or add new members. Contact your Comfy account manager to restore access."
+            "You can't run workflows or add new members. Contact sales to restore access."
           )
         ).toBeInTheDocument()
       })
