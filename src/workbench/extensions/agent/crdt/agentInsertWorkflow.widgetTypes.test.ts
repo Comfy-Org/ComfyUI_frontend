@@ -148,14 +148,13 @@ function bindProjection(workflowId: string, graph: LGraph) {
   let seq = 0
   const deliver = (update: Uint8Array, opIds: string[]): boolean => {
     follower.applyRemoteUpdate(update)
-    const committed =
-      projection.applyFrame({
-        workflowId,
-        seq: ++seq,
-        update,
-        actor: 'agent:test',
-        opIds
-      }) !== null
+    const committed = projection.applyFrame({
+      workflowId,
+      seq: ++seq,
+      update,
+      actor: 'agent:test',
+      opIds
+    }).applied
     return committed
   }
   return deliver
