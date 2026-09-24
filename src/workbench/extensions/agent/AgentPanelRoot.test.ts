@@ -7,7 +7,7 @@ import type {
 } from '@comfyorg/ingest-types'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
 import { computed, defineComponent, h, nextTick, ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
@@ -178,12 +178,6 @@ const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
 vi.mock(import('@vueuse/core'), { spy: true })
 
 vi.mock(import('@/platform/telemetry'))
-
-function getTelemetryMock() {
-  const telemetry = useTelemetry()
-  assert.exists(telemetry)
-  return vi.mocked(telemetry)
-}
 
 // Counts up rather than returning a constant, so a cached id would show up as a
 // repeat instead of passing.
@@ -579,7 +573,7 @@ describe('AgentPanelRoot onboarding', () => {
         screen.queryByRole('dialog', { name: 'Meet your Comfy Agent' })
       ).not.toBeInTheDocument()
       expect(
-        getTelemetryMock().trackAgentOnboardingNotShown
+        useTelemetry()!.trackAgentOnboardingNotShown
       ).toHaveBeenCalledExactlyOnceWith({ reason: 'tour_active' })
     } finally {
       firstRunHolds.value = false
@@ -602,18 +596,14 @@ describe('AgentPanelRoot onboarding', () => {
       ).not.toBeInTheDocument()
     )
 
-    expect(
-      getTelemetryMock().trackAgentOnboardingNotShown
-    ).not.toHaveBeenCalled()
+    expect(useTelemetry()!.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
   })
 
   it('reports the deferral once the workspace resolves after mount', async () => {
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: null })
     canvasStore.linearMode = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
-    expect(
-      getTelemetryMock().trackAgentOnboardingNotShown
-    ).not.toHaveBeenCalled()
+    expect(useTelemetry()!.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
 
     Object.assign(useTeamWorkspaceStore(), {
       activeWorkspaceId: 'workspace-late'
@@ -621,7 +611,7 @@ describe('AgentPanelRoot onboarding', () => {
 
     await vi.waitFor(() =>
       expect(
-        getTelemetryMock().trackAgentOnboardingNotShown
+        useTelemetry()!.trackAgentOnboardingNotShown
       ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
     )
   })
@@ -635,7 +625,7 @@ describe('AgentPanelRoot onboarding', () => {
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
     expect(
-      getTelemetryMock().trackAgentOnboardingNotShown
+      useTelemetry()!.trackAgentOnboardingNotShown
     ).toHaveBeenCalledExactlyOnceWith({ reason: 'app_mode' })
   })
 
@@ -650,9 +640,7 @@ describe('AgentPanelRoot onboarding', () => {
     canvasStore.linearMode = true
     render(AgentPanelRoot, { global: { plugins: [i18n] } })
 
-    expect(
-      getTelemetryMock().trackAgentOnboardingNotShown
-    ).not.toHaveBeenCalled()
+    expect(useTelemetry()!.trackAgentOnboardingNotShown).not.toHaveBeenCalled()
   })
 
   it('walks through the four cards and leaves the composer usable after Done', async () => {
@@ -1274,7 +1262,7 @@ describe('AgentPanelRoot attach flow', () => {
         name: i18n.global.t('agent.attachFiles')
       })
     )
-    expect(getTelemetryMock().trackAgentAttachButtonClicked).toHaveBeenCalled()
+    expect(useTelemetry()!.trackAgentAttachButtonClicked).toHaveBeenCalled()
 
     const file = new File(['x'], 'cat.png', { type: 'image/png' })
     const input = screen.getByTestId<HTMLInputElement>('agent-file-input')
@@ -1295,7 +1283,7 @@ describe('AgentPanelRoot attach flow', () => {
       content: '@[Image: cat.png] make it pop',
       attachments: ['uploaded_cat.png']
     })
-    expect(getTelemetryMock().trackAgentMessageSent).toHaveBeenCalledWith({
+    expect(useTelemetry()!.trackAgentMessageSent).toHaveBeenCalledWith({
       attachment_count: 1,
       node_tag_count: 0,
       thread_id: null,
@@ -2765,7 +2753,7 @@ describe('AgentPanelRoot transcript copy', () => {
 describe('AgentPanelRoot feedback capture', () => {
   beforeEach(() => {
     ws.clear()
-    getTelemetryMock().trackAgentMessageFeedback.mockClear()
+    vi.mocked(useTelemetry())!.trackAgentMessageFeedback.mockClear()
   })
 
   it('forwards a thumbs vote to telemetry with the message id and vote', async () => {
@@ -2806,7 +2794,9 @@ describe('AgentPanelRoot feedback capture', () => {
       await screen.findByRole('button', { name: 'Helpful' })
     )
 
-    expect(getTelemetryMock().trackAgentMessageFeedback.mock.calls).toEqual([
+    expect(
+      vi.mocked(useTelemetry())!.trackAgentMessageFeedback.mock.calls
+    ).toEqual([
       [{ message_id: 'turn-9', vote: 'up', workflow_id: 'wf-rated' }],
       [{ message_id: 'turn-9', vote: null, workflow_id: 'wf-rated' }]
     ])
@@ -2849,9 +2839,9 @@ describe('AgentPanelRoot feedback capture', () => {
       await screen.findByRole('button', { name: 'Helpful' })
     )
 
-    expect(getTelemetryMock().trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-10', vote: 'up', workflow_id: 'wf-last' }]
-    ])
+    expect(
+      vi.mocked(useTelemetry())!.trackAgentMessageFeedback.mock.calls
+    ).toEqual([[{ message_id: 'turn-10', vote: 'up', workflow_id: 'wf-last' }]])
   })
 
   it('reports a null workflow when the rated message never linked a tab', async () => {
@@ -2879,9 +2869,9 @@ describe('AgentPanelRoot feedback capture', () => {
       await screen.findByRole('button', { name: 'Helpful' })
     )
 
-    expect(getTelemetryMock().trackAgentMessageFeedback.mock.calls).toEqual([
-      [{ message_id: 'turn-11', vote: 'up', workflow_id: null }]
-    ])
+    expect(
+      vi.mocked(useTelemetry())!.trackAgentMessageFeedback.mock.calls
+    ).toEqual([[{ message_id: 'turn-11', vote: 'up', workflow_id: null }]])
   })
 })
 
@@ -2899,8 +2889,8 @@ describe('AgentPanelRoot lifecycle', () => {
     )
 
     expect(useAgentNodeSelectionStore().isActive).toBe(false)
-    expect(getTelemetryMock().trackAgentCloseButtonClicked).toHaveBeenCalled()
-    expect(getTelemetryMock().trackAgentPanelClosed).toHaveBeenCalledWith({
+    expect(useTelemetry()!.trackAgentCloseButtonClicked).toHaveBeenCalled()
+    expect(useTelemetry()!.trackAgentPanelClosed).toHaveBeenCalledWith({
       source: 'close_button',
       open_duration_ms: null
     })
@@ -2993,8 +2983,8 @@ describe('AgentPanelRoot workflow binding', () => {
     useAgentPanelStore().enabled = true
     vi.mocked(app.loadGraphData).mockClear()
     vi.mocked(validateComfyWorkflow).mockClear()
-    getTelemetryMock().trackAgentNodeTagged.mockClear()
-    getTelemetryMock().trackAgentWorkflowApplied.mockClear()
+    vi.mocked(useTelemetry())!.trackAgentNodeTagged.mockClear()
+    vi.mocked(useTelemetry())!.trackAgentWorkflowApplied.mockClear()
     executionErrors.showErrorOverlay.mockClear()
   })
 
@@ -3020,12 +3010,14 @@ describe('AgentPanelRoot workflow binding', () => {
       if (existingThread !== null)
         useAgentConversationStore().setThreadId(existingThread)
       mockMessagesEndpoint('wf-42')
-      telemetry.trackAgentMessageSent.mockClear()
+      vi.mocked(useTelemetry())!.trackAgentMessageSent.mockClear()
       renderWithSelectedTarget()
 
       await sendFromComposer('build me a workflow')
 
-      expect(telemetry.trackAgentMessageSent.mock.calls).toEqual([
+      expect(
+        vi.mocked(useTelemetry())!.trackAgentMessageSent.mock.calls
+      ).toEqual([
         [
           {
             attachment_count: 0,
@@ -3043,7 +3035,7 @@ describe('AgentPanelRoot workflow binding', () => {
   it('reports a message sent from an empty-state suggestion chip as a suggestion', async () => {
     makeTab('wf-42')
     mockMessagesEndpoint('wf-42')
-    telemetry.trackAgentMessageSent.mockClear()
+    vi.mocked(useTelemetry())!.trackAgentMessageSent.mockClear()
     renderWithSelectedTarget()
 
     await userEvent.click(
@@ -3052,18 +3044,20 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Send' }))
     await screen.findByRole('button', { name: 'Stop' })
 
-    expect(telemetry.trackAgentMessageSent.mock.calls).toEqual([
+    expect(vi.mocked(useTelemetry())!.trackAgentMessageSent.mock.calls).toEqual(
       [
-        {
-          attachment_count: 0,
-          node_tag_count: 0,
-          thread_id: null,
-          workflow_id: 'wf-42',
-          client_message_id: 'client-message-1',
-          input_method: 'suggestion'
-        }
+        [
+          {
+            attachment_count: 0,
+            node_tag_count: 0,
+            thread_id: null,
+            workflow_id: 'wf-42',
+            client_message_id: 'client-message-1',
+            input_method: 'suggestion'
+          }
+        ]
       ]
-    ])
+    )
   })
 
   it('keeps the report on the turn’s own workflow when the target changes mid-send', async () => {
@@ -3086,7 +3080,7 @@ describe('AgentPanelRoot workflow binding', () => {
         { id: 'wf-99', name: 'other' }
       ]
     })
-    telemetry.trackAgentMessageSent.mockClear()
+    vi.mocked(useTelemetry())!.trackAgentMessageSent.mockClear()
     renderWithSelectedTarget()
     await screen.findByRole('textbox')
     sending = true
@@ -3094,18 +3088,20 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('build me a workflow')
 
     expect(bodies[0]).toMatchObject({ workflow_id: 'wf-42' })
-    expect(telemetry.trackAgentMessageSent.mock.calls).toEqual([
+    expect(vi.mocked(useTelemetry())!.trackAgentMessageSent.mock.calls).toEqual(
       [
-        {
-          attachment_count: 0,
-          node_tag_count: 0,
-          thread_id: null,
-          workflow_id: 'wf-42',
-          client_message_id: 'client-message-1',
-          input_method: 'typed'
-        }
+        [
+          {
+            attachment_count: 0,
+            node_tag_count: 0,
+            thread_id: null,
+            workflow_id: 'wf-42',
+            client_message_id: 'client-message-1',
+            input_method: 'typed'
+          }
+        ]
       ]
-    ])
+    )
   })
 
   it('reports the workflow the turn was posted against, not the id known before it resolved', async () => {
@@ -3117,7 +3113,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const bodies = mockMessagesEndpoint('wf-77', () =>
       listed ? [{ id: 'wf-77', name: 'current' }] : []
     )
-    telemetry.trackAgentMessageSent.mockClear()
+    vi.mocked(useTelemetry())!.trackAgentMessageSent.mockClear()
     renderWithSelectedTarget()
     await screen.findByRole('textbox')
     listed = true
@@ -3125,18 +3121,20 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('build me a workflow')
 
     expect(bodies[0]).toMatchObject({ workflow_id: 'wf-77' })
-    expect(telemetry.trackAgentMessageSent.mock.calls).toEqual([
+    expect(vi.mocked(useTelemetry())!.trackAgentMessageSent.mock.calls).toEqual(
       [
-        {
-          attachment_count: 0,
-          node_tag_count: 0,
-          thread_id: null,
-          workflow_id: 'wf-77',
-          client_message_id: 'client-message-1',
-          input_method: 'typed'
-        }
+        [
+          {
+            attachment_count: 0,
+            node_tag_count: 0,
+            thread_id: null,
+            workflow_id: 'wf-77',
+            client_message_id: 'client-message-1',
+            input_method: 'typed'
+          }
+        ]
       ]
-    ])
+    )
   })
 
   function setupWorkflowContext({
@@ -4617,12 +4615,10 @@ describe('AgentPanelRoot workflow binding', () => {
     // canvas itself.
     expect(app.loadGraphData).not.toHaveBeenCalled()
     await vi.waitFor(() =>
-      expect(getTelemetryMock().trackAgentWorkflowApplied).toHaveBeenCalledWith(
-        {
-          workflow_id: 'wf-42',
-          target: 'active_tab_switch'
-        }
-      )
+      expect(useTelemetry()!.trackAgentWorkflowApplied).toHaveBeenCalledWith({
+        workflow_id: 'wf-42',
+        target: 'active_tab_switch'
+      })
     )
   })
 
@@ -4752,7 +4748,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(useAgentWorkflowTabBindingStore().tabPathFor('wf-77')).toBe(
       'workflows/Video test.json'
     )
-    expect(getTelemetryMock().trackAgentWorkflowApplied).toHaveBeenCalledWith({
+    expect(useTelemetry()!.trackAgentWorkflowApplied).toHaveBeenCalledWith({
       workflow_id: 'wf-77',
       target: 'active_tab_open'
     })
@@ -4768,7 +4764,7 @@ describe('AgentPanelRoot workflow binding', () => {
       )
       await renderAndSend('work here')
       vi.mocked(useWorkflowService()).openWorkflow.mockResolvedValueOnce(false)
-      getTelemetryMock().trackAgentWorkflowApplied.mockClear()
+      vi.mocked(useTelemetry())!.trackAgentWorkflowApplied.mockClear()
 
       ws.emit('agent_active_tab', {
         workflow_id: 'wf-other',
@@ -4789,9 +4785,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(
         useAgentWorkflowTabBindingStore().tabPathFor('wf-other')
       ).toBeUndefined()
-      expect(
-        getTelemetryMock().trackAgentWorkflowApplied
-      ).not.toHaveBeenCalled()
+      expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
       expect(useWorkflowTabActivityStore().editingTabPath).toBe(current.path)
       expect(useWorkflowTabActivityStore().creatingTab).toBe(false)
       expect(
@@ -4806,7 +4800,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const { unmount } = renderWithSelectedTarget()
     await sendFromComposer('work here')
     vi.useFakeTimers()
-    getTelemetryMock().trackAgentWorkflowApplied.mockClear()
+    vi.mocked(useTelemetry())!.trackAgentWorkflowApplied.mockClear()
 
     ws.emit('agent_active_tab', {
       workflow_id: 'wf-late',
@@ -4824,7 +4818,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
     ).toBeUndefined()
-    expect(getTelemetryMock().trackAgentWorkflowApplied).not.toHaveBeenCalled()
+    expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
     expect(useWorkflowTabActivityStore().creatingTab).toBe(false)
   })
 
@@ -4840,7 +4834,7 @@ describe('AgentPanelRoot workflow binding', () => {
       const { unmount } = renderWithSelectedTarget()
       await sendFromComposer('work here')
       vi.useFakeTimers()
-      getTelemetryMock().trackAgentWorkflowApplied.mockClear()
+      vi.mocked(useTelemetry())!.trackAgentWorkflowApplied.mockClear()
       let finishOpen: ((opened: boolean) => void) | undefined
       vi.mocked(useWorkflowService()).openWorkflow.mockImplementationOnce(
         async (tab) => {
@@ -4867,9 +4861,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(
         useAgentWorkflowTabBindingStore().tabPathFor('wf-late')
       ).toBeUndefined()
-      expect(
-        getTelemetryMock().trackAgentWorkflowApplied
-      ).not.toHaveBeenCalled()
+      expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
       expect(useWorkflowTabActivityStore().editingTabPath).toBeNull()
       if (kind === 'new') expect(workflowStore.activeWorkflow).toEqual(current)
       expect(
@@ -4884,7 +4876,7 @@ describe('AgentPanelRoot workflow binding', () => {
     const { unmount } = renderWithSelectedTarget()
     await sendFromComposer('work here')
     vi.useFakeTimers()
-    getTelemetryMock().trackAgentWorkflowApplied.mockClear()
+    vi.mocked(useTelemetry())!.trackAgentWorkflowApplied.mockClear()
     let finishOpen: ((opened: boolean) => void) | undefined
     vi.mocked(useWorkflowService()).openWorkflow.mockImplementationOnce(
       () =>
@@ -4912,7 +4904,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       useAgentWorkflowTabBindingStore().tabPathFor('wf-queued')
     ).toBeUndefined()
-    expect(getTelemetryMock().trackAgentWorkflowApplied).not.toHaveBeenCalled()
+    expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
     expect(useWorkflowTabActivityStore().creatingTab).toBe(false)
   })
 
@@ -4998,7 +4990,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(
       useAgentWorkflowTabBindingStore().tabPathFor('wf-77')
     ).toBeUndefined()
-    expect(getTelemetryMock().trackAgentWorkflowApplied).not.toHaveBeenCalled()
+    expect(useTelemetry()!.trackAgentWorkflowApplied).not.toHaveBeenCalled()
   })
 
   it('agent_active_tab strips dotfile prefixes hidden behind whitespace', async () => {
@@ -6309,8 +6301,8 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(await screen.findByText('KSampler')).toBeInTheDocument()
     expect([...state.selectedItems]).toEqual([])
     expect(state.selectItems).not.toHaveBeenCalled()
-    expect(getTelemetryMock().trackAgentNodeTagged).toHaveBeenCalledTimes(1)
-    expect(getTelemetryMock().trackAgentNodeTagged).toHaveBeenCalledWith({
+    expect(useTelemetry()!.trackAgentNodeTagged).toHaveBeenCalledTimes(1)
+    expect(useTelemetry()!.trackAgentNodeTagged).toHaveBeenCalledWith({
       source: 'mention_picker'
     })
   })
@@ -6895,7 +6887,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('decode it')
 
     expect(bodies[0]).toMatchObject({ selection: { node_ids: ['7'] } })
-    expect(getTelemetryMock().trackAgentMessageSent).toHaveBeenCalledWith({
+    expect(useTelemetry()!.trackAgentMessageSent).toHaveBeenCalledWith({
       attachment_count: 0,
       node_tag_count: 1,
       thread_id: null,
