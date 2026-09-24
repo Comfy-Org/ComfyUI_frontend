@@ -179,23 +179,23 @@ describe('describeImageLoadFailure', () => {
 
   it('drops the unload listener once the race settles, on every failure', async () => {
     vi.stubGlobal('fetch', respondWith(404))
-    const signals: AbortSignal[] = []
-    const addSpy = vi
-      .spyOn(window, 'addEventListener')
-      .mockImplementation((type, _fn, opts) => {
-        if (type === 'pagehide' && opts && typeof opts === 'object') {
-          signals.push(opts.signal!)
-        }
-      })
+    // Observes registration without replacing it, so the listeners under test
+    // are the real ones the DOM holds — a mocked implementation would register
+    // nothing and the teardown assertion below would pass vacuously.
+    const addSpy = vi.spyOn(window, 'addEventListener')
 
     for (let i = 0; i < 3; i++) {
       await describeImageLoadFailure(`${ORIGIN}/api/view?filename=a${i}.png`)
     }
 
+    const signals = addSpy.mock.calls
+      .filter(([type]) => type === 'pagehide')
+      .map(([, , options]) => (options as AddEventListenerOptions).signal)
     addSpy.mockRestore()
+
     expect(signals).toHaveLength(3)
     // Every listener is torn down, so repeated failures cannot accumulate them.
-    expect(signals.every((s) => s.aborted)).toBe(true)
+    expect(signals.every((signal) => signal?.aborted)).toBe(true)
   })
 
   it('carries page age, the field that distinguishes auth expiry from a 404', async () => {
