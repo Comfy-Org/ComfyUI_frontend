@@ -14,7 +14,8 @@ workflows to that product. The user clarified that workflow preparation happens
 offline when catalog content is authored; extracting an editor APP interface is
 outside this feature. This replaces the publication/export proposal in
 [WORKSHOP-WORKFLOWS-0036](WORKSHOP-WORKFLOWS-0036-published-app-definitions-and-durable-cloud-runs.md).
-Its separate Cloud admission, billing, recovery and media requirements remain.
+The user subsequently deferred the separate Cloud admission, recovery and media
+infrastructure. Existing Cloud endpoints are the current execution contract.
 
 ## Decision
 
@@ -26,9 +27,8 @@ formats; do not introduce replacement master or Router catalogs.
 These files are the publication store for this phase. Catalog database tables,
 Router/workflow publishing APIs and automatic workflow input compilation are
 future work. A later migration can preserve the declared content and IDs; this
-feature does not need a storage abstraction built in anticipation of it. Durable
-run, receipt and media records serve execution/recovery and remain separate from
-catalog publishing.
+feature does not need a storage abstraction built in anticipation of it. Proposed durable run, receipt and media infrastructure is deferred and requires
+Cloud backend team agreement before implementation resumes.
 
 - The master pages source owns names, copy, examples, INPUTS widgets and their
   presentation. A page declares its MODEL, CLOUD or SERVERLESS target and stable
@@ -76,6 +76,26 @@ the common schema validator and known request fixtures. Runtime input validation
 uses those declared constraints. Backend authorization and native execution
 checks still apply; their errors are normalized at the render boundary. Missing
 metadata is corrected offline, never inferred or repaired while rendering a page.
+
+### Current Cloud transport
+
+Use the existing authenticated ingest upload grant, raw PUT, prompt submission,
+job polling and job cancellation endpoints. Browser calls use the current Cloud
+workspace session; CLI calls use the caller's API key. The prepared JSONL graph
+and explicit bindings produce the native prompt request. Existing Cloud checks
+remain authoritative for access and billing.
+
+Persist known job IDs in caller/workspace-scoped browser storage. An uncertain
+submission has no automatic replay because the existing prompt endpoint does
+not promise idempotency. Present native cancellation as requested; its display
+status does not prove that execution has stopped. Selected outputs use Cloud's
+existing ephemeral short links; reread the same job to refresh delivery.
+
+The deferred backend PRs and frontend future branch preserve the stronger
+recovery proposal. They are not dependencies of this preview. This choice gets
+the curated workflows running without extending another team's public APIs;
+background recovery, cross-device history and stronger submission guarantees
+remain outside the current delivery.
 
 ### Alternatives considered
 
