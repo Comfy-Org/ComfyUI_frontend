@@ -6,6 +6,30 @@ governs this corpus. Existing Models INPUTS, shared panels and provider-independ
 validation consume offline-authored execution records. Exporter/APP discovery
 tests from earlier work are historical evidence, not FE-2736 acceptance gates.
 
+The current runtime corpus exercises the generated public contract through the
+real workflow helper, controller, scoped storage and Vue page integration.
+Browser tests in `apps/website/e2e/workshop-workflow-runs.spec.ts` send actual
+file bytes through mocked grants and direct PUT, then resume the same admitted
+run after refresh. They cover partial delivery retry, selected-output link
+renewal, confirmed cancellation, disabled admission and sign-out. The API and
+Workflow tabs preserve form state and request keys without submitting compute.
+
+Lower-level tests cover token renewal, lost POST responses, unchanged/changed
+attempts, stale run responses, and late history responses after both user and
+workspace changes. File drafts use real IndexedDB operations and native File
+objects to prove byte preservation across repeated refresh, storage failure,
+one-time anonymous sign-in handoff and isolation. CLI and cURL request fixtures
+use the same prepared defaults; shell quoting is exercised without external
+network calls. Static preview tests verify escaped SVG and original JSON identity.
+
+Cloud PR #10470 now includes public HTTP ownership, admission, polling, history,
+cancellation, delivery retry and signed-access tests over the durable run store.
+Current-head service checks pass; an unrelated standalone-agent smoke test fails
+in its SIGKILL setup on the PR's base checkout. These checks are not real Cloud
+generation or caller billing evidence. The staging matrix below remains open.
+
+The following implementation notes record earlier checkpoints.
+
 Initial prepared-data check, 2026-09-23: the three records in
 `apps/website/src/content/workshop-workflows.jsonl` passed 30 acceptance/rejection
 cases through the existing Models `validateWorkshopInput` function. These cover
@@ -231,7 +255,7 @@ workflows, never ordinary unit-test execution.
   poll, list and signing; none can attach old results or grants to a new caller.
 - Refresh before/after admission preserves attempt identity/form state and
   resumes the same run. Browser-storage denial is reported accurately while a
-  known public run link remains usable. A new attempt cannot reuse an old key.
+  saved run ID remains recoverable. A new attempt cannot reuse an old key.
 - History tests prove canonical replacement, the independent active-run lookup,
   ordering by visible output tiles, and polling stopping when work settles.
 - Flag tests cover initial off, delayed answer, blocked PostHog, account change,

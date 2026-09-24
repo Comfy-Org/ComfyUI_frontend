@@ -256,6 +256,47 @@ PUBLIC_WORKSHOP_ENABLED=1 PUBLIC_WORKSHOP_AUTH_FLAG=1 PUBLIC_WORKSHOP_ROUTER_RUN
 previews and production always use PostHog. This is a frontend visibility
 control; the APIs continue to enforce authentication and billing.
 
+### Cloud workflow pages
+
+`workshop-display.json` owns the page and INPUT widgets. The matching record in
+`workshop-workflows.jsonl` supplies the prepared execution graph, input mappings,
+defaults and selected outputs. Add both records when introducing a workflow;
+unmatched entries stay hidden. Prepare metadata offline when content changes.
+The website does not extract editor APP selections or execute widget serializers.
+
+Workflow pages reuse the Models form, validation and output components. The
+`workshop-workflows-enabled` PostHog flag gates new visits and runs. A caller's
+saved run remains recoverable after that flag is disabled; sign-out or workspace
+switching detaches its controller and hides its results. Backend authorization and
+admission controls remain authoritative. Local development also accepts
+`PUBLIC_WORKSHOP_WORKFLOWS_ENABLED=1`.
+
+`src/config/workflow-render.ts` implements the shared workflow request and polling
+helper. Node scripts import `workflow_render` and `workflow_for_model` from
+`scripts/workflow-render.ts`; `COMFY_API_KEY` supplies the credential unless a
+token option is given. File inputs use the form's `{ file, name, size, type }`
+shape and are uploaded through grants/direct PUT. URL inputs must already refer
+to caller-owned finalized uploads. The helper returns the run and compatible
+output objects; selected links carry their expiry and refresh endpoint.
+
+Persist `onPrepared`'s attempt before submission and `onAdmitted`'s public run ID
+before polling. Retry an uncertain submission with `{ attempt }`; resume an
+admitted run with `{ runId }`. Aborting the helper stops observation. Explicit
+cancel uses the run API and waits for Cloud confirmation. Output delivery retry
+and link refresh do not submit inference. The page's API tab shows the exact
+wire request, required idempotency header and upload steps.
+
+Prepare graph previews separately with
+`pnpm --filter @comfyorg/website exec tsx scripts/prepare-workflow-previews.ts`.
+This reads the pinned source commit from the local checkout and writes static
+SVG plus original workflow JSON into `public/workflows/prepared/`. New source
+repositories require offline preparation; neither the website build nor run
+admission invokes this tool.
+
+Real Cloud staging, native model availability, direct GCS PUT/CORS and caller
+billing must be verified before enabling the workflow rollout. See
+[the acceptance corpus](../../docs/testing/workshop-cloud-workflows.md).
+
 ### Models analytics
 
 Product analytics use the website's existing PostHog project, following the

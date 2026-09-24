@@ -1,8 +1,8 @@
 # Cloud workflows in Models / Workshop
 
-Status: proposed architecture for FE-2736, reviewed against source on 2026-09-22.
-This document describes work to build; it does not claim deployment or staging
-acceptance. The page/catalog decision is
+Status: FE-2736 implementation design, updated 2026-09-23. The Cloud API and
+website integration are implemented in stacked draft PRs; deployment and staging
+acceptance remain open. The page/catalog decision is
 [WORKSHOP-CATALOG-0037](../adr/WORKSHOP-CATALOG-0037-shared-pages-and-authored-execution-catalogs.md).
 The Cloud lifecycle proposal remains in
 [WORKSHOP-WORKFLOWS-0036](../adr/WORKSHOP-WORKFLOWS-0036-published-app-definitions-and-durable-cloud-runs.md).
@@ -17,8 +17,8 @@ of scope. Earlier exporter commits (`34e948eebf`, `ebf6cdf7f2`) and the
 export-artifact compiler (`96961fe8b8`) are not release dependencies. Cloud commit
 `38617e73d2` removes that compiler and review command and consumes prepared JSONL
 through the existing Router validator and explicit input mappings.
-Cloud receipt and upload work remains applicable. Runtime integration, staging
-and rollout are incomplete. Removing the authoring PR leaves five planned PRs,
+Cloud receipt and upload work remains applicable. Runtime integration is under
+review; staging and rollout are incomplete. Removing the authoring PR leaves five planned PRs,
 including at most three Cloud PRs.
 
 ## Scope and authority
@@ -101,11 +101,12 @@ workflow can expose ordinary numeric controls when the prepared request accepts
 them. Verify the prepared request against the pinned graph and actual Cloud
 runtime; never run custom editor widgets to discover its interface.
 
-The graph tab currently depends on deprecated standalone `@comfyorg/litegraph`
-0.17.2. Resolve its maintained renderer strategy as a bounded frontend spike
-before porting that dependency. Keep the read-only graph viewer behind its own
-interface; it must not load custom-node code, authenticate or submit runs.
-Renderer selection is still open and does not block backend correctness work.
+The graph tab uses an SVG prepared offline alongside the original UI workflow
+JSON. `apps/website/scripts/prepare-workflow-previews.ts` preserves the pinned
+source's node positions and connections, including separate nested graph panels.
+The page displays the asset, with full-size and JSON download links. Interactive
+graph editing belongs in Cloud. This avoids shipping the prototype's deprecated
+renderer or adding a second graph runtime to the website.
 
 ## Ownership and service boundaries
 
@@ -251,12 +252,11 @@ The browser and CLI call the same implementations. The [TypeScript SDK](https://
 currently excludes browser support in its requirements; use the website's HTTP
 boundary rather than importing its Node client into an island.
 
-Default precedence is authored defaults/example values, supported standard
-overrides, then explicit `workflow_specific` overrides. An explicit form
-snapshot is an alternative to overrides. Unknown parameter/input IDs fail;
-known standard parameters without a binding follow Router's omission rule.
-Conversions such as size-to-width/height are versioned publication data, not
-name inference. Preserve `0`, `false` and intentional empty strings; distinguish
+The helper accepts page input IDs over the authored defaults. Unknown IDs fail;
+there is no inferred standard-parameter mapping or separate workflow-specific
+override layer. The script wrapper reads the same master JSON and workflow JSONL
+as the browser's prepared page data. Conversions such as size-to-width/height are
+explicit publication data. Preserve `0`, `false` and intentional empty strings; distinguish
 missing fields from invalid nulls. Restrict numeric inputs to exactly
 representable values shared by Go and TypeScript; reject unsafe defaults rather
 than rounding large seeds.
@@ -556,13 +556,11 @@ and a continuation cursor; clients load selected outputs through the status link
 and refresh grants only when visible. Numeric input scalars explicitly use double
 precision, with a generated-client regression for the largest safe integer.
 
-Run/runtime contracts are not served. The upload grant/access integration is
-available only with explicit backend storage configuration; new grants also
-require `WORKSHOP_UPLOADS_ENABLED`. A code-generation overlay removes the
-remaining draft paths and their response roots before generating routes and the embedded API document.
-Operation-ID exclusion alone retains empty path metadata in the current
-generator. Contract tests cover actual generated route absence; runtime wiring,
-internal Cloud contracts and boundary proofs remain separate implementation work.
+Cloud PR #10470 serves these routes and includes them in the generated public
+contract and frontend projection. Live caller/workspace authorization applies to
+every operation. New runs and uploads remain disabled by default and require
+explicit backend configuration; reads, cancellation and recovery remain available
+when admission is disabled. Runtime currently reports passive `unknown`.
 
 | Route                                                                | Contract                                                                                                                                                                                                        |
 | -------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -595,18 +593,20 @@ identity detaches and discards late responses and in-memory grants.
 Before POST, persist the logical attempt key and prepared intent in a draft
 scoped by caller/workspace/workflow/version. Persist the admitted public ID as
 soon as it is known; one controller owns its URL recovery pointer. An uncertain
-POST reuses the same intent/key after reload. Do not store signed URLs as draft
-identity: retain an upload handle and obtain fresh authorized access. Unuploaded
-files may use bounded local draft storage; unavailable browser storage must be
-reported as limited draft recovery, not as failed execution.
+POST reuses the same intent/key after reload. Store canonical upload references
+in the intent, never signed URLs. Selected files use the existing bounded
+IndexedDB draft store, scoped by user/workspace/page and retained across refresh.
+Private canonical references are not used as image previews. Unavailable file
+storage reports limited form recovery; failure to save submission intent stops
+admission before POST. Both paths retain URL-only workflow transport.
 
 Reuse controls and `RunOutput` presentation after strict workflow wire
 validation. `RunOutput`'s broader Router/blob possibilities do not widen the
 workflow protocol. New workflow identity is distinct from model `routerId`;
-preserve existing model URLs and catalog identities. Keep the shared run-target
-union small (`router-model` and `cloud-workflow` initially), and share only
-input/output presentation and explicit lifecycle operations. Do not force both
-transports into the same cancellation or persistence semantics.
+preserve existing model URLs and catalog identities. The existing typed model
+union selects the Router or workflow page composition. Reuse INPUT controls,
+validation and output presentation; each adapter owns its cancellation and
+persistence semantics.
 
 History is a canonical server snapshot with cursor paging, not an append-only
 client union. The active run may be supplemented by an independent best-effort
@@ -625,7 +625,10 @@ saved-assets build flag. A browser flag is not authorization or an embargo.
 Backend admission has an independently enforceable gate and reviewed workflow
 allowlist. Evaluate eligibility server-side; a forged browser flag cannot run
 an unenabled definition. Keep read/cancel/recovery/delivery available for
-previously admitted runs after admission is disabled. Static catalog assets
+previously admitted runs after admission is disabled. The website restores the
+current caller's saved recovery view after refresh;
+new runs stay disabled, and account changes remove the old view. Backend access
+checks still authorize every read and command. Static catalog assets
 must contain only approved public content; keep unreleased material out of
 public builds. Deployment order is migrations/internal Cloud contracts,
 comfy-api admission and recovery, private definitions, generated clients/public
