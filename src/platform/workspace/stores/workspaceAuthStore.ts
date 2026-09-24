@@ -304,7 +304,11 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
       new Error(`Unified token refresh failed permanently: ${code}`),
       {
         errorType: 'unified_auth_refresh_permanent_failure',
-        tags: { failure_code: code, retry_count: unifiedScheduledRetryCount }
+        tags: { failure_code: code, retry_count: unifiedScheduledRetryCount },
+        // `surfaceUnifiedPermanentFailure` below already writes the console
+        // line via `surfacePermanentAuthError`; without this the same failure
+        // prints twice.
+        logToConsole: false
       }
     )
     surfaceUnifiedPermanentFailure(code)

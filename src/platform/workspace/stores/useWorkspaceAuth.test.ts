@@ -3046,21 +3046,24 @@ describe('useWorkspaceAuthStore', () => {
       {
         status: 403,
         statusText: 'Forbidden',
-        detailKey: 'workspaceAuth.errors.accessDenied'
+        detailKey: 'workspaceAuth.errors.accessDenied',
+        code: 'ACCESS_DENIED'
       },
       {
         status: 404,
         statusText: 'Not Found',
-        detailKey: 'workspaceAuth.errors.workspaceNotFound'
+        detailKey: 'workspaceAuth.errors.workspaceNotFound',
+        code: 'WORKSPACE_NOT_FOUND'
       },
       {
         status: 401,
         statusText: 'Unauthorized',
-        detailKey: 'workspaceAuth.errors.invalidFirebaseToken'
+        detailKey: 'workspaceAuth.errors.invalidFirebaseToken',
+        code: 'INVALID_FIREBASE_TOKEN'
       }
     ])(
       'surfaces the $status permanent refresh error as a toast and clears the slot',
-      async ({ status, statusText, detailKey }) => {
+      async ({ status, statusText, detailKey, code }) => {
         vi.mocked(useAuthStore().getIdToken).mockResolvedValue(
           'firebase-token-xyz'
         )
@@ -3104,7 +3107,10 @@ describe('useWorkspaceAuthStore', () => {
         expect(reportError).toHaveBeenCalledWith(
           expect.any(Error),
           expect.objectContaining({
-            errorType: 'unified_auth_refresh_permanent_failure'
+            errorType: 'unified_auth_refresh_permanent_failure',
+            tags: { failure_code: code, retry_count: 0 },
+            // The toast path owns the console line for this failure.
+            logToConsole: false
           })
         )
         expect(unifiedToken.value).toBeNull()
