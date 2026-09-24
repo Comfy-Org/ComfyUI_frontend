@@ -659,6 +659,7 @@ const {
   events,
   onThreadStarted: (source) =>
     useTelemetry()?.trackAgentThreadStarted({ source }),
+  onAskResolved: forgetApproval,
   workflow: {
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
@@ -874,8 +875,9 @@ async function onOpenApprovalWorkflow(
   workflowId: string,
   workflowName?: string
 ): Promise<void> {
+  const decidedAt = Date.now()
   if (await enqueueActiveTab({ workflow_id: workflowId, name: workflowName }))
-    trackApprovalResolved(askId, 'open_workflow')
+    trackApprovalResolved(askId, 'open_workflow', decidedAt)
 }
 
 async function onNavigateToReferenceWorkflow(
@@ -989,17 +991,12 @@ async function onAgentActiveTab(
   }
 }
 
-const approvalShownAt = new Map<string, number>()
-const shownApprovalIds = new Set<string>()
-
 function onApprovalShown(
   askId: string,
   turnId: string,
   workflowId: string | null
 ): void {
-  if (shownApprovalIds.has(askId)) return
-  shownApprovalIds.add(askId)
-  approvalShownAt.set(askId, Date.now())
+  if (!conversationStore.recordApprovalShown(askId, Date.now())) return
   useTelemetry()?.trackAgentRunApprovalShown({
     turn_id: turnId,
     workflow_id: workflowId
@@ -1008,15 +1005,21 @@ function onApprovalShown(
 
 function trackApprovalResolved(
   askId: string,
-  decision: 'run' | 'cancel' | 'open_workflow'
+  decision: 'run' | 'cancel' | 'open_workflow',
+  decidedAt = Date.now()
 ): void {
-  const shownAt = approvalShownAt.get(askId)
+  const shownAt = conversationStore.approvalShownAt(askId)
   if (shownAt === undefined) return
-  if (decision !== 'open_workflow') approvalShownAt.delete(askId)
+  if (decision !== 'open_workflow')
+    conversationStore.forgetApprovalTiming(askId)
   useTelemetry()?.trackAgentRunApprovalResolved({
     decision,
-    time_to_decide_ms: Math.max(0, Date.now() - shownAt)
+    time_to_decide_ms: Math.max(0, decidedAt - shownAt)
   })
+}
+
+function forgetApproval(askId: string): void {
+  conversationStore.forgetApproval(askId)
 }
 
 async function onAnswerAsk(
@@ -1027,6 +1030,26 @@ async function onAnswerAsk(
 }
 
 const lastReportedWorkflowByThread = new Map<string, string>()
+let pendingWorkflowBind: {
+  workflowId: string
+  previousWorkflowId: string | null
+  source: 'selector_chip' | 'restored'
+} | null = null
+
+function rememberPendingWorkflowBind(
+  workflowId: string,
+  previousWorkflowId: string | null,
+  source: 'active_tab' | 'selector_chip' | 'minted' | 'restored'
+): void {
+  if (source !== 'selector_chip' && source !== 'restored') return
+  pendingWorkflowBind = { workflowId, previousWorkflowId, source }
+}
+
+function consumePendingWorkflowBind(workflowId: string) {
+  const pending = pendingWorkflowBind
+  pendingWorkflowBind = null
+  return pending?.workflowId === workflowId ? pending : null
+}
 
 function trackWorkflowBound(
   workflowId: string,
@@ -1034,16 +1057,22 @@ function trackWorkflowBound(
   bindSource: 'active_tab' | 'selector_chip' | 'minted' | 'restored'
 ): void {
   const currentThreadId = threadId.value
-  if (currentThreadId === null) return
+  if (currentThreadId === null) {
+    rememberPendingWorkflowBind(workflowId, previousWorkflowId, bindSource)
+    return
+  }
+  const pendingBind = consumePendingWorkflowBind(workflowId)
   const lastReportedWorkflowId =
-    lastReportedWorkflowByThread.get(currentThreadId) ?? previousWorkflowId
+    lastReportedWorkflowByThread.get(currentThreadId) ??
+    pendingBind?.previousWorkflowId ??
+    previousWorkflowId
   if (workflowId === lastReportedWorkflowId) return
   lastReportedWorkflowByThread.set(currentThreadId, workflowId)
   useTelemetry()?.trackAgentWorkflowBound({
     thread_id: currentThreadId,
     workflow_id: workflowId,
     prev_workflow_id: lastReportedWorkflowId,
-    bind_source: bindSource
+    bind_source: pendingBind?.source ?? bindSource
   })
 }
 
@@ -1119,6 +1148,7 @@ void refreshHistory()
 async function onSelectHistory(id: string): Promise<void> {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
+  pendingWorkflowBind = null
   agentPanelStore.resetWorkflowTarget()
   exitNodeSelectionMode()
   if (await loadThread(id))
@@ -1236,6 +1266,7 @@ function onDeleteHistory(id: string): void {
 function onNewChat(source?: 'new_chat_button'): void {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
+  pendingWorkflowBind = null
   exitNodeSelectionMode()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
@@ -1467,14 +1498,14 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
       detail: t('agent.assetNotAttachable'),
       life: 5000
     })
-  return result !== 'unsupported'
+  return result === 'uploaded'
 }
 
 function onPanelDragOver(event: DragEvent): void {
   if (isAttachableDrag(event)) event.preventDefault()
 }
 
-function onPanelDrop(event: DragEvent): void {
+async function onPanelDrop(event: DragEvent): Promise<void> {
   clearAssetDrag()
   // A dropped asset card carries a URI, not a File, so the claim must happen
   // before the async fetch resolves it into one.
@@ -1493,8 +1524,8 @@ function onPanelDrop(event: DragEvent): void {
   )
   if (files.length === 0) return
   event.preventDefault()
-  void attachment.addFiles(files)
-  useTelemetry()?.trackAgentAttachButtonClicked({ method: 'drag_drop' })
+  if (await attachment.addFiles(files))
+    useTelemetry()?.trackAgentAttachButtonClicked({ method: 'drag_drop' })
 }
 </script>
 

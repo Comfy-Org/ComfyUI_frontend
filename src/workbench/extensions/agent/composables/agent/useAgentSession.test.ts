@@ -941,7 +941,7 @@ describe('useAgentSession (v1 composition root)', () => {
       )
       expect(telemetry.trackAgentStopClicked).toHaveBeenCalledExactlyOnceWith({
         method,
-        turn_id: 'restored-approval',
+        turn_id: 'restored-turn',
         turn_elapsed_ms: null
       })
     }

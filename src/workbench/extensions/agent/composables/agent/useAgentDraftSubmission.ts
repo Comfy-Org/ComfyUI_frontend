@@ -28,7 +28,7 @@ interface UseAgentDraftSubmissionOptions {
     references: WorkflowReference[],
     meta: SubmissionMeta
   ) => Promise<boolean>
-  stop: (method: 'button' | 'escape') => Promise<void>
+  stop: (method?: 'button' | 'escape') => Promise<void>
 }
 
 /**
@@ -121,8 +121,7 @@ export function useAgentDraftSubmission(
         ? composer.submission.stopMethod
         : null
     composer.settleSubmission(submissionId, sent)
-    if (sent && stopRequested && stopMethod !== null)
-      await options.stop(stopMethod)
+    if (sent && stopRequested) await options.stop(stopMethod ?? undefined)
   }
 
   return { submit }

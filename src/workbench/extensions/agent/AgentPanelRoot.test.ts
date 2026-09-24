@@ -1414,6 +1414,7 @@ describe('AgentPanelRoot attach flow', () => {
     getServerFeature.mockReturnValue(24 * 1024 * 1024)
     executionErrors.showErrorOverlay.mockClear()
     stubUploadFetch()
+    telemetry.trackAgentAttachButtonClicked.mockClear()
     renderWithSelectedTarget()
     await nextTick()
 
@@ -1429,6 +1430,7 @@ describe('AgentPanelRoot attach flow', () => {
       })
     )
     expect(screen.queryByText('movie.mp4')).not.toBeInTheDocument()
+    expect(telemetry.trackAgentAttachButtonClicked).not.toHaveBeenCalled()
   })
 
   it('uses a larger server limit for non-video attachments', async () => {
@@ -1497,9 +1499,11 @@ describe('AgentPanelRoot attach flow', () => {
       )
     ).toBeInTheDocument()
     await vi.waitFor(() => expect(uploaded).toEqual([name]))
-    expect(
-      telemetry.trackAgentAttachButtonClicked
-    ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
+    await vi.waitFor(() =>
+      expect(
+        telemetry.trackAgentAttachButtonClicked
+      ).toHaveBeenCalledExactlyOnceWith({ method: 'drag_drop' })
+    )
   })
 
   it('names every approved format in the picker accept list', async () => {
@@ -2930,7 +2934,7 @@ describe('AgentPanelRoot run approval telemetry', () => {
     workflowStore.activeWorkflow = workflow
     useAgentWorkflowTabBindingStore().bind('workflow-1', workflow.path)
 
-    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const panel = render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const store = useAgentConversationStore()
     store.setThreadId('th-1')
     const turnId = 'turn-approval' as TurnId
@@ -2968,6 +2972,13 @@ describe('AgentPanelRoot run approval telemetry', () => {
       turn_id: 'turn-approval',
       workflow_id: 'workflow-1'
     })
+
+    currentTime = 1_100
+    panel.unmount()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    expect(await screen.findByRole('button', { name: 'Run' })).toBeVisible()
+    await nextTick()
+    expect(telemetry.trackAgentRunApprovalShown).toHaveBeenCalledOnce()
 
     currentTime = 1_150
     await userEvent.click(
@@ -4848,6 +4859,38 @@ describe('AgentPanelRoot workflow binding', () => {
     await sendFromComposer('continue there')
     await vi.waitFor(() =>
       expect(useAgentConversationStore().activeTurnId).toBe('m-2')
+    )
+
+    expect(telemetry.trackAgentWorkflowBound).toHaveBeenCalledExactlyOnceWith({
+      thread_id: 'th-1',
+      workflow_id: 'wf-other',
+      prev_workflow_id: 'wf-42',
+      bind_source: 'selector_chip'
+    })
+  })
+
+  it('attributes a pre-thread binding when the first turn acknowledges it', async () => {
+    setupWorkflowContext({
+      targetId: 'wf-42',
+      references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
+    })
+    mockMessagesEndpoint('wf-other')
+    renderWithSelectedTarget()
+    telemetry.trackAgentWorkflowBound.mockClear()
+
+    await userEvent.click(
+      screen.getByRole('button', {
+        name: i18n.global.t('agent.switchWorkflow')
+      })
+    )
+    await userEvent.click(
+      await screen.findByRole('menuitemradio', { name: 'other' })
+    )
+    expect(telemetry.trackAgentWorkflowBound).not.toHaveBeenCalled()
+
+    await sendFromComposer('work there')
+    await vi.waitFor(() =>
+      expect(useAgentConversationStore().activeTurnId).toBe('m-1')
     )
 
     expect(telemetry.trackAgentWorkflowBound).toHaveBeenCalledExactlyOnceWith({

@@ -8,6 +8,7 @@ import { createUuidv4 } from '@/utils/uuid'
 import type {
   AgentActiveTabData,
   AgentTurnAccepted,
+  AgentWsEvent,
   TurnId
 } from '../../schemas/agentApiSchema'
 import {
@@ -72,6 +73,7 @@ export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
   onThreadStarted?: (source: 'new_chat_button' | 'first_open') => void
+  onAskResolved?: (askId: string) => void
   workflow?: {
     // origin, when given, pins resolution to the tab that initiated the send
     // instead of the target selected when this is called - it is read
@@ -129,7 +131,7 @@ function disownsWorkflow(error: unknown): boolean {
 }
 
 export function useAgentSession(deps: AgentSessionDeps) {
-  const { rest, events, onThreadStarted, workflow } = deps
+  const { rest, events, onThreadStarted, onAskResolved, workflow } = deps
 
   const conversationStore = useAgentConversationStore()
   const bindingStore = useAgentWorkflowTabBindingStore()
@@ -246,6 +248,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const stoppedGeneration = ownedGeneration
     queueMicrotask(() => {
       if (stoppedGeneration !== sessionGeneration) return
+      turnStartedAt.clear()
       conversationStore.abortActiveTurn()
       conversationStore.dropBackgroundTurns()
     })
@@ -610,6 +613,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
   }
 
+  function forgetActiveTurnStartedAt(): void {
+    const activeTurnId = conversationStore.activeTurnId
+    if (activeTurnId !== null) turnStartedAt.delete(activeTurnId)
+  }
+
   function isStoppingTurn(turnId: TurnId): boolean {
     return (
       promptEditState.value.phase === 'stopping' &&
@@ -645,7 +653,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     if (isStoppingTurn(turnId)) return
     promptEditState.value = { phase: 'stopping', turnId }
-    const stopMetadata = captureStopMetadata(turnId, method)
+    const stopMetadata = captureStopMetadata(
+      conversationStore.activeMessageId ?? turnId,
+      method
+    )
     try {
       await rest.cancelMessage(threadId, turnId)
       trackCommittedStop(stopMetadata)
@@ -724,57 +735,72 @@ export function useAgentSession(deps: AgentSessionDeps) {
     return hydrated && isCurrent()
   }
 
+  function handleMalformedEvent(
+    type: string,
+    raw: object,
+    error: unknown
+  ): void {
+    const messageId = (raw as { data?: { message_id?: unknown } }).data
+      ?.message_id
+    if (type === 'agent_message_done') {
+      if (typeof messageId === 'string')
+        turnStartedAt.delete(messageId as TurnId)
+      if (
+        typeof messageId !== 'string' ||
+        messageId === conversationStore.activeTurnId
+      ) {
+        forgetActiveTurnStartedAt()
+        conversationStore.abortActiveTurn()
+        pushError(i18n.global.t('agent.malformedEvent'))
+      } else {
+        conversationStore.settleBackgroundTurn(messageId)
+      }
+    }
+    console.warn('[agent] dropping malformed agent event', error)
+  }
+
+  function handleMessageDone(
+    event: Extract<AgentWsEvent, { type: 'agent_message_done' }>
+  ): void {
+    turnStartedAt.delete(event.data.message_id as TurnId)
+    if (
+      promptEditState.value.phase === 'stopping' &&
+      event.data.message_id === promptEditState.value.turnId &&
+      event.data.thread_id === conversationStore.threadId
+    )
+      promptEditState.value = {
+        phase: 'ready',
+        turnId: promptEditState.value.turnId
+      }
+  }
+
+  function handleAgentEvent(event: AgentWsEvent): void {
+    if (event.type === 'agent_ask_resolved') {
+      setAskAnswering(event.data.ask_id, false)
+      onAskResolved?.(event.data.ask_id)
+    }
+    conversationStore.ingest(event)
+    if (event.type === 'agent_active_tab') {
+      if (
+        event.data.thread_id === undefined ||
+        event.data.thread_id === conversationStore.threadId
+      )
+        workflow?.activeTab?.(event.data)
+      return
+    }
+    if (event.type === 'agent_message_done') handleMessageDone(event)
+  }
+
   function onRaw(raw: unknown): void {
     if (typeof raw !== 'object' || raw === null) return
     const type = (raw as { type?: unknown }).type
     if (typeof type !== 'string' || !isAgentEvent(type)) return
     const parsed = parseAgentWsEvent(raw)
     if (!parsed.success) {
-      const messageId = (raw as { data?: { message_id?: unknown } }).data
-        ?.message_id
-      if (type === 'agent_message_done') {
-        if (
-          typeof messageId !== 'string' ||
-          messageId === conversationStore.activeTurnId
-        ) {
-          conversationStore.abortActiveTurn()
-          pushError(i18n.global.t('agent.malformedEvent'))
-        } else {
-          conversationStore.settleBackgroundTurn(messageId)
-        }
-      }
-      console.warn('[agent] dropping malformed agent event', parsed.error)
+      handleMalformedEvent(type, raw, parsed.error)
       return
     }
-    const event = parsed.data
-    if (event.type === 'agent_ask_resolved')
-      setAskAnswering(event.data.ask_id, false)
-    switch (event.type) {
-      case 'agent_active_tab':
-        // Every thread records the link in its own transcript; only the thread
-        // on screen is allowed to move the user's tabs.
-        conversationStore.ingest(event)
-        if (
-          event.data.thread_id === undefined ||
-          event.data.thread_id === conversationStore.threadId
-        )
-          workflow?.activeTab?.(event.data)
-        return
-      default:
-        conversationStore.ingest(event)
-        if (event.type === 'agent_message_done')
-          turnStartedAt.delete(event.data.message_id as TurnId)
-        if (
-          event.type === 'agent_message_done' &&
-          promptEditState.value.phase === 'stopping' &&
-          event.data.message_id === promptEditState.value.turnId &&
-          event.data.thread_id === conversationStore.threadId
-        )
-          promptEditState.value = {
-            phase: 'ready',
-            turnId: promptEditState.value.turnId
-          }
-    }
+    handleAgentEvent(parsed.data)
   }
 
   function onStatus(live: boolean): void {
@@ -786,6 +812,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     // interrupted. An initial `false` (socket not open yet) is not a
     // reconnect and must not abort a turn that survived a remount.
     if (!everLive) return
+    turnStartedAt.clear()
     conversationStore.abortActiveTurn()
     conversationStore.dropBackgroundTurns()
   }

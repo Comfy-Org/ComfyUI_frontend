@@ -75,6 +75,7 @@ function setup() {
     })
     const pending = { promise, resolve: resolveSend }
     const send = vi.fn<Send>(() => pending.promise)
+    const stop = vi.fn(async (_method?: 'button' | 'escape') => {})
     const options = {
       canSubmit: () => canSubmit.value,
       target: () => target.value,
@@ -85,7 +86,7 @@ function setup() {
         exit: () => {}
       },
       send,
-      stop: vi.fn(async () => {})
+      stop
     }
     let submission = useAgentDraftSubmission(options)
     let mountedScope = scope
@@ -99,6 +100,7 @@ function setup() {
       canSubmit,
       pending,
       send,
+      stop,
       unmount() {
         mountedScope.stop()
       },
@@ -124,6 +126,23 @@ function setup() {
 }
 
 describe('Agent draft submission', () => {
+  it('commits a deferred stop even when its telemetry method is absent', async () => {
+    const { composer, pending, stop, submit } = setup()
+    const sending = submit()
+    const submission = composer.submission
+    if (submission?.phase !== 'pending') throw new Error('Expected submission')
+    composer.submission = {
+      ...submission,
+      stopRequested: true,
+      stopMethod: null
+    }
+
+    pending.resolve(true)
+    await sending
+
+    expect(stop).toHaveBeenCalledExactlyOnceWith(undefined)
+  })
+
   it('clears the complete draft before sending its snapshot and preserves subsequent typing on success', async () => {
     const { composer, selection, original, submit, send, pending } = setup()
     send.mockImplementation(() => {
