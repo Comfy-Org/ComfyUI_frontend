@@ -1,3 +1,5 @@
+import type { WorkshopModelDetail } from '../../../config/models-catalogue'
+
 export type StudioGate =
   | 'unavailable'
   | 'pending'
@@ -8,6 +10,7 @@ export type StudioGate =
 
 export interface StudioGateInput {
   readonly runEnabled: boolean
+  readonly modelRunnable: boolean
   readonly mounted: boolean
   readonly authAvailable: boolean
   readonly sessionSettled: boolean
@@ -21,11 +24,17 @@ export interface StudioGateInput {
  * still being minted.
  */
 export function studioGate(input: StudioGateInput): StudioGate {
-  if (!input.runEnabled) return 'unavailable'
+  if (!input.runEnabled || !input.modelRunnable) return 'unavailable'
   if (!input.mounted) return 'pending'
   if (!input.authAvailable) return 'unavailable'
   if (!input.sessionSettled) return 'pending'
   if (!input.role) return 'signedOut'
   if (!input.outOfCredits) return 'ready'
   return input.role === 'member' ? 'memberNoCredits' : 'noCredits'
+}
+
+export function canRunModel(
+  model: Pick<WorkshopModelDetail, 'execution' | 'incompleteReason'>
+): boolean {
+  return !!model.execution && !model.incompleteReason
 }

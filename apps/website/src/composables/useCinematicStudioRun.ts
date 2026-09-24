@@ -14,7 +14,7 @@ import { useWorkshopSession } from '../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../config/workshop-snippets'
 import { createWorkshopUrlUploader } from '../config/workshop-url-upload'
 import type { AspectRatio } from '../lib/workshop/cinematic-studio/catalog'
-import { studioGate } from '../lib/workshop/cinematic-studio/gate'
+import { canRunModel, studioGate } from '../lib/workshop/cinematic-studio/gate'
 import type { Reel, ReelEvent } from '../lib/workshop/cinematic-studio/reel'
 import {
   EMPTY_REEL,
@@ -54,9 +54,8 @@ export function useCinematicStudioRun(model: WorkshopModelDetail) {
     studioGate({
       runEnabled:
         workshopEnabled.value &&
-        !!model.execution &&
-        !model.incompleteReason &&
         import.meta.env.PUBLIC_WORKSHOP_ROUTER_RUN === '1',
+      modelRunnable: canRunModel(model),
       mounted: mounted.value,
       authAvailable: authEnabled.value && !sessionFailure.value,
       sessionSettled: settled.value && !(user.value && !session.value),
