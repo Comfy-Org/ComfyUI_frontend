@@ -100,14 +100,22 @@ describe('Seedream layer-separation input adapter', () => {
 
 describe('Grok reference-video input adapter', () => {
   it('restricts only reference requests to 720p', () => {
-    const contract = workshopContractSchema.parse(
+    const published = workshopContractSchema.parse(
       contracts.find((item) => item.id === 'xai/grok-imagine-video-1.5')
     )
+    const existingRule = { not: { required: ['legacy_disallowed'] } }
+    const contract = adaptRouterModel({
+      ...published,
+      inputSchema: { ...published.inputSchema, allOf: [existingRule] }
+    })
     const reference = {
       prompt: 'Animate this reference',
       reference_images: [{ url: 'https://example.com/reference.png' }]
     }
 
+    expect(contract.inputSchema.allOf).toEqual(
+      expect.arrayContaining([existingRule])
+    )
     expect(
       validateWorkshopInput(
         { ...reference, resolution: '1080p' },
@@ -127,6 +135,12 @@ describe('Grok reference-video input adapter', () => {
         contract.inputSchema
       )
     ).toBe(true)
+    expect(
+      validateWorkshopInput(
+        { prompt: 'A landscape', legacy_disallowed: true },
+        contract.inputSchema
+      )
+    ).toBe(false)
   })
 })
 

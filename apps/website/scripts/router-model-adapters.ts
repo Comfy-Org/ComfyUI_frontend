@@ -26,29 +26,34 @@ function imageAndMask(): WorkshopMediaBinding[] {
   }))
 }
 
+function withGrokReferenceResolutionConstraint(
+  contract: WorkshopContract
+): WorkshopContract {
+  const allOf = Array.isArray(contract.inputSchema.allOf)
+    ? contract.inputSchema.allOf
+    : []
+  return {
+    ...contract,
+    inputSchema: {
+      ...contract.inputSchema,
+      allOf: [
+        ...allOf,
+        {
+          not: {
+            required: ['reference_images', 'resolution'],
+            properties: { resolution: { const: '1080p' } }
+          }
+        }
+      ]
+    }
+  }
+}
+
 export function adaptRouterModel(contract: WorkshopContract): WorkshopContract {
   if (['wan/wan3.0-video', 'wan/wan3.0-video-prime'].includes(contract.id))
     return { ...contract, rehostUrlInputs: true }
-  if (contract.id === 'xai/grok-imagine-video-1.5') {
-    const allOf = Array.isArray(contract.inputSchema.allOf)
-      ? contract.inputSchema.allOf
-      : []
-    return {
-      ...contract,
-      inputSchema: {
-        ...contract.inputSchema,
-        allOf: [
-          ...allOf,
-          {
-            not: {
-              required: ['reference_images', 'resolution'],
-              properties: { resolution: { const: '1080p' } }
-            }
-          }
-        ]
-      }
-    }
-  }
+  if (contract.id === 'xai/grok-imagine-video-1.5')
+    return withGrokReferenceResolutionConstraint(contract)
   if (contract.id === 'byteplus/seedream-5-0-pro-260628') {
     const slug = 'byteplus--seedream-5-pro-layer-separation--edit-images'
     const edit =

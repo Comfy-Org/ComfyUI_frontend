@@ -114,21 +114,30 @@ function providerFieldErrors(
 ): FieldErrors {
   if (!bodyComplete || contract.id !== 'kling/kling-v3-omni' || !body.trim())
     return {}
+  return isKlingHdrRefusal(body) ? { video_url: 'videoHdrUnsupported' } : {}
+}
+
+function parseJsonObject(body: string): object | undefined {
   try {
     const payload: unknown = JSON.parse(body)
-    if (payload === null || typeof payload !== 'object') return {}
-    const data = Reflect.get(payload, 'data')
-    if (data === null || typeof data !== 'object') return {}
-    if (
-      Reflect.get(data, 'task_status') !== 'failed' ||
-      Reflect.get(data, 'task_status_msg') !==
-        'VideoNormalize failed, HDR video is not supported'
-    )
-      return {}
-    return { video_url: 'videoHdrUnsupported' }
+    if (payload !== null && typeof payload === 'object') return payload
   } catch {
-    return {}
+    return undefined
   }
+  return undefined
+}
+
+function isKlingHdrRefusal(body: string): boolean {
+  const payload = parseJsonObject(body)
+  if (!payload) return false
+  const data = Reflect.get(payload, 'data')
+  return (
+    data !== null &&
+    typeof data === 'object' &&
+    Reflect.get(data, 'task_status') === 'failed' &&
+    Reflect.get(data, 'task_status_msg') ===
+      'VideoNormalize failed, HDR video is not supported'
+  )
 }
 
 export interface RouterRunOptions {
