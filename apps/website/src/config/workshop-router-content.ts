@@ -1,9 +1,11 @@
 import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
 import type {
   GeneratedExample,
+  UseCase,
   WorkshopModel,
   WorkshopModelDetail
 } from './models-catalogue'
+import { useCasesFor } from './models-catalogue'
 import { formForContract } from './workshop-contract'
 import { workshopContract } from './workshop-contract-catalog'
 import { workshopPromptDefaults } from './workshop-prompt-defaults'
@@ -139,4 +141,23 @@ export function getRouterWorkshopModelDetail(
   slug: string
 ): WorkshopModelDetail | undefined {
   return detailBySlug.get(routerModelSlugAliases.get(slug) ?? slug)
+}
+
+/**
+ * Resolves a Router API `{provider}/{model}` id (or the legacy catalog id
+ * some content is filed under, when the two differ) plus its use case to
+ * that model's canonical `/models/[slug]` href, one hop, without going
+ * through the redirect a bare `{provider}/{model}` id needs when the same
+ * id maps to more than one use case's page.
+ */
+export function getRouterModelHref(
+  modelId: string,
+  useCase: UseCase
+): string | undefined {
+  return workshopModels.find(
+    (model) =>
+      useCasesFor(model).includes(useCase) &&
+      (model.routerId === modelId ||
+        routerContentBySlug.get(model.slug)?.entry.id === modelId)
+  )?.href
 }
