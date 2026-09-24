@@ -69,7 +69,8 @@ describe('churnkeyClient', () => {
         authHash: 'signed-hash',
         customerId: 'cus_test_1',
         provider: 'stripe',
-        mode: 'test'
+        mode: 'test',
+        customerAttributes: { nativeOfferEligible: false }
       })
     )
 
@@ -122,7 +123,8 @@ describe('churnkeyClient', () => {
 
       expect(capturedConfig()).toMatchObject({
         mode,
-        subscriptionId: 'sub_offer_1'
+        subscriptionId: 'sub_offer_1',
+        customerAttributes: { nativeOfferEligible: true }
       })
       expect(capturedConfig()).not.toHaveProperty('handleDiscount')
       capturedConfig().onClose({ aborted: true })

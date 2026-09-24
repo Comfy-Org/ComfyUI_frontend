@@ -24,11 +24,13 @@ export type ChurnkeyOfferConfig =
       subscriptionId: string
       onDiscount: (customer: unknown, coupon: unknown) => void
       handleDiscount?: never
+      customerAttributes: { nativeOfferEligible: true }
     }
   | {
       subscriptionId?: never
       onDiscount?: never
       handleDiscount: ChurnkeyUnsupportedHandler
+      customerAttributes: { nativeOfferEligible: false }
     }
 
 export type ChurnkeyInitConfig = ChurnkeyOfferConfig & {

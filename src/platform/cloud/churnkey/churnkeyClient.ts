@@ -117,8 +117,15 @@ function createSession(
         }
 
         const offerConfig: ChurnkeyOfferConfig = offerSubscriptionId
-          ? { subscriptionId: offerSubscriptionId, onDiscount: recordDiscount }
-          : { handleDiscount: rejectUnsupportedOffer }
+          ? {
+              subscriptionId: offerSubscriptionId,
+              onDiscount: recordDiscount,
+              customerAttributes: { nativeOfferEligible: true }
+            }
+          : {
+              handleDiscount: rejectUnsupportedOffer,
+              customerAttributes: { nativeOfferEligible: false }
+            }
 
         const config: ChurnkeyInitConfig = {
           appId: configuredAppId,
