@@ -6,13 +6,14 @@ import type {
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { DirectiveBinding } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
@@ -33,7 +34,11 @@ const tooltipDirectiveStub = {
 }
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/telemetry'))
 const fetchApi = vi.mocked(api.fetchApi)
+const telemetryProvider = useTelemetry()
+assert.exists(telemetryProvider)
+const telemetry = vi.mocked(telemetryProvider)
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -561,6 +566,7 @@ describe('Composer', () => {
     })
 
     it('applies the picked mode without a separate save step', async () => {
+      telemetry.trackAgentRunModeChanged.mockClear()
       mount()
       const store = useAgentRunModeStore()
 
@@ -580,6 +586,12 @@ describe('Composer', () => {
         await screen.findByRole('button', { name: 'Auto' })
       ).toBeInTheDocument()
       expect(store.creditLimit).toBeNull()
+      expect(
+        telemetry.trackAgentRunModeChanged
+      ).toHaveBeenCalledExactlyOnceWith({
+        from: 'ask_approval',
+        to: 'auto'
+      })
     })
 
     it('rewrites the active mode when it is picked again', async () => {
@@ -602,6 +614,7 @@ describe('Composer', () => {
     })
 
     it('keeps the popover open on the unchanged mode when the save fails', async () => {
+      telemetry.trackAgentRunModeChanged.mockClear()
       fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
       mount()
 
@@ -628,6 +641,7 @@ describe('Composer', () => {
         severity: 'error',
         detail: i18n.global.t('agent.runModeSaveFailed')
       })
+      expect(telemetry.trackAgentRunModeChanged).not.toHaveBeenCalled()
     })
 
     it('blocks a second pick while the write is in flight', async () => {
