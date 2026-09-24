@@ -83,6 +83,7 @@ const chosen = (name: string) => {
 
 describe('useWorkflowRun', () => {
   beforeEach(() => {
+    window.localStorage.clear()
     vi.spyOn(workflowExecution, 'createWorkflowClient').mockReturnValue(client)
     client.read.mockResolvedValue(job('completed'))
     session.value = credential
@@ -275,5 +276,64 @@ describe('useWorkflowRun', () => {
     await run.cancel()
 
     expect(client.cancel).toHaveBeenCalled()
+  })
+})
+
+// Cloud keeps a finished job and everything it made. The page used to keep
+// only the copies it had downloaded, so a reload threw away a result that had
+// already been paid for.
+describe('useWorkflowRun remembering', () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+    vi.spyOn(workflowExecution, 'createWorkflowClient').mockReturnValue(client)
+    client.read.mockResolvedValue(job('completed'))
+    session.value = credential
+    const state = useWorkshopSession()
+    state.session = computed(() => session.value)
+  })
+
+  it('brings the last result back after a reload', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve(new Response(new Blob())))
+    )
+    const first = useWorkflowRun(imageField, graph, 'demo')
+    await first.run()
+    await settle()
+    expect(first.state.value.phase).toBe('finished')
+
+    client.read.mockClear()
+    const reopened = useWorkflowRun(imageField, graph, 'demo')
+    await settle()
+
+    expect(reopened.state.value.phase).toBe('finished')
+    expect(client.read).toHaveBeenCalledWith(
+      `/api/jobs/${JOB_ID}`,
+      expect.anything()
+    )
+  })
+
+  // Nobody asked for it, so a result Cloud no longer holds is dropped rather
+  // than turned into a failure over something the reader never requested.
+  it('opens clean when the last result is gone', async () => {
+    const key = `hub.lastRun.u1:w1.gone`
+    window.localStorage.setItem(key, JOB_ID)
+    client.read.mockRejectedValue(new Error('no such job'))
+
+    const run = useWorkflowRun(imageField, graph, 'gone')
+    await settle()
+
+    expect(run.state.value.phase).toBe('idle')
+    expect(window.localStorage.getItem(key)).toBeNull()
+  })
+
+  // One browser, two accounts: what the other one made is not on this page.
+  it('keeps one reader\u2019s runs away from another\u2019s', async () => {
+    window.localStorage.setItem(`hub.lastRun.u2:w9.demo`, JOB_ID)
+
+    const run = useWorkflowRun(imageField, graph, 'demo')
+    await settle()
+
+    expect(run.state.value.phase).toBe('idle')
   })
 })

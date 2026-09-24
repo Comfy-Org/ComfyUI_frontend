@@ -25,12 +25,15 @@ import WorkflowRunResult from './WorkflowRunResult.vue'
 const {
   fields,
   graph,
+  slug = '',
   sample,
   coldStart = false,
   locale = 'en'
 } = defineProps<{
   fields: readonly WorkflowField[]
   graph: WorkflowGraph
+  /** This workflow's name, under which its last result is remembered. */
+  slug?: string
   /** What this workflow makes, shown until a run of its own replaces it. */
   sample?: string
   /**
@@ -54,7 +57,7 @@ const {
   run,
   resume,
   cancel
-} = useWorkflowRun(fields, graph)
+} = useWorkflowRun(fields, graph, slug)
 
 const { balance } = useWorkshopCredits()
 const {

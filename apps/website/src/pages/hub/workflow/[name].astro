@@ -181,6 +181,7 @@ const tags = usefulTags(template.tags)
             <WorkflowRunForm
               fields={runForm.fields}
               graph={runForm.graph}
+              slug={template.name}
               sample={template.thumbnails[0]}
               coldStart={coldStart}
               client:load

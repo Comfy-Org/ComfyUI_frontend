@@ -12,6 +12,7 @@ import {
 } from '../config/workflow-execution'
 import type { WorkflowFailure } from '../lib/hub/run-failure'
 import { runUnderWay } from '../lib/hub/run-progress'
+import { forgetRun, recallRun, rememberRun } from '../lib/hub/run-memory'
 import { WORKSHOP_CLOUD_BASE_URL } from '../config/workshop-env'
 import { useWorkshopSession } from '../config/workshop-session-state'
 import { refreshWorkshopCredits } from '../config/workshop-credits'
@@ -100,7 +101,12 @@ function failed(error: unknown, jobId: string | undefined, sent: boolean) {
 
 export function useWorkflowRun(
   fields: readonly WorkflowField[],
-  graph: WorkflowGraph
+  graph: WorkflowGraph,
+  /**
+   * This workflow's name, under which its last finished job is remembered so
+   * a reload can ask Cloud for that result again instead of losing it.
+   */
+  slug = ''
 ) {
   const { session, settled, ensureFresh } = useWorkshopSession()
   const identity = computed(() =>
@@ -195,6 +201,10 @@ export function useWorkflowRun(
       if (workflowFinished(job)) {
         if (job.status === 'completed') await collect(id, signal)
         state.value = settledState(job)
+        if (slug && owner) {
+          if (job.status === 'completed') rememberRun(slug, owner, id)
+          else forgetRun(slug, owner)
+        }
         void refreshWorkshopCredits({ force: true })
         return
       }
@@ -286,20 +296,50 @@ export function useWorkflowRun(
       if (!signal.aborted) state.value = failed(error, jobId, sent)
     }
   }
-  async function resume() {
-    if (state.value.phase !== 'error' || !state.value.jobId) return
-    const jobId = state.value.jobId
+  /**
+   * Go back to a job and put its result on the page.
+   *
+   * @returns whether the panel is now showing it. False means Cloud no longer
+   * has that job, which is the one case worth forgetting it over.
+   */
+  async function reopen(jobId: string) {
     const startedAt = Date.now()
     state.value = { phase: 'reconnecting', startedAt }
     releaseOutputs()
+    controller?.abort()
     controller = new AbortController()
     const { signal } = controller
+    owner = identity.value
     try {
       await poll(jobId, signal, startedAt)
+      return true
     } catch (error) {
-      if (!signal.aborted) state.value = failed(error, jobId, true)
+      if (signal.aborted) return true
+      state.value = failed(error, jobId, true)
+      return false
     }
   }
+
+  async function resume() {
+    if (state.value.phase !== 'error' || !state.value.jobId) return
+    await reopen(state.value.jobId)
+  }
+
+  /**
+   * The last result this reader got from this workflow, asked for again. It is
+   * theirs and already paid for, so it comes back rather than being lost to a
+   * reload. Nothing is said while it loads if it turns out to be gone: they
+   * did not ask for it, so a failure over it is noise.
+   */
+  async function recall() {
+    const reader = identity.value
+    if (!slug || !reader || state.value.phase !== 'idle') return
+    const jobId = recallRun(slug, reader)
+    if (!jobId || (await reopen(jobId))) return
+    forgetRun(slug, reader)
+    state.value = { phase: 'idle' }
+  }
+
   async function cancel() {
     if (state.value.phase !== 'tracking' || !controller) return
     const job = state.value.job
@@ -317,12 +357,24 @@ export function useWorkflowRun(
       )
     }
   }
-  watch(identity, (next, previous) => {
-    if (next === previous) return
-    controller?.abort()
-    releaseOutputs()
-    state.value = { phase: 'idle' }
-  })
+  // Whoever is signed in owns what the panel shows: the run on screen is put
+  // away when they change, and theirs is asked for once the session is known.
+  let showing = ''
+  watch(
+    [settled, identity],
+    ([, reader]) => {
+      if (reader !== showing) {
+        if (showing) {
+          controller?.abort()
+          releaseOutputs()
+          state.value = { phase: 'idle' }
+        }
+        showing = reader
+      }
+      void recall()
+    },
+    { immediate: true }
+  )
   useEventListener('beforeunload', (event) => {
     if (busy.value) event.preventDefault()
   })
