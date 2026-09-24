@@ -132,6 +132,7 @@ function onDelivery(url: string, status: 'succeeded' | 'failed' | 'cancelled') {
     :model-name="model.name"
     :modality="model.modality"
     :retry-disabled="!canStart"
+    refreshable
     @retry="emit('retry')"
     @refresh="refreshUrl"
     @delivery="onDelivery"

@@ -209,6 +209,29 @@ describe('shared workflow rendering', () => {
     })
   })
 
+  it('rejects an invalid native graph before recording a submission intent', async () => {
+    const definition = structuredClone(workflow)
+    definition.cloud.inputBindings.prompt.targets[0].inputName = 'missing'
+    const fetch = vi.fn<typeof globalThis.fetch>()
+    const onPrepared = vi.fn()
+
+    await expect(
+      renderWorkflow(
+        'test',
+        {},
+        {
+          model: { ...model, workflow: definition },
+          token: 'caller',
+          fetch,
+          onPrepared
+        }
+      )
+    ).rejects.toMatchObject({ code: 'definition_incompatible' })
+
+    expect(onPrepared).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('resumes a known Cloud job without another submission', async () => {
     const fetch = vi
       .fn<typeof globalThis.fetch>()

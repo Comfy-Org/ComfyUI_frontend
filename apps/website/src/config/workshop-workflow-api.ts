@@ -140,7 +140,8 @@ export function createWorkflowApi(
   async function send(
     url: URL,
     init: RequestInit & { readonly signal: AbortSignal },
-    refresh = false
+    refresh = false,
+    beforeSend?: () => void | Promise<void>
   ) {
     init.signal.throwIfAborted()
     const token =
@@ -149,6 +150,8 @@ export function createWorkflowApi(
         : options.token
     init.signal.throwIfAborted()
     if (!token) throw new WorkshopWorkflowError('not_authenticated')
+    await beforeSend?.()
+    init.signal.throwIfAborted()
     return transport(url, {
       ...init,
       credentials: 'omit',
@@ -168,7 +171,8 @@ export function createWorkflowApi(
     schema: WorkflowResponseSchema<T>,
     signal: AbortSignal,
     method = 'GET',
-    body?: unknown
+    body?: unknown,
+    beforeSend?: () => void | Promise<void>
   ): Promise<T> {
     signal.throwIfAborted()
     const url = new URL(path, WORKSHOP_CLOUD_BASE_URL)
@@ -183,7 +187,7 @@ export function createWorkflowApi(
     ])
     try {
       const init = { method, body: encoded, signal: requestSignal }
-      let response = await send(url, init)
+      let response = await send(url, init, false, beforeSend)
       if (response.status === 401 && typeof options.token === 'function') {
         await response.body?.cancel()
         response = await send(url, init, true)
@@ -217,14 +221,16 @@ export function createWorkflowApi(
     request,
     async submit(
       body: WorkflowRunRequest,
-      signal: AbortSignal
+      signal: AbortSignal,
+      beforeSend?: () => void | Promise<void>
     ): Promise<WorkflowRunSummary> {
       const result = await request(
         '/api/prompt',
         zPromptResponse,
         signal,
         'POST',
-        workflowCloudRequest(options.definition, body)
+        workflowCloudRequest(options.definition, body),
+        beforeSend
       )
       if (!result.prompt_id) throw new WorkshopWorkflowError('response')
       const now = new Date().toISOString()

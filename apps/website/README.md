@@ -290,8 +290,10 @@ submitting inference. The API tab shows the native request and upload steps.
 
 Prepare graph previews separately with
 `pnpm --filter @comfyorg/website exec tsx scripts/prepare-workflow-previews.ts`.
-This reads the pinned source commit from the local checkout and writes static
-SVG plus original workflow JSON into `public/workflows/prepared/`. New source
+This reads `source.uiWorkflowPath` at the pinned commit from the local checkout
+and writes static SVG plus original workflow JSON into
+`public/workflows/prepared/`. `source.path` identifies the executable API graph;
+the UI workflow path is declared separately in the same JSONL record. New source
 repositories require offline preparation; neither the website build nor run
 admission invokes this tool.
 

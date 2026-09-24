@@ -1,7 +1,7 @@
 import { z } from 'astro/zod'
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { basename, join } from 'node:path'
+import { join } from 'node:path'
 
 import { parseWorkflowCatalog } from '../src/config/workshop-workflow-catalog-schema'
 import { isDirectExecution } from './script-entry-point'
@@ -158,10 +158,11 @@ function main() {
   for (const entry of entries) {
     if (entry.source.repository !== 'Comfy-Org/ComfyUI_frontend')
       throw new Error('Prepare external sources separately')
-    const path = `apps/website/public/workflows/graphs/${basename(entry.source.path)}`
+    if (!entry.source.uiWorkflowPath)
+      throw new Error(`Missing authoring workflow source for ${entry.id}`)
     const original = execFileSync(
       'git',
-      ['show', `${entry.source.commit}:${path}`],
+      ['show', `${entry.source.commit}:${entry.source.uiWorkflowPath}`],
       { cwd: site, encoding: 'utf8', maxBuffer: 4 * 1024 * 1024 }
     )
     const raw: unknown = JSON.parse(original)

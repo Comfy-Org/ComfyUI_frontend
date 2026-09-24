@@ -520,13 +520,15 @@ describe('PlaygroundOutput', () => {
     await user.click(screen.getByTestId('output-download'))
     expect(downloadOutput).toHaveBeenLastCalledWith(
       'https://example.com/b.webp',
-      'latest.webp'
+      'latest.webp',
+      { onUnavailable: undefined }
     )
     await user.click(screen.getByTestId('earlier-run-0'))
     await user.click(screen.getByTestId('output-download'))
     expect(downloadOutput).toHaveBeenLastCalledWith(
       'https://example.com/first.webp',
-      'first.webp'
+      'first.webp',
+      { onUnavailable: undefined }
     )
   })
 

@@ -205,6 +205,15 @@ export function createWorkflowController(options: {
     }
   }
 
+  function deliveryFailure(runId: string, error: unknown) {
+    if (
+      !lifetime.signal.aborted &&
+      state.phase !== 'settled' &&
+      savedWorkflowRunId(record()) === runId
+    )
+      failure(error)
+  }
+
   async function retryDelivery() {
     const saved = record()
     if (saved?.stage !== 'run') return
@@ -218,11 +227,7 @@ export function createWorkflowController(options: {
       dispatch({ type: 'observed', observation: result })
       if (state.phase === 'active') await resume()
     } catch (error) {
-      if (
-        !lifetime.signal.aborted &&
-        savedWorkflowRunId(record()) === saved.runId
-      )
-        failure(error)
+      deliveryFailure(saved.runId, error)
     }
   }
 
@@ -247,11 +252,7 @@ export function createWorkflowController(options: {
         observation: withOutputAccess(state.observation, outputId, access)
       })
     } catch (error) {
-      if (
-        !lifetime.signal.aborted &&
-        savedWorkflowRunId(record()) === saved.runId
-      )
-        failure(error)
+      deliveryFailure(saved.runId, error)
     }
   }
 

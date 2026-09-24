@@ -214,9 +214,9 @@ export async function renderWorkflow(
     }
     if (attempt.request.workflowId !== options.model.workflowId)
       throw new WorkshopWorkflowError('invalid_request')
-    await options.onPrepared?.(attempt)
-    signal.throwIfAborted()
-    const run = await api.submit(attempt.request, signal)
+    const run = await api.submit(attempt.request, signal, () =>
+      options.onPrepared?.(attempt)
+    )
     await options.onAdmitted?.(run)
     signal.throwIfAborted()
     id = run.id

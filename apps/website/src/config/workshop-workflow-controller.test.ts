@@ -5,9 +5,11 @@ import {
   createWorkflowApi,
   WorkshopWorkflowError
 } from './workshop-workflow-api'
+import type { WorkflowApiOptions } from './workshop-workflow-api'
 import { workflowDetailsBySlug } from './workshop-workflow-content'
 import { createWorkflowController } from './workshop-workflow-controller'
 import type { WorkflowErrorCode } from './workshop-workflow-response'
+import { WORKFLOW_CONTROL_BYTES } from './workshop-workflow-response'
 import type { WorkflowState } from './workshop-workflow-state'
 import { workflowStorage } from './workshop-workflow-storage'
 import type { WorkflowMediaUploader } from './workshop-workflow-upload'
@@ -17,8 +19,8 @@ const otherId = '2f290fb5-0a9f-42e3-a392-55bd8c016758'
 const input = { image: 'https://storage.googleapis.com/inputs/canonical-image' }
 const uploaded = { image: 'canonical-image.webp' }
 
-function authoredWorkflow() {
-  const model = workflowDetailsBySlug.get('workflows/remove-background')
+function authoredWorkflow(slug: string) {
+  const model = workflowDetailsBySlug.get(slug)
   if (!model) throw new Error('Missing authored test workflow')
   return model
 }
@@ -41,15 +43,17 @@ function job(
 }
 
 function fixture({
+  workflowSlug = 'workflows/remove-background',
   scope = 'user:workspace',
   token = scope,
   backing = sessionStorage
 }: {
+  workflowSlug?: string
   scope?: string
-  token?: string
+  token?: WorkflowApiOptions['token']
   backing?: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 } = {}) {
-  const model = authoredWorkflow()
+  const model = authoredWorkflow(workflowSlug)
   const storage = workflowStorage(backing, scope, model.workflowId)
   const fetch = vi.fn<typeof globalThis.fetch>()
   const uploadFile = vi
@@ -69,6 +73,48 @@ function fixture({
 }
 
 describe('existing Cloud workflow controller', () => {
+  it('rejects an oversized native graph without saving a submission intent', async () => {
+    const f = fixture({ workflowSlug: 'workflows/change-material' })
+
+    await f.controller.start({
+      image1: input.image,
+      image2: input.image,
+      prompt: 'x'.repeat(WORKFLOW_CONTROL_BYTES - 2000)
+    })
+
+    expect(f.updates.at(-1)?.phase).toBe('failed')
+    expect(f.updates.at(-1)).toMatchObject({
+      error: new WorkshopWorkflowError('payload_too_large')
+    })
+    expect(f.storage.read()).toBeUndefined()
+    expect(f.fetch).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { name: 'missing credentials', token: '', code: 'not_authenticated' },
+    {
+      name: 'failed credential resolution',
+      token: async () => {
+        throw new TypeError('Session unavailable')
+      },
+      code: 'network'
+    }
+  ] as const)(
+    'rejects $name without saving a submission intent',
+    async ({ token, code }) => {
+      const f = fixture({ token })
+
+      await f.controller.start(input)
+
+      expect(f.updates.at(-1)).toEqual({
+        phase: 'failed',
+        error: new WorkshopWorkflowError(code)
+      })
+      expect(f.storage.read()).toBeUndefined()
+      expect(f.fetch).not.toHaveBeenCalled()
+    }
+  )
+
   it('refuses to submit when it cannot save the recovery intent', async () => {
     const f = fixture({
       backing: {
@@ -503,6 +549,38 @@ describe('existing Cloud workflow controller', () => {
 
   type Fixture = ReturnType<typeof fixture>
   type DeferredResponse = ReturnType<typeof Promise.withResolvers<Response>>
+
+  it.for([
+    {
+      name: 'an output refresh',
+      run: (f: Fixture) => f.controller.refreshOutput('image:0')
+    },
+    {
+      name: 'a delivery retry',
+      run: (f: Fixture) => f.controller.retryDelivery()
+    }
+  ])('keeps a completed run settled when $name fails', async ({ run }) => {
+    const f = fixture()
+    f.fetch
+      .mockResolvedValueOnce(Response.json({ prompt_id: id }))
+      .mockResolvedValueOnce(Response.json(job()))
+    await f.controller.start(input)
+    const settled = f.updates.at(-1)
+    const saved = f.storage.read()
+    expect(settled).toMatchObject({ phase: 'settled' })
+    f.fetch.mockRejectedValueOnce(new TypeError('Delivery unavailable'))
+
+    await run(f)
+
+    expect(f.updates.at(-1)).toEqual(settled)
+    expect(f.storage.read()).toEqual(saved)
+    expect(f.fetch.mock.calls.map(([, init]) => init?.method)).toEqual([
+      'POST',
+      'GET',
+      'GET'
+    ])
+  })
+
   const deliveryActions = [
     {
       name: 'a successful output refresh',

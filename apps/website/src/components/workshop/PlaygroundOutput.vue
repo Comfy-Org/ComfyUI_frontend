@@ -37,6 +37,7 @@ const {
   earlier = [],
   attachments = [],
   retryDisabled = false,
+  refreshable = false,
   memberWorkspace,
   locale = 'en'
 } = defineProps<{
@@ -47,6 +48,7 @@ const {
   earlier?: readonly RunRecord[]
   attachments?: readonly RunOutput[]
   retryDisabled?: boolean
+  refreshable?: boolean
   memberWorkspace?: string
   locale?: Locale
 }>()
@@ -174,17 +176,31 @@ const currentUrl = computed(() => outputs.value[selected.value] ?? '')
 watch(currentUrl, (_, previous) => {
   if (previous) emit('delivery', previous, 'cancelled')
 })
-const failedDownloadUrl = ref<string>()
+const failedDownload = ref<{ url: string; action: 'refresh' | 'open' }>()
 const downloadNeedsLink = computed(
-  () => failedDownloadUrl.value === currentUrl.value
-)
-const downloadExpired = computed(
   () =>
-    shown.value?.download !== undefined && now >= shown.value.download.expiresAt
+    failedDownload.value?.url === currentUrl.value &&
+    failedDownload.value?.action === 'open'
 )
+const downloadNeedsRefresh = computed(
+  () =>
+    (failedDownload.value?.url === currentUrl.value &&
+      failedDownload.value?.action === 'refresh') ||
+    (shown.value?.download !== undefined &&
+      now >= shown.value.download.expiresAt)
+)
+const downloadLabel = computed(() => {
+  if (downloadNeedsRefresh.value) return 'workshop.output.refreshLink'
+  return downloadNeedsLink.value
+    ? 'workshop.output.openOriginal'
+    : 'workshop.output.download'
+})
+watch(shown, () => {
+  failedDownload.value = undefined
+})
 async function download(event: MouseEvent) {
   if (!shown.value) return
-  if (downloadExpired.value) {
+  if (downloadNeedsRefresh.value) {
     event.preventDefault()
     emit('refresh', shown.value.url)
     return
@@ -192,9 +208,23 @@ async function download(event: MouseEvent) {
   emit('download', shown.value.kind)
   if (downloadNeedsLink.value || shown.value.download) return
   event.preventDefault()
-  const url = currentUrl.value
-  if (!(await downloadOutput(url, shown.value.fileName)))
-    failedDownloadUrl.value = url
+  await downloadMedia(currentUrl.value, shown.value.fileName)
+}
+
+async function downloadMedia(url: string, fileName: string) {
+  let unavailable = false
+  if (
+    !(await downloadOutput(url, fileName, {
+      onUnavailable: refreshable
+        ? () => {
+            unavailable = true
+          }
+        : undefined
+    }))
+  ) {
+    failedDownload.value = { url, action: unavailable ? 'refresh' : 'open' }
+    if (unavailable && currentUrl.value === url) emit('refresh', url)
+  }
 }
 watch(
   () => latest.value?.id ?? latest.value?.url,
@@ -677,16 +707,7 @@ const earlierClass = (active: boolean) =>
           data-testid="output-download"
           @click="download"
         >
-          {{
-            t(
-              downloadExpired
-                ? 'workshop.output.refreshLink'
-                : downloadNeedsLink
-                  ? 'workshop.output.openOriginal'
-                  : 'workshop.output.download',
-              locale
-            )
-          }}
+          {{ t(downloadLabel, locale) }}
         </Button>
       </div>
     </template>

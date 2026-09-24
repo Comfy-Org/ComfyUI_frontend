@@ -55,6 +55,7 @@ function mountDraft(
   initial: FormValues = { prompt: 'Page default' }
 ) {
   const values = ref<FormValues>(initial)
+  const fields = ref(schema)
   let captured: ReturnType<typeof useWorkflowFormDraft> | undefined
   const view = render(
     defineComponent({
@@ -62,7 +63,7 @@ function mountDraft(
         const draft = useWorkflowFormDraft(
           slug,
           scope,
-          ref(schema),
+          fields,
           values,
           ref(false)
         )
@@ -80,7 +81,7 @@ function mountDraft(
     })
   )
   assert.exists(captured)
-  return { ...view, values, draft: captured }
+  return { ...view, values, fields, draft: captured }
 }
 
 function selectedFile(bytes: string): FileValue {
@@ -211,6 +212,36 @@ describe('workflow form drafts', () => {
     expect(
       sessionStorage.getItem(`comfy-workshop-form:${slug}:${alice}:media`)
     ).toBe(token)
+  })
+
+  it('deletes persisted media when the form no longer has media fields', async () => {
+    const first = mountDraft(alice)
+    await nextTick()
+    const selected = selectedFile('private image bytes')
+    first.values.value = { prompt: 'Current prompt', image: selected }
+    await nextTick()
+    await waitFor(() => expect(first.draft.pending.value).toBe(false))
+    const mediaKey = `comfy-workshop-form:${slug}:${alice}:media`
+    const token = sessionStorage.getItem(mediaKey)
+    assert.exists(token)
+    expect(
+      await readWorkshopDraft(token, new AbortController().signal)
+    ).toEqual({ image: selected.file })
+
+    first.fields.value = schema.filter((field) => field.name !== 'image')
+    await first.draft.stash()
+    expect(first.draft.restoreFailed.value).toBe(false)
+    expect(
+      await readWorkshopDraft(token, new AbortController().signal)
+    ).toBeUndefined()
+    expect(sessionStorage.getItem(mediaKey)).toBeNull()
+
+    first.unmount()
+    const reloaded = mountDraft(alice)
+    await waitFor(() => expect(reloaded.draft.pending.value).toBe(false))
+    expect(reloaded.draft.restoreFailed.value).toBe(false)
+    expect(reloaded.values.value.image).toBeUndefined()
+    expect(reloaded.values.value.prompt).toBe('Current prompt')
   })
 
   it('retains the latest file when more edits arrive during a pending save', async () => {

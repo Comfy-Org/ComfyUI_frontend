@@ -64,15 +64,19 @@ describe('Workshop workflow HTTP client', () => {
       .fn<(refresh?: boolean) => Promise<string>>()
       .mockResolvedValueOnce('before')
       .mockResolvedValueOnce('after')
+    const beforeSend = vi.fn(() => {
+      expect(fetch).not.toHaveBeenCalled()
+    })
 
     const run = await createWorkflowApi({
       definition: source,
       fetch,
       token
-    }).submit(request, new AbortController().signal)
+    }).submit(request, new AbortController().signal, beforeSend)
 
     expect(run).toMatchObject({ id, state: 'queued', outputState: 'pending' })
     expect(token.mock.calls).toEqual([[false], [true]])
+    expect(beforeSend).toHaveBeenCalledOnce()
     expect(fetch.mock.calls.map(([url]) => String(url))).toEqual([
       `${WORKSHOP_CLOUD_BASE_URL}/api/prompt`,
       `${WORKSHOP_CLOUD_BASE_URL}/api/prompt`

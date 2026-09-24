@@ -57,12 +57,13 @@ export function useWorkshopFormDraft(
     activity.value = 'saving'
     persistScalars()
     try {
-      const token =
-        (persistFiles && sessionStorage.getItem(mediaKey)) ||
-        workshopIdempotencyKey()
+      const previousToken = persistFiles && sessionStorage.getItem(mediaKey)
+      const token = previousToken || workshopIdempotencyKey()
       sessionStorage.setItem(mediaKey, token)
       const files = packWorkshopFiles(schema.value, values.value)
       if (!Object.keys(files).length) {
+        if (previousToken)
+          await deleteWorkshopDraft(previousToken, controller.signal)
         sessionStorage.removeItem(mediaKey)
         return
       }

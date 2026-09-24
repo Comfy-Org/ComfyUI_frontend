@@ -11,6 +11,7 @@ import { restoreFormValues } from '../config/workshop-playground'
 import type { WorkshopSession } from '../config/workshop-session-state'
 import { useWorkshopSession } from '../config/workshop-session-state'
 import { workflowDetailsBySlug } from '../config/workshop-workflow-content'
+import type { SavedWorkflow } from '../config/workshop-workflow-storage'
 import { workflowStorage } from '../config/workshop-workflow-storage'
 import { createWorkflowUploader } from '../config/workshop-workflow-upload'
 import { useWorkflowFormDraft } from './useWorkflowFormDraft'
@@ -125,6 +126,7 @@ describe('workflow page caller lifecycle', () => {
       requested: () => void
     ) => void
     postedTokens: string[]
+    expectedIntent: SavedWorkflow | undefined
   }
   const boundaries: CredentialBoundary[] = [
     {
@@ -136,7 +138,8 @@ describe('workflow page caller lifecycle', () => {
           return pending.promise
         })
       },
-      postedTokens: []
+      postedTokens: [],
+      expectedIntent: undefined
     },
     {
       name: 'a workspace switch during credential refresh',
@@ -147,7 +150,8 @@ describe('workflow page caller lifecycle', () => {
           return pending.promise
         })
       },
-      postedTokens: []
+      postedTokens: [],
+      expectedIntent: undefined
     },
     {
       name: 'an account switch during 401 token renewal',
@@ -159,13 +163,25 @@ describe('workflow page caller lifecycle', () => {
           return pending.promise
         })
       },
-      postedTokens: ['Bearer alice:workspace-a:token']
+      postedTokens: ['Bearer alice:workspace-a:token'],
+      expectedIntent: {
+        version: 2,
+        stage: 'intent',
+        attempt: {
+          request: {
+            workflowId: 'workflows/remove-background',
+            definitionVersion: '1',
+            appInputs: { image: 'canonical-image.webp' }
+          }
+        },
+        cancelRequested: false
+      }
     }
   ]
 
   it.for(boundaries)(
     'does not submit a different caller after $name',
-    async ({ prepare, postedTokens, next }) => {
+    async ({ prepare, postedTokens, expectedIntent, next }) => {
       const f = fixture()
       const pendingCredential = Promise.withResolvers<CredentialResult>()
       const requested = Promise.withResolvers<void>()
@@ -190,10 +206,7 @@ describe('workflow page caller lifecycle', () => {
       expect(f.workflow.state.value).toEqual(presentationBeforeSwitch)
       expect(
         workflowStorage(sessionStorage, f.scope, f.model.workflowId).read()
-      ).toMatchObject({
-        stage: 'intent',
-        attempt: { request: { appInputs: { image: 'canonical-image.webp' } } }
-      })
+      ).toEqual(expectedIntent)
       expect(
         workflowStorage(
           sessionStorage,

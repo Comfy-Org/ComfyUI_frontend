@@ -28,7 +28,8 @@ export const workflowSchema = z
       .object({
         repository: name,
         commit: z.string().regex(/^[a-f0-9]{40}$/),
-        path: name
+        path: name,
+        uiWorkflowPath: name.optional()
       })
       .strict(),
     inputSchema: z
