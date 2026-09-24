@@ -128,17 +128,17 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     return isImageOutputs(node, outputs) ? app.getPreviewFormatParam() : ''
   }
 
-  function buildImageUrls(
+  function buildNodeImages(
     node: LGraphNode,
     outputs: RuntimeOutput | undefined
-  ): string[] | undefined {
+  ): NodeImage[] | undefined {
     if (!outputs?.images?.length) return
 
     const rand = app.getRandParam()
     const previewParam = getPreviewParam(node, outputs)
 
     return outputs.images.map((image) => {
-      if (!image) return api.apiURL(`/view?${previewParam}${rand}`)
+      if (!image) return { url: api.apiURL(`/view?${previewParam}${rand}`) }
 
       const filename = image.filename ?? ''
       const { filepath, rootFolder } = parseAnnotatedPath(filename, image.type)
@@ -147,7 +147,10 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
         filename: node.comfyClass === 'LoadImageOutput' ? filename : filepath,
         type: rootFolder
       })
-      return api.apiURL(`/view?${params}${previewParam}${rand}`)
+      return {
+        url: api.apiURL(`/view?${params}${previewParam}${rand}`),
+        result: image
+      }
     })
   }
 
@@ -159,12 +162,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const previews = getNodePreviews(node)
     if (previews?.length) return previews.map((url) => ({ url }))
 
-    const outputs = getNodeOutputs(node)
-    const urls = buildImageUrls(node, outputs)
-    return urls?.map((url, index) => {
-      const result = outputs?.images?.[index]
-      return result ? { url, result } : { url }
-    })
+    return buildNodeImages(node, getNodeOutputs(node))
   }
 
   function getNodeOutputByExecutionId(
@@ -190,12 +188,7 @@ export const useNodeOutputStore = defineStore('nodeOutput', () => {
     const previews = getNodePreviewImagesByExecutionId(executionId)
     if (previews?.length) return previews.map((url) => ({ url }))
 
-    const outputs = getNodeOutputByExecutionId(executionId)
-    const urls = buildImageUrls(node, outputs)
-    return urls?.map((url, index) => {
-      const result = outputs?.images?.[index]
-      return result ? { url, result } : { url }
-    })
+    return buildNodeImages(node, getNodeOutputByExecutionId(executionId))
   }
 
   function setOutputsByLocatorId(

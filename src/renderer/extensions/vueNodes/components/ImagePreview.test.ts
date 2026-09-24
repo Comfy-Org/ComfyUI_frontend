@@ -1,8 +1,8 @@
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
-import { describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick, watchEffect } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useTelemetry } from '@/platform/telemetry'
@@ -12,6 +12,7 @@ import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview
 import { openHdrViewer } from '@/services/hdrViewerService'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeImage } from '@/types/nodeMedia'
+import type { AugmentedResultItem } from '@/utils/resultItem'
 
 // Mock downloadFile to avoid DOM errors
 vi.mock(import('@/base/common/downloadUtil'), () => ({
@@ -57,57 +58,56 @@ const i18n = createI18n({
 })
 
 describe('ImagePreview', () => {
-  const defaultProps = {
-    imageUrls: [
-      '/api/view?filename=test1.png&type=output',
-      '/api/view?filename=test2.png&type=output'
-    ]
+  const lightbox: {
+    items: readonly AugmentedResultItem[]
+    activeIndex: number | null
+  } = { items: [], activeIndex: null }
+
+  const lightboxIsOpen = () => lightbox.activeIndex !== null
+  const lightboxItem = () => {
+    if (lightbox.activeIndex === null) throw new Error('lightbox is closed')
+    return lightbox.items[lightbox.activeIndex]
   }
 
-  interface TestProps {
-    imageUrls?: readonly string[]
-    imageItems?: readonly NodeImage['result'][]
+  beforeEach(() => {
+    lightbox.items = []
+    lightbox.activeIndex = null
+  })
+
+  const defaultUrls = [
+    '/api/view?filename=test1.png&type=output',
+    '/api/view?filename=test2.png&type=output'
+  ]
+
+  const imagesOf = (...urls: string[]): NodeImage[] =>
+    urls.map((url) => ({ url }))
+
+  interface PreviewProps {
     images?: readonly NodeImage[]
     nodeId?: NodeId
   }
 
-  function toComponentProps({
-    imageUrls = defaultProps.imageUrls,
-    imageItems,
-    images = imageUrls.map((url, index) => ({
-      url,
-      result: imageItems?.[index]
-    })),
+  function renderImagePreview({
+    images = imagesOf(...defaultUrls),
     nodeId
-  }: TestProps = {}) {
-    return { images, nodeId }
-  }
-
-  function renderImagePreview(props: TestProps = {}) {
+  }: PreviewProps = {}) {
     const result = render(ImagePreview, {
-      props: toComponentProps(props),
+      props: { images, nodeId },
       global: {
         plugins: [getActivePinia()!, i18n],
         stubs: {
           MediaLightbox: {
             props: ['items', 'activeIndex'],
-            template: `
-              <div
-                v-if="activeIndex !== null"
-                role="dialog"
-                aria-label="Gallery"
-                :data-subfolder="items[activeIndex].subfolder"
-                :data-result-type="items[activeIndex].type"
-              >
-                <img :src="items[activeIndex].url" :alt="items[activeIndex].filename" />
-                <button
-                  v-if="items.length > 1"
-                  @click="$emit('update:activeIndex', (activeIndex - 1 + items.length) % items.length)"
-                >
-                  Previous
-                </button>
-              </div>
-            `
+            setup(props: Record<string, unknown>) {
+              watchEffect(() => {
+                lightbox.items =
+                  (props.items as readonly AugmentedResultItem[] | undefined) ??
+                  []
+                lightbox.activeIndex =
+                  (props.activeIndex as number | null | undefined) ?? null
+              })
+            },
+            template: '<div />'
           },
           'i-lucide:venetian-mask': true,
           'i-lucide:download': true,
@@ -118,8 +118,10 @@ describe('ImagePreview', () => {
     })
     return {
       ...result,
-      rerender: (nextProps: TestProps) =>
-        result.rerender(toComponentProps(nextProps))
+      rerender: ({
+        images = imagesOf(...defaultUrls),
+        nodeId
+      }: PreviewProps = {}) => result.rerender({ images, nodeId })
     }
   }
 
@@ -137,7 +139,7 @@ describe('ImagePreview', () => {
 
   it('offers the HDR viewer instead of an <img> for exr outputs', () => {
     renderImagePreview({
-      imageUrls: ['/api/view?filename=out.exr&type=output']
+      images: imagesOf('/api/view?filename=out.exr&type=output')
     })
 
     expect(screen.getByTestId('hdr-open-button')).toBeInTheDocument()
@@ -146,7 +148,7 @@ describe('ImagePreview', () => {
 
   it('displays calculating dimensions text in gallery mode', async () => {
     renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
+      images: imagesOf(defaultUrls[0])
     })
 
     screen.getByText('Calculating dimensions')
@@ -165,7 +167,7 @@ describe('ImagePreview', () => {
 
   it('does not show navigation dots for single image', () => {
     renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
+      images: imagesOf(defaultUrls[0])
     })
 
     const navigationDots = screen.queryAllByRole('button', {
@@ -186,7 +188,7 @@ describe('ImagePreview', () => {
 
   it('shows mask/edit button for single images', () => {
     renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
+      images: imagesOf(defaultUrls[0])
     })
 
     screen.getByRole('button', { name: 'Edit or mask image' })
@@ -194,7 +196,7 @@ describe('ImagePreview', () => {
 
   it('hides mask and download buttons when image fails to load', async () => {
     renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
+      images: imagesOf(defaultUrls[0])
     })
 
     expect(
@@ -222,7 +224,7 @@ describe('ImagePreview', () => {
 
   it('handles download button click', async () => {
     renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
+      images: imagesOf(defaultUrls[0])
     })
     const user = userEvent.setup()
 
@@ -231,7 +233,7 @@ describe('ImagePreview', () => {
     })
     await user.click(downloadButton)
 
-    expect(downloadFile).toHaveBeenCalledWith(defaultProps.imageUrls[0])
+    expect(downloadFile).toHaveBeenCalledWith(defaultUrls[0])
   })
 
   describe('opening the lightbox from the node preview', () => {
@@ -245,93 +247,78 @@ describe('ImagePreview', () => {
       await nextTick()
       await user.dblClick(screen.getByRole('region'))
 
-      expect(screen.getByRole('dialog', { name: 'Gallery' })).toContainElement(
-        screen.getByRole('img', { name: 'test2.png' })
-      )
+      expect(lightboxItem().filename).toBe('test2.png')
     })
 
     it('opens the lightbox from the gallery panel of a single image', async () => {
-      renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
+      renderImagePreview({ images: imagesOf(defaultUrls[0]) })
       const user = userEvent.setup()
 
       await user.dblClick(screen.getByRole('region'))
 
-      expect(screen.getByRole('img', { name: 'test1.png' })).toHaveAttribute(
-        'src',
-        defaultProps.imageUrls[0]
-      )
+      expect(lightboxItem().url).toBe(defaultUrls[0])
     })
 
     it('carries the metadata the backend sent, not the url it built', async () => {
       renderImagePreview({
-        imageUrls: ['/api/view?filename=p.png'],
-        imageItems: [
-          { filename: 'p.png', subfolder: 'nested/dir', type: 'temp' }
+        images: [
+          {
+            url: '/api/view?filename=p.png',
+            result: { filename: 'p.png', subfolder: 'nested/dir', type: 'temp' }
+          }
         ]
       })
       const user = userEvent.setup()
 
       await user.dblClick(screen.getByRole('region'))
 
-      expect(screen.getByRole('dialog', { name: 'Gallery' })).toHaveAttribute(
-        'data-subfolder',
-        'nested/dir'
-      )
-      expect(screen.getByRole('dialog', { name: 'Gallery' })).toHaveAttribute(
-        'data-result-type',
-        'temp'
-      )
+      expect(lightboxItem()).toMatchObject({
+        subfolder: 'nested/dir',
+        type: 'temp'
+      })
     })
 
     it('omits the result type when no record backs the image', async () => {
       renderImagePreview({
-        imageUrls: ['/api/view?filename=p.png'],
-        imageItems: undefined
+        images: imagesOf('/api/view?filename=p.png')
       })
       const user = userEvent.setup()
 
       await user.dblClick(screen.getByRole('region'))
 
-      expect(
-        screen.getByRole('dialog', { name: 'Gallery' })
-      ).not.toHaveAttribute('data-result-type')
-      expect(screen.getByRole('img', { name: 'p.png' })).toBeInTheDocument()
+      expect(lightboxItem()).not.toHaveProperty('type')
+      expect(lightboxItem().url).toBe('/api/view?filename=p.png')
     })
 
     it('opens the lightbox at full resolution', async () => {
       renderImagePreview({
-        imageUrls: ['/api/view?filename=test1.png&preview=webp;75&rand=1']
+        images: imagesOf('/api/view?filename=test1.png&preview=webp;75&rand=1')
       })
       const user = userEvent.setup()
 
       await user.dblClick(screen.getByRole('region'))
 
-      expect(screen.getByRole('img', { name: 'test1.png' })).toHaveAttribute(
-        'src',
-        '/api/view?filename=test1.png&rand=1'
-      )
+      expect(lightboxItem().url).toBe('/api/view?filename=test1.png&rand=1')
     })
 
     it('routes hdr outputs to the hdr viewer instead of the lightbox', async () => {
       const hdrUrl = '/api/view?filename=out.exr&type=output'
-      renderImagePreview({ imageUrls: [hdrUrl] })
+      renderImagePreview({ images: imagesOf(hdrUrl) })
       const user = userEvent.setup()
 
       await user.dblClick(screen.getByTestId('hdr-open-button'))
 
       expect(openHdrViewer).toHaveBeenCalledExactlyOnceWith(hdrUrl)
-      expect(
-        screen.queryByRole('dialog', { name: 'Gallery' })
-      ).not.toBeInTheDocument()
+      expect(lightboxIsOpen()).toBe(false)
     })
 
     it('leaves hdr outputs out of a mixed lightbox gallery', async () => {
       renderImagePreview({
-        imageUrls: [
+        images: imagesOf(
           '/api/view?filename=out.exr&type=output',
-          defaultProps.imageUrls[0],
-          defaultProps.imageUrls[1]
-        ]
+          defaultUrls[0],
+          defaultUrls[1]
+        )
       })
       const user = userEvent.setup()
 
@@ -341,9 +328,8 @@ describe('ImagePreview', () => {
       await nextTick()
       await user.dblClick(screen.getByRole('region'))
 
-      expect(screen.getByRole('img', { name: 'test2.png' })).toBeInTheDocument()
-      await user.click(screen.getByRole('button', { name: 'Previous' }))
-      expect(screen.getByRole('img', { name: 'test1.png' })).toBeInTheDocument()
+      expect(lightbox.items.map(({ url }) => url)).toEqual(defaultUrls)
+      expect(lightboxItem().url).toBe(defaultUrls[1])
     })
 
     it('opens the lightbox from below the gallery panel', async () => {
@@ -356,7 +342,7 @@ describe('ImagePreview', () => {
       await nextTick()
       await user.dblClick(screen.getByText('Calculating dimensions'))
 
-      expect(screen.getByRole('img', { name: 'test2.png' })).toBeInTheDocument()
+      expect(lightboxItem().url).toBe(defaultUrls[1])
     })
 
     it('does not open the lightbox while the grid is showing', async () => {
@@ -365,9 +351,7 @@ describe('ImagePreview', () => {
 
       await user.dblClick(screen.getByTestId('image-grid'))
 
-      expect(
-        screen.queryByRole('dialog', { name: 'Gallery' })
-      ).not.toBeInTheDocument()
+      expect(lightboxIsOpen()).toBe(false)
     })
 
     const transientUrlCases = [
@@ -378,7 +362,7 @@ describe('ImagePreview', () => {
     it.for(transientUrlCases)(
       'hides the lightbox button for a %s',
       ([_label, imageUrl]) => {
-        renderImagePreview({ imageUrls: [imageUrl] })
+        renderImagePreview({ images: imagesOf(imageUrl) })
 
         expect(
           screen.queryByRole('button', { name: 'Open in lightbox' })
@@ -392,64 +376,54 @@ describe('ImagePreview', () => {
     it.for(transientUrlCases)(
       'does not put a %s into the lightbox',
       async ([_label, imageUrl]) => {
-        renderImagePreview({ imageUrls: [imageUrl] })
+        renderImagePreview({ images: imagesOf(imageUrl) })
         const user = userEvent.setup()
 
         await user.dblClick(screen.getByRole('region'))
 
-        expect(
-          screen.queryByRole('dialog', { name: 'Gallery' })
-        ).not.toBeInTheDocument()
+        expect(lightboxIsOpen()).toBe(false)
       }
     )
 
     it('opens the lightbox from the named action button', async () => {
-      renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
+      renderImagePreview({ images: imagesOf(defaultUrls[0]) })
       const user = userEvent.setup()
 
       await user.click(screen.getByRole('button', { name: 'Open in lightbox' }))
 
-      expect(
-        screen.getByRole('dialog', { name: 'Gallery' })
-      ).toBeInTheDocument()
+      expect(lightboxIsOpen()).toBe(true)
     })
 
     it('opens the lightbox when the action button is activated by keyboard', async () => {
-      renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
+      renderImagePreview({ images: imagesOf(defaultUrls[0]) })
       const user = userEvent.setup()
 
       screen.getByRole('button', { name: 'Open in lightbox' }).focus()
       await user.keyboard('{Enter}')
 
-      expect(
-        screen.getByRole('dialog', { name: 'Gallery' })
-      ).toBeInTheDocument()
+      expect(lightboxIsOpen()).toBe(true)
     })
 
     it('does not open the lightbox when a control is double-clicked', async () => {
-      renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
+      renderImagePreview({ images: imagesOf(defaultUrls[0]) })
       const user = userEvent.setup()
 
       await user.dblClick(
         screen.getByRole('button', { name: 'Download image' })
       )
 
-      expect(
-        screen.queryByRole('dialog', { name: 'Gallery' })
-      ).not.toBeInTheDocument()
+      expect(lightboxIsOpen()).toBe(false)
     })
 
     it('does not open the lightbox for an image that failed to load', async () => {
-      renderImagePreview({ imageUrls: [defaultProps.imageUrls[0]] })
+      renderImagePreview({ images: imagesOf(defaultUrls[0]) })
       const user = userEvent.setup()
 
       await fireEvent.error(screen.getByTestId('main-image'))
       await nextTick()
       await user.dblClick(screen.getByRole('region'))
 
-      expect(
-        screen.queryByRole('dialog', { name: 'Gallery' })
-      ).not.toBeInTheDocument()
+      expect(lightboxIsOpen()).toBe(false)
     })
   })
 
@@ -459,10 +433,7 @@ describe('ImagePreview', () => {
     await switchToGallery(user)
 
     // Initially shows first image
-    expect(screen.getByRole('img')).toHaveAttribute(
-      'src',
-      defaultProps.imageUrls[0]
-    )
+    expect(screen.getByRole('img')).toHaveAttribute('src', defaultUrls[0])
 
     // Click second navigation dot
     const navigationDots = screen.getAllByRole('button', {
@@ -471,10 +442,7 @@ describe('ImagePreview', () => {
     await user.click(navigationDots[1])
     await nextTick()
 
-    expect(screen.getByRole('img')).toHaveAttribute(
-      'src',
-      defaultProps.imageUrls[1]
-    )
+    expect(screen.getByRole('img')).toHaveAttribute('src', defaultUrls[1])
   })
 
   it('marks active navigation dot with aria-current', async () => {
@@ -500,7 +468,7 @@ describe('ImagePreview', () => {
 
   it('has proper accessibility attributes', () => {
     renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
+      images: imagesOf(defaultUrls[0])
     })
 
     expect(screen.getByRole('img')).toHaveAttribute('alt', 'View image 1 of 1')
@@ -535,7 +503,7 @@ describe('ImagePreview', () => {
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[1]
+        defaultUrls[1]
       )
     })
 
@@ -553,7 +521,7 @@ describe('ImagePreview', () => {
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[0]
+        defaultUrls[0]
       )
     })
 
@@ -570,7 +538,7 @@ describe('ImagePreview', () => {
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[0]
+        defaultUrls[0]
       )
     })
 
@@ -585,7 +553,7 @@ describe('ImagePreview', () => {
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[1]
+        defaultUrls[1]
       )
     })
 
@@ -603,7 +571,7 @@ describe('ImagePreview', () => {
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[0]
+        defaultUrls[0]
       )
     })
 
@@ -618,7 +586,7 @@ describe('ImagePreview', () => {
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[1]
+        defaultUrls[1]
       )
     })
 
@@ -640,7 +608,7 @@ describe('ImagePreview', () => {
 
     it('ignores arrow keys for single image', async () => {
       renderImagePreview({
-        imageUrls: [defaultProps.imageUrls[0]]
+        images: imagesOf(defaultUrls[0])
       })
       const user = userEvent.setup()
 
@@ -675,7 +643,7 @@ describe('ImagePreview', () => {
 
     it('defaults to gallery mode for single image', () => {
       renderImagePreview({
-        imageUrls: [defaultProps.imageUrls[0]]
+        images: imagesOf(defaultUrls[0])
       })
 
       screen.getByRole('region')
@@ -696,7 +664,7 @@ describe('ImagePreview', () => {
       await nextTick()
 
       const mainImg = screen.getByTestId('main-image')
-      expect(mainImg).toHaveAttribute('src', defaultProps.imageUrls[1])
+      expect(mainImg).toHaveAttribute('src', defaultUrls[1])
     })
 
     it('shows back-to-grid button next to navigation dots', async () => {
@@ -733,11 +701,11 @@ describe('ImagePreview', () => {
 
       // Change URLs
       await rerender({
-        imageUrls: [
+        images: imagesOf(
           '/api/view?filename=new1.png&type=output',
           '/api/view?filename=new2.png&type=output',
           '/api/view?filename=new3.png&type=output'
-        ]
+        )
       })
       await nextTick()
 
@@ -753,7 +721,7 @@ describe('ImagePreview', () => {
     it('should not enter persistent loading state when cycling through identical images', async () => {
       const sameUrl = '/api/view?filename=test.png&type=output'
       renderImagePreview({
-        imageUrls: [sameUrl, sameUrl, sameUrl]
+        images: imagesOf(sameUrl, sameUrl, sameUrl)
       })
       await switchToGallery(userEvent.setup())
 
@@ -777,12 +745,12 @@ describe('ImagePreview', () => {
   })
 
   describe('URL change detection', () => {
-    it('should NOT reset loading state when imageUrls prop is reassigned with identical URLs', async () => {
+    it('should NOT reset loading state when images prop is reassigned with identical URLs', async () => {
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime
       })
       const urls = ['/api/view?filename=test.png&type=output']
-      const { rerender } = renderImagePreview({ imageUrls: urls })
+      const { rerender } = renderImagePreview({ images: imagesOf(...urls) })
       void user
 
       // Simulate image load completing
@@ -793,7 +761,7 @@ describe('ImagePreview', () => {
       expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false')
 
       // Reassign with new array reference but same content
-      await rerender({ imageUrls: [...urls] })
+      await rerender({ images: imagesOf(...urls) })
       await nextTick()
 
       // Advance past the 250ms delayed loader timeout
@@ -804,12 +772,12 @@ describe('ImagePreview', () => {
       expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false')
     })
 
-    it('should reset loading state when imageUrls prop changes to different URLs', async () => {
+    it('should reset loading state when images prop changes to different URLs', async () => {
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime
       })
       const urls = ['/api/view?filename=test.png&type=output']
-      const { rerender } = renderImagePreview({ imageUrls: urls })
+      const { rerender } = renderImagePreview({ images: imagesOf(...urls) })
 
       // Simulate image load completing
       await fireEvent.load(screen.getByRole('img'))
@@ -821,7 +789,7 @@ describe('ImagePreview', () => {
       void user
       // Change to different URL
       await rerender({
-        imageUrls: ['/api/view?filename=different.png&type=output']
+        images: imagesOf('/api/view?filename=different.png&type=output')
       })
       await nextTick()
 
@@ -833,12 +801,12 @@ describe('ImagePreview', () => {
     })
 
     it('should handle empty to non-empty URL transitions correctly', async () => {
-      const { rerender } = renderImagePreview({ imageUrls: [] })
+      const { rerender } = renderImagePreview({ images: imagesOf() })
 
       expect(screen.queryByTestId('image-preview')).not.toBeInTheDocument()
 
       await rerender({
-        imageUrls: ['/api/view?filename=test.png&type=output']
+        images: imagesOf('/api/view?filename=test.png&type=output')
       })
       await nextTick()
 

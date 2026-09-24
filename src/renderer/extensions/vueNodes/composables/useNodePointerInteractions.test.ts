@@ -277,6 +277,26 @@ describe('useNodePointerInteractions', () => {
     expect(toggleNodeSelectionAfterPointerUp).not.toHaveBeenCalled()
   })
 
+  it('does not toggle selection when a different pointer releases over the node', () => {
+    const { pointerHandlers } = useNodePointerInteractions(testNodeState)
+    const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()
+
+    pointerHandlers.onPointerdown(
+      createPointerEvent('pointerdown', { pointerId: 1 })
+    )
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { pointerId: 2 })
+    )
+
+    expect(toggleNodeSelectionAfterPointerUp).not.toHaveBeenCalled()
+
+    pointerHandlers.onPointerup(
+      createPointerEvent('pointerup', { pointerId: 1 })
+    )
+
+    expect(toggleNodeSelectionAfterPointerUp).toHaveBeenCalledTimes(1)
+  })
+
   it('on ctrl+click: calls toggleNodeSelectionAfterPointerUp on pointer up (not pointer down)', async () => {
     const { pointerHandlers } = useNodePointerInteractions(testNodeState)
     const { toggleNodeSelectionAfterPointerUp } = useNodeEventHandlers()

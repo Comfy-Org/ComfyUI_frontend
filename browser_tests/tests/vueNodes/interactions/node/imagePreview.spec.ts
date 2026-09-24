@@ -217,11 +217,19 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         await expect(node.imageGrid.locator('img')).toHaveCount(100)
       })
 
+      // The node is already at its minimum width, so the narrow case has to be
+      // reached by widening first and then shrinking back toward that floor.
       await expect.poll(() => countColumns(node.imageGrid)).toBe(10)
-      await node.resizeFromCorner('SE', 200, 0)
+
+      await node.resizeFromCorner('SE', 400, 0)
       await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(10)
-      await node.resizeFromCorner('SE', -200, 200)
-      await expect.poll(() => countColumns(node.imageGrid)).toBeLessThan(10)
+      const widestColumns = await countColumns(node.imageGrid)
+
+      await node.resizeFromCorner('SE', -200, 0)
+      await expect
+        .poll(() => countColumns(node.imageGrid))
+        .toBeLessThan(widestColumns)
+      await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(10)
     }
   )
 

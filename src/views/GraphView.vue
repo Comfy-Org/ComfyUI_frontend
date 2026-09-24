@@ -77,7 +77,6 @@ import { useTelemetry } from '@/platform/telemetry'
 import { getShellLayoutSnapshot } from '@/platform/telemetry/utils/getShellLayoutSnapshot'
 import { useFrontendVersionMismatchWarning } from '@/platform/updates/common/useFrontendVersionMismatchWarning'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import type { StatusWsMessageStatus } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
@@ -118,7 +117,6 @@ const colorPaletteStore = useColorPaletteStore()
 const queueStore = useQueueStore()
 const assetsStore = useAssetsStore()
 const versionCompatibilityStore = useVersionCompatibilityStore()
-const workflowStore = useWorkflowStore()
 const graphCanvasContainerRef = ref<HTMLDivElement | null>(null)
 const graphReady = ref(false)
 const { isBuilderMode, mode, isAppMode } = useAppMode()
@@ -288,17 +286,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   executionStore.unbindExecutionEvents()
 })
-
-watch(
-  () => workflowStore.activeWorkflow?.path,
-  () => {
-    void nextTick(() => {
-      graphCanvasContainerRef.value
-        ?.querySelector<HTMLElement>('#graph-canvas')
-        ?.focus()
-    })
-  }
-)
 
 useEventListener(window, 'keydown', useKeybindingService().keybindHandler)
 

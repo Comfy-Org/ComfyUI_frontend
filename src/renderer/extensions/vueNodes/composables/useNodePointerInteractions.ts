@@ -38,7 +38,7 @@ export function useNodePointerInteractions(
   }
 
   let hasDraggingStarted = false
-  let hasNodePointerSequenceStarted = false
+  let nodePointerSequenceId: number | null = null
 
   const dragGuard = useClickDragGuard(3)
 
@@ -54,7 +54,7 @@ export function useNodePointerInteractions(
       return
     }
 
-    hasNodePointerSequenceStarted = true
+    nodePointerSequenceId = event.pointerId
 
     if (isPinned()) return
 
@@ -131,8 +131,8 @@ export function useNodePointerInteractions(
 
   function onPointerup(event: PointerEvent) {
     if (forwardMiddlePointerIfNeeded(event, isMiddleButtonEvent)) return
-    const shouldToggleSelection = hasNodePointerSequenceStarted
-    hasNodePointerSequenceStarted = false
+    const shouldToggleSelection = nodePointerSequenceId === event.pointerId
+    if (shouldToggleSelection) nodePointerSequenceId = null
     // Don't handle pointer events when canvas is in panning mode - forward to canvas instead
     const canHandlePointer = shouldHandleNodePointerEvents.value
     if (!canHandlePointer) {
@@ -163,7 +163,7 @@ export function useNodePointerInteractions(
   }
 
   function onPointercancel(event: PointerEvent) {
-    hasNodePointerSequenceStarted = false
+    if (nodePointerSequenceId === event.pointerId) nodePointerSequenceId = null
     if (!layoutStore.isDraggingVueNodes.value) return
     safeDragEnd(event)
   }

@@ -33,7 +33,7 @@ import ResultAudio from './ResultAudio.vue'
 import ResultText from './ResultText.vue'
 import ResultVideo from './ResultVideo.vue'
 
-defineProps<{
+const { item } = defineProps<{
   readonly item: AugmentedResultItem
 }>()
 

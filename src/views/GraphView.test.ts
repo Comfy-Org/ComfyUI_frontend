@@ -1,15 +1,11 @@
-import { fromPartial } from '@total-typescript/shoehorn'
 import { render, screen } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh'
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
-import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
-import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -132,12 +128,7 @@ vi.mock<unknown>(
     default: { template: '<div data-testid="education-card-stub" />' }
   })
 )
-vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => ({
-  default: {
-    template:
-      '<canvas id="graph-canvas" tabindex="-1" aria-label="Graph canvas" />'
-  }
-}))
+vi.mock<unknown>(import('@/components/graph/GraphCanvas.vue'), () => stubModule)
 vi.mock<unknown>(import('@/views/LinearView.vue'), () => stubModule)
 vi.mock<unknown>(
   import('@/components/builder/BuilderToolbar.vue'),
@@ -230,25 +221,5 @@ describe('GraphView - partner nodes education card', () => {
     render(GraphView, { global: { plugins: [i18n] } })
 
     expect(screen.queryByTestId('education-card-stub')).not.toBeInTheDocument()
-  })
-})
-
-describe('GraphView - workflow focus', () => {
-  const makeWorkflow = (path: string) =>
-    fromPartial<LoadedComfyWorkflow>({
-      path,
-      filename: path.split('/').pop()
-    })
-
-  it('focuses the incoming canvas when the active workflow changes', async () => {
-    const workflowStore = useWorkflowStore()
-    workflowStore.activeWorkflow = makeWorkflow('/workflows/a.json')
-
-    render(GraphView, { global: { plugins: [i18n] } })
-    workflowStore.activeWorkflow = makeWorkflow('/workflows/b.json')
-    await nextTick()
-    await nextTick()
-
-    expect(screen.getByLabelText('Graph canvas')).toHaveFocus()
   })
 })

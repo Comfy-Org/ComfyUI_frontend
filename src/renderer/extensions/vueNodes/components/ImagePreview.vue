@@ -5,7 +5,7 @@
     class="image-preview group relative flex size-full min-w-16 flex-col justify-center px-2"
     :style="{ minHeight: `${IMAGE_PREVIEW_CONTENT_MIN_HEIGHT}px` }"
     @keydown="handleKeyDown"
-    @pointerdown.stop
+    @pointerdown="onPreviewPointerDown"
     @click.capture="handleRepeatedClick"
     @dblclick.stop="handleGalleryDoubleClick"
   >
@@ -233,6 +233,7 @@ import { useElementSize, useTimeoutFn } from '@vueuse/core'
 import { computed, nextTick, ref, useTemplateRef, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { isMiddlePointerInput } from '@/base/pointerUtils'
 import { downloadFile } from '@/base/common/downloadUtil'
 import MediaLightbox from '@/components/common/MediaLightbox.vue'
 import Button from '@/components/ui/button/Button.vue'
@@ -464,6 +465,11 @@ function openInLightbox(index: number) {
   if (selectedIndex === -1) return
   lightboxItems.value = renderable.map(toGalleryItem)
   lightboxIndex.value = selectedIndex
+}
+
+function onPreviewPointerDown(event: PointerEvent) {
+  if (isMiddlePointerInput(event)) return
+  event.stopPropagation()
 }
 
 function handleRepeatedClick(event: MouseEvent) {
