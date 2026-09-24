@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Badge from '@/components/ui/badge/Badge.vue'
 
 import type { BadgeVariants } from '@/components/ui/badge'
@@ -17,9 +19,10 @@ const { label = 'new' } = defineProps<{
     :size="size"
     variant="accent"
     :class="
-      label === 'beta'
-        ? 'text-primary-warm-white before:bg-primary-comfy-plum'
-        : undefined
+      cn(
+        label === 'beta' &&
+          'text-primary-warm-white before:bg-primary-comfy-plum'
+      )
     "
   >
     {{ t(label === 'beta' ? 'nav.badgeBeta' : 'nav.badgeNew', locale) }}
