@@ -18,7 +18,7 @@ export const AGENT_SOCKET_URL = /\/api\/agent\/events(?:\?|$)/
  * human op with `human:<user_id>:<tab>`, so it matches the signed-in cloud
  * test user the boot mocks authenticate as.
  */
-export const AGENT_USER_ID = 'test-user-e2e'
+const AGENT_USER_ID = 'test-user-e2e'
 
 type AgentIdentityWire = z.infer<typeof zAgentIdentityWire>
 
