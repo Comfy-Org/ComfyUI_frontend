@@ -19,6 +19,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | [AUTH-CREDENTIALS-0011](AUTH-CREDENTIALS-0011-cloud-credential-lifecycle-invariants.md)                          | Cloud Credential Lifecycle Invariants                                              | Proposed   | 2026-07-09 |
 | [AUTH-IDENTITY-0028](AUTH-IDENTITY-0028-account-package-firebase-entry-delivers-cloud-identity.md)               | The Account Package's Firebase Entry Delivers Identity to the Cloud Session Client | Proposed   | 2026-09-09 |
 | [AUTH-IDENTITY-0033](AUTH-IDENTITY-0033-account-package-owns-identity-taken-at-construction.md)                  | The Account Package Owns Identity and the Session Client Takes It at Construction  | Accepted   | 2026-09-16 |
+| [AUTH-SESSION-0037](AUTH-SESSION-0037-shared-web-session-on-a-host-only-cookie.md)                               | Shared Web Session on a Host-Only Cookie                                           | Proposed   | 2026-09-24 |
 | [AUTH-WORKSPACE-0036](AUTH-WORKSPACE-0036-workspace-deep-link-contract.md)                                       | Workspace Deep-Link Contract                                                       | Proposed   | 2026-09-21 |
 | [BILLING-CHECKOUT-0031](BILLING-CHECKOUT-0031-checkout-journey-instrumentation-contract.md)                      | Checkout Journey Instrumentation Contract                                          | Proposed   | 2026-09-09 |
 | [BILLING-WEB-0031](BILLING-WEB-0031-static-spa-boundary.md)                                                      | Static SPA Boundary for Hosted Billing                                             | Proposed   | 2026-09-10 |
@@ -64,8 +65,10 @@ An Architecture Decision Record captures an important architectural decision mad
 | [WEBSITE-ACCEPTANCE-0036](WEBSITE-ACCEPTANCE-0036-separate-live-customer-tests-from-offline-ci.md)               | Separate live customer acceptance from offline CI                                  | Proposed   | 2026-09-21 |
 | [WEBSITE-REQUESTS-0030](WEBSITE-REQUESTS-0030-creator-widgets-and-router-request-composition.md)                 | Creator widgets and Router request composition                                     | Deprecated | 2026-09-09 |
 | [WIDGET-SERIALIZATION-0006](WIDGET-SERIALIZATION-0006-preserve-primitive-widget-values-across-copy-and-paste.md) | PrimitiveNode Widget Restoration Lifecycle                                         | Accepted   | 2026-02-22 |
+| [WORKSHOP-CATALOG-0037](WORKSHOP-CATALOG-0037-shared-pages-and-authored-execution-catalogs.md)                   | Shared pages and authored execution catalogs                                       | Accepted   | 2026-09-23 |
 | [WORKSHOP-TELEMETRY-0034](WORKSHOP-TELEMETRY-0034-browser-delivery-health.md)                                    | Browser delivery health for Models                                                 | Proposed   | 2026-09-18 |
 | [WORKSHOP-VALIDATION-0036](WORKSHOP-VALIDATION-0036-declarative-input-constraints.md)                            | Declarative input constraints                                                      | Proposed   | 2026-09-22 |
+| [WORKSHOP-WORKFLOWS-0036](WORKSHOP-WORKFLOWS-0036-published-app-definitions-and-durable-cloud-runs.md)           | Published APP definitions and durable Cloud runs                                   | Superseded | 2026-09-22 |
 
 ## Creating a New ADR
 
