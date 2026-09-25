@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Clapperboard } from '@lucide/vue'
 
-import { useReshootDemo } from '../../../../composables/useReshootDemo'
+import { useReshootRun } from '../../../../composables/useReshootRun'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import AppsBackLink from '../AppsBackLink.vue'
@@ -13,7 +13,9 @@ import ReshootUpload from './ReshootUpload.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const demo = useReshootDemo({ autoRead: true })
+// The real run: depth analysis and takes are jobs on the CrossView
+// deployment, and analysis waits for its button because it costs a run.
+const demo = useReshootRun(locale)
 const {
   upload,
   clip,
@@ -33,7 +35,14 @@ const {
   seed,
   takes,
   selected,
-  current
+  current,
+  rendering,
+  frames,
+  clipError,
+  geometry,
+  pose,
+  status,
+  error
 } = demo
 </script>
 
@@ -62,11 +71,16 @@ const {
         :camera
         :keys
         :depth
+        :frames
+        :clip-error="clipError"
+        :error
+        :rendering
         :locale
         @aim="demo.aim"
         @key="demo.addKey"
         @remove-key="demo.removeKey"
         @clear-keys="keys = []"
+        @analyze="demo.analyze"
         @generate="demo.generate"
       />
       <div
@@ -95,6 +109,11 @@ const {
         :selected
         :current
         cancellable
+        :geometry
+        :pose
+        :keep-aim="keepAim"
+        :frame
+        :status
         :locale
         class="lg:pt-2"
         @aim="demo.aim"

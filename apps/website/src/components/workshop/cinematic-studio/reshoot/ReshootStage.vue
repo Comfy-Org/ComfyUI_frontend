@@ -6,8 +6,10 @@ import { computed, ref, useTemplateRef } from 'vue'
 import type {
   DepthState,
   ReshootTake
-} from '../../../../composables/useReshootDemo'
+} from '../../../../composables/useReshootRun'
 import type { ReshootCamera } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import type { Pose } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/camera'
+import type { Geometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import type { ReshootSound, ReshootView } from './output'
@@ -26,6 +28,11 @@ const {
   selected,
   current,
   cancellable = false,
+  geometry,
+  pose,
+  keepAim = true,
+  frame = 0,
+  status,
   locale = 'en'
 } = defineProps<{
   clip: string
@@ -36,6 +43,11 @@ const {
   selected: string
   current?: ReshootTake
   cancellable?: boolean
+  geometry?: Geometry
+  pose?: Pose
+  keepAim?: boolean
+  frame?: number
+  status?: string
   locale?: Locale
 }>()
 
@@ -54,6 +66,13 @@ const sound = ref<ReshootSound>('generated')
 const finished = computed(() =>
   current?.status === 'done' && current.url ? current : undefined
 )
+// The download follows what is being watched: the clip's own sound when
+// that is chosen and the take has it.
+const href = computed(() =>
+  sound.value === 'original' && finished.value?.originalUrl
+    ? finished.value.originalUrl
+    : finished.value?.url
+)
 const fileName = computed(
   () =>
     `crossview-take-${current?.n ?? 0}${sound.value === 'original' ? '-original-audio' : ''}.mp4`
@@ -70,7 +89,7 @@ const fileName = computed(
         v-if="finished?.url"
         v-model:view="view"
         v-model:sound="sound"
-        :href="finished.url"
+        :href="href ?? finished.url"
         :file-name="fileName"
         :locale
         @reuse="emit('reuse')"
@@ -95,6 +114,11 @@ const fileName = computed(
           :camera
           :depth
           :aimable="step === 2"
+          :geometry
+          :pose
+          :keep-aim="keepAim"
+          :frame
+          :status
           :locale
           @aim="emit('aim', $event)"
         />

@@ -77,13 +77,50 @@ const copy = {
   'reshoot.clip.change': { en: 'Change', 'zh-CN': '更换' },
   'reshoot.clip.ready': { en: 'Scene read', 'zh-CN': '场景已读取' },
   'reshoot.generate.note': {
-    en: 'Takes 1.5 to 5 minutes. Keep aiming while it renders.',
-    'zh-CN': '需要 1.5 到 5 分钟，生成期间可以继续调整机位。'
+    en: 'Keep aiming while it renders.',
+    'zh-CN': '生成期间可以继续调整机位。'
   },
   'reshoot.generate.wait': {
-    en: 'MoGe estimates depth for every frame, about 20 to 40 seconds. The first run after a quiet spell also starts a server.',
-    'zh-CN':
-      'MoGe 会估算每一帧的深度，约 20 到 40 秒。闲置一段时间后的首次运行还需要启动服务器。'
+    en: 'MoGe estimates depth for every frame, as a run on the server. The camera unlocks when it is done.',
+    'zh-CN': 'MoGe 会在服务器上运行，估算每一帧的深度。完成后即可调整机位。'
+  },
+  'reshoot.analyzeAgain': {
+    en: 'Analyze depth again',
+    'zh-CN': '重新分析深度'
+  },
+  'reshoot.generate.locked': {
+    en: 'Analyze depth first.',
+    'zh-CN': '请先分析深度。'
+  },
+  'reshoot.clipLength': {
+    en: 'This clip is {seconds} s. Use one between 5 and 15 seconds.',
+    'zh-CN': '此片段时长 {seconds} 秒，请使用 5 到 15 秒的片段。'
+  },
+  'reshoot.stage.uploading': {
+    en: 'Uploading the clip',
+    'zh-CN': '正在上传片段'
+  },
+  'reshoot.stage.queued': {
+    en: 'Waiting for a server',
+    'zh-CN': '正在等待服务器'
+  },
+  'reshoot.stage.queuedAt': {
+    en: 'Queued · position {n}',
+    'zh-CN': '排队中 · 第 {n} 位'
+  },
+  'reshoot.stage.starting': {
+    en: 'Starting a server',
+    'zh-CN': '正在启动服务器'
+  },
+  'reshoot.stage.fetching': {
+    en: 'Fetching the result',
+    'zh-CN': '正在获取结果'
+  },
+  'reshoot.take.failed': { en: 'This take failed', 'zh-CN': '此镜头生成失败' },
+  'reshoot.failed': { en: 'Something went wrong', 'zh-CN': '出现问题' },
+  'reshoot.noWebgl': {
+    en: 'This preview needs WebGL2, which this browser does not offer.',
+    'zh-CN': '此预览需要 WebGL2，当前浏览器不支持。'
   },
   'reshoot.expand': { en: 'Full screen', 'zh-CN': '全屏' },
   'reshoot.collapse': { en: 'Exit full screen', 'zh-CN': '退出全屏' },
@@ -243,8 +280,8 @@ const copy = {
   'reshoot.take.cancelled': { en: 'Cancelled', 'zh-CN': '已取消' },
   'reshoot.download': { en: 'Download', 'zh-CN': '下载' },
   'reshoot.demoNote': {
-    en: 'Design prototype: no jobs run. Takes show the example result.',
-    'zh-CN': '设计原型：不会运行任务，镜头显示示例结果。'
+    en: 'Prototype: runs on a dedicated Comfy API deployment through a local proxy.',
+    'zh-CN': '原型：通过本地代理在专用的 Comfy API 部署上运行。'
   }
 } as const satisfies Record<string, LocalizedText>
 

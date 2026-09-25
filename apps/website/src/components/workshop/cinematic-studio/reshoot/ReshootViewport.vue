@@ -4,7 +4,7 @@ import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { DepthState } from '../../../../composables/useReshootDemo'
+import type { DepthState } from '../../../../composables/useReshootRun'
 import type { ReshootCamera } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import {
   cameraZone,
@@ -13,6 +13,9 @@ import {
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
+import type { Pose } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/camera'
+import type { Geometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import ReshootWarp from './ReshootWarp.vue'
 import ReshootZone from './ReshootZone.vue'
 
 const {
@@ -20,20 +23,37 @@ const {
   camera,
   depth,
   aimable,
+  geometry,
+  pose,
+  keepAim = true,
+  frame = 0,
+  status,
   locale = 'en'
 } = defineProps<{
   clip: string
   camera: Readonly<ReshootCamera>
   depth: DepthState
   aimable: boolean
+  /** The analysed clip; with it, the view is the real warp, not a tilt. */
+  geometry?: Geometry
+  pose?: Pose
+  keepAim?: boolean
+  frame?: number
+  /** Where the analysis stands while it runs. */
+  status?: string
   locale?: Locale
 }>()
+
+const noWebgl = ref(false)
+const live = computed(
+  () => ready.value && !!geometry && !!pose && !noWebgl.value
+)
 
 const emit = defineEmits<{ aim: [patch: Partial<ReshootCamera>] }>()
 
 const ready = computed(() => aimable && depth === 'ready')
 const transform = computed(() =>
-  ready.value ? viewTransform(camera) : undefined
+  ready.value && !live.value ? viewTransform(camera) : undefined
 )
 const notice = computed(() =>
   depth === 'stale' ? rc('reshoot.stale', locale) : undefined
@@ -93,7 +113,17 @@ function zoom(event: WheelEvent) {
     @pointercancel="dragFrom = undefined"
     @wheel="zoom"
   >
+    <ReshootWarp
+      v-if="live && geometry && pose"
+      :geometry
+      :pose
+      :hfov="camera.fov"
+      :keep-aim="keepAim"
+      :frame
+      @unsupported="noWebgl = true"
+    />
     <video
+      v-else
       :src="clip"
       autoplay
       muted
@@ -112,7 +142,7 @@ function zoom(event: WheelEvent) {
           class="size-4 text-primary-comfy-yellow motion-safe:animate-spin"
           aria-hidden="true"
         />
-        {{ rc('reshoot.analyzing', locale) }}
+        {{ status || rc('reshoot.analyzing', locale) }}
       </span>
     </div>
     <p

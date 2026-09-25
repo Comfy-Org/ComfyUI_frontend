@@ -1,41 +1,114 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor as waitUntil } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { readGeometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
+import {
+  cancel,
+  download,
+  submit,
+  uploadVideo,
+  waitFor
+} from '../../../../lib/workshop/cinematic-studio/reshoot-engine/deployment'
 import ReshootStudio from './ReshootStudio.vue'
+
+// The network is the only thing stubbed: the page, the composable and the
+// graph binding run as they do in the browser.
+vi.mock(
+  import('../../../../lib/workshop/cinematic-studio/reshoot-engine/deployment'),
+  { spy: true }
+)
+vi.mock(
+  import('../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'),
+  { spy: true }
+)
+
+const net = {
+  holdTakes: false,
+  submitted: [] as Record<string, { inputs: Record<string, unknown> }>[]
+}
 
 function setup() {
   render(ReshootStudio)
-  return userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+  return userEvent.setup()
 }
 
 beforeEach(() => {
-  vi.useFakeTimers({ shouldAdvanceTime: true })
+  net.holdTakes = false
+  net.submitted = []
+  vi.stubGlobal(
+    'fetch',
+    vi.fn(async () => new Response(new Blob(['clip'], { type: 'video/mp4' })))
+  )
+  vi.mocked(uploadVideo).mockResolvedValue('clip.mp4')
+  vi.mocked(submit).mockImplementation(async (workflow) => {
+    const graph = workflow as unknown as (typeof net.submitted)[number]
+    net.submitted.push(graph)
+    return '43' in graph ? 'take-job' : 'analyze-job'
+  })
+  vi.mocked(waitFor).mockImplementation(
+    (id, _onUpdate, signal) =>
+      new Promise((resolve, reject) => {
+        const done = { id, status: 'succeeded', outputs: [] }
+        if (id !== 'take-job' || !net.holdTakes) return resolve(done)
+        signal.addEventListener('abort', () =>
+          reject(new DOMException('Stopped', 'AbortError'))
+        )
+      })
+  )
+  vi.mocked(download).mockResolvedValue(new Blob(['x'], { type: 'video/mp4' }))
+  vi.mocked(cancel).mockResolvedValue()
+  vi.mocked(readGeometry).mockResolvedValue({
+    frames: 107,
+    width: 8,
+    height: 4,
+    fps: 24,
+    sourceWidth: 960,
+    sourceHeight: 544,
+    fxNorm: null,
+    jpegs: [],
+    depth: [new Float32Array(32).fill(3)],
+    depthHalf: [new Uint16Array(32)]
+  })
 })
 
-describe('Re-shoot on one screen', () => {
-  async function pickExample(user: ReturnType<typeof setup>) {
+const inputs = (
+  workflow: Record<string, { inputs: Record<string, unknown> }>
+) => workflow['5'].inputs
+
+describe('Re-shoot, run for real', () => {
+  async function analyzeExample(user: ReturnType<typeof setup>) {
     await user.click(screen.getByRole('button', { name: /Sci-fi pilot/ }))
-    await vi.advanceTimersByTimeAsync(3000)
+    await user.click(screen.getByTestId('reshoot-analyze'))
+    await waitUntil(() =>
+      expect(screen.getByTestId('reshoot-action')).toBeEnabled()
+    )
   }
 
-  it('reads the scene as soon as a clip is picked, then aims from the globe', async () => {
+  it('waits for Analyze depth, because the analysis is a run of its own', async () => {
     const user = setup()
-    expect(screen.queryByTestId('reshoot-action')).toBeNull()
     expect(screen.getByTestId('reshoot-empty')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Sci-fi pilot/ }))
 
-    expect(screen.getByRole('status')).toHaveTextContent('Estimating depth')
+    expect(net.submitted).toHaveLength(0)
     expect(screen.getByTestId('reshoot-action')).toBeDisabled()
     expect(screen.getByRole('slider', { name: 'Rotation' })).toBeDisabled()
+    expect(screen.getByText('Analyze depth first.')).toBeInTheDocument()
 
-    await vi.advanceTimersByTimeAsync(3000)
+    await user.click(screen.getByTestId('reshoot-analyze'))
+    await waitUntil(() =>
+      expect(screen.getByTestId('reshoot-action')).toBeEnabled()
+    )
+    expect(net.submitted).toHaveLength(1)
+    expect(net.submitted[0]['2'].inputs).toMatchObject({
+      aspect_ratio: 'source',
+      megapixels: 0.4
+    })
+
     screen.getByTestId('reshoot-globe').focus()
     await user.keyboard('{ArrowRight}')
-
     expect(screen.getByRole('slider', { name: 'Rotation' })).toHaveValue('-25')
-    expect(screen.getByTestId('reshoot-action')).toBeEnabled()
   })
 
   it.for([
@@ -45,7 +118,7 @@ describe('Re-shoot on one screen', () => {
     'leaves vertical touch drags from $start to the page scroll unless it is the handle: tilts $tilts',
     async ({ start, tilts }) => {
       const user = setup()
-      await pickExample(user)
+      await analyzeExample(user)
       const globe = screen.getByTestId('reshoot-globe')
       const target = screen.getByTestId(
         start === 'the globe' ? 'reshoot-globe' : 'reshoot-globe-handle'
@@ -69,24 +142,49 @@ describe('Re-shoot on one screen', () => {
     }
   )
 
-  it('lines up a take next to the picture and cancels it there', async () => {
+  it('sends the camera that was aimed', async () => {
     const user = setup()
-    await pickExample(user)
+    await analyzeExample(user)
+    screen.getByTestId('reshoot-globe').focus()
+    await user.keyboard('{ArrowRight}')
 
     await user.click(screen.getByTestId('reshoot-action'))
 
-    expect(
-      screen.getByRole('button', { name: 'Take 1 · az -30° el 15°' })
-    ).toHaveAttribute('aria-current', 'true')
+    await waitUntil(() => expect(net.submitted).toHaveLength(2))
+    expect(inputs(net.submitted[1])).toMatchObject({
+      azimuth: -25,
+      elevation: 15,
+      distance: 1,
+      hfov: 50,
+      pivot_override: true,
+      keep_source_aim: true,
+      use_keyframes: false
+    })
+  })
+
+  it('lines up a take next to the picture and cancels it there', async () => {
+    net.holdTakes = true
+    const user = setup()
+    await analyzeExample(user)
+
+    await user.click(screen.getByTestId('reshoot-action'))
+
+    await waitUntil(() =>
+      expect(
+        screen.getByRole('button', { name: 'Take 1 · az -30° el 15°' })
+      ).toHaveAttribute('aria-current', 'true')
+    )
     await user.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(screen.getByRole('status')).toHaveTextContent('Cancelled')
+    await waitUntil(() =>
+      expect(screen.getByRole('status')).toHaveTextContent('Cancelled')
+    )
   })
 
   it("aims again from a finished take's angle", async () => {
     const user = setup()
-    await pickExample(user)
+    await analyzeExample(user)
     await user.click(screen.getByTestId('reshoot-action'))
-    await vi.advanceTimersByTimeAsync(6500)
+    await screen.findByRole('button', { name: 'Use this angle again' })
     screen.getByTestId('reshoot-globe').focus()
     await user.keyboard('{ArrowRight}{ArrowRight}')
     await user.click(
