@@ -3,7 +3,7 @@ import type { LGraph } from '@/lib/litegraph/src/LGraph'
 import type { Positionable } from '@/lib/litegraph/src/interfaces'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { selectableKeyOf } from '@/renderer/core/canvas/litegraph/selectionAdapter'
-import { useSelectionStore } from '@/renderer/core/canvas/selectionStore'
+import { useSelectionStore } from '@/core/selection/selectionStore'
 import { graphScopeOf } from '@/types/graphScopeId'
 
 /**
