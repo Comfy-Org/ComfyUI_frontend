@@ -206,6 +206,34 @@ describe('Re-shoot, run for real', () => {
     ).toBeInTheDocument()
   })
 
+  it('draws a new seed every take unless one is fixed', async () => {
+    const user = setup()
+    await analyzeExample(user)
+    const seedOf = (i: number) => net.submitted[i]['30'].inputs.noise_seed
+    const take = async (n: number) => {
+      await user.click(screen.getByTestId('reshoot-action'))
+      await waitUntil(() => expect(net.submitted).toHaveLength(n))
+      await screen.findByRole('button', { name: 'Use this angle again' })
+    }
+
+    await take(2)
+    await take(3)
+    expect(seedOf(1)).toEqual(expect.any(Number))
+    expect(seedOf(2)).not.toBe(seedOf(1))
+
+    const field = screen.getByRole('spinbutton', { name: 'Seed' })
+    expect(field).toHaveAttribute('placeholder', 'Random')
+    await user.type(field, '7')
+    field.blur()
+    await take(4)
+    expect(seedOf(3)).toBe(7)
+
+    await user.clear(field)
+    field.blur()
+    await take(5)
+    expect(seedOf(4)).not.toBe(7)
+  })
+
   it('moves the camera in and out from the globe', async () => {
     const user = setup()
     await analyzeExample(user)

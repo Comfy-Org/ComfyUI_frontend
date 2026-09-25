@@ -57,17 +57,22 @@ const copy = {
   'reshoot.views': { en: 'Show', 'zh-CN': '显示' },
   'reshoot.sound': { en: 'Sound', 'zh-CN': '声音' },
   'reshoot.sound.generated': { en: 'Generated', 'zh-CN': '生成的声音' },
-  'reshoot.sound.original': { en: 'Original clip', 'zh-CN': '原片声音' },
+  'reshoot.sound.original': { en: 'Original audio', 'zh-CN': '原始音频' },
   'reshoot.warpNote': {
     en: 'The warp guide of a real run shows here: the clip pushed to the new camera, magenta where it has to be invented.',
     'zh-CN':
       '真实运行时这里显示变形引导：片段被推到新机位，洋红色为需要生成的部分。'
   },
   'reshoot.seed': { en: 'Seed', 'zh-CN': '种子' },
+  'reshoot.seed.random': { en: 'Random', 'zh-CN': '随机' },
+  'reshoot.seed.help': {
+    en: 'Leave empty for a new seed every take; enter a number to fix it.',
+    'zh-CN': '留空则每次生成使用新的种子；输入数字即可固定。'
+  },
   'reshoot.prompt.dialogue': {
-    en: 'The model also makes the sound: if your video has dialogue, write the lines here so the new take says them.',
+    en: 'The model also generates new audio: if your video has dialogue, prompt the lines here so the new generation retains it better.',
     'zh-CN':
-      '模型也会生成声音：如果视频中有对白，请在这里写下台词，新镜头就会说出来。'
+      '模型也会生成新的音频：如果视频中有对白，请在这里写下台词，新生成的内容会更好地保留它们。'
   },
   'reshoot.clip.length': {
     en: 'This clip is {seconds} s long. Use one between 5 and 15 seconds.',

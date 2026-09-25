@@ -55,7 +55,18 @@ const emit = defineEmits<{
 const upload = defineModel<File | undefined>('upload')
 const aspect = defineModel<ReshootAspect>('aspect', { required: true })
 const size = defineModel<ReshootSize>('size', { required: true })
-const seed = defineModel<number>('seed', { required: true })
+const seed = defineModel<number | undefined>('seed')
+/** Empty is random; a number, whole and not negative, is a fixed seed. */
+const seedText = computed({
+  get: () => (seed.value === undefined ? '' : String(seed.value)),
+  // a number field's v-model already hands over a number, or '' when empty
+  set: (entry: string | number) => {
+    const value = typeof entry === 'number' ? entry : Number.parseFloat(entry)
+    seed.value = Number.isFinite(value)
+      ? Math.max(0, Math.floor(value))
+      : undefined
+  }
+})
 const keepAim = defineModel<boolean>('keepAim', { required: true })
 const frame = defineModel<number>('frame', { required: true })
 const prompt = defineModel<string>('prompt', { required: true })
@@ -166,17 +177,28 @@ function choose(event: Event) {
               {{ rc('reshoot.prompt.dialogue', locale) }}
             </p>
           </div>
-          <label class="flex items-center justify-between gap-3 text-xs">
-            <span class="font-semibold text-primary-comfy-canvas">
-              {{ rc('reshoot.seed', locale) }}
-            </span>
-            <input
-              v-model.number="seed"
-              type="number"
-              min="0"
-              class="h-9 w-28 rounded-xl bg-transparency-white-t4 px-3 font-mono text-sm text-primary-warm-white tabular-nums outline-none focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
-            />
-          </label>
+          <div class="flex flex-col gap-1.5">
+            <label class="flex items-center justify-between gap-3 text-xs">
+              <span class="font-semibold text-primary-comfy-canvas">
+                {{ rc('reshoot.seed', locale) }}
+              </span>
+              <input
+                v-model.lazy="seedText"
+                type="number"
+                min="0"
+                step="1"
+                :placeholder="rc('reshoot.seed.random', locale)"
+                aria-describedby="reshoot-seed-help"
+                class="h-9 w-28 rounded-xl bg-transparency-white-t4 px-3 font-mono text-sm text-primary-warm-white tabular-nums outline-none placeholder:font-sans placeholder:text-primary-warm-gray focus-visible:ring-1 focus-visible:ring-primary-comfy-yellow/60"
+              />
+            </label>
+            <p
+              id="reshoot-seed-help"
+              class="text-[11px]/relaxed text-primary-warm-gray"
+            >
+              {{ rc('reshoot.seed.help', locale) }}
+            </p>
+          </div>
         </div>
       </ReshootDisclosure>
     </div>

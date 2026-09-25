@@ -112,7 +112,8 @@ export function useReshootRun(locale: Locale = 'en') {
   const keys = ref<CameraKey[]>([])
   const motion = ref<ReshootMotion>('smooth')
   const prompt = ref('')
-  const seed = ref(42)
+  /** A fixed seed, or none: then every take draws its own. */
+  const seed = ref<number>()
   const takes = ref<ReshootTake[]>([EXAMPLE_TAKE])
   const selected = ref<string>('example')
 
@@ -377,7 +378,7 @@ export function useReshootRun(locale: Locale = 'en') {
             motion: motion.value
           },
           prompt: prompt.value,
-          seed: seed.value
+          seed: seed.value ?? Math.floor(Math.random() * 2 ** 32)
         }),
         // the take's own heading already says it is generating
         '',
