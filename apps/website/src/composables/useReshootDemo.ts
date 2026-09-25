@@ -54,6 +54,7 @@ export function useReshootDemo() {
   const aspect = ref<ReshootAspect>('source')
   const size = ref<ReshootSize>('480p')
   const depth = ref<DepthState>('none')
+  const step = ref<1 | 2>(1)
   const camera = reactive<ReshootCamera>({ ...DEFAULT_CAMERA })
   const keepAim = ref(true)
   const frame = ref(0)
@@ -93,7 +94,18 @@ export function useReshootDemo() {
     selected.value = 'aim'
     later(ANALYZE_MS, () => {
       depth.value = 'ready'
+      step.value = 2
     })
+  }
+
+  function prepare() {
+    if (depth.value === 'ready') step.value = 2
+    else analyze()
+  }
+
+  function back() {
+    step.value = 1
+    selected.value = 'aim'
   }
 
   function updateTake(id: string, patch: Partial<ReshootTake>) {
@@ -153,6 +165,7 @@ export function useReshootDemo() {
     aspect,
     size,
     depth,
+    step,
     camera,
     keepAim,
     frame,
@@ -163,7 +176,8 @@ export function useReshootDemo() {
     selected,
     current,
     rendering,
-    analyze,
+    prepare,
+    back,
     generate,
     cancel,
     aim,

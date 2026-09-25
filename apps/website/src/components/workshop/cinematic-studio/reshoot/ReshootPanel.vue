@@ -9,11 +9,10 @@ import type {
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
-import { t } from '../../../../i18n/translations'
 import ReshootAction from './ReshootAction.vue'
-import ReshootCameraControls from './ReshootCameraControls.vue'
-import ReshootClipControls from './ReshootClipControls.vue'
-import ReshootMoveControls from './ReshootMoveControls.vue'
+import ReshootAimSections from './ReshootAimSections.vue'
+import ReshootPrepareSections from './ReshootPrepareSections.vue'
+import ReshootStepper from './ReshootStepper.vue'
 
 const {
   clip,
@@ -22,6 +21,7 @@ const {
   camera,
   keys,
   depth,
+  step,
   rendering,
   locale = 'en'
 } = defineProps<{
@@ -31,16 +31,18 @@ const {
   camera: Readonly<ReshootCamera>
   keys: readonly CameraKey[]
   depth: DepthState
+  step: 1 | 2
   rendering: boolean
   locale?: Locale
 }>()
 
 const emit = defineEmits<{
+  go: [step: 1 | 2]
   aim: [patch: Partial<ReshootCamera>]
   key: []
   removeKey: [frame: number]
   clearKeys: []
-  analyze: []
+  prepare: []
   generate: []
   cancel: []
 }>()
@@ -52,9 +54,6 @@ const keepAim = defineModel<boolean>('keepAim', { required: true })
 const frame = defineModel<number>('frame', { required: true })
 const motion = defineModel<ReshootMotion>('motion', { required: true })
 const prompt = defineModel<string>('prompt', { required: true })
-
-const labelClass =
-  'text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase'
 </script>
 
 <template>
@@ -63,73 +62,62 @@ const labelClass =
     class="flex min-w-0 flex-col rounded-2xl border border-transparency-white-t8 bg-transparency-white-t4"
   >
     <header
-      class="border-b border-transparency-white-t8 px-5 py-3 text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+      class="flex flex-col gap-2 border-b border-transparency-white-t8 px-3 py-3"
     >
-      {{ t('workshop.input.title', locale) }}
+      <ReshootStepper
+        :step
+        :can-aim="depth === 'ready'"
+        :locale
+        @go="emit('go', $event)"
+      />
+      <p class="px-2 text-xs/relaxed text-primary-warm-gray">
+        {{
+          rc(step === 1 ? 'reshoot.step1.hint' : 'reshoot.step2.hint', locale)
+        }}
+      </p>
     </header>
     <div class="flex flex-col divide-y divide-transparency-white-t8">
-      <section class="flex flex-col gap-2.5 p-5">
-        <h2 :class="labelClass">{{ rc('reshoot.section.video', locale) }}</h2>
-        <ReshootClipControls
-          v-model:upload="upload"
-          v-model:aspect="aspect"
-          v-model:size="size"
-          :clip
-          :clip-name="clipName"
-          :is-example="isExample"
-          :locale
-        />
-      </section>
-      <section class="flex flex-col gap-2.5 p-5">
-        <h2 :class="labelClass">{{ rc('reshoot.section.camera', locale) }}</h2>
-        <ReshootCameraControls
-          v-model:keep-aim="keepAim"
-          :camera
-          :disabled="depth !== 'ready'"
-          :locale
-          @aim="emit('aim', $event)"
-        />
-      </section>
-      <section class="flex flex-col gap-2.5 p-5">
-        <h2 :class="labelClass">{{ rc('reshoot.section.move', locale) }}</h2>
-        <ReshootMoveControls
-          v-model:frame="frame"
-          v-model:motion="motion"
-          :keys
-          :disabled="depth !== 'ready'"
-          :locale
-          @key="emit('key')"
-          @remove="emit('removeKey', $event)"
-          @clear="emit('clearKeys')"
-        />
-      </section>
-      <section class="flex flex-col gap-2.5 p-5">
-        <div class="flex items-center justify-between">
-          <label for="reshoot-panel-prompt" :class="labelClass">
-            {{ rc('reshoot.section.prompt', locale) }}
-          </label>
-          <span class="text-[11px] text-primary-warm-gray">
-            {{ rc('reshoot.optional', locale) }}
-          </span>
-        </div>
-        <textarea
-          id="reshoot-panel-prompt"
-          v-model="prompt"
-          rows="3"
-          :placeholder="rc('reshoot.prompt.placeholder', locale)"
-          class="field-sizing-content min-h-20 resize-none rounded-2xl border border-transparency-white-t20 bg-transparency-white-t4 px-4 py-3 text-sm/relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray focus-visible:border-primary-comfy-yellow"
-        />
-      </section>
+      <ReshootPrepareSections
+        v-if="step === 1"
+        v-model:upload="upload"
+        v-model:aspect="aspect"
+        v-model:size="size"
+        v-model:prompt="prompt"
+        :clip
+        :clip-name="clipName"
+        :is-example="isExample"
+        :locale
+      />
+      <ReshootAimSections
+        v-else
+        v-model:keep-aim="keepAim"
+        v-model:frame="frame"
+        v-model:motion="motion"
+        :clip
+        :clip-name="clipName"
+        :aspect
+        :size
+        :prompt
+        :camera
+        :keys
+        :locale
+        @back="emit('go', 1)"
+        @aim="emit('aim', $event)"
+        @key="emit('key')"
+        @remove-key="emit('removeKey', $event)"
+        @clear-keys="emit('clearKeys')"
+      />
     </div>
     <footer
       class="sticky bottom-0 z-10 mt-auto flex flex-col gap-2 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
     >
       <ReshootAction
+        :step
         :depth
         :rendering
         wide
         :locale
-        @analyze="emit('analyze')"
+        @prepare="emit('prepare')"
         @generate="emit('generate')"
         @cancel="emit('cancel')"
       />

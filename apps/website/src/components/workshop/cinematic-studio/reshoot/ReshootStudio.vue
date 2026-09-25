@@ -5,6 +5,7 @@ import { useCinematicPopover } from '../../../../composables/useCinematicPopover
 import { useReshootDemo } from '../../../../composables/useReshootDemo'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
+import AppsBackLink from '../AppsBackLink.vue'
 import CinematicPopover from '../CinematicPopover.vue'
 import ReshootCameraControls from './ReshootCameraControls.vue'
 import ReshootClipControls from './ReshootClipControls.vue'
@@ -23,6 +24,7 @@ const {
   aspect,
   size,
   depth,
+  step,
   camera,
   keepAim,
   frame,
@@ -33,7 +35,8 @@ const {
   selected,
   current,
   rendering,
-  analyze,
+  prepare,
+  back,
   generate,
   cancel,
   aim,
@@ -53,6 +56,10 @@ function run(action: () => void) {
   close()
   action()
 }
+
+function go(target: 1 | 2) {
+  run(target === 1 ? back : prepare)
+}
 </script>
 
 <template>
@@ -60,11 +67,13 @@ function run(action: () => void) {
     class="mb-12 flex min-h-[calc(100svh-5rem)] flex-col lg:mb-20 lg:min-h-[calc(100svh-7rem)]"
     data-testid="reshoot"
   >
-    <div class="flex flex-1 flex-col px-3 pt-6 sm:px-6">
+    <div class="flex flex-1 flex-col gap-4 px-3 pt-4 sm:px-6">
+      <AppsBackLink :locale />
       <ReshootStage
         :clip
         :camera
         :depth
+        :step
         :takes
         :selected
         :current
@@ -128,15 +137,18 @@ function run(action: () => void) {
           :aspect
           :size
           :depth
+          :step
           :rendering
           :open-popover="popover"
           :locale
           @open="toggle"
-          @analyze="run(analyze)"
+          @go="go"
+          @prepare="run(prepare)"
           @generate="run(generate)"
           @cancel="cancel"
         />
         <p class="mt-2 text-center text-[11px] text-primary-warm-gray">
+          {{ rc('reshoot.credit', locale) }} ·
           {{ rc('reshoot.demoNote', locale) }}
         </p>
       </div>

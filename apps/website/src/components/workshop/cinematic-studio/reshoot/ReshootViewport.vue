@@ -19,25 +19,25 @@ const {
   clip,
   camera,
   depth,
+  aimable,
   locale = 'en'
 } = defineProps<{
   clip: string
   camera: Readonly<ReshootCamera>
   depth: DepthState
+  aimable: boolean
   locale?: Locale
 }>()
 
 const emit = defineEmits<{ aim: [patch: Partial<ReshootCamera>] }>()
 
-const ready = computed(() => depth === 'ready')
+const ready = computed(() => aimable && depth === 'ready')
 const transform = computed(() =>
   ready.value ? viewTransform(camera) : undefined
 )
-const notice = computed(() => {
-  if (depth === 'stale') return rc('reshoot.stale', locale)
-  if (depth === 'none') return rc('reshoot.needsDepth', locale)
-  return undefined
-})
+const notice = computed(() =>
+  depth === 'stale' ? rc('reshoot.stale', locale) : undefined
+)
 
 const dragFrom = ref<{ x: number; y: number }>()
 
@@ -111,7 +111,7 @@ function zoom(event: WheelEvent) {
       {{ notice }}
     </p>
     <div
-      v-else
+      v-else-if="ready"
       class="absolute inset-x-4 bottom-4 flex items-center justify-between gap-3 text-xs text-primary-warm-white"
     >
       <span

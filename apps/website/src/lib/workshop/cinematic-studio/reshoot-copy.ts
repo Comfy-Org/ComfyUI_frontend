@@ -6,6 +6,25 @@ const copy = {
   'reshoot.panel': { en: 'Re-shoot settings', 'zh-CN': '重拍设置' },
   'reshoot.composer': { en: 'Re-shoot composer', 'zh-CN': '重拍输入栏' },
   'reshoot.section.video': { en: 'Video', 'zh-CN': '视频' },
+  'reshoot.step': { en: 'Step {n}', 'zh-CN': '第 {n} 步' },
+  'reshoot.step1': { en: 'Prepare the clip', 'zh-CN': '准备片段' },
+  'reshoot.step2': { en: 'Aim and generate', 'zh-CN': '设置机位并生成' },
+  'reshoot.step1.hint': {
+    en: 'Choose the clip, its framing and what the new view should reveal. Depth is analyzed once; then you aim freely.',
+    'zh-CN':
+      '选择片段、画面比例以及新视角要呈现的内容。深度只需分析一次，之后可自由取景。'
+  },
+  'reshoot.step2.hint': {
+    en: 'Drag the preview or use the controls, key a move if you want one, then generate.',
+    'zh-CN': '拖动预览或使用控件，需要时添加关键帧运镜，然后生成。'
+  },
+  'reshoot.continue': { en: 'Continue', 'zh-CN': '继续' },
+  'reshoot.back': { en: 'Back to the clip', 'zh-CN': '返回片段' },
+  'reshoot.edit': { en: 'Edit', 'zh-CN': '编辑' },
+  'reshoot.credit': {
+    en: "Built on Cseti's CrossView-Warp LoRA and node",
+    'zh-CN': '基于 Cseti 的 CrossView-Warp LoRA 与节点'
+  },
   'reshoot.section.camera': { en: 'New camera', 'zh-CN': '新机位' },
   'reshoot.section.move': { en: 'Camera move', 'zh-CN': '运镜' },
   'reshoot.section.prompt': {

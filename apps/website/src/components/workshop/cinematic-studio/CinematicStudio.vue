@@ -12,6 +12,7 @@ import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starter
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
+import AppsBackLink from './AppsBackLink.vue'
 import CinematicComposer from './CinematicComposer.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
 import CinematicPicker from './CinematicPicker.vue'
@@ -112,6 +113,7 @@ function generateOn(slug: string) {
     class="mb-12 flex min-h-[calc(100svh-5rem)] flex-col lg:mb-20 lg:min-h-[calc(100svh-7rem)]"
     data-testid="cinematic"
   >
+    <AppsBackLink :locale class="mx-3 mt-4 sm:mx-6" />
     <CinematicStage
       :reel="studio.reel.value"
       :models

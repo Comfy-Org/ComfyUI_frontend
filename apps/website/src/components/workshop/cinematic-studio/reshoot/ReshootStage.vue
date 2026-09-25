@@ -15,6 +15,7 @@ const {
   clip,
   camera,
   depth,
+  step,
   takes,
   selected,
   current,
@@ -23,6 +24,7 @@ const {
   clip: string
   camera: Readonly<ReshootCamera>
   depth: DepthState
+  step: 1 | 2
   takes: readonly ReshootTake[]
   selected: string
   current?: ReshootTake
@@ -49,6 +51,7 @@ const emit = defineEmits<{
         :clip
         :camera
         :depth
+        :aimable="step === 2"
         :locale
         @aim="emit('aim', $event)"
       />

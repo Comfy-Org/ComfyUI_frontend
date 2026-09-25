@@ -6,6 +6,7 @@ import { useCinematicShot } from '../../../composables/useCinematicShot'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import AppsBackLink from './AppsBackLink.vue'
 import CinematicPanel from './CinematicPanel.vue'
 import CinematicPicker from './CinematicPicker.vue'
 import CinematicStageCard from './CinematicStageCard.vue'
@@ -52,6 +53,7 @@ function generate() {
     class="mx-auto max-w-10xl px-4 py-8 sm:px-8 lg:px-14"
     data-testid="cinematic"
   >
+    <AppsBackLink :locale class="mb-3" />
     <div class="mb-6 flex items-center gap-3">
       <h1 class="text-2xl font-semibold text-primary-warm-white lg:text-3xl">
         {{ tc('cinematic.title', locale) }}
