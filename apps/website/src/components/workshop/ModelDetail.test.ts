@@ -412,6 +412,8 @@ describe('ModelDetail', () => {
     ])
     const metadata = {
       model_slug: runnable.slug,
+      page_type: 'model',
+      render_engine: 'router',
       router_id: runnable.routerId,
       provider: 'Demo',
       modality: 'image'

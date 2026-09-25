@@ -1,6 +1,7 @@
 import { z } from 'astro/zod'
 
 import type { WorkshopDisplayEntry } from '../content/workshop-display.schema'
+import categories from '../content/workshop-workflow-categories.json'
 import type {
   WorkflowWorkshopModel,
   WorkflowWorkshopModelDetail
@@ -13,6 +14,19 @@ const exampleValuesSchema = z.record(
   z.string(),
   z.union([z.string(), z.number(), z.boolean(), z.array(z.string())])
 )
+
+function categoryFor(page: WorkshopDisplayEntry) {
+  const order = categories.findIndex(
+    (category) => category.id === page.category
+  )
+  if (order < 0) return undefined
+  const category = categories[order]
+  return {
+    categoryLabel: category.label,
+    categoryOrder: order,
+    categoryHighlight: category.highlight === page.modelId
+  }
+}
 
 export function workflowPagesFor(
   pages: readonly WorkshopDisplayEntry[],
@@ -48,6 +62,7 @@ function workflowPageFor(
     template: page.template
   }
   const modality = entry.outputs[0]?.kind
+  const samples = page.media.samples ?? []
   const model: WorkflowWorkshopModel = {
     type: entry.type,
     workflowId: entry.id,
@@ -56,7 +71,11 @@ function workflowPageFor(
     name: page.displayName,
     summary: page.description,
     category: page.category,
-    workflowCount: page.media.samples?.length ?? 0,
+    ...categoryFor(page),
+    recommendedRank: page.recommendedRank,
+    models: page.template?.models,
+    author: page.template?.author,
+    workflowCount: samples.length,
     modality,
     useCases: [page.useCase],
     capabilities: [],
@@ -69,7 +88,7 @@ function workflowPageFor(
     form: formForWorkflow(workflow),
     fields: [],
     defaults: {},
-    examples: (page.media.samples ?? []).map((sample, index) => {
+    examples: samples.map((sample, index) => {
       const example = page.examples.at(index)
       const values = exampleValuesSchema.parse(example?.values ?? {})
       return {

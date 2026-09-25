@@ -76,7 +76,7 @@ vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // eslint-disable-line primevue-removal/no-imports
+  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
   () => ({
     useToast: () => ({ add: vi.fn() })
   })
