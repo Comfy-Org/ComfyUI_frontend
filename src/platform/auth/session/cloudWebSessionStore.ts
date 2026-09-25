@@ -5,9 +5,9 @@ import { onScopeDispose } from 'vue'
 import type {
   WebSessionAccountChange,
   WebSessionIdentity,
-  WebSessionIdentityState
+  WebSessionIdentityState,
+  WebSessionSharedMessage
 } from '@comfyorg/account-core/webSessionIdentity'
-import type { WebSessionResult } from '@comfyorg/account-core/webSession'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import {
   createWebCrossTabRefreshPort,
@@ -59,7 +59,7 @@ function resetForAccountChange(change: WebSessionAccountChange): void {
 
 function createCloudIdentity(): WebSessionIdentity {
   const visibility = createWebVisibilityPort()
-  const crossTab = createWebCrossTabRefreshPort<WebSessionResult>()
+  const crossTab = createWebCrossTabRefreshPort<WebSessionSharedMessage>()
   return createWebSessionIdentity({
     session: {
       apiBaseUrl: api.apiURL(''),
