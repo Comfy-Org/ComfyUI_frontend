@@ -12,6 +12,7 @@ import { KeybindingImpl } from '@/platform/keybindings/keybinding'
 import { registerCoreKeybindingCommands } from '@/platform/keybindings/__fixtures__/registerCoreKeybindingCommands'
 import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
+import { useRaisedSurfaceStore } from '@/platform/keybindings/raisedSurfaceStore'
 import { useCommandStore } from '@/stores/commandStore'
 import type { DialogInstance } from '@/stores/dialogStore'
 import { useDialogStore } from '@/stores/dialogStore'
@@ -106,7 +107,32 @@ describe('keybindingService - Escape key handling', () => {
     expect(useCommandStore().execute).not.toHaveBeenCalled()
   })
 
-  it('should NOT execute Escape keybinding with modifiers when a dialog is open', async () => {
+  it('should NOT execute Escape keybinding when a raised surface is open', async () => {
+    const raisedSurfaceStore = useRaisedSurfaceStore()
+    raisedSurfaceStore.open('context-menu')
+
+    keybindingService = useKeybindingService()
+
+    const event = createKeyboardEvent('Escape')
+    await keybindingService.keybindHandler(event)
+
+    expect(mockCommandExecute).not.toHaveBeenCalled()
+  })
+
+  it('should resume executing Escape keybinding after a raised surface closes', async () => {
+    const raisedSurfaceStore = useRaisedSurfaceStore()
+    const id = raisedSurfaceStore.open('context-menu')
+    raisedSurfaceStore.close(id)
+
+    keybindingService = useKeybindingService()
+
+    const event = createKeyboardEvent('Escape')
+    await keybindingService.keybindHandler(event)
+
+    expect(mockCommandExecute).toHaveBeenCalledWith('Comfy.Graph.ExitSubgraph')
+  })
+
+  it('should execute Escape keybinding with modifiers regardless of dialog state', async () => {
     const dialogStore = useDialogStore()
     dialogStore.dialogStack.push(createTestDialogInstance('test-dialog'))
 
