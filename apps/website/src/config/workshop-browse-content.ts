@@ -14,6 +14,7 @@ import { workshopRouterAliasesSchema } from './workshop-router-identity'
 import { labelSharedThumbnails } from './workshop-thumbnail-labels'
 import { workshopContentInputs } from './workshop-content-inputs'
 import { modelSummary } from '../lib/workshop/model-summary'
+import { providerName } from '../lib/workshop/provider-name'
 import { modelOrderRank } from './workshop-model-order'
 import {
   isWorkshopModelDisabled,
@@ -56,34 +57,6 @@ function modalityFor(model: WorkshopModelEntry): Modality {
   if (model.modality === 'music') return 'audio'
   if (model.modality === 'svg') return 'image'
   return model.modality
-}
-
-const PROVIDER_NAMES: Readonly<Record<string, string>> = {
-  bfl: 'Black Forest Labs',
-  byteplus: 'ByteDance',
-  'byteplus-mediakit': 'ByteDance',
-  elevenlabs: 'ElevenLabs',
-  fishaudio: 'Fish Audio',
-  gemini: 'Google',
-  ltx: 'Lightricks',
-  luma_2: 'Luma',
-  openai: 'OpenAI',
-  synclabs: 'Sync Labs',
-  'tencent-hunyuan3d': 'Tencent',
-  vertexai: 'Google',
-  wavespeed: 'WaveSpeed',
-  xai: 'xAI'
-}
-
-function providerName(provider: string): string {
-  return (
-    PROVIDER_NAMES[provider] ??
-    provider
-      .split('-')
-      .filter(Boolean)
-      .map((word) => word[0].toUpperCase() + word.slice(1))
-      .join(' ')
-  )
 }
 
 function taskForUseCases(
