@@ -20,6 +20,8 @@ import CinematicDirectionChips from './CinematicDirectionChips.vue'
 import CinematicGenerateAction from './CinematicGenerateAction.vue'
 import CinematicMenu from './CinematicMenu.vue'
 import CinematicOptionIcon from './CinematicOptionIcon.vue'
+import { videoStarterCopy } from '../../../lib/workshop/cinematic-studio/video-starters'
+import { videoModelSummary } from '../../../lib/workshop/cinematic-studio/model-capabilities'
 import type { PopoverKey } from './picker-key'
 
 const {
@@ -64,6 +66,7 @@ const modelOptions = computed(() =>
     id: model.slug,
     label: model.name,
     logo: model.logo,
+    description: videoModelSummary(model, locale),
     meta: model.degraded ? tc('cinematic.model.degraded', locale) : undefined
   }))
 )
@@ -137,7 +140,11 @@ const chipClass = (key: PopoverKey) =>
         id="cinematic-scene"
         v-model="scene"
         rows="2"
-        :placeholder="tc('cinematic.scene.placeholder', locale)"
+        :placeholder="
+          model?.video
+            ? videoStarterCopy(locale).placeholder
+            : tc('cinematic.scene.placeholder', locale)
+        "
         class="field-sizing-content max-h-40 min-h-11 flex-1 resize-none bg-transparent pt-1.5 text-base/relaxed text-primary-warm-white outline-none placeholder:text-primary-warm-gray"
         @keydown.enter.meta.prevent="generateFromKeyboard"
         @keydown.enter.ctrl.prevent="generateFromKeyboard"

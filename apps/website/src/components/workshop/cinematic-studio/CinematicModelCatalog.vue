@@ -4,7 +4,9 @@ import {
   generationTimingNamespaceKey,
   readGenerationTimings
 } from '../../../lib/workshop/cinematic-studio/generation-timings'
-import type { ModelCapability } from '../../../lib/workshop/cinematic-studio/model-capabilities'
+import { videoDurationGuidance } from '../../../lib/workshop/cinematic-studio/model-capabilities';
+import type { ModelCapability } from '../../../lib/workshop/cinematic-studio/model-capabilities';
+import { modelGuidanceCopy } from '../../../lib/workshop/cinematic-studio/model-guidance-copy'
 import type { CinematicCatalogEntry } from '../../../lib/workshop/cinematic-studio/model-catalog'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -27,6 +29,15 @@ const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ select: [slug: string]; returnFocus: [] }>()
 const search = ref('')
 const modality = ref('all')
+const guidanceCopy = computed(() => modelGuidanceCopy(locale))
+const durationGuidance = computed(() =>
+  Object.fromEntries(
+    entries.map((entry) => [
+      entry.slug,
+      videoDurationGuidance(entry.capabilities, locale)
+    ])
+  )
+)
 const timingNamespace = inject(generationTimingNamespaceKey, undefined)
 const timings = shallowRef<
   Record<string, { count: number; median: number; min: number; max: number }>
@@ -72,6 +83,8 @@ function seconds(ms: number) {
   }).format(ms / 1000)
 }
 function capabilityValue(row: ModelCapability) {
+  if (row.kind === 'duration')
+    return videoDurationGuidance([row], locale).supported
   return row.values
     .map((value) => {
       if (row.kind === 'firstFrame' || row.kind === 'lastFrame') {
@@ -211,11 +224,34 @@ function select(slug: string) {
                   )
                 }}
               </p>
+              <div
+                v-if="entry.modality === 'video'"
+                class="mt-3 space-y-1 text-sm text-primary-warm-white"
+              >
+                <p>
+                  <span class="text-primary-warm-gray"
+                    >{{ guidanceCopy.clipLength }}:</span
+                  >
+                  {{ durationGuidance[entry.slug].supported }}
+                </p>
+                <p
+                  v-if="durationGuidance[entry.slug].suggestion"
+                  class="text-primary-comfy-yellow"
+                >
+                  {{ durationGuidance[entry.slug].suggestion }}
+                </p>
+                <p
+                  v-if="durationGuidance[entry.slug].suggestion"
+                  class="text-xs text-primary-warm-gray"
+                >
+                  {{ guidanceCopy.suggestionNote }}
+                </p>
+              </div>
               <details class="mt-3 text-sm text-primary-warm-white">
                 <summary
                   class="cursor-pointer rounded-lg border border-transparency-white-t20 px-3 py-2 text-primary-comfy-yellow"
                 >
-                  {{ tc('cinematic.capability.details', locale) }}
+                  {{ guidanceCopy.details }}
                 </summary>
                 <dl class="mt-3 grid grid-cols-1 gap-2 text-xs">
                   <div v-for="row in entry.capabilities" :key="row.kind">
@@ -238,7 +274,7 @@ function select(slug: string) {
                 </p>
                 <div class="mt-3 border-t border-transparency-white-t8 pt-3">
                   <p class="font-medium">
-                    {{ tc('cinematic.timing.title', locale) }}
+                    {{ guidanceCopy.waitTime }}
                   </p>
                   <template v-if="timings[entry.slug]">
                     <p class="mt-1">

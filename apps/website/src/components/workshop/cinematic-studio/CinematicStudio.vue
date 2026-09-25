@@ -39,6 +39,7 @@ import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
 import CinematicStage from './CinematicStage.vue'
 import CinematicReviewDialog from './CinematicReviewDialog.vue'
 import CinematicModeSwitch from './CinematicModeSwitch.vue'
+import CinematicVideoStart from './CinematicVideoStart.vue'
 import CinematicVideoControls from './CinematicVideoControls.vue'
 import type { PopoverKey } from './picker-key'
 import { pickerGroups, popoverTitle } from './picker-key'
@@ -179,6 +180,28 @@ function generate() {
 function generateOn(slug: string) {
   modelSlug.value = slug
   generate()
+}
+
+const animationModel = computed(() =>
+  models.find((model) => model.video?.firstFrame === 'required')
+)
+
+function startVideo(prompt: string) {
+  if (studio.rendering.value || frameLoading.value) return
+  scene.value = prompt
+  focusScene()
+}
+
+function chooseStartingImage() {
+  if (studio.rendering.value || frameLoading.value || !animationModel.value)
+    return
+  if (
+    !selectedModel.value?.video ||
+    selectedModel.value.video.firstFrame === 'unsupported'
+  )
+    modelSlug.value = animationModel.value.slug
+  closePopover()
+  openPopover('references')
 }
 </script>
 
@@ -469,12 +492,19 @@ function generateOn(slug: string) {
       @close="review = undefined"
       @confirm="confirm"
     />
-    <p
+    <CinematicVideoStart
       v-if="mode === 'video' && !modeReel.takes.length"
-      class="m-auto max-w-xl px-6 py-12 text-center text-lg text-primary-comfy-canvas"
-    >
-      {{ tc('cinematic.video.start', locale) }}
-    </p>
+      :scene
+      :has-frame="
+        !!firstFrame && selectedModel?.video?.firstFrame !== 'unsupported'
+      "
+      :can-animate="!!animationModel"
+      :disabled="studio.rendering.value || frameLoading"
+      :locale
+      @start="startVideo"
+      @upload="chooseStartingImage"
+      @saved="libraryOpen = true"
+    />
     <CinematicStage
       v-else
       :reel="modeReel"
@@ -492,7 +522,14 @@ function generateOn(slug: string) {
     />
 
     <div
-      class="sticky bottom-0 z-50 bg-linear-to-t from-primary-comfy-ink via-primary-comfy-ink/90 to-transparent px-3 pt-4 pb-4 sm:px-6 sm:pb-6"
+      :class="
+        cn(
+          'z-50 bg-linear-to-t from-primary-comfy-ink via-primary-comfy-ink/90 to-transparent px-3 pt-4 pb-4 sm:px-6 sm:pb-6',
+          mode === 'video' && !modeReel.takes.length
+            ? 'relative'
+            : 'sticky bottom-0'
+        )
+      "
     >
       <div class="relative mx-auto w-full max-w-7xl">
         <CinematicModeSwitch

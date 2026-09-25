@@ -26,6 +26,7 @@ import CinematicOptionIcon from './CinematicOptionIcon.vue'
 import CinematicOutputControls from './CinematicOutputControls.vue'
 import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
 import CinematicSceneField from './CinematicSceneField.vue'
+import { videoModelSummary } from '../../../lib/workshop/cinematic-studio/model-capabilities'
 import type { PickerKey } from './picker-key'
 
 const {
@@ -70,7 +71,8 @@ const modelOptions = computed(() =>
   models.map((model) => ({
     id: model.slug,
     label: model.name,
-    logo: model.logo
+    logo: model.logo,
+    description: videoModelSummary(model, locale)
   }))
 )
 const model = computed(() =>

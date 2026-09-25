@@ -41,7 +41,13 @@ describe('model capability timing evidence', () => {
         provide: { [generationTimingNamespaceKey as symbol]: namespace }
       }
     })
-    await user.click(await screen.findByText('Capabilities & generation time'))
+    expect((await screen.findAllByText('5s / 10s'))[0]).toBeVisible()
+    expect(screen.getByText('Studio starting point: 5s')).toBeVisible()
+    expect(screen.getByText(/not a provider recommendation/)).toBeVisible()
+    await user.click(
+      await screen.findByText('More capabilities & generation wait time')
+    )
+    expect(screen.getByText('Generation wait time')).toBeVisible()
     expect(
       await screen.findByText(/Typical observed time \(median\): 2 sec/)
     ).toBeVisible()
@@ -50,5 +56,31 @@ describe('model capability timing evidence', () => {
     namespace.value = 'catalog-timing-workspace-two'
     expect(await screen.findByText('Not measured yet')).toBeVisible()
     expect(screen.queryByText(/Typical observed time/)).not.toBeInTheDocument()
+  })
+  it('keeps unspecified native clip lengths honest and provides their model controls', async () => {
+    const props = {
+      open: true,
+      selectable: [],
+      entries: [
+        {
+          slug: 'native-video',
+          name: 'Native video',
+          provider: 'Provider',
+          routerId: 'provider/native',
+          modality: 'video',
+          href: '/models/native-video/',
+          runnable: true,
+          capabilities: []
+        }
+      ] satisfies CinematicCatalogEntry[]
+    }
+    render(CinematicModelCatalog, { props })
+    expect(
+      await screen.findByText('Not specified here — check model page controls')
+    ).toBeVisible()
+    expect(screen.queryByText(/Studio starting point:/)).not.toBeInTheDocument()
+    expect(
+      screen.getByRole('link', { name: /Open model page/ })
+    ).toHaveAttribute('href', '/models/native-video/')
   })
 })

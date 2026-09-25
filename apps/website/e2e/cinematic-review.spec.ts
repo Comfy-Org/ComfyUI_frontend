@@ -200,11 +200,11 @@ test('separates authored clip capabilities from unmeasured generation time', asy
     .getByRole('searchbox', { name: 'Search models or providers' })
     .fill('Kling 3.0 Text-to-Video')
   await catalog
-    .getByText('Capabilities & generation time', { exact: true })
+    .getByText('More capabilities & generation wait time', { exact: true })
     .click()
   await expect(catalog).toContainText('Clip length (seconds)')
   await expect(catalog).toContainText('Standard / Professional')
-  await expect(catalog).toContainText('Generation time')
+  await expect(catalog).toContainText('Generation wait time')
   await expect(catalog).toContainText('Not measured yet')
   await expect(catalog).toContainText('including uploads and queue time')
   await expect(catalog).not.toContainText('Typical observed time (median)')

@@ -131,6 +131,38 @@ describe('CinematicStudio', () => {
     expect(generateButton()).toBeEnabled()
   })
 
+  it('fills editable video starters without submitting and preserves the image draft', async () => {
+    const user = renderStudio()
+    await user.type(screen.getByLabelText('Scene'), 'My image draft')
+    await user.click(screen.getByRole('button', { name: 'Video' }))
+    expect(
+      screen.getByRole('heading', { name: 'Bring your scene to life.' })
+    ).toBeInTheDocument()
+    await user.click(
+      screen.getByRole('button', { name: /Slow cinematic push-in/ })
+    )
+    expect(screen.getByLabelText('Scene')).toHaveDisplayValue(/fisherman/)
+    expect(screen.getByLabelText('Scene')).toHaveFocus()
+    expect(router_render).not.toHaveBeenCalled()
+    expect(
+      screen.queryByRole('dialog', { name: 'Review your shot' })
+    ).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Image' }))
+    expect(screen.getByLabelText('Scene')).toHaveValue('My image draft')
+  })
+
+  it('chooses an image-compatible model and opens the real starting-frame controls', async () => {
+    const user = renderStudio()
+    await user.click(screen.getByRole('button', { name: 'Video' }))
+    await user.click(
+      screen.getByRole('button', { name: 'Choose a starting image' })
+    )
+    expect(
+      screen.getByTestId('cinematic-reference-firstFrame')
+    ).toBeInTheDocument()
+    expect(router_render).not.toHaveBeenCalled()
+  })
+
   it('keeps image and video scene drafts separate while switching modes', async () => {
     const user = renderStudio()
     await user.type(screen.getByLabelText('Scene'), 'Still frame at dawn')

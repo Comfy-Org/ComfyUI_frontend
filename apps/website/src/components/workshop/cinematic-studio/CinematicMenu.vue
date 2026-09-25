@@ -21,6 +21,7 @@ interface MenuOption {
   readonly id: string
   readonly label: string
   readonly meta?: string
+  readonly description?: string
   readonly logo?: string
 }
 
@@ -65,7 +66,12 @@ const triggerLabel = computed(() => {
         align="start"
         :side-offset="8"
         :collision-padding="8"
-        class="z-50 flex max-h-(--reka-dropdown-menu-content-available-height) min-w-72 flex-col rounded-2xl border border-transparency-white-t8 bg-site-dropdown p-1.5 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0"
+        :class="
+          cn(
+            'z-50 flex max-h-(--reka-dropdown-menu-content-available-height) max-w-[calc(100vw-2rem)] min-w-72 flex-col rounded-2xl border border-transparency-white-t8 bg-site-dropdown p-1.5 shadow-lg data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:animate-in data-[state=open]:fade-in-0',
+            browseLabel && 'w-96'
+          )
+        "
       >
         <DropdownMenuLabel
           class="shrink-0 px-2.5 pt-1.5 pb-1 text-xs text-primary-warm-gray"
@@ -74,26 +80,33 @@ const triggerLabel = computed(() => {
         </DropdownMenuLabel>
         <DropdownMenuRadioGroup
           v-model="value"
-          class="block max-h-[min(24rem,55vh)] min-h-0 overflow-y-auto"
+          class="block max-h-[min(24rem,55vh)] min-h-0 min-w-0 overflow-y-auto"
         >
           <DropdownMenuRadioItem
             v-for="option in options"
             :key="option.id"
             :value="option.id"
-            class="flex h-9 cursor-pointer items-center gap-2.5 rounded-lg px-2.5 text-sm text-primary-warm-white outline-none data-highlighted:bg-transparency-white-t8"
+            class="flex min-h-9 cursor-pointer items-center gap-2.5 rounded-lg px-2.5 py-2 text-sm text-primary-warm-white outline-none data-highlighted:bg-transparency-white-t8"
           >
             <img
               v-if="option.logo"
               :src="option.logo"
               alt=""
-              class="size-4 brightness-0 invert"
+              class="size-4 shrink-0 brightness-0 invert"
             />
-            <span class="flex-1">{{ option.label }}</span>
+            <span class="min-w-0 flex-1"
+              ><span class="block whitespace-normal">{{ option.label }}</span
+              ><span
+                v-if="option.description"
+                class="mt-1 block text-xs whitespace-normal text-primary-comfy-canvas"
+                >{{ option.description }}</span
+              ></span
+            >
             <span v-if="option.meta" class="text-xs text-primary-warm-gray">
               {{ option.meta }}
             </span>
             <Check
-              class="size-3.5 opacity-0 in-data-[state=checked]:opacity-100"
+              class="size-3.5 shrink-0 opacity-0 in-data-[state=checked]:opacity-100"
               aria-hidden="true"
             />
           </DropdownMenuRadioItem>

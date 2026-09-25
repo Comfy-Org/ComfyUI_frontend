@@ -2,6 +2,60 @@ import type { WorkshopModelDetail } from '../../../config/models-catalogue'
 import { workshopPageSchema } from '../../../config/workshop-page-state'
 import { urlUploadField } from '../../../config/workshop-playground'
 import type { CinematicModel } from './models'
+import type { Locale } from '../../../i18n/translations'
+import { modelGuidanceCopy } from './model-guidance-copy'
+
+export function videoModelSummary(
+  model: CinematicModel,
+  locale: Locale = 'en'
+) {
+  if (!model.video) return undefined
+  const guidance = videoDurationGuidance(
+    [{ kind: 'duration', values: model.video.durations.map(String) }],
+    locale
+  )
+  const durations = [...new Set(model.video.durations)].sort((a, b) => a - b)
+  const contiguous =
+    durations.length > 4 &&
+    durations.every(
+      (value, index) =>
+        Number.isInteger(value) &&
+        (index === 0 || value === durations[index - 1] + 1)
+    )
+  const supported = contiguous
+    ? `${durations[0]}–${durations.at(-1)}${modelGuidanceCopy(locale).secondsUnit}`
+    : guidance.supported
+  return [supported, guidance.suggestion].filter(Boolean).join(' · ')
+}
+
+export function videoDurationGuidance(
+  capabilities: readonly ModelCapability[],
+  locale: Locale = 'en'
+): { supported: string; suggestedSeconds?: number; suggestion?: string } {
+  const values = capabilities.find((row) => row.kind === 'duration')?.values
+  const copy = modelGuidanceCopy(locale)
+  if (!values?.length) return { supported: copy.unknownDuration }
+  const supported = values
+    .map((value) =>
+      value === '-1'
+        ? copy.autoDuration
+        : /^\d+(?:\.\d+)?(?:[–-]\d+(?:\.\d+)?)?$/.test(value)
+          ? `${value}${copy.secondsUnit}`
+          : value
+    )
+    .join(' / ')
+  const durations = values.map(Number)
+  if (durations.some((value) => !Number.isFinite(value) || value <= 0))
+    return { supported }
+  const suggestedSeconds = [...durations].sort(
+    (a, b) => Math.abs(a - 5) - Math.abs(b - 5) || a - b
+  )[0]
+  return {
+    supported,
+    suggestedSeconds,
+    suggestion: `${copy.startingPoint}: ${suggestedSeconds}${copy.secondsUnit}`
+  }
+}
 
 type CapabilityKind =
   | 'duration'
