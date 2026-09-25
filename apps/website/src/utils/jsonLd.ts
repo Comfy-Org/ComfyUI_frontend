@@ -234,6 +234,12 @@ export interface SoftwareAppInput {
   license?: string
   codeRepository?: string
   authorName?: string
+  author?: {
+    type: 'Person' | 'Organization'
+    name: string
+    url?: string
+    sameAs?: string[]
+  }
   isFree?: boolean
   sameAs?: string[]
   mainEntityOfPage?: string
@@ -244,9 +250,16 @@ export function softwareApplicationNode(input: SoftwareAppInput): JsonLdNode {
   const orgRef = { '@id': organizationId(input.siteUrl) }
   const author = input.firstParty
     ? orgRef
-    : input.authorName
-      ? { '@type': 'Person', name: input.authorName }
-      : undefined
+    : input.author
+      ? {
+          '@type': input.author.type,
+          name: input.author.name,
+          url: input.author.url,
+          sameAs: input.author.sameAs
+        }
+      : input.authorName
+        ? { '@type': 'Person', name: input.authorName }
+        : undefined
   return {
     '@type': 'SoftwareApplication',
     '@id': input.id,
