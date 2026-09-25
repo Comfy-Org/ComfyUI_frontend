@@ -201,9 +201,6 @@ function isGroupWidgetChildInput(node: LGraphNode, inputName: string): boolean {
  * an unselected option still reach this filter, because `ComfyNode.configure`
  * appends every serialized input the definition lacks. Realigning those is
  * safe: their group's handler bails on the same missing key.
- *
- * @see browser_tests/tests/subgraph/subgraphConvertAutogrowInputs.spec.ts
- * "loads with both reference images connected"
  */
 function isAutogrowGroupInput(node: LGraphNode, inputName: string): boolean {
   const groupName = groupNameOf(inputName)
