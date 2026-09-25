@@ -66,6 +66,10 @@ it.for<{
       recursive: true,
       filter: (source) => !source.endsWith('.test.ts')
     })
+    await cp(
+      join(import.meta.dirname, '../isMainModule.ts'),
+      join(directory, 'scripts/isMainModule.ts')
+    )
     await symlink(
       join(repoRoot, 'node_modules'),
       join(directory, 'node_modules'),
