@@ -12,6 +12,8 @@ import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Badge from '../ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 
@@ -39,11 +41,15 @@ const AUTOPLAY_MS = 7000
 const {
   slides,
   locale = 'en',
-  autoplay = true
+  autoplay = true,
+  compact = false
 } = defineProps<{
   slides: readonly FeaturedSlide[]
   locale?: Locale
   autoplay?: boolean
+  /** Where outcome rows follow immediately, the banner gives up height so the
+   * first of them is on screen with it. */
+  compact?: boolean
 }>()
 
 const activeIndex = ref(0)
@@ -120,7 +126,14 @@ const fill = computed(() =>
     data-testid="section-featured"
   >
     <div
-      class="group relative block h-84 short:h-57 sm:short:h-60"
+      :class="
+        cn(
+          'group relative block',
+          compact
+            ? 'h-68 short:h-48 sm:short:h-50'
+            : 'h-84 short:h-57 sm:short:h-60'
+        )
+      "
       data-testid="featured-slide"
     >
       <a
