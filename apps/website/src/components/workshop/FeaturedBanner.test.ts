@@ -126,6 +126,11 @@ describe('FeaturedBanner', () => {
     expect(screen.queryByTestId('featured-docs-link')).toBeNull()
   })
 
+  it('stays out of the way when the catalogue has nothing to feature', () => {
+    render(FeaturedBanner, { props: { slides: [] } })
+    expect(screen.queryByTestId('section-featured')).toBeNull()
+  })
+
   it('drops the pagination when there is nothing to page through', () => {
     render(FeaturedBanner, { props: { slides: modelSlides([base], 'en') } })
     expect(screen.queryByTestId('featured-pagination')).toBeNull()

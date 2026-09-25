@@ -43,6 +43,18 @@ describe('CatalogueBackLink', () => {
     )
   })
 
+  it('adds the shelf to a listing that already carries a query', async () => {
+    history.replaceState(null, '', '/hub/model/demo/')
+    rememberShelf('generate-videos', '/hub/model/demo/')
+    render(CatalogueBackLink, { props: { catalogue: '/hub?view=grid' } })
+
+    await waitFor(() =>
+      expect(screen.getByTestId('model-back').getAttribute('href')).toBe(
+        '/hub?view=grid&useCase=generate-videos'
+      )
+    )
+  })
+
   it('offers the shelf the visitor came from', async () => {
     history.replaceState(null, '', '/models/demo/')
     rememberShelf('generate-videos', '/models/demo/')
