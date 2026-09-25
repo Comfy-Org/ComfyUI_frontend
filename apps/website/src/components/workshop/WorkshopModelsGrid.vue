@@ -224,14 +224,14 @@ watch(browseAll, (on) => on && resetFilters())
       >
         <slot name="tabs" />
         <div
-          class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit"
+          class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit sm:justify-end"
         >
           <WorkshopSearchField
             v-model="query"
             :models
             :locale
             compact
-            class="min-w-0 flex-1 sm:mr-auto sm:max-w-xl sm:min-w-32"
+            class="min-w-0 flex-1 sm:max-w-120"
           />
 
           <div class="flex items-center gap-2" data-testid="workshop-filters">
