@@ -57,6 +57,7 @@ import { retainRunHistory } from '../../config/workshop-run-history'
 import { reportWorkshopRun } from '../../config/workshop-run-state'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
 import { linkLeavingPage } from '../../lib/workshop/leaving-link'
+import { routerSavesAssets } from '../../lib/workshop/asset-saving'
 import type { WorkshopSession } from '../../config/workshop-session-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
@@ -209,7 +210,9 @@ const runState = ref<RunState>(
 // With Cloud keeping every generation, a run outlives the page that started it:
 // the reader can close the tab and find the result in their assets. Without it,
 // the run exists only here, so leaving has to stop it.
-const savesAssets = import.meta.env.PUBLIC_WORKSHOP_SAVE_ASSETS === '1'
+const savesAssets =
+  import.meta.env.PUBLIC_WORKSHOP_SAVE_ASSETS === '1' &&
+  routerSavesAssets(model.routerId)
 const runs = ref<RunRecord[]>([])
 const earlier = computed(() => runs.value.slice(1))
 const attachments = computed(() =>

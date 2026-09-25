@@ -148,6 +148,13 @@ const runnable: WorkshopModelDetail = {
   examples: []
 }
 
+const unkeepable: WorkshopModelDetail = {
+  ...runnable,
+  routerId: 'byteplus/seedream-4-0-250828',
+  slug: 'byteplus--seedream-4-0-250828',
+  execution: workshopContract('byteplus/seedream-4-0-250828')
+}
+
 const uncuratedRunnable: WorkshopModelDetail = {
   ...runnable,
   execution: runnable.execution
@@ -405,6 +412,29 @@ describe('ModelDetail', () => {
       ).toBe('succeeded')
     )
 
+    await vi.waitFor(() =>
+      expect(screen.getByTestId('output-expires')).toBeVisible()
+    )
+  })
+
+  // Ben's finding: the Router refuses to admit a run at all when it is asked
+  // to keep an operation whose output shape it cannot read, so asking for
+  // every model would break the pages it cannot keep instead of leaving their
+  // results unkept.
+  it('asks the router to keep only a generation it can keep', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', '1')
+    auth.session.value = credential
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [] })
+    vi.mocked(runWorkshopRouter).mockResolvedValue(routerResult)
+    mountDetail({ model: unkeepable })
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
+
+    expect(vi.mocked(runWorkshopRouter).mock.calls[0][0].comfy_save_asset).toBe(
+      false
+    )
+    expect(screen.queryByTestId('saved-assets')).toBeNull()
     await vi.waitFor(() =>
       expect(screen.getByTestId('output-expires')).toBeVisible()
     )
