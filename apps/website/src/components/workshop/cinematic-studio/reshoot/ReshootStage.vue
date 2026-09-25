@@ -9,7 +9,8 @@ import type {
 } from '../../../../composables/useReshootRun'
 import type {
   CameraKey,
-  ReshootCamera
+  ReshootCamera,
+  ReshootMotion
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import type { Pose } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/camera'
 import type { Geometry } from '../../../../lib/workshop/cinematic-studio/reshoot-engine/cvgeo'
@@ -63,9 +64,11 @@ const emit = defineEmits<{
   cancel: []
   reuse: []
   key: []
+  clearKeys: []
 }>()
 
 const frame = defineModel<number>('frame', { default: 0 })
+const motion = defineModel<ReshootMotion>('motion', { default: 'smooth' })
 // the timeline belongs to aiming: live depth and no take in the frame
 const aiming = computed(() =>
   !current && step === 2 && depth === 'ready' && geometry ? geometry : undefined
@@ -153,12 +156,14 @@ const fileName = computed(
       <ReshootTimeline
         v-if="aiming"
         v-model:frame="frame"
+        v-model:motion="motion"
         :frames="aiming.frames"
         :fps="aiming.fps"
         :keys
         :keyed
         :locale
         @key="emit('key')"
+        @clear="emit('clearKeys')"
       />
     </div>
     <p class="text-xs text-primary-warm-gray">
