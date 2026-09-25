@@ -488,11 +488,16 @@ test.describe(
       // PM-1716: KEEP-ALIVE #12 requires uncatalogued widget writes to fail
       // loudly. Pin an actionable user-visible contract rather than merely
       // requiring some generic error chrome.
+      // `toastErrors` is not filtered on `:visible` (only `visibleToasts` is),
+      // and `toContainText` passes on any matching node in the collection. Both
+      // together would accept a rejection message the user never sees, which is
+      // the opposite of "fail loudly". Filter to the message and require it on
+      // screen.
+      const rejectionToast = new ToastHelper(page).toastErrors.filter({
+        hasText: 'Widget edit was rejected and was not saved'
+      })
       test.fail()
-      await expect(new ToastHelper(page).toastErrors).toContainText(
-        'Widget edit was rejected and was not saved',
-        { timeout: 3_000 }
-      )
+      await expect(rejectionToast).toBeVisible({ timeout: 3_000 })
     })
   }
 )
