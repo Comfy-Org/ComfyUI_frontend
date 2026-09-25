@@ -24,11 +24,15 @@ import {
   mapWithConcurrency,
   translateLocaleItems
 } from './translate'
+import type { LocaleFileState } from './update-locales'
 import {
   assembleLeafTranslations,
   buildTranslationItems,
   formatPruneSummary,
-  formatUsageSummary
+  formatUsageSummary,
+  preservedBaseline,
+  preservedPendingBaseline,
+  reportCheck
 } from './update-locales'
 
 const locale: OutputLocale = { code: 'xx', name: 'Test Language' }
@@ -501,6 +505,193 @@ describe('formatPruneSummary', () => {
   })
 })
 
+describe('reportCheck', () => {
+  /**
+   * Regression guard for the September 2026 `agent.askComfyAgent` ->
+   * `agent.entryButton` rename, which left all 14 shipped non-English locales
+   * 14 keys behind `en` and carrying one dead key. `pnpm locale:check` runs in
+   * CI, printed the drift, and still exited 0, so every non-English user
+   * silently fell back to English for the whole Agent entry point and graph
+   * activity surface.
+   */
+  const source = { agent: { entryButton: 'Agent' } }
+
+  beforeEach(() => {
+    vi.spyOn(process.stdout, 'write').mockReturnValue(true)
+  })
+
+  function state(
+    overrides: {
+      localeCode?: string
+      pendingPaths?: string[][]
+      strayPaths?: string[][]
+      knownPendingKeys?: ReadonlySet<string>
+      knownStrayKeys?: ReadonlySet<string>
+    } = {}
+  ): LocaleFileState {
+    const code = overrides.localeCode ?? locale.code
+    return {
+      locale: { ...locale, code },
+      plan: {
+        filename: 'main.json',
+        source,
+        changes: { added: [], deleted: [], modified: [] },
+        invalidated: new Set<string>(),
+        previousLeafCount: 1,
+        // The audit is not under test here; a degraded plan skips it so these
+        // cases assert drift handling alone.
+        degraded: true,
+        knownViolationKeys: new Set<string>()
+      },
+      outputFile: `src/locales/${code}/main.json`,
+      existing: {},
+      pendingLeaves: (overrides.pendingPaths ?? []).map((path) => ({
+        path,
+        value: getLeaf(source, path) ?? ''
+      })),
+      strayPaths: overrides.strayPaths ?? [],
+      knownPendingKeys: overrides.knownPendingKeys ?? new Set<string>(),
+      knownStrayKeys: overrides.knownStrayKeys ?? new Set<string>()
+    }
+  }
+
+  it('passes when every locale matches the English source', () => {
+    expect(reportCheck([state()])).toBe(0)
+  })
+
+  it('fails on a key that is missing a translation and is not baselined', () => {
+    expect(
+      reportCheck([state({ pendingPaths: [['agent', 'entryButton']] })])
+    ).toBe(1)
+  })
+
+  it('fails on a key that no longer exists in English and is not baselined', () => {
+    expect(
+      reportCheck([state({ strayPaths: [['agent', 'askComfyAgent']] })])
+    ).toBe(1)
+  })
+
+  it('exempts pending and stray keys recorded in the manifest baseline', () => {
+    expect(
+      reportCheck([
+        state({
+          pendingPaths: [['agent', 'entryButton']],
+          strayPaths: [['agent', 'askComfyAgent']],
+          knownPendingKeys: new Set([pathKey(['agent', 'entryButton'])]),
+          knownStrayKeys: new Set([pathKey(['agent', 'askComfyAgent'])])
+        })
+      ])
+    ).toBe(0)
+  })
+
+  it('does not let one locale baseline exempt the same key in another', () => {
+    // `knownPending` is scoped per locale for exactly this case: `de` has the
+    // key recorded as pre-existing lag, `ja` does not, so `ja` must still fail.
+    const baselined = new Set([pathKey(['agent', 'entryButton'])])
+    expect(
+      reportCheck([
+        state({
+          localeCode: 'de',
+          pendingPaths: [['agent', 'entryButton']],
+          knownPendingKeys: baselined
+        }),
+        state({
+          localeCode: 'ja',
+          pendingPaths: [['agent', 'entryButton']],
+          knownPendingKeys: new Set<string>()
+        })
+      ])
+    ).toBe(1)
+  })
+
+  it('does not let a stray baseline exempt a future pending transition', () => {
+    // Simulate a key becoming pending after it was restored in `en` and its
+    // existing locale value was later removed or invalidated.
+    expect(
+      reportCheck([
+        state({
+          pendingPaths: [['agent', 'askComfyAgent']],
+          knownStrayKeys: new Set([pathKey(['agent', 'askComfyAgent'])])
+        })
+      ])
+    ).toBe(1)
+  })
+
+  it('does not let a pending baseline exempt the same key once it is stray', () => {
+    expect(
+      reportCheck([
+        state({
+          strayPaths: [['agent', 'entryButton']],
+          knownPendingKeys: new Set([pathKey(['agent', 'entryButton'])])
+        })
+      ])
+    ).toBe(1)
+  })
+
+  it('still fails on new drift once a baseline exists', () => {
+    expect(
+      reportCheck([
+        state({
+          pendingPaths: [
+            ['agent', 'entryButton'],
+            ['agent', 'nodesAdded']
+          ],
+          knownPendingKeys: new Set([pathKey(['agent', 'entryButton'])])
+        })
+      ])
+    ).toBe(1)
+  })
+})
+
+describe('preservedBaseline', () => {
+  const baseline = {
+    'main.json': [pathKey(['agent', 'entryButton'])],
+    'settings.json': [pathKey(['setting', 'label'])]
+  }
+
+  it('drops the baseline of a completed entry file and keeps the rest', () => {
+    expect(
+      preservedBaseline(
+        ['main.json', 'settings.json'],
+        new Set(['main.json']),
+        baseline
+      )
+    ).toEqual({ 'settings.json': [pathKey(['setting', 'label'])] })
+  })
+
+  it('keeps every baseline when no entry file completed', () => {
+    expect(
+      preservedBaseline(['main.json', 'settings.json'], new Set(), baseline)
+    ).toEqual(baseline)
+  })
+
+  it('records nothing when there is no baseline to carry', () => {
+    expect(preservedBaseline(['main.json'], new Set(), undefined)).toEqual({})
+  })
+})
+
+describe('preservedPendingBaseline', () => {
+  const baseline = {
+    'de/main.json': [pathKey(['agent', 'entryButton'])],
+    'ja/main.json': [pathKey(['agent', 'entryButton'])],
+    'de/settings.json': [pathKey(['setting', 'label'])]
+  }
+
+  it('drops every locale entry for a completed entry file', () => {
+    expect(preservedPendingBaseline(new Set(['main.json']), baseline)).toEqual({
+      'de/settings.json': [pathKey(['setting', 'label'])]
+    })
+  })
+
+  it('keeps every locale entry when no entry file completed', () => {
+    expect(preservedPendingBaseline(new Set(), baseline)).toEqual(baseline)
+  })
+
+  it('records nothing when there is no baseline to carry', () => {
+    expect(preservedPendingBaseline(new Set(), undefined)).toEqual({})
+  })
+})
+
 describe('formatUsageSummary', () => {
   it('sums usage across responses and tolerates missing fields', () => {
     expect(
@@ -598,6 +789,9 @@ describe('createOpenAiTranslator', () => {
       }
       requestBodies.push(init.body)
       calls++
+      // `.at()` is typed as possibly undefined, so the guard below stays live:
+      // a case scripting fewer responses than requests fails with its own
+      // message instead of returning undefined into the translator.
       const response = Array.isArray(respond)
         ? respond.at(calls - 1)
         : respond(init.body, calls)

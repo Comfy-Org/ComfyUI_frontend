@@ -5,5 +5,303 @@
     "nodeDefs.json": "d49bc43ddd371a725ad2f24120c6677373ba117c",
     "settings.json": "f8f06ec7a5c6acf3703c3bcdf42e0c9de85f5b89"
   },
+  "knownPending": {
+    "ar/main.json": [
+      "[\"agent\",\"editWhileWorking\"]",
+      "[\"agent\",\"entryButton\"]",
+      "[\"agent\",\"nodesAdded\"]",
+      "[\"agent\",\"retryAfterSeconds\"]",
+      "[\"agent\",\"updatingGraph\"]",
+      "[\"agent\",\"viewAddedNodes\"]",
+      "[\"auth\",\"errors\",\"auth/account-exists-with-different-credential\"]",
+      "[\"auth\",\"errors\",\"auth/email-already-in-use\"]",
+      "[\"billingOperation\",\"authenticatePaymentBlockedDetail\"]",
+      "[\"billingOperation\",\"authenticatePaymentDetail\"]",
+      "[\"credits\",\"topUp\",\"awaitingBankApprovalBody\"]",
+      "[\"credits\",\"topUp\",\"changeInProgressError\"]",
+      "[\"g\",\"subgraphUnpackFailed\"]",
+      "[\"minimap\",\"highlightedNodes\"]",
+      "[\"minimap\",\"label\"]",
+      "[\"rightSidePanel\",\"blockedLastRun\"]"
+    ],
+    "de/main.json": [
+      "[\"agent\",\"editWhileWorking\"]",
+      "[\"agent\",\"entryButton\"]",
+      "[\"agent\",\"nodesAdded\"]",
+      "[\"agent\",\"retryAfterSeconds\"]",
+      "[\"agent\",\"updatingGraph\"]",
+      "[\"agent\",\"viewAddedNodes\"]",
+      "[\"auth\",\"errors\",\"auth/account-exists-with-different-credential\"]",
+      "[\"auth\",\"errors\",\"auth/email-already-in-use\"]",
+      "[\"billingOperation\",\"authenticatePaymentBlockedDetail\"]",
+      "[\"billingOperation\",\"authenticatePaymentDetail\"]",
+      "[\"credits\",\"topUp\",\"awaitingBankApprovalBody\"]",
+      "[\"credits\",\"topUp\",\"changeInProgressError\"]",
+      "[\"g\",\"subgraphUnpackFailed\"]",
+      "[\"minimap\",\"highlightedNodes\"]",
+      "[\"minimap\",\"label\"]",
+      "[\"rightSidePanel\",\"blockedLastRun\"]"
+    ],
+    "es/main.json": [
+      "[\"agent\",\"editWhileWorking\"]",
+      "[\"agent\",\"entryButton\"]",
+      "[\"agent\",\"nodesAdded\"]",
+      "[\"agent\",\"retryAfterSeconds\"]",
+      "[\"agent\",\"updatingGraph\"]",
+      "[\"agent\",\"viewAddedNodes\"]",
+      "[\"auth\",\"errors\",\"auth/account-exists-with-different-credential\"]",
+      "[\"auth\",\"errors\",\"auth/email-already-in-use\"]",
+      "[\"billingOperation\",\"authenticatePaymentBlockedDetail\"]",
+      "[\"billingOperation\",\"authenticatePaymentDetail\"]",
+      "[\"credits\",\"topUp\",\"awaitingBankApprovalBody\"]",
+      "[\"credits\",\"topUp\",\"changeInProgressError\"]",
+      "[\"g\",\"subgraphUnpackFailed\"]",
+      "[\"minimap\",\"highlightedNodes\"]",
+      "[\"minimap\",\"label\"]",
+      "[\"rightSidePanel\",\"blockedLastRun\"]"
+    ],
+    "fa/main.json": [
+      "[\"agent\",\"editWhileWorking\"]",
+      "[\"agent\",\"entryButton\"]",
+      "[\"agent\",\"nodesAdded\"]",
+      "[\"agent\",\"retryAfterSeconds\"]",
+      "[\"agent\",\"updatingGraph\"]",
+      "[\"agent\",\"viewAddedNodes\"]",
+      "[\"auth\",\"errors\",\"auth/account-exists-with-different-credential\"]",
+      "[\"auth\",\"errors\",\"auth/email-already-in-use\"]",
+      "[\"billingOperation\",\"authenticatePaymentBlockedDetail\"]",
+      "[\"billingOperation\",\"authenticatePaymentDetail\"]",
+      "[\"credits\",\"topUp\",\"awaitingBankApprovalBody\"]",
+      "[\"credits\",\"topUp\",\"changeInProgressError\"]",
+      "[\"g\",\"subgraphUnpackFailed\"]",
+      "[\"minimap\",\"highlightedNodes\"]",
+      "[\"minimap\",\"label\"]",
+      "[\"rightSidePanel\",\"blockedLastRun\"]"
+    ],
+    "fr/main.json": [
+      "[\"agent\",\"editWhileWorking\"]",
+      "[\"agent\",\"entryButton\"]",
+      "[\"agent\",\"nodesAdded\"]",
+      "[\"agent\",\"retryAfterSeconds\"]",
+      "[\"agent\",\"updatingGraph\"]",
+      "[\"agent\",\"viewAddedNodes\"]",
+      "[\"auth\",\"errors\",\"auth/account-exists-with-different-credential\"]",
+      "[\"auth\",\"errors\",\"auth/email-already-in-use\"]",
+      "[\"billingOperation\",\"authenticatePaymentBlockedDetail\"]",
+      "[\"billingOperation\",\"authenticatePaymentDetail\"]",
+      "[\"credits\",\"topUp\",\"awaitingBankApprovalBody\"]",
+      "[\"credits\",\"topUp\",\"changeInProgressError\"]",
+      "[\"g\",\"subgraphUnpackFailed\"]",
+      "[\"minimap\",\"highlightedNodes\"]",
+      "[\"minimap\",\"label\"]",
+      "[\"rightSidePanel\",\"blockedLastRun\"]"
+    ],
+    "he/main.json": [
+      "[\"agent\",\"editWhileWorking\"]",
+      "[\"agent\",\"entryButton\"]",
+      "[\"agent\",\"nodesAdded\"]",
+      "[\"agent\",\"retryAfterSeconds\"]",
+      "[\"agent\",\"updatingGraph\"]",
+      "[\"agent\",\"viewAddedNodes\"]",
+      "[\"auth\",\"errors\",\"auth/account-exists-with-different-credential\"]",
+      "[\"auth\",\"errors\",\"auth/email-already-in-use\"]",
+      "[\"billingOperation\",\"authenticatePaymentBlockedDetail\"]",
+      "[\"billingOperation\",\"authenticatePaymentDetail\"]",
+      "[\"credits\",\"topUp\",\"awaitingBankApprovalBody\"]",
+      "[\"credits\",\"topUp\",\"changeInProgressError\"]",
+      "[\"g\",\"subgraphUnpackFailed\"]",
+      "[\"minimap\",\"highlightedNodes\"]",
+      "[\"minimap\",\"label\"]",
+      "[\"rightSidePanel\",\"blockedLastRun\"]"
+    ],
+    "it/main.json": [
+      "[\"agent\",\"editWhileWorking\"]",
+      "[\"agent\",\"entryButton\"]",
+      "[\"agent\",\"nodesAdded\"]",
+      "[\"agent\",\"retryAfterSeconds\"]",
+      "[\"agent\",\"updatingGraph\"]",
+      "[\"agent\",\"viewAddedNodes\"]",
+      "[\"auth\",\"errors\",\"auth/account-exists-with-different-credential\"]",
+      "[\"auth\",\"errors\",\"auth/email-already-in-use\"]",
+      "[\"billingOperation\",\"authenticatePaymentBlockedDetail\"]",
+      "[\"billingOperation\",\"authenticatePaymentDetail\"]",
+      "[\"credits\",\"topUp\",\"awaitingBankApprovalBody\"]",
+      "[\"credits\",\"topUp\",\"changeInProgressError\"]",
+      "[\"g\",\"subgraphUnpackFailed\"]",
+      "[\"minimap\",\"highlightedNodes\"]",
+      "[\"minimap\",\"label\"]",
+      "[\"rightSidePanel\",\"blockedLastRun\"]"
+    ],
+    "ja/main.json": [
+      "[\"agent\",\"editWhileWorking\"]",
+      "[\"agent\",\"entryButton\"]",
+      "[\"agent\",\"nodesAdded\"]",
+      "[\"agent\",\"retryAfterSeconds\"]",
+      "[\"agent\",\"updatingGraph\"]",
+      "[\"agent\",\"viewAddedNodes\"]",
+      "[\"auth\",\"errors\",\"auth/account-exists-with-different-credential\"]",
+      "[\"auth\",\"errors\",\"auth/email-already-in-use\"]",
+      "[\"billingOperation\",\"authenticatePaymentBlockedDetail\"]",
+      "[\"billingOperation\",\"authenticatePaymentDetail\"]",
+      "[\"credits\",\"topUp\",\"awaitingBankApprovalBody\"]",
+      "[\"credits\",\"topUp\",\"changeInProgressError\"]",
+      "[\"g\",\"subgraphUnpackFailed\"]",
+      "[\"minimap\",\"highlightedNodes\"]",
+      "[\"minimap\",\"label\"]",
+      "[\"rightSidePanel\",\"blockedLastRun\"]"
+    ],
+    "ko/main.json": [
+      "[\"agent\",\"editWhileWorking\"]",
+      "[\"agent\",\"entryButton\"]",
+      "[\"agent\",\"nodesAdded\"]",
+      "[\"agent\",\"retryAfterSeconds\"]",
+      "[\"agent\",\"updatingGraph\"]",
+      "[\"agent\",\"viewAddedNodes\"]",
+      "[\"auth\",\"errors\",\"auth/account-exists-with-different-credential\"]",
+      "[\"auth\",\"errors\",\"auth/email-already-in-use\"]",
+      "[\"billingOperation\",\"authenticatePaymentBlockedDetail\"]",
+      "[\"billingOperation\",\"authenticatePaymentDetail\"]",
+      "[\"credits\",\"topUp\",\"awaitingBankApprovalBody\"]",
+      "[\"credits\",\"topUp\",\"changeInProgressError\"]",
+      "[\"g\",\"subgraphUnpackFailed\"]",
+      "[\"minimap\",\"highlightedNodes\"]",
+      "[\"minimap\",\"label\"]",
+      "[\"rightSidePanel\",\"blockedLastRun\"]"
+    ],
+    "pt-BR/main.json": [
+      "[\"agent\",\"editWhileWorking\"]",
+      "[\"agent\",\"entryButton\"]",
+      "[\"agent\",\"nodesAdded\"]",
+      "[\"agent\",\"retryAfterSeconds\"]",
+      "[\"agent\",\"updatingGraph\"]",
+      "[\"agent\",\"viewAddedNodes\"]",
+      "[\"auth\",\"errors\",\"auth/account-exists-with-different-credential\"]",
+      "[\"auth\",\"errors\",\"auth/email-already-in-use\"]",
+      "[\"billingOperation\",\"authenticatePaymentBlockedDetail\"]",
+      "[\"billingOperation\",\"authenticatePaymentDetail\"]",
+      "[\"credits\",\"topUp\",\"awaitingBankApprovalBody\"]",
+      "[\"credits\",\"topUp\",\"changeInProgressError\"]",
+      "[\"g\",\"subgraphUnpackFailed\"]",
+      "[\"minimap\",\"highlightedNodes\"]",
+      "[\"minimap\",\"label\"]",
+      "[\"rightSidePanel\",\"blockedLastRun\"]"
+    ],
+    "ru/main.json": [
+      "[\"agent\",\"editWhileWorking\"]",
+      "[\"agent\",\"entryButton\"]",
+      "[\"agent\",\"nodesAdded\"]",
+      "[\"agent\",\"retryAfterSeconds\"]",
+      "[\"agent\",\"updatingGraph\"]",
+      "[\"agent\",\"viewAddedNodes\"]",
+      "[\"auth\",\"errors\",\"auth/account-exists-with-different-credential\"]",
+      "[\"auth\",\"errors\",\"auth/email-already-in-use\"]",
+      "[\"billingOperation\",\"authenticatePaymentBlockedDetail\"]",
+      "[\"billingOperation\",\"authenticatePaymentDetail\"]",
+      "[\"credits\",\"topUp\",\"awaitingBankApprovalBody\"]",
+      "[\"credits\",\"topUp\",\"changeInProgressError\"]",
+      "[\"g\",\"subgraphUnpackFailed\"]",
+      "[\"minimap\",\"highlightedNodes\"]",
+      "[\"minimap\",\"label\"]",
+      "[\"rightSidePanel\",\"blockedLastRun\"]"
+    ],
+    "tr/main.json": [
+      "[\"agent\",\"editWhileWorking\"]",
+      "[\"agent\",\"entryButton\"]",
+      "[\"agent\",\"nodesAdded\"]",
+      "[\"agent\",\"retryAfterSeconds\"]",
+      "[\"agent\",\"updatingGraph\"]",
+      "[\"agent\",\"viewAddedNodes\"]",
+      "[\"auth\",\"errors\",\"auth/account-exists-with-different-credential\"]",
+      "[\"auth\",\"errors\",\"auth/email-already-in-use\"]",
+      "[\"billingOperation\",\"authenticatePaymentBlockedDetail\"]",
+      "[\"billingOperation\",\"authenticatePaymentDetail\"]",
+      "[\"credits\",\"topUp\",\"awaitingBankApprovalBody\"]",
+      "[\"credits\",\"topUp\",\"changeInProgressError\"]",
+      "[\"g\",\"subgraphUnpackFailed\"]",
+      "[\"minimap\",\"highlightedNodes\"]",
+      "[\"minimap\",\"label\"]",
+      "[\"rightSidePanel\",\"blockedLastRun\"]"
+    ],
+    "zh/main.json": [
+      "[\"agent\",\"editWhileWorking\"]",
+      "[\"agent\",\"entryButton\"]",
+      "[\"agent\",\"nodesAdded\"]",
+      "[\"agent\",\"retryAfterSeconds\"]",
+      "[\"agent\",\"updatingGraph\"]",
+      "[\"agent\",\"viewAddedNodes\"]",
+      "[\"auth\",\"errors\",\"auth/account-exists-with-different-credential\"]",
+      "[\"auth\",\"errors\",\"auth/email-already-in-use\"]",
+      "[\"billingOperation\",\"authenticatePaymentBlockedDetail\"]",
+      "[\"billingOperation\",\"authenticatePaymentDetail\"]",
+      "[\"credits\",\"topUp\",\"awaitingBankApprovalBody\"]",
+      "[\"credits\",\"topUp\",\"changeInProgressError\"]",
+      "[\"g\",\"subgraphUnpackFailed\"]",
+      "[\"minimap\",\"highlightedNodes\"]",
+      "[\"minimap\",\"label\"]",
+      "[\"rightSidePanel\",\"blockedLastRun\"]"
+    ],
+    "zh-TW/main.json": [
+      "[\"agent\",\"editWhileWorking\"]",
+      "[\"agent\",\"entryButton\"]",
+      "[\"agent\",\"nodesAdded\"]",
+      "[\"agent\",\"retryAfterSeconds\"]",
+      "[\"agent\",\"updatingGraph\"]",
+      "[\"agent\",\"viewAddedNodes\"]",
+      "[\"auth\",\"errors\",\"auth/account-exists-with-different-credential\"]",
+      "[\"auth\",\"errors\",\"auth/email-already-in-use\"]",
+      "[\"billingOperation\",\"authenticatePaymentBlockedDetail\"]",
+      "[\"billingOperation\",\"authenticatePaymentDetail\"]",
+      "[\"credits\",\"topUp\",\"awaitingBankApprovalBody\"]",
+      "[\"credits\",\"topUp\",\"changeInProgressError\"]",
+      "[\"g\",\"subgraphUnpackFailed\"]",
+      "[\"minimap\",\"highlightedNodes\"]",
+      "[\"minimap\",\"label\"]",
+      "[\"rightSidePanel\",\"blockedLastRun\"]"
+    ]
+  },
+  "knownStray": {
+    "ar/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "de/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "es/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "fa/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "fr/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "he/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "it/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "ja/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "ko/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "pt-BR/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "ru/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "tr/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "zh/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ],
+    "zh-TW/main.json": [
+      "[\"agent\",\"askComfyAgent\"]"
+    ]
+  },
   "version": 1
 }
