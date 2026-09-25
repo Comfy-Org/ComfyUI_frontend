@@ -117,7 +117,7 @@ function wire() {
 }
 
 describe('follower commit boundary', () => {
-  it.fails('does not integrate Yjs structs when a truncated update throws', () => {
+  it('does not integrate Yjs structs when a truncated update throws', () => {
     const host = new Y.Doc()
     onTestFinished(() => host.destroy())
     host.transact(() => {
