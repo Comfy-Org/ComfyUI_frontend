@@ -198,6 +198,11 @@ test(
     await expect.poll(() => promptHistory.requests.length).toBe(1)
     expect(promptHistory.requests[0].attachments).toEqual([BARE_DIGEST])
     await expect(panel.getByTestId('reply-image-preview')).toHaveCount(1)
+    // The live label, asserted here rather than in the PM-1705 case below: an
+    // expected-failure body gives a working assertion no regression cover.
+    await expect(
+      panel.getByRole('img', { name: 'Beach photo.png', exact: true })
+    ).toBeVisible()
 
     const reopened = await reopenAfterReload(panel, page)
 
@@ -246,18 +251,23 @@ test(
 )
 
 /**
- * Still red: `AgentPostMessageRequest` declares `attachments` as filenames and
- * has no slot for the name the user recognises (services/ingest/openapi.yaml),
- * so the turn is posted knowing only the storage ref and no reload can recover
- * what was never sent. Widening that contract is out of reach here — it is a
- * cloud change followed by regenerating `packages/ingest-types`, whose
- * openapi.yaml is not checked in. The other repair is reachable: the read path
- * can resolve the name from the asset behind `attachment_refs[].id`, which
- * `assetService.getAssetDetails` already fetches, at the cost of a request per
- * attachment on hydrate — and it would retire this case rather than turn it
- * green, since this arrange routes no asset endpoint. Twin of the `(h-gap)`
- * pin in useAgentSession.test.ts, kept here because only the browser shows
- * what the user is left looking at.
+ * PM-1705, tracked and deliberately still red. `AgentPostMessageRequest`
+ * declares `attachments` as filenames and has no slot for the name the user
+ * recognises (services/ingest/openapi.yaml), so the turn is posted knowing
+ * only the storage ref and no reload can recover what was never sent.
+ *
+ * Widening that contract is out of reach here — it is a cloud change followed
+ * by regenerating `packages/ingest-types`, whose openapi.yaml is not checked
+ * in. The other repair is reachable: the read path can resolve the name from
+ * the asset behind `attachment_refs[].id`, which `assetService.getAssetDetails`
+ * already fetches, at the cost of a request per attachment on hydrate. That
+ * one would retire this case rather than turn it green, since this arrange
+ * routes no asset endpoint.
+ *
+ * Twin of the `(h-gap)` pin in useAgentSession.test.ts, kept here because only
+ * the browser shows what the user is left looking at. The pre-reload half of
+ * the claim lives in the unmarked case above, where a regression can still
+ * turn it red.
  */
 test(
   'labels a refreshed attachment with the filename the user attached',
@@ -277,9 +287,6 @@ test(
     })
     await sendTurn(panel, 'upscale this')
     await expect.poll(() => promptHistory.requests.length).toBe(1)
-    await expect(
-      panel.getByRole('img', { name: 'Beach photo.png', exact: true })
-    ).toBeVisible()
 
     const reopened = await reopenAfterReload(panel, page)
 
@@ -305,6 +312,9 @@ test(
   async ({ page, promptHistory, workflowSelection }) => {
     const serverTurnId = 'e2e-server-turn'
     const otherThreadId = 'e2e-other-thread'
+    // The id the shared fixture's POST mock acks the first turn with. Held
+    // here rather than read back, because the assistant row has to carry it
+    // before any request asks for it.
     const liveTurnId = '1dda6c2a-fdc5-45c3-b499-000000000001'
     let attachmentThreadId = ''
 

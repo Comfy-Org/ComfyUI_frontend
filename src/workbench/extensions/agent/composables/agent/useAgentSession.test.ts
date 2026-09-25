@@ -1349,13 +1349,13 @@ describe('useAgentSession (v1 composition root)', () => {
    * (persist/threads.go) — so revisit it if that key is reshaped instead, or
    * this pin stays red past its own fix.
    *
-   * The widening is not reachable from this repo: it is a change to
-   * `AgentPostMessageRequest` in cloud's services/ingest/openapi.yaml followed
-   * by regenerating `packages/ingest-types`, whose openapi.yaml is not even
-   * checked in here. The read-path repair is reachable —
+   * Tracked as PM-1705, and red deliberately while the sibling pins for item 3
+   * all closed. The widening is not reachable from this repo: it is a change
+   * to `AgentPostMessageRequest` in cloud's services/ingest/openapi.yaml
+   * followed by regenerating `packages/ingest-types`, whose openapi.yaml is
+   * not even checked in here. The read-path repair is reachable —
    * `assetService.getAssetDetails` already fetches the asset behind an id, at
-   * the cost of a request per attachment on hydrate. The sibling pins for item
-   * 3 all closed; this one stays red deliberately. What the user is left
+   * the cost of a request per attachment on hydrate. What the user is left
    * looking at is the `test.fail()` case in
    * browser_tests/tests/agent/agentAttachmentRehydrationGaps.spec.ts.
    */

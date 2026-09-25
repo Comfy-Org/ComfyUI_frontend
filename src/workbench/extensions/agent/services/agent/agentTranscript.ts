@@ -10,6 +10,12 @@ import { createAssistantMessage } from './agentMessageParts'
  * type. `mediaKind` (services/agent/server/agent_handler.go) writes only these
  * three and omits the key otherwise, so anything else on the wire reads as
  * unresolved rather than as a fourth kind.
+ *
+ * The composer admits 3D too, and the preview grid renders it, so a 3D asset
+ * stored under an extensionless key still degrades to a plain tile after a
+ * refresh. Widening this union cannot fix that on its own — the kind has to be
+ * written before it can be read, which is a change to `mimeFamily` in the same
+ * Go file.
  */
 type AttachmentKind = 'image' | 'video' | 'audio'
 
@@ -19,10 +25,11 @@ type AttachmentKind = 'image' | 'video' | 'audio'
  * name the server ever saw, so `name` and `ref` are the same string.
  *
  * `id` and `kind` are the server's own resolution of that name, replayed off
- * the row's `attachment_refs`. They are what let a rehydrated attachment be
+ * the row's `attachment_refs`. `kind` is what lets a rehydrated attachment be
  * classified when its name cannot classify itself — a library asset is
  * attached under its content hash, which carries no extension to read a kind
- * off.
+ * off. `id` has no reader yet: it is the asset behind that same hash, which
+ * PM-1705 needs to recover the filename the user attached.
  */
 export interface UserAttachment {
   name: string
