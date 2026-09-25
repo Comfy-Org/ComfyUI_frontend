@@ -144,7 +144,7 @@ describe('showTopUpCreditsDialog', () => {
       source: 'agent_paywall'
     })
 
-    expect(showSubscriptionDialog).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().show).toHaveBeenCalledWith({
       reason: 'out_of_credits',
       paymentIntentSource: 'agent_paywall'
     })
@@ -158,7 +158,7 @@ describe('showTopUpCreditsDialog', () => {
       source: 'agent_paywall'
     })
 
-    expect(showSubscriptionDialog).toHaveBeenCalledWith({
+    expect(useSubscriptionDialog().show).toHaveBeenCalledWith({
       reason: 'agent_paywall',
       paymentIntentSource: 'agent_paywall'
     })
@@ -178,7 +178,7 @@ describe('showTopUpCreditsDialog', () => {
   })
 
   it('withholds the surface from the legacy rail content', async () => {
-    state.type = 'legacy'
+    useBillingContext().type = computed(() => 'legacy')
 
     await useDialogService().showTopUpCreditsDialog({
       isInsufficientCredits: true,

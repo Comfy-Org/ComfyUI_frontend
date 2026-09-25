@@ -16,6 +16,7 @@ const zhMessages = cloneDeep(i18n.global.getLocaleMessage('zh'))
 
 describe('useLitegraphService().getCanvasCenter', () => {
   it('returns origin when canvas is not yet initialised', () => {
+    app.canvas.ds.visible_area.set([10, 20, 200, 100])
     Reflect.set(app, 'rootGraphOrUndefined', undefined)
 
     const center = useLitegraphService().getCanvasCenter()
