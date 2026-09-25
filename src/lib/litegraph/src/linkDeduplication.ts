@@ -182,7 +182,6 @@ function groupNameOf(inputName: string): string | undefined {
   return separator < 1 ? undefined : inputName.slice(0, separator)
 }
 
-/** Group widgets (dynamic combos) name children `<group widget name>.<key>`. */
 function isGroupWidgetChildInput(node: LGraphNode, inputName: string): boolean {
   const groupName = groupNameOf(inputName)
   if (groupName === undefined) return false

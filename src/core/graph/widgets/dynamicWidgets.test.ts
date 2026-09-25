@@ -7,6 +7,7 @@ import {
   test,
   vi
 } from 'vitest'
+import type { z } from 'zod'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import {
   addAutogrow,
@@ -17,8 +18,10 @@ import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
 import { realignGroupWidgetChildLinks } from '@/lib/litegraph/src/linkDeduplication'
 import type { SerialisableGraph } from '@/lib/litegraph/src/types/serialisation'
 import type {
+  ComfyInputsSpec,
   ComfyNodeDef as ComfyNodeDefV1,
-  InputSpec
+  zAutogrowOptions,
+  zDynamicComboInputSpec
 } from '@/schemas/nodeDefSchema'
 import { useLitegraphService } from '@/services/litegraphService'
 import { useLinkStore } from '@/stores/linkStore'
@@ -671,14 +674,21 @@ class SourceNode extends LGraphNode {
   }
 }
 
-type ChildInputs = Record<string, InputSpec>
+type ChildInputs = NonNullable<ComfyInputsSpec['required']>
+
+type DynamicComboInputSpec = z.infer<typeof zDynamicComboInputSpec>
+
+type AutogrowInputSpec = [
+  type: 'COMFY_AUTOGROW_V3',
+  options: z.infer<typeof zAutogrowOptions>
+]
 
 type ComboOption = [key: string, childInputs: ChildInputs]
 
 function dynamicCombo(
   defaultOption: ComboOption,
   ...remainingOptions: ComboOption[]
-): InputSpec {
+): DynamicComboInputSpec {
   const options = [defaultOption, ...remainingOptions]
   const declaredKeys = options.map(([key]) => key)
   const realizedKeys = Object.keys(
@@ -705,18 +715,37 @@ function dynamicCombo(
 }
 
 describe('dynamicCombo fixture builder', () => {
-  test('rejects option keys that a record reorders, and accepts those it does not', () => {
-    const option = (key: string): ComboOption => [key, {}]
+  function option(key: string): ComboOption {
+    return [key, {}]
+  }
 
-    expect(() => dynamicCombo(option('Seedance'), option('0'))).toThrow(
-      /\[0, Seedance\] instead of \[Seedance, 0\]/
-    )
-    expect(() => dynamicCombo(option('0'), option('2'), option('1'))).toThrow(
-      /\[0, 1, 2\] instead of \[0, 2, 1\]/
-    )
-    expect(() => dynamicCombo(option('a'), option('b'), option('a'))).toThrow(
-      /Duplicate option keys/
-    )
+  const rejectedCases: {
+    name: string
+    options: [ComboOption, ...ComboOption[]]
+    message: RegExp
+  }[] = [
+    {
+      name: 'a numeric key after a named one',
+      options: [option('Seedance'), option('0')],
+      message: /\[0, Seedance\] instead of \[Seedance, 0\]/
+    },
+    {
+      name: 'numeric keys out of ascending order',
+      options: [option('0'), option('2'), option('1')],
+      message: /\[0, 1, 2\] instead of \[0, 2, 1\]/
+    },
+    {
+      name: 'a key declared twice',
+      options: [option('a'), option('b'), option('a')],
+      message: /Duplicate option keys: a/
+    }
+  ]
+
+  test.for(rejectedCases)('rejects $name', ({ options, message }) => {
+    expect(() => dynamicCombo(...options)).toThrow(message)
+  })
+
+  test('accepts a numeric key too large to be an array index', () => {
     expect(() =>
       dynamicCombo(option('0'), option('Seedance'), option('4294967295'))
     ).not.toThrow()
@@ -727,7 +756,7 @@ function autogrow(template: {
   names: string[]
   min: number
   input: ChildInputs
-}): InputSpec {
+}): AutogrowInputSpec {
   const { names, min, input } = template
   return [
     'COMFY_AUTOGROW_V3',
