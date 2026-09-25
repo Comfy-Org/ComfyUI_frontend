@@ -3132,6 +3132,7 @@
     },
     "preview": {
       "completeVerification": "Complete verification",
+      "pendingVerificationDetail": "A payment you started earlier is waiting for bank verification. Completing it activates the plan you chose then. You can choose a different plan once it finishes.",
       "completePayment": "Complete your payment",
       "parkedCheckoutDetail": "Your earlier checkout is still waiting for a payment method. Complete your payment to activate this plan.",
       "confirmPayment": "Confirm your payment",
