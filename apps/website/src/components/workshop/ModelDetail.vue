@@ -258,10 +258,12 @@ const canRunModel = computed(
     !activeExample.value?.fields &&
     !clone
 )
+const flagOffGate = computed(() =>
+  workshopEnabledSettled.value ? 'rollingOut' : 'pending'
+)
 const gate = computed(() => {
   if (!canRunModel.value) return 'unavailable'
-  if (!workshopEnabled.value)
-    return workshopEnabledSettled.value ? 'rollingOut' : 'pending'
+  if (!workshopEnabled.value) return flagOffGate.value
   if (!mounted.value || draftPending.value) return 'pending'
   if (!authEnabled.value || sessionFailure.value) return 'unavailable'
   if (!settled.value || (user.value && !session.value)) return 'pending'
