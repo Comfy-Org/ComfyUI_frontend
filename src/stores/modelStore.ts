@@ -372,10 +372,16 @@ export const useModelStore = defineStore('models', () => {
     return true
   }
 
+  // Folders a pending reload replaces would finish loading into detached objects.
+  async function settlePendingReloads() {
+    while (pendingReloads.size > 0) await Promise.allSettled(pendingReloads)
+  }
+
   async function getLoadedModelFolder(
     folderName: string
   ): Promise<ModelFolder | null> {
     modelDataConsumed = true
+    await settlePendingReloads()
     if (foldersMissedCapabilityChange) await loadModelFolders()
     const folder = Object.hasOwn(modelFolderByName.value, folderName)
       ? modelFolderByName.value[folderName]
@@ -391,8 +397,7 @@ export const useModelStore = defineStore('models', () => {
    */
   async function loadModels() {
     modelDataConsumed = true
-    // Folders a pending reload replaces would finish loading into detached objects.
-    while (pendingReloads.size > 0) await Promise.allSettled(pendingReloads)
+    await settlePendingReloads()
     // A load superseded by a newer concurrent one commits nothing, which
     // would leave the folder list empty and silently load no models; retry
     // until a load of ours commits (even a genuinely empty result) or a
@@ -554,11 +559,14 @@ export const useModelStore = defineStore('models', () => {
    * stale response a no-op, so no debouncing is needed here.
    */
   function reloadForCapabilityChange() {
-    reloadModels().catch((error) => {
-      foldersMissedCapabilityChange = true
-      reportError(error, {
-        errorType: 'error_reloading_model_library_after_capability_change'
-      })
+    const reload = reloadModels()
+    const requestId = modelFoldersRequestId
+    reload.catch((error) => {
+      // A newer request either committed current folders or reports its own failure.
+      if (requestId === modelFoldersRequestId) {
+        foldersMissedCapabilityChange = true
+      }
+      reportError(error, { errorType: 'model_library_capability_reload' })
     })
   }
 
