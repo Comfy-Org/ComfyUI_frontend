@@ -45,6 +45,7 @@ import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { getFilenameDetails } from '@/utils/formatUtil'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { reportError } from '@/platform/telemetry/reportError'
 // eslint-disable-next-line import-x/no-restricted-paths
@@ -4068,7 +4069,7 @@ describe('AgentPanelRoot workflow binding', () => {
   it('restores an agent-minted draft target after reload and keeps its Cloud identity on send', async () => {
     const draftGraphId = '3d4d7f1e-3c8b-4a0a-9a3c-1d2e3f4a5b6c'
     localStorage.setItem(
-      'Comfy.Agent.WorkflowTabBindings.v2',
+      StorageKeys.agentWorkflowTabBindings('personal'),
       JSON.stringify({
         'wf-minted': {
           tabPath: 'workflows/minted.json',
@@ -5254,10 +5255,16 @@ describe('AgentPanelRoot workflow binding', () => {
     const staleWorkflowId = 'wf-abandoned'
     const defaultPath = 'workflows/Unsaved Workflow.json'
     localStorage.setItem(
-      'Comfy.Agent.WorkflowTabBindings',
-      JSON.stringify({ [staleWorkflowId]: defaultPath })
+      StorageKeys.agentWorkflowTabBindings('personal'),
+      JSON.stringify({
+        [staleWorkflowId]: {
+          tabPath: defaultPath,
+          graphId: '3d4d7f1e-3c8b-4a0a-9a3c-1d2e3f4a5b6c',
+          confirmedAt: Date.now()
+        }
+      })
     )
-    localStorage.setItem('Comfy.Agent.ThreadId', 'th-stale')
+    localStorage.setItem(StorageKeys.agentThread('personal'), 'th-stale')
     const fresh = addTab(defaultPath, {
       isTemporary: true,
       activeState: fromPartial<ComfyWorkflowJSON>({
@@ -6240,7 +6247,7 @@ describe('AgentPanelRoot workflow binding', () => {
       })
     })
     localStorage.setItem(
-      'Comfy.Agent.WorkflowTabBindings.v2',
+      StorageKeys.agentWorkflowTabBindings('personal'),
       JSON.stringify({
         'wf-from-before-reload': {
           tabPath: tab.path,
@@ -6825,8 +6832,14 @@ describe('AgentPanelRoot workflow binding', () => {
 
   it('includes a backgrounded tab whose binding was persisted before a reload', async () => {
     localStorage.setItem(
-      'Comfy.Agent.WorkflowTabBindings',
-      JSON.stringify({ 'wf-old': 'workflows/mountain.json' })
+      StorageKeys.agentWorkflowTabBindings('personal'),
+      JSON.stringify({
+        'wf-old': {
+          tabPath: 'workflows/mountain.json',
+          graphId: null,
+          confirmedAt: Date.now()
+        }
+      })
     )
     makeTab('wf-42')
     addTab('workflows/mountain.json')
