@@ -89,6 +89,7 @@ const motionValue = computed({
         </span>
         <button
           type="button"
+          :disabled
           class="grid size-5 place-items-center rounded-md text-primary-warm-gray hover:text-primary-warm-white"
           :aria-label="
             rc('reshoot.move.remove', locale).replace(
@@ -116,6 +117,7 @@ const motionValue = computed({
       </CinematicMenu>
       <button
         type="button"
+        :disabled
         class="h-9 rounded-xl px-3 text-xs text-primary-warm-gray hover:text-primary-warm-white"
         @click="emit('clear')"
       >

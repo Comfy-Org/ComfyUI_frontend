@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { computed } from 'vue'
+
 import type { PlaygroundExample } from '../../../../config/workshop-playground'
 import { RESHOOT_EXAMPLE } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
@@ -18,7 +20,7 @@ const SAMPLES = [
   ['train', 'train']
 ] as const
 
-const EXAMPLES: readonly PlaygroundExample[] = [
+const examples = computed<readonly PlaygroundExample[]>(() => [
   {
     id: 'crossview-example',
     title: rc('reshoot.pick.exampleTitle', locale),
@@ -35,12 +37,12 @@ const EXAMPLES: readonly PlaygroundExample[] = [
     outputUrl: `/images/cinematic-studio/${image}.jpg`,
     mediaKind: 'image' as const
   }))
-]
+])
 </script>
 
 <template>
   <ExamplesTab
-    :examples="EXAMPLES"
+    :examples="examples"
     :active-id="activeId"
     :locale
     @open="emit('pick')"

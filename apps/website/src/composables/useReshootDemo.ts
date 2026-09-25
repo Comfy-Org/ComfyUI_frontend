@@ -135,6 +135,7 @@ export function useReshootDemo({ autoRead = false } = {}) {
   }
 
   function generate() {
+    if (depth.value !== 'ready') return
     const n = takes.value.length
     const id = `take-${n}`
     takes.value = [
