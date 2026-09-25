@@ -103,16 +103,26 @@ const PREPARE_TIMEOUT_MS = 3000
 const TERMINAL_ANSWER_STATUSES = new Set([403, 404, 409])
 
 /**
- * PM-1658: backoff between re-drives of a consent answer. The server documents
+ * PM-1658: backoff before re-driving a consent answer. The server documents
  * 5xx here as retryable and re-drives the STORED selection, so resending the
  * same answer is always safe and is the only recovery that cannot turn into a
- * contradictory second choice. Short, because the card is held disabled for the
- * whole sequence.
+ * contradictory second choice. One retry only: the card is disabled for the
+ * whole sequence, which with ANSWER_ASK_TIMEOUT_MS keeps the worst case under
+ * the shared 60s request deadline it replaces.
  */
-const ANSWER_RETRY_BACKOFF_MS = [200, 600]
+const ANSWER_RETRY_BACKOFF_MS = [300]
 
+/**
+ * A rejected fetch never reached the server, and 5xx is the status the server
+ * documents as retryable. Everything else either answered (a schema failure
+ * means a 202 body we could not read — replaying it is a wasted request) or
+ * refuses permanently, as 501 does on deployments with no durable turn to
+ * wake.
+ */
 function isRetryableAnswerFailure(error: unknown): boolean {
-  return error instanceof AgentApiError ? error.status >= 500 : true
+  if (error instanceof AgentApiError)
+    return error.status >= 500 && error.status !== 501
+  return error instanceof TypeError || error instanceof DOMException
 }
 
 let sessionGeneration = 0
@@ -643,10 +653,14 @@ export function useAgentSession(deps: AgentSessionDeps) {
         error instanceof AgentApiError &&
         TERMINAL_ANSWER_STATUSES.has(error.status)
       ) {
-        // A 409 is the ordinary double-click; the rest mean this client was
-        // never able to answer this ask, which is worth knowing about.
-        if (error.status !== 409)
+        // A 409 is the ordinary double-click, and the ask really is resolved,
+        // so it needs neither telemetry nor a notice. The rest mean this
+        // client could never have answered, which the user has to be told
+        // about or the card simply vanishes as though it had worked.
+        if (error.status !== 409) {
           reportError(error, { errorType: 'agent_ask_answer_refused' })
+          pushError(i18n.global.t('agent.runApproval.answerFailed'))
+        }
         conversationStore.retireAsk(askId)
         return
       }
@@ -782,7 +796,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     if (!everLive) return
     conversationStore.abortActiveTurn()
     conversationStore.dropBackgroundTurns()
-    // After the teardown, never before: disposing a transport republishes its
+    // After the teardown, never before: settling a transport republishes its
     // own copy of the message, which would put a dismissed card back.
     conversationStore.dismissCommittedAsks()
   }

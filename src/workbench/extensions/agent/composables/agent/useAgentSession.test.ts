@@ -689,10 +689,11 @@ describe('useAgentSession (v1 composition root)', () => {
 
         await session.answerAsk('turn-1:call-1', 'run')
 
-        // Retrying reproduces it, so the card goes rather than sitting there
-        // reporting a server string at every click.
+        // Retrying reproduces it, so the card goes -- but it must not go
+        // silently, or its disappearance is indistinguishable from the answer
+        // having landed.
         expect(cardOnScreen()).toBe(false)
-        expect(session.notices.value).toEqual([])
+        expect(session.notices.value).toHaveLength(1)
         expect(reportError).toHaveBeenCalledWith(expect.any(AgentApiError), {
           errorType: 'agent_ask_answer_refused'
         })

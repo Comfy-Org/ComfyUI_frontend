@@ -118,10 +118,12 @@ class TurnLockServer {
   }
 
   /**
-   * Mirrors `server/asks.go`: the first answer CASes onto the row, and every
-   * later one is answered by REPLAYING the stored selection rather than
-   * committing the new one. A fake that accepted the second answer would let a
-   * client that re-offers an already-answered card look correct here.
+   * Mirrors the accepted half of `server/asks.go`: the first answer CASes onto
+   * the row, and every later one is answered by REPLAYING the stored selection
+   * rather than committing the new one. A fake that accepted the second answer
+   * would let a client that re-offers an already-answered card look correct
+   * here. The refusal statuses (403/404/409) and the retryable 5xx are NOT
+   * modelled — those branches are covered by unit tests.
    */
   answerAsk(selected: string[]): void {
     this.answerRequests.push(selected)

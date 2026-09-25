@@ -36,6 +36,14 @@ interface BackgroundTurn {
   settled: boolean
 }
 
+/**
+ * PM-1658: how long an accepted answer waits for its `agent_ask_resolved`
+ * frame before the card is retired anyway. Generous, because the frame is the
+ * normal release and arrives in milliseconds; it exists only so a lost frame
+ * cannot leave the card disabled for the rest of the session.
+ */
+const ASK_RESOLUTION_GRACE_MS = 15_000
+
 export const useAgentConversationStore = defineStore(
   'agentConversation',
   () => {
@@ -181,7 +189,31 @@ export const useAgentConversationStore = defineStore(
         settledTransport.dropAskPart(askId)
       for (const entry of backgroundTurns.values())
         entry.transport.dropAskPart(askId)
+      resolvedAskIds.add(askId)
+      clearAskResolutionWatchdog(askId)
       setAskAnswering(askId, false)
+    }
+
+    /**
+     * PM-1658: asks this client has retired. `hydrate()` rebuilds a card from
+     * the server's `pending_ask`, which still reads pending while an answer is
+     * in flight and after a resolution broadcast is lost, so a refetch would
+     * otherwise put an answered card back on screen ENABLED — and the server
+     * answers the second, contradictory click by replaying the FIRST
+     * selection. Survives a remount because the store does; pruned in
+     * `hydrate` once the server stops naming the ask at all.
+     */
+    const resolvedAskIds = new Set<string>()
+    const askResolutionWatchdogs = new Map<
+      string,
+      ReturnType<typeof setTimeout>
+    >()
+
+    function clearAskResolutionWatchdog(askId: string): void {
+      const timer = askResolutionWatchdogs.get(askId)
+      if (timer === undefined) return
+      clearTimeout(timer)
+      askResolutionWatchdogs.delete(askId)
     }
 
     /**
@@ -210,10 +242,23 @@ export const useAgentConversationStore = defineStore(
      * Records that the server accepted this answer. A card whose turn is still
      * attached keeps waiting for the canonical frame; a detached one has none
      * coming, so it is retired now.
+     *
+     * The wait is bounded either way. A frame can be lost outright, and a turn
+     * re-adopted by `hydrate` between the click and the response looks
+     * attached while owning no socket that will ever deliver one — both leave
+     * the card disabled with nothing to release it.
      */
     function commitAsk(askId: string): void {
       committedAskIds.add(askId)
-      if (!activeTurnOwnsAsk(askId)) retireAsk(askId)
+      if (!activeTurnOwnsAsk(askId)) {
+        retireAsk(askId)
+        return
+      }
+      clearAskResolutionWatchdog(askId)
+      askResolutionWatchdogs.set(
+        askId,
+        setTimeout(() => retireAsk(askId), ASK_RESOLUTION_GRACE_MS)
+      )
     }
 
     /**
@@ -489,10 +534,44 @@ export const useAgentConversationStore = defineStore(
       clearActive()
     }
 
+    /**
+     * PM-1658: strips cards this client has already retired from a freshly
+     * fetched transcript, and forgets ids the server no longer names so the
+     * record cannot grow without bound. Returns whether the transcript's
+     * pending turn is still genuinely pending — a row parked on an ask we have
+     * answered must not be re-adopted as the live turn.
+     */
+    function dropResolvedAsks(
+      transcript: ReturnType<typeof normalizeAgentTranscript>
+    ): boolean {
+      if (resolvedAskIds.size > 0) {
+        const named = new Set(
+          transcript.messages.flatMap((message) =>
+            message.parts.flatMap((part) =>
+              part.type === 'runApproval' ? [part.askId] : []
+            )
+          )
+        )
+        for (const askId of resolvedAskIds)
+          if (!named.has(askId)) resolvedAskIds.delete(askId)
+        for (const message of transcript.messages)
+          message.parts = message.parts.filter(
+            (part) =>
+              part.type !== 'runApproval' || !resolvedAskIds.has(part.askId)
+          )
+      }
+      return (
+        transcript.pending?.message.parts.some(
+          (part) => part.type === 'runApproval'
+        ) ?? false
+      )
+    }
+
     function hydrate(history: AgentMessages): void {
       disposeActiveAndSettledTransports()
       clearActive()
       const transcript = normalizeAgentTranscript(history)
+      const stillPending = dropResolvedAsks(transcript)
       messages.value = transcript.messages
       userTexts.value = transcript.userTexts
       userTags.value = new Map()
@@ -502,7 +581,7 @@ export const useAgentConversationStore = defineStore(
       hydratedAssistantTurnIds = transcript.assistantTurnIds
       dropAttachmentPreviews()
       userAttachments.value = transcript.userAttachments
-      if (transcript.pending) {
+      if (transcript.pending && stillPending) {
         liveMessage = transcript.pending.message
         activeTurnId.value = transcript.pending.messageId
         activeIndex.value = messages.value.indexOf(transcript.pending.message)

@@ -32,10 +32,12 @@ const CLOUD_WORKFLOW_PAGE_SIZE = 100
 /**
  * PM-1658: tightens `fetchApi`'s shared 60s header deadline for the one
  * request a consent card's buttons wait on, since the card is held disabled
- * from the click until this settles. Goes through `timeoutMs` rather than a
- * raw signal so a timeout still raises fetchApi's own telemetry.
+ * from the click until this settles. Halved rather than merely lowered so that
+ * the caller's single re-drive still fits inside the 60s the card used to be
+ * able to wait. Goes through `timeoutMs` rather than a raw signal so a timeout
+ * still raises fetchApi's own telemetry.
  */
-const ANSWER_ASK_TIMEOUT_MS = 30_000
+const ANSWER_ASK_TIMEOUT_MS = 15_000
 
 export class AgentApiError extends Error {
   readonly status: number
