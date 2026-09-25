@@ -222,6 +222,7 @@ const chipClass = (key: PopoverKey) =>
           <span class="px-3">×{{ takes }}</span>
         </button>
       </div>
+      <slot name="generation-settings" />
       <CinematicGenerateAction
         :gate
         :workspace-name="workspaceName"

@@ -373,26 +373,7 @@ function chooseStartingImage() {
       >
         {{ tcAssets('limit', locale) }}
       </p>
-      <label
-        v-if="selectedModel?.seed"
-        class="flex items-center gap-2 text-xs text-primary-comfy-canvas"
-        >{{ libraryCopy('seed', locale)
-        }}<input
-          :value="requestedSeed ?? ''"
-          type="number"
-          :step="selectedModel.seed.step"
-          :min="selectedModel.seed.minimum"
-          :max="selectedModel.seed.maximum"
-          :placeholder="libraryCopy('random', locale)"
-          :disabled="studio.rendering.value"
-          class="h-9 w-32 rounded-lg border border-transparency-white-t20 bg-primary-comfy-ink px-2 text-primary-warm-white"
-          @input="
-            requestedSeed =
-              ($event.target as HTMLInputElement).value === ''
-                ? undefined
-                : Number(($event.target as HTMLInputElement).value)
-          "
-      /></label>
+
       <p
         v-if="
           mode === 'image' &&
@@ -645,7 +626,30 @@ function chooseStartingImage() {
           @open="openPopover"
           @generate="generate"
           @cancel="studio.cancel"
-        />
+        >
+          <template #generation-settings>
+            <label
+              v-if="selectedModel?.seed"
+              class="flex items-center gap-2 text-xs text-primary-comfy-canvas"
+              >{{ libraryCopy('seed', locale)
+              }}<input
+                :value="requestedSeed ?? ''"
+                type="number"
+                :step="selectedModel.seed.step"
+                :min="selectedModel.seed.minimum"
+                :max="selectedModel.seed.maximum"
+                :placeholder="libraryCopy('random', locale)"
+                :disabled="studio.rendering.value"
+                class="h-9 w-32 rounded-lg border border-transparency-white-t20 bg-primary-comfy-ink px-2 text-primary-warm-white"
+                @input="
+                  requestedSeed =
+                    ($event.target as HTMLInputElement).value === ''
+                      ? undefined
+                      : Number(($event.target as HTMLInputElement).value)
+                "
+            /></label>
+          </template>
+        </CinematicComposer>
       </div>
     </div>
 
