@@ -4,7 +4,11 @@ beforeEach(() => {
   vi.resetModules()
 })
 
-it.for(['@comfyorg/account-core/webSession', '@comfyorg/account-core/testing'])(
+it.for([
+  '@comfyorg/account-core/webSession',
+  '@comfyorg/account-core/webSessionFlag',
+  '@comfyorg/account-core/testing'
+])(
   'importing %s starts no timer, listener, channel, or request',
   async (specifier) => {
     const fetchSpy = vi.fn<typeof fetch>()
