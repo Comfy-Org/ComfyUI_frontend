@@ -1,16 +1,20 @@
-import { expect, mergeTests } from '@playwright/test'
+import { mergeTests } from '@playwright/test'
 import type { Locator } from '@playwright/test'
 
 import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import {
+  comfyExpect as expect,
+  comfyPageFixture as test
+} from '@e2e/fixtures/ComfyPage'
 import { ExecutionHelper } from '@e2e/fixtures/helpers/ExecutionHelper'
 import {
   getPromotedWidgetNames,
   getPromotedWidgetCountByName
 } from '@e2e/fixtures/utils/promotedWidgets'
 import { VueNodeFixture } from '@e2e/fixtures/utils/vueNodeFixtures'
+import { previewImageNodeFixture } from '@e2e/fixtures/previewImageNodeFixture'
 import { webSocketFixture } from '@e2e/fixtures/ws'
-const wstest = mergeTests(test, webSocketFixture)
+const wstest = mergeTests(test, webSocketFixture, previewImageNodeFixture)
 
 test.describe('Vue Nodes Image Preview', { tag: '@vue-nodes' }, () => {
   async function loadImageOnNode(comfyPage: ComfyPage) {
@@ -189,10 +193,29 @@ async function countColumns(locator: Locator) {
   })
 }
 
+async function pressAndTrackFocus(
+  comfyPage: ComfyPage,
+  dialog: Locator,
+  key: string,
+  count: number
+): Promise<boolean[]> {
+  const focusStates: boolean[] = []
+  for (let press = 0; press < count; press++) {
+    await comfyPage.page.keyboard.press(key)
+    focusStates.push(
+      await dialog.evaluate(
+        (element) =>
+          !!document.activeElement && element.contains(document.activeElement)
+      )
+    )
+  }
+  return focusStates
+}
+
 test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
   wstest(
     'Image previews tile to fit node',
-    async ({ comfyMouse, comfyPage, getWebSocket }) => {
+    async ({ comfyPage, getWebSocket }) => {
       const execution = new ExecutionHelper(comfyPage, await getWebSocket())
 
       await test.step('Add node', async () => {
@@ -213,14 +236,221 @@ test.describe('Vue Nodes Batch Image Preview', { tag: '@vue-nodes' }, () => {
         await expect(node.imageGrid.locator('img')).toHaveCount(100)
       })
 
-      const { bottomRight } = node.resize
+      // The node is already at its minimum width, so the narrow case has to be
+      // reached by widening first and then shrinking back toward that floor.
       await expect.poll(() => countColumns(node.imageGrid)).toBe(10)
-      await comfyMouse.dragElementBy(bottomRight, { x: 200 })
+
+      await node.resizeFromCorner('SE', 400, 0)
       await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(10)
-      await comfyMouse.dragElementBy(bottomRight, { x: -200, y: 200 })
+      const widestColumns = await countColumns(node.imageGrid)
+
+      await node.resizeFromCorner('SE', -200, 0)
+      await expect
+        .poll(() => countColumns(node.imageGrid))
+        .toBeLessThan(widestColumns)
+      await expect.poll(() => countColumns(node.imageGrid)).toBeGreaterThan(10)
+
+      // Back to the starting width, but taller: the extra vertical room lets
+      // the tiler settle on larger tiles in fewer columns than it began with.
+      await node.resizeFromCorner('SE', -200, 200)
       await expect.poll(() => countColumns(node.imageGrid)).toBeLessThan(10)
     }
   )
+
+  wstest(
+    'opens the lightbox when a grid image is double-clicked',
+    async ({ comfyPage, getWebSocket, addPreviewImageNode, downloads }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const node = await addPreviewImageNode()
+      const gridImages = node.imageGrid.locator('img')
+
+      await test.step('Inject a multi-image grid', async () => {
+        const images = [
+          { filename: 'decoy-a.png', subfolder: '', type: 'input' },
+          { filename: 'decoy-b.png', subfolder: '', type: 'input' },
+          { filename: 'example.png', subfolder: '', type: 'input' },
+          { filename: 'decoy-d.png', subfolder: '', type: 'input' }
+        ]
+        execution.executed('', '1', { images })
+        await expect(gridImages).toHaveCount(4)
+      })
+
+      await test.step('The grid requests lightweight thumbnails', async () => {
+        await expect(gridImages.first()).toHaveAttribute(
+          'src',
+          /[?&]preview=webp(%3B|;)75/
+        )
+      })
+
+      const nodeBoxBefore = await node.root.boundingBox()
+      if (!nodeBoxBefore) throw new Error('node has no bounding box')
+      const selectedBefore = await comfyPage.nodeOps.getSelectedNodeIds()
+      const lightbox = comfyPage.page.getByRole('dialog', { name: 'Gallery' })
+
+      await test.step('Double-click the third cell', async () => {
+        await node.imageGrid
+          .getByRole('button', { name: 'View image 3 of 4' })
+          .dblclick({ delay: 5 })
+
+        await expect(lightbox).toBeVisible()
+      })
+
+      await test.step('It opens that cell at full resolution', async () => {
+        const lightboxImage = lightbox.locator('img').first()
+        await expect(lightboxImage).toHaveAttribute(
+          'src',
+          /[?&]filename=example\.png/
+        )
+        await expect(lightboxImage).not.toHaveAttribute('src', /decoy-/)
+        await expect(lightboxImage).not.toHaveAttribute('src', /[?&]preview=/)
+        await expect(lightbox.getByLabel('Previous')).toBeVisible()
+        await expect(lightbox.getByLabel('Next')).toBeVisible()
+      })
+
+      await test.step('The node is untouched by the gesture', async () => {
+        expect(downloads).toEqual([])
+        await expect(comfyPage.page.locator('.mask-editor-dialog')).toHaveCount(
+          0
+        )
+        await expect(node.root).toHaveBounds(nodeBoxBefore)
+        await expect
+          .poll(() => comfyPage.nodeOps.getSelectedNodeIds())
+          .toEqual(selectedBefore)
+      })
+
+      await test.step('Escape closes the lightbox', async () => {
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(lightbox).toBeHidden()
+      })
+    }
+  )
+
+  wstest(
+    'opens the lightbox on a dense grid cell that the action bar covers',
+    async ({ comfyPage, getWebSocket, addPreviewImageNode, downloads }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const node = await addPreviewImageNode()
+      const gridImages = node.imageGrid.locator('img')
+
+      await test.step('Inject a dense grid', async () => {
+        const images = Array.from({ length: 16 }, (_unused, index) => ({
+          filename: index === 1 ? 'example.png' : `decoy-${index}.png`,
+          subfolder: '',
+          type: 'input'
+        }))
+        execution.executed('', '1', { images })
+        await expect(gridImages).toHaveCount(16)
+      })
+
+      const lightbox = comfyPage.page.getByRole('dialog', { name: 'Gallery' })
+
+      await test.step('Double-click a cell the action bar overlaps', async () => {
+        await node.imageGrid
+          .getByRole('button', { name: 'View image 2 of 16' })
+          .dblclick({ delay: 5 })
+
+        await expect(lightbox).toBeVisible()
+      })
+
+      await test.step('The chosen cell opens at full resolution', async () => {
+        const lightboxImage = lightbox.locator('img').first()
+        await expect(lightboxImage).toHaveAttribute(
+          'src',
+          /[?&]filename=example\.png/
+        )
+        await expect(lightboxImage).not.toHaveAttribute('src', /decoy-/)
+        await expect(lightboxImage).not.toHaveAttribute('src', /[?&]preview=/)
+      })
+
+      await test.step('No download or mask editor was triggered', async () => {
+        expect(downloads).toEqual([])
+        await expect(comfyPage.page.locator('.mask-editor-dialog')).toHaveCount(
+          0
+        )
+      })
+
+      await test.step('Escape closes the lightbox', async () => {
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(lightbox).toBeHidden()
+      })
+    }
+  )
+
+  wstest(
+    'stays open when the lightbox action button is double-clicked',
+    async ({ comfyPage, getWebSocket, addPreviewImageNode }) => {
+      const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+      const node = await addPreviewImageNode()
+
+      const lightbox = comfyPage.page.getByRole('dialog', { name: 'Gallery' })
+
+      await test.step('Show a single preview image', async () => {
+        execution.executed('', '1', {
+          images: [{ filename: 'example.png', subfolder: '', type: 'input' }]
+        })
+        await expect(node.imagePreview.locator('img').first()).toBeVisible()
+      })
+
+      await test.step('Double-click the trigger button', async () => {
+        await node.imagePreview.getByRole('region').hover()
+        await comfyPage.page
+          .getByRole('button', { name: 'Open in lightbox' })
+          .dblclick({ delay: 5 })
+      })
+
+      await test.step('The second click does not dismiss it', async () => {
+        await comfyPage.nextFrame()
+        await expect(lightbox).toBeVisible()
+      })
+
+      await test.step('Escape closes the lightbox', async () => {
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(lightbox).toBeHidden()
+      })
+    }
+  )
+
+  for (const key of ['Tab', 'Shift+Tab'] as const) {
+    wstest(
+      `keeps focus inside the lightbox across repeated ${key}`,
+      async ({ comfyPage, getWebSocket, addPreviewImageNode }) => {
+        const execution = new ExecutionHelper(comfyPage, await getWebSocket())
+        const node = await addPreviewImageNode()
+        const gridImages = node.imageGrid.locator('img')
+
+        await test.step('Open the lightbox on a four-image grid', async () => {
+          execution.executed('', '1', {
+            images: Array.from({ length: 4 }, () => ({
+              filename: 'example.png',
+              subfolder: '',
+              type: 'input'
+            }))
+          })
+          await expect(gridImages).toHaveCount(4)
+          await expect(gridImages.first()).toBeVisible()
+
+          await node.imageGrid
+            .getByRole('button', { name: 'View image 3 of 4' })
+            .dblclick({ delay: 5 })
+        })
+
+        const lightbox = comfyPage.page.getByRole('dialog', { name: 'Gallery' })
+        await expect(lightbox).toBeVisible()
+
+        const focusStates = await pressAndTrackFocus(
+          comfyPage,
+          lightbox,
+          key,
+          5
+        )
+
+        expect(focusStates).toEqual([true, true, true, true, true])
+
+        await comfyPage.page.keyboard.press('Escape')
+        await expect(lightbox).toBeHidden()
+      }
+    )
+  }
 
   wstest(
     'requests lightweight thumbnail URLs for grid cells',
