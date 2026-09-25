@@ -1,6 +1,6 @@
 /**
  * Widget prop filtering utilities
- * Filters out style-related and customization props from PrimeVue components
+ * Filters out style-related and customization props from widget components
  * to maintain consistent widget appearance across the application
  */
 

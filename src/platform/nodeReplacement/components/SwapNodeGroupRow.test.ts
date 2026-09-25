@@ -2,7 +2,6 @@ import { getActivePinia } from 'pinia'
 import { fromAny } from '@total-typescript/shoehorn'
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -61,7 +60,7 @@ function renderRow(
       ...props
     },
     global: {
-      plugins: [getActivePinia()!, PrimeVue, i18n],
+      plugins: [getActivePinia()!, i18n],
       stubs: {
         TransitionCollapse: { template: '<div><slot /></div>' }
       }

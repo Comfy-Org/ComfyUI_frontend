@@ -78,7 +78,7 @@ export interface SimplifiedWidget<
 
   displayLabel?: string
 
-  /** Widget options including filtered PrimeVue props */
+  /** Widget options including filtered presentation props */
   options?: O
 
   /** Override for use with subgraph promoted asset widgets*/

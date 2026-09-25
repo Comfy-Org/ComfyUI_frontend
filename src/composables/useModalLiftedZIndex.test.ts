@@ -1,7 +1,8 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createApp, ref } from 'vue'
 import type { Ref } from 'vue'
+
+import { zIndexManager } from '@/utils/zIndexManager'
 
 import { overlayZIndexKey, useModalLiftedZIndex } from './useModalLiftedZIndex'
 
@@ -15,7 +16,7 @@ function setupStyle(open: Ref<boolean>, parentZIndex = 0) {
 
 function registerDialog() {
   const el = document.createElement('div')
-  ZIndex.set('modal', el, 1700)
+  zIndexManager.set('modal', el, 1700)
   registered.push(el)
   return Number(el.style.zIndex)
 }
@@ -23,7 +24,7 @@ function registerDialog() {
 afterEach(() => {
   let el = registered.pop()
   while (el) {
-    ZIndex.clear(el)
+    zIndexManager.clear(el)
     el = registered.pop()
   }
 })
@@ -42,7 +43,7 @@ describe('useModalLiftedZIndex', () => {
     // ~1800 a time. Reporters saw the dialog at 7306 while the dropdown sat at
     // its static z-3000; a single fresh dialog only reaches ~1702 and hides this.
     const other = document.createElement('div')
-    ZIndex.set('overlay', other, 1800)
+    zIndexManager.set('overlay', other, 1800)
     registered.push(other)
     const dialogZIndex = registerDialog()
     expect(dialogZIndex).toBeGreaterThan(3000)

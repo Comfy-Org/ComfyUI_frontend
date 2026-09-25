@@ -3,7 +3,6 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { fromPartial } from '@total-typescript/shoehorn'
 
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { computed, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -138,7 +137,7 @@ describe('WidgetSelectDropdown', () => {
         ...extraProps
       },
       global: {
-        plugins: [PrimeVue, getActivePinia()!, i18n]
+        plugins: [getActivePinia()!, i18n]
       }
     })
   }

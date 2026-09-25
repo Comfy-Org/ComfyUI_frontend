@@ -39,7 +39,7 @@ Prefer Vue native options when available:
 - Use `cn()` from `@comfyorg/tailwind-utils` for conditional classes
 - Refer to packages/design-system/src/css/style.css for design tokens and tailwind configuration
 - Exception: when third-party libraries render runtime DOM outside Vue templates
-  (for example xterm internals inside PrimeVue terminal wrappers), scoped
+  (for example xterm internals inside terminal wrappers), scoped
   `:deep()` selectors are allowed. Add a brief inline comment explaining why the
   exception is required.
 

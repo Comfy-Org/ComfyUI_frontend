@@ -14,7 +14,6 @@
 </template>
 
 <script setup lang="ts">
-import { ZIndex } from '@primeuix/utils/zindex'
 import {
   computed,
   onMounted,
@@ -36,6 +35,7 @@ import {
 import { app } from '@/scripts/app'
 import { useWorkspaceStore } from '@/stores/workspaceStore'
 import { electronAPI } from '@/utils/envUtil'
+import { zIndexManager } from '@/utils/zIndexManager'
 import { useConflictDetection } from '@/workbench/extensions/manager/composables/useConflictDetection'
 
 const workspaceStore = useWorkspaceStore()
@@ -49,8 +49,8 @@ watchPostEffect((onCleanup) => {
   const overlay = loadingOverlay.value
   if (!isLoading.value || !overlay) return
 
-  ZIndex.set(MODAL_Z_KEY, overlay, MODAL_Z_BASE)
-  onCleanup(() => ZIndex.clear(overlay))
+  zIndexManager.set(MODAL_Z_KEY, overlay, MODAL_Z_BASE)
+  onCleanup(() => zIndexManager.clear(overlay))
 })
 
 watch(

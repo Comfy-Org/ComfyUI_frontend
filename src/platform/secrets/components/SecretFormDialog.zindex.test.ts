@@ -1,8 +1,9 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
+
+import { zIndexManager } from '@/utils/zIndexManager'
 
 import SecretFormDialog from './SecretFormDialog.vue'
 
@@ -36,7 +37,7 @@ describe('SecretFormDialog z-index stacking', () => {
 
   beforeEach(() => {
     const openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 1700)
+    zIndexManager.set('modal', openModal, 1700)
     openModalZIndex = Number(openModal.style.zIndex)
   })
 

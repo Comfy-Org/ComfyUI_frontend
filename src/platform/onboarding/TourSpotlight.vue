@@ -151,7 +151,6 @@
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
 import { useEventListener, useWindowSize } from '@vueuse/core'
-import { ZIndex } from '@primeuix/utils/zindex'
 import { FocusScope } from 'reka-ui'
 import {
   computed,
@@ -166,6 +165,7 @@ import { useI18n } from 'vue-i18n'
 
 import { MODAL_Z_BASE, MODAL_Z_KEY } from '@/components/dialog/vRekaZIndex'
 import Button from '@/components/ui/button/Button.vue'
+import { zIndexManager } from '@/utils/zIndexManager'
 
 import CoachmarkCard from './CoachmarkCard.vue'
 import {
@@ -263,10 +263,8 @@ async function raiseOverlay() {
   await nextTick()
   const el = overlayRef.value
   if (!el) return
-  // ZIndex.set pushes a fresh entry into the shared modal sequence on every
-  // call, so clear the previous one or per-step re-raises leak entries.
-  ZIndex.clear(el)
-  ZIndex.set(MODAL_Z_KEY, el, MODAL_Z_BASE)
+  zIndexManager.clear(el)
+  zIndexManager.set(MODAL_Z_KEY, el, MODAL_Z_BASE)
 }
 
 watch(
@@ -284,7 +282,7 @@ watch(
 )
 
 onBeforeUnmount(() => {
-  if (overlayRef.value) ZIndex.clear(overlayRef.value)
+  if (overlayRef.value) zIndexManager.clear(overlayRef.value)
 })
 
 function viewport() {

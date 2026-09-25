@@ -1,7 +1,6 @@
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { describe, expect, it, vi } from 'vitest'
 
 import type { SwapNodeGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
@@ -45,7 +44,7 @@ function mountCard(
       ...(callbacks?.onReplace ? { onReplace: callbacks.onReplace } : {})
     },
     global: {
-      plugins: [getActivePinia()!, PrimeVue]
+      plugins: [getActivePinia()!]
     }
   })
 }

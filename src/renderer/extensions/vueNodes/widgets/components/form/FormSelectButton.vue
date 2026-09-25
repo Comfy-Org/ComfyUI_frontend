@@ -49,8 +49,8 @@ type ModelValue = T extends object ? T['value'] : T
 interface Props {
   modelValue: ModelValue | null | undefined
   options: T[]
-  optionLabel?: string // PrimeVue compatible prop
-  optionValue?: string // PrimeVue compatible prop
+  optionLabel?: string
+  optionValue?: string
   disabled?: boolean
 }
 
@@ -68,7 +68,7 @@ const {
 
 const emit = defineEmits<Emits>()
 
-// handle both string/number arrays and object arrays with PrimeVue compatibility
+// Handle both string/number arrays and object arrays.
 const getOptionValue = (option: T, index: number): ModelValue => {
   if (typeof option !== 'object') {
     return option as ModelValue
@@ -85,7 +85,7 @@ const getOptionValue = (option: T, index: number): ModelValue => {
   return value as ModelValue
 }
 
-// for display with PrimeVue compatibility
+// Resolve the option label for display.
 const getOptionLabel = (option: T): string => {
   if (typeof option === 'object' && option !== null) {
     const labelField = optionLabel

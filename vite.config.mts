@@ -715,11 +715,6 @@ export default defineConfig({
 
             // UI component libraries
             {
-              name: 'vendor-primevue',
-              test: /[\\/]node_modules[\\/](@?primevue|@primeuix)[\\/]/,
-              priority: 15
-            },
-            {
               name: 'vendor-reka-ui',
               test: /[\\/]node_modules[\\/]reka-ui[\\/]/,
               priority: 15
