@@ -191,6 +191,10 @@ vi.mock('@/renderer/core/canvas/links/linkDropOrchestrator', () => ({
   resolveNodeSurfaceSlotCandidate: () => null
 }))
 
+vi.mock('@/platform/workflow/management/stores/workflowStore', () => ({
+  useWorkflowStore: () => ({ activeWorkflow: null })
+}))
+
 vi.mock('@vueuse/core', () => ({
   useEventListener: (event: string, handler: (...args: unknown[]) => void) => {
     capturedHandlers[event] = handler
@@ -202,10 +206,6 @@ vi.mock('@vueuse/core', () => ({
 vi.mock('@/lib/litegraph/src/LLink', () => ({
   LLink: { getReroutes: () => [] },
   slotFloatingLinks: () => []
-}))
-
-vi.mock('@/lib/litegraph/src/types/globalEnums', () => ({
-  LinkDirection: { LEFT: 0, RIGHT: 1, NONE: -1 }
 }))
 
 vi.mock('@/utils/rafBatch', () => ({

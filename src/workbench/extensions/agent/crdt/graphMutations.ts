@@ -303,6 +303,17 @@ function serialisableSlotFields(
 }
 
 /**
+ * `ghost` marks a node still following the cursor during search-box placement.
+ * The placement click clears it locally and mints no op, so a document that
+ * recorded the flag would resurrect it here and leave an already-placed node
+ * translucent and unclickable.
+ */
+function cloneNodeFlags(value: unknown): Record<string, unknown> {
+  const { ghost: _ghost, ...flags } = cloneRecord(value)
+  return flags
+}
+
+/**
  * A supplied input slot whose record has no `link` key carries no link
  * information (as opposed to `link: null`, which means unlinked). Such slots
  * keep the link of the `existing` slot at the same index, or `null` when the
@@ -752,17 +763,21 @@ function prepareNode(
   const [x, y] = readPair(payload.pos, [0, 0])
   const [width, height] = readPair(payload.size, [270, 100])
   const mode = Number(payload.mode)
+  const flags = cloneNodeFlags(payload.flags)
   const state: NodeState = {
     id,
     graphId: scope.owningGraphId,
     type: payload.type,
     title: resolveNodeTitle(payload, incumbent),
-    flags: cloneRecord(payload.flags),
+    flags,
     inputs: prepareInputSlots(payload.inputs, incumbent?.inputs),
     outputs: prepareOutputSlots(payload.outputs),
     mode: Number.isInteger(mode) ? mode : 0,
     properties: cloneRecord(payload.properties) as NodeState['properties'],
-    lastSerialization: structuredClone(payload) as unknown as ISerialisedNode,
+    lastSerialization: structuredClone({
+      ...payload,
+      flags
+    }) as unknown as ISerialisedNode,
     titleReconcileBaseline: {
       title: typeof payload.title === 'string' ? payload.title : undefined
     },
