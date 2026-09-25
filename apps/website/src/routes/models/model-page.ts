@@ -94,6 +94,47 @@ function cutAtWord(text: string, maxLength: number) {
   return `${(lastSpace > 0 ? cut.slice(0, lastSpace) : cut).replace(/[\s,;:.]+$/, '')}…`
 }
 
+function compose(...parts: (string | undefined)[]) {
+  return parts.filter(Boolean).join(' ')
+}
+
+function metaPriceClause(priceEstimate: string | undefined, locale: Locale) {
+  if (!priceEstimate) return undefined
+  const { amount, per } = splitPriceLabel(priceEstimate)
+  const unit = per?.slice(1).toLowerCase()
+  return unit
+    ? interpolate(t('workshop.model.meta.price', locale), { amount, unit })
+    : interpolate(t('workshop.model.meta.priceNoUnit', locale), { amount })
+}
+
+function metaLead(who: string, summary: string | undefined, locale: Locale) {
+  return summary
+    ? interpolate(t('workshop.model.meta.lead', locale), { who, summary })
+    : interpolate(t('workshop.model.meta.leadNoSummary', locale), { who })
+}
+
+function fitSummary(
+  who: string,
+  summary: string | undefined,
+  priceClause: string | undefined,
+  locale: Locale
+) {
+  const bare = compose(metaLead(who, summary, locale), priceClause)
+  if (bare.length <= META_DESCRIPTION_MAX) return bare
+  const summaryRoom =
+    (summary?.length ?? 0) - (bare.length - META_DESCRIPTION_MAX)
+  const trimmed =
+    summary && summaryRoom > 0
+      ? compose(
+          metaLead(who, cutAtWord(summary, summaryRoom), locale),
+          priceClause
+        )
+      : bare
+  return trimmed.length <= META_DESCRIPTION_MAX
+    ? trimmed
+    : cutAtWord(trimmed, META_DESCRIPTION_MAX)
+}
+
 export function modelMetaDescription(
   page: {
     model: { name: string; provider?: string; summary?: string }
@@ -111,47 +152,14 @@ export function modelMetaDescription(
           provider
         })
       : name
-  const lead = (shownSummary: string | undefined) =>
-    shownSummary
-      ? interpolate(t('workshop.model.meta.lead', locale), {
-          who,
-          summary: shownSummary
-        })
-      : interpolate(t('workshop.model.meta.leadNoSummary', locale), { who })
-  const price = page.priceEstimate
-    ? splitPriceLabel(page.priceEstimate)
-    : undefined
-  const priceUnit = price?.per?.slice(1).toLowerCase()
-  const priceClause = price
-    ? interpolate(
-        t(
-          priceUnit
-            ? 'workshop.model.meta.price'
-            : 'workshop.model.meta.priceNoUnit',
-          locale
-        ),
-        { amount: price.amount, unit: priceUnit ?? '' }
-      )
-    : undefined
-  const compose = (...parts: (string | undefined)[]) =>
-    parts.filter(Boolean).join(' ')
-
-  for (const cta of [
+  const lead = metaLead(who, summary, locale)
+  const priceClause = metaPriceClause(page.priceEstimate, locale)
+  const fitting = [
     t('workshop.model.meta.cta', locale),
-    t('workshop.model.meta.ctaShort', locale)
-  ]) {
-    const description = compose(lead(summary), cta, priceClause)
-    if (description.length <= META_DESCRIPTION_TARGET) return description
-  }
-  const bare = compose(lead(summary), priceClause)
-  if (bare.length <= META_DESCRIPTION_MAX) return bare
-  const summaryRoom =
-    (summary?.length ?? 0) - (bare.length - META_DESCRIPTION_MAX)
-  const trimmed =
-    summary && summaryRoom > 0
-      ? compose(lead(cutAtWord(summary, summaryRoom)), priceClause)
-      : bare
-  return trimmed.length <= META_DESCRIPTION_MAX
-    ? trimmed
-    : cutAtWord(trimmed, META_DESCRIPTION_MAX)
+    t('workshop.model.meta.ctaShort', locale),
+    undefined
+  ]
+    .map((cta) => compose(lead, cta, priceClause))
+    .find((description) => description.length <= META_DESCRIPTION_TARGET)
+  return fitting ?? fitSummary(who, summary, priceClause, locale)
 }
