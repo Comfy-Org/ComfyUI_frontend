@@ -344,3 +344,20 @@ for (const { width, half, path } of tabletToolbars) {
       await expect(control).toBeInViewport({ ratio: 1 })
   })
 }
+
+test('keeps Run on screen beside a workflow form taller than the window', async ({
+  page,
+  context
+}) => {
+  await mockWorkflowVisibility(context, true)
+  await page.setViewportSize({ width: 1280, height: 500 })
+  await page.goto('/models/workflows/extend-image-borders/')
+
+  const run = page.getByTestId('workflow-run-footer')
+  await expect(run.getByRole('link', { name: 'Sign in to run' })).toBeVisible()
+  await page
+    .getByRole('heading', { name: 'Make it yours' })
+    .evaluate((heading) => heading.scrollIntoView({ block: 'start' }))
+
+  await expect(run).toBeInViewport({ ratio: 1 })
+})

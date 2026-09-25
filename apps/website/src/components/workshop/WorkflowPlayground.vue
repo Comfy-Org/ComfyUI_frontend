@@ -210,7 +210,7 @@ function start() {
     class="grid items-start gap-6 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]"
   >
     <section
-      class="overflow-hidden rounded-2xl border border-transparency-white-t20"
+      class="rounded-2xl border border-transparency-white-t20"
       aria-labelledby="workflow-inputs-heading"
     >
       <form @submit.prevent="start">
@@ -240,7 +240,10 @@ function start() {
             {{ t('workshop.form.draftRestoreFailed') }}
           </p>
         </div>
-        <div class="space-y-3 border-t border-transparency-white-t8 p-5 lg:p-6">
+        <div
+          class="sticky bottom-0 z-10 space-y-3 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-5 backdrop-blur-sm lg:p-6"
+          data-testid="workflow-run-footer"
+        >
           <p class="text-xs/relaxed text-primary-warm-gray">
             {{ t('workshop.workflow.cloudBilling') }}
           </p>

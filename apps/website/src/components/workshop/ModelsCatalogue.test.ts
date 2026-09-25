@@ -60,6 +60,33 @@ const launchModels: WorkshopModel[] = [
 ]
 
 describe('ModelsCatalogue', () => {
+  it.for([
+    {
+      tab: 'Models',
+      subtitle:
+        'Try the latest AI models with your own ideas, right in your browser.'
+    },
+    {
+      tab: 'Workflows',
+      subtitle:
+        'Turn your ideas into finished results with multi-step workflows powered by AI models.'
+    },
+    {
+      tab: 'Apps',
+      subtitle:
+        'Take on bigger ideas with apps that bring multiple workflows together.'
+    }
+  ])('introduces the $tab tab in its own words', async ({ tab, subtitle }) => {
+    const user = userEvent.setup()
+    render(ModelsCatalogue, { props: { models: launchModels } })
+    if (tab !== 'Models')
+      await user.click(screen.getByRole('button', { name: tab }))
+
+    expect(await screen.findByTestId('workshop-hero')).toHaveTextContent(
+      subtitle
+    )
+  })
+
   it('separates workflow outcomes from Models and searches their supporting model names', async () => {
     const user = userEvent.setup()
     render(ModelsCatalogue, { props: { models: launchModels } })
