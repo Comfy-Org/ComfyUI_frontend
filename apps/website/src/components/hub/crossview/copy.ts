@@ -101,9 +101,9 @@ export const copy = {
   generatingHelp:
     'The camera is locked while this runs. The first run after a quiet spell also loads the model.',
   viewResult: 'View result',
-  compare: 'Drag to compare the source clip and the result',
+  exampleResult: 'Example result',
   exampleHelp:
-    'The same clip, re-shot from a new angle at 768p — drag the seam to compare. Analyze its depth to aim a camera of your own, or choose another clip.',
+    'The clip above, re-shot from a new angle at 768p. Analyze its depth to aim a camera of your own, or choose another clip.',
   sound: 'Sound',
   sounds: { generated: 'Generated', original: 'Original clip' } as Record<
     string,
