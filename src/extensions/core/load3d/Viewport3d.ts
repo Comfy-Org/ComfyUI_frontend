@@ -222,6 +222,7 @@ export class Viewport3d {
   }
 
   private renderView(): void {
+    this.renderer.state.reset()
     this.view.beginRender()
     this.runPreRenderCallbacks()
     this.renderMainScene()
