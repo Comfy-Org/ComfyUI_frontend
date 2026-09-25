@@ -1,5 +1,18 @@
 import { spawnSync } from 'node:child_process'
-import type { SpawnSyncOptions, SpawnSyncReturns } from 'node:child_process'
+import type {
+  SpawnSyncOptionsWithBufferEncoding,
+  SpawnSyncReturns
+} from 'node:child_process'
+
+type CommandOutput = Buffer | null | undefined
+type RunCommandResult = Omit<
+  SpawnSyncReturns<Buffer>,
+  'output' | 'stdout' | 'stderr'
+> & {
+  output: CommandOutput[]
+  stdout: CommandOutput
+  stderr: CommandOutput
+}
 
 /**
  * pnpm is pnpm.cmd on Windows, and Node >=18.20 refuses to spawn a .cmd
@@ -23,12 +36,12 @@ export function quoteForCmd(argument: string): string {
 export function runCommand(
   command: string,
   args: string[],
-  options: SpawnSyncOptions = {}
-): SpawnSyncReturns<Buffer> {
+  options: SpawnSyncOptionsWithBufferEncoding = {}
+): RunCommandResult {
   const shell = options.shell ?? needsShell()
   const finalArgs = shell === true ? args.map(quoteForCmd) : args
   return spawnSync(command, finalArgs, {
     ...options,
     shell
-  }) as SpawnSyncReturns<Buffer>
+  })
 }

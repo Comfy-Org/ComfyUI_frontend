@@ -203,9 +203,7 @@ describe('ReleaseNotificationToast', () => {
       'Comfy-Desktop.CheckForUpdates'
     )
     expect(mockWindowOpen).not.toHaveBeenCalled()
-    expect(
-      vi.mocked(useErrorHandling()).toastErrorHandler
-    ).not.toHaveBeenCalled()
+    expect(useErrorHandling().toastErrorHandler).not.toHaveBeenCalled()
   })
 
   it('shows an error toast if the desktop updater flow fails on desktop', async () => {
@@ -231,9 +229,7 @@ describe('ReleaseNotificationToast', () => {
 
     await user.click(screen.getByRole('button', { name: /update/i }))
 
-    expect(
-      vi.mocked(useErrorHandling()).toastErrorHandler
-    ).toHaveBeenCalledWith(error)
+    expect(useErrorHandling().toastErrorHandler).toHaveBeenCalledWith(error)
     expect(mockWindowOpen).not.toHaveBeenCalled()
   })
 
