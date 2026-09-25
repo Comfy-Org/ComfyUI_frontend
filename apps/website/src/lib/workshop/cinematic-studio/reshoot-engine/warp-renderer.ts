@@ -8,6 +8,13 @@
  * pass the nearest point wins, and a later pass overwrites an earlier one.
  * Clearing the depth buffer between passes reproduces exactly that. What the
  * source camera never saw stays magenta, the colour the LoRA was trained on.
+ *
+ * The points come from the analysis's preview-sized depth, but they can be
+ * drawn onto a larger canvas, the size of the output. There the node's 25
+ * passes would leave a hatched pattern (points no longer land one per pixel,
+ * and the last pass wins), so each point is drawn once as a square just wide
+ * enough to meet its neighbours, and the depth test keeps the nearest. At the
+ * source's own size the node's passes run as they are: the parity test.
  */
 
 import type { Mat4 } from './camera'
@@ -20,11 +27,14 @@ precision highp float;
 precision highp int;
 uniform highp sampler2D uDepth;
 uniform ivec2 uSize;
+uniform ivec2 uOutSize;
 uniform mat4 uInvTarget;
+uniform float uSrcFx;
 uniform float uFx;
 uniform vec2 uCenter;
 uniform float uThreshold;
 uniform ivec2 uOffset;
+uniform float uPointSize;
 out vec2 vUv;
 void main() {
   int w = uSize.x;
@@ -33,15 +43,15 @@ void main() {
   // NaN fails every comparison, so no-geometry pixels drop out here too
   if (!(z > 0.0 && z < uThreshold)) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
   vec2 size = vec2(uSize);
-  vec3 src = vec3((float(p.x) - size.x * 0.5) / uFx * z,
-                  (float(p.y) - size.y * 0.5) / uFx * z, z);
+  vec3 src = vec3((float(p.x) - size.x * 0.5) / uSrcFx * z,
+                  (float(p.y) - size.y * 0.5) / uSrcFx * z, z);
   vec3 d = (uInvTarget * vec4(src, 1.0)).xyz;
   if (d.z <= 0.0) { gl_Position = vec4(2.0, 2.0, 2.0, 1.0); return; }
   vec2 px = roundEven(d.xy / d.z * uFx + uCenter) + vec2(uOffset);
   // pixel centre -> clip space; y flips because row 0 is the top of the frame
-  vec2 ndc = (px + 0.5) / size * 2.0 - 1.0;
+  vec2 ndc = (px + 0.5) / vec2(uOutSize) * 2.0 - 1.0;
   gl_Position = vec4(ndc.x, -ndc.y, d.z / (d.z + uThreshold) * 2.0 - 1.0, 1.0);
-  gl_PointSize = 1.0;
+  gl_PointSize = uPointSize;
   vUv = (vec2(p) + 0.5) / size;
 }`
 
@@ -55,8 +65,11 @@ void main() { outColor = vec4(texture(uColor, vUv).rgb, 1.0); }`
 export interface WarpView {
   /** Camera-to-world pose of the target camera. */
   readonly inverseTarget: Mat4
+  /** Focal length in output pixels. */
   readonly fx: number
-  /** Principal point; vertical_shift moves cy by shift * height. */
+  /** Focal length in source pixels; the output's when the two are one size. */
+  readonly sourceFx?: number
+  /** Principal point in output pixels; vertical_shift moves cy by shift * height. */
   readonly cx: number
   readonly cy: number
 }
@@ -82,10 +95,13 @@ export class WarpRenderer {
   constructor(
     readonly canvas: HTMLCanvasElement,
     readonly width: number,
-    readonly height: number
+    readonly height: number,
+    /** The size drawn at; the source's own when left out. */
+    readonly outWidth = width,
+    readonly outHeight = height
   ) {
-    canvas.width = width
-    canvas.height = height
+    canvas.width = outWidth
+    canvas.height = outHeight
     const gl = canvas.getContext('webgl2', {
       antialias: false,
       preserveDrawingBuffer: true
@@ -105,11 +121,14 @@ export class WarpRenderer {
         'uDepth',
         'uColor',
         'uSize',
+        'uOutSize',
         'uInvTarget',
+        'uSrcFx',
         'uFx',
         'uCenter',
         'uThreshold',
-        'uOffset'
+        'uOffset',
+        'uPointSize'
       ].map((name) => [name, gl.getUniformLocation(program, name)])
     )
     this.depthTex = this.texture()
@@ -153,7 +172,7 @@ export class WarpRenderer {
 
   render(view: WarpView) {
     const { gl, uniforms: u } = this
-    gl.viewport(0, 0, this.width, this.height)
+    gl.viewport(0, 0, this.outWidth, this.outHeight)
     gl.useProgram(this.program)
     gl.bindVertexArray(this.vao)
     gl.activeTexture(gl.TEXTURE0)
@@ -163,7 +182,9 @@ export class WarpRenderer {
     gl.bindTexture(gl.TEXTURE_2D, this.colorTex)
     gl.uniform1i(u.uColor, 1)
     gl.uniform2i(u.uSize, this.width, this.height)
+    gl.uniform2i(u.uOutSize, this.outWidth, this.outHeight)
     gl.uniformMatrix4fv(u.uInvTarget, false, view.inverseTarget)
+    gl.uniform1f(u.uSrcFx, view.sourceFx ?? view.fx)
     gl.uniform1f(u.uFx, view.fx)
     gl.uniform2f(u.uCenter, view.cx, view.cy)
     gl.uniform1f(u.uThreshold, this.threshold)
@@ -172,19 +193,36 @@ export class WarpRenderer {
     gl.clear(gl.COLOR_BUFFER_BIT)
     gl.enable(gl.DEPTH_TEST)
     gl.depthFunc(gl.LESS)
-    for (let dy = -SPLAT; dy <= SPLAT; dy++)
-      for (let dx = -SPLAT; dx <= SPLAT; dx++) {
-        gl.clear(gl.DEPTH_BUFFER_BIT)
-        gl.uniform2i(u.uOffset, dx, dy)
-        gl.drawArrays(gl.POINTS, 0, this.width * this.height)
-      }
+    const points = this.width * this.height
+    if (this.outWidth === this.width) {
+      gl.uniform1f(u.uPointSize, 1)
+      for (let dy = -SPLAT; dy <= SPLAT; dy++)
+        for (let dx = -SPLAT; dx <= SPLAT; dx++) {
+          gl.clear(gl.DEPTH_BUFFER_BIT)
+          gl.uniform2i(u.uOffset, dx, dy)
+          gl.drawArrays(gl.POINTS, 0, points)
+        }
+      return
+    }
+    gl.clear(gl.DEPTH_BUFFER_BIT)
+    gl.uniform2i(u.uOffset, 0, 0)
+    gl.uniform1f(u.uPointSize, Math.ceil(this.outWidth / this.width) + 1)
+    gl.drawArrays(gl.POINTS, 0, points)
   }
 
   /** Read the frame back, for the parity test against the node. */
   pixels(): Uint8Array {
     const { gl } = this
-    const out = new Uint8Array(this.width * this.height * 4)
-    gl.readPixels(0, 0, this.width, this.height, gl.RGBA, gl.UNSIGNED_BYTE, out)
+    const out = new Uint8Array(this.outWidth * this.outHeight * 4)
+    gl.readPixels(
+      0,
+      0,
+      this.outWidth,
+      this.outHeight,
+      gl.RGBA,
+      gl.UNSIGNED_BYTE,
+      out
+    )
     return out
   }
 

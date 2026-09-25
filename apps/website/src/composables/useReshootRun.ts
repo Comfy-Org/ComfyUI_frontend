@@ -15,8 +15,13 @@ import {
   withKey
 } from '../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../lib/workshop/cinematic-studio/reshoot-copy'
+import {
+  cameraAt,
+  keyIndexAt,
+  roundCamera,
+  toKeyframes
+} from '../lib/workshop/cinematic-studio/reshoot-path'
 import type {
-  Keyframe,
   Pose,
   Vec3
 } from '../lib/workshop/cinematic-studio/reshoot-engine/camera'
@@ -177,12 +182,26 @@ export function useReshootRun(locale: Locale = 'en') {
     )
   })
 
-  /** The pose the preview draws: the camera being aimed, around that pivot. */
+  // --- the camera at the playhead. With no keys `camera` is the one camera;
+  // with keys the playhead flies the path, and a pose tried between keys is
+  // shown until Key writes it (moving the playhead lets it go).
+  const audition = shallowRef<ReshootCamera>()
+  watch(frame, () => (audition.value = undefined))
+  const path = computed<ReshootCamera>(() =>
+    audition.value && keys.value.length
+      ? { ...audition.value, fov: camera.fov }
+      : cameraAt(keys.value, frame.value, motion.value, camera)
+  )
+  /** What the globe, sliders and readouts show. */
+  const view = computed(() => roundCamera(path.value))
+  const onKey = computed(() => keyIndexAt(keys.value, frame.value) >= 0)
+
+  /** The pose the preview draws: the camera at the playhead, around the pivot. */
   const pose = computed<Pose>(() => ({
-    az: camera.azimuth,
-    el: camera.elevation,
-    dist: camera.distance,
-    vs: camera.shift,
+    az: path.value.azimuth,
+    el: path.value.elevation,
+    dist: path.value.distance,
+    vs: path.value.shift,
     px: pivot.value[0],
     py: pivot.value[1],
     pz: pivot.value[2]
@@ -320,31 +339,20 @@ export function useReshootRun(locale: Locale = 'en') {
     )
   }
 
-  /** Her keys hold a camera per 0-based frame; the node wants 1-based poses. */
-  function keyframes(): Keyframe[] {
-    return keys.value.map((key) => ({
-      f: key.frame + 1,
-      az: key.camera.azimuth,
-      el: key.camera.elevation,
-      dist: key.camera.distance,
-      vs: key.camera.shift,
-      px: pivot.value[0],
-      py: pivot.value[1],
-      pz: pivot.value[2]
-    }))
-  }
-
   async function generate() {
     if (depth.value !== 'ready' || rendering.value) return
     error.value = undefined
     const n = takes.value.length
     const id = `take-${n}`
+    // two keys make a move; a single key is where the camera holds
+    const moving = keys.value.length >= 2
+    const still = keys.value[0]?.camera ?? camera
     takes.value = [
       ...takes.value,
       {
         id,
         n,
-        camera: { ...camera },
+        camera: { ...still, fov: camera.fov },
         keys: keys.value.length,
         status: 'rendering',
         startedAt: Date.now(),
@@ -358,14 +366,14 @@ export function useReshootRun(locale: Locale = 'en') {
         generateWorkflow({
           clip: await clipSettings(),
           camera: {
-            azimuth: camera.azimuth,
-            elevation: camera.elevation,
-            distance: camera.distance,
+            azimuth: still.azimuth,
+            elevation: still.elevation,
+            distance: still.distance,
             hfov: camera.fov,
-            verticalShift: camera.shift,
+            verticalShift: still.shift,
             pivot: pivot.value,
             keepSourceAim: keepAim.value,
-            keyframes: keyframes(),
+            keyframes: moving ? toKeyframes(keys.value, pivot.value) : [],
             motion: motion.value
           },
           prompt: prompt.value,
@@ -409,16 +417,33 @@ export function useReshootRun(locale: Locale = 'en') {
     if (run.job) void cancelJob(run.job)
   }
 
+  /**
+   * Every way of aiming (globe, drag, wheel, sliders) lands here. On a key it
+   * edits that key; between keys it tries a pose that Key writes; with no
+   * keys it moves the one camera. The lens is one for the whole clip.
+   */
   function aim(patch: Partial<ReshootCamera>) {
-    Object.assign(camera, patch)
     selected.value = 'aim'
+    const { fov, ...move } = patch
+    if (fov !== undefined) camera.fov = fov
+    if (Object.keys(move).length === 0) return
+    const at = keyIndexAt(keys.value, frame.value)
+    if (at >= 0)
+      keys.value = keys.value.map((key, i) =>
+        i === at ? { ...key, camera: { ...key.camera, ...move } } : key
+      )
+    else if (keys.value.length) audition.value = { ...path.value, ...move }
+    else Object.assign(camera, move)
   }
 
-  function addKey() {
-    keys.value = withKey(keys.value, {
-      frame: frame.value,
-      camera: { ...camera }
-    })
+  /** Key the pose at the playhead, or take away the key already there. */
+  function toggleKey() {
+    const at = keyIndexAt(keys.value, frame.value)
+    keys.value =
+      at >= 0
+        ? keys.value.filter((_, i) => i !== at)
+        : withKey(keys.value, { frame: frame.value, camera: view.value })
+    audition.value = undefined
   }
 
   function removeKey(at: number) {
@@ -448,6 +473,8 @@ export function useReshootRun(locale: Locale = 'en') {
     depth,
     step,
     camera,
+    view,
+    onKey,
     keepAim,
     frame,
     keys,
@@ -472,7 +499,7 @@ export function useReshootRun(locale: Locale = 'en') {
     generate,
     cancel,
     aim,
-    addKey,
+    toggleKey,
     removeKey,
     reuse
   }
