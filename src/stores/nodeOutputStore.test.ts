@@ -137,7 +137,8 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     expect(store.nodeOutputs[String(node.id)]).toEqual(output)
     expect(app.nodeOutputs[String(node.id)]).toEqual(output)
 
-    const [url] = store.getNodeImageUrlsByExecutionId(executionId, node) ?? []
+    const [{ url } = { url: '' }] =
+      store.getNodeImagesByExecutionId(executionId, node) ?? []
     const previewUrl = new URL(url, window.location.origin)
     expect(previewUrl.pathname).toBe('/api/view')
     expect(previewUrl.searchParams.get('filename')).toBe('execution-result.png')
@@ -232,6 +233,80 @@ describe('nodeOutputStore setNodeOutputsByExecutionId with merge', () => {
     app.nodePreviewImages['5'] = ['blob:legacy']
 
     expect(store.getNodePreviews(node)).toEqual(['blob:canonical'])
+  })
+})
+
+describe('nodeOutputStore getNodeImages', () => {
+  beforeEach(() => {
+    app.nodeOutputs = {}
+    app.nodePreviewImages = {}
+  })
+
+  it('returns the records behind the built view URLs', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    const images = [
+      { filename: 'a.png', subfolder: 'sub', type: 'temp' as const },
+      { filename: 'b.png', subfolder: '', type: 'output' as const }
+    ]
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([node.id]),
+      createMockOutputs(images)
+    )
+
+    expect(store.getNodeImages(node)?.map(({ result }) => result)).toEqual(
+      images
+    )
+    expect(store.getNodeImages(node)).toHaveLength(images.length)
+  })
+
+  it('keeps URL positions while omitting missing result records', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([node.id]),
+      fromAny({ images: [null, { filename: 'b.png' }] })
+    )
+
+    const images = store.getNodeImages(node)
+    expect(images).toHaveLength(2)
+    expect(images?.[0]).toEqual({ url: expect.any(String) })
+    expect(images?.[1]).toEqual({
+      url: expect.any(String),
+      result: { filename: 'b.png' }
+    })
+  })
+
+  it('omits records while live previews are showing', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    store.setNodeOutputsByExecutionId(
+      createNodeExecutionId([node.id]),
+      createMockOutputs([{ filename: 'a.png', type: 'output' as const }])
+    )
+    store.setNodePreviewsByNodeId(node.id, ['blob:live'])
+
+    expect(store.getNodeImages(node)).toEqual([{ url: 'blob:live' }])
+  })
+
+  it('mirrors that branch for the execution-id accessor', () => {
+    const store = useNodeOutputStore()
+    const node = createMockNode({ id: 1 })
+    const executionId = createNodeExecutionId([node.id])
+    store.setNodeOutputsByExecutionId(
+      executionId,
+      createMockOutputs([{ filename: 'a.png', type: 'output' as const }])
+    )
+
+    expect(
+      store.getNodeImagesByExecutionId(executionId, node)?.[0].result
+    ).toEqual({ filename: 'a.png', type: 'output' })
+
+    store.setNodePreviewsByExecutionId(executionId, ['blob:live'])
+
+    expect(store.getNodeImagesByExecutionId(executionId, node)).toEqual([
+      { url: 'blob:live' }
+    ])
   })
 })
 

@@ -1,5 +1,3 @@
-/* eslint-disable testing-library/no-container, testing-library/no-node-access */
-/* eslint-disable testing-library/prefer-user-event */
 import { render, screen, fireEvent } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { getActivePinia } from 'pinia'
@@ -11,6 +9,8 @@ import { useTelemetry } from '@/platform/telemetry'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import ImagePreview from '@/renderer/extensions/vueNodes/components/ImagePreview.vue'
+import type { NodeId } from '@/types/nodeId'
+import type { NodeImage } from '@/types/nodeMedia'
 
 // Mock downloadFile to avoid DOM errors
 vi.mock(import('@/base/common/downloadUtil'), () => ({
@@ -43,7 +43,8 @@ const i18n = createI18n({
         unknownFile: 'Unknown file',
         loading: 'Loading',
         viewGrid: 'Grid view',
-        galleryThumbnail: 'Gallery thumbnail'
+        galleryThumbnail: 'Gallery thumbnail',
+        gallery: 'Gallery'
       },
       hdrViewer: {
         hdrImage: 'HDR image',
@@ -54,16 +55,25 @@ const i18n = createI18n({
 })
 
 describe('ImagePreview', () => {
-  const defaultProps = {
-    imageUrls: [
-      '/api/view?filename=test1.png&type=output',
-      '/api/view?filename=test2.png&type=output'
-    ]
+  const defaultUrls = [
+    '/api/view?filename=test1.png&type=output',
+    '/api/view?filename=test2.png&type=output'
+  ]
+
+  const imagesOf = (...urls: string[]): NodeImage[] =>
+    urls.map((url) => ({ url }))
+
+  interface PreviewProps {
+    images?: readonly NodeImage[]
+    nodeId?: NodeId
   }
 
-  function renderImagePreview(props = {}) {
-    return render(ImagePreview, {
-      props: { ...defaultProps, ...props },
+  function renderImagePreview({
+    images = imagesOf(...defaultUrls),
+    nodeId
+  }: PreviewProps = {}) {
+    const result = render(ImagePreview, {
+      props: { images, nodeId },
       global: {
         plugins: [getActivePinia()!, i18n],
         stubs: {
@@ -74,6 +84,13 @@ describe('ImagePreview', () => {
         }
       }
     })
+    return {
+      ...result,
+      rerender: ({
+        images = imagesOf(...defaultUrls),
+        nodeId
+      }: PreviewProps = {}) => result.rerender({ images, nodeId })
+    }
   }
 
   async function switchToGallery(user: ReturnType<typeof userEvent.setup>) {
@@ -82,15 +99,15 @@ describe('ImagePreview', () => {
     await nextTick()
   }
 
-  it('does not render when no imageUrls provided', () => {
-    const { container } = renderImagePreview({ imageUrls: [] })
+  it('does not render when no images are provided', () => {
+    renderImagePreview({ images: [] })
 
-    expect(container.querySelector('.image-preview')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('image-preview')).not.toBeInTheDocument()
   })
 
   it('offers the HDR viewer instead of an <img> for exr outputs', () => {
     renderImagePreview({
-      imageUrls: ['/api/view?filename=out.exr&type=output']
+      images: imagesOf('/api/view?filename=out.exr&type=output')
     })
 
     expect(screen.getByTestId('hdr-open-button')).toBeInTheDocument()
@@ -99,7 +116,7 @@ describe('ImagePreview', () => {
 
   it('displays calculating dimensions text in gallery mode', async () => {
     renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
+      images: imagesOf(defaultUrls[0])
     })
 
     screen.getByText('Calculating dimensions')
@@ -118,7 +135,7 @@ describe('ImagePreview', () => {
 
   it('does not show navigation dots for single image', () => {
     renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
+      images: imagesOf(defaultUrls[0])
     })
 
     const navigationDots = screen.queryAllByRole('button', {
@@ -139,7 +156,7 @@ describe('ImagePreview', () => {
 
   it('shows mask/edit button for single images', () => {
     renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
+      images: imagesOf(defaultUrls[0])
     })
 
     screen.getByRole('button', { name: 'Edit or mask image' })
@@ -147,7 +164,7 @@ describe('ImagePreview', () => {
 
   it('hides mask and download buttons when image fails to load', async () => {
     renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
+      images: imagesOf(defaultUrls[0])
     })
 
     expect(
@@ -175,7 +192,7 @@ describe('ImagePreview', () => {
 
   it('handles download button click', async () => {
     renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
+      images: imagesOf(defaultUrls[0])
     })
     const user = userEvent.setup()
 
@@ -184,7 +201,7 @@ describe('ImagePreview', () => {
     })
     await user.click(downloadButton)
 
-    expect(downloadFile).toHaveBeenCalledWith(defaultProps.imageUrls[0])
+    expect(downloadFile).toHaveBeenCalledWith(defaultUrls[0])
   })
 
   it('switches images when navigation dots are clicked', async () => {
@@ -193,10 +210,7 @@ describe('ImagePreview', () => {
     await switchToGallery(user)
 
     // Initially shows first image
-    expect(screen.getByRole('img')).toHaveAttribute(
-      'src',
-      defaultProps.imageUrls[0]
-    )
+    expect(screen.getByRole('img')).toHaveAttribute('src', defaultUrls[0])
 
     // Click second navigation dot
     const navigationDots = screen.getAllByRole('button', {
@@ -205,10 +219,7 @@ describe('ImagePreview', () => {
     await user.click(navigationDots[1])
     await nextTick()
 
-    expect(screen.getByRole('img')).toHaveAttribute(
-      'src',
-      defaultProps.imageUrls[1]
-    )
+    expect(screen.getByRole('img')).toHaveAttribute('src', defaultUrls[1])
   })
 
   it('marks active navigation dot with aria-current', async () => {
@@ -234,7 +245,7 @@ describe('ImagePreview', () => {
 
   it('has proper accessibility attributes', () => {
     renderImagePreview({
-      imageUrls: [defaultProps.imageUrls[0]]
+      images: imagesOf(defaultUrls[0])
     })
 
     expect(screen.getByRole('img')).toHaveAttribute('alt', 'View image 1 of 1')
@@ -259,126 +270,128 @@ describe('ImagePreview', () => {
 
   describe('keyboard navigation', () => {
     it('navigates to next image with ArrowRight', async () => {
-      const { container } = renderImagePreview()
+      renderImagePreview()
       const user = userEvent.setup()
       await switchToGallery(user)
 
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
+      screen.getByRole('region').focus()
+      await user.keyboard('{ArrowRight}')
       await nextTick()
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[1]
+        defaultUrls[1]
       )
     })
 
     it('navigates to previous image with ArrowLeft', async () => {
-      const { container } = renderImagePreview()
+      renderImagePreview()
       const user = userEvent.setup()
       await switchToGallery(user)
 
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
+      screen.getByRole('region').focus()
+      await user.keyboard('{ArrowRight}')
       await nextTick()
 
-      await fireEvent.keyDown(preview, { key: 'ArrowLeft' })
+      await user.keyboard('{ArrowLeft}')
       await nextTick()
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[0]
+        defaultUrls[0]
       )
     })
 
     it('wraps around from last to first with ArrowRight', async () => {
-      const { container } = renderImagePreview()
+      renderImagePreview()
       const user = userEvent.setup()
       await switchToGallery(user)
 
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
+      screen.getByRole('region').focus()
+      await user.keyboard('{ArrowRight}')
       await nextTick()
-      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
+      await user.keyboard('{ArrowRight}')
       await nextTick()
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[0]
+        defaultUrls[0]
       )
     })
 
     it('wraps around from first to last with ArrowLeft', async () => {
-      const { container } = renderImagePreview()
+      renderImagePreview()
       const user = userEvent.setup()
       await switchToGallery(user)
 
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      await fireEvent.keyDown(preview, { key: 'ArrowLeft' })
+      screen.getByRole('region').focus()
+      await user.keyboard('{ArrowLeft}')
       await nextTick()
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[1]
+        defaultUrls[1]
       )
     })
 
     it('navigates to first image with Home', async () => {
-      const { container } = renderImagePreview()
+      renderImagePreview()
       const user = userEvent.setup()
       await switchToGallery(user)
 
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
+      screen.getByRole('region').focus()
+      await user.keyboard('{ArrowRight}')
       await nextTick()
 
-      await fireEvent.keyDown(preview, { key: 'Home' })
+      await user.keyboard('{Home}')
       await nextTick()
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[0]
+        defaultUrls[0]
       )
     })
 
     it('navigates to last image with End', async () => {
-      const { container } = renderImagePreview()
+      renderImagePreview()
       const user = userEvent.setup()
       await switchToGallery(user)
 
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      await fireEvent.keyDown(preview, { key: 'End' })
+      screen.getByRole('region').focus()
+      await user.keyboard('{End}')
       await nextTick()
 
       expect(screen.getByTestId('main-image')).toHaveAttribute(
         'src',
-        defaultProps.imageUrls[1]
+        defaultUrls[1]
       )
     })
 
     it('ignores arrow keys in grid mode', async () => {
-      const { container } = renderImagePreview()
+      renderImagePreview()
+      const user = userEvent.setup()
 
       const gridThumbnails = screen.getAllByRole('button', {
         name: /^View image/
       })
       expect(gridThumbnails).toHaveLength(2)
 
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
+      gridThumbnails[0].focus()
+      await user.keyboard('{ArrowRight}')
       await nextTick()
 
       expect(screen.queryByRole('region')).not.toBeInTheDocument()
     })
 
     it('ignores arrow keys for single image', async () => {
-      const { container } = renderImagePreview({
-        imageUrls: [defaultProps.imageUrls[0]]
+      renderImagePreview({
+        images: imagesOf(defaultUrls[0])
       })
+      const user = userEvent.setup()
 
       const initialSrc = screen.getByRole('img').getAttribute('src')
-      const preview = container.querySelector('.image-preview') as HTMLElement
-      await fireEvent.keyDown(preview, { key: 'ArrowRight' })
+      screen.getByRole('region').focus()
+      await user.keyboard('{ArrowRight}')
       await nextTick()
 
       expect(screen.getByRole('img')).toHaveAttribute('src', initialSrc!)
@@ -407,7 +420,7 @@ describe('ImagePreview', () => {
 
     it('defaults to gallery mode for single image', () => {
       renderImagePreview({
-        imageUrls: [defaultProps.imageUrls[0]]
+        images: imagesOf(defaultUrls[0])
       })
 
       screen.getByRole('region')
@@ -428,7 +441,7 @@ describe('ImagePreview', () => {
       await nextTick()
 
       const mainImg = screen.getByTestId('main-image')
-      expect(mainImg).toHaveAttribute('src', defaultProps.imageUrls[1])
+      expect(mainImg).toHaveAttribute('src', defaultUrls[1])
     })
 
     it('shows back-to-grid button next to navigation dots', async () => {
@@ -465,11 +478,11 @@ describe('ImagePreview', () => {
 
       // Change URLs
       await rerender({
-        imageUrls: [
+        images: imagesOf(
           '/api/view?filename=new1.png&type=output',
           '/api/view?filename=new2.png&type=output',
           '/api/view?filename=new3.png&type=output'
-        ]
+        )
       })
       await nextTick()
 
@@ -483,25 +496,20 @@ describe('ImagePreview', () => {
 
   describe('batch cycling with identical URLs', () => {
     it('should not enter persistent loading state when cycling through identical images', async () => {
-      const user = userEvent.setup({
-        advanceTimers: vi.advanceTimersByTime
-      })
       const sameUrl = '/api/view?filename=test.png&type=output'
-      const { container } = renderImagePreview({
-        imageUrls: [sameUrl, sameUrl, sameUrl]
+      renderImagePreview({
+        images: imagesOf(sameUrl, sameUrl, sameUrl)
       })
-      await switchToGallery(user)
+      await switchToGallery(userEvent.setup())
 
       // Simulate initial image load
-      await fireEvent.load(screen.getByRole('img'))
+      await fireEvent.load(screen.getByTestId('main-image'))
       await nextTick()
-      expect(
-        container.querySelector('[aria-busy="true"]')
-      ).not.toBeInTheDocument()
+      expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false')
 
       // Click second navigation dot to cycle
       const dots = screen.getAllByRole('button', { name: /View image/ })
-      await user.click(dots[1])
+      await userEvent.setup().click(dots[1])
       await nextTick()
 
       // Advance past the delayed loader timeout
@@ -509,21 +517,17 @@ describe('ImagePreview', () => {
       await nextTick()
 
       // Should NOT be in loading state since URL didn't change
-      expect(
-        container.querySelector('[aria-busy="true"]')
-      ).not.toBeInTheDocument()
+      expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false')
     })
   })
 
   describe('URL change detection', () => {
-    it('should NOT reset loading state when imageUrls prop is reassigned with identical URLs', async () => {
+    it('should NOT reset loading state when images prop is reassigned with identical URLs', async () => {
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime
       })
       const urls = ['/api/view?filename=test.png&type=output']
-      const { container, rerender } = renderImagePreview({
-        imageUrls: urls
-      })
+      const { rerender } = renderImagePreview({ images: imagesOf(...urls) })
       void user
 
       // Simulate image load completing
@@ -531,12 +535,10 @@ describe('ImagePreview', () => {
       await nextTick()
 
       // Verify loader is hidden after load
-      expect(
-        container.querySelector('[aria-busy="true"]')
-      ).not.toBeInTheDocument()
+      expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false')
 
       // Reassign with new array reference but same content
-      await rerender({ imageUrls: [...urls] })
+      await rerender({ images: imagesOf(...urls) })
       await nextTick()
 
       // Advance past the 250ms delayed loader timeout
@@ -544,33 +546,27 @@ describe('ImagePreview', () => {
       await nextTick()
 
       // Loading state should NOT have been reset
-      expect(
-        container.querySelector('[aria-busy="true"]')
-      ).not.toBeInTheDocument()
+      expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false')
     })
 
-    it('should reset loading state when imageUrls prop changes to different URLs', async () => {
+    it('should reset loading state when images prop changes to different URLs', async () => {
       const user = userEvent.setup({
         advanceTimers: vi.advanceTimersByTime
       })
       const urls = ['/api/view?filename=test.png&type=output']
-      const { container, rerender } = renderImagePreview({
-        imageUrls: urls
-      })
+      const { rerender } = renderImagePreview({ images: imagesOf(...urls) })
 
       // Simulate image load completing
       await fireEvent.load(screen.getByRole('img'))
       await nextTick()
 
       // Verify loader is hidden
-      expect(
-        container.querySelector('[aria-busy="true"]')
-      ).not.toBeInTheDocument()
+      expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'false')
 
       void user
       // Change to different URL
       await rerender({
-        imageUrls: ['/api/view?filename=different.png&type=output']
+        images: imagesOf('/api/view?filename=different.png&type=output')
       })
       await nextTick()
 
@@ -578,20 +574,20 @@ describe('ImagePreview', () => {
       await vi.advanceTimersByTimeAsync(300)
       await nextTick()
 
-      expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument()
+      expect(screen.getByRole('region')).toHaveAttribute('aria-busy', 'true')
     })
 
     it('should handle empty to non-empty URL transitions correctly', async () => {
-      const { container, rerender } = renderImagePreview({ imageUrls: [] })
+      const { rerender } = renderImagePreview({ images: imagesOf() })
 
-      expect(container.querySelector('.image-preview')).not.toBeInTheDocument()
+      expect(screen.queryByTestId('image-preview')).not.toBeInTheDocument()
 
       await rerender({
-        imageUrls: ['/api/view?filename=test.png&type=output']
+        images: imagesOf('/api/view?filename=test.png&type=output')
       })
       await nextTick()
 
-      expect(container.querySelector('.image-preview')).toBeInTheDocument()
+      expect(screen.getByTestId('image-preview')).toBeInTheDocument()
       screen.getByRole('img')
     })
   })

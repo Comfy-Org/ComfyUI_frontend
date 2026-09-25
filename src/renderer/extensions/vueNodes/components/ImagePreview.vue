@@ -1,6 +1,7 @@
 <template>
   <div
     v-if="imageUrls.length > 0"
+    data-testid="image-preview"
     class="image-preview group relative flex size-full min-w-16 flex-col justify-center px-2"
     :style="{ minHeight: `${IMAGE_PREVIEW_CONTENT_MIN_HEIGHT}px` }"
     @keydown="handleKeyDown"
@@ -223,18 +224,18 @@ import type { NodeId } from '@/types/nodeId'
 import { isHdrImageUrl } from '@/utils/hdrFormatUtil'
 import { getGridThumbnailUrl } from '@/utils/imageUtil'
 import { resolveNode } from '@/utils/litegraphUtil'
+import type { NodeImage } from '@/types/nodeMedia'
 import { cn } from '@comfyorg/tailwind-utils'
 
 import { IMAGE_PREVIEW_CONTENT_MIN_HEIGHT } from './imagePreviewLayout'
 
 interface ImagePreviewProps {
-  /** Array of image URLs to display */
-  readonly imageUrls: readonly string[]
+  readonly images: readonly NodeImage[]
   /** Optional node ID for context-aware actions */
   readonly nodeId?: NodeId
 }
 
-const { imageUrls, nodeId } = defineProps<ImagePreviewProps>()
+const { images, nodeId } = defineProps<ImagePreviewProps>()
 
 const { t } = useI18n()
 const maskEditor = useMaskEditor()
@@ -255,7 +256,8 @@ const { width: gridWidth, height: gridHeight } = useElementSize(
 )
 
 const currentIndex = ref(0)
-const viewMode = ref<ViewMode>(defaultViewMode(imageUrls))
+const imageUrls = computed(() => images.map(({ url }) => url))
+const viewMode = ref<ViewMode>(defaultViewMode(imageUrls.value))
 const galleryPanelEl = ref<HTMLDivElement>()
 const actualDimensions = ref<string | null>(null)
 const imageError = ref(false)
@@ -271,23 +273,25 @@ const { start: startDelayedLoader, stop: stopDelayedLoader } = useTimeoutFn(
   { immediate: false }
 )
 
-const currentImageUrl = computed(() => imageUrls[currentIndex.value] ?? '')
+const currentImageUrl = computed(
+  () => imageUrls.value[currentIndex.value] ?? ''
+)
 const currentImageIsHdr = computed(() => isHdrImageUrl(currentImageUrl.value))
-const gridImageUrls = computed(() => imageUrls.map(getGridThumbnailUrl))
-const hasMultipleImages = computed(() => imageUrls.length > 1)
+const gridImageUrls = computed(() => imageUrls.value.map(getGridThumbnailUrl))
+const hasMultipleImages = computed(() => imageUrls.value.length > 1)
 const imageAltText = computed(() =>
   t('g.viewImageOfTotal', {
     index: currentIndex.value + 1,
-    total: imageUrls.length
+    total: imageUrls.value.length
   })
 )
 const gridCols = computed(() => {
   const bias = gridWidth.value / gridHeight.value / imageAspectRatio.value
-  return Math.max(Math.round(Math.sqrt(imageUrls.length * bias)), 1)
+  return Math.max(Math.round(Math.sqrt(imageUrls.value.length * bias)), 1)
 })
 
 watch(
-  () => imageUrls,
+  imageUrls,
   (newUrls, oldUrls) => {
     // Only reset state if URLs actually changed (not just array reference)
     const urlsChanged =
@@ -373,8 +377,8 @@ function handleDownload() {
 
 function setCurrentIndex(index: number) {
   if (currentIndex.value === index) return
-  if (index >= 0 && index < imageUrls.length) {
-    const urlChanged = imageUrls[index] !== currentImageUrl.value
+  if (index >= 0 && index < imageUrls.value.length) {
+    const urlChanged = imageUrls.value[index] !== currentImageUrl.value
     currentIndex.value = index
     imageError.value = false
     if (urlChanged) startDelayedLoader()
@@ -389,7 +393,7 @@ async function openImageInGallery(index: number) {
 }
 
 function handleGridClick(index: number) {
-  const url = imageUrls[index]
+  const url = imageUrls.value[index]
   if (isHdrImageUrl(url)) {
     openHdrViewer(url)
     return
@@ -417,19 +421,23 @@ function handleKeyDown(event: KeyboardEvent) {
     return
   }
 
-  if (imageUrls.length <= 1 || viewMode.value === 'grid') return
+  if (imageUrls.value.length <= 1 || viewMode.value === 'grid') return
 
   switch (event.key) {
     case 'ArrowLeft':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value > 0 ? currentIndex.value - 1 : imageUrls.length - 1
+        currentIndex.value > 0
+          ? currentIndex.value - 1
+          : imageUrls.value.length - 1
       )
       break
     case 'ArrowRight':
       event.preventDefault()
       setCurrentIndex(
-        currentIndex.value < imageUrls.length - 1 ? currentIndex.value + 1 : 0
+        currentIndex.value < imageUrls.value.length - 1
+          ? currentIndex.value + 1
+          : 0
       )
       break
     case 'Home':
@@ -438,7 +446,7 @@ function handleKeyDown(event: KeyboardEvent) {
       break
     case 'End':
       event.preventDefault()
-      setCurrentIndex(imageUrls.length - 1)
+      setCurrentIndex(imageUrls.value.length - 1)
       break
   }
 }
