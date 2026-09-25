@@ -57,20 +57,24 @@
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youPay') }}
         </div>
-        <FormattedNumberStepper
+        <NumberField
           :model-value="payAmount"
           :min="0"
           :max="MAX_AMOUNT"
-          :step="getStepAmount"
+          :step="getStepAmount(payAmount)"
+          :format-options="{ maximumFractionDigits: 0 }"
           @update:model-value="handlePayAmountChange"
-          @max-reached="showCeilingWarning = true"
         >
-          <template #prefix>
-            <span class="shrink-0 text-base font-semibold text-base-foreground"
-              >$</span
-            >
-          </template>
-        </FormattedNumberStepper>
+          <NumberFieldDecrement />
+          <span class="shrink-0 text-base font-semibold text-base-foreground"
+            >$</span
+          >
+          <NumberFieldInput
+            :aria-label="$t('credits.topUp.youPay')"
+            class="text-lg font-medium"
+          />
+          <NumberFieldIncrement />
+        </NumberField>
       </div>
 
       <!-- You Get -->
@@ -78,17 +82,21 @@
         <div class="text-sm text-muted-foreground">
           {{ $t('credits.topUp.youGet') }}
         </div>
-        <FormattedNumberStepper
+        <NumberField
           v-model="creditsModel"
           :min="0"
           :max="usdToCredits(MAX_AMOUNT)"
-          :step="getCreditsStepAmount"
-          @max-reached="showCeilingWarning = true"
+          :step="getCreditsStepAmount(creditsModel)"
+          :format-options="{ maximumFractionDigits: 0 }"
         >
-          <template #prefix>
-            <i class="icon-[lucide--coins] size-4 shrink-0 text-gold-500" />
-          </template>
-        </FormattedNumberStepper>
+          <NumberFieldDecrement />
+          <i class="icon-[lucide--coins] size-4 shrink-0 text-gold-500" />
+          <NumberFieldInput
+            :aria-label="$t('credits.topUp.youGet')"
+            class="text-lg font-medium"
+          />
+          <NumberFieldIncrement />
+        </NumberField>
       </div>
     </div>
 
@@ -156,7 +164,10 @@ import { useI18n } from 'vue-i18n'
 
 import { creditsToUsd, usdToCredits } from '@/base/credits/comfyCredits'
 import Button from '@/components/ui/button/Button.vue'
-import FormattedNumberStepper from '@/components/ui/stepper/FormattedNumberStepper.vue'
+import NumberField from '@/components/ui/number-field/NumberField.vue'
+import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
+import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
+import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useExternalLink } from '@/composables/useExternalLink'
 import { useTelemetry } from '@/platform/telemetry'
@@ -186,7 +197,6 @@ const MAX_AMOUNT = 10000
 // State
 const selectedPreset = ref<number | null>(50)
 const payAmount = ref(50)
-const showCeilingWarning = ref(false)
 const loading = ref(false)
 
 // Computed
@@ -207,6 +217,7 @@ const isValidAmount = computed(
 )
 
 const isBelowMin = computed(() => payAmount.value < MIN_AMOUNT)
+const showCeilingWarning = computed(() => payAmount.value >= MAX_AMOUNT)
 
 // Utility functions
 function formatNumber(num: number): string {
@@ -229,11 +240,9 @@ function getCreditsStepAmount(currentCredits: number): number {
 function handlePayAmountChange(value: number) {
   payAmount.value = value
   selectedPreset.value = null
-  showCeilingWarning.value = false
 }
 
 function handlePresetClick(amount: number) {
-  showCeilingWarning.value = false
   payAmount.value = amount
   selectedPreset.value = amount
 }

@@ -114,7 +114,6 @@
     "@iconify/json": "catalog:",
     "@primeuix/utils": "catalog:",
     "@primevue/core": "catalog:",
-    "@primevue/forms": "catalog:",
     "@primevue/themes": "catalog:",
     "@sentry/vue": "catalog:",
     "@sparkjsdev/spark": "catalog:",

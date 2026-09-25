@@ -42,25 +42,11 @@ const i18n = createI18n({
   messages: { en: enMessages }
 })
 
-const cycleToggleStub = {
-  props: ['options'],
-  emits: ['update:modelValue'],
-  template: `<div><button
-      v-for="option in options"
-      :key="option.value"
-      :data-testid="'cycle-' + option.value"
-      @click="$emit('update:modelValue', option.value)"
-    >{{ option.label }}</button></div>`
-}
-
 function renderComponent() {
   return render(PricingTableWorkspace, {
     global: {
       plugins: [i18n],
-      components: { Button },
-      stubs: {
-        SelectButton: cycleToggleStub
-      }
+      components: { Button }
     }
   })
 }
@@ -102,7 +88,7 @@ describe('PricingTableWorkspace credit allotment copy', () => {
     const user = userEvent.setup()
     renderComponent()
 
-    await user.click(screen.getByTestId('cycle-monthly'))
+    await user.click(screen.getByRole('button', { name: 'Monthly' }))
     await nextTick()
 
     expect(screen.getAllByText('Monthly credits / member')).toHaveLength(3)

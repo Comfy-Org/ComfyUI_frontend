@@ -1,86 +1,64 @@
 <template>
-  <div class="input-knob flex flex-row items-center gap-2">
+  <div class="flex flex-row items-center gap-2">
     <Knob
-      :model-value="modelValue"
+      :model-value
       :value-template="displayValue"
-      class="knob-part"
-      :class="knobClass"
-      :min="min"
-      :max="max"
-      :step="step"
+      class="w-32"
+      :min
+      :max
+      :step
+      :disabled
+      :aria-label="ariaLabel"
+      :aria-labelledby="ariaLabelledby"
       v-bind="$attrs"
-      @update:model-value="updateValue"
+      @update:model-value="(value) => emit('update:modelValue', value)"
     />
-    <InputNumber
-      :model-value="modelValue"
-      class="input-part"
-      :max-fraction-digits="3"
-      :class="inputClass"
-      :min="min"
-      :max="max"
-      :step="step"
-      :allow-empty="false"
-      @update:model-value="updateValue"
-    />
+    <NumberField
+      :model-value
+      class="w-32"
+      :format-options="{ maximumFractionDigits: 3 }"
+      :min
+      :max
+      :step
+      :disabled
+      @update:model-value="(value) => emit('update:modelValue', value)"
+    >
+      <NumberFieldDecrement />
+      <NumberFieldInput :aria-label :aria-labelledby="ariaLabelledby" />
+      <NumberFieldIncrement />
+    </NumberField>
   </div>
 </template>
 
 <script setup lang="ts">
-import InputNumber from 'primevue/inputnumber'
 import Knob from 'primevue/knob'
-import { ref, watch } from 'vue'
 
-const props = defineProps<{
+import NumberField from '@/components/ui/number-field/NumberField.vue'
+import NumberFieldDecrement from '@/components/ui/number-field/NumberFieldDecrement.vue'
+import NumberFieldIncrement from '@/components/ui/number-field/NumberFieldIncrement.vue'
+import NumberFieldInput from '@/components/ui/number-field/NumberFieldInput.vue'
+
+const { step, resolution } = defineProps<{
   modelValue: number
-  inputClass?: string
-  knobClass?: string
   min?: number
   max?: number
   step?: number
   resolution?: number
+  disabled?: boolean
+  ariaLabel?: string
+  ariaLabelledby?: string
 }>()
 
 const emit = defineEmits<{
-  (e: 'update:modelValue', value: number): void
+  'update:modelValue': [value: number]
 }>()
 
-const localValue = ref(props.modelValue)
-
-watch(
-  () => props.modelValue,
-  (newValue) => {
-    localValue.value = newValue
-  }
-)
-
-const updateValue = (newValue: number | null) => {
-  if (newValue === null) {
-    // If the input is cleared, reset to the minimum value or 0
-    newValue = Number(props.min) || 0
-  }
-
-  const min = Number(props.min ?? Number.NEGATIVE_INFINITY)
-  const max = Number(props.max ?? Number.POSITIVE_INFINITY)
-  const step = Number(props.step) || 1
-
-  // Ensure the value is within the allowed range
-  newValue = Math.max(min, Math.min(max, newValue))
-
-  // Round to the nearest step
-  newValue = Math.round(newValue / step) * step
-
-  // Update local value and emit change
-  localValue.value = newValue
-  emit('update:modelValue', newValue)
-}
-
 const displayValue = (value: number): string => {
-  updateValue(value)
-  const stepString = (props.step ?? 1).toString()
-  const resolution = stepString.includes('.')
+  const stepString = (step ?? 1).toString()
+  const stepResolution = stepString.includes('.')
     ? stepString.split('.')[1].length
     : 0
-  return value.toFixed(props.resolution ?? resolution)
+  return value.toFixed(resolution ?? stepResolution)
 }
 
 defineOptions({

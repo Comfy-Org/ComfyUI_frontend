@@ -17,12 +17,17 @@
           class="flex flex-col gap-4 px-4 py-2"
           @submit.prevent="handleSubmit"
         >
-          <div class="flex flex-col gap-1">
-            <label for="secret-provider" class="text-sm font-medium">
+          <Field :data-invalid="!!errors.provider">
+            <FieldLabel for="secret-provider">
               {{ $t('secrets.provider') }}
-            </label>
+            </FieldLabel>
             <Select v-model="form.provider" :disabled="mode === 'edit'">
-              <SelectTrigger id="secret-provider" class="w-full" autofocus>
+              <SelectTrigger
+                id="secret-provider"
+                class="w-full"
+                autofocus
+                :invalid="!!errors.provider"
+              >
                 <SelectValue :placeholder="$t('g.none')" />
               </SelectTrigger>
               <SelectContent disable-portal>
@@ -44,21 +49,16 @@
                 </SelectItem>
               </SelectContent>
             </Select>
-            <small v-if="errors.provider" class="text-red-500">
-              {{ errors.provider }}
-            </small>
-            <small v-else class="text-muted">
-              {{ providerHelp }}
-            </small>
-          </div>
+            <FieldError v-if="errors.provider">{{
+              errors.provider
+            }}</FieldError>
+            <FieldDescription v-else>{{ providerHelp }}</FieldDescription>
+          </Field>
 
-          <div
-            v-if="mode === 'create' && credentialOptions.length > 1"
-            class="flex flex-col gap-1"
-          >
-            <label for="secret-credential-type" class="text-sm font-medium">
+          <Field v-if="mode === 'create' && credentialOptions.length > 1">
+            <FieldLabel for="secret-credential-type">
               {{ $t('secrets.credentialType') }}
-            </label>
+            </FieldLabel>
             <Select v-model="credentialType">
               <SelectTrigger id="secret-credential-type" class="w-full">
                 <SelectValue />
@@ -73,30 +73,28 @@
                 </SelectItem>
               </SelectContent>
             </Select>
-            <small class="text-muted">
+            <FieldDescription>
               {{ $t('secrets.credentialTypeHint') }}
-            </small>
-          </div>
+            </FieldDescription>
+          </Field>
 
-          <div class="flex flex-col gap-1">
-            <label for="secret-name" class="text-sm font-medium">
+          <Field :data-invalid="!!errors.name">
+            <FieldLabel for="secret-name">
               {{ $t('secrets.name') }}
-            </label>
-            <InputText
+            </FieldLabel>
+            <Input
               id="secret-name"
               v-model="form.name"
               :placeholder="$t('secrets.namePlaceholder')"
-              :class="{ 'p-invalid': errors.name }"
+              :aria-invalid="!!errors.name"
             />
-            <small v-if="errors.name" class="text-red-500">
-              {{ errors.name }}
-            </small>
-          </div>
+            <FieldError v-if="errors.name">{{ errors.name }}</FieldError>
+          </Field>
 
-          <div class="flex flex-col gap-1">
-            <label for="secret-value" class="text-sm font-medium">
+          <Field :data-invalid="!!errors.secretValue">
+            <FieldLabel for="secret-value">
               {{ $t('secrets.secretValue') }}
-            </label>
+            </FieldLabel>
             <template v-if="selectedInputType === 'json_file'">
               <Button
                 type="button"
@@ -105,7 +103,7 @@
                 class="w-fit"
                 @click="fileInput?.click()"
               >
-                <i class="pi pi-upload" />
+                <i class="icon-[lucide--upload]" />
                 {{ $t('secrets.uploadJsonFile') }}
               </Button>
               <input
@@ -115,7 +113,7 @@
                 class="hidden"
                 @change="onFileChange"
               />
-              <span v-if="fileName" class="text-sm text-muted">
+              <span v-if="fileName" class="text-sm text-muted-foreground">
                 {{ fileName }}
               </span>
               <Textarea
@@ -123,10 +121,10 @@
                 v-model="form.secretValue"
                 :placeholder="$t('secrets.jsonFilePlaceholder')"
                 class="min-h-32 font-mono"
-                :class="{ 'p-invalid': errors.secretValue }"
+                :aria-invalid="!!errors.secretValue"
               />
             </template>
-            <Password
+            <PasswordInput
               v-else
               id="secret-value"
               v-model="form.secretValue"
@@ -135,22 +133,15 @@
                   ? $t('secrets.secretValuePlaceholderEdit')
                   : $t('secrets.secretValuePlaceholder')
               "
-              :feedback="false"
-              toggle-mask
-              fluid
-              :class="{ 'p-invalid': errors.secretValue }"
+              :aria-invalid="!!errors.secretValue"
             />
-            <small v-if="errors.secretValue" class="text-red-500">
+            <FieldError v-if="errors.secretValue">
               {{ errors.secretValue }}
-            </small>
-            <small v-else class="text-muted">
-              {{ secretValueHint }}
-            </small>
-          </div>
+            </FieldError>
+            <FieldDescription v-else>{{ secretValueHint }}</FieldDescription>
+          </Field>
 
-          <span v-if="apiError" class="text-sm text-destructive-background">
-            {{ apiError }}
-          </span>
+          <FieldError v-if="apiError">{{ apiError }}</FieldError>
 
           <div class="flex justify-end gap-2 py-2">
             <Button
@@ -172,8 +163,6 @@
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
 import { computed, useId, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -186,6 +175,12 @@ import DialogOverlay from '@/components/ui/dialog/DialogOverlay.vue'
 import DialogPortal from '@/components/ui/dialog/DialogPortal.vue'
 import DialogTitle from '@/components/ui/dialog/DialogTitle.vue'
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
+import Field from '@/components/ui/field/Field.vue'
+import FieldDescription from '@/components/ui/field/FieldDescription.vue'
+import FieldError from '@/components/ui/field/FieldError.vue'
+import FieldLabel from '@/components/ui/field/FieldLabel.vue'
+import Input from '@/components/ui/input/Input.vue'
+import PasswordInput from '@/components/ui/input/PasswordInput.vue'
 import Select from '@/components/ui/select/Select.vue'
 import SelectContent from '@/components/ui/select/SelectContent.vue'
 import SelectItem from '@/components/ui/select/SelectItem.vue'

@@ -50,6 +50,14 @@ describe('UserSelectView', () => {
     )
   })
 
+  it('names the existing user selector from its label', () => {
+    mountView()
+
+    expect(
+      screen.getByRole('combobox', { name: 'userSelect.existingUser:' })
+    ).toBeInTheDocument()
+  })
+
   it('shows an error when login is attempted without a selection', async () => {
     mountView()
 

@@ -44,12 +44,28 @@
         :class="cn(selectContentClass, 'min-w-(--reka-select-trigger-width)')"
         @keydown="onContentKeydown"
       >
+        <div v-if="searchable" class="px-2 pt-2">
+          <div
+            class="flex items-center gap-2 rounded-lg border border-solid border-border-default px-3 py-1.5"
+          >
+            <i class="icon-[lucide--search] text-muted-foreground" />
+            <input
+              ref="searchInputRef"
+              v-model="searchQuery"
+              type="text"
+              :aria-label="t('g.search')"
+              :placeholder="searchPlaceholder ?? t('g.search')"
+              class="w-full border-none bg-transparent text-sm outline-none"
+              @keydown="onSearchKeydown"
+            />
+          </div>
+        </div>
         <SelectViewport
           :style="{ maxHeight: `min(${listMaxHeight}, 50vh)` }"
           class="scrollbar-custom w-full"
         >
           <SelectItem
-            v-for="opt in options"
+            v-for="opt in filteredOptions"
             :key="opt.value"
             :value="opt.value"
             :class="selectItemVariants({ layout: 'single' })"
@@ -84,7 +100,7 @@ import {
   SelectValue,
   SelectViewport
 } from 'reka-ui'
-import { ref } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 import type { StyleValue } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -96,6 +112,7 @@ import {
   stopEscapeToDocument
 } from '@/components/ui/select/select.variants'
 import type { SelectOption } from '@/components/ui/select/types'
+import { useSelectSearch } from '@/components/ui/select/useSelectSearch'
 import { useAttrsClass } from '@/composables/useAttrsClass'
 import { useModalLiftedZIndex } from '@/composables/useModalLiftedZIndex'
 import { usePopoverSizing } from '@/composables/usePopoverSizing'
@@ -108,18 +125,20 @@ const { attrsClass, attrsWithoutClass } = useAttrsClass()
 
 const {
   label,
-  options,
+  options = [],
   size = 'lg',
   invalid = false,
   loading = false,
   disabled = false,
+  searchable = false,
+  searchPlaceholder,
   listMaxHeight = '28rem',
   popoverMinWidth,
   popoverMaxWidth,
   contentStyle
 } = defineProps<{
   label?: string
-  options?: SelectOption[]
+  options?: SelectOption<string | number>[]
   /** Trigger size: 'lg' (40px, Interface) or 'md' (32px, Node) */
   size?: 'lg' | 'md'
   /** Show invalid (destructive) border */
@@ -128,6 +147,9 @@ const {
   loading?: boolean
   /** Disable the select */
   disabled?: boolean
+  /** Show an input that filters options by name */
+  searchable?: boolean
+  searchPlaceholder?: string
   /** Maximum height of the dropdown panel (default: 28rem) */
   listMaxHeight?: string
   /** Minimum width of the popover (default: auto) */
@@ -137,11 +159,29 @@ const {
   contentStyle?: StyleValue
 }>()
 
-const selectedItem = defineModel<string | undefined>({ required: true })
+const selectedItem = defineModel<string | number | undefined>({
+  required: true
+})
 
 const { t } = useI18n()
 const isOpen = ref(false)
+const searchQuery = ref('')
+const searchInputRef = ref<HTMLInputElement | null>(null)
 const liftedContentStyle = useModalLiftedZIndex(isOpen)
+const filteredOptions = useSelectSearch(searchQuery, () => options)
+
+watch(isOpen, async (open) => {
+  if (!open || !searchable) return
+  searchQuery.value = ''
+  await nextTick()
+  searchInputRef.value?.focus()
+})
+
+function onSearchKeydown(event: KeyboardEvent) {
+  if (!['ArrowDown', 'ArrowUp', 'Escape'].includes(event.key)) {
+    event.stopPropagation()
+  }
+}
 
 function onContentKeydown(event: KeyboardEvent) {
   if (event.key === 'Escape') {

@@ -1,98 +1,89 @@
 <template>
-  <Form
-    v-slot="$form"
-    class="flex flex-col gap-6"
-    :resolver="zodResolver(signInSchema)"
-    @submit="onSubmit"
-  >
-    <!-- Email Field -->
-    <div class="flex flex-col gap-2">
-      <label class="mb-2 text-base font-medium opacity-80" :for="emailInputId">
-        {{ t('auth.login.emailLabel') }}
-      </label>
-      <InputText
-        :id="emailInputId"
-        autocomplete="email"
-        class="h-10"
-        name="email"
-        type="text"
-        :placeholder="t('auth.login.emailPlaceholder')"
-        :invalid="$form.email?.invalid"
-      />
-      <small v-if="$form.email?.invalid" class="text-red-500">{{
-        $form.email.error.message
-      }}</small>
-    </div>
+  <form class="flex flex-col gap-10" @submit.prevent="onSubmit">
+    <FieldGroup>
+      <VeeField v-slot="{ componentField, errors }" name="email">
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel :for="emailInputId">
+            {{ t('auth.login.emailLabel') }}
+          </FieldLabel>
+          <Input
+            v-bind="componentField"
+            :id="emailInputId"
+            autocomplete="email"
+            type="text"
+            :placeholder="t('auth.login.emailPlaceholder')"
+            :aria-invalid="!!errors.length"
+          />
+          <FieldError v-if="errors.length" :errors />
+        </Field>
+      </VeeField>
 
-    <!-- Password Field -->
-    <div class="flex flex-col gap-2">
-      <div class="mb-2 flex items-center justify-between">
-        <label
-          class="text-base font-medium opacity-80"
-          for="comfy-org-sign-in-password"
-        >
-          {{ t('auth.login.passwordLabel') }}
-        </label>
-        <span
-          :class="
-            cn('text-base font-medium text-muted select-none', {
-              'cursor-not-allowed opacity-50':
-                !$form.email?.value || $form.email?.invalid,
-              'cursor-pointer': $form.email?.value && !$form.email?.invalid
-            })
-          "
-          @click="handleForgotPassword($form.email?.value, $form.email?.valid)"
-        >
-          {{ t('auth.login.forgotPassword') }}
-        </span>
-      </div>
-      <Password
-        input-id="comfy-org-sign-in-password"
-        pt:pc-input-text:root:autocomplete="current-password"
-        name="password"
-        :feedback="false"
-        toggle-mask
-        :placeholder="t('auth.login.passwordPlaceholder')"
-        :class="{ 'p-invalid': $form.password?.invalid }"
-        fluid
-        class="h-10"
-      />
-      <small v-if="$form.password?.invalid" class="text-red-500">{{
-        $form.password.error.message
-      }}</small>
-    </div>
+      <VeeField v-slot="{ componentField, errors }" name="password">
+        <Field :data-invalid="!!errors.length">
+          <div class="flex items-center justify-between">
+            <FieldLabel for="comfy-org-sign-in-password">
+              {{ t('auth.login.passwordLabel') }}
+            </FieldLabel>
+            <span
+              :class="
+                cn(
+                  'text-sm font-medium text-muted-foreground select-none',
+                  canResetPassword
+                    ? 'cursor-pointer'
+                    : 'cursor-not-allowed opacity-50'
+                )
+              "
+              @click="handleForgotPassword"
+            >
+              {{ t('auth.login.forgotPassword') }}
+            </span>
+          </div>
+          <PasswordInput
+            v-bind="componentField"
+            id="comfy-org-sign-in-password"
+            autocomplete="current-password"
+            :placeholder="t('auth.login.passwordPlaceholder')"
+            :aria-invalid="!!errors.length"
+          />
+          <FieldError v-if="errors.length" :errors />
+        </Field>
+      </VeeField>
+    </FieldGroup>
 
-    <!-- Submit Button -->
     <Spinner v-if="loading" class="mx-auto size-8" />
     <Button
       v-else
       type="submit"
-      class="mt-4 h-10 font-medium"
-      :disabled="!$form.valid"
+      class="h-10 font-medium"
+      :disabled="!meta.valid"
     >
       {{ t('auth.login.loginButton') }}
     </Button>
-  </Form>
+  </form>
 </template>
 
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@primevue/forms'
-import { Form } from '@primevue/forms'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
+import { toTypedSchema } from '@vee-validate/zod'
 import { useThrottleFn } from '@vueuse/core'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
 import { useToast } from 'primevue/usetoast'
+import { Field as VeeField, useForm, useIsFieldValid } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { cn } from '@comfyorg/tailwind-utils'
+
 import Button from '@/components/ui/button/Button.vue'
+import Field from '@/components/ui/field/Field.vue'
+import FieldError from '@/components/ui/field/FieldError.vue'
+import FieldGroup from '@/components/ui/field/FieldGroup.vue'
+import FieldLabel from '@/components/ui/field/FieldLabel.vue'
+import Input from '@/components/ui/input/Input.vue'
+import PasswordInput from '@/components/ui/input/PasswordInput.vue'
 import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { signInSchema } from '@/schemas/signInSchema'
 import type { SignInData } from '@/schemas/signInSchema'
 import { useAuthStore } from '@/stores/authStore'
-import { cn } from '@comfyorg/tailwind-utils'
 
 const authStore = useAuthStore()
 const authActions = useAuthActions()
@@ -107,24 +98,27 @@ const emit = defineEmits<{
 
 const emailInputId = 'comfy-org-sign-in-email'
 
-const onSubmit = useThrottleFn((event: FormSubmitEvent) => {
-  if (event.valid) {
-    emit('submit', event.values as SignInData)
-  }
-}, 1_500)
+const { handleSubmit, meta, values } = useForm({
+  validationSchema: toTypedSchema(signInSchema),
+  initialValues: { email: '', password: '' }
+})
+const isEmailValid = useIsFieldValid('email')
+const canResetPassword = computed(() => !!values.email && isEmailValid.value)
 
-const handleForgotPassword = async (
-  email: string,
-  isValid: boolean | undefined
-) => {
-  if (!email || !isValid) {
+const onSubmit = useThrottleFn(
+  handleSubmit((formValues) => emit('submit', formValues)),
+  1_500
+)
+
+async function handleForgotPassword() {
+  const email = values.email
+  if (!email || !isEmailValid.value) {
     toast.add({
       severity: 'warn',
       summary: t('auth.login.emailPlaceholder'),
       life: 5_000
     })
-    // Focus the email input
-    document.getElementById(emailInputId)?.focus?.()
+    document.getElementById(emailInputId)?.focus()
     return
   }
   await authActions.sendPasswordReset(email)

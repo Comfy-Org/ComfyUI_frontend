@@ -6,7 +6,7 @@
       </span>
     </div>
     <div
-      v-if="isLoadingVersions || isQueueing"
+      v-if="isBusy"
       class="flex flex-col items-center py-4 text-center text-muted"
     >
       <Spinner class="mb-2 size-8" />
@@ -20,57 +20,48 @@
         class="p-0"
       />
     </div>
-    <Listbox
+    <ListboxRoot
       v-else
-      :model-value="selectedVersion"
-      option-label="label"
-      option-value="value"
-      option-disabled="isDisabled"
-      :options="processedVersionOptions"
-      :highlight-on-select="false"
-      class="max-h-[50vh] w-full rounded-md border-none shadow-none"
-      :pt="{
-        listContainer: { class: 'scrollbar-hide' }
-      }"
-      @update:model-value="
-        (version: string | null) => {
-          if (version) selectedVersion = version
-        }
-      "
+      v-model="selectedVersion"
+      selection-behavior="replace"
+      class="w-full"
     >
-      <template #option="slotProps">
-        <div class="flex w-full items-center justify-between p-1">
+      <ListboxContent class="max-h-[50vh] scrollbar-hide overflow-y-auto p-1">
+        <ListboxItem
+          v-for="option in processedVersionOptions"
+          :key="option.value"
+          :value="option.value"
+          :disabled="option.isDisabled"
+          :aria-disabled="option.isDisabled"
+          :aria-label="option.label"
+          class="flex cursor-pointer items-center justify-between rounded-md px-3 py-2 outline-none data-disabled:cursor-not-allowed data-disabled:opacity-50 data-highlighted:bg-secondary-background-hover"
+        >
           <div class="flex items-center gap-2">
-            <template v-if="slotProps.option.value === 'nightly'">
-              <div class="w-4"></div>
-            </template>
-            <template v-else>
-              <i
-                v-if="slotProps.option.hasConflict"
-                v-tooltip="{
-                  value: slotProps.option.conflictMessage,
-                  showDelay: 300
-                }"
-                class="icon-[lucide--triangle-alert] text-warning-background"
-                role="img"
-                :aria-label="slotProps.option.conflictMessage"
-              />
-              <VerifiedIcon v-else :size="20" class="relative right-0.5" />
-            </template>
-            <span>{{ slotProps.option.label }}</span>
+            <div v-if="option.value === 'nightly'" class="w-4"></div>
+            <i
+              v-else-if="option.hasConflict"
+              v-tooltip="{
+                value: option.conflictMessage,
+                showDelay: 300
+              }"
+              class="icon-[lucide--triangle-alert] text-warning-background"
+              role="img"
+              :aria-label="option.conflictMessage"
+            />
+            <VerifiedIcon v-else :size="20" class="relative right-0.5" />
+            <span>{{ option.label }}</span>
             <PackStatusMessage
-              v-if="slotProps.option.isFlagged"
+              v-if="option.isFlagged"
               status-type="NodeVersionStatusFlagged"
               class="shrink-0"
             />
           </div>
-          <i
-            v-if="slotProps.option.isSelected"
-            class="pi pi-check text-highlight"
-          />
-        </div>
-      </template>
-    </Listbox>
+          <ListboxItemIndicator as-child>
+            <i class="icon-[lucide--check] text-highlight" />
+          </ListboxItemIndicator>
+        </ListboxItem>
+      </ListboxContent>
+    </ListboxRoot>
     <p role="status" class="px-3 text-sm text-muted">
       {{ latestUnavailableMessage }}
     </p>
@@ -98,7 +89,12 @@
 
 <script setup lang="ts">
 import { whenever } from '@vueuse/core'
-import Listbox from 'primevue/listbox'
+import {
+  ListboxContent,
+  ListboxItem,
+  ListboxItemIndicator,
+  ListboxRoot
+} from 'reka-ui'
 import { valid as validSemver } from 'semver'
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
@@ -161,6 +157,8 @@ const managerStore = useComfyManagerStore()
 const { checkNodeCompatibility } = useConflictDetection()
 
 const isQueueing = ref(false)
+const isLoadingVersions = ref(false)
+const isBusy = computed(() => isLoadingVersions.value || isQueueing.value)
 const selectedVersion = ref<string>(SelectedVersionValues.LATEST)
 const isInstallDisabled = computed(
   () =>
@@ -209,8 +207,7 @@ const latestInstallableVersion = computed(() =>
 )
 
 const latestUnavailableMessage = computed(() => {
-  if (isLoadingVersions.value || isQueueing.value || latestActiveVersion.value)
-    return ''
+  if (isBusy.value || latestActiveVersion.value) return ''
   if (registryService.error.value) return t('manager.versionLoadFailed')
   return fetchedVersions.value.some(
     (version) =>
@@ -219,8 +216,6 @@ const latestUnavailableMessage = computed(() => {
     ? t('manager.noActiveVersionsFlagged')
     : t('manager.noActiveVersions')
 })
-
-const isLoadingVersions = ref(false)
 
 const onNodePackChange = async () => {
   isLoadingVersions.value = true
@@ -333,19 +328,6 @@ const getVersionCompatibility = (version: string) => {
     conflictMessage
   }
 }
-// Helper to determine if an option is selected.
-const isOptionSelected = (optionValue: string) => {
-  if (selectedVersion.value === optionValue) {
-    return true
-  }
-  if (
-    optionValue === 'latest' &&
-    selectedVersion.value === latestActiveVersion.value?.version
-  ) {
-    return true
-  }
-  return false
-}
 const isVersionInstalled = (version: string) => {
   const installed = nodePack.id
     ? managerStore.getInstalledPackVersion(nodePack.id)
@@ -367,7 +349,6 @@ const processedVersionOptions = computed(() => {
         getVersionData(option.value).status === 'NodeVersionStatusFlagged',
       hasConflict: compatibility.hasConflict,
       conflictMessage: compatibility.conflictMessage,
-      isSelected: isOptionSelected(option.value),
       isDisabled:
         isVersionInstalled(option.value) ||
         (option.value === SelectedVersionValues.LATEST &&

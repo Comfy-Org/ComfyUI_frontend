@@ -36,7 +36,7 @@ test.describe('User Select View', { tag: '@settings' }, () => {
     await page.goto(userSelectPage.url)
     await expect(page).toHaveURL(userSelectPage.selectionUrl)
     await userSelectPage.existingUserSelect.click()
-    await page.locator('.p-select-list .p-select-option').first().click()
+    await page.getByRole('option').first().click()
     await userSelectPage.nextButton.click()
     await expect(page).toHaveURL(userSelectPage.url)
   })

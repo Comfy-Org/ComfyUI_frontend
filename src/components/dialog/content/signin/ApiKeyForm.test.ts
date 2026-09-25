@@ -1,13 +1,8 @@
-import { Form } from '@primevue/forms'
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Message from '@/components/ui/message/Message.vue'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import { useAuthStore } from '@/stores/authStore'
 
@@ -48,10 +43,7 @@ describe('ApiKeyForm', () => {
   function renderComponent(props: Record<string, unknown> = {}) {
     const user = userEvent.setup()
     const result = render(ApiKeyForm, {
-      global: {
-        plugins: [PrimeVue, i18n],
-        components: { Button, Form, InputText, Message }
-      },
+      global: { plugins: [i18n] },
       props
     })
     return { ...result, user }

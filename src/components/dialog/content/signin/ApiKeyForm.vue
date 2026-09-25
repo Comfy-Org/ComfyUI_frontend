@@ -4,67 +4,48 @@
       <h1 class="my-0 text-2xl/normal font-medium">
         {{ t('auth.apiKey.title') }}
       </h1>
-      <div class="flex flex-col gap-2">
-        <p class="my-0 text-base text-muted">
-          {{ t('auth.apiKey.description') }}
-        </p>
+      <p class="my-0 text-base text-muted-foreground">
+        {{ t('auth.apiKey.description') }}
         <a
           href="https://docs.comfy.org/interface/user#logging-in-with-an-api-key"
           target="_blank"
-          class="cursor-pointer text-blue-500"
+          class="underline underline-offset-4 hover:text-base-foreground"
         >
           {{ t('g.learnMore') }}
         </a>
-      </div>
+      </p>
     </div>
 
-    <Form
-      v-slot="$form"
-      class="flex flex-col gap-6"
-      :resolver="zodResolver(apiKeySchema)"
-      @submit="onSubmit"
-    >
-      <Message v-if="$form.apiKey?.invalid" severity="error" class="mb-4">
-        {{ $form.apiKey.error.message }}
-      </Message>
-
-      <div class="flex flex-col gap-2">
-        <label
-          class="mb-2 text-base font-medium opacity-80"
-          for="comfy-org-api-key"
-        >
-          {{ t('auth.apiKey.label') }}
-        </label>
-        <div class="flex flex-col gap-2">
-          <InputText
-            pt:root:id="comfy-org-api-key"
-            pt:root:autocomplete="off"
-            class="h-10"
-            name="apiKey"
+    <form class="flex flex-col gap-6" @submit.prevent="onSubmit">
+      <VeeField v-slot="{ componentField, errors }" name="apiKey">
+        <Field :data-invalid="!!errors.length">
+          <FieldLabel for="comfy-org-api-key">
+            {{ t('auth.apiKey.label') }}
+          </FieldLabel>
+          <Input
+            v-bind="componentField"
+            id="comfy-org-api-key"
+            autocomplete="off"
             type="password"
             :placeholder="t('auth.apiKey.placeholder')"
-            :invalid="$form.apiKey?.invalid"
+            :aria-invalid="!!errors.length"
           />
-          <small class="text-muted">
+          <FieldDescription>
             {{ t('auth.apiKey.helpText') }}
-            <a
-              :href="`${comfyPlatformBaseUrl}/login`"
-              target="_blank"
-              class="cursor-pointer text-blue-500"
-            >
+            <a :href="`${comfyPlatformBaseUrl}/login`" target="_blank">
               {{ t('auth.apiKey.generateKey') }}
             </a>
             <span class="mx-1">•</span>
             <a
               href="https://docs.comfy.org/tutorials/partner-nodes/overview#log-in-with-comfyui-account-api-key-on-non-whitelisted-websites"
               target="_blank"
-              class="cursor-pointer text-blue-500"
             >
               {{ t('auth.apiKey.whitelistInfo') }}
             </a>
-          </small>
-        </div>
-      </div>
+          </FieldDescription>
+          <FieldError v-if="errors.length" :errors />
+        </Field>
+      </VeeField>
 
       <div class="mt-4 flex items-center justify-between">
         <Button type="button" variant="textonly" @click="$emit('back')">
@@ -79,20 +60,22 @@
           {{ t('g.save') }}
         </Button>
       </div>
-    </Form>
+    </form>
   </div>
 </template>
 
 <script setup lang="ts">
-import type { FormSubmitEvent } from '@primevue/forms'
-import { Form } from '@primevue/forms'
-import { zodResolver } from '@primevue/forms/resolvers/zod'
-import InputText from 'primevue/inputtext'
+import { toTypedSchema } from '@vee-validate/zod'
+import { Field as VeeField, useForm } from 'vee-validate'
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
-import Message from '@/components/ui/message/Message.vue'
+import Field from '@/components/ui/field/Field.vue'
+import FieldDescription from '@/components/ui/field/FieldDescription.vue'
+import FieldError from '@/components/ui/field/FieldError.vue'
+import FieldLabel from '@/components/ui/field/FieldLabel.vue'
+import Input from '@/components/ui/input/Input.vue'
 import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import {
   configValueOrDefault,
@@ -120,10 +103,13 @@ const emit = defineEmits<{
   (e: 'success'): void
 }>()
 
-const onSubmit = async (event: FormSubmitEvent) => {
-  if (event.valid) {
-    await apiKeyStore.storeApiKey(event.values.apiKey)
-    emit('success')
-  }
-}
+const { handleSubmit } = useForm({
+  validationSchema: toTypedSchema(apiKeySchema),
+  initialValues: { apiKey: '' }
+})
+
+const onSubmit = handleSubmit(async ({ apiKey }) => {
+  await apiKeyStore.storeApiKey(apiKey)
+  emit('success')
+})
 </script>
