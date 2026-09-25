@@ -45,10 +45,32 @@ with 276.80 core test minutes on that SHA, and
 [PR #17991's Fallow failure](https://github.com/Comfy-Org/ComfyUI_frontend/actions/runs/36075153555)
 with 325.22 minutes.
 
+Those eight SHAs come from four PRs. None had a recorded failed core-test job
+in the selected runs, but missing runs and cancellations limit that observation.
+The sample does not establish how often a prerequisite and an independent test
+fail together, or how much diagnostic information gating would delay.
+
 All sampled runners use `ubuntu-latest`. This repository is public, so standard
 runner execution is [free under GitHub's billing policy](https://docs.github.com/en/billing/concepts/product-billing/github-actions).
-The target is wasted compute and concurrency. Storage and external service
-charges are not measured.
+The target is developer and merge-queue turnaround under shared runner limits.
+Runner-minutes are a supporting metric. Storage and external service charges
+are not measured.
+
+### Queue evidence does not yet establish a net benefit
+
+Dashboard screenshots reviewed on September 25 report average job queue times
+of 4 seconds for August 1 through 31 and 32 seconds for the last 30 days, starting
+August 26. These overlapping periods are not a controlled comparison. A job
+screenshot shows an eligible unit-test job waiting for an `ubuntu-latest`
+runner with a displayed elapsed time of 12m22s. Long waits exist alongside a
+much lower average; neither measure establishes that queueing dominates
+turnaround across PRs.
+
+A queued-workflow count does not distinguish runner supply, concurrency limits,
+or other scheduling delays. The dashboard's 126,725 failed-job minutes over
+the last 30 days are also not an estimate of avoidable work: a failed test can
+produce useful diagnostic information. The same-revision sample above is the
+narrower estimate, and it remains a counterfactual upper bound.
 
 ## Decision
 
@@ -56,6 +78,12 @@ Prototype native `needs` dependencies in `CI: Tests E2E` for PRs and merge
 groups. Run lint/format/Knip/typechecks, Fallow, and the existing build in
 parallel. Only after they succeed, start frontend Playwright, Vitest, and the
 custom-node ecosystem matrix. Keep path filtering inside each suite.
+
+Treat this as a scheduling experiment, not a demonstrated improvement in
+turnaround. Playwright already depends on the build in the existing workflow.
+This prototype adds lint and Fallow dependencies, and makes unit and ecosystem
+tests wait for the build too. Preventing Playwright shards from starting after
+that build fails is not a new saving from this change.
 
 Keep the E2E workflow name, file, and artifacts so existing `workflow_run`
 report consumers still find the producing run. Reuse the other workflows with
@@ -68,6 +96,40 @@ and rerun matching logic. Reject `workflow_run` for executing PR tests: it
 changes the event, ref, and permission boundary. A new umbrella workflow would
 also require migrating the E2E report consumers; retaining the existing entry
 point avoids that migration in this prototype.
+
+### Shared capacity versus complete feedback
+
+The strongest case for gating is the effect on other candidates. A revision
+that fails a required prerequisite cannot merge. Starting large test matrices
+on it consumes capacity that other PRs and merge candidates could use. Near
+capacity, avoiding that work could reduce queue delays enough to offset the
+new dependency delay. Free runner execution does not mean unlimited capacity.
+
+The strongest case against gating is the value of independent diagnostics.
+A revision with a lint failure can still expose a test failure. Parallel runs
+let the author fix both in one iteration; a hard gate can require another
+fix, push, and CI cycle. Newly dependent work also waits on passing candidates
+when spare capacity is available. That wait includes prerequisite queue time
+and summary jobs, not just the runtime of the cheap checks.
+
+Local lint and typechecks can reduce prerequisite failures, but they are not
+free for developers running many agents. Requiring them before a push moves
+compute and waiting to the development environment. This proposal does not
+assume that every contributor can use local checks instead of CI.
+
+The following scheduling alternatives remain open for comparison:
+
+- Keep Vitest parallel and gate only the expensive Playwright and ecosystem
+  matrices. This retains some independent feedback with a smaller compute
+  reduction than gating all three suites.
+- Prioritize cheap checks over expensive work where runner scheduling permits.
+  This could improve early feedback without suppressing later diagnostics;
+  this prototype does not provide that priority mechanism.
+- Start everything in parallel and cancel expensive work after a prerequisite
+  fails. Passing candidates avoid the new dependency delay, but failing runs
+  still consume capacity until cancellation and lose unfinished diagnostics.
+- Keep the current parallel scheduling if queue savings do not compensate for
+  slower passing candidates and additional diagnostic cycles.
 
 ### Dependency comparison
 
@@ -178,6 +240,8 @@ coordinated run. No new key retroactively cancels those runs.
 
 - Passing candidates wait for the slowest prerequisite. Unit tests and the
   ecosystem matrix now wait for the build as well as lint checks.
+- Independent test failures can remain undiscovered until a later push,
+  increasing the number of author feedback cycles.
 - Unit-only edits now require a build, even when Playwright remains skipped.
 - E2E workflow completion consumers now wait for unit and ecosystem jobs too.
 - A rerun of the coordinator includes the other suites. Partial reruns need
@@ -187,6 +251,27 @@ coordinated run. No new key retroactively cancels those runs.
 - Website, billing, Storybook, performance, post-merge, and manual workflows
   remain independent in this first prototype. Browser-based custom-node tests
   are already nightly/manual-only and remain unchanged.
+
+### Evaluate turnaround before rollout
+
+The proposed primary outcomes are p95 time to complete, actionable PR feedback
+and p95 time from merge-queue entry to completion. A fast prerequisite failure
+alone does not count as complete feedback about the independent suites.
+
+Compare the prototype with parallel scheduling at similar load and change
+scope. Separate PR and merge-group events, passing and failing candidates, and
+busy and quiet periods. Record:
+
+- Time an eligible job waits for a runner, including p95 and p99, separately
+  from dependency waits, concurrency waits, and execution time where observable.
+- Median and p95 completion time for passing candidates.
+- Additional fix/push cycles before authors discover independent test failures.
+- Runner-minutes avoided, including the cost of extra builds and summary jobs.
+
+Agree on an acceptable passing-candidate slowdown before rollout. Reduced
+runner-minutes alone are insufficient evidence to adopt the gate. The current
+sample does not measure these turnaround outcomes or isolate the cause of the
+observed runner waits.
 
 ## Notes
 
