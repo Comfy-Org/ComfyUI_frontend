@@ -305,6 +305,8 @@ describe('ModelDetail', () => {
     expect(assign).toHaveBeenCalledWith(
       `${location.origin}/models/another-model/`
     )
+    const run = vi.mocked(runWorkshopRouter).mock.calls[0][0]
+    expect(run.signal.reason === WORKSHOP_LEAVE_RUNNING).toBe(true)
 
     // Second time out, it already said its piece.
     expect(clickLinkTo('/models/a-third-model/')).toBe(true)

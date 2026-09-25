@@ -10256,6 +10256,10 @@ Enterprise`
   },
   'workshop.run.savedStay': { en: 'Stay on this page', 'zh-CN': '留在此页面' },
   'workshop.run.savedLeave': { en: 'Leave', 'zh-CN': '离开' },
+  'workshop.run.savedCancel': {
+    en: 'Cancel the generation',
+    'zh-CN': '取消这次生成'
+  },
   'workshop.run.switchAnyway': {
     en: 'Switch and cancel',
     'zh-CN': '切换并取消'

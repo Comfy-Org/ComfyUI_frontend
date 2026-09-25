@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { ExternalLink } from '@lucide/vue'
+import { computed } from 'vue'
+
 import Button from '../ui/button/Button.vue'
 import Dialog from '../ui/dialog/Dialog.vue'
 import DialogContent from '../ui/dialog/DialogContent.vue'
@@ -43,7 +46,11 @@ const {
   locale?: Locale
 }>()
 const open = defineModel<boolean>('open', { default: false })
-const emit = defineEmits<{ leave: [] }>()
+const emit = defineEmits<{ leave: []; cancel: [] }>()
+
+// Leaving a kept run costs nothing, so the only choice worth a button is the
+// one that costs something: stopping the machine the reader is paying for.
+const stopping = computed(() => action === 'leaveSaved')
 </script>
 
 <template>
@@ -60,29 +67,34 @@ const emit = defineEmits<{ leave: [] }>()
         <DialogDescription class="text-base text-primary-comfy-canvas/70">
           {{ t(COPY[action].body, locale) }}
         </DialogDescription>
-      </div>
-
-      <div
-        class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end"
-      >
         <a
           v-if="assetsHref"
           :href="assetsHref"
           target="_blank"
           rel="noopener noreferrer"
-          class="inline-flex items-center rounded-lg px-1 text-sm font-medium whitespace-nowrap text-primary-warm-gray underline-offset-4 transition-colors outline-none hover:text-primary-comfy-yellow hover:underline focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 sm:mr-auto"
+          class="mt-1 inline-flex w-fit items-center gap-1.5 rounded-lg text-sm font-medium text-primary-comfy-yellow underline-offset-4 transition-colors outline-none hover:underline focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
           data-testid="run-leave-assets"
         >
           {{ t('workshop.run.savedAssets', locale) }}
+          <ExternalLink class="size-3.5" aria-hidden="true" />
         </a>
+      </div>
+
+      <div
+        class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-end"
+      >
         <Button
           variant="outline"
           size="lg"
           class="px-5"
-          data-testid="run-leave-stay"
-          @click="open = false"
+          :data-testid="stopping ? 'run-leave-cancel' : 'run-leave-stay'"
+          @click="stopping ? emit('cancel') : (open = false)"
         >
-          {{ t(COPY[action].stay, locale) }}
+          {{
+            stopping
+              ? t('workshop.run.savedCancel', locale)
+              : t(COPY[action].stay, locale)
+          }}
         </Button>
         <Button
           size="lg"

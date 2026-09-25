@@ -372,6 +372,16 @@ function leaveForLink() {
   location.assign(href)
 }
 
+// The reader would rather not pay for what they are walking away from.
+function cancelAndLeave() {
+  const href = leavingTo.value
+  leavingTo.value = undefined
+  if (!href) return
+  rememberLeavingNotice()
+  cancelRun()
+  location.assign(href)
+}
+
 function rememberLeavingNotice() {
   if (!savesAssets) return
   markLeavingNoticeSeen()
@@ -1144,6 +1154,7 @@ function useInCode() {
       :locale
       @update:open="(value: boolean) => !value && (leavingTo = undefined)"
       @leave="leaveForLink"
+      @cancel="cancelAndLeave"
     />
 
     <ExampleReplaceDialog
