@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent } from 'vue'
 
+import { useToast } from '@/components/ui/toast'
 import { i18n } from '@/i18n'
 import { useTemplateUrlLoader as createTemplateUrlLoader } from '@/platform/workflow/templates/composables/useTemplateUrlLoader'
 import type { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
@@ -58,15 +59,6 @@ vi.mock<unknown>(
 
 // Mock toast
 const mockToastAdd = vi.fn()
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
-  })
-)
 
 const apps: App<Element>[] = []
 
@@ -90,6 +82,7 @@ function useTemplateUrlLoader() {
 afterEach(() => apps.splice(0).forEach((app) => app.unmount()))
 
 beforeEach(() => {
+  vi.mocked(useToast().error).mockImplementation(mockToastAdd)
   Object.assign(useCanvasStore(), { linearMode: false })
 })
 
@@ -246,10 +239,8 @@ describe('useTemplateUrlLoader', () => {
     const { loadTemplateFromUrl } = useTemplateUrlLoader()
     await loadTemplateFromUrl()
 
-    expect(mockToastAdd).toHaveBeenCalledWith({
-      severity: 'error',
-      summary: 'Error',
-      detail: i18n.global.t('templateWorkflows.error.loading')
+    expect(mockToastAdd).toHaveBeenCalledWith('Error', {
+      description: i18n.global.t('templateWorkflows.error.loading')
     })
   })
 

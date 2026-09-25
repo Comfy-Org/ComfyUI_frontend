@@ -1,8 +1,6 @@
 import { getActivePinia } from 'pinia'
-import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import PrimeVue from 'primevue/config'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -14,6 +12,7 @@ import type { Settings } from '@/platform/settings/types'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useLitegraphService } from '@/services/litegraphService'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
+import { zIndexManager } from '@/utils/zIndexManager'
 import { useSearchBoxStore } from '@/stores/workspace/searchBoxStore'
 import type { FuseFilter, FuseFilterWithValue } from '@/utils/fuseUtil'
 
@@ -104,7 +103,7 @@ describe('NodeSearchBoxPopover', () => {
 
     const result = render(NodeSearchBoxPopover, {
       global: {
-        plugins: [i18n, PrimeVue, pinia],
+        plugins: [i18n, pinia],
         stubs: {
           NodeSearchBox: NodeSearchBoxStub,
           NodeSearchContent: NodeSearchContentStub,
@@ -146,7 +145,7 @@ describe('NodeSearchBoxPopover', () => {
 
   afterEach(() => {
     if (openModal) {
-      ZIndex.clear(openModal)
+      zIndexManager.clear(openModal)
       openModal = undefined
     }
   })
@@ -231,7 +230,7 @@ describe('NodeSearchBoxPopover', () => {
 
   it('opens above an existing lifted dialog', async () => {
     openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 3702)
+    zIndexManager.set('modal', openModal, 3702)
     const dialogZIndex = Number(openModal.style.zIndex)
     const { pinia } = renderComponent({
       'Comfy.NodeSearchBoxImpl': 'v1 (legacy)'

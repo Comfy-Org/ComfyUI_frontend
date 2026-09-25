@@ -11,7 +11,7 @@ const { message, closeLabel } = defineProps<{
 
 const emit = defineEmits<{ close: [id: number] }>()
 
-/** PrimeVue ToastMessage's fixed severity icons, paths from @primevue/icons. */
+/** PrimeVue ToastMessage's fixed severity icon paths. */
 const ICONS: Record<ToastSeverity, { name: string; paths: string[] }> = {
   success: {
     name: 'check',

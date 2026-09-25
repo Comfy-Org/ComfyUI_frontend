@@ -1,19 +1,18 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { computed, ref } from 'vue'
+import { ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import type { MissingPackGroup } from '@/components/rightSidePanel/errors/useErrorGroups'
-import { useManagerState } from '@/workbench/extensions/manager/composables/useManagerState'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
 
 import MissingPackGroupRow from './MissingPackGroupRow.vue'
 
 const mockInstallAllPacks = vi.fn()
 const mockIsInstalling = ref(false)
-const mockShouldShowManagerButtons = ref(false)
+const mockShouldShowManagerButtons = { value: false }
+const mockOpenManager = vi.fn()
 const mockMissingNodePacks = ref<Array<{ id: string; name: string }>>([])
 const mockIsLoading = ref(false)
 
@@ -39,7 +38,17 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
+vi.mock<unknown>(
+  import('@/workbench/extensions/manager/composables/useManagerState'),
+
+  () => ({
+    useManagerState: () => ({
+      isNewManagerUI: { value: false },
+      shouldShowManagerButtons: mockShouldShowManagerButtons,
+      openManager: mockOpenManager
+    })
+  })
+)
 
 vi.mock<unknown>(
   import('@/workbench/extensions/manager/types/comfyManagerTypes'),
@@ -108,7 +117,12 @@ function renderRow(
       ...props
     },
     global: {
-      plugins: [PrimeVue, i18n]
+      plugins: [i18n],
+      stubs: {
+        DotSpinner: {
+          template: '<span role="status" aria-label="loading" />'
+        }
+      }
     }
   })
   return { user, onLocateNode, onOpenManagerInfo }
@@ -118,9 +132,6 @@ describe('MissingPackGroupRow', () => {
   beforeEach(() => {
     vi.mocked(useComfyManagerStore().isPackInstalled).mockReturnValue(false)
     mockShouldShowManagerButtons.value = false
-    useManagerState().shouldShowManagerButtons = computed(
-      () => mockShouldShowManagerButtons.value
-    )
     mockIsInstalling.value = false
     mockMissingNodePacks.value = []
     mockIsLoading.value = false
@@ -352,7 +363,7 @@ describe('MissingPackGroupRow', () => {
       mockIsInstalling.value = true
       mockMissingNodePacks.value = [{ id: 'my-pack', name: 'My Pack' }]
       renderRow()
-      expect(screen.getByTestId('dot-spinner')).toBeInTheDocument()
+      expect(screen.getByRole('status')).toBeInTheDocument()
     })
 
     it('shows install button when not installed and pack found', () => {
@@ -378,7 +389,7 @@ describe('MissingPackGroupRow', () => {
       mockShouldShowManagerButtons.value = true
       mockIsLoading.value = true
       renderRow()
-      expect(screen.getByTestId('dot-spinner')).toBeInTheDocument()
+      expect(screen.getByRole('status')).toBeInTheDocument()
     })
   })
 

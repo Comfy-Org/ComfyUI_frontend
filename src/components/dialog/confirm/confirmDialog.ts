@@ -30,7 +30,7 @@ export function showConfirmDialog(
       size: 'md',
       contentClass: 'rounded-2xl border-border-default sm:max-w-lg',
       // Confirm sections carry their own padding — zero out the dialog
-      // chrome padding, like the PrimeVue `pt` overrides did.
+      // chrome padding.
       headerClass: 'p-0 pr-3',
       bodyClass: 'p-0',
       footerClass: 'p-0'

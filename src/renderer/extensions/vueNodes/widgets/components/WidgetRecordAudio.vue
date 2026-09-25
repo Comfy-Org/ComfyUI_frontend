@@ -83,11 +83,11 @@
 
 <script setup lang="ts">
 import { useIntervalFn } from '@vueuse/core'
-import { Button } from 'primevue'
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
+import Button from '@/components/ui/button/Button.vue'
 import { useToast } from '@/components/ui/toast'
 import { app } from '@/scripts/app'
 import { isDOMWidget } from '@/scripts/domWidget'

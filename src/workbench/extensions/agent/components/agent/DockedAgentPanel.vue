@@ -103,11 +103,3 @@ useEventListener(document, 'pointermove', (e: PointerEvent) => {
   agentPanelStore.setWidth(resizeStartWidth + (resizeStartX - e.clientX))
 })
 </script>
-
-<style scoped>
-.agent-resize-handle:hover,
-.agent-resize-handle[data-resizing='true'] {
-  transition: background-color 0.2s ease 300ms;
-  background-color: var(--p-primary-color);
-}
-</style>

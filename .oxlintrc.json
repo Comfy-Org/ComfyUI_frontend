@@ -27,10 +27,10 @@
     "vue"
   ],
   "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
-  "extends": ["./scripts/primevue-import-allowlist.json"],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
     "comfy/no-js-private-class-members": "error",
+    "comfy/no-primevue-imports": "error",
     "comfy/no-render-in-watch-effect": "error",
     "no-array-constructor": "error",
     "no-case-declarations": "error",
@@ -56,33 +56,6 @@
     "prefer-rest-params": "error",
     "prefer-spread": "error",
     "preserve-caught-error": "error",
-    "no-restricted-imports": [
-      "error",
-      {
-        "paths": [
-          {
-            "name": "primevue/calendar",
-            "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
-          },
-          {
-            "name": "primevue/dropdown",
-            "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
-          },
-          {
-            "name": "primevue/inputswitch",
-            "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
-          },
-          {
-            "name": "primevue/overlaypanel",
-            "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
-          },
-          {
-            "name": "primevue/sidebar",
-            "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
-          }
-        ]
-      }
-    ],
     "no-unsafe-optional-chaining": "error",
     "no-self-assign": "allow",
     "no-unreachable": "error",

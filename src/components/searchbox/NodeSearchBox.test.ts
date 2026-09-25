@@ -1,4 +1,3 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -6,6 +5,7 @@ import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import { vRekaZIndex } from '@/components/dialog/vRekaZIndex'
+import { zIndexManager } from '@/utils/zIndexManager'
 
 import NodeSearchBox from './NodeSearchBox.vue'
 
@@ -28,7 +28,7 @@ let openModal: HTMLElement | undefined
 
 afterEach(() => {
   if (openModal) {
-    ZIndex.clear(openModal)
+    zIndexManager.clear(openModal)
     openModal = undefined
   }
 })
@@ -36,7 +36,7 @@ afterEach(() => {
 describe('NodeSearchBox dialog stacking', () => {
   it('opens its filter dialog above search opened over a lifted modal', async () => {
     openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 3702)
+    zIndexManager.set('modal', openModal, 3702)
     const managerZIndex = Number(openModal.style.zIndex)
     const Harness = defineComponent({
       components: { NodeSearchBox },

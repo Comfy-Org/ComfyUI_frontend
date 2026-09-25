@@ -11,7 +11,8 @@ const DOM_METHOD_MESSAGES = new Map([
   ['querySelector', DOM_INSPECTION_MESSAGE],
   ['querySelectorAll', DOM_INSPECTION_MESSAGE]
 ])
-const PRIMEVUE_MODULE = /^(?:primevue(?:\/|$)|@primevue(?:\/|$))/
+const PRIMEVUE_MODULE =
+  /^(?:primevue(?:\/|$)|@primevue(?:\/|$)|@primeuix(?:\/|$))/
 const ES2023_ARRAY_COPY_METHODS = new Set([
   'toReversed',
   'toSorted',
@@ -330,7 +331,7 @@ export const noNewZodServerResponseSchema = restrictModules(
 
 export const noPrimeVueImports = restrictModules(
   (source) => PRIMEVUE_MODULE.test(source),
-  'New PrimeVue usage is banned per the PrimeVue removal effort. Remove this import. scripts/primevue-import-allowlist.json only shrinks; do not add entries.'
+  'PrimeVue usage is banned. Use the project design-system components instead.'
 )
 
 export const noEs2023ArrayCopyMethod = {

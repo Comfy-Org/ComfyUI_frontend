@@ -1,8 +1,9 @@
-import { ZIndex } from '@primeuix/utils/zindex'
 import { fireEvent, render, screen, waitFor } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import { defineComponent, ref } from 'vue'
+
+import { zIndexManager } from '@/utils/zIndexManager'
 
 import PopoverOverlay from './PopoverOverlay.vue'
 
@@ -22,7 +23,7 @@ function renderPopover(withOutside = false) {
 
 afterEach(() => {
   if (openModal) {
-    ZIndex.clear(openModal)
+    zIndexManager.clear(openModal)
     openModal = undefined
   }
 })
@@ -55,7 +56,7 @@ describe('PopoverOverlay', () => {
 
   it('opens above a registered modal', async () => {
     openModal = document.createElement('div')
-    ZIndex.set('modal', openModal, 3702)
+    zIndexManager.set('modal', openModal, 3702)
     const dialogZIndex = Number(openModal.style.zIndex)
     renderPopover()
 
