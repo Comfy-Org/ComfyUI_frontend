@@ -19,11 +19,9 @@ test.describe(
         `[data-node-id="${loadImageNode.id}"]`
       )
       await nodeEl.click({ button: 'right' })
-      const menu = comfyPage.page.locator('.p-contextmenu')
+      const menu = comfyPage.page.getByRole('menu')
       await menu.waitFor({ state: 'visible' })
-      const menuLabels = await menu
-        .locator('[role="menuitem"] span.flex-1')
-        .allInnerTexts()
+      const menuLabels = await menu.getByRole('menuitem').allInnerTexts()
 
       expect(menuLabels).toContain('Paste Image')
     })
@@ -41,11 +39,9 @@ test.describe(
         `[data-node-id="${saveImageNode.id}"]`
       )
       await nodeEl.click({ button: 'right' })
-      const menu = comfyPage.page.locator('.p-contextmenu')
+      const menu = comfyPage.page.getByRole('menu')
       await menu.waitFor({ state: 'visible' })
-      const menuLabels = await menu
-        .locator('[role="menuitem"] span.flex-1')
-        .allInnerTexts()
+      const menuLabels = await menu.getByRole('menuitem').allInnerTexts()
 
       expect(menuLabels).not.toContain('Paste Image')
       expect(menuLabels).not.toContain('Open Image')

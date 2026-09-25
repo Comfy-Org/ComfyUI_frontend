@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import type { MenuItem } from 'primevue/menuitem'
 import {
   DropdownMenuItem,
   DropdownMenuPortal,
@@ -13,6 +12,8 @@ import { toValue } from 'vue'
 import type { StyleValue } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
+
+import type { MenuItem } from '@/components/ui/menu/types'
 
 const { t } = useI18n()
 
