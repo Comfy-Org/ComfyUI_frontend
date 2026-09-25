@@ -272,6 +272,27 @@ describe('HostTelemetrySink', () => {
         workflow_id: 'workflow-1',
         target: 'active_tab_switch'
       }
+      name: TelemetryEvents.AGENT_CONSENT_SHOWN,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentShown({ trigger: 'first_load' }),
+      properties: { trigger: 'first_load' }
+    },
+    {
+      name: TelemetryEvents.AGENT_CONSENT_RESOLVED,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentConsentResolved({ decision: 'accepted' }),
+      properties: { decision: 'accepted' }
+    },
+    {
+      name: TelemetryEvents.AGENT_ONBOARDING_SHOWN,
+      track: (sink: HostTelemetrySink) => sink.trackAgentOnboardingShown(),
+      properties: undefined
+    },
+    {
+      name: TelemetryEvents.AGENT_ONBOARDING_STEP,
+      track: (sink: HostTelemetrySink) =>
+        sink.trackAgentOnboardingStep({ step: 4, action: 'finish' }),
+      properties: { step: 4, action: 'finish' }
     },
     {
       name: TelemetryEvents.AGENT_CONSENT_NOT_OFFERED,

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { computed, ref, shallowRef } from 'vue'
 
+import type { AgentInputMethod } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
 import type { ComposerAttachment } from '../../composables/agent/useComposer'
@@ -65,6 +66,9 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
   )
   const nodeScope = ref<string | null>(null)
   const promptEpoch = ref(0)
+  // Set by the affordance that supplied the text; read once at submission and
+  // reset there, so it describes the message being sent rather than the panel.
+  const promptOrigin = ref<AgentInputMethod>('typed')
   const insertionPoint = shallowRef<ComposerInsertionPoint>({
     textOffset: 0,
     referenceIndex: 0
@@ -77,6 +81,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     phase: 'pending' | 'failed'
     stopRequested: boolean
     revision: number
+    origin: AgentInputMethod
     snapshot: SubmittedDraft
   } | null>(null)
   let revision = 0
@@ -126,7 +131,12 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     updateDraft({ text: next.text, references })
   }
 
+  function markSuggestedPrompt(): void {
+    promptOrigin.value = 'suggestion'
+  }
+
   function replacePrompt(next: PromptSnapshot): void {
+    promptOrigin.value = 'edited'
     resetPromptHistory()
     updateDraft({
       text: next.text,
@@ -334,6 +344,11 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
 
   function startSubmission(snapshot: SubmittedDraft): number {
     resetPromptHistory()
+    // Held with the snapshot, not dropped: a send that fails puts this draft
+    // back in the composer, and the retry came from the same chip or edited
+    // prompt the first attempt did.
+    const origin = promptOrigin.value
+    promptOrigin.value = 'typed'
     updateDraft({ text: '', references: [] })
     insertionPoint.value = { textOffset: 0, referenceIndex: 0 }
     const id = ++nextSubmissionId
@@ -342,6 +357,7 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
       phase: 'pending',
       stopRequested: false,
       revision,
+      origin,
       snapshot
     }
     return id
@@ -368,7 +384,9 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     const failed = submission.value
     if (failed?.phase !== 'failed') return
     submission.value = null
-    if (failed.revision === revision) return failed.snapshot
+    if (failed.revision !== revision) return
+    promptOrigin.value = failed.origin
+    return failed.snapshot
   }
 
   function invalidateSubmission(): void {
@@ -384,12 +402,14 @@ export const useAgentComposerStore = defineStore('agentComposer', () => {
     nodes,
     nodeScope,
     promptEpoch,
+    promptOrigin,
     insertionPoint,
     submission,
     setText,
     setInsertionPoint,
     resetPromptHistory,
     applyEditorPrompt,
+    markSuggestedPrompt,
     replacePrompt,
     restorePrompt,
     replaceDraft,

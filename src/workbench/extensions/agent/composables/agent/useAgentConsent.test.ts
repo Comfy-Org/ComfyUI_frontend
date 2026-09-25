@@ -332,7 +332,7 @@ describe('useAgentConsent', () => {
     )
     const onOpen = vi.fn()
 
-    const request = useAgentConsent().withConsent(onOpen)
+    const request = useAgentConsent().withConsent('button_click', onOpen)
 
     expect(useDialogStore().dialogStack).toHaveLength(0)
     expect(onOpen).not.toHaveBeenCalled()
@@ -350,7 +350,7 @@ describe('useAgentConsent', () => {
     fetchWithUnifiedRemint.mockRejectedValueOnce(new Error('offline'))
     const onOpen = vi.fn()
 
-    const request = useAgentConsent().withConsent(onOpen)
+    const request = useAgentConsent().withConsent('button_click', onOpen)
     await vi.waitFor(() => {
       expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     })
@@ -481,7 +481,7 @@ describe('useAgentConsent', () => {
   })
 
   it('configures the first-use card as an accessible dismissable dialog', async () => {
-    const request = useAgentConsent().withConsent(vi.fn())
+    const request = useAgentConsent().withConsent('button_click', vi.fn())
 
     const dialog = await waitForConsentDialog()
 
@@ -504,7 +504,7 @@ describe('useAgentConsent', () => {
           })
       )
     const onOpen = vi.fn()
-    const request = useAgentConsent().withConsent(onOpen)
+    const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
 
     ;(dialog.contentProps.onAccept as () => void)()
@@ -535,7 +535,9 @@ describe('useAgentConsent', () => {
   it('reports the card as shown only after its async component mounts', async () => {
     const onOpen = vi.fn()
     const onShown = vi.fn()
-    const request = useAgentConsent().withConsent(onOpen, { onShown })
+    const request = useAgentConsent().withConsent('button_click', onOpen, {
+      onShown
+    })
     const dialog = await waitForConsentDialog()
 
     expect(onShown).not.toHaveBeenCalled()
@@ -573,7 +575,7 @@ describe('useAgentConsent', () => {
     async ({ user, workspaceId }) => {
       const key = 'Comfy.AgentConsent.AutoShown.account-a.workspace-a'
       const onOpen = vi.fn()
-      const request = useAgentConsent().withConsent(onOpen, {
+      const request = useAgentConsent().withConsent('button_click', onOpen, {
         onShown: () => {
           localStorage.setItem(key, 'true')
         }
@@ -611,7 +613,10 @@ describe('useAgentConsent', () => {
     const onOpen = vi.fn()
     const onShown = vi.fn()
     const canShow = vi.fn(() => false)
-    const request = useAgentConsent().withConsent(onOpen, { onShown, canShow })
+    const request = useAgentConsent().withConsent('button_click', onOpen, {
+      onShown,
+      canShow
+    })
 
     await setImmediate()
     expect(canShow).not.toHaveBeenCalled()
@@ -630,7 +635,7 @@ describe('useAgentConsent', () => {
       .mockResolvedValueOnce(settingResponse(false))
       .mockRejectedValueOnce(new Error('offline'))
     const onOpen = vi.fn()
-    void useAgentConsent().withConsent(onOpen)
+    void useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
 
     ;(dialog.contentProps.onAccept as () => void)()
@@ -647,7 +652,7 @@ describe('useAgentConsent', () => {
 
   it('keeps a missing-auth save retryable in the same account', async () => {
     const onOpen = vi.fn()
-    const request = useAgentConsent().withConsent(onOpen)
+    const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
     vi.mocked(useAuthStore().getWorkspaceAuthHeader).mockResolvedValueOnce(null)
 
@@ -670,7 +675,7 @@ describe('useAgentConsent', () => {
 
   it('does not apply an open consent card to a different account', async () => {
     const onOpen = vi.fn()
-    const request = useAgentConsent().withConsent(onOpen)
+    const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
 
     authState.identity = 'account-b'
@@ -702,7 +707,7 @@ describe('useAgentConsent', () => {
     fetchWithUnifiedRemint.mockResolvedValueOnce(savedResponse())
     const onOpen = vi.fn()
 
-    const request = useAgentConsent().withConsent(onOpen)
+    const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
     ;(dialog.contentProps.onAccept as () => void)()
     await request
@@ -734,7 +739,7 @@ describe('useAgentConsent', () => {
     showSignInDialog.mockResolvedValueOnce(false)
     const onOpen = vi.fn()
 
-    const request = useAgentConsent().withConsent(onOpen)
+    const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
     ;(dialog.contentProps.onAccept as () => void)()
     await request
@@ -801,7 +806,7 @@ describe('useAgentConsent', () => {
     showSignInDialog.mockRejectedValueOnce(error)
     const onOpen = vi.fn()
 
-    const request = useAgentConsent().withConsent(onOpen)
+    const request = useAgentConsent().withConsent('button_click', onOpen)
     const outcome = request.catch((error: unknown) => error)
     await startConsent()
     expect(await outcome).toBeUndefined()
@@ -824,7 +829,7 @@ describe('useAgentConsent', () => {
       return true
     })
     fetchWithUnifiedRemint.mockResolvedValueOnce(savedResponse())
-    const retry = useAgentConsent().withConsent(onOpen)
+    const retry = useAgentConsent().withConsent('button_click', onOpen)
     await startConsent()
     await retry
     expect(onOpen).toHaveBeenCalledOnce()
@@ -838,7 +843,7 @@ describe('useAgentConsent', () => {
       .mockReturnValueOnce(oldSave.promise)
       .mockReturnValueOnce(newSave.promise)
     const oldOpen = vi.fn()
-    const first = useAgentConsent().withConsent(oldOpen)
+    const first = useAgentConsent().withConsent('button_click', oldOpen)
     await startConsent()
     await vi.waitFor(() =>
       expect(fetchWithUnifiedRemint).toHaveBeenCalledTimes(2)
@@ -847,7 +852,7 @@ describe('useAgentConsent', () => {
     useDialogStore().closeDialog({ key: 'agent-consent' })
     await first
     const newOpen = vi.fn()
-    const second = useAgentConsent().withConsent(newOpen)
+    const second = useAgentConsent().withConsent('button_click', newOpen)
     await startConsent()
     await vi.waitFor(() =>
       expect(fetchWithUnifiedRemint).toHaveBeenCalledTimes(3)
@@ -872,7 +877,7 @@ describe('useAgentConsent', () => {
     fetchWithUnifiedRemint.mockResolvedValueOnce(settingResponse(true))
     const onOpen = vi.fn()
 
-    const request = useAgentConsent().withConsent(onOpen)
+    const request = useAgentConsent().withConsent('button_click', onOpen)
     await vi.waitFor(() => {
       expect(fetchWithUnifiedRemint).toHaveBeenCalledOnce()
     })
@@ -883,7 +888,7 @@ describe('useAgentConsent', () => {
   })
 
   it('asks again after Skip without recording a decline', async () => {
-    const firstRequest = useAgentConsent().withConsent(vi.fn())
+    const firstRequest = useAgentConsent().withConsent('button_click', vi.fn())
     const firstDialog = await waitForConsentDialog()
 
     ;(firstDialog.contentProps.onReject as () => void)()
@@ -891,7 +896,7 @@ describe('useAgentConsent', () => {
 
     expect(useDialogStore().dialogStack).toHaveLength(0)
 
-    const secondRequest = useAgentConsent().withConsent(vi.fn())
+    const secondRequest = useAgentConsent().withConsent('button_click', vi.fn())
     const secondDialog = await waitForConsentDialog()
     expect(secondDialog.key).toBe('agent-consent')
     ;(secondDialog.contentProps.onReject as () => void)()
@@ -899,7 +904,7 @@ describe('useAgentConsent', () => {
   })
   it('does not apply an open consent card to another workspace', async () => {
     const onOpen = vi.fn()
-    const request = useAgentConsent().withConsent(onOpen)
+    const request = useAgentConsent().withConsent('button_click', onOpen)
     const dialog = await waitForConsentDialog()
     Object.assign(useTeamWorkspaceStore(), { activeWorkspaceId: 'workspace-b' })
     Object.assign(useTeamWorkspaceStore(), {

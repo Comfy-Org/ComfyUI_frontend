@@ -335,6 +335,7 @@ export function useAgentConsent() {
   }
 
   async function withConsent(
+    trigger: AgentConsentTrigger,
     onAccept: () => void,
     hooks: ConsentOfferHooks = {}
   ): Promise<void> {

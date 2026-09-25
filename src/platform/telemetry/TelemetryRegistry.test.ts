@@ -2,10 +2,13 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { TelemetryRegistry } from './TelemetryRegistry'
 import type {
+  AgentConsentResolvedMetadata,
+  AgentConsentShownMetadata,
   AgentEntryButtonClickedMetadata,
   AgentMessageFeedbackMetadata,
   AgentMessageSentMetadata,
   AgentNodeTaggedMetadata,
+  AgentOnboardingStepMetadata,
   AgentPanelClosedMetadata,
   AgentPanelOpenedMetadata,
   AgentWorkflowAppliedMetadata,
@@ -288,8 +291,22 @@ describe('TelemetryRegistry', () => {
     } satisfies AgentEntryButtonClickedMetadata
     const messageSentMetadata = {
       attachment_count: 1,
-      node_tag_count: 2
+      node_tag_count: 2,
+      thread_id: 'th-1',
+      workflow_id: 'w1',
+      client_message_id: 'cm-1',
+      input_method: 'typed'
     } satisfies AgentMessageSentMetadata
+    const consentShownMetadata = {
+      trigger: 'button_click'
+    } satisfies AgentConsentShownMetadata
+    const consentResolvedMetadata = {
+      decision: 'accepted'
+    } satisfies AgentConsentResolvedMetadata
+    const onboardingStepMetadata = {
+      step: 2,
+      action: 'next'
+    } satisfies AgentOnboardingStepMetadata
     const nodeTaggedMetadata = {
       source: 'mention_picker'
     } satisfies AgentNodeTaggedMetadata
@@ -337,6 +354,29 @@ describe('TelemetryRegistry', () => {
         expected: { ...messageSentMetadata },
         invoke: (registry) =>
           registry.trackAgentMessageSent(messageSentMetadata)
+      },
+      {
+        method: 'trackAgentConsentShown',
+        expected: { ...consentShownMetadata },
+        invoke: (registry) =>
+          registry.trackAgentConsentShown(consentShownMetadata)
+      },
+      {
+        method: 'trackAgentConsentResolved',
+        expected: { ...consentResolvedMetadata },
+        invoke: (registry) =>
+          registry.trackAgentConsentResolved(consentResolvedMetadata)
+      },
+      {
+        method: 'trackAgentOnboardingShown',
+        expected: undefined,
+        invoke: (registry) => registry.trackAgentOnboardingShown()
+      },
+      {
+        method: 'trackAgentOnboardingStep',
+        expected: { ...onboardingStepMetadata },
+        invoke: (registry) =>
+          registry.trackAgentOnboardingStep(onboardingStepMetadata)
       },
       {
         method: 'trackAgentNodeTagged',
