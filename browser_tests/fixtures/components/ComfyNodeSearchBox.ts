@@ -6,10 +6,10 @@ class ComfyNodeSearchFilterSelectionPanel {
   readonly header: Locator
 
   constructor(public readonly page: Page) {
-    this.root = page.getByRole('dialog')
-    this.header = this.root
-      .locator('div')
-      .filter({ hasText: 'Add node filter condition' })
+    this.root = page.getByRole('dialog', { name: 'Add node filter condition' })
+    this.header = this.root.getByRole('heading', {
+      name: 'Add node filter condition'
+    })
   }
 
   async selectFilterType(filterType: string) {
