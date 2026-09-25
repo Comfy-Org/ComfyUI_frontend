@@ -9,7 +9,7 @@ import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mocked } from 'vitest'
-import { computed, defineComponent, h, nextTick, ref } from 'vue'
+import { computed, defineComponent, h, markRaw, nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 import { useClipboard } from '@vueuse/core'
 
@@ -38,6 +38,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { app } from '@/scripts/app'
+import { ChangeTracker } from '@/scripts/changeTracker'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
@@ -107,7 +108,8 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
     addEventListener: ws.add,
     removeEventListener: ws.remove,
     addCustomEventListener: ws.add,
-    removeCustomEventListener: ws.remove
+    removeCustomEventListener: ws.remove,
+    dispatchCustomEvent: vi.fn()
   }
 }))
 
@@ -2860,7 +2862,33 @@ describe('AgentPanelRoot canvas draft on remote edit', () => {
       actor: 'agent:thread:turn'
     })
 
-    expect(captureCanvasState).toHaveBeenCalledOnce()
+    expect(captureCanvasState).toHaveBeenCalledExactlyOnceWith({
+      autoQueue: false
+    })
+  })
+
+  it('reaches a real change tracker, marking the tab modified', () => {
+    const initialState = fromPartial<ComfyWorkflowJSON>({
+      version: 0.4,
+      nodes: []
+    })
+    const tab = addTab('workflows/remote_edit.json')
+    const tracker = markRaw(
+      new ChangeTracker(fromPartial<ComfyWorkflow>(tab), initialState)
+    )
+    tab.changeTracker = tracker
+    workflowStore.activeWorkflow = tab
+    appMock.isGraphReady = true
+    appMock.graph.nodes.push({ id: 1, type: 'LoadImage', widgets_values: [] })
+
+    renderWithSelectedTarget()
+    followerEvents().onApplied?.({
+      workflowId: 'wf-1',
+      actor: 'agent:thread:turn'
+    })
+
+    expect(tracker.activeState.nodes).toHaveLength(1)
+    expect(tab.isModified).toBe(true)
   })
 
   it('drives the capture from onApplied, not from onMaterialized', () => {

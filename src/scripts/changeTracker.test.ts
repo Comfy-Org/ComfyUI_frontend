@@ -1017,6 +1017,26 @@ describe('ChangeTracker', () => {
         }
       )
 
+      // PM-1598: an agent turn lands as a run of frames, each captured on
+      // its own. Carrying auto-queue would queue a prompt per frame against
+      // a half-built graph, where a user's single interaction queued one.
+      it('still records the change when the caller opts out of auto-queue', () => {
+        const initial = createState(2)
+        const tracker = createTracker(initial)
+        const changed = structuredClone(initial)
+        changed.nodes.pop()
+        mockCanvasState(changed)
+
+        tracker.captureCanvasState({ autoQueue: false })
+
+        expect(api.dispatchCustomEvent).toHaveBeenCalledWith(
+          'graphChanged',
+          changed
+        )
+        expect(tracker.activeState).toEqual(changed)
+        expectAutoQueueGraphChangedNotDispatched()
+      })
+
       it('ignores layout changes inside a subgraph', async () => {
         const initial = await createSubgraphState()
         const tracker = createTracker(initial)

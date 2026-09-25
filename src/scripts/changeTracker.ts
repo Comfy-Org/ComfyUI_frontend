@@ -376,7 +376,7 @@ export class ChangeTracker {
     }
   }
 
-  updateModified(previousState?: ComfyWorkflowJSON) {
+  updateModified(previousState?: ComfyWorkflowJSON, autoQueue = true) {
     // Get the workflow from the store as ChangeTracker is raw object, i.e.
     // `this.workflow` is not reactive.
     const workflow = useWorkflowStore().getWorkflowByPath(this.workflow.path)
@@ -388,6 +388,7 @@ export class ChangeTracker {
     }
 
     const autoQueueGraphChanged =
+      autoQueue &&
       !!previousState &&
       isAutoQueueOnChange() &&
       !_.isEqual(
@@ -405,8 +406,13 @@ export class ChangeTracker {
    * Snapshot the current canvas state into activeState and push undo.
    * INVARIANT: only the active workflow's tracker may read from the canvas.
    * Calling this on an inactive tracker would capture the wrong graph.
+   *
+   * @param autoQueue Whether an execution-graph change here may trigger
+   * auto-queue. Pass false for a change the user did not make: an agent turn
+   * lands as a run of frames, and each would queue its own prompt against a
+   * half-built graph.
    */
-  captureCanvasState() {
+  captureCanvasState({ autoQueue = true }: { autoQueue?: boolean } = {}) {
     const isUndoRedoing = this._restoringState
     const isInsideChangeTransaction = this.changeCount > 0
     if (
@@ -432,7 +438,7 @@ export class ChangeTracker {
 
       this.activeState = currentState
       this.redoQueue.length = 0
-      this.updateModified(previousState)
+      this.updateModified(previousState, autoQueue)
       void this.squashState()
     }
   }
