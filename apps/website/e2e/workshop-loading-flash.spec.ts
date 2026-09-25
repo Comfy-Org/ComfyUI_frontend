@@ -34,14 +34,17 @@ test('static HTML at /models/ names the catalogue and links every model', async 
     expect.stringContaining('ComfyUI models')
   ])
   expect(live).not.toMatch(/Grok Imagine in ComfyUI|Try Grok Imagine Now/)
+  expect(live).toContain('data-testid="workshop-loading"')
   expect(live).not.toContain('data-testid="workshop-search"')
-  const linked = new Set(
-    Array.from(
-      live.matchAll(/href="\/models\/([^"/]+)\/"/g),
-      ([, slug]) => slug
-    )
+  const directory = live.match(
+    /data-testid="models-directory"[\s\S]*?<\/section>/
+  )?.[0]
+  const linked = Array.from(
+    directory?.matchAll(/href="\/models\/([^"/]+)\/"/g) ?? [],
+    ([, slug]) => slug
   )
-  expect(linked).toEqual(await publishedModelSlugs(request))
+  expect(new Set(linked)).toEqual(await publishedModelSlugs(request))
+  expect(linked).toHaveLength(new Set(linked).size)
 })
 
 test.describe('enabled workshop', () => {
@@ -79,6 +82,7 @@ test.describe('enabled workshop', () => {
     await page.goto('/models/')
     await waitForIsland(page, page.getByTestId('workshop-search'))
     await page
+      .getByTestId('workshop-sections')
       .getByRole('link', { name: /Grok Imagine Image/i })
       .first()
       .click()
