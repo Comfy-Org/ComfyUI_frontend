@@ -112,7 +112,7 @@
 
 <script setup lang="ts">
 import { cn } from '@comfyorg/tailwind-utils'
-import { computed, nextTick, onUpdated, ref, watch } from 'vue'
+import { computed, nextTick, ref, watch } from 'vue'
 
 import AgentEntryButton from '@/components/topbar/AgentEntryButton.vue'
 import CurrentUserButton from '@/components/topbar/CurrentUserButton.vue'
@@ -239,7 +239,7 @@ const onCloseWorkflow = async (option: WorkflowOption) => {
 const WHEEL_LINE_HEIGHT_PX = 16
 
 function handleWheel(event: WheelEvent) {
-  if (event.deltaX) return
+  if (Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return
   event.preventDefault()
   const unit =
     event.deltaMode === WheelEvent.DOM_DELTA_LINE
@@ -271,6 +271,4 @@ function handleTabResize(event: TransitionEvent) {
   if (event.propertyName !== 'flex-shrink') return
   checkOverflow()
 }
-
-onUpdated(checkOverflow)
 </script>

@@ -275,44 +275,58 @@ test.describe('Workflow tabs', () => {
       { tag: '@ui' },
       async ({ comfyPage }) => {
         const topbar = comfyPage.menu.topbar
-        await topbar.openBlankWorkflows(5)
-        const [firstTabName] = await topbar.getTabNames()
 
-        await comfyPage.workflow.switchToTab(firstTabName)
+        await test.step('shrink tabs while they still fit', async () => {
+          await topbar.openBlankWorkflows(5)
+          const [firstTabName] = await topbar.getTabNames()
+          await comfyPage.workflow.switchToTab(firstTabName)
 
-        await expect(topbar.tabs.last()).toBeInViewport({ ratio: 1 })
-        await expect
-          .poll(async () => {
-            const [activeBox, inactiveBox] = await Promise.all([
-              topbar.getActiveTab().boundingBox(),
-              topbar.tabs.last().boundingBox()
-            ])
-            return activeBox && inactiveBox
-              ? activeBox.width - inactiveBox.width
-              : null
-          })
-          .toBeGreaterThan(0)
-        await expect
-          .poll(async () => {
-            const widths = await topbar.tabs.evaluateAll((tabs) =>
-              tabs
-                .filter(
-                  (tab) =>
-                    !tab.querySelector('[role="tab"][aria-selected="true"]')
-                )
-                .map((tab) => tab.getBoundingClientRect().width)
+          await expect(topbar.tabs.last()).toBeInViewport({ ratio: 1 })
+          await expect
+            .poll(async () => {
+              const [activeBox, inactiveBox] = await Promise.all([
+                topbar.getActiveTab().boundingBox(),
+                topbar.tabs.last().boundingBox()
+              ])
+              return activeBox && inactiveBox
+                ? activeBox.width - inactiveBox.width
+                : null
+            })
+            .toBeGreaterThan(0)
+          await expect
+            .poll(() =>
+              topbar.tabStrip.evaluate((strip) => ({
+                fits: strip.scrollWidth <= strip.clientWidth + 1,
+                scrollLeft: strip.scrollLeft
+              }))
             )
-            return Math.min(...widths)
-          })
-          .toBeGreaterThanOrEqual(90)
-        await expect
-          .poll(() =>
-            topbar.tabStrip.evaluate((strip) => ({
-              fits: strip.scrollWidth <= strip.clientWidth + 1,
-              scrollLeft: strip.scrollLeft
-            }))
-          )
-          .toEqual({ fits: true, scrollLeft: 0 })
+            .toEqual({ fits: true, scrollLeft: 0 })
+        })
+
+        await test.step('scroll after inactive tabs reach 90px', async () => {
+          await topbar.newWorkflowButton.click()
+          await expect(topbar.tabs).toHaveCount(7)
+          await expect
+            .poll(async () => {
+              const widths = await topbar.tabs.evaluateAll((tabs) =>
+                tabs
+                  .filter(
+                    (tab) =>
+                      !tab.querySelector('[role="tab"][aria-selected="true"]')
+                  )
+                  .map((tab) => tab.getBoundingClientRect().width)
+              )
+              return widths.every((width) => Math.abs(width - 90) <= 0.5)
+            })
+            .toBe(true)
+          await expect
+            .poll(() =>
+              topbar.tabStrip.evaluate(
+                (strip) => strip.scrollWidth > strip.clientWidth + 1
+              )
+            )
+            .toBe(true)
+        })
       }
     )
 
@@ -321,20 +335,24 @@ test.describe('Workflow tabs', () => {
       { tag: '@ui' },
       async ({ comfyPage }) => {
         const topbar = comfyPage.menu.topbar
-        await topbar.openBlankWorkflows(10)
 
-        await expect(topbar.tabs.last()).toBeInViewport({ ratio: 1 })
-        await expect(topbar.tabs.first()).not.toBeInViewport({ ratio: 1 })
+        await test.step('open enough tabs to overflow', async () => {
+          await topbar.openBlankWorkflows(10)
+          await expect(topbar.tabs.last()).toBeInViewport({ ratio: 1 })
+          await expect(topbar.tabs.first()).not.toBeInViewport({ ratio: 1 })
+        })
 
-        await topbar.workflowTabs
-          .getByRole('button', { name: 'More workflows', exact: true })
-          .click()
-        await comfyPage.page
-          .getByRole('menuitem', { name: 'Unsaved Workflow', exact: true })
-          .click()
+        await test.step('select the hidden first tab', async () => {
+          await topbar.workflowTabs
+            .getByRole('button', { name: 'More workflows', exact: true })
+            .click()
+          await comfyPage.page
+            .getByRole('menuitem', { name: 'Unsaved Workflow', exact: true })
+            .click()
 
-        await expect(topbar.tabs.first()).toBeInViewport({ ratio: 1 })
-        await expect(topbar.tabs.last()).not.toBeInViewport({ ratio: 1 })
+          await expect(topbar.tabs.first()).toBeInViewport({ ratio: 1 })
+          await expect(topbar.tabs.last()).not.toBeInViewport({ ratio: 1 })
+        })
       }
     )
 
@@ -343,12 +361,16 @@ test.describe('Workflow tabs', () => {
       { tag: '@ui' },
       async ({ comfyPage }) => {
         const topbar = comfyPage.menu.topbar
-        await topbar.openBlankWorkflows(10)
-        await expect(topbar.tabs.last()).toBeInViewport({ ratio: 1 })
 
-        await comfyPage.page.setViewportSize({ width: 600, height: 720 })
+        await test.step('open tabs with the last tab active', async () => {
+          await topbar.openBlankWorkflows(10)
+          await expect(topbar.tabs.last()).toBeInViewport({ ratio: 1 })
+        })
 
-        await expect(topbar.tabs.last()).toBeInViewport({ ratio: 1 })
+        await test.step('keep the active tab visible after resize', async () => {
+          await comfyPage.page.setViewportSize({ width: 600, height: 720 })
+          await expect(topbar.tabs.last()).toBeInViewport({ ratio: 1 })
+        })
       }
     )
 
@@ -357,34 +379,42 @@ test.describe('Workflow tabs', () => {
       { tag: '@ui' },
       async ({ comfyPage }) => {
         const topbar = comfyPage.menu.topbar
-        await topbar.openBlankWorkflows(10)
+
+        await test.step('open compact tabs', async () => {
+          await topbar.openBlankWorkflows(10)
+          await expect(
+            topbar.tabs.first(),
+            'strip must overflow'
+          ).not.toBeInViewport({ ratio: 1 })
+        })
+
         const inactiveTab = topbar.getTab(9)
-        const activeTab = topbar.getActiveTab()
-        await expect(
-          topbar.tabs.first(),
-          'strip must overflow'
-        ).not.toBeInViewport({ ratio: 1 })
 
-        await inactiveTab.hover()
-        await expect(
-          inactiveTab.getByTestId(TestIds.topbar.closeWorkflowButton)
-        ).toBeHidden()
+        await test.step('hide Close on inactive tab hover', async () => {
+          await inactiveTab.hover()
+          await expect(
+            inactiveTab.getByTestId(TestIds.topbar.closeWorkflowButton)
+          ).toBeHidden()
 
-        await activeTab.hover()
-        await expect(
-          activeTab.getByTestId(TestIds.topbar.closeWorkflowButton)
-        ).toBeVisible()
+          const activeTab = topbar.getActiveTab()
+          await activeTab.hover()
+          await expect(
+            activeTab.getByTestId(TestIds.topbar.closeWorkflowButton)
+          ).toBeVisible()
+        })
 
-        const tabCount = await topbar.tabs.count()
-        const closeButton = inactiveTab.getByTestId(
-          TestIds.topbar.closeWorkflowButton
-        )
-        await inactiveTab.getByRole('tab').focus()
-        await comfyPage.page.keyboard.press('Tab')
-        await expect(closeButton).toBeFocused()
-        await expect(closeButton).toBeVisible()
-        await comfyPage.page.keyboard.press('Enter')
-        await expect(topbar.tabs).toHaveCount(tabCount - 1)
+        await test.step('focus and activate Close with the keyboard', async () => {
+          const tabCount = await topbar.tabs.count()
+          const closeButton = inactiveTab.getByTestId(
+            TestIds.topbar.closeWorkflowButton
+          )
+          await inactiveTab.getByRole('tab').focus()
+          await comfyPage.page.keyboard.press('Tab')
+          await expect(closeButton).toBeFocused()
+          await expect(closeButton).toBeVisible()
+          await comfyPage.page.keyboard.press('Enter')
+          await expect(topbar.tabs).toHaveCount(tabCount - 1)
+        })
       }
     )
   })
@@ -394,31 +424,35 @@ test.describe('Workflow tabs', () => {
     { tag: '@ui' },
     async ({ comfyPage }) => {
       const topbar = comfyPage.menu.topbar
-      await topbar.openBlankWorkflows(2)
-      const tab = topbar.getWorkflowTab('Unsaved Workflow (2)')
-      const popover = topbar.getWorkflowPopover('Unsaved Workflow (2)')
 
-      await tab.hover()
+      await test.step('hover a background workflow tab', async () => {
+        await topbar.openBlankWorkflows(2)
+        await topbar.getWorkflowTab('Unsaved Workflow (2)').hover()
+      })
 
-      await expect(popover).toBeVisible()
-      await expect
-        .poll(async () => {
-          const [tabBox, popoverBox] = await Promise.all([
-            tab.boundingBox(),
-            popover.boundingBox()
-          ])
-          if (!tabBox || !popoverBox) return null
-          return {
-            centered:
-              Math.abs(
-                tabBox.x +
-                  tabBox.width / 2 -
-                  (popoverBox.x + popoverBox.width / 2)
-              ) <= 1,
-            under: popoverBox.y >= tabBox.y + tabBox.height
-          }
-        })
-        .toEqual({ centered: true, under: true })
+      await test.step('place the popover below the tab center', async () => {
+        const tab = topbar.getWorkflowTab('Unsaved Workflow (2)')
+        const popover = topbar.getWorkflowPopover('Unsaved Workflow (2)')
+        await expect(popover).toBeVisible()
+        await expect
+          .poll(async () => {
+            const [tabBox, popoverBox] = await Promise.all([
+              tab.boundingBox(),
+              popover.boundingBox()
+            ])
+            if (!tabBox || !popoverBox) return null
+            return {
+              centered:
+                Math.abs(
+                  tabBox.x +
+                    tabBox.width / 2 -
+                    (popoverBox.x + popoverBox.width / 2)
+                ) <= 1,
+              under: popoverBox.y >= tabBox.y + tabBox.height
+            }
+          })
+          .toEqual({ centered: true, under: true })
+      })
     }
   )
 

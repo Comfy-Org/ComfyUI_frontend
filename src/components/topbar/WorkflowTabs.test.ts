@@ -661,6 +661,14 @@ describe('WorkflowTabs scrolling', () => {
       deltaMode: WheelEvent.DOM_DELTA_PIXEL,
       expectedLeft: null,
       prevented: false
+    },
+    {
+      name: 'vertical-dominant diagonal',
+      deltaX: 2,
+      deltaY: 7,
+      deltaMode: WheelEvent.DOM_DELTA_PIXEL,
+      expectedLeft: 7,
+      prevented: true
     }
   ])(
     'handles $name wheel input once',
