@@ -10,6 +10,16 @@ describe('CI runtime ownership', () => {
     ['CI: Tests E2E', 'playwright-tests-chromium-sharded (1, 16)', 'e2e-test'],
     ['CI: Lint Format', 'repo-checks', 'repo-checks'],
     ['CI: Lint Format', 'lint-and-format', null],
+    ['CI: Tests E2E', 'lint-pr / lint', 'lint'],
+    ['CI: Tests E2E', 'lint-queue / typecheck', 'typecheck'],
+    ['CI: Tests E2E', 'fallow / fallow', 'fallow'],
+    ['CI: Tests E2E', 'unit / test', 'unit'],
+    [
+      'CI: Tests E2E',
+      'ecosystem / ecosystem-matrix (vue, shard 2)',
+      'custom-nodes'
+    ],
+    ['CI: Tests E2E', 'test', null],
     ['PR: Unified Report', 'test', null]
   ] satisfies [string, string, string | null][])(
     '%s / %s => %s',

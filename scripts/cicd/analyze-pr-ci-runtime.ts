@@ -101,6 +101,16 @@ export function classify(
   gate: boolean
   expensive: boolean
 } | null {
+  const nested = [
+    ['lint-pr / ', 'CI: Lint Format'],
+    ['lint-queue / ', 'CI: Lint Format'],
+    ['fallow / ', 'CI: Fallow'],
+    ['unit / ', 'CI: Tests Unit'],
+    ['ecosystem / ', 'CI: Custom Nodes Ecosystem Matrix']
+  ].find(([prefix]) => job.startsWith(prefix))
+  if (workflow === 'CI: Tests E2E' && nested)
+    return classify(nested[1], job.slice(nested[0].length))
+
   const rules: [RegExp, RegExp, Category][] = [
     [/^CI: Lint Format$/, /^lint( \(|$)/, 'lint'],
     [/^CI: Lint Format$/, /^typecheck( \(|$)/, 'typecheck'],
@@ -475,6 +485,7 @@ async function main() {
       'GitHub timestamps measure elapsed runner time, not billed minutes',
       'Skipped jobs have no runner time; cancelled jobs count when timestamps exist',
       'Workflow wall time is updated_at minus created_at, including queue/dependency/report time; only completed runs with measured owned jobs are summarized',
+      'Coverage lists standalone run availability; reusable checks are attributed by caller job prefixes in samples',
       'Failure impact includes only core unit, E2E tests and ecosystem matrix jobs on the same source SHA; it is a counterfactual upper bound, not measured savings'
     ],
     summary: analyze(samples, sources),
