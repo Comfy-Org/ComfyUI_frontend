@@ -1,0 +1,85 @@
+# Description: Browser tests for the hosted billing app (apps/billing-web)
+# against a Cloud and identity the suite mocks in-process. Nothing reaches a
+# real service; see apps/billing-web/e2e/README.md.
+name: 'CI: Billing Web E2E'
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches-ignore: [wip/*, draft/*, temp/*]
+  merge_group:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      app-billing-web-changes: ${{ steps.changes.outputs.app-billing-web-changes }}
+      packages-changes: ${{ steps.changes.outputs.packages-changes }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: changes
+        uses: ./.github/actions/changes-filter
+
+  billing-web-e2e:
+    needs: changes
+    if: ${{ needs.changes.outputs.app-billing-web-changes == 'true' || needs.changes.outputs.packages-changes == 'true' }}
+    runs-on: ubuntu-latest
+    container:
+      image: mcr.microsoft.com/playwright:v1.61.1-noble
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup frontend
+        uses: ./.github/actions/setup-frontend
+        with:
+          node_cache: 'false'
+
+      - name: Run billing web browser tests
+        run: pnpm --filter @comfyorg/billing-web test:e2e
+
+      - name: Upload report
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: billing-web-playwright-report
+          path: |
+            apps/billing-web/playwright-report/
+            apps/billing-web/test-results/
+          retention-days: 7
+
+  # Stable branch-protection context when tests are skipped.
+  billing-web-e2e-gate:
+    needs: [changes, billing-web-e2e]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify billing web browser tests passed or were not required
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          E2E_RESULT: ${{ needs.billing-web-e2e.result }}
+          BILLING_WEB_CHANGED: ${{ needs.changes.outputs.app-billing-web-changes }}
+          PACKAGES_CHANGED: ${{ needs.changes.outputs.packages-changes }}
+        run: |
+          if [ "$E2E_RESULT" = "success" ]; then
+            echo "Billing web browser tests passed."
+            exit 0
+          fi
+          if [ "$E2E_RESULT" = "skipped" ] &&
+             [ "$CHANGES_RESULT" = "success" ] &&
+             [ "$BILLING_WEB_CHANGED" != "true" ] &&
+             [ "$PACKAGES_CHANGED" != "true" ]; then
+            echo "No billing web or package changes; billing web browser tests not required."
+            exit 0
+          fi
+          echo "::error title=Billing web browser tests::changes=$CHANGES_RESULT e2e=$E2E_RESULT billing-web=$BILLING_WEB_CHANGED packages=$PACKAGES_CHANGED"
+          exit 1

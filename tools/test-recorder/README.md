@@ -64,7 +64,13 @@ for the full chain.
 running dev server. On a terminal with no flags it asks which recording to
 replay and whether to watch it; `--case <id>` narrows to one recording,
 `--headed` shows it, `--video` records it, and `--help` prints usage without
-running anything. The replay workflow is in
+running anything. `--spec <path>` replays the recordings through a spec other
+than the default `agentConversation` ones — anything that asserts something
+else about the same recordings, such as rendered node geometry, is reachable
+through the CLI rather than a hand-written Playwright invocation. A spec
+answers `--case` when it titles its cases `recorded <case id>`, the
+convention `browser_tests/tests/agent/agentConversationReplay.spec.ts`
+follows. The replay workflow is in
 `.claude/skills/agent-integration-replay/SKILL.md`.
 
 ## Development

@@ -1,0 +1,183 @@
+{
+  "id": "fb5b92b3-fd02-4753-8d96-4f8848898ee8",
+  "revision": 0,
+  "last_node_id": 16,
+  "last_link_id": 29,
+  "nodes": [
+    {
+      "id": 2,
+      "type": "LoadImage",
+      "pos": [-2900, 4860],
+      "size": [360, 470],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [5, 26]
+        },
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": []
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImage",
+        "image": "clipspace-painted-masked-1787233871783.png [input]"
+      },
+      "widgets_values": ["vintage_girl_yellow_apple.png", "image"]
+    },
+    {
+      "id": 4,
+      "type": "SaveImageAdvanced",
+      "pos": [-1730, 4860],
+      "size": [550, 377.875],
+      "flags": {},
+      "order": 4,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "link": 29
+        }
+      ],
+      "outputs": [
+        {
+          "name": "images",
+          "type": "IMAGE",
+          "links": [6]
+        }
+      ],
+      "properties": {},
+      "widgets_values": ["Bria_Eraser", "png", "8-bit", "sRGB"]
+    },
+    {
+      "id": 5,
+      "type": "ImageCompare",
+      "pos": [-1128, 4860],
+      "size": [400, 350],
+      "flags": {},
+      "order": 5,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image_a",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 5
+        },
+        {
+          "name": "image_b",
+          "shape": 7,
+          "type": "IMAGE",
+          "link": 6
+        }
+      ],
+      "outputs": [],
+      "properties": {
+        "Node name for S&R": "ImageCompare"
+      },
+      "widgets_values": []
+    },
+    {
+      "id": 13,
+      "type": "MarkdownNote",
+      "pos": [-3380, 4860],
+      "size": [440, 690],
+      "flags": {},
+      "order": 1,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "title": "Note: Bria Eraser",
+      "properties": {},
+      "widgets_values": [
+        "# Bria Eraser Template\n\nUse this template to **remove a specific object or region from an image** with Bria's Eraser API. The masked area is erased and filled with surrounding context; everything outside the mask stays pixel-perfect unchanged.\n\n## Input Assets\n\n- [vintage_girl_yellow_apple.png](https://raw.githubusercontent.com/Comfy-Org/workflow_templates/refs/heads/main/input/vintage_girl_yellow_apple.png)\n\n## How to use\n\n1. **Load an image**: Upload your image in `LoadImage`. The Painter canvas and compare view auto-update.\n2. **Paint a mask**: Use the `Painter` node to brush over the object or region you want to remove. Tip: paint slightly beyond the object's edge (hair, glass, fabric, contact points) so the model has room to blend cleanly.\n3. **Run `BriaEraser`**: No prompt needed. The node erases the masked area and inpaints the background. Enter your `api_key` if it is not already set.\n4. **Compare and save**: `ImageCompare` shows before/after, `SaveImageAdvanced` exports the result.\n\n## Notes\n\n- The masked area is **fully regenerated from its surroundings**: Eraser erases the object and inpaints the region with the surrounding background, so the result blends seamlessly. Keep the mask slightly larger than the object's edge for clean blending.\n- The mask is **binary**: white (255) marks the region to erase, black (0) everywhere else, and it must match the image's aspect ratio.\n- For more precise results, use an automatic segmentation mask (SAM-style) if available: the API's `mask_type` distinguishes `manual` (brush-drawn) from `automatic` (algorithm-generated) masks.\n- The `Painter` node is only available under **Nodes 2.0**. The canvas auto-updates when you upload a new image. If you only see \"Painter: Node 2.0 only\": enable Nodes 2.0 via **Menu -> Nodes2.0**, or remove the Painter node and use the [Mask Editor](https://docs.comfy.org/interface/maskeditor) to create the mask."
+      ],
+      "color": "#222",
+      "bgcolor": "#000"
+    },
+    {
+      "id": 15,
+      "type": "BriaEraser",
+      "pos": [-2040, 4860],
+      "size": [270, 197.921875],
+      "flags": {},
+      "order": 3,
+      "mode": 0,
+      "inputs": [
+        {
+          "name": "image",
+          "type": "IMAGE",
+          "link": 26
+        },
+        {
+          "name": "mask",
+          "type": "MASK",
+          "link": 27
+        }
+      ],
+      "outputs": [
+        {
+          "name": "IMAGE",
+          "type": "IMAGE",
+          "links": [29]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "BriaEraser"
+      },
+      "widgets_values": ["manual", "false"],
+      "color": "#432",
+      "bgcolor": "#653"
+    },
+    {
+      "id": 16,
+      "type": "LoadImageMask",
+      "title": "Edit mask (white = edit)",
+      "pos": [300, 600],
+      "size": [300, 310],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "MASK",
+          "type": "MASK",
+          "links": [27]
+        }
+      ],
+      "properties": {
+        "Node name for S&R": "LoadImageMask"
+      },
+      "widgets_values": ["", "red", "image"]
+    }
+  ],
+  "links": [
+    [5, 2, 0, 5, 0, "IMAGE"],
+    [6, 4, 0, 5, 1, "IMAGE"],
+    [26, 2, 0, 15, 0, "IMAGE"],
+    [27, 16, 0, 15, 1, "MASK"],
+    [29, 15, 0, 4, 0, "IMAGE"]
+  ],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.6447181148595378,
+      "offset": [4009.9670539443127, -4410.370290183048]
+    },
+    "frontendVersion": "1.48.7",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
+}

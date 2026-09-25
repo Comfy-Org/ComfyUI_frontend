@@ -53,11 +53,7 @@ describe('NodeConflictDialogContent', () => {
     const result = render(NodeConflictDialogContent, {
       props,
       global: {
-        plugins: [pinia, i18n],
-        stubs: {
-          ContentDivider: true,
-          Button: { template: '<button><slot /></button>' }
-        }
+        plugins: [pinia, i18n]
       }
     })
     return { ...result, user }

@@ -4,7 +4,7 @@ import type {
   LGraphNode,
   Subgraph
 } from '@/lib/litegraph/src/litegraph'
-import type { ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 
 /**
  * Check if an error is an AbortError triggered by `AbortController#abort`

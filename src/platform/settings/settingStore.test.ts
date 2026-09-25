@@ -1,23 +1,19 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, expectTypeOf, it, vi } from 'vitest'
+
+import type { Keybinding } from '@/platform/keybindings/types'
+import { useTelemetry } from '@/platform/telemetry'
+import type { NodeBadgeMode } from '@/types/nodeSource'
+import type { LinkReleaseTriggerAction } from '@/types/searchBoxTypes'
 
 import {
   getSettingInfo,
   useSettingStore
 } from '@/platform/settings/settingStore'
-import type { SettingParams } from '@/platform/settings/types'
-import type { Settings } from '@/schemas/apiSchema'
+import type { SettingParams, Settings } from '@/platform/settings/types'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 
-const { trackSettingChanged } = vi.hoisted(() => ({
-  trackSettingChanged: vi.fn()
-}))
-
-vi.mock<unknown>(import('@/platform/telemetry'), () => ({
-  useTelemetry: vi.fn(() => ({
-    trackSettingChanged
-  }))
-}))
+vi.mock(import('@/platform/telemetry'))
 
 // Mock the api
 vi.mock<unknown>(import('@/scripts/api'), () => ({
@@ -28,22 +24,22 @@ vi.mock<unknown>(import('@/scripts/api'), () => ({
   }
 }))
 
-// Mock the app
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    ui: {
-      settings: {
-        dispatchChange: vi.fn()
-      }
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 describe('useSettingStore', () => {
   let store: ReturnType<typeof useSettingStore>
 
   beforeEach(() => {
     store = useSettingStore()
+  })
+
+  it('preserves enum types when reading settings', () => {
+    expectTypeOf<
+      Settings['Comfy.NodeBadge.NodeIdBadgeMode']
+    >().toEqualTypeOf<NodeBadgeMode>()
+    expectTypeOf<
+      Settings['Comfy.LinkRelease.Action']
+    >().toEqualTypeOf<LinkReleaseTriggerAction>()
   })
 
   it('should initialize with empty settings', () => {
@@ -53,7 +49,7 @@ describe('useSettingStore', () => {
 
   describe('load', () => {
     it('should load settings from API', async () => {
-      const mockSettings = { 'test.setting': 'value' }
+      const mockSettings = { 'Comfy.Locale': 'value' }
       vi.mocked(api.getSettings).mockResolvedValue(
         mockSettings as Partial<Settings> as Settings
       )
@@ -148,8 +144,8 @@ describe('useSettingStore', () => {
 
     it('should set error if settings are loaded after registration', async () => {
       const setting: SettingParams = {
-        id: 'test.setting',
-        name: 'test.setting',
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
         type: 'text',
         defaultValue: 'default'
       }
@@ -169,21 +165,21 @@ describe('useSettingStore', () => {
   describe('addSetting', () => {
     it('should register a new setting', () => {
       const setting: SettingParams = {
-        id: 'test.setting',
-        name: 'test.setting',
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
         type: 'text',
         defaultValue: 'default'
       }
 
       store.addSetting(setting)
 
-      expect(store.settingsById['test.setting']).toEqual(setting)
+      expect(store.settingsById['Comfy.Locale']).toEqual(setting)
     })
 
     it('should warn and skip for duplicate setting ID', () => {
       const setting: SettingParams = {
-        id: 'test.setting',
-        name: 'test.setting',
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
         type: 'text',
         defaultValue: 'default'
       }
@@ -195,24 +191,24 @@ describe('useSettingStore', () => {
       store.addSetting(setting)
 
       expect(consoleWarnSpy).toHaveBeenCalledWith(
-        'Setting already registered: test.setting'
+        'Setting already registered: Comfy.Locale'
       )
       consoleWarnSpy.mockRestore()
     })
 
     it('should migrate deprecated values', () => {
       const setting: SettingParams = {
-        id: 'test.setting',
-        name: 'test.setting',
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
         type: 'text',
         defaultValue: 'default',
         migrateDeprecatedValue: (val: unknown) => (val as string).toUpperCase()
       }
 
-      store.settingValues['test.setting'] = 'oldvalue'
+      store.settingValues['Comfy.Locale'] = 'oldvalue'
       store.addSetting(setting)
 
-      expect(store.settingValues['test.setting']).toBe('OLDVALUE')
+      expect(store.settingValues['Comfy.Locale']).toBe('OLDVALUE')
     })
   })
 
@@ -224,20 +220,20 @@ describe('useSettingStore', () => {
 
     it('should return regular default value when no defaultsByInstallVersion', () => {
       const setting: SettingParams = {
-        id: 'test.setting',
+        id: 'Comfy.Locale',
         name: 'Test Setting',
         type: 'text',
         defaultValue: 'regular-default'
       }
       store.addSetting(setting)
 
-      const result = store.getDefaultValue('test.setting')
+      const result = store.getDefaultValue('Comfy.Locale')
       expect(result).toBe('regular-default')
     })
 
     it('should return versioned default when user version matches', () => {
       const setting: SettingParams = {
-        id: 'test.setting',
+        id: 'Comfy.Locale',
         name: 'Test Setting',
         type: 'text',
         defaultValue: 'regular-default',
@@ -248,7 +244,7 @@ describe('useSettingStore', () => {
       }
       store.addSetting(setting)
 
-      const result = store.getDefaultValue('test.setting')
+      const result = store.getDefaultValue('Comfy.Locale')
       // installedVersion is 1.30.0, so should get 1.21.3 default
       expect(result).toBe('version-1.21.3-default')
     })
@@ -257,7 +253,7 @@ describe('useSettingStore', () => {
       store.settingValues['Comfy.InstalledVersion'] = '1.50.0'
 
       const setting: SettingParams = {
-        id: 'test.setting',
+        id: 'Comfy.Locale',
         name: 'Test Setting',
         type: 'text',
         defaultValue: 'regular-default',
@@ -268,7 +264,7 @@ describe('useSettingStore', () => {
       }
       store.addSetting(setting)
 
-      const result = store.getDefaultValue('test.setting')
+      const result = store.getDefaultValue('Comfy.Locale')
       // installedVersion is 1.50.0, so should get 1.40.3 default
       expect(result).toBe('version-1.40.3-default')
     })
@@ -277,7 +273,7 @@ describe('useSettingStore', () => {
       store.settingValues['Comfy.InstalledVersion'] = '1.10.0'
 
       const setting: SettingParams = {
-        id: 'test.setting',
+        id: 'Comfy.Locale',
         name: 'Test Setting',
         type: 'text',
         defaultValue: 'regular-default',
@@ -288,7 +284,7 @@ describe('useSettingStore', () => {
       }
       store.addSetting(setting)
 
-      const result = store.getDefaultValue('test.setting')
+      const result = store.getDefaultValue('Comfy.Locale')
       // installedVersion is 1.10.0, lower than all versioned defaults
       expect(result).toBe('regular-default')
     })
@@ -298,7 +294,7 @@ describe('useSettingStore', () => {
       delete store.settingValues['Comfy.InstalledVersion']
 
       const setting: SettingParams = {
-        id: 'test.setting',
+        id: 'Comfy.Locale',
         name: 'Test Setting',
         type: 'text',
         defaultValue: 'regular-default',
@@ -309,32 +305,54 @@ describe('useSettingStore', () => {
       }
       store.addSetting(setting)
 
-      const result = store.getDefaultValue('test.setting')
+      const result = store.getDefaultValue('Comfy.Locale')
       // No installed version, should use backward compatibility
       expect(result).toBe('regular-default')
     })
 
-    it.for([false, 0, ''])(
-      'should return a falsy versioned default (%j)',
-      (falsy) => {
-        const setting: SettingParams = {
-          id: 'test.setting',
-          name: 'Test Setting',
+    it.for([
+      {
+        setting: {
+          id: 'Comfy.EnableTooltips',
+          name: 'Tooltips',
+          type: 'boolean',
+          defaultValue: true,
+          defaultsByInstallVersion: { '1.21.3': false }
+        } satisfies SettingParams<boolean>,
+        expected: false
+      },
+      {
+        setting: {
+          id: 'Comfy.Graph.ZoomSpeed',
+          name: 'Zoom speed',
+          type: 'number',
+          defaultValue: 1,
+          defaultsByInstallVersion: { '1.21.3': 0 }
+        } satisfies SettingParams<number>,
+        expected: 0
+      },
+      {
+        setting: {
+          id: 'Comfy.Locale',
+          name: 'Locale',
           type: 'text',
-          defaultValue: 'regular-default',
-          defaultsByInstallVersion: {
-            '1.21.3': falsy
-          }
-        }
+          defaultValue: 'en',
+          defaultsByInstallVersion: { '1.21.3': '' }
+        } satisfies SettingParams<string>,
+        expected: ''
+      }
+    ])(
+      'should return a falsy versioned default ($expected)',
+      ({ setting, expected }) => {
         store.addSetting(setting)
 
-        expect(store.getDefaultValue('test.setting')).toBe(falsy)
+        expect(store.getDefaultValue(setting.id)).toBe(expected)
       }
     )
 
     it('should handle function-based versioned defaults', () => {
       const setting: SettingParams = {
-        id: 'test.setting',
+        id: 'Comfy.Locale',
         name: 'Test Setting',
         type: 'text',
         defaultValue: 'regular-default',
@@ -345,7 +363,7 @@ describe('useSettingStore', () => {
       }
       store.addSetting(setting)
 
-      const result = store.getDefaultValue('test.setting')
+      const result = store.getDefaultValue('Comfy.Locale')
       // installedVersion is 1.30.0, so should get 1.21.3 default (executed)
       expect(result).toBe('dynamic-version-1.21.3-default')
     })
@@ -354,7 +372,7 @@ describe('useSettingStore', () => {
       store.settingValues['Comfy.InstalledVersion'] = '1.10.0'
 
       const setting: SettingParams = {
-        id: 'test.setting',
+        id: 'Comfy.Locale',
         name: 'Test Setting',
         type: 'text',
         defaultValue: () => 'dynamic-regular-default',
@@ -365,14 +383,14 @@ describe('useSettingStore', () => {
       }
       store.addSetting(setting)
 
-      const result = store.getDefaultValue('test.setting')
+      const result = store.getDefaultValue('Comfy.Locale')
       // installedVersion is 1.10.0, should fallback to function-based regular default
       expect(result).toBe('dynamic-regular-default')
     })
 
     it('should handle complex version comparison correctly', () => {
       const setting: SettingParams = {
-        id: 'test.setting',
+        id: 'Comfy.Locale',
         name: 'Test Setting',
         type: 'text',
         defaultValue: 'regular-default',
@@ -386,26 +404,26 @@ describe('useSettingStore', () => {
 
       // Test with 1.21.5 - should get 1.21.3 default
       store.settingValues['Comfy.InstalledVersion'] = '1.21.5'
-      expect(store.getDefaultValue('test.setting')).toBe(
+      expect(store.getDefaultValue('Comfy.Locale')).toBe(
         'version-1.21.3-default'
       )
 
       // Test with 1.21.15 - should get 1.21.10 default
       store.settingValues['Comfy.InstalledVersion'] = '1.21.15'
-      expect(store.getDefaultValue('test.setting')).toBe(
+      expect(store.getDefaultValue('Comfy.Locale')).toBe(
         'version-1.21.10-default'
       )
 
       // Test with 1.21.3 exactly - should get 1.21.3 default
       store.settingValues['Comfy.InstalledVersion'] = '1.21.3'
-      expect(store.getDefaultValue('test.setting')).toBe(
+      expect(store.getDefaultValue('Comfy.Locale')).toBe(
         'version-1.21.3-default'
       )
     })
 
     it('should work with get() method using versioned defaults', () => {
       const setting: SettingParams = {
-        id: 'test.setting',
+        id: 'Comfy.Locale',
         name: 'Test Setting',
         type: 'text',
         defaultValue: 'regular-default',
@@ -417,13 +435,13 @@ describe('useSettingStore', () => {
       store.addSetting(setting)
 
       // get() should use getDefaultValue internally
-      const result = store.get('test.setting')
+      const result = store.get('Comfy.Locale')
       expect(result).toBe('version-1.21.3-default')
     })
 
     it('should handle mixed function and static versioned defaults', () => {
       const setting: SettingParams = {
-        id: 'test.setting',
+        id: 'Comfy.Locale',
         name: 'Test Setting',
         type: 'text',
         defaultValue: 'regular-default',
@@ -436,20 +454,20 @@ describe('useSettingStore', () => {
 
       // Test with 1.30.0 - should get dynamic 1.21.3 default
       store.settingValues['Comfy.InstalledVersion'] = '1.30.0'
-      expect(store.getDefaultValue('test.setting')).toBe(
+      expect(store.getDefaultValue('Comfy.Locale')).toBe(
         'dynamic-1.21.3-default'
       )
 
       // Test with 1.50.0 - should get static 1.40.3 default
       store.settingValues['Comfy.InstalledVersion'] = '1.50.0'
-      expect(store.getDefaultValue('test.setting')).toBe(
+      expect(store.getDefaultValue('Comfy.Locale')).toBe(
         'static-1.40.3-default'
       )
     })
 
     it('should handle version sorting correctly', () => {
       const setting: SettingParams = {
-        id: 'test.setting',
+        id: 'Comfy.Locale',
         name: 'Test Setting',
         type: 'text',
         defaultValue: 'regular-default',
@@ -463,7 +481,7 @@ describe('useSettingStore', () => {
 
       // Test with 1.37.0 - should get 1.35.0 default (highest version <= 1.37.0)
       store.settingValues['Comfy.InstalledVersion'] = '1.37.0'
-      expect(store.getDefaultValue('test.setting')).toBe(
+      expect(store.getDefaultValue('Comfy.Locale')).toBe(
         'version-1.35.0-default'
       )
     })
@@ -472,22 +490,22 @@ describe('useSettingStore', () => {
   describe('get and set', () => {
     it('should get default value when setting not exists', () => {
       const setting: SettingParams = {
-        id: 'test.setting',
-        name: 'test.setting',
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
         type: 'text',
         defaultValue: 'default'
       }
       store.addSetting(setting)
 
-      expect(store.get('test.setting')).toBe('default')
+      expect(store.get('Comfy.Locale')).toBe('default')
     })
 
     it('should set value and trigger onChange', async () => {
       const onChangeMock = vi.fn()
       const dispatchChangeMock = vi.mocked(app.ui.settings.dispatchChange)
       const setting: SettingParams = {
-        id: 'test.setting',
-        name: 'test.setting',
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
         type: 'text',
         defaultValue: 'default',
         onChange: onChangeMock
@@ -497,21 +515,21 @@ describe('useSettingStore', () => {
       expect(onChangeMock).toHaveBeenCalledTimes(1)
       expect(dispatchChangeMock).toHaveBeenCalledTimes(1)
 
-      await store.set('test.setting', 'newvalue')
+      await store.set('Comfy.Locale', 'newvalue')
 
-      expect(store.get('test.setting')).toBe('newvalue')
+      expect(store.get('Comfy.Locale')).toBe('newvalue')
       expect(onChangeMock).toHaveBeenCalledWith('newvalue', 'default')
       expect(onChangeMock).toHaveBeenCalledTimes(2)
       expect(dispatchChangeMock).toHaveBeenCalledTimes(2)
-      expect(api.storeSetting).toHaveBeenCalledWith('test.setting', 'newvalue')
+      expect(api.storeSetting).toHaveBeenCalledWith('Comfy.Locale', 'newvalue')
 
       // Set a different value, it should trigger onChange
-      await store.set('test.setting', 'differentvalue')
+      await store.set('Comfy.Locale', 'differentvalue')
       expect(onChangeMock).toHaveBeenCalledWith('differentvalue', 'newvalue')
       expect(onChangeMock).toHaveBeenCalledTimes(3)
       expect(dispatchChangeMock).toHaveBeenCalledTimes(3)
       expect(api.storeSetting).toHaveBeenCalledWith(
-        'test.setting',
+        'Comfy.Locale',
         'differentvalue'
       )
     })
@@ -523,8 +541,8 @@ describe('useSettingStore', () => {
         return new Response()
       })
       store.addSetting({
-        id: 'test.setting',
-        name: 'test.setting',
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
         type: 'text',
         defaultValue: 'default',
         onChange: async (_value, old) => {
@@ -534,7 +552,7 @@ describe('useSettingStore', () => {
         }
       })
 
-      await store.set('test.setting', 'newvalue')
+      await store.set('Comfy.Locale', 'newvalue')
 
       expect(order).toEqual(['onChange', 'storeSetting'])
     })
@@ -557,19 +575,19 @@ describe('useSettingStore', () => {
     ])('persists the value when a handler $label', async ({ onChange }) => {
       vi.spyOn(console, 'warn').mockImplementation(() => {})
       store.addSetting({
-        id: 'test.setting',
-        name: 'test.setting',
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
         type: 'text',
         defaultValue: 'default',
         onChange
       })
 
       await expect(
-        store.set('test.setting', 'newvalue')
+        store.set('Comfy.Locale', 'newvalue')
       ).resolves.toBeUndefined()
 
-      expect(api.storeSetting).toHaveBeenCalledWith('test.setting', 'newvalue')
-      expect(store.get('test.setting')).toBe('newvalue')
+      expect(api.storeSetting).toHaveBeenCalledWith('Comfy.Locale', 'newvalue')
+      expect(store.get('Comfy.Locale')).toBe('newvalue')
     })
 
     it('does not persist a value a newer set() has superseded', async () => {
@@ -579,8 +597,8 @@ describe('useSettingStore', () => {
       })
       let isFirstChange = true
       store.addSetting({
-        id: 'test.setting',
-        name: 'test.setting',
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
         type: 'text',
         defaultValue: 'default',
         onChange: async (_value, old) => {
@@ -590,14 +608,14 @@ describe('useSettingStore', () => {
         }
       })
 
-      const stalled = store.set('test.setting', 'first')
-      await store.set('test.setting', 'second')
+      const stalled = store.set('Comfy.Locale', 'first')
+      await store.set('Comfy.Locale', 'second')
       releaseFirst()
       await stalled
 
-      expect(store.get('test.setting')).toBe('second')
+      expect(store.get('Comfy.Locale')).toBe('second')
       expect(api.storeSetting).toHaveBeenLastCalledWith(
-        'test.setting',
+        'Comfy.Locale',
         'second'
       )
     })
@@ -605,32 +623,32 @@ describe('useSettingStore', () => {
     it('exposes the new value to onChange handlers', async () => {
       const observed: unknown[] = []
       store.addSetting({
-        id: 'test.setting',
-        name: 'test.setting',
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
         type: 'text',
         defaultValue: 'default',
         onChange: () => {
-          observed.push(store.get('test.setting'))
+          observed.push(store.get('Comfy.Locale'))
         }
       })
 
-      await store.set('test.setting', 'newvalue')
+      await store.set('Comfy.Locale', 'newvalue')
 
       expect(observed).toEqual(['default', 'newvalue'])
     })
 
     it('tracks visible settings with values by default', async () => {
       store.addSetting({
-        id: 'test.setting',
-        name: 'test.setting',
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
         type: 'text',
         defaultValue: 'default'
       })
 
-      await store.set('test.setting', 'newvalue')
+      await store.set('Comfy.Locale', 'newvalue')
 
-      expect(trackSettingChanged).toHaveBeenCalledWith({
-        setting_id: 'test.setting',
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledWith({
+        setting_id: 'Comfy.Locale',
         previous_value: 'default',
         new_value: 'newvalue'
       })
@@ -638,64 +656,64 @@ describe('useSettingStore', () => {
 
     it('does not track hidden settings by default', async () => {
       store.addSetting({
-        id: 'test.setting',
-        name: 'test.setting',
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
         type: 'hidden',
         defaultValue: 'default'
       })
 
-      await store.set('test.setting', 'newvalue')
+      await store.set('Comfy.Locale', 'newvalue')
 
-      expect(trackSettingChanged).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSettingChanged).not.toHaveBeenCalled()
     })
 
     it('does not track visible settings that opt out', async () => {
       store.addSetting({
-        id: 'test.setting',
-        name: 'test.setting',
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
         type: 'text',
         defaultValue: 'default',
         telemetry: { trackChanges: false }
       })
 
-      await store.set('test.setting', 'newvalue')
+      await store.set('Comfy.Locale', 'newvalue')
 
-      expect(trackSettingChanged).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSettingChanged).not.toHaveBeenCalled()
     })
 
     it('tracks visible settings without values when values opt out', async () => {
       store.addSetting({
-        id: 'test.setting',
-        name: 'test.setting',
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
         type: 'text',
         defaultValue: 'default',
         telemetry: { includeValues: false }
       })
 
-      await store.set('test.setting', 'newvalue')
+      await store.set('Comfy.Locale', 'newvalue')
 
-      expect(trackSettingChanged).toHaveBeenCalledWith({
-        setting_id: 'test.setting'
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledWith({
+        setting_id: 'Comfy.Locale'
       })
     })
 
     it('tracks hidden settings that opt in, without shipping values by default', async () => {
       store.addSetting({
-        id: 'test.setting',
-        name: 'test.setting',
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
         type: 'hidden',
         defaultValue: 'default',
         telemetry: { trackChanges: true }
       })
 
-      await store.set('test.setting', 'newvalue')
-      expect(trackSettingChanged).toHaveBeenCalledWith({
-        setting_id: 'test.setting'
+      await store.set('Comfy.Locale', 'newvalue')
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledWith({
+        setting_id: 'Comfy.Locale'
       })
 
       // Setting the same value again is a no-op and should not re-emit
-      await store.set('test.setting', 'newvalue')
-      expect(trackSettingChanged).toHaveBeenCalledTimes(1)
+      await store.set('Comfy.Locale', 'newvalue')
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledTimes(1)
     })
 
     it('ships previous/new values when the setting opts into includeValues', async () => {
@@ -709,7 +727,7 @@ describe('useSettingStore', () => {
 
       await store.set('Comfy.ColorPalette', 'light')
 
-      expect(trackSettingChanged).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledWith({
         setting_id: 'Comfy.ColorPalette',
         previous_value: 'dark',
         new_value: 'light'
@@ -718,25 +736,25 @@ describe('useSettingStore', () => {
 
     it('does not track telemetry when persistence fails', async () => {
       store.addSetting({
-        id: 'test.setting',
-        name: 'test.setting',
+        id: 'Comfy.Locale',
+        name: 'Comfy.Locale',
         type: 'text',
         defaultValue: 'default',
         telemetry: { trackChanges: true }
       })
       vi.mocked(api.storeSetting).mockRejectedValueOnce(new Error('failed'))
 
-      await expect(store.set('test.setting', 'newvalue')).rejects.toThrow(
+      await expect(store.set('Comfy.Locale', 'newvalue')).rejects.toThrow(
         'failed'
       )
 
-      expect(trackSettingChanged).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSettingChanged).not.toHaveBeenCalled()
     })
 
     describe('object mutation prevention', () => {
       beforeEach(() => {
         const setting: SettingParams = {
-          id: 'test.setting',
+          id: 'Comfy.NodeLibrary.BookmarksCustomization',
           name: 'Test setting',
           type: 'hidden',
           defaultValue: {}
@@ -745,80 +763,90 @@ describe('useSettingStore', () => {
       })
 
       it('should prevent mutations of objects after set', async () => {
-        const originalObject = { foo: 'bar', nested: { value: 123 } }
+        const originalObject = {
+          folder: { icon: 'bookmark', color: 'blue' }
+        }
 
-        await store.set('test.setting', originalObject)
+        await store.set(
+          'Comfy.NodeLibrary.BookmarksCustomization',
+          originalObject
+        )
 
-        // Attempt to mutate the original object
-        originalObject.foo = 'changed'
-        originalObject.nested.value = 456
+        originalObject.folder.icon = 'changed'
+        originalObject.folder.color = 'red'
 
-        // Get the stored value
-        const storedValue = store.get('test.setting')
+        const storedValue = store.get(
+          'Comfy.NodeLibrary.BookmarksCustomization'
+        )
 
-        // Verify the stored value wasn't affected by the mutation
-        expect(storedValue).toEqual({ foo: 'bar', nested: { value: 123 } })
+        expect(storedValue).toEqual({
+          folder: { icon: 'bookmark', color: 'blue' }
+        })
       })
 
       it('should prevent mutations of retrieved objects', async () => {
-        const initialValue = { foo: 'bar', nested: { value: 123 } }
-
-        // Set initial value
-        await store.set('test.setting', initialValue)
-
-        // Get the value and try to mutate it
-        const retrievedValue = store.get('test.setting')
-        retrievedValue.foo = 'changed'
-        if (retrievedValue.nested) {
-          retrievedValue.nested.value = 456
+        const initialValue = {
+          folder: { icon: 'bookmark', color: 'blue' }
         }
 
-        // Get the value again
-        const newRetrievedValue = store.get('test.setting')
+        await store.set(
+          'Comfy.NodeLibrary.BookmarksCustomization',
+          initialValue
+        )
 
-        // Verify the stored value wasn't affected by the mutation
+        const retrievedValue = store.get(
+          'Comfy.NodeLibrary.BookmarksCustomization'
+        )
+        retrievedValue.folder.icon = 'changed'
+        retrievedValue.folder.color = 'red'
+
+        const newRetrievedValue = store.get(
+          'Comfy.NodeLibrary.BookmarksCustomization'
+        )
+
         expect(newRetrievedValue).toEqual({
-          foo: 'bar',
-          nested: { value: 123 }
+          folder: { icon: 'bookmark', color: 'blue' }
         })
       })
 
       it('should prevent mutations of arrays after set', async () => {
-        const originalArray = [1, 2, { value: 3 }]
-
-        await store.set('test.setting', originalArray)
-
-        // Attempt to mutate the original array
-        originalArray.push(4)
-        if (typeof originalArray[2] === 'object') {
-          originalArray[2].value = 999
+        const binding: Keybinding = {
+          commandId: 'Comfy.Test',
+          combo: { key: 'a' }
         }
+        const originalArray: Keybinding[] = [binding]
 
-        // Get the stored value
-        const storedValue = store.get('test.setting')
+        await store.set('Comfy.Keybinding.NewBindings', originalArray)
 
-        // Verify the stored value wasn't affected by the mutation
-        expect(storedValue).toEqual([1, 2, { value: 3 }])
+        originalArray.push({ commandId: 'Comfy.Other', combo: { key: 'b' } })
+        binding.combo.key = 'changed'
+
+        const storedValue = store.get('Comfy.Keybinding.NewBindings')
+
+        expect(storedValue).toEqual([
+          { commandId: 'Comfy.Test', combo: { key: 'a' } }
+        ])
       })
 
       it('should prevent mutations of retrieved arrays', async () => {
-        const initialArray = [1, 2, { value: 3 }]
+        const initialArray: Keybinding[] = [
+          { commandId: 'Comfy.Test', combo: { key: 'a' } }
+        ]
 
-        // Set initial value
-        await store.set('test.setting', initialArray)
+        await store.set('Comfy.Keybinding.NewBindings', initialArray)
 
-        // Get the value and try to mutate it
-        const retrievedArray = store.get('test.setting')
-        retrievedArray.push(4)
-        if (typeof retrievedArray[2] === 'object') {
-          retrievedArray[2].value = 999
-        }
+        const retrievedArray = store.get('Comfy.Keybinding.NewBindings')
+        retrievedArray.push({
+          commandId: 'Comfy.Other',
+          combo: { key: 'b' }
+        })
+        retrievedArray[0].combo.key = 'changed'
 
-        // Get the value again
-        const newRetrievedValue = store.get('test.setting')
+        const newRetrievedValue = store.get('Comfy.Keybinding.NewBindings')
 
-        // Verify the stored value wasn't affected by the mutation
-        expect(newRetrievedValue).toEqual([1, 2, { value: 3 }])
+        expect(newRetrievedValue).toEqual([
+          { commandId: 'Comfy.Test', combo: { key: 'a' } }
+        ])
       })
     })
   })
@@ -880,8 +908,8 @@ describe('useSettingStore', () => {
         'Comfy.Release.Version': '1.0.0'
       })
 
-      expect(trackSettingChanged).toHaveBeenCalledTimes(1)
-      expect(trackSettingChanged).toHaveBeenCalledWith({
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledTimes(1)
+      expect(useTelemetry()?.trackSettingChanged).toHaveBeenCalledWith({
         setting_id: 'Comfy.ColorPalette',
         previous_value: 'dark',
         new_value: 'light'
@@ -927,15 +955,15 @@ describe('useSettingStore', () => {
       await store.setMany({ 'Comfy.Release.Version': 'existing' })
 
       expect(api.storeSettings).not.toHaveBeenCalled()
-      expect(trackSettingChanged).not.toHaveBeenCalled()
+      expect(useTelemetry()?.trackSettingChanged).not.toHaveBeenCalled()
     })
   })
 })
 
 describe('getSettingInfo', () => {
   const baseSetting: SettingParams = {
-    id: 'test.setting',
-    name: 'test.setting',
+    id: 'Comfy.Locale',
+    name: 'Comfy.Locale',
     type: 'text',
     defaultValue: 'default'
   }
@@ -943,7 +971,7 @@ describe('getSettingInfo', () => {
   it('should handle settings with explicit category array', () => {
     const setting: SettingParams = {
       ...baseSetting,
-      id: 'test.setting',
+      id: 'Comfy.Locale',
       category: ['Main', 'Sub', 'Detail']
     }
 
@@ -958,21 +986,20 @@ describe('getSettingInfo', () => {
   it('should handle settings with id-based categorization', () => {
     const setting: SettingParams = {
       ...baseSetting,
-      id: 'main.sub.setting.name'
+      id: 'Comfy.NodeLibrary.Bookmarks.V2'
     }
 
     const result = getSettingInfo(setting)
 
     expect(result).toEqual({
-      category: 'main',
-      subCategory: 'sub'
+      category: 'Comfy',
+      subCategory: 'NodeLibrary'
     })
   })
 
   it('should use "Other" as default subCategory when missing', () => {
     const setting: SettingParams = {
       ...baseSetting,
-      id: 'single.setting',
       category: ['single']
     }
 
@@ -987,7 +1014,6 @@ describe('getSettingInfo', () => {
   it('should use "Other" as default category when missing', () => {
     const setting: SettingParams = {
       ...baseSetting,
-      id: 'single.setting',
       category: []
     }
 

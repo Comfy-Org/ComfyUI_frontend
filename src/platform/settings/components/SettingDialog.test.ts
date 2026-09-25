@@ -3,6 +3,7 @@ import { beforeEach, expect, it, vi } from 'vitest'
 import { nextTick, ref } from 'vue'
 import type { Ref } from 'vue'
 
+import { i18n } from '@/i18n'
 import type { NavGroupData } from '@/types/navTypes'
 
 import SettingDialog from './SettingDialog.vue'
@@ -16,7 +17,6 @@ const searchMocks = vi.hoisted(() => ({
   searchQuery: null as unknown as Ref<string>,
   searchResultsCategories: null as unknown as Ref<Set<string>>
 }))
-const mockFetchBalance = vi.hoisted(() => vi.fn())
 
 vi.mock<unknown>(
   import('@/platform/settings/composables/useSettingUI'),
@@ -64,9 +64,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({ fetchBalance: mockFetchBalance })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 vi.mock(
   import('@/platform/telemetry/searchQuery/useSearchQueryTracking'),
@@ -103,15 +101,14 @@ it('falls back when the active navigation item becomes unavailable', async () =>
   render(SettingDialog, {
     props: { onClose: vi.fn() },
     global: {
-      mocks: { $t: (key: string) => key },
+      plugins: [i18n],
       stubs: {
         BaseModalLayout: {
           template:
             '<div><slot name="leftPanel" /><slot name="content" /></div>'
         },
         NavItem: { template: '<button><slot /></button>' },
-        NavTitle: true,
-        SearchInput: true
+        NavTitle: true
       }
     }
   })

@@ -1,4 +1,5 @@
 import type { AstroIntegration } from 'astro'
+import { envField } from 'astro/config'
 // Both imported statically. A dynamic `import()` inside the hook throws
 // "Vite module runner has been closed" — by `astro:build:done` the runner that
 // resolves module specifiers is gone, so anything not already loaded fails.
@@ -17,50 +18,74 @@ import {
 
 export function modelsBuildRoutes(enabled: boolean) {
   const entry = (name: string) =>
-    fileURLToPath(new URL(`../routes/models/${name}.astro`, import.meta.url))
+    fileURLToPath(new URL(`../routes/models/${name}`, import.meta.url))
   return [
-    { pattern: '/models', entrypoint: entry(enabled ? 'index' : 'showcase') },
+    {
+      pattern: '/models',
+      entrypoint: entry(enabled ? 'index.astro' : 'showcase.astro')
+    },
     ...(enabled
       ? [
-          { pattern: '/models/[slug]', entrypoint: entry('[slug]') },
-          { pattern: '/models/showcase', entrypoint: entry('showcase') }
+          { pattern: '/models/[...slug]', entrypoint: entry('[slug].astro') },
+          { pattern: '/models/showcase', entrypoint: entry('showcase.astro') },
+          {
+            pattern: '/checkout-opening',
+            entrypoint: entry('checkout-opening.astro')
+          },
+          {
+            pattern: '/zh-CN/checkout-opening',
+            entrypoint: entry('checkout-opening.astro')
+          },
+          {
+            pattern: '/checkout-return',
+            entrypoint: entry('checkout-return.astro')
+          },
+          {
+            pattern: '/zh-CN/checkout-return',
+            entrypoint: entry('checkout-return.astro')
+          },
+          {
+            pattern: '/models/[...slug]/page.json',
+            entrypoint: entry('page.json.ts')
+          },
+          {
+            pattern: '/models/catalogue.json',
+            entrypoint: entry('catalogue.json.ts')
+          }
         ]
       : [])
   ]
 }
 
-/**
- * Gates Models routes and removes the retired Workshop tree in every build.
- *
- * Workshop is unfinished, and `noindex` does not stop a page being deployed —
- * it only asks a crawler to stay away, while the page stays live at a URL
- * anyone can share. A deployed build must not contain those routes at all.
- *
- * Models routes are registered only when enabled, with the existing marketing
- * page retained at /models otherwise. The retired /workshop tree uses
- * `astro:build:done` to remove its emitted directory even when Models is on. The
- * earlier attempt filtered the route list at `astro:routes:resolved`, which
- * does not work: that hook reports the resolved routes, and mutating the
- * array does not stop them being generated. Deleting the output is
- * unambiguous. The client build rejects bundled catalogue modules when disabled;
- * shared CSS and translations are not covered by that catalogue boundary.
- *
- * Preview builds are release builds too — a preview answers "what goes out if
- * we release right now?", so it excludes Models detail routes for the same reason.
- * Local development includes Models, as does any build asked for it explicitly. See
- * `config/workshop-release.ts` for the switch.
- *
- * A build that includes Models must also say which Cloud family
- * it talks to, and one its origin is allowed to reach; that is checked before
- * anything is generated, so a wrong family is a build error rather than a
- * preflight error in a visitor's browser.
- */
 export function workshopReleaseGate(): AstroIntegration {
   return {
     name: 'workshop-release-gate',
     hooks: {
-      'astro:config:setup': ({ injectRoute, updateConfig }) => {
-        updateConfig({ vite: { plugins: [workshopClientBoundary()] } })
+      'astro:config:setup': ({ injectRoute, updateConfig, command }) => {
+        updateConfig({
+          env: {
+            schema: {
+              WORKSHOP_LOCAL_DEV: envField.boolean({
+                context: 'client',
+                access: 'public',
+                default: command === 'dev' && !process.env.VERCEL_ENV
+              }),
+              WORKSHOP_DEPLOY_ENV: envField.string({
+                context: 'client',
+                access: 'public',
+                default: process.env.VERCEL_ENV ?? ''
+              }),
+              WORKSHOP_RELEASE: envField.string({
+                context: 'client',
+                access: 'public',
+                default: process.env.VERCEL_GIT_COMMIT_SHA ?? 'local'
+              })
+            }
+          },
+          vite: {
+            plugins: [workshopClientBoundary()]
+          }
+        })
         for (const route of modelsBuildRoutes(isWorkshopInBuild()))
           injectRoute(route)
       },

@@ -15,6 +15,11 @@ jobs:
   fallow:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      contents: read
+      # For the explainer section. A fork PR's token is read-only, so the
+      # explainer degrades to the job summary there rather than failing.
+      pull-requests: write
     steps:
       - name: Checkout ref
         uses: actions/checkout@v7
@@ -34,6 +39,7 @@ jobs:
         uses: ./.github/actions/setup-frontend
 
       - name: Audit new findings
+        id: audit
         uses: fallow-rs/fallow@c2da9fcae5388226a87e986b1812f9c872d288c6 # v3.24.1
         with:
           command: audit
@@ -41,3 +47,70 @@ jobs:
           format: json
           branded-token: false
           changed-since: ${{ steps.audit-base.outputs.sha }}
+
+      # GitHub renders at most 10 annotations per type per step, and a repo-wide
+      # audit emits enough warnings to crowd out the errors that fail the gate.
+      # On #17436 all ten visible annotations were pre-existing package.json
+      # warnings while both blocking findings were rendered nowhere at all.
+      - name: Render findings
+        if: ${{ !cancelled() }}
+        id: findings
+        env:
+          RESULTS: fallow-results.json
+        run: |
+          set -euo pipefail
+          # An audit that never completed is not a finding against the PR, so it
+          # reports withheld rather than fail — the same distinction the
+          # renderer already makes for an error envelope.
+          completed=true
+          if [ -s "$RESULTS" ]; then
+            npx tsx scripts/cicd/fallow-findings.ts "$RESULTS" > fallow-findings.md
+            if grep -q '"error"[[:space:]]*:[[:space:]]*true' "$RESULTS"; then
+              completed=false
+            fi
+          else
+            completed=false
+            printf 'Fallow produced no results file — the audit step failed before it could write one.\n' > fallow-findings.md
+          fi
+          echo "completed=$completed" >> "$GITHUB_OUTPUT"
+          cat fallow-findings.md
+
+      - name: Explain the verdict
+        if: ${{ !cancelled() }}
+        uses: ./.github/actions/explain-check
+        with:
+          slug: fallow
+          title: Fallow
+          icon: '🌾'
+          status: ${{ steps.findings.outputs.completed == 'false' && 'withheld' || steps.audit.outcome == 'success' && 'pass' || 'fail' }}
+          headline: >-
+            Fallow audits the diff for duplication, complexity and dead code.
+            It gates on **new** findings only, so when the audit completes, a
+            red is something this PR introduced or moved — never inherited
+            backlog. A red can also mean the audit itself did not finish; the
+            details below say which happened.
+          details-file: fallow-findings.md
+          reproduce: |
+            # the base the gate compared against
+            npx fallow audit --root . --quiet --format json \
+              --changed-since ${{ steps.audit-base.outputs.sha }}
+          docs: '[ADR-DEVEX-LINT-0015](docs/adr/DEVEX-LINT-0015-adopt-fallow-with-new-only-baselines.md)'
+          pr-number: ${{ github.event.pull_request.number }}
+          token: ${{ github.token }}
+
+      # The audit already writes these and they were previously discarded, so
+      # a failed gate left nothing to inspect after the fact. Note this only
+      # stores the SARIF; ingesting it into the Security tab would need a
+      # separate upload-sarif step with security-events: write, which a fork
+      # PR's token cannot carry.
+      - name: Upload audit results
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
+        with:
+          name: fallow-results
+          path: |
+            fallow-results.json
+            fallow-results.sarif
+            fallow-findings.md
+          if-no-files-found: warn
+          retention-days: 7

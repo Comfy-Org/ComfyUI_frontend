@@ -5,20 +5,29 @@ import type { FormValues } from './workshop-playground'
 import { MAX_UPLOAD_BYTES } from './workshop-playground'
 import { workshopFileBase64 } from './workshop-file-encoding'
 import { WorkshopRouterError } from './workshop-router-errors'
+import type { WorkshopUrlEncoder } from './workshop-url-input'
+import { uploadWorkshopFile } from './workshop-url-input'
 import { renderWorkshopRequestTemplate } from './workshop-request-template'
 import { prepareWorkshopRequestCallback } from './workshop-request-callbacks'
 import { loadWorkshopExampleFile } from './workshop-example-file-loader'
-import { MAX_REQUEST_BYTES } from './workshop-limits'
+import { encodedWorkshopFileBytes, MAX_REQUEST_BYTES } from './workshop-limits'
 
-export interface EncodedWorkshopFile {
-  readonly data: string
-  readonly mimeType: string
-}
+export type PreparedWorkshopFile =
+  | {
+      readonly data: string
+      readonly mimeType: string
+      readonly url?: never
+    }
+  | {
+      readonly url: string
+      readonly mimeType: string
+      readonly data?: never
+    }
 
 export interface WorkshopRequestInputs {
   readonly values: Readonly<Partial<Record<string, string | number | boolean>>>
   readonly files: Readonly<
-    Partial<Record<string, readonly EncodedWorkshopFile[]>>
+    Partial<Record<string, readonly PreparedWorkshopFile[]>>
   >
 }
 
@@ -37,7 +46,8 @@ export async function prepareWorkshopCreatorRequest(
   definition: WorkshopCreatorForm,
   values: FormValues,
   signal: AbortSignal,
-  encodeFile = workshopFileBase64
+  encodeFile = workshopFileBase64,
+  uploadFile?: WorkshopUrlEncoder
 ): Promise<Record<string, unknown>> {
   const fileNames = new Set(definition.files.map((field) => field.name))
   const plain: Record<string, string | number | boolean> = {
@@ -57,8 +67,11 @@ export async function prepareWorkshopCreatorRequest(
     plain[name] = parsed.data
   }
   let bytes = new TextEncoder().encode(JSON.stringify(plain)).byteLength
+  const usesUrlFiles =
+    definition.request.kind === 'callback' &&
+    definition.request.callback === 'gemini-image'
   function reserve(file: { size: number; type: string }, name: string) {
-    bytes += 4 * Math.ceil(file.size / 3) + file.type.length + 256
+    bytes += encodedWorkshopFileBytes(file)
     if (bytes > MAX_REQUEST_BYTES)
       throw new WorkshopRouterError('validation', null, {
         [name]: 'requestTooLarge'
@@ -90,11 +103,12 @@ export async function prepareWorkshopCreatorRequest(
         throw new WorkshopRouterError('validation', null, {
           [field.name]: 'tooLarge'
         })
-      if (value.file instanceof File) reserve(value.file, field.name)
+      if (value.file instanceof File && !usesUrlFiles)
+        reserve(value.file, field.name)
       return { name: field.name, value, accept }
     })
   })
-  const files: Record<string, EncodedWorkshopFile[]> = {}
+  const files: Record<string, PreparedWorkshopFile[]> = {}
   for (const { name, value, accept } of uploads) {
     let file: File
     try {
@@ -102,20 +116,32 @@ export async function prepareWorkshopCreatorRequest(
         value.file instanceof File
           ? value.file
           : await loadWorkshopExampleFile(value, signal)
-    } catch {
+    } catch (cause) {
       signal.throwIfAborted()
-      throw new WorkshopRouterError('validation', null, {
-        [name]: 'uploadFailed'
-      })
+      throw new WorkshopRouterError(
+        'upload',
+        null,
+        {
+          [name]: 'uploadFailed'
+        },
+        undefined,
+        'example_download',
+        { cause }
+      )
     }
     if (accept.length && !accept.includes(file.type))
       throw new WorkshopRouterError('validation', null, { [name]: 'badType' })
-    if (!(value.file instanceof File)) reserve(file, name)
-    const encoded = {
-      data: await encodeFile(file, signal),
-      mimeType: file.type
-    }
-    files[name] = [...(files[name] ?? []), encoded]
+    if (!(value.file instanceof File) && !usesUrlFiles) reserve(file, name)
+    const prepared: PreparedWorkshopFile = usesUrlFiles
+      ? {
+          url: await uploadWorkshopFile(file, name, signal, uploadFile),
+          mimeType: file.type
+        }
+      : {
+          data: await encodeFile(file, signal, name),
+          mimeType: file.type
+        }
+    files[name] = [...(files[name] ?? []), prepared]
   }
   signal.throwIfAborted()
   return definition.request.kind === 'template'
