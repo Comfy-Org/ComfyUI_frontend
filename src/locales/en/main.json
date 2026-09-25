@@ -5363,7 +5363,7 @@
     "coachTitle": "Meet your Comfy Agent",
     "coachBody": "Describe your ideas, ask it to build and run workflows. It sees your canvas and files.",
     "coachWorkflowTitle": "Your agent edits the workflow you're viewing",
-    "coachWorkflowBody": "It switches with your tabs until you send a message or choose a workflow. You can also add files or mention other workflows.",
+    "coachWorkflowBody": "It switches with your tabs until you send a message, choose a workflow, or add a node reference.",
     "coachGraphTitle": "Let the agent run while you edit",
     "coachGraphBody": "You can still edit the graph or switch tabs while the agent is working.",
     "coachHistoryTitle": "Pick up where you left off",

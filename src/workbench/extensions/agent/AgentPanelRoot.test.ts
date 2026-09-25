@@ -678,7 +678,7 @@ describe('AgentPanelRoot onboarding', () => {
       {
         title: "Your agent edits the workflow you're viewing",
         description:
-          'It switches with your tabs until you send a message or choose a workflow. You can also add files or mention other workflows.'
+          'It switches with your tabs until you send a message, choose a workflow, or add a node reference.'
       },
       {
         title: 'Let the agent run while you edit',
