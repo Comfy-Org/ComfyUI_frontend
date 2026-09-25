@@ -5,6 +5,7 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetService } from '@/platform/assets/services/assetService'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
+import { reportError } from '@/platform/telemetry/reportError'
 import { api } from '@/scripts/api'
 import {
   ResourceState,
@@ -21,6 +22,8 @@ const mockDistribution = vi.hoisted(
 vi.mock(import('@/platform/distribution/types'), () => mockDistribution)
 
 vi.mock(import('@/platform/remoteConfig/remoteConfig'))
+
+vi.mock(import('@/platform/telemetry/reportError'))
 
 const featureState = vi.hoisted(() => ({
   serverFeatures: {} as Record<string, unknown>
@@ -693,6 +696,28 @@ describe('useModelStore', () => {
         ResourceState.Loaded
       ])
       expect(api.getModels).not.toHaveBeenCalled()
+    })
+
+    it('rebuilds from the asset source on the next load after the capability reload fails', async () => {
+      enableMocks(false)
+      store = useModelStore()
+      await store.loadModelFolders()
+      vi.mocked(api.getModelFolders).mockRejectedValueOnce(new Error('offline'))
+
+      featureState.serverFeatures.assets = true
+      await vi.waitFor(() =>
+        expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+          errorType: 'error_reloading_model_library_after_capability_change'
+        })
+      )
+      await store.loadModels()
+
+      expect(store.modelFolders.map((folder) => folder.state)).toStrictEqual([
+        ResourceState.Loaded,
+        ResourceState.Loaded
+      ])
+      expect(api.getModels).not.toHaveBeenCalled()
+      expect(assetService.getAssetModels).toHaveBeenCalledTimes(2)
     })
   })
 
