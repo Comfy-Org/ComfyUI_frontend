@@ -35,6 +35,8 @@ workflow; only `retained` stores a chosen workflow (or null after it closes).
 history load. Session startup supplies fresh versus restored context before
 hydration, without relying on when it assigns a thread ID. Only `restoring`
 accepts a restored target; missing or failed history never resumes following.
+Node-add commands retain the target; restoring or consuming draft nodes does
+not infer a new user decision.
 
 Passive following invokes no picker save/navigation operation. Tab changes
 still invalidate superseded picker work while following, so a late save cannot

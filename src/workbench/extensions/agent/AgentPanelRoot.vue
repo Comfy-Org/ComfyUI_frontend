@@ -449,6 +449,7 @@ const {
     get: () => composerStore.nodes,
     set: composerStore.setNodes
   }),
+  onNodesAdded: agentPanelStore.retainWorkflowTarget,
   retainWhenNotLive: true,
   selection: selectedNodes,
   enabled: () => agentEnabled.value && selectedTarget.value !== null,
@@ -483,7 +484,6 @@ function mentionableNodes(): SelectedNode[] {
 watch(
   selectionTags,
   (tags) => {
-    if (tags.length) agentPanelStore.retainWorkflowTarget()
     nodeReferenceWorkflow = tags.length ? selectedTarget.value : null
     if (!agentPanelStore.isOpen || agentNodeSelectionStore.isLoadingWorkflow)
       return
