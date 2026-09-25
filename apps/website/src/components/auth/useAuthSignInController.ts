@@ -164,7 +164,12 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   // gone, so the watch below outlives it. Bounded: an unclaimed record left
   // armed would eventually sign out an identity from somewhere else entirely.
   const strayWatch = ref<
-    { readonly before?: string; readonly attempt: number } | undefined
+    | {
+        readonly before?: string
+        readonly attempt: number
+        readonly holdsModeLinks: boolean
+      }
+    | undefined
   >()
   let strayTimer: ReturnType<typeof setTimeout> | undefined
 
@@ -273,7 +278,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     () =>
       busy.value ||
       state.value.step === 'detached' ||
-      strayWatch.value !== undefined
+      strayWatch.value?.holdsModeLinks === true
   )
 
   const progressKey = computed(() => {
@@ -569,13 +574,20 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       // than reading `user` once, and evaluate now too for the rare identity
       // that has already landed.
       //
-      // Only for a cancellation. `popup-closed-by-user` means Firebase waited
-      // out its own grace with no auth event, so nothing was ever in flight to
-      // arrive late, and arming there would hold the mode links on every
-      // ordinary dismissal — the case this whole change exists to speed up.
-      if (detached && !authenticated && cancelledBySuccessor && firebase) {
+      // Armed for a dismissal too, not just a cancellation: Firebase's grace is
+      // 8s against blocking functions documented at up to 7s, and this project
+      // runs one, so `popup-closed-by-user` can be thrown with the exchange
+      // still running (firebase-js-sdk#6956). Only a cancellation holds the
+      // mode links, though — a remount is what makes that case unrecoverable,
+      // and holding them on every ordinary dismissal would tax the very case
+      // this change exists to speed up.
+      if (detached && !authenticated && firebase) {
         firebaseForRollback = firebase
-        strayWatch.value = { before: identityBefore, attempt: attemptNumber }
+        strayWatch.value = {
+          before: identityBefore,
+          attempt: attemptNumber,
+          holdsModeLinks: cancelledBySuccessor
+        }
         clearTimeout(strayTimer)
         strayTimer = setTimeout(() => {
           strayWatch.value = undefined

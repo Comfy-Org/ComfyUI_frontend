@@ -951,16 +951,17 @@ describe('AuthSignIn', () => {
     )
     await userEvent.setup().click(githubButton())
     cancelPopup?.({ code: 'auth/cancelled-popup-request', message: 'x' })
-    await new Promise((resolve) => setTimeout(resolve, 0))
     // The successor fails, so the page is in `error` rather than `detached`.
     failGithub?.({ code: 'auth/popup-blocked', message: 'x' })
-    await new Promise((resolve) => setTimeout(resolve, 0))
 
     const signUpLink = screen.getByRole('link', { name: /sign up/i })
-    expect(
-      signUpLink.getAttribute('aria-disabled'),
-      'a remount here would discard the only thing waiting to clear that identity'
-    ).toBe('true')
+    await waitFor(() => {
+      expect(githubButton()).not.toHaveAttribute('disabled')
+      expect(
+        signUpLink,
+        'a remount here would discard the only thing waiting to clear that identity'
+      ).toHaveAttribute('aria-disabled', 'true')
+    })
     signUpLink.dispatchEvent(
       new MouseEvent('click', { bubbles: true, cancelable: true })
     )
@@ -968,6 +969,40 @@ describe('AuthSignIn', () => {
       screen.queryByRole('button', { name: /sign up with google/i })
     ).toBeNull()
 
+    authUser.value = testFirebaseUser({
+      uid: 'stray-user',
+      email: 'user@example.com',
+      displayName: null
+    })
+
+    await waitFor(() => expect(signOutWorkshop).toHaveBeenCalledOnce())
+    expect(vi.mocked(useWorkshopSession().ensureFresh)).not.toHaveBeenCalled()
+    expect(replace).not.toHaveBeenCalled()
+  })
+
+  it('clears a stray identity a dismissed pop-up publishes from its in-flight exchange', async () => {
+    let closePopup: (() => void) | undefined
+    let dismissPopup: ((reason: unknown) => void) | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise<UserCredential>((_resolve, reject) => {
+        dismissPopup = reject
+      })
+    })
+    vi.mocked(signOutWorkshop).mockReturnValue(new Promise(() => {}))
+    render(AuthSignIn)
+
+    await clickGoogle()
+    closePopup?.()
+    await waitFor(() =>
+      expect(useEmailButton().hasAttribute('disabled')).toBe(false)
+    )
+
+    // firebase-js-sdk#6956: the helper closes the window, `signInWithIdp` is
+    // still running, the poller's grace expires and throws popup-closed-by-user
+    // — and the exchange then completes and signs the visitor in anyway.
+    dismissPopup?.({ code: 'auth/popup-closed-by-user', message: 'x' })
+    await waitFor(() => expect(captureAuthFailed).toHaveBeenCalledOnce())
     authUser.value = testFirebaseUser({
       uid: 'stray-user',
       email: 'user@example.com',
