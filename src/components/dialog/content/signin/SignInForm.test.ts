@@ -1,15 +1,8 @@
-import { Form } from '@primevue/forms'
 import userEvent from '@testing-library/user-event'
-import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
-import InputText from 'primevue/inputtext'
-import Password from 'primevue/password'
-import ToastService from 'primevue/toastservice'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import Button from '@/components/ui/button/Button.vue'
-import Spinner from '@/components/ui/spinner/Spinner.vue'
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useAuthStore } from '@/stores/authStore'
@@ -44,10 +37,7 @@ describe('SignInForm', () => {
     })
     const user = userEvent.setup()
     const result = render(SignInForm, {
-      global: {
-        plugins: [PrimeVue, i18n, ToastService],
-        components: { Form, Button, InputText, Password, Spinner }
-      },
+      global: { plugins: [i18n] },
       props
     })
     return { ...result, user }
@@ -91,11 +81,15 @@ describe('SignInForm', () => {
 
       await user.type(getEmailInput(), 'test@example.com')
       await user.type(getPasswordInput(), 'password123')
-      await user.click(screen.getByRole('button', { name: loginButtonText }))
+      const submit = screen.getByRole('button', { name: loginButtonText })
+      await waitFor(() => expect(submit).toBeEnabled())
+      await user.click(submit)
 
-      expect(onSubmit).toHaveBeenCalledWith({
-        email: 'test@example.com',
-        password: 'password123'
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith({
+          email: 'test@example.com',
+          password: 'password123'
+        })
       })
     })
 
@@ -151,6 +145,20 @@ describe('SignInForm', () => {
       const passwordInput = getPasswordInput()
       expect(passwordInput).toHaveAttribute('id', 'comfy-org-sign-in-password')
       expect(passwordInput).toHaveAttribute('name', 'password')
+      expect(passwordInput).toHaveAttribute('type', 'password')
+    })
+
+    it('toggles password visibility', async () => {
+      const { user } = renderComponent()
+
+      await user.click(
+        screen.getByRole('button', { name: enMessages.auth.showPassword })
+      )
+
+      expect(getPasswordInput()).toHaveAttribute('type', 'text')
+      expect(
+        screen.getByRole('button', { name: enMessages.auth.hidePassword })
+      ).toHaveAttribute('aria-pressed', 'true')
     })
   })
 

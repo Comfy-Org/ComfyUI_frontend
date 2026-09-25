@@ -197,6 +197,44 @@ describe('MultiSelect', () => {
     })
   })
 
+  it('shows selected option labels in the trigger', () => {
+    const { unmount } = renderInParent({}, [
+      { name: 'Option A', value: 'a' },
+      { name: 'Option B', value: 'b' }
+    ])
+
+    expect(screen.getByText('Option A, Option B')).toBeInTheDocument()
+
+    unmount()
+  })
+
+  it('renders the value slot with the selected options instead of the joined labels', () => {
+    const Parent = {
+      template: `
+        <MultiSelect v-model="sel" :options="options">
+          <template #value="{ selected }">
+            <span v-for="item in selected" :key="item.value" data-testid="chip">
+              {{ item.name }}
+            </span>
+          </template>
+        </MultiSelect>`,
+      components: { MultiSelect },
+      setup: () => ({
+        sel: ref([options[0], options[2]]),
+        options
+      })
+    }
+
+    const { unmount } = render(Parent, { global: { plugins: [i18n] } })
+
+    expect(
+      screen.getAllByTestId('chip').map((chip) => chip.textContent.trim())
+    ).toEqual(['Option A', 'Option C'])
+    expect(screen.queryByText('Option A, Option C')).not.toBeInTheDocument()
+
+    unmount()
+  })
+
   it('lets the user type in the search box when nested in a trapped focus scope', async () => {
     const user = userEvent.setup()
     const InTrap = {

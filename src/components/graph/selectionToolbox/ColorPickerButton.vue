@@ -23,14 +23,18 @@
       v-if="showColorPicker"
       class="absolute -top-10 left-1/2 -translate-x-1/2"
     >
-      <SelectButton
-        :model-value="selectedColorOption"
-        :options="colorOptions"
-        option-label="name"
-        data-key="value"
-        @update:model-value="applyColor"
+      <ToggleGroup
+        :model-value="selectedColorOption?.name"
+        type="single"
+        @update:model-value="applyColorName"
       >
-        <template #option="{ option }">
+        <ToggleGroupItem
+          v-for="option in colorOptions"
+          :key="option.name"
+          :value="option.name"
+          :aria-label="option.localizedName"
+          class="px-1 py-2"
+        >
           <i
             v-tooltip.top="option.localizedName"
             class="pi pi-circle-fill"
@@ -39,20 +43,20 @@
             }"
             :data-testid="option.name"
           />
-        </template>
-      </SelectButton>
+        </ToggleGroupItem>
+      </ToggleGroup>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
 import { useEventListener } from '@vueuse/core'
-import SelectButton from 'primevue/selectbutton'
 import type { Raw } from 'vue'
 import { computed, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import type {
   ColorOption as CanvasColorOption,
   LiteGraphCanvasEvent,
@@ -111,6 +115,11 @@ const colorOptions: ColorOption[] = [
 ]
 
 const selectedColorOption = ref<ColorOption | null>(null)
+const applyColorName = (value: unknown) => {
+  if (typeof value === 'string') {
+    applyColor(colorOptions.find((option) => option.name === value) ?? null)
+  }
+}
 const applyColor = (colorOption: ColorOption | null) => {
   const colorName = colorOption?.name ?? NO_COLOR_OPTION.name
   const canvasColorOption =
@@ -172,9 +181,3 @@ watch(
   { immediate: true }
 )
 </script>
-
-<style scoped>
-:deep(.p-togglebutton) {
-  padding: calc(var(--spacing) * 2) var(--spacing);
-}
-</style>

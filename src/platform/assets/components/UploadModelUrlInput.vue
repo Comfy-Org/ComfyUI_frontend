@@ -45,11 +45,10 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <InputText
+        <Input
           v-model="url"
           autofocus
           :placeholder="$t('assetBrowser.genericLinkPlaceholder')"
-          class="w-full border-0 bg-secondary-background p-4"
           data-attr="upload-model-step1-url-input"
         />
         <p v-if="error" class="text-sm text-error">
@@ -81,10 +80,10 @@
 </template>
 
 <script setup lang="ts">
-import InputText from 'primevue/inputtext'
 import { computed } from 'vue'
 
 import Button from '@/components/ui/button/Button.vue'
+import Input from '@/components/ui/input/Input.vue'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 

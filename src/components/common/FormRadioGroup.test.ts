@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
@@ -11,10 +11,7 @@ type FormRadioGroupProps = ComponentProps<typeof FormRadioGroup>
 
 describe('FormRadioGroup', () => {
   function renderComponent(props: FormRadioGroupProps) {
-    return render(FormRadioGroup, {
-      global: { plugins: [PrimeVue] },
-      props
-    })
+    return render(FormRadioGroup, { props })
   }
 
   describe('normalizedOptions computed property', () => {
@@ -75,31 +72,6 @@ describe('FormRadioGroup', () => {
       expect(radios[1]).toHaveAttribute('value', 'Option B')
     })
 
-    it('handles custom object with optionLabel and optionValue', () => {
-      renderComponent({
-        modelValue: 2,
-        options: [
-          { name: 'First Option', id: '1' },
-          { name: 'Second Option', id: '2' },
-          { name: 'Third Option', id: '3' }
-        ],
-        optionLabel: 'name',
-        optionValue: 'id',
-        id: 'test-radio'
-      })
-
-      const radios = screen.getAllByRole('radio')
-      expect(radios).toHaveLength(3)
-
-      expect(radios[0]).toHaveAttribute('value', '1')
-      expect(radios[1]).toHaveAttribute('value', '2')
-      expect(radios[2]).toHaveAttribute('value', '3')
-
-      expect(screen.getByText('First Option')).toBeInTheDocument()
-      expect(screen.getByText('Second Option')).toBeInTheDocument()
-      expect(screen.getByText('Third Option')).toBeInTheDocument()
-    })
-
     it('handles mixed array with strings and SettingOptions', () => {
       renderComponent({
         modelValue: 'complex',
@@ -142,21 +114,41 @@ describe('FormRadioGroup', () => {
 
       expect(screen.queryAllByRole('radio')).toHaveLength(0)
     })
-
-    it('handles object with missing properties gracefully', () => {
-      renderComponent({
-        modelValue: 'opt1',
-        options: [{ label: 'Option 1', val: 'opt1' }],
-        id: 'test-radio'
-      })
-
-      expect(screen.getAllByRole('radio')).toHaveLength(1)
-      expect(screen.getByText('Unknown')).toBeInTheDocument()
-    })
   })
 
   describe('component functionality', () => {
-    it('sets correct id and name attributes on inputs', () => {
+    it('renders and updates the selected option', async () => {
+      const user = userEvent.setup()
+      const { emitted } = renderComponent({
+        modelValue: 'A',
+        options: ['A', 'B'],
+        id: 'selection'
+      })
+
+      expect(screen.getByRole('radio', { name: 'A' })).toBeChecked()
+
+      await user.click(screen.getByRole('radio', { name: 'B' }))
+      expect(emitted()['update:modelValue']).toEqual([['B']])
+    })
+
+    it('keeps numeric option values numeric', async () => {
+      const user = userEvent.setup()
+      const { emitted } = renderComponent({
+        modelValue: 1,
+        options: [
+          { text: 'One', value: 1 },
+          { text: 'Two', value: 2 }
+        ] satisfies SettingOption[],
+        id: 'count'
+      })
+
+      expect(screen.getByRole('radio', { name: 'One' })).toBeChecked()
+
+      await user.click(screen.getByRole('radio', { name: 'Two' }))
+      expect(emitted()['update:modelValue']).toEqual([[2]])
+    })
+
+    it('sets ids on radio buttons', () => {
       renderComponent({
         modelValue: 'A',
         options: ['A', 'B'],
@@ -166,9 +158,7 @@ describe('FormRadioGroup', () => {
       const radios = screen.getAllByRole('radio')
 
       expect(radios[0]).toHaveAttribute('id', 'my-radio-group-A')
-      expect(radios[0]).toHaveAttribute('name', 'my-radio-group')
       expect(radios[1]).toHaveAttribute('id', 'my-radio-group-B')
-      expect(radios[1]).toHaveAttribute('name', 'my-radio-group')
     })
 
     it('associates labels with radio buttons correctly', () => {
@@ -196,17 +186,8 @@ describe('FormRadioGroup', () => {
       })
 
       const radios = screen.getAllByRole('radio')
-      // PrimeVue RadioButton places aria-describedby on its root <div>, not the <input>
-      // eslint-disable-next-line testing-library/no-node-access
-      expect(radios[0].closest('[aria-describedby]')).toHaveAttribute(
-        'aria-describedby',
-        'Option 1-label'
-      )
-      // eslint-disable-next-line testing-library/no-node-access
-      expect(radios[1].closest('[aria-describedby]')).toHaveAttribute(
-        'aria-describedby',
-        'Option 2-label'
-      )
+      expect(radios[0]).toHaveAttribute('aria-describedby', 'Option 1-label')
+      expect(radios[1]).toHaveAttribute('aria-describedby', 'Option 2-label')
     })
   })
 })

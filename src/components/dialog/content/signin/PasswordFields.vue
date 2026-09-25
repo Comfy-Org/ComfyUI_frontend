@@ -1,84 +1,65 @@
 <template>
-  <!-- Password Field -->
-  <FormField
-    ref="passwordField"
-    v-slot="$field"
-    name="password"
-    class="flex flex-col gap-2"
-  >
-    <div class="mb-2 flex items-center justify-between">
-      <label
-        class="text-base font-medium opacity-80"
-        for="comfy-org-sign-up-password"
-      >
+  <VeeField v-slot="{ componentField, errors, meta, value }" name="password">
+    <Field ref="passwordField" :data-invalid="!!errors.length">
+      <FieldLabel for="comfy-org-sign-up-password">
         {{ t('auth.signup.passwordLabel') }}
-      </label>
-    </div>
-    <Password
-      v-model="password"
-      input-id="comfy-org-sign-up-password"
-      pt:pc-input-text:root:autocomplete="new-password"
-      name="password"
-      :feedback="false"
-      toggle-mask
-      :placeholder="t('auth.signup.passwordPlaceholder')"
-      :pt:pc-input-text:root:class="fieldClass"
-      :class="{ 'p-invalid': $field.invalid }"
-      fluid
-    />
-    <div v-if="$field.dirty && isPasswordFocused" class="flex flex-col gap-1">
+      </FieldLabel>
+      <PasswordInput
+        v-bind="componentField"
+        id="comfy-org-sign-up-password"
+        autocomplete="new-password"
+        :placeholder="t('auth.signup.passwordPlaceholder')"
+        :class="fieldClass"
+        :aria-invalid="!!errors.length"
+      />
       <PasswordRules
-        :password="password"
+        v-if="meta.dirty && isPasswordFocused"
+        :password="value ?? ''"
         :copy="passwordRulesCopy"
         root-class="text-sm"
         list-class="mt-1 space-y-1"
-        unmet-class="text-red-500"
+        unmet-class="text-destructive-background"
       />
-    </div>
-  </FormField>
+    </Field>
+  </VeeField>
 
-  <!-- Confirm Password Field -->
-  <FormField v-slot="$field" name="confirmPassword" class="flex flex-col gap-2">
-    <label
-      class="mb-2 text-base font-medium opacity-80"
-      for="comfy-org-sign-up-confirm-password"
-    >
-      {{ t('auth.login.confirmPasswordLabel') }}
-    </label>
-    <Password
-      name="confirmPassword"
-      input-id="comfy-org-sign-up-confirm-password"
-      pt:pc-input-text:root:autocomplete="new-password"
-      :feedback="false"
-      toggle-mask
-      :placeholder="t('auth.login.confirmPasswordPlaceholder')"
-      :pt:pc-input-text:root:class="fieldClass"
-      :class="{ 'p-invalid': $field.invalid }"
-      fluid
-    />
-    <small v-if="$field.error" class="text-red-500">{{
-      $field.error.message
-    }}</small>
-  </FormField>
+  <VeeField v-slot="{ componentField, errors }" name="confirmPassword">
+    <Field :data-invalid="!!errors.length">
+      <FieldLabel for="comfy-org-sign-up-confirm-password">
+        {{ t('auth.login.confirmPasswordLabel') }}
+      </FieldLabel>
+      <PasswordInput
+        v-bind="componentField"
+        id="comfy-org-sign-up-confirm-password"
+        autocomplete="new-password"
+        :placeholder="t('auth.login.confirmPasswordPlaceholder')"
+        :class="fieldClass"
+        :aria-invalid="!!errors.length"
+      />
+      <FieldError v-if="errors.length" :errors />
+    </Field>
+  </VeeField>
 </template>
 
 <script setup lang="ts">
-import { FormField } from '@primevue/forms'
 import { useFocusWithin } from '@vueuse/core'
-import Password from 'primevue/password'
-import { computed, ref, useTemplateRef } from 'vue'
-import type { ComponentPublicInstance, HTMLAttributes } from 'vue'
+import { Field as VeeField } from 'vee-validate'
+import { computed, useTemplateRef } from 'vue'
+import type { HTMLAttributes } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
+import Field from '@/components/ui/field/Field.vue'
+import FieldError from '@/components/ui/field/FieldError.vue'
+import FieldLabel from '@/components/ui/field/FieldLabel.vue'
+import PasswordInput from '@/components/ui/input/PasswordInput.vue'
 
-const { fieldClass = 'h-10' } = defineProps<{
+const { fieldClass } = defineProps<{
   fieldClass?: HTMLAttributes['class']
 }>()
 
 const { t } = useI18n()
-const password = ref('')
-const passwordField = useTemplateRef<ComponentPublicInstance>('passwordField')
+const passwordField = useTemplateRef('passwordField')
 const { focused: isPasswordFocused } = useFocusWithin(passwordField)
 
 const passwordRulesCopy = computed(() => ({

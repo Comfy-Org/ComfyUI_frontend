@@ -1,6 +1,4 @@
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
-import InputNumber from 'primevue/inputnumber'
 import { describe, expect, it } from 'vitest'
 import { defineComponent } from 'vue'
 import { createI18n } from 'vue-i18n'
@@ -56,8 +54,7 @@ function renderComponent(
 ) {
   return render(WidgetInputNumberGradientSlider, {
     global: {
-      plugins: [PrimeVue, i18n],
-      components: { InputNumber },
+      plugins: [i18n],
       stubs: {
         GradientSlider: GradientSliderStub,
         WidgetLayoutField: WidgetLayoutFieldStub

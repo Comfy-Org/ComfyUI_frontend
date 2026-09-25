@@ -1,62 +1,50 @@
 <template>
-  <div class="flex flex-row gap-4">
+  <RadioGroup
+    v-model="modelValue"
+    :name="id"
+    orientation="horizontal"
+    class="gap-4"
+  >
     <div
       v-for="option in normalizedOptions"
       :key="option.value"
       class="flex items-center"
     >
-      <RadioButton
-        :input-id="`${id}-${option.value}`"
-        :name="id"
+      <RadioGroupItem
+        :id="`${id}-${option.value}`"
         :value="option.value"
-        :model-value="modelValue"
         :aria-describedby="`${option.text}-label`"
-        @update:model-value="$emit('update:modelValue', $event)"
       />
-      <label :for="`${id}-${option.value}`" class="ml-2 cursor-pointer">
+      <label
+        :id="`${option.text}-label`"
+        :for="`${id}-${option.value}`"
+        class="ml-2 cursor-pointer"
+      >
         {{ option.text }}
       </label>
     </div>
-  </div>
+  </RadioGroup>
 </template>
 
-<script setup lang="ts" generic="T extends string | number | boolean | null">
-import RadioButton from 'primevue/radiobutton'
+<script setup lang="ts">
 import { computed } from 'vue'
 
+import RadioGroup from '@/components/ui/radio-group/RadioGroup.vue'
+import RadioGroupItem from '@/components/ui/radio-group/RadioGroupItem.vue'
 import type { SettingOption } from '@/platform/settings/types'
 
-const props = defineProps<{
-  modelValue: T
-  options?: (string | SettingOption | Record<string, string>)[]
-  optionLabel?: string
-  optionValue?: string
+const { options = [] } = defineProps<{
+  options?: (string | SettingOption)[]
   id?: string
 }>()
 
-defineEmits<{
-  'update:modelValue': [value: T]
-}>()
+const modelValue = defineModel<string | number | null>()
 
-const normalizedOptions = computed<SettingOption[]>(() => {
-  if (!props.options) return []
-
-  return props.options.map((option) => {
-    if (typeof option === 'string') {
-      return { text: option, value: option }
-    }
-
-    if ('text' in option) {
-      return {
-        text: option.text,
-        value: option.value ?? option.text
-      }
-    }
-    // Handle optionLabel/optionValue
-    return {
-      text: option[props.optionLabel || 'text'] || 'Unknown',
-      value: option[props.optionValue || 'value']
-    }
-  })
-})
+const normalizedOptions = computed(() =>
+  options.map((option) =>
+    typeof option === 'string'
+      ? { text: option, value: option }
+      : { text: option.text, value: option.value ?? option.text }
+  )
+)
 </script>

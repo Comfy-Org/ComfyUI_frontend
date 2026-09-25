@@ -11,7 +11,7 @@
       class="flex items-start gap-4 rounded-2xl border border-interface-stroke p-4 font-inter"
     >
       <span class="shrink-0" @click.prevent="requestAccessModeToggle">
-        <ToggleSwitch
+        <Switch
           :model-value="!isRestricted"
           readonly
           :disabled="!isGated && (!canEditPolicy || isSaving)"
@@ -291,7 +291,7 @@
                 role="cell"
                 class="flex h-8 items-center justify-end justify-self-end"
               >
-                <ToggleSwitch
+                <Switch
                   v-if="isRestricted"
                   :model-value="provider.enabled"
                   :disabled="isSaving || !canEditPolicy"
@@ -362,13 +362,13 @@ import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import type { MenuItem } from 'primevue/menuitem'
-import ToggleSwitch from 'primevue/toggleswitch'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import DropdownMenu from '@/components/common/DropdownMenu.vue'
 import Button from '@/components/ui/button/Button.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
 import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
+import Switch from '@/components/ui/switch/Switch.vue'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 import { usePartnerNodeGovernanceStore } from '@/platform/workspace/stores/partnerNodeGovernanceStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
