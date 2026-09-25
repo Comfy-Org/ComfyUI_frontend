@@ -24,12 +24,14 @@ import { setupInlinePromptEditorDom } from './composer/inlinePromptEditorTestSet
 
 setupInlinePromptEditorDom()
 
-const createHistoryGroups = () => ({
-  current: [],
-  today: [],
-  yesterday: [],
-  earlier: []
-})
+function createHistoryGroups() {
+  return {
+    current: [],
+    today: [],
+    yesterday: [],
+    earlier: []
+  }
+}
 
 function mount(isMaximized = false) {
   return render(AgentPanel, {
@@ -69,15 +71,22 @@ type RemoveAttachmentArgs = [id: string]
 type InsertArgs = [text: string]
 type ReplaceDraftArgs = [text: string]
 
-const attachmentCalls = {
-  add: [] as AddAttachmentArgs[],
-  update: [] as UpdateAttachmentArgs[],
-  remove: [] as RemoveAttachmentArgs[]
+const attachmentCalls: {
+  add: AddAttachmentArgs[]
+  update: UpdateAttachmentArgs[]
+  remove: RemoveAttachmentArgs[]
+} = {
+  add: [],
+  update: [],
+  remove: []
 }
 
-const draftCalls = {
-  insert: [] as InsertArgs[],
-  replaceDraft: [] as ReplaceDraftArgs[]
+const draftCalls: {
+  insert: InsertArgs[]
+  replaceDraft: ReplaceDraftArgs[]
+} = {
+  insert: [],
+  replaceDraft: []
 }
 
 const suggestedPrompt = 'Generate a yellow duck with a hockey mask'
@@ -411,13 +420,12 @@ describe('AgentPanel', () => {
     await user.click(screen.getByRole('button', { name: 'Open saved chat' }))
     await nextTick()
 
-    expect(emitted().deleteHistory[0]).toEqual(['history-1'])
-    expect(emitted().copyHistory[0]).toEqual(['history-1'])
-    expect(emitted().renameHistory[0]).toEqual([
-      'history-1',
-      'Renamed saved chat'
+    expect(emitted().deleteHistory).toEqual([['history-1']])
+    expect(emitted().copyHistory).toEqual([['history-1']])
+    expect(emitted().renameHistory).toEqual([
+      ['history-1', 'Renamed saved chat']
     ])
-    expect(emitted().selectHistory[0]).toEqual(['history-1'])
+    expect(emitted().selectHistory).toEqual([['history-1']])
     expect(screen.queryByTestId('chat-history')).not.toBeInTheDocument()
   })
 
@@ -656,14 +664,14 @@ describe('AgentPanel', () => {
     expect(emitted().newChat).toHaveLength(1)
     expect(emitted().toggleSize).toHaveLength(1)
     expect(emitted().close).toHaveLength(1)
-    expect(emitted().send[0]).toEqual(['Forwarded prompt', []])
+    expect(emitted().send).toEqual([['Forwarded prompt', []]])
     expect(emitted().stop).toHaveLength(1)
     expect(emitted().attach).toHaveLength(1)
     expect(emitted().openAssets).toHaveLength(1)
     expect(emitted().selectNodes).toHaveLength(1)
-    expect(emitted().removeTag[0]).toEqual(['tag-1'])
-    expect(emitted().mentionPick[0]).toEqual([
-      { id: 'node-1', title: 'KSampler' }
+    expect(emitted().removeTag).toEqual([['tag-1']])
+    expect(emitted().mentionPick).toEqual([
+      [{ id: 'node-1', title: 'KSampler' }]
     ])
   })
 
