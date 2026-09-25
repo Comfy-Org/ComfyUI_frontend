@@ -315,7 +315,6 @@ export const useModelStore = defineStore('models', () => {
 
   let modelFoldersRequestId = 0
   const pendingReloads = new Set<Promise<boolean>>()
-  // Set when a capability reload fails, leaving folders bound to the old source.
   let foldersStale = false
 
   /**
