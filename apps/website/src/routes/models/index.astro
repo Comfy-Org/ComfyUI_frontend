@@ -1,13 +1,14 @@
 ---
 import BaseLayout from '../../layouts/BaseLayout.astro'
+import { workshopModels } from '../../config/workshop-browse-content'
 import ModelsPage from '../../components/workshop/ModelsPage.vue'
 import ModelsShowcase from '../../components/models/ModelsShowcase.astro'
+import { modelsHubMeta } from './models-hub-meta'
+
+const { title, description } = modelsHubMeta(workshopModels)
 ---
 
-<BaseLayout
-  title="Models - Comfy"
-  description="Run the world's leading AI models in ComfyUI. Browse every supported model with community workflow templates ready to run."
->
+<BaseLayout {title} {description}>
   <ModelsPage client:load>
     <ModelsShowcase slot="fallback" />
   </ModelsPage>
