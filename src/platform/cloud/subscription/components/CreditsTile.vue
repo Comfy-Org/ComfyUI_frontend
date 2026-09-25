@@ -376,11 +376,19 @@ const displayTotal = computed(() =>
     ? formatCreditCount(0)
     : totalCredits.value
 )
-const displayPrepaid = computed(() =>
-  zeroState || showsInactivePlanState.value
-    ? formatCreditCount(0)
-    : prepaidCredits.value
+// An ended sales-managed plan retains its prepaid balance: the note beside
+// this number says the credits become spendable once the plan is restored,
+// so the amount must survive the inactive state rather than read 0.
+const retainsPrepaidWhileInactive = computed(() =>
+  isSalesManagedTier(subscription.value?.tier)
 )
+const displayPrepaid = computed(() => {
+  if (zeroState) return formatCreditCount(0)
+  if (showsInactivePlanState.value && !retainsPrepaidWhileInactive.value) {
+    return formatCreditCount(0)
+  }
+  return prepaidCredits.value
+})
 const usedBarWidth = computed(
   () => `${(usage.value.usedFraction * 100).toFixed(2)}%`
 )

@@ -481,6 +481,9 @@ describe('CreditsTile', () => {
     const { container } = renderTile({ inactivePlan: true })
 
     expect(container.textContent).toContain('Additional credits')
+    // The retained prepaid balance stays visible — a note promising the
+    // credits are spendable once restored must not sit beside a zero.
+    expect(container.textContent).toContain('633')
     expect(container.textContent).toContain(
       'Spendable once your plan is restored.'
     )
