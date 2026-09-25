@@ -7,6 +7,7 @@ import { ref, toRaw, watch } from 'vue'
 import { useChainCallback } from '@/composables/functional/useChainCallback'
 import type Load3d from '@/extensions/core/load3d/Load3d'
 import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
+import type { ModelStats } from '@/extensions/core/load3d/modelStats'
 import { createLoad3d } from '@/extensions/core/load3d/createLoad3d'
 import { isLoad3dResultViewerNode } from '@/extensions/core/load3d/nodeTypes'
 import {
@@ -149,6 +150,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
   })
 
   const hasSkeleton = ref(false)
+  const modelStats = ref<ModelStats | null>(null)
+  let modelStatsAbort: AbortController | null = null
 
   const cameraConfig = ref<CameraConfig>({
     cameraType: 'perspective',
@@ -931,6 +934,8 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     modelLoadingStart: () => {
       loadingMessage.value = t('load3d.loadingModel')
       loading.value = true
+      modelStats.value = null
+      abortModelStats()
       if (!isFirstModelLoad) {
         modelConfig.value = {
           upDirection: 'original',
@@ -964,6 +969,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
         'wireframe'
       ]
       hasSkeleton.value = load3d?.hasSkeleton() ?? false
+      refreshModelStats()
       applyGizmoConfigToLoad3d()
       syncSceneModels()
       isFirstModelLoad = false
@@ -1094,7 +1100,28 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     })
   }
 
+  const abortModelStats = () => {
+    modelStatsAbort?.abort()
+    modelStatsAbort = null
+  }
+
+  const refreshModelStats = () => {
+    abortModelStats()
+    const controller = new AbortController()
+    modelStatsAbort = controller
+    void load3d
+      ?.getModelStats(controller.signal)
+      .then((stats) => {
+        if (modelStatsAbort !== controller) return
+        modelStats.value = stats
+      })
+      .catch((error: unknown) => {
+        if (!controller.signal.aborted) throw error
+      })
+  }
+
   const cleanup = () => {
+    abortModelStats()
     handleEvents('remove')
 
     const node = toRaw(nodeRef.value)
@@ -1126,6 +1153,7 @@ export const useLoad3d = (nodeOrRef: MaybeRef<LGraphNode | null>) => {
     canExport,
     materialModes,
     hasSkeleton,
+    modelStats,
     hasRecording,
     recordingDuration,
     animations,
