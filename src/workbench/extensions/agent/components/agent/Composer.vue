@@ -443,7 +443,7 @@ defineExpose({
           'relative flex flex-col border transition-colors',
           assetDragActive
             ? 'h-28 rounded-lg border-dashed border-component-node-border bg-secondary-background'
-            : 'min-h-28 rounded-lg border-border-default bg-secondary-background focus-within:border-muted-foreground'
+            : 'min-h-28 rounded-lg border-border-subtle bg-secondary-background focus-within:border-muted-foreground'
         )
       "
     >
@@ -545,7 +545,7 @@ defineExpose({
             v-if="
               !composer.draft.value && !composer.prompt.value.references.length
             "
-            class="pointer-events-none relative z-10 -mt-7 font-inter text-[14px]/[20px] font-normal text-muted-foreground"
+            class="pointer-events-none relative z-10 -mt-7 font-inter text-[14px]/[20px] font-normal text-muted-foreground/70"
           >
             <span>{{ placeholderHint.text }} </span>
             <AccessibleTooltip
@@ -562,7 +562,7 @@ defineExpose({
                   size="unset"
                   :aria-disabled="!!nodeReferenceDisabledReason || undefined"
                   :aria-description="nodeReferenceDisabledReason"
-                  class="pointer-events-auto -ml-1 h-5 shrink-0 gap-1 px-1 align-top text-sm/5 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
+                  class="pointer-events-auto -ml-1 h-5 shrink-0 gap-1 px-1 align-top text-sm/5 text-muted-foreground/70 hover:text-muted-foreground aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
                   @click="onSelectNodes"
                 >
                   <span
