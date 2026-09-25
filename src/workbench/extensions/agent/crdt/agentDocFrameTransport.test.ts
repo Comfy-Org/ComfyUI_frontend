@@ -22,7 +22,8 @@ function fakeSource() {
       statusListeners.add(listener)
       return () => statusListeners.delete(listener)
     },
-    send
+    send,
+    reconnect: () => {}
   }
   return {
     source,

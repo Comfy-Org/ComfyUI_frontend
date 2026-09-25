@@ -33,6 +33,12 @@ export interface AgentIdentityDeps {
 }
 
 export interface ResolvedAgentIdentity {
+  /**
+   * Forgets the identity and looks it up again, e.g. when the signed-in
+   * account changes. A lookup still in flight for the previous account is
+   * discarded.
+   */
+  reset(): void
   userId: Readonly<Ref<string | null>>
   stop(): void
 }
@@ -49,13 +55,18 @@ export function resolveAgentIdentity(
   // A connected edge that lands while a lookup is in flight is owed a retry
   // should that lookup fail — the socket may never announce itself again.
   let edgeDuringFlight = false
+  // Bumped by reset(): a lookup that started for another account is ignored.
+  let generation = 0
 
   async function attempt(): Promise<void> {
     if (stopped || inFlight || userId.value !== null) return
     inFlight = true
+    const started = generation
     try {
-      userId.value = (await deps.getIdentity()).userId
+      const identity = await deps.getIdentity()
+      if (started === generation) userId.value = identity.userId
     } catch (error) {
+      if (started !== generation) return
       failures += 1
       retryNotBefore =
         Date.now() +
@@ -65,7 +76,8 @@ export function resolveAgentIdentity(
         )
       deps.onFailure(error)
     } finally {
-      inFlight = false
+      // A superseded lookup leaves the flag to the one reset() started.
+      if (started === generation) inFlight = false
     }
     if (edgeDuringFlight) {
       edgeDuringFlight = false
@@ -96,6 +108,19 @@ export function resolveAgentIdentity(
 
   return {
     userId: readonly(userId),
+    reset() {
+      generation += 1
+      userId.value = null
+      failures = 0
+      retryNotBefore = 0
+      edgeDuringFlight = false
+      if (deferredRetry !== null) {
+        clearTimeout(deferredRetry)
+        deferredRetry = null
+      }
+      inFlight = false
+      void attempt()
+    },
     stop() {
       stopped = true
       stopConnected()

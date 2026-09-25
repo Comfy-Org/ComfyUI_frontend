@@ -279,6 +279,34 @@ describe('createAgentEventSource reconnect backoff', () => {
   })
 })
 
+describe('createAgentEventSource reconnect', () => {
+  it('drops the open socket and connects again with a freshly read token', async () => {
+    const tokens = ['account-a', 'account-b']
+    const { source, sockets } = sourceHarness(undefined, async () =>
+      tokens.shift()
+    )
+    source.subscribe(vi.fn())
+    await connected()
+    sockets[0].open()
+
+    source.reconnect()
+    await connected()
+
+    expect(sockets[0].readyState).toBe(WebSocket.CLOSED)
+    expect(sockets).toHaveLength(2)
+    expect(new URL(sockets[1].url).searchParams.get('token')).toBe('account-b')
+  })
+
+  it('opens nothing when no one is listening', async () => {
+    const { source, sockets } = sourceHarness()
+
+    source.reconnect()
+    await connected()
+
+    expect(sockets).toHaveLength(0)
+  })
+})
+
 describe('createAgentEventSource token', () => {
   it('presents the caller credential as ?token=, read afresh on every connect', async () => {
     vi.useFakeTimers()
