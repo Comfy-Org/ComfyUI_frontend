@@ -34,9 +34,8 @@ export class NodeOperationsHelper {
   async getSelectedGraphNodesCount(): Promise<number> {
     return await this.page.evaluate(() => {
       return (
-        window.app?.graph.nodes.filter(
-          (node: LGraphNode) => node.is_selected === true
-        ).length || 0
+        window.app?.graph.nodes.filter((node: LGraphNode) => node.is_selected)
+          .length || 0
       )
     })
   }

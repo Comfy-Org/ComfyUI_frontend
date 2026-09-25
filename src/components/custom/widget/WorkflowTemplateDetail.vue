@@ -2,7 +2,7 @@
 import { ref, useId } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import Badge from '@/components/common/Badge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { TemplateDetailGroup } from '@/platform/workflow/templates/types/templateDetail'
 
@@ -123,12 +123,9 @@ defineExpose({
             <h3 :id="groupTitleId(group.id)" class="m-0 text-sm font-medium">
               {{ group.label }}
             </h3>
-            <Badge
-              :label="group.rows.length"
-              severity="secondary"
-              variant="circle"
-              class="size-4"
-            />
+            <Badge severity="secondary" variant="badge">
+              {{ group.rows.length }}
+            </Badge>
             <span
               v-if="group.total"
               class="ml-auto text-sm text-muted-foreground"

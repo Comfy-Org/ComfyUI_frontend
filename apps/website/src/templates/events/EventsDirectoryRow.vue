@@ -74,7 +74,7 @@ useResizeObserver(descEl, ([entry]) => {
         'relative isolate flex gap-3 px-6 py-5 transition-colors',
         rowLink && 'hover:bg-white/5',
         selected &&
-          'bg-primary-comfy-yellow/10 ring-primary-comfy-yellow/40 ring-1 ring-inset'
+          'bg-primary-comfy-yellow/10 ring-1 ring-primary-comfy-yellow/40 ring-inset'
       )
     "
     data-testid="events-directory-row"
@@ -85,7 +85,7 @@ useResizeObserver(descEl, ([entry]) => {
       :target="rowLinkTarget"
       :rel="rowLinkRel"
       :aria-label="`${row.title} — ${rowLink.label}`"
-      class="focus-visible:ring-primary-comfy-yellow absolute inset-0 z-10 focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset"
+      class="absolute inset-0 z-10 focus-visible:ring-2 focus-visible:ring-primary-comfy-yellow focus-visible:outline-none focus-visible:ring-inset"
     />
     <!-- A video's poster stands in here; a <video> is not worth it at this
     size. Hidden on phones, where the row runs the full page width and the

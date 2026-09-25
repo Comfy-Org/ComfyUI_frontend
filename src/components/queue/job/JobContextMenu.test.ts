@@ -49,18 +49,6 @@ const popoverStub = defineComponent({
   `
 })
 
-const buttonStub = {
-  props: {
-    disabled: { type: Boolean, default: false },
-    ariaLabel: { type: String, default: undefined }
-  },
-  template: `
-    <button :disabled="disabled" :aria-label="ariaLabel">
-      <slot />
-    </button>
-  `
-}
-
 type MenuHandle = { open: (e: Event) => Promise<void>; hide: () => void }
 
 const createEntries = (): MenuEntry[] => [
@@ -98,7 +86,7 @@ function renderMenu(entries: MenuEntry[], onAction?: ReturnType<typeof vi.fn>) {
   const { unmount } = render(Wrapper, {
     props: { onAction: actionSpy },
     global: {
-      stubs: { Popover: popoverStub, Button: buttonStub }
+      stubs: { Popover: popoverStub }
     }
   })
 

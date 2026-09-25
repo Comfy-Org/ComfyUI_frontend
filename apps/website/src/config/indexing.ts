@@ -1,41 +1,39 @@
+import { LOCALE_CODES, LOCALES } from './locales'
 import { models } from './models'
-import {
-  isLegacyWorkshopRoute,
-  isWorkshopInBuild,
-  isWorkshopRoute
-} from './workshop-release'
+import { isLegacyWorkshopRoute, isWorkshopRoute } from './workshop-release'
 
-const LOCALES = ['en', 'zh-CN'] as const
-const DEFAULT_LOCALE = 'en'
 const PAYMENT_STATUSES = ['success', 'failed'] as const
 const PLACEHOLDER_PATHNAMES = ['/case-studies', '/videos', '/demos'] as const
 
-const LOCALE_PREFIXES = LOCALES.map((locale) =>
-  locale === DEFAULT_LOCALE ? '' : `/${locale}`
-)
+const ALL_LOCALE_PREFIXES = LOCALE_CODES.map((locale) => LOCALES[locale].prefix)
 
-const NOINDEX_PATHNAMES = new Set([
-  ...LOCALE_PREFIXES.flatMap((prefix) =>
-    PAYMENT_STATUSES.map((status) => `${prefix}/payment/${status}`)
-  ),
-  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/individual-submission`),
-  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/booking-confirmation`),
-  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/agent`),
-  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/login`),
-  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/signup`),
-  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/forgot-password`),
-  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/privacy-policy`),
-  ...LOCALE_PREFIXES.map((prefix) => `${prefix}/terms-of-service`),
-  ...LOCALE_PREFIXES.flatMap((prefix) =>
-    PLACEHOLDER_PATHNAMES.map((pathname) => `${prefix}${pathname}`)
+const NOINDEX_ROUTES = [
+  ...PAYMENT_STATUSES.map((status) => `/payment/${status}`),
+  '/individual-submission',
+  '/booking-confirmation',
+  '/agent',
+  '/login',
+  '/signup',
+  '/forgot-password',
+  '/models/showcase',
+  '/checkout-opening',
+  '/checkout-return',
+  '/privacy-policy',
+  '/terms-of-service',
+  ...PLACEHOLDER_PATHNAMES
+]
+
+const NOINDEX_PATHNAMES = new Set(
+  ALL_LOCALE_PREFIXES.flatMap((prefix) =>
+    NOINDEX_ROUTES.map((route) => `${prefix}${route}`)
   )
-])
+)
 
 const MODEL_REDIRECT_PATHNAMES = new Set(
   models
     .filter((model) => model.canonicalSlug !== undefined)
     .flatMap((model) =>
-      LOCALE_PREFIXES.map(
+      ALL_LOCALE_PREFIXES.map(
         (prefix) => `${prefix}/p/supported-models/${model.slug}`
       )
     )
@@ -55,6 +53,6 @@ export function isExcludedFromSitemap(page: string): boolean {
     isNoindexPathname(pathname) ||
     isLegacyWorkshopRoute(pathname) ||
     MODEL_REDIRECT_PATHNAMES.has(pathname) ||
-    (!isWorkshopInBuild() && isWorkshopRoute(pathname))
+    isWorkshopRoute(pathname)
   )
 }

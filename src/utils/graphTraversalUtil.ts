@@ -7,6 +7,8 @@ import type {
 import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import {
+  createLeafNodeExecutionId,
+  createLeafNodeLocatorId,
   createNodeExecutionId,
   createNodeLocatorId,
   getParentExecutionIds,
@@ -16,6 +18,7 @@ import { parseNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 import type { NodeState } from '@/types/nodeState'
 import type { UUID } from '@/utils/uuid'
+import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 import { isSubgraphIoNode } from './typeGuardUtil'
 
@@ -38,12 +41,23 @@ export function subgraphIdFromState(
   return rootGraphId && state.graphId !== rootGraphId ? state.graphId : null
 }
 
-/** The locator id for a node described by its shell state. */
+/**
+ * The locator id for a node described by its shell state.
+ *
+ * A root-owned node has no ancestor path to encode, so its raw id can be
+ * kept whole even when it contains a colon that isn't a subgraph-scope
+ * prefix (comfy-multi-player's insert_workflow remapped ids, PM-1580) — see
+ * `createLeafNodeLocatorId`. A node that IS meant to live inside a subgraph
+ * still goes through the strict, delimiter-aware path.
+ */
 export function locatorIdFromState(
   state: Pick<NodeState, 'id' | 'graphId'>,
   rootGraphId: UUID | undefined
 ): NodeLocatorId | null {
-  return createNodeLocatorId(subgraphIdFromState(state, rootGraphId), state.id)
+  return createLeafNodeLocatorId(
+    subgraphIdFromState(state, rootGraphId),
+    state.id
+  )
 }
 
 function parseNodeIdPath(path: string[]): NodeId[] | null {
@@ -536,8 +550,14 @@ export function isCandidateScopeActive(
   candidate: {
     nodeId?: string | number | null | undefined
     sourceExecutionId?: string | number | null | undefined
+    promotedSources?: readonly PromotedWidgetExecutionSource[]
   }
 ): boolean {
+  if (candidate.promotedSources) {
+    return candidate.promotedSources.some((source) =>
+      isExecutionPathActive(rootGraph, source.executionId)
+    )
+  }
   const executionId = getCandidateActivityExecutionId(candidate)
   return executionId == null || isExecutionPathActive(rootGraph, executionId)
 }
@@ -557,6 +577,7 @@ export function isMissingCandidateActive(
     nodeId?: string | number | null | undefined
     sourceExecutionId?: string | number | null | undefined
     isMissing?: boolean | undefined
+    promotedSources?: readonly PromotedWidgetExecutionSource[]
   }
 ): boolean {
   if (candidate.isMissing !== true) return false
@@ -604,14 +625,31 @@ export function executionIdFromState(
   const localNodeId = parseNodeId(state.id)
   if (!localNodeId) return null
 
+  // A root-owned node has no ancestor path to encode, so its raw id can be
+  // kept whole even when it contains a colon that isn't a subgraph-scope
+  // prefix (comfy-multi-player's insert_workflow remapped ids, PM-1580) —
+  // see `createLeafNodeExecutionId`. A node that IS meant to live inside a
+  // subgraph still goes through the strict, segment-splitting path.
+  const fallback = subgraphIdFromState(state, rootGraph.id)
+    ? createNodeExecutionId([localNodeId])
+    : createLeafNodeExecutionId(localNodeId)
+
   const locatorId = locatorIdFromState(state, rootGraph.id)
   const node = locatorId && getNodeByLocatorId(rootGraph, locatorId)
-  if (!node) return createNodeExecutionId([localNodeId])
+  if (!node) return fallback
 
-  return (
-    getExecutionIdByNode(rootGraph, node) ??
-    createNodeExecutionId([localNodeId])
-  )
+  return getExecutionIdByNode(rootGraph, node) ?? fallback
+}
+
+export function getNodeByState(
+  rootGraph: LGraph,
+  state: Pick<NodeState, 'id' | 'graphId'>
+): LGraphNode | null {
+  const graph =
+    state.graphId === rootGraph.id
+      ? rootGraph
+      : findSubgraphByUuid(rootGraph, state.graphId)
+  return graph?.getNodeById(state.id) ?? null
 }
 
 /**
@@ -628,7 +666,16 @@ export function getNodeByLocatorId(
   locatorId: string
 ): LGraphNode | null {
   const parsedIds = parseNodeLocatorId(locatorId)
-  if (!parsedIds) return null
+  if (!parsedIds) {
+    // parseNodeLocatorId's delimiter-aware format rejects a locator id
+    // whose local id itself contains a colon that isn't a subgraph-scope
+    // prefix (comfy-multi-player's insert_workflow remapped ids, PM-1580).
+    // createLeafNodeLocatorId keeps such an id whole instead of splitting
+    // it into `<subgraphUuid>:<id>`, so there is no subgraph prefix to
+    // strip here either: resolve it directly against the root graph.
+    const leafNodeId = parseNodeId(locatorId)
+    return leafNodeId ? rootGraph.getNodeById(leafNodeId) || null : null
+  }
 
   const { subgraphUuid, localNodeId } = parsedIds
 
@@ -858,7 +905,7 @@ export function collectFromNodes<T = LGraphNode, C = void>(
   const {
     collector = (node: LGraphNode) => node as T,
     contextBuilder = () => undefined as C,
-    initialContext = undefined,
+    initialContext,
     expandSubgraphs = true
   } = options || {}
   const results: T[] = []
@@ -949,4 +996,26 @@ function findPartialExecutionPathToGraph(
     if (subpath !== undefined) return node.id + ':' + subpath
   }
   return undefined
+}
+
+export function resolveInputSourceNode(
+  node: LGraphNode,
+  slot: number
+): LGraphNode | undefined {
+  let upstream = node.getInputNode(slot)
+  let link = node.getInputLink(slot)
+  const visited = new Set<LGraphNode>()
+
+  while (upstream?.isSubgraphNode()) {
+    if (!link || visited.has(upstream)) return undefined
+    visited.add(upstream)
+
+    const resolved = upstream.resolveSubgraphOutputLink(link.origin_slot)
+    if (!resolved) return undefined
+
+    upstream = resolved.outputNode ?? null
+    link = resolved.link
+  }
+
+  return upstream ?? undefined
 }
