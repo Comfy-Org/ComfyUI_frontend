@@ -1,4 +1,4 @@
-type Locale = 'en' | 'zh-CN' | 'ja'
+import type { Locale } from '../config/locales'
 
 const translations = {
   'home.workshop.heading': {
@@ -23,6 +23,49 @@ const translations = {
     'zh-CN': '在 Comfy 上浏览并运行最新的 AI 图像、视频和音频模型。'
   },
   'workshop.hero.eyebrow': { en: 'Models', 'zh-CN': '模型' },
+  'workshop.catalogue.apps': { en: 'Apps', 'zh-CN': '应用' },
+  'workshop.catalogue.categories': { en: 'Categories', 'zh-CN': '分类' },
+  'workshop.catalogue.show': { en: 'Browse', 'zh-CN': '浏览' },
+  'workshop.catalogue.subtitle': {
+    en: 'Models and the workflows built on them, by what you want to make.',
+    'zh-CN': '按你想创作的内容浏览模型及其工作流。'
+  },
+  'workshop.catalogue.appsSoon': {
+    en: 'Apps are coming soon',
+    'zh-CN': '应用即将上线'
+  },
+  'workshop.catalogue.appsHint': {
+    en: 'For now, explore ready-to-run workflows or try a model with your own ideas.',
+    'zh-CN': '现在可以先探索现成的工作流，或用自己的创意试用模型。'
+  },
+  'workshop.catalogue.noWorkflows': {
+    en: 'No workflows match your search and filters.',
+    'zh-CN': '没有符合搜索和筛选条件的工作流。'
+  },
+  'workshop.catalogue.backToWorkflows': {
+    en: 'Back to workflows',
+    'zh-CN': '返回工作流'
+  },
+  'workshop.catalogue.allWorkflows': {
+    en: 'All workflows',
+    'zh-CN': '全部工作流'
+  },
+  'workshop.sort.recommended': {
+    en: 'Recommended',
+    'zh-CN': '推荐顺序'
+  },
+  'workshop.catalogue.browseAllWorkflows': {
+    en: 'Browse all workflows',
+    'zh-CN': '浏览全部工作流'
+  },
+  'workshop.catalogue.searchWorkflows': {
+    en: 'Search workflows…',
+    'zh-CN': '搜索工作流…'
+  },
+  'workshop.catalogue.showWorkflows': {
+    en: 'Show {n} workflows',
+    'zh-CN': '显示 {n} 个工作流'
+  },
   'workshop.hero.heading': {
     en: 'What will you make next?',
     'zh-CN': '接下来你想创造什么？'
@@ -4349,32 +4392,32 @@ Enterprise`
   // Featured dropdown cards — keys are keyed by parent nav item, not card content,
   // so the copy can be swapped without renaming the key.
   'nav.featuredProductsTitle': {
-    en: 'NEW RELEASE: MINIMAX H3',
-    'zh-CN': '全新发布：MiniMax H3'
+    en: 'GEMINI OMNI 1.1 FLASH',
+    'zh-CN': 'Gemini Omni 1.1 Flash'
   },
   'nav.featuredProductsAlt': {
-    en: 'MiniMax H3 feature image',
-    'zh-CN': 'MiniMax H3 精选图片'
+    en: 'Gemini Omni 1.1 Flash video: cavemen meet the future',
+    'zh-CN': 'Gemini Omni 1.1 Flash 视频：穴居人遇见未来'
   },
   'nav.featuredProductsCta': {
     en: 'EXPLORE NOW',
     'zh-CN': '立即探索'
   },
   'nav.featuredProductsCtaAria': {
-    en: 'Explore the MiniMax H3 release',
-    'zh-CN': '探索 MiniMax H3 版本'
+    en: 'Explore the Gemini Omni 1.1 Flash release',
+    'zh-CN': '探索 Gemini Omni 1.1 Flash 版本'
   },
   'nav.featuredCommunityTitle': {
-    en: 'Sky Replacement',
-    'zh-CN': '天空替换'
+    en: 'Product Photography',
+    'zh-CN': '产品摄影'
   },
   'nav.featuredCommunityAlt': {
-    en: 'Sky Replacement workflow demo image',
-    'zh-CN': '天空替换工作流演示图片'
+    en: 'Product Photography workflow demo image',
+    'zh-CN': '产品摄影工作流演示图片'
   },
   'nav.featuredCommunityCtaAria': {
-    en: 'Watch the Sky Replacement demo',
-    'zh-CN': '观看天空替换演示'
+    en: 'Watch the Product Photography demo',
+    'zh-CN': '观看产品摄影演示'
   },
   'nav.featuredCompanyTitle': {
     en: 'Customer story: Black Math',
@@ -6172,9 +6215,9 @@ Enterprise`
     'zh-CN': 'Comfy 企业版包含什么？'
   },
   'contact.faq.a3': {
-    en: 'Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/cloud/enterprise), or request a demo through this form.',
+    en: 'Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/enterprise/), or request a demo through this form.',
     'zh-CN':
-      '云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/cloud/enterprise)，或通过此表单预约演示。'
+      '云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/enterprise/)，或通过此表单预约演示。'
   },
   'contact.faq.q4': {
     en: 'Is Comfy SOC 2 compliant?',
@@ -10089,6 +10132,18 @@ Enterprise`
     en: 'This input is incompatible with the other settings.',
     'zh-CN': '此输入与其他设置不兼容。'
   },
+  'workshop.form.imageAspectRatioOutOfRange': {
+    en: 'Use an image with an aspect ratio between {minimum} and {maximum}.',
+    'zh-CN': '请使用宽高比在 {minimum} 到 {maximum} 之间的图片。'
+  },
+  'workshop.form.imageLayerDecompositionUnsupported': {
+    en: 'This image is too complex to separate into layers. Choose a simpler image.',
+    'zh-CN': '此图片过于复杂，无法分离图层。请选择更简单的图片。'
+  },
+  'workshop.form.imageUnreadable': {
+    en: 'Could not read the image dimensions. Select a readable image or use an accessible image link.',
+    'zh-CN': '无法读取图片尺寸。请选择可读取的图片或使用可访问的图片链接。'
+  },
   'workshop.form.videoTooLong': {
     en: 'Use a video that is {seconds} seconds or shorter.',
     'zh-CN': '请使用时长不超过 {seconds} 秒的视频。'
@@ -10096,6 +10151,10 @@ Enterprise`
   'workshop.form.videoWidthOutOfRange': {
     en: 'Use a video between {minimum} and {maximum} pixels wide.',
     'zh-CN': '请使用宽度在 {minimum} 到 {maximum} 像素之间的视频。'
+  },
+  'workshop.form.videoHdrUnsupported': {
+    en: 'HDR video is not supported. Convert this video to SDR and try again.',
+    'zh-CN': '不支持 HDR 视频。请将此视频转换为 SDR 后重试。'
   },
   'workshop.form.videoUnreadable': {
     en: 'Could not read the video details. Select a playable video or use an accessible video link.',
@@ -10268,8 +10327,8 @@ Enterprise`
   'workshop.output.download': { en: 'Download', 'zh-CN': '下载' },
   'workshop.output.openOriginal': { en: 'Open output', 'zh-CN': '打开输出' },
   'workshop.output.downloadFallback': {
-    en: 'Automatic download failed. Open the output to save it.',
-    'zh-CN': '自动下载失败。请打开输出文件后保存。'
+    en: 'If your download did not start, open the output to save a copy.',
+    'zh-CN': '如果下载未开始，请打开输出文件并保存副本。'
   },
   'workshop.output.useInCode': {
     en: 'Use these settings in code',
@@ -10520,6 +10579,50 @@ Enterprise`
     'zh-CN': '模板作者：{author}'
   },
   'workshop.workflow.makeYours': { en: 'Make it yours', 'zh-CN': '开始创作' },
+  'workshop.workflow.sections': {
+    en: 'Workflow sections',
+    'zh-CN': '工作流栏目'
+  },
+  'workshop.workflow.inside': {
+    en: 'Inside the workflow',
+    'zh-CN': '查看工作流内部'
+  },
+  'workshop.workflow.previewHint': {
+    en: 'A read-only preview of the source template. Open it in Cloud to explore the nodes and make changes.',
+    'zh-CN': '源模板的只读预览。在 Cloud 中打开，即可查看节点并进行修改。'
+  },
+  'workshop.workflow.fullPreview': {
+    en: 'Open full-size workflow preview',
+    'zh-CN': '打开完整尺寸的工作流预览'
+  },
+  'workshop.workflow.apiHint': {
+    en: 'The request below uses the same prepared graph and settings as the Playground. Each submission can start a paid run; do not automatically retry a submission whose outcome is unknown.',
+    'zh-CN':
+      '以下请求使用与体验区相同的预设图和设置。每次提交都可能开始一次付费运行；如果提交结果未知，请勿自动重试。'
+  },
+  'workshop.workflow.apiUploads': {
+    en: 'Upload media first',
+    'zh-CN': '先上传媒体'
+  },
+  'workshop.workflow.apiUploadGrant': {
+    en: 'POST /api/inputs/upload-url with {"content_type":"image/png"} on the Cloud origin, using your workspace credential.',
+    'zh-CN':
+      '使用工作区凭证向 Cloud 的 POST /api/inputs/upload-url 发送 {"content_type":"image/png"}。'
+  },
+  'workshop.workflow.apiUploadPut': {
+    en: 'PUT the raw file bytes to the returned upload_path on the same Cloud origin. Do not send an account credential with this PUT.',
+    'zh-CN':
+      '将文件原始字节 PUT 到同一 Cloud 地址返回的 upload_path。此 PUT 不要携带账号凭证。'
+  },
+  'workshop.workflow.apiUploadFinalize': {
+    en: 'The PUT response contains name. Replace the corresponding UPLOADED_*_FILENAME value below with that name.',
+    'zh-CN': 'PUT 响应包含 name。用此名称替换下方对应的 UPLOADED_*_FILENAME。'
+  },
+  'workshop.workflow.apiPoll': {
+    en: 'POST /api/prompt returns prompt_id. Poll GET /api/jobs/{prompt_id}?short_link=ephemeral_tool_chain with your credential. Selected outputs contain temporary short_url links; read the job again to refresh them.',
+    'zh-CN':
+      'POST /api/prompt 返回 prompt_id。使用凭证轮询 GET /api/jobs/{prompt_id}?short_link=ephemeral_tool_chain。选定输出包含临时 short_url 链接；再次读取运行即可刷新链接。'
+  },
   'workshop.workflow.exampleHint': {
     en: 'An example from this template.',
     'zh-CN': '此模板的示例。'
@@ -10532,6 +10635,99 @@ Enterprise`
     en: 'Runs in your Cloud workspace. Your plan and compute credits apply.',
     'zh-CN': '在你的 Cloud 工作区中运行，使用你的套餐和计算积分。'
   },
+  'workshop.output.refreshLink': {
+    en: 'Refresh download link',
+    'zh-CN': '刷新下载链接'
+  },
+  'workshop.workflow.preparing': {
+    en: 'Preparing inputs…',
+    'zh-CN': '正在准备输入…'
+  },
+  'workshop.workflow.submitting': { en: 'Submitting…', 'zh-CN': '正在提交…' },
+  'workshop.workflow.queued': { en: 'Queued', 'zh-CN': '排队中' },
+  'workshop.workflow.cancelling': {
+    en: 'Waiting for cancellation…',
+    'zh-CN': '正在等待取消确认…'
+  },
+  'workshop.workflow.delivering': {
+    en: 'Preparing outputs…',
+    'zh-CN': '正在准备输出…'
+  },
+  'workshop.workflow.failed': {
+    en: 'This run failed. Review your inputs before running again.',
+    'zh-CN': '运行失败。请检查输入后重试。'
+  },
+  'workshop.workflow.interrupted': {
+    en: 'Connection interrupted',
+    'zh-CN': '连接中断'
+  },
+  'workshop.workflow.resume': {
+    en: 'Reconnect to this run',
+    'zh-CN': '重新连接此运行'
+  },
+  'workshop.workflow.resumeHint': {
+    en: 'Once Cloud returns a job ID, this tab can reconnect to it after a refresh. Leaving the page does not cancel the job.',
+    'zh-CN':
+      'Cloud 返回运行 ID 后，此标签页可在刷新后重新连接。离开页面不会取消运行。'
+  },
+  'workshop.workflow.inputSize': {
+    en: 'Use files up to 25 MiB each, with at most 50 MiB of inputs per run.',
+    'zh-CN': '单个文件不得超过 25 MiB，每次运行的输入总大小不得超过 50 MiB。'
+  },
+  'workshop.workflow.submissionUnknown': {
+    en: 'Cloud may have accepted this run, but its response was lost. Check your Cloud history before starting another run.',
+    'zh-CN':
+      'Cloud 可能已接受运行，但响应丢失。开始新运行前请检查 Cloud 历史记录。'
+  },
+  'workshop.workflow.checkCloud': { en: 'Check Cloud', 'zh-CN': '查看 Cloud' },
+  'workshop.workflow.dismissUnknown': {
+    en: 'Return to inputs',
+    'zh-CN': '返回输入'
+  },
+  'workshop.workflow.cancelRequested': {
+    en: 'Cancellation requested. Check Cloud for the final job status.',
+    'zh-CN': '已请求取消。请在 Cloud 中查看最终运行状态。'
+  },
+  'workshop.workflow.signInAgain': {
+    en: 'Sign in again to reconnect to this run.',
+    'zh-CN': '请重新登录以连接此运行。'
+  },
+  'workshop.workflow.accessDenied': {
+    en: 'This account no longer has access to this workspace. Check your workspace selection.',
+    'zh-CN': '此账号已无法访问该工作区。请检查所选工作区。'
+  },
+  'workshop.workflow.definitionChanged': {
+    en: 'This workflow has changed. Reload the page before starting a new run.',
+    'zh-CN': '工作流已更新。开始新运行前请重新加载页面。'
+  },
+  'workshop.workflow.runMissing': {
+    en: 'This run is not available in the current account and workspace.',
+    'zh-CN': '当前账号和工作区无法访问此运行。'
+  },
+  'workshop.workflow.paused': {
+    en: 'New workflow runs are temporarily paused. Existing runs can still be followed or cancelled.',
+    'zh-CN': '新工作流运行已暂时停用。你仍可查看或取消已有运行。'
+  },
+  'workshop.workflow.mediaUnavailable': {
+    en: 'An input upload is incomplete or no longer available. Check your files and try again.',
+    'zh-CN': '输入文件尚未上传完成或已不可用。请检查文件后重试。'
+  },
+  'workshop.workflow.deliveryFailed': {
+    en: 'The run finished, but some outputs could not be delivered. Retry delivery to retrieve them from this run.',
+    'zh-CN': '运行已完成，但部分输出未能送达。重试获取此运行的输出即可。'
+  },
+  'workshop.workflow.retryDelivery': {
+    en: 'Retry output delivery',
+    'zh-CN': '重试获取输出'
+  },
+  'workshop.workflow.storageFailed': {
+    en: 'Your browser could not save this run for recovery. Allow site storage, then try again.',
+    'zh-CN': '浏览器无法保存运行恢复信息。请允许此网站使用存储，然后重试。'
+  },
+  'workshop.workflow.connectionLost': {
+    en: 'The run could not be checked. Reconnect to recover its current status.',
+    'zh-CN': '无法查看运行状态。请重新连接以获取最新状态。'
+  },
   'workshop.workflow.browserUnavailable': {
     en: 'Running workflows from this page is not available yet.',
     'zh-CN': '暂不支持从此页面运行工作流。'
@@ -10543,10 +10739,6 @@ Enterprise`
   'workshop.workflow.explore': {
     en: 'Explore the possibilities',
     'zh-CN': '探索更多可能'
-  },
-  'workshop.workflow.templateExample': {
-    en: 'Template example {n}',
-    'zh-CN': '模板示例 {n}'
   },
   'workshop.workflow.by': { en: 'by {author}', 'zh-CN': '作者 {author}' },
   'workshop.workflow.nodeGraph': { en: 'Node Graph', 'zh-CN': '节点图' },

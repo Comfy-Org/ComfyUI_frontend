@@ -110,7 +110,9 @@ import type { DraftSnapshot } from './services/agent/agentRestClient'
 import type { AgentPaywallAction } from './services/agent/agentPaywallPresentation'
 import {
   DEFAULT_AGENT_PAYWALL_PRESENTATION,
-  resolveAgentPaywallPresentation
+  resolveAgentPaywallPresentation,
+  toAgentPaywallCta,
+  toAgentPaywallReason
 } from './services/agent/agentPaywallPresentation'
 import { createAgentEventSource } from './services/agent/agentEventSource'
 import { createStandaloneAgentEventSource } from './services/agent/standaloneAgentEventSource'
@@ -143,12 +145,19 @@ const { workspaceRole } = useWorkspaceUI()
 const { subscription, tier: subscriptionTier } = useBillingContext()
 const conversationStore = useAgentConversationStore()
 watch(
-  () => subscription.value?.hasFunds,
-  (hasFunds) => conversationStore.setPaywallsResolved(hasFunds === true),
+  subscription,
+  (currentSubscription) => {
+    if (currentSubscription?.hasFunds) conversationStore.resolvePaywalls()
+  },
   { immediate: true }
 )
-const { canTopUp, canSubscribeSelfServe, hasResolvedCapabilities } =
-  useBillingCapabilities()
+const {
+  canTopUp,
+  canSubscribeSelfServe,
+  hasResolvedCapabilities,
+  isReady: capabilityReadSettled,
+  snapshotAuthoritative
+} = useBillingCapabilities()
 const paywallPresentation = computed(() => {
   if (isCloud && !hasResolvedCapabilities.value && !canTopUp.value) {
     return DEFAULT_AGENT_PAYWALL_PRESENTATION
@@ -177,8 +186,53 @@ const events =
     : createAgentEventSource(api)
 
 function onPaywallAction(action: AgentPaywallAction): void {
-  openAccountPrecondition(action === 'addCredits' ? 'credits' : 'subscription')
+  useTelemetry()?.trackAgentPaywallCtaClicked({
+    cta: toAgentPaywallCta(action)
+  })
+  if (action === 'addCredits') {
+    if (canTopUp.value) {
+      useTelemetry()?.trackAddApiCreditButtonClicked({
+        source: 'agent_paywall'
+      })
+    }
+    openAccountPrecondition('credits', { source: 'agent_paywall' })
+    return
+  }
+  openAccountPrecondition('subscription', { source: 'agent_paywall' })
 }
+
+const { messages: conversationMessages } = storeToRefs(conversationStore)
+watch(
+  () =>
+    // Gated on the read having *settled*, which includes settling as
+    // unavailable. `snapshotAuthoritative` is narrower — it excludes that
+    // outage state — and gating on it stranded those sessions: the paywall
+    // still renders, an owner still gets the fallback Add credits CTA, and its
+    // click is still reported, so the funnel saw CTAs with no impression.
+    capabilityReadSettled.value
+      ? conversationMessages.value
+          .filter((message) =>
+            message.parts.some((part) => part.type === 'paywall')
+          )
+          .map((message) => message.id)
+      : [],
+  (paywallMessageIds) => {
+    const telemetry = useTelemetry()
+    if (!telemetry) return
+    for (const id of paywallMessageIds) {
+      if (!conversationStore.claimPaywallImpression(id)) continue
+      telemetry.trackAgentPaywallShown({
+        // An unavailable read leaves `canTopUp` guessing true for an owner, so
+        // the presentation would name a confident reason drawn from a fallback
+        // rather than from capabilities. Report the impression as `unknown`.
+        reason: snapshotAuthoritative.value
+          ? toAgentPaywallReason(paywallPresentation.value)
+          : 'unknown'
+      })
+    }
+  },
+  { immediate: true }
+)
 
 const workflowStore = useWorkflowStore()
 const workflowService = useWorkflowService()
@@ -208,6 +262,7 @@ const {
   isSelecting: workflowSelecting,
   selectingTarget,
   savingReference,
+  onVisibleWorkflowChanged,
   selectTarget: onSelectWorkflowTarget,
   selectReference: onSelectWorkflowReference,
   restoreTarget: onWorkflowRestored,
@@ -448,6 +503,7 @@ const {
     get: () => composerStore.nodes,
     set: composerStore.setNodes
   }),
+  onNodesAdded: agentPanelStore.retainWorkflowTarget,
   retainWhenNotLive: true,
   selection: selectedNodes,
   enabled: () => agentEnabled.value && selectedTarget.value !== null,
@@ -667,6 +723,7 @@ const {
     useTelemetry()?.trackAgentThreadStarted({ source }),
   onAskResolved: forgetApproval,
   workflow: {
+    initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
     restored: onWorkflowRestored,
@@ -908,6 +965,16 @@ async function onNavigateToReferenceWorkflow(
   }
 }
 
+async function onShowTarget(): Promise<void> {
+  const target = selectedTarget.value
+  if (target === null) return
+  try {
+    if (!(await workflowService.openWorkflow(target))) warnWorkflowUnavailable()
+  } catch {
+    warnWorkflowUnavailable()
+  }
+}
+
 function agentTabFilename(name: string | undefined): string | undefined {
   const cleaned = [
     ...(name ?? '')
@@ -1038,7 +1105,6 @@ async function onAnswerAsk(
     trackApprovalResolved(askId, selection, decidedAt, shownAt)
 }
 
-start()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   ++activeTabGeneration
@@ -1110,7 +1176,7 @@ void refreshHistory()
 async function onSelectHistory(id: string): Promise<void> {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
-  agentPanelStore.resetWorkflowTarget()
+  agentPanelStore.beginWorkflowRestoration()
   exitNodeSelectionMode()
   if (await loadThread(id))
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
@@ -1165,6 +1231,7 @@ const coachSteps = computed<CoachStep[]>(() => [
 
 const { submit: onSend } = useAgentDraftSubmission({
   canSubmit: () => !workflowSelecting.value && !isSending.value,
+  onSubmit: agentPanelStore.retainWorkflowTarget,
   target: () => selectedTarget.value,
   editableWorkflowId: () => editableWorkflowId.value,
   selection: {
@@ -1231,11 +1298,9 @@ function onNewChat(source?: 'new_chat_button' | 'history_delete'): void {
   exitNodeSelectionMode()
   composerStore.setWorkflowReferences([])
   composerStore.resetPromptHistory()
-  // A new chat targets whatever tab is on screen right now, not the previous
-  // chat's target - unlike onSelectHistory(), which resets to 'uninitialized'
-  // so restoreTarget() can re-apply the loaded thread's own binding.
-  agentPanelStore.setWorkflowTarget(workflowStore.activeWorkflow)
   newChat(source)
+  if (selectionTags.value.length) agentPanelStore.retainWorkflowTarget()
+  else agentPanelStore.startFollowingVisibleWorkflow()
 }
 
 const panelRef = ref<InstanceType<typeof AgentPanel>>()
@@ -1276,8 +1341,6 @@ watch(
   }
 )
 
-watch(() => workflowStore.activeWorkflow, exitNodeSelectionMode)
-
 watch(
   selectedTarget,
   (target, previous) => {
@@ -1289,6 +1352,19 @@ watch(
   },
   { flush: 'sync' }
 )
+
+watch(
+  () => workflowStore.activeWorkflow,
+  () => {
+    exitNodeSelectionMode()
+    onVisibleWorkflowChanged()
+  },
+  { flush: 'sync' }
+)
+
+// Target startup is an explicit session event, not a read of a thread ID that
+// happens to have been assigned by start(). Register scope cleanup first.
+start()
 
 watch(
   () => canvasStore.currentGraph,
@@ -1533,6 +1609,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       :active-tab="selectedTargetTab"
       :workflow-tabs="workflowTabs"
       :visible-tab-path="workflowStore.activeWorkflow?.path ?? null"
+      :follows-visible-workflow="agentPanelStore.followsVisibleWorkflow"
       :selecting-tab-path="selectingTarget?.path ?? null"
       :select-tab="onSelectWorkflowTarget"
       :workflow-detached="workflowDetached"
@@ -1552,6 +1629,7 @@ async function onPanelDrop(event: DragEvent): Promise<void> {
       @approval-shown="onApprovalShown"
       @open-workflow="onOpenApprovalWorkflow"
       @open-reference-workflow="onNavigateToReferenceWorkflow"
+      @show-target="onShowTarget"
       @paywall-action="onPaywallAction"
       @new-chat="onNewChat('new_chat_button')"
       @toggle-size="agentPanelStore.toggleMaximize()"

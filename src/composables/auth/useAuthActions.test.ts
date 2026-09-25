@@ -34,7 +34,7 @@ const mockToastErrorHandler = vi.hoisted(() => vi.fn())
 
 const mockStartPendingTopup = vi.hoisted(() => vi.fn())
 const mockDistributionState = vi.hoisted(() => ({ isCloud: false }))
-const mockClearAllWorkflowStorage = vi.hoisted(() => vi.fn())
+const mockClearAllWorkspaceStorage = vi.hoisted(() => vi.fn())
 const mockPrepareWorkflowLogoutTransition = vi.hoisted(() => vi.fn())
 
 const authErrorMessages: Record<string, string> = enLocale.auth.errors
@@ -70,7 +70,7 @@ vi.mock<unknown>(import('@/composables/billing/usePendingTopup'), () => ({
 }))
 
 vi.mock(import('@/platform/workflow/persistence/base/storageIO'), () => ({
-  clearAllWorkflowStorage: mockClearAllWorkflowStorage,
+  clearAllWorkspaceStorage: mockClearAllWorkspaceStorage,
   prepareWorkflowLogoutTransition: mockPrepareWorkflowLogoutTransition
 }))
 
@@ -192,7 +192,7 @@ describe('useAuthActions.logout', () => {
     expect(useDialogService().confirm).not.toHaveBeenCalled()
     expect(useWorkflowService().saveWorkflow).not.toHaveBeenCalled()
     expect(mockAuthStore.logout).toHaveBeenCalledTimes(1)
-    expect(mockClearAllWorkflowStorage).not.toHaveBeenCalled()
+    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
   })
 
   it('logs out without prompting when no workflows are modified', async () => {
@@ -214,7 +214,7 @@ describe('useAuthActions.logout', () => {
     await logout()
 
     expect(mockPrepareWorkflowLogoutTransition).toHaveBeenCalledOnce()
-    expect(mockClearAllWorkflowStorage).toHaveBeenCalledExactlyOnceWith()
+    expect(mockClearAllWorkspaceStorage).toHaveBeenCalledExactlyOnceWith()
     expect(
       vi.mocked(mockAuthStore.logout).mock.invocationCallOrder[0]
     ).toBeLessThan(
@@ -222,9 +222,9 @@ describe('useAuthActions.logout', () => {
     )
     expect(
       mockPrepareWorkflowLogoutTransition.mock.invocationCallOrder[0]
-    ).toBeLessThan(mockClearAllWorkflowStorage.mock.invocationCallOrder[0])
+    ).toBeLessThan(mockClearAllWorkspaceStorage.mock.invocationCallOrder[0])
     expect(
-      mockClearAllWorkflowStorage.mock.invocationCallOrder[0]
+      mockClearAllWorkspaceStorage.mock.invocationCallOrder[0]
     ).toBeLessThan(navigationSpy.mock.invocationCallOrder[0])
   })
 
@@ -237,7 +237,7 @@ describe('useAuthActions.logout', () => {
     await logout()
 
     expect(mockPrepareWorkflowLogoutTransition).not.toHaveBeenCalled()
-    expect(mockClearAllWorkflowStorage).not.toHaveBeenCalled()
+    expect(mockClearAllWorkspaceStorage).not.toHaveBeenCalled()
   })
 
   it('cancels sign-out when the dialog is dismissed (null)', async () => {
