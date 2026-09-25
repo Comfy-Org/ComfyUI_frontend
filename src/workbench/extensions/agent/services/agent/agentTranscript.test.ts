@@ -297,14 +297,14 @@ describe('normalizeAgentTranscript', () => {
     /**
      * Reachable through the API rather than through this client: the writer
      * stores `attachments` verbatim and has never filtered it, so a blank name
-     * posted by any client persists. `contentAttachments` then drops it — a
-     * blank names no file — where this keeps it as an attachment, giving the
-     * turn a tile with an empty caption and no resolvable preview. The row is
-     * shown without a sibling `attachment_refs`, the pre-`attachment_refs`
-     * legacy shape; a current writer would emit one naming `real.png`, which
-     * this parser ignores anyway whenever `attachments` is an array.
+     * posted by any client persists. `contentAttachments` drops it — a blank
+     * names no file — and so must this, or the turn gains a tile with an empty
+     * caption and no resolvable preview. The row is shown without a sibling
+     * `attachment_refs`, the pre-`attachment_refs` legacy shape; a current
+     * writer would emit one naming `real.png`, which supplies no resolution
+     * here beyond the name `attachments` already carries.
      */
-    it.fails('drops a blank name persisted under attachments', () => {
+    it('drops a blank name persisted under attachments', () => {
       const message = row(1, 'user', 'turn-a', '', 'row-1')
       message.content = { attachments: ['', 'real.png'] }
 
