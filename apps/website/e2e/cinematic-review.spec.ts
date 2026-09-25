@@ -2,6 +2,193 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/modelsAccount'
 
+for (const layout of ['e', 'd']) {
+  test(`keeps palette and lighting presets independent in layout ${layout}`, async ({
+    page
+  }) => {
+    await page.addInitScript(() => {
+      localStorage.setItem(
+        'cinematic-creative-presets-v1:demo',
+        JSON.stringify([
+          {
+            name: 'Legacy combined',
+            settings: {
+              genre: 'horror',
+              era: '1980s',
+              tempo: 'auto',
+              movements: [],
+              palette: ['#112233'],
+              paletteMain: 0,
+              lights: [
+                {
+                  position: 'back',
+                  color: '#abcdef',
+                  brightness: 25,
+                  diffusion: 35
+                }
+              ]
+            }
+          }
+        ])
+      )
+    })
+    await page.goto(`/cinematic-studio?demo=success&ux=${layout}`)
+    const open = page.getByRole('button', {
+      name: 'Creative controls',
+      exact: true
+    })
+    await open.click()
+    const editor = page.getByRole('dialog', { name: 'Creative direction' })
+    const palette = editor.getByRole('region', {
+      name: 'Custom palette',
+      exact: true
+    })
+    const lighting = editor.getByRole('region', {
+      name: 'Custom lighting',
+      exact: true
+    })
+    const color = palette.getByRole('textbox', {
+      name: 'Color 1 HEX',
+      exact: true
+    })
+    const main = palette.getByRole('combobox', {
+      name: 'Main color',
+      exact: true
+    })
+    const position = lighting.getByRole('combobox', {
+      name: 'Position 1',
+      exact: true
+    })
+    const genre = editor.getByRole('combobox', { name: 'Genre', exact: true })
+    const palettePresets = palette.getByRole('region', {
+      name: 'Saved palettes',
+      exact: true
+    })
+    const lightingPresets = lighting.getByRole('region', {
+      name: 'Saved lighting setups',
+      exact: true
+    })
+    const loadPalette = palettePresets.getByRole('button', {
+      name: 'Load palette: Shared name',
+      exact: true
+    })
+    const loadLighting = lightingPresets.getByRole('button', {
+      name: 'Load lighting: Shared name',
+      exact: true
+    })
+    await genre.selectOption('noir')
+    await palette
+      .getByRole('button', { name: 'Add color', exact: true })
+      .click()
+    await color.fill('#ff8800')
+    await main.selectOption('0')
+    await lighting
+      .getByRole('button', { name: 'Add light', exact: true })
+      .click()
+    await position.selectOption('left')
+    const lightColor = lighting.getByLabel('Color 1', { exact: true })
+    const brightness = lighting.getByRole('slider', { name: /^Brightness/ })
+    const diffusion = lighting.getByRole('slider', { name: /^Diffusion/ })
+    await lightColor.fill('#aabbcc')
+    await brightness.press('Home')
+    await diffusion.press('End')
+    await palettePresets
+      .getByRole('textbox', { name: 'Palette preset name', exact: true })
+      .fill('Shared name')
+    await palettePresets
+      .getByRole('button', { name: 'Save palette', exact: true })
+      .click()
+    await lightingPresets
+      .getByRole('textbox', { name: 'Lighting preset name', exact: true })
+      .fill('Shared name')
+    await lightingPresets
+      .getByRole('button', { name: 'Save lighting', exact: true })
+      .click()
+    await expect(loadPalette).toBeVisible()
+    await expect(loadLighting).toBeVisible()
+
+    await color.fill('#00aa55')
+    await main.selectOption({ label: 'No main color' })
+    await position.selectOption('right')
+    await lightColor.fill('#ffffff')
+    await brightness.press('End')
+    await diffusion.press('Home')
+    await genre.selectOption('drama')
+    await loadPalette.click()
+    await expect(color).toHaveValue('#ff8800')
+    await expect(main).toHaveValue('0')
+    await expect(position).toHaveValue('right')
+    await expect(lightColor).toHaveValue('#ffffff')
+    await expect(brightness).toHaveValue('100')
+    await expect(diffusion).toHaveValue('0')
+    await expect(genre).toHaveValue('drama')
+    await color.fill('#00aa55')
+    await loadLighting.click()
+    await expect(position).toHaveValue('left')
+    await expect(lightColor).toHaveValue('#aabbcc')
+    await expect(brightness).toHaveValue('0')
+    await expect(diffusion).toHaveValue('100')
+    await expect(color).toHaveValue('#00aa55')
+    await expect(genre).toHaveValue('drama')
+    await editor.getByRole('button', { name: 'Apply', exact: true }).click()
+
+    await open.click()
+    await loadPalette.click()
+    await position.selectOption('top')
+    await editor
+      .getByRole('button', { name: 'Cancel', exact: true })
+      .last()
+      .click()
+    await open.click()
+    await expect(color).toHaveValue('#00aa55')
+    await expect(position).toHaveValue('left')
+    await expect(genre).toHaveValue('drama')
+    await editor
+      .getByRole('button', { name: 'Cancel', exact: true })
+      .last()
+      .click()
+
+    await page.reload()
+    await open.click()
+    await expect(loadPalette).toBeVisible()
+    await expect(loadLighting).toBeVisible()
+    await expect(color).toHaveValue('#00aa55')
+    await position.selectOption('top')
+    await loadPalette.click()
+    await expect(color).toHaveValue('#ff8800')
+    await expect(main).toHaveValue('0')
+    await expect(position).toHaveValue('top')
+    await loadLighting.click()
+    await expect(position).toHaveValue('left')
+    await expect(color).toHaveValue('#ff8800')
+    await expect(genre).toHaveValue('drama')
+
+    await editor.getByText('Combined creative presets', { exact: true }).click()
+    await expect(
+      editor.getByText('Legacy combined', { exact: true })
+    ).toBeVisible()
+    await editor
+      .getByRole('button', { name: 'Load into draft', exact: true })
+      .click()
+    await expect(color).toHaveValue('#112233')
+    await expect(main).toHaveValue('0')
+    await expect(position).toHaveValue('back')
+    await expect(genre).toHaveValue('horror')
+    await expect(
+      editor.getByRole('combobox', { name: 'Era', exact: true })
+    ).toHaveValue('1980s')
+    await expect(lighting.getByLabel('Color 1', { exact: true })).toHaveValue(
+      '#abcdef'
+    )
+    await expect(
+      lighting.getByRole('slider', { name: /^Brightness/ })
+    ).toHaveValue('25')
+    await expect(
+      lighting.getByRole('slider', { name: /^Diffusion/ })
+    ).toHaveValue('35')
+  })
+}
+
 test('separates authored clip capabilities from unmeasured generation time', async ({
   page
 }) => {

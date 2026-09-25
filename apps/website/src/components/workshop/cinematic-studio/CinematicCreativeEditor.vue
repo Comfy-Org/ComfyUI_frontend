@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import CinematicPresetSection from './CinematicPresetSection.vue'
 import CinematicLightingDiagram from './CinematicLightingDiagram.vue'
 import type { Locale } from '../../../i18n/translations'
 import { tcCreative } from '../../../lib/workshop/cinematic-studio/creative-copy'
@@ -387,7 +388,7 @@ async function sampleImage(event: Event) {
           </div>
           <p v-if="!moves.length" class="text-sm">{{ t('empty') }}</p>
         </section>
-        <section class="flex flex-col gap-3">
+        <section :aria-label="t('palette')" class="flex flex-col gap-3">
           <h3 class="font-semibold">
             {{ t('palette') }} · {{ draft.palette.length }}/8
           </h3>
@@ -485,8 +486,14 @@ async function sampleImage(event: Event) {
               :disabled="sampling"
               @change="sampleImage"
           /></label>
+          <CinematicPresetSection
+            v-model="draft"
+            kind="palette"
+            :namespace
+            :locale
+          />
         </section>
-        <section class="flex flex-col gap-3">
+        <section :aria-label="t('lights')" class="flex flex-col gap-3">
           <h3 class="font-semibold">
             {{ t('lights') }} · {{ draft.lights.length }}/3
           </h3>
@@ -545,9 +552,20 @@ async function sampleImage(event: Event) {
           >
             {{ t('addLight') }}
           </button>
+          <CinematicPresetSection
+            v-model="draft"
+            kind="lighting"
+            :namespace
+            :locale
+          />
         </section>
-        <section class="flex flex-col gap-3">
-          <h3 class="font-semibold">{{ t('presets') }}</h3>
+        <details class="rounded-xl border border-transparency-white-t20 p-3">
+          <summary class="cursor-pointer text-sm font-semibold">
+            {{ t('combinedPresets') }}
+          </summary>
+          <p class="my-3 text-xs text-primary-comfy-canvas">
+            {{ t('combinedNote') }}
+          </p>
           <div class="flex flex-wrap gap-2">
             <input
               v-model="name"
@@ -579,7 +597,7 @@ async function sampleImage(event: Event) {
               {{ t('load') }}
             </button>
           </div>
-        </section>
+        </details>
         <details>
           <summary class="cursor-pointer text-sm">{{ t('preview') }}</summary>
           <p class="mt-2 text-sm whitespace-pre-wrap text-primary-comfy-canvas">

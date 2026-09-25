@@ -31,13 +31,17 @@ and Below. Markers sharing a position remain separately visible. Accessible
 descriptions include position, color, brightness and diffusion. This visualizes
 prompt guidance, not a physical lighting simulation; Apply/Cancel are unchanged.
 
+Preset follow-up: palettes and lighting now have independent browser/workspace
+scoped stores. Palette loads only colors/main priority; lighting loads only
+light positions/colors/brightness/diffusion. Loads update the draft until Apply.
+Existing combined presets remain under an explicit expandable section and keep
+their original storage key and full-settings behavior. Each separate store keeps
+up to 16 named entries, with same-name replacement within that preset type only.
+
 ## Remaining differences
 
 These are explicit follow-ups, not claims that the migration is a complete replica.
 
-- Presets: the original saves palettes and lighting rigs separately. Current
-  creative presets capture the combined draft; loading one changes those saved
-  creative settings together.
 - Comparison: original `src/review.js` persists its selected pair across reload,
   highlights changed settings in an A/B table, and offers original-size opening
   and download inline. Current selection is in-memory and settings appear per

@@ -17,7 +17,9 @@ API-key backend, copied private output library, or additional dependency.
   unsupported reference combinations are blocked before submission.
 - Genre/era/tempo, ordered movements, custom palettes and lighting presets.
   Custom lighting includes a reactive subject/camera position diagram, separate
-  height view, numbered color markers and accessible descriptions.
+  height view, numbered color markers and accessible descriptions. Separate
+  palette and lighting presets load only their own settings into the draft;
+  legacy combined presets remain available with explicit full-settings behavior.
 - Account/workspace-scoped local creations, favorites, rename, comparison,
   source lineage, downloads, validated recipe import/export and settings reuse.
 - Named character/location/prop assets, pixel crop and ordered reference roles.
@@ -38,10 +40,10 @@ API-key backend, copied private output library, or additional dependency.
 
 ## Validation
 
-- Latest run: 328 focused Studio tests passed across 34 component, library and
+- Latest run: 331 focused Studio tests passed across 36 component, library and
   composable files. Earlier route validation also passed two LTX Fast tests and
   731 shared contract tests; these were not rerun for the capability UI change.
-- 23 production browser tests passed across both Studio layouts, including
+- 25 production browser tests passed across both Studio layouts, including
   crop pixels, assets, edit review, prompt suggestions, plans, recipe import,
   motion comparison and transition reference restoration after reload.
 - Website build, website typecheck, knip and Astro formatting passed.

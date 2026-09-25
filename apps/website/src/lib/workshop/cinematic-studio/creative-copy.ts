@@ -1,6 +1,31 @@
 import type { Locale } from '../../../i18n/translations'
 
 const COPY = {
+  palettePresets: ['Saved palettes', '已保存调色板'],
+  lightingPresets: ['Saved lighting setups', '已保存灯光设置'],
+  palettePresetName: ['Palette preset name', '调色板预设名称'],
+  lightingPresetName: ['Lighting preset name', '灯光预设名称'],
+  savePalette: ['Save palette', '保存调色板'],
+  saveLighting: ['Save lighting', '保存灯光'],
+  loadPalette: ['Load palette', '加载调色板'],
+  loadLighting: ['Load lighting', '加载灯光'],
+  palettePresetNote: [
+    'Saves colors and main-color priority in this browser. Loading changes only the palette. A matching name replaces that palette preset.',
+    '在此浏览器中保存颜色及主色优先级。加载仅更改调色板。同名预设将被替换。'
+  ],
+  lightingPresetNote: [
+    'Saves light positions, colors, brightness and diffusion in this browser. Loading changes only lighting. A matching name replaces that lighting preset.',
+    '在此浏览器中保存灯光位置、颜色、亮度和柔光程度。加载仅更改灯光。同名预设将被替换。'
+  ],
+  presetLoaded: [
+    'Loaded into draft. Apply to use it in the scene.',
+    '已加载到草稿。应用后用于场景。'
+  ],
+  combinedPresets: ['Combined creative presets', '组合创作预设'],
+  combinedNote: [
+    'Your existing presets are kept here. Loading one replaces all creative settings in the draft, including palette and lighting.',
+    '现有预设保留于此。加载会替换草稿中的全部创作设置，包括调色板和灯光。'
+  ],
   lightLayout: ['Lighting positions', '灯光位置'],
   planView: ['Around the subject', '主体周围'],
   elevationView: ['Height', '高度'],
