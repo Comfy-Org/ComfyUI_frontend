@@ -82,6 +82,7 @@ import {
   resolvePointerTarget,
   resolveSelectableTarget
 } from './canvas/resolvePointerTarget'
+import { watchGestureInterrupts } from './canvas/watchGestureInterrupts'
 import { isOverNodeInput, isOverNodeOutput } from './canvas/measureSlots'
 import { strokeShape } from './draw'
 import { defineDeprecatedProperty } from './utils/feedback'
@@ -911,6 +912,7 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     scale: number
     readOnly: boolean
   } | null = null
+  private _stopWatchingDragZoomInterrupts?: () => void
 
   /** If true, enable live selection during drag. Nodes are selected/deselected in real-time. */
   liveSelection: boolean = false
@@ -2166,30 +2168,31 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
       return
     }
 
-    this._finishDragZoom()
-    this.pointer.reset()
-
     const { document } = this.getCanvasWindow()
     const { canvas } = this
+    this._finishDragZoom()
+    try {
+      this.pointer.reset()
+    } finally {
+      // Assertions: removing nullish is fine.
+      canvas.removeEventListener('pointercancel', this._mousecancel_callback!)
+      canvas.removeEventListener('pointerout', this._mouseout_callback!)
+      canvas.removeEventListener('pointermove', this._mousemove_callback!)
+      canvas.removeEventListener('pointerup', this._mouseup_callback!)
+      canvas.removeEventListener('pointerdown', this._mousedown_callback!)
+      canvas.removeEventListener('wheel', this._mousewheel_callback!)
+      canvas.removeEventListener('keydown', this._key_callback!)
+      document.removeEventListener('keyup', this._key_callback!)
+      canvas.removeEventListener('contextmenu', this._doNothing)
+      canvas.removeEventListener('auxclick', this._preventMiddleAuxClick)
+      canvas.removeEventListener('dragenter', this._doReturnTrue)
 
-    // Assertions: removing nullish is fine.
-    canvas.removeEventListener('pointercancel', this._mousecancel_callback!)
-    canvas.removeEventListener('pointerout', this._mouseout_callback!)
-    canvas.removeEventListener('pointermove', this._mousemove_callback!)
-    canvas.removeEventListener('pointerup', this._mouseup_callback!)
-    canvas.removeEventListener('pointerdown', this._mousedown_callback!)
-    canvas.removeEventListener('wheel', this._mousewheel_callback!)
-    canvas.removeEventListener('keydown', this._key_callback!)
-    document.removeEventListener('keyup', this._key_callback!)
-    canvas.removeEventListener('contextmenu', this._doNothing)
-    canvas.removeEventListener('auxclick', this._preventMiddleAuxClick)
-    canvas.removeEventListener('dragenter', this._doReturnTrue)
+      this._mousedown_callback = undefined
+      this._mousewheel_callback = undefined
+      this._key_callback = undefined
 
-    this._mousedown_callback = undefined
-    this._mousewheel_callback = undefined
-    this._key_callback = undefined
-
-    this._events_binded = false
+      this._events_binded = false
+    }
   }
 
   /**
@@ -2374,6 +2377,13 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
         readOnly: this.read_only
       }
       this.read_only = true
+      const pointerId =
+        'pointerId' in e && typeof e.pointerId === 'number' ? e.pointerId : -1
+      this._stopWatchingDragZoomInterrupts = watchGestureInterrupts(
+        this.canvas,
+        pointerId,
+        () => this._finishDragZoom()
+      )
       return
     }
 
@@ -3267,6 +3277,8 @@ export class LGraphCanvas implements CustomEventDispatcher<LGraphCanvasEventMap>
     const start = this._dragZoomStart
     if (!start) return
     this._dragZoomStart = null
+    this._stopWatchingDragZoomInterrupts?.()
+    this._stopWatchingDragZoomInterrupts = undefined
     this.read_only = start.readOnly
   }
 

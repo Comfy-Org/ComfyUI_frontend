@@ -883,6 +883,29 @@ describe('LGraphCanvas interrupted gestures', () => {
     expect(canvas.pointer.isDown).toBe(false)
   })
 
+  it('unbinding removes events when drag finalization throws', () => {
+    const removeEventListener = vi.spyOn(canvas.canvas, 'removeEventListener')
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    canvas.bindEvents()
+    warn.mockClear()
+    canvas.onNodeMoved = () => {
+      throw new Error('finalization failed')
+    }
+    gesture.press(A_BODY)
+    gesture.move(shifted(A_BODY, FAR))
+
+    expect(() => canvas.unbindEvents()).toThrow('finalization failed')
+
+    expect(removeEventListener).toHaveBeenCalledWith(
+      'pointerdown',
+      expect.any(Function)
+    )
+    canvas.bindEvents()
+    expect(warn).not.toHaveBeenCalled()
+    canvas.onNodeMoved = undefined
+    canvas.unbindEvents()
+  })
+
   it('unbinding events finishes an active drag zoom', () => {
     canvas.bindEvents()
     canvas.dragZoomEnabled = true
@@ -890,6 +913,16 @@ describe('LGraphCanvas interrupted gestures', () => {
     expect(canvas.read_only).toBe(true)
 
     canvas.unbindEvents()
+
+    expect(canvas.read_only).toBe(false)
+  })
+
+  it('window blur finishes an active drag zoom', () => {
+    canvas.dragZoomEnabled = true
+    gesture.press(A_BODY, { ctrlKey: true, shiftKey: true })
+    expect(canvas.read_only).toBe(true)
+
+    canvas.canvas.ownerDocument.defaultView?.dispatchEvent(new Event('blur'))
 
     expect(canvas.read_only).toBe(false)
   })

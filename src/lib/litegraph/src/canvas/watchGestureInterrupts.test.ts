@@ -30,4 +30,16 @@ describe('watchGestureInterrupts', () => {
 
     expect(onInterrupt).not.toHaveBeenCalled()
   })
+
+  it('accepts lost capture events created in another realm', () => {
+    const element = document.createElement('div')
+    const onInterrupt = vi.fn()
+    watchGestureInterrupts(element, 1, onInterrupt)
+    const event = new Event('lostpointercapture')
+    Object.defineProperty(event, 'pointerId', { value: 1 })
+
+    element.dispatchEvent(event)
+
+    expect(onInterrupt).toHaveBeenCalledOnce()
+  })
 })
