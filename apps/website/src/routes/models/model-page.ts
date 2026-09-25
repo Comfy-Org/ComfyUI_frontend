@@ -1,3 +1,4 @@
+import type { WorkshopModel } from '../../config/models-catalogue'
 import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
 import { getWorkshopModel } from '../../config/workshop-browse-content'
 import {
@@ -16,6 +17,12 @@ function splitShownTags<T>(tags: readonly T[]) {
   const shownTags = tags.slice(0, TAGS_SHOWN)
   const restTags = tags.slice(TAGS_SHOWN)
   return { shownTags, restTags, restTagCount: restTags.length }
+}
+
+export function modelOgImage(
+  model: Pick<WorkshopModel, 'thumbnail'>
+): string | undefined {
+  return model.thumbnail?.kind === 'image' ? model.thumbnail.url : undefined
 }
 
 export async function prepareModelPage(
