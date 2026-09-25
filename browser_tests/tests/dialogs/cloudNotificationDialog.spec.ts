@@ -25,7 +25,7 @@ test.describe('Cloud notification dialog', { tag: '@ui' }, () => {
     await dialog.toCloud.click()
     const popup = await popupPromise
 
-    expect(new URL(popup.url()).hostname).toContain('comfy.org')
+    expect(new URL(popup.url()).hostname).toBe('comfy.org')
     await popup.close()
     await expect(dialog.root).toBeHidden()
   })

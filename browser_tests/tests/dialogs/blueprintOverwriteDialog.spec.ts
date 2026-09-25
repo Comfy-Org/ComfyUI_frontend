@@ -10,7 +10,6 @@ test.describe(
       comfyPage
     }) => {
       const blueprintName = `test-blueprint-overwrite-${Date.now()}`
-      await comfyPage.settings.setSetting('Comfy.UseNewMenu', 'Top')
       await comfyPage.settings.setSetting(
         'Comfy.Workflow.WarnBlueprintOverwrite',
         true

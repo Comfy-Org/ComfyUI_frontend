@@ -63,8 +63,6 @@ test.describe('Topbar menu commands', { tag: '@ui' }, () => {
 })
 
 test.describe('Topbar Help menu', { tag: '@ui' }, () => {
-  test.use({ initialSettings: { 'Comfy.UseNewMenu': 'Top' } })
-
   test('Help > Support opens the external zendesk link with the OSS tag', async ({
     comfyPage
   }) => {
