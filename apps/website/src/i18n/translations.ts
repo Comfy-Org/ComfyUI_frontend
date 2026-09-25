@@ -9851,8 +9851,12 @@ Enterprise`
     'zh-CN': '可在浏览器或 API 中运行。'
   },
   'workshop.model.meta.price': {
-    en: 'From {amount} per {unit}.',
-    'zh-CN': '{amount}/{unit} 起。'
+    en: 'Typical cost: {amount} per {unit}.',
+    'zh-CN': '默认设置下约 {amount}/{unit}。'
+  },
+  'workshop.model.meta.priceNoUnit': {
+    en: 'Typical cost: {amount}.',
+    'zh-CN': '默认设置下约 {amount}。'
   },
   'workshop.model.tabs.playground': { en: 'Playground', 'zh-CN': 'Playground' },
   'workshop.model.tabs.api': { en: 'API', 'zh-CN': 'API' },

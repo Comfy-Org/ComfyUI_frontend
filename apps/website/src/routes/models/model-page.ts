@@ -15,11 +15,11 @@ import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 const TAGS_SHOWN = 3
 const META_DESCRIPTION_TARGET = 160
 const META_DESCRIPTION_MAX = 170
-const PROVIDER_BRANDS: Record<string, readonly string[]> = {
-  'Black Forest Labs': ['FLUX'],
-  ByteDance: ['Seedance', 'Seedream'],
-  Google: ['Nano Banana', 'Veo']
-}
+const PROVIDER_BRANDS = new Map<string, readonly string[]>([
+  ['Black Forest Labs', ['FLUX']],
+  ['ByteDance', ['Seedance', 'Seedream']],
+  ['Google', ['Nano Banana', 'Veo']]
+])
 
 function splitShownTags<T>(tags: readonly T[]) {
   const shownTags = tags.slice(0, TAGS_SHOWN)
@@ -77,7 +77,7 @@ export async function prepareModelPage(
 
 function nameCarriesProvider(name: string, provider: string) {
   const lowerName = name.toLowerCase()
-  return [provider, ...(PROVIDER_BRANDS[provider] ?? [])].some((brand) =>
+  return [provider, ...(PROVIDER_BRANDS.get(provider) ?? [])].some((brand) =>
     lowerName.includes(brand.toLowerCase())
   )
 }
@@ -113,11 +113,17 @@ export function modelMetaDescription(
   const price = page.priceEstimate
     ? splitPriceLabel(page.priceEstimate)
     : undefined
+  const priceUnit = price?.per?.slice(1).toLowerCase()
   const priceClause = price
-    ? interpolate(t('workshop.model.meta.price', locale), {
-        amount: price.amount,
-        unit: (price.per?.slice(1) ?? 'Run').toLowerCase()
-      })
+    ? interpolate(
+        t(
+          priceUnit
+            ? 'workshop.model.meta.price'
+            : 'workshop.model.meta.priceNoUnit',
+          locale
+        ),
+        { amount: price.amount, unit: priceUnit ?? '' }
+      )
     : undefined
   const compose = (...parts: (string | undefined)[]) =>
     parts.filter(Boolean).join(' ')

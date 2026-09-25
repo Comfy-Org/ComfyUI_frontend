@@ -26,7 +26,7 @@ describe('modelMetaDescription', () => {
         priceEstimate: '2.11 credits/Run'
       },
       expected:
-        'SeedVR2 Image Upscaler by WaveSpeed: Upscales an image to 2K/4K/8K. Run it in your browser or call it via API. From 2.11 credits per run.'
+        'SeedVR2 Image Upscaler by WaveSpeed: Upscales an image to 2K/4K/8K. Run it in your browser or call it via API. Typical cost: 2.11 credits per run.'
     },
     {
       name: 'does not double a brand the name already carries',
@@ -52,6 +52,15 @@ describe('modelMetaDescription', () => {
       name: 'falls back to the name when there is no summary',
       page: { model: { name: 'Kling Omni', provider: 'Kling' } },
       expected: 'Kling Omni. Run it in your browser or call it via API.'
+    },
+    {
+      name: 'leaves the unit out when the price label has none',
+      page: {
+        model: { name: 'Recraft V4', provider: 'Recraft', summary: 'Draws.' },
+        priceEstimate: '12 credits'
+      },
+      expected:
+        'Recraft V4: Draws. Run it in your browser or call it via API. Typical cost: 12 credits.'
     }
   ])('$name', ({ page, expected }) => {
     expect(modelMetaDescription(page)).toBe(expected)
@@ -60,14 +69,14 @@ describe('modelMetaDescription', () => {
   it.for([
     [
       'shortens the call to action',
-      14,
-      /\. Run it in your browser or via API\. From/
+      13,
+      /\. Run it in your browser or via API\. Typical cost/
     ],
-    ['drops the call to action', 18, /lorem\. From/],
+    ['drops the call to action', 17, /lorem\. Typical cost/],
     [
       'cuts the summary at a word',
       40,
-      /^Luma Ray: lorem( lorem)*… From 4\.2 credits per run\.$/
+      /^Luma Ray: lorem( lorem)*… Typical cost: 4\.2 credits per run\.$/
     ]
   ] as const)('%s when the description runs long', ([, words, pattern]) => {
     const description = modelMetaDescription({
