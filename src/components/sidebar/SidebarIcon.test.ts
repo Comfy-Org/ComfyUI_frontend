@@ -45,7 +45,7 @@ describe('SidebarIcon', () => {
 
   it('renders icon', () => {
     const { container } = renderSidebarIcon()
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- Icon escape hatch: iconify icons have no ARIA role
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- Icon escape hatch: iconify icons have no ARIA role
     expect(container.querySelector('.side-bar-button-icon')).not.toBeNull()
   })
 

@@ -108,7 +108,7 @@ describe('TagsInput with child components', () => {
     })
 
     // Click the container to enter edit mode and show the input
-    // eslint-disable-next-line testing-library/no-node-access -- TagsInput root element needs click to enter edit mode; no role/label available
+    // oxlint-disable-next-line testing-library/no-node-access -- TagsInput root element needs click to enter edit mode; no role/label available
     await user.click(container.firstElementChild!)
     await nextTick()
 
@@ -133,7 +133,7 @@ describe('TagsInput with child components', () => {
 
     expect(screen.queryByPlaceholderText('Add tag...')).not.toBeInTheDocument()
 
-    // eslint-disable-next-line testing-library/no-node-access -- TagsInput root element needs click to test disabled behavior; no role/label available
+    // oxlint-disable-next-line testing-library/no-node-access -- TagsInput root element needs click to test disabled behavior; no role/label available
     await user.click(container.firstElementChild!)
     await nextTick()
 
@@ -154,7 +154,7 @@ describe('TagsInput with child components', () => {
       }
     })
 
-    // eslint-disable-next-line testing-library/no-node-access -- TagsInput root element needs click; no role/label
+    // oxlint-disable-next-line testing-library/no-node-access -- TagsInput root element needs click; no role/label
     await user.click(container.firstElementChild!)
     await nextTick()
     expect(screen.getByPlaceholderText('Add tag...')).toBeInTheDocument()

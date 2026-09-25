@@ -70,7 +70,7 @@ describe('WorkshopSections', () => {
       const row = within(screen.getByTestId('section-generate-videos'))
 
       // userEvent.click cannot express a non-primary button or click modifier.
-      // eslint-disable-next-line testing-library/prefer-user-event
+      // oxlint-disable-next-line testing-library/prefer-user-event
       await fireEvent.click(row.getByRole('link', { name: /^a\b/i }), event)
 
       expect(lastShelf('/models/a/')).toBeUndefined()

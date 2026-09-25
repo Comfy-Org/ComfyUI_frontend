@@ -7,6 +7,12 @@ import type {
 import type { noDuplicateIngestType as NoDuplicateIngestType } from './comfyIngestTypes'
 import type { useGlobalPinia as UseGlobalPinia } from './globalPinia'
 import type {
+  noRelativePackages as NoRelativePackages,
+  noRestrictedPaths as NoRestrictedPaths,
+  noUselessPathSegments as NoUselessPathSegments
+} from './importPaths'
+import type { noNewErrorThrow as NoNewErrorThrow } from './noNewErrorThrow'
+import type {
   noDeprecatedApiSchema as NoDeprecatedApiSchema,
   noDirectSelectionWrite as NoDirectSelectionWrite,
   noDomInComputed as NoDomInComputed,
@@ -41,6 +47,15 @@ const { noDuplicateIngestType } = requireFrom('./comfyIngestTypes.ts') as {
 }
 const { useGlobalPinia } = requireFrom('./globalPinia.ts') as {
   useGlobalPinia: typeof UseGlobalPinia
+}
+const { noRelativePackages, noRestrictedPaths, noUselessPathSegments } =
+  requireFrom('./importPaths.ts') as {
+    noRelativePackages: typeof NoRelativePackages
+    noRestrictedPaths: typeof NoRestrictedPaths
+    noUselessPathSegments: typeof NoUselessPathSegments
+  }
+const { noNewErrorThrow } = requireFrom('./noNewErrorThrow.ts') as {
+  noNewErrorThrow: typeof NoNewErrorThrow
 }
 const {
   noDeprecatedApiSchema,
@@ -99,6 +114,7 @@ export default {
     'no-import-actual': noImportActual,
     'no-misplaced-spec-files': noMisplacedSpecFiles,
     'no-module-scope-vitest-mocks': noModuleScopeVitestMocks,
+    'no-new-error-throw': noNewErrorThrow,
     'no-new-zod-for-remote-api-types': noNewZodForRemoteApiTypes,
     'no-new-zod-server-response-schema': noNewZodServerResponseSchema,
     'no-persistent-litegraph-registration': noPersistentLiteGraphRegistration,
@@ -107,8 +123,11 @@ export default {
     'no-render-in-watch-effect': noRenderInWatchEffect,
     'no-redundant-litegraph-cleanup': noRedundantLiteGraphCleanup,
     'no-redundant-vitest-cleanup': noRedundantVitestCleanup,
+    'no-relative-packages': noRelativePackages,
+    'no-restricted-paths': noRestrictedPaths,
     'no-unit-test-files-in-browser-tests': noUnitTestFilesInBrowserTests,
     'no-unsafe-error-assertion': noUnsafeErrorAssertion,
+    'no-useless-path-segments': noUselessPathSegments,
     'prefer-initial-settings': preferInitialSettings,
     'use-global-pinia': useGlobalPinia
   }

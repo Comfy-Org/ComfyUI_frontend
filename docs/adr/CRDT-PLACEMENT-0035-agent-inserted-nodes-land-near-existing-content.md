@@ -31,7 +31,7 @@ Forces that constrain where a fix can live:
   `pos` — but the frontend cannot rely on every writer, every version, doing
   so. A client-side invariant is correct regardless of what the server sends.
 - **The layer rule.** `graphMutations.ts` lives in `src/workbench/`, and the
-  layered architecture (`eslint.config.ts`, `import-x/no-restricted-paths`)
+  layered architecture (`.oxlintrc.json`, `comfy/no-restricted-paths`)
   forbids workbench importing from `src/renderer/` — which is where geometry
   lives: node bounds in `layoutStore`, the visible area on the canvas's
   `DragAndScale`. The module already handles this exact tension with a port:

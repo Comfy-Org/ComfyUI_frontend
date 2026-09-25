@@ -35,7 +35,7 @@ function renderHero() {
 function renderedVideoSrc() {
   // <video> carries no implicit ARIA role, so Testing Library queries cannot
   // reach it and the src assertion has to touch the node directly.
-  // eslint-disable-next-line testing-library/no-node-access
+  // oxlint-disable-next-line testing-library/no-node-access
   const videos = document.querySelectorAll('video')
   expect(videos.length).toBe(1)
   return videos[0].getAttribute('src')

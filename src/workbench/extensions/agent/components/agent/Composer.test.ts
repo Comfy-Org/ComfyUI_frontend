@@ -387,7 +387,7 @@ describe('Composer', () => {
     )
     await nextTick()
     expect(emitted().send).toHaveLength(1)
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     expect(document.activeElement).toBe(document.body)
 
     await rerender({ streaming: true })

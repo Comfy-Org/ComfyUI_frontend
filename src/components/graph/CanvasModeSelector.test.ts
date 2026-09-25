@@ -85,7 +85,7 @@ describe('CanvasModeSelector', () => {
 
     const menuItems = screen.getAllByRole('menuitemradio')
     menuItems.forEach((item) => {
-      // eslint-disable-next-line testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-node-access
       const icons = item.querySelectorAll('i')
       icons.forEach((icon) => {
         expect(icon).toHaveAttribute('aria-hidden', 'true')

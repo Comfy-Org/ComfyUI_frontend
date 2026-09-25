@@ -548,7 +548,7 @@ describe('PackVersionSelectorPopover', () => {
       await user.click(screen.getByText('0.9.0'))
 
       // Verify 0.9.0 is selected via aria-selected
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue Listbox: checking aria-selected on option element
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue Listbox: checking aria-selected on option element
       const selectedOption = container.querySelector(
         '[role="option"][aria-selected="true"]'
       )
@@ -569,10 +569,10 @@ describe('PackVersionSelectorPopover', () => {
       await waitForPromises()
 
       // Selected version should remain 0.9.0 — verify via pi-check icon
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue Listbox: checking selected indicator icon
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue Listbox: checking selected indicator icon
       const checkIcons = container.querySelectorAll('.pi.pi-check')
       const selectedTexts = Array.from(checkIcons).map(
-        // eslint-disable-next-line testing-library/no-node-access -- traversing to parent option element
+        // oxlint-disable-next-line testing-library/no-node-access -- traversing to parent option element
         (icon) => icon.closest('[role="option"]')?.textContent
       )
       expect(selectedTexts.some((text) => text?.includes('0.9.0'))).toBe(true)
@@ -594,10 +594,10 @@ describe('PackVersionSelectorPopover', () => {
       await waitForPromises()
 
       // Nightly should be selected — verify via pi-check icon next to Nightly
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue Listbox: checking selected indicator icon
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue Listbox: checking selected indicator icon
       const checkIcons = container.querySelectorAll('.pi.pi-check')
       const selectedTexts = Array.from(checkIcons).map(
-        // eslint-disable-next-line testing-library/no-node-access -- traversing to parent option element
+        // oxlint-disable-next-line testing-library/no-node-access -- traversing to parent option element
         (icon) => icon.closest('[role="option"]')?.textContent
       )
       expect(selectedTexts.some((text) => text?.includes('Nightly'))).toBe(true)
@@ -617,10 +617,10 @@ describe('PackVersionSelectorPopover', () => {
       await waitForPromises()
 
       // Nightly should be selected
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue Listbox: checking selected indicator icon
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue Listbox: checking selected indicator icon
       const checkIcons = container.querySelectorAll('.pi.pi-check')
       const selectedTexts = Array.from(checkIcons).map(
-        // eslint-disable-next-line testing-library/no-node-access -- traversing to parent option element
+        // oxlint-disable-next-line testing-library/no-node-access -- traversing to parent option element
         (icon) => icon.closest('[role="option"]')?.textContent
       )
       expect(selectedTexts.some((text) => text?.includes('Nightly'))).toBe(true)
@@ -660,7 +660,7 @@ describe('PackVersionSelectorPopover', () => {
 
       expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- icon class query not expressible via ARIA roles
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- icon class query not expressible via ARIA roles
       const warningIcons = container.querySelectorAll(
         '.icon-\\[lucide--triangle-alert\\]'
       )
@@ -680,7 +680,7 @@ describe('PackVersionSelectorPopover', () => {
 
       expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- VerifiedIcon renders SVG without accessible role
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- VerifiedIcon renders SVG without accessible role
       const verifiedIcons = container.querySelectorAll('svg')
       expect(verifiedIcons.length).toBeGreaterThan(0)
     })
@@ -723,7 +723,7 @@ describe('PackVersionSelectorPopover', () => {
 
       expect(mockCheckNodeCompatibility).toHaveBeenCalled()
 
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- icon class query not expressible via ARIA roles
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access -- icon class query not expressible via ARIA roles
       const warningIcons = container.querySelectorAll(
         '.icon-\\[lucide--triangle-alert\\]'
       )

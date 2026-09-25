@@ -157,7 +157,7 @@ describe('NodeHeader.vue', () => {
     })
 
     // Enter edit mode
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.dblClick(screen.getByTestId('node-header-1'))
 
     // Edit and confirm
@@ -174,7 +174,7 @@ describe('NodeHeader.vue', () => {
       nodeData: makeNodeData({ title: 'KeepMe' })
     })
 
-    // eslint-disable-next-line testing-library/prefer-user-event
+    // oxlint-disable-next-line testing-library/prefer-user-event
     await fireEvent.dblClick(screen.getByTestId('node-header-1'))
     const input = screen.getByTestId('node-title-input')
     await user.clear(input)
@@ -189,7 +189,7 @@ describe('NodeHeader.vue', () => {
   it('renders correct chevron icon based on collapsed prop', async () => {
     const { rerender } = renderHeader({ collapsed: false })
     const collapseButton = screen.getByTestId('node-collapse-button')
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const expandedIcon = collapseButton.querySelector('i')!
     expect(expandedIcon.classList).not.toContain('-rotate-90')
 
@@ -197,7 +197,7 @@ describe('NodeHeader.vue', () => {
       nodeData: makeNodeData(),
       collapsed: true
     })
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     const collapsedIcon = collapseButton.querySelector('i')!
     expect(collapsedIcon.classList).toContain('-rotate-90')
   })
@@ -219,7 +219,7 @@ describe('NodeHeader.vue', () => {
 
       tooltipDirective.updated.mockClear()
 
-      // eslint-disable-next-line testing-library/prefer-user-event
+      // oxlint-disable-next-line testing-library/prefer-user-event
       await fireEvent.dblClick(screen.getByTestId('node-header-1'))
 
       expect(tooltipDirective.updated).toHaveBeenCalled()

@@ -208,7 +208,7 @@ describe('ConversationView', () => {
       global: { plugins: [i18n] }
     })
 
-    // eslint-disable-next-line testing-library/no-node-access -- scroll container has no queryable role; mask classes are the behavior under test
+    // oxlint-disable-next-line testing-library/no-node-access -- scroll container has no queryable role; mask classes are the behavior under test
     const scroll = container.firstElementChild?.firstElementChild as HTMLElement
     const topMask = 'mask-t-from-[calc(100%-2rem)]'
     const bottomMask = 'mask-b-from-[calc(100%-2rem)]'

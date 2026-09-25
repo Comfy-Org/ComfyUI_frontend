@@ -57,13 +57,13 @@ describe('ComfyActionbar', () => {
     try {
       await nextTick()
 
-      /* eslint-disable testing-library/no-node-access -- Teleport target verification requires scoping to the container element */
+      /* oxlint-disable testing-library/no-node-access -- Teleport target verification requires scoping to the container element */
       expect(
         dockedProgressContainer.querySelector(
           '[data-testid="queue-inline-progress"]'
         )
       ).not.toBeNull()
-      /* eslint-enable testing-library/no-node-access */
+      /* oxlint-enable testing-library/no-node-access */
     } finally {
       dockedProgressContainer.remove()
     }
@@ -75,13 +75,13 @@ describe('ComfyActionbar', () => {
     try {
       await nextTick()
 
-      /* eslint-disable testing-library/no-node-access -- Teleport target verification requires scoping to the container element */
+      /* oxlint-disable testing-library/no-node-access -- Teleport target verification requires scoping to the container element */
       expect(
         dockedProgressContainer.querySelector(
           '[data-testid="queue-inline-progress"]'
         )
       ).toBeNull()
-      /* eslint-enable testing-library/no-node-access */
+      /* oxlint-enable testing-library/no-node-access */
     } finally {
       dockedProgressContainer.remove()
     }

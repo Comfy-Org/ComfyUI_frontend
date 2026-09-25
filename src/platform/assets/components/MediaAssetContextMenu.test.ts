@@ -127,7 +127,7 @@ async function showMenu(container: Element): Promise<HTMLElement> {
   const event = new MouseEvent('contextmenu', { bubbles: true })
   capturedRef!.show(event)
   await nextTick()
-  // eslint-disable-next-line testing-library/no-container
+  // oxlint-disable-next-line testing-library/no-container
   return container.querySelector('.context-menu-stub') as HTMLElement
 }
 
@@ -164,13 +164,13 @@ describe('MediaAssetContextMenu', () => {
     const menuId = menu.id
 
     expect(menuId).not.toBe('')
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     expect(document.getElementById(menuId)).toBe(menu)
 
     outside.dispatchEvent(new Event('pointerdown', { bubbles: true }))
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     expect(container.querySelector('.context-menu-stub')).toBeNull()
     expect(onHide).toHaveBeenCalledOnce()
 

@@ -124,7 +124,7 @@ describe('AgentBetaWaitlistForm', () => {
     expect(confirmation.textContent).toMatch(/you're on the waitlist/i)
     expect(confirmation.textContent).toContain('someone@example.com')
     expect(screen.queryByRole('textbox')).toBeNull()
-    // eslint-disable-next-line testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-node-access
     expect(document.activeElement).toBe(confirmation)
   })
 

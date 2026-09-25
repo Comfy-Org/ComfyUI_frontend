@@ -2,6 +2,7 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
+import { isEslintFile } from './eslintScope'
 import { isMainModule } from './isMainModule'
 
 interface PushedRange {
@@ -26,10 +27,6 @@ export function pushedRanges(prePushInput: string): PushedRange[] {
       }
     ]
   })
-}
-
-function isLintable(fileName: string): boolean {
-  return /\.(?:js|ts|tsx|vue|mts|astro)$/.test(fileName)
 }
 
 function git(cwd: string, ...args: string[]): string | undefined {
@@ -68,7 +65,7 @@ function changedFiles(cwd: string, range: PushedRange): string[] {
     { cwd, encoding: 'utf8' }
   )
     .split('\0')
-    .filter(isLintable)
+    .filter(isEslintFile)
 }
 
 // ESLint reads the working tree, so only the checked-out commit can be linted

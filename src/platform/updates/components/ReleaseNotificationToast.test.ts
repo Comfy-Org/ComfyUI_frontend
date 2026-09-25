@@ -117,11 +117,11 @@ describe('ReleaseNotificationToast', () => {
     })
 
     const { container } = renderComponent()
-    /* eslint-disable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-disable testing-library/no-container, testing-library/no-node-access */
     expect(
       container.querySelector('.icon-\\[lucide--rocket\\]')
     ).toBeInTheDocument()
-    /* eslint-enable testing-library/no-container, testing-library/no-node-access */
+    /* oxlint-enable testing-library/no-container, testing-library/no-node-access */
   })
 
   it('displays release version', () => {

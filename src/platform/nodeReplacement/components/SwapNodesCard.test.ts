@@ -54,26 +54,26 @@ describe('SwapNodesCard', () => {
   describe('Rendering', () => {
     it('renders correct number of SwapNodeGroupRow components', () => {
       const { container } = mountCard({ swapNodeGroups: makeGroups(3) })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.swap-row')).toHaveLength(3)
     })
 
     it('renders zero rows when swapNodeGroups is empty', () => {
       const { container } = mountCard({ swapNodeGroups: [] })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.swap-row')).toHaveLength(0)
     })
 
     it('renders one row when swapNodeGroups has one entry', () => {
       const { container } = mountCard({ swapNodeGroups: makeGroups(1) })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       expect(container.querySelectorAll('.swap-row')).toHaveLength(1)
     })
 
     it('passes group prop to children', () => {
       const groups = makeGroups(1)
       const { container } = mountCard({ swapNodeGroups: groups })
-      // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+      // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
       const row = container.querySelector('.swap-row')
       expect(row!.getAttribute('data-group-type')).toBe(groups[0].type)
     })

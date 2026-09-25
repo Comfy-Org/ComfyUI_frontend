@@ -3,11 +3,18 @@
   "ignorePatterns": [
     "**/vite.config.*.timestamp*",
     "**/vitest.config.*.timestamp*",
+    ".agents/checks/eslint.strict.config.js",
+    "ComfyUI/**",
+    "apps/*/.astro/**",
+    "apps/*/coverage/**",
+    "apps/*/dist/**",
+    "apps/*/playwright-report/**",
+    "apps/*/test-results/**",
     "components.d.ts",
     "coverage/*",
     "dist/*",
-    "packages/ingest-types/src/types.gen.ts",
-    "packages/ingest-types/src/zod.gen.ts",
+    "packages/design-system/src/css/lucideStrokePlugin.js",
+    "packages/ingest-types/src/*.gen.ts",
     "packages/registry-types/src/comfyRegistryTypes.ts",
     "playwright-report/*",
     "scripts/registry-census/detection-proof/**",
@@ -26,12 +33,17 @@
     "vitest",
     "vue"
   ],
-  "jsPlugins": ["./tools/oxlint-plugins/comfy.ts"],
+  "jsPlugins": [
+    "./tools/oxlint-plugins/comfy.ts",
+    "eslint-plugin-unused-imports"
+  ],
   "extends": ["./scripts/primevue-import-allowlist.json"],
   "rules": {
     "comfy/no-duplicate-ingest-type": "error",
+    "comfy/no-relative-packages": "error",
     "comfy/no-js-private-class-members": "error",
     "comfy/no-render-in-watch-effect": "error",
+    "comfy/no-useless-path-segments": "error",
     "no-array-constructor": "error",
     "no-case-declarations": "error",
     "no-console": [
@@ -87,6 +99,7 @@
     "no-self-assign": "allow",
     "no-unreachable": "error",
     "no-useless-rename": "off",
+    "no-useless-assignment": "error",
     "import/default": "error",
     "import/no-named-as-default": "error",
     "import/export": "error",
@@ -120,6 +133,7 @@
     "typescript/require-array-sort-compare": "error",
     "typescript/triple-slash-reference": "error",
     "typescript/no-unused-vars": "off",
+    "unused-imports/no-unused-imports": "error",
     "unicorn/no-empty-file": "off",
     "vitest/require-mock-type-parameters": "off",
     "vitest/valid-expect": "error",
@@ -195,10 +209,87 @@
       }
     },
     {
+      "files": [
+        "src/base/**/*.{ts,vue}",
+        "src/platform/**/*.{ts,vue}",
+        "src/workbench/**/*.{ts,vue}",
+        "src/world/**/*.{ts,vue}"
+      ],
+      "rules": {
+        "comfy/no-restricted-paths": [
+          "error",
+          {
+            "zones": [
+              {
+                "target": "src/base",
+                "from": ["src/platform", "src/workbench", "src/renderer"],
+                "message": "base/ cannot import from upper layers (violates layer architecture: base → platform → workbench → renderer)"
+              },
+              {
+                "target": "src/platform",
+                "from": ["src/workbench", "src/renderer"],
+                "message": "platform/ cannot import from upper layers (violates layer architecture: base → platform → workbench → renderer)"
+              },
+              {
+                "target": "src/workbench",
+                "from": "src/renderer",
+                "message": "workbench/ cannot import from renderer/ (violates layer architecture: base → platform → workbench → renderer)"
+              },
+              {
+                "target": "src/world",
+                "from": "src/lib/litegraph",
+                "message": "src/world/ must remain free of litegraph dependencies. The world layer owns canonical entity identity and must not depend on litegraph types or values."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["src/lib/**/*.{ts,vue}"],
+      "rules": {
+        "comfy/no-restricted-paths": [
+          "warn",
+          {
+            "zones": [
+              {
+                "target": "src/lib",
+                "from": [
+                  "src/components",
+                  "src/composables",
+                  "src/extensions",
+                  "src/platform",
+                  "src/renderer",
+                  "src/services",
+                  "src/stores",
+                  "src/views",
+                  "src/workbench",
+                  "src/world"
+                ],
+                "message": "src/lib/ is vendored leaf code and cannot import from app layers (violates layer architecture: lib → base → platform → workbench → renderer). Invert the dependency: have the app layer pass what it needs in, or move the shared type down into src/lib/ or src/base/."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": ["src/**/*.{js,mjs,cjs,ts,mts,cts,vue}"],
       "excludeFiles": ["src/**/*.test.{ts,tsx}"],
       "rules": {
         "comfy/no-es2023-array-copy-method": "error"
+      }
+    },
+    {
+      "files": ["src/**/*.{ts,tsx,vue}"],
+      "excludeFiles": [
+        "src/**/*.d.ts",
+        "src/**/*.{test,spec,stories}.{ts,tsx,vue}",
+        "src/**/{test,tests,__test__,__tests__,__fixtures__,fixtures}/**",
+        "src/**/{generated,vendor}/**"
+      ],
+      "rules": {
+        "comfy/no-new-error-throw": "error"
       }
     },
     {
@@ -307,6 +398,52 @@
       }
     },
     {
+      "files": ["**/*.vue", "**/*.astro"],
+      "rules": {
+        "unused-imports/no-unused-imports": "off"
+      }
+    },
+    {
+      "files": ["**/*.test.ts"],
+      "jsPlugins": ["eslint-plugin-testing-library"],
+      "rules": {
+        "testing-library/no-container": "error",
+        "testing-library/no-debugging-utils": "error",
+        "testing-library/no-node-access": "error",
+        "testing-library/no-wait-for-multiple-assertions": "error",
+        "testing-library/prefer-find-by": "error",
+        "testing-library/prefer-presence-queries": "error",
+        "testing-library/prefer-screen-queries": "error",
+        "testing-library/prefer-user-event": "error"
+      }
+    },
+    {
+      "files": [
+        "**/*.stories.{ts,tsx,js,jsx,mjs,cjs}",
+        "**/*.story.{ts,tsx,js,jsx,mjs,cjs}"
+      ],
+      "jsPlugins": ["eslint-plugin-storybook"],
+      "rules": {
+        "storybook/await-interactions": "error",
+        "storybook/context-in-play-function": "error",
+        "storybook/default-exports": "error",
+        "storybook/hierarchy-separator": "warn",
+        "storybook/no-redundant-story-name": "warn",
+        "storybook/no-renderer-packages": "error",
+        "storybook/prefer-pascal-case": "warn",
+        "storybook/story-exports": "error",
+        "storybook/use-storybook-expect": "error",
+        "storybook/use-storybook-testing-library": "error"
+      }
+    },
+    {
+      "files": [".storybook/main.{ts,js,mts,mjs,cts,cjs}"],
+      "jsPlugins": ["eslint-plugin-storybook"],
+      "rules": {
+        "storybook/no-uninstalled-addons": "error"
+      }
+    },
+    {
       "files": [
         "apps/**/*.test.{ts,tsx}",
         "packages/object-info-parser/**/*.test.{ts,tsx}"
@@ -335,6 +472,241 @@
       }
     },
     {
+      "files": ["**/*.vue"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "primevue/calendar",
+                "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
+              },
+              {
+                "name": "primevue/dropdown",
+                "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
+              },
+              {
+                "name": "primevue/inputswitch",
+                "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
+              },
+              {
+                "name": "primevue/overlaypanel",
+                "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
+              },
+              {
+                "name": "primevue/sidebar",
+                "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
+              },
+              {
+                "name": "@/i18n",
+                "importNames": ["t", "d", "te"],
+                "message": "In Vue components, use `const { t } = useI18n()` instead of importing from '@/i18n'."
+              },
+              {
+                "name": "@vueuse/core",
+                "importNames": ["useVirtualList"],
+                "message": "useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead."
+              },
+              {
+                "name": "@sentry/vue",
+                "importNames": ["captureException"],
+                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+              },
+              {
+                "name": "@datadog/browser-rum",
+                "importNames": ["datadogRum"],
+                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/*.ts"],
+      "excludeFiles": ["**/use[A-Z]*.ts", "**/*.test.ts", "src/i18n.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "primevue/calendar",
+                "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
+              },
+              {
+                "name": "primevue/dropdown",
+                "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
+              },
+              {
+                "name": "primevue/inputswitch",
+                "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
+              },
+              {
+                "name": "primevue/overlaypanel",
+                "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
+              },
+              {
+                "name": "primevue/sidebar",
+                "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
+              },
+              {
+                "name": "vue-i18n",
+                "importNames": ["useI18n"],
+                "message": "useI18n() requires Vue setup context. Use `import { t } from '@/i18n'` instead."
+              },
+              {
+                "name": "@vueuse/core",
+                "importNames": ["useVirtualList"],
+                "message": "useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead."
+              },
+              {
+                "name": "@sentry/vue",
+                "importNames": ["captureException"],
+                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+              },
+              {
+                "name": "@datadog/browser-rum",
+                "importNames": ["datadogRum"],
+                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/use[A-Z]*.ts", "src/i18n.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "primevue/calendar",
+                "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
+              },
+              {
+                "name": "primevue/dropdown",
+                "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
+              },
+              {
+                "name": "primevue/inputswitch",
+                "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
+              },
+              {
+                "name": "primevue/overlaypanel",
+                "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
+              },
+              {
+                "name": "primevue/sidebar",
+                "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
+              },
+              {
+                "name": "@vueuse/core",
+                "importNames": ["useVirtualList"],
+                "message": "useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead."
+              },
+              {
+                "name": "@sentry/vue",
+                "importNames": ["captureException"],
+                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+              },
+              {
+                "name": "@datadog/browser-rum",
+                "importNames": ["datadogRum"],
+                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["**/*.test.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "primevue/calendar",
+                "message": "Calendar is deprecated in PrimeVue 4+. Use DatePicker instead: import DatePicker from 'primevue/datepicker'"
+              },
+              {
+                "name": "primevue/dropdown",
+                "message": "Dropdown is deprecated in PrimeVue 4+. Use Select instead: import Select from 'primevue/select'"
+              },
+              {
+                "name": "primevue/inputswitch",
+                "message": "InputSwitch is deprecated in PrimeVue 4+. Use ToggleSwitch instead: import ToggleSwitch from 'primevue/toggleswitch'"
+              },
+              {
+                "name": "primevue/overlaypanel",
+                "message": "OverlayPanel is deprecated in PrimeVue 4+. Use Popover instead: import Popover from 'primevue/popover'"
+              },
+              {
+                "name": "primevue/sidebar",
+                "message": "Sidebar is deprecated in PrimeVue 4+. Use Drawer instead: import Drawer from 'primevue/drawer'"
+              },
+              {
+                "name": "@vue/test-utils",
+                "message": "Use @testing-library/vue with @testing-library/user-event instead."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["apps/website/e2e/**/*.spec.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@playwright/test",
+                "importNames": [
+                  "test",
+                  "chromium",
+                  "firefox",
+                  "webkit",
+                  "request"
+                ],
+                "message": "Use the blockExternalMedia fixture so website tests cannot access external services."
+              },
+              {
+                "name": "playwright",
+                "message": "Use the blockExternalMedia fixture instead."
+              },
+              {
+                "name": "vue-i18n",
+                "importNames": ["useI18n"],
+                "message": "useI18n() requires Vue setup context."
+              },
+              {
+                "name": "@vueuse/core",
+                "importNames": ["useVirtualList"],
+                "message": "useVirtualList requires uniform item heights. Use TanStack Virtual (via Reka UI virtualizer or @tanstack/vue-virtual) instead."
+              },
+              {
+                "name": "@sentry/vue",
+                "importNames": ["captureException"],
+                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw captureException reaches Sentry only, so the failure stays invisible to every Datadog dashboard and alert."
+              },
+              {
+                "name": "@datadog/browser-rum",
+                "importNames": ["datadogRum"],
+                "message": "Use reportError() from '@/platform/telemetry/reportError'. A raw datadogRum.addError reaches Datadog only, and skips the pre-init buffer that keeps early-boot failures from being dropped."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
       "files": ["browser_tests/**/*.ts"],
       "excludeFiles": ["browser_tests/fixtures/networkIsolationFixture.ts"],
       "rules": {
@@ -347,6 +719,16 @@
                 "importNames": ["test"],
                 "message": "Use a fixture based on networkIsolationFixture instead of raw Playwright test."
               }
+            ],
+            "patterns": [
+              {
+                "group": ["./**", "../**"],
+                "message": "Use the @e2e/ path alias instead of relative imports."
+              },
+              {
+                "group": ["@e2e/helpers", "@e2e/helpers/*"],
+                "message": "browser_tests/helpers/ was removed. Use @e2e/fixtures/utils/, @e2e/fixtures/components/, or @e2e/fixtures/helpers/ instead."
+              }
             ]
           }
         ],
@@ -355,6 +737,53 @@
           {
             "property": "continue",
             "message": "Use route.fallback() so requests pass through the network policy."
+          }
+        ]
+      }
+    },
+    {
+      "files": ["browser_tests/tests/**/*.spec.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@playwright/test",
+                "importNames": ["test"],
+                "message": "Use `comfyPageFixture as test` from the ComfyPage fixture module instead of raw `test` from '@playwright/test'."
+              }
+            ],
+            "patterns": [
+              {
+                "group": ["./**", "../**"],
+                "message": "Use the @e2e/ path alias instead of relative imports."
+              },
+              {
+                "group": ["@e2e/helpers", "@e2e/helpers/*"],
+                "message": "browser_tests/helpers/ was removed. Use @e2e/fixtures/utils/, @e2e/fixtures/components/, or @e2e/fixtures/helpers/ instead."
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "files": ["browser_tests/fixtures/networkIsolationFixture.ts"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "patterns": [
+              {
+                "group": ["./**", "../**"],
+                "message": "Use the @e2e/ path alias instead of relative imports."
+              },
+              {
+                "group": ["@e2e/helpers", "@e2e/helpers/*"],
+                "message": "browser_tests/helpers/ was removed. Use @e2e/fixtures/utils/, @e2e/fixtures/components/, or @e2e/fixtures/helpers/ instead."
+              }
+            ]
           }
         ]
       }

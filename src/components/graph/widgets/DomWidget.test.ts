@@ -89,7 +89,7 @@ describe('DomWidget style', () => {
       }
     })
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.left).toBe('0px')
     expect(root.style.top).toBe('0px')
@@ -109,7 +109,7 @@ describe('DomWidget style', () => {
     widgetState.zIndex = 3
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.pointerEvents).toBe('none')
     expect(root.style.opacity).toBe('0.5')
@@ -127,7 +127,7 @@ describe('DomWidget style', () => {
     mockClippingStyle.value = { clipPath: 'inset(1px)' }
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.clipPath).toBe('inset(1px)')
   })
@@ -200,7 +200,7 @@ describe('DomWidget style', () => {
     mockClippingStyle.value = { clipPath: 'inset(1px)' }
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.clipPath).toBe('')
   })
@@ -217,7 +217,7 @@ describe('DomWidget style', () => {
     widgetState.zIndex = 3
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.pointerEvents).toBe('none')
   })
@@ -240,7 +240,7 @@ describe('DomWidget position update matrix', () => {
         render(DomWidget, { props: { widgetState } })
       )
       const roots = rendered.map(({ container }) => {
-        // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+        // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
         return container.querySelector('.dom-widget') as HTMLElement
       })
       const initialStyles = roots.map((root) => root.getAttribute('style'))
@@ -313,7 +313,7 @@ describe('native DOM widget interaction lifecycle', () => {
     })
     await nextTick()
 
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access
+    // oxlint-disable-next-line testing-library/no-container, testing-library/no-node-access
     const root = container.querySelector('.dom-widget') as HTMLElement
     expect(root.style.pointerEvents).toBe('none')
   })

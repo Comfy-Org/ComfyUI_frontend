@@ -82,22 +82,23 @@ describe('filesToLint', () => {
   function repoWithHistory() {
     const repo = createRepo()
     const base = repo.commit('base', {
-      'a.ts': 'a',
-      'deleted.ts': 'gone',
+      'a.vue': 'a',
+      'deleted.vue': 'gone',
       'README.md': 'docs'
     })
     repo.git('branch', 'other')
     repo.git('checkout', '-q', 'other')
-    const other = repo.commit('other', { 'c.ts': 'c' })
+    const other = repo.commit('other', { 'c.vue': 'c' })
     repo.git('checkout', '-q', '-')
     const head = repo.commit('head', {
-      'a.ts': 'a2',
-      'b.ts': 'b',
-      'missing.ts': 'never on disk',
-      'deleted.ts': null,
+      'a.vue': 'a2',
+      'b.vue': 'b',
+      'missing.vue': 'never on disk',
+      'oxlintOwned.ts': 'ts',
+      'deleted.vue': null,
       'README.md': 'docs2'
     })
-    rmSync(join(repo.dir, 'missing.ts'))
+    rmSync(join(repo.dir, 'missing.vue'))
     repo.git('update-ref', 'refs/remotes/origin/main', base)
     return { ...repo, base, other, head }
   }
@@ -106,15 +107,15 @@ describe('filesToLint', () => {
 
   it.for([
     [
-      'lints lintable files the pushed commits add or modify on the working tree, against the remote sha',
+      'lints ESLint-scoped files the pushed commits add or modify on the working tree, against the remote sha',
       ({ head, base }: Shas) => pushLine(head, base),
-      ['a.ts', 'b.ts'],
+      ['a.vue', 'b.vue'],
       () => []
     ],
     [
       'diffs a new branch against origin/main',
       ({ head }: Shas) => pushLine(head),
-      ['a.ts', 'b.ts'],
+      ['a.vue', 'b.vue'],
       () => []
     ],
     [
@@ -141,7 +142,7 @@ describe('filesToLint', () => {
 
   it('leaves a commit with no reachable base to CI', () => {
     const repo = createRepo()
-    const head = repo.commit('orphan', { 'a.ts': 'a' })
+    const head = repo.commit('orphan', { 'a.vue': 'a' })
     const stderr = vi
       .spyOn(process.stderr, 'write')
       .mockImplementation(() => true)

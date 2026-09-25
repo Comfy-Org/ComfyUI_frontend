@@ -48,7 +48,7 @@ import { useWorkflowStore } from '@/platform/workflow/management/stores/workflow
 import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 import type { LoadedComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { reportError } from '@/platform/telemetry/reportError'
-// eslint-disable-next-line import-x/no-restricted-paths
+// oxlint-disable-next-line comfy/no-restricted-paths
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useOnboardingTourStore } from '@/platform/onboarding/onboardingTourStore'
 import { registerTour } from '@/platform/onboarding/onboardingTours'
@@ -3592,9 +3592,9 @@ describe('AgentPanelRoot a11y id guard', () => {
     expect(await screen.findByText(i18n.global.t('agent.title'))).toBeVisible()
     // Document-level count is the point: the guard must see any duplicate id
     // anywhere in the document, not just within the panel subtree.
-    /* eslint-disable testing-library/no-node-access */
+    /* oxlint-disable testing-library/no-node-access */
     expect(document.querySelectorAll('#agent-panel-title')).toHaveLength(1)
-    /* eslint-enable testing-library/no-node-access */
+    /* oxlint-enable testing-library/no-node-access */
   })
 })
 
