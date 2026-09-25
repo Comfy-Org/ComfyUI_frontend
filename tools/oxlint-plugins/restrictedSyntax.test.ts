@@ -11,10 +11,13 @@ interface Diagnostic {
   readonly labels: readonly { readonly span: { readonly line: number } }[]
 }
 
+const privateSigil = '#'
+
 const probeDirs = {
   source: path.resolve('src/__restricted_syntax_probes__'),
   app: path.resolve('apps/__restricted_syntax_probes__/src'),
   remote: path.resolve('src/platform/remote/__restricted_syntax_probes__'),
+  selection: path.resolve('src/composables/graph/__restricted_syntax_probes__'),
   schemas: path.resolve('src/schemas/__restricted_syntax_probes__'),
   fixtureData: path.resolve(
     'browser_tests/fixtures/data/__restricted_syntax_probes__'
@@ -32,6 +35,17 @@ const removedModuleFiles = [
   path.join(probeDirs.fixtureData, 'deprecated.ts'),
   path.join(probeDirs.browserTests, 'deprecated.spec.ts')
 ]
+
+const selectionWriteProbes = [
+  ['selected-assignment.ts', 'group.selected = true'],
+  ['selected-items-add.ts', 'canvas.selectedItems.add(group)'],
+  ['selected-items-delete.ts', 'canvas.selectedItems.delete(group)'],
+  ['selected-items-clear.ts', 'canvas.selectedItems.clear()'],
+  ['selected-nodes-assignment.ts', 'canvas.selected_nodes[group.id] = group'],
+  ['selected-nodes-delete.ts', 'delete canvas.selected_nodes[group.id]'],
+  ['selection-store-apply.ts', 'useSelectionStore().apply(scope, command)'],
+  ['computed-selected-assignment.ts', "canvas['selected'] = true"]
+] as const
 
 const probes = [
   {
@@ -74,10 +88,31 @@ void unrelated
 `
   },
   {
+    file: path.join(probeDirs.source, 'privateMembers.ts'),
+    source: `class Example {
+  ${privateSigil}value = 0
+  ${privateSigil}read() { return this.${privateSigil}value }
+}
+void Example
+`
+  },
+  {
     file: path.join(probeDirs.source, 'computed.vue'),
     source: `<script setup lang="ts">
 computed(() => element.getBoundingClientRect())
 </script>
+`
+  },
+  ...selectionWriteProbes.map(([file, source]) => ({
+    file: path.join(probeDirs.selection, file),
+    source: `${source}\n`
+  })),
+  {
+    file: path.join(probeDirs.selection, 'allowed-selection-access.ts'),
+    source: `void group.selected
+void canvas.selectedItems.has(group)
+void canvas.selected_nodes[group.id]
+canvas[selected] = value
 `
   },
   ...removedModuleFiles.map((file) => {
@@ -317,6 +352,36 @@ describe('restricted syntax rules', () => {
       new Set([
         'Do not measure the DOM inside a computed - every recompute becomes a layout read. Derive from a store instead. See docs/guidance/state-and-effects.md.',
         'Do not inspect the DOM inside a computed. Derive from a store instead. See docs/guidance/state-and-effects.md.'
+      ])
+    )
+  })
+
+  it('rejects JavaScript hard-private class members', () => {
+    const privateMemberFindings = findingsFor('no-js-private-class-members')
+    expect(privateMemberFindings).toHaveLength(2)
+    expect(
+      privateMemberFindings.every(({ severity }) => severity === 'error')
+    ).toBe(true)
+    expect(
+      new Set(privateMemberFindings.map(({ message }) => message))
+    ).toEqual(
+      new Set([
+        'Do not use JavaScript hard-private class members. Use TypeScript private members instead.'
+      ])
+    )
+  })
+
+  it('rejects direct canvas selection writes', () => {
+    const selectionFindings = findingsFor('no-direct-selection-write')
+    expect(
+      selectionFindings.map(({ filename }) => path.basename(filename)).sort()
+    ).toEqual(selectionWriteProbes.map(([file]) => file).sort())
+    expect(
+      selectionFindings.every(({ severity }) => severity === 'error')
+    ).toBe(true)
+    expect(new Set(selectionFindings.map(({ message }) => message))).toEqual(
+      new Set([
+        'Route canvas selection changes through LGraphCanvas selection APIs.'
       ])
     )
   })

@@ -658,7 +658,20 @@ describe('ModelDetail', () => {
 
   it('asks for an unreadable image to be reselected and then runs successfully', async () => {
     auth.session.value = credential
-    const fetch = vi.fn<typeof globalThis.fetch>()
+    let uploadAttempts = 0
+    const fetch = vi.fn<typeof globalThis.fetch>(async (_, init) => {
+      if (init?.method === 'POST')
+        return Response.json({
+          upload_url: 'https://storage.example/upload',
+          download_url: 'https://storage.example/image.png'
+        })
+      if (init?.method === 'PUT') {
+        uploadAttempts += 1
+        if (uploadAttempts === 1) throw new TypeError('Failed to fetch')
+        return new Response(null, { status: 200 })
+      }
+      throw new Error('Unexpected request')
+    })
     vi.stubGlobal('fetch', fetch)
     const model = getRouterWorkshopModelDetail(
       'vertexai--gemini-nano-banana-2--edit-images'
@@ -672,7 +685,9 @@ describe('ModelDetail', () => {
     for (const remove of sources.queryAllByRole('button', { name: /^Remove / }))
       await user().click(remove)
     const file = new File(['pixels'], 'private.png', { type: 'image/png' })
-    vi.spyOn(file, 'arrayBuffer').mockRejectedValue(
+    const sample = new Blob(['p'])
+    vi.spyOn(file, 'slice').mockReturnValue(sample)
+    vi.spyOn(sample, 'arrayBuffer').mockRejectedValue(
       new DOMException('Private file detail', 'NotReadableError')
     )
     const input = screen.getByLabelText('Source images', {
@@ -692,7 +707,7 @@ describe('ModelDetail', () => {
     )
     expect(screen.queryByRole('button', { name: 'Try again' })).toBeNull()
     expect(runWorkshopRouter).not.toHaveBeenCalled()
-    expect(fetch).not.toHaveBeenCalled()
+    expect(fetch).toHaveBeenCalledTimes(2)
     expect(captureWorkshopEvent).toHaveBeenCalledWith({
       name: 'run_finished',
       properties: expect.objectContaining({
@@ -716,6 +731,7 @@ describe('ModelDetail', () => {
     await user().click(screen.getByTestId('run-button'))
     await screen.findByTestId('output-download')
     expect(runWorkshopRouter).toHaveBeenCalledOnce()
+    expect(fetch).toHaveBeenCalledTimes(4)
     expect(
       JSON.stringify(vi.mocked(captureWorkshopEvent).mock.calls)
     ).not.toContain('private.png')
@@ -2335,13 +2351,15 @@ describe('ModelDetail', () => {
     }
   )
 
-  it("sends the API tab's get-key link as a models onboarding arrival for this model", async () => {
+  it("sends the API tab's get-key link as a models onboarding arrival for this model and workspace", async () => {
     auth.session.value = credential
     mountDetail({ model: runnable })
     await nextTick()
     await user().click(screen.getByTestId('tab-api'))
-    expect(screen.getByTestId('api-get-key').getAttribute('href')).toBe(
-      'https://platform.comfy.org/profile/api-keys?onboarding=models&model=bfl--flux-2-pro'
-    )
+    const href = screen.getByTestId('api-get-key').getAttribute('href')
+    const params = new URL(href ?? '').searchParams
+    expect(params.get('onboarding')).toBe('models')
+    expect(params.get('model')).toBe('bfl--flux-2-pro')
+    expect(params.get('workspace')).toBe(credential.workspace.id)
   })
 })

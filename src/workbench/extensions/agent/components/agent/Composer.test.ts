@@ -6,13 +6,14 @@ import type {
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
 import { render, screen, waitFor, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, h, nextTick, ref } from 'vue'
 import type { DirectiveBinding } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 
 import { i18n } from '@/i18n'
 import { consultEscapeOverride } from '@/platform/keybindings/escapeOverride'
+import { useTelemetry } from '@/platform/telemetry'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useAgentRunModeStore } from '../../stores/agent/agentRunModeStore'
@@ -32,7 +33,11 @@ const tooltipDirectiveStub = {
 }
 
 vi.mock(import('@/scripts/api'))
+vi.mock(import('@/platform/telemetry'))
 const fetchApi = vi.mocked(api.fetchApi)
+const telemetryProvider = useTelemetry()
+assert.exists(telemetryProvider)
+const telemetry = vi.mocked(telemetryProvider)
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -518,8 +523,8 @@ describe('Composer', () => {
   describe('run permissions popover', () => {
     beforeEach(() => {
       localStorage.clear()
-      fetchApi.mockReset()
-      fetchApi.mockImplementation(async () =>
+      vi.mocked(api.fetchApi).mockReset()
+      vi.mocked(api.fetchApi).mockImplementation(async () =>
         jsonResponse(404, { error: 'not found' })
       )
     })
@@ -551,6 +556,7 @@ describe('Composer', () => {
     })
 
     it('applies the picked mode without a separate save step', async () => {
+      telemetry.trackAgentRunModeChanged.mockClear()
       mount()
       const store = useAgentRunModeStore()
 
@@ -570,6 +576,12 @@ describe('Composer', () => {
         await screen.findByRole('button', { name: 'Auto' })
       ).toBeInTheDocument()
       expect(store.creditLimit).toBeNull()
+      expect(
+        telemetry.trackAgentRunModeChanged
+      ).toHaveBeenCalledExactlyOnceWith({
+        from: 'ask_approval',
+        to: 'auto'
+      })
     })
 
     it('rewrites the active mode when it is picked again', async () => {
@@ -586,12 +598,15 @@ describe('Composer', () => {
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
       expect(
-        fetchApi.mock.calls.filter(([, init]) => init?.method === 'PUT')
+        vi
+          .mocked(api.fetchApi)
+          .mock.calls.filter(([, init]) => init?.method === 'PUT')
       ).toHaveLength(1)
       expect(useAgentRunModeStore().mode).toBe('ask_approval')
     })
 
     it('keeps the popover open on the unchanged mode when the save fails', async () => {
+      telemetry.trackAgentRunModeChanged.mockClear()
       fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
       mount()
 
@@ -618,11 +633,12 @@ describe('Composer', () => {
         severity: 'error',
         detail: i18n.global.t('agent.runModeSaveFailed')
       })
+      expect(telemetry.trackAgentRunModeChanged).not.toHaveBeenCalled()
     })
 
     it('blocks a second pick while the write is in flight', async () => {
       let resolvePut!: (response: Response) => void
-      fetchApi.mockReturnValueOnce(
+      vi.mocked(api.fetchApi).mockReturnValueOnce(
         new Promise<Response>((resolve) => {
           resolvePut = resolve
         })
@@ -650,18 +666,20 @@ describe('Composer', () => {
       expect(ask).not.toHaveAttribute('aria-busy')
       expect(ask).toBeChecked()
       await userEvent.click(ask)
-      expect(fetchApi).toHaveBeenCalledTimes(1)
+      expect(api.fetchApi).toHaveBeenCalledTimes(1)
 
       resolvePut(jsonResponse(200, { mode: 'auto', credit_limit: null }))
       await vi.waitFor(() => expect(store.mode).toBe('auto'))
-      expect(fetchApi).toHaveBeenCalledTimes(1)
+      expect(api.fetchApi).toHaveBeenCalledTimes(1)
       expect(
         screen.queryByText('Choose when the agent needs your consent')
       ).toBeNull()
     })
 
     it('takes a retry after a failed save', async () => {
-      fetchApi.mockResolvedValueOnce(jsonResponse(500, { error: 'failed' }))
+      vi.mocked(api.fetchApi).mockResolvedValueOnce(
+        jsonResponse(500, { error: 'failed' })
+      )
       mount()
       const store = useAgentRunModeStore()
 
@@ -674,7 +692,7 @@ describe('Composer', () => {
 
       await userEvent.click(auto)
       await vi.waitFor(() => expect(store.mode).toBe('auto'))
-      expect(fetchApi).toHaveBeenCalledTimes(2)
+      expect(api.fetchApi).toHaveBeenCalledTimes(2)
     })
 
     it('commits the focused mode on Enter', async () => {
@@ -698,7 +716,7 @@ describe('Composer', () => {
       const pendingGet = new Promise<Response>((resolve) => {
         resolveGet = resolve
       })
-      fetchApi.mockImplementation(async (_route, init) =>
+      vi.mocked(api.fetchApi).mockImplementation(async (_route, init) =>
         init?.method === 'PUT'
           ? jsonResponse(200, { mode: 'auto', credit_limit: null })
           : pendingGet
@@ -759,7 +777,7 @@ describe('Composer', () => {
 
     it('leaves a menu reopened during the write open once it settles', async () => {
       let resolvePut!: (response: Response) => void
-      fetchApi.mockReturnValueOnce(
+      vi.mocked(api.fetchApi).mockReturnValueOnce(
         new Promise<Response>((resolve) => {
           resolvePut = resolve
         })
@@ -1379,6 +1397,70 @@ describe('Composer', () => {
       expect(emitted().openReferenceWorkflow).toBeUndefined()
       expect(emitted().send).toBeUndefined()
       expect(useAgentComposerStore().draft).toBe('Keep this prompt')
+    }
+  )
+
+  it.for([
+    {
+      direction: 'ArrowLeft',
+      key: '{ArrowLeft}',
+      insertedText: 'again ',
+      expectedText:
+        'again Before Unsaved Workflow between Unsaved Workflow (2) after',
+      expectedOffsets: [13, 22] as const
+    },
+    {
+      direction: 'ArrowRight',
+      key: '{ArrowRight}',
+      insertedText: ' again',
+      expectedText:
+        'Before Unsaved Workflow between Unsaved Workflow (2) after again',
+      expectedOffsets: [7, 16] as const
+    }
+  ])(
+    'keeps restored workflow chips when $direction collapses Select All',
+    async ({ key, insertedText, expectedText, expectedOffsets }) => {
+      useAgentComposerStore().replacePrompt({
+        text: 'Before  between  after',
+        workflowReferences: [
+          { id: 'wf-1', name: 'Unsaved Workflow', textOffset: 7 },
+          { id: 'wf-2', name: 'Unsaved Workflow (2)', textOffset: 16 }
+        ]
+      })
+      mount()
+      const store = useAgentComposerStore()
+      const epoch = store.promptEpoch
+      store.setNodeScope('workflows/Unsaved Workflow (3).json')
+      expect(store.promptEpoch).toBe(epoch)
+
+      const textbox = screen.getByRole('textbox')
+      expect(textbox).toHaveTextContent(
+        'Before Unsaved Workflow between Unsaved Workflow (2) after'
+      )
+      expect(
+        within(textbox).getAllByTestId('workflow-reference-chip')
+      ).toHaveLength(2)
+
+      await userEvent.click(textbox)
+      await userEvent.keyboard(`{Control>}a{/Control}${key}`)
+      await userEvent.keyboard(insertedText)
+
+      expect(textbox).toHaveTextContent(expectedText)
+      expect(
+        within(textbox).getAllByTestId('workflow-reference-chip')
+      ).toHaveLength(2)
+      expect(store.workflowReferences).toEqual([
+        {
+          id: 'wf-1',
+          name: 'Unsaved Workflow',
+          textOffset: expectedOffsets[0]
+        },
+        {
+          id: 'wf-2',
+          name: 'Unsaved Workflow (2)',
+          textOffset: expectedOffsets[1]
+        }
+      ])
     }
   )
 

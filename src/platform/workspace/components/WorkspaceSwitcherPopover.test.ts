@@ -1,8 +1,10 @@
 import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 
 import WorkspaceSwitcherPopover from './WorkspaceSwitcherPopover.vue'
@@ -11,15 +13,7 @@ vi.mock(import('@/platform/workspace/composables/useWorkspaceSwitch'), () => ({
   useWorkspaceSwitch: () => ({ switchWorkspace: vi.fn() })
 }))
 
-const billingMocks = vi.hoisted(() => ({
-  subscription: {
-    value: null as { tier: string; duration: string } | null
-  }
-}))
-
-vi.mock<unknown>(import('@/composables/billing/useBillingContext'), () => ({
-  useBillingContext: () => ({ subscription: billingMocks.subscription })
-}))
+vi.mock(import('@/composables/billing/useBillingContext'))
 
 const distributionMocks = vi.hoisted(() => ({ isCloud: true }))
 
@@ -122,7 +116,9 @@ describe('WorkspaceSwitcherPopover', () => {
   })
 
   beforeEach(() => {
-    billingMocks.subscription.value = null
+    const billingContext = useBillingContext()
+    billingContext.subscription = computed(() => null)
+    vi.mocked(useBillingContext).mockReturnValue(billingContext)
     distributionMocks.isCloud = true
   })
 
@@ -190,7 +186,17 @@ describe('WorkspaceSwitcherPopover', () => {
   })
 
   it('does not render a tier badge on team workspace rows', () => {
-    billingMocks.subscription.value = { tier: 'PRO', duration: 'MONTHLY' }
+    useBillingContext().subscription = computed(() => ({
+      isActive: true,
+      tier: 'PRO',
+      duration: 'MONTHLY',
+      planSlug: null,
+      scheduledChange: null,
+      renewalDate: null,
+      endDate: null,
+      isCancelled: false,
+      hasFunds: true
+    }))
 
     renderComponent({
       activeWorkspaceId: 'ws-team',

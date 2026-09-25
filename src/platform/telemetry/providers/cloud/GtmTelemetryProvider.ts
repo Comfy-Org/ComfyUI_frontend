@@ -300,7 +300,8 @@ export class GtmTelemetryProvider implements TelemetryProvider {
 
   trackPageVisibilityChanged(metadata: PageVisibilityMetadata): void {
     this.pushEvent('page_visibility', {
-      visibility_state: metadata.visibility_state
+      visibility_state: metadata.visibility_state,
+      agent_panel_open: metadata.agent_panel_open
     })
   }
 

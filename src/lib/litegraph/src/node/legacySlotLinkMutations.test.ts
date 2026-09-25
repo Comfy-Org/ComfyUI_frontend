@@ -67,7 +67,7 @@ describe('legacy slot link compatibility', () => {
     const { source, targets } = fanOut(3)
     const view = source.outputs[0].links!
 
-    for (const id of [...view]) view.splice(view.indexOf(id), 1)
+    for (const id of Array.from(view)) view.splice(view.indexOf(id), 1)
 
     for (const [index, target] of targets.entries()) {
       expect(target.isInputConnected(0), `target ${index}`).toBe(false)

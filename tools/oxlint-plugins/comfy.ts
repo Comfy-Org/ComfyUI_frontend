@@ -14,8 +14,10 @@ import type {
 import type { noNewErrorThrow as NoNewErrorThrow } from './noNewErrorThrow'
 import type {
   noDeprecatedApiSchema as NoDeprecatedApiSchema,
+  noDirectSelectionWrite as NoDirectSelectionWrite,
   noDomInComputed as NoDomInComputed,
   noEs2023ArrayCopyMethod as NoEs2023ArrayCopyMethod,
+  noJsPrivateClassMembers as NoJsPrivateClassMembers,
   noMisplacedSpecFiles as NoMisplacedSpecFiles,
   noNewZodForRemoteApiTypes as NoNewZodForRemoteApiTypes,
   noNewZodServerResponseSchema as NoNewZodServerResponseSchema,
@@ -57,8 +59,10 @@ const { noNewErrorThrow } = requireFrom('./noNewErrorThrow.ts') as {
 }
 const {
   noDeprecatedApiSchema,
+  noDirectSelectionWrite,
   noDomInComputed,
   noEs2023ArrayCopyMethod,
+  noJsPrivateClassMembers,
   noMisplacedSpecFiles,
   noNewZodForRemoteApiTypes,
   noNewZodServerResponseSchema,
@@ -68,8 +72,10 @@ const {
   noUnsafeErrorAssertion
 } = requireFrom('./restrictedSyntax.ts') as {
   noDeprecatedApiSchema: typeof NoDeprecatedApiSchema
+  noDirectSelectionWrite: typeof NoDirectSelectionWrite
   noDomInComputed: typeof NoDomInComputed
   noEs2023ArrayCopyMethod: typeof NoEs2023ArrayCopyMethod
+  noJsPrivateClassMembers: typeof NoJsPrivateClassMembers
   noMisplacedSpecFiles: typeof NoMisplacedSpecFiles
   noNewZodForRemoteApiTypes: typeof NoNewZodForRemoteApiTypes
   noNewZodServerResponseSchema: typeof NoNewZodServerResponseSchema
@@ -100,7 +106,9 @@ export default {
   rules: {
     'no-comfy-page-setup-call': noComfyPageSetupCall,
     'no-deprecated-api-schema': noDeprecatedApiSchema,
+    'no-direct-selection-write': noDirectSelectionWrite,
     'no-dom-in-computed': noDomInComputed,
+    'no-js-private-class-members': noJsPrivateClassMembers,
     'no-duplicate-ingest-type': noDuplicateIngestType,
     'no-es2023-array-copy-method': noEs2023ArrayCopyMethod,
     'no-import-actual': noImportActual,

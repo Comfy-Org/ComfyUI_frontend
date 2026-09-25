@@ -8,6 +8,10 @@ vi.mock(import('./gh'), () => ({
   switchBranch: vi.fn()
 }))
 vi.mock(import('./clipboard'), () => ({ copyToClipboard: vi.fn() }))
+vi.mock<unknown>(import('node:fs'), () => ({
+  default: { readFileSync: vi.fn(() => 'contents') },
+  readFileSync: vi.fn(() => 'contents')
+}))
 vi.mock(import('@clack/prompts'), () => ({
   confirm: vi.fn(),
   isCancel: (value: unknown): value is symbol => typeof value === 'symbol'
