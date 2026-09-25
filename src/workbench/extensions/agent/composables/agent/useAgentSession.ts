@@ -36,6 +36,7 @@ import type {
   PostMessageInput
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import type { WorkflowReference } from '../../types/workflowReference'
 import { serializeWorkflowReferences } from '../../utils/workflowReferenceText'
@@ -120,6 +121,14 @@ export interface AgentSessionDeps {
 
 const PREPARE_TIMEOUT_MS = 3000
 
+/** High-volume types, so a malformed one is reported once rather than per frame. */
+const THROTTLED_EVENT_TYPES = new Set([
+  'agent_message_delta',
+  'agent_message_draft',
+  'agent_thinking',
+  'agent_tool_call'
+])
+
 let sessionGeneration = 0
 
 /**
@@ -135,8 +144,11 @@ const turnStartedAt = new Map<TurnId, number>()
  * so a stop clicked from a remounted panel before the acknowledgement must
  * reach the continuation that acks. One owner: armed while a send is in
  * flight, consumed exactly once at ack.
+ *
+ * Whether a send IS in flight comes from agentSendGateStore, which the
+ * run-mode write also waits on — one definition of "a message is on its way",
+ * rather than a second flag that can drift from it.
  */
-let sendInFlight = false
 let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
 
 function consumeStopPendingAck() {
@@ -163,6 +175,22 @@ function disownsWorkflow(error: unknown): boolean {
   )
 }
 
+function isDeliberateRefusal(error: unknown): boolean {
+  if (disownsWorkflow(error)) return true
+  return error instanceof AgentApiError && error.status === 409
+}
+
+/**
+ * Whether a failed send is a FAULT rather than an answer the service gave on
+ * purpose: an admission denial is a billing outcome the paywall renders, a 409
+ * is a turn already running, and a disowned workflow is released so the user
+ * can resend (see releaseDisownedWorkflow). A chat notice alone kept the rest
+ * out of both error consoles.
+ */
+function isReportableSendFault(error: unknown): boolean {
+  return parseAdmissionError(error) === undefined && !isDeliberateRefusal(error)
+}
+
 export function useAgentSession(deps: AgentSessionDeps) {
   const { rest, events, onThreadStarted, onAskResolved, workflow } = deps
   const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
@@ -170,6 +198,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   const conversationStore = useAgentConversationStore()
   const bindingStore = useAgentWorkflowTabBindingStore()
+  const sendGateStore = useAgentSendGateStore()
   /**
    * The workflow the session is bound to (set on turn ack or an active-tab
    * switch, cleared by newChat/loadThread) - the CRDT follower's subscribe
@@ -239,6 +268,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function nextLocalErrorId(): TurnId {
     return toTurnId(`local-error-${createUuidv4()}`)
   }
+
+  const reportedMalformedEventTypes = new Set<string>()
 
   let unsubscribe: (() => void) | null = null
   let unsubscribeStatus: (() => void) | null = null
@@ -626,6 +657,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // persisted, so a refusal that lands after newChat()/loadThread() has
       // moved on still has to release, or the dead id survives the reload.
       releaseDisownedWorkflow(sentContext, error)
+      // Also before the guard, and for the same reason: the fault happened
+      // whether or not the user has since moved on, and newChat() is exactly
+      // when nobody is watching the chat. Only the NOTICE is generation-
+      // scoped, so it never lands in a conversation it did not come from.
+      if (isReportableSendFault(error))
+        reportError(error, { errorType: 'agent_send_failed' })
       if (generation !== loadGeneration) return false
       recordSendError(error, text)
       return false
@@ -657,7 +694,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     promptEditState.value = { phase: 'idle' }
     sending.value = true
-    sendInFlight = true
+    // Held from here rather than around postTurn alone: the POST waits on
+    // prepareWorkflow() first, and a run mode written during THAT wait still
+    // reaches the server before the message it must not re-authorize.
+    sendGateStore.begin()
     stopPendingAck = null
     try {
       return await performSend(
@@ -669,7 +709,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
     } finally {
       sending.value = false
-      sendInFlight = false
+      sendGateStore.end()
     }
   }
 
@@ -719,9 +759,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
       // The POST has not acked yet; remember the intent and cancel on ack.
-      // sendInFlight, not this instance's sending: the panel that posted may
-      // have been remounted, and the stop arrives through the new instance.
-      if (sendInFlight) stopPendingAck = { method }
+      // The shared send gate, not this instance's sending: the panel that
+      // posted may have been remounted, and the stop arrives through the new
+      // instance.
+      if (sendGateStore.isSending) stopPendingAck = { method }
       return
     }
     if (isStoppingTurn(turnId)) return
@@ -836,7 +877,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
         conversationStore.settleBackgroundTurn(turnId)
       }
     }
-    console.warn('[agent] dropping malformed agent event', error)
+    // A dropped agent_ask is a run-approval card the user never sees, so the
+    // turn stalls with nothing on screen to point at. Only the per-chunk types
+    // are throttled to one report each, since a shape regression in one of
+    // those would otherwise report hundreds of times; every other type reports
+    // each occurrence, ask included.
+    const throttled = THROTTLED_EVENT_TYPES.has(type)
+    if (!throttled || !reportedMalformedEventTypes.has(type)) {
+      if (throttled) reportedMalformedEventTypes.add(type)
+      reportError(error, {
+        errorType: 'agent_malformed_event_dropped',
+        tags: { eventType: type }
+      })
+    }
   }
 
   function handleMessageDone(

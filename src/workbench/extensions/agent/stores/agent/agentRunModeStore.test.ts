@@ -1,10 +1,14 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { nextTick } from 'vue'
 
 import { api } from '@/scripts/api'
+import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 
 vi.mock(import('@/scripts/api'))
 
+import { useAgentComposerStore } from './agentComposerStore'
 import { useAgentRunModeStore } from './agentRunModeStore'
+import { useAgentSendGateStore } from './agentSendGateStore'
 
 function jsonResponse(status: number, body: unknown): Response {
   return new Response(JSON.stringify(body), {
@@ -269,6 +273,104 @@ describe('agentRunModeStore', () => {
       expect(api.fetchApi).not.toHaveBeenCalled()
     }
   )
+
+  // PM-1660: the composer clears on the send click but the POST waits on the
+  // cloud-workflow refresh, so a mode saved in that window used to reach the
+  // server first and re-authorize the turn the user had already sent.
+  it('holds a mode change back until the in-flight send settles', async () => {
+    localStorage.setItem(
+      'Comfy.Agent.RunModePreference',
+      JSON.stringify({ mode: 'auto', credit_limit: null })
+    )
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      jsonResponse(200, { mode: 'ask_approval', credit_limit: null })
+    )
+    const sendGate = useAgentSendGateStore()
+    sendGate.begin()
+    const store = useAgentRunModeStore()
+
+    const save = store.save('ask_approval', null)
+    await nextTick()
+
+    expect(vi.mocked(api.fetchApi)).not.toHaveBeenCalled()
+    expect(store.mode).toBe('auto')
+
+    sendGate.end()
+    await save
+
+    expect(vi.mocked(api.fetchApi)).toHaveBeenCalledWith(
+      '/agent/run-mode',
+      expect.objectContaining({ method: 'PUT' })
+    )
+    expect(store.mode).toBe('ask_approval')
+  })
+
+  // Abandoning the VIEW does not abandon the turn: newChat/loadThread clear the
+  // composer's submission but stash the turn, which keeps running and keeps
+  // spending. Keying the wait on the draft let a later mode change overtake it.
+  it('keeps holding a mode change after the composer submission is discarded', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      jsonResponse(200, { mode: 'auto', credit_limit: null })
+    )
+    const composer = useAgentComposerStore()
+    composer.startSubmission({
+      prompt: composer.prompt,
+      attachments: [],
+      nodes: [],
+      target: createMockLoadedWorkflow({ path: 'workflows/target.json' })
+    })
+    const sendGate = useAgentSendGateStore()
+    sendGate.begin()
+    const store = useAgentRunModeStore()
+
+    composer.invalidateSubmission()
+    const save = store.save('auto', null)
+    await nextTick()
+
+    expect(vi.mocked(api.fetchApi)).not.toHaveBeenCalled()
+
+    sendGate.end()
+    await save
+
+    expect(vi.mocked(api.fetchApi)).toHaveBeenCalledOnce()
+  })
+
+  // A send is only bounded as far as its response headers, so a stalled body
+  // would hold the write forever and leave the popover disabled until a
+  // reload. Failing lets the user retry and writes nothing behind a turn the
+  // server may not have started.
+  it('gives up rather than waiting on a send that never settles', async () => {
+    vi.useFakeTimers()
+    try {
+      const sendGate = useAgentSendGateStore()
+      sendGate.begin()
+      const store = useAgentRunModeStore()
+
+      // Caught on the spot, not asserted at the end: advancing the timers is
+      // what rejects it, and an unhandled rejection in between fails the run.
+      const save = store
+        .save('ask_approval', null)
+        .catch((error: unknown) => error)
+      await vi.advanceTimersByTimeAsync(90_000)
+
+      expect(await save).toBeInstanceOf(Error)
+      expect(vi.mocked(api.fetchApi)).not.toHaveBeenCalled()
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('saves straight away when no send is in flight', async () => {
+    vi.mocked(api.fetchApi).mockResolvedValue(
+      jsonResponse(200, { mode: 'ask_approval', credit_limit: null })
+    )
+    const store = useAgentRunModeStore()
+
+    await store.save('ask_approval', null)
+
+    expect(vi.mocked(api.fetchApi)).toHaveBeenCalledOnce()
+    expect(store.mode).toBe('ask_approval')
+  })
 
   it('surfaces non-404 failures without changing the saved preference', async () => {
     vi.mocked(api.fetchApi).mockResolvedValueOnce(

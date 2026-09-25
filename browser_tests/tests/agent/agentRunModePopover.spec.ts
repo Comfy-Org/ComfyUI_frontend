@@ -196,4 +196,98 @@ test.describe('Agent run permissions popover', { tag: '@cloud' }, () => {
       expect(savedModes).toEqual(['auto', 'auto'])
     })
   })
+
+  // PM-1660/PM-1661, reproduced from the reporter's recording: the composer
+  // clears on the send CLICK, but the POST that carries the message waits on
+  // the cloud-workflow refresh first. The server pins a turn's run mode when
+  // that POST arrives, so a mode written inside that window re-authorized a
+  // turn the user had already sent under the previous mode.
+  test('a mode picked while a message is still in flight is saved after it', async ({
+    agentPanel,
+    comfyPage
+  }) => {
+    const page = comfyPage.page
+    const reachedServer: string[] = []
+    let holdTheSend = false
+    let releaseTheSend: () => void = () => {}
+    const sendHeld = new Promise<void>((resolve) => {
+      releaseTheSend = resolve
+    })
+
+    // Both halves of the send are held. Holding the workflow refresh alone
+    // would not be enough: prepareWorkflow() abandons it after
+    // PREPARE_TIMEOUT_MS and issues the POST anyway, which then waits here.
+    await page.route('**/api/workflows?*', async (route) => {
+      if (holdTheSend) await sendHeld
+      await route.fallback()
+    })
+    await page.route('**/api/agent/threads/*/messages', async (route) => {
+      if (route.request().method() !== 'POST') return route.fallback()
+      // Recorded where the POST is FORWARDED, not where it is intercepted.
+      // Recording on interception would let a PUT that overtook a still-held
+      // POST still read back as ['message', 'run-mode'] and pass.
+      if (holdTheSend) await sendHeld
+      reachedServer.push('message')
+      await route.fallback()
+    })
+    await page.route('**/api/agent/run-mode', async (route) => {
+      const request = route.request()
+      if (request.method() !== 'PUT')
+        return route.fulfill(
+          jsonRoute({
+            mode: 'auto',
+            credit_limit: null
+          } satisfies AgentRunModePreference)
+        )
+      reachedServer.push('run-mode')
+      return route.fulfill(
+        jsonRoute(zAgentRunMode.parse(request.postDataJSON()))
+      )
+    })
+
+    await agentPanel.open()
+    await agentPanel.selectWorkflow()
+    const panel = agentPanel.root
+    const askTrigger = panel.getByRole('button', {
+      name: enMessages.agent.runModeTriggerAsk,
+      exact: true
+    })
+    const autoTrigger = panel.getByRole('button', {
+      name: enMessages.agent.runModeTriggerAuto,
+      exact: true
+    })
+    await expect(autoTrigger).toBeVisible()
+
+    holdTheSend = true
+    await agentPanel.sendMessage('run the wf')
+
+    await test.step('the composer looks sent while the send is still held', async () => {
+      await expect(agentPanel.composer).toHaveText('')
+    })
+
+    await test.step('switching mode now does not overtake the message', async () => {
+      await autoTrigger.click()
+      await page
+        .getByRole('menuitemradio', {
+          name: new RegExp(enMessages.agent.runModeAsk)
+        })
+        .click()
+
+      // A cheap sanity guard, not the regression detector: reachedServer is
+      // pushed from a Node-side route handler, which the DOM assertion above
+      // it does not order against. The detector is the final assertion.
+      // Nothing at all should have been forwarded while the send is held.
+      await expect(
+        page.getByRole('menuitemradio', {
+          name: new RegExp(enMessages.agent.runModeAsk)
+        })
+      ).toHaveAttribute('aria-busy', 'true')
+      expect(reachedServer).toEqual([])
+
+      releaseTheSend()
+      await expect(askTrigger).toBeVisible()
+      // The load-bearing assertion: the write landed, and it landed second.
+      await expect.poll(() => reachedServer).toEqual(['message', 'run-mode'])
+    })
+  })
 })

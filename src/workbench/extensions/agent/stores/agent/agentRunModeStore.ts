@@ -1,4 +1,4 @@
-import { useLocalStorage } from '@vueuse/core'
+import { until, useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed } from 'vue'
 
@@ -12,6 +12,7 @@ import {
   AgentApiError,
   createAgentRestClient
 } from '../../services/agent/agentRestClient'
+import { useAgentSendGateStore } from './agentSendGateStore'
 
 const DEFAULT_PREFERENCE: AgentRunModePreference = {
   mode: 'ask_approval',
@@ -21,6 +22,15 @@ const DEFAULT_CREDIT_LIMIT = 300
 const PREFERENCE_STORAGE_KEY = 'Comfy.Agent.RunModePreference'
 const LEGACY_MODE_STORAGE_KEY = 'Comfy.Agent.RunMode'
 const LEGACY_CREDIT_LIMIT_STORAGE_KEY = 'Comfy.Agent.RunCreditLimit'
+/**
+ * An arbitrary backstop, chosen precisely BECAUSE a send has no ceiling of
+ * its own to sit past: auth init and a 401 remint each add their own wait,
+ * and nothing aborts a stalled response body at all. Long enough that a
+ * merely slow send finishes first; short enough to free the control.
+ */
+const SEND_WAIT_TIMEOUT_MS = 90_000
+
+class AgentSendWaitTimeoutError extends Error {}
 
 function migrateLegacyPreference(): void {
   const storedPreference = localStorage.getItem(PREFERENCE_STORAGE_KEY)
@@ -61,6 +71,37 @@ function migrateLegacyPreference(): void {
     localStorage.removeItem(LEGACY_MODE_STORAGE_KEY)
     localStorage.removeItem(LEGACY_CREDIT_LIMIT_STORAGE_KEY)
   }
+}
+
+/**
+ * Resolves once no message is still on its way to the server. The server pins
+ * a turn's run mode when that turn's POST ARRIVES, not when the user pressed
+ * send, so a mode written while the composer already looks sent overtakes the
+ * message and re-authorizes it (PM-1660).
+ *
+ * REJECTS rather than waits forever if the send never settles. A send is only
+ * bounded as far as its response HEADERS (api.ts clears its timer when those
+ * arrive, not when the body does), so a stalled body would otherwise leave
+ * every later write pending and the popover disabled until a reload. Failing
+ * is the safe direction on a spend gate: the user is told to retry, and no
+ * mode is written behind a message whose turn may still be unstarted.
+ */
+function sendInFlight(): Promise<unknown> | undefined {
+  const sendGate = useAgentSendGateStore()
+  if (!sendGate.isSending) return
+  return until(() => sendGate.isSending)
+    .toBe(false, {
+      flush: 'sync',
+      timeout: SEND_WAIT_TIMEOUT_MS,
+      throwOnTimeout: true
+    })
+    .catch(() => {
+      // until() rejects with the bare string 'Timeout', which reads as
+      // nothing in the error consoles the popover reports to.
+      throw new AgentSendWaitTimeoutError(
+        'timed out waiting for a message already sent'
+      )
+    })
 }
 
 export const useAgentRunModeStore = defineStore('agentRunMode', () => {
@@ -126,6 +167,12 @@ export const useAgentRunModeStore = defineStore('agentRunMode', () => {
       appliedSaveRevision = revision
       apply(savedPreference)
     }
+    // The picked mode is deliberately NOT applied here: this control shows
+    // what is SAVED, with the popover's own spinner covering the write (see
+    // Composer.test.ts, 'blocks a second pick while the write is in flight').
+    // Waiting for a send in flight widens that window; it does not change it.
+    const held = sendInFlight()
+    if (held !== undefined) await held
     try {
       applySaved(await api.putRunMode(next))
     } catch (error) {

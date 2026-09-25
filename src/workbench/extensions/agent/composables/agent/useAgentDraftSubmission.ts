@@ -1,6 +1,7 @@
 import { watch } from 'vue'
 import { v4 as uuidv4 } from 'uuid'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import type { AgentInputMethod } from '@/platform/telemetry/types'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 
@@ -74,20 +75,23 @@ export function useAgentDraftSubmission(
     flush: 'sync'
   })
 
+  function isSendable(
+    text: string,
+    attachments: ComposerAttachment[]
+  ): boolean {
+    if (!options.canSubmit()) return false
+    if (composer.submission?.phase === 'pending') return false
+    if (!text.trim() && attachments.length === 0) return false
+    return !attachments.some((attachment) => attachment.uploading)
+  }
+
   async function submit(
     text: string,
     attachments: ComposerAttachment[],
     references: WorkflowReference[] = []
   ): Promise<void> {
     const target = options.target()
-    if (
-      !options.canSubmit() ||
-      composer.submission?.phase === 'pending' ||
-      target === null ||
-      (!text.trim() && attachments.length === 0) ||
-      attachments.some((attachment) => attachment.uploading)
-    )
-      return
+    if (target === null || !isSendable(text, attachments)) return
 
     const prompt = composer.prompt
     const inputMethod = composer.promptOrigin
@@ -105,13 +109,22 @@ export function useAgentDraftSubmission(
       target
     })
 
-    const sent = await options.send(
-      text,
-      sentAttachments,
-      nodes,
-      sentReferences,
-      { clientMessageId: uuidv4(), inputMethod }
-    )
+    // A send that rejects rather than returning false would leave the
+    // submission 'pending' for the page's lifetime, and AgentPanelRoot reads
+    // that phase into isSending, which gates canSubmit — so the composer
+    // would refuse every later message until a reload. Reported rather than
+    // rethrown: the only caller is a template handler typed `=> void`
+    // (useComposer's onSend), so a rethrow lands as an untagged unhandled
+    // rejection that reaches neither error console.
+    let sent = false
+    try {
+      sent = await options.send(text, sentAttachments, nodes, sentReferences, {
+        clientMessageId: uuidv4(),
+        inputMethod
+      })
+    } catch (error) {
+      reportError(error, { errorType: 'agent_submit_failed' })
+    }
     composer.settleSubmission(submissionId, sent)
   }
 

@@ -30,6 +30,7 @@ import type {
   PostMessageInput
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 
 import type { SelectedNode } from './useCanvasSelection'
@@ -602,6 +603,178 @@ describe('useAgentSession (v1 composition root)', () => {
       )
     ).toBe(true)
   })
+
+  // PM-1660: the run-mode write waits on this gate, and the turn newChat()
+  // walks away from is stashed, not cancelled — it keeps running and keeps
+  // spending, so its POST must still be un-overtakeable.
+  it('holds the send gate for the whole send, newChat included, then releases it', async () => {
+    let releasePost: (ack: AgentTurnAccepted) => void = () => {}
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockImplementation(
+        () =>
+          new Promise<AgentTurnAccepted>((resolve) => {
+            releasePost = resolve
+          })
+      )
+    const sendGate = useAgentSendGateStore()
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    const sent = session.sendMessage('run the wf')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+    expect(sendGate.isSending).toBe(true)
+
+    session.newChat()
+    expect(sendGate.isSending).toBe(true)
+
+    releasePost({
+      thread_id: 'th-1',
+      message_id: 'msg-1',
+      workflow_id: 'wf-1'
+    })
+    await sent
+
+    expect(sendGate.isSending).toBe(false)
+  })
+
+  it('reports a failed send, so the failure is visible beyond the chat notice', async () => {
+    const failure = new Error('network down')
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(failure)
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      errorType: 'agent_send_failed'
+    })
+  })
+
+  // The generation guard exists to keep a stale notice out of the conversation
+  // the user moved to. It should not also swallow the fault report — a send
+  // that broke still broke, and newChat is exactly when nobody is watching.
+  it('reports a send fault even when the chat moved on before it failed', async () => {
+    const failure = new Error('network down')
+    let rejectPost: (error: Error) => void = () => {}
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockImplementation(
+        () =>
+          new Promise<AgentTurnAccepted>((_resolve, reject) => {
+            rejectPost = reject
+          })
+      )
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    const sent = session.sendMessage('make a cat')
+    await vi.waitFor(() => expect(postMessage).toHaveBeenCalledOnce())
+    session.newChat()
+    rejectPost(failure)
+
+    expect(await sent).toBe(false)
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      errorType: 'agent_send_failed'
+    })
+    expect(session.entries.value).toEqual([])
+  })
+
+  // Each of these is a refusal the service issued on purpose and the UI
+  // already explains, so none of them is a fault worth a telemetry report.
+  it.for([
+    {
+      refusal: 'an admission denial',
+      error: () => admissionError('no_funds', 'Out of credits')
+    },
+    {
+      refusal: 'a concurrent turn',
+      error: () =>
+        new AgentApiError('a turn is already running', 409, undefined)
+    },
+    {
+      refusal: 'a disowned workflow',
+      error: () =>
+        new AgentApiError('gone', 403, {
+          error: 'workflow not found or access denied'
+        })
+    }
+  ])('leaves $refusal out of telemetry', async ({ error }) => {
+    const postMessage = vi
+      .fn<
+        (threadId: string, req: PostMessageInput) => Promise<AgentTurnAccepted>
+      >()
+      .mockRejectedValue(error())
+    const session = useAgentSession({
+      rest: fakeRest({ postMessage }),
+      events: fakeEvents().source
+    })
+    session.start()
+
+    expect(await session.sendMessage('make a cat')).toBe(false)
+
+    expect(reportError).not.toHaveBeenCalled()
+  })
+
+  // PM-1660: a dropped agent_ask is a run-approval card the user never sees,
+  // and console.warn alone left that invisible to both consoles.
+  it('reports an agent event it had to drop as malformed', async () => {
+    const { source, emit } = fakeEvents()
+    const session = useAgentSession({ rest: fakeRest(), events: source })
+    session.start()
+    await session.sendMessage('build it')
+
+    emit({ type: 'agent_ask', data: { thread_id: 'th-1' } })
+
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'agent_malformed_event_dropped',
+      tags: { eventType: 'agent_ask' }
+    })
+  })
+
+  // onRaw sees every frame, so a shape regression in a streamed type would
+  // otherwise report once per chunk. A dropped ask is rare and each one costs
+  // the user a consent card they never saw, so those are never throttled.
+  it.for([
+    { eventType: 'agent_message_delta', reports: 1 },
+    { eventType: 'agent_ask', reports: 3 }
+  ])(
+    'reports a malformed $eventType $reports time(s) across three frames',
+    async ({ eventType, reports }) => {
+      const { source, emit } = fakeEvents()
+      const session = useAgentSession({ rest: fakeRest(), events: source })
+      session.start()
+      await session.sendMessage('build it')
+
+      const malformed = { type: eventType, data: { thread_id: 'th-1' } }
+      emit(malformed)
+      emit(malformed)
+      emit(malformed)
+
+      expect(reportError).toHaveBeenCalledTimes(reports)
+      expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+        errorType: 'agent_malformed_event_dropped',
+        tags: { eventType }
+      })
+    }
+  )
 
   it('renders no_funds as the paywall reply while keeping the rejected prompt', async () => {
     const postMessage = vi
