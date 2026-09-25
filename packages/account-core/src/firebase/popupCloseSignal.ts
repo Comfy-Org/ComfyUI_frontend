@@ -40,8 +40,14 @@ const FIREBASE_AUTH_HANDLER_PATH = '/__/auth/handler'
  * helper closes the popup itself once it has handed the credential back — so
  * a sign-in that is already resolving is given this long to settle first and
  * suppress the signal entirely.
+ *
+ * Firebase allows 8s at the same decision point. Less is safe here because
+ * the signal only releases controls and never fails the sign-in: a credential
+ * arriving after it still completes. This buys back most of the 8-10s while
+ * leaving room for the credential call that outlives the window it was made
+ * from, which is the case Firebase's own margin is there for.
  */
-const POPUP_CLOSE_SETTLE_MS = 500
+const POPUP_CLOSE_SETTLE_MS = 1_500
 
 let patchInstalled = false
 
@@ -64,11 +70,15 @@ export function withPopupCloseSignal<T>(
   let settled = false
   let timer: ReturnType<typeof setTimeout> | undefined
 
-  const restoreOpen = () => {
-    // Only the installer clears the flag: a call that never patched must not
-    // hand the next one permission to wrap a patch that is still live.
-    if (window.open !== patchedOpen) return
-    window.open = nativeOpen
+  // Released by whichever call installed it and by no other, but always by
+  // that one: a call that never patched must not free a patch still in use,
+  // and an installer that declined to free its own because something else had
+  // since wrapped `window.open` would disable the signal for the whole page.
+  let installedHere = false
+  const releasePatch = () => {
+    if (!installedHere) return
+    installedHere = false
+    if (window.open === patchedOpen) window.open = nativeOpen
     patchInstalled = false
   }
 
@@ -93,19 +103,20 @@ export function withPopupCloseSignal<T>(
     if (!String(args[0] ?? '').includes(FIREBASE_AUTH_HANDLER_PATH)) {
       return opened
     }
-    restoreOpen()
+    releasePatch()
     if (opened) watchForClose(opened)
     return opened
   }
 
   const stopWatching = () => {
     settled = true
-    restoreOpen()
+    releasePatch()
     clearTimeout(timer)
   }
 
   window.open = patchedOpen
   patchInstalled = true
+  installedHere = true
   // The popup is opened several awaits into `signInWithPopup` (the resolver
   // initializes first), so the patch has to outlive the synchronous call — and
   // has to come off again when that call throws before ever opening one.

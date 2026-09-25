@@ -626,6 +626,49 @@ describe('AuthSignIn', () => {
     await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
   })
 
+  it('holds the mode links through a detached attempt, so no remount can mint past provisioning', async () => {
+    let closePopup: (() => void) | undefined
+    let completeSignIn: ((credential: UserCredential) => void) | undefined
+    vi.mocked(signInWorkshopWithGoogle).mockImplementation((options) => {
+      closePopup = options?.onPopupClosed
+      return new Promise<UserCredential>((resolve) => {
+        completeSignIn = resolve
+      })
+    })
+    window.history.replaceState({}, '', '/login/')
+    render(AuthSignIn)
+
+    await clickGoogle()
+    closePopup?.()
+    await waitFor(() =>
+      expect(useEmailButton().hasAttribute('disabled')).toBe(false)
+    )
+
+    const signUpLink = screen.getByRole('link', { name: /sign up/i })
+    expect(signUpLink.getAttribute('aria-disabled')).toBe('true')
+    signUpLink.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })
+    )
+    expect(
+      screen.queryByRole('button', { name: /sign up with google/i }),
+      'a remount would leave the old attempt running against a controller back at idle'
+    ).toBeNull()
+
+    // The credential the remounted controller would have minted unprovisioned.
+    const credential = testCredential(
+      testFirebaseUser({
+        uid: 'user-1',
+        email: 'user@example.com',
+        displayName: null
+      })
+    )
+    authUser.value = credential.user
+    completeSignIn?.(credential)
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith('/'))
+    expect(vi.mocked(provisionWorkshopCustomer)).toHaveBeenCalledOnce()
+  })
+
   it('rolls a late credential back when the visitor has moved on to another attempt', async () => {
     let closePopup: (() => void) | undefined
     let completeSignIn: ((credential: UserCredential) => void) | undefined

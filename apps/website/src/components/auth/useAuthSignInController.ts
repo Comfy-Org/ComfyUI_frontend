@@ -201,15 +201,24 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.button !== 0)
       return
     event.preventDefault()
-    // The links hold still while the buttons do. A detached attempt is
-    // deliberately not held: the scope guard abandons it on the remount, and
-    // its `live()` checks stop it before it can publish or redirect.
-    if (busy.value) return
+    // The links hold still while the buttons do, and through a detached
+    // attempt too: `signIn.abandon()` only bumps a generation, so a remount
+    // leaves the old attempt running against a fresh controller that is back
+    // at `idle` and would mint its credential through the restore listener,
+    // skipping the provisioning `detached` exists to protect.
+    if (modeLocked.value) return
     onSwitchMode(next)
   }
 
   const busy = computed(
     () => state.value.step === 'pending' || state.value.step === 'minting'
+  )
+
+  // The sign-in controls come back on a detached attempt, but the mode links
+  // cannot: switching remounts the panel, and the replacement controller would
+  // mint the old attempt's credential without provisioning it.
+  const modeLocked = computed(
+    () => busy.value || state.value.step === 'detached'
   )
 
   const progressKey = computed(() => {
@@ -265,6 +274,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     const live = liveWhile(signIn.capture())
     let firebase: WorkshopFirebase | undefined
     let authenticated = false
+    let authenticatedUid: string | undefined
     let detached = false
     let finishAttempt: (() => void) | undefined
     // Detaching hands the controls to the visitor; from then on this attempt
@@ -277,7 +287,13 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     // frees the controls, and best-effort so a rejection stays handled.
     const abandon = async () => {
       reportAuthCompleted = undefined
-      if (authenticated) {
+      // `signOutWorkshop` is global. A different identity on `currentUser` got
+      // there after this attempt lost the controls and is not this attempt's
+      // to drop; an unpublished one still rolls back, since a credential that
+      // never reached the listener is this attempt's own to clear.
+      const identityIsAnothersNow =
+        !!user.value && user.value.uid !== authenticatedUid
+      if (authenticated && !identityIsAnothersNow) {
         const rollback = firebase!.signOutWorkshop().catch(() => {})
         pendingRollback = rollback
         void rollback.finally(() => {
@@ -321,12 +337,12 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
         return
       }
       firebase = loaded
-      // A detached predecessor still decides its own outcome and may still
-      // publish an identity, so this attempt waits it out before adding a
-      // second credential to the one `currentUser` both would write. The wait
-      // is on the submit the visitor just made, not on controls they have not
-      // touched, and it is bounded like every other non-interactive step.
-      if (pendingAuthentication) {
+      // A detached predecessor may still publish an identity, so an email
+      // attempt waits it out rather than adding a second credential to the one
+      // `currentUser` both would write. A popup attempt does not wait: opening
+      // one cancels the outstanding popup inside Firebase, and waiting would
+      // spend the visitor's click activation and get the retry pop-up blocked.
+      if (provider === 'email' && pendingAuthentication) {
         const settledFirst = await withinOperationDeadline(
           pendingAuthentication
         )
@@ -402,6 +418,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
       // The identity is persisted the moment the credential resolves, so an
       // abandon from here on must roll it back even if the flag has since flipped.
       authenticated = true
+      authenticatedUid = credential.user.uid
       if (!live()) {
         await abandon()
         return
@@ -568,6 +585,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
     formVisible,
     authTimedOut,
     busy,
+    modeLocked,
     progressKey,
     regionStatus,
     isSecureContext,

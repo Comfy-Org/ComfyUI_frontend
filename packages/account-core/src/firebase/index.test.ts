@@ -282,7 +282,7 @@ describe('popup sign-in close signal', () => {
 
       await vi.advanceTimersByTimeAsync(0)
       popup!.close()
-      await vi.advanceTimersByTimeAsync(750)
+      await vi.advanceTimersByTimeAsync(1_750)
 
       expect(onPopupClosed).toHaveBeenCalledOnce()
     }

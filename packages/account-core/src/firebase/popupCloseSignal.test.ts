@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { withPopupCloseSignal } from './popupCloseSignal.js'
 
 /** One poll tick plus the settle window, the soonest the signal can fire. */
-const AFTER_CLOSE_MS = 750
+const AFTER_CLOSE_MS = 1_750
 
 interface SignInHarness {
   readonly settle: (credential: string) => void
@@ -133,7 +133,7 @@ describe('withPopupCloseSignal', () => {
     popup?.close()
     // Inside the settle window: the OAuth helper closed its own popup and the
     // credential is still on its way.
-    await vi.advanceTimersByTimeAsync(300)
+    await vi.advanceTimersByTimeAsync(900)
     signIn.settle('credential')
     await expect(result).resolves.toBe('credential')
 
