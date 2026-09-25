@@ -405,6 +405,49 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
+    it('captures the agent activation funnel events with metadata', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentConsentShown({ trigger: 'first_load' })
+      provider.trackAgentConsentResolved({ decision: 'accepted' })
+      provider.trackAgentOnboardingShown()
+      provider.trackAgentOnboardingStep({ step: 4, action: 'finish' })
+
+      expect(hoisted.mockCapture.mock.calls).toEqual([
+        [TelemetryEvents.AGENT_CONSENT_SHOWN, { trigger: 'first_load' }],
+        [TelemetryEvents.AGENT_CONSENT_RESOLVED, { decision: 'accepted' }],
+        [TelemetryEvents.AGENT_ONBOARDING_SHOWN, {}],
+        [TelemetryEvents.AGENT_ONBOARDING_STEP, { step: 4, action: 'finish' }]
+      ])
+    })
+
+    it('captures the agent message with its thread, workflow and origin', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      provider.trackAgentMessageSent({
+        attachment_count: 1,
+        node_tag_count: 2,
+        thread_id: 'thread-1',
+        workflow_id: 'workflow-1',
+        client_message_id: 'client-message-1',
+        input_method: 'suggestion'
+      })
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(
+        TelemetryEvents.AGENT_MESSAGE_SENT,
+        {
+          attachment_count: 1,
+          node_tag_count: 2,
+          thread_id: 'thread-1',
+          workflow_id: 'workflow-1',
+          client_message_id: 'client-message-1',
+          input_method: 'suggestion'
+        }
+      )
+    })
+
     it('captures link dedup drop events with metadata', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
@@ -602,6 +645,94 @@ describe('PostHogTelemetryProvider', () => {
 
     it.for([
       {
+        event: TelemetryEvents.AGENT_MESSAGE_FEEDBACK,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentMessageFeedback({
+            message_id: 'turn-1',
+            turn_id: 'turn-1',
+            vote: 'up',
+            workflow_id: 'workflow-1'
+          }),
+        properties: {
+          message_id: 'turn-1',
+          turn_id: 'turn-1',
+          vote: 'up',
+          workflow_id: 'workflow-1'
+        }
+      },
+      {
+        event: TelemetryEvents.AGENT_ATTACH_BUTTON_CLICKED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentAttachButtonClicked({ method: 'drag_drop' }),
+        properties: { method: 'drag_drop' }
+      },
+      {
+        event: TelemetryEvents.AGENT_STOP_CLICKED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentStopClicked({
+            method: 'escape',
+            turn_id: 'turn-1',
+            turn_elapsed_ms: 400
+          }),
+        properties: {
+          method: 'escape',
+          turn_id: 'turn-1',
+          turn_elapsed_ms: 400
+        }
+      },
+      {
+        event: TelemetryEvents.AGENT_WORKFLOW_BOUND,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentWorkflowBound({
+            thread_id: 'thread-1',
+            workflow_id: 'workflow-2',
+            prev_workflow_id: 'workflow-1',
+            bind_source: 'selector_chip'
+          }),
+        properties: {
+          thread_id: 'thread-1',
+          workflow_id: 'workflow-2',
+          prev_workflow_id: 'workflow-1',
+          bind_source: 'selector_chip'
+        }
+      },
+      {
+        event: TelemetryEvents.AGENT_RUN_APPROVAL_SHOWN,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentRunApprovalShown({
+            turn_id: 'turn-1',
+            workflow_id: null
+          }),
+        properties: { turn_id: 'turn-1', workflow_id: null }
+      },
+      {
+        event: TelemetryEvents.AGENT_RUN_APPROVAL_RESOLVED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentRunApprovalResolved({
+            decision: 'open_workflow',
+            time_to_decide_ms: 500
+          }),
+        properties: {
+          decision: 'open_workflow',
+          time_to_decide_ms: 500
+        }
+      },
+      {
+        event: TelemetryEvents.AGENT_RUN_MODE_CHANGED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentRunModeChanged({
+            from: 'ask_approval',
+            to: 'auto'
+          }),
+        properties: { from: 'ask_approval', to: 'auto' }
+      },
+      {
+        event: TelemetryEvents.AGENT_THREAD_STARTED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentThreadStarted({ source: 'first_open' }),
+        properties: { source: 'first_open' }
+      },
+      {
         event: TelemetryEvents.AGENT_CONSENT_NOT_OFFERED,
         track: (provider: PostHogTelemetryProvider) =>
           provider.trackAgentConsentNotOffered({ reason: 'tour_active' }),
@@ -617,7 +748,7 @@ describe('PostHogTelemetryProvider', () => {
         properties: { reason: 'target_missing', step: 2 }
       }
     ])(
-      'captures $event with its reason',
+      'captures $event with its properties',
       async ({ event, track, properties }) => {
         const provider = createProvider()
         await vi.dynamicImportSettled()
@@ -627,6 +758,28 @@ describe('PostHogTelemetryProvider', () => {
         expect(hoisted.mockCapture).toHaveBeenCalledWith(event, properties)
       }
     )
+
+    it.for([
+      {
+        event: TelemetryEvents.AGENT_PAYWALL_SHOWN,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentPaywallShown({ reason: 'subscription_inactive' }),
+        properties: { reason: 'subscription_inactive' }
+      },
+      {
+        event: TelemetryEvents.AGENT_PAYWALL_CTA_CLICKED,
+        track: (provider: PostHogTelemetryProvider) =>
+          provider.trackAgentPaywallCtaClicked({ cta: 'add_credits' }),
+        properties: { cta: 'add_credits' }
+      }
+    ])('captures $event', async ({ event, track, properties }) => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+
+      track(provider)
+
+      expect(hoisted.mockCapture).toHaveBeenCalledWith(event, properties)
+    })
 
     it('captures resubscribe clicks with their source', async () => {
       const provider = createProvider()
