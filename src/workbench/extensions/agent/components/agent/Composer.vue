@@ -231,10 +231,16 @@ watch(mentionActive, async () => {
     ?.scrollIntoView?.({ block: 'nearest' })
 })
 
-const placeholderHint = computed(() => {
-  const [text = '', mentionNodes = ''] = t('agent.placeholder').split('\n')
-  return { text, mentionNodes }
-})
+function openReferenceMenu(): void {
+  const editor = editorRef.value
+  if (!editor) return
+  const { start, end } = editor.selection()
+  const needsSeparator =
+    start > 0 && !/\s/.test(composer.draft.value[start - 1] ?? '')
+  editor.replaceText(start, end, needsSeparator ? ' @' : '@')
+  editor.focus()
+  syncMention()
+}
 
 function onEnter(event: KeyboardEvent): void {
   if (event.isComposing || event.shiftKey) return
@@ -547,156 +553,145 @@ defineExpose({
             "
             class="pointer-events-none relative z-10 -mt-7 font-inter text-[14px]/[20px] font-normal text-muted-foreground"
           >
-            <span>{{ placeholderHint.text }} </span>
-            <AccessibleTooltip
-              :label="nodeReferenceDisabledReason ?? ''"
-              :disabled="!nodeReferenceDisabledReason"
-              :skip-delay-duration="0"
-              disable-hoverable-content
-              :collision-padding="8"
-            >
-              <template #trigger>
-                <Button
-                  type="button"
-                  variant="link"
-                  size="unset"
-                  :aria-disabled="!!nodeReferenceDisabledReason || undefined"
-                  :aria-description="nodeReferenceDisabledReason"
-                  class="pointer-events-auto -ml-1 h-5 shrink-0 gap-1 px-1 align-top text-sm/5 aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
-                  @click="onSelectNodes"
-                >
-                  <span
-                    class="icon-[lucide--mouse-pointer-click] size-3.5 shrink-0"
-                  />
-                  <span
-                    class="underline decoration-dashed underline-offset-2"
-                    >{{ placeholderHint.mentionNodes }}</span
-                  >
-                </Button>
-              </template>
-            </AccessibleTooltip>
+            {{ t('agent.placeholder') }}
           </div>
         </div>
       </div>
 
       <div class="flex items-center justify-between px-3 py-2">
-        <DropdownMenuRoot v-model:open="addMenuOpen">
-          <DropdownMenuTrigger as-child>
-            <Button
-              v-tooltip.top="buildTooltipConfig(t('agent.addToPrompt'))"
-              variant="muted-textonly"
-              size="icon"
-              :aria-label="t('agent.addToPrompt')"
-            >
-              <span class="icon-[lucide--plus] size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuPortal>
-            <DropdownMenuContent
-              side="top"
-              align="start"
-              :side-offset="4"
-              class="agent-scope z-1100 box-border w-max min-w-46.5 rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
-            >
-              <AccessibleTooltip
-                :label="nodeReferenceDisabledReason ?? ''"
-                :disabled="!nodeReferenceDisabledReason"
-                :skip-delay-duration="0"
-                disable-hoverable-content
-                :collision-padding="8"
+        <div class="flex items-center gap-1">
+          <DropdownMenuRoot v-model:open="addMenuOpen">
+            <DropdownMenuTrigger as-child>
+              <Button
+                v-tooltip.top="buildTooltipConfig(t('agent.addToPrompt'))"
+                variant="muted-textonly"
+                size="icon"
+                :aria-label="t('agent.addToPrompt')"
               >
-                <template #trigger>
-                  <DropdownMenuItem
-                    :disabled="!!nodeReferenceDisabledReason"
-                    :aria-description="nodeReferenceDisabledReason"
-                    class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-highlighted:bg-secondary-background-hover"
-                    @select="onSelectNodes"
-                  >
-                    <span class="icon-[comfy--node] size-4 shrink-0" />
-                    <span class="whitespace-nowrap">
-                      {{ t('agent.nodes') }}
-                    </span>
-                  </DropdownMenuItem>
-                </template>
-              </AccessibleTooltip>
-              <DropdownMenuSub
-                v-model:open="workflowSubmenuOpen"
-                @update:open="onWorkflowSubmenuOpenChange"
+                <span class="icon-[lucide--plus] size-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuPortal>
+              <DropdownMenuContent
+                side="top"
+                align="start"
+                :side-offset="4"
+                class="agent-scope z-1100 box-border w-max min-w-46.5 rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
               >
-                <DropdownMenuSubTrigger
-                  class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
+                <AccessibleTooltip
+                  :label="nodeReferenceDisabledReason ?? ''"
+                  :disabled="!nodeReferenceDisabledReason"
+                  :skip-delay-duration="0"
+                  disable-hoverable-content
+                  :collision-padding="8"
                 >
-                  <span class="icon-[comfy--workflow] size-4 shrink-0" />
-                  <span class="flex-1 text-left whitespace-nowrap">
-                    {{ t('agent.workflows') }}
-                  </span>
-                  <span class="icon-[lucide--chevron-right] size-4 shrink-0" />
-                </DropdownMenuSubTrigger>
-                <DropdownMenuPortal>
-                  <DropdownMenuSubContent
-                    :side-offset="4"
-                    class="agent-scope z-1100 box-border max-h-64 min-w-46.5 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
+                  <template #trigger>
+                    <DropdownMenuItem
+                      :disabled="!!nodeReferenceDisabledReason"
+                      :aria-description="nodeReferenceDisabledReason"
+                      class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none aria-disabled:cursor-not-allowed aria-disabled:opacity-50 data-highlighted:bg-secondary-background-hover"
+                      @select="onSelectNodes"
+                    >
+                      <span class="icon-[comfy--node] size-4 shrink-0" />
+                      <span class="whitespace-nowrap">
+                        {{ t('agent.nodes') }}
+                      </span>
+                    </DropdownMenuItem>
+                  </template>
+                </AccessibleTooltip>
+                <DropdownMenuSub
+                  v-model:open="workflowSubmenuOpen"
+                  @update:open="onWorkflowSubmenuOpenChange"
+                >
+                  <DropdownMenuSubTrigger
+                    class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
                   >
-                    <DropdownMenuItem
-                      class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                      @select.prevent="workflowSubmenuOpen = false"
+                    <span class="icon-[comfy--workflow] size-4 shrink-0" />
+                    <span class="flex-1 text-left whitespace-nowrap">
+                      {{ t('agent.workflows') }}
+                    </span>
+                    <span
+                      class="icon-[lucide--chevron-right] size-4 shrink-0"
+                    />
+                  </DropdownMenuSubTrigger>
+                  <DropdownMenuPortal>
+                    <DropdownMenuSubContent
+                      :side-offset="4"
+                      class="agent-scope z-1100 box-border max-h-64 min-w-46.5 overflow-y-auto rounded-lg border border-border-subtle bg-secondary-background p-1 font-inter shadow-lg"
                     >
-                      <span
-                        class="icon-[lucide--chevron-left] size-4 shrink-0"
-                      />
-                      <span>{{ t('g.back') }}</span>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      v-for="workflow in eligibleWorkflows"
-                      :key="workflow.id ?? workflow.tabPath"
-                      :disabled="workflowSelecting"
-                      class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                      @select.prevent="pickWorkflow(workflow)"
-                    >
-                      <span class="icon-[comfy--workflow] size-4 shrink-0" />
-                      <span class="max-w-64 truncate">{{ workflow.name }}</span>
-                      <span
-                        v-if="workflow.id === undefined"
-                        class="text-xs text-muted-foreground"
-                        >{{ t('agent.unsavedWorkflow') }}</span
+                      <DropdownMenuItem
+                        class="mb-0.5 box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
+                        @select.prevent="workflowSubmenuOpen = false"
                       >
-                    </DropdownMenuItem>
-                    <div
-                      v-if="eligibleWorkflows.length === 0"
-                      class="px-2 py-1 text-xs text-muted-foreground"
-                    >
-                      {{ t('agent.noWorkflowsToReference') }}
-                    </div>
-                  </DropdownMenuSubContent>
-                </DropdownMenuPortal>
-              </DropdownMenuSub>
-              <DropdownMenuItem
-                v-if="canOpenAssets"
-                class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                @select="emit('openAssets')"
-              >
-                <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
-                <span class="whitespace-nowrap">
-                  {{ t('agent.addFromAssets') }}
-                </span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator
-                v-if="canAttach && canOpenAssets"
-                class="mt-0 mb-px h-px bg-border-subtle"
-              />
-              <DropdownMenuItem
-                v-if="canAttach"
-                class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
-                @select="emit('attach')"
-              >
-                <i-lucide:paperclip class="size-4 shrink-0" />
-                <span class="whitespace-nowrap">{{
-                  t('agent.attachFiles')
-                }}</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenuPortal>
-        </DropdownMenuRoot>
+                        <span
+                          class="icon-[lucide--chevron-left] size-4 shrink-0"
+                        />
+                        <span>{{ t('g.back') }}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        v-for="workflow in eligibleWorkflows"
+                        :key="workflow.id ?? workflow.tabPath"
+                        :disabled="workflowSelecting"
+                        class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
+                        @select.prevent="pickWorkflow(workflow)"
+                      >
+                        <span class="icon-[comfy--workflow] size-4 shrink-0" />
+                        <span class="max-w-64 truncate">{{
+                          workflow.name
+                        }}</span>
+                        <span
+                          v-if="workflow.id === undefined"
+                          class="text-xs text-muted-foreground"
+                          >{{ t('agent.unsavedWorkflow') }}</span
+                        >
+                      </DropdownMenuItem>
+                      <div
+                        v-if="eligibleWorkflows.length === 0"
+                        class="px-2 py-1 text-xs text-muted-foreground"
+                      >
+                        {{ t('agent.noWorkflowsToReference') }}
+                      </div>
+                    </DropdownMenuSubContent>
+                  </DropdownMenuPortal>
+                </DropdownMenuSub>
+                <DropdownMenuItem
+                  v-if="canOpenAssets"
+                  class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
+                  @select="emit('openAssets')"
+                >
+                  <span class="icon-[comfy--image-ai-edit] size-4 shrink-0" />
+                  <span class="whitespace-nowrap">
+                    {{ t('agent.addFromAssets') }}
+                  </span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator
+                  v-if="canAttach && canOpenAssets"
+                  class="mt-0 mb-px h-px bg-border-subtle"
+                />
+                <DropdownMenuItem
+                  v-if="canAttach"
+                  class="box-border flex h-7 w-full cursor-pointer items-center gap-1.5 rounded-lg px-1.5 py-1 text-[14px]/5 font-normal text-base-foreground outline-none data-highlighted:bg-secondary-background-hover"
+                  @select="emit('attach')"
+                >
+                  <i-lucide:paperclip class="size-4 shrink-0" />
+                  <span class="whitespace-nowrap">{{
+                    t('agent.attachFiles')
+                  }}</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenuPortal>
+          </DropdownMenuRoot>
+          <Button
+            v-tooltip.top="buildTooltipConfig(t('agent.reference'))"
+            type="button"
+            variant="muted-textonly"
+            size="icon"
+            :aria-label="t('agent.reference')"
+            @click="openReferenceMenu"
+          >
+            <span class="text-base/4 font-medium">@</span>
+          </Button>
+        </div>
 
         <div class="flex items-center gap-1">
           <RunModePopover />

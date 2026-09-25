@@ -133,13 +133,6 @@ describe('Composer', () => {
       getMentionNodes: () => [{ id: '7', title: 'KSampler' }]
     }
     const { emitted } = mount(props)
-    const inline = screen.getByRole('button', {
-      name: 'mention nodes'
-    })
-    expect(inline).toHaveAttribute('aria-disabled', 'true')
-    expect(inline).toHaveAccessibleDescription(reason)
-    await userEvent.click(inline)
-    expect(emitted().selectNodes).toBeUndefined()
 
     await userEvent.click(screen.getByRole('button', { name: 'Add to prompt' }))
     const plusNodes = screen.getByRole('menuitem', { name: 'Nodes' })
@@ -182,23 +175,11 @@ describe('Composer', () => {
     expect(emitted().mentionPick).toBeUndefined()
   })
 
-  it('T-21 / PM-678 / FE-1325 hints at ideas, canvas references, and dragged assets', () => {
+  it('uses one primary action in the empty composer placeholder', () => {
     mount()
 
-    const text = screen.getByText(
-      'Describe ideas, @ to reference workflows, drag in media asset and files, or'
-    )
-    expect(text).toBeVisible()
-    const addNodes = screen.getByRole('button', {
-      name: 'mention nodes'
-    })
-    expect(addNodes).toBeVisible()
-    expect(addNodes).toContainHTML(
-      '<span class="icon-[lucide--mouse-pointer-click] size-3.5 shrink-0"></span>'
-    )
-    expect(
-      text.compareDocumentPosition(addNodes) & Node.DOCUMENT_POSITION_FOLLOWING
-    ).toBeTruthy()
+    expect(screen.getByText('Describe what you want to create')).toBeVisible()
+    expect(screen.getByRole('button', { name: 'Reference' })).toBeVisible()
   })
 
   it('hides the empty-composer hint once typing begins', async () => {
@@ -209,23 +190,35 @@ describe('Composer', () => {
     await userEvent.paste('hello')
 
     expect(useAgentComposerStore().draft).toBe('hello')
-    expect(screen.queryByRole('button', { name: 'mention nodes' })).toBeNull()
+    expect(
+      screen.queryByText('Describe what you want to create')
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Reference' })).toBeVisible()
   })
 
-  it('enters graph selection mode from the empty-composer hint', async () => {
-    const getMentionNodes = vi.fn(() => [])
-    const { emitted } = mount({ getMentionNodes })
-    const hintButton = screen.getByRole('button', {
-      name: 'mention nodes'
-    })
+  it('opens the node and workflow reference picker from the @ control', async () => {
+    mount({ getMentionNodes: () => [{ id: '7', title: 'KSampler' }] })
+    const textbox = screen.getByRole('textbox')
 
-    await userEvent.tab()
-    await userEvent.tab()
-    expect(hintButton).toHaveFocus()
-    await userEvent.keyboard('{Enter}')
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }))
 
-    expect(emitted().selectNodes).toHaveLength(1)
-    expect(getMentionNodes).not.toHaveBeenCalled()
+    expect(textbox).toHaveTextContent('@')
+    expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
+    expect(screen.getByRole('menuitem', { name: 'Workflows' })).toBeVisible()
+    await userEvent.click(screen.getByRole('menuitem', { name: 'Nodes' }))
+    expect(screen.getByRole('menuitem', { name: 'KSampler' })).toBeVisible()
+  })
+
+  it('separates a Reference trigger from existing text', async () => {
+    mount({ getMentionNodes: () => [{ id: '7', title: 'KSampler' }] })
+    const textbox = screen.getByRole('textbox')
+    await userEvent.click(textbox)
+    await userEvent.paste('edit this')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Reference' }))
+
+    expect(textbox).toHaveTextContent('edit this @')
+    expect(screen.getByRole('menuitem', { name: 'Nodes' })).toBeVisible()
   })
 
   it('retains the draft on Enter while a workflow selection is saving', async () => {
@@ -1581,11 +1574,7 @@ describe('Composer', () => {
   it('keeps the empty prompt hint visible when only nodes are selected', () => {
     mount({ selectionTags: [{ id: '5', title: 'KSampler' }] })
 
-    expect(
-      screen.getByText(
-        'Describe ideas, @ to reference workflows, drag in media asset and files, or'
-      )
-    ).toBeVisible()
+    expect(screen.getByText('Describe what you want to create')).toBeVisible()
   })
 
   it('hides the conditional entries from the add menu by default', async () => {
