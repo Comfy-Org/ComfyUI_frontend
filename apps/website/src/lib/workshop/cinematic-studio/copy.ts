@@ -120,6 +120,7 @@ const copy = {
     en: 'Use as reference',
     'zh-CN': '用作参考'
   },
+  'cinematic.ux.app': { en: 'App', 'zh-CN': '应用' },
   'cinematic.ux.heading': {
     en: 'Layout to review',
     'zh-CN': '评审布局'

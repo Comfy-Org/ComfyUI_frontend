@@ -1,15 +1,17 @@
 <script setup lang="ts">
-import { Ellipsis } from '@lucide/vue'
 import { computed, onMounted, ref } from 'vue'
 
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
+import { rc } from '../../../lib/workshop/cinematic-studio/reshoot-copy'
 import WorkshopGate from '../WorkshopGate.vue'
 import CinematicAppsHub from './CinematicAppsHub.vue'
-import CinematicMenu from './CinematicMenu.vue'
+import CinematicScenarioMenu from './CinematicScenarioMenu.vue'
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPanel from './CinematicStudioPanel.vue'
+import ReshootStudio from './reshoot/ReshootStudio.vue'
+import ReshootStudioPanel from './reshoot/ReshootStudioPanel.vue'
 
 const { models, locale = 'en' } = defineProps<{
   models: readonly CinematicModel[]
@@ -22,39 +24,65 @@ const LAYOUTS = [
   { id: 'hub', label: 'cinematic.ux.hub' }
 ] as const
 
+const APPS = ['studio', 'reshoot'] as const
+
 const layout = ref('e')
+const app = ref('studio')
 const layoutOptions = computed(() =>
   LAYOUTS.map((option) => ({ id: option.id, label: tc(option.label, locale) }))
 )
+const appOptions = computed(() => [
+  { id: 'studio', label: tc('cinematic.title', locale) },
+  { id: 'reshoot', label: rc('reshoot.title', locale) }
+])
 
 onMounted(() => {
-  const requested = new URLSearchParams(window.location.search).get('ux')
-  if (requested && LAYOUTS.some((option) => option.id === requested))
-    layout.value = requested
+  const params = new URLSearchParams(window.location.search)
+  const requestedLayout = params.get('ux')
+  if (LAYOUTS.some((option) => option.id === requestedLayout))
+    layout.value = requestedLayout ?? layout.value
+  const requestedApp = params.get('app')
+  if (APPS.some((id) => id === requestedApp))
+    app.value = requestedApp ?? app.value
 })
+
+function remember(key: string, value: string) {
+  const url = new URL(window.location.href)
+  url.searchParams.set(key, value)
+  window.history.replaceState(window.history.state, '', url)
+}
 
 function pickLayout(id: string) {
   layout.value = id
-  const url = new URL(window.location.href)
-  url.searchParams.set('ux', id)
-  window.history.replaceState(window.history.state, '', url)
+  remember('ux', id)
+}
+
+function pickApp(id: string) {
+  app.value = id
+  remember('app', id)
+  if (layout.value === 'hub') pickLayout('e')
 }
 </script>
 
 <template>
   <WorkshopGate>
     <CinematicAppsHub v-if="layout === 'hub'" :locale />
+    <template v-else-if="app === 'reshoot'">
+      <ReshootStudioPanel v-if="layout === 'd'" :locale />
+      <ReshootStudio v-else :locale />
+    </template>
     <CinematicStudioPanel v-else-if="layout === 'd'" :models :locale />
     <CinematicStudio v-else :models :locale />
-    <CinematicMenu
-      :model-value="layout"
-      :options="layoutOptions"
-      :heading="tc('cinematic.ux.heading', locale)"
-      trigger-class="fixed right-3 bottom-56 z-60 size-8 justify-center rounded-full border border-transparency-white-t20 bg-primary-comfy-ink-light text-primary-comfy-canvas shadow-lg hover:text-primary-warm-white lg:right-5 lg:bottom-5"
-      @update:model-value="pickLayout"
-    >
-      <Ellipsis class="size-4" aria-hidden="true" />
-    </CinematicMenu>
+    <CinematicScenarioMenu
+      :app
+      :layout
+      :apps="appOptions"
+      :layouts="layoutOptions"
+      :app-heading="tc('cinematic.ux.app', locale)"
+      :layout-heading="tc('cinematic.ux.heading', locale)"
+      @update:app="pickApp"
+      @update:layout="pickLayout"
+    />
     <template #fallback>
       <div
         class="flex min-h-[60svh] flex-col items-center justify-center gap-3 text-center"

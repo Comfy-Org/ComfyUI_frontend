@@ -489,6 +489,25 @@ describe('CinematicStudio', () => {
       expect(window.location.search).toBe('?ux=d')
     })
 
+    it('swaps to the Re-shoot app and keeps the chosen layout', async () => {
+      window.history.replaceState(null, '', '/cinematic-studio?ux=d')
+      render(CinematicStudioPage, { props: { models } })
+      const user = userEvent.setup()
+
+      await user.click(
+        await screen.findByRole('button', { name: /^Layout to review/ })
+      )
+      await user.click(
+        await screen.findByRole('menuitemradio', { name: 'Re-shoot a video' })
+      )
+
+      expect(
+        screen.getByRole('complementary', { name: 'Re-shoot settings' })
+      ).toBeInTheDocument()
+      expect(panel()).toBeNull()
+      expect(window.location.search).toBe('?ux=d&app=reshoot')
+    })
+
     it('lists Cinematic Studio first and Re-shoot a video next in the Hub apps tab', async () => {
       window.history.replaceState(null, '', '/cinematic-studio?ux=hub')
       render(CinematicStudioPage, { props: { models } })
