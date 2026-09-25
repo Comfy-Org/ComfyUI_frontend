@@ -511,16 +511,21 @@ export const useAgentConversationStore = defineStore(
      * broadcast-only and never persisted, so a plain reload of this thread
      * would not show it either.
      *
-     * A carried tool call is copied, not aliased, and forced terminal. The
-     * only calls that reach here are ones the row does not have, and the row
-     * carries every call the service saw finish -- so this one never did, and
-     * there is no transport left to finish it. Left `streaming` it would spin
-     * forever on a settled message, which is the same normalization
-     * `toolCallPartState` applies to a restored in-progress call.
+     * A carried tool call that is still `streaming` is copied, not aliased,
+     * and forced terminal: there
+     * is no transport left to settle it, and left `streaming` it would spin
+     * forever on a message nothing can finish. Its OUTCOME is kept, though.
+     * Streaming does not mean unfinished here -- PM-1575's canvas gate holds
+     * a succeeded canvas-mutating call at `streaming` with `ok` already true
+     * while it waits for the follower to catch up, and calling that a failure
+     * would put a red cross on a call that worked. Only a call that truly
+     * never resolved has no `ok`, and that one reads as failed, matching
+     * `toolCallOk` on a restored in-progress row.
      *
-     * Inserted before the row's trailing reply text rather than appended, so
-     * a tab link the agent announced while working does not render as a chip
-     * underneath the answer it preceded.
+     * Inserted before the row's trailing run of reply text and approval card
+     * rather than appended, so a tab link the agent
+     * announced while working does not render underneath the answer it
+     * preceded.
      */
     function adoptLiveOnlyParts(
       hydrated: AssistantMessage,
@@ -536,15 +541,15 @@ export const useAgentConversationStore = defineStore(
         if (part.type !== 'tool' || recordedCallIds.has(part.callId)) return []
         return [
           part.state === 'streaming'
-            ? { ...part, state: 'done' as const, ok: false }
+            ? { ...part, state: 'done' as const, ok: part.ok ?? false }
             : part
         ]
       })
       if (carried.length === 0) return
       const insertAt =
-        hydrated.parts.at(-1)?.type === 'text'
-          ? hydrated.parts.length - 1
-          : hydrated.parts.length
+        hydrated.parts.findLastIndex(
+          (part) => part.type !== 'text' && part.type !== 'runApproval'
+        ) + 1
       hydrated.parts = [
         ...hydrated.parts.slice(0, insertAt),
         ...carried,
