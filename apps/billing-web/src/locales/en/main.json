@@ -169,6 +169,7 @@
       "currentPlan": "Current plan",
       "currentPlanIs": "Current plan: {plan}",
       "noPlan": "You are not on a paid plan yet.",
+      "endsOn": "Ends on {date}",
       "choose": "Choose",
       "choosePlan": "Choose {plan}",
       "cancel": "Cancel subscription",

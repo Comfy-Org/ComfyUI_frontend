@@ -15,6 +15,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import CardRow from './CardRow.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
+import { modelSlides } from '../../lib/workshop/featured-slides'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
@@ -97,6 +98,7 @@ const featured = computed(() =>
     category.models.filter((model) => model.categoryHighlight)
   )
 )
+const featuredSlides = computed(() => modelSlides(featured.value, locale))
 
 function clear() {
   query.value = ''
@@ -160,7 +162,7 @@ function leaveSection() {
 
     <FeaturedBanner
       v-if="browsing && featured.length"
-      :models="featured"
+      :slides="featuredSlides"
       :locale
       :autoplay="false"
       class="mb-10 short:mb-6"

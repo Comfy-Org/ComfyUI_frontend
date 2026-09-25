@@ -42,7 +42,7 @@ const marker = computed(
       :data-testid="`catalogue-tab-${tab}`"
       :class="
         cn(
-          'relative inline-flex h-9 cursor-pointer items-center justify-center rounded-xl px-5 text-sm font-semibold whitespace-nowrap transition-colors outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 max-sm:px-3',
+          'relative inline-flex h-9 cursor-pointer items-center justify-center rounded-xl px-5 text-sm font-semibold whitespace-nowrap transition-colors duration-300 ease-out outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50 motion-reduce:transition-none max-sm:px-3',
           active === tab
             ? 'text-page'
             : 'text-content-secondary hover:text-content-bright'

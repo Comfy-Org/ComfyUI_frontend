@@ -280,6 +280,45 @@ export type WorkflowApiAssetsRequest = {
 }
 
 /**
+ * The user a web session belongs to
+ */
+export type WebSessionUser = {
+  email: string
+  /**
+   * The identity provider's verified-email claim when the session was created
+   */
+  email_verified: boolean
+  /**
+   * Comfy user id
+   */
+  id: string
+  name?: string
+  /**
+   * Sign-in method, for example `google.com` or `password`
+   */
+  sign_in_provider?: string
+}
+
+/**
+ * The live web session and the user it belongs to
+ */
+export type WebSessionResponse = {
+  /**
+   * The session ends at this time regardless of use
+   */
+  absolute_expires_at: string
+  /**
+   * Send as `X-CSRF-Token` on requests that change data with this session
+   */
+  csrf_token: string
+  /**
+   * Idle expiry. Real use slides it; reading the session does not.
+   */
+  expires_at: string
+  user: WebSessionUser
+}
+
+/**
  * Result of validating a set of asset operations.
  */
 export type ValidationResult = {
@@ -1466,11 +1505,11 @@ export type PreviewSubscribeResponse = {
   new_plan: PreviewPlanInfo
   /**
    * The Stripe payment method configuration governing which payment
-   * methods the embedded checkout offers for this environment. Mount
-   * Stripe Elements with `paymentMethodConfiguration` set to this id
-   * instead of hardcoding payment method types. Present on every
-   * successful preview while embedded checkout is enabled and absent
-   * from legacy previews.
+   * methods a checkout offers for this environment. Mount Stripe
+   * Elements with `paymentMethodConfiguration` set to this id instead
+   * of hardcoding payment method types. Present on every successful
+   * preview whenever the environment has one configured, independent
+   * of embedded_checked_enabled; absent when it is not configured.
    *
    */
   payment_method_configuration_id?: string
@@ -6969,6 +7008,46 @@ export type DeleteSessionResponses = {
 
 export type DeleteSessionResponse2 =
   DeleteSessionResponses[keyof DeleteSessionResponses]
+
+export type GetSessionData = {
+  body?: never
+  path?: never
+  query?: never
+  url: '/api/auth/session'
+}
+
+export type GetSessionErrors = {
+  /**
+   * No live session. `code` is `session_expired`, `session_revoked`,
+   * or `no_session`: no cookie, a cookie the server never issued, a
+   * session whose user no longer exists, or `web_session_enabled` off
+   * for the session's user.
+   *
+   */
+  401: ErrorResponse
+  /**
+   * Refused. `code` is `origin_not_allowed` (untrusted or missing
+   * Origin), `cross_site_request`, or `FORBIDDEN` when the account is
+   * scheduled for deletion.
+   *
+   */
+  403: ErrorResponse
+  /**
+   * The session store is unreachable; retry with backoff
+   */
+  500: ErrorResponse
+}
+
+export type GetSessionError = GetSessionErrors[keyof GetSessionErrors]
+
+export type GetSessionResponses = {
+  /**
+   * The live session
+   */
+  200: WebSessionResponse
+}
+
+export type GetSessionResponse = GetSessionResponses[keyof GetSessionResponses]
 
 export type CreateSessionData = {
   body?: never
