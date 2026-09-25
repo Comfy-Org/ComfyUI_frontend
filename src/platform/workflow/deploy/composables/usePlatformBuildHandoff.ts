@@ -111,93 +111,44 @@ function armHandoff(
   window.addEventListener('message', onMessage)
 }
 
-function showOpeningNotice(tab: Window): void {
-  tab.document.write(
-    `<!doctype html><title>${t('deployToComfyApi.openingBuildWizard')}</title>` +
-      `<p style="font-family:system-ui,sans-serif;padding:2rem">` +
-      `${t('deployToComfyApi.openingBuildWizard')}</p>`
-  )
-}
-
 function reportHandoffError(error: unknown): void {
   reportError(error, { errorType: 'error_preparing_platform_build_handoff' })
 }
 
 /**
  * Opens the platform's build wizard on its import step with the open
- * workflow already picked. On Cloud the saved workflow is in the workspace
- * library the wizard reads, so its id goes in the link. Otherwise the tab we
- * opened is the channel: the link carries a nonce and the workflow JSON is
- * posted to the wizard when it says it is ready. Without a tab of our own
- * (Desktop hands new windows to the system browser, or the popup was
- * blocked) the workflow file is exported for the wizard's drop zone instead.
+ * workflow already picked, straight from the click: nothing is awaited before
+ * the tab opens, so popup blockers see the gesture and no blank tab is needed.
+ *
+ * On Cloud a saved, unchanged workflow is already in the workspace library the
+ * wizard reads, so its id is looked up as soon as the card opens and goes in
+ * the link. Anything else in a browser goes over the tab we open: the link
+ * carries a nonce and the workflow JSON is posted when the wizard says it is
+ * ready. Desktop hands new windows to the system browser, so there is no tab
+ * to talk to; the workflow file is exported for the wizard's drop zone.
  */
 export function usePlatformBuildHandoff() {
   const workflowStore = useWorkflowStore()
   const workflowService = useWorkflowService()
   const toastStore = useToastStore()
 
-  async function savedCloudWorkflowId(
-    workflow: ComfyWorkflow
-  ): Promise<string | undefined> {
-    if (workflow.isTemporary) return undefined
-    if (workflow.isModified && !(await workflowService.saveWorkflow(workflow)))
-      return undefined
-    try {
-      return await findCloudWorkflowId(cloudWorkflowName(workflow))
-    } catch (error) {
-      reportHandoffError(error)
-      return undefined
-    }
+  let savedCloudCopy: { workflow: ComfyWorkflow; id: string } | undefined
+  const lookedUp = workflowStore.activeWorkflow
+  if (isCloud && lookedUp && !lookedUp.isTemporary && !lookedUp.isModified) {
+    findCloudWorkflowId(cloudWorkflowName(lookedUp))
+      .then((id) => {
+        if (id) savedCloudCopy = { workflow: lookedUp, id }
+      })
+      .catch(reportHandoffError)
   }
 
-  async function resolveUrl(tab: Window | null): Promise<string> {
-    const workflow = workflowStore.activeWorkflow
-    if (!workflow) return platformBuildImportUrl({ kind: 'bare' })
-
-    const workflowId = isCloud
-      ? await savedCloudWorkflowId(workflow)
-      : undefined
-    if (workflowId) return platformBuildImportUrl({ kind: 'cloud', workflowId })
-
-    if (!tab) {
-      await workflowService.exportWorkflow(workflow.filename, 'workflow')
-      return platformBuildImportUrl({ kind: 'bare' })
-    }
-
-    const nonce = handoffNonce()
-    const { workflow: graph } = await app.graphToPrompt()
-    armHandoff(tab, nonce, `${cloudWorkflowName(workflow)}.json`, graph)
-    return platformBuildImportUrl({ kind: 'handoff', nonce })
+  function cloudIdFor(workflow: ComfyWorkflow): string | undefined {
+    if (savedCloudCopy?.workflow !== workflow) return undefined
+    if (workflow.isTemporary || workflow.isModified) return undefined
+    return savedCloudCopy.id
   }
 
-  /**
-   * Call from the click handler. A temporary workflow is saved first, because
-   * its save prompt has to be answered on this tab. Then in a browser the tab
-   * opens on the gesture and lands where the workflow is once the lookup has
-   * finished. Desktop hands every new window to the system browser, so it gets
-   * the resolved link in one go. Resolves to whether a tab was opened.
-   */
-  async function open(): Promise<boolean> {
-    const workflow = workflowStore.activeWorkflow
-    if (isCloud && workflow?.isTemporary)
-      await workflowService.saveWorkflow(workflow).catch(reportHandoffError)
-
-    const tab = isDesktop ? null : window.open('', '_blank')
-    if (tab) showOpeningNotice(tab)
-    const url = await resolveUrl(tab).catch((error: unknown) => {
-      reportHandoffError(error)
-      return platformBuildImportUrl({ kind: 'bare' })
-    })
-    if (tab) {
-      tab.location.href = url
-      return true
-    }
-    if (isDesktop) {
-      window.open(url, '_blank', 'noopener')
-      return true
-    }
-    if (window.open(url, '_blank')) return true
+  function tellBlocked(url: string): false {
     toastStore.add({
       severity: 'error',
       summary: t('deployToComfyApi.popupBlocked'),
@@ -205,6 +156,50 @@ export function usePlatformBuildHandoff() {
       life: 8000
     })
     return false
+  }
+
+  /**
+   * Call from the click handler, and keep the call first: the tab has to open
+   * inside the click's user activation. Resolves to whether a tab was opened.
+   */
+  async function open(): Promise<boolean> {
+    const workflow = workflowStore.activeWorkflow
+    const bare = platformBuildImportUrl({ kind: 'bare' })
+
+    if (isDesktop) {
+      if (workflow)
+        await workflowService.exportWorkflow(workflow.filename, 'workflow')
+      window.open(bare, '_blank', 'noopener')
+      return true
+    }
+    if (!workflow) return window.open(bare, '_blank') ? true : tellBlocked(bare)
+
+    const workflowId = cloudIdFor(workflow)
+    if (workflowId) {
+      const url = platformBuildImportUrl({ kind: 'cloud', workflowId })
+      return window.open(url, '_blank') ? true : tellBlocked(url)
+    }
+
+    const nonce = handoffNonce()
+    const tab = window.open(
+      platformBuildImportUrl({ kind: 'handoff', nonce }),
+      '_blank'
+    )
+    if (!tab) {
+      await workflowService
+        .exportWorkflow(workflow.filename, 'workflow')
+        .catch(reportHandoffError)
+      return tellBlocked(bare)
+    }
+    const { workflow: graph } = await app
+      .graphToPrompt()
+      .catch((error: unknown) => {
+        reportHandoffError(error)
+        return { workflow: undefined }
+      })
+    if (graph)
+      armHandoff(tab, nonce, `${cloudWorkflowName(workflow)}.json`, graph)
+    return true
   }
 
   return { open }
