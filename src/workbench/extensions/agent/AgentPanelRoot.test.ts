@@ -3578,7 +3578,7 @@ describe('AgentPanelRoot workflow binding', () => {
       references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
     })
     const bodies = mockMessagesEndpoint('wf-other')
-    renderWithSelectedTarget()
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
     const textbox = screen.getByRole('textbox')
     await userEvent.click(textbox)
     await userEvent.paste('continue this draft')
@@ -4006,6 +4006,57 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(scratch.isTemporary).toBe(false)
     expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(current.path)
+  })
+
+  it('keeps a persisted startup target unresolved until history hydration completes', async () => {
+    const {
+      target,
+      references: [other]
+    } = setupWorkflowContext({
+      targetId: 'wf-42',
+      references: [{ path: 'workflows/other.json', workflowId: 'wf-other' }]
+    })
+    mockMessagesEndpoint('wf-other')
+    localStorage.setItem('Comfy.Agent.ThreadId', 'th-restored')
+    const defaultFetch = vi.mocked(fetch).getMockImplementation()
+    assert.exists(defaultFetch)
+    let finishHistory = (_response: Response) => {}
+    const history = new Promise<Response>((resolve) => {
+      finishHistory = resolve
+    })
+    vi.mocked(fetch).mockImplementation((input, init) =>
+      String(input).includes('/messages') && init?.method !== 'POST'
+        ? history
+        : defaultFetch(input, init)
+    )
+    render(AgentPanelRoot, { global: { plugins: [i18n] } })
+    const panel = useAgentPanelStore()
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(panel.canRestoreWorkflow).toBe(true)
+    workflowStore.activeWorkflow = addTab('workflows/third.json')
+    await nextTick()
+    expect(panel.selectedWorkflow).toBeNull()
+    expect(panel.canRestoreWorkflow).toBe(true)
+
+    finishHistory(
+      json(200, [
+        {
+          id: 'row',
+          thread_id: 'th-restored',
+          seq: 1,
+          role: 'user',
+          status: 'complete',
+          turn_id: 'turn',
+          workflow_id: 'wf-other',
+          content: { text: 'Earlier request' }
+        }
+      ])
+    )
+    await waitFor(() => expect(panel.selectedWorkflow?.path).toBe(other.path))
+    expect(panel.canRestoreWorkflow).toBe(false)
+    workflowStore.activeWorkflow = target
+    await nextTick()
+    expect(panel.selectedWorkflow?.path).toBe(other.path)
   })
 
   it('restores an agent-minted draft target after reload and keeps its Cloud identity on send', async () => {

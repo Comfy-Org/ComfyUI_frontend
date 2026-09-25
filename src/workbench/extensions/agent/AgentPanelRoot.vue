@@ -208,7 +208,7 @@ const {
   isSelecting: workflowSelecting,
   selectingTarget,
   savingReference,
-  followVisibleWorkflow,
+  onVisibleWorkflowChanged,
   selectTarget: onSelectWorkflowTarget,
   selectReference: onSelectWorkflowReference,
   restoreTarget: onWorkflowRestored,
@@ -669,6 +669,7 @@ const {
     useTelemetry()?.trackAgentThreadStarted({ source }),
   onAskResolved: forgetApproval,
   workflow: {
+    initialize: agentPanelStore.initializeTargetTracking,
     current: targetWorkflowTurnContext,
     adopted: onWorkflowAdopted,
     restored: onWorkflowRestored,
@@ -1050,7 +1051,6 @@ async function onAnswerAsk(
     trackApprovalResolved(askId, selection, decidedAt, shownAt)
 }
 
-start()
 void refreshCloudWorkflowIds()
 onBeforeUnmount(() => {
   ++activeTabGeneration
@@ -1122,7 +1122,7 @@ void refreshHistory()
 async function onSelectHistory(id: string): Promise<void> {
   composerStore.invalidateSubmission()
   cancelWorkflowSelection()
-  agentPanelStore.resetWorkflowTarget()
+  agentPanelStore.beginWorkflowRestoration()
   exitNodeSelectionMode()
   if (await loadThread(id))
     useTelemetry()?.trackAgentThreadStarted({ source: 'history_select' })
@@ -1299,15 +1299,18 @@ watch(
   { flush: 'sync' }
 )
 
-agentPanelStore.initializeTargetTracking(threadId.value !== null)
 watch(
   () => workflowStore.activeWorkflow,
   () => {
     exitNodeSelectionMode()
-    followVisibleWorkflow()
+    onVisibleWorkflowChanged()
   },
-  { immediate: true, flush: 'sync' }
+  { flush: 'sync' }
 )
+
+// Target startup is an explicit session event, not a read of a thread ID that
+// happens to have been assigned by start(). Register scope cleanup first.
+start()
 
 watch(
   () => canvasStore.currentGraph,

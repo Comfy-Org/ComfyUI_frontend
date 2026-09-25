@@ -28,13 +28,17 @@ superseded picker operations do not commit. Success, failure, retry and removing
 references do not resume following. Explicit target selection remains available; New Chat starts
 following again unless its retained draft still contains node references.
 
-The panel store owns this policy alongside target selection so it survives
-component remounts. Startup resolves fresh versus restored context before
-adopting a default. History selection retains its own restoration path; missing
-or failed history does not become fresh simply because its thread ID is absent.
+The panel store owns a single target-state union so it survives component
+remounts. In `following`, the target derives directly from the editor's active
+workflow; only `retained` stores a chosen workflow (or null after it closes).
+`uninitialized` and `restoring` distinguish unresolved startup from an explicit
+history load. Session startup supplies fresh versus restored context before
+hydration, without relying on when it assigns a thread ID. Only `restoring`
+accepts a restored target; missing or failed history never resumes following.
 
-Passive following adopts the visible workflow without invoking the explicit
-picker's save/navigation operation. Request origin, graph drafts, workflow
+Passive following invokes no picker save/navigation operation. Tab changes
+still invalidate superseded picker work while following, so a late save cannot
+override a newer visible target. Request origin, graph drafts, workflow
 references and CRDT bindings keep their existing owners. Contextual feedback
 takes priority over the educational tip and is independent of its dismissal.
 

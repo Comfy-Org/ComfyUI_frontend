@@ -69,14 +69,13 @@ export function useAgentWorkflowSelection({
     () => workflowSelection.value?.purpose === 'reference'
   )
   let targetSelectionGeneration = 0
-  function followVisibleWorkflow(): void {
+  function onVisibleWorkflowChanged(): void {
     if (!panelStore.followsVisibleWorkflow) return
     if (
       workflowSelection.value?.purpose === 'target' &&
       workflowSelection.value.workflow !== workflowStore.activeWorkflow
     )
       ++targetSelectionGeneration
-    panelStore.followVisibleWorkflow()
   }
 
   function commitWorkflowTarget(
@@ -87,7 +86,6 @@ export function useAgentWorkflowSelection({
   ): void {
     bindingStore.bind(workflowId, workflow.path)
     panelStore.setWorkflowTarget(workflow)
-    panelStore.retainWorkflowTarget()
     composerStore.removeWorkflowReference(workflowId)
     if (workflowId !== previousWorkflowId)
       onTargetBound?.(workflowId, previousWorkflowId, source)
@@ -255,7 +253,7 @@ export function useAgentWorkflowSelection({
     isSelecting: computed(() => workflowSelection.value !== null),
     selectingTarget,
     savingReference,
-    followVisibleWorkflow,
+    onVisibleWorkflowChanged,
     selectTarget: onSelectWorkflowTarget,
     selectReference: onSelectWorkflowReference,
     restoreTarget: onWorkflowRestored,
