@@ -49,7 +49,6 @@
           v-model="url"
           autofocus
           :placeholder="$t('assetBrowser.genericLinkPlaceholder')"
-          class="w-full border-0 bg-secondary-background p-4"
           data-attr="upload-model-step1-url-input"
         />
         <p v-if="error" class="text-sm text-error">

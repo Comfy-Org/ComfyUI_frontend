@@ -1,7 +1,5 @@
 <template>
-  <div
-    class="color-customization-selector-container flex flex-row items-center gap-2"
-  >
+  <div class="color-customization-selector-container flex items-center gap-2">
     <ToggleGroup v-model="selectedColorName" type="single">
       <ToggleGroupItem
         v-for="option in colorOptionsWithCustom"

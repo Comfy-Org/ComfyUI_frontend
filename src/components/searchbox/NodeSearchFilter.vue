@@ -1,10 +1,6 @@
 <template>
   <div class="flex flex-col gap-2">
-    <ToggleGroup
-      v-model="selectedFilterName"
-      type="single"
-      class="filter-type-select"
-    >
+    <ToggleGroup v-model="selectedFilterName" type="single">
       <ToggleGroupItem
         v-for="filter in filters"
         :key="filter.name"
@@ -15,7 +11,6 @@
     </ToggleGroup>
     <SingleSelect
       v-model="selectedFilterValue"
-      class="filter-value-select"
       :options="filterValues"
       searchable
     />

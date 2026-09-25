@@ -3,7 +3,7 @@
     v-model="modelValue"
     :name="id"
     orientation="horizontal"
-    class="flex-row gap-4"
+    class="gap-4"
   >
     <div
       v-for="option in normalizedOptions"

@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-row items-center gap-2">
+  <div class="flex items-center gap-2">
     <Slider
       :model-value="[modelValue]"
       class="w-20"

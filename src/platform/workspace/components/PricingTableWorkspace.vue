@@ -11,7 +11,7 @@
           v-for="option in billingCycleOptions"
           :key="option.value"
           :value="option.value"
-          class="h-8 w-36 text-muted-foreground data-[state=on]:bg-base-foreground data-[state=on]:text-base-background"
+          class="h-8 w-36 data-[state=on]:bg-base-foreground data-[state=on]:text-base-background"
         >
           <div class="flex items-center gap-2">
             <span>{{ option.label }}</span>
