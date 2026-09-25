@@ -835,6 +835,9 @@ describe('useAgentSession (v1 composition root)', () => {
     expect(telemetry.trackAgentStopClicked).not.toHaveBeenCalled()
 
     emit(delta('msg-1', ' Stopped at your request.'))
+    expect(session.isStreaming.value).toBe(true)
+    expect(session.editableTurnId.value).toBeNull()
+
     emit(done('msg-1'))
     expect(session.isStreaming.value).toBe(false)
     expect(session.editableTurnId.value).toBe('msg-1')

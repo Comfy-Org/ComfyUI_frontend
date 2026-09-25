@@ -869,15 +869,13 @@ export function useAgentSession(deps: AgentSessionDeps) {
     event: Extract<AgentWsEvent, { type: 'agent_message_done' }>
   ): void {
     turnStartedAt.delete(toTurnId(event.data.message_id))
-    if (
-      promptEditState.value.phase === 'stopping' &&
-      event.data.message_id === promptEditState.value.turnId &&
-      event.data.thread_id === conversationStore.threadId
-    )
-      promptEditState.value = {
-        phase: 'ready',
-        turnId: promptEditState.value.turnId
-      }
+    // Only a terminal event may hand the prompt back. A delta after Stop leaves
+    // the turn live on the server, so exposing Edit there would let the resend
+    // race the single-active-turn lock.
+    markStoppedTurnReady({
+      threadId: event.data.thread_id,
+      messageId: toTurnId(event.data.message_id)
+    })
   }
 
   function handleAgentEvent(event: AgentWsEvent): void {
@@ -895,10 +893,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     if (event.type === 'agent_message_done') handleMessageDone(event)
-    markStoppedTurnReady({
-      threadId: event.data.thread_id,
-      messageId: toTurnId(event.data.message_id)
-    })
   }
 
   function onRaw(raw: unknown): void {
