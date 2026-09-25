@@ -8,83 +8,51 @@ import {
 } from '@vueuse/core'
 import { computed, ref, useTemplateRef, watch } from 'vue'
 
-import type { WorkshopModel } from '../../config/models-catalogue'
-import { getRoutes } from '../../config/routes'
 import { prefersReducedMotion } from '../../composables/useReducedMotion'
 import { usePreviewVideo } from '../../composables/usePreviewVideo'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { bannerName } from '../../lib/workshop/banner-name'
-import { modelDocsHref } from '../../lib/workshop/model-docs'
-import { taskLabelFor } from '../../lib/workshop/task-label'
 import Badge from '../ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 
+/**
+ * One thing worth opening, whatever kind of thing the catalogue holds. The
+ * shape lives here rather than beside the projections that build it, so a
+ * catalogue with nothing to do with models can render the banner without
+ * pulling the model catalogue in behind it.
+ */
+export interface FeaturedSlide {
+  readonly key: string
+  readonly href: string
+  readonly title: string
+  /** What it is or what it makes, in the badge that leads the slide. */
+  readonly kind: string
+  readonly tags: readonly string[]
+  readonly summary: string | undefined
+  readonly media: { url: string; kind: 'image' | 'video' } | undefined
+  readonly docsHref: string | undefined
+  readonly cta?: string
+}
+
 const AUTOPLAY_MS = 7000
-const CAPABILITY_LIMIT = 3
 
 const {
-  models,
-  studio = false,
+  slides,
   locale = 'en',
   autoplay = true
 } = defineProps<{
-  models: readonly WorkshopModel[]
-  studio?: boolean
+  slides: readonly FeaturedSlide[]
   locale?: Locale
   autoplay?: boolean
 }>()
 
-interface Slide {
-  readonly key: string
-  readonly href: string
-  readonly label: string
-  readonly name: string
-  readonly task: string
-  readonly summary?: string
-  readonly cta: string
-  readonly docsHref?: string
-  readonly capabilities: readonly string[]
-  readonly video?: string
-  readonly image?: string
-}
-
-const studioSlide = computed<Slide>(() => ({
-  key: 'cinematic-studio',
-  href: getRoutes(locale).cinematicStudio,
-  label: t('nav.cinematicStudio', locale),
-  name: t('nav.cinematicStudio', locale),
-  task: t('workshop.cinematic.badge', locale),
-  summary: t('workshop.cinematic.summary', locale),
-  cta: t('workshop.cinematic.cta', locale),
-  capabilities: [],
-  image: '/images/cinematic-studio/neon-street.jpg'
-}))
-
-const slides = computed<readonly Slide[]>(() => [
-  ...(studio ? [studioSlide.value] : []),
-  ...models.map((model) => ({
-    key: model.slug,
-    href: model.href,
-    label: model.name,
-    name: bannerName(model.name, taskLabelFor(model, 'en')),
-    task: taskLabelFor(model, locale),
-    summary: model.summary,
-    cta: t('workshop.hub.tryNow', locale),
-    docsHref: modelDocsHref(model),
-    capabilities: model.capabilities.slice(0, CAPABILITY_LIMIT),
-    video: model.thumbnail?.kind === 'video' ? model.thumbnail.url : undefined,
-    image: model.thumbnailUrl
-  }))
-])
-
 const activeIndex = ref(0)
-const active = computed(
-  () => slides.value[Math.min(activeIndex.value, slides.value.length - 1)]
+const active = computed<FeaturedSlide | undefined>(
+  () => slides[Math.min(activeIndex.value, slides.length - 1)]
 )
 
 function goTo(index: number) {
-  activeIndex.value = (index + slides.value.length) % slides.value.length
+  activeIndex.value = (index + slides.length) % slides.length
 }
 
 const banner = useTemplateRef<HTMLElement>('banner')
@@ -97,7 +65,7 @@ const onScreen = useElementVisibility(banner, { initialValue: true })
 const visibility = useDocumentVisibility()
 const video = useTemplateRef<HTMLVideoElement>('video')
 // The video fills the banner, so the banner's observer is its observer.
-const previewSrc = usePreviewVideo(video, () => active.value.video, {
+const previewSrc = usePreviewVideo(video, () => active.value?.media?.url, {
   visible: () => onScreen.value
 })
 
@@ -114,7 +82,7 @@ useEventListener(banner, 'focusout', () => (readingByKeyboard.value = false))
 const rotating = computed(
   () =>
     autoplay &&
-    slides.value.length > 1 &&
+    slides.length > 1 &&
     onScreen.value &&
     visibility.value === 'visible' &&
     !hovered.value &&
@@ -163,7 +131,7 @@ const fill = computed(() =>
         data-testid="featured-slide-link"
       ></a>
       <video
-        v-if="active.video"
+        v-if="active.media?.kind === 'video'"
         :key="active.key"
         ref="video"
         :src="previewSrc"
@@ -176,9 +144,9 @@ const fill = computed(() =>
         data-testid="featured-video"
       />
       <img
-        v-else-if="active.image"
+        v-else-if="active.media"
         :key="active.key"
-        :src="active.image"
+        :src="active.media.url"
         alt=""
         class="pointer-events-none absolute inset-0 size-full object-cover"
         decoding="async"
@@ -197,10 +165,10 @@ const fill = computed(() =>
             size="md"
             class="text-primary-comfy-canvas backdrop-blur-md"
           >
-            {{ active.task }}
+            {{ active.kind }}
           </Badge>
           <Badge
-            v-for="capability in active.capabilities"
+            v-for="capability in active.tags"
             :key="capability"
             variant="subtle"
             size="md"
@@ -213,7 +181,7 @@ const fill = computed(() =>
         <h2
           class="text-2xl font-bold text-balance text-primary-warm-white lg:text-3xl"
         >
-          {{ active.name }}
+          {{ active.title }}
         </h2>
 
         <p
@@ -225,7 +193,7 @@ const fill = computed(() =>
 
         <div class="pointer-events-auto flex w-fit items-center gap-3">
           <Button as="a" :href="active.href" class="w-fit">
-            {{ active.cta }}
+            {{ active.cta ?? t('workshop.hub.tryNow', locale) }}
           </Button>
           <Button
             v-if="active.docsHref"
@@ -252,7 +220,7 @@ const fill = computed(() =>
         v-for="(slide, index) in slides"
         :key="slide.key"
         type="button"
-        :aria-label="slide.label"
+        :aria-label="slide.title"
         :aria-current="index === activeIndex ? 'true' : undefined"
         class="group pointer-events-auto max-w-12 min-w-0 flex-1 cursor-pointer rounded-full py-3 outline-none focus-visible:ring-3 focus-visible:ring-primary-comfy-yellow/50"
         @click="goTo(index)"

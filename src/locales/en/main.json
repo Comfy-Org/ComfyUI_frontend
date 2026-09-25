@@ -3132,6 +3132,7 @@
     },
     "preview": {
       "completeVerification": "Complete verification",
+      "pendingVerificationDetail": "A payment you started earlier still needs your attention. Completing it activates the plan you chose then. You can choose a different plan once it finishes.",
       "completePayment": "Complete your payment",
       "parkedCheckoutDetail": "Your earlier checkout is still waiting for a payment method. Complete your payment to activate this plan.",
       "confirmPayment": "Confirm your payment",
@@ -5236,6 +5237,10 @@
     "runNotice": "The agent can modify the graph. Check Run permissions before allowing it to execute the workflow.",
     "runNoticeExpanded": "The agent can modify your workflow. Check Run permissions before allowing it to execute.",
     "workflowEditNotice": "The agent can now edit {workflow}. It works on 1 workflow at a time, and you can switch workflows during chat.",
+    "targetFollowsVisibleWorkflow": "Target workflow follows the visible tab until you choose a target, reference nodes, or send a message.",
+    "viewingDifferentWorkflow": "You’re viewing a different workflow from the target.",
+    "showTarget": "Show target",
+    "showTargetWorkflow": "Show target workflow: {workflowName}",
     "runApproval": {
       "lead": "This tool wants to run the workflow:",
       "question": "Do you approve?",

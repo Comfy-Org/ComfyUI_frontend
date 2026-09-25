@@ -1,4 +1,11 @@
-import { fireEvent, render, screen } from '@testing-library/vue'
+import userEvent from '@testing-library/user-event'
+import {
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within
+} from '@testing-library/vue'
 import { resolveObjectURL } from 'node:buffer'
 import { describe, expect, it, vi } from 'vitest'
 import { createSSRApp, h } from 'vue'
@@ -7,6 +14,30 @@ import { renderToString } from 'vue/server-renderer'
 import ImageSourcePreview from './ImageSourcePreview.vue'
 
 describe('image source previews', () => {
+  // A thumbnail is too small to judge a picture by, so it opens to the size the
+  // screen allows and the reader can put it back.
+  it('opens the chosen picture and closes it again', async () => {
+    const user = userEvent.setup()
+    render(ImageSourcePreview, {
+      props: { name: 'Source image', src: 'https://example.com/image.png' }
+    })
+
+    await user.click(
+      screen.getByRole('button', { name: 'Expand Source image' })
+    )
+
+    const dialog = await screen.findByTestId('image-source-dialog')
+    expect(
+      within(dialog).getByRole('img', { name: 'Source image' })
+    ).toBeVisible()
+
+    await user.click(screen.getByRole('button', { name: 'Close' }))
+
+    await waitFor(() =>
+      expect(screen.queryByTestId('image-source-dialog')).toBeNull()
+    )
+  })
+
   it('does not emit a server-owned Blob URL into the page HTML', async () => {
     const create = vi.spyOn(URL, 'createObjectURL')
     const html = await renderToString(

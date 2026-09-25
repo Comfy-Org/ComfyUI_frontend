@@ -15,6 +15,7 @@ import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import CardRow from './CardRow.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
+import { modelSlides } from '../../lib/workshop/featured-slides'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import WorkshopSearchField from './WorkshopSearchField.vue'
@@ -97,6 +98,7 @@ const featured = computed(() =>
     category.models.filter((model) => model.categoryHighlight)
   )
 )
+const featuredSlides = computed(() => modelSlides(featured.value, locale))
 
 function clear() {
   query.value = ''
@@ -132,8 +134,12 @@ function leaveSection() {
     </template>
     <div
       class="sticky top-20 z-30 -mx-1 mb-8 flex flex-wrap items-center gap-3 bg-page px-1 py-4 max-sm:mb-4 max-sm:py-2 lg:top-26"
+      data-testid="workshop-toolbar"
     >
-      <div class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full">
+      <slot name="tabs" />
+      <div
+        class="flex min-w-0 flex-1 items-center gap-3 max-sm:basis-full sm:min-w-fit"
+      >
         <WorkshopSearchField
           v-model="query"
           :models="matchingCategories"
@@ -160,7 +166,7 @@ function leaveSection() {
 
     <FeaturedBanner
       v-if="browsing && featured.length"
-      :models="featured"
+      :slides="featuredSlides"
       :locale
       :autoplay="false"
       class="mb-10 short:mb-6"
