@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useI18n } from 'vue-i18n'
 
-import Badge from '@/components/common/Badge.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
 
@@ -26,11 +26,12 @@ function failureLabel(): string {
     <Badge
       role="status"
       :aria-label="failureLabel()"
-      :label="failureLabel()"
       severity="danger"
-      variant="label"
+      variant="badge"
       class="h-5 px-2 py-0.5 text-xs font-medium normal-case"
-    />
+    >
+      {{ failureLabel() }}
+    </Badge>
     <Button
       :aria-label="
         t(

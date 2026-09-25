@@ -3,8 +3,8 @@ import { useI18n } from 'vue-i18n'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import Badge from '@/components/common/Badge.vue'
 import WorkflowTemplateDownloadFailure from '@/components/custom/widget/WorkflowTemplateDownloadFailure.vue'
+import Badge from '@/components/ui/badge/Badge.vue'
 import Button from '@/components/ui/button/Button.vue'
 import type { TemplateDetailRow } from '@/platform/workflow/templates/types/templateDetail'
 import type { TemplateModelDownloadState } from '@/platform/workflow/templates/utils/templateModelDownloadState'
@@ -136,10 +136,12 @@ function namedLabel(key: string): string {
     v-else-if="status.downloadState.status === 'done'"
     role="status"
     :aria-label="t('templateWorkflows.detail.downloaded')"
-    :label="t('templateWorkflows.detail.downloaded')"
-    variant="label"
+    variant="badge"
+    severity="success"
     class="h-5 bg-success-background/20 px-2 py-0.5 text-xs font-medium text-success-background normal-case"
-  />
+  >
+    {{ t('templateWorkflows.detail.downloaded') }}
+  </Badge>
   <WorkflowTemplateDownloadFailure
     v-else
     :state="status.downloadState"

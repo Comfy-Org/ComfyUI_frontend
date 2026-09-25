@@ -17,7 +17,7 @@ const pageDescription = t('affiliate.page.description', 'en')
 const { locale, url } = pageContext(
   Astro.site,
   Astro.url.pathname,
-  Astro.currentLocale,
+  Astro.currentLocale
 )
 const faqPage: JsonLdNode = {
   '@type': 'FAQPage',
@@ -25,8 +25,8 @@ const faqPage: JsonLdNode = {
   mainEntity: affiliateFaqs.map((faq) => ({
     '@type': 'Question',
     name: faq.question[locale],
-    acceptedAnswer: { '@type': 'Answer', text: faq.answer[locale] },
-  })),
+    acceptedAnswer: { '@type': 'Answer', text: faq.answer[locale] }
+  }))
 }
 ---
 
@@ -35,11 +35,10 @@ const faqPage: JsonLdNode = {
   description={pageDescription}
   breadcrumbs={[
     { name: t('breadcrumb.home', locale), url: absoluteUrl(Astro.site, '/') },
-    { name: pageTitle },
+    { name: pageTitle }
   ]}
   extraJsonLd={[faqPage]}
 >
-
   <HeroSection />
   <HowItWorksSection />
   <AudienceSection />

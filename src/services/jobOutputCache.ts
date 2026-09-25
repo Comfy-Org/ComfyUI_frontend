@@ -14,7 +14,7 @@ import type {
 } from '@/platform/remote/comfyui/jobs/jobTypes'
 import { extractWorkflow } from '@/platform/remote/comfyui/jobs/fetchJobs'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
-import type { TaskOutput } from '@/schemas/apiSchema'
+import type { TaskOutput } from '@/platform/remote/comfyui/execution/types'
 import { api } from '@/scripts/api'
 import type { TaskItemImpl } from '@/stores/queueStore'
 import type { AugmentedResultItem } from '@/utils/resultItem'

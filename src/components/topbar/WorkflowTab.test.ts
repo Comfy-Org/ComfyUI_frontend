@@ -1,11 +1,13 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { TabsList, TabsRoot } from 'reka-ui'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { markRaw, nextTick } from 'vue'
+import { defineComponent, h, markRaw, nextTick } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -14,8 +16,6 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 import WorkflowTab from './WorkflowTab.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
-const mockCloseWorkflow = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 
 vi.mock(import('@/composables/usePragmaticDragAndDrop'), () => ({
   usePragmaticDraggable: vi.fn(),
@@ -28,14 +28,7 @@ vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({
-      closeWorkflow: mockCloseWorkflow
-    })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock<unknown>(
   import('@/renderer/core/thumbnail/useWorkflowThumbnail'),
@@ -126,22 +119,24 @@ function renderTab({
     path: resolvedActiveWorkflowPath
   })
   useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'off'
-  const rendered = render(WorkflowTab, {
-    global: {
-      plugins: [i18n],
-      stubs: {
-        WorkflowActionsList: true,
-        Button: {
-          template: '<button v-bind="$attrs"><slot /></button>'
+  const rendered = render(
+    defineComponent(
+      () => () =>
+        h(TabsRoot, { modelValue: resolvedActiveWorkflowPath }, () =>
+          h(TabsList, () =>
+            h(WorkflowTab, { workflowOption, isFirst: false, isLast: false })
+          )
+        )
+    ),
+    {
+      global: {
+        plugins: [i18n],
+        stubs: {
+          WorkflowActionsList: true
         }
       }
-    },
-    props: {
-      workflowOption,
-      isFirst: false,
-      isLast: false
     }
-  })
+  )
   const workflowStore = useWorkflowStore()
   for (const workflow of [workflowOption.workflow, ...otherOpenWorkflows])
     workflowStore.attachWorkflow(workflow, 0)
@@ -287,12 +282,26 @@ describe('WorkflowTab - agent activity indicators', () => {
 })
 
 describe('WorkflowTab - close button', () => {
+  it('keeps the close button hidden while an active status indicator shows', async () => {
+    renderTab({ activeWorkflowKey: 'test-key' })
+    useWorkflowTabActivityStore().setEditing('/workflows/test.json')
+    await nextTick()
+
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentWorking })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('close-workflow-button')).toHaveClass('invisible')
+    expect(screen.getByTestId('close-workflow-button')).not.toHaveClass(
+      'visible'
+    )
+  })
+
   it('delegates close to workflow service with the tab workflow', async () => {
     renderTab()
     const user = userEvent.setup()
     await user.click(screen.getByTestId('close-workflow-button'))
 
-    expect(mockCloseWorkflow).toHaveBeenCalledWith(
+    expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
       expect.objectContaining({ key: 'test-key' }),
       expect.anything()
     )
@@ -371,7 +380,7 @@ describe('WorkflowTab - Agent target', () => {
     expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
     expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
     await userEvent.setup().click(screen.getByTestId('close-workflow-button'))
-    expect(mockCloseWorkflow).toHaveBeenCalledWith(
+    expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
       workflowOption.workflow,
       expect.anything()
     )

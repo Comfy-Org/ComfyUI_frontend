@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
-import type { PromptResponse } from '@/schemas/apiSchema'
+import type { PromptFailureResponse } from '@/platform/remote/comfyui/types'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { TestIds } from '@e2e/fixtures/selectors'
@@ -14,8 +14,11 @@ import { TestIds } from '@e2e/fixtures/selectors'
 test.describe('Subscription paywall on queue', { tag: '@ui' }, () => {
   test.use({ initialSettings: { 'Comfy.RightSidePanel.ShowErrorsTab': true } })
 
-  async function mockQueueError(page: Page, error: PromptResponse['error']) {
-    const body: PromptResponse = { node_errors: {}, error }
+  async function mockQueueError(
+    page: Page,
+    error: PromptFailureResponse['error']
+  ) {
+    const body: PromptFailureResponse = { node_errors: {}, error }
     await page.route('**/api/prompt', async (route) => {
       await route.fulfill({
         status: 402,

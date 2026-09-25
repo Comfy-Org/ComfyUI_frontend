@@ -5,23 +5,15 @@ import { useI18n } from 'vue-i18n'
 import type {
   ActivityPart,
   AssistantMessage,
-  NoticePart,
-  RunApprovalPart,
-  PaywallPart,
-  TabLinkPart,
   TextPart
 } from '../../../services/agent/agentMessageParts'
 import { htmlReplyAssets } from '../../../utils/replyAssets'
 import { cn } from '@comfyorg/tailwind-utils'
 import { renderMarkdownToHtml } from '@/utils/markdownRendererUtil'
 
-import MarkdownStream from './MarkdownStream.vue'
-import AgentPaywallCard from './AgentPaywallCard.vue'
+import AgentMessageGroup from './AgentMessageGroup.vue'
 import MessageFeedback from './MessageFeedback.vue'
-import RunApprovalCard from './RunApprovalCard.vue'
-import TabLinkCard from './TabLinkCard.vue'
-import ActivityTrace from './ActivityTrace.vue'
-import WorkSummary from './WorkSummary.vue'
+import type { AgentMessageGroup as Group } from './agentMessageGroup'
 import { DEFAULT_AGENT_PAYWALL_PRESENTATION } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type {
   AgentPaywallAction,
@@ -42,17 +34,10 @@ const { t } = useI18n()
 const emit = defineEmits<{
   feedback: [vote: 'up' | 'down' | null]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  approvalShown: [askId: string, turnId: string, workflowId: string | null]
   paywallAction: [action: AgentPaywallAction]
 }>()
-
-type Group =
-  | { kind: 'text'; part: TextPart }
-  | { kind: 'notice'; part: NoticePart }
-  | { kind: 'paywall'; part: PaywallPart }
-  | { kind: 'trace' }
-  | { kind: 'tabLinks'; parts: TabLinkPart[] }
-  | { kind: 'runApproval'; part: RunApprovalPart }
 
 // Every thinking and tool part of the turn reads as one trace, wherever they fall
 // between the reply's text parts, so the completed turn folds into a single summary.
@@ -130,7 +115,7 @@ const status = computed(() => {
     }
   if (composing.value)
     return {
-      icon: 'text-agent-fg-subtle icon-[lucide--loader-circle] animate-spin',
+      icon: 'text-muted-foreground icon-[lucide--loader-circle] animate-spin',
       text: t('agent.working')
     }
   return null
@@ -140,59 +125,28 @@ const status = computed(() => {
 <template>
   <div class="space-y-2 pb-4">
     <template v-for="(group, index) in groups" :key="index">
-      <MarkdownStream v-if="group.kind === 'text'" :text="group.part.text" />
-      <template v-else-if="group.kind === 'trace'">
-        <ActivityTrace v-if="message.streaming" :parts="activityParts" />
-        <WorkSummary v-else :parts="activityParts" />
-      </template>
-      <div
-        v-else-if="group.kind === 'tabLinks'"
-        role="group"
-        class="flex flex-col gap-1"
-      >
-        <TabLinkCard
-          v-for="(link, linkIndex) in group.parts"
-          :key="linkIndex"
-          :workflow-id="link.workflowId"
-          :locator-id="link.locatorId"
-          :name="link.name"
-        />
-      </div>
-      <RunApprovalCard
-        v-else-if="group.kind === 'runApproval'"
-        :part="group.part"
-        :answering="answeringAskIds.has(group.part.askId)"
+      <AgentMessageGroup
+        :group
+        :streaming="message.streaming"
+        :activity-parts="activityParts"
+        :answering-ask-ids="answeringAskIds"
+        :paywall-presentation="paywallPresentation"
         @answer="(askId, selection) => emit('answerAsk', askId, selection)"
-        @open-workflow="
-          (workflowId, workflowName) =>
-            emit('openWorkflow', workflowId, workflowName)
+        @approval-shown="
+          (askId, workflowId) =>
+            emit('approvalShown', askId, message.id, workflowId)
         "
-      />
-      <AgentPaywallCard
-        v-else-if="group.kind === 'paywall'"
-        :presentation="paywallPresentation"
+        @open-workflow="
+          (askId, workflowId, workflowName) =>
+            emit('openWorkflow', askId, workflowId, workflowName)
+        "
         @paywall-action="emit('paywallAction', $event)"
       />
-      <div
-        v-else
-        :role="group.part.level === 'error' ? 'alert' : 'status'"
-        :class="
-          cn(
-            'rounded-agent flex items-start gap-2 border px-3 py-2 text-sm',
-            group.part.level === 'error'
-              ? 'border-agent-danger/40 text-agent-danger'
-              : 'border-agent-border text-agent-fg-muted'
-          )
-        "
-      >
-        <span class="mt-0.5 icon-[lucide--triangle-alert] size-4 shrink-0" />
-        <span>{{ group.part.text }}</span>
-      </div>
     </template>
 
     <div
       v-if="status"
-      class="text-agent-fg-muted flex h-8 items-center gap-2 rounded-lg px-2 text-sm/5 font-normal"
+      class="flex h-8 items-center gap-2 rounded-lg px-2 text-sm/5 font-normal text-muted-foreground"
     >
       <span :class="cn('size-4 shrink-0', status.icon)" />
       <span class="agent-shimmer-text min-w-0 truncate">{{ status.text }}</span>

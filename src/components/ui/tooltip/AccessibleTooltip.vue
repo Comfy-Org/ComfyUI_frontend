@@ -20,7 +20,13 @@ const {
   ringClass = 'focus-visible:ring-base-foreground',
   side = 'top',
   sideOffset = 6,
-  delayDuration = 300
+  delayDuration = 300,
+  disabled = false,
+  skipDelayDuration = 300,
+  disableHoverableContent = false,
+  disableClosingTrigger = true,
+  align = 'center',
+  collisionPadding = 0
 } = defineProps<{
   label: string | string[]
   testId?: string
@@ -30,6 +36,12 @@ const {
   side?: 'top' | 'right' | 'bottom' | 'left'
   sideOffset?: number
   delayDuration?: number
+  disabled?: boolean
+  skipDelayDuration?: number
+  disableHoverableContent?: boolean
+  disableClosingTrigger?: boolean
+  align?: 'start' | 'center' | 'end'
+  collisionPadding?: number
 }>()
 
 const open = ref(false)
@@ -52,8 +64,12 @@ const contentClass = computed(() =>
 </script>
 
 <template>
-  <TooltipProvider :delay-duration="delayDuration">
-    <TooltipRoot v-model:open="open" disable-closing-trigger>
+  <TooltipProvider
+    :delay-duration
+    :skip-delay-duration
+    :disable-hoverable-content
+  >
+    <TooltipRoot v-model:open="open" :disabled :disable-closing-trigger>
       <TooltipTrigger as-child>
         <slot name="trigger">
           <button
@@ -78,6 +94,8 @@ const contentClass = computed(() =>
         <TooltipContent
           :side
           :side-offset
+          :align
+          :collision-padding
           :aria-hidden="$slots.trigger ? undefined : true"
           :aria-label="$slots.trigger ? undefined : ' '"
           data-testid="disclosure-tooltip"
