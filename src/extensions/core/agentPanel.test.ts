@@ -34,6 +34,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import type { PostHogLike } from '@/workbench/extensions/agent/utils/postHogFlagSource'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import { toNodeId } from '@/types/nodeId'
@@ -78,10 +79,12 @@ vi.mock(
   }
 )
 
+type FlagsDelivery = Parameters<PostHogLike['onFeatureFlags']>[0]
+
 const mocks = vi.hoisted(() => ({
   capturedExtensions: [] as ComfyExtension[],
   flagEnabled: undefined as boolean | undefined,
-  flagListener: null as (() => void) | null
+  flagListener: null as FlagsDelivery | null
 }))
 
 vi.mock(
@@ -122,7 +125,7 @@ vi.mock(
 vi.mock(import('posthog-js'), () => ({
   default: fromPartial<PostHog>({
     isFeatureEnabled: () => mocks.flagEnabled,
-    onFeatureFlags: (listener: () => void) => {
+    onFeatureFlags: (listener: FlagsDelivery) => {
       mocks.flagListener = listener
       return () => {}
     }
@@ -1044,6 +1047,15 @@ describe('AgentPanel extension flag gate', () => {
     await loadEntryAndSetup()
     mocks.flagEnabled = true
     mocks.flagListener!()
+    expect(agentStore.enabled).toBe(true)
+  })
+
+  it.fails('KNOWN BUG: a resolved, whitelisted user stays locked out when the flag delivery reports a load error', async () => {
+    await loadEntryAndSetup()
+    mocks.flagEnabled = true
+
+    mocks.flagListener!([], {}, { errorsLoading: true })
+
     expect(agentStore.enabled).toBe(true)
   })
 
