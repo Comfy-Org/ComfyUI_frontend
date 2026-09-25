@@ -215,6 +215,7 @@ export const externalLinks = {
   docsSubscription: 'https://docs.comfy.org/support/subscription/subscribing',
   g2ComfyUi: 'https://www.g2.com/products/comfyui',
   github: 'https://github.com/Comfy-Org/ComfyUI',
+  githubOrg: 'https://github.com/Comfy-Org',
   githubInstall: 'https://github.com/Comfy-Org/ComfyUI#installing',
   instagram: 'https://www.instagram.com/comfyui/',
   linkedin: 'https://www.linkedin.com/company/comfyui',

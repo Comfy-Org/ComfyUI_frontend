@@ -1,6 +1,7 @@
 import type { Locale } from '../config/locales'
 import { resolveLocale } from '../config/locales'
-import { externalLinks } from '../config/routes'
+import { externalLinks, getRoutes } from '../config/routes'
+import { t } from '../i18n/translations'
 
 export type JsonLdNode = Record<string, unknown> & { '@type': string }
 
@@ -26,7 +27,7 @@ export interface Crumb {
 }
 
 const sameAs = [
-  externalLinks.github,
+  externalLinks.githubOrg,
   externalLinks.x,
   externalLinks.youtube,
   externalLinks.discord,
@@ -95,6 +96,13 @@ function organizationNode(siteUrl: string): JsonLdNode {
       width: 512,
       height: 512
     },
+    description: t('hero.subtitle', 'en'),
+    contactPoint: {
+      '@type': 'ContactPoint',
+      contactType: 'customer support',
+      email: 'support@comfy.org',
+      url: `${siteUrl}${getRoutes().contact}/`
+    },
     sameAs
   }
 }
@@ -104,6 +112,7 @@ function websiteNode(siteUrl: string): JsonLdNode {
     '@type': 'WebSite',
     '@id': websiteId(siteUrl),
     name: 'Comfy',
+    alternateName: ['Comfy Org', 'comfy.org'],
     url: siteUrl,
     publisher: { '@id': organizationId(siteUrl) }
   }
@@ -186,6 +195,10 @@ export function articleNode(input: ArticleInput): JsonLdNode {
     author: orgRef,
     publisher: orgRef
   }
+}
+
+export function webPageName(title: string): string {
+  return title.replace(/ - Comfy$/, '')
 }
 
 interface WebPageInput {

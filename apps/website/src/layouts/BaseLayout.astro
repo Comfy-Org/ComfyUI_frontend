@@ -24,12 +24,13 @@ import {
   evaluateBannerVisibility
 } from '../utils/banner'
 import { fetchGitHubStars, formatStarCount } from '../utils/github'
-import { buildPageGraph, pageContext } from '../utils/jsonLd'
+import { buildPageGraph, pageContext, webPageName } from '../utils/jsonLd'
 import type { Crumb, JsonLdNode, WebPageType } from '../utils/jsonLd'
 import JsonLdGraph from '../components/common/JsonLdGraph.astro'
 
 interface Props {
   title: string
+  pageName?: string
   description?: string
   keywords?: string[]
   ogImage?: string
@@ -44,6 +45,7 @@ interface Props {
 
 const {
   title,
+  pageName = webPageName(title),
   description = 'Comfy is the AI creation engine for visual professionals who demand control.',
   keywords,
   ogImage = 'https://media.comfy.org/website/comfy.webp',
@@ -93,7 +95,7 @@ const structuredData = shouldNoindex
       { siteUrl, locale },
       {
         url,
-        name: title,
+        name: pageName,
         description,
         imageUrl: ogImageURL.href,
         type: pageType,
