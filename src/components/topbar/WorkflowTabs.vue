@@ -239,6 +239,7 @@ const onCloseWorkflow = async (option: WorkflowOption) => {
 const WHEEL_LINE_HEIGHT_PX = 16
 
 function handleWheel(event: WheelEvent) {
+  if (event.ctrlKey || event.metaKey) return
   if (Math.abs(event.deltaX) >= Math.abs(event.deltaY)) return
   event.preventDefault()
   const unit =

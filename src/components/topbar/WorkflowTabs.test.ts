@@ -693,6 +693,26 @@ describe('WorkflowTabs scrolling', () => {
     }
   )
 
+  it.for(['ctrlKey', 'metaKey'] as const)(
+    'preserves %s-modified wheel input',
+    (modifier) => {
+      renderComponent()
+      const tabStrip = screen.getByTestId('workflow-tab-strip')
+      const scrollBy = vi.fn()
+      tabStrip.scrollBy = scrollBy
+      const event = new WheelEvent('wheel', {
+        deltaY: 7,
+        cancelable: true
+      })
+      Object.defineProperty(event, modifier, { value: true })
+
+      tabStrip.dispatchEvent(event)
+
+      expect(scrollBy).not.toHaveBeenCalled()
+      expect(event.defaultPrevented).toBe(false)
+    }
+  )
+
   it('reveals the active tab when the tab list overflows', async () => {
     const workflowStore = useWorkflowStore()
     const workflow = await workflowStore.createTemporary('active.json').load()
