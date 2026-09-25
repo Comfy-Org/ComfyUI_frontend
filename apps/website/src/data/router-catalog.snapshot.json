@@ -1,0 +1,1228 @@
+{
+  "sourceRepo": "Comfy-Org/docs",
+  "sourceCommit": "b7ca31c056dd2b46bd8258f805804f11fd2ee9fe",
+  "models": [
+    {
+      "id": "anthropic/claude-fable-5-1",
+      "docsPath": "/development/comfy-router/models/anthropic/claude-fable-5-1/code",
+      "name": "Claude Fable 5.1"
+    },
+    {
+      "id": "anthropic/claude-fable-5",
+      "docsPath": "/development/comfy-router/models/anthropic/claude-fable-5/code",
+      "name": "Claude Fable 5"
+    },
+    {
+      "id": "anthropic/claude-haiku-4-5-20251001",
+      "docsPath": "/development/comfy-router/models/anthropic/claude-haiku-4-5-20251001/code",
+      "name": "Claude Haiku 4.5 20251001"
+    },
+    {
+      "id": "anthropic/claude-opus-4-6",
+      "docsPath": "/development/comfy-router/models/anthropic/claude-opus-4-6/code",
+      "name": "Claude Opus 4.6"
+    },
+    {
+      "id": "anthropic/claude-opus-4-7",
+      "docsPath": "/development/comfy-router/models/anthropic/claude-opus-4-7/code",
+      "name": "Claude Opus 4.7"
+    },
+    {
+      "id": "anthropic/claude-opus-4-8",
+      "docsPath": "/development/comfy-router/models/anthropic/claude-opus-4-8/code",
+      "name": "Claude Opus 4.8"
+    },
+    {
+      "id": "anthropic/claude-opus-5-5",
+      "docsPath": "/development/comfy-router/models/anthropic/claude-opus-5-5/code",
+      "name": "Claude Opus 5.5"
+    },
+    {
+      "id": "anthropic/claude-opus-5",
+      "docsPath": "/development/comfy-router/models/anthropic/claude-opus-5/code",
+      "name": "Claude Opus 5"
+    },
+    {
+      "id": "anthropic/claude-sonnet-4-5-20250929",
+      "docsPath": "/development/comfy-router/models/anthropic/claude-sonnet-4-5-20250929/code",
+      "name": "Claude Sonnet 4.5 20250929"
+    },
+    {
+      "id": "anthropic/claude-sonnet-4-6",
+      "docsPath": "/development/comfy-router/models/anthropic/claude-sonnet-4-6/code",
+      "name": "Claude Sonnet 4.6"
+    },
+    {
+      "id": "anthropic/claude-sonnet-5",
+      "docsPath": "/development/comfy-router/models/anthropic/claude-sonnet-5/code",
+      "name": "Claude Sonnet 5"
+    },
+    {
+      "id": "beeble/switchx",
+      "docsPath": "/development/comfy-router/models/beeble/switchx/code",
+      "name": "SwitchX"
+    },
+    {
+      "id": "bfl/erase-v1",
+      "docsPath": "/development/comfy-router/models/black-forest-labs/erase-v1/code",
+      "name": "Erase V1"
+    },
+    {
+      "id": "bfl/flux-pro-1.1-ultra",
+      "docsPath": "/development/comfy-router/models/black-forest-labs/flux-1-1-pro-ultra-image/code",
+      "name": "Flux 1.1 Pro Ultra Image"
+    },
+    {
+      "id": "bfl/flux-kontext-pro",
+      "docsPath": "/development/comfy-router/models/black-forest-labs/flux-1-kontext/code",
+      "name": "FLUX.1 Kontext"
+    },
+    {
+      "id": "bfl/flux-2-max",
+      "docsPath": "/development/comfy-router/models/black-forest-labs/flux-2-max/code",
+      "name": "FLUX 2 Max"
+    },
+    {
+      "id": "bfl/flux-2-pro",
+      "docsPath": "/development/comfy-router/models/black-forest-labs/flux-2-pro/code",
+      "name": "FLUX 2 Pro"
+    },
+    {
+      "id": "bfl/flux-3-video",
+      "docsPath": "/development/comfy-router/models/black-forest-labs/flux-3-video/code",
+      "name": "FLUX 3 Video"
+    },
+    {
+      "id": "bfl/flux-pro-1.0-canny",
+      "docsPath": "/development/comfy-router/models/black-forest-labs/flux-pro-1-0-canny/code",
+      "name": "FLUX Pro 1.0 Canny"
+    },
+    {
+      "id": "bfl/flux-pro-1.0-depth",
+      "docsPath": "/development/comfy-router/models/black-forest-labs/flux-pro-1-0-depth/code",
+      "name": "FLUX Pro 1.0 Depth"
+    },
+    {
+      "id": "bfl/flux-pro-1.0-expand",
+      "docsPath": "/development/comfy-router/models/black-forest-labs/flux-pro-1-0-expand/code",
+      "name": "FLUX Pro 1.0 Expand"
+    },
+    {
+      "id": "bfl/flux-pro-1.0-fill",
+      "docsPath": "/development/comfy-router/models/black-forest-labs/flux-pro-1-0-fill/code",
+      "name": "FLUX Pro 1.0 Fill"
+    },
+    {
+      "id": "bfl/video-upscale-v1",
+      "docsPath": "/development/comfy-router/models/black-forest-labs/flux-video-upscale/code",
+      "name": "FLUX Video Upscale"
+    },
+    {
+      "id": "bfl/video-edit-v1",
+      "docsPath": "/development/comfy-router/models/black-forest-labs/video-edit-v1/code",
+      "name": "Video Edit V1"
+    },
+    {
+      "id": "bfl/vto-v1",
+      "docsPath": "/development/comfy-router/models/black-forest-labs/vto-v1/code",
+      "name": "VTO V1"
+    },
+    {
+      "id": "bria/fibo",
+      "docsPath": "/development/comfy-router/models/bria/fibo/code",
+      "name": "Fibo"
+    },
+    {
+      "id": "bria/image-edit-add-object-by-text",
+      "docsPath": "/development/comfy-router/models/bria/image-edit-add-object-by-text/code",
+      "name": "Image Edit Add Object By Text"
+    },
+    {
+      "id": "bria/image-edit-erase-by-text",
+      "docsPath": "/development/comfy-router/models/bria/image-edit-erase-by-text/code",
+      "name": "Image Edit Erase By Text"
+    },
+    {
+      "id": "bria/image-edit-erase-foreground",
+      "docsPath": "/development/comfy-router/models/bria/image-edit-erase-foreground/code",
+      "name": "Image Edit Erase Foreground"
+    },
+    {
+      "id": "bria/image-edit-erase",
+      "docsPath": "/development/comfy-router/models/bria/image-edit-erase/code",
+      "name": "Image Edit Erase"
+    },
+    {
+      "id": "bria/image-edit-expand",
+      "docsPath": "/development/comfy-router/models/bria/image-edit-expand/code",
+      "name": "Image Edit Expand"
+    },
+    {
+      "id": "bria/image-edit-gen-fill",
+      "docsPath": "/development/comfy-router/models/bria/image-edit-gen-fill/code",
+      "name": "Image Edit Gen Fill"
+    },
+    {
+      "id": "bria/image-edit-increase-resolution",
+      "docsPath": "/development/comfy-router/models/bria/image-edit-increase-resolution/code",
+      "name": "Image Edit Increase Resolution"
+    },
+    {
+      "id": "bria/image-edit-relight",
+      "docsPath": "/development/comfy-router/models/bria/image-edit-relight/code",
+      "name": "Image Edit Relight"
+    },
+    {
+      "id": "bria/image-edit-remove-background",
+      "docsPath": "/development/comfy-router/models/bria/image-edit-remove-background/code",
+      "name": "Image Edit Remove Background"
+    },
+    {
+      "id": "bria/image-edit-replace-background",
+      "docsPath": "/development/comfy-router/models/bria/image-edit-replace-background/code",
+      "name": "Image Edit Replace Background"
+    },
+    {
+      "id": "bria/image-edit-replace-object-by-text",
+      "docsPath": "/development/comfy-router/models/bria/image-edit-replace-object-by-text/code",
+      "name": "Image Edit Replace Object By Text"
+    },
+    {
+      "id": "bria/image-edit-reseason",
+      "docsPath": "/development/comfy-router/models/bria/image-edit-reseason/code",
+      "name": "Image Edit Reseason"
+    },
+    {
+      "id": "bria/image-edit-restore",
+      "docsPath": "/development/comfy-router/models/bria/image-edit-restore/code",
+      "name": "Image Edit Restore"
+    },
+    {
+      "id": "bria/structured-instruction",
+      "docsPath": "/development/comfy-router/models/bria/structured-instruction/code",
+      "name": "Structured Instruction"
+    },
+    {
+      "id": "bria/video-edit-erase",
+      "docsPath": "/development/comfy-router/models/bria/video-edit-erase/code",
+      "name": "Video Edit Erase"
+    },
+    {
+      "id": "bria/video-edit-green-screen",
+      "docsPath": "/development/comfy-router/models/bria/video-edit-green-screen/code",
+      "name": "Video Edit Green Screen"
+    },
+    {
+      "id": "bria/video-edit-remove-background",
+      "docsPath": "/development/comfy-router/models/bria/video-edit-remove-background/code",
+      "name": "Video Edit Remove Background"
+    },
+    {
+      "id": "bria/video-edit-replace-background",
+      "docsPath": "/development/comfy-router/models/bria/video-edit-replace-background/code",
+      "name": "Video Edit Replace Background"
+    },
+    {
+      "id": "byteplus/dreamina-seedance-2-0-260128",
+      "docsPath": "/development/comfy-router/models/byteplus/dreamina-seedance-2-0-260128/code",
+      "name": "Dreamina Seedance 2.0 260128"
+    },
+    {
+      "id": "byteplus/dreamina-seedance-2-0-fast-260128",
+      "docsPath": "/development/comfy-router/models/byteplus/dreamina-seedance-2-0-fast-260128/code",
+      "name": "Dreamina Seedance 2.0 Fast 260128"
+    },
+    {
+      "id": "byteplus/dreamina-seedance-2-0-mini",
+      "docsPath": "/development/comfy-router/models/byteplus/dreamina-seedance-2-0-mini/code",
+      "name": "Dreamina Seedance 2.0 Mini"
+    },
+    {
+      "id": "byteplus/dreamina-seedance-2-5-260628",
+      "docsPath": "/development/comfy-router/models/byteplus/dreamina-seedance-2-5-260628/code",
+      "name": "Dreamina Seedance 2.5 260628"
+    },
+    {
+      "id": "byteplus/seed-2-0-lite-260228",
+      "docsPath": "/development/comfy-router/models/byteplus/seed-2-0-lite-260228/code",
+      "name": "Seed 2.0 Lite 260228"
+    },
+    {
+      "id": "byteplus/seed-2-0-mini-260215",
+      "docsPath": "/development/comfy-router/models/byteplus/seed-2-0-mini-260215/code",
+      "name": "Seed 2.0 Mini 260215"
+    },
+    {
+      "id": "byteplus/seed-2-0-pro-260328",
+      "docsPath": "/development/comfy-router/models/byteplus/seed-2-0-pro-260328/code",
+      "name": "Seed 2.0 Pro 260328"
+    },
+    {
+      "id": "byteplus/seed-audio-1.0-multilingual",
+      "docsPath": "/development/comfy-router/models/byteplus/seed-audio-1-0-multilingual/code",
+      "name": "Seed Audio 1.0 Multilingual"
+    },
+    {
+      "id": "byteplus/seed-audio-1.0",
+      "docsPath": "/development/comfy-router/models/byteplus/seed-audio-1-0/code",
+      "name": "Seed Audio 1.0"
+    },
+    {
+      "id": "byteplus/seedance-1-0-pro-250528",
+      "docsPath": "/development/comfy-router/models/byteplus/seedance-1-0-pro-250528/code",
+      "name": "Seedance 1.0 Pro 250528"
+    },
+    {
+      "id": "byteplus/seedance-1-0-pro-fast-251015",
+      "docsPath": "/development/comfy-router/models/byteplus/seedance-1-0-pro-fast-251015/code",
+      "name": "Seedance 1.0 Pro Fast 251015"
+    },
+    {
+      "id": "byteplus/seedance-1-5-pro-251215",
+      "docsPath": "/development/comfy-router/models/byteplus/seedance-1-5-pro-251215/code",
+      "name": "Seedance 1.5 Pro 251215"
+    },
+    {
+      "id": "byteplus/seedream-4-0-250828",
+      "docsPath": "/development/comfy-router/models/byteplus/seedream-4-0-250828/code",
+      "name": "Seedream 4.0 250828"
+    },
+    {
+      "id": "byteplus/seedream-4-5-251128",
+      "docsPath": "/development/comfy-router/models/byteplus/seedream-4-5-251128/code",
+      "name": "Seedream 4.5 251128"
+    },
+    {
+      "id": "byteplus/seedream-5-0-260128",
+      "docsPath": "/development/comfy-router/models/byteplus/seedream-5-0-260128/code",
+      "name": "Seedream 5.0 260128"
+    },
+    {
+      "id": "byteplus/seedream-5-0-flash-260915",
+      "docsPath": "/development/comfy-router/models/byteplus/seedream-5-0-flash-260915/code",
+      "name": "Seedream 5.0 Flash 260915"
+    },
+    {
+      "id": "byteplus/seedream-5-0-pro-260628",
+      "docsPath": "/development/comfy-router/models/byteplus/seedream-5-0-pro-260628/code",
+      "name": "Seedream 5.0 Pro 260628"
+    },
+    {
+      "id": "elevenlabs/eleven_sfx_v2",
+      "docsPath": "/development/comfy-router/models/elevenlabs/eleven-sfx-v2/code",
+      "name": "Eleven Sfx V2"
+    },
+    {
+      "id": "elevenlabs/eleven_v3",
+      "docsPath": "/development/comfy-router/models/elevenlabs/eleven-v3/code",
+      "name": "Eleven V3"
+    },
+    {
+      "id": "fal/h3-max-turbo",
+      "docsPath": "/development/comfy-router/models/fal/h3-max-turbo/code",
+      "name": "H3 Max Turbo"
+    },
+    {
+      "id": "fal/h3-max",
+      "docsPath": "/development/comfy-router/models/fal/h3-max/code",
+      "name": "H3 Max"
+    },
+    {
+      "id": "fal/patina",
+      "docsPath": "/development/comfy-router/models/fal/patina/code",
+      "name": "Patina"
+    },
+    {
+      "id": "freepik/ai-image-upscaler-precision-v2",
+      "docsPath": "/development/comfy-router/models/freepik/ai-image-upscaler-precision-v2/code",
+      "name": "AI Image Upscaler Precision V2"
+    },
+    {
+      "id": "freepik/ai-skin-enhancer-creative",
+      "docsPath": "/development/comfy-router/models/freepik/ai-skin-enhancer-creative/code",
+      "name": "AI Skin Enhancer Creative"
+    },
+    {
+      "id": "freepik/ai-skin-enhancer-faithful",
+      "docsPath": "/development/comfy-router/models/freepik/ai-skin-enhancer-faithful/code",
+      "name": "AI Skin Enhancer Faithful"
+    },
+    {
+      "id": "freepik/ai-skin-enhancer-flexible",
+      "docsPath": "/development/comfy-router/models/freepik/ai-skin-enhancer-flexible/code",
+      "name": "AI Skin Enhancer Flexible"
+    },
+    {
+      "id": "gemini-interactions/gemini-omni-1.1-flash",
+      "docsPath": "/development/comfy-router/models/gemini-interactions/gemini-omni-1-1-flash/code",
+      "name": "Gemini Omni 1.1 Flash"
+    },
+    {
+      "id": "gemini-interactions/gemini-omni-flash-preview",
+      "docsPath": "/development/comfy-router/models/gemini-interactions/gemini-omni-flash-preview/code",
+      "name": "Gemini Omni Flash Preview"
+    },
+    {
+      "id": "vertexai/gemini-2.5-flash-image",
+      "docsPath": "/development/comfy-router/models/google/gemini-2-5-flash-image/code",
+      "name": "Gemini 2.5 Flash Image"
+    },
+    {
+      "id": "vertexai/gemini-3.1-flash-lite",
+      "docsPath": "/development/comfy-router/models/google/gemini-3-1-flash-lite/code",
+      "name": "Gemini 3.1 Flash Lite"
+    },
+    {
+      "id": "vertexai/gemini-3.7-flash",
+      "docsPath": "/development/comfy-router/models/google/gemini-3-7-flash/code",
+      "name": "Gemini 3.7 Flash"
+    },
+    {
+      "id": "vertexai/gemini-3.8-flash",
+      "docsPath": "/development/comfy-router/models/google/gemini-3-8-flash/code",
+      "name": "Gemini 3.8 Flash"
+    },
+    {
+      "id": "vertexai/gemini-3.1-pro-preview",
+      "docsPath": "/development/comfy-router/models/google/gemini/code",
+      "name": "Google Gemini"
+    },
+    {
+      "id": "vertexai/imagen-3.0-fast-generate-001",
+      "docsPath": "/development/comfy-router/models/google/imagen-3-0-fast-generate-001/code",
+      "name": "Imagen 3.0 Fast Generate 001"
+    },
+    {
+      "id": "vertexai/imagen-3.0-generate-001",
+      "docsPath": "/development/comfy-router/models/google/imagen-3-0-generate-001/code",
+      "name": "Imagen 3.0 Generate 001"
+    },
+    {
+      "id": "vertexai/imagen-3.0-generate-002",
+      "docsPath": "/development/comfy-router/models/google/imagen-3-0-generate-002/code",
+      "name": "Imagen 3.0 Generate 002"
+    },
+    {
+      "id": "vertexai/gemini-3.1-flash-lite-image",
+      "docsPath": "/development/comfy-router/models/google/nano-banana-2-lite/code",
+      "name": "Nano Banana 2 Lite"
+    },
+    {
+      "id": "vertexai/gemini-3.1-flash-image",
+      "docsPath": "/development/comfy-router/models/google/nano-banana-2/code",
+      "name": "Nano Banana 2"
+    },
+    {
+      "id": "vertexai/gemini-3-pro-image",
+      "docsPath": "/development/comfy-router/models/google/nano-banana-pro/code",
+      "name": "Nano Banana Pro"
+    },
+    {
+      "id": "heygen/starfish",
+      "docsPath": "/development/comfy-router/models/heygen/starfish/code",
+      "name": "Starfish"
+    },
+    {
+      "id": "higgsfield/higgsfield-kling-3-4k",
+      "docsPath": "/development/comfy-router/models/higgsfield/higgsfield-kling-3-4k/code",
+      "name": "Higgsfield Kling 3.4k"
+    },
+    {
+      "id": "higgsfield/higgsfield-kling-3-pro",
+      "docsPath": "/development/comfy-router/models/higgsfield/higgsfield-kling-3-pro/code",
+      "name": "Higgsfield Kling 3 Pro"
+    },
+    {
+      "id": "ideogram/ideogram-v3",
+      "docsPath": "/development/comfy-router/models/ideogram/ideogram-v3/code",
+      "name": "Ideogram V3"
+    },
+    {
+      "id": "ideogram/ideogram-v4",
+      "docsPath": "/development/comfy-router/models/ideogram/ideogram-v4/code",
+      "name": "Ideogram 4.0"
+    },
+    {
+      "id": "ideogram/p-image-ideogram",
+      "docsPath": "/development/comfy-router/models/ideogram/p-image-ideogram/code",
+      "name": "P Image Ideogram"
+    },
+    {
+      "id": "kling/kling-3.0-turbo",
+      "docsPath": "/development/comfy-router/models/kling/kling-3-0-turbo/code",
+      "name": "Kling 3.0 Turbo"
+    },
+    {
+      "id": "kling/kling-image-o1",
+      "docsPath": "/development/comfy-router/models/kling/kling-image-o1/code",
+      "name": "Kling Image O1"
+    },
+    {
+      "id": "kling/kling-v2-5-turbo",
+      "docsPath": "/development/comfy-router/models/kling/kling-v2-5-turbo/code",
+      "name": "Kling V2.5 Turbo"
+    },
+    {
+      "id": "kling/kling-v2-6",
+      "docsPath": "/development/comfy-router/models/kling/kling-v2-6/code",
+      "name": "Kling V2.6"
+    },
+    {
+      "id": "kling/kling-v3-omni",
+      "docsPath": "/development/comfy-router/models/kling/kling-v3-omni/code",
+      "name": "Kling V3 Omni"
+    },
+    {
+      "id": "kling/kling-v3",
+      "docsPath": "/development/comfy-router/models/kling/kling-v3/code",
+      "name": "Kling V3"
+    },
+    {
+      "id": "kling/kling-video-o1",
+      "docsPath": "/development/comfy-router/models/kling/kling-video-o1/code",
+      "name": "Kling Video O1"
+    },
+    {
+      "id": "kling/videos-avatar-image2video",
+      "docsPath": "/development/comfy-router/models/kling/videos-avatar-image2video/code",
+      "name": "Videos Avatar Image 2video"
+    },
+    {
+      "id": "kling/videos-lip-sync",
+      "docsPath": "/development/comfy-router/models/kling/videos-lip-sync/code",
+      "name": "Videos Lip Sync"
+    },
+    {
+      "id": "kling/videos-video-extend",
+      "docsPath": "/development/comfy-router/models/kling/videos-video-extend/code",
+      "name": "Videos Video Extend"
+    },
+    {
+      "id": "krea/krea-2-large",
+      "docsPath": "/development/comfy-router/models/krea/krea-2-large/code",
+      "name": "Krea 2 Large"
+    },
+    {
+      "id": "krea/krea-2-medium-turbo",
+      "docsPath": "/development/comfy-router/models/krea/krea-2-medium-turbo/code",
+      "name": "Krea 2 Medium Turbo"
+    },
+    {
+      "id": "krea/krea-2-medium",
+      "docsPath": "/development/comfy-router/models/krea/krea-2-medium/code",
+      "name": "Krea 2 Medium"
+    },
+    {
+      "id": "krea/krea-2",
+      "docsPath": "/development/comfy-router/models/krea/krea-2/code",
+      "name": "Krea 2"
+    },
+    {
+      "id": "ltx/ltx-2-5-fast",
+      "docsPath": "/development/comfy-router/models/ltx/ltx-2-5-fast/code",
+      "name": "LTX 2.5 Fast"
+    },
+    {
+      "id": "ltx/ltx-2-5-pro",
+      "docsPath": "/development/comfy-router/models/ltx/ltx-2-5-pro/code",
+      "name": "LTX 2.5 Pro"
+    },
+    {
+      "id": "luma/photon-1",
+      "docsPath": "/development/comfy-router/models/luma/photon-1/code",
+      "name": "Photon 1"
+    },
+    {
+      "id": "luma/photon-flash-1",
+      "docsPath": "/development/comfy-router/models/luma/photon-flash-1/code",
+      "name": "Photon Flash 1"
+    },
+    {
+      "id": "luma/ray-2",
+      "docsPath": "/development/comfy-router/models/luma/ray-2/code",
+      "name": "Ray 2"
+    },
+    {
+      "id": "luma/ray-flash-2",
+      "docsPath": "/development/comfy-router/models/luma/ray-flash-2/code",
+      "name": "Ray Flash 2"
+    },
+    {
+      "id": "luma_2/uni-1-max",
+      "docsPath": "/development/comfy-router/models/luma_2/uni-1-max/code",
+      "name": "Uni 1 Max"
+    },
+    {
+      "id": "luma_2/uni-1",
+      "docsPath": "/development/comfy-router/models/luma_2/uni-1/code",
+      "name": "Uni 1"
+    },
+    {
+      "id": "meshy/animations",
+      "docsPath": "/development/comfy-router/models/meshy/animations/code",
+      "name": "Animations"
+    },
+    {
+      "id": "meshy/meshy-5",
+      "docsPath": "/development/comfy-router/models/meshy/meshy-5/code",
+      "name": "Meshy 5"
+    },
+    {
+      "id": "meshy/meshy-6",
+      "docsPath": "/development/comfy-router/models/meshy/meshy-6/code",
+      "name": "Meshy 6"
+    },
+    {
+      "id": "meshy/meshy-7.1",
+      "docsPath": "/development/comfy-router/models/meshy/meshy-7-1/code",
+      "name": "Meshy 7.1"
+    },
+    {
+      "id": "meshy/meshy-7",
+      "docsPath": "/development/comfy-router/models/meshy/meshy-7/code",
+      "name": "Meshy 7"
+    },
+    {
+      "id": "meshy/remesh",
+      "docsPath": "/development/comfy-router/models/meshy/remesh/code",
+      "name": "Remesh"
+    },
+    {
+      "id": "meshy/rigging",
+      "docsPath": "/development/comfy-router/models/meshy/rigging/code",
+      "name": "Rigging"
+    },
+    {
+      "id": "minimax/minimax-h3",
+      "docsPath": "/development/comfy-router/models/minimax/minimax-h3/code",
+      "name": "MiniMax H3"
+    },
+    {
+      "id": "moonvalley/image-to-video",
+      "docsPath": "/development/comfy-router/models/moonvalley/image-to-video/code",
+      "name": "Image To Video"
+    },
+    {
+      "id": "moonvalley/text-to-image",
+      "docsPath": "/development/comfy-router/models/moonvalley/text-to-image/code",
+      "name": "Text To Image"
+    },
+    {
+      "id": "moonvalley/text-to-video",
+      "docsPath": "/development/comfy-router/models/moonvalley/text-to-video/code",
+      "name": "Text To Video"
+    },
+    {
+      "id": "moonvalley/video-to-video-resize",
+      "docsPath": "/development/comfy-router/models/moonvalley/video-to-video-resize/code",
+      "name": "Video To Video Resize"
+    },
+    {
+      "id": "moonvalley/video-to-video",
+      "docsPath": "/development/comfy-router/models/moonvalley/video-to-video/code",
+      "name": "Video To Video"
+    },
+    {
+      "id": "openai/gpt-4.1-mini",
+      "docsPath": "/development/comfy-router/models/openai/gpt-4-1-mini/code",
+      "name": "GPT 4.1 Mini"
+    },
+    {
+      "id": "openai/gpt-4.1-nano",
+      "docsPath": "/development/comfy-router/models/openai/gpt-4-1-nano/code",
+      "name": "GPT 4.1 Nano"
+    },
+    {
+      "id": "openai/gpt-4.1",
+      "docsPath": "/development/comfy-router/models/openai/gpt-4-1/code",
+      "name": "GPT 4.1"
+    },
+    {
+      "id": "openai/gpt-4o",
+      "docsPath": "/development/comfy-router/models/openai/gpt-4o/code",
+      "name": "GPT 4o"
+    },
+    {
+      "id": "openai/gpt-5.5-pro",
+      "docsPath": "/development/comfy-router/models/openai/gpt-5-5-pro/code",
+      "name": "GPT 5.5 Pro"
+    },
+    {
+      "id": "openai/gpt-5.5",
+      "docsPath": "/development/comfy-router/models/openai/gpt-5-5/code",
+      "name": "GPT 5.5"
+    },
+    {
+      "id": "openai/gpt-5.6-luna",
+      "docsPath": "/development/comfy-router/models/openai/gpt-5-6-luna/code",
+      "name": "GPT 5.6 Luna"
+    },
+    {
+      "id": "openai/gpt-5.6-sol",
+      "docsPath": "/development/comfy-router/models/openai/gpt-5-6-sol/code",
+      "name": "GPT 5.6 Sol"
+    },
+    {
+      "id": "openai/gpt-5.6-terra",
+      "docsPath": "/development/comfy-router/models/openai/gpt-5-6-terra/code",
+      "name": "GPT 5.6 Terra"
+    },
+    {
+      "id": "openai/gpt-5-mini",
+      "docsPath": "/development/comfy-router/models/openai/gpt-5-mini/code",
+      "name": "GPT 5 Mini"
+    },
+    {
+      "id": "openai/gpt-5-nano",
+      "docsPath": "/development/comfy-router/models/openai/gpt-5-nano/code",
+      "name": "GPT 5 Nano"
+    },
+    {
+      "id": "openai/gpt-5",
+      "docsPath": "/development/comfy-router/models/openai/gpt-5/code",
+      "name": "GPT 5"
+    },
+    {
+      "id": "openai/gpt-6-astra",
+      "docsPath": "/development/comfy-router/models/openai/gpt-6-astra/code",
+      "name": "GPT 6 Astra"
+    },
+    {
+      "id": "openai/gpt-6-luna",
+      "docsPath": "/development/comfy-router/models/openai/gpt-6-luna/code",
+      "name": "GPT 6 Luna"
+    },
+    {
+      "id": "openai/gpt-6-sol",
+      "docsPath": "/development/comfy-router/models/openai/gpt-6-sol/code",
+      "name": "GPT 6 Sol"
+    },
+    {
+      "id": "openai/gpt-image-1.5",
+      "docsPath": "/development/comfy-router/models/openai/gpt-image-1-5/code",
+      "name": "GPT Image 1.5"
+    },
+    {
+      "id": "openai/gpt-image-1",
+      "docsPath": "/development/comfy-router/models/openai/gpt-image-1/code",
+      "name": "GPT Image 1"
+    },
+    {
+      "id": "openai/gpt-image-2.5-flare",
+      "docsPath": "/development/comfy-router/models/openai/gpt-image-2-5-flare/code",
+      "name": "GPT Image 2.5 Flare"
+    },
+    {
+      "id": "openai/gpt-image-2.5-sunburst",
+      "docsPath": "/development/comfy-router/models/openai/gpt-image-2-5-sunburst/code",
+      "name": "GPT Image 2.5 Sunburst"
+    },
+    {
+      "id": "openai/gpt-image-2",
+      "docsPath": "/development/comfy-router/models/openai/gpt-image-2/code",
+      "name": "GPT Image 2"
+    },
+    {
+      "id": "openai/o1-pro",
+      "docsPath": "/development/comfy-router/models/openai/o1-pro/code",
+      "name": "o1-pro"
+    },
+    {
+      "id": "openai/o1",
+      "docsPath": "/development/comfy-router/models/openai/o1/code",
+      "name": "o1"
+    },
+    {
+      "id": "openai/o3",
+      "docsPath": "/development/comfy-router/models/openai/o3/code",
+      "name": "o3"
+    },
+    {
+      "id": "openai/o4-mini",
+      "docsPath": "/development/comfy-router/models/openai/o4-mini/code",
+      "name": "o4-mini"
+    },
+    {
+      "id": "openrouter/chat-completions",
+      "docsPath": "/development/comfy-router/models/openrouter/chat-completions/code",
+      "name": "Chat Completions"
+    },
+    {
+      "id": "pruna/p-video-2",
+      "docsPath": "/development/comfy-router/models/pruna/p-video-2/code",
+      "name": "P Video 2"
+    },
+    {
+      "id": "qwen/qwen-image-3.0-pro",
+      "docsPath": "/development/comfy-router/models/qwen/qwen-image-3-0-pro/code",
+      "name": "Qwen Image 3.0 Pro"
+    },
+    {
+      "id": "qwen/qwen-image-3.0",
+      "docsPath": "/development/comfy-router/models/qwen/qwen-image-3-0/code",
+      "name": "Qwen Image 3.0"
+    },
+    {
+      "id": "recraft/recraftv2",
+      "docsPath": "/development/comfy-router/models/recraft/recraftv2/code",
+      "name": "Recraft V2"
+    },
+    {
+      "id": "recraft/recraftv3",
+      "docsPath": "/development/comfy-router/models/recraft/recraftv3/code",
+      "name": "Recraft V3"
+    },
+    {
+      "id": "recraft/recraftv4_1_pro_vector",
+      "docsPath": "/development/comfy-router/models/recraft/recraftv4-1-pro-vector/code",
+      "name": "Recraft V4.1 Pro Vector"
+    },
+    {
+      "id": "recraft/recraftv4_1_pro",
+      "docsPath": "/development/comfy-router/models/recraft/recraftv4-1-pro/code",
+      "name": "Recraft V4.1 Pro"
+    },
+    {
+      "id": "recraft/recraftv4_1_utility_pro_vector",
+      "docsPath": "/development/comfy-router/models/recraft/recraftv4-1-utility-pro-vector/code",
+      "name": "Recraft V4.1 Utility Pro Vector"
+    },
+    {
+      "id": "recraft/recraftv4_1_utility_pro",
+      "docsPath": "/development/comfy-router/models/recraft/recraftv4-1-utility-pro/code",
+      "name": "Recraft V4.1 Utility Pro"
+    },
+    {
+      "id": "recraft/recraftv4_1_utility_vector",
+      "docsPath": "/development/comfy-router/models/recraft/recraftv4-1-utility-vector/code",
+      "name": "Recraft V4.1 Utility Vector"
+    },
+    {
+      "id": "recraft/recraftv4_1_utility",
+      "docsPath": "/development/comfy-router/models/recraft/recraftv4-1-utility/code",
+      "name": "Recraft V4.1 Utility"
+    },
+    {
+      "id": "recraft/recraftv4_1_vector",
+      "docsPath": "/development/comfy-router/models/recraft/recraftv4-1-vector/code",
+      "name": "Recraft V4.1 Vector"
+    },
+    {
+      "id": "recraft/recraftv4_1",
+      "docsPath": "/development/comfy-router/models/recraft/recraftv4-1/code",
+      "name": "Recraft V4.1"
+    },
+    {
+      "id": "recraft/recraftv4_pro",
+      "docsPath": "/development/comfy-router/models/recraft/recraftv4-pro/code",
+      "name": "Recraft V4 Pro"
+    },
+    {
+      "id": "recraft/recraftv4_styles_pro_vector",
+      "docsPath": "/development/comfy-router/models/recraft/recraftv4-styles-pro-vector/code",
+      "name": "Recraft V4 Styles Pro Vector"
+    },
+    {
+      "id": "recraft/recraftv4_styles_pro",
+      "docsPath": "/development/comfy-router/models/recraft/recraftv4-styles-pro/code",
+      "name": "Recraft V4 Styles Pro"
+    },
+    {
+      "id": "recraft/recraftv4_styles_vector",
+      "docsPath": "/development/comfy-router/models/recraft/recraftv4-styles-vector/code",
+      "name": "Recraft V4 Styles Vector"
+    },
+    {
+      "id": "recraft/recraftv4_styles",
+      "docsPath": "/development/comfy-router/models/recraft/recraftv4-styles/code",
+      "name": "Recraft V4 Styles"
+    },
+    {
+      "id": "recraft/recraftv4",
+      "docsPath": "/development/comfy-router/models/recraft/recraftv4/code",
+      "name": "Recraft V4"
+    },
+    {
+      "id": "runway/aleph2",
+      "docsPath": "/development/comfy-router/models/runway/aleph2/code",
+      "name": "Aleph 2"
+    },
+    {
+      "id": "runway/gen4_image",
+      "docsPath": "/development/comfy-router/models/runway/gen4-image/code",
+      "name": "Gen 4 Image"
+    },
+    {
+      "id": "runway/gen4_turbo",
+      "docsPath": "/development/comfy-router/models/runway/gen4-turbo/code",
+      "name": "Gen 4 Turbo"
+    },
+    {
+      "id": "synclabs/sync-3",
+      "docsPath": "/development/comfy-router/models/synclabs/sync-3/code",
+      "name": "Sync 3"
+    },
+    {
+      "id": "tencent/hunyuan-3d-part",
+      "docsPath": "/development/comfy-router/models/tencent/hunyuan-3d-part/code",
+      "name": "Hunyuan 3D Part"
+    },
+    {
+      "id": "tencent/hunyuan-3d-smart-topology",
+      "docsPath": "/development/comfy-router/models/tencent/hunyuan-3d-smart-topology/code",
+      "name": "Hunyuan 3D Smart Topology"
+    },
+    {
+      "id": "tencent/hunyuan-3d-texture-edit",
+      "docsPath": "/development/comfy-router/models/tencent/hunyuan-3d-texture-edit/code",
+      "name": "Hunyuan 3D Texture Edit"
+    },
+    {
+      "id": "tencent/hunyuan-3d-uv",
+      "docsPath": "/development/comfy-router/models/tencent/hunyuan-3d-uv/code",
+      "name": "Hunyuan 3D Uv"
+    },
+    {
+      "id": "veo/veo-2.0-generate-001",
+      "docsPath": "/development/comfy-router/models/veo/veo-2-0-generate-001/code",
+      "name": "Veo 2.0 Generate 001"
+    },
+    {
+      "id": "veo/veo-3.0-fast-generate-001",
+      "docsPath": "/development/comfy-router/models/veo/veo-3-0-fast-generate-001/code",
+      "name": "Veo 3.0 Fast Generate 001"
+    },
+    {
+      "id": "veo/veo-3.0-generate-001",
+      "docsPath": "/development/comfy-router/models/veo/veo-3-0-generate-001/code",
+      "name": "Veo 3.0 Generate 001"
+    },
+    {
+      "id": "veo/veo-3.1-fast-generate-001",
+      "docsPath": "/development/comfy-router/models/veo/veo-3-1-fast-generate-001/code",
+      "name": "Veo 3.1 Fast Generate 001"
+    },
+    {
+      "id": "veo/veo-3.1-generate-001",
+      "docsPath": "/development/comfy-router/models/veo/veo-3-1-generate-001/code",
+      "name": "Veo 3.1 Generate 001"
+    },
+    {
+      "id": "veo/veo-3.1-lite-generate-001",
+      "docsPath": "/development/comfy-router/models/veo/veo-3-1-lite-generate-001/code",
+      "name": "Veo 3.1 Lite Generate 001"
+    },
+    {
+      "id": "wan/happyhorse-1.0-i2v",
+      "docsPath": "/development/comfy-router/models/wan/happyhorse-1-0-i2v/code",
+      "name": "HappyHorse 1.0 I2V"
+    },
+    {
+      "id": "wan/happyhorse-1.0-r2v",
+      "docsPath": "/development/comfy-router/models/wan/happyhorse-1-0-r2v/code",
+      "name": "HappyHorse 1.0 R2V"
+    },
+    {
+      "id": "wan/happyhorse-1.0-t2v",
+      "docsPath": "/development/comfy-router/models/wan/happyhorse-1-0-t2v/code",
+      "name": "HappyHorse 1.0 T2V"
+    },
+    {
+      "id": "wan/happyhorse-1.0-video-edit",
+      "docsPath": "/development/comfy-router/models/wan/happyhorse-1-0-video-edit/code",
+      "name": "HappyHorse 1.0 Video Edit"
+    },
+    {
+      "id": "wan/happyhorse-1.1-i2v",
+      "docsPath": "/development/comfy-router/models/wan/happyhorse-1-1-i2v/code",
+      "name": "HappyHorse 1.1 I2V"
+    },
+    {
+      "id": "wan/happyhorse-1.1-r2v",
+      "docsPath": "/development/comfy-router/models/wan/happyhorse-1-1-r2v/code",
+      "name": "HappyHorse 1.1 R2V"
+    },
+    {
+      "id": "wan/happyhorse-1.1-t2v",
+      "docsPath": "/development/comfy-router/models/wan/happyhorse-1-1-t2v/code",
+      "name": "HappyHorse 1.1 T2V"
+    },
+    {
+      "id": "wan/wan2.5-i2i-preview",
+      "docsPath": "/development/comfy-router/models/wan/wan2-5-i2i-preview/code",
+      "name": "Wan 2.5 I2I Preview"
+    },
+    {
+      "id": "wan/wan2.5-i2v-preview",
+      "docsPath": "/development/comfy-router/models/wan/wan2-5-i2v-preview/code",
+      "name": "Wan 2.5 I2V Preview"
+    },
+    {
+      "id": "wan/wan2.5-t2i-preview",
+      "docsPath": "/development/comfy-router/models/wan/wan2-5-t2i-preview/code",
+      "name": "Wan 2.5 T2I Preview"
+    },
+    {
+      "id": "wan/wan2.5-t2v-preview",
+      "docsPath": "/development/comfy-router/models/wan/wan2-5-t2v-preview/code",
+      "name": "Wan 2.5 T2V Preview"
+    },
+    {
+      "id": "wan/wan2.6-i2v",
+      "docsPath": "/development/comfy-router/models/wan/wan2-6-i2v/code",
+      "name": "Wan 2.6 I2V"
+    },
+    {
+      "id": "wan/wan2.6-r2v",
+      "docsPath": "/development/comfy-router/models/wan/wan2-6-r2v/code",
+      "name": "Wan 2.6 R2V"
+    },
+    {
+      "id": "wan/wan2.6-t2v",
+      "docsPath": "/development/comfy-router/models/wan/wan2-6-t2v/code",
+      "name": "Wan 2.6 T2V"
+    },
+    {
+      "id": "wan/wan2.7-i2v",
+      "docsPath": "/development/comfy-router/models/wan/wan2-7-i2v/code",
+      "name": "Wan 2.7 I2V"
+    },
+    {
+      "id": "wan/wan2.7-r2v",
+      "docsPath": "/development/comfy-router/models/wan/wan2-7-r2v/code",
+      "name": "Wan 2.7 R2V"
+    },
+    {
+      "id": "wan/wan2.7-t2v",
+      "docsPath": "/development/comfy-router/models/wan/wan2-7-t2v/code",
+      "name": "Wan 2.7 T2V"
+    },
+    {
+      "id": "wan/wan2.7-videoedit",
+      "docsPath": "/development/comfy-router/models/wan/wan2-7-videoedit/code",
+      "name": "Wan 2.7 Video Edit"
+    },
+    {
+      "id": "wan/wan3.0-video-prime",
+      "docsPath": "/development/comfy-router/models/wan/wan3-0-video-prime/code",
+      "name": "Wan 3.0 Video Prime"
+    },
+    {
+      "id": "wan/wan3.0-video",
+      "docsPath": "/development/comfy-router/models/wan/wan3-0-video/code",
+      "name": "Wan 3.0 Video"
+    },
+    {
+      "id": "wavespeed/flashvsr",
+      "docsPath": "/development/comfy-router/models/wavespeed/flashvsr/code",
+      "name": "Flashvsr"
+    },
+    {
+      "id": "wavespeed/seedvr2",
+      "docsPath": "/development/comfy-router/models/wavespeed/seedvr2/code",
+      "name": "Seedvr 2"
+    },
+    {
+      "id": "wavespeed/ultimate-image-upscaler",
+      "docsPath": "/development/comfy-router/models/wavespeed/ultimate-image-upscaler/code",
+      "name": "Ultimate Image Upscaler"
+    },
+    {
+      "id": "xai/grok-imagine-image-2.0",
+      "docsPath": "/development/comfy-router/models/xai/grok-imagine-image-2-0/code",
+      "name": "Grok Imagine Image 2.0"
+    },
+    {
+      "id": "xai/grok-imagine-image-pro",
+      "docsPath": "/development/comfy-router/models/xai/grok-imagine-image-pro/code",
+      "name": "Grok Imagine Image Pro"
+    },
+    {
+      "id": "xai/grok-imagine-image-quality",
+      "docsPath": "/development/comfy-router/models/xai/grok-imagine-image-quality/code",
+      "name": "Grok Imagine Image Quality"
+    },
+    {
+      "id": "xai/grok-imagine-image",
+      "docsPath": "/development/comfy-router/models/xai/grok-imagine-image/code",
+      "name": "Grok Imagine Image"
+    },
+    {
+      "id": "xai/grok-imagine-video-1.5-preview",
+      "docsPath": "/development/comfy-router/models/xai/grok-imagine-video-1-5-preview/code",
+      "name": "Grok Imagine Video 1.5 Preview"
+    },
+    {
+      "id": "xai/grok-imagine-video-1.5",
+      "docsPath": "/development/comfy-router/models/xai/grok-imagine-video-1-5/code",
+      "name": "Grok Imagine Video 1.5"
+    },
+    {
+      "id": "xai/grok-imagine-video",
+      "docsPath": "/development/comfy-router/models/xai/grok-imagine-video/code",
+      "name": "Grok Imagine Video"
+    }
+  ],
+  "providerCoverage": {
+    "providers": [
+      "fal",
+      "Higgsfield",
+      "Runware",
+      "WaveSpeed"
+    ],
+    "rows": [
+      {
+        "name": "Dreamina Seedance 2.0 260128",
+        "docsPath": "/development/comfy-router/models/byteplus/dreamina-seedance-2-0-260128/code",
+        "id": "byteplus/dreamina-seedance-2-0-260128",
+        "comfy": "✓",
+        "providers": [
+          "fal",
+          "Higgsfield",
+          "Runware",
+          "WaveSpeed"
+        ],
+        "altProviders": [
+          "fal",
+          "higgsfield",
+          "runware",
+          "wavespeed"
+        ]
+      },
+      {
+        "name": "Dreamina Seedance 2.5 260628",
+        "docsPath": "/development/comfy-router/models/byteplus/dreamina-seedance-2-5-260628/code",
+        "id": "byteplus/dreamina-seedance-2-5-260628",
+        "comfy": "✓",
+        "providers": [
+          "fal",
+          "Higgsfield",
+          "Runware",
+          "WaveSpeed"
+        ],
+        "altProviders": [
+          "fal",
+          "higgsfield",
+          "runware",
+          "wavespeed"
+        ]
+      },
+      {
+        "name": "GPT Image 2",
+        "docsPath": "/development/comfy-router/models/openai/gpt-image-2/code",
+        "id": "openai/gpt-image-2",
+        "comfy": "✓",
+        "providers": [
+          "fal",
+          "Runware",
+          "WaveSpeed"
+        ],
+        "altProviders": [
+          "fal",
+          "runware",
+          "wavespeed"
+        ]
+      },
+      {
+        "name": "GPT Image 2.5 Flare",
+        "docsPath": "/development/comfy-router/models/openai/gpt-image-2-5-flare/code",
+        "id": "openai/gpt-image-2.5-flare",
+        "comfy": "✓",
+        "providers": [
+          "fal",
+          "Runware",
+          "WaveSpeed"
+        ],
+        "altProviders": [
+          "fal",
+          "runware",
+          "wavespeed"
+        ]
+      },
+      {
+        "name": "GPT Image 2.5 Sunburst",
+        "docsPath": "/development/comfy-router/models/openai/gpt-image-2-5-sunburst/code",
+        "id": "openai/gpt-image-2.5-sunburst",
+        "comfy": "✓",
+        "providers": [
+          "fal",
+          "Runware",
+          "WaveSpeed"
+        ],
+        "altProviders": [
+          "fal",
+          "runware",
+          "wavespeed"
+        ]
+      },
+      {
+        "name": "Kling 3.0 Turbo",
+        "docsPath": "/development/comfy-router/models/kling/kling-3-0-turbo/code",
+        "id": "kling/kling-3.0-turbo",
+        "comfy": "✓",
+        "providers": [
+          "Higgsfield"
+        ],
+        "altProviders": [
+          "higgsfield"
+        ]
+      },
+      {
+        "name": "Kling V3",
+        "docsPath": "/development/comfy-router/models/kling/kling-v3/code",
+        "id": "kling/kling-v3",
+        "comfy": "✓",
+        "providers": [
+          "Higgsfield"
+        ],
+        "altProviders": [
+          "higgsfield"
+        ]
+      },
+      {
+        "name": "Nano Banana 2",
+        "docsPath": "/development/comfy-router/models/google/nano-banana-2/code",
+        "id": "vertexai/gemini-3.1-flash-image",
+        "comfy": "✓",
+        "providers": [
+          "fal",
+          "Runware",
+          "WaveSpeed"
+        ],
+        "altProviders": [
+          "fal",
+          "runware",
+          "wavespeed"
+        ]
+      },
+      {
+        "name": "Nano Banana Pro",
+        "docsPath": "/development/comfy-router/models/google/nano-banana-pro/code",
+        "id": "vertexai/gemini-3-pro-image",
+        "comfy": "✓",
+        "providers": [
+          "fal",
+          "Runware",
+          "WaveSpeed"
+        ],
+        "altProviders": [
+          "fal",
+          "runware",
+          "wavespeed"
+        ]
+      },
+      {
+        "name": "Wan 3.0 Video",
+        "docsPath": "/development/comfy-router/models/wan/wan3-0-video/code",
+        "id": "wan/wan3.0-video",
+        "comfy": "✓",
+        "providers": [
+          "Higgsfield"
+        ],
+        "altProviders": [
+          "higgsfield"
+        ]
+      }
+    ]
+  }
+}

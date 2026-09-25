@@ -23,6 +23,7 @@
     "test:visual:update": "playwright test --project visual --update-snapshots",
     "ashby:refresh-snapshot": "tsx ./scripts/refresh-ashby-snapshot.ts",
     "cloud-nodes:refresh-snapshot": "tsx ./scripts/refresh-cloud-nodes-snapshot.ts",
+    "router-catalog:refresh-snapshot": "tsx ./scripts/refresh-router-catalog-snapshot.ts",
     "generate:models": "tsx ./scripts/generate-models.ts",
     "generate:workshop-catalog": "tsx ./scripts/generate-workshop-catalog.ts",
     "generate:workshop-display": "tsx ./scripts/generate-workshop-display.ts",
