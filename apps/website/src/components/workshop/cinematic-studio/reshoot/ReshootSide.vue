@@ -7,7 +7,6 @@ import type {
   CameraKey,
   ReshootAspect,
   ReshootCamera,
-  ReshootMotion,
   ReshootSize
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
@@ -49,7 +48,6 @@ const {
 const emit = defineEmits<{
   aim: [patch: Partial<ReshootCamera>]
   removeKey: [frame: number]
-  clearKeys: []
   analyze: []
   generate: []
 }>()
@@ -60,7 +58,6 @@ const size = defineModel<ReshootSize>('size', { required: true })
 const seed = defineModel<number>('seed', { required: true })
 const keepAim = defineModel<boolean>('keepAim', { required: true })
 const frame = defineModel<number>('frame', { required: true })
-const motion = defineModel<ReshootMotion>('motion', { required: true })
 const prompt = defineModel<string>('prompt', { required: true })
 
 const ready = computed(() => depth === 'ready')
@@ -133,11 +130,9 @@ function choose(event: Event) {
       >
         <ReshootMoveControls
           v-model:frame="frame"
-          v-model:motion="motion"
           :keys
           :locale
           @remove="emit('removeKey', $event)"
-          @clear="emit('clearKeys')"
         />
       </ReshootDisclosure>
       <ReshootFormat v-model:aspect="aspect" v-model:size="size" :locale />

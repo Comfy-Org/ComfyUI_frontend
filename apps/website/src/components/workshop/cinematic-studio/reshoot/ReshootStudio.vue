@@ -64,7 +64,6 @@ const {
         v-model:seed="seed"
         v-model:keep-aim="keepAim"
         v-model:frame="frame"
-        v-model:motion="motion"
         v-model:prompt="prompt"
         :clip
         :clip-name="clipName"
@@ -79,7 +78,6 @@ const {
         :locale
         @aim="demo.aim"
         @remove-key="demo.removeKey"
-        @clear-keys="keys = []"
         @analyze="demo.analyze"
         @generate="demo.generate"
       />
@@ -102,6 +100,7 @@ const {
       <ReshootStage
         v-else
         v-model:frame="frame"
+        v-model:motion="motion"
         :clip
         :camera="view"
         :depth
@@ -123,6 +122,7 @@ const {
         @cancel="demo.cancel"
         @reuse="demo.reuse(selected)"
         @key="demo.toggleKey"
+        @clear-keys="keys = []"
       />
     </div>
     <ReshootExamples

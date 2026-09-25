@@ -272,6 +272,25 @@ describe('Re-shoot, run for real', () => {
       ).toHaveLength(4)
     })
 
+    it('eases the move with the Motion menu, in the preview and the request', async () => {
+      const user = setup()
+      await twoKeys(user)
+      await scrub(12)
+      const linear = Number((rotation() as HTMLInputElement).value)
+
+      await user.click(screen.getByRole('button', { name: /^Motion:/ }))
+      await user.click(
+        await screen.findByRole('menuitemradio', { name: /Ease in$/ })
+      )
+
+      expect(Number((rotation() as HTMLInputElement).value)).toBeLessThan(
+        linear
+      )
+      await user.click(screen.getByTestId('reshoot-action'))
+      await waitUntil(() => expect(net.submitted).toHaveLength(2))
+      expect(inputs(net.submitted[1]).interp_motion).toBe('ease_in')
+    })
+
     it('takes a key away with the same button, and holds a single key', async () => {
       const user = setup()
       await twoKeys(user)

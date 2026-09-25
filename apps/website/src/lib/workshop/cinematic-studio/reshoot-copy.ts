@@ -244,6 +244,14 @@ const copy = {
   'reshoot.move.frame': { en: 'Frame', 'zh-CN': '帧' },
   'reshoot.move.key': { en: 'Key', 'zh-CN': '关键帧' },
   'reshoot.move.unkey': { en: 'Remove key', 'zh-CN': '删除关键帧' },
+  'reshoot.move.noKeys': {
+    en: 'No keys: one camera for the whole clip. Key two frames to make a move.',
+    'zh-CN': '没有关键帧：整个片段使用同一机位。设置两个关键帧即可形成运镜。'
+  },
+  'reshoot.move.oneKey': {
+    en: 'One key holds the camera there. Key another frame to make a move.',
+    'zh-CN': '一个关键帧会让机位固定在此。再设置一帧即可形成运镜。'
+  },
   'reshoot.move.goTo': {
     en: 'Go to the key at {time}',
     'zh-CN': '跳到 {time} 处的关键帧'

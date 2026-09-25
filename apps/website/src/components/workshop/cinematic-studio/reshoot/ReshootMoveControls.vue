@@ -1,23 +1,15 @@
 <script setup lang="ts">
 import { X } from '@lucide/vue'
-import { computed } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type {
-  CameraKey,
-  ReshootMotion
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
-import {
-  RESHOOT_MOTIONS,
-  frameTime
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
+import type { CameraKey } from '../../../../lib/workshop/cinematic-studio/reshoot'
+import { frameTime } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
-import CinematicMenu from '../CinematicMenu.vue'
 
-// The move's keys and how the camera flies between them. Scrubbing and
-// keying happen on the timeline under the preview; a key here jumps to it.
+// The move's keys. Scrubbing, keying and the motion curve are on the
+// timeline under the preview; a key here jumps to it.
 const {
   keys,
   disabled = false,
@@ -28,23 +20,8 @@ const {
   locale?: Locale
 }>()
 
-const emit = defineEmits<{ remove: [frame: number]; clear: [] }>()
+const emit = defineEmits<{ remove: [frame: number] }>()
 const frame = defineModel<number>('frame', { required: true })
-const motion = defineModel<ReshootMotion>('motion', { required: true })
-
-const motionOptions = computed(() =>
-  RESHOOT_MOTIONS.map((id) => ({
-    id,
-    label: rc(`reshoot.motion.${id}`, locale)
-  }))
-)
-const motionValue = computed({
-  get: () => motion.value,
-  set: (id: string) => {
-    const match = RESHOOT_MOTIONS.find((option) => option === id)
-    if (match) motion.value = match
-  }
-})
 </script>
 
 <template>
@@ -102,25 +79,5 @@ const motionValue = computed({
         </button>
       </li>
     </ul>
-    <div v-if="keys.length > 1" class="flex items-center gap-2">
-      <CinematicMenu
-        v-model="motionValue"
-        :options="motionOptions"
-        :heading="rc('reshoot.move.motion', locale)"
-        trigger-class="h-9 flex-1 justify-between gap-2 border border-transparency-white-t20 px-3 text-sm text-primary-warm-white"
-      >
-        <span class="text-primary-warm-gray">
-          {{ rc('reshoot.move.motion', locale) }}
-        </span>
-        {{ rc(`reshoot.motion.${motion}`, locale) }}
-      </CinematicMenu>
-      <button
-        type="button"
-        class="h-9 rounded-xl px-3 text-xs text-primary-warm-gray hover:text-primary-warm-white"
-        @click="emit('clear')"
-      >
-        {{ rc('reshoot.move.clear', locale) }}
-      </button>
-    </div>
   </div>
 </template>
