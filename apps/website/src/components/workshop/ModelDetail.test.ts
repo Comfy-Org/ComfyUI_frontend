@@ -304,6 +304,7 @@ describe('ModelDetail', () => {
 
     expect(assign).toHaveBeenCalledWith(link.href)
     const run = vi.mocked(runWorkshopRouter).mock.calls[0][0]
+    expect(run.signal.aborted).toBe(true)
     expect(run.signal.reason === WORKSHOP_LEAVE_RUNNING).toBe(keeps)
   })
 
@@ -341,7 +342,35 @@ describe('ModelDetail', () => {
     await user().click(screen.getByTestId('run-leave-confirm'))
 
     const run = vi.mocked(runWorkshopRouter).mock.calls[0][0]
+    expect(run.signal.aborted).toBe(true)
     expect(run.signal.reason === WORKSHOP_LEAVE_RUNNING).toBe(false)
+  })
+
+  // The address carries the run so a reload finds it again. Cancelling ends
+  // that run, so the id goes with it rather than waiting to be restored as
+  // though the machine were still working.
+  it('takes the run out of the address when it is cancelled', async () => {
+    vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', '1')
+    auth.session.value = credential
+    vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [] })
+    vi.mocked(runWorkshopRouter).mockImplementation((options) => {
+      options.onRequestId?.('18655193-3f73-4abf-b49c-1c6a058355bc')
+      return Promise.withResolvers<typeof routerResult>().promise
+    })
+    const address = location.href
+    onTestFinished(() => history.replaceState(null, '', address))
+    mountDetail({ model: runnable })
+    await user().type(screen.getByTestId('field-prompt'), 'A teapot')
+    await user().click(screen.getByTestId('run-button'))
+    await vi.waitFor(() =>
+      expect(new URL(location.href).searchParams.get('request_id')).toBe(
+        '18655193-3f73-4abf-b49c-1c6a058355bc'
+      )
+    )
+
+    await user().click(screen.getByTestId('run-button'))
+
+    expect(new URL(location.href).searchParams.get('request_id')).toBeNull()
   })
 
   it('links a documented provider in a new tab', () => {

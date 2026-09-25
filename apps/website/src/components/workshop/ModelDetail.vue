@@ -445,6 +445,7 @@ function cancelRun() {
     })
     activeRun = undefined
     pendingRequest = undefined
+    rememberRequestId(null)
   }
   runState.value = transition(runState.value, { type: 'cancel' })
 }
