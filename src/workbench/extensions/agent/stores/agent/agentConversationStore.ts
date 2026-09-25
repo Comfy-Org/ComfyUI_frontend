@@ -80,6 +80,7 @@ export const useAgentConversationStore = defineStore(
     const backgroundTurns = new Map<string, BackgroundTurn>()
     let hydratedMessageIds = new Set<string>()
     let hydratedAssistantTurnIds = new Set<TurnId>()
+    const reportedPaywallImpressions = new Set<TurnId>()
     const approvalShownAtByAsk = new Map<string, number>()
     const shownApprovalIds = new Set<string>()
     const activeIndex = ref(-1)
@@ -186,6 +187,12 @@ export const useAgentConversationStore = defineStore(
 
     function setPaywallsResolved(resolved: boolean): void {
       if (resolved) resolvePaywalls()
+    }
+
+    function claimPaywallImpression(turnId: TurnId): boolean {
+      if (reportedPaywallImpressions.has(turnId)) return false
+      reportedPaywallImpressions.add(turnId)
+      return true
     }
 
     function startTurn(turnId: TurnId): void {
@@ -446,6 +453,7 @@ export const useAgentConversationStore = defineStore(
       forgetAllApprovals()
       hydratedMessageIds = new Set()
       hydratedAssistantTurnIds = new Set()
+      reportedPaywallImpressions.clear()
       clearActive()
     }
 
@@ -523,6 +531,7 @@ export const useAgentConversationStore = defineStore(
       recordFailedSend,
       recordPaywall,
       setPaywallsResolved,
+      claimPaywallImpression,
       startTurn,
       ingest,
       setCanvasSyncGate,
