@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ArrowUpRight } from '@lucide/vue'
+import { useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, ref, watch } from 'vue'
 
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
@@ -21,9 +22,11 @@ import { useWorkflowFormDraft } from '../../composables/useWorkflowFormDraft'
 import { useWorkflowRun } from '../../composables/useWorkflowRun'
 import { t } from '../../i18n/translations'
 import {
+  captureWorkshopEvent,
   useWorkshopEnabled,
   useWorkshopWorkflowsEnabled
 } from '../../scripts/posthog'
+import { workshopModelAnalytics } from '../../scripts/workshop-analytics'
 import { sameFormValues } from '../../lib/workshop/form-values'
 import ExampleReplaceDialog from './ExampleReplaceDialog.vue'
 import PlaygroundForm from './PlaygroundForm.vue'
@@ -31,6 +34,7 @@ import WorkflowResults from './WorkflowResults.vue'
 import WorkflowRunControls from './WorkflowRunControls.vue'
 import WorkflowPreview from './WorkflowPreview.vue'
 import WorkflowApi from './WorkflowApi.vue'
+import WorkflowExamplePreview from './WorkflowExamplePreview.vue'
 
 const { model, scope, cloudHref } = defineProps<{
   model: WorkflowWorkshopModelDetail
@@ -78,6 +82,20 @@ const draft = useWorkflowFormDraft(
 )
 const enabled = useWorkshopEnabled()
 const workflowsEnabled = useWorkshopWorkflowsEnabled()
+const mounted = useMounted()
+const modelAnalytics = workshopModelAnalytics(model)
+watch(
+  () => mounted.value && enabled.value && workflowsEnabled.value,
+  (visible) => {
+    if (visible)
+      captureWorkshopEvent({ name: 'model_viewed', properties: modelAnalytics })
+  },
+  { once: true }
+)
+watch([section, enabled, workflowsEnabled], ([active, enabled, workflows]) => {
+  if (enabled && workflows && active === 'api')
+    captureWorkshopEvent({ name: 'api_viewed', properties: modelAnalytics })
+})
 const busy = computed(() =>
   ['preparing', 'active', 'interrupted'].includes(state.value.phase)
 )
@@ -267,6 +285,8 @@ function start() {
         :status-label="statusLabel"
         :can-start="canStart"
         :refresh-output="workflow.refreshOutput"
+        :analytics="workflow.analytics.value"
+        :visible="section === 'playground'"
         @retry="start"
         @retry-delivery="workflow.retryDelivery()"
       />
@@ -302,16 +322,12 @@ function start() {
         :key="example.name"
         type="button"
         :aria-pressed="selectedExample === index"
+        :aria-label="example.title"
         class="cursor-pointer overflow-hidden rounded-2xl border border-transparency-white-t8 text-left hover:border-primary-comfy-yellow focus-visible:outline-primary-comfy-yellow disabled:cursor-not-allowed disabled:opacity-50"
         :disabled="formDisabled"
         @click="selectExample(index)"
       >
-        <img
-          :src="example.thumbnailUrl"
-          :alt="example.title"
-          loading="lazy"
-          class="aspect-4/3 w-full object-cover"
-        />
+        <WorkflowExamplePreview :example :poster="model.thumbnailUrl" />
         <span class="block p-4 text-sm text-primary-warm-gray">
           {{
             t('workshop.workflow.templateExample').replace(
