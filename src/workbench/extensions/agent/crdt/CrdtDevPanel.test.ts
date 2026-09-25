@@ -107,6 +107,26 @@ describe('CrdtDevPanel', () => {
     expect(sheet()).toHaveTextContent('7')
   })
 
+  it('renders disconnected status fallbacks', async () => {
+    const user = userEvent.setup()
+    render(CrdtDevPanel, {
+      props: {
+        status: {
+          ...STATUS,
+          connected: false,
+          workflowId: null,
+          lastFrameType: null
+        }
+      }
+    })
+
+    await user.click(chip()!)
+
+    expect(screen.getByRole('row', { name: 'doc id —' })).toBeVisible()
+    expect(screen.getByRole('row', { name: 'connected no' })).toBeVisible()
+    expect(screen.getByRole('row', { name: 'last frame —' })).toBeVisible()
+  })
+
   it('moves focus into the panel and restores it after Escape closes', async () => {
     const user = userEvent.setup()
     renderPanel()
