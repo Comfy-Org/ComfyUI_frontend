@@ -9,6 +9,7 @@ import {
   directoryEvents,
   eventJsonLdNode,
   eventStatus,
+  eventVideoUploadDate,
   pastEvents,
   toCalendarEvent,
   upcomingEvents
@@ -24,6 +25,23 @@ const baseEvent: ComfyEvent = {
   startDateTime: '2026-08-05T13:00:00-07:00',
   link: { href: { en: '/launches', 'zh-CN': '/zh-CN/launches' } }
 }
+
+describe('eventVideoUploadDate', () => {
+  it('returns the recordingPublishDate if it is provided', () => {
+    expect(
+      eventVideoUploadDate({
+        startDateTime: '2026-08-01',
+        recordingPublishDate: '2026-08-05'
+      })
+    ).toBe('2026-08-05')
+  })
+
+  it('falls back to the startDateTime if recordingPublishDate is missing', () => {
+    expect(eventVideoUploadDate({ startDateTime: '2026-08-01' })).toBe(
+      '2026-08-01'
+    )
+  })
+})
 
 describe('toCalendarEvent', () => {
   it('maps localized fields and appends an absolute event link', () => {
