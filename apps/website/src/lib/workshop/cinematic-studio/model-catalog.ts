@@ -1,6 +1,7 @@
 import type { InjectionKey } from 'vue'
 import type { Locale } from '../../../i18n/translations'
 import type { Modality } from '../../../config/models-catalogue'
+import type { ModelCapability } from './model-capabilities'
 
 export interface CinematicCatalogEntry {
   readonly slug: string
@@ -10,6 +11,7 @@ export interface CinematicCatalogEntry {
   readonly modality: Modality | 'other'
   readonly href: string
   readonly runnable: boolean
+  readonly capabilities: readonly ModelCapability[]
 }
 
 export const cinematicCatalogKey: InjectionKey<{

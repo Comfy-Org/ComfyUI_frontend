@@ -1,4 +1,5 @@
 import type { MotionComparisonPayload } from '../lib/workshop/cinematic-studio/motion-comparison'
+import { generationTimingNamespaceKey } from '../lib/workshop/cinematic-studio/generation-timings'
 import { useCinematicComposerDrafts } from './useCinematicComposerDrafts'
 import type {
   ComposerDrafts,
@@ -30,6 +31,7 @@ import {
   computed,
   onMounted,
   onScopeDispose,
+  provide,
   ref,
   shallowRef,
   watch
@@ -88,6 +90,7 @@ export function useCinematicShot(
           })
         : undefined
   )
+  provide(generationTimingNamespaceKey, namespace)
   const library = useCinematicLibrary(
     () => namespace.value,
     () => studio.reel.value.takes

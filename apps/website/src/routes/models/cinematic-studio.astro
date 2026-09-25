@@ -9,6 +9,9 @@ import { tc } from '../../lib/workshop/cinematic-studio/copy'
 import { workshopModels } from '../../config/workshop-browse-content'
 import { canRunModel } from '../../lib/workshop/cinematic-studio/gate'
 import type { CinematicCatalogEntry } from '../../lib/workshop/cinematic-studio/model-catalog'
+import { modelCapabilities } from '../../lib/workshop/cinematic-studio/model-capabilities'
+
+const models = runnableCinematicModels(getRouterWorkshopModelDetail)
 
 const catalog = workshopModels.map<CinematicCatalogEntry>((model) => {
   const detail = getRouterWorkshopModelDetail(model.slug)
@@ -19,12 +22,15 @@ const catalog = workshopModels.map<CinematicCatalogEntry>((model) => {
     routerId: model.routerId,
     modality: model.modality ?? 'other',
     href: model.href,
-    runnable: Boolean(detail && canRunModel(detail))
+    runnable: Boolean(detail && canRunModel(detail)),
+    capabilities: modelCapabilities(
+      detail,
+      models.find((item) => item.slug === model.slug)
+    )
   }
 })
 
 const enhancementModel = cinematicEnhancementModel()
-const models = runnableCinematicModels(getRouterWorkshopModelDetail)
 const editingModels = runnableCinematicEditingModels(
   getRouterWorkshopModelDetail
 )

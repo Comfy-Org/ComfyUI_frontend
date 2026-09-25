@@ -2,6 +2,27 @@ import { expect } from '@playwright/test'
 
 import { test } from './fixtures/modelsAccount'
 
+test('separates authored clip capabilities from unmeasured generation time', async ({
+  page
+}) => {
+  await page.goto('/cinematic-studio?demo=success')
+  await page.getByRole('button', { name: /Model · via Comfy Router:/ }).click()
+  await page.getByRole('menuitem', { name: /^All models \(/ }).click()
+  const catalog = page.getByRole('dialog', { name: 'All models', exact: true })
+  await catalog
+    .getByRole('searchbox', { name: 'Search models or providers' })
+    .fill('Kling 3.0 Text-to-Video')
+  await catalog
+    .getByText('Capabilities & generation time', { exact: true })
+    .click()
+  await expect(catalog).toContainText('Clip length (seconds)')
+  await expect(catalog).toContainText('Standard / Professional')
+  await expect(catalog).toContainText('Generation time')
+  await expect(catalog).toContainText('Not measured yet')
+  await expect(catalog).toContainText('including uploads and queue time')
+  await expect(catalog).not.toContainText('Typical observed time (median)')
+})
+
 test('browses the full model catalog without losing the Studio draft', async ({
   page
 }) => {

@@ -1,5 +1,10 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, inject, ref, shallowRef, watch } from 'vue'
+import {
+  generationTimingNamespaceKey,
+  readGenerationTimings
+} from '../../../lib/workshop/cinematic-studio/generation-timings'
+import type { ModelCapability } from '../../../lib/workshop/cinematic-studio/model-capabilities'
 import type { CinematicCatalogEntry } from '../../../lib/workshop/cinematic-studio/model-catalog'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -22,6 +27,92 @@ const open = defineModel<boolean>('open', { required: true })
 const emit = defineEmits<{ select: [slug: string]; returnFocus: [] }>()
 const search = ref('')
 const modality = ref('all')
+const timingNamespace = inject(generationTimingNamespaceKey, undefined)
+const timings = shallowRef<
+  Record<string, { count: number; median: number; min: number; max: number }>
+>({})
+watch(
+  [open, () => timingNamespace?.value],
+  () => {
+    timings.value = {}
+    const scope = timingNamespace?.value
+    if (!open.value || !scope) return
+    timings.value = Object.fromEntries(
+      entries.flatMap((entry) => {
+        const values = readGenerationTimings(scope, entry.slug)
+          .map((sample) => sample.elapsedMs)
+          .sort((a, b) => a - b)
+        if (!values.length) return []
+        const middle = Math.floor(values.length / 2)
+        return [
+          [
+            entry.slug,
+            {
+              count: values.length,
+              median:
+                values.length % 2
+                  ? values[middle]
+                  : (values[middle - 1] + values[middle]) / 2,
+              min: values[0],
+              max: values[values.length - 1]
+            }
+          ]
+        ]
+      })
+    )
+  },
+  { immediate: true }
+)
+function seconds(ms: number) {
+  return new Intl.NumberFormat(locale, {
+    style: 'unit',
+    unit: 'second',
+    unitDisplay: 'short',
+    maximumFractionDigits: 0
+  }).format(ms / 1000)
+}
+function capabilityValue(row: ModelCapability) {
+  return row.values
+    .map((value) => {
+      if (row.kind === 'firstFrame' || row.kind === 'lastFrame') {
+        switch (value) {
+          case 'required':
+            return tc('cinematic.capability.required', locale)
+          case 'optional':
+            return tc('cinematic.capability.optional', locale)
+          case 'supported':
+            return tc('cinematic.capability.supported', locale)
+          case 'unsupported':
+            return tc('cinematic.capability.unsupported', locale)
+        }
+      }
+      if (
+        row.kind === 'inputs' &&
+        ['text', 'image', 'video', 'audio'].includes(value)
+      ) {
+        switch (value) {
+          case 'text':
+            return tc('cinematic.catalog.text', locale)
+          case 'image':
+            return tc('cinematic.catalog.image', locale)
+          case 'video':
+            return tc('cinematic.catalog.video', locale)
+          case 'audio':
+            return tc('cinematic.catalog.audio', locale)
+        }
+      }
+      if (row.kind === 'quality' && value === 'std')
+        return tc('cinematic.video.standard', locale)
+      if (row.kind === 'quality' && value === 'pro')
+        return tc('cinematic.video.professional', locale)
+      if (row.kind === 'audio' && ['on', 'true'].includes(value))
+        return tc('cinematic.video.audioOn', locale)
+      if (row.kind === 'audio' && ['off', 'false'].includes(value))
+        return tc('cinematic.video.audioOff', locale)
+      return value
+    })
+    .join(' / ')
+}
 const modalities = [
   'all',
   'image',
@@ -120,6 +211,62 @@ function select(slug: string) {
                   )
                 }}
               </p>
+              <details class="mt-3 text-sm text-primary-warm-white">
+                <summary
+                  class="cursor-pointer rounded-lg border border-transparency-white-t20 px-3 py-2 text-primary-comfy-yellow"
+                >
+                  {{ tc('cinematic.capability.details', locale) }}
+                </summary>
+                <dl class="mt-3 grid grid-cols-1 gap-2 text-xs">
+                  <div v-for="row in entry.capabilities" :key="row.kind">
+                    <dt class="text-primary-warm-gray">
+                      {{ tc(`cinematic.capability.${row.kind}`, locale) }}
+                    </dt>
+                    <dd class="mt-0.5 wrap-break-word">
+                      {{ capabilityValue(row) }}
+                    </dd>
+                  </div>
+                </dl>
+                <p
+                  v-if="!entry.capabilities.length"
+                  class="mt-2 text-xs text-primary-warm-gray"
+                >
+                  {{ tc('cinematic.capability.unknown', locale) }}
+                </p>
+                <p class="mt-2 text-xs text-primary-warm-gray">
+                  {{ tc('cinematic.capability.note', locale) }}
+                </p>
+                <div class="mt-3 border-t border-transparency-white-t8 pt-3">
+                  <p class="font-medium">
+                    {{ tc('cinematic.timing.title', locale) }}
+                  </p>
+                  <template v-if="timings[entry.slug]">
+                    <p class="mt-1">
+                      {{
+                        tc(
+                          timings[entry.slug].count >= 3
+                            ? 'cinematic.timing.typical'
+                            : 'cinematic.timing.observed',
+                          locale
+                        )
+                      }}: {{ seconds(timings[entry.slug].median) }}
+                    </p>
+                    <p class="mt-1 text-xs text-primary-warm-gray">
+                      {{ tc('cinematic.timing.range', locale) }}:
+                      {{ seconds(timings[entry.slug].min) }} –
+                      {{ seconds(timings[entry.slug].max) }} ·
+                      {{ timings[entry.slug].count }}
+                      {{ tc('cinematic.timing.runs', locale) }}
+                    </p>
+                  </template>
+                  <p v-else class="mt-1">
+                    {{ tc('cinematic.timing.unmeasured', locale) }}
+                  </p>
+                  <p class="mt-2 text-xs text-primary-warm-gray">
+                    {{ tc('cinematic.timing.note', locale) }}
+                  </p>
+                </div>
+              </details>
             </div>
             <Button
               v-if="selectable.includes(entry.slug)"

@@ -8,7 +8,8 @@ import {
   onTestFinished,
   vi
 } from 'vitest'
-import { computed, defineComponent, nextTick } from 'vue'
+import { computed, defineComponent, nextTick, ref } from 'vue'
+import { readGenerationTimings } from '../lib/workshop/cinematic-studio/generation-timings'
 import type { AccountCredential } from '@comfyorg/account-core/session'
 
 import { useWorkshopSession } from '../config/workshop-session-state'
@@ -54,6 +55,7 @@ const recovered = {
 }
 
 beforeEach(() => {
+  vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible')
   localStorage.clear()
   vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', '1')
   vi.mocked(useWorkshopEnabled).mockReturnValue(computed(() => true))
@@ -91,6 +93,84 @@ async function pageResponse(url: string) {
 }
 
 describe('cinematic request recovery', () => {
+  it.for(['cancel', 'switch-account'])(
+    'does not record interrupted generation timing on %s',
+    async (action) => {
+      const current = ref(credential)
+      useWorkshopSession().session = computed(() => current.value)
+      const requested = Promise.withResolvers<void>()
+      vi.stubGlobal(
+        'fetch',
+        vi.fn<typeof fetch>(async (input, init) => {
+          if (String(input).startsWith('/')) return pageResponse(String(input))
+          requested.resolve()
+          return new Promise<Response>((_, reject) =>
+            init?.signal?.addEventListener(
+              'abort',
+              () => reject(new DOMException('Stopped', 'AbortError')),
+              { once: true }
+            )
+          )
+        })
+      )
+      const { run } = mountRun()
+      await nextTick()
+      const generating = run.generate({
+        modelSlug: SLUG,
+        prompt: 'Harbor',
+        aspect: '16:9',
+        resolutionPixels: 1024,
+        takes: 1,
+        references: []
+      })
+      await requested.promise
+      if (action === 'cancel') run.cancel()
+      else {
+        current.value = { ...credential, uid: 'other-user' }
+        await nextTick()
+      }
+      await generating
+      expect(readGenerationTimings(NAMESPACE, SLUG)).toEqual([])
+      expect(
+        readGenerationTimings(JSON.stringify(['other-user', 'workspace']), SLUG)
+      ).toEqual([])
+    }
+  )
+  it('excludes a successful run that became hidden', async () => {
+    const hidden = vi.spyOn(document, 'visibilityState', 'get')
+    vi.stubGlobal(
+      'fetch',
+      vi.fn<typeof fetch>(async (input, init) => {
+        if (String(input).startsWith('/')) return pageResponse(String(input))
+        if (init?.method === 'POST') {
+          hidden.mockReturnValue('hidden')
+          document.dispatchEvent(new Event('visibilitychange'))
+          hidden.mockReturnValue('visible')
+          return Response.json(
+            { request_id: REQUEST_ID, status: 'IN_QUEUE' },
+            { status: 201 }
+          )
+        }
+        return Response.json({
+          id: 'result',
+          status: 'Ready',
+          result: { sample: 'https://example.com/image.png' }
+        })
+      })
+    )
+    const { run } = mountRun()
+    await nextTick()
+    await run.generate({
+      modelSlug: SLUG,
+      prompt: 'Harbor',
+      aspect: '16:9',
+      resolutionPixels: 1024,
+      takes: 1,
+      references: []
+    })
+    expect(run.reel.value.takes[0].status).toBe('done')
+    expect(readGenerationTimings(NAMESPACE, SLUG)).toEqual([])
+  })
   it.for([false, true])(
     'validates a motion batch before submission and stops at failure (invalid settings: %s)',
     async (invalid) => {
@@ -134,6 +214,11 @@ describe('cinematic request recovery', () => {
     }
   )
   it('journals before submission and replaces unknown status only after queue admission', async () => {
+    let elapsed = 0
+    vi.spyOn(performance, 'now').mockImplementation(() => {
+      elapsed += 10
+      return elapsed
+    })
     const statuses: string[] = []
     vi.stubGlobal(
       'fetch',
@@ -169,6 +254,7 @@ describe('cinematic request recovery', () => {
       status: 'complete'
     })
     expect(run.reel.value.takes.at(0)?.status).toBe('done')
+    expect(readGenerationTimings(NAMESPACE, SLUG)).toHaveLength(1)
   })
 
   it('does not submit when the initial recovery receipt cannot be persisted', async () => {
@@ -198,6 +284,7 @@ describe('cinematic request recovery', () => {
     expect(network.every((url) => url.startsWith('/'))).toBe(true)
     expect(run.recoveryError.value).toBe(true)
     expect(run.reel.value.takes.at(0)?.status).toBe('failed')
+    expect(readGenerationTimings(NAMESPACE, SLUG)).toEqual([])
   })
 
   it('collects a saved receipt after reload using only GET and retains it until media is saved', async () => {
@@ -225,6 +312,7 @@ describe('cinematic request recovery', () => {
       `/v2/models/${contractId}/requests/${REQUEST_ID}`
     )
     expect(readCinematicJournal(NAMESPACE)[0].status).toBe('complete')
+    expect(readGenerationTimings(NAMESPACE, SLUG)).toEqual([])
   })
 
   it('never automatically submits an unknown interrupted request', async () => {

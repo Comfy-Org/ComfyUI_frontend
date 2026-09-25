@@ -33,9 +33,10 @@ API-key backend, copied private output library, or additional dependency.
 
 ## Validation
 
-- 333 focused Studio tests, two LTX Fast route tests and 731 shared contract
-  tests passed across 33 files (1,066 tests total).
-- 18 production browser tests passed across both Studio layouts, including
+- Latest run: 313 focused Studio tests passed across 33 component, library and
+  composable files. Earlier route validation also passed two LTX Fast tests and
+  731 shared contract tests; these were not rerun for the capability UI change.
+- 19 production browser tests passed across both Studio layouts, including
   crop pixels, assets, edit review, prompt suggestions, plans, recipe import,
   motion comparison and transition reference restoration after reload.
 - Website build, website typecheck, knip and Astro formatting passed.
@@ -53,6 +54,19 @@ API-key backend, copied private output library, or additional dependency.
 - The rendered picker now exposes 14 image choices and 19 video routes.
   Model-specific image framing and reference limits come from authored contracts.
   Native model controls remain available through the separate `/models` catalog.
+- Expand Capabilities & generation time on any catalog entry for authored clip
+  lengths, resolution, aspect, quality, audio and input controls where defined,
+  plus Studio reference and frame limits. Missing capability definitions stay
+  explicit; a list of settings is not a promise that every combination works.
+- Generation timing is separate from clip duration. Successful uninterrupted
+  foreground Studio requests record local account/workspace-scoped observations,
+  including preparation/uploads/queue/result collection. Retain at most 20 per
+  model across 60 models for 30 days. No prompts, media or credentials are stored.
+  Demo, recovered, failed, cancelled, hidden/suspended and account-switched runs
+  are excluded. Fewer than three observations are labeled insufficient to estimate;
+  three or more show median, range and count. Settings may vary; this is neither
+  a provider benchmark nor a promised completion time. Storage failures do not
+  fail generation. No live latency measurement was performed for this change.
 - Independent image/video drafts survive reload, including settings and stored
   reference bundles. Multiple named plans can be created, switched and restored.
 - Camera editing supports source-frame guidance, source plus saved references,

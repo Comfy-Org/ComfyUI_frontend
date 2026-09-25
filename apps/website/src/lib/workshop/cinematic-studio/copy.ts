@@ -6,6 +6,77 @@ import type { Locale, LocalizedText } from '../../../i18n/translations'
  * not add to every other page's script budget.
  */
 const copy = {
+  'cinematic.capability.firstFrame': {
+    en: 'Starting frame in Studio',
+    'zh-CN': '工作室起始帧'
+  },
+  'cinematic.capability.lastFrame': {
+    en: 'Ending frame in Studio',
+    'zh-CN': '工作室结束帧'
+  },
+  'cinematic.capability.required': { en: 'Required', 'zh-CN': '必需' },
+  'cinematic.capability.optional': { en: 'Optional', 'zh-CN': '可选' },
+  'cinematic.capability.supported': { en: 'Supported', 'zh-CN': '支持' },
+  'cinematic.capability.unsupported': {
+    en: 'Not supported',
+    'zh-CN': '不支持'
+  },
+  'cinematic.capability.details': {
+    en: 'Capabilities & generation time',
+    'zh-CN': '功能与生成时间'
+  },
+  'cinematic.capability.duration': {
+    en: 'Clip length (seconds)',
+    'zh-CN': '片段时长（秒）'
+  },
+  'cinematic.capability.resolution': {
+    en: 'Output resolution / size',
+    'zh-CN': '输出分辨率 / 尺寸'
+  },
+  'cinematic.capability.aspect': { en: 'Aspect ratios', 'zh-CN': '画面比例' },
+  'cinematic.capability.quality': { en: 'Quality', 'zh-CN': '质量' },
+  'cinematic.capability.audio': { en: 'Audio control', 'zh-CN': '音频控制' },
+  'cinematic.capability.fps': {
+    en: 'Frame rate (fps)',
+    'zh-CN': '帧率（fps）'
+  },
+  'cinematic.capability.inputs': {
+    en: 'Model page inputs',
+    'zh-CN': '模型页面输入'
+  },
+  'cinematic.capability.references': {
+    en: 'Studio image references (maximum)',
+    'zh-CN': '工作室图像参考（最多）'
+  },
+  'cinematic.capability.unknown': {
+    en: 'Capability details are not available in this version. Check the model page.',
+    'zh-CN': '此版本暂无功能详情，请查看模型页面。'
+  },
+  'cinematic.capability.note': {
+    en: 'From the model’s authored controls. Some combinations have additional limits. Studio may expose fewer controls than the model page.',
+    'zh-CN':
+      '来自模型定义的控件。部分组合有额外限制，工作室提供的控件可能少于模型页面。'
+  },
+  'cinematic.timing.title': { en: 'Generation time', 'zh-CN': '生成时间' },
+  'cinematic.timing.typical': {
+    en: 'Typical observed time (median)',
+    'zh-CN': '常见实测时间（中位数）'
+  },
+  'cinematic.timing.observed': {
+    en: 'Observed median · too few runs to estimate',
+    'zh-CN': '实测中位数 · 次数不足，暂无法估计'
+  },
+  'cinematic.timing.range': { en: 'Observed range', 'zh-CN': '实测范围' },
+  'cinematic.timing.runs': { en: 'successful runs', 'zh-CN': '次成功运行' },
+  'cinematic.timing.unmeasured': {
+    en: 'Not measured yet',
+    'zh-CN': '尚未测量'
+  },
+  'cinematic.timing.note': {
+    en: 'Recent successful Studio runs in this workspace and browser, including uploads and queue time. Settings may differ. Demo, failed, recovered and interrupted runs are excluded. This is not clip length or a guaranteed completion time.',
+    'zh-CN':
+      '基于此工作区和浏览器中最近成功的工作室运行，包含上传和排队时间，设置可能不同。不计入演示、失败、恢复及中断的运行。这不是片段时长，也不保证完成时间。'
+  },
   'cinematic.video.quality': { en: 'Quality', 'zh-CN': '质量' },
   'cinematic.video.standard': { en: 'Standard', 'zh-CN': '标准' },
   'cinematic.video.professional': { en: 'Professional', 'zh-CN': '专业' },

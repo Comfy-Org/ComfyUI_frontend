@@ -1,6 +1,10 @@
 import type { ReferenceFile } from '../lib/workshop/cinematic-studio/reference-bundles'
 import { useMounted } from '@vueuse/core'
 import {
+  recordGenerationTiming,
+  startGenerationTiming
+} from '../lib/workshop/cinematic-studio/generation-timings'
+import {
   computed,
   onMounted,
   onScopeDispose,
@@ -197,6 +201,7 @@ export function useCinematicStudioRun(modelCount: number) {
       status: 'unknown'
     }
     attempt.entry = entry
+    const timing = startGenerationTiming()
     try {
       if ((model.modality === 'video') !== Boolean(request.video))
         throw new WorkshopRouterError('validation')
@@ -275,6 +280,13 @@ export function useCinematicStudioRun(modelCount: number) {
         status: 'complete'
       })
       dispatch({ type: 'takeSucceeded', id, output })
+      const elapsedMs = timing.finish()
+      if (
+        elapsedMs !== undefined &&
+        attemptIsCurrent(attempt) &&
+        namespace.value === attempt.namespace
+      )
+        recordGenerationTiming(attempt.namespace, model.slug, { id, elapsedMs })
       return true
     } catch (error) {
       if (signal.aborted) return false
@@ -297,6 +309,8 @@ export function useCinematicStudioRun(modelCount: number) {
           : { type: 'takeFailed', id, reason: 'client' }
       )
       return false
+    } finally {
+      timing.dispose()
     }
   }
 
