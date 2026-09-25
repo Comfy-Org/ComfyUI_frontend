@@ -445,8 +445,13 @@ function startAgentCrdtFollower(
         : []
     }
   }
-  const isRemoteEdit = (update: ClassifiedDocUpdate): boolean =>
-    update.actor !== localActor()
+  const notifyAppliedFrame = (
+    update: ClassifiedDocUpdate,
+    applied: boolean
+  ): void => {
+    if (!applied || update.actor === localActor()) return
+    events.onApplied?.({ workflowId: update.workflowId, actor: update.actor })
+  }
 
   const onSubscribed: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
@@ -502,12 +507,7 @@ function startAgentCrdtFollower(
     )
     // Last, and after the reconcile: the consumer reads the live graph, and
     // a host callback that throws must not strand the bookkeeping above.
-    if (applied && isRemoteEdit(update)) {
-      events.onApplied?.({
-        workflowId: update.workflowId,
-        actor: update.actor
-      })
-    }
+    notifyAppliedFrame(update, applied)
   }
   const onOpsResult: EventListener = (event) => {
     if (!(event instanceof CustomEvent)) return
