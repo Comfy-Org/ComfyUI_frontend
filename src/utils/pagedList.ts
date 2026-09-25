@@ -5,17 +5,25 @@ export interface PagedList<T> {
   hasMore: Readonly<MaybeRef<boolean>>
   invalidate: (items?: string[]) => Promise<void>
   isLoading: Readonly<MaybeRef<boolean>>
-  items: Readonly<MaybeRef<T[]>>
+  items: Readonly<MaybeRef<readonly T[]>>
   /** Returns whether pagination advanced. Page-walking callers must stop on false. */
   loadMore: () => Promise<boolean>
   loadNew: () => Promise<void>
 }
 
+export type MaybePaged<T> = readonly T[] | PagedList<T>
+export function isPaged<T>(list: MaybePaged<T>): list is PagedList<T> {
+  return !Array.isArray(list)
+}
+export function pagedItems<T>(list: MaybePaged<T>): readonly T[] {
+  return isPaged(list) ? toValue(list.items) : list
+}
+
 export class WrappedList<T, U> implements PagedList<U> {
-  readonly items: MaybeRef<U[]>
+  readonly items: MaybeRef<readonly U[]>
   constructor(
     private readonly childList: PagedList<T>,
-    private readonly transform: (items: readonly T[]) => U[]
+    private readonly transform: (items: readonly T[]) => readonly U[]
   ) {
     this.items = computed(() => this.transform(toValue(this.childList.items)))
   }

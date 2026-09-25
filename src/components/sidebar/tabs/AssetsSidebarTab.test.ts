@@ -3,14 +3,19 @@ import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
+import type { AssetItem } from '@/platform/assets/schemas/assetSchema'
 import { resolveOutputAssetItems } from '@/platform/assets/utils/outputAssetUtil'
 import { useAssetsStore } from '@/stores/assetsStore'
+import { pagedItems } from '@/utils/pagedList'
+import type { PagedList } from '@/utils/pagedList'
 
 import AssetsSidebarTab from './AssetsSidebarTab.vue'
 
+let mockOutputAssets: PagedList<AssetItem>
+
 beforeEach(() => {
   const store = useAssetsStore()
-  store.outputAssets = {
+  mockOutputAssets = {
     items: [],
     hasMore: false,
     isLoading: false,
@@ -18,6 +23,7 @@ beforeEach(() => {
     loadNew: vi.fn(async () => {}),
     invalidate: vi.fn(async () => {})
   }
+  Object.assign(store, { outputAssets: mockOutputAssets })
   vi.spyOn(store.inputAssets, 'loadNew').mockResolvedValue(undefined)
   vi.spyOn(store.inputAssets, 'loadMore').mockResolvedValue(false)
 })
@@ -113,11 +119,12 @@ const sidebarTabTemplateStub = {
 const assetsGridStub = {
   props: ['assets'],
   emits: ['output-count-click'],
+  methods: { pagedItems },
   template: `
     <div data-testid="assets-grid">
       <button
         aria-label="Enter output folder"
-        @click="$emit('output-count-click', assets[0])"
+        @click="$emit('output-count-click', pagedItems(assets)[0])"
       />
     </div>
   `
@@ -144,13 +151,13 @@ function renderTab() {
 }
 
 beforeEach(() => {
-  useAssetsStore().outputAssets.items = [folderAsset]
-  useAssetsStore().outputAssets.hasMore = false
+  mockOutputAssets.items = [folderAsset]
+  mockOutputAssets.hasMore = false
 })
 
 it('keeps pagination mounted when more assets can be loaded', () => {
-  useAssetsStore().outputAssets.items = []
-  useAssetsStore().outputAssets.hasMore = true
+  mockOutputAssets.items = []
+  mockOutputAssets.hasMore = true
 
   renderTab()
 

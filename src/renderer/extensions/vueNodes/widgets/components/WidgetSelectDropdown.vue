@@ -1,104 +1,85 @@
 <script setup lang="ts">
-import { computed, provide, ref, toRef, toValue } from 'vue'
+import { computed, provide, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import { SUPPORTED_EXTENSIONS_ACCEPT } from '@/extensions/core/load3d/constants'
 import FormDropdown from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/FormDropdown.vue'
 import { AssetKindKey } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
-import type { LayoutMode } from '@/renderer/extensions/vueNodes/widgets/components/form/dropdown/types'
 import WidgetLayoutField from '@/renderer/extensions/vueNodes/widgets/components/layout/WidgetLayoutField.vue'
 import { useAssetWidgetData } from '@/renderer/extensions/vueNodes/widgets/composables/useAssetWidgetData'
 import { useWidgetSelectActions } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectActions'
 import { useWidgetSelectItems } from '@/renderer/extensions/vueNodes/widgets/composables/useWidgetSelectItems'
-import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
-import { useAssetsStore } from '@/stores/assetsStore'
-import type { SimplifiedWidget, WidgetValue } from '@/types/simplifiedWidget'
-import type { AssetKind } from '@/types/widgetTypes'
+import { parseComboSpecDescriptor } from '@/renderer/extensions/vueNodes/widgets/utils/comboSpecDescriptor'
+import type { OwnershipOption } from '@/platform/assets/types/filterTypes'
+import { isComboInputSpec } from '@/schemas/nodeDef/nodeDefSchemaV2'
+import type { SimplifiedWidget } from '@/types/simplifiedWidget'
+import { pagedItems } from '@/utils/pagedList'
 import {
   PANEL_EXCLUDED_PROPS,
   filterWidgetProps
 } from '@/utils/widgetPropFilter'
 
-interface Props {
+const props = defineProps<{
   widget: SimplifiedWidget<string | undefined>
-  nodeType?: string
-  assetKind?: AssetKind
-  allowUpload?: boolean
-  uploadFolder?: ResultItemType
-  uploadSubfolder?: string
   isAssetMode?: boolean
-  defaultLayoutMode?: LayoutMode
-}
+}>()
 
-const props = defineProps<Props>()
-
-provide(
-  AssetKindKey,
-  computed(() => props.assetKind)
-)
-
-const modelValue = defineModel<WidgetValue>({
-  default(modelProps: Record<string, unknown>) {
-    const modelWidget = modelProps.widget as Props['widget'] | undefined
-    const values = modelWidget?.options?.values
-    return (Array.isArray(values) ? values[0] : undefined) ?? ''
-  }
+const descriptor = computed(() => {
+  const spec = props.widget.spec
+  return parseComboSpecDescriptor(
+    spec && isComboInputSpec(spec) ? spec : undefined
+  )
 })
-const stringModelValue = computed({
-  get: () => {
-    const value = modelValue.value
-    return value == null ? undefined : String(value)
-  },
-  set: (value: string | undefined) => {
-    modelValue.value = value
+
+const assetKind = computed(() => descriptor.value.kind)
+
+provide(AssetKindKey, assetKind)
+
+const modelValue = defineModel<string | undefined>({
+  default({ widget }: { widget?: SimplifiedWidget<string | undefined> }) {
+    const values = widget?.options?.values
+    return Array.isArray(values) ? values[0] : undefined
   }
 })
 
 const { t } = useI18n()
-const outputAssets = useAssetsStore().outputAssets
 
 const combinedProps = computed(() =>
   filterWidgetProps(props.widget.options, PANEL_EXCLUDED_PROPS)
 )
 
 const getAssetData = () => {
-  const nodeType: string | undefined =
-    props.widget.options?.nodeType ?? props.nodeType
-  if (props.isAssetMode && nodeType) {
-    return useAssetWidgetData(toRef(nodeType))
-  }
-  return null
+  if (!props.isAssetMode) return null
+  return useAssetWidgetData(() => props.widget.options?.nodeType)
 }
-const assetData = getAssetData()
+
+const filterSelected = ref('all')
+const ownershipSelected = ref<OwnershipOption>('all')
+const baseModelSelected = ref<Set<string>>(new Set())
 
 const {
   dropdownItems,
-  displayItems,
-  filterSelected,
   filterOptions,
-  ownershipSelected,
-  showOwnershipFilter,
   ownershipOptions,
-  baseModelSelected,
-  showBaseModelFilter,
   baseModelOptions,
   selectedSet
 } = useWidgetSelectItems({
-  values: () => props.widget.options?.values as unknown[] | undefined,
   getOptionLabel: () => props.widget.options?.getOptionLabel,
-  modelValue: stringModelValue,
-  assetKind: () => props.assetKind,
-  outputMediaAssets: outputAssets,
-  assetData,
-  isAssetMode: () => props.isAssetMode
+  modelValue,
+  assetKind,
+  assetData: getAssetData(),
+  isAssetMode: () => props.isAssetMode ?? false,
+  filterSelected,
+  ownershipSelected,
+  baseModelSelected
 })
 
 const { updateSelectedItems, handleFilesUpdate } = useWidgetSelectActions({
-  modelValue: stringModelValue,
-  dropdownItems,
+  modelValue,
+  dropdownItems: () => pagedItems(dropdownItems.value),
   widget: () => props.widget,
-  uploadFolder: () => props.uploadFolder,
-  uploadSubfolder: () => props.uploadSubfolder
+  uploadFolder: () => descriptor.value.folder ?? 'input',
+  uploadSubfolder: () => descriptor.value.subfolder
 })
 
 const mediaPlaceholder = computed(() => {
@@ -108,7 +89,7 @@ const mediaPlaceholder = computed(() => {
     return options.placeholder
   }
 
-  switch (props.assetKind) {
+  switch (assetKind.value) {
     case 'image':
       return t('widgets.uploadSelect.placeholderImage')
     case 'video':
@@ -126,15 +107,10 @@ const mediaPlaceholder = computed(() => {
   return t('widgets.uploadSelect.placeholder')
 })
 
-const uploadable = computed(() => {
-  if (props.isAssetMode) return false
-  return props.allowUpload === true
-})
-
 const acceptTypes = computed(() => {
   // Be permissive with accept types because backend uses libraries
   // that can handle a wide range of formats
-  switch (props.assetKind) {
+  switch (assetKind.value) {
     case 'image':
       return 'image/*,.exr'
     case 'video':
@@ -148,8 +124,6 @@ const acceptTypes = computed(() => {
   }
 })
 
-const layoutMode = ref<LayoutMode>(props.defaultLayoutMode ?? 'grid')
-
 const isUploading = ref(false)
 async function updateFiles(files: File[]) {
   isUploading.value = true
@@ -162,26 +136,22 @@ async function updateFiles(files: File[]) {
   <WidgetLayoutField :widget>
     <FormDropdown
       v-model:filter-selected="filterSelected"
-      v-model:layout-mode="layoutMode"
       v-model:ownership-selected="ownershipSelected"
       v-model:base-model-selected="baseModelSelected"
+      :layout-mode="props.isAssetMode ? 'list' : 'grid'"
       :selected="selectedSet"
       :items="dropdownItems"
-      :display-items="displayItems"
       :placeholder="mediaPlaceholder"
       :multiple="false"
-      :uploadable
+      :uploadable="!props.isAssetMode && descriptor.allowUpload"
       :accept="acceptTypes"
       :filter-options
-      :show-ownership-filter
+      :show-ownership-filter="props.isAssetMode"
       :ownership-options
-      :show-base-model-filter
+      :show-base-model-filter="props.isAssetMode"
       :base-model-options
       :is-uploading
       v-bind="combinedProps"
-      :loading-more="toValue(outputAssets.isLoading)"
-      :on-load-more="() => outputAssets.loadMore()"
-      :can-load-more="toValue(outputAssets.hasMore)"
       class="w-full"
       @update:selected="updateSelectedItems"
       @update:files="updateFiles"

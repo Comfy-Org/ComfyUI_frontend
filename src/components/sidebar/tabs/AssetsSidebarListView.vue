@@ -6,8 +6,6 @@
       :grid-style="listGridStyle"
       :max-columns="1"
       :default-item-height="48"
-      :on-load-more
-      :can-load-more
     >
       <template #item="{ item }">
         <div class="relative">
@@ -89,6 +87,7 @@ import {
   getMediaTypeFromFilename,
   truncateFilename
 } from '@/utils/formatUtil'
+import type { PagedList } from '@/utils/pagedList'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const {
@@ -98,13 +97,11 @@ const {
   isStackExpanded,
   toggleStack
 } = defineProps<{
-  assetItems: OutputStackListItem[]
+  assetItems: PagedList<OutputStackListItem>
   selectableAssets: AssetItem[]
   isSelected: (assetId: string) => boolean
   isStackExpanded: (asset: AssetItem) => boolean
   toggleStack: (asset: AssetItem) => Promise<void>
-  onLoadMore?: () => unknown
-  canLoadMore?: boolean
 }>()
 
 const assetsStore = useAssetsStore()

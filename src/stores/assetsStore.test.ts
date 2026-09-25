@@ -110,6 +110,13 @@ function createHistoryPage(start: number): JobListItem[] {
 }
 
 describe('assetsStore - OSS history pagination', () => {
+  beforeEach(() => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => Response.json([]))
+    )
+  })
+
   it('serializes refresh with pagination without skipping the next offset', async () => {
     let resolveFirstPage!: (jobs: JobListItem[]) => void
     const firstPage = new Promise<JobListItem[]>((resolve) => {

@@ -70,9 +70,9 @@ const MockFormDropdownInput = {
 interface MountDropdownOptions {
   searcher?: (
     query: string,
-    items: FormDropdownItem[],
+    items: readonly FormDropdownItem[],
     onCleanup: (cleanupFn: () => void) => void
-  ) => Promise<FormDropdownItem[]>
+  ) => Promise<readonly FormDropdownItem[]>
   multiple?: boolean | number
   selected?: Set<string>
   searchQuery?: string
@@ -189,7 +189,7 @@ describe('FormDropdown', () => {
 
   it('avoids filtering work while dropdown is closed', async () => {
     const searcher = vi.fn(
-      async (_query: string, sourceItems: FormDropdownItem[]) =>
+      async (_query: string, sourceItems: readonly FormDropdownItem[]) =>
         sourceItems.filter((item) => item.name.includes('video'))
     )
 
@@ -219,7 +219,7 @@ describe('FormDropdown', () => {
 
   it('runs filtering when dropdown opens', async () => {
     const searcher = vi.fn(
-      async (_query: string, sourceItems: FormDropdownItem[]) =>
+      async (_query: string, sourceItems: readonly FormDropdownItem[]) =>
         sourceItems.filter((item) => item.id === 'keep')
     )
 
@@ -316,7 +316,7 @@ describe('FormDropdown', () => {
   it('searches the latest query before selecting the top search result', async () => {
     const onUpdateSelected = vi.fn()
     const searcher = vi.fn(
-      async (query: string, sourceItems: FormDropdownItem[]) => {
+      async (query: string, sourceItems: readonly FormDropdownItem[]) => {
         if (query.trim() === '') return sourceItems
         return sourceItems.filter((item) => item.name.includes(query))
       }
@@ -362,19 +362,21 @@ describe('FormDropdown', () => {
   it('does not select a stale result if the query changes before Enter search resolves', async () => {
     const onUpdateSelected = vi.fn()
     let resolveAlphaSearch: () => void = () => {}
-    const searcher = vi.fn((query: string, sourceItems: FormDropdownItem[]) => {
-      if (query === 'alp') {
-        return new Promise<FormDropdownItem[]>((resolve) => {
-          resolveAlphaSearch = () =>
-            resolve(sourceItems.filter((item) => item.name.includes(query)))
-        })
-      }
+    const searcher = vi.fn(
+      (query: string, sourceItems: readonly FormDropdownItem[]) => {
+        if (query === 'alp') {
+          return new Promise<FormDropdownItem[]>((resolve) => {
+            resolveAlphaSearch = () =>
+              resolve(sourceItems.filter((item) => item.name.includes(query)))
+          })
+        }
 
-      if (query.trim() === '') return Promise.resolve(sourceItems)
-      return Promise.resolve(
-        sourceItems.filter((item) => item.name.includes(query))
-      )
-    })
+        if (query.trim() === '') return Promise.resolve(sourceItems)
+        return Promise.resolve(
+          sourceItems.filter((item) => item.name.includes(query))
+        )
+      }
+    )
 
     const items = [
       createItem('beta', 'beta.ckpt'),

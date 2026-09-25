@@ -71,14 +71,14 @@ describe('useOutputStacks properties', () => {
     )
   })
 
-  it('all items have unique keys', () => {
+  it('all items have unique id', () => {
     fc.assert(
       fc.property(arbAssetList(0, 30), (assets) => {
         const assetsRef = ref(assets)
         const { assetItems } = useOutputStacks({ assets: assetsRef })
 
-        const keys = assetItems.value.map((item) => item.key)
-        expect(new Set(keys).size).toBe(keys.length)
+        const ids = assetItems.value.map((item) => item.id)
+        expect(new Set(ids).size).toBe(ids.length)
       })
     )
   })

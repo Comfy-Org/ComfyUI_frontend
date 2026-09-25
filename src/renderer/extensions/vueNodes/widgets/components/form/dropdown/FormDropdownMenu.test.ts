@@ -1,22 +1,20 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
+import { mockPagedList } from '@/utils/__tests__/pagedListUtils'
+import { isPaged, pagedItems } from '@/utils/pagedList'
 import FormDropdownMenu from './FormDropdownMenu.vue'
 import type { FormDropdownItem, LayoutMode } from './types'
 
 const VirtualGridStub = {
   name: 'VirtualGrid',
-  props: [
-    'items',
-    'maxColumns',
-    'itemHeight',
-    'scrollerHeight',
-    'onLoadMore',
-    'canLoadMore'
-  ],
-  template:
-    '<div data-testid="virtual-grid" :data-items="JSON.stringify(items)" :data-max-columns="maxColumns" :data-can-load-more="String(canLoadMore)" @click="onLoadMore && onLoadMore()" />'
+  props: ['items', 'maxColumns', 'itemHeight', 'scrollerHeight'],
+  methods: { isPaged, pagedItems },
+  template: `<div data-testid="virtual-grid" :data-max-columns="maxColumns">
+    <slot v-if="isPaged(items) && items.isLoading" name="loading" />
+    <slot v-else-if="!pagedItems(items).length" name="placeholder" />
+  </div>`
 }
 
 function createItem(id: string, name: string): FormDropdownItem {
@@ -71,24 +69,6 @@ describe('FormDropdownMenu', () => {
     expect(screen.getByTestId('virtual-grid')).toBeTruthy()
   })
 
-  it('transforms items to include key property for VirtualGrid', () => {
-    const items = [createItem('1', 'Item 1'), createItem('2', 'Item 2')]
-    render(FormDropdownMenu, {
-      props: {
-        ...defaultProps,
-        items
-      },
-      global: globalConfig
-    })
-
-    const virtualGrid = screen.getByTestId('virtual-grid')
-    const virtualItems = JSON.parse(virtualGrid.getAttribute('data-items')!)
-
-    expect(virtualItems).toHaveLength(2)
-    expect(virtualItems[0]).toHaveProperty('key', '1')
-    expect(virtualItems[1]).toHaveProperty('key', '2')
-  })
-
   it('uses single column layout for list modes', () => {
     render(FormDropdownMenu, {
       props: {
@@ -102,30 +82,24 @@ describe('FormDropdownMenu', () => {
     expect(virtualGrid.getAttribute('data-max-columns')).toBe('1')
   })
 
-  it('forwards onLoadMore and canLoadMore to the virtual grid', async () => {
-    const user = userEvent.setup()
-    const onLoadMore = vi.fn()
-    render(FormDropdownMenu, {
-      props: { ...defaultProps, onLoadMore, canLoadMore: true },
-      global: globalConfig
-    })
-
-    const grid = screen.getByTestId('virtual-grid')
-    expect(grid.getAttribute('data-can-load-more')).toBe('true')
-
-    await user.click(grid)
-    expect(onLoadMore).toHaveBeenCalledTimes(1)
-  })
-
-  it('shows the loading-more row only while loadingMore is set', async () => {
+  it('shows the loading-more row only while the paged list is loading', async () => {
     const { rerender } = render(FormDropdownMenu, {
-      props: { ...defaultProps, loadingMore: true },
+      props: {
+        ...defaultProps,
+        items: mockPagedList<FormDropdownItem>({ isLoading: true })
+      },
       global: globalConfig
     })
 
     expect(screen.getByTestId('form-dropdown-loading-more')).toBeTruthy()
 
-    await rerender({ ...defaultProps, loadingMore: false })
+    await rerender({
+      ...defaultProps,
+      items: mockPagedList<FormDropdownItem>({
+        isLoading: false,
+        items: defaultProps.items
+      })
+    })
 
     expect(screen.queryByTestId('form-dropdown-loading-more')).toBeNull()
   })
