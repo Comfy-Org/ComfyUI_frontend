@@ -23,19 +23,36 @@ export const OPERATION_POLL_BUDGET = {
 } as const
 
 /**
+ * Whether this tab holds something the customer can do right now: an embedded
+ * challenge to open or retry, a hosted page to visit, or a declined attempt
+ * to retry.
+ */
+function customerCanAct(state: PendingBillingOperation): boolean {
+  if (state.declineReason !== undefined) return true
+  if (state.presentation === 'hosted') return state.actionUrl !== undefined
+  const challenge = state.challenge?.status
+  return challenge === 'required' || challenge === 'failed'
+}
+
+/**
  * Waiting on the customer, not on the backend: a challenge to complete
  * elsewhere, a hosted page to finish, a phase the server reports as blocked on
  * them, or a declined attempt awaiting their retry. Once this tab's own
  * challenge completes the state reads processing and nothing waits on the
  * customer anymore.
+ *
+ * Only parked while the customer can act here. The server can report a
+ * blocked phase and a client secret before its cached `authentication_state`
+ * catches up, and the slow cadence would then hold a screen with no action.
  */
 export function isParkedOnCustomer(state: PendingBillingOperation): boolean {
   return (
-    state.authenticationState === 'requires_action' ||
-    state.actionUrl !== undefined ||
-    isBlockedOnCustomerPhase(state.serverPhase) ||
-    (state.authenticationState === 'failed_retryable' &&
-      state.customerActionSeen)
+    customerCanAct(state) &&
+    (state.authenticationState === 'requires_action' ||
+      state.actionUrl !== undefined ||
+      isBlockedOnCustomerPhase(state.serverPhase) ||
+      (state.authenticationState === 'failed_retryable' &&
+        state.customerActionSeen))
   )
 }
 

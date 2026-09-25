@@ -6,7 +6,8 @@
 import {
   zCreateSessionResponse,
   zDeleteSessionResponse,
-  zErrorResponse
+  zErrorResponse,
+  zGetSessionResponse
 } from '@comfyorg/ingest-types/zod'
 
 import type {
@@ -15,7 +16,6 @@ import type {
   WebSessionFailure,
   WebSessionResult
 } from './sessionContracts.js'
-import { zWebSessionResponse } from './webSessionDraftContract.js'
 
 export type {
   WebSession,
@@ -111,7 +111,7 @@ export async function readWebSession(
   if (!('response' in sent)) return sent
 
   const { status } = sent.response
-  const parsed = zWebSessionResponse.safeParse(await readJson(sent.response))
+  const parsed = zGetSessionResponse.safeParse(await readJson(sent.response))
   if (!parsed.success) return failure('SESSION_UNAVAILABLE', status)
   const { user, csrf_token, expires_at, absolute_expires_at } = parsed.data
   if (expectedUserId !== undefined && user.id !== expectedUserId) {
