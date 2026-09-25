@@ -18,6 +18,7 @@ import {
   refreshMissingModelPipeline,
   runMissingModelPipeline
 } from '@/platform/missingModel/missingModelPipeline'
+import type { scanAllModelCandidates } from '@/platform/missingModel/missingModelScan'
 import { createNodeExecutionId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 import { t } from '@/i18n'
@@ -95,11 +96,8 @@ vi.mock<unknown>(import('@/platform/missingModel/missingModelScan'), () => ({
   hasPendingVerification: (candidate: MissingModelCandidate) =>
     mockHandles.hasPendingVerification(candidate),
   scanAllModelCandidates: (
-    graph: LGraph,
-    isAssetSupported: (nodeType: string, widgetName: string) => boolean,
-    getDirectory?: (nodeType: string) => string | undefined
-  ) =>
-    mockHandles.scanAllModelCandidates(graph, isAssetSupported, getDirectory),
+    ...args: Parameters<typeof scanAllModelCandidates>
+  ) => mockHandles.scanAllModelCandidates(...args),
   enrichWithEmbeddedMetadata: (
     candidates: readonly MissingModelCandidate[],
     graphData: ComfyWorkflowJSON
