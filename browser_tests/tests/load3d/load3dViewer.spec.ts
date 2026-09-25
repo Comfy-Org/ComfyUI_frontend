@@ -57,11 +57,6 @@ test.describe('Load3D Viewer', { tag: '@vue-nodes' }, () => {
     load3d,
     viewer
   }) => {
-    test.fixme(
-      true,
-      'Activates after slice PR 16187 merges: https://github.com/Comfy-Org/ComfyUI_frontend/pull/16187'
-    )
-
     await comfyPage.page.evaluate(() => {
       document.documentElement.style.setProperty(
         '--workspace-inset-right',
