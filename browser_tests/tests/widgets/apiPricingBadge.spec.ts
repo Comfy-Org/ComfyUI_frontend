@@ -1,89 +1,85 @@
 import { expect } from '@playwright/test'
 
-import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
+import type { ComfyPage } from '@e2e/fixtures/ComfyPage'
+import { test } from '@e2e/fixtures/legacyNodeBadgeFixture'
 
-for (const vueEnabled of [false, true] as const) {
-  const renderer = vueEnabled ? 'vue' : 'legacy'
+const API_NODE_TITLE = 'Flux 1.1 [pro] Ultra Image'
+const PRICE_TEXT = '12.7 credits/Run'
 
-  test.describe(
-    `API node pricing badge (${renderer})`,
-    { tag: ['@node', '@widget'] },
-    () => {
-      test.use({
-        initialSettings: {
-          'Comfy.VueNodes.Enabled': vueEnabled,
-          'Comfy.NodeBadge.ShowApiPricing': true
-        }
-      })
+test.use({ initialSettings: { 'Comfy.NodeBadge.ShowApiPricing': true } })
 
-      test.beforeEach(async ({ context }) => {
-        await context.route(
-          'https://comfyanonymous.github.io/ComfyUI_examples/',
-          (route) =>
-            route.fulfill({ contentType: 'text/html', body: '<!doctype html>' })
-        )
-      })
-
-      test('follows the Settings UI toggle', async ({ comfyPage }) => {
-        await comfyPage.workflow.loadWorkflow('partner_api_node')
-
-        const vueNode = vueEnabled
-          ? await comfyPage.vueNodes.getFixtureByTitle(
-              'Flux 1.1 [pro] Ultra Image'
-            )
-          : undefined
-        if (vueNode) {
-          await comfyPage.vueNodes.waitForNodes()
-        } else {
-          await comfyPage.legacyNodeBadges.install([
-            { key: 'price', title: 'Flux 1.1 [pro] Ultra Image' }
-          ])
-        }
-
-        await test.step('show pricing initially', async () => {
-          if (vueNode) {
-            await expect(vueNode.priceBadge.required).toBeVisible()
-          } else {
-            await comfyPage.legacyNodeBadges.expectState([
-              { key: 'price', text: '12.7 credits/Run', visible: true }
-            ])
-          }
-        })
-
-        await test.step('hide pricing through Settings', async () => {
-          await comfyPage.settingDialog.open()
-          await comfyPage.settingDialog.category('Comfy').click()
-          await comfyPage.settingDialog.toggleBooleanSetting(
-            'Comfy.NodeBadge.ShowApiPricing'
-          )
-          await comfyPage.settingDialog.close()
-
-          if (vueNode) {
-            await expect(vueNode.priceBadge.required).toBeHidden()
-          } else {
-            await comfyPage.legacyNodeBadges.expectState([
-              { key: 'price', text: '12.7 credits/Run', visible: false }
-            ])
-          }
-        })
-
-        await test.step('restore pricing through Settings', async () => {
-          await comfyPage.settingDialog.open()
-          await comfyPage.settingDialog.category('Comfy').click()
-          await comfyPage.settingDialog.toggleBooleanSetting(
-            'Comfy.NodeBadge.ShowApiPricing'
-          )
-          await comfyPage.settingDialog.close()
-
-          if (vueNode) {
-            await expect(vueNode.priceBadge.required).toBeVisible()
-          } else {
-            await comfyPage.legacyNodeBadges.expectState([
-              { key: 'price', text: '12.7 credits/Run', visible: true }
-            ])
-          }
-        })
-      })
-    }
+test.beforeEach(async ({ context }) => {
+  await context.route(
+    'https://comfyanonymous.github.io/ComfyUI_examples/',
+    (route) =>
+      route.fulfill({ contentType: 'text/html', body: '<!doctype html>' })
   )
+})
+
+test.describe(
+  'API node pricing badge (Vue)',
+  { tag: ['@node', '@widget', '@vue-nodes'] },
+  () => {
+    test('follows the Settings UI toggle', async ({ comfyPage }) => {
+      await comfyPage.workflow.loadWorkflow('partner_api_node')
+      const vueNode = await comfyPage.vueNodes.getFixtureByTitle(API_NODE_TITLE)
+
+      await test.step('show pricing initially', async () => {
+        await expect(vueNode.priceBadge.required).toBeVisible()
+      })
+
+      await test.step('hide pricing through Settings', async () => {
+        await toggleApiPricing(comfyPage)
+        await expect(vueNode.priceBadge.required).toBeHidden()
+      })
+
+      await test.step('restore pricing through Settings', async () => {
+        await toggleApiPricing(comfyPage)
+        await expect(vueNode.priceBadge.required).toBeVisible()
+      })
+    })
+  }
+)
+
+test.describe(
+  'API node pricing badge (legacy)',
+  { tag: ['@node', '@widget'] },
+  () => {
+    test('follows the Settings UI toggle', async ({
+      comfyPage,
+      legacyNodeBadges
+    }) => {
+      await comfyPage.workflow.loadWorkflow('partner_api_node')
+      await legacyNodeBadges.install([{ key: 'price', title: API_NODE_TITLE }])
+
+      await test.step('show pricing initially', async () => {
+        await legacyNodeBadges.expectState([
+          { key: 'price', text: PRICE_TEXT, visible: true }
+        ])
+      })
+
+      await test.step('hide pricing through Settings', async () => {
+        await toggleApiPricing(comfyPage)
+        await legacyNodeBadges.expectState([
+          { key: 'price', text: PRICE_TEXT, visible: false }
+        ])
+      })
+
+      await test.step('restore pricing through Settings', async () => {
+        await toggleApiPricing(comfyPage)
+        await legacyNodeBadges.expectState([
+          { key: 'price', text: PRICE_TEXT, visible: true }
+        ])
+      })
+    })
+  }
+)
+
+async function toggleApiPricing(comfyPage: ComfyPage) {
+  await comfyPage.settingDialog.open()
+  await comfyPage.settingDialog.category('Comfy').click()
+  await comfyPage.settingDialog.toggleBooleanSetting(
+    'Comfy.NodeBadge.ShowApiPricing'
+  )
+  await comfyPage.settingDialog.close()
 }
