@@ -1,0 +1,63 @@
+name: 'Release: Cloud Smoke'
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployed sandbox to smoke test'
+        type: choice
+        default: testcloud
+        options: [testcloud, stagingcloud]
+      expected_sha:
+        description: 'Full frontend commit SHA expected in the deployed sandbox'
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-cloud-smoke-${{ inputs.environment }}
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    if: github.repository == 'Comfy-Org/ComfyUI_frontend' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: release-smoke-${{ inputs.environment }}
+    env:
+      DISTRIBUTION: cloud
+      PLAYWRIGHT_CLOUD_LIVE: '1'
+      PLAYWRIGHT_CLOUD_RELEASE_SMOKE: '1'
+      PLAYWRIGHT_TEST_URL: https://${{ inputs.environment }}.comfy.org
+      PLAYWRIGHT_SETUP_API_URL: https://${{ inputs.environment }}.comfy.org
+      CLOUD_EXPECTED_FRONTEND_SHA: ${{ inputs.expected_sha }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: main
+          persist-credentials: false
+      - uses: ./.github/actions/setup-frontend
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run deployed release smoke
+        env:
+          CLOUD_ACCOUNT_EMAIL: ${{ secrets.CLOUD_ACCOUNT_EMAIL }}
+          CLOUD_ACCOUNT_PASSWORD: ${{ secrets.CLOUD_ACCOUNT_PASSWORD }}
+        run: >-
+          pnpm exec playwright test
+          --project=cloud-live
+          browser_tests/tests/liveCloud/releaseSmoke.spec.ts
+          --workers=1
+          --reporter=github,html
+      - name: Upload smoke report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v6
+        with:
+          name: release-smoke-${{ inputs.environment }}-${{ github.run_id }}
+          path: |
+            playwright-report/
+            test-results/
+          if-no-files-found: ignore
+          retention-days: 7
