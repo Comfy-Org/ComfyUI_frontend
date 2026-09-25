@@ -1082,6 +1082,22 @@ describe('AgentPanel extension flag gate', () => {
     mocks.flagListener!([], {}, { errorsLoading: true })
 
     expect(agentStore.enabled).toBe(true)
+    expect(agentStore.gateSettled).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(FLAG_SETTLE_TIMEOUT_MS)
+
+    expect(agentStore.enabled).toBe(true)
+  })
+
+  it('locks an uncached whitelisted session out for good when its only delivery fails', async () => {
+    await loadEntryAndSetup()
+
+    mocks.flagListener!([], {}, { errorsLoading: true })
+    mocks.flagEnabled = true
+    await vi.advanceTimersByTimeAsync(FLAG_SETTLE_TIMEOUT_MS)
+
+    expect(agentStore.enabled).toBe(false)
+    expect(agentStore.gateSettled).toBe(true)
   })
 
   it('disables the panel without closing it when the flag flips back to false', async () => {
