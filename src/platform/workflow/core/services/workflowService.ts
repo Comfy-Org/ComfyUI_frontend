@@ -413,8 +413,13 @@ export const useWorkflowService = () => {
 
   const openWorkflow = (
     workflow: ComfyWorkflow,
-    options: { force?: boolean; navigationIntentId?: number } = {}
+    options: {
+      force?: boolean
+      navigationIntentId?: number
+      isCurrent?: () => boolean
+    } = {}
   ): Promise<boolean> => {
+    if (options.isCurrent?.() === false) return Promise.resolve(false)
     if (closingWorkflowCounts.has(closingKey(workflow)))
       return Promise.resolve(false)
     if (
@@ -430,9 +435,18 @@ export const useWorkflowService = () => {
       useSubgraphNavigationStore().beginWorkflowNavigation()
     return queueWorkflowLoad(async () => {
       try {
+        if (options.isCurrent?.() === false) {
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
+        }
         const loadFromRemote = !workflow.isLoaded
         if (loadFromRemote) {
           await workflow.load()
+        }
+        if (options.isCurrent?.() === false) {
+          if (loadFromRemote) workflow.unload()
+          useSubgraphNavigationStore().endWorkflowNavigation(navigationIntentId)
+          return false
         }
 
         const loaded = await app.loadGraphData(
