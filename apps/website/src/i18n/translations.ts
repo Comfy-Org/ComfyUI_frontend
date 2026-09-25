@@ -84,6 +84,11 @@ const translations = {
     'zh-CN':
       '在 ComfyUI 中浏览 {count} 个 AI 模型，包括 {names}。在浏览器中试用任意模型，然后在你的代码中调用它。'
   },
+  'models.hub.meta.descriptionWithoutNames': {
+    en: 'Browse {count} AI models in ComfyUI. Try any model in your browser, then call it from your code.',
+    'zh-CN':
+      '在 ComfyUI 中浏览 {count} 个 AI 模型。在浏览器中试用任意模型，然后在你的代码中调用它。'
+  },
   'workshop.search.label': {
     en: 'Search models, providers, and categories',
     'zh-CN': '搜索模型、提供商、分类...'

@@ -13,7 +13,12 @@ export function modelsHubMeta(
   )
   return {
     title: t('models.hub.meta.title', locale),
-    description: t('models.hub.meta.description', locale)
+    description: t(
+      families.length
+        ? 'models.hub.meta.description'
+        : 'models.hub.meta.descriptionWithoutNames',
+      locale
+    )
       .replace('{count}', String(models.length))
       .replace(
         '{names}',

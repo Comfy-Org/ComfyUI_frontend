@@ -33,4 +33,11 @@ describe('modelsHubMeta', () => {
     expect(description).toContain('FLUX and Veo')
     expect(description).not.toContain('Kling')
   })
+
+  it('leaves out the names clause when no family is in the catalogue', () => {
+    const { description } = modelsHubMeta([{ name: 'Grok Imagine' }])
+    expect(description).toBe(
+      'Browse 1 AI models in ComfyUI. Try any model in your browser, then call it from your code.'
+    )
+  })
 })
