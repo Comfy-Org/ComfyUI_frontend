@@ -27,8 +27,8 @@ import {
   useWidgetValueStore
 } from '@/stores/widgetValueStore'
 import {
-  createLeafNodeExecutionId,
-  createLeafNodeLocatorId
+  createLeafNodeLocatorId,
+  createNodeExecutionId
 } from '@/types/nodeIdentification'
 import type { NodeExecutionId, NodeLocatorId } from '@/types/nodeIdentification'
 import type { NodeId } from '@/types/nodeId'
@@ -47,8 +47,7 @@ import type { WidgetId } from '@/types/widgetId'
 import {
   executionIdFromState,
   executionIdToNodeLocatorId,
-  getNodeByLocatorId,
-  locatorIdFromState,
+  getNodeByState,
   subgraphIdFromState
 } from '@/utils/graphTraversalUtil'
 import { mapLiveWidgetsById } from '@/utils/litegraphUtil'
@@ -166,8 +165,7 @@ function getHostNode(
   nodeData: NodeState
 ): LGraphNode | null {
   if (!rootGraph) return null
-  const locatorId = locatorIdFromState(nodeData, rootGraph.id)
-  return locatorId ? getNodeByLocatorId(rootGraph, locatorId) : null
+  return getNodeByState(rootGraph, nodeData)
 }
 
 function isWidgetVisible(
@@ -181,9 +179,25 @@ function isWidgetVisible(
   })
 }
 
+/**
+ * Looks up a node's error record by execution id, guarding against an
+ * execution id that happens to name an inherited `Object.prototype` property
+ * (e.g. `constructor`, `toString`): a plain-object index would otherwise
+ * return that inherited function instead of `undefined`, and callers that
+ * assume a truthy result has an `.errors` array would throw.
+ */
+function getOwnNodeError<T>(
+  errors: Record<string, T> | null | undefined,
+  executionId: string
+): T | undefined {
+  return errors && Object.hasOwn(errors, executionId)
+    ? errors[executionId]
+    : undefined
+}
+
 function hasWidgetError(
   widget: { name: string; errorTarget?: WidgetErrorTarget },
-  nodeExecId: NodeExecutionId,
+  nodeExecId: NodeExecutionId | null,
   nodeErrors:
     | { errors: { extra_info?: { input_name?: string } }[] }
     | undefined,
@@ -195,12 +209,16 @@ function hasWidgetError(
     !!nodeErrors?.errors.some(
       (e) => e.extra_info?.input_name === widget.name
     ) ||
-    missingModelStore.isWidgetMissingModel(nodeExecId, widget.name) ||
-    missingMediaStore.isWidgetMissingMedia(nodeExecId, widget.name)
+    (nodeExecId !== null &&
+      (missingModelStore.isWidgetMissingModel(nodeExecId, widget.name) ||
+        missingMediaStore.isWidgetMissingMedia(nodeExecId, widget.name)))
   const target = widget.errorTarget
   if (!target) return hasHostError
 
-  const sourceErrors = executionErrorStore.lastNodeErrors?.[target.executionId]
+  const sourceErrors = getOwnNodeError(
+    executionErrorStore.lastNodeErrors,
+    target.executionId
+  )
   return (
     hasHostError ||
     !!sourceErrors?.errors.some(
@@ -226,7 +244,7 @@ function createWidgetUpdateHandler({
   id: WidgetId
   live?: { node: LGraphNode; widget: IBaseWidget }
   errorTarget?: WidgetErrorTarget
-  nodeExecId: NodeExecutionId
+  nodeExecId: NodeExecutionId | null
   widgetName: string
   widgetOptions: IWidgetOptions
   executionErrorStore: ReturnType<typeof useExecutionErrorStore>
@@ -251,13 +269,15 @@ function createWidgetUpdateHandler({
         options
       )
     }
-    executionErrorStore.clearWidgetRelatedErrors(
-      nodeExecId,
-      widgetName,
-      widgetName,
-      newValue,
-      options
-    )
+    if (nodeExecId) {
+      executionErrorStore.clearWidgetRelatedErrors(
+        nodeExecId,
+        widgetName,
+        widgetName,
+        newValue,
+        options
+      )
+    }
   }
 }
 
@@ -336,12 +356,14 @@ function widgetNodeLocatorId(
     if (sourceLocator) return sourceLocator
   }
   if (!bareWidgetId) return undefined
-  return (
-    createLeafNodeLocatorId(
-      subgraphIdFromState(ctx.nodeData, ctx.rootGraphId),
-      bareWidgetId
-    ) ?? undefined
-  )
+  const subgraphId = subgraphIdFromState(ctx.nodeData, ctx.rootGraphId)
+  // A colon in `bareWidgetId` is only ambiguous when it needs a subgraph
+  // prefix: `<subgraphId>:<bareWidgetId>` would then collide with the
+  // `<subgraph-uuid>:<local-id>` locator shape. A root-owned id has no
+  // prefix to collide with, so it can be kept whole (comfy-multi-player's
+  // insert_workflow remapped ids, PM-1580) via the leaf-tolerant path.
+  if (subgraphId && bareWidgetId.includes(':')) return undefined
+  return createLeafNodeLocatorId(subgraphId, bareWidgetId) ?? undefined
 }
 
 interface WidgetProcessingContext {
@@ -353,7 +375,7 @@ interface WidgetProcessingContext {
   hostNode: LGraphNode | null
   liveWidgets: Map<WidgetId, IBaseWidget>
   slotMetadata: Map<string, WidgetSlotMetadata>
-  nodeExecId: NodeExecutionId
+  nodeExecId: NodeExecutionId | null
   nodeErrors: Parameters<typeof hasWidgetError>[2]
   widgetValueStore: ReturnType<typeof useWidgetValueStore>
   executionErrorStore: ReturnType<typeof useExecutionErrorStore>
@@ -492,8 +514,7 @@ export function computeProcessedWidgets({
   const nodeExecId =
     isGraphReady && rootGraph
       ? executionIdFromState(rootGraph, nodeData)
-      : createLeafNodeExecutionId(nodeData.id)
-  if (!nodeExecId) return []
+      : createNodeExecutionId([nodeData.id])
 
   const hostNode = getHostNode(rootGraph, nodeData)
   const liveWidgets = hostNode
@@ -525,7 +546,9 @@ export function computeProcessedWidgets({
     liveWidgets,
     slotMetadata,
     nodeExecId,
-    nodeErrors: executionErrorStore.lastNodeErrors?.[nodeExecId],
+    nodeErrors: nodeExecId
+      ? getOwnNodeError(executionErrorStore.lastNodeErrors, nodeExecId)
+      : undefined,
     widgetValueStore,
     executionErrorStore,
     missingModelStore,
