@@ -53,7 +53,7 @@ const billingNote = computed(() => {
 
         <span
           v-if="discount"
-          class="text-primary-comfy-yellow text-sm max-sm:text-xs sm:ml-2"
+          class="text-sm text-primary-comfy-yellow max-sm:text-xs sm:ml-2"
         >
           {{ discount }}
         </span>

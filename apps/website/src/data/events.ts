@@ -360,6 +360,100 @@ const events: readonly ComfyEvent[] = [
     }
   },
   {
+    id: 'nyc-creative-ai-september-forum',
+    category: 'meetup',
+    organizer: 'community',
+    coords: { lat: 40.7128, lng: -74.006 },
+    title: {
+      en: 'ZeroSpace: NYC Creative AI September Forum',
+      'zh-CN': 'ZeroSpace：NYC Creative AI 九月论坛'
+    },
+    description: {
+      en: 'The September NYC Creative AI forum runs at ZeroSpace, presented by Flora, Daydream, and ZeroSpace.',
+      'zh-CN':
+        '九月的 NYC Creative AI 论坛将在 ZeroSpace 举行，由 Flora、Daydream 与 ZeroSpace 共同呈现。'
+    },
+    location: { en: 'New York, NY', 'zh-CN': '美国纽约' },
+    dateLabel: {
+      en: 'September 22, 2026 · 6-9 PM ET',
+      'zh-CN': '2026年9月22日 · 下午6点至9点（ET）'
+    },
+    startDateTime: '2026-09-22T18:00:00-04:00',
+    endDateTime: '2026-09-22T21:00:00-04:00',
+    link: {
+      href: {
+        en: 'https://luma.com/of64wqdr',
+        'zh-CN': 'https://luma.com/of64wqdr'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'Register', 'zh-CN': '报名' },
+    media: eventImage('nyc-creative-ai-september-forum.png', {
+      en: 'ZeroSpace: NYC Creative AI September Forum',
+      'zh-CN': 'ZeroSpace：NYC Creative AI 九月论坛'
+    })
+  },
+  {
+    id: 'sf-tech-week-tool-panel',
+    category: 'meetup',
+    organizer: 'partner',
+    coords: { lat: 37.7749, lng: -122.4194 },
+    title: {
+      en: 'SF Tech Week: ComfyUI Panel with TOOL ft. Yannik Marek',
+      'zh-CN':
+        'SF Tech Week：与 TOOL 共同举办的 ComfyUI 圆桌讨论（特邀 Yannik Marek）'
+    },
+    description: {
+      en: 'Comfy joins TOOL for a panel during San Francisco Tech Week, featuring Yannik Marek from the Comfy team.',
+      'zh-CN':
+        'Comfy 将与 TOOL 一起参加 San Francisco Tech Week 期间的一场圆桌讨论，Comfy 团队的 Yannik Marek 将作为嘉宾出席。'
+    },
+    location: { en: 'San Francisco, CA', 'zh-CN': '美国加州旧金山' },
+    dateLabel: {
+      en: 'October 6, 2026 · San Francisco Tech Week',
+      'zh-CN': '2026年10月6日 · San Francisco Tech Week'
+    },
+    startDateTime: '2026-10-06',
+    link: {
+      href: {
+        en: 'https://partiful.com/e/hFOQv0LDW2a1vehxwDRt',
+        'zh-CN': 'https://partiful.com/e/hFOQv0LDW2a1vehxwDRt'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' }
+  },
+  {
+    id: 'la-tech-week-tool-panel',
+    category: 'meetup',
+    organizer: 'partner',
+    coords: { lat: 34.0211, lng: -118.3965 },
+    title: {
+      en: 'LA Tech Week: ComfyUI Panel with TOOL ft. Justin Offermann',
+      'zh-CN':
+        'LA Tech Week：与 TOOL 共同举办的 ComfyUI 圆桌讨论（特邀 Justin Offermann）'
+    },
+    description: {
+      en: 'Comfy joins TOOL for a panel during LA Tech Week, featuring Justin Offermann from the Comfy team.',
+      'zh-CN':
+        'Comfy 将与 TOOL 一起参加 LA Tech Week 期间的一场圆桌讨论，Comfy 团队的 Justin Offermann 将作为嘉宾出席。'
+    },
+    location: { en: 'Los Angeles, CA', 'zh-CN': '美国加州洛杉矶' },
+    dateLabel: {
+      en: 'October 15, 2026 · LA Tech Week',
+      'zh-CN': '2026年10月15日 · LA Tech Week'
+    },
+    startDateTime: '2026-10-15',
+    link: {
+      href: {
+        en: 'https://partiful.com/e/dkPwnLH0yWh0rkO85wfH',
+        'zh-CN': 'https://partiful.com/e/dkPwnLH0yWh0rkO85wfH'
+      },
+      newTab: true
+    },
+    ctaLabel: { en: 'RSVP', 'zh-CN': '报名' }
+  },
+  {
     id: 'la-august-meetup',
     category: 'meetup',
     organizer: 'community',

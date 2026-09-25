@@ -136,7 +136,7 @@ export function useCoachmarkTarget(
   watchEffect((onCleanup) => {
     const candidate = movingAnchor.value
     if (!candidate) return
-    onCleanup(candidate.onMove(() => void update()))
+    onCleanup(candidate.onMove(() => update()))
   })
 
   const targetRect = computed<DOMRect | null>(() => {

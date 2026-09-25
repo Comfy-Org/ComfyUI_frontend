@@ -1,15 +1,21 @@
 import { describe, expect, it, vi } from 'vitest'
 
 import { loadWorkshopExampleFile } from '../src/config/workshop-example-file-loader'
-import { runWorkshopRouter } from '../src/config/workshop-router'
+import { runWorkshopRouter } from '../src/config/workshop-router-queue'
 import { WorkshopRouterError } from '../src/config/workshop-router-errors'
+import { getAuthoredRouterWorkshopModelDetail } from '../src/config/workshop-router-content'
 import {
-  prepareRouterRender,
-  router_for_model,
-  router_render
+  createRouterRenderHelpers,
+  prepareRouterRender as preparePublishedRouterRender,
+  resolveRouterRender as resolvePublishedRouterRender,
+  router_render as renderPublishedRouter,
+  router_for_model as routerForPublishedModel
 } from './router-render'
 
-vi.mock(import('../src/config/workshop-router'), () => ({
+const { prepareRouterRender, router_for_model, router_render } =
+  createRouterRenderHelpers(getAuthoredRouterWorkshopModelDetail)
+
+vi.mock(import('../src/config/workshop-router-queue'), () => ({
   runWorkshopRouter: vi.fn()
 }))
 
@@ -18,6 +24,17 @@ vi.mock(import('../src/config/workshop-example-file-loader'), () => ({
 }))
 
 describe('router_render', () => {
+  it('keeps the documented default helpers available for published pages', async () => {
+    const slug = 'bfl--flux-2-pro--generate-images'
+    const router = routerForPublishedModel(slug)
+    const resolved = resolvePublishedRouterRender(slug)
+    const prepared = await preparePublishedRouterRender(slug)
+
+    expect(resolved.routerId).toBe('bfl/flux-2-pro')
+    expect(prepared.routerId).toBe('bfl/flux-2-pro')
+    expect(prepared.body.prompt).toBe(router.router_get_default_value('prompt'))
+  })
+
   it.for([
     {
       slug: 'bfl--flux-3-text-to-video--generate-videos',
@@ -76,16 +93,14 @@ describe('router_render', () => {
 
     const text = await prepareRouterRender('vertexai--veo-3--generate-videos')
     expect(text.body).not.toHaveProperty('instances.0.image')
-    expect(text.body).toHaveProperty(
-      'instances.0.prompt',
-      animation.values.prompt
-    )
+    expect(text.body).toHaveProperty('instances.0.prompt', text.values.prompt)
+    expect(text.values.prompt).not.toBe(animation.values.prompt)
   })
 
   it.for([
     'openai--gpt-image-1--edit-images',
     'openai--gpt-image-1.5--edit-images',
-    'openai--gpt-image-2--edit-images'
+    'openai--gpt-image-2--generate-images'
   ])(
     'omits optional PNG compression for the initial %s request',
     async (slug) => {
@@ -190,8 +205,8 @@ describe('router_render', () => {
     expect(runWorkshopRouter).not.toHaveBeenCalled()
   })
 
-  it('uses COMFY_KEY through the production page Router client', async () => {
-    vi.stubEnv('COMFY_KEY', 'comfyui-test-key')
+  it('uses COMFY_API_KEY through the production page Router client', async () => {
+    vi.stubEnv('COMFY_API_KEY', 'comfyui-test-key')
     vi.mocked(runWorkshopRouter).mockResolvedValue({
       requestId: 'request-1',
       deadlineCollections: 0,
@@ -204,7 +219,7 @@ describe('router_render', () => {
       ]
     })
 
-    const result = await router_render(
+    const result = await renderPublishedRouter(
       'bfl--flux-2-pro--generate-images',
       {},
       { idempotencyKey: 'render-1' }
@@ -225,7 +240,7 @@ describe('router_render', () => {
   })
 
   it('reports a missing key as unavailable without exposing credentials', async () => {
-    vi.stubEnv('COMFY_KEY', '')
+    vi.stubEnv('COMFY_API_KEY', '')
     vi.mocked(runWorkshopRouter).mockRejectedValue(
       new WorkshopRouterError('unavailable')
     )

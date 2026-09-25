@@ -4,46 +4,39 @@ import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 import { useNodeDragToCanvas } from './useNodeDragToCanvas'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
+import { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { useLitegraphService } from '@/services/litegraphService'
 
-const {
-  mockAddNodeOnGraph,
-  mockConvertEventToCanvasOffset,
-  mockSelectItems,
-  mockReportError,
-  mockCanvas
-} = vi.hoisted(() => {
-  const mockConvertEventToCanvasOffset = vi.fn()
-  const mockSelectItems = vi.fn()
-  return {
-    mockAddNodeOnGraph: vi.fn(),
-    mockConvertEventToCanvasOffset,
-    mockSelectItems,
-    mockReportError: vi.fn(),
-    mockCanvas: {
-      canvas: {
-        addEventListener: vi.fn(),
-        removeEventListener: vi.fn(),
-        getBoundingClientRect: vi.fn()
-      },
-      convertEventToCanvasOffset: mockConvertEventToCanvasOffset,
-      selectItems: mockSelectItems
+const mockReportError = vi.hoisted(() => vi.fn())
+
+const { mockConvertEventToCanvasOffset, mockSelectItems, mockCanvas } =
+  vi.hoisted(() => {
+    const mockConvertEventToCanvasOffset = vi.fn()
+    const mockSelectItems = vi.fn()
+    return {
+      mockConvertEventToCanvasOffset,
+      mockSelectItems,
+      mockCanvas: {
+        canvas: {
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+          getBoundingClientRect: vi.fn()
+        },
+        convertEventToCanvasOffset: mockConvertEventToCanvasOffset,
+        selectItems: mockSelectItems
+      }
     }
-  }
-})
+  })
 
-vi.mock<unknown>(import('@/services/litegraphService'), () => ({
-  useLitegraphService: vi.fn(() => ({
-    addNodeOnGraph: mockAddNodeOnGraph
-  }))
-}))
+vi.mock(import('@/services/litegraphService'))
 
 vi.mock(import('@/platform/telemetry/reportError'), () => ({
   reportError: mockReportError
 }))
 
-vi.mock(import('@/i18n'), () => ({ t: (key: string) => key }))
+vi.mock(import('@/i18n'))
 
 describe('useNodeDragToCanvas', () => {
   const mockNodeDef = {
@@ -168,7 +161,9 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      mockAddNodeOnGraph.mockReturnValue({ id: 1, type: 'TestNode' })
+      vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
+        new LGraphNode('Placed node')
+      )
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
@@ -180,9 +175,12 @@ describe('useNodeDragToCanvas', () => {
       })
       document.dispatchEvent(pointerEvent)
 
-      expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNodeDef, {
-        pos: [150, 150]
-      })
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
+        mockNodeDef,
+        {
+          pos: [150, 150]
+        }
+      )
       expect(mockReportError).not.toHaveBeenCalled()
     })
 
@@ -204,7 +202,7 @@ describe('useNodeDragToCanvas', () => {
       })
       document.dispatchEvent(pointerEvent)
 
-      expect(mockAddNodeOnGraph).not.toHaveBeenCalled()
+      expect(useLitegraphService().addNodeOnGraph).not.toHaveBeenCalled()
       expect(isDragging.value).toBe(false)
     })
 
@@ -238,8 +236,10 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      const placedNode = { id: 1 }
-      mockAddNodeOnGraph.mockReturnValue(placedNode)
+      const placedNode = new LGraphNode('Placed node')
+      vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
+        placedNode
+      )
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
@@ -263,8 +263,11 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      const widget = { name: 'ckpt_name', value: '' }
-      mockAddNodeOnGraph.mockReturnValue({ id: 1, widgets: [widget] })
+      const placedNode = new LGraphNode('Placed node')
+      const widget = placedNode.addWidget('text', 'ckpt_name', '', () => {})
+      vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
+        placedNode
+      )
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef, {
@@ -290,8 +293,10 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      const placedNode = { id: 1, type: 'CheckpointLoaderSimple', widgets: [] }
-      mockAddNodeOnGraph.mockReturnValue(placedNode)
+      const placedNode = new LGraphNode('Placed node', 'CheckpointLoaderSimple')
+      vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
+        placedNode
+      )
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef, {
@@ -345,7 +350,9 @@ describe('useNodeDragToCanvas', () => {
       })
       const nodeType = 'n'.repeat(200)
       const widgetName = 'w'.repeat(220)
-      mockAddNodeOnGraph.mockReturnValue({ id: 1, type: nodeType, widgets: [] })
+      vi.mocked(useLitegraphService().addNodeOnGraph).mockReturnValue(
+        new LGraphNode('Placed node', nodeType)
+      )
 
       useNodeDragToCanvas().startDrag(mockNodeDef, {
         widgetValues: { [widgetName]: 'value' }
@@ -376,7 +383,6 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      mockAddNodeOnGraph.mockReturnValue(null)
 
       const { startDrag } = useNodeDragToCanvas()
       const longNodeName = 'n'.repeat(200)
@@ -443,7 +449,6 @@ describe('useNodeDragToCanvas', () => {
         bottom: 500
       })
       mockConvertEventToCanvasOffset.mockReturnValue([150, 150])
-      mockAddNodeOnGraph.mockReturnValue(null)
 
       const { startDrag } = useNodeDragToCanvas()
       startDrag(mockNodeDef)
@@ -478,7 +483,7 @@ describe('useNodeDragToCanvas', () => {
       })
       document.dispatchEvent(pointerEvent)
 
-      expect(mockAddNodeOnGraph).not.toHaveBeenCalled()
+      expect(useLitegraphService().addNodeOnGraph).not.toHaveBeenCalled()
       expect(isDragging.value).toBe(true)
     })
   })
@@ -498,9 +503,12 @@ describe('useNodeDragToCanvas', () => {
       startDrag(mockNodeDef, { mode: 'native' })
       handleNativeDrop(250, 250)
 
-      expect(mockAddNodeOnGraph).toHaveBeenCalledWith(mockNodeDef, {
-        pos: [200, 200]
-      })
+      expect(useLitegraphService().addNodeOnGraph).toHaveBeenCalledWith(
+        mockNodeDef,
+        {
+          pos: [200, 200]
+        }
+      )
     })
 
     it('should not add node when drop position is outside canvas', () => {
@@ -516,7 +524,7 @@ describe('useNodeDragToCanvas', () => {
       startDrag(mockNodeDef, { mode: 'native' })
       handleNativeDrop(600, 250)
 
-      expect(mockAddNodeOnGraph).not.toHaveBeenCalled()
+      expect(useLitegraphService().addNodeOnGraph).not.toHaveBeenCalled()
       expect(isDragging.value).toBe(false)
     })
 
@@ -534,7 +542,7 @@ describe('useNodeDragToCanvas', () => {
       startDrag(mockNodeDef)
       handleNativeDrop(250, 250)
 
-      expect(mockAddNodeOnGraph).not.toHaveBeenCalled()
+      expect(useLitegraphService().addNodeOnGraph).not.toHaveBeenCalled()
     })
 
     it('should reset drag state after drop', () => {

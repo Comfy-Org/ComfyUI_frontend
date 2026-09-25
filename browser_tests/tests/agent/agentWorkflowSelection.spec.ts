@@ -3,6 +3,7 @@ import { expect, mergeTests } from '@playwright/test'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest } from '@e2e/fixtures/agentPanelFixture'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 import { workflowSelectionTest } from '@e2e/fixtures/agentWorkflowSelectionFixture'
 
 const test = mergeTests(agentTest, workflowSelectionTest)
@@ -11,12 +12,58 @@ test.describe(
   'Explicit Agent workflow selection',
   { tag: ['@cloud', '@ui'] },
   () => {
+    test('renders matching workflow and run-permission icons', async ({
+      page,
+      workflowSelection
+    }, testInfo) => {
+      await page
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
+        .click()
+      const panel = page.locator('#agent-panel-root')
+      await panel
+        .getByRole('button', { name: enMessages.agent.switchWorkflow })
+        .click()
+      await page
+        .getByRole('menuitemradio', { name: 'Unsaved Workflow', exact: true })
+        .click()
+      await expect.poll(() => workflowSelection.savedPaths.length).toBe(1)
+      workflowSelection.finishSave(true)
+      const workflowIcon = panel.getByTestId('workflow-selector-icon')
+      await expect(workflowIcon).toHaveCSS('width', '16px')
+      await expect(workflowIcon).toHaveCSS('height', '16px')
+      await panel
+        .getByRole('button', {
+          name: enMessages.agent.runModeTriggerAsk,
+          exact: true
+        })
+        .click()
+      await expect(
+        page.getByText(enMessages.agent.runPermissions, { exact: true })
+      ).toBeVisible()
+      const chevron = panel.getByTestId('run-mode-chevron')
+      await expect(chevron).toHaveCSS('width', '16px')
+      await expect(chevron).toHaveCSS('height', '16px')
+      await testInfo.attach('composer-icons', {
+        body: await panel.screenshot({
+          animations: 'disabled',
+          path: testInfo.outputPath('composer-icons.png')
+        }),
+        contentType: 'image/png'
+      })
+    })
+
     test('clears a closed target and restores a send interrupted during preparation', async ({
       page,
       workflowSelection
     }) => {
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       const panel = page.locator('#agent-panel-root')
       const targetPicker = panel.getByRole('button', {
@@ -70,7 +117,10 @@ test.describe(
       workflowSelection
     }, testInfo) => {
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       const panel = page.locator('#agent-panel-root')
       const targetPicker = panel.getByRole('button', {
@@ -123,7 +173,10 @@ test.describe(
       await panel.getByRole('button', { name: enMessages.g.close }).click()
       await expect(panel).toHaveCount(0)
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       await expect(composer).toHaveText(
         'Unsaved Workflow Use this workflow as inspiration'
@@ -155,9 +208,9 @@ test.describe(
         contentType: 'image/png'
       })
       await open.click()
-      await expect(
-        page.locator('.workflow-tabs .p-togglebutton-checked')
-      ).toHaveText('Unsaved Workflow')
+      await expect(new Topbar(page).getActiveTab()).toHaveText(
+        'Unsaved Workflow'
+      )
       await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
       await expect(composer).toHaveText(
         'Unsaved Workflow Use this workflow as inspiration'
@@ -173,9 +226,9 @@ test.describe(
       await expect(chip).toHaveCount(0)
       await expect(composer).toHaveText('Use this workflow as inspiration')
       await expect(targetPicker).toHaveText('Unsaved Workflow (2)')
-      await expect(
-        page.locator('.workflow-tabs .p-togglebutton-checked')
-      ).toHaveText('Unsaved Workflow')
+      await expect(new Topbar(page).getActiveTab()).toHaveText(
+        'Unsaved Workflow'
+      )
       expect(workflowSelection.postedMessages).toHaveLength(0)
     })
 
@@ -184,7 +237,10 @@ test.describe(
       workflowSelection
     }, testInfo) => {
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       const panel = page.locator('#agent-panel-root')
       const reason = enMessages.agent.selectWorkflowForNodes
@@ -270,11 +326,16 @@ test.describe(
           exact: true
         })
         .click()
-      const editorTabs = page.locator('.workflow-tabs .p-togglebutton')
-      await expect(editorTabs).toHaveCount(2)
-      await editorTabs.first().click()
+      const topbar = new Topbar(page)
+      await expect(topbar.tabs).toHaveCount(2)
+      await expect(topbar.getTab(1).and(topbar.getActiveTab())).toBeVisible()
+      await topbar.getTab(0).click()
+      await expect(topbar.getTab(0).and(topbar.getActiveTab())).toBeVisible()
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       await page
         .getByRole('button', { name: enMessages.agent.switchWorkflow })
@@ -321,7 +382,10 @@ test.describe(
       workflowSelection
     }, testInfo) => {
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { includeHidden: true })
@@ -430,7 +494,10 @@ test.describe(
       await panel.getByRole('button', { name: enMessages.g.close }).click()
       await expect(targetMarker).toBeVisible()
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       await expect(
         panel.getByRole('button', { name: enMessages.agent.switchWorkflow })
@@ -464,9 +531,9 @@ test.describe(
       })
       await targetMenuItem.click()
       await expect(targetMarker).toBeVisible()
-      await expect(
-        page.locator('.workflow-tabs .p-togglebutton-checked')
-      ).toHaveText('Unsaved Workflow')
+      await expect(new Topbar(page).getActiveTab()).toHaveText(
+        'Unsaved Workflow'
+      )
       await panel
         .getByRole('button', { name: enMessages.agent.newChat })
         .click()
@@ -481,7 +548,10 @@ test.describe(
       workflowSelection
     }) => {
       await page
-        .getByRole('button', { name: enMessages.agent.askComfyAgent })
+        .getByRole('button', {
+          name: enMessages.agent.entryButton,
+          exact: true
+        })
         .click()
       const panel = page.locator('#agent-panel-root')
       const composer = panel.getByRole('textbox', { includeHidden: true })

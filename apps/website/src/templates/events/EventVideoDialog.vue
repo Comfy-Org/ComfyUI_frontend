@@ -85,17 +85,17 @@ onUnmounted(() => {
   >
     <button
       :aria-label="t('events.videoDialog.close', locale)"
-      class="border-primary-comfy-yellow hover:bg-primary-comfy-yellow group absolute top-8 right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 bg-primary-comfy-ink transition-colors lg:right-26"
+      class="group absolute top-8 right-10 z-10 flex size-10 cursor-pointer items-center justify-center rounded-2xl border-2 border-primary-comfy-yellow bg-primary-comfy-ink transition-colors hover:bg-primary-comfy-yellow lg:right-26"
       @click="closeDialog"
     >
       <span
-        class="bg-primary-comfy-yellow size-5 transition-colors group-hover:bg-primary-comfy-ink"
+        class="size-5 bg-primary-comfy-yellow transition-colors group-hover:bg-primary-comfy-ink"
         style="mask: url('/icons/close.svg') center / contain no-repeat"
       />
     </button>
 
     <div
-      class="border-primary-comfy-yellow rounded-5xl w-full max-w-7xl overflow-hidden border-2 bg-primary-comfy-ink p-3 lg:p-4"
+      class="w-full max-w-7xl overflow-hidden rounded-5xl border-2 border-primary-comfy-yellow bg-primary-comfy-ink p-3 lg:p-4"
     >
       <div class="aspect-video w-full overflow-hidden rounded-3xl">
         <iframe

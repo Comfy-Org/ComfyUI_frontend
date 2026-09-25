@@ -5,10 +5,13 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { LGraphGroup, LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { AutoPanController } from '@/renderer/core/canvas/useAutoPan'
+import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
+import { useTransformState } from '@/renderer/core/layout/transform/useTransformState'
 import { LayoutSource } from '@/renderer/core/layout/types'
 import type { NodeLayout } from '@/renderer/core/layout/types'
 import { toNodeId } from '@/types/nodeId'
 import type { UUID } from '@/utils/uuid'
+import { setCanvasSelection } from '@/utils/__tests__/canvasSelectionTestUtils'
 
 // TODO: Simplify test setup — use real layoutStore + createTestingPinia instead
 // of manually mocking every dependency. See https://github.com/Comfy-Org/ComfyUI_frontend/issues/10765
@@ -21,7 +24,6 @@ const testState = vi.hoisted(() => {
       moveNode: vi.fn(),
       batchMoveNodes: vi.fn()
     },
-    batchUpdateNodeBounds: vi.fn(),
     nodeSnap: {
       shouldSnap: vi.fn(() => false),
       applySnapToPosition: vi.fn((pos: { x: number; y: number }) => pos)
@@ -42,7 +44,7 @@ const testState = vi.hoisted(() => {
   }
 })
 
-vi.mock<unknown>(import('@/renderer/core/canvas/useAutoPan'), () => ({
+vi.mock(import('@/renderer/core/canvas/useAutoPan'), () => ({
   AutoPanController: vi.fn()
 }))
 
@@ -53,13 +55,7 @@ vi.mock<unknown>(
   })
 )
 
-vi.mock<unknown>(import('@/renderer/core/layout/store/layoutStore'), () => ({
-  layoutStore: {
-    getNodeLayout: (_rootGraphId: string, nodeId: string) =>
-      testState.nodeLayouts.get(nodeId) ?? null,
-    batchUpdateNodeBounds: testState.batchUpdateNodeBounds
-  }
-}))
+vi.mock(import('@/renderer/core/layout/store/layoutStore'))
 
 vi.mock<unknown>(
   import('@/renderer/extensions/vueNodes/composables/useNodeSnap'),
@@ -77,17 +73,7 @@ vi.mock(
   })
 )
 
-vi.mock<unknown>(
-  import('@/renderer/core/layout/transform/useTransformState'),
-  () => ({
-    useTransformState: () => ({
-      screenToCanvas: ({ x, y }: { x: number; y: number }) => ({
-        x: x / (testState.mockDs.scale || 1) - testState.mockDs.offset[0],
-        y: y / (testState.mockDs.scale || 1) - testState.mockDs.offset[1]
-      })
-    })
-  })
-)
+vi.mock(import('@/renderer/core/layout/transform/useTransformState'))
 
 vi.mock(import('@vueuse/core'), { spy: true })
 vi.mocked(VueUse.createSharedComposable).mockImplementation(
@@ -107,6 +93,18 @@ function pointerEvent(clientX: number, clientY: number): PointerEvent {
 }
 
 beforeEach(() => {
+  vi.mocked(layoutStore.getNodeLayout).mockImplementation(
+    (_rootGraphId, nodeId) => {
+      const layout = testState.nodeLayouts.get(nodeId)
+      return layout ? fromPartial<NodeLayout>(layout) : null
+    }
+  )
+  vi.mocked(useTransformState().screenToCanvas).mockImplementation(
+    ({ x, y }) => ({
+      x: x / (testState.mockDs.scale || 1) - testState.mockDs.offset[0],
+      y: y / (testState.mockDs.scale || 1) - testState.mockDs.offset[1]
+    })
+  )
   vi.mocked(VueUse.whenever).mockImplementation(() =>
     Object.assign(vi.fn(), {
       pause: vi.fn(),
@@ -125,7 +123,7 @@ beforeEach(() => {
     return fromPartial<AutoPanController>(controller)
   })
   Object.assign(useCanvasStore(), { selectedNodeIds: new Set() })
-  useCanvasStore().selectedItems = []
+  setCanvasSelection([])
   testState.nodeLayouts.clear()
   testState.nodeSnap.shouldSnap.mockReturnValue(false)
   testState.nodeSnap.applySnapToPosition.mockImplementation(
@@ -211,7 +209,7 @@ describe('useNodeDrag', () => {
     const selectedGroup = new LGraphGroup('selected')
     selectedGroup.pos = [500, 600]
     Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
-    useCanvasStore().selectedItems = [selectedNode, selectedGroup]
+    setCanvasSelection([selectedNode, selectedGroup])
     testState.nodeLayouts.set('1', {
       position: { x: 100, y: 100 },
       size: { width: 200, height: 120 }
@@ -247,8 +245,8 @@ describe('useNodeDrag', () => {
 
     expect(testState.cancelAnimationFrame).toHaveBeenCalledTimes(1)
     expect(testState.cancelAnimationFrame).toHaveBeenCalledWith(1)
-    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledTimes(1)
-    expect(testState.batchUpdateNodeBounds).toHaveBeenCalledWith(
+    expect(layoutStore.batchUpdateNodeBounds).toHaveBeenCalledTimes(1)
+    expect(layoutStore.batchUpdateNodeBounds).toHaveBeenCalledWith(
       ROOT_GRAPH_ID,
       [
         {
@@ -269,7 +267,7 @@ describe('useNodeDrag', () => {
 describe('useNodeDrag auto-pan', () => {
   beforeEach(() => {
     Object.assign(useCanvasStore(), { selectedNodeIds: new Set([node1]) })
-    useCanvasStore().selectedItems = []
+    setCanvasSelection([])
     testState.nodeLayouts.clear()
     testState.nodeLayouts.set('1', {
       position: { x: 100, y: 200 },
@@ -417,7 +415,7 @@ describe('useNodeDrag non-node positionables', () => {
         pos[1] += deltaY
       }
     }
-    useCanvasStore().selectedItems = [fromPartial(group)]
+    setCanvasSelection([fromPartial(group)])
     return group
   }
 

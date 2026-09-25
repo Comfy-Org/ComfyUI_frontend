@@ -2,6 +2,7 @@ import type { Model } from './models'
 import type { WorkshopFormDefinition } from './workshop-form-definition'
 import type { WorkshopContract } from './workshop-contract'
 import type { WorkshopInputDefinition } from './workshop-input-definition'
+import type { WorkshopWorkflowDefinition } from './workshop-workflow-definition'
 import { OTHER_FORMAT_USE_CASES } from './workshop-sections'
 
 export const MODALITIES = ['image', 'video', 'audio', '3d', 'text'] as const
@@ -114,13 +115,12 @@ export interface GeneratedModel {
   readonly examples: readonly GeneratedExample[]
 }
 
-export interface WorkshopModel {
+interface WorkshopPresentation {
   readonly slug: string
   readonly name: string
   readonly workflowCount: number
   readonly recommendedRank?: number
   readonly href: string
-  readonly routerId: string
   readonly incompleteReason?: 'missing-input-schema'
   readonly provider?: string
   readonly modality?: Modality
@@ -141,13 +141,47 @@ export interface WorkshopModel {
   readonly successorSlug?: string
 }
 
-export interface WorkshopModelDetail extends WorkshopModel {
+export type RouterWorkshopModel = WorkshopPresentation & {
+  readonly type?: 'MODEL'
+  readonly routerId: string
+  readonly workflowId?: never
+}
+
+export type WorkflowWorkshopModel = WorkshopPresentation & {
+  readonly type: 'CLOUD' | 'SERVERLESS'
+  readonly workflowId: string
+  readonly routerId?: never
+  readonly category?: string
+}
+
+export type WorkshopModel = RouterWorkshopModel | WorkflowWorkshopModel
+
+interface WorkshopDetailPresentation {
   readonly nodeDisplayName?: string
   readonly form?: WorkshopFormDefinition
-  readonly execution?: WorkshopContract
   readonly fields: readonly GeneratedField[]
   readonly defaults: WorkshopExampleValues
   readonly examples: readonly GeneratedExample[]
+}
+
+export type RouterWorkshopModelDetail = WorkshopDetailPresentation &
+  RouterWorkshopModel & {
+    readonly execution?: WorkshopContract
+    readonly workflow?: never
+  }
+
+export type WorkflowWorkshopModelDetail = WorkshopDetailPresentation &
+  WorkflowWorkshopModel & {
+    readonly execution?: never
+    readonly workflow: WorkshopWorkflowDefinition
+  }
+
+export type WorkshopModelDetail =
+  | RouterWorkshopModelDetail
+  | WorkflowWorkshopModelDetail
+
+export function workshopExecutionId(model: WorkshopModel): string {
+  return model.routerId ?? model.workflowId
 }
 
 // makes it image/video/audio-to-X, anything else is text-to-X.
@@ -302,6 +336,7 @@ export function modalityOf(
 export interface WorkshopFilter {
   readonly query?: string
   readonly useCase?: UseCase | 'all' | 'other'
+  readonly useCases?: readonly UseCase[]
   readonly modalities?: readonly string[]
   readonly providers?: readonly string[]
   readonly capabilities?: readonly string[]
@@ -328,23 +363,57 @@ function matchesFacet(
   )
 }
 
-// Deep links into the catalog: `?useCase=edit-images&capability=Upscale&provider=Kling`.
-export function catalogSearch(filter: Partial<WorkshopFilter>): string {
+function matchesUseCases(
+  selected: readonly UseCase[],
+  model: WorkshopModel
+): boolean {
+  return (
+    selected.length === 0 ||
+    selected.some((value) => useCasesFor(model).includes(value))
+  )
+}
+
+function matchesModalities(
+  selected: readonly string[],
+  model: WorkshopModel
+): boolean {
+  return (
+    selected.length === 0 ||
+    (model.modalities ?? [modalityOf(model)]).some((value) =>
+      selected.includes(value)
+    )
+  )
+}
+
+function matchesCapabilities(
+  selected: readonly string[],
+  model: WorkshopModel
+): boolean {
+  return (
+    selected.length === 0 ||
+    selected.some((value) => model.capabilities.includes(value))
+  )
+}
+
+type CatalogLocation = Pick<WorkshopFilter, 'query' | 'useCase'>
+
+interface ParsedCatalogLocation extends CatalogLocation {
+  readonly modalities: readonly string[]
+  readonly providers: readonly string[]
+  readonly capabilities: readonly string[]
+}
+
+// Deep links into the catalog: `?useCase=edit-images&q=upscale`.
+export function catalogSearch(filter: CatalogLocation): string {
   const params = new URLSearchParams()
   if (filter.query) params.set('q', filter.query)
   if (filter.useCase && filter.useCase !== 'all')
     params.set('useCase', filter.useCase)
-  for (const capability of filter.capabilities ?? [])
-    params.append('capability', capability)
-  for (const provider of filter.providers ?? [])
-    params.append('provider', provider)
-  for (const modality of filter.modalities ?? [])
-    params.append('modality', modality)
   const search = params.toString()
   return search ? `?${search}` : ''
 }
 
-export function parseCatalogSearch(search: string): WorkshopFilter {
+export function parseCatalogSearch(search: string): ParsedCatalogLocation {
   const params = new URLSearchParams(search)
   const useCase = params.get('useCase')
   return {
@@ -352,9 +421,9 @@ export function parseCatalogSearch(search: string): WorkshopFilter {
     useCase:
       USE_CASES.find((value) => value === useCase) ??
       (useCase === 'other' ? 'other' : 'all'),
-    capabilities: params.getAll('capability'),
-    providers: params.getAll('provider'),
-    modalities: params.getAll('modality')
+    modalities: params.getAll('modality').filter(Boolean),
+    providers: params.getAll('provider').filter(Boolean),
+    capabilities: params.getAll('capability').filter(Boolean)
   }
 }
 
@@ -363,6 +432,7 @@ export function filterWorkshopModels(
   {
     query = '',
     useCase = 'all',
+    useCases = [],
     modalities = [],
     providers = [],
     capabilities = []
@@ -372,13 +442,10 @@ export function filterWorkshopModels(
   return list.filter(
     (model) =>
       matchesUseCase(useCase, model) &&
-      (modalities.length === 0 ||
-        (model.modalities ?? [modalityOf(model)]).some((modality) =>
-          modalities.includes(modality)
-        )) &&
+      matchesUseCases(useCases, model) &&
+      matchesModalities(modalities, model) &&
       matchesFacet(providers, model.provider) &&
-      (capabilities.length === 0 ||
-        capabilities.some((value) => model.capabilities.includes(value))) &&
+      matchesCapabilities(capabilities, model) &&
       (needle === '' || searchText(model).includes(needle))
   )
 }
@@ -398,8 +465,23 @@ function searchText(model: WorkshopModel): string {
     .toLowerCase()
 }
 
-export const SORT_ORDERS = ['popular', 'name', 'priceAsc', 'priceDesc'] as const
+const SORT_ORDERS = ['popular', 'name', 'priceAsc', 'priceDesc'] as const
 export type SortOrder = (typeof SORT_ORDERS)[number]
+
+/**
+ * Price orders only mean something where a price exists. Offering them over a
+ * list that carries none hands the visitor three controls that all sort by
+ * name, so they are withheld until a model brings a price of its own.
+ */
+export function sortOrdersFor(
+  list: readonly WorkshopModel[]
+): readonly SortOrder[] {
+  return list.some((model) => model.creditsPerRun !== undefined)
+    ? SORT_ORDERS
+    : SORT_ORDERS.filter(
+        (order) => order !== 'priceAsc' && order !== 'priceDesc'
+      )
+}
 
 export function sortWorkshopModels(
   list: readonly WorkshopModel[],
