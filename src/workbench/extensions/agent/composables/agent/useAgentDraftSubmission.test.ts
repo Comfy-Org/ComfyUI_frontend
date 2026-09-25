@@ -2,8 +2,13 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { computed, effectScope, nextTick, ref, shallowRef, watch } from 'vue'
 import type { EffectScope } from 'vue'
 
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/comfyWorkflow'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 import type { WorkflowReference } from '../../types/workflowReference'
 import { useAgentComposerStore } from '../../stores/agent/agentComposerStore'
@@ -370,6 +375,22 @@ describe('Agent draft submission', () => {
     expect(send.mock.calls[0][4]).toEqual({
       clientMessageId: expect.any(String),
       inputMethod: origin
+    })
+  })
+
+  // A submission left 'pending' forever is not just a stuck spinner:
+  // AgentPanelRoot folds that phase into isSending, which gates canSubmit, so
+  // the composer refuses every later message until a reload.
+  it('settles the submission even when the send throws', async () => {
+    const { composer, submit, send } = setup()
+    const failure = new Error('send blew up')
+    send.mockRejectedValue(failure)
+
+    await submit()
+
+    expect(composer.submission?.phase).not.toBe('pending')
+    expect(reportError).toHaveBeenCalledWith(failure, {
+      errorType: 'agent_submit_failed'
     })
   })
 })

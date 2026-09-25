@@ -36,6 +36,7 @@ import type {
   PostMessageInput
 } from '../../services/agent/agentRestClient'
 import { useAgentConversationStore } from '../../stores/agent/agentConversationStore'
+import { useAgentSendGateStore } from '../../stores/agent/agentSendGateStore'
 import { useAgentWorkflowTabBindingStore } from '../../stores/agent/agentWorkflowTabBindingStore'
 import type { WorkflowReference } from '../../types/workflowReference'
 import { serializeWorkflowReferences } from '../../utils/workflowReferenceText'
@@ -122,6 +123,29 @@ export interface AgentSessionDeps {
 
 const PREPARE_TIMEOUT_MS = 3000
 
+/** High-volume types, so a malformed one is reported once rather than per frame. */
+const THROTTLED_EVENT_TYPES = new Set([
+  'agent_message_delta',
+  'agent_message_draft',
+  'agent_thinking',
+  'agent_tool_call'
+])
+
+/**
+ * Every type gets a ceiling, not just the high-volume ones: the frames are
+ * server-controlled, so a schema drift on ANY of them would otherwise drive
+ * unbounded synchronous console + Sentry + Datadog dispatches straight from
+ * the socket handler. The rarer types keep a few reports rather than one,
+ * since each dropped agent_ask is a consent card the user never saw.
+ *
+ * Module-level like `turnStartedAt` and `stopPendingAck`: the panel remounts
+ * on dock/undock, and a per-instance count would restart the ceiling each
+ * time and let a persistent regression report for as long as the user keeps
+ * toggling.
+ */
+const MAX_MALFORMED_REPORTS_PER_TYPE = 5
+const malformedEventReports = new Map<string, number>()
+
 let sessionGeneration = 0
 
 /**
@@ -137,9 +161,31 @@ const turnStartedAt = new Map<TurnId, number>()
  * so a stop clicked from a remounted panel before the acknowledgement must
  * reach the continuation that acks. One owner: armed while a send is in
  * flight, consumed exactly once at ack.
+ *
+ * Deliberately NOT agentSendGateStore: that gate is bounded, releasing itself
+ * after MAX_HOLD_MS so a stalled send cannot lock the run-mode control out for
+ * the page's lifetime. This decision needs the opposite property — it must
+ * stay armed for as long as the POST can still acknowledge, or a stop clicked
+ * during a slow send is dropped instead of being applied at ack. Same window
+ * in the ordinary case, different failure mode on purpose.
+ *
+ * A COUNT, not a flag: `sending` is per session instance, so a remount or a
+ * second panel can have its own POST in flight, and a boolean would let the
+ * first to settle disarm the others and drop their stop.
  */
-let sendInFlight = false
+let sendsAwaitingAck = 0
 let stopPendingAck: { method: AgentStopMethod | undefined } | null = null
+
+/** Arms the ack window for ONE send and returns its single-use release. */
+function beginSendAck(): () => void {
+  sendsAwaitingAck += 1
+  let released = false
+  return () => {
+    if (released) return
+    released = true
+    sendsAwaitingAck = Math.max(0, sendsAwaitingAck - 1)
+  }
+}
 
 function consumeStopPendingAck() {
   const pending = stopPendingAck
@@ -165,6 +211,22 @@ function disownsWorkflow(error: unknown): boolean {
   )
 }
 
+function isDeliberateRefusal(error: unknown): boolean {
+  if (disownsWorkflow(error)) return true
+  return error instanceof AgentApiError && error.status === 409
+}
+
+/**
+ * Whether a failed send is a FAULT rather than an answer the service gave on
+ * purpose: an admission denial is a billing outcome the paywall renders, a 409
+ * is a turn already running, and a disowned workflow is released so the user
+ * can resend (see releaseDisownedWorkflow). A chat notice alone kept the rest
+ * out of both error consoles.
+ */
+export function isReportableSendFault(error: unknown): boolean {
+  return parseAdmissionError(error) === undefined && !isDeliberateRefusal(error)
+}
+
 export function useAgentSession(deps: AgentSessionDeps) {
   const { rest, events, onThreadStarted, onAskResolved, workflow } = deps
   const threadStorageKey = StorageKeys.agentThread(getWorkspaceId())
@@ -172,6 +234,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
 
   const conversationStore = useAgentConversationStore()
   const bindingStore = useAgentWorkflowTabBindingStore()
+  const sendGateStore = useAgentSendGateStore()
   /**
    * The workflow the session is bound to (set on turn ack or an active-tab
    * switch, cleared by newChat/loadThread) - the CRDT follower's subscribe
@@ -629,6 +692,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       // persisted, so a refusal that lands after newChat()/loadThread() has
       // moved on still has to release, or the dead id survives the reload.
       releaseDisownedWorkflow(sentContext, error)
+      // Also before the guard, and for the same reason: the fault happened
+      // whether or not the user has since moved on, and newChat() is exactly
+      // when nobody is watching the chat. Only the NOTICE is generation-
+      // scoped, so it never lands in a conversation it did not come from.
+      if (isReportableSendFault(error))
+        reportError(error, { errorType: 'agent_send_failed' })
       if (generation !== loadGeneration) return false
       recordSendError(error, text)
       return false
@@ -660,7 +729,11 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     promptEditState.value = { phase: 'idle' }
     sending.value = true
-    sendInFlight = true
+    // Held from here rather than around postTurn alone: the POST waits on
+    // prepareWorkflow() first, and a run mode written during THAT wait still
+    // reaches the server before the message it must not re-authorize.
+    const releaseSendGate = sendGateStore.begin()
+    const releaseSendAck = beginSendAck()
     stopPendingAck = null
     try {
       return await performSend(
@@ -672,7 +745,8 @@ export function useAgentSession(deps: AgentSessionDeps) {
       )
     } finally {
       sending.value = false
-      sendInFlight = false
+      releaseSendAck()
+      releaseSendGate()
     }
   }
 
@@ -722,9 +796,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
     const turnId = conversationStore.activeTurnId
     if (threadId === null || turnId === null) {
       // The POST has not acked yet; remember the intent and cancel on ack.
-      // sendInFlight, not this instance's sending: the panel that posted may
-      // have been remounted, and the stop arrives through the new instance.
-      if (sendInFlight) stopPendingAck = { method }
+      // The shared send gate, not this instance's sending: the panel that
+      // posted may have been remounted, and the stop arrives through the new
+      // instance.
+      if (sendsAwaitingAck > 0) stopPendingAck = { method }
       return
     }
     if (isStoppingTurn(turnId)) return
@@ -839,7 +914,18 @@ export function useAgentSession(deps: AgentSessionDeps) {
         conversationStore.settleBackgroundTurn(turnId)
       }
     }
-    console.warn('[agent] dropping malformed agent event', error)
+    // A dropped agent_ask is a run-approval card the user never sees, so the
+    // turn stalls with nothing on screen to point at.
+    const ceiling = THROTTLED_EVENT_TYPES.has(type)
+      ? 1
+      : MAX_MALFORMED_REPORTS_PER_TYPE
+    const seen = malformedEventReports.get(type) ?? 0
+    if (seen >= ceiling) return
+    malformedEventReports.set(type, seen + 1)
+    reportError(error, {
+      errorType: 'agent_malformed_event_dropped',
+      tags: { eventType: type }
+    })
   }
 
   function handleMessageDone(
