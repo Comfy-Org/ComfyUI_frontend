@@ -14,6 +14,7 @@ import type {
   ParsedWireBatch,
   WireOpEnvelope
 } from '@e2e/fixtures/agentWireFrame'
+import { isRecord } from '@e2e/fixtures/utils/isRecord'
 
 const SUBSCRIBE_TIMEOUT = 15_000
 
@@ -46,11 +47,11 @@ function docFrameEnvelope(
   raw: string | Buffer
 ): { type: string; data: Record<string, unknown> } | null {
   const frame: unknown = JSON.parse(raw.toString())
-  if (typeof frame !== 'object' || frame === null) return null
-  const { type, data } = frame as { type?: unknown; data?: unknown }
+  if (!isRecord(frame)) return null
+  const { type, data } = frame
   if (typeof type !== 'string' || !type.startsWith('doc_')) return null
-  if (typeof data !== 'object' || data === null) return null
-  return { type, data: data as Record<string, unknown> }
+  if (!isRecord(data)) return null
+  return { type, data }
 }
 
 function stringOrNull(value: unknown): string | null {
