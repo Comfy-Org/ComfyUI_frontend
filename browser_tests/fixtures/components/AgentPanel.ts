@@ -3,6 +3,8 @@ import type { Locator, Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
+import type { AgentAdmissionDenialMock } from '@e2e/fixtures/data/agent/agentAdmissionDenials'
+
 export class AgentPanel {
   public readonly root: Locator
   public readonly openButton: Locator
@@ -83,6 +85,27 @@ export class AgentPanel {
     await this.workflowPicker.click()
     await this.page.getByRole('menuitemradio', { name, exact: true }).click()
     await expect(this.workflowPicker).toHaveText(name)
+  }
+
+  async rejectNextTurn({
+    status,
+    body,
+    retryAfterSeconds
+  }: AgentAdmissionDenialMock): Promise<void> {
+    let rejected = false
+    // Scoped to POST so the agent fixture's GET handler still serves history.
+    await this.page.route('**/api/agent/threads/*/messages', async (route) => {
+      if (route.request().method() !== 'POST' || rejected) {
+        return route.fallback()
+      }
+      rejected = true
+      await route.fulfill({
+        status,
+        contentType: 'application/json',
+        headers: { 'Retry-After': String(retryAfterSeconds) },
+        body: JSON.stringify(body)
+      })
+    })
   }
 
   async sendMessage(message: string): Promise<void> {
