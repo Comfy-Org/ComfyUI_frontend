@@ -57,10 +57,6 @@ import { retainRunHistory } from '../../config/workshop-run-history'
 import { reportWorkshopRun } from '../../config/workshop-run-state'
 import { modelDocsHref } from '../../lib/workshop/model-docs'
 import { linkLeavingPage } from '../../lib/workshop/leaving-link'
-import {
-  leavingNoticeUnseen,
-  markLeavingNoticeSeen
-} from '../../lib/workshop/leaving-notice'
 import type { WorkshopSession } from '../../config/workshop-session-state'
 import { useWorkshopSession } from '../../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../../config/workshop-snippets'
@@ -302,7 +298,7 @@ watch(
 // standing one costs the idle page its place in the back/forward cache.
 // globalThis.window, not window: on the server the island has neither.
 useEventListener(
-  () => (isRunning.value && !savesAssets ? globalThis.window : undefined),
+  () => (isRunning.value ? globalThis.window : undefined),
   'beforeunload',
   (event: BeforeUnloadEvent) => event.preventDefault()
 )
@@ -311,7 +307,7 @@ useEventListener(
 // listener: declining restores the prior entry without unmounting this island;
 // accepting lets Astro finish the traversal and cancel the run on unmount.
 useEventListener(
-  () => (isRunning.value && !savesAssets ? globalThis.window : undefined),
+  () => (isRunning.value ? globalThis.window : undefined),
   'popstate',
   (event: PopStateEvent) => {
     if (restoringTraversal) {
@@ -341,19 +337,11 @@ useEventListener(
 // this one route off the page can be asked in our own words. The rest still
 // reach the guards above.
 const leavingTo = ref<string>()
-const noticeUnseen = ref(true)
-onMounted(() => (noticeUnseen.value = leavingNoticeUnseen()))
-
-// A run that is cancelled by leaving asks every time, because every time costs
-// the reader their work. A run that is kept says so once and then trusts them
-// with it.
-const asksBeforeLeaving = computed(
-  () => isRunning.value && (!savesAssets || noticeUnseen.value)
-)
+// Only where the cloud would keep the result is carrying on worth offering.
 const leaveAction = computed(() => (savesAssets ? 'leaveSaved' : 'leave'))
 
 useEventListener(
-  () => (asksBeforeLeaving.value ? globalThis.document : undefined),
+  () => (isRunning.value ? globalThis.document : undefined),
   'click',
   (event: MouseEvent) => {
     const href = linkLeavingPage(event, location)
@@ -367,32 +355,24 @@ function leaveForLink() {
   const href = leavingTo.value
   leavingTo.value = undefined
   if (!href) return
-  rememberLeavingNotice()
-  releaseRun()
-  location.assign(href)
-}
-
-// The reader would rather not pay for what they are walking away from.
-function cancelAndLeave() {
-  const href = leavingTo.value
-  leavingTo.value = undefined
-  if (!href) return
-  rememberLeavingNotice()
   cancelRun()
   location.assign(href)
 }
 
-function rememberLeavingNotice() {
-  if (!savesAssets) return
-  markLeavingNoticeSeen()
-  noticeUnseen.value = false
+// The reader who started a long render on purpose and meant to walk away.
+function keepAndLeave() {
+  const href = leavingTo.value
+  leavingTo.value = undefined
+  if (!href) return
+  stopObserving()
+  location.assign(href)
 }
 
 // A push/replace has not moved history yet, so native fallback is safe and the
 // beforeunload guard owns its confirmation. An approved traversal is the one
 // exception: it was already confirmed in the capture-phase popstate handler.
 useEventListener(
-  () => (asksBeforeLeaving.value ? globalThis.document : undefined),
+  () => (isRunning.value ? globalThis.document : undefined),
   'astro:before-preparation',
   (event: Event) => {
     const navigationType = Reflect.get(event, 'navigationType')
@@ -424,7 +404,7 @@ const now = useTimestamp({ interval: 1000 })
 // The header is its own island and switching workspace is not a navigation,
 // so none of the guards above see it. This is how it learns there is a run.
 watch(isRunning, (running) =>
-  reportWorkshopRun(running && !savesAssets ? cancelRun : undefined)
+  reportWorkshopRun(running ? cancelRun : undefined)
 )
 onScopeDispose(() => reportWorkshopRun(undefined))
 
@@ -464,17 +444,11 @@ onMounted(() => {
     requestId.value = id
 })
 
-// Leaving is only a reason to keep paying when the result is being saved.
-function releaseRun() {
-  if (savesAssets) stopObserving()
-  else cancelRun()
-}
-
 // The results on screen belong to the workspace that paid for them, so an
 // owner who changes takes them with them. Only a saved run survives the change,
 // and it survives in their assets rather than here.
 function leaveOwner() {
-  releaseRun()
+  cancelRun()
   if (!savesAssets) return
   pendingRequest = undefined
   releaseRouterOutputs(
@@ -523,7 +497,7 @@ async function switchToPersonal() {
 }
 
 onUnmounted(() => {
-  releaseRun()
+  cancelRun()
   releaseRouterOutputs(
     runs.value.flatMap((run) => [run.output, ...run.attachments])
   )
@@ -1154,7 +1128,7 @@ function useInCode() {
       :locale
       @update:open="(value: boolean) => !value && (leavingTo = undefined)"
       @leave="leaveForLink"
-      @cancel="cancelAndLeave"
+      @keep="keepAndLeave"
     />
 
     <ExampleReplaceDialog

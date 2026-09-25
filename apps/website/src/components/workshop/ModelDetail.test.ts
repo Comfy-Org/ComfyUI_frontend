@@ -238,14 +238,11 @@ describe('ModelDetail', () => {
     })
   })
 
-  // A run Cloud is keeping outlives the page: leaving may detach from it. A run
-  // it is not keeping exists only here, so leaving has to stop the machine.
-  it.for([
-    { saving: '1', detaches: true },
-    { saving: '0', detaches: false }
-  ])(
-    'leaves on unmount with saving $saving, detaching: $detaches',
-    async ({ saving, detaches }) => {
+  // Ben's finding, pinned: whatever the flag says, a page that goes away takes
+  // its run with it. Only the reader can choose otherwise, and only out loud.
+  it.for([{ saving: '1' }, { saving: '0' }])(
+    'stops the run on unmount, with saving $saving',
+    async ({ saving }) => {
       vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', saving)
       auth.session.value = credential
       vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [] })
@@ -257,21 +254,24 @@ describe('ModelDetail', () => {
       await user().click(screen.getByTestId('run-button'))
       await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
       const run = vi.mocked(runWorkshopRouter).mock.calls[0][0]
-      expect(run.comfy_save_asset).toBe(detaches)
+      expect(run.comfy_save_asset).toBe(saving === '1')
       expect(
         window.dispatchEvent(new Event('beforeunload', { cancelable: true }))
-      ).toBe(detaches)
+      ).toBe(false)
 
       unmount()
 
       expect(run.signal.aborted).toBe(true)
-      expect(run.signal.reason === WORKSHOP_LEAVE_RUNNING).toBe(detaches)
+      expect(run.signal.reason === WORKSHOP_LEAVE_RUNNING).toBe(false)
     }
   )
 
-  // A kept run is news, not a warning: it says so once, points at where the
-  // result will be, and then stays out of the way for the rest of the tab.
-  it('tells a reader once that a kept run outlives the page', async () => {
+  // Leaving stops the machine, because a reader who walks away is not waiting
+  // for this result. Carrying on is offered, never assumed.
+  it.for([
+    { press: 'run-leave-confirm', named: 'Leave and stop', keeps: false },
+    { press: 'run-leave-keep', named: 'Leave it running', keeps: true }
+  ])('$named leaves and keeps the run: $keeps', async ({ press, keeps }) => {
     vi.stubEnv('PUBLIC_WORKSHOP_SAVE_ASSETS', '1')
     auth.session.value = credential
     vi.mocked(listWorkshopGenerations).mockResolvedValue({ requests: [] })
@@ -280,39 +280,29 @@ describe('ModelDetail', () => {
     )
     const assign = vi.spyOn(location, 'assign').mockImplementation(() => {})
     onTestFinished(() => assign.mockRestore())
-    const clickLinkTo = (path: string) => {
-      const link = document.createElement('a')
-      link.href = `${location.origin}${path}`
-      document.body.append(link)
-      onTestFinished(() => link.remove())
-      return link.dispatchEvent(
-        new MouseEvent('click', { bubbles: true, cancelable: true })
-      )
-    }
+    const link = document.createElement('a')
+    link.href = `${location.origin}/models/another-model/`
+    document.body.append(link)
+    onTestFinished(() => link.remove())
     mountDetail({ model: runnable })
     await user().type(screen.getByTestId('field-prompt'), 'A teapot')
     await user().click(screen.getByTestId('run-button'))
     await vi.waitFor(() => expect(runWorkshopRouter).toHaveBeenCalledOnce())
 
-    expect(clickLinkTo('/models/another-model/')).toBe(false)
+    link.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true })
+    )
     await screen.findByTestId('run-leave-dialog')
-    expect(screen.getByText('Your generation keeps going')).toBeVisible()
+    expect(screen.getByText('Leave and stop the generation?')).toBeVisible()
     expect(screen.getByTestId('run-leave-assets').getAttribute('href')).toBe(
       WORKSHOP_ASSETS_URL
     )
 
-    await user().click(screen.getByTestId('run-leave-confirm'))
-    expect(assign).toHaveBeenCalledWith(
-      `${location.origin}/models/another-model/`
-    )
-    const run = vi.mocked(runWorkshopRouter).mock.calls[0][0]
-    expect(run.signal.reason === WORKSHOP_LEAVE_RUNNING).toBe(true)
+    await user().click(screen.getByTestId(press))
 
-    // Second time out, it already said its piece.
-    expect(clickLinkTo('/models/a-third-model/')).toBe(true)
-    await vi.waitFor(() =>
-      expect(screen.queryByTestId('run-leave-dialog')).toBeNull()
-    )
+    expect(assign).toHaveBeenCalledWith(link.href)
+    const run = vi.mocked(runWorkshopRouter).mock.calls[0][0]
+    expect(run.signal.reason === WORKSHOP_LEAVE_RUNNING).toBe(keeps)
   })
 
   it('links a documented provider in a new tab', () => {

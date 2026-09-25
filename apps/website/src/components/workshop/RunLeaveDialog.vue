@@ -46,11 +46,12 @@ const {
   locale?: Locale
 }>()
 const open = defineModel<boolean>('open', { default: false })
-const emit = defineEmits<{ leave: []; cancel: [] }>()
+const emit = defineEmits<{ leave: []; keep: [] }>()
 
-// Leaving a kept run costs nothing, so the only choice worth a button is the
-// one that costs something: stopping the machine the reader is paying for.
-const stopping = computed(() => action === 'leaveSaved')
+// A reader who walks away is not waiting for this result, so leaving stops the
+// machine, as it always has. Only where the cloud would keep the result is
+// carrying on worth offering at all, and then only as the quieter choice.
+const offersToKeep = computed(() => action === 'leaveSaved')
 </script>
 
 <template>
@@ -87,12 +88,12 @@ const stopping = computed(() => action === 'leaveSaved')
           variant="outline"
           size="lg"
           class="px-5"
-          :data-testid="stopping ? 'run-leave-cancel' : 'run-leave-stay'"
-          @click="stopping ? emit('cancel') : (open = false)"
+          :data-testid="offersToKeep ? 'run-leave-keep' : 'run-leave-stay'"
+          @click="offersToKeep ? emit('keep') : (open = false)"
         >
           {{
-            stopping
-              ? t('workshop.run.savedCancel', locale)
+            offersToKeep
+              ? t('workshop.run.savedKeep', locale)
               : t(COPY[action].stay, locale)
           }}
         </Button>

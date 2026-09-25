@@ -10243,22 +10243,23 @@ Enterprise`
     'zh-CN': '留在此工作区'
   },
   'workshop.run.savedTitle': {
-    en: 'Your generation keeps going',
-    'zh-CN': '你的生成仍在继续'
+    en: 'Leave and stop the generation?',
+    'zh-CN': '离开并停止这次生成？'
   },
   'workshop.run.savedBody': {
-    en: 'You can leave. The run finishes without you, and the result lands in your assets.',
-    'zh-CN': '你可以离开。这次运行会自行完成，结果会保存到你的素材中。'
+    en: 'You will not see the result on this page. Left running, it keeps spending credits until it finishes, and lands in your assets.',
+    'zh-CN':
+      '你不会在这个页面看到结果。若让它继续，它会一直消耗积分直到完成，结果会保存到你的素材中。'
   },
   'workshop.run.savedAssets': {
     en: 'Open your assets',
     'zh-CN': '打开你的素材'
   },
   'workshop.run.savedStay': { en: 'Stay on this page', 'zh-CN': '留在此页面' },
-  'workshop.run.savedLeave': { en: 'Leave', 'zh-CN': '离开' },
-  'workshop.run.savedCancel': {
-    en: 'Cancel the generation',
-    'zh-CN': '取消这次生成'
+  'workshop.run.savedLeave': { en: 'Leave and stop', 'zh-CN': '离开并停止' },
+  'workshop.run.savedKeep': {
+    en: 'Leave it running',
+    'zh-CN': '让它继续运行'
   },
   'workshop.run.switchAnyway': {
     en: 'Switch and cancel',
