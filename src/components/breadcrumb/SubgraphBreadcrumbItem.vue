@@ -10,10 +10,10 @@
       draggable="false"
       :class="
         cn(
-          'p-breadcrumb-item-link flex h-8 cursor-pointer appearance-none items-center justify-start gap-0 overflow-hidden border-none bg-transparent px-2 py-0 text-inherit select-none [font:inherit] hover:bg-transparent',
+          'breadcrumb-item-link flex h-8 cursor-pointer appearance-none items-center justify-start gap-0 overflow-hidden border-none bg-transparent px-2 py-0 text-inherit select-none [font:inherit] hover:bg-transparent',
           isActive &&
-            'p-breadcrumb-item-link-icon-visible gap-1 text-text-primary',
-          menuOpen && 'p-breadcrumb-item-link-menu-visible'
+            'breadcrumb-item-link-icon-visible gap-1 text-text-primary',
+          menuOpen && 'breadcrumb-item-link-menu-visible'
         )
       "
       @click="handleClick"
@@ -24,10 +24,7 @@
         data-testid="subgraph-breadcrumb-missing-nodes-icon"
         class="icon-[lucide--triangle-alert] text-warning-background"
       />
-      <span
-        ref="labelRef"
-        class="p-breadcrumb-item-label max-w-72 truncate px-2"
-      >
+      <span ref="labelRef" class="breadcrumb-item-label max-w-72 truncate px-2">
         {{ item.label }}
       </span>
       <Badge

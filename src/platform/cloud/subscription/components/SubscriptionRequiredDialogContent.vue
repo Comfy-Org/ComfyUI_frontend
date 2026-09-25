@@ -246,8 +246,4 @@ const handleViewEnterprise = () => {
 .legacy-dialog :deep(.bg-comfy-menu-secondary) {
   background-color: transparent;
 }
-
-.legacy-dialog :deep(.p-button) {
-  color: white;
-}
 </style>

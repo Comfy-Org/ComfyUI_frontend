@@ -14,8 +14,8 @@ import { laidOut, mountNode, movingTarget } from './fixtures/coachmarkTargets'
 import { COACH_IDS, FIRST_RUN_COACH_IDS } from './onboardingTours'
 import type { SpotlightStep } from './onboardingTours'
 
-vi.mock<unknown>(import('@primeuix/utils/zindex'), () => ({
-  ZIndex: { set: vi.fn(), clear: vi.fn() }
+vi.mock<unknown>(import('@/utils/zIndexManager'), () => ({
+  zIndexManager: { set: vi.fn(), clear: vi.fn() }
 }))
 
 const i18n = createI18n({

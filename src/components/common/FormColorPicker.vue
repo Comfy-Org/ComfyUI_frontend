@@ -39,7 +39,7 @@ defineOptions({
   inheritAttrs: false
 })
 
-// Preserve the PrimeVue ColorPicker storage contract (hex without `#`); the
+// Preserve the legacy storage contract (hex without `#`); the
 // underlying picker uses `#`-prefixed hex, so normalize on read/write.
 const hexValue = computed<string>({
   get: () =>

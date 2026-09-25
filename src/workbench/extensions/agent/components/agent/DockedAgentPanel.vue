@@ -148,11 +148,3 @@ useEventListener(document, 'pointerup', stopResizing)
 useEventListener(document, 'pointercancel', stopResizing)
 onBeforeUnmount(stopResizing)
 </script>
-
-<style scoped>
-.agent-resize-handle:hover,
-.agent-resize-handle[data-resizing='true'] {
-  transition: background-color 0.2s ease 300ms;
-  background-color: var(--p-primary-color);
-}
-</style>

@@ -538,7 +538,7 @@ export function usdToMicros(usd: number): number {
  * @param text - The string to convert
  * @returns The string with URLs converted to HTML links
  * @example
- * linkifyHtml('Visit https://example.com for more info') // returns 'Visit <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:underline">https://example.com</a> for more info'
+ * linkifyHtml('Visit https://example.com for more info') // returns 'Visit <a href="https://example.com" target="_blank" rel="noopener noreferrer" class="text-link hover:underline">https://example.com</a> for more info'
  */
 export function linkifyHtml(text: string): string {
   if (!text) return ''
@@ -547,7 +547,7 @@ export function linkifyHtml(text: string): string {
   return text.replace(urlRegex, (_match, p1, _p2, p3) => {
     const url = p1 || p3
     const href = p3 ? `http://${url}` : url
-    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-primary-400 hover:underline">${url}</a>`
+    return `<a href="${href}" target="_blank" rel="noopener noreferrer" class="text-link hover:underline">${url}</a>`
   })
 }
 

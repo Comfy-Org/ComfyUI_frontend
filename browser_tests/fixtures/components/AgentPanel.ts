@@ -322,9 +322,7 @@ export class AgentPanel {
     await this.page.mouse.move(0, 0)
     await this.workflowPicker.blur()
     await expect(
-      this.page
-        .locator('.p-tooltip, [role="tooltip"]')
-        .filter({ visible: true })
+      this.page.getByRole('tooltip').filter({ visible: true })
     ).toHaveCount(0)
   }
 
