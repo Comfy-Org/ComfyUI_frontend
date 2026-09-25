@@ -341,17 +341,20 @@ export class MultiAutogrowRealignHarness {
   async submitAndReadTargetInputs(): Promise<
     ComfyApiWorkflow[string]['inputs']
   > {
+    const submittedPrompt = await this.submitAndReadPrompt()
+    if (!(TARGET_ID in submittedPrompt)) {
+      throw new Error(`Submitted prompt has no node ${TARGET_ID}`)
+    }
+    return submittedPrompt[TARGET_ID].inputs
+  }
+
+  async submitAndReadPrompt(): Promise<ComfyApiWorkflow> {
     this.submittedPrompt = undefined
     await this.page
       .getByRole('button', { name: enMessages.menu.run, exact: true })
       .click()
     await expect.poll(() => this.submittedPrompt !== undefined).toBe(true)
-    const submittedPrompt = this.requireSubmittedPrompt()
-    if (!(TARGET_ID in submittedPrompt)) {
-      throw new Error(`Submitted prompt has no node ${TARGET_ID}`)
-    }
-    const target = submittedPrompt[TARGET_ID]
-    return target.inputs
+    return this.requireSubmittedPrompt()
   }
 
   async expectSubmittedValuesNamedCorrectly(
