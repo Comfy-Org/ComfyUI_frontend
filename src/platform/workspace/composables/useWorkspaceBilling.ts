@@ -515,15 +515,6 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     }
   }
 
-  function openPortalWindow(url: string): boolean {
-    // The handle arms the return refresh, so adding `noopener` here (which
-    // nulls it) silently stops billing state from re-reading on return.
-    const portalWindow = window.open(url, '_blank')
-    if (!portalWindow) return false
-    refreshOnPortalReturn()
-    return true
-  }
-
   function reportBillingTabBlocked(): void {
     useToastStore().add({
       severity: 'warn',
@@ -532,25 +523,14 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     })
   }
 
-  // Layer C first; the rail, and then the legacy client, only when the one
-  // before them doesn't serve this workspace. A pop-up blocker refuses this
-  // page rather than one destination, so a refused tab ends the attempt
-  // without minting another portal session.
-  async function manageSubscription(): Promise<void> {
-    error.value = null
-    const hosted = openHostedBillingTabOutcome('payment-methods')
-    if (hosted === 'opened') return
-    if (hosted === 'blocked') return reportBillingTabBlocked()
-
+  /** The rail's portal URL, or the legacy client's when the rail declines. */
+  async function requestPortalUrl(): Promise<string | undefined> {
     const rail = useSubscriptionRail()
     if (rail) {
       const url = await onSubscriptionRail(() =>
         rail.openPaymentPortal(window.location.href)
       )
-      if (url !== DECLINED) {
-        if (!openPortalWindow(url)) reportBillingTabBlocked()
-        return
-      }
+      if (url !== DECLINED) return url
     }
 
     isLoading.value = true
@@ -558,15 +538,38 @@ export function useWorkspaceBilling(): BillingState & BillingActions {
     try {
       const returnUrl = window.location.href
       const response = await workspaceApi.getPaymentPortalUrl(returnUrl)
-      if (response.url && !openPortalWindow(response.url)) {
-        reportBillingTabBlocked()
-      }
+      return response.url || undefined
     } catch (err) {
       error.value =
         err instanceof Error ? err.message : 'Failed to open billing portal'
       throw err
     } finally {
       isLoading.value = false
+    }
+  }
+
+  // Layer C first; the rail, and then the legacy client, only when the one
+  // before them doesn't serve this workspace. The portal tab is reserved
+  // before the first request: one opened after it resolves has lost the
+  // click's activation, and a refused reservation mints no portal session.
+  async function manageSubscription(): Promise<void> {
+    error.value = null
+    const hosted = openHostedBillingTabOutcome('payment-methods')
+    if (hosted === 'opened') return
+    if (hosted === 'blocked') return reportBillingTabBlocked()
+
+    // The handle arms the return refresh, so adding `noopener` here (which
+    // nulls it) silently stops billing state from re-reading on return.
+    const portalTab = window.open('', '_blank')
+    if (!portalTab) return reportBillingTabBlocked()
+    try {
+      const url = await requestPortalUrl()
+      if (!url) return portalTab.close()
+      portalTab.location.href = url
+      refreshOnPortalReturn()
+    } catch (err) {
+      portalTab.close()
+      throw err
     }
   }
 

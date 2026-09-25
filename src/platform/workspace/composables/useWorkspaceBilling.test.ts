@@ -854,6 +854,13 @@ describe('useWorkspaceBilling', () => {
   describe('manageSubscription', () => {
     let originalLocation: Location
 
+    function stubPortalTab() {
+      const tab = { location: { href: '' }, close: vi.fn() }
+      const open = vi.fn(() => tab as unknown as Window)
+      vi.stubGlobal('open', open)
+      return { tab, open }
+    }
+
     beforeEach(() => {
       originalLocation = window.location
       Object.defineProperty(window, 'location', {
@@ -878,8 +885,7 @@ describe('useWorkspaceBilling', () => {
     })
 
     it('opens the payment portal URL returned by the API', async () => {
-      const openSpy = vi.fn()
-      vi.stubGlobal('open', openSpy)
+      const { tab, open } = stubPortalTab()
 
       mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
         url: 'https://billing.example/portal'
@@ -891,18 +897,31 @@ describe('useWorkspaceBilling', () => {
       expect(mockWorkspaceApi.getPaymentPortalUrl).toHaveBeenCalledWith(
         'https://app.example/settings'
       )
-      expect(openSpy).toHaveBeenCalledWith(
-        'https://billing.example/portal',
-        '_blank'
-      )
+      expect(open).toHaveBeenCalledOnce()
+      expect(tab.location.href).toBe('https://billing.example/portal')
+      expect(tab.close).not.toHaveBeenCalled()
+    })
+
+    it('reserves the portal tab before the portal request resolves', async () => {
+      const { tab, open } = stubPortalTab()
+      const portal = createDeferred<{ url: string }>()
+      mockWorkspaceApi.getPaymentPortalUrl.mockReturnValue(portal.promise)
+
+      const pending = setupBilling().manageSubscription()
+      expect(open).toHaveBeenCalledOnce()
+
+      portal.resolve({ url: 'https://billing.example/portal' })
+      await pending
+
+      expect(open).toHaveBeenCalledOnce()
+      expect(tab.location.href).toBe('https://billing.example/portal')
     })
 
     it.for([
       ['empty string', ''],
       ['null', null]
-    ])('does not open a window when API returns %s url', async ([, url]) => {
-      const openSpy = vi.fn()
-      vi.stubGlobal('open', openSpy)
+    ])('closes the reserved tab when API returns %s url', async ([, url]) => {
+      const { tab } = stubPortalTab()
 
       mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
         url: url as string
@@ -911,7 +930,29 @@ describe('useWorkspaceBilling', () => {
       const billing = setupBilling()
       await billing.manageSubscription()
 
-      expect(openSpy).not.toHaveBeenCalled()
+      expect(tab.close).toHaveBeenCalledOnce()
+      expect(tab.location.href).toBe('')
+    })
+
+    it.for([
+      { name: 'the legacy client', railEnabled: false },
+      { name: 'the SDK rail', railEnabled: true }
+    ])('closes the reserved tab when $name fails', async ({ railEnabled }) => {
+      const { tab } = stubPortalTab()
+      mockRail.enabled = railEnabled
+      mockRail.openPaymentPortal.mockResolvedValue({
+        status: 'error',
+        error: new Error('portal down')
+      })
+      mockWorkspaceApi.getPaymentPortalUrl.mockRejectedValue(
+        new Error('portal down')
+      )
+
+      await expect(setupBilling().manageSubscription()).rejects.toThrow(
+        'portal down'
+      )
+
+      expect(tab.close).toHaveBeenCalledOnce()
     })
 
     // Layer C is independent of Layer A: the destination decides the URL, so
@@ -964,7 +1005,7 @@ describe('useWorkspaceBilling', () => {
       { name: 'the SDK rail portal', hosted: false, railEnabled: true },
       { name: 'the legacy portal', hosted: false, railEnabled: false }
     ])(
-      'tells the customer when $name is blocked and mints no second portal session',
+      'tells the customer when $name is blocked and mints no portal session',
       async ({ hosted, railEnabled }) => {
         vi.stubGlobal(
           'open',
@@ -985,10 +1026,8 @@ describe('useWorkspaceBilling', () => {
 
         await setupBilling().manageSubscription()
 
-        const portalSessions =
-          mockRail.openPaymentPortal.mock.calls.length +
-          mockWorkspaceApi.getPaymentPortalUrl.mock.calls.length
-        expect(portalSessions).toBe(hosted ? 0 : 1)
+        expect(mockRail.openPaymentPortal).not.toHaveBeenCalled()
+        expect(mockWorkspaceApi.getPaymentPortalUrl).not.toHaveBeenCalled()
         expect(useToastStore().messagesToAdd).toEqual([
           expect.objectContaining({
             severity: 'warn',
@@ -1000,10 +1039,7 @@ describe('useWorkspaceBilling', () => {
     )
 
     it('clears a failure from the previous attempt when the hosted route opens', async () => {
-      vi.stubGlobal(
-        'open',
-        vi.fn(() => ({ location: { href: '' } }) as unknown as Window)
-      )
+      stubPortalTab()
       localStorage.setItem('ff:hosted_billing_destination', '"billing_web"')
       mockWorkspaceApi.getPaymentPortalUrl.mockRejectedValue(
         new Error('portal down')
@@ -1020,8 +1056,7 @@ describe('useWorkspaceBilling', () => {
     })
 
     it('opens the portal URL the SDK rail returns while the server says stripe', async () => {
-      const openSpy = vi.fn(() => window)
-      vi.stubGlobal('open', openSpy)
+      const { tab } = stubPortalTab()
       mockRail.enabled = true
       mockRail.openPaymentPortal.mockResolvedValue({
         status: 'ok',
@@ -1034,10 +1069,7 @@ describe('useWorkspaceBilling', () => {
       expect(mockRail.openPaymentPortal).toHaveBeenCalledWith(
         'https://app.example/settings'
       )
-      expect(openSpy).toHaveBeenCalledWith(
-        'https://billing.example/sdk-portal',
-        '_blank'
-      )
+      expect(tab.location.href).toBe('https://billing.example/sdk-portal')
       expect(mockWorkspaceApi.getPaymentPortalUrl).not.toHaveBeenCalled()
     })
 
@@ -1053,10 +1085,7 @@ describe('useWorkspaceBilling', () => {
     })
 
     it('re-reads billing state once when the tab regains visibility after opening the portal', async () => {
-      vi.stubGlobal(
-        'open',
-        vi.fn(() => ({}) as Window)
-      )
+      stubPortalTab()
       mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
         url: 'https://billing.example/portal'
       })
@@ -1079,10 +1108,7 @@ describe('useWorkspaceBilling', () => {
     })
 
     it('re-reads billing state when focus returns without a visibility change', async () => {
-      vi.stubGlobal(
-        'open',
-        vi.fn(() => ({}) as Window)
-      )
+      stubPortalTab()
       mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
         url: 'https://billing.example/portal'
       })
@@ -1104,10 +1130,7 @@ describe('useWorkspaceBilling', () => {
     })
 
     it('ignores hidden transitions and refreshes on the visible return', async () => {
-      vi.stubGlobal(
-        'open',
-        vi.fn(() => ({}) as Window)
-      )
+      stubPortalTab()
       mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
         url: 'https://billing.example/portal'
       })
@@ -1127,10 +1150,7 @@ describe('useWorkspaceBilling', () => {
     })
 
     it('replaces pending return listeners on repeated portal opens', async () => {
-      vi.stubGlobal(
-        'open',
-        vi.fn(() => ({}) as Window)
-      )
+      stubPortalTab()
       mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
         url: 'https://billing.example/portal'
       })
@@ -1150,10 +1170,7 @@ describe('useWorkspaceBilling', () => {
     })
 
     it('removes pending return listeners when its scope is disposed', async () => {
-      vi.stubGlobal(
-        'open',
-        vi.fn(() => ({}) as Window)
-      )
+      stubPortalTab()
       mockWorkspaceApi.getPaymentPortalUrl.mockResolvedValue({
         url: 'https://billing.example/portal'
       })
