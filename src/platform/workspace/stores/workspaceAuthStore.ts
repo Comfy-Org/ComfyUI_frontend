@@ -13,8 +13,12 @@ import {
   isPermanentSessionError
 } from '@comfyorg/account-core/session'
 
+import { zCurrentWorkspaceResponse } from '@comfyorg/ingest-types/zod'
+
 import { t } from '@/i18n'
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
+import type { WebSessionRequests } from '@/platform/auth/session/webSessionFetch'
+import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
@@ -189,11 +193,49 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
   }
 
   function switchWorkspace(workspaceId: string): Promise<void> {
+    const requests = webSessionRequests()
+    if (requests) return switchSessionWorkspace(requests, workspaceId)
+
+    return switchTokenWorkspace(workspaceId)
+  }
+
+  /** The session selects a workspace by header; the role comes from ingest. */
+  async function switchSessionWorkspace(
+    requests: WebSessionRequests,
+    workspaceId: string
+  ): Promise<void> {
+    const scope = await requests.scope()
+    if (!scope) return switchTokenWorkspace(workspaceId)
+
+    currentWorkspace.value = null
+    const response = await requests.send(
+      workspaceApiUrl('/workspaces/current'),
+      { method: 'GET', cache: 'no-store' },
+      { ...scope, workspaceId }
+    )
+    const current = zCurrentWorkspaceResponse.safeParse(
+      response.ok ? await response.json() : undefined
+    )
+    if (!current.success || current.data.id !== workspaceId) {
+      throw new WorkspaceAuthError(
+        `Workspace switch refused with ${response.status}`
+      )
+    }
+    const { id, name, type, role = 'member' } = current.data
+    currentWorkspace.value = { id, name, type, role }
+  }
+
+  function switchTokenWorkspace(workspaceId: string): Promise<void> {
     if (flags.unifiedCloudAuthEnabled) {
       return switchUnifiedWorkspace(workspaceId)
     }
 
     return switchLegacyWorkspace(workspaceId)
+  }
+
+  function dropDeniedWorkspace(workspaceId: string): void {
+    if (currentWorkspace.value?.id !== workspaceId) return
+    endWorkspaceSession(workspaceId)
   }
 
   // --- Unified Cloud-JWT lifecycle (flag-gated: unified_cloud_auth) ----------
@@ -621,6 +663,7 @@ export const useWorkspaceAuthStore = defineStore('workspaceAuth', () => {
     getUnifiedToken,
     getUnifiedSessionClient,
     getUnifiedMintWorkspaceId,
-    clearWorkspaceContext
+    clearWorkspaceContext,
+    dropDeniedWorkspace
   }
 })
