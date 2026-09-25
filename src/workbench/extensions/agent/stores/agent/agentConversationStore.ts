@@ -471,22 +471,50 @@ export const useAgentConversationStore = defineStore(
     }
 
     /**
-     * Whether the row can stand in for the stash. Equal counts as superseding:
-     * a stash that received every delta but never the done frame holds exactly
-     * what the row holds, and reinstating it would leave the turn streaming
-     * with no transport left to finish it. Both dimensions have to be covered
-     * -- text for the reply, part count for the tool calls the row may not
-     * have caught up on -- so a stash holding anything extra still wins.
+     * Whether the row can stand in for the stash, compared on reply text only.
+     * Equal counts as superseding: a stash that received every delta but never
+     * the done frame holds exactly what the row holds, and reinstating it
+     * would leave the turn streaming with no transport left to finish it.
+     *
+     * Part counts are deliberately NOT compared. They are drawn from different
+     * alphabets -- a row carries tool parts and one text part, while a live
+     * transport also emits thinking, tab links and a fresh text part after
+     * each interruption -- so a narrated turn normally has more live parts
+     * than row parts, and requiring the row to match would strand exactly the
+     * turns this is meant to rescue. Nothing is lost by ignoring them: the
+     * call site has already excluded streaming rows, so a row that reaches
+     * here carries every tool call the service recorded.
      */
     function supersedesLiveReply(
       hydrated: AssistantMessage,
       live: AssistantMessage
     ): boolean {
       if (live.parts.length === 0) return hydrated.parts.length > 0
-      return (
-        replyTextLength(hydrated) >= replyTextLength(live) &&
-        hydrated.parts.length >= live.parts.length
+      return replyTextLength(hydrated) >= replyTextLength(live)
+    }
+
+    /**
+     * The row wins, but the service wrote it and never saw the parts only a
+     * live transport produces. Tab links, and any tool call the row has not
+     * caught up on, ride onto it. Thinking is left behind on purpose: it is
+     * broadcast-only and never persisted, so a plain reload of this thread
+     * would not show it either.
+     */
+    function adoptLiveOnlyParts(
+      live: AssistantMessage,
+      hydrated: AssistantMessage
+    ): void {
+      const recordedCallIds = new Set(
+        hydrated.parts.flatMap((part) =>
+          part.type === 'tool' ? [part.callId] : []
+        )
       )
+      const carried = live.parts.filter(
+        (part) =>
+          part.type === 'tabLink' ||
+          (part.type === 'tool' && !recordedCallIds.has(part.callId))
+      )
+      if (carried.length > 0) hydrated.parts = [...hydrated.parts, ...carried]
     }
 
     function adoptHydratedTurn(
@@ -509,8 +537,10 @@ export const useAgentConversationStore = defineStore(
       if (
         !hydratedStreamingTurnIds.has(hydratedTurnId) &&
         supersedesLiveReply(hydrated, entry.message)
-      )
+      ) {
+        adoptLiveOnlyParts(entry.message, hydrated)
         return { keeps: 'hydrated', turnId: hydratedTurnId }
+      }
       kept.splice(index, 1)
       adoptPendingAsks(hydrated, entry.message)
       moveUserRecord(hydratedTurnId, entry.message.id)
