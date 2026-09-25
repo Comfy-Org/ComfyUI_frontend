@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-
 import { useReshootDemo } from '../../../../composables/useReshootDemo'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
@@ -34,10 +32,6 @@ const {
   selected,
   current
 } = demo
-
-const canReuse = computed(
-  () => current.value?.status === 'done' && current.value.id !== 'example'
-)
 </script>
 
 <template>
@@ -50,7 +44,7 @@ const canReuse = computed(
     <ReshootPick v-if="!picked" :locale @pick="demo.pick" />
     <div
       v-else
-      class="grid items-start gap-6 lg:grid-cols-[23rem_minmax(0,1fr)]"
+      class="grid items-start gap-6 lg:grid-cols-[27rem_minmax(0,1fr)]"
     >
       <ReshootSide
         v-model:upload="upload"
@@ -67,13 +61,11 @@ const canReuse = computed(
         :camera
         :keys
         :depth
-        :can-reuse="canReuse"
         :locale
         @aim="demo.aim"
         @key="demo.addKey"
         @remove-key="demo.removeKey"
         @clear-keys="keys = []"
-        @reuse="demo.reuse(selected)"
         @generate="demo.generate"
       />
       <ReshootStage
@@ -90,9 +82,11 @@ const canReuse = computed(
         @aim="demo.aim"
         @select="selected = $event"
         @cancel="demo.cancel"
+        @reuse="demo.reuse(selected)"
       />
     </div>
     <p class="text-center text-[11px] text-primary-warm-gray">
+      {{ rc('reshoot.credit', locale) }} ·
       {{ rc('reshoot.demoNote', locale) }}
     </p>
   </div>

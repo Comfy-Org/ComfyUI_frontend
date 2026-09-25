@@ -17,6 +17,12 @@ const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const emit = defineEmits<{ pick: [file?: File] }>()
 
+const SAMPLES = [
+  ['street', 'neon-street'],
+  ['diner', 'diner'],
+  ['train', 'train']
+] as const
+
 const EXAMPLES: readonly PlaygroundExample[] = [
   {
     id: 'crossview-example',
@@ -25,7 +31,15 @@ const EXAMPLES: readonly PlaygroundExample[] = [
     values: {},
     outputUrl: RESHOOT_EXAMPLE.clip,
     mediaKind: 'video'
-  }
+  },
+  ...SAMPLES.map(([key, image]) => ({
+    id: `sample-${key}`,
+    title: rc(`reshoot.sample.${key}`, locale),
+    specs: [rc('reshoot.sample.meta', locale)],
+    values: {},
+    outputUrl: `/images/cinematic-studio/${image}.jpg`,
+    mediaKind: 'image' as const
+  }))
 ]
 
 const over = ref(false)
@@ -73,7 +87,7 @@ function drop(event: DragEvent) {
     <label
       :class="
         cn(
-          'flex w-full cursor-pointer flex-col items-center gap-3 rounded-3xl border-[1.5px] border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-6 py-10 text-center transition-colors focus-within:border-primary-comfy-yellow hover:border-primary-warm-white/40',
+          'group/drop flex w-full cursor-pointer flex-col items-center gap-3 rounded-3xl border-[1.5px] border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-6 py-10 text-center transition-colors focus-within:border-primary-comfy-yellow hover:border-primary-warm-white/40',
           over && 'border-primary-comfy-yellow bg-transparency-white-t8'
         )
       "
@@ -81,7 +95,7 @@ function drop(event: DragEvent) {
       @dragleave="over = false"
       @drop.prevent="drop"
     >
-      <Upload class="size-8 text-primary-comfy-yellow" aria-hidden="true" />
+      <Upload class="size-8 text-primary-comfy-canvas" aria-hidden="true" />
       <span class="text-lg font-semibold text-primary-warm-white">
         {{ rc('reshoot.pick.drop', locale) }}
       </span>
@@ -89,7 +103,7 @@ function drop(event: DragEvent) {
         {{ rc('reshoot.clip.help', locale) }}
       </span>
       <span
-        class="mt-2 rounded-full bg-primary-comfy-yellow px-5 py-2.5 text-sm font-semibold text-primary-comfy-ink"
+        class="mt-2 rounded-full px-5 py-2.5 text-sm font-semibold text-primary-warm-white ring-1 ring-transparency-white-t20 transition-colors ring-inset group-hover/drop:bg-transparency-white-t8"
       >
         {{ rc('reshoot.pick.upload', locale) }}
       </span>

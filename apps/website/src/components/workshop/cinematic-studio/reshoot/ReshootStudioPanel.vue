@@ -25,6 +25,7 @@ const {
   motion,
   prompt,
   seed,
+  reuse,
   takes,
   selected,
   current,
@@ -113,6 +114,7 @@ function go(target: 1 | 2) {
             @aim="aim"
             @select="selected = $event"
             @cancel="cancel"
+            @reuse="reuse(selected)"
           />
         </div>
       </section>

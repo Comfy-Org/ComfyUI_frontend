@@ -43,6 +43,7 @@ const emit = defineEmits<{
   aim: [patch: Partial<ReshootCamera>]
   select: [id: string]
   cancel: []
+  reuse: []
 }>()
 
 const frameEl = useTemplateRef<HTMLElement>('frameEl')
@@ -72,6 +73,7 @@ const fileName = computed(
         :href="finished.url"
         :file-name="fileName"
         :locale
+        @reuse="emit('reuse')"
       />
       <div
         ref="frameEl"

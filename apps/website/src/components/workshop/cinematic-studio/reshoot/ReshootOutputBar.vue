@@ -1,5 +1,12 @@
 <script setup lang="ts">
-import { Clapperboard, Download, Film, Volume2, Waypoints } from '@lucide/vue'
+import {
+  Clapperboard,
+  Download,
+  Film,
+  RotateCcw,
+  Volume2,
+  Waypoints
+} from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -16,6 +23,8 @@ const {
   fileName: string
   locale?: Locale
 }>()
+
+const emit = defineEmits<{ reuse: [] }>()
 
 const view = defineModel<ReshootView>('view', { required: true })
 const sound = defineModel<ReshootSound>('sound', { required: true })
@@ -79,6 +88,14 @@ const optionClass = (active: boolean) =>
           {{ rc(`reshoot.sound.${option}`, locale) }}
         </button>
       </div>
+      <button
+        type="button"
+        class="flex h-10 items-center gap-1.5 rounded-full px-4 text-xs font-semibold text-primary-warm-white ring-1 ring-transparency-white-t20 transition-colors ring-inset hover:bg-transparency-white-t8"
+        @click="emit('reuse')"
+      >
+        <RotateCcw class="size-3.5" aria-hidden="true" />
+        {{ rc('reshoot.reuse', locale) }}
+      </button>
       <a
         :href
         :download="fileName"

@@ -25,8 +25,8 @@ const copy = {
     'zh-CN': '基于 Cseti 的 CrossView-Warp LoRA 与节点'
   },
   'reshoot.pick.lead': {
-    en: 'Pick a clip, aim a new camera at it, and get the same moment from another angle.',
-    'zh-CN': '选择一个片段，设置新的机位，从另一个角度得到同一时刻。'
+    en: 'Aim a new camera at your clip and get the same moment from another angle.',
+    'zh-CN': '为片段设置新机位，从另一个角度得到同一时刻。'
   },
   'reshoot.pick.drop': { en: 'Drop a video here', 'zh-CN': '将视频拖到这里' },
   'reshoot.pick.upload': { en: 'Upload a video', 'zh-CN': '上传视频' },
@@ -35,8 +35,8 @@ const copy = {
     'zh-CN': '无需上传即可试用'
   },
   'reshoot.aim.globe': {
-    en: 'Hold and drag to aim the camera',
-    'zh-CN': '按住并拖动以设置机位'
+    en: 'Drag the camera around your clip',
+    'zh-CN': '围绕片段拖动机位'
   },
   'reshoot.aim.more': {
     en: 'More: lens, height, keep aim',
@@ -84,20 +84,22 @@ const copy = {
     en: 'Opens once the scene is read, about 20 to 40 seconds.',
     'zh-CN': '场景读取完成后即可使用，约 20 到 40 秒。'
   },
-  'reshoot.eyebrow': { en: 'App · Prototype', 'zh-CN': '应用 · 原型' },
-  'reshoot.fact.input': {
-    en: '5 to 15 s video in',
-    'zh-CN': '输入 5 到 15 秒视频'
-  },
-  'reshoot.fact.size': { en: '480p or 768p', 'zh-CN': '480p 或 768p' },
-  'reshoot.fact.time': {
-    en: '1.5 to 5 min per take',
-    'zh-CN': '每条 1.5 到 5 分钟'
-  },
-  'reshoot.fact.sound': { en: 'New sound included', 'zh-CN': '包含新声音' },
   'reshoot.expand': { en: 'Full screen', 'zh-CN': '全屏' },
   'reshoot.collapse': { en: 'Exit full screen', 'zh-CN': '退出全屏' },
   'reshoot.pick.exampleTitle': { en: 'Sci-fi pilot', 'zh-CN': '科幻飞行员' },
+  'reshoot.sample.street': { en: 'Night street', 'zh-CN': '夜晚街道' },
+  'reshoot.sample.diner': { en: 'Diner talk', 'zh-CN': '餐馆对话' },
+  'reshoot.sample.train': { en: 'Train window', 'zh-CN': '火车车窗' },
+  'reshoot.sample.meta': { en: 'Sample', 'zh-CN': '示例' },
+  'reshoot.nudge.up': { en: 'Camera higher', 'zh-CN': '机位升高' },
+  'reshoot.nudge.down': { en: 'Camera lower', 'zh-CN': '机位降低' },
+  'reshoot.nudge.left': { en: 'Camera left', 'zh-CN': '机位向左' },
+  'reshoot.nudge.right': { en: 'Camera right', 'zh-CN': '机位向右' },
+  'reshoot.advanced': { en: 'Advanced', 'zh-CN': '高级' },
+  'reshoot.advanced.value': {
+    en: 'Prompt, dialogue, seed',
+    'zh-CN': '提示词、对白、种子'
+  },
   'reshoot.section.camera': { en: 'New camera', 'zh-CN': '新机位' },
   'reshoot.section.move': { en: 'Camera move', 'zh-CN': '运镜' },
   'reshoot.section.prompt': {

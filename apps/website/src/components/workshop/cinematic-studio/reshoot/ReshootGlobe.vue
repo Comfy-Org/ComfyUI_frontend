@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Video } from '@lucide/vue'
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from '@lucide/vue'
 import { computed, ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -31,7 +31,7 @@ const {
 
 const emit = defineEmits<{ aim: [patch: Partial<ReshootCamera>] }>()
 
-const SIZE = 240
+const SIZE = 264
 const R = SIZE * 0.4
 const C = SIZE / 2
 const MERIDIANS = [0, 30, 60].map((deg) => R * Math.cos((deg * Math.PI) / 180))
@@ -46,7 +46,16 @@ const STROKE: Readonly<Record<ReshootZone, string>> = {
   red: 'stroke-primary-comfy-red'
 }
 
+const SUBJECT = { w: 52, h: 32 }
 const marker = computed(() => globePoint(camera.azimuth, camera.elevation, R))
+const facing = computed(
+  () => (Math.atan2(-marker.value.y, -marker.value.x) * 180) / Math.PI
+)
+const cone = computed(() => {
+  const { x, y } = marker.value
+  const half = SUBJECT.h / 2
+  return `${x.toFixed(1)},${y.toFixed(1)} ${-SUBJECT.w / 2},${-half} ${SUBJECT.w / 2},${half}`
+})
 const label = computed(
   () =>
     `${rc('reshoot.aim.globe', locale)}: ${camera.azimuth}°, ${camera.elevation}°`
@@ -75,6 +84,33 @@ function drag(event: PointerEvent) {
   dragFrom.value = { x: event.clientX, y: event.clientY }
   nudge(dx * 0.6, -dy * 0.4)
 }
+
+const NUDGES = [
+  {
+    key: 'ArrowUp',
+    icon: ChevronUp,
+    label: 'reshoot.nudge.up',
+    place: 'top-0 left-1/2 -translate-x-1/2'
+  },
+  {
+    key: 'ArrowDown',
+    icon: ChevronDown,
+    label: 'reshoot.nudge.down',
+    place: 'bottom-0 left-1/2 -translate-x-1/2'
+  },
+  {
+    key: 'ArrowLeft',
+    icon: ChevronLeft,
+    label: 'reshoot.nudge.left',
+    place: 'top-1/2 left-0 -translate-y-1/2'
+  },
+  {
+    key: 'ArrowRight',
+    icon: ChevronRight,
+    label: 'reshoot.nudge.right',
+    place: 'top-1/2 right-0 -translate-y-1/2'
+  }
+] as const
 
 const KEYS: Readonly<Record<string, [number, number]>> = {
   ArrowLeft: [-5, 0],
@@ -145,26 +181,61 @@ function key(event: KeyboardEvent) {
         stroke-linecap="round"
         :class="STROKE[arc.zone]"
       />
-      <line
-        :x2="marker.x"
-        :y2="marker.y"
-        stroke-dasharray="3 4"
-        class="stroke-primary-comfy-yellow/50"
-      />
     </svg>
     <video
       :src="clip"
       muted
       playsinline
       preload="metadata"
-      class="pointer-events-none absolute top-1/2 left-1/2 h-11 w-17 -translate-1/2 rounded-lg object-cover ring-1 ring-transparency-white-t20"
+      class="pointer-events-none absolute top-1/2 left-1/2 -translate-1/2 rounded-md object-cover ring-1 ring-transparency-white-t20"
+      :style="{ width: `${SUBJECT.w}px`, height: `${SUBJECT.h}px` }"
     />
-    <span
-      class="pointer-events-none absolute grid size-8 -translate-1/2 place-items-center rounded-full bg-primary-comfy-yellow shadow-[0_0_0_4px_rgb(33_25_39/0.6)] transition-[left,top] duration-75"
-      :style="{ left: `${C + marker.x}px`, top: `${C + marker.y}px` }"
+    <svg
+      :width="SIZE"
+      :height="SIZE"
+      :viewBox="`${-C} ${-C} ${SIZE} ${SIZE}`"
       aria-hidden="true"
+      class="pointer-events-none absolute inset-0"
     >
-      <Video class="size-4 text-primary-comfy-ink" />
-    </span>
+      <polygon
+        :points="cone"
+        class="fill-primary-comfy-yellow/15 stroke-primary-comfy-yellow/40"
+        stroke-linejoin="round"
+      />
+      <g
+        :transform="`translate(${marker.x} ${marker.y}) rotate(${facing})`"
+        class="transition-transform duration-75"
+      >
+        <circle r="17" class="fill-primary-comfy-ink/70" />
+        <rect
+          x="-11"
+          y="-7"
+          width="14"
+          height="14"
+          rx="3"
+          class="fill-primary-comfy-yellow"
+        />
+        <path d="M3 -3 L11 -7 L11 7 L3 3 Z" class="fill-primary-comfy-yellow" />
+        <circle cx="-4" r="3" class="fill-primary-comfy-ink" />
+      </g>
+    </svg>
+    <button
+      v-for="nudgeButton in NUDGES"
+      :key="nudgeButton.key"
+      type="button"
+      tabindex="-1"
+      :disabled
+      :aria-label="rc(nudgeButton.label, locale)"
+      :class="
+        cn(
+          'absolute grid size-7 place-items-center rounded-full text-primary-warm-gray hover:bg-transparency-white-t8 hover:text-primary-warm-white disabled:pointer-events-none',
+          nudgeButton.place
+        )
+      "
+      @pointerdown.stop
+      @click="nudge(...KEYS[nudgeButton.key])"
+    >
+      <component :is="nudgeButton.icon" class="size-4" aria-hidden="true" />
+    </button>
   </div>
 </template>
