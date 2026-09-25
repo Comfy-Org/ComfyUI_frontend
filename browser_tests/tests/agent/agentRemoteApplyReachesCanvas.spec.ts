@@ -4,6 +4,7 @@ import { agentTest as test } from '@e2e/fixtures/agentPanelFixture'
 import {
   AGENT_NODE_IDS,
   addFiveLoadImageNodes,
+  addLoadImageNode,
   deleteNode
 } from '@e2e/fixtures/data/agent/agentRemoteApply'
 import { AgentRemoteApplyHarness } from '@e2e/fixtures/helpers/AgentRemoteApplyHarness'
@@ -135,9 +136,13 @@ test.describe(
       // re-seed, and the user-visible consequence of getting that wrong is a
       // doubled canvas -- which is what this asserts, without reading a single
       // frame.
-      await agent.reconnect()
+      const missedNodeId = 7_010_006
+      await agent.reconnect([addLoadImageNode(missedNodeId, 5)])
 
-      await expect.poll(() => agent.settledCanvasNodeIds()).toEqual(settled)
+      await expect(agent.node(missedNodeId)).toBeVisible()
+      await expect
+        .poll(() => agent.settledCanvasNodeIds())
+        .toEqual([...settled, String(missedNodeId)].sort())
       for (const nodeId of AGENT_NODE_IDS) {
         await expect(agent.node(nodeId)).toHaveCount(1)
       }

@@ -243,9 +243,10 @@ export class AgentRemoteApplyHarness {
    * Drops the socket and waits for the follower to re-subscribe and be
    * answered, so the caller can assert what the recovery did to the canvas.
    */
-  async reconnect(): Promise<void> {
+  async reconnect(missedOps: RecordedGraphOperation[] = []): Promise<void> {
     const before = this.hostSocket.subscribeCount()
     await this.hostSocket.disconnect()
+    if (missedOps.length > 0) this.applyOnHost(missedOps)
     await expect
       .poll(() => this.hostSocket.subscribeCount(), {
         message: 'the follower never resubscribed after the socket dropped',
