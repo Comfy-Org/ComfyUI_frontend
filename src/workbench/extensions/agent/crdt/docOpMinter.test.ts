@@ -9,7 +9,12 @@ import {
   emitGraphIntent,
   withGraphIntentSource
 } from '@/lib/litegraph/src/graphIntents'
-import { LGraph, LGraphNode, LiteGraph } from '@/lib/litegraph/src/litegraph'
+import {
+  LGraph,
+  LGraphEventMode,
+  LGraphNode,
+  LiteGraph
+} from '@/lib/litegraph/src/litegraph'
 import {
   createTestSubgraph,
   createTestSubgraphNode
@@ -247,6 +252,59 @@ describe('attachDocOpMinter', () => {
         }
       },
       {
+        command: 'set_node_field title',
+        act: (g: LGraph) => {
+          const { source } = seedGraph(g)
+          source.title = 'Renamed'
+          return {
+            op: 'set_node_field',
+            node_id: source.id,
+            field: 'title',
+            value: 'Renamed'
+          }
+        }
+      },
+      {
+        command: 'set_node_field mode',
+        act: (g: LGraph) => {
+          const { source } = seedGraph(g)
+          source.mode = LGraphEventMode.BYPASS
+          return {
+            op: 'set_node_field',
+            node_id: source.id,
+            field: 'mode',
+            value: LGraphEventMode.BYPASS
+          }
+        }
+      },
+      {
+        command: 'set_node_field flags.collapsed',
+        act: (g: LGraph) => {
+          const { source } = seedGraph(g)
+          source.collapse()
+          return {
+            op: 'set_node_field',
+            node_id: source.id,
+            field: 'flags.collapsed',
+            value: true
+          }
+        }
+      },
+      {
+        command: 'set_node_field flags.pinned',
+        act: (g: LGraph) => {
+          const { source } = seedGraph(g)
+          withGraphIntentSource('load', () => source.pin(true))
+          source.unpin()
+          return {
+            op: 'set_node_field',
+            node_id: source.id,
+            field: 'flags.pinned',
+            value: null
+          }
+        }
+      },
+      {
         command: 'clear',
         act: (g: LGraph) => {
           const { source, sink } = seedGraph(g)
@@ -270,6 +328,10 @@ describe('attachDocOpMinter', () => {
       sink.disconnectInput(0)
       source.connect(0, sink, 0)
       source.widgets![0].value = 7
+      source.title = 'Renamed'
+      source.mode = LGraphEventMode.NEVER
+      source.collapse()
+      source.pin()
       graph.remove(sink)
       graph.clear()
     })
@@ -308,19 +370,53 @@ describe('attachDocOpMinter', () => {
     expect(minted).toEqual([])
   })
 
-  it('snapshots a pasted node after its same-tick configure, folding the widget write into add_node', async () => {
+  it('snapshots a pasted node after its same-tick configure, folding the widget and field writes into add_node', async () => {
     const node = new TestSource()
     graph.add(node)
-    node.configure(fromPartial({ widgets_values: [7] }))
+    node.configure(fromPartial({ widgets_values: [7], title: 'Pasted' }))
     node.widgets![0].value = 9
+    node.mode = LGraphEventMode.BYPASS
     await afterFlush()
 
     expect(minted).toEqual([
       expect.objectContaining({
         op: 'add_node',
-        node: expect.objectContaining({ widgets_values: { steps: 9 } })
+        node: expect.objectContaining({
+          widgets_values: { steps: 9 },
+          title: 'Pasted',
+          mode: LGraphEventMode.BYPASS
+        })
       })
     ])
+  })
+
+  it('applies a minted field write to the document without touching the widget register', () => {
+    const { source } = seedGraph(graph)
+    const doc = mintDocFrom(graph)
+    const outcomes = applyMinted(doc, [
+      {
+        op: 'set_node_field',
+        node_id: source.id,
+        field: 'title',
+        value: 'Renamed'
+      },
+      {
+        op: 'set_node_field',
+        node_id: source.id,
+        field: 'flags.collapsed',
+        value: true
+      }
+    ])
+
+    expect(outcomes).toEqual(['applied', 'applied'])
+    const projected = project(doc, CATALOG).nodes.find(
+      (node) => String(node.id) === String(source.id)
+    )
+    expect(projected).toMatchObject({
+      title: 'Renamed',
+      flags: { collapsed: true },
+      widgets_values: [20, 'button-slot']
+    })
   })
 
   it('mints nothing for a node added and removed in the same tick', async () => {

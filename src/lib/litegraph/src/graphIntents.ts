@@ -18,6 +18,15 @@ import type { LLink } from './LLink'
 
 export type GraphIntentSource = 'local' | 'agent-remote' | 'load'
 
+/**
+ * A scalar node field written as its own register: `null` returns a flag to
+ * absent. Mirrors the wire vocabulary's `set_node_field` fields.
+ */
+export type NodeFieldWrite =
+  | { field: 'title'; value: string }
+  | { field: 'mode'; value: number }
+  | { field: 'flags.collapsed' | 'flags.pinned'; value: boolean | null }
+
 export type GraphIntent =
   | { type: 'add_node'; graph: LGraph; node: LGraphNode }
   | {
@@ -37,6 +46,7 @@ export type GraphIntent =
       value: unknown
       previous: unknown
     }
+  | ({ type: 'set_node_field'; graph: LGraph; nodeId: NodeId } & NodeFieldWrite)
 
 export type GraphIntentEvent = GraphIntent & { source: GraphIntentSource }
 
@@ -76,6 +86,24 @@ export function collectingSeveredLinks<T>(severed: LinkId[], fn: () => T): T {
   } finally {
     severedLinkSink = previous
   }
+}
+
+/**
+ * Announces a node field write. A node its graph does not hold yet (still
+ * being constructed or configured before `graph.add`) announces nothing: the
+ * `add_node` that follows carries the field.
+ */
+export function emitNodeFieldWrite(
+  node: LGraphNode,
+  write: NodeFieldWrite
+): void {
+  if (node.graph?.getNodeById(node.id) !== node) return
+  emitGraphIntent({
+    type: 'set_node_field',
+    graph: node.graph,
+    nodeId: node.id,
+    ...write
+  })
 }
 
 export function emitGraphIntent(intent: GraphIntent): void {

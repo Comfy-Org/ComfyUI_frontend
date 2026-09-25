@@ -83,6 +83,7 @@ import { anchorRerouteChain } from './Reroute'
 import type { Reroute, RerouteId } from './Reroute'
 import { getNodeInputOnPos, getNodeOutputOnPos } from './canvas/measureSlots'
 import type { IDrawBoundingOptions } from './draw'
+import { emitNodeFieldWrite } from './graphIntents'
 import { NullGraphError } from './infrastructure/NullGraphError'
 import type { ReadOnlyRectangle } from './infrastructure/Rectangle'
 import { Rectangle } from './infrastructure/Rectangle'
@@ -372,7 +373,8 @@ export class LGraphNode
   }
 
   set title(value: string) {
-    setTrackedNodeState(this, 'title', value)
+    if (setTrackedNodeState(this, 'title', value))
+      emitNodeFieldWrite(this, { field: 'title', value })
   }
   /**
    * The font style used to render the node's title text.
@@ -504,8 +506,10 @@ export class LGraphNode
   }
 
   set mode(value: LGraphEventMode) {
-    setTrackedNodeState(this, 'mode', value)
+    if (setTrackedNodeState(this, 'mode', value))
+      emitNodeFieldWrite(this, { field: 'mode', value })
   }
+
   get last_serialization(): ISerialisedNode | undefined {
     return this._state.lastSerialization
   }
@@ -1132,7 +1136,7 @@ export class LGraphNode
       }
     }
 
-    if (!info.title) {
+    if (!info.title && this.constructor.title) {
       this.title = this.constructor.title
     }
 
@@ -3758,6 +3762,10 @@ export class LGraphNode
     if (!this.graph) throw new NullGraphError()
     this.graph.incrementVersion()
     this.flags.collapsed = !this.flags.collapsed
+    emitNodeFieldWrite(this, {
+      field: 'flags.collapsed',
+      value: this.flags.collapsed
+    })
     this.setDirtyCanvas(true, true)
   }
 
@@ -3788,6 +3796,10 @@ export class LGraphNode
     this.flags.pinned = v ?? !this.flags.pinned
     this.resizable = !this.pinned
     if (!this.pinned) this.flags.pinned = undefined
+    emitNodeFieldWrite(this, {
+      field: 'flags.pinned',
+      value: this.flags.pinned ?? null
+    })
   }
 
   unpin(): void {

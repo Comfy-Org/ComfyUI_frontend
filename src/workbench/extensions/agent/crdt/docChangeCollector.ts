@@ -74,6 +74,8 @@ export class DocChangeCollector {
     if (event.target === this.nodesMap) this.onNodeEntriesChanged(event)
     else if (event.path.length === 1) this.onNodeFieldsChanged(event)
     else if (event.path[1] === 'widgets') this.onNamedWidgetsChanged(event)
+    else if (event.path[1] === 'flags')
+      this.resyncNodes.add(String(event.path[0]))
   }
 
   private onOpaqueWidgetsChanged(event: Y.YArrayEvent<unknown>): void {

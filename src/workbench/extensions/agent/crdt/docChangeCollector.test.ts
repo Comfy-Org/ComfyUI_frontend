@@ -109,6 +109,26 @@ describe('DocChangeCollector', () => {
     expect(changes.nodes.size).toBe(0)
   })
 
+  it('flags a node for field resync when one flag register changes inside its nested flags map', () => {
+    const { doc, collector } = setup()
+    doc.transact(() => {
+      nodesMap(doc)
+        .get('1')
+        ?.set('flags', new Y.Map([['pinned', true]]))
+    })
+    collector.take()
+
+    doc.transact(() => {
+      const flags = nodesMap(doc).get('1')?.get('flags')
+      if (!(flags instanceof Y.Map)) throw new Error('nested flags')
+      flags.set('collapsed', true)
+    })
+
+    const changes = collector.take()
+    expect(changes.resyncNodes).toEqual(new Set(['1']))
+    expect(changes.widgets.size).toBe(0)
+  })
+
   it('records link keys, clears on take, and stops observing after destroy', () => {
     const { doc, collector } = setup()
 

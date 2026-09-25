@@ -131,6 +131,29 @@ describe('LiveGraphApplier', () => {
     expect(node.flags).toEqual({ collapsed: true, ghost: true })
   })
 
+  it('mirrors one flag register written inside the document flags map onto the live node', () => {
+    const { graph, doc, collector, applier, applyCollected } = setup({
+      nodes: [sourceNode(1, { flags: { pinned: true } })],
+      links: []
+    })
+    applyCollected()
+    const node = graph.getNodeById(toNodeId(1))
+    if (!node) throw new Error('node 1 was not created')
+
+    const collapse = envelope({
+      op: 'set_node_field',
+      node_id: 1,
+      field: 'flags.collapsed',
+      value: true
+    })
+    expect(applyOps(doc, [collapse], CATALOG).outcomes).toEqual([
+      { op_id: collapse.op_id, outcome: 'applied' }
+    ])
+    applier.applyChanges(doc, collector.take(), CONTEXT)
+
+    expect(node.flags).toEqual({ pinned: true, collapsed: true })
+  })
+
   it('applies the rest of a frame when one operation throws, and reports it once', () => {
     const { graph, doc, applyCollected, applyEdit } = setup({
       nodes: [sourceNode(1)],

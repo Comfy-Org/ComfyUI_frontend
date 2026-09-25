@@ -312,6 +312,23 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
     })
   }
 
+  function mintSetNodeField(event: IntentOf<'set_node_field'>): void {
+    if (pendingAdds.has(nodeKey(event.graph.id, event.nodeId))) return
+    if (!isMintableRootScope(event.graph, 'set_node_field', event.nodeId))
+      return
+    const {
+      type: _type,
+      graph: _graph,
+      nodeId,
+      source: _source,
+      ...write
+    } = event
+    schedule({
+      kind: 'op',
+      operation: { op: 'set_node_field', node_id: nodeId, ...write }
+    })
+  }
+
   function mintRemoveNode(event: IntentOf<'remove_node'>): void {
     if (!isMintableRootScope(event.graph, 'node_delete', event.node.id)) return
     const key = nodeKey(event.graph.id, event.node.id)
@@ -455,6 +472,9 @@ export function attachDocOpMinter(deps: DocOpMinterDeps): DocOpMinter {
         return
       case 'set_widget':
         mintSetWidget(event)
+        return
+      case 'set_node_field':
+        mintSetNodeField(event)
         return
     }
   }

@@ -89,9 +89,11 @@ one applier, and it is not in the frontend.
   litegraph callbacks. No store action takes a remote-context parameter.
 - **Provenance is call-carried.** Every remote write runs inside
   `withGraphIntentSource('agent-remote', ...)` (`src/lib/litegraph/src/graphIntents.ts`)
-  and `layoutStore.withActor(actor, ...)`. `LGraph.add/remove/_addLink/_removeLink/clear`
-  and the widget value setter announce `GraphIntent` events tagged with that
-  source; `docOpMinter` mints `doc_ops` only from `local` intents. Layout
+  and `layoutStore.withActor(actor, ...)`. `LGraph.add/remove/_addLink/_removeLink/clear`,
+  the widget value setter, and the node `title`/`mode` setters plus
+  `collapse()`/`pin()` announce `GraphIntent` events tagged with that source;
+  `docOpMinter` mints `doc_ops` only from `local` intents (`set_node_field`
+  for the scalar fields, one register per `(node, field)`). Layout
   operations recorded while the applier writes are stamped with the remote
   actor instead of this session's, so layout listeners can tell a remote
   insertion from a local one. Minting no longer keys on layout source.
