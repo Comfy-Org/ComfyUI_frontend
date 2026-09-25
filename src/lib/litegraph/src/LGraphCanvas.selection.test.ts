@@ -1,4 +1,5 @@
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { Positionable, Rect } from '@/lib/litegraph/src/interfaces'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
@@ -501,6 +502,73 @@ describe('LGraphCanvas selection', () => {
 
       expect(canvas.selectedItems.size).toBe(0)
       expect(graph.nodes).toHaveLength(0)
+    })
+
+    it('highlights a link connected after the node was selected', () => {
+      a.addOutput('out', 'number')
+      b.addInput('in', 'number')
+      canvas.select(a)
+      expect(Object.keys(canvas.highlighted_links)).toHaveLength(0)
+
+      const link = a.connect(0, b, 0)
+      assert.exists(link)
+
+      expect(canvas.highlighted_links).toEqual({ [link.id]: true })
+    })
+
+    it('reuses the selection view while selection and topology are unchanged', () => {
+      const selectedKeys = vi.spyOn(useSelectionStore(), 'selectedKeys')
+      canvas.select(a)
+
+      expect(canvas.selected_nodes).toEqual({ [a.id]: a })
+      expect(canvas.highlighted_links).toEqual({})
+
+      expect(selectedKeys).toHaveBeenCalledOnce()
+
+      canvas.deselect(a)
+
+      expect(canvas.selected_nodes).toEqual({})
+      expect(selectedKeys).toHaveBeenCalledTimes(2)
+    })
+
+    it('supports legacy highlighted_links clear assignment', () => {
+      canvas.select(a)
+
+      expect(() => {
+        canvas.highlighted_links = {}
+      }).not.toThrow()
+    })
+
+    it('keeps selection reads bounded for a bulk collapse', () => {
+      const nodes = Array.from({ length: 32 }, (_, index) =>
+        addNode(graph, `Bulk ${index}`, 200 + index * 10, 200)
+      )
+      canvas.selectItems(nodes)
+      LGraphCanvas.active_canvas = canvas
+      graph._version++
+      const selectedKeys = vi.spyOn(useSelectionStore(), 'selectedKeys')
+
+      LGraphCanvas.onMenuNodeCollapse(
+        { content: 'Collapse' },
+        {},
+        new MouseEvent('click'),
+        fromPartial<Parameters<typeof LGraphCanvas.onMenuNodeCollapse>[3]>({}),
+        nodes[0]
+      )
+
+      expect(nodes.map((node) => node.collapsed)).toEqual(Array(32).fill(true))
+      expect(selectedKeys.mock.calls.length).toBeLessThanOrEqual(5)
+    })
+
+    it('assigning selected_nodes replaces the selection', () => {
+      canvas.select(a)
+
+      canvas.selected_nodes = { [b.id]: b }
+
+      expect(selectedTitles(canvas)).toEqual(['B'])
+      expect(canvas.selected_nodes).toEqual({ [b.id]: b })
+      expect(a.selected).toBe(false)
+      expect(b.selected).toBe(true)
     })
 
     it('records and removes every selectable kind', () => {
