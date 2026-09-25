@@ -47,11 +47,13 @@ function embeddedModelNames(
   )
 }
 
+const CORE_PACK_ID = 'comfy-core'
+
 function nodePack(
   properties: Record<string, unknown> | undefined
 ): NodePack | undefined {
   const id = getCnrIdFromProperties(properties)
-  if (!id) return undefined
+  if (!id || id === CORE_PACK_ID) return undefined
   const version = properties?.ver
   return typeof version === 'string' && version ? { id, version } : { id }
 }

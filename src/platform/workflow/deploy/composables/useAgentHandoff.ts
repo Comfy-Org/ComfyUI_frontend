@@ -24,6 +24,7 @@ export function useAgentHandoff() {
 
   function snapshot() {
     const workflow = workflowStore.activeWorkflow
+    workflow?.changeTracker.prepareForSave()
     const name =
       workflow?.filename.replace(/\.json$/i, '') || UNTITLED_WORKFLOW_NAME
     const graph = workflow?.activeState ?? {}
@@ -44,14 +45,18 @@ export function useAgentHandoff() {
    * same reason.
    */
   async function copyBrief(): Promise<boolean> {
-    const { graph, inputs } = snapshot()
-    const document = buildAgentHandoffDocument({
-      distribution: DISTRIBUTION,
-      inputs
-    })
     try {
-      if (!(await copyToClipboard(document, { toastOnSuccess: false })))
+      const { graph, inputs } = snapshot()
+      const document = buildAgentHandoffDocument({
+        distribution: DISTRIBUTION,
+        inputs
+      })
+      if (!(await copyToClipboard(document, { toastOnSuccess: false }))) {
+        reportError(new Error('The clipboard refused the brief'), {
+          errorType: 'error_copying_deploy_agent_brief'
+        })
         return false
+      }
       if (isCloud) {
         downloadBlob(
           inputs.workflowFileName,

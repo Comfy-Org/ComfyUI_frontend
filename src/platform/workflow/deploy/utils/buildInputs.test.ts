@@ -110,7 +110,7 @@ describe('deriveBuildInputs', () => {
     )
 
     expect(inputs.nodeClasses).toEqual(['UpscaleModelLoader'])
-    expect(inputs.nodePacks).toEqual([{ id: 'comfy-core' }])
+    expect(inputs.nodePacks).toEqual([])
     expect(inputs.models).toEqual(['RealESRGAN_x4.pth'])
   })
 
@@ -149,7 +149,7 @@ describe('deriveBuildInputs', () => {
     )
 
     expect(inputs.nodeClasses).toEqual(['KSampler'])
-    expect(inputs.nodePacks).toEqual([{ id: 'comfy-core' }])
+    expect(inputs.nodePacks).toEqual([])
   })
 
   it('ignores widget values that are not model filenames', () => {

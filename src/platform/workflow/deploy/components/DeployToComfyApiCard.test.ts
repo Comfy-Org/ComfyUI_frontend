@@ -110,6 +110,17 @@ describe('DeployToComfyApiCard', () => {
     )
   })
 
+  it('drops the copied label when a later copy fails', async () => {
+    const { user } = renderCard()
+    const button = screen.getByTestId('deploy-to-comfy-api-agent')
+    await user.click(button)
+    copyBrief.mockResolvedValueOnce(false)
+
+    await user.click(button)
+
+    expect(button).toHaveTextContent('Deploy with your agent')
+  })
+
   it('opens the developer platform and reports done', async () => {
     const open = vi.spyOn(window, 'open').mockImplementation(() => null)
     const { onDone, user } = renderCard()

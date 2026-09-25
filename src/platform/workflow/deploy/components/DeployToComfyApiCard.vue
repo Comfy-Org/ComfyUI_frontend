@@ -186,6 +186,7 @@ async function copyHandoff() {
     ? labelThatFits(button)
     : t('deployToComfyApi.copiedShort')
   isCopying.value = true
+  copiedLabel.value = undefined
   try {
     if (await copyBrief()) copiedLabel.value = label
   } finally {

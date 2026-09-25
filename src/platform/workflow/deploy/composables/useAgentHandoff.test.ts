@@ -32,7 +32,11 @@ function setActiveWorkflow(
   filename = 'portrait-upscale.json',
   activeState: Record<string, unknown> = GRAPH
 ) {
-  useWorkflowStore().activeWorkflow = fromPartial({ filename, activeState })
+  useWorkflowStore().activeWorkflow = fromPartial({
+    filename,
+    activeState,
+    changeTracker: { prepareForSave: vi.fn() }
+  })
 }
 
 describe('useAgentHandoff', () => {
@@ -105,17 +109,19 @@ describe('useAgentHandoff', () => {
     await expect(useAgentHandoff().copyBrief()).resolves.toBe(false)
 
     expect(downloadBlob).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
+      errorType: 'error_copying_deploy_agent_brief'
+    })
   })
 
-  it('reports a failure and tells the user, instead of leaving the click unanswered', async () => {
-    setActiveWorkflow()
-    const failure = new Error('clipboard unavailable')
-    copyToClipboard.mockRejectedValueOnce(failure)
+  it('reports a workflow it cannot read and tells the user, instead of leaving the click unanswered', async () => {
+    setActiveWorkflow('broken.json', { nodes: 5 })
     const toast = vi.spyOn(useToastStore(), 'add')
 
     await expect(useAgentHandoff().copyBrief()).resolves.toBe(false)
 
-    expect(reportError).toHaveBeenCalledWith(failure, {
+    expect(copyToClipboard).not.toHaveBeenCalled()
+    expect(reportError).toHaveBeenCalledWith(expect.any(TypeError), {
       errorType: 'error_copying_deploy_agent_brief'
     })
     expect(toast).toHaveBeenCalledWith(
@@ -125,6 +131,22 @@ describe('useAgentHandoff', () => {
       })
     )
     expect(downloadBlob).not.toHaveBeenCalled()
+  })
+
+  it('captures an edit still in a focused field before it reads the graph', async () => {
+    const prepareForSave = vi.fn()
+    useWorkflowStore().activeWorkflow = fromPartial({
+      filename: 'portrait-upscale.json',
+      activeState: GRAPH,
+      changeTracker: { prepareForSave }
+    })
+
+    await useAgentHandoff().copyBrief()
+
+    expect(prepareForSave).toHaveBeenCalled()
+    expect(prepareForSave.mock.invocationCallOrder[0]).toBeLessThan(
+      copyToClipboard.mock.invocationCallOrder[0]
+    )
   })
 
   it('names an unsaved workflow "workflow"', () => {
