@@ -1,12 +1,13 @@
 import { computed, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast'
+import type { ToastId } from '@/components/ui/toast'
 import { isCloud, isDesktop } from '@/platform/distribution/types'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useSurveyFeatureTracking } from '@/platform/surveys/useSurveyFeatureTracking'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { TemplateInput } from '@/platform/workflow/templates/schemas/templateSchema'
 import { syncCompletedTemplateInputsWithCurrentGraph } from '@/platform/workflow/templates/composables/useTemplateInputDownloadGraphSync'
 import { useWorkflowTemplatesStore } from '@/platform/workflow/templates/repositories/workflowTemplatesStore'
@@ -192,7 +193,7 @@ export function useTemplateWorkflows() {
   }
 
   function showTemplateError(detail: string) {
-    useToastStore().add({ severity: 'error', summary: t('g.error'), detail })
+    useToast().error(t('g.error'), { description: detail })
   }
 
   function reportTemplateError(error: unknown) {
@@ -208,10 +209,13 @@ export function useTemplateWorkflows() {
     inputs: TemplateInput[],
     signal: AbortSignal
   ) {
-    const toast = useToastStore()
-    const progress = {
-      severity: 'info' as const,
-      summary: t('templateWorkflows.preparingMedia')
+    const toast = useToast()
+    let progressToastId: ToastId | undefined
+    function showPreparingMediaToast() {
+      progressToastId ??= toast.loading(t('templateWorkflows.preparingMedia'))
+    }
+    function dismissPreparingMediaToast() {
+      if (progressToastId !== undefined) toast.dismiss(progressToastId)
     }
     let preparedJson: ComfyWorkflowJSON | LegacyLoadableWorkflow = workflow
     const errors: unknown[] = []
@@ -221,9 +225,7 @@ export function useTemplateWorkflows() {
         inputs,
         signal,
         useSettingStore().get('Comfy.Workflow.NamedValuesRestore'),
-        () => {
-          toast.add(progress)
-        }
+        showPreparingMediaToast
       )
       errors.push(...result.errors)
       preparedJson = result.workflow
@@ -236,7 +238,7 @@ export function useTemplateWorkflows() {
       signal.throwIfAborted()
       errors.push(error)
     } finally {
-      toast.remove(progress)
+      dismissPreparingMediaToast()
     }
     if (errors.length) {
       reportError(
@@ -246,11 +248,9 @@ export function useTemplateWorkflows() {
           errorType: 'error_loading_template_media'
         }
       )
-      toast.add({
-        severity: 'warn',
-        summary: t('g.warning'),
-        detail: t('templateWorkflows.error.preparingMedia'),
-        life: 8000
+      toast.warning(t('g.warning'), {
+        description: t('templateWorkflows.error.preparingMedia'),
+        duration: 8000
       })
     }
     return preparedJson

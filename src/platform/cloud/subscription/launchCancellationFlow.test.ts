@@ -6,7 +6,7 @@ import type { BillingType } from '@/composables/billing/types'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import type { BillingRail } from '@/platform/workspace/api/workspaceApi'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
@@ -314,7 +314,7 @@ describe('launchCancellationFlow', () => {
           level
         })
       )
-      expect(vi.mocked(useToastStore().add).mock.calls.length > 0).toBe(toast)
+      expect(useToast().toasts.length > 0).toBe(toast)
     }
   )
 })

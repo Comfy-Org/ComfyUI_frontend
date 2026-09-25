@@ -1,5 +1,6 @@
+import { useToast } from '@/components/ui/toast'
 import { useDialogStore } from '@/stores/dialogStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
@@ -10,7 +11,6 @@ import { useLayerEditor } from './useLayerEditor'
 vi.mock(import('@/i18n'))
 
 beforeEach(() => {
-  vi.mocked(useToastStore().add).mockImplementation(() => undefined)
   vi.mocked(useNodeOutputStore().getNodeImageUrls).mockImplementation(
     () => undefined
   )
@@ -29,11 +29,9 @@ describe('useLayerEditor', () => {
     ])
     useLayerEditor().openLayerEditor(node)
     expect(useDialogStore().showDialog).not.toHaveBeenCalled()
-    expect(useToastStore().add).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'info',
-        detail: 'layerEditor.needsTwoImages'
-      })
+    expect(useToast().info).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ description: 'layerEditor.needsTwoImages' })
     )
   })
 

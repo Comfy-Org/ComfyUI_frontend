@@ -5,10 +5,10 @@ import type {
 
 import { supportsInAppCancellation } from '@/composables/billing/billingRail'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useToast } from '@/components/ui/toast'
 import { t } from '@/i18n'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { WorkspaceApiError } from '@/platform/workspace/api/workspaceApiError'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
@@ -116,10 +116,8 @@ function reportFlowNotShown(error: unknown, workspaceStillCurrent: boolean) {
     level: workspaceStillCurrent ? 'error' : 'warning'
   })
   if (!workspaceStillCurrent) return
-  useToastStore().add({
-    severity: 'error',
-    summary: t('subscription.cancelDialog.failed'),
-    life: 8000
+  useToast().error(t('subscription.cancelDialog.failed'), {
+    duration: 8000
   })
 }
 

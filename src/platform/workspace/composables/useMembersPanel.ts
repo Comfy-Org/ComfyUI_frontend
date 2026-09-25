@@ -1,6 +1,6 @@
 import type { MenuItem } from '@/components/ui/menu/types'
 import { storeToRefs } from 'pinia'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { computed, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -357,16 +357,9 @@ export function useMembersPanel() {
     if (!permissions.value.canManageInvites) return
     try {
       await resendInvite(invite.id)
-      toast.add({
-        severity: 'success',
-        summary: t('workspacePanel.toast.inviteResent'),
-        life: 2000
-      })
+      toast.success(t('workspacePanel.toast.inviteResent'), { duration: 2000 })
     } catch {
-      toast.add({
-        severity: 'error',
-        summary: t('workspacePanel.toast.inviteResendFailed')
-      })
+      toast.error(t('workspacePanel.toast.inviteResendFailed'))
     }
   }
 

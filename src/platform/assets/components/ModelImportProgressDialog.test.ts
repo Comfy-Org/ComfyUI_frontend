@@ -5,8 +5,8 @@ import { describe, expect, it, vi } from 'vitest'
 import { nextTick } from 'vue'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
+import { useToast } from '@/components/ui/toast'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetDownloadStore } from '@/stores/assetDownloadStore'
 
 import ModelImportProgressDialog from './ModelImportProgressDialog.vue'
@@ -52,8 +52,7 @@ describe('ModelImportProgressDialog cancellation', () => {
   it('reports cancellation failures and shows the error toast', async () => {
     const user = userEvent.setup()
     const store = renderDialog()
-    const toastStore = useToastStore()
-    const addToast = vi.spyOn(toastStore, 'add')
+    const errorToast = vi.spyOn(useToast(), 'error')
     const error = new Error('Cancellation unavailable')
     vi.spyOn(store, 'cancelDownload').mockResolvedValue({ ok: false, error })
 
@@ -66,10 +65,8 @@ describe('ModelImportProgressDialog cancellation', () => {
         errorType: 'asset_download_cancellation_failure',
         logToConsole: false
       })
-      expect(addToast).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Cancellation unavailable'
+      expect(errorToast).toHaveBeenCalledWith('Error', {
+        description: 'Cancellation unavailable'
       })
     })
   })

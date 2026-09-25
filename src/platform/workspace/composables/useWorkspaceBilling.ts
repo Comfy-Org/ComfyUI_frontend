@@ -13,13 +13,13 @@ import type {
   PreviewSubscribeInput
 } from '@comfyorg/account-core/billing'
 
+import { useToast } from '@/components/ui/toast'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
 import { useBillingPlans } from '@/platform/cloud/subscription/composables/useBillingPlans'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import type { SubscriptionDialogOptions } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { reportError } from '@/platform/telemetry/reportError'
 import { categorizeBillingApiError } from '@/platform/telemetry/utils/billingFailureCategory'
 import { createBillingPortalReporter } from '@/platform/telemetry/utils/billingPortalTelemetry'
@@ -584,10 +584,8 @@ export function useWorkspaceBilling(): WorkspaceBilling {
   }
 
   function reportBillingTabBlocked(): void {
-    useToastStore().add({
-      severity: 'warn',
-      summary: t('g.warning'),
-      detail: t('subscription.billingTabBlocked')
+    useToast().warning(t('g.warning'), {
+      description: t('subscription.billingTabBlocked')
     })
   }
 

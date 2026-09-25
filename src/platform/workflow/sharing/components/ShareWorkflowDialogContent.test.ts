@@ -15,10 +15,15 @@ vi.mock(import('@/platform/telemetry'))
 const mockToast = vi.hoisted(() => ({ add: vi.fn() }))
 
 vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
+  import('@/components/ui/toast'),
 
   () => ({
-    useToast: () => mockToast
+    useToast: () => ({
+      success: mockToast.add,
+      error: mockToast.add,
+      info: mockToast.add,
+      warning: mockToast.add
+    })
   })
 )
 

@@ -8,7 +8,7 @@ import { i18n } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useFeatureUsageTracker } from '@/platform/surveys/useFeatureUsageTracker'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { api } from '@/scripts/api'
 import { app } from '@/scripts/app'
 import { useTemplateWorkflows } from '@/platform/workflow/templates/composables/useTemplateWorkflows'
@@ -221,12 +221,12 @@ describe('useTemplateWorkflows', () => {
       'not-started'
     )
 
-    expect(useToastStore().messagesToAdd).toEqual([
-      {
-        severity: 'error',
-        summary: i18n.global.t('g.error'),
-        detail: i18n.global.t('templateWorkflows.error.loading')
-      }
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: i18n.global.t('g.error'),
+        description: i18n.global.t('templateWorkflows.error.loading')
+      })
     ])
     expect(fetch).not.toHaveBeenCalled()
     expect(app.loadGraphData).not.toHaveBeenCalled()
@@ -252,14 +252,14 @@ describe('useTemplateWorkflows', () => {
       'not-started'
     )
 
-    expect(useToastStore().messagesToAdd).toEqual([
-      {
-        severity: 'error',
-        summary: i18n.global.t('g.error'),
-        detail: i18n.global.t('templateWorkflows.error.templateNotFound', {
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: i18n.global.t('g.error'),
+        description: i18n.global.t('templateWorkflows.error.templateNotFound', {
           templateName: 'missing'
         })
-      }
+      })
     ])
     expect(fetch).not.toHaveBeenCalled()
     expect(app.loadGraphData).not.toHaveBeenCalled()
@@ -892,9 +892,7 @@ describe('useTemplateWorkflows', () => {
         { openSource: 'template' }
       )
       expect(fetch).toHaveBeenCalledTimes(1)
-      expect(useToastStore().messagesToAdd).not.toContainEqual(
-        expect.objectContaining({ severity: 'info' })
-      )
+      expect(useToast().loading).not.toHaveBeenCalled()
     }
   )
 
@@ -939,8 +937,8 @@ describe('useTemplateWorkflows', () => {
       )
       expect(fetch).toHaveBeenCalledTimes(1)
       expect(api.fetchApi).not.toHaveBeenCalled()
-      expect(useToastStore().messagesToAdd).not.toContainEqual(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
     }
   )
@@ -993,10 +991,10 @@ describe('useTemplateWorkflows', () => {
       )
       expect(app.reloadNodeDefs).not.toHaveBeenCalled()
       expect(useDialogStore().closeDialog).toHaveBeenCalled()
-      expect(useToastStore().messagesToAdd).toContainEqual(
+      expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
-          severity: 'warn',
-          detail: expect.stringContaining('choose your own files')
+          kind: 'warning',
+          description: expect.stringContaining('choose your own files')
         })
       )
     }
@@ -1028,10 +1026,10 @@ describe('useTemplateWorkflows', () => {
     )
     expect(fetch).toHaveBeenCalledTimes(1)
     expect(api.fetchApi).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'warn',
-        detail: expect.stringContaining('choose your own files')
+        kind: 'warning',
+        description: expect.stringContaining('choose your own files')
       })
     )
   })
@@ -1126,10 +1124,10 @@ describe('useTemplateWorkflows', () => {
       surface: 'graph',
       errorType: 'error_loading_template'
     })
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'error',
-        detail: i18n.global.t('templateWorkflows.error.loading')
+        kind: 'error',
+        description: i18n.global.t('templateWorkflows.error.loading')
       })
     ])
     expect(second).toBe('not-started')
@@ -1160,7 +1158,7 @@ describe('useTemplateWorkflows', () => {
     expect(await second).toBe('loaded')
     expect(app.loadGraphData).toHaveBeenCalledOnce()
     expect(nextLoader.loadingTemplateId.value).toBeNull()
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
   })
 
   it('does not open the workflow when the loader unmounts while fetching the template', async () => {
@@ -1224,7 +1222,7 @@ describe('useTemplateWorkflows', () => {
       expect(requestSignal?.aborted).toBe(true)
       expect(loader.loadingTemplateId.value).toBeNull()
       expect(app.loadGraphData).not.toHaveBeenCalled()
-      expect(useToastStore().messagesToAdd).toEqual([])
+      expect(useToast().toasts).toEqual([])
     }
   )
 
@@ -1270,9 +1268,7 @@ describe('useTemplateWorkflows', () => {
 
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
       expect(
-        useToastStore().messagesToAdd.filter(
-          (message) => message.severity === 'error'
-        )
+        useToast().toasts.filter((message) => message.kind === 'error')
       ).toEqual([])
     }
   )
@@ -1326,9 +1322,7 @@ describe('useTemplateWorkflows', () => {
 
       expect(app.loadGraphData).toHaveBeenCalledTimes(1)
       expect(
-        useToastStore().messagesToAdd.filter(
-          (message) => message.severity === 'error'
-        )
+        useToast().toasts.filter((message) => message.kind === 'error')
       ).toEqual([])
     }
   )

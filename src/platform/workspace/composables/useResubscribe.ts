@@ -1,4 +1,4 @@
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -55,11 +55,7 @@ export function useResubscribe() {
           duration_ms: Date.now() - startedAt
         })
       }
-      toast.add({
-        severity: 'success',
-        summary: t('subscription.resubscribeSuccess'),
-        life: 5000
-      })
+      toast.success(t('subscription.resubscribeSuccess'), { duration: 5000 })
     } catch (error) {
       const detail =
         error instanceof Error && error.message.trim()
@@ -75,11 +71,7 @@ export function useResubscribe() {
           duration_ms: Date.now() - startedAt
         })
       })
-      toast.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail
-      })
+      toast.error(t('g.error'), { description: detail })
     } finally {
       isResubscribing.value = false
     }

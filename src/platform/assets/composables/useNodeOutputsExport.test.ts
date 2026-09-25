@@ -5,13 +5,13 @@ import { h } from 'vue'
 
 import { downloadFile } from '@/base/common/downloadUtil'
 import GlobalDialog from '@/components/dialog/GlobalDialog.vue'
+import { useToast } from '@/components/ui/toast'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { i18n } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import { assetService } from '@/platform/assets/services/assetService'
 import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useAssetExportStore } from '@/stores/assetExportStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
@@ -121,11 +121,11 @@ describe('useNodeOutputsExport', () => {
     await exportFromDialog(node, ['f2.exr'])
 
     await vi.waitFor(() => {
-      expect(useToastStore().messagesToAdd).toEqual([
+      expect(useToast().toasts).toEqual([
         expect.objectContaining({
-          severity: 'info',
-          summary: 'Preparing ZIP download...',
-          detail: 'Preparing ZIP export for 2 files'
+          kind: 'info',
+          title: 'Preparing ZIP download...',
+          description: 'Preparing ZIP export for 2 files'
         })
       ])
     })
@@ -226,10 +226,10 @@ describe('useNodeOutputsExport', () => {
         context: { count: 2 }
       })
     })
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'error',
-        detail: 'Failed to create ZIP export'
+        kind: 'error',
+        description: 'Failed to create ZIP export'
       })
     ])
     expect(useAssetExportStore().exportList).toEqual([])

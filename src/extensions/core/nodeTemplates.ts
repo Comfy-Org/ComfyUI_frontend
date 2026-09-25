@@ -3,7 +3,7 @@ import { t } from '@/i18n'
 import type { IContextMenuValue } from '@/lib/litegraph/src/types/contextMenu'
 import type { LGraphCanvas } from '@/lib/litegraph/src/litegraph'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useDialogService } from '@/services/dialogService'
 import type { ComfyExtension } from '@/types/comfy'
 import { deserialiseAndCreate } from '@/utils/vintageClipboard'
@@ -126,9 +126,9 @@ class ManageTemplates extends ComfyDialog {
       await api.storeUserData(file, templates, { stringify: false })
     } catch (error) {
       console.error(error)
-      useToastStore().addAlert(
-        error instanceof Error ? error.message : String(error)
-      )
+      useToast().warning('Alert', {
+        description: error instanceof Error ? error.message : String(error)
+      })
     }
   }
 
@@ -158,7 +158,9 @@ class ManageTemplates extends ComfyDialog {
 
   exportAll() {
     if (this.templates.length == 0) {
-      useToastStore().addAlert(t('toastMessages.noTemplatesToExport'))
+      useToast().warning('Alert', {
+        description: t('toastMessages.noTemplatesToExport')
+      })
       return
     }
 
@@ -406,7 +408,9 @@ const ext: ComfyExtension = {
                 data = JSON.parse(template.data)
               } catch (error) {
                 console.error('Failed to parse node template data', error)
-                useToastStore().addAlert(t('toastMessages.invalidTemplateData'))
+                useToast().warning('Alert', {
+                  description: t('toastMessages.invalidTemplateData')
+                })
                 return
               }
 

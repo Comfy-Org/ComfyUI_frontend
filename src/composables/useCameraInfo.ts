@@ -16,7 +16,7 @@ import {
 import type { NodeWithWidgets } from '@/extensions/core/cameraInfo/widgetBridge'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 
 const WIDGET_NAMES = [
   'mode',
@@ -65,9 +65,9 @@ export function useCameraInfo(nodeRef: MaybeRef<LGraphNode | null>) {
     } catch (error) {
       console.error('Failed to initialize CameraInfoViewport:', error)
       cleanup()
-      useToastStore().addAlert(
-        t('toastMessages.failedToInitializeCameraInfoViewer')
-      )
+      useToast().warning('Alert', {
+        description: t('toastMessages.failedToInitializeCameraInfoViewer')
+      })
     }
   }
 

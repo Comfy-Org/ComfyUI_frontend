@@ -49,7 +49,8 @@ test.describe('Top-up without a saved payment method', () => {
 
     await expect(
       page
-        .locator('.p-toast-message.p-toast-message-error')
+        .getByTestId('toast')
+        .and(page.locator('[data-toast-kind="error"]'))
         .getByText(/Add one via Settings → Plan & Credits → Manage billing/)
     ).toBeVisible()
   })

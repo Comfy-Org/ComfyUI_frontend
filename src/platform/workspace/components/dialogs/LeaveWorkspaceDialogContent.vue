@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -65,10 +65,8 @@ async function onLeave() {
     window.location.reload()
   } catch (error) {
     console.error('[LeaveWorkspaceDialog] Failed to leave workspace:', error)
-    toast.add({
-      severity: 'error',
-      summary: t('workspacePanel.toast.failedToLeaveWorkspace'),
-      detail: error instanceof Error ? error.message : t('g.unknownError')
+    toast.error(t('workspacePanel.toast.failedToLeaveWorkspace'), {
+      description: error instanceof Error ? error.message : t('g.unknownError')
     })
   } finally {
     loading.value = false

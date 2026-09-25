@@ -8,14 +8,14 @@ import DowngradeRemoveMembersDialogContent from './DowngradeRemoveMembersDialogC
 
 const mockToastAdd = vi.fn()
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: mockToastAdd,
+    error: mockToastAdd,
+    info: mockToastAdd,
+    warning: mockToastAdd
   })
-)
+}))
 
 const i18n = createI18n({
   legacy: false,

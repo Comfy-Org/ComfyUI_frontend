@@ -10,10 +10,10 @@ import type { FirebaseIdentity } from '@comfyorg/account-core/firebase'
 import type { WebSessionCommandResult } from '@comfyorg/account-core/webSession'
 import type { WebSessionIdentityState } from '@comfyorg/account-core/webSessionIdentity'
 
+import { useToast } from '@/components/ui/toast'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useCloudWebSessionStore } from '@/platform/auth/session/cloudWebSessionStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { ComfyWorkflow } from '@/platform/workflow/management/stores/workflowStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { api } from '@/scripts/api'
@@ -192,10 +192,10 @@ describe('UserPanel sign out of all devices', () => {
     expect(revokeAll.mock.invocationCallOrder[0]).toBeLessThan(
       vi.mocked(useAuthStore().logout).mock.invocationCallOrder[0]
     )
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'success',
-        summary: 'Signed out of all devices'
+        kind: 'success',
+        title: 'Signed out of all devices'
       })
     )
   })
@@ -236,7 +236,7 @@ describe('UserPanel sign out of all devices', () => {
 
     expect(revokeAll).not.toHaveBeenCalled()
     expect(useAuthStore().logout).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
   })
 
   it('keeps the user signed in and shows why when the revoke fails', async () => {
@@ -251,11 +251,11 @@ describe('UserPanel sign out of all devices', () => {
     await userEvent.click(screen.getByRole('button', signOutEverywhere))
 
     expect(useAuthStore().logout).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'error',
-        summary: "Couldn't sign out of all devices",
-        detail: enMessages.auth.webSession.token.unavailable
+        kind: 'error',
+        title: "Couldn't sign out of all devices",
+        description: enMessages.auth.webSession.token.unavailable
       })
     ])
     expect(screen.getByRole('button', signOutEverywhere)).toBeEnabled()

@@ -1,15 +1,21 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen, waitFor, within } from '@testing-library/vue'
+import { useClipboard } from '@vueuse/core'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { computed, ref } from 'vue'
 
 import { i18n } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { api } from '@/scripts/api'
 
 import type { ReplyAsset } from '../../../utils/replyAssets'
 import MessageFeedback from './MessageFeedback.vue'
 
-vi.mock(import('@/platform/telemetry/reportError'))
+const clipboard = vi.hoisted(() => ({ copy: vi.fn() }))
+
+vi.mock(import('@/platform/telemetry/reportError'), () => ({
+  reportError: vi.fn()
+}))
 
 vi.mock(import('@/scripts/api'))
 
@@ -17,6 +23,18 @@ vi.mock(import('@/platform/assets/utils/assetPreviewUtil'), () => ({
   isAssetPreviewSupported: () => false,
   findOutputAsset: async () => undefined
 }))
+
+vi.mock(import('@vueuse/core'), { spy: true })
+vi.mocked(useClipboard).mockImplementation(
+  () =>
+    ({
+      copy: clipboard.copy,
+      copyPending: ref(false),
+      copied: ref(false),
+      isSupported: computed(() => true),
+      text: ref('')
+    }) satisfies ReturnType<typeof useClipboard>
+)
 
 const markdownSource = '# Title\n\n**bold** move'
 
@@ -161,12 +179,9 @@ describe('MessageFeedback', () => {
     await user.click(download)
 
     await waitFor(() =>
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: '1 download failed'
-        })
-      )
+      expect(useToast().error).toHaveBeenCalledWith('Error', {
+        description: '1 download failed'
+      })
     )
     await waitFor(() => expect(download).toBeEnabled())
 

@@ -5,7 +5,7 @@ import { nextTick } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import * as registry from '@/services/comfyRegistryService'
 import type { components } from '@/types/comfyRegistryTypes'
 import { useComfyManagerStore } from '@/workbench/extensions/manager/stores/comfyManagerStore'
@@ -107,9 +107,9 @@ it.for([
   await userEvent.click(screen.getByRole('button', { name: 'Update' }))
 
   await waitFor(() => {
-    expect(useToastStore().add).toHaveBeenCalledWith(
-      expect.objectContaining({ severity })
-    )
+    expect(
+      useToast()[severity === 'warn' ? 'warning' : 'error']
+    ).toHaveBeenCalled()
   })
   expect(useComfyManagerStore().installPack.call).not.toHaveBeenCalled()
   expect(screen.getByRole('button', { name: 'Update' })).toBeEnabled()
@@ -152,9 +152,7 @@ it('skips switching when the selected version is already installed', async () =>
   await userEvent.click(screen.getByRole('button', { name: 'Update' }))
 
   await waitFor(() => {
-    expect(useToastStore().add).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'info' })
-    )
+    expect(useToast().info).toHaveBeenCalled()
   })
   expect(manager.installPack.call).not.toHaveBeenCalled()
 })

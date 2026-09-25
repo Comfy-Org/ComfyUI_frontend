@@ -8,14 +8,14 @@
     />
     <RouterView />
   </div>
-  <GlobalToast />
+  <Toaster />
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
 import { RouterView } from 'vue-router'
 
-import GlobalToast from '@/components/toast/GlobalToast.vue'
+import { Toaster } from '@/components/ui/toast'
 import { useDocumentDarkTheme } from '@/platform/cloud/onboarding/composables/useDocumentDarkTheme'
 
 useDocumentDarkTheme()

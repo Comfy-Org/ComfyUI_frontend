@@ -1,5 +1,5 @@
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 
 /**
  * Strategy for recovering from specific error conditions.
@@ -50,7 +50,7 @@ export interface ErrorRecoveryStrategy<
 }
 
 export function useErrorHandling() {
-  const toast = useToastStore()
+  const toast = useToast()
   const toastErrorHandler = (error: unknown) => {
     const isNetworkError =
       error instanceof TypeError &&
@@ -60,11 +60,7 @@ export function useErrorHandling() {
       : error instanceof Error
         ? error.message
         : t('g.unknownError')
-    toast.add({
-      severity: 'error',
-      summary: t('g.error'),
-      detail: message
-    })
+    toast.error(t('g.error'), { description: message })
     console.error(error)
   }
 

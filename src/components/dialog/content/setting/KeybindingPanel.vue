@@ -97,6 +97,7 @@ import { RovingFocusGroup } from 'reka-ui'
 
 import { showConfirmDialog } from '@/components/dialog/confirm/confirmDialog'
 import Button from '@/components/ui/button/Button.vue'
+import { useToast } from '@/components/ui/toast'
 import ContextMenu from '@/components/ui/menu/ContextMenu.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
@@ -116,7 +117,6 @@ import { useKeybindingService } from '@/platform/keybindings/keybindingService'
 import { useKeybindingStore } from '@/platform/keybindings/keybindingStore'
 import { useKeybindingPresetService } from '@/platform/keybindings/presetService'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useCommandStore } from '@/stores/commandStore'
 import { useDialogStore } from '@/stores/dialogStore'
 import { normalizeI18nKey } from '@/utils/formatUtil'
@@ -135,7 +135,7 @@ const settingStore = useSettingStore()
 const commandStore = useCommandStore()
 const dialogStore = useDialogStore()
 const { t } = useI18n()
-const toastStore = useToastStore()
+const toast = useToast()
 
 const presetNames = ref<string[]>([])
 
@@ -450,11 +450,9 @@ function resetAllKeybindings() {
         keybindingStore.resetAllKeybindings()
         await keybindingService.persistUserKeybindings()
         dialogStore.closeDialog(dialog)
-        toastStore.add({
-          severity: 'info',
-          summary: t('g.info'),
-          detail: t('g.allKeybindingsReset'),
-          life: 3000
+        toast.info(t('g.info'), {
+          description: t('g.allKeybindingsReset'),
+          duration: 3000
         })
       }
     }

@@ -13,7 +13,7 @@ import { nextTick, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 
 import en from '@/locales/en/main.json'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { api } from '@/scripts/api'
 import * as registryService from '@/services/comfyRegistryService'
 import type { components as RegistryComponents } from '@/types/comfyRegistryTypes'
@@ -27,6 +27,21 @@ type InstalledPacksResponse =
   ManagerComponents['schemas']['InstalledPacksResponse']
 type ManagerPackInstalled = ManagerComponents['schemas']['ManagerPackInstalled']
 type TaskExecutionStatus = ManagerComponents['schemas']['TaskExecutionStatus']
+
+function legacyToastMessages() {
+  return useToast().toasts.flatMap((toast) =>
+    toast.kind === 'custom'
+      ? []
+      : [
+          {
+            severity: toast.kind === 'warning' ? 'warn' : toast.kind,
+            summary: toast.title,
+            ...(toast.description ? { detail: toast.description } : {}),
+            ...(Number.isFinite(toast.duration) ? { life: toast.duration } : {})
+          }
+        ]
+  )
+}
 
 vi.mock(
   import('@/workbench/extensions/manager/services/comfyManagerService'),
@@ -238,10 +253,10 @@ describe('useComfyManagerStore', () => {
       expect(store.isPackInstalled('test-pack')).toBe(expectedInstalled)
       expect(store.installedPacks).toEqual(installed)
       expect(store.isProcessingTasks).toBe(false)
-      expect(useToastStore().messagesToAdd).toEqual(expectedToasts)
+      expect(legacyToastMessages()).toEqual(expectedToasts)
 
       api.dispatchCustomEvent('cm-task-completed', detail)
-      expect(useToastStore().messagesToAdd).toEqual(expectedToasts)
+      expect(legacyToastMessages()).toEqual(expectedToasts)
     }
   )
 
@@ -265,7 +280,7 @@ describe('useComfyManagerStore', () => {
     expect(store.isPackInstalling('test-pack')).toBe(false)
     expect(store.isPackInstalled('test-pack')).toBe(false)
     expect(store.isProcessingTasks).toBe(false)
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(legacyToastMessages()).toEqual([
       expect.objectContaining({
         severity: 'error',
         detail: 'Request rejected. Check the terminal.'
@@ -297,7 +312,7 @@ describe('useComfyManagerStore', () => {
     expect(store.isPackInstalling('test-pack')).toBe(true)
     expect(store.isProcessingTasks).toBe(true)
     expect(store.failedTasksIds).toEqual([])
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(legacyToastMessages()).toEqual([
       expect.objectContaining({ detail: 'Queue start temporarily unavailable' })
     ])
 
@@ -342,7 +357,7 @@ describe('useComfyManagerStore', () => {
     expect(store.isPackInstalling('test-pack')).toBe(false)
     expect(store.isPackInstalled('test-pack')).toBe(false)
     expect(store.isProcessingTasks).toBe(false)
-    expect(useToastStore().messagesToAdd.at(-1)).toEqual(
+    expect(legacyToastMessages().at(-1)).toEqual(
       expect.objectContaining({ severity: 'error', detail: result })
     )
   })
@@ -374,7 +389,7 @@ describe('useComfyManagerStore', () => {
     expect(store.isPackInstalling('pending-pack')).toBe(true)
     expect(store.isPackInstalling('rejected-pack')).toBe(false)
     expect(store.isProcessingTasks).toBe(true)
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(legacyToastMessages()).toEqual([
       expect.objectContaining({ severity: 'error', detail: 'Request rejected' })
     ])
   })
@@ -618,7 +633,7 @@ describe('useComfyManagerStore', () => {
       api.dispatchCustomEvent('cm-task-completed', detail)
       await nextTick()
       api.dispatchCustomEvent('cm-task-completed', detail)
-      expect(useToastStore().messagesToAdd).toEqual([
+      expect(legacyToastMessages()).toEqual([
         expect.objectContaining({
           severity: 'error',
           detail: 'Operation failed'
@@ -698,7 +713,7 @@ describe('useComfyManagerStore', () => {
       api.dispatchCustomEvent('cm-task-completed', detail)
       await nextTick()
       api.dispatchCustomEvent('cm-task-completed', detail)
-      expect(useToastStore().messagesToAdd).toHaveLength(toastCount)
+      expect(legacyToastMessages()).toHaveLength(toastCount)
     }
   )
 
@@ -743,7 +758,7 @@ describe('useComfyManagerStore', () => {
     expect(store.isTaskInProgress(taskId)).toBe(false)
     expect(store.succeededTasksLogs.map((log) => log.taskId)).toEqual([taskId])
     expect(store.failedTasksIds).toEqual([])
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(legacyToastMessages()).toEqual([])
 
     await store.enablePack({ id: 'other-pack', version: '1.0.0' })
     expect(store.isProcessingTasks).toBe(true)
@@ -932,7 +947,7 @@ describe('useComfyManagerStore', () => {
 
       expect(store.isProcessingTasks).toBe(true)
       expect(store.queueError).toBe(newerError)
-      expect(useToastStore().messagesToAdd).toEqual(expectedToasts)
+      expect(legacyToastMessages()).toEqual(expectedToasts)
     }
   )
 
@@ -963,7 +978,7 @@ describe('useComfyManagerStore', () => {
 
     expect(store.isProcessingTasks).toBe(true)
     expect(store.queueError).toBeNull()
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(legacyToastMessages()).toEqual([])
   })
 
   it('keeps a newer completion event when an earlier queue status request finishes', async () => {

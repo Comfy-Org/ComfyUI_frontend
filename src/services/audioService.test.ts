@@ -1,4 +1,4 @@
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { api } from '@/scripts/api'
@@ -6,6 +6,14 @@ import { useAudioService } from '@/services/audioService'
 
 const mockRegister = vi.hoisted(() => vi.fn())
 const mockConnect = vi.hoisted(() => vi.fn())
+
+vi.mock<unknown>(import('@/scripts/app'), () => ({
+  app: { canvas: {}, rootGraph: {} }
+}))
+
+const mockToastStore = vi.hoisted(() => ({
+  warning: vi.fn()
+}))
 
 vi.mock(import('extendable-media-recorder'), () => ({
   register: mockRegister
@@ -16,6 +24,10 @@ vi.mock(import('extendable-media-recorder-wav-encoder'), () => ({
 }))
 
 vi.mock(import('@/scripts/api'))
+
+beforeEach(() => {
+  vi.mocked(useToast().warning).mockImplementation(mockToastStore.warning)
+})
 
 describe('useAudioService', () => {
   let service: ReturnType<typeof useAudioService>
@@ -193,9 +205,9 @@ describe('useAudioService', () => {
         'Error uploading temp file: 500 - Internal Server Error'
       )
 
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'Error uploading temp file: 500 - Internal Server Error'
-      )
+      expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
+        description: 'Error uploading temp file: 500 - Internal Server Error'
+      })
     })
 
     it('should handle network errors', async () => {
@@ -226,11 +238,11 @@ describe('useAudioService', () => {
           `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
         )
 
-        expect(useToastStore().addAlert).toHaveBeenCalledWith(
-          `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
-        )
+        expect(mockToastStore.warning).toHaveBeenCalledWith('Alert', {
+          description: `Error uploading temp file: ${testCase.status} - ${testCase.statusText}`
+        })
 
-        vi.mocked(useToastStore().addAlert).mockClear()
+        mockToastStore.warning.mockClear()
       }
     })
 
