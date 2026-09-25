@@ -31,6 +31,12 @@ describe('t()', () => {
     ).toBe('ComfyUI 中的 Flux')
   })
 
+  it('keeps missing named values visible', () => {
+    expect(t('validation.minLength', 'en')).toBe(
+      'Must be at least {length} characters'
+    )
+  })
+
   it('renders escaped special characters literally', () => {
     expect(t('auth.errors.signupBlocked')).toContain('support@comfy.org')
   })
@@ -81,6 +87,15 @@ describe('tAround', () => {
       ).toEqual(parts)
     }
   )
+
+  it('rejects messages that repeat the markup slot', () => {
+    expect(() =>
+      tAround('models.faq.whatIs.localAnswer', 'en', 'name', {
+        description: 'a model',
+        count: 3
+      })
+    ).toThrow('repeats slot {name}')
+  })
 })
 
 describe('hasKey', () => {

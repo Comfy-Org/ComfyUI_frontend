@@ -4426,7 +4426,7 @@
     "hub": {
       "categories": "分类",
       "docs": "阅读文档",
-      "empty": "没有符合筛选条件的模板",
+      "empty": "没有符合筛选条件的工作流",
       "emptyHint": "试试移除一些筛选条件",
       "facets": {
         "allModels": "全部模型",
@@ -4455,7 +4455,7 @@
       "loadMore": "加载更多",
       "models": "模型",
       "search": "搜索工作流、模型、创作者...",
-      "showing": "显示 {shown} / {total} 个模板",
+      "showing": "显示 {shown} / {total} 个工作流",
       "sort": {
         "newest": "最新",
         "popular": "最受欢迎"
