@@ -4,7 +4,8 @@
  * operation exists; it never advances the machine itself.
  *
  * A server verdict outranks anything the host reports: a customer who backed
- * out of a page after the charge went through still sees the success.
+ * out of a page after the charge went through still sees the success. A
+ * challenge this tab completed is not offered again while the server settles.
  */
 import type {
   BillingDeclineReason,
@@ -84,6 +85,13 @@ function stepForReason(reason: PaymentReasonKey): PaymentStep {
   return PROCESSING_REASONS.has(reason) ? 'processing_error' : 'declined'
 }
 
+/** A completed challenge waits on the server, not on the customer. */
+function awaitsVerification(state: PendingBillingOperation): boolean {
+  const challengeOpen =
+    state.challenge !== undefined && state.challenge.status !== 'completed'
+  return challengeOpen || state.actionUrl !== undefined
+}
+
 function projectPending(
   state: PendingBillingOperation,
   hostStep: HostPaymentStep
@@ -102,8 +110,10 @@ function projectPending(
       ...(recoveryAction === undefined ? {} : { recoveryAction })
     }
   }
-  const parked = state.challenge !== undefined || state.actionUrl !== undefined
-  return { ...base, step: parked ? 'verifying' : 'preview' }
+  return {
+    ...base,
+    step: awaitsVerification(state) ? 'verifying' : 'preview'
+  }
 }
 
 export function projectPaymentStep(
