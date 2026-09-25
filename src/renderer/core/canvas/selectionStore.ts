@@ -18,27 +18,23 @@ export const useSelectionStore = defineStore('selection', () => {
   )
   const revision = ref(0)
 
-  function apply(scope: GraphScope, command: SelectionCommand): void {
+  function applyCommand(scope: GraphScope, command: SelectionCommand): void {
     const owners = roots.get(scope.rootGraphId)
     const current = owners?.get(scope.owningGraphId)
     let next: Set<SelectableKey>
     switch (command.type) {
       case 'selection.add':
         if (current) {
-          if (current.has(command.key)) return
           current.add(command.key)
-          revision.value++
           return
         }
         next = new Set([command.key])
         break
       case 'selection.remove':
-        if (current?.delete(command.key)) revision.value++
+        current?.delete(command.key)
         return
       case 'selection.clear':
-        if (!current?.size) return
-        current.clear()
-        revision.value++
+        current?.clear()
         return
       case 'selection.replace':
         next = new Set(command.keys)
@@ -48,7 +44,12 @@ export const useSelectionStore = defineStore('selection', () => {
 
     if (owners) owners.set(scope.owningGraphId, next)
     else roots.set(scope.rootGraphId, new Map([[scope.owningGraphId, next]]))
-    revision.value++
+  }
+
+  function apply(scope: GraphScope, command: SelectionCommand): void {
+    const before = selectedKeys(scope)
+    applyCommand(scope, command)
+    if (!isEqual(before, selectedKeys(scope))) revision.value++
   }
 
   function clearRoot(rootGraphId: RootGraphId): void {
