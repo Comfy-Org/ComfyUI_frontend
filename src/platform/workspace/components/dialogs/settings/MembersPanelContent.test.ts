@@ -39,6 +39,8 @@ const {
   mockActiveView,
   mockSearchQuery,
   mockPermissions,
+  mockIsPlanEnded,
+  mockIsSalesManagedPlan,
   mockUiConfig
 } = vi.hoisted(() => {
   // oxlint-disable-next-line typescript/no-require-imports, typescript/consistent-type-imports
@@ -53,6 +55,8 @@ const {
     mockShowViewTabs: ref(true),
     mockShowInviteButton: ref(true),
     mockIsInviteDisabled: ref(false),
+    mockIsPlanEnded: ref(false),
+    mockIsSalesManagedPlan: ref(false),
     mockFilteredMembers: ref<WorkspaceMember[]>([]),
     mockFilteredPendingInvites: ref<WorkspacePendingInvite[]>([]),
     mockMaxSeats: ref<number | null>(20),
@@ -108,6 +112,8 @@ vi.mock<unknown>(
       showViewTabs: mockShowViewTabs,
       showInviteButton: mockShowInviteButton,
       isInviteDisabled: mockIsInviteDisabled,
+      isPlanEnded: mockIsPlanEnded,
+      isSalesManagedPlan: mockIsSalesManagedPlan,
       inviteTooltip: computed(() => null),
       handleInviteMember: mockHandleInviteMember,
       personalWorkspaceMember: computed(() => ({
@@ -228,6 +234,8 @@ describe('MembersPanelContent', () => {
     mockShowViewTabs.value = true
     mockShowInviteButton.value = true
     mockIsInviteDisabled.value = false
+    mockIsPlanEnded.value = false
+    mockIsSalesManagedPlan.value = false
     mockActiveView.value = 'active'
     mockSearchQuery.value = ''
     mockPermissions.value = {
@@ -496,6 +504,41 @@ describe('MembersPanelContent', () => {
     expect(screen.queryByText('workspacePanel.members.upsellBanner')).toBeNull()
   })
 
+  describe('ended treatment gate (DES-1200)', () => {
+    it('shows the resume banner once a team plan has ended', () => {
+      mockIsPlanEnded.value = true
+      renderComponent()
+      expect(
+        screen.getByText('workspacePanel.members.endedTeamTitle')
+      ).toBeTruthy()
+      expect(
+        screen.getByText('workspacePanel.members.upsellBannerReactivate')
+      ).toBeTruthy()
+    })
+
+    it('routes an ended Enterprise plan to sales', () => {
+      mockIsPlanEnded.value = true
+      mockIsSalesManagedPlan.value = true
+      renderComponent()
+      expect(
+        screen.getByText('workspacePanel.members.endedEnterpriseTitle')
+      ).toBeTruthy()
+      expect(
+        screen.getByText('workspacePanel.members.upsellBannerEnterpriseEnded')
+      ).toBeTruthy()
+    })
+
+    it('shows no banner while a cancellation is merely scheduled', () => {
+      renderComponent()
+      expect(
+        screen.queryByText('workspacePanel.members.endedTeamTitle')
+      ).toBeNull()
+      expect(
+        screen.queryByText('workspacePanel.members.upsellBannerReactivate')
+      ).toBeNull()
+    })
+  })
+
   describe('not on team plan', () => {
     beforeEach(() => {
       mockMaxSeats.value = 1
@@ -533,14 +576,14 @@ describe('MembersPanelContent', () => {
       expect(mockShowTeamPlans).toHaveBeenCalled()
     })
 
-    it('lets an owner reactivate a lapsed Team plan', async () => {
+    it('lets an owner resume an ended Team plan', async () => {
       mockHasTeamPlan.value = true
-      mockHasLapsedTeamPlan.value = true
+      mockIsPlanEnded.value = true
       renderComponent()
 
       await userEvent.click(
         screen.getByRole('button', {
-          name: /workspacePanel\.members\.reactivateTeam/
+          name: /workspacePanel\.billingStatus\.ending\.reactivate/
         })
       )
       expect(mockShowTeamPlans).toHaveBeenCalled()

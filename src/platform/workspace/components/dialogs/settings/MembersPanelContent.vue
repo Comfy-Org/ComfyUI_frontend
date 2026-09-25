@@ -1,5 +1,23 @@
 <template>
   <div class="grow overflow-auto pt-6">
+    <!-- Upsell Banner -->
+    <MemberUpsellBanner
+      v-if="
+        !isPlanLoading &&
+        ((isInPersonalWorkspace && maxSeats === 1) || isPlanEnded) &&
+        permissions.canManageSubscription
+      "
+      :variant="
+        isPlanEnded
+          ? isSalesManagedPlan
+            ? 'contactSales'
+            : 'reactivate'
+          : 'upgrade'
+      "
+      @action="
+        isPlanEnded && isSalesManagedPlan ? handleContactUs() : showTeamPlans()
+      "
+    />
     <div
       class="flex size-full flex-col gap-2 rounded-2xl border border-interface-stroke p-6"
     >
@@ -197,16 +215,6 @@
         </div>
       </div>
     </div>
-    <!-- Upsell Banner -->
-    <MemberUpsellBanner
-      v-if="
-        !isPlanLoading &&
-        ((isInPersonalWorkspace && maxSeats === 1) || isCancelled) &&
-        permissions.canManageSubscription
-      "
-      :reactivate="hasLapsedTeamPlan"
-      @show-plans="showTeamPlans()"
-    />
     <!-- Need More Members Footer -->
     <div v-if="hasMemberSeats" class="flex items-center pt-2">
       <p class="text-sm text-muted-foreground">
@@ -242,9 +250,9 @@ const {
   activeView,
   maxSeats,
   isInPersonalWorkspace,
-  hasLapsedTeamPlan,
+  isPlanEnded,
+  isSalesManagedPlan,
   hasMemberSeats,
-  isCancelled,
   isPlanLoading,
   hasMultipleMembers,
   showSearch,

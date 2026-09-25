@@ -1,40 +1,73 @@
 <template>
-  <div
-    class="mt-4 flex w-full items-center justify-between gap-4 rounded-2xl border border-interface-stroke bg-secondary-background p-6 max-sm:flex-col max-sm:items-stretch"
-  >
-    <div class="flex items-center gap-2">
-      <i class="icon-[lucide--info] size-4 shrink-0 text-muted-foreground" />
-      <p class="m-0 text-sm text-muted-foreground">
-        {{
-          reactivate
-            ? $t('workspacePanel.members.upsellBannerReactivate')
-            : $t('workspacePanel.members.upsellBanner')
-        }}
-      </p>
-    </div>
-    <Button
-      variant="inverted"
-      size="lg"
-      class="max-sm:w-full"
-      @click="$emit('showPlans')"
+  <div class="@container mb-4">
+    <div
+      role="status"
+      class="flex flex-col gap-3 rounded-2xl border border-interface-stroke/60 bg-base-background p-4 @2xl:flex-row @2xl:items-center @2xl:gap-2"
     >
-      {{
-        reactivate
-          ? $t('workspacePanel.members.reactivateTeam')
-          : $t('workspacePanel.members.upgradeToTeam')
-      }}
-    </Button>
+      <div class="flex min-w-0 flex-1 flex-col gap-1">
+        <div class="flex items-center gap-2">
+          <i
+            class="icon-[lucide--circle-alert] size-4 shrink-0 text-muted-foreground"
+          />
+          <span v-if="title" class="text-sm text-base-foreground">
+            {{ title }}
+          </span>
+          <span v-else class="text-sm text-muted-foreground">{{ body }}</span>
+        </div>
+        <p v-if="title" class="m-0 pl-6 text-sm text-muted-foreground">
+          {{ body }}
+        </p>
+      </div>
+      <div class="flex shrink-0 flex-wrap items-center gap-2 pl-6 @2xl:pl-0">
+        <Button variant="secondary" size="lg" @click="$emit('action')">
+          {{ cta }}
+        </Button>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
 import Button from '@/components/ui/button/Button.vue'
 
-const { reactivate = false } = defineProps<{
-  reactivate?: boolean
+// 'upgrade': personal workspace pitching the Team plan (no title — a pitch,
+// not a state change). 'reactivate' / 'contactSales': the plan has ended
+// (billing_status inactive) and the route back differs by tier — self-serve
+// resumes in-product, Enterprise goes through sales (DES-1200).
+const { variant } = defineProps<{
+  variant: 'upgrade' | 'reactivate' | 'contactSales'
 }>()
 
 defineEmits<{
-  showPlans: []
+  action: []
 }>()
+
+const { t } = useI18n()
+
+const title = computed(() => {
+  if (variant === 'reactivate')
+    return t('workspacePanel.members.endedTeamTitle')
+  if (variant === 'contactSales')
+    return t('workspacePanel.members.endedEnterpriseTitle')
+  return null
+})
+
+const body = computed(() => {
+  if (variant === 'reactivate')
+    return t('workspacePanel.members.upsellBannerReactivate')
+  if (variant === 'contactSales')
+    return t('workspacePanel.members.upsellBannerEnterpriseEnded')
+  return t('workspacePanel.members.upsellBanner')
+})
+
+const cta = computed(() => {
+  if (variant === 'reactivate')
+    return t('workspacePanel.billingStatus.ending.reactivate')
+  if (variant === 'contactSales')
+    return t('workspacePanel.members.contactSales')
+  return t('workspacePanel.members.upgradeToTeam')
+})
 </script>

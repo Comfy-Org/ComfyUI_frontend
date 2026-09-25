@@ -7,11 +7,14 @@ const meta: Meta<typeof MemberUpsellBanner> = {
   component: MemberUpsellBanner,
   tags: ['autodocs'],
   argTypes: {
-    reactivate: { control: 'boolean' },
-    onShowPlans: { action: 'showPlans' }
+    variant: {
+      control: 'select',
+      options: ['upgrade', 'reactivate', 'contactSales']
+    },
+    onAction: { action: 'action' }
   },
   args: {
-    reactivate: false
+    variant: 'upgrade'
   },
   decorators: [
     (story) => ({
@@ -24,24 +27,31 @@ const meta: Meta<typeof MemberUpsellBanner> = {
 export default meta
 type Story = StoryObj<typeof meta>
 
-// Workspace that never subscribed to a team plan: acquisition copy.
+// Personal workspace pitching the Team plan: acquisition copy, no title.
 export const Upgrade: Story = {
-  args: { reactivate: false }
+  args: { variant: 'upgrade' }
 }
 
-// Team plan that was subscribed and has since been cancelled or ended: win-back
-// copy (driven by hasLapsedTeamPlan → subscriptionStatus 'canceled' | 'ended').
+// Team plan past its end date (subscription_status 'ended'): win-back copy
+// with the in-product resume action. Cancel-scheduled plans show no banner
+// at all — invites stay live until the plan actually ends (DES-1200).
 export const Reactivate: Story = {
-  args: { reactivate: true }
+  args: { variant: 'reactivate' }
 }
 
-export const BothStates: Story = {
+// Ended Enterprise: the route back is sales, not a resume button.
+export const ContactSales: Story = {
+  args: { variant: 'contactSales' }
+}
+
+export const AllStates: Story = {
   render: () => ({
     components: { MemberUpsellBanner },
     template: `
       <div class="flex flex-col gap-4">
-        <MemberUpsellBanner :reactivate="false" />
-        <MemberUpsellBanner :reactivate="true" />
+        <MemberUpsellBanner variant="upgrade" />
+        <MemberUpsellBanner variant="reactivate" />
+        <MemberUpsellBanner variant="contactSales" />
       </div>
     `
   })

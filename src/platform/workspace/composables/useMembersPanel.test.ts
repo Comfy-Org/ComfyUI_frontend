@@ -310,10 +310,11 @@ const {
     mockIsTeamPlan: ref(true),
     mockSubscriptionStatus: ref<BillingSubscriptionStatus | null>('active'),
     mockWorkspaceRole: ref<'owner' | 'member'>('owner'),
-    mockSubscription: ref<Pick<
-      SubscriptionInfo,
-      'tier' | 'isCancelled'
-    > | null>({ tier: 'PRO', isCancelled: false })
+    mockSubscription: ref<
+      | (Pick<SubscriptionInfo, 'tier' | 'isCancelled'> &
+          Partial<Pick<SubscriptionInfo, 'endDate'>>)
+      | null
+    >({ tier: 'PRO', isCancelled: false })
   }
 })
 
@@ -1043,13 +1044,78 @@ describe('useMembersPanel', () => {
       expect(panel.isInviteDisabled.value).toBe(false)
     })
 
-    it('disables the invite button when the team plan is cancelled', async () => {
+    // DES-1200: a cancel-scheduled subscription stays active until cancel_at
+    // and the backend permits seat adds the whole time — cancelled never
+    // freezes member management, only ended does.
+    it('keeps invites live while a cancellation is scheduled', async () => {
       mockSubscription.value = { tier: 'PRO', isCancelled: true }
       const panel = await setup()
+      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.permissions.value.canInviteMembers).toBe(true)
+      panel.handleInviteMember()
+      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+    })
+
+    it('keeps invites live for an end-dated Enterprise plan still running', async () => {
+      mockSubscription.value = {
+        tier: 'ENTERPRISE',
+        isCancelled: true,
+        endDate: '2027-01-15T00:00:00Z'
+      }
+      const panel = await setup()
+      expect(panel.isInviteDisabled.value).toBe(false)
+      expect(panel.permissions.value.canInviteMembers).toBe(true)
+      panel.handleInviteMember()
+      expect(useDialogService().showInviteMemberDialog).toHaveBeenCalled()
+    })
+
+    it('freezes invites only once the plan has ended, visibly for owners', async () => {
+      mockSubscriptionStatus.value = 'ended'
+      useBillingCapabilities().canInviteMembers = computed(() => false)
+      const panel = await setup()
+      expect(panel.isPlanEnded.value).toBe(true)
+      expect(panel.showInviteButton.value).toBe(true)
       expect(panel.isInviteDisabled.value).toBe(true)
-      expect(panel.permissions.value.canInviteMembers).toBe(false)
       panel.handleInviteMember()
       expect(useDialogService().showInviteMemberDialog).not.toHaveBeenCalled()
+    })
+
+    it('keeps the ended invite button hidden from members', async () => {
+      mockSubscriptionStatus.value = 'ended'
+      useBillingCapabilities().canInviteMembers = computed(() => false)
+      mockPermissions.value = {
+        ...mockPermissions.value,
+        canManageSubscription: false
+      }
+      const panel = await setup()
+      expect(panel.showInviteButton.value).toBe(false)
+    })
+
+    it('classifies an ended Enterprise plan as sales-managed', async () => {
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = { tier: 'ENTERPRISE', isCancelled: false }
+      const panel = await setup()
+      expect(panel.isSalesManagedPlan.value).toBe(true)
+    })
+
+    // isSalesManagedTier()'s contract: an unrecognized tier is sales-managed,
+    // so an ended unknown plan routes to Contact sales, never to the
+    // self-serve Reactivate claim.
+    it('classifies an ended unrecognized tier as sales-managed too', async () => {
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = {
+        tier: 'FUTURE_TIER' as never,
+        isCancelled: false
+      }
+      const panel = await setup()
+      expect(panel.isSalesManagedPlan.value).toBe(true)
+    })
+
+    it('keeps a self-serve Pro plan off the sales-managed route', async () => {
+      mockSubscriptionStatus.value = 'ended'
+      mockSubscription.value = { tier: 'PRO', isCancelled: false }
+      const panel = await setup()
+      expect(panel.isSalesManagedPlan.value).toBe(false)
     })
 
     it('enables invite for a Team-plan owner over personal defaults', async () => {
