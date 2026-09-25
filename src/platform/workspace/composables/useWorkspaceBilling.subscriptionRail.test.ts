@@ -509,13 +509,19 @@ describe('preview subscribe on the billing SDK rail', () => {
 })
 
 describe('payment portal on the billing SDK rail', () => {
+  let portalTab: { location: { href: string }; close: () => void }
+
+  beforeEach(() => {
+    portalTab = { location: { href: '' }, close: vi.fn() }
+    vi.mocked(window.open).mockReturnValue(portalTab as unknown as Window)
+  })
+
   it('opens the workspace client URL while the rail is off', async () => {
     await setupBilling().manageSubscription()
 
     expect(workspaceApi.getPaymentPortalUrl).toHaveBeenCalledOnce()
-    expect(window.open).toHaveBeenCalledWith(
-      'https://portal.legacy.example/session',
-      '_blank'
+    expect(portalTab.location.href).toBe(
+      'https://portal.legacy.example/session'
     )
   })
 
@@ -532,10 +538,7 @@ describe('payment portal on the billing SDK rail', () => {
       returnUrl: window.location.href
     })
     expect(workspaceApi.getPaymentPortalUrl).not.toHaveBeenCalled()
-    expect(window.open).toHaveBeenCalledWith(
-      'https://portal.sdk.example/session',
-      '_blank'
-    )
+    expect(portalTab.location.href).toBe('https://portal.sdk.example/session')
   })
 
   it('falls back to the workspace client when the route is missing', async () => {
@@ -547,9 +550,8 @@ describe('payment portal on the billing SDK rail', () => {
     await setupBilling().manageSubscription()
 
     expect(workspaceApi.getPaymentPortalUrl).toHaveBeenCalledOnce()
-    expect(window.open).toHaveBeenCalledWith(
-      'https://portal.legacy.example/session',
-      '_blank'
+    expect(portalTab.location.href).toBe(
+      'https://portal.legacy.example/session'
     )
   })
 })
