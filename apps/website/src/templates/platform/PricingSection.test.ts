@@ -11,11 +11,11 @@ describe('PricingSection', () => {
     for (const gpu of ['RTX PRO 6000', 'H100', 'H200', 'B200']) {
       expect(screen.getAllByText(gpu)).toHaveLength(2)
     }
-    expect(screen.getAllByText('$3.49/hr')).toHaveLength(2)
+    expect(screen.getAllByText('$4.54/hr')).toHaveLength(2)
     expect(
       screen.getAllByText(t('platform.pricing.storage.containerDisk', 'en'))
     ).toHaveLength(2)
-    expect(screen.getAllByText('$0.13/GB/mo')).toHaveLength(2)
+    expect(screen.getAllByText('$0.15/GB/mo')).toHaveLength(2)
   })
 
   it('uses the platform heading by default and accepts overrides', () => {

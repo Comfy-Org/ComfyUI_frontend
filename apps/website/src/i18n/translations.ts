@@ -9330,8 +9330,8 @@ Enterprise`
     'zh-CN': '按 GPU 秒计费'
   },
   'platform.pricing.storageExample': {
-    en: 'Worked example: 500 GB of models on standard network storage = $45.50/mo + GPU time.',
-    'zh-CN': '示例：500 GB 模型存放在标准网络存储上 = 每月 $45.50 + GPU 时间。'
+    en: 'Worked example: 500 GB of models on standard network storage = $100.00/mo + GPU time.',
+    'zh-CN': '示例：500 GB 模型存放在标准网络存储上 = 每月 $100.00 + GPU 时间。'
   },
   'platform.pricing.modelsNote': {
     en: 'Comfy Router usage shows per-output prices on each model card and draws from the same credit pool.',
