@@ -807,6 +807,8 @@ describe('AuthSignIn', () => {
           failGithub = reject
         })
     )
+    // A sign-out is a round trip, so the identity stays published while it runs.
+    vi.mocked(signOutWorkshop).mockReturnValue(new Promise(() => {}))
     render(AuthSignIn)
     render(AuthToast)
 
@@ -831,9 +833,10 @@ describe('AuthSignIn', () => {
 
     await waitFor(() => expect(signOutWorkshop).toHaveBeenCalledOnce())
     expect(
-      replace,
-      'the restore listener would otherwise mint a session for an account that was never provisioned'
+      vi.mocked(useWorkshopSession().ensureFresh),
+      'the restore listener must not mint while the sign-out clearing that identity is still in flight'
     ).not.toHaveBeenCalled()
+    expect(replace).not.toHaveBeenCalled()
     expect(vi.mocked(provisionWorkshopCustomer)).not.toHaveBeenCalled()
   })
 

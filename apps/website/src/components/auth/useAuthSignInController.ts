@@ -169,33 +169,37 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
   let strayTimer: ReturnType<typeof setTimeout> | undefined
 
   /**
-   * Clears an identity that a cancelled attempt's in-flight exchange published
-   * after the attempt had already given up on it. Deliberately inert while any
-   * attempt is still running: a live one owns the identity question, and its
-   * own credential reaches `currentUser` before it can claim it here.
+   * Starts clearing an identity that a cancelled attempt's in-flight exchange
+   * published after the attempt had already given up on it, and reports
+   * whether it did. Deliberately inert while any attempt is still running: a
+   * live one owns the identity question, and its own credential reaches
+   * `currentUser` before it can claim it here.
+   *
+   * The restore path calls this before it acts, rather than a watcher of its
+   * own racing it: the sign-out is a round trip, and a restore that ran first
+   * would mint a session for the account this is in the middle of discarding.
    */
-  function clearStrayIdentity(): void {
+  function clearStrayIdentity(): boolean {
     const watching = strayWatch
-    if (!watching || !firebaseForRollback) return
+    if (!watching || !firebaseForRollback) return false
     if (lastAuthenticatedAttempt >= watching.attempt) {
       strayWatch = undefined
-      return
+      return false
     }
-    if (attemptsInFlight > 0) return
+    if (attemptsInFlight > 0) return false
     const current = user.value
-    if (!current || current.uid === watching.before) return
+    if (!current || current.uid === watching.before) return false
     strayWatch = undefined
     const rollback = firebaseForRollback.signOutWorkshop().catch(() => {})
     pendingRollback = rollback
     void rollback.finally(() => {
       if (pendingRollback === rollback) pendingRollback = undefined
     })
+    return true
   }
 
   let firebaseForRollback: WorkshopFirebase | undefined
-  const stopStrayWatch = watch(user, clearStrayIdentity)
   onBeforeUnmount(() => {
-    stopStrayWatch()
     clearTimeout(strayTimer)
     strayWatch = undefined
   })
@@ -604,6 +608,7 @@ export function useAuthSignInController(options: AuthSignInControllerOptions) {
         dispatch({ type: 'signedOut' })
         return
       }
+      if (clearStrayIdentity()) return
       if (isSwitchingAccount(window.location.search)) return
       const before = state.value.step
       dispatch({
