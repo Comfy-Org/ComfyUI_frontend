@@ -9,7 +9,10 @@ import {
   useWorkshopCredits
 } from '../config/workshop-credits'
 import { releaseRouterOutputs } from '../config/workshop-response'
-import { WorkshopRouterError } from '../config/workshop-router-errors'
+import {
+  WorkshopRouterError,
+  workshopRunMayStillSettle
+} from '../config/workshop-router-errors'
 import type { WorkshopSession } from '../config/workshop-session-state'
 import { useWorkshopSession } from '../config/workshop-session-state'
 import { workshopIdempotencyKey } from '../config/workshop-snippets'
@@ -26,12 +29,64 @@ import { useWorkshopAuthFlag, useWorkshopEnabled } from '../scripts/posthog'
 
 interface ShotRequest {
   readonly modelSlug: string
+  readonly referenceSlug?: string
   readonly prompt: string
   readonly aspect: AspectRatio
   readonly resolutionPixels: number
   readonly takes: number
   readonly references: readonly File[]
   readonly preview?: string
+}
+
+function takeFingerprint(
+  startedFor: WorkshopSession,
+  slug: string,
+  request: ShotRequest,
+  index: number
+): string {
+  return JSON.stringify([
+    startedFor.uid,
+    startedFor.workspace.id,
+    slug,
+    request.prompt,
+    request.aspect,
+    request.resolutionPixels,
+    request.references.map((file) => [
+      file.name,
+      file.size,
+      file.type,
+      file.lastModified
+    ]),
+    index
+  ])
+}
+
+function shotParameters(request: ShotRequest) {
+  return {
+    prompt: request.prompt,
+    aspect_ratio: request.aspect,
+    resolution: request.resolutionPixels,
+    ...(request.references.length
+      ? { reference_images: request.references }
+      : {})
+  }
+}
+
+function takeFailure(id: string, error: unknown): ReelEvent {
+  return error instanceof WorkshopRouterError
+    ? {
+        type: 'takeFailed',
+        id,
+        reason: error.reason,
+        requestId: error.requestId ?? undefined
+      }
+    : { type: 'takeFailed', id, reason: 'client' }
+}
+
+function mayStillSettle(error: unknown): boolean {
+  return (
+    error instanceof WorkshopRouterError && workshopRunMayStillSettle(error)
+  )
 }
 
 /**
@@ -83,6 +138,13 @@ export function useCinematicStudioRun(modelCount: number) {
 
   let controller: AbortController | undefined
 
+  const unsettledKeys = new Map<string, string>()
+  function idempotencyKeyFor(fingerprint: string): string {
+    const key = unsettledKeys.get(fingerprint) ?? workshopIdempotencyKey()
+    unsettledKeys.set(fingerprint, key)
+    return key
+  }
+
   async function tokenFor(startedFor: WorkshopSession, signal: AbortSignal) {
     const credential = await ensureFresh(undefined, { signal })
     signal.throwIfAborted()
@@ -97,36 +159,28 @@ export function useCinematicStudioRun(modelCount: number) {
 
   async function renderTake(
     id: string,
+    index: number,
     model: WorkshopModelDetail,
     request: ShotRequest,
     startedFor: WorkshopSession,
     signal: AbortSignal
   ) {
+    const fingerprint = takeFingerprint(startedFor, model.slug, request, index)
     try {
-      const result = await router_render(
-        model.slug,
-        {
-          prompt: request.prompt,
-          aspect_ratio: request.aspect,
-          resolution: request.resolutionPixels,
-          ...(request.references.length
-            ? { reference_images: request.references }
-            : {})
-        },
-        {
-          model,
-          signal,
-          idempotencyKey: id,
-          token: () => tokenFor(startedFor, signal),
-          uploadFile: async (file, uploadSignal) =>
-            uploadUrl(
-              file,
-              await tokenFor(startedFor, signal),
-              JSON.stringify([startedFor.uid, startedFor.workspace.id]),
-              uploadSignal
-            )
-        }
-      )
+      const result = await router_render(model.slug, shotParameters(request), {
+        model,
+        signal,
+        idempotencyKey: idempotencyKeyFor(fingerprint),
+        token: () => tokenFor(startedFor, signal),
+        uploadFile: async (file, uploadSignal) =>
+          uploadUrl(
+            file,
+            await tokenFor(startedFor, signal),
+            JSON.stringify([startedFor.uid, startedFor.workspace.id]),
+            uploadSignal
+          )
+      })
+      unsettledKeys.delete(fingerprint)
       const output = result.outputs.at(0)
       releaseRouterOutputs(result.outputs.slice(1))
       if (signal.aborted) {
@@ -137,22 +191,18 @@ export function useCinematicStudioRun(modelCount: number) {
       dispatch({ type: 'takeSucceeded', id, output })
     } catch (error) {
       if (signal.aborted) return
-      dispatch(
-        error instanceof WorkshopRouterError
-          ? {
-              type: 'takeFailed',
-              id,
-              reason: error.reason,
-              requestId: error.requestId ?? undefined
-            }
-          : { type: 'takeFailed', id, reason: 'client' }
-      )
+      if (!mayStillSettle(error)) unsettledKeys.delete(fingerprint)
+      dispatch(takeFailure(id, error))
     }
   }
 
   async function generate(request: ShotRequest) {
     const startedFor = session.value
-    if (rendering.value || gate.value !== 'ready' || !startedFor) return
+    const slug = request.references.length
+      ? request.referenceSlug
+      : request.modelSlug
+    if (rendering.value || gate.value !== 'ready' || !startedFor || !slug)
+      return
     const ids = Array.from({ length: request.takes }, () =>
       workshopIdempotencyKey()
     )
@@ -168,10 +218,10 @@ export function useCinematicStudioRun(modelCount: number) {
     const attempt = new AbortController()
     controller = attempt
     try {
-      const model = await loadModel(request.modelSlug)
+      const model = await loadModel(slug)
       await Promise.all(
-        ids.map((id) =>
-          renderTake(id, model, request, startedFor, attempt.signal)
+        ids.map((id, index) =>
+          renderTake(id, index, model, request, startedFor, attempt.signal)
         )
       )
     } catch {

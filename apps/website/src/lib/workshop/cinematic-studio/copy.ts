@@ -587,6 +587,10 @@ const copy = {
     en: 'Cancel',
     'zh-CN': '取消'
   },
+  'cinematic.references.unsupported': {
+    en: "{model} can't use references. Remove them or pick another model.",
+    'zh-CN': '{model} 无法使用参考图。请移除参考图或选择其他模型。'
+  },
   'cinematic.output.unavailable': {
     en: 'Running models is not available here yet.',
     'zh-CN': '此处暂不支持运行模型。'

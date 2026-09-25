@@ -24,6 +24,7 @@ const {
   workspaceName,
   rendering,
   canGenerate,
+  blockedNote,
   wide = false,
   locale = 'en'
 } = defineProps<{
@@ -31,6 +32,7 @@ const {
   workspaceName?: string
   rendering: boolean
   canGenerate: boolean
+  blockedNote?: string
   wide?: boolean
   locale?: Locale
 }>()
@@ -63,6 +65,15 @@ const buttonClass = computed(() =>
   <div :class="cn('flex flex-col gap-2.5', !wide && 'shrink-0 items-end')">
     <p v-if="wide && note" class="text-xs text-content-secondary">
       {{ note }}
+    </p>
+    <p
+      v-if="blockedNote"
+      role="status"
+      :class="
+        cn('text-xs text-content-secondary', !wide && 'max-w-64 text-right')
+      "
+    >
+      {{ blockedNote }}
     </p>
     <Button
       v-if="gate === 'signedOut'"

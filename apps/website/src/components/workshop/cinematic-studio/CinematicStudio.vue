@@ -6,6 +6,7 @@ import { cn } from '@comfyorg/tailwind-utils'
 import { useCinematicLeaveGuard } from '../../../composables/useCinematicLeaveGuard'
 import { useCinematicPopover } from '../../../composables/useCinematicPopover'
 import { useCinematicShot } from '../../../composables/useCinematicShot'
+import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import type { DirectionPart } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { StarterShot } from '../../../lib/workshop/cinematic-studio/starters'
@@ -43,6 +44,7 @@ const {
   start: startShot,
   generate: generateShot
 } = useCinematicShot(models)
+reportStudioBusy(() => studio.rendering.value)
 const {
   open: popover,
   toggle: togglePopover,

@@ -53,6 +53,9 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   const references = computed(() =>
     [cast.value, palette.value].filter((file): file is File => !!file)
   )
+  const model = computed(() =>
+    models.find((option) => option.slug === modelSlug.value)
+  )
 
   function choose(part: DirectionPart, id: string) {
     direction.value = { ...direction.value, [part]: id }
@@ -67,6 +70,7 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
   function generate() {
     void studio.generate({
       modelSlug: modelSlug.value,
+      referenceSlug: model.value?.referenceSlug,
       prompt: cinematicPrompt(brief.value),
       aspect: aspect.value,
       resolutionPixels:

@@ -3,6 +3,7 @@ import { useTemplateRef } from 'vue'
 
 import { useCinematicPopover } from '../../../composables/useCinematicPopover'
 import { useCinematicShot } from '../../../composables/useCinematicShot'
+import { reportStudioBusy } from '../../../composables/useStudioSwitchGuard'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -33,6 +34,7 @@ const {
   choose,
   generate: generateShot
 } = useCinematicShot(models)
+reportStudioBusy(() => studio.rendering.value)
 const {
   open: picker,
   toggle: togglePicker,

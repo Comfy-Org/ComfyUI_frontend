@@ -333,12 +333,80 @@ describe('CinematicStudio', () => {
     await user.click(generateButton())
 
     await screen.findByAltText(/A diner at dawn/)
-    const [, parameters] = vi.mocked(router_render).mock.calls[0]
+    const [slug, parameters] = vi.mocked(router_render).mock.calls[0]
+    expect(slug).toBe(first.referenceSlug)
     expect(parameters?.reference_images).toEqual([face])
     expect(parameters?.prompt).toContain(
       'Keep the character from reference image 1.'
     )
   })
+
+  it('does not charge for references a model would drop', async () => {
+    const dropsReferences = models.find((model) => !model.referenceSlug)
+    if (!dropsReferences) throw new Error('Every model keeps references')
+    window.history.replaceState(
+      null,
+      '',
+      `/cinematic-studio?model=${dropsReferences.slug}`
+    )
+    const user = renderStudio()
+    const face = new File(['face'], 'mara.png', { type: 'image/png' })
+
+    await user.click(
+      await screen.findByRole('button', {
+        name: tc('cinematic.composer.references')
+      })
+    )
+    await user.upload(screen.getByTestId('cinematic-reference-cast'), face)
+    await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+
+    expect(generateButton()).toBeDisabled()
+    expect(
+      screen.getByText(
+        tc('cinematic.references.unsupported').replace(
+          '{model}',
+          dropsReferences.name
+        )
+      )
+    ).toBeInTheDocument()
+    expect(router_render).not.toHaveBeenCalled()
+  })
+
+  it.for([
+    { settlement: 'pending' as const, reusesKey: true },
+    { settlement: 'terminal' as const, reusesKey: false }
+  ])(
+    'tries a $settlement take again with the same key: $reusesKey',
+    async ({ settlement, reusesKey }) => {
+      vi.mocked(router_render)
+        .mockRejectedValueOnce(
+          new WorkshopRouterError(
+            'network',
+            'request-7',
+            {},
+            undefined,
+            'response',
+            { requestSettlement: settlement }
+          )
+        )
+        .mockImplementation(async (slug) => rendered(slug))
+      const user = renderStudio()
+
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await user.click(
+        within(await screen.findByRole('status')).getByRole('button', {
+          name: t('workshop.error.retry')
+        })
+      )
+
+      await screen.findByAltText(/A diner at dawn/)
+      const [firstKey, retryKey] = vi
+        .mocked(router_render)
+        .mock.calls.map(([, , options]) => options.idempotencyKey)
+      expect(firstKey === retryKey).toBe(reusesKey)
+    }
+  )
 
   it('cancels a take that is still rendering', async () => {
     const signals: AbortSignal[] = []
@@ -487,6 +555,40 @@ describe('CinematicStudio', () => {
 
       expect(panel()).toBeInTheDocument()
       expect(window.location.search).toBe('?ux=d')
+    })
+
+    it('asks before a layout switch would cancel a take still rendering', async () => {
+      const signals: AbortSignal[] = []
+      vi.mocked(router_render).mockImplementation(
+        (_slug, _parameters, options) =>
+          new Promise(() => {
+            if (options.signal) signals.push(options.signal)
+          })
+      )
+      render(CinematicStudioPage, { props: { models } })
+      const user = userEvent.setup()
+
+      await user.type(await screen.findByLabelText('Scene'), 'A diner at dawn')
+      await user.click(generateButton())
+      await user.click(
+        await screen.findByRole('button', { name: /^Layout to review/ })
+      )
+      await user.click(
+        await screen.findByRole('menuitemradio', { name: /D · Side panel/ })
+      )
+      const dialog = await screen.findByRole('dialog', {
+        name: t('workshop.run.leaveTitle')
+      })
+
+      expect(panel()).toBeNull()
+      expect(signals[0].aborted).toBe(false)
+      await user.click(
+        within(dialog).getByRole('button', {
+          name: t('workshop.run.leaveAnyway')
+        })
+      )
+      expect(panel()).toBeInTheDocument()
+      expect(signals[0].aborted).toBe(true)
     })
 
     it('swaps to the Re-shoot app, which has a single layout', async () => {

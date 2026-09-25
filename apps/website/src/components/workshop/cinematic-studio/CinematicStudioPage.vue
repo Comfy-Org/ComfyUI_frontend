@@ -1,10 +1,12 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, shallowRef } from 'vue'
 
+import { provideStudioSwitchGuard } from '../../../composables/useStudioSwitchGuard'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { rc } from '../../../lib/workshop/cinematic-studio/reshoot-copy'
+import RunLeaveDialog from '../RunLeaveDialog.vue'
 import WorkshopGate from '../WorkshopGate.vue'
 import CinematicAppsHub from './CinematicAppsHub.vue'
 import CinematicScenarioMenu from './CinematicScenarioMenu.vue'
@@ -51,15 +53,35 @@ function remember(key: string, value: string) {
   window.history.replaceState(window.history.state, '', url)
 }
 
-function pickLayout(id: string) {
+const busy = provideStudioSwitchGuard()
+const pendingSwitch = shallowRef<() => void>()
+
+function guarded(change: () => void) {
+  if (busy()) pendingSwitch.value = change
+  else change()
+}
+
+function switchAnyway() {
+  const change = pendingSwitch.value
+  pendingSwitch.value = undefined
+  change?.()
+}
+
+function setLayout(id: string) {
   layout.value = id
   remember('ux', id)
 }
 
+function pickLayout(id: string) {
+  guarded(() => setLayout(id))
+}
+
 function pickApp(id: string) {
-  app.value = id
-  remember('app', id)
-  if (layout.value === 'hub') pickLayout('e')
+  guarded(() => {
+    app.value = id
+    remember('app', id)
+    if (layout.value === 'hub') setLayout('e')
+  })
 }
 </script>
 
@@ -78,6 +100,12 @@ function pickApp(id: string) {
       :layout-heading="tc('cinematic.ux.heading', locale)"
       @update:app="pickApp"
       @update:layout="pickLayout"
+    />
+    <RunLeaveDialog
+      :open="pendingSwitch !== undefined"
+      :locale
+      @update:open="(value: boolean) => !value && (pendingSwitch = undefined)"
+      @leave="switchAnyway"
     />
     <template #fallback>
       <div
