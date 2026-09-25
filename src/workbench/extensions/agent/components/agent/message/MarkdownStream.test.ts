@@ -119,6 +119,49 @@ describe('MarkdownStream', () => {
     )
   })
 
+  // The local agent links previews on the ComfyUI it drives, by loopback
+  // address. Opened from another machine that host is the reader's own
+  // computer, so the panel re-homes the reference onto the page's origin.
+  describe('a panel opened away from the machine running the agent', () => {
+    const loopback =
+      'http://127.0.0.1:8188/view?filename=ComfyUI_00005_.png&subfolder=&type=output'
+    const sameOrigin = `${window.location.origin}/view?filename=ComfyUI_00005_.png&subfolder=&type=output`
+
+    it('renders a loopback asset image against the page origin', () => {
+      render(MarkdownStream, {
+        props: { text: `![a duck](${loopback})` },
+        global: { plugins: [i18n] }
+      })
+      expect(screen.getByRole('img', { name: 'a duck' })).toHaveAttribute(
+        'src',
+        sameOrigin
+      )
+    })
+
+    it('renders a loopback image inside prose against the page origin', () => {
+      render(MarkdownStream, {
+        props: { text: `Here it is ![a duck](${loopback}) — enjoy.` },
+        global: { plugins: [i18n] }
+      })
+      expect(screen.getByRole('img', { name: 'a duck' })).toHaveAttribute(
+        'src',
+        sameOrigin
+      )
+    })
+
+    it('leaves a remote ComfyUI host alone', () => {
+      const remote = 'http://gpu-box.lan:8188/view?filename=a.png'
+      render(MarkdownStream, {
+        props: { text: `Rendered ![gen](${remote}) remotely.` },
+        global: { plugins: [i18n] }
+      })
+      expect(screen.getByRole('img', { name: 'gen' })).toHaveAttribute(
+        'src',
+        remote
+      )
+    })
+  })
+
   it('strips a script tag (XSS guard)', () => {
     const { html } = render(MarkdownStream, {
       props: { text: 'hi <script>alert(1)</script> there' }

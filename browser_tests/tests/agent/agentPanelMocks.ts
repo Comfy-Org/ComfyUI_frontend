@@ -117,6 +117,14 @@ export const MESSAGE_DELTA_EVENT: AgentWsEvent = {
   }
 }
 
+/** An `agent_message_delta` frame carrying arbitrary reply markdown. */
+export function agentMessageDeltaEvent(delta: string): AgentWsEvent {
+  return {
+    type: 'agent_message_delta',
+    data: { delta, message_id: TURN_ID, thread_id: THREAD_ID }
+  }
+}
+
 export const MESSAGE_DONE_EVENT: AgentWsEvent = {
   type: 'agent_message_done',
   data: {
