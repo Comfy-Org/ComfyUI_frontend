@@ -902,16 +902,19 @@ describe('CinematicStudio', () => {
       expect(window.location.search).toBe('?ux=d')
     })
 
-    it('lists Cinematic Studio first in the Hub apps tab', async () => {
+    it('lists Cinematic Studio first and Re-shoot a video next in the Hub apps tab', async () => {
       window.history.replaceState(null, '', '/cinematic-studio?ux=hub')
       render(CinematicStudioPage, { props: { models } })
 
       const tab = await screen.findByRole('button', { name: 'Apps' })
       expect(tab).toHaveAttribute('aria-pressed', 'true')
-      const [firstApp] = screen.getAllByRole('listitem')
+      const [firstApp, secondApp] = screen.getAllByRole('listitem')
       expect(
         within(firstApp).getByRole('link', { name: 'Cinematic Studio' })
       ).toHaveAttribute('href', '/cinematic-studio?ux=e')
+      expect(
+        within(secondApp).getByRole('link', { name: 'Re-shoot a video' })
+      ).toHaveAttribute('href', expect.stringContaining('crossview_warp_h3'))
     })
 
     it('runs a shot from the side panel on the model picked there', async () => {

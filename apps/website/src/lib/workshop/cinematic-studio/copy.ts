@@ -228,6 +228,16 @@ const copy = {
     en: 'Image · 5 models',
     'zh-CN': '图像 · 5 个模型'
   },
+  'cinematic.hub.prototype': { en: 'Prototype', 'zh-CN': '原型' },
+  'cinematic.hub.reshoot': { en: 'Re-shoot a video', 'zh-CN': '重拍视频' },
+  'cinematic.hub.reshootSummary': {
+    en: 'Aim a new camera at your clip and generate the scene from that angle.',
+    'zh-CN': '为你的片段重新架设机位，从新的角度生成这一场景。'
+  },
+  'cinematic.hub.reshootMeta': {
+    en: 'Video · MiniMax H3',
+    'zh-CN': '视频 · MiniMax H3'
+  },
   'cinematic.hub.to3d': { en: 'Image to 3D', 'zh-CN': '图像转 3D' },
   'cinematic.hub.to3dSummary': {
     en: 'Turn a product photo into a 3D model you can spin and export.',

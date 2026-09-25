@@ -62,11 +62,6 @@ export function getMainNavigation(
           label: t('nav.comfyWorkshop', locale),
           href: routes.workshop,
           badge: 'new'
-        },
-        {
-          label: t('nav.cinematicStudio', locale),
-          href: routes.cinematicStudio,
-          badge: 'beta'
         }
       ]
     : []
