@@ -18,7 +18,7 @@ interface Subscription {
   hasFunds: boolean
   isCancelled: boolean
   endDate: string | null
-  tier?: 'ENTERPRISE'
+  tier?: SubscriptionInfo['tier']
   scheduledChange?: SubscriptionInfo['scheduledChange']
 }
 
@@ -354,6 +354,8 @@ describe('BillingStatusBanner', () => {
     paymentFailedState()
     state.isTeamPlan = false
     state.workspaceType = 'personal'
+    // A known personal tier: an unrecognized one is denied recovery outright.
+    state.subscription = { ...state.subscription!, tier: 'PRO' }
     renderBanner()
 
     expect(screen.getByRole('status')).toHaveTextContent('Payment failed')

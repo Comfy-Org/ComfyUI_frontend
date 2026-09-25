@@ -8,6 +8,7 @@ const funded: BillingBannerInputs = {
   v1PaymentRecovery: true,
   isTeamPlan: true,
   isEnterprise: false,
+  isKnownPersonalTier: false,
   isLoaded: true,
   canAccessSubscriptionFeatures: true,
   billingStatus: 'paid',
@@ -48,9 +49,21 @@ describe('deriveBillingBanner', () => {
   })
 
   it('shows payment failed to personal workspace owners', () => {
-    expect(derive({ ...paymentFailed, isTeamPlan: false })).toBe(
-      'paymentFailed'
-    )
+    expect(
+      derive({ ...paymentFailed, isTeamPlan: false, isKnownPersonalTier: true })
+    ).toBe('paymentFailed')
+  })
+
+  // An unrecognized server tier reads as "not team, not Enterprise" — it must
+  // not borrow the personal payment-recovery claim (fail-closed policy).
+  it('denies payment recovery to an unrecognized tier', () => {
+    expect(
+      derive({
+        ...paymentFailed,
+        isTeamPlan: false,
+        isKnownPersonalTier: false
+      })
+    ).toBeNull()
   })
 
   it('hides existing notices when billing control is rolled back', () => {

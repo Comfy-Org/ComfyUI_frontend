@@ -10,7 +10,10 @@ import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { isWithinEnterpriseEndingNotice } from '@/platform/cloud/subscription/constants/tierPricing'
 import { isCloud } from '@/platform/distribution/types'
 import type { SubscriptionInfo } from '@/composables/billing/types'
-import type { BillingStatus } from '@/platform/workspace/api/workspaceApi'
+import type {
+  SubscriptionTier,
+  BillingStatus
+} from '@/platform/workspace/api/workspaceApi'
 import { useWorkspaceUI } from '@/platform/workspace/composables/useWorkspaceUI'
 
 export type BillingBannerKind =
@@ -25,6 +28,7 @@ export interface BillingBannerInputs {
   v1PaymentRecovery: boolean
   isTeamPlan: boolean
   isEnterprise: boolean
+  isKnownPersonalTier: boolean
   isLoaded: boolean
   canAccessSubscriptionFeatures: boolean
   billingStatus: BillingStatus | null
@@ -56,12 +60,24 @@ function deriveEnterpriseBanner(
   return withinEndingNotice ? 'ending' : null
 }
 
+// The personal tiers whose payment-recovery claim is known-good. An
+// unrecognized server tier reads as "not team, not Enterprise" and would
+// otherwise borrow the personal claim — the module's unknown-tier policy is
+// fail-closed, so recovery is granted only to tiers on this list.
+const PERSONAL_RECOVERY_TIERS: ReadonlySet<SubscriptionTier> = new Set([
+  'STANDARD',
+  'CREATOR',
+  'PRO',
+  'FOUNDERS_EDITION'
+])
+
 // Payment recovery reaches personal workspaces too; only paused stays
 // team-shaped. Its rollout gate is independent of billing control.
 function derivePaymentRecoveryBanner(
   inputs: BillingBannerInputs
 ): BillingBannerKind | null {
   if (!inputs.v1PaymentRecovery) return null
+  if (!inputs.isTeamPlan && !inputs.isKnownPersonalTier) return null
   if (inputs.isTeamPlan && inputs.billingStatus === 'paused') return 'paused'
   if (inputs.billingStatus === 'payment_failed' && inputs.canManage) {
     return 'paymentFailed'
@@ -116,11 +132,21 @@ export function deriveBillingBanner(
   return derivePaymentRecoveryBanner(inputs) ?? deriveTeamNoticeBanner(inputs)
 }
 
+function classifyTier(
+  tier: SubscriptionTier | null | undefined
+): Pick<BillingBannerInputs, 'isEnterprise' | 'isKnownPersonalTier'> {
+  return {
+    isEnterprise: tier === 'ENTERPRISE',
+    isKnownPersonalTier: tier != null && PERSONAL_RECOVERY_TIERS.has(tier)
+  }
+}
+
 function readSubscriptionInputs(
   subscription: SubscriptionInfo | null
 ): Pick<
   BillingBannerInputs,
   | 'isEnterprise'
+  | 'isKnownPersonalTier'
   | 'isLoaded'
   | 'hasFunds'
   | 'isCancelled'
@@ -128,7 +154,7 @@ function readSubscriptionInputs(
   | 'hasScheduledChange'
 > {
   return {
-    isEnterprise: subscription?.tier === 'ENTERPRISE',
+    ...classifyTier(subscription?.tier),
     isLoaded: subscription !== null,
     hasFunds: subscription?.hasFunds ?? null,
     isCancelled: subscription?.isCancelled ?? false,
