@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useMounted } from '@vueuse/core'
-import { computed, onScopeDispose, ref, watch } from 'vue'
+import { computed, onScopeDispose, ref, useTemplateRef, watch } from 'vue'
 
 import type { WorkflowWorkshopModelDetail } from '../../config/models-catalogue'
 import {
@@ -17,6 +17,7 @@ import {
   workflowStatusKey
 } from '../../config/workshop-workflow-presentation'
 import { panelSaysRefusal } from '../../lib/workshop/workflow-refusal'
+import { useStickyFooterScrollPadding } from '../../composables/useStickyFooterScrollPadding'
 import { useTablist } from '../../composables/useTablist'
 import { useWorkflowFormDraft } from '../../composables/useWorkflowFormDraft'
 import { useWorkflowRun } from '../../composables/useWorkflowRun'
@@ -45,6 +46,8 @@ const emit = defineEmits<{ recovery: [active: boolean] }>()
 const sections = ['playground', 'workflow', 'api'] as const
 const section = ref<(typeof sections)[number]>('playground')
 const { onKeydown } = useTablist(() => sections, section)
+const footer = useTemplateRef<HTMLElement>('footer')
+useStickyFooterScrollPadding(footer, () => section.value === 'playground')
 const sectionLabels = {
   playground: 'workshop.model.tabs.playground',
   workflow: 'workshop.model.tabs.details',
@@ -242,6 +245,7 @@ function start() {
           </p>
         </div>
         <div
+          ref="footer"
           class="sticky bottom-0 z-10 mt-auto space-y-3 rounded-b-2xl border-t border-transparency-white-t8 bg-page/85 p-3 backdrop-blur-sm"
           data-testid="workflow-run-footer"
         >
