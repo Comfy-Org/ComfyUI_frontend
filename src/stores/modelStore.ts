@@ -315,7 +315,8 @@ export const useModelStore = defineStore('models', () => {
 
   let modelFoldersRequestId = 0
   const pendingReloads = new Set<Promise<boolean>>()
-  let foldersMissedCapabilityChange = false
+  // Whether the committed folders read from the asset API; unset until the first commit.
+  let committedAssetsEnabled: boolean | undefined
 
   /**
    * Whether anything has consumed this store's model data (sidebar loads,
@@ -328,6 +329,7 @@ export const useModelStore = defineStore('models', () => {
     requestId: number
     names: string[]
     folders: Record<string, ModelFolder>
+    assetsEnabled: boolean
   }
 
   /**
@@ -355,13 +357,22 @@ export const useModelStore = defineStore('models', () => {
         flags.assetsEnabled ? effectiveModelExtensions(folder.extensions) : []
       )
     }
-    return { requestId, names: resData.map((folder) => folder.name), folders }
+    return {
+      requestId,
+      names: resData.map((folder) => folder.name),
+      folders,
+      assetsEnabled: flags.assetsEnabled
+    }
   }
 
-  function commitModelFolders({ names, folders }: PreparedModelFolders): void {
+  function commitModelFolders({
+    names,
+    folders,
+    assetsEnabled
+  }: PreparedModelFolders): void {
     modelFolderNames.value = names
     modelFolderByName.value = folders
-    foldersMissedCapabilityChange = false
+    committedAssetsEnabled = assetsEnabled
   }
 
   /** Loads the model folder structure from the server; false when superseded. */
@@ -372,17 +383,31 @@ export const useModelStore = defineStore('models', () => {
     return true
   }
 
-  // Folders a pending reload replaces would finish loading into detached objects.
-  async function settlePendingReloads() {
-    while (pendingReloads.size > 0) await Promise.allSettled(pendingReloads)
+  /**
+   * Makes the committed folder structure current before its folders load:
+   * waits out pending reloads, whose replaced folders would finish loading
+   * into detached objects, and rebuilds when nothing is committed yet or the
+   * committed folders read from a data source the capability has since
+   * switched away from. A superseded rebuild commits nothing, so this retries
+   * until a load of ours commits or a concurrent one has; bounded as a
+   * safety net.
+   */
+  async function ensureCurrentModelFolders() {
+    for (let attempt = 0; attempt < 3; attempt++) {
+      while (pendingReloads.size > 0) await Promise.allSettled(pendingReloads)
+      const current =
+        modelFolderNames.value.length > 0 &&
+        committedAssetsEnabled === flags.assetsEnabled
+      if (current) return
+      if (await loadModelFolders()) return
+    }
   }
 
   async function getLoadedModelFolder(
     folderName: string
   ): Promise<ModelFolder | null> {
     modelDataConsumed = true
-    await settlePendingReloads()
-    if (foldersMissedCapabilityChange) await loadModelFolders()
+    await ensureCurrentModelFolders()
     const folder = Object.hasOwn(modelFolderByName.value, folderName)
       ? modelFolderByName.value[folderName]
       : undefined
@@ -397,16 +422,7 @@ export const useModelStore = defineStore('models', () => {
    */
   async function loadModels() {
     modelDataConsumed = true
-    await settlePendingReloads()
-    // A load superseded by a newer concurrent one commits nothing, which
-    // would leave the folder list empty and silently load no models; retry
-    // until a load of ours commits (even a genuinely empty result) or a
-    // concurrent one has populated the list. Bounded as a safety net.
-    for (let attempt = 0; attempt < 3; attempt++) {
-      if (modelFolderNames.value.length > 0 && !foldersMissedCapabilityChange)
-        break
-      if (await loadModelFolders()) break
-    }
+    await ensureCurrentModelFolders()
     return Promise.all(modelFolders.value.map((folder) => folder.load()))
   }
 
@@ -559,13 +575,7 @@ export const useModelStore = defineStore('models', () => {
    * stale response a no-op, so no debouncing is needed here.
    */
   function reloadForCapabilityChange() {
-    const reload = reloadModels()
-    const requestId = modelFoldersRequestId
-    reload.catch((error) => {
-      // A newer request either committed current folders or reports its own failure.
-      if (requestId === modelFoldersRequestId) {
-        foldersMissedCapabilityChange = true
-      }
+    reloadModels().catch((error) => {
       reportError(error, { errorType: 'model_library_capability_reload' })
     })
   }
