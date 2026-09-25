@@ -342,6 +342,34 @@ export const useAgentConversationStore = defineStore(
       clearActive()
     }
 
+    /**
+     * Both ways a resume can find that the copy already on screen IS this
+     * turn: a settled stash whose row came back, and an unsettled one whose
+     * row holds more of the reply than the stash does. Either way the stash's
+     * transport is discarded for good, so the caller flushes what it is still
+     * holding rather than leaving it unreachable until its own STALE_AFTER_MS.
+     */
+    function hydratedCopySupersedes(
+      entry: BackgroundTurn,
+      kept: AssistantMessage[],
+      poppedHydratedCopy: boolean
+    ): boolean {
+      if (poppedHydratedCopy) return false
+      if (entry.settled) return hydratedTurnIdsByRowId.has(entry.messageId)
+      return adoptHydratedTurn(entry, kept)?.keeps === 'hydrated'
+    }
+
+    function activateResumedTurn(entry: BackgroundTurn, index: number): void {
+      // A hydrate that landed on a mid-ask row left its own transport in the
+      // active slot, and this resume supersedes it. Dispose rather than
+      // overwrite, or it is orphaned until its own STALE_AFTER_MS fallback.
+      if (transport && transport !== entry.transport) transport.dispose()
+      activeTurnId.value = entry.messageId
+      activeIndex.value = index
+      transport = entry.transport
+      liveMessage = entry.message
+    }
+
     function resumeBackgroundTurn(): void {
       if (threadId.value === null) return
       const entry = backgroundTurns.get(threadId.value)
@@ -353,22 +381,7 @@ export const useAgentConversationStore = defineStore(
       // colliding with an unrelated turn.
       const kept = messages.value.filter((m) => m.id !== entry.message.id)
       const poppedHydratedCopy = removeHydratedCopy(entry, kept)
-      if (
-        entry.settled &&
-        !poppedHydratedCopy &&
-        hydratedTurnIdsByRowId.has(entry.messageId)
-      ) {
-        // The persisted, authoritative copy is already on screen (kept, via
-        // the filter above) -- this entry's transport is now discarded for
-        // good, so flush anything it is still holding rather than leaving it
-        // unreachable until its own STALE_AFTER_MS fallback.
-        entry.transport.dispose()
-        return
-      }
-      const adoption = poppedHydratedCopy
-        ? undefined
-        : adoptHydratedTurn(entry, kept)
-      if (adoption?.keeps === 'hydrated') {
+      if (hydratedCopySupersedes(entry, kept, poppedHydratedCopy)) {
         entry.transport.dispose()
         return
       }
@@ -382,20 +395,13 @@ export const useAgentConversationStore = defineStore(
       if (entry.settled) {
         // PM-1575: this settled turn is kept on screen but not reactivated --
         // its transport is discarded for good right after this, same as the
-        // hydrated-copy-dropped branch above, so flush anything it is still
-        // holding rather than leaving it unreachable until its own
-        // STALE_AFTER_MS fallback.
+        // superseded branch above, so flush anything it is still holding
+        // rather than leaving it unreachable until its own STALE_AFTER_MS
+        // fallback.
         entry.transport.dispose()
         return
       }
-      // A hydrate that landed on a mid-ask row left its own transport in the
-      // active slot, and this resume supersedes it. Dispose rather than
-      // overwrite, or it is orphaned until its own STALE_AFTER_MS fallback.
-      if (transport && transport !== entry.transport) transport.dispose()
-      activeTurnId.value = entry.messageId
-      activeIndex.value = index
-      transport = entry.transport
-      liveMessage = entry.message
+      activateResumedTurn(entry, index)
     }
 
     function moveTurnRecord<T>(

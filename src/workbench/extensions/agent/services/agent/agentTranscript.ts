@@ -97,21 +97,29 @@ function isAttachmentKind(value: unknown): value is AttachmentKind {
  * First entry wins for a repeated name: the writer emits one ref per posted
  * name, so a duplicate is the same file resolved the same way.
  */
+function resolvedAttachmentRef(
+  entry: unknown
+): [string, Pick<UserAttachment, 'id' | 'kind'>] | undefined {
+  if (typeof entry !== 'object' || entry === null) return undefined
+  const { name, id, kind } = entry as Record<string, unknown>
+  if (typeof name !== 'string') return undefined
+  return [
+    name.trim(),
+    {
+      ...(typeof id === 'string' && id !== '' ? { id } : {}),
+      ...(isAttachmentKind(kind) ? { kind } : {})
+    }
+  ]
+}
+
 function resolvedAttachmentRefs(
   value: unknown
 ): Map<string, Pick<UserAttachment, 'id' | 'kind'>> {
   const resolved = new Map<string, Pick<UserAttachment, 'id' | 'kind'>>()
   if (!Array.isArray(value)) return resolved
   for (const entry of value as unknown[]) {
-    if (typeof entry !== 'object' || entry === null) continue
-    const { name, id, kind } = entry as Record<string, unknown>
-    if (typeof name !== 'string') continue
-    const key = name.trim()
-    if (resolved.has(key)) continue
-    resolved.set(key, {
-      ...(typeof id === 'string' && id !== '' ? { id } : {}),
-      ...(isAttachmentKind(kind) ? { kind } : {})
-    })
+    const ref = resolvedAttachmentRef(entry)
+    if (ref && !resolved.has(ref[0])) resolved.set(ref[0], ref[1])
   }
   return resolved
 }
@@ -449,20 +457,19 @@ export function normalizeAgentTranscript(
     recordTurnOrder(turnId, seenTurns, turnOrder)
     const text = typeof row.content?.text === 'string' ? row.content.text : ''
     if (row.role === 'user') {
-      const workflowId = recordUserRow(
-        row,
-        turnId,
-        text,
-        userTexts,
-        userAttachments,
-        userWorkflowReferences
-      )
-      if (workflowId) latestWorkflowId = workflowId
+      latestWorkflowId =
+        recordUserRow(
+          row,
+          turnId,
+          text,
+          userTexts,
+          userAttachments,
+          userWorkflowReferences
+        ) ?? latestWorkflowId
     }
     if (row.role === 'assistant') {
       if (row.status === 'streaming') streamingTurnIds.add(turnId)
-      const rowPending = recordAssistantRow(row, turnId, text, assistants)
-      if (rowPending) pending = rowPending
+      pending = recordAssistantRow(row, turnId, text, assistants) ?? pending
     }
   }
 
