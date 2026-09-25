@@ -1018,6 +1018,133 @@ describe('useAgentConversationStore', () => {
   })
 
   /**
+   * PM-1575's canvas gate holds a SUCCEEDED canvas-mutating call at streaming
+   * with `ok` already true, waiting for the follower. Forcing every carried
+   * streaming call to failed would put a red cross on a call that worked, so
+   * only a call that truly never resolved reads as failed.
+   */
+  it.for([
+    {
+      label: 'a call the canvas gate is still holding',
+      status: 'success',
+      ok: true
+    },
+    { label: 'a call that never resolved', status: 'running', ok: false }
+  ])('carries $label onto the row with its own outcome', ({ status, ok }) => {
+    const store = useAgentConversationStore()
+    store.setCanvasSyncGate(
+      () => true,
+      () => 0
+    )
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'add a node')
+    store.ingest(toolCall('t1', 'add_node', status))
+    store.ingest(delta('t1', 'Wo'))
+    store.stashActiveTurn()
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'add a node'),
+      historyRow(2, 'assistant', 'server-turn', 'Worked on it.', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(
+      store.messages[0].parts.filter((part) => part.type === 'tool')
+    ).toEqual([
+      expect.objectContaining({ name: 'add_node', state: 'done', ok })
+    ])
+  })
+
+  /**
+   * The settled-while-away path: the done frame reached the stash's transport
+   * before the user came back. The row is authoritative there too, and the
+   * live-only parts have exactly as little anywhere else to go.
+   */
+  it('carries the live-only parts when the turn settled while away', () => {
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(activeTab('workflow-9', 't1'))
+    store.ingest(delta('t1', 'All done.'))
+    store.stashActiveTurn()
+    store.ingest(done('t1'))
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      historyRow(2, 'assistant', 'server-turn', 'All done.', 't1')
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(partTexts(store)).toEqual(['All done.'])
+    expect(tabLinkIds(store)).toEqual(['workflow-9'])
+    expect(store.messages[0].parts.map((part) => part.type)).toEqual([
+      'tabLink',
+      'text'
+    ])
+  })
+
+  /**
+   * The insertion point, on the one row shape that can tell the two rules
+   * apart: a mid-ask row ends [text, runApproval], so stepping back over the
+   * trailing text alone would still land the carried chip under the approval
+   * card it was announced before.
+   */
+  it('carries a live-only part above a trailing approval card', () => {
+    const [askingRow] = zAgentMessages.parse([
+      {
+        id: 't1',
+        thread_id: 'th',
+        seq: 2,
+        role: 'assistant',
+        status: 'streaming',
+        turn_id: 'server-turn',
+        content: { text: 'All done.' },
+        pending_ask: {
+          message_id: 't1',
+          ask_id: 'server-turn:call-1',
+          kind: 'run_approval',
+          context: { workflow_id: 'workflow-1', workflow_name: 'Portrait' },
+          prompt: 'Run workflow “Portrait”?',
+          options: [{ id: 'run', label: 'Run' }],
+          min_selections: 1,
+          max_selections: 1,
+          allow_other: false
+        }
+      }
+    ])
+    const store = useAgentConversationStore()
+    store.setThreadId('th')
+    store.startTurn(T1)
+    store.recordUser(T1, 'upscale this')
+    store.ingest(activeTab('workflow-9', 't1'))
+    store.stashActiveTurn()
+    store.ingest(done('t1'))
+
+    store.setThreadId('th-other')
+    store.hydrate([])
+    store.setThreadId('th')
+    store.hydrate([
+      historyRow(1, 'user', 'server-turn', 'upscale this'),
+      askingRow
+    ])
+    store.resumeBackgroundTurn()
+
+    expect(store.messages[0].parts.map((part) => part.type)).toEqual([
+      'tabLink',
+      'text',
+      'runApproval'
+    ])
+  })
+
+  /**
    * Two asset rows can share a content hash, so the same ref can be attached
    * under a different name in another thread. A thread must not be handed a
    * name the user only ever typed somewhere else.
