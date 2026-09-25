@@ -490,14 +490,27 @@ describe('a human edit made while the document connection is down', () => {
     expect(clientState.sent).toHaveLength(0)
   })
 
-  it.fails('KNOWN GAP: reaches the host once after reconnect, under its original op_id', async () => {
+  /**
+   * These two gaps are split rather than asserted in one `it.fails`, because
+   * `it.fails` passes on the FIRST failure and abandons the rest of the body.
+   * Bundled, the delivery assertion below fails while `clientState.sent` is
+   * still empty, so the `op_id`-retention and exactly-once assertions never
+   * execute -- and an implementation that delivers the op but re-mints its
+   * `op_id` would still report as an expected failure, hiding a FORECLOSE #7
+   * violation behind a green run.
+   *
+   * Both remain `it.fails` today: nothing is delivered at all, so the second
+   * test cannot reach its own subject either. The point of the split is that
+   * once delivery lands, each property fails -- and gets fixed -- on its own
+   * name instead of one masking the other.
+   */
+  it.fails('KNOWN GAP: reaches the host after reconnect', async () => {
     const { enqueue } = mountFollower('wf-a')
     clientState.transportUp = false
 
     await enqueue([deleteNode('edited-during-outage')])
     vi.advanceTimersByTime(RETRY_BUDGET_MS)
     expect(clientState.sent).toHaveLength(0)
-    const operationId = clientState.attempts[0].ops[0].op_id
 
     // `reconnected` alone only re-drives the subscribe; nothing may go out
     // until the host acks that the document is bound again.
@@ -507,11 +520,25 @@ describe('a human edit made while the document connection is down', () => {
 
     ackResubscribe('wf-a')
 
-    // Delivered, toward the workflow it was minted against, carrying the id
-    // it was minted with. Re-minting would defeat the applier's op_id dedupe
-    // and let a replay apply the edit a second time.
+    // Delivered, toward the workflow it was minted against.
     expect(clientState.sent).toHaveLength(1)
     expect(clientState.sent[0]).toMatchObject({ workflowId: 'wf-a' })
+  })
+
+  it.fails('KNOWN GAP: replays under its original op_id, exactly once', async () => {
+    const { enqueue } = mountFollower('wf-a')
+    clientState.transportUp = false
+
+    await enqueue([deleteNode('edited-during-outage')])
+    vi.advanceTimersByTime(RETRY_BUDGET_MS)
+    const operationId = clientState.attempts[0].ops[0].op_id
+
+    clientState.transportUp = true
+    apiState.target.dispatchEvent(new Event('reconnected'))
+    ackResubscribe('wf-a')
+
+    // Carrying the id it was minted with. Re-minting would defeat the
+    // applier's op_id dedupe and let a replay apply the edit a second time.
     expect(clientState.sent[0].ops[0]).toMatchObject({
       op_id: operationId,
       op: 'delete_node',
