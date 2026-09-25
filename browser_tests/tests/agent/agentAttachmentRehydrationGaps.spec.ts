@@ -10,6 +10,7 @@ import type {
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import type { MediaKind } from '@/platform/assets/schemas/mediaAssetSchema'
 import { MIME_ASSET_INFO } from '@/platform/assets/schemas/mediaAssetSchema'
+import { StorageKeys } from '@/platform/workflow/persistence/base/storageKeys'
 
 import { promptHistoryTest as test } from '@e2e/fixtures/agentPromptHistoryFixture'
 import { jsonRoute } from '@e2e/fixtures/utils/jsonRoute'
@@ -40,6 +41,9 @@ test.use({ connectWebSocketToServer: false })
  * that ref is the only name the turn still has.
  */
 const BARE_DIGEST = 'a'.repeat(64)
+/** Agent threads are keyed per workspace since FE-2405; 'personal' is the
+ * workspace every agent spec boots into. */
+const THREAD_KEY = StorageKeys.agentThread('personal')
 const PLAIN_FILENAME = 'ComfyUI_00002_.png'
 
 interface DroppedLibraryAsset {
@@ -394,9 +398,8 @@ test(
     await expect.poll(() => promptHistory.requests.length).toBe(1)
     await expect(panel.getByTestId('reply-image-preview')).toHaveCount(1)
     attachmentThreadId =
-      (await page.evaluate(() =>
-        localStorage.getItem('Comfy.Agent.ThreadId')
-      )) ?? ''
+      (await page.evaluate((key) => localStorage.getItem(key), THREAD_KEY)) ??
+      ''
     expect(attachmentThreadId).not.toBe('')
 
     const openHistory = () =>
