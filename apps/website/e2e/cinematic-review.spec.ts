@@ -186,3 +186,341 @@ for (const layout of ['e', 'd']) {
     await expect(library.getByRole('article')).toHaveCount(2)
   })
 }
+
+for (const layout of ['e', 'd']) {
+  test(`crops and reuses a saved location in layout ${layout}`, async ({
+    page
+  }) => {
+    await page.setViewportSize({
+      width: layout === 'd' ? 390 : 1440,
+      height: 900
+    })
+    await page.goto(`/cinematic-studio?demo=success&ux=${layout}`)
+    await page
+      .getByRole('button', { name: 'Characters, places & props', exact: true })
+      .click()
+    const dialog = page.getByRole('dialog', {
+      name: 'Characters, places & props'
+    })
+    const png = await page.evaluate(() => {
+      const canvas = document.createElement('canvas')
+      canvas.width = 40
+      canvas.height = 20
+      const context = canvas.getContext('2d')!
+      context.fillStyle = 'red'
+      context.fillRect(0, 0, 20, 20)
+      context.fillStyle = 'blue'
+      context.fillRect(20, 0, 20, 20)
+      return canvas.toDataURL('image/png').split(',')[1]
+    })
+    await dialog.getByLabel('Upload reference image').setInputFiles({
+      name: 'harbor.png',
+      mimeType: 'image/png',
+      buffer: Buffer.from(png, 'base64')
+    })
+    await dialog.getByText('Crop reference', { exact: true }).click()
+    await dialog.getByLabel('Left (px)', { exact: true }).fill('20')
+    await dialog.getByLabel('Width (px)', { exact: true }).fill('20')
+    await dialog.getByRole('button', { name: 'Apply crop to draft' }).click()
+    await dialog
+      .getByLabel('Reference name', { exact: true })
+      .fill('Blue harbor')
+    await dialog
+      .getByRole('combobox', { name: /^Reference role/ })
+      .selectOption('location')
+    await dialog
+      .getByLabel('Details to preserve')
+      .fill('Keep the red lighthouse.')
+    await dialog
+      .getByRole('button', { name: 'Save reference', exact: true })
+      .click()
+    const image = dialog.getByRole('img', { name: 'Blue harbor', exact: true })
+    await expect(image).toBeVisible()
+    expect(
+      await image.evaluate((element: HTMLImageElement) => {
+        const canvas = document.createElement('canvas')
+        canvas.width = element.naturalWidth
+        canvas.height = element.naturalHeight
+        const context = canvas.getContext('2d')!
+        context.drawImage(element, 0, 0)
+        return {
+          width: canvas.width,
+          height: canvas.height,
+          pixel: [...context.getImageData(0, 0, 1, 1).data]
+        }
+      })
+    ).toEqual({ width: 20, height: 20, pixel: [0, 0, 255, 255] })
+    await page.reload()
+    await page
+      .getByRole('button', { name: 'Characters, places & props', exact: true })
+      .click()
+    await expect(
+      dialog.getByRole('img', { name: 'Blue harbor', exact: true })
+    ).toBeVisible()
+    await dialog
+      .getByRole('button', { name: 'Use reference', exact: true })
+      .click()
+    await page
+      .getByRole('textbox', { name: 'Scene', exact: true })
+      .fill('A boat reaches the harbor.')
+    await page.getByRole('button', { name: 'Review shot', exact: true }).click()
+    const review = page.getByRole('dialog', { name: 'Review your shot' })
+    await expect(review).toContainText(
+      'Use reference image 1 for the location "Blue harbor".'
+    )
+    await expect(review).toContainText('Keep the red lighthouse.')
+    await page.screenshot({
+      path: `temp/cinematic-assets-${layout}.png`,
+      fullPage: true
+    })
+  })
+}
+
+test('reviews and edits a prompt suggestion without changing the original prematurely', async ({
+  page
+}) => {
+  await page.goto('/cinematic-studio?demo=success')
+  const scene = page.getByRole('textbox', { name: 'Scene', exact: true })
+  await scene.fill('A boat reaches the harbor.')
+  await page
+    .getByRole('button', { name: 'Enhance prompt', exact: true })
+    .click()
+  const dialog = page.getByRole('dialog', { name: 'Enhance prompt' })
+  await dialog
+    .getByRole('button', { name: 'Review enhancement request' })
+    .click()
+  await dialog
+    .getByRole('button', { name: 'Generate demo suggestion · no credits' })
+    .click()
+  await expect(page.locator('#cinematic-scene')).toHaveValue(
+    'A boat reaches the harbor.'
+  )
+  await dialog
+    .getByLabel('Editable suggestion')
+    .fill('Soft sunrise reveals the weathered wooden hull.')
+  await dialog.getByRole('button', { name: 'Apply suggestion' }).click()
+  await expect(scene).toHaveValue(
+    /A boat reaches the harbor\.[\s\S]*Soft sunrise reveals the weathered wooden hull\./
+  )
+})
+
+test('keeps generated takes attached to the planned shot and imports its recipe', async ({
+  page
+}) => {
+  await page.goto('/cinematic-studio?demo=success')
+  await page
+    .getByRole('textbox', { name: 'Scene', exact: true })
+    .fill('A boat reaches the harbor.')
+  await page.getByLabel('Seed (optional)', { exact: true }).fill('17')
+  await page
+    .getByRole('button', { name: 'Build your scene', exact: true })
+    .click()
+  const workshop = page.getByRole('dialog', { name: 'Scene workshop' })
+  await workshop
+    .getByRole('button', { name: 'Plan shots', exact: true })
+    .click()
+  await workshop
+    .getByRole('button', { name: 'Use current studio settings', exact: true })
+    .click()
+  await workshop
+    .getByRole('button', { name: 'Use this scene', exact: true })
+    .first()
+    .click()
+  await page.getByRole('button', { name: 'Review shot', exact: true }).click()
+  await page
+    .getByRole('dialog', { name: 'Review your shot' })
+    .getByRole('button', { name: 'Generate shot', exact: true })
+    .click()
+  await expect(
+    page.getByAltText(/A wide establishing shot/).first()
+  ).toBeVisible()
+  await page
+    .getByRole('button', { name: 'Build your scene', exact: true })
+    .click()
+  await workshop
+    .getByRole('button', { name: 'Plan shots', exact: true })
+    .click()
+  await workshop.getByText('Saved takes · 1', { exact: true }).click()
+  await expect(
+    workshop.getByText('Matches these scene directions')
+  ).toBeVisible()
+  await workshop
+    .getByLabel('Shared scene', { exact: true })
+    .fill('A boat leaves the harbor.')
+  await expect(
+    workshop.getByText('Made with previous scene directions')
+  ).toBeVisible()
+  await workshop
+    .getByRole('button', { name: 'Cancel', exact: true })
+    .last()
+    .click()
+  await page
+    .getByRole('button', { name: 'Your creations', exact: true })
+    .click()
+  const library = page.getByRole('dialog', { name: 'Your creations' })
+  const downloadPromise = page.waitForEvent('download')
+  await library
+    .getByRole('button', { name: 'Save recipe', exact: true })
+    .first()
+    .click()
+  const download = await downloadPromise
+  const path = await download.path()
+  expect(path).toBeTruthy()
+  await page.keyboard.press('Escape')
+  await page
+    .getByRole('button', { name: 'Import a recipe', exact: true })
+    .click()
+  const importer = page.getByRole('dialog', { name: 'Import a recipe' })
+  await importer.getByLabel('Choose recipe JSON').setInputFiles(path)
+  await importer
+    .getByRole('button', { name: 'Apply recipe', exact: true })
+    .click()
+  await expect(
+    page.getByRole('textbox', { name: 'Scene', exact: true })
+  ).toHaveValue(/A boat reaches the harbor/)
+  await expect(
+    page.getByRole('dialog', { name: 'Review your shot' })
+  ).not.toBeVisible()
+})
+
+test('selects saved transition boundaries and restores both after reload', async ({
+  page
+}) => {
+  await page.goto('/cinematic-studio?demo=success')
+  for (const scene of ['The harbor at sunrise.', 'The harbor after sunset.']) {
+    await page.getByRole('textbox', { name: 'Scene', exact: true }).fill(scene)
+    await page.getByRole('button', { name: 'Review shot', exact: true }).click()
+    await page
+      .getByRole('dialog', { name: 'Review your shot' })
+      .getByRole('button', { name: 'Generate shot', exact: true })
+      .click()
+    await expect(page.getByAltText(new RegExp(scene)).first()).toBeVisible()
+  }
+  await page
+    .getByRole('button', { name: 'Plan a transition', exact: true })
+    .click()
+  const transition = page.getByRole('dialog', { name: 'Plan a transition' })
+  await transition
+    .getByRole('region', { name: 'First frame', exact: true })
+    .getByRole('combobox')
+    .selectOption({ index: 1 })
+  await transition
+    .getByRole('region', { name: 'Last frame', exact: true })
+    .getByRole('combobox')
+    .selectOption({ index: 2 })
+  await expect(
+    transition.getByRole('img', { name: 'First frame', exact: true })
+  ).toBeVisible()
+  await expect(
+    transition.getByRole('img', { name: 'Last frame', exact: true })
+  ).toBeVisible()
+  await transition.getByRole('button', { name: 'Swap frames' }).click()
+  await transition
+    .getByLabel('Scene and action between the frames')
+    .fill('Light slowly changes across the harbor.')
+  await transition.getByRole('button', { name: 'Use these frames' }).click()
+  await page.getByRole('button', { name: 'Review shot', exact: true }).click()
+  const review = page.getByRole('dialog', { name: 'Review your shot' })
+  await expect(
+    review.getByRole('img', { name: 'Starting frame' })
+  ).toBeVisible()
+  await expect(review.getByRole('img', { name: 'Ending frame' })).toBeVisible()
+  await review
+    .getByRole('button', { name: 'Generate shot', exact: true })
+    .click()
+  await expect(
+    page.getByLabel('Generated video', { exact: true })
+  ).toBeVisible()
+  await page
+    .getByRole('button', { name: 'Your creations', exact: true })
+    .click()
+  const library = page.getByRole('dialog', { name: 'Your creations' })
+  await library
+    .getByRole('combobox', { name: 'All', exact: true })
+    .selectOption('video')
+  await expect(
+    library.getByRole('button', { name: 'Reuse settings', exact: true })
+  ).toBeVisible()
+  await page.reload()
+  await page
+    .getByRole('button', { name: 'Your creations', exact: true })
+    .click()
+  await library
+    .getByRole('combobox', { name: 'All', exact: true })
+    .selectOption('video')
+  await library
+    .getByRole('button', { name: 'Reuse settings', exact: true })
+    .click()
+  await page.getByRole('button', { name: 'Review shot', exact: true }).click()
+  await expect(
+    review.getByRole('img', { name: 'Starting frame' })
+  ).toBeVisible()
+  await expect(review.getByRole('img', { name: 'Ending frame' })).toBeVisible()
+  await expect(review).toContainText('Light slowly changes across the harbor.')
+  await page.screenshot({
+    path: 'temp/cinematic-transition-restored.png',
+    fullPage: true
+  })
+})
+
+test('reviews separate motion clips and preserves the draft on Back', async ({
+  page
+}) => {
+  await page.goto('/cinematic-studio?demo=success')
+  await page
+    .getByRole('button', { name: 'Compare camera directions', exact: true })
+    .click()
+  const motion = page.getByRole('dialog', { name: 'Compare camera directions' })
+  await motion.getByLabel('Upload an image').setInputFiles({
+    name: 'frame.png',
+    mimeType: 'image/png',
+    buffer: Buffer.from(
+      'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/l9sAAAAASUVORK5CYII=',
+      'base64'
+    )
+  })
+  await motion
+    .getByLabel('Scene and action for every clip')
+    .fill('Clouds drift over the harbor.')
+  await motion.getByLabel('Push in', { exact: true }).check()
+  await motion.getByRole('button', { name: 'Review clips' }).click()
+  const review = page.getByRole('dialog', { name: 'Review your shot' })
+  await expect(review).toContainText(
+    'Separate clips; each uses workspace credits.'
+  )
+  await expect(review).toContainText('Keep the camera locked in place.')
+  await expect(review).toContainText('smooth physical dolly-in')
+  await review.getByRole('button', { name: 'Back to editing' }).click()
+  await expect(
+    motion.getByLabel('Scene and action for every clip')
+  ).toHaveValue('Clouds drift over the harbor.')
+  await expect(motion.getByLabel('Push in', { exact: true })).toBeChecked()
+  await motion.getByRole('button', { name: 'Review clips' }).click()
+  await review
+    .getByRole('button', { name: 'Generate shot', exact: true })
+    .click()
+  await expect(
+    page.getByLabel('Generated video', { exact: true })
+  ).toBeVisible()
+  await page
+    .getByRole('button', { name: 'Your creations', exact: true })
+    .click()
+  const library = page.getByRole('dialog', { name: 'Your creations' })
+  await library
+    .getByRole('combobox', { name: 'All', exact: true })
+    .selectOption('video')
+  await expect(
+    library.getByRole('link', { name: 'Download', exact: true })
+  ).toHaveCount(2)
+  await page.keyboard.press('Escape')
+  await page
+    .getByRole('button', { name: 'Compare results', exact: true })
+    .click()
+  await expect(
+    page.getByRole('dialog', { name: 'Compare creations' }).locator('video')
+  ).toHaveCount(2)
+  await page.screenshot({
+    path: 'temp/cinematic-motion-comparison.png',
+    fullPage: true
+  })
+})

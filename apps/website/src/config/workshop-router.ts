@@ -106,15 +106,20 @@ function failureFor(
   return 'provider'
 }
 
-export interface RouterRunOptions {
+export interface RouterConnectionOptions {
   readonly contract: WorkshopContract
-  readonly body: Readonly<Record<string, unknown>>
   readonly token: string
   readonly freshToken?: () => Promise<string>
-  readonly idempotencyKey: string
   readonly signal: AbortSignal
   readonly onRequestId?: (requestId: string | null) => void
   readonly rasterizeSvg?: WorkshopSvgRasterizer
+}
+
+export interface RouterRunOptions extends RouterConnectionOptions {
+  readonly body: Readonly<Record<string, unknown>>
+  readonly idempotencyKey: string
+  readonly onQueuedRequest?: (requestId: string) => void
+  readonly cancelOnAbort?: boolean | (() => boolean)
 }
 
 interface RunProgress {
@@ -136,16 +141,20 @@ type RunState =
       readonly outputs: RunOutput[]
     })
 
-export interface AttemptContext {
-  readonly options: RouterRunOptions
-  readonly body: string
+export interface RouterConnectionContext {
+  readonly options: RouterConnectionOptions
   readonly controller: AbortController
   readonly signal: AbortSignal
   readonly deadlineAt: number
 }
 
+export interface AttemptContext extends RouterConnectionContext {
+  readonly options: RouterRunOptions
+  readonly body: string
+}
+
 export async function withRunDeadline<T>(
-  context: AttemptContext,
+  context: RouterConnectionContext,
   limit: number,
   action: () => Promise<T>
 ): Promise<T> {
@@ -189,7 +198,7 @@ function retryState(
 
 export function throwRunFailure(
   error: unknown,
-  context: AttemptContext,
+  context: RouterConnectionContext,
   requestId: string | null
 ): never {
   context.options.signal.throwIfAborted()
@@ -246,7 +255,7 @@ function attributedResponseError(
 export async function settleRouterResponse(
   response: Response,
   requestId: string | null,
-  context: AttemptContext
+  context: RouterConnectionContext
 ): Promise<RunOutput[]> {
   const { options, signal } = context
   try {
@@ -382,25 +391,30 @@ export interface RouterRunResult {
   readonly deadlineCollections: number
 }
 
-export function createAttemptContext(
-  options: RouterRunOptions
-): AttemptContext {
-  if (
-    !options.token ||
-    !options.idempotencyKey ||
-    !/^[\w.-]+\/[\w.-]+$/.test(options.contract.id)
-  )
+export function createRouterConnectionContext(
+  options: RouterConnectionOptions
+): RouterConnectionContext {
+  if (!options.token || !/^[\w.-]+\/[\w.-]+$/.test(options.contract.id))
     throw new WorkshopRouterError('unavailable')
-  if (!validateWorkshopInput(options.body, options.contract.inputSchema))
-    throw new WorkshopRouterError('validation')
   const controller = new AbortController()
   return {
     options,
-    body: serializeRouterInput(options.body),
     controller,
     signal: combineAbortSignals([controller.signal, options.signal]),
     deadlineAt: Date.now() + TOTAL_RUN_TIMEOUT_MS
   }
+}
+
+export function createAttemptContext(
+  options: RouterRunOptions
+): AttemptContext {
+  if (!options.idempotencyKey) throw new WorkshopRouterError('unavailable')
+  const context = createRouterConnectionContext(options)
+  if (!validateWorkshopInput(options.body, options.contract.inputSchema)) {
+    context.controller.abort()
+    throw new WorkshopRouterError('validation')
+  }
+  return { ...context, options, body: serializeRouterInput(options.body) }
 }
 
 export async function runSynchronousWorkshopRouter(

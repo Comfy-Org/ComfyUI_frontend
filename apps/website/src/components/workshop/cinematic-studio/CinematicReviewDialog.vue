@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import { useObjectUrl } from '@vueuse/core'
 import { computed, watch } from 'vue'
 import type { CinematicReview } from '../../../composables/useCinematicShot'
 import type { Locale } from '../../../i18n/translations'
+import { libraryCopy } from '../../../lib/workshop/cinematic-studio/library-copy'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import Button from '../../ui/button/Button.vue'
 import Dialog from '../../ui/dialog/Dialog.vue'
@@ -12,12 +14,22 @@ import DialogTitle from '../../ui/dialog/DialogTitle.vue'
 const {
   review,
   canConfirm,
+  referenceSaveError = false,
+  referencePreparing = false,
   locale = 'en'
 } = defineProps<{
   review: CinematicReview | undefined
   canConfirm: boolean
+  referenceSaveError?: boolean
+  referencePreparing?: boolean
   locale?: Locale
 }>()
+const firstPreview = useObjectUrl(
+  computed(() => review?.request.video?.firstFrame)
+)
+const lastPreview = useObjectUrl(
+  computed(() => review?.request.video?.lastFrame)
+)
 const emit = defineEmits<{ confirm: []; close: [] }>()
 const referenceNames = computed(() =>
   review
@@ -70,7 +82,12 @@ watch(
               {{ tc('cinematic.review.format', locale) }}
             </dt>
             <dd class="mt-1">
-              {{ review.request.aspect }} · {{ review.resolution }}
+              {{
+                review.adaptiveAspect
+                  ? libraryCopy('providerAspect', locale)
+                  : review.request.aspect
+              }}
+              · {{ review.resolution }}
             </dd>
           </div>
           <div>
@@ -86,6 +103,12 @@ watch(
             <dd class="mt-1 wrap-break-word">
               {{ referenceNames || tc('cinematic.review.none', locale) }}
             </dd>
+          </div>
+          <div v-if="review.request.seed !== undefined">
+            <dt class="text-primary-comfy-canvas">
+              {{ libraryCopy('seed', locale) }}
+            </dt>
+            <dd>{{ review.request.seed }}</dd>
           </div>
           <div v-if="review.request.video">
             <dt class="text-primary-comfy-canvas">
@@ -103,7 +126,37 @@ watch(
             </dd>
           </div>
         </dl>
-        <div class="flex flex-col gap-2">
+        <div v-if="firstPreview || lastPreview" class="grid grid-cols-2 gap-3">
+          <img
+            v-if="firstPreview"
+            :src="firstPreview"
+            :alt="tc('cinematic.video.firstFrame', locale)"
+            class="h-28 w-full rounded-lg object-contain"
+          />
+          <img
+            v-if="lastPreview"
+            :src="lastPreview"
+            :alt="tc('cinematic.video.lastFrame', locale)"
+            class="h-28 w-full rounded-lg object-contain"
+          />
+        </div>
+        <div v-if="review.batch" class="flex flex-col gap-2">
+          <p class="text-sm text-primary-comfy-canvas">
+            {{ libraryCopy('separateClips', locale) }}
+          </p>
+          <ol
+            class="max-h-52 list-inside list-decimal space-y-3 overflow-y-auto text-sm text-primary-warm-white"
+          >
+            <li
+              v-for="(clip, index) in review.batch"
+              :key="index"
+              class="whitespace-pre-wrap"
+            >
+              {{ clip.prompt }}
+            </li>
+          </ol>
+        </div>
+        <div v-else class="flex flex-col gap-2">
           <h3 class="text-sm font-semibold text-primary-warm-white">
             {{ tc('cinematic.review.prompt', locale) }}
           </h3>
@@ -118,7 +171,21 @@ watch(
           {{ tc('cinematic.review.credits', locale) }}
         </p>
         <p
-          v-if="!canConfirm"
+          v-if="referencePreparing"
+          role="status"
+          class="text-sm text-primary-warm-white"
+        >
+          {{ libraryCopy('referencePreparing', locale) }}
+        </p>
+        <p
+          v-if="referenceSaveError"
+          role="alert"
+          class="text-sm text-primary-warm-white"
+        >
+          {{ libraryCopy('referenceSaveError', locale) }}
+        </p>
+        <p
+          v-if="!canConfirm && !referencePreparing"
           role="status"
           class="text-sm text-primary-warm-white"
         >

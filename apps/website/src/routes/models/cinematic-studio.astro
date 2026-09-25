@@ -1,4 +1,5 @@
 ---
+import { cinematicEnhancementModel } from '../../lib/workshop/cinematic-studio/enhancement-model'
 import BaseLayout from '../../layouts/BaseLayout.astro'
 import CinematicStudioPage from '../../components/workshop/cinematic-studio/CinematicStudioPage.vue'
 import { getRouterWorkshopModelDetail } from '../../config/workshop-router-content'
@@ -6,6 +7,7 @@ import { runnableCinematicEditingModels } from '../../lib/workshop/cinematic-stu
 import { runnableCinematicModels } from '../../lib/workshop/cinematic-studio/models'
 import { tc } from '../../lib/workshop/cinematic-studio/copy'
 
+const enhancementModel = cinematicEnhancementModel()
 const models = runnableCinematicModels(getRouterWorkshopModelDetail)
 const editingModels = runnableCinematicEditingModels(
   getRouterWorkshopModelDetail
@@ -19,6 +21,7 @@ if (!models.length) throw new Error('Cinematic Studio has no runnable models')
   noindex
 >
   <CinematicStudioPage
+    enhancementModel={enhancementModel}
     editingModels={editingModels}
     models={models}
     client:load

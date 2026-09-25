@@ -2,42 +2,56 @@
 
 Base: Comfy-Org/ComfyUI_frontend#18695. Review draft: #18751.
 
-The existing `/models` workspace authentication, Router contracts, upload,
-credit, queue and response handling remain the execution path. The standalone
-demo server, API-key connection screen, private outputs and research scripts
-are not part of this port.
+Studio uses the existing `/models` workspace authentication, Router contracts,
+uploads, credit gates, queue and response handling. There is no standalone
+API-key backend, copied private output library, or additional dependency.
 
-## Verified before this milestone
+## Implemented workflows
 
-- Image generation and review in both layouts.
-- Seedance text-to-video and first/last-frame animation; image-to-video action.
-- Separate image/video drafts and results; playback and downloads.
-- 70 Studio tests, four production browser tests; desktop/mobile checks.
+- Image/video composer drafts, frozen generation review, native playback,
+  downloads, source-image edits, camera/look changes and prompt-based relight.
+- Contract-supported video routes, durations, resolutions, audio and seeds;
+  unsupported reference combinations are blocked before submission.
+- Genre/era/tempo, ordered movements, custom palettes and lighting presets.
+- Account/workspace-scoped local creations, favorites, rename, comparison,
+  source lineage, downloads, validated recipe import/export and settings reuse.
+- Named character/location/prop assets, pixel crop and ordered reference roles.
+  Actual provider bodies retain every selected reference image.
+- Guided scene building and editable plans with captured studio settings,
+  per-shot reference selections, generated takes and previous-version labels.
+- Editable prompt suggestions through the shared Router path, with review
+  before the paid request and explicit application of the returned suggestion.
+- Saved/uploaded transition boundaries, swapping, preview and exact-byte reuse.
+- One to three separately reviewed motion clips, queued sequentially, stopping
+  on failure or cancellation. An omitted seed allows independent provider seeds.
+- Interrupted queued requests can be collected without submitting another paid
+  generation. Unknown admission is never automatically retried. Completed
+  receipts remain until the output is saved durably in the local library.
+- Local reference bundles restore uploaded and saved media for settings reuse,
+  plans and recovery. Missing media is reported; storage failures block new
+  submission rather than quietly discarding references.
 
-## Verified current milestone
+## Validation
 
-- Account/workspace-scoped browser creation storage, names, favorites, export
-  and generation settings reuse. Editing recipes require reopening the editor
-  with a source image. Storage is local to the browser, not cloud sync.
-- Source-image edits, camera viewpoint, look changes and prompt-based relight.
-- Genre/era/tempo, ordered movement, custom palette/light drafts and presets.
-- Guided scene builder and editable three-shot plans.
+- 284 focused unit/component/contract tests across 29 files passed.
+- 12 production browser tests passed across both Studio layouts, including
+  crop pixels, assets, edit review, prompt suggestions, plans, recipe import,
+  motion comparison and transition reference restoration after reload.
+- Website build, website typecheck, knip and Astro formatting passed.
+- Desktop and mobile visual review uses feature-flag mocks and sample media.
+- No paid generation or production workspace verification was performed.
 
-Validation: 123 Studio/storage tests and six production browser tests pass.
-Browser checks cover both layouts, desktop/mobile, saved media after reload,
-actual downloads, edit review/back and sample edit generation. No paid requests.
+## Limits and engineer verification
 
-## Still to verify or migrate
+Storage is browser-local and scoped to account/workspace, not cloud sync.
+Model coverage follows bundled authored contracts; it is not every Router model.
+Dedicated Bria relighting is absent from those contracts; relighting here is
+prompt-based image editing. Output-quality parity and identity lock are not
+claimed. Existing feature gates remain in place.
 
-- Model-specific seed/capability coverage and additional video routes.
-- Recoverable interrupted request identity using shared Router collection.
-- Named character/location assets, reference roles and crop.
-- Planner generated takes, source lineage, saved plans and comparisons.
-- Optional paid prompt suggestion with editable review.
-- Complete recipe/reference restore, including explicit missing-media handling.
-- Original workflow acceptance cases and live paid image/edit/video verification.
-- Supported-runtime repository checks and engineer approval.
-
-No claim of output-quality parity or deterministic relighting/identity lock.
-Dedicated Bria relighting is not currently in the bundled model contracts;
-prompt-based image editing must be described accurately.
+Run supported-runtime CI and a live authenticated image/edit/video smoke test
+before release. Local Node 24.19.0 is below the required 26.8.2. Earlier full-site
+lint reports the unchanged pixal3d-trellis2.astro unused expression. The earlier
+full website test run had 39 failed files, 24 failed tests, 8,240 passed and four
+skipped; nine representative Windows shell/symlink failures reproduced on the
+untouched base, while the remaining failures were not individually audited.

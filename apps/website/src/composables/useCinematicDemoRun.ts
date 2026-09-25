@@ -2,6 +2,7 @@ import { useMounted } from '@vueuse/core'
 import { computed, onScopeDispose, shallowReadonly, shallowRef } from 'vue'
 
 import type { ShotRequest } from './useCinematicStudioRun'
+import type { CinematicJournalEntry } from '../lib/workshop/cinematic-studio/journal'
 import type { RunFailure } from '../config/workshop-run'
 import type { WorkshopSession } from '../config/workshop-session-state'
 import type { AspectRatio } from '../lib/workshop/cinematic-studio/catalog'
@@ -97,29 +98,36 @@ export function useCinematicDemoRun() {
   }
 
   function generate(shot: DemoShot) {
-    if (rendering.value) return
+    generateBatch([shot])
+  }
+  function generateBatch(shots: readonly DemoShot[]) {
+    if (rendering.value || !shots.length || shots.length > 3) return
     const scenario = demoScenario()
-    const ids = Array.from({ length: shot.takes }, () => crypto.randomUUID())
-    dispatch({
-      type: 'shotStarted',
-      ids,
-      prompt: shot.prompt,
-      modelSlug: shot.modelSlug,
-      aspect: shot.aspect,
-      startedAt: Date.now(),
-      preview: shot.preview,
-      settings: shot.settings
-    })
-    const renderMs = scenario === 'slow' ? SLOW_RENDER_MS : DEMO_RENDER_MS
-    ids.forEach((id, index) => {
-      const timer = setTimeout(
-        () => {
-          timers.delete(timer)
-          settle(id, index, scenario, !!shot.video)
-        },
-        renderMs + index * 1200
-      )
-      timers.add(timer)
+    let order = 0
+    shots.forEach((shot) => {
+      const ids = Array.from({ length: shot.takes }, () => crypto.randomUUID())
+      dispatch({
+        type: 'shotStarted',
+        ids,
+        prompt: shot.prompt,
+        modelSlug: shot.modelSlug,
+        aspect: shot.aspect,
+        startedAt: Date.now(),
+        preview: shot.preview,
+        settings: shot.settings
+      })
+      const renderMs = scenario === 'slow' ? SLOW_RENDER_MS : DEMO_RENDER_MS
+      ids.forEach((id) => {
+        const index = order++
+        const timer = setTimeout(
+          () => {
+            timers.delete(timer)
+            settle(id, index, scenario, !!shot.video)
+          },
+          renderMs + index * 1200
+        )
+        timers.add(timer)
+      })
     })
   }
 
@@ -136,7 +144,12 @@ export function useCinematicDemoRun() {
     gate,
     session: shallowRef<WorkshopSession>(),
     rendering,
+    pending: shallowReadonly(shallowRef<readonly CinematicJournalEntry[]>([])),
+    recoveryError: shallowRef(false),
+    recover: async (_id: string) => {},
+    dismissRecovery: (_id: string) => {},
     generate,
+    generateBatch,
     cancel,
     select: (id: string) => dispatch({ type: 'selected', id })
   }

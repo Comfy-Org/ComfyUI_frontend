@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { AUTO_DIRECTION } from './catalog'
 
 import {
   composePlannedScene,
@@ -6,10 +7,76 @@ import {
   createSceneBuilderDraft,
   parseSceneBuilderDraft,
   sceneBuilderStorageKey,
-  serializeSceneBuilderDraft
+  serializeSceneBuilderDraft,
+  planSettingsSchema,
+  plannedReferenceIds,
+  plannedShotMetadata
 } from './scene-builder'
 
 describe('scene builder', () => {
+  it('persists validated settings with all, selected and no reference semantics', () => {
+    const draft = createSceneBuilderDraft('A cyclist')
+    const input = {
+      modelSlug: 'real-model',
+      aspect: '16:9',
+      resolution: '1K',
+      takes: 1,
+      direction: { ...AUTO_DIRECTION },
+      referenceBundleId: 'a'.repeat(64),
+      references: [
+        { id: 'subject:', label: 'Subject' },
+        { id: 'style:', label: 'Style' }
+      ]
+    }
+    draft.plan.settings = planSettingsSchema.parse(input)
+    input.direction.body = 'invalid'
+    expect(draft.plan.settings.direction.body).toBe(AUTO_DIRECTION.body)
+    expect(plannedReferenceIds(draft.plan, 0)).toEqual(['subject:', 'style:'])
+    const before = plannedShotMetadata(draft.plan, 0)
+    draft.plan.shots[0].referenceIds = ['style:', 'missing:']
+    expect(plannedReferenceIds(draft.plan, 0)).toEqual(['style:'])
+    expect(plannedShotMetadata(draft.plan, 0).snapshot).not.toBe(
+      before.snapshot
+    )
+    draft.plan.shots[0].referenceIds = []
+    const restored = parseSceneBuilderDraft(serializeSceneBuilderDraft(draft))
+    expect(plannedReferenceIds(restored.plan, 0)).toEqual([])
+    expect(restored.plan.settings?.enhance).toBe(false)
+    expect(() =>
+      planSettingsSchema.parse({
+        ...input,
+        direction: AUTO_DIRECTION,
+        referenceBundleId: undefined
+      })
+    ).toThrow()
+    expect(() =>
+      planSettingsSchema.parse({
+        ...input,
+        direction: AUTO_DIRECTION,
+        references: [{ id: 'https://host/image', label: 'URL' }]
+      })
+    ).toThrow()
+  })
+  it('can exclude the shared brief without removing the shot action and framing', () => {
+    const { plan } = createSceneBuilderDraft('Shared scene')
+    plan.character = 'Shared character'
+    plan.continuity = 'Shared continuity'
+    plan.shots[0].action = 'Private action'
+    plan.shots[0].includeSharedBrief = false
+    expect(composePlannedScene(plan, 0)).toContain('Private action')
+    expect(composePlannedScene(plan, 0)).not.toContain('Shared')
+    plan.scene = ''
+    expect(() => composePlannedScene(plan, 0)).not.toThrow()
+    const legacy = JSON.parse(
+      serializeSceneBuilderDraft(createSceneBuilderDraft('Legacy'))
+    )
+    for (const shot of legacy.plan.shots) delete shot.includeSharedBrief
+    expect(
+      parseSceneBuilderDraft(JSON.stringify(legacy)).plan.shots.every(
+        (shot) => shot.includeSharedBrief
+      )
+    ).toBe(true)
+  })
   it('organizes entered words without rewriting them or mutating the draft', () => {
     const { brief } = createSceneBuilderDraft('  A cyclist  ')
     brief.action = 'turns left'

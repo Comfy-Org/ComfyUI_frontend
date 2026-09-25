@@ -1,11 +1,29 @@
 import { describe, expect, it } from 'vitest'
 
-import { resolveModelRouterRender } from '../../../config/router-render'
+import {
+  prepareModelRouterRender,
+  resolveModelRouterRender
+} from '../../../config/router-render'
 import { getAuthoredRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
-import { cinematicVideoDescriptor, cinematicVideoForm } from './video'
+import {
+  cinematicVideoDescriptor,
+  cinematicVideoForm,
+  videoResolutionsForAspect
+} from './video'
 
 const textSlug = 'byteplus--seedance-2-5-text-to-video--generate-videos'
 const frameSlug = 'byteplus--seedance-2-5-first-last-frame--animate-images'
+const wanSlugs = [
+  'wan--text-to-video--generate-videos',
+  'wan--image-to-video--animate-images',
+  'wan--text-to-video-2.7--generate-videos',
+  'wan--image-to-video-2.7--animate-images',
+  'wan--text-to-video-3.0--generate-videos',
+  'wan--image-to-video-3.0--animate-images',
+  'wan--text-to-video-3.0-prime--generate-videos',
+  'wan--image-to-video-3.0-prime--animate-images'
+]
+const ltxSlug = 'ltx--text-to-video-v2--generate-videos'
 
 function modelFor(slug: string) {
   const model = getAuthoredRouterWorkshopModelDetail(slug)
@@ -14,6 +32,157 @@ function modelFor(slug: string) {
 }
 
 describe('cinematic video Router contract', () => {
+  it.for([textSlug, frameSlug, ...wanSlugs, ltxSlug])(
+    'prepares %s with the same Router request path and no catalogue media',
+    async (slug) => {
+      const model = modelFor(slug)
+      const descriptor = cinematicVideoDescriptor(model.execution)
+      if (!descriptor) throw new Error(`Missing video settings: ${slug}`)
+      const firstFrame = new File(['frame'], 'frame.png', { type: 'image/png' })
+      const form = cinematicVideoForm(
+        model,
+        'A slow dolly through a forest',
+        descriptor.aspects[0] ?? '16:9',
+        {
+          durationSeconds: descriptor.defaultDuration,
+          resolution: descriptor.defaultResolution,
+          generateAudio: false,
+          ...(descriptor.firstFrame === 'required' ? { firstFrame } : {}),
+          ...(descriptor.seed ? { seed: 42 } : {})
+        }
+      )
+      const prepared = await prepareModelRouterRender(
+        model,
+        {},
+        {
+          form,
+          uploadFile: async () => 'https://uploads.example.com/user-frame.png'
+        }
+      )
+      expect(prepared.expectedKind).toBe('video')
+      expect(JSON.stringify(prepared.body)).toContain(
+        'A slow dolly through a forest'
+      )
+      expect(JSON.stringify(prepared.body)).not.toContain('cdn.jsdelivr.net')
+      expect(JSON.stringify(prepared.body)).not.toContain('media.comfy.org')
+      if (descriptor.firstFrame === 'required')
+        expect(JSON.stringify(prepared.body)).toContain(
+          'https://uploads.example.com/user-frame.png'
+        )
+      if (slug.startsWith('wan--')) {
+        expect(prepared.body).toMatchObject({
+          parameters: { duration: 5, seed: 42 }
+        })
+        expect(descriptor.generateAudio).toBe(false)
+        expect(descriptor.lastFrame).toBe(false)
+      }
+      if (slug === ltxSlug)
+        expect(prepared.body).toMatchObject({
+          duration: 5,
+          resolution: '1280x720',
+          generate_audio: false,
+          fps: 25
+        })
+    }
+  )
+
+  it('uses the LTX Pro resolution matrix without advertising Fast-only sizes', () => {
+    const model = modelFor(ltxSlug)
+    const descriptor = cinematicVideoDescriptor(model.execution)
+    expect(descriptor).toMatchObject({
+      resolutions: ['1280x720', '720x1280', '1920x1080', '1080x1920'],
+      aspects: ['16:9', '9:16'],
+      firstFrame: 'unsupported',
+      generateAudio: true
+    })
+    expect(descriptor?.seed).toBeUndefined()
+    if (!descriptor) throw new Error('Missing LTX descriptor')
+    expect(videoResolutionsForAspect(descriptor, '9:16')).toEqual([
+      '720x1280',
+      '1080x1920'
+    ])
+    expect(
+      cinematicVideoForm(model, 'Move slowly', '9:16', {
+        durationSeconds: 5,
+        resolution: '1920x1080',
+        generateAudio: true
+      }).values.resolution
+    ).toBe('1080x1920')
+    expect(() =>
+      cinematicVideoForm(model, 'Move slowly', '16:9', {
+        durationSeconds: 5,
+        resolution: '3840x2160',
+        generateAudio: true
+      })
+    ).toThrow('validation')
+  })
+
+  it.for(wanSlugs)('derives Wan capability limits for %s', (slug) => {
+    const descriptor = cinematicVideoDescriptor(modelFor(slug).execution)
+    const version3 = slug.includes('3.0')
+    const version27 = slug.includes('2.7')
+    expect(descriptor?.durations).toEqual(
+      version3
+        ? Array.from({ length: 29 }, (_, i) => i + 2)
+        : version27
+          ? Array.from({ length: 14 }, (_, i) => i + 2)
+          : [5, 10, 15]
+    )
+    expect(descriptor?.seed).toEqual({ minimum: 0, maximum: 2147483647 })
+    if (slug !== 'wan--text-to-video--generate-videos')
+      expect(descriptor?.aspects).toEqual([])
+  })
+
+  it('rejects unsupported frame, duration and seed requests rather than silently changing them', () => {
+    const model = modelFor(ltxSlug)
+    const settings = {
+      durationSeconds: 5,
+      resolution: '1280x720',
+      generateAudio: true
+    }
+    expect(() =>
+      cinematicVideoForm(model, 'Move slowly', '16:9', { ...settings, seed: 1 })
+    ).toThrow('validation')
+    expect(() =>
+      cinematicVideoForm(model, 'Move slowly', '16:9', {
+        ...settings,
+        durationSeconds: 7
+      })
+    ).toThrow('validation')
+    expect(() =>
+      cinematicVideoForm(model, 'Move slowly', '16:9', {
+        ...settings,
+        firstFrame: new File(['frame'], 'frame.png', { type: 'image/png' })
+      })
+    ).toThrow('validation')
+  })
+
+  it.for(wanSlugs.filter((slug) => slug.includes('--image-to-video')))(
+    'requires an uploaded first frame for %s',
+    (slug) => {
+      const model = modelFor(slug)
+      expect(() =>
+        cinematicVideoForm(model, 'Move slowly', '16:9', {
+          durationSeconds: 5,
+          resolution: '720P',
+          generateAudio: false
+        })
+      ).toThrow('validation')
+      expect(() =>
+        cinematicVideoForm(model, 'Move slowly', '16:9', {
+          durationSeconds: 5,
+          resolution: '720P',
+          generateAudio: false,
+          seed: -1
+        })
+      ).toThrow('validation')
+    }
+  )
+
+  it('does not misrepresent reference-video input as a starting frame', () => {
+    const model = modelFor('wan--reference-video-2.7--animate-images')
+    expect(cinematicVideoDescriptor(model.execution)).toBeUndefined()
+  })
   it.for([
     { slug: textSlug, firstFrame: 'unsupported', lastFrame: false },
     { slug: frameSlug, firstFrame: 'required', lastFrame: true }

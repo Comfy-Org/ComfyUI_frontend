@@ -1,6 +1,35 @@
 import type { Locale } from '../../../i18n/translations'
 
 const copy = {
+  referencePreparing: [
+    'Saving references before generation…',
+    '正在生成前保存参考图…'
+  ],
+  transition: ['Plan a transition', '规划转场'],
+  motion: ['Compare camera directions', '对比相机运动'],
+  separateClips: [
+    'Separate clips; each uses workspace credits. Later clips stop if one fails.',
+    '独立片段；每个均使用工作区积分。如某个失败，则停止后续片段。'
+  ],
+  referenceSaveError: [
+    'Could not save the reference images in this browser. Free browser storage and try again. No generation was submitted.',
+    '无法在此浏览器保存参考图像。请释放浏览器存储空间后重试。尚未提交生成请求。'
+  ],
+  referenceUnsupported: [
+    'This model cannot use these references. Choose a reference-capable model or remove some images.',
+    '此模型无法使用这些参考图。请选择支持参考图的模型，或移除部分图像。'
+  ],
+  compare: ['Compare results', '比较结果'],
+  restoreError: [
+    'Could not fully restore these settings or references. Check the selected model and reattach missing images.',
+    '无法完整恢复这些设置或参考图。请检查所选模型并重新添加缺失的图像。'
+  ],
+  seed: ['Seed (optional)', '种子（可选）'],
+  random: ['Random', '随机'],
+  providerAspect: [
+    'Framing follows source or provider',
+    '构图由源图或提供方决定'
+  ],
   title: ['Your creations', '你的作品'],
   description: [
     'Saved in this browser for your current account and workspace. Download important work to keep a backup.',
@@ -36,8 +65,8 @@ const copy = {
   reveal: ['Reveal preview', '显示预览'],
   hidden: ['Preview hidden', '预览已隐藏'],
   reuseNotice: [
-    'Settings restored. Reattach any reference images before generating.',
-    '设置已恢复。生成前请重新添加参考图像。'
+    'Settings and locally available references restored. Check your references before generating.',
+    '设置和本地可用参考图已恢复。请在生成前检查参考图。'
   ],
   builder: ['Build your scene', '构建场景'],
   creative: ['Creative controls', '创意控制']

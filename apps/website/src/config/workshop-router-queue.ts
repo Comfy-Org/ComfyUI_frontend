@@ -2,11 +2,14 @@ import { combineAbortSignals, createTimeoutSignal } from '../utils/abortSignal'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import type {
   AttemptContext,
+  RouterConnectionContext,
+  RouterConnectionOptions,
   RouterRunOptions,
   RouterRunResult
 } from './workshop-router'
 import {
   createAttemptContext,
+  createRouterConnectionContext,
   inFlightWaitMs,
   runSynchronousWorkshopRouter,
   settleRouterResponse,
@@ -37,8 +40,17 @@ const TERMINAL_RESULT_ERRORS = new Set([
   'queue_timeout'
 ])
 
-interface QueueContext extends AttemptContext {
+interface QueueContext extends RouterConnectionContext {
   latestToken: string
+}
+
+interface SubmissionContext extends AttemptContext {
+  latestToken: string
+}
+
+export interface RouterCollectionOptions extends RouterConnectionOptions {
+  readonly requestId: string
+  readonly cancelOnAbort?: boolean | (() => boolean)
 }
 
 interface Submitting {
@@ -68,7 +80,10 @@ type QueuedRun =
       readonly outputs: RunOutput[]
     }
 
-function requestsUrl(context: AttemptContext, requestId?: string): string {
+function requestsUrl(
+  context: RouterConnectionContext,
+  requestId?: string
+): string {
   const root = `${WORKSHOP_ROUTER_BASE_URL}/v2/models/${context.options.contract.id}/requests`
   return requestId ? `${root}/${requestId}` : root
 }
@@ -112,23 +127,30 @@ function runRequestId(state: QueuedRun): string | null {
 async function routerFetch(
   context: QueueContext,
   url: string,
-  init: { readonly method: 'GET' | 'POST' | 'PUT'; readonly body?: string }
+  init:
+    | { readonly method: 'GET' }
+    | {
+        readonly method: 'POST'
+        readonly body: string
+        readonly idempotencyKey: string
+      }
 ): Promise<Response> {
   const { options } = context
   const token = (await options.freshToken?.()) ?? options.token
   context.signal.throwIfAborted()
   context.latestToken = token
   return fetch(url, {
-    ...init,
+    method: init.method,
+    ...(init.method === 'POST' ? { body: init.body } : {}),
     credentials: 'omit',
     redirect: 'error',
     headers: {
       Authorization: `Bearer ${token}`,
-      ...(init.body === undefined
+      ...(init.method === 'GET'
         ? {}
         : {
             'Content-Type': 'application/json',
-            'Idempotency-Key': options.idempotencyKey
+            'Idempotency-Key': init.idempotencyKey
           })
     },
     signal: combineAbortSignals([
@@ -140,11 +162,12 @@ async function routerFetch(
 
 async function submit(
   state: Submitting,
-  context: QueueContext
+  context: SubmissionContext
 ): Promise<QueuedRun> {
   const response = await routerFetch(context, requestsUrl(context), {
     method: 'POST',
-    body: context.body
+    body: context.body,
+    idempotencyKey: context.options.idempotencyKey
   })
   const callId = response.headers.get('X-Comfy-Request-Id')
   if (
@@ -175,6 +198,21 @@ async function submit(
   if (!requestId)
     throw new WorkshopRouterError('response', callId, {}, undefined, 'response')
   context.options.onRequestId?.(requestId)
+  try {
+    context.options.onQueuedRequest?.(requestId)
+  } catch (cause) {
+    throw new WorkshopRouterError(
+      'client',
+      requestId,
+      {},
+      undefined,
+      'request',
+      {
+        cause,
+        requestSettlement: 'pending'
+      }
+    )
+  }
   return { phase: 'collect', requestId, interruptions: 0, unreadableResults: 0 }
 }
 
@@ -326,7 +364,7 @@ function afterInterruption(
 
 async function advance(
   state: PendingRun,
-  context: QueueContext
+  context: SubmissionContext
 ): Promise<QueuedRun> {
   if (state.phase === 'waiting') {
     await waitFor(state.waitMs, context.signal)
@@ -351,10 +389,67 @@ function requestCancellation(context: QueueContext, requestId: string): void {
   }).catch(() => {})
 }
 
+export async function collectWorkshopRouter(
+  options: RouterCollectionOptions
+): Promise<RouterRunResult> {
+  if (!REQUEST_ID.test(options.requestId))
+    throw new WorkshopRouterError('validation')
+  const context: QueueContext = {
+    ...createRouterConnectionContext(options),
+    latestToken: options.token
+  }
+  let state: QueuedRun = {
+    phase: 'collect',
+    requestId: options.requestId,
+    interruptions: 0,
+    unreadableResults: 0
+  }
+  try {
+    while (state.phase !== 'complete') {
+      if (state.phase === 'submit' || state.phase === 'synchronous')
+        throw new WorkshopRouterError('response', options.requestId)
+      const active: Collecting | Waiting = state
+      state = await withRunDeadline(
+        context,
+        Number.POSITIVE_INFINITY,
+        async (): Promise<QueuedRun> => {
+          if (active.phase === 'waiting') {
+            await waitFor(active.waitMs, context.signal)
+            return active.next
+          }
+          try {
+            return await collect(active, context)
+          } catch (error) {
+            return afterInterruption(error, active, context)
+          }
+        }
+      )
+    }
+    return {
+      outputs: state.outputs,
+      requestId: state.requestId,
+      deadlineCollections: 0
+    }
+  } catch (error) {
+    if (
+      options.signal.aborted &&
+      (typeof options.cancelOnAbort === 'function'
+        ? options.cancelOnAbort()
+        : options.cancelOnAbort)
+    )
+      requestCancellation(context, options.requestId)
+    options.signal.throwIfAborted()
+    if (error instanceof WorkshopRouterError) throw error
+    return throwRunFailure(error, context, options.requestId)
+  } finally {
+    context.controller.abort()
+  }
+}
+
 export async function runWorkshopRouter(
   options: RouterRunOptions
 ): Promise<RouterRunResult> {
-  const context: QueueContext = {
+  const context: SubmissionContext = {
     ...createAttemptContext(options),
     latestToken: options.token
   }
@@ -379,7 +474,13 @@ export async function runWorkshopRouter(
     }
   } catch (error) {
     const requestId = runRequestId(state)
-    if (options.signal.aborted && requestId)
+    if (
+      options.signal.aborted &&
+      requestId &&
+      (typeof options.cancelOnAbort === 'function'
+        ? options.cancelOnAbort()
+        : options.cancelOnAbort !== false)
+    )
       requestCancellation(context, requestId)
     options.signal.throwIfAborted()
     if (error instanceof WorkshopRouterError) throw error

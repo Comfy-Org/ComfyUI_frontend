@@ -24,6 +24,13 @@ import { runnableCinematicModels } from '../../../lib/workshop/cinematic-studio/
 import CinematicStudio from './CinematicStudio.vue'
 import CinematicStudioPage from './CinematicStudioPage.vue'
 
+vi.mock(
+  import('../../../lib/workshop/cinematic-studio/reference-bundles'),
+  () => ({
+    saveReferenceBundle: vi.fn(async () => undefined),
+    loadReferenceBundle: vi.fn()
+  })
+)
 vi.mock(import('../../../config/workshop-session-state'))
 vi.mock(import('../../../config/workshop-credits'))
 vi.mock(import('../../../scripts/posthog'))
@@ -609,9 +616,13 @@ describe('CinematicStudio', () => {
     await confirmShot(user)
 
     await screen.findByAltText(/A diner at dawn/)
-    const [, parameters] = vi.mocked(router_render).mock.calls[0]
-    expect(parameters?.reference_images).toEqual([face])
-    expect(parameters?.prompt).toContain(
+    const [slug, parameters, options] = vi.mocked(router_render).mock.calls[0]
+    expect(slug).toBe('byteplus--seedream-4-5--edit-images')
+    expect(parameters).toEqual({})
+    expect(options.form?.values.images).toEqual([
+      expect.objectContaining({ file: face, name: face.name })
+    ])
+    expect(options.form?.values.prompt).toContain(
       'Keep the character from reference image 1.'
     )
   })
@@ -726,9 +737,13 @@ describe('CinematicStudio', () => {
 
     await confirmShot(user)
     await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(2))
-    const [, parameters] = vi.mocked(router_render).mock.calls[1]
-    expect(parameters?.reference_images).toEqual([expect.any(File)])
-    expect(parameters?.prompt).toContain(
+    const [slug, parameters, options] = vi.mocked(router_render).mock.calls[1]
+    expect(slug).toBe('byteplus--seedream-4-5--edit-images')
+    expect(parameters).toEqual({})
+    expect(options.form?.values.images).toEqual([
+      expect.objectContaining({ file: expect.any(File), name: 'shot.png' })
+    ])
+    expect(options.form?.values.prompt).toContain(
       'Keep the character from reference image 1.'
     )
   })

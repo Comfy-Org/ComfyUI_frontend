@@ -3,7 +3,10 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { workshopContract } from './workshop-contract-catalog'
 import { WORKSHOP_ROUTER_BASE_URL } from './workshop-env'
 import { WorkshopRouterError } from './workshop-router-errors'
-import { runWorkshopRouter } from './workshop-router-queue'
+import {
+  collectWorkshopRouter,
+  runWorkshopRouter
+} from './workshop-router-queue'
 import { workshopFailureAnalytics } from '../scripts/workshop-analytics'
 
 const MODEL = 'bfl/flux-2-pro'
@@ -110,6 +113,41 @@ describe('queued Router delivery', () => {
   beforeEach(() => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-09-19T12:00:00Z'))
+  })
+
+  it('reports an admitted queue handle separately from diagnostic request IDs', async () => {
+    const onQueuedRequest = vi.fn()
+    stubFetch(admitted(), result())
+    await settle(runWorkshopRouter({ ...options(), onQueuedRequest }))
+    expect(onQueuedRequest).toHaveBeenCalledExactlyOnceWith(REQUEST_ID)
+  })
+
+  it('does not report admission for a rejected submission', async () => {
+    const onQueuedRequest = vi.fn()
+    stubFetch(refusal(400, 'invalid_input'))
+    await expect(
+      settle(runWorkshopRouter({ ...options(), onQueuedRequest }))
+    ).rejects.toMatchObject({ reason: 'validation' })
+    expect(onQueuedRequest).not.toHaveBeenCalled()
+  })
+
+  it('preserves the admitted handle without resubmitting when journaling fails', async () => {
+    const calls = stubFetch(admitted())
+    await expect(
+      settle(
+        runWorkshopRouter({
+          ...options(),
+          onQueuedRequest: () => {
+            throw new Error('Storage unavailable')
+          }
+        })
+      )
+    ).rejects.toMatchObject({
+      reason: 'client',
+      requestId: REQUEST_ID,
+      requestSettlement: 'pending'
+    })
+    expect(requestedUrls(calls)).toEqual([`POST ${SUBMIT_URL}`])
   })
 
   it('submits once, polls until the run finishes, and reports the durable request id', async () => {
@@ -448,5 +486,103 @@ describe('queued Router delivery', () => {
       reason: 'response'
     })
     expect(calls).toHaveBeenCalledOnce()
+  })
+})
+
+describe('collecting an admitted Router request', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+
+  function collectionOptions(signal = new AbortController().signal) {
+    const { contract, token } = options()
+    return { contract, token, signal, requestId: REQUEST_ID }
+  }
+
+  it('collects the same request through transient failures without submitting generation', async () => {
+    const calls = stubFetch(
+      new TypeError('Disconnected'),
+      refusal(503, 'temporarily_unavailable', '1'),
+      pending(),
+      result()
+    )
+    const rendered = await settle(collectWorkshopRouter(collectionOptions()))
+    expect(rendered.outputs[0].url).toBe('https://media.example/result.png')
+    expect(requestedUrls(calls)).toEqual([
+      `GET ${RESULT_URL}`,
+      `GET ${RESULT_URL}`,
+      `GET ${RESULT_URL}`,
+      `GET ${RESULT_URL}`
+    ])
+    expect(calls.mock.calls.map(([, init]) => init?.body)).toEqual([
+      undefined,
+      undefined,
+      undefined,
+      undefined
+    ])
+  })
+
+  it('does not fall back to a billable route when collection is unavailable', async () => {
+    const calls = stubFetch(refusal(403, 'not_enabled'))
+    await expect(
+      settle(collectWorkshopRouter(collectionOptions()))
+    ).rejects.toMatchObject({
+      reason: 'unavailable',
+      requestSettlement: 'pending'
+    })
+    expect(requestedUrls(calls)).toEqual([`GET ${RESULT_URL}`])
+  })
+
+  it.for(['../other', '', 'not-a-uuid'])(
+    'rejects malformed saved handle %s before requesting',
+    async (requestId) => {
+      const calls = stubFetch()
+      await expect(
+        collectWorkshopRouter({ ...collectionOptions(), requestId })
+      ).rejects.toMatchObject({ reason: 'validation' })
+      expect(calls).not.toHaveBeenCalled()
+    }
+  )
+
+  it.for([
+    { cancelOnAbort: undefined, methods: [`GET ${RESULT_URL}`] },
+    {
+      cancelOnAbort: true,
+      methods: [`GET ${RESULT_URL}`, `PUT ${RESULT_URL}/cancel`]
+    }
+  ])(
+    'uses explicit cancellation policy $cancelOnAbort when observation stops',
+    async ({ cancelOnAbort, methods }) => {
+      const controller = new AbortController()
+      const calls = vi.fn<typeof fetch>(async (_, init) => {
+        if (init?.method === 'PUT') return Response.json({}, { status: 202 })
+        controller.abort()
+        throw controller.signal.reason
+      })
+      vi.stubGlobal('fetch', calls)
+      await expect(
+        settle(
+          collectWorkshopRouter({
+            ...collectionOptions(controller.signal),
+            cancelOnAbort,
+            freshToken: async () => 'fresh-token'
+          })
+        )
+      ).rejects.toMatchObject({ name: 'AbortError' })
+      expect(requestedUrls(calls)).toEqual(methods)
+      expect(
+        new Headers(calls.mock.calls.at(-1)?.[1]?.headers).get('Authorization')
+      ).toBe('Bearer fresh-token')
+    }
+  )
+
+  it('detaches without cancellation by default', async () => {
+    const controller = new AbortController()
+    controller.abort()
+    const calls = stubFetch()
+    await expect(
+      collectWorkshopRouter(collectionOptions(controller.signal))
+    ).rejects.toMatchObject({ name: 'AbortError' })
+    expect(calls).not.toHaveBeenCalled()
   })
 })

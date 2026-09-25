@@ -94,6 +94,9 @@ export function runnableCinematicEditingModels(
 
 export interface CinematicEditingSettings {
   readonly sourceFile?: File
+  /** Additional references, submitted after sourceFile in this exact order. */
+  readonly sourceFiles?: readonly File[]
+  readonly seed?: number
   readonly prompt: string
   readonly aspect?: string
   readonly resolution?: string
@@ -105,14 +108,19 @@ export function cinematicEditingForm(
 ) {
   const descriptor = cinematicEditingDescriptor(model)
   if (!descriptor) throw new WorkshopRouterError('unavailable')
+  const schema = workshopPageSchema(model)
+  const imageField = schema.find((field) => field.name === 'images')
+  const files = [settings.sourceFile, ...(settings.sourceFiles ?? [])]
   if (
-    !(settings.sourceFile instanceof File) ||
-    !settings.sourceFile.type.startsWith('image/')
+    files.some(
+      (file) => !(file instanceof File) || !file.type.startsWith('image/')
+    ) ||
+    imageField?.kind !== 'file' ||
+    files.length > (imageField.maxItems ?? 1)
   )
     throw new WorkshopRouterError('validation', null, { images: 'rejected' })
   if (!settings.prompt.trim())
     throw new WorkshopRouterError('validation', null, { prompt: 'rejected' })
-  const schema = workshopPageSchema(model)
   const ratio = dimensions(settings.aspect)
   const exactSize =
     ratio &&
@@ -130,7 +138,8 @@ export function cinematicEditingForm(
       defaultValues(schema),
       {
         prompt: settings.prompt.trim(),
-        source_images: [settings.sourceFile],
+        source_images: files as File[],
+        ...(settings.seed !== undefined ? { seed: settings.seed } : {}),
         ...(settings.aspect && descriptor.aspects.length
           ? { aspect_ratio: settings.aspect }
           : {}),

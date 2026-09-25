@@ -1,9 +1,11 @@
 <script setup lang="ts">
+import { computed, watch } from 'vue'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import type { AspectRatio } from '../../../lib/workshop/cinematic-studio/catalog'
 import { ASPECT_RATIOS } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
+import { videoResolutionsForAspect } from '../../../lib/workshop/cinematic-studio/video'
 import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
 
 const { model, locale = 'en' } = defineProps<{
@@ -16,6 +18,17 @@ const resolution = defineModel<string>('resolution', { required: true })
 const audio = defineModel<boolean>('audio', { required: true })
 const firstFrame = defineModel<File | undefined>('firstFrame')
 const lastFrame = defineModel<File | undefined>('lastFrame')
+const resolutions = computed(() =>
+  model?.video ? videoResolutionsForAspect(model.video, aspect.value) : []
+)
+watch(
+  resolutions,
+  (values) => {
+    if (values.length && !values.includes(resolution.value))
+      resolution.value = values[0]
+  },
+  { immediate: true }
+)
 const fieldClass =
   'mt-2 h-10 w-full rounded-xl border border-transparency-white-t20 bg-primary-comfy-ink px-3 text-sm text-primary-warm-white'
 </script>
@@ -38,16 +51,14 @@ const fieldClass =
       <label class="text-xs text-primary-comfy-canvas"
         >{{ tc('cinematic.output.resolution', locale) }}
         <select v-model="resolution" :class="fieldClass">
-          <option
-            v-for="value in model.video.resolutions"
-            :key="value"
-            :value="value"
-          >
+          <option v-for="value in resolutions" :key="value" :value="value">
             {{ value }}
           </option>
         </select>
       </label>
-      <label class="text-xs text-primary-comfy-canvas"
+      <label
+        v-if="model.video.aspects.length"
+        class="text-xs text-primary-comfy-canvas"
         >{{ tc('cinematic.output.aspect', locale) }}
         <select v-model="aspect" :class="fieldClass">
           <option

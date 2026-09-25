@@ -1,4 +1,96 @@
 import { z } from 'zod'
+import type { SavedCreation } from './creations'
+import { cameraGroups, lookGroups, gradeGroup } from './catalog'
+import { validateCreativeSettings } from './creative'
+
+const directionChoice = (part: string) =>
+  z
+    .string()
+    .refine((id) =>
+      [...cameraGroups, ...lookGroups, gradeGroup]
+        .find((group) => group.part === part)
+        ?.options.some((option) => option.id === id)
+    )
+const referenceId = z
+  .string()
+  .min(1)
+  .max(200)
+  .regex(/^[a-zA-Z0-9:_-]+$/)
+export const planSettingsSchema = z
+  .object({
+    modelSlug: z
+      .string()
+      .min(1)
+      .max(200)
+      .regex(/^[a-zA-Z0-9._-]+$/),
+    modelName: z.string().max(200).optional(),
+    aspect: z.enum(['21:9', '16:9', '4:3', '1:1', '9:16']),
+    resolution: z.enum(['1K', '2K']),
+    takes: z.number().int().min(1).max(4),
+    enhance: z.boolean().default(false),
+    assets: z
+      .array(
+        z
+          .object({
+            id: z.string().min(1).max(100),
+            name: z.string().max(60),
+            kind: z.enum(['character', 'location', 'prop']),
+            notes: z.string().max(500)
+          })
+          .strict()
+      )
+      .max(3)
+      .optional(),
+    seed: z.number().finite().optional(),
+    direction: z
+      .object({
+        body: directionChoice('body'),
+        lens: directionChoice('lens'),
+        focal: directionChoice('focal'),
+        aperture: directionChoice('aperture'),
+        shot: directionChoice('shot'),
+        light: directionChoice('light'),
+        film: directionChoice('film'),
+        look: directionChoice('look'),
+        grade: directionChoice('grade')
+      })
+      .strict(),
+    creative: z
+      .unknown()
+      .transform((value, context) => {
+        try {
+          return validateCreativeSettings(value)
+        } catch {
+          context.addIssue({
+            code: 'custom',
+            message: 'Invalid creative settings'
+          })
+          return z.NEVER
+        }
+      })
+      .optional(),
+    referenceBundleId: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
+    references: z
+      .array(z.object({ id: referenceId, label: z.string().max(200) }).strict())
+      .max(20)
+      .default([])
+  })
+  .strict()
+  .superRefine((settings, context) => {
+    if (
+      new Set(settings.references.map((item) => item.id)).size !==
+        settings.references.length ||
+      (settings.references.length > 0 && !settings.referenceBundleId)
+    )
+      context.addIssue({
+        code: 'custom',
+        message: 'References require a saved bundle and unique identifiers'
+      })
+  })
+export type PlanSettingsSnapshot = z.infer<typeof planSettingsSchema>
 
 export const SCENE_LIMIT = 8000
 export const BRIEF_FIELDS = [
@@ -9,6 +101,11 @@ export const BRIEF_FIELDS = [
   'constraints'
 ] as const
 const text = z.string().max(SCENE_LIMIT)
+const identity = z
+  .string()
+  .min(1)
+  .max(200)
+  .regex(/^[A-Za-z0-9_-]+$/)
 const briefSchema = z
   .object({
     subject: text,
@@ -19,7 +116,14 @@ const briefSchema = z
   })
   .strict()
 const shotSchema = z
-  .object({ title: z.string().max(100), action: text, framing: text })
+  .object({
+    id: identity.default(() => crypto.randomUUID()),
+    title: z.string().max(100),
+    action: text,
+    framing: text,
+    referenceIds: z.array(referenceId).max(20).optional(),
+    includeSharedBrief: z.boolean().default(true)
+  })
   .strict()
 const draftSchema = z
   .object({
@@ -28,11 +132,19 @@ const draftSchema = z
     brief: briefSchema,
     plan: z
       .object({
+        id: identity.default(() => crypto.randomUUID()),
         character: text,
         setting: text,
         scene: text,
         continuity: text,
-        shots: z.array(shotSchema).length(3)
+        settings: planSettingsSchema.optional(),
+        shots: z
+          .array(shotSchema)
+          .length(3)
+          .refine(
+            (shots) =>
+              new Set(shots.map((shot) => shot.id)).size === shots.length
+          )
       })
       .strict()
   })
@@ -40,6 +152,80 @@ const draftSchema = z
 
 export type SceneBrief = z.infer<typeof briefSchema>
 export type SceneBuilderDraft = z.infer<typeof draftSchema>
+
+export const planShotMetadataSchema = z
+  .object({
+    planId: identity,
+    shotId: identity,
+    snapshot: z.string().min(1).max(20000)
+  })
+  .strict()
+export type PlanShotMetadata = z.infer<typeof planShotMetadataSchema>
+
+export function plannedShotMetadata(
+  plan: SceneBuilderDraft['plan'],
+  index: number
+): PlanShotMetadata {
+  const shot = plan.shots.at(index)
+  if (!shot) throw new Error('Missing shot')
+  return planShotMetadataSchema.parse({
+    planId: plan.id,
+    shotId: shot.id,
+    snapshot: JSON.stringify({
+      scene: composePlannedScene(plan, index),
+      title: shot.title,
+      ...(plan.settings
+        ? {
+            settings: plan.settings,
+            referenceIds: plannedReferenceIds(plan, index)
+          }
+        : {})
+    })
+  })
+}
+
+export function plannedReferenceIds(
+  plan: SceneBuilderDraft['plan'],
+  index: number
+): string[] | undefined {
+  if (!plan.settings) return undefined
+  const available = plan.settings.references.map((reference) => reference.id)
+  const selected = plan.shots.at(index)?.referenceIds
+  return selected === undefined
+    ? available
+    : available.filter((id) => selected.includes(id))
+}
+
+/** Matches identity, never names, prompt similarity or card position. */
+export function plannedShotTakes(
+  plan: SceneBuilderDraft['plan'],
+  index: number,
+  creations: readonly SavedCreation[]
+) {
+  const shot = plan.shots.at(index)
+  if (!shot) return []
+  let snapshot: string | undefined
+  try {
+    snapshot = plannedShotMetadata(plan, index).snapshot
+  } catch {
+    /* Invalid draft still retains its prior takes. */
+  }
+  const settings = z.object({ plan: planShotMetadataSchema })
+  return creations
+    .flatMap((creation) => {
+      const parsed = settings.safeParse(creation.settings)
+      if (
+        !parsed.success ||
+        parsed.data.plan.planId !== plan.id ||
+        parsed.data.plan.shotId !== shot.id
+      )
+        return []
+      return [
+        { creation, previousVersion: parsed.data.plan.snapshot !== snapshot }
+      ]
+    })
+    .sort((a, b) => b.creation.createdAt - a.creation.createdAt)
+}
 
 const labels = {
   action: 'Action',
@@ -112,16 +298,24 @@ export function composePlannedScene(
 ): string {
   const parsed = draftSchema.shape.plan.parse(plan)
   const shot = parsed.shots.at(index)
-  if (!shot || !shot.framing.trim() || !parsed.scene.trim())
+  if (
+    !shot ||
+    !shot.framing.trim() ||
+    (shot.includeSharedBrief && !parsed.scene.trim())
+  )
     throw new Error('Missing shot scene or framing')
   return validateScene(
     [
       shot.framing.trim(),
-      parsed.scene.trim(),
-      parsed.character.trim() && `Character: ${parsed.character.trim()}`,
-      parsed.setting.trim() && `Setting: ${parsed.setting.trim()}`,
+      shot.includeSharedBrief && parsed.scene.trim(),
+      shot.includeSharedBrief &&
+        parsed.character.trim() &&
+        `Character: ${parsed.character.trim()}`,
+      shot.includeSharedBrief &&
+        parsed.setting.trim() &&
+        `Setting: ${parsed.setting.trim()}`,
       shot.action.trim() && `Action: ${shot.action.trim()}`,
-      parsed.continuity.trim(),
+      shot.includeSharedBrief && parsed.continuity.trim(),
       'One film still. Follow the shot framing above; retain the scene, people and clothing.'
     ]
       .filter(Boolean)

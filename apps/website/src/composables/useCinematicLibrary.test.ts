@@ -1,7 +1,7 @@
 import { Blob } from 'node:buffer'
 import { URL } from 'node:url'
 import { render } from '@testing-library/vue'
-import { IDBFactory } from 'fake-indexeddb'
+import { IDBFactory, IDBObjectStore } from 'fake-indexeddb'
 import { Response } from 'undici'
 import {
   assert,
@@ -15,10 +15,15 @@ import {
 import { defineComponent, nextTick, ref, shallowRef } from 'vue'
 
 import { listCreations } from '../lib/workshop/cinematic-studio/creations'
+import {
+  readCinematicJournal,
+  writeCinematicJournal
+} from '../lib/workshop/cinematic-studio/journal'
 import type { Take } from '../lib/workshop/cinematic-studio/reel'
 import { useCinematicLibrary } from './useCinematicLibrary'
 
 beforeEach(() => {
+  localStorage.clear()
   vi.stubGlobal('indexedDB', new IDBFactory())
   vi.stubGlobal('Blob', Blob)
   vi.stubGlobal('URL', URL)
@@ -34,7 +39,7 @@ beforeEach(() => {
 })
 
 const completed: Take = {
-  id: 'take-1',
+  id: '7f1a1a6e-6a53-4a5f-9d3a-2b3b0a1f9c21',
   shot: 1,
   letter: 'A',
   prompt: 'A harbor',
@@ -71,6 +76,37 @@ function mountLibrary() {
 }
 
 describe('cinematic library lifecycle', () => {
+  it('removes the recovery receipt only after the media is durably saved', async () => {
+    writeCinematicJournal('account-a', {
+      ...completed,
+      contractId: 'bfl/flux-2-pro',
+      status: 'complete',
+      requestId: '6f1a1a6e-6a53-4a5f-9d3a-2b3b0a1f9c21'
+    })
+    const { library, takes } = mountLibrary()
+    takes.value = [completed]
+    await expect.poll(() => library.items.value.length).toBe(1)
+    expect(await listCreations('account-a')).toHaveLength(1)
+    expect(readCinematicJournal('account-a')).toEqual([])
+  })
+
+  it('retains the recovery receipt when durable storage is full', async () => {
+    writeCinematicJournal('account-a', {
+      ...completed,
+      contractId: 'bfl/flux-2-pro',
+      status: 'complete',
+      requestId: '6f1a1a6e-6a53-4a5f-9d3a-2b3b0a1f9c21'
+    })
+    vi.spyOn(IDBObjectStore.prototype, 'put').mockImplementation(() => {
+      throw new DOMException('Storage full', 'QuotaExceededError')
+    })
+    const { library, takes } = mountLibrary()
+    takes.value = [completed]
+    await expect.poll(() => library.error.value).toBe(true)
+    expect(readCinematicJournal('account-a')).toHaveLength(1)
+    expect(await listCreations('account-a')).toEqual([])
+  })
+
   it('keeps a deleted completed take deleted when saving is retried', async () => {
     const { library, takes } = mountLibrary()
     takes.value = [completed]

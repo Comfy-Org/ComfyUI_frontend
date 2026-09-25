@@ -4,6 +4,7 @@ import { computed, ref } from 'vue'
 import type { Locale } from '../../../i18n/translations'
 import type { SavedCreation } from '../../../lib/workshop/cinematic-studio/creations'
 import { libraryCopy as copy } from '../../../lib/workshop/cinematic-studio/library-copy'
+import { serializeCinematicRecipe } from '../../../lib/workshop/cinematic-studio/recipes'
 import Button from '../../ui/button/Button.vue'
 import Dialog from '../../ui/dialog/Dialog.vue'
 import DialogContent from '../../ui/dialog/DialogContent.vue'
@@ -80,9 +81,8 @@ function remove(item: SavedCreation) {
   removing.value = undefined
 }
 function recipe(item: SavedCreation) {
-  const { blob: _blob, ...metadata } = item
   const url = URL.createObjectURL(
-    new Blob([JSON.stringify({ version: 1, ...metadata }, null, 2)], {
+    new Blob([serializeCinematicRecipe(item)], {
       type: 'application/json'
     })
   )

@@ -74,7 +74,7 @@ export const MOVEMENTS = [
 ] as const
 
 export type Movement = (typeof MOVEMENTS)[number][0]
-export interface CreativeLight {
+interface CreativeLight {
   position: (typeof LIGHT_POSITIONS)[number]
   color: string
   brightness: number

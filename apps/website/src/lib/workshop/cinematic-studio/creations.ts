@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { planShotMetadataSchema } from './scene-builder'
 import { validateCreativeSettings } from './creative'
 
 import { cameraGroups, gradeGroup, lookGroups } from './catalog'
@@ -16,7 +17,31 @@ const directionChoice = (part: string) =>
         ?.options.some((option) => option.id === id)
     )
 
-const settingsSchema = z.object({
+export const creationSettingsSchema = z.object({
+  referenceBundleId: z
+    .string()
+    .regex(/^[a-f0-9]{64}$/)
+    .optional(),
+  lastSourceId: z.string().max(200).optional(),
+  generationModelSlug: z
+    .string()
+    .min(1)
+    .max(200)
+    .regex(/^[a-zA-Z0-9._-]+$/)
+    .optional(),
+  plan: planShotMetadataSchema.optional(),
+  references: z.array(z.string().max(500)).max(20).optional(),
+  assets: z
+    .array(
+      z.object({
+        id: z.string().min(1).max(100),
+        name: z.string().max(60),
+        kind: z.enum(['character', 'location', 'prop']),
+        notes: z.string().max(500)
+      })
+    )
+    .max(3)
+    .optional(),
   creative: z
     .unknown()
     .transform((value, context) => {
@@ -39,7 +64,7 @@ const settingsSchema = z.object({
   aspect: z.enum(['21:9', '16:9', '4:3', '1:1', '9:16']).optional(),
   resolutionPixels: z.number().int().positive().max(16384).optional(),
   takes: z.number().int().min(1).max(4).optional(),
-  seed: z.number().int().nonnegative().optional(),
+  seed: z.number().finite().optional(),
   sourceId: z.string().max(200).optional(),
   operation: z
     .enum(['generate', 'edit', 'camera', 'look', 'relight'])
@@ -81,11 +106,11 @@ const creationSchema = z.object({
   nsfw: z.boolean(),
   favorite: z.boolean().default(false),
   blob: z.custom<Blob>((value) => value instanceof Blob),
-  settings: settingsSchema.optional()
+  settings: creationSettingsSchema.optional()
 })
 
 export type SavedCreation = z.infer<typeof creationSchema>
-export type CreationSettings = z.infer<typeof settingsSchema>
+export type CreationSettings = z.infer<typeof creationSettingsSchema>
 export type CreationInput = z.input<typeof creationSchema>
 
 export function creationNamespace(

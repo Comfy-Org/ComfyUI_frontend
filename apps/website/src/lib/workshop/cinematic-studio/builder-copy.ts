@@ -1,6 +1,50 @@
 import type { Locale } from '../../../i18n/translations'
 
 const COPY = {
+  sharedSettings: ['Saved studio settings', '已保存的工作室设置'],
+  captureSettings: ['Use current studio settings', '使用当前工作室设置'],
+  noSettings: [
+    'No saved settings. Applying uses the current studio settings.',
+    '尚未保存设置。应用时使用当前工作室设置。'
+  ],
+  settingsReview: [
+    'Review the restored model and settings in the studio before generating. Unavailable models or reference bundles must be resolved there.',
+    '生成前请在工作室中检查恢复的模型和设置。不可用的模型或参考图包需在那里处理。'
+  ],
+  settingsError: [
+    'Save a valid studio setup and its reference bundle before capturing settings.',
+    '请先保存有效的工作室设置及其参考图包。'
+  ],
+  takeCount: ['takes', '版本'],
+  shotSettings: ['Shared brief and references', '共用场景与参考图'],
+  includeSharedBrief: [
+    'Include shared scene, character, setting and continuity',
+    '包含共用场景、角色、环境及连贯性说明'
+  ],
+  references: ['References', '参考图'],
+  referenceNote: [
+    'Uncheck all to use no references for this shot.',
+    '全部取消勾选即可不使用参考图。'
+  ],
+  noReferences: ['No references saved in this setup.', '此设置未保存参考图。'],
+  takes: ['Saved takes', '已存版本'],
+  previousVersion: [
+    'Made with previous scene directions',
+    '使用之前的场景指导生成'
+  ],
+  currentVersion: ['Matches these scene directions', '匹配当前场景指导'],
+  sensitive: [
+    'This take may contain sensitive content.',
+    '此版本可能包含敏感内容。'
+  ],
+  reveal: ['Reveal this take', '显示此版本'],
+  mediaUnavailable: [
+    'Media is unavailable in this browser.',
+    '此浏览器中无法获取媒体。'
+  ],
+  viewTake: ['View take', '查看版本'],
+  editTake: ['Edit frame', '编辑画面'],
+  animateTake: ['Animate frame', '动画化画面'],
   title: ['Scene workshop', '场景工作台'],
   description: [
     'Organize your own words and plan three shots. Applying a scene does not generate media or use credits.',
@@ -43,8 +87,8 @@ const COPY = {
   ],
   reset: ['Start from current scene', '从当前场景开始'],
   planNote: [
-    'Each card shares the character and setting. Use a scene, then review your generation settings in the studio. References must be attached separately.',
-    '每张卡片共用角色和环境。使用场景后，请在工作室中检查生成设置。参考图需单独添加。'
+    'Save studio settings for this plan, choose each shot’s shared brief and references, then review in the studio before generating.',
+    '为此计划保存工作室设置，选择各镜头的共用场景与参考图，然后在工作室中检查后再生成。'
   ],
   optional: ['Optional', '可选'],
   characters: ['characters', '字符']

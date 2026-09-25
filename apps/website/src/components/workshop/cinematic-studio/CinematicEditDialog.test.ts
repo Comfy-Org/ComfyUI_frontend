@@ -25,6 +25,29 @@ function props() {
 }
 
 describe('CinematicEditDialog', () => {
+  it('keeps the imported edit recipe when returning from review', async () => {
+    const initial = props()
+    const source = {
+      ...initial.source,
+      recipe: {
+        modelSlug: initial.models[0].slug,
+        prompt: 'Preserve the person; soften the window light.',
+        aspect: '4:3' as const,
+        operation: 'relight' as const
+      }
+    }
+    const { emitted } = render(CinematicEditDialog, {
+      props: { ...initial, source }
+    })
+    const user = userEvent.setup()
+    expect(
+      await screen.findByRole('textbox', { name: 'Edit instruction' })
+    ).toHaveValue(source.recipe.prompt)
+    await user.click(screen.getByRole('button', { name: 'Review edit' }))
+    expect(emitted('review')).toEqual([
+      [{ ...source.recipe, sourceFile: source.file }]
+    ])
+  })
   it('reviews the selected source and exact instruction without closing the draft', async () => {
     const user = userEvent.setup()
     const initial = props()

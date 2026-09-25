@@ -37,6 +37,8 @@ export interface RouterRenderOptions {
   readonly uploadFile?: WorkshopUrlEncoder
   readonly rasterizeSvg?: WorkshopSvgRasterizer
   readonly onRequestId?: (requestId: string | null) => void
+  readonly onQueuedRequest?: (requestId: string) => void
+  readonly cancelOnAbort?: boolean | (() => boolean)
   readonly onPrepared?: (prepared: PreparedRouterRender) => void | Promise<void>
 }
 
@@ -166,6 +168,8 @@ export async function router_render(
     idempotencyKey,
     signal,
     rasterizeSvg: options.rasterizeSvg,
+    onQueuedRequest: options.onQueuedRequest,
+    cancelOnAbort: options.cancelOnAbort,
     ...(options.onRequestId ? { onRequestId: options.onRequestId } : {})
   })
   const outputs = result.outputs.filter(

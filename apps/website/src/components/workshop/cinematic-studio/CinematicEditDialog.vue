@@ -32,7 +32,19 @@ const {
   direction,
   locale = 'en'
 } = defineProps<{
-  source: { file: File; url: string; name: string } | undefined
+  source:
+    | {
+        file: File
+        url: string
+        name: string
+        recipe?: {
+          modelSlug: string
+          prompt: string
+          aspect: AspectRatio
+          operation: Operation
+        }
+      }
+    | undefined
   models: readonly CinematicModel[]
   direction: Direction
   locale?: Locale
@@ -73,10 +85,11 @@ watch(
   () => source?.file,
   (file) => {
     if (!file) return
-    operation.value = 'edit'
-    instruction.value = ''
+    operation.value = source?.recipe?.operation ?? 'edit'
+    instruction.value = source?.recipe?.prompt ?? ''
+    if (source?.recipe) modelSlug.value = source.recipe.modelSlug
     additional.value = ''
-    aspect.value = '16:9'
+    aspect.value = source?.recipe?.aspect ?? '16:9'
     camera.value = { ...cameraViewDefaults }
     lightType.value = 'golden-hour'
     lightDirection.value = 'side'

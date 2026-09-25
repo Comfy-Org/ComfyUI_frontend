@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { WorkshopModelDetail } from '../../../config/models-catalogue'
 import { Ellipsis } from '@lucide/vue'
 import { computed, onMounted, ref } from 'vue'
 
@@ -14,10 +15,12 @@ import CinematicStudioPanel from './CinematicStudioPanel.vue'
 const {
   models,
   editingModels = [],
+  enhancementModel,
   locale = 'en'
 } = defineProps<{
   models: readonly CinematicModel[]
   editingModels?: readonly CinematicModel[]
+  enhancementModel?: WorkshopModelDetail
   locale?: Locale
 }>()
 
@@ -53,9 +56,16 @@ function pickLayout(id: string) {
       v-else-if="layout === 'd'"
       :models
       :editing-models="editingModels"
+      :enhancement-model="enhancementModel"
       :locale
     />
-    <CinematicStudio v-else :models :editing-models="editingModels" :locale />
+    <CinematicStudio
+      v-else
+      :models
+      :editing-models="editingModels"
+      :enhancement-model="enhancementModel"
+      :locale
+    />
     <CinematicMenu
       :model-value="layout"
       :options="layoutOptions"

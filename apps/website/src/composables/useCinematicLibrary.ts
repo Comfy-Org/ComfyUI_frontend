@@ -8,6 +8,7 @@ import {
 } from 'vue'
 
 import type { Take } from '../lib/workshop/cinematic-studio/reel'
+import { removeCinematicJournal } from '../lib/workshop/cinematic-studio/journal'
 import type { SavedCreation } from '../lib/workshop/cinematic-studio/creations'
 import {
   listCreations,
@@ -26,6 +27,10 @@ export function useCinematicLibrary(
   const error = ref(false)
   const urls = shallowRef<Readonly<Record<string, string>>>({})
   const attempted = new Set<string>()
+  const attemptedOutputs = new Map<
+    string,
+    Extract<Take, { status: 'done' }>['output']
+  >()
   const deleted = new Set<string>()
   let epoch = 0
   let disposed = false
@@ -58,6 +63,7 @@ export function useCinematicLibrary(
         if (!next[id]) URL.revokeObjectURL(url)
       urls.value = next
       items.value = saved
+      for (const item of saved) removeCinematicJournal(namespace, item.takeId)
     } catch {
       if (isCurrent(current)) error.value = true
     } finally {
@@ -90,6 +96,7 @@ export function useCinematicLibrary(
         blob,
         settings: take.settings
       })
+      removeCinematicJournal(namespace, take.id)
       if (isCurrent(current)) await refresh()
     } catch {
       if (isCurrent(current)) error.value = true
@@ -102,11 +109,13 @@ export function useCinematicLibrary(
     for (const take of takes()) {
       if (
         take.status !== 'done' ||
-        attempted.has(take.id) ||
+        (attempted.has(take.id) &&
+          attemptedOutputs.get(take.id) === take.output) ||
         deleted.has(take.id)
       )
         continue
       attempted.add(take.id)
+      attemptedOutputs.set(take.id, take.output)
       void persist(take, namespace)
     }
   }
@@ -118,6 +127,7 @@ export function useCinematicLibrary(
       release()
       items.value = []
       attempted.clear()
+      attemptedOutputs.clear()
       error.value = typeof indexedDB === 'undefined'
       void refresh().then(savePending)
     },
