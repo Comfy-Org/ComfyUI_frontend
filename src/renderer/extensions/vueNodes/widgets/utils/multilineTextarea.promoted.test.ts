@@ -154,7 +154,7 @@ describe('createPromotedDomWidget', () => {
     return widget
   }
 
-  it('gives each host its own clone of the interior element', () => {
+  it('first host shares the interior element, later hosts get clones', () => {
     const element = document.createElement('div')
     element.textContent = 'interior content'
     const source = fromAny<IBaseWidget, unknown>({
@@ -176,12 +176,22 @@ describe('createPromotedDomWidget', () => {
       'b'
     )
 
-    expect(widgetA.element).not.toBe(element)
-    expect(widgetA.element).not.toBe(widgetB.element)
-    expect(widgetA.element.textContent).toBe('interior content')
+    expect(widgetA.element).toBe(element)
+    expect(widgetB.element).not.toBe(element)
     expect(widgetB.element.textContent).toBe('interior content')
     expect(widgetA.type).toBe('kj_preview')
     expect(useDomWidgetStore().widgetStates.has(widgetA.id)).toBe(true)
+
+    // Releasing the claim lets a fresh bind share the live element again.
+    widgetA.onRemove?.()
+    const widgetC = promoteDom(
+      source,
+      makeWidgetId('g', toNodeId('n'), 'c'),
+      'c'
+    )
+    expect(widgetC.element).toBe(element)
+    widgetC.onRemove?.()
+    widgetB.onRemove?.()
   })
 
   it('keeps host clone elements synchronized with a value-bearing source', () => {
@@ -197,6 +207,7 @@ describe('createPromotedDomWidget', () => {
         getValue: () => interiorValue,
         setValue: (value: string) => {
           interiorValue = value
+          element.value = value
         }
       }
     })
@@ -217,6 +228,8 @@ describe('createPromotedDomWidget', () => {
     const hostB = promoteDom(source, idB, 'b')
     const elementA = hostA.element as HTMLInputElement
     const elementB = hostB.element as HTMLInputElement
+    expect(elementA).toBe(element)
+    expect(elementB).not.toBe(element)
     expect(elementA.value).toBe('live')
     expect(elementB.value).toBe('live')
 
@@ -261,9 +274,20 @@ describe('createPromotedDomWidget', () => {
       value: 'first',
       options: {}
     })
+    const cloneId = makeWidgetId('g', toNodeId('n'), 'preview_b')
+    useWidgetValueStore().registerWidget(cloneId, {
+      type: 'MARKDOWN',
+      value: 'first',
+      options: {}
+    })
 
-    const widget = promoteDom(source)
-    const clone = widget.element
+    // The first host shares the live element; the interior widget's own
+    // listeners own its behavior. Clone hosts replay them.
+    const sharedHost = promoteDom(source)
+    expect(sharedHost.element).toBe(root)
+
+    const cloneHost = promoteDom(source, cloneId, 'preview_b')
+    const clone = cloneHost.element
     expect(clone).not.toBe(root)
 
     const cloneTextarea = clone.querySelector('textarea')
@@ -275,9 +299,10 @@ describe('createPromotedDomWidget', () => {
     cloneTextarea!.value = 'edited on host'
     cloneTextarea!.dispatchEvent(new Event('input', { bubbles: true }))
     expect(source.value).toBe('edited on host')
-    expect(useWidgetValueStore().getWidget(WIDGET_ID)?.value).toBe(
+    expect(useWidgetValueStore().getWidget(cloneId)?.value).toBe(
       'edited on host'
     )
+    expect(root.querySelector('.preview')?.textContent).toBe('edited on host')
 
     cloneTextarea!.dispatchEvent(new Event('blur'))
     expect(clone.classList.contains('editing')).toBe(false)
@@ -286,6 +311,9 @@ describe('createPromotedDomWidget', () => {
     source.value = 'from interior'
     expect(cloneTextarea?.value).toBe('from interior')
     expect(clone.querySelector('.preview')?.textContent).toBe('from interior')
+
+    cloneHost.onRemove?.()
+    sharedHost.onRemove?.()
   })
 
   it('reuses the interior component for component-backed widgets', () => {

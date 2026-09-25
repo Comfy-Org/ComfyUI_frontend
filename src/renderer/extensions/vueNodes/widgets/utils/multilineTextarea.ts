@@ -174,9 +174,10 @@ export function createPromotedMultilineWidget(
 
 /**
  * Builds the host widget for a promoted DOM-backed source widget. Textareas
- * keep the store-backed host-owned element; any other DOM widget gets a
- * host-owned clone of the interior element (synchronized through the source
- * widget) and any component widget reuses the interior component, so the live
+ * keep the store-backed host-owned element; the first DOM host claims and
+ * shares the interior element (so in-place DOM updates stay live on it) while
+ * later hosts for the same element get clones synchronized through the source
+ * widget; any component widget reuses the interior component. The live
  * content renders on the host node instead of staying hidden in the interior
  * node's overlay. The widget is registered with the DOM widget store
  * so the canvas-mode overlay positions it on the host row; in Vue-nodes mode
@@ -188,6 +189,10 @@ type SourceCallbackRegistration = {
   previousCallback: IBaseWidget['callback']
   dispatcher: IBaseWidget['callback']
 }
+
+// Which host widget currently owns mounting an interior element: the first
+// host shares the live node, later hosts get clones.
+const claimedElements = new WeakMap<Element, symbol>()
 
 // Multiple promoted hosts can resolve the same interior widget from a shared
 // Subgraph definition, so the callback wrapper is shared and the original
@@ -278,14 +283,24 @@ export function createPromotedDomWidget(
     return widget
   }
 
-  // DomWidget.vue appends widget.element into the host overlay, so two hosts
-  // reusing the interior element would move it out of each other; each host
-  // owns a clone instead.
-  const element = sourceWidget.element.cloneNode(true) as HTMLElement
-  const isValueBearing = 'value' in element
-  const cloneTextarea = element.querySelector('textarea')
+  // DomWidget.vue appends widget.element into the host overlay, so a second
+  // host reusing the interior element would move it out of the first. The
+  // first host claims and shares the live element (widgets that mutate their
+  // DOM in place, e.g. streaming previews, stay live on it); later hosts fall
+  // back to a clone kept in sync through the source value. The claim is
+  // released when the sharing host widget is removed.
+  const sourceElement = sourceWidget.element
+  const claim = Symbol('promoted-dom-host')
+  const shared = !claimedElements.has(sourceElement)
+  if (shared) claimedElements.set(sourceElement, claim)
+  const element = shared
+    ? sourceElement
+    : (sourceElement.cloneNode(true) as HTMLElement)
+  const isValueBearing = !shared && 'value' in element
+  const cloneTextarea = shared ? null : element.querySelector('textarea')
   let refreshClonePreview: (() => void) | undefined
   const reflectValueToElement = (value: string) => {
+    if (shared) return
     if (isValueBearing) (element as HTMLInputElement).value = value
     else if (cloneTextarea) {
       cloneTextarea.value = value
@@ -380,6 +395,8 @@ export function createPromotedDomWidget(
   // chain the same sync onto the interior callback the setter calls.
   const releaseSourceSync = addSourceCallbackSync(sourceWidget, syncToHost)
   widget.onRemove = useChainCallback(widget.onRemove, () => {
+    if (shared && claimedElements.get(sourceElement) === claim)
+      claimedElements.delete(sourceElement)
     inputListenerController.abort()
     releaseSourceSync()
   })
