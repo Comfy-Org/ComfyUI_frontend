@@ -45,6 +45,7 @@ export type PaymentIntentSource =
   | 'upload_model_upgrade'
   | 'team_upgrade_resume'
   | 'free_tier_quota'
+  | 'agent_paywall'
 
 export type SubscriptionCheckoutType = 'new' | 'change'
 export type SubscriptionCheckoutTier = TierKey | 'team'
@@ -1355,6 +1356,7 @@ export type CheckoutEntrySource =
   | 'settings_billing'
   | 'other'
   | 'unknown'
+  | 'agent_paywall'
 type CheckoutElementPhase = 'init' | 'mount' | 'update'
 /** Which Stripe element in the shared group the observation came from. */
 type CheckoutElementKind = 'payment' | 'address'

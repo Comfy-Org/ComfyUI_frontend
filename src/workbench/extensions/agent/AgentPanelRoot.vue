@@ -205,10 +205,10 @@ function onPaywallAction(
         source: 'agent_paywall'
       })
     }
-    openAccountPrecondition('credits')
+    openAccountPrecondition('credits', { source: 'agent_paywall' })
     return
   }
-  openAccountPrecondition('subscription')
+  openAccountPrecondition('subscription', { source: 'agent_paywall' })
 }
 
 const { messages: conversationMessages, entries: conversationEntries } =
