@@ -97,7 +97,10 @@ export function sourceAim(pivot: Vec3): Vec3 {
   return [0, 0, Math.max(norm(pivot), 1e-3)]
 }
 
-/** Inverse of a rigid pose (rotation transposed, translation rotated back). */
+/**
+ * Inverse of a rigid pose (rotation transposed, translation rotated back).
+ * @knipIgnoreUsedByStackedPR the WebGL warp preview
+ */
 export function invertPose(c: Mat4): Mat4 {
   const [r0, r1, r2, d0, d1, d2, f0, f1, f2] = [
     c[0],
@@ -128,7 +131,10 @@ export function focalPx(width: number, hfovDeg: number): number {
   return width / (2 * Math.tan((hfovDeg * DEG) / 2))
 }
 
-/** numpy.percentile with its default linear interpolation, on a sorted array. */
+/**
+ * numpy.percentile with its default linear interpolation, on a sorted array.
+ * @knipIgnoreUsedByStackedPR the WebGL warp preview
+ */
 export function percentileSorted(sorted: ArrayLike<number>, q: number): number {
   if (sorted.length === 0) return 0
   const idx = ((sorted.length - 1) * q) / 100

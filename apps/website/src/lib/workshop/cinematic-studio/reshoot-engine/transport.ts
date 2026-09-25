@@ -1,6 +1,6 @@
 import { WORKSHOP_ROUTER_BASE_URL } from '../../../../config/workshop-env'
 
-export interface ReshootOutput {
+interface ReshootOutput {
   readonly id?: string
   readonly asset_id?: string
   readonly filename?: string
@@ -80,7 +80,7 @@ function bodyField(body: string, key: string): string | undefined {
   }
 }
 
-export async function reshootError(response: Response): Promise<ReshootError> {
+async function reshootError(response: Response): Promise<ReshootError> {
   const body = await response.text().catch(() => '')
   const retryAfter = Number(response.headers.get('Retry-After') ?? NaN)
   const code =
