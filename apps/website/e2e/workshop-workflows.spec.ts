@@ -260,3 +260,23 @@ test('the background example pairs its input and output and restores edited inpu
   await page.reload()
   await expect(original).toBeVisible()
 })
+
+for (const width of [640, 768]) {
+  test(`keeps every Models toolbar control on screen at ${width}px`, async ({
+    page,
+    context
+  }) => {
+    await mockWorkflowVisibility(context, true)
+    await page.setViewportSize({ width, height: 900 })
+    await page.goto('/models/')
+    const toolbar = page.getByTestId('workshop-toolbar')
+    await expect(toolbar.getByTestId('catalogue-tabs')).toBeVisible()
+    for (const control of [
+      toolbar.getByTestId('catalogue-tabs'),
+      toolbar.getByTestId('workshop-search'),
+      toolbar.getByTestId('workshop-filters'),
+      toolbar.getByTestId('workshop-sort')
+    ])
+      await expect(control).toBeInViewport({ ratio: 1 })
+  })
+}
