@@ -1098,6 +1098,50 @@ describe('ChangeTracker', () => {
         expect(tracker.undoQueue).toEqual([initial, afterRun])
       })
 
+      it('settles auto-queue once for the whole run when it closes', () => {
+        const initial = createState(4)
+        const tracker = createTracker(initial)
+
+        const state = captureNodeRemoval(tracker, initial, {
+          coalesceUndo: true
+        })
+        captureNodeRemoval(tracker, state, { coalesceUndo: true })
+        expectAutoQueueGraphChangedNotDispatched()
+
+        tracker.closeCoalescedRun()
+
+        const events: string[] = dispatchedEventNames()
+        expect(
+          events.filter((event) => event === 'autoQueueGraphChanged')
+        ).toHaveLength(1)
+      })
+
+      it('stays quiet on close when the run left the execution graph alone', () => {
+        const initial = createState(4)
+        const tracker = createTracker(initial)
+        const moved = structuredClone(initial)
+        moved.nodes[0].pos = [123, 456]
+        mockCanvasState(moved)
+        tracker.captureCanvasState({ autoQueue: false, coalesceUndo: true })
+
+        tracker.closeCoalescedRun()
+
+        expectAutoQueueGraphChangedNotDispatched()
+      })
+
+      it('starts a new entry for the run after a close', () => {
+        const initial = createState(4)
+        const tracker = createTracker(initial)
+
+        const afterFirstRun = captureNodeRemoval(tracker, initial, {
+          coalesceUndo: true
+        })
+        tracker.closeCoalescedRun()
+        captureNodeRemoval(tracker, afterFirstRun, { coalesceUndo: true })
+
+        expect(tracker.undoQueue).toEqual([initial, afterFirstRun])
+      })
+
       it('opens a new entry for a run that follows an ordinary capture', () => {
         const initial = createState(4)
         const tracker = createTracker(initial)

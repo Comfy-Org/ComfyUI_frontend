@@ -896,7 +896,10 @@ watch(
     if (value === 'idle') {
       // The immediate idle value on remount is a hydration snapshot, not a
       // completed turn. A real idle transition is observed after this pass.
-      if (observedActivityStatus) graphActivity.finishTurn()
+      if (observedActivityStatus) {
+        graphActivity.finishTurn()
+        workflowStore.activeWorkflow?.changeTracker.closeCoalescedRun()
+      }
     } else graphActivity.startTurn(turnId)
     observedActivityStatus = true
     if (value === 'idle') {

@@ -273,7 +273,7 @@ export class ChangeTracker {
   _restoringState: boolean = false
 
   _coalescingUndo = false
-  _squashAutoQueue = true
+  _squashAutoQueue = false
 
   ds?: { scale: number; offset: [number, number] }
   nodeOutputs?: Partial<Record<string, ExecutedWsMessage['output']>>
@@ -461,7 +461,7 @@ export class ChangeTracker {
 
       this.activeState = currentState
       this.redoQueue.length = 0
-      this._squashAutoQueue = autoQueue
+      this._squashAutoQueue ||= autoQueue
       this.updateModified(previousState, { autoQueue })
       void this.squashState()
     }
@@ -477,9 +477,37 @@ export class ChangeTracker {
     if (ChangeTracker.graphEqual(this.activeState, currentState)) return
 
     const previousState = this.activeState
+    const autoQueue = this._squashAutoQueue
+    this._squashAutoQueue = false
     this.activeState = currentState
-    this.updateModified(previousState, { autoQueue: this._squashAutoQueue })
+    this.updateModified(previousState, { autoQueue })
   }, 50)
+
+  /**
+   * End a run of coalesced captures, so the next one opens its own undo
+   * entry, and settle the auto-queue the run's frames each deferred.
+   *
+   * Auto-queue is a whole-run decision: firing per frame would run prompts
+   * against graphs that are still half-built, and never firing would drop
+   * the one run that the user's next interaction used to trigger on their
+   * behalf. Comparing the entry the run opened against the state it ended
+   * on reproduces that single dispatch.
+   */
+  closeCoalescedRun() {
+    if (!this._coalescingUndo) return
+    const runStart = this.undoQueue.at(-1)
+    this._coalescingUndo = false
+    if (
+      runStart &&
+      isAutoQueueOnChange() &&
+      !_.isEqual(
+        getExecutionGraphState(runStart),
+        getExecutionGraphState(this.activeState)
+      )
+    ) {
+      api.dispatchCustomEvent('autoQueueGraphChanged')
+    }
+  }
 
   /** @deprecated Use {@link captureCanvasState} instead. */
   checkState() {
