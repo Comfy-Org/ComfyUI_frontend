@@ -4,7 +4,6 @@ import type {
   BillingOpStatusResponse,
   BillingPlansResponse,
   BillingStatusResponse,
-  Plan,
   PreviewSubscribeResponse
 } from '@comfyorg/ingest-types'
 
@@ -16,6 +15,7 @@ import {
   cloudAppFixture as test,
   waitForCloudApp
 } from '@e2e/fixtures/cloudAppFixture'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
 import { mockBilling } from '@e2e/fixtures/utils/cloudBillingMocks'
 import { bootCloud, mockCloudBoot } from '@e2e/fixtures/utils/cloudBootMocks'
@@ -45,20 +45,14 @@ const BOOT_FEATURES = {
   unified_cloud_auth: true
 } satisfies RemoteConfig
 
-const CREATOR_ANNUAL_PLAN = {
+const CREATOR_ANNUAL_PLAN = createPlan({
   slug: 'creator-annual',
   tier: 'CREATOR',
   duration: 'ANNUAL',
-  price_cents: 33_600,
-  credits_cents: 7_400,
-  max_seats: 5,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 33_600,
-    total_credits_cents: 7_400
-  }
-} satisfies Plan
+  priceCents: 33_600,
+  monthlyCredits: 7_400,
+  maxSeats: 5
+})
 
 /** The server naming the operation it still has open for this scope. */
 const STATUS_WITH_PENDING_SUBSCRIPTION = {
@@ -86,8 +80,8 @@ const NEW_CREATOR_SUBSCRIPTION = {
   is_immediate: true,
   cost_today_cents: 33_600,
   cost_next_period_cents: 33_600,
-  credits_today_cents: 7_400,
-  credits_next_period_cents: 7_400,
+  credits_today_cents: CREATOR_ANNUAL_PLAN.credits_cents,
+  credits_next_period_cents: CREATOR_ANNUAL_PLAN.credits_cents,
   new_plan: CREATOR_ANNUAL_PLAN
 } satisfies PreviewSubscribeResponse
 

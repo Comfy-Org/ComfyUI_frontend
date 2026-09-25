@@ -5,12 +5,12 @@ import type { RemoteConfig } from '@/platform/remoteConfig/types'
 import type {
   BillingPlansResponse,
   BillingStatusResponse,
-  Plan,
   PreviewSubscribeResponse
 } from '@/platform/workspace/api/workspaceApi'
 
 import { comfyPageFixture as test } from '@e2e/fixtures/ComfyPage'
 import { createWorkspaceBillingCapabilities } from '@e2e/fixtures/data/billingCapabilities'
+import { createPlan } from '@e2e/fixtures/data/billingPlans'
 import { mockSystemStats } from '@e2e/fixtures/data/systemStats'
 import { CloudAuthHelper } from '@e2e/fixtures/helpers/CloudAuthHelper'
 import { FeatureFlagHelper } from '@e2e/fixtures/helpers/FeatureFlagHelper'
@@ -55,20 +55,13 @@ const ACTIVE_BILLING_STATUS: BillingStatusResponse = {
   has_funds: true
 }
 
-const STANDARD_YEARLY_PLAN: Plan = {
+const STANDARD_YEARLY_PLAN = createPlan({
   slug: 'standard-yearly',
   tier: 'STANDARD',
   duration: 'ANNUAL',
-  price_cents: 16_000,
-  credits_cents: 4_200,
-  max_seats: 1,
-  availability: { available: true },
-  seat_summary: {
-    seat_count: 1,
-    total_cost_cents: 16_000,
-    total_credits_cents: 4_200
-  }
-}
+  priceCents: 16_000,
+  monthlyCredits: 4_200
+})
 
 const NEW_STANDARD_SUBSCRIPTION: PreviewSubscribeResponse = {
   allowed: true,
@@ -77,8 +70,8 @@ const NEW_STANDARD_SUBSCRIPTION: PreviewSubscribeResponse = {
   is_immediate: true,
   cost_today_cents: 16_000,
   cost_next_period_cents: 16_000,
-  credits_today_cents: 4_200,
-  credits_next_period_cents: 4_200,
+  credits_today_cents: STANDARD_YEARLY_PLAN.credits_cents,
+  credits_next_period_cents: STANDARD_YEARLY_PLAN.credits_cents,
   new_plan: STANDARD_YEARLY_PLAN
 }
 
