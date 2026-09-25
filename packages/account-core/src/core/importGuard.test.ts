@@ -66,11 +66,15 @@ describe('core import guard', () => {
 
   it('scans the web session sources', () => {
     expect(sources.map(({ name }) => name)).toEqual(
-      expect.arrayContaining(['webSession.ts', 'sessionTokenMint.ts'])
+      expect.arrayContaining([
+        'webSession.ts',
+        'sessionTokenMint.ts',
+        'webSessionIdentity.ts'
+      ])
     )
   })
 
-  it.for(['webSession.ts', 'sessionTokenMint.ts'])(
+  it.for(['webSession.ts', 'sessionTokenMint.ts', 'webSessionIdentity.ts'])(
     'keeps %s and everything it imports off Firebase',
     (entry) => {
       const closure = relativeImportClosure(entry)
@@ -86,6 +90,19 @@ describe('core import guard', () => {
       expect(firebaseImports).toEqual([])
     }
   )
+
+  // #18715 asserted this separately: the identity module must pull webSession
+  // into its closure. The parameterized case above only pins each entry against
+  // itself, so keep the containment check.
+  it('pulls webSession into the web session identity closure', () => {
+    expect(
+      [...relativeImportClosure('webSessionIdentity.ts').keys()].map((file) =>
+        relative(CORE_DIR, file)
+      )
+    ).toEqual(
+      expect.arrayContaining(['webSessionIdentity.ts', 'webSession.ts'])
+    )
+  })
 
   it.for([
     'firebase/auth',
