@@ -65,13 +65,9 @@ interface AgentCrdtOutcomeCounters {
   /**
    * PM-1575: same as `applied`, excluding a subscribe's own catch-up frame
    * (`update.catchUp`) -- the one-time state-vector sync that lands whenever
-   * a workflow is (re)subscribed to, unrelated to any in-flight tool call.
-   * `applied` alone is unusable as a canvas-sync gate for that reason: a tool
-   * call's baseline, captured before that catch-up lands, would otherwise
-   * read the catch-up itself as "the matching update already arrived" for
-   * whichever tool call happens to be first after a (re)subscribe. Consumers
-   * that need "did a LIVE update land" (agentEventTransport.ts's canvas-sync
-   * baseline) must read this field, not `applied`.
+   * a workflow is (re)subscribed to, unrelated to live editing activity.
+   * Consumers that need a count of live updates rather than every applied
+   * frame must read this field, not `applied`.
    */
   appliedLive: number
   /** Received but not applied: inactive target, workflow mismatch, or no bound adapter session. */
@@ -177,6 +173,10 @@ export interface AgentCrdtStatus {
 }
 
 export interface AgentCrdtFollowerEvents {
+  onAppliedUpdate?: (event: {
+    workflowId: string
+    opIds: readonly string[]
+  }) => void
   onMaterialized?: (event: {
     workflowId: string
     actor: string | undefined
@@ -417,7 +417,15 @@ function startAgentCrdtFollower(
     const applied = projection.applyFrame(update)
     incrementOutcome(applied ? 'applied' : 'skipped')
     if (applied && !update.catchUp) incrementOutcome('appliedLive')
-    return applied ? projection.reconcileLiveGraph(update.workflowId) : []
+    if (!applied) return []
+    const materialized = projection.reconcileLiveGraph(update.workflowId)
+    if (update.opIds && update.opIds.length > 0) {
+      events.onAppliedUpdate?.({
+        workflowId: update.workflowId,
+        opIds: update.opIds
+      })
+    }
+    return materialized
   }
 
   const onSubscribed: EventListener = (event) => {

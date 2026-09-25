@@ -1,5 +1,3 @@
-import fs from 'fs'
-
 import { describe, expect, it, vi } from 'vitest'
 
 import type { AgentMessages } from '../../schemas/agentApiSchema'
@@ -66,7 +64,8 @@ function thinking(delta: string): AgentChatEvent {
 function toolCall(
   tool_name: string,
   status: 'running' | 'success' | 'error',
-  tool_call_id = `call-${tool_name}`
+  tool_call_id = `call-${tool_name}`,
+  correlation?: { workflow_id: string; op_ids: string[] }
 ): AgentChatEvent {
   return {
     type: 'agent_tool_call',
@@ -75,7 +74,8 @@ function toolCall(
       tool_name,
       status,
       message_id: 'm',
-      thread_id: 't'
+      thread_id: 't',
+      ...correlation
     }
   }
 }
@@ -766,7 +766,37 @@ describe('agentEventTransport reply drafts', () => {
 })
 
 describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
-  it('holds a successful tool call at streaming until the canvas catches up', () => {
+  it('settles a correlated tool call only after the matching workflow applies every expected operation', () => {
+    const message = createAssistantMessage(T)
+    const emit = vi.fn<(m: AssistantMessage) => void>()
+    const transport = createAgentEventTransport(message, emit, () => true)
+
+    transport.ingest(
+      toolCall('future_mutating_tool', 'success', 'call-1', {
+        workflow_id: 'workflow-1',
+        op_ids: ['op-1', 'op-2']
+      })
+    )
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'workflow-2',
+      opIds: ['op-1', 'op-2']
+    })
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'workflow-1',
+      opIds: ['op-1']
+    })
+    expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
+
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'workflow-1',
+      opIds: ['op-2', 'op-1']
+    })
+    expect(toolParts(message)[0]).toMatchObject({ state: 'done' })
+  })
+
+  it('settles an uncorrelated success immediately while the gate is open', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit, () => true)
@@ -774,11 +804,8 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     transport.ingest(toolCall('add_node', 'success'))
     expect(toolParts(message)[0]).toMatchObject({
       ok: true,
-      state: 'streaming'
+      state: 'done'
     })
-
-    transport.notifyCanvasCaughtUp()
-    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
   })
 
   // A failed tool call never mutates anything, so there is no forthcoming
@@ -791,7 +818,12 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit, () => true)
 
-    transport.ingest(toolCall('validate', 'error'))
+    transport.ingest(
+      toolCall('validate', 'error', 'call-validate', {
+        workflow_id: 'workflow-1',
+        op_ids: ['op-1']
+      })
+    )
 
     expect(toolParts(message)[0]).toMatchObject({ ok: false, state: 'done' })
   })
@@ -801,86 +833,40 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit, () => false)
 
-    transport.ingest(toolCall('add_node', 'success'))
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-add_node', {
+        workflow_id: 'workflow-1',
+        op_ids: ['op-1']
+      })
+    )
 
     expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
   })
 
-  // PM-1575 regression: most agent tools are read-only or navigational and
-  // never produce a doc_update at all (confirmed against every recorded
-  // conversation under browser_tests/fixtures/data/agent/conversations/ --
-  // e.g. agent-rec-text-only-answer's switch_tab + print_workflow turn
-  // carries no graph_ops whatsoever). Gating those the same as a real graph
-  // edit stranded them at the spinner glyph for the full STALE_AFTER_MS,
-  // since nothing ever calls notifyCanvasCaughtUp for a turn with no canvas
-  // mutation to report.
-  it('settles a successful read-only tool call immediately, even while the gate is open', () => {
+  // The normal ordering can be doc_update first and terminal tool frame
+  // second. Retaining correlated applied frames prevents that race.
+  it('settles immediately when the matching doc_update already applied before the terminal frame arrives', () => {
     const message = createAssistantMessage(T)
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit, () => true)
 
-    transport.ingest(toolCall('switch_tab', 'success'))
-    transport.ingest(toolCall('print_workflow', 'success', 'call-2'))
-
-    expect(toolParts(message)).toEqual([
-      expect.objectContaining({ name: 'switch_tab', ok: true, state: 'done' }),
-      expect.objectContaining({
-        name: 'print_workflow',
-        ok: true,
-        state: 'done'
+    transport.ingest(
+      toolCall('add_node', 'running', 'call-add_node', {
+        workflow_id: 'workflow-1',
+        op_ids: ['op-1']
       })
-    ])
-  })
-
-  // PM-1575 regression (finding #1, high): the normal ordering on a healthy
-  // doc host is the op broadcasting a doc_update WHILE the tool runs, with
-  // the success frame landing after. notifyCanvasCaughtUp() used to fire on
-  // that update while pendingCanvasSync was still empty (the terminal frame
-  // hadn't arrived yet to populate it) and be a silent no-op -- stranding
-  // the part at 'streaming' for the full STALE_AFTER_MS fallback, since
-  // nothing else would call notifyCanvasCaughtUp() again for a turn with no
-  // further doc activity. See browser_tests spec for the e2e counterpart.
-  it('settles immediately when the matching doc_update already applied before the terminal frame arrives', () => {
-    const message = createAssistantMessage(T)
-    const emit = vi.fn<(m: AssistantMessage) => void>()
-    let outcomeCount = 0
-    const transport = createAgentEventTransport(
-      message,
-      emit,
-      () => true,
-      () => outcomeCount
     )
-
-    transport.ingest(toolCall('add_node', 'running'))
-    // The matching doc_update lands while the tool is still running.
-    outcomeCount += 1
-    // No notifyCanvasCaughtUp() call in between: nothing was pending yet for
-    // it to release.
-    transport.ingest(toolCall('add_node', 'success'))
-
-    expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
-  })
-
-  it('still defers when the outcome counter has not moved since the tool started', () => {
-    const message = createAssistantMessage(T)
-    const emit = vi.fn<(m: AssistantMessage) => void>()
-    const outcomeCount = 3
-    const transport = createAgentEventTransport(
-      message,
-      emit,
-      () => true,
-      () => outcomeCount
-    )
-
-    transport.ingest(toolCall('add_node', 'running'))
-    transport.ingest(toolCall('add_node', 'success'))
-
-    expect(toolParts(message)[0]).toMatchObject({
-      ok: true,
-      state: 'streaming'
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'workflow-1',
+      opIds: ['op-1']
     })
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-add_node', {
+        workflow_id: 'workflow-1',
+        op_ids: ['op-1']
+      })
+    )
 
-    transport.notifyCanvasCaughtUp()
     expect(toolParts(message)[0]).toMatchObject({ ok: true, state: 'done' })
   })
 
@@ -894,11 +880,15 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit, () => true)
 
-    transport.ingest(toolCall('add_node', 'success', 'call-1'))
+    const terminal = toolCall('add_node', 'success', 'call-1', {
+      workflow_id: 'workflow-1',
+      op_ids: ['op-1']
+    })
+    transport.ingest(terminal)
     expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
 
     vi.advanceTimersByTime(15_000)
-    transport.ingest(toolCall('add_node', 'success', 'call-1'))
+    transport.ingest(terminal)
 
     vi.advanceTimersByTime(15_000)
     expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
@@ -913,9 +903,17 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     const transport = createAgentEventTransport(message, emit, () => true)
 
     expect(transport.hasPendingCanvasSync()).toBe(false)
-    transport.ingest(toolCall('add_node', 'success'))
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-add_node', {
+        workflow_id: 'workflow-1',
+        op_ids: ['op-1']
+      })
+    )
     expect(transport.hasPendingCanvasSync()).toBe(true)
-    transport.notifyCanvasCaughtUp()
+    transport.notifyCanvasCaughtUp({
+      workflowId: 'workflow-1',
+      opIds: ['op-1']
+    })
     expect(transport.hasPendingCanvasSync()).toBe(false)
   })
 
@@ -929,7 +927,12 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     const emit = vi.fn<(m: AssistantMessage) => void>()
     const transport = createAgentEventTransport(message, emit, () => true)
 
-    transport.ingest(toolCall('add_node', 'success'))
+    transport.ingest(
+      toolCall('add_node', 'success', 'call-add_node', {
+        workflow_id: 'workflow-1',
+        op_ids: ['op-1']
+      })
+    )
     expect(toolParts(message)[0]).toMatchObject({ state: 'streaming' })
 
     transport.dispose()
@@ -939,71 +942,5 @@ describe('agentEventTransport canvas-sync gate (PM-1575)', () => {
     const callsAfterDispose = emit.mock.calls.length
     vi.advanceTimersByTime(STALE_AFTER_MS)
     expect(emit.mock.calls.length).toBe(callsAfterDispose)
-  })
-})
-
-// PM-1575 (finding #8, low): CANVAS_MUTATING_TOOLS is a hand-maintained set
-// against an unconstrained `tool_name: z.string()` -- a renamed or newly
-// added mutating tool would silently take the "settle immediately" branch
-// and reintroduce the materialization-lag bug with no type or test failure.
-// This pins every tool name actually seen in the recorded conversation
-// fixtures against a hand-reviewed expectation, so a new, unreviewed name
-// fails CI instead of silently defaulting to "not canvas-mutating".
-describe('agentEventTransport CANVAS_MUTATING_TOOLS pinning (PM-1575)', () => {
-  const CONVERSATION_FIXTURES_DIR =
-    'browser_tests/fixtures/data/agent/conversations'
-
-  // Reviewed against every fixture under CONVERSATION_FIXTURES_DIR as of
-  // this test's authorship. A name appearing in a NEW or updated fixture
-  // that is not in this list fails the test below, forcing a reviewer to
-  // decide whether CANVAS_MUTATING_TOOLS needs it before updating this list.
-  const REVIEWED_TOOL_NAMES = new Set([
-    'add_node',
-    'apply_ops',
-    'clear_canvas',
-    'connect',
-    'delete_node',
-    'find_nodes',
-    'list_generate_models',
-    'list_model_picks',
-    'list_slots',
-    'list_workflows',
-    'ls_nodes',
-    'print_workflow',
-    'remember',
-    'set_widget',
-    'show_node',
-    'switch_tab',
-    'validate'
-  ])
-
-  function toolNamesInFixtures(): Set<string> {
-    const names = new Set<string>()
-    const collect = (value: unknown): void => {
-      if (Array.isArray(value)) {
-        for (const item of value) collect(item)
-        return
-      }
-      if (typeof value !== 'object' || value === null) return
-      for (const [key, nested] of Object.entries(value)) {
-        if (key === 'tool_name' && typeof nested === 'string') names.add(nested)
-        else collect(nested)
-      }
-    }
-    for (const file of fs.readdirSync(CONVERSATION_FIXTURES_DIR)) {
-      if (!file.endsWith('.json')) continue
-      const contents = fs.readFileSync(
-        `${CONVERSATION_FIXTURES_DIR}/${file}`,
-        'utf-8'
-      )
-      collect(JSON.parse(contents))
-    }
-    return names
-  }
-
-  it('pins every tool name recorded in the conversation fixtures', () => {
-    expect([...toolNamesInFixtures()].sort()).toEqual(
-      [...REVIEWED_TOOL_NAMES].sort()
-    )
   })
 })
