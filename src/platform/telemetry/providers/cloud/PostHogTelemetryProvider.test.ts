@@ -586,33 +586,13 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
-    it('reads the agent panel state for a run the button did not start', async () => {
+    // Two executions rather than one: a provider that sampled the panel once
+    // and reused the answer would still satisfy the carry-over case below.
+    it('samples the panel state afresh for each execution', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
+
       hoisted.agentPanelOpen = true
-
-      try {
-        provider.trackWorkflowExecution()
-
-        expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
-          TelemetryEvents.EXECUTION_START,
-          expect.objectContaining({ agent_panel_open: true })
-        )
-      } finally {
-        hoisted.agentPanelOpen = false
-      }
-    })
-
-    // The two events one run produces must agree. Closing the panel between
-    // submitting the run and execution starting would otherwise split the pair.
-    it('carries the run button panel state onto execution start', async () => {
-      const provider = createProvider()
-      await vi.dynamicImportSettled()
-      hoisted.agentPanelOpen = true
-      provider.trackRunButton(runButtonProperties({ agent_panel_open: true }))
-
-      // The user closes the panel while the run is being submitted.
-      hoisted.agentPanelOpen = false
       provider.trackWorkflowExecution()
 
       expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
@@ -620,8 +600,24 @@ describe('PostHogTelemetryProvider', () => {
         expect.objectContaining({ agent_panel_open: true })
       )
 
-      // The carry-over is consumed, so an unattributed run reads fresh state.
+      hoisted.agentPanelOpen = false
       provider.trackWorkflowExecution()
+
+      expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
+        TelemetryEvents.EXECUTION_START,
+        expect.objectContaining({ agent_panel_open: false })
+      )
+    })
+
+    it('does not carry a panel state from a click that never executed', async () => {
+      const provider = createProvider()
+      await vi.dynamicImportSettled()
+      hoisted.agentPanelOpen = true
+      provider.trackRunButton(runButtonProperties({ agent_panel_open: true }))
+
+      hoisted.agentPanelOpen = false
+      provider.trackWorkflowExecution()
+
       expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
         TelemetryEvents.EXECUTION_START,
         expect.objectContaining({ agent_panel_open: false })
