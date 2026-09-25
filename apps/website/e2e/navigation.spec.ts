@@ -168,6 +168,55 @@ test.describe('Desktop dropdown @interaction', () => {
     }
   })
 
+  for (const { reducedMotion, autoplay } of [
+    { reducedMotion: 'no-preference', autoplay: true },
+    { reducedMotion: 'reduce', autoplay: false }
+  ] as const) {
+    test(`Products featured video ${autoplay ? 'autoplays' : 'does not autoplay'} with ${reducedMotion} motion`, async ({
+      page
+    }) => {
+      await page.emulateMedia({ reducedMotion })
+      const nav = page.getByRole('navigation', { name: 'Main navigation' })
+      await nav
+        .getByTestId('desktop-nav-links')
+        .getByRole('button', { name: 'Products' })
+        .hover()
+
+      const card = nav.getByTestId('nav-dropdown').getByRole('link', {
+        name: 'Explore the Gemini Omni 1.1 Flash release'
+      })
+      await expect(card).toHaveAttribute('href', '/gemini-omni')
+      const video = card.locator('video')
+      await expect(video).toHaveAttribute(
+        'src',
+        'https://media.comfy.org/website/gemini-omni/card-5.webm'
+      )
+      await expect(video).toHaveJSProperty('autoplay', autoplay)
+      await expect(video).toHaveJSProperty('loop', false)
+    })
+  }
+
+  test('Community featured card links to the Product Photography tutorial', async ({
+    page
+  }) => {
+    const nav = page.getByRole('navigation', { name: 'Main navigation' })
+    await nav
+      .getByTestId('desktop-nav-links')
+      .getByRole('button', { name: 'Community' })
+      .hover()
+
+    const card = nav
+      .getByTestId('nav-dropdown')
+      .getByRole('link', { name: 'Watch the Product Photography demo' })
+    await expect(card).toHaveAttribute(
+      'href',
+      '/learning/ads/product-photography'
+    )
+    await expect(
+      card.getByRole('img', { name: 'Product Photography workflow demo image' })
+    ).toBeVisible()
+  })
+
   for (const panel of RETIRED_BADGE_PANELS) {
     test(`${panel.section} dropdown keeps NEW on ${panel.badged} and drops it from the retired entries`, async ({
       page
