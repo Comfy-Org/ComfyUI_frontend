@@ -66,7 +66,10 @@ const CATALOG: BillingPlansData = {
 const SURFACE_PATH = '/v1/subscription'
 const ENTRY_QUERY = 'product=comfyui&return_to=comfyui_workspace'
 
-async function renderSubscription(options: FakeBillingClientOptions = {}) {
+async function renderSubscription(
+  options: FakeBillingClientOptions = {},
+  entryQuery = ENTRY_QUERY
+) {
   const router = createRouter({
     history: createMemoryHistory(),
     routes: [
@@ -79,7 +82,7 @@ async function renderSubscription(options: FakeBillingClientOptions = {}) {
     preview: { status: 'ok', value: previewOf() },
     ...options
   })
-  await router.push(`${SURFACE_PATH}?${ENTRY_QUERY}`)
+  await router.push(`${SURFACE_PATH}?${entryQuery}`)
   await router.isReady()
   render(SubscriptionView, {
     global: {
@@ -145,6 +148,24 @@ describe('SubscriptionView', () => {
 
     await userEvent.click(
       screen.getByRole('button', { name: 'Continue to checkout' })
+    )
+
+    expect(fake.router.currentRoute.value.fullPath).toBe(
+      `/v1/checkout?${ENTRY_QUERY}&plan=creator_monthly`
+    )
+  })
+
+  it('drops an entry credit stop the quote did not use', async () => {
+    const fake = await renderSubscription(
+      {},
+      `${ENTRY_QUERY}&team_credit_stop_id=team_200`
+    )
+
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Choose Creator · Monthly' })
+    )
+    await userEvent.click(
+      await screen.findByRole('button', { name: 'Continue to checkout' })
     )
 
     expect(fake.router.currentRoute.value.fullPath).toBe(
@@ -470,6 +491,11 @@ describe('SubscriptionView', () => {
       expect(await screen.findByText('$665.00')).toBeInTheDocument()
       expect(screen.getByText('147,700 credits a month')).toBeInTheDocument()
       expect(screen.queryByText('$0.00')).not.toBeInTheDocument()
+      expect(
+        screen.getByRole('combobox', {
+          name: 'Monthly credits for Team · Monthly'
+        })
+      ).toHaveValue('team_700')
     })
 
     it('prices the plan at the stop the workspace is subscribed to', async () => {

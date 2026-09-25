@@ -162,10 +162,11 @@ async function selectPlan(slug: string, stopId: string | undefined) {
 /** The entry's product and return target travel with the plan the customer chose. */
 function goToCheckout() {
   if (selectedSlug.value === undefined) return
+  const { team_credit_stop_id: _entryStopId, ...entryQuery } = route.query
   void router.push({
     path: billingIntentPath('checkout'),
     query: {
-      ...route.query,
+      ...entryQuery,
       plan: selectedSlug.value,
       ...(quotedStopId.value === undefined
         ? {}
