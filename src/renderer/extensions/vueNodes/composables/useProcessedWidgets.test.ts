@@ -1,4 +1,3 @@
-import type { TooltipOptions } from 'primevue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 
@@ -77,7 +76,7 @@ function createGraphWithNode(
 }
 
 const noopUi = {
-  getTooltipConfig: () => ({}) as TooltipOptions,
+  getTooltipConfig: () => ({}),
   handleNodeRightClick: () => {}
 }
 

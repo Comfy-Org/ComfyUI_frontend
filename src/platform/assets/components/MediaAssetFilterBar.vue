@@ -12,32 +12,39 @@
       <template #actions>
         <Menu v-if="isCloud" :modal="false">
           <template #trigger>
-            <Button
-              v-tooltip.top="{ value: $t('assetBrowser.filterBy') }"
-              variant="secondary"
-              size="icon"
-              icon="icon-[lucide--list-filter]"
-              :indicator="hasActiveFilters"
-              :aria-label="$t('assetBrowser.filterBy')"
-            />
+            <Tooltip
+              :config="{ value: $t('assetBrowser.filterBy') }"
+              side="top"
+            >
+              <Button
+                variant="secondary"
+                size="icon"
+                icon="icon-[lucide--list-filter]"
+                :indicator="hasActiveFilters"
+                :aria-label="$t('assetBrowser.filterBy')"
+              />
+            </Tooltip>
           </template>
           <MediaAssetFilterMenu
             v-model:date-filter="dateFilter"
             v-model:media-type-filters="mediaTypeFilters"
           />
         </Menu>
-        <MediaAssetSettingsButton
-          v-tooltip.top="{ value: $t('sideToolbar.mediaAssets.viewSettings') }"
+        <Tooltip
+          :config="{ value: $t('sideToolbar.mediaAssets.viewSettings') }"
+          side="top"
         >
-          <template #default>
-            <MediaAssetSettingsMenu
-              v-model:view-mode="viewMode"
-              v-model:sort-by="sortBy"
-              :show-sort-options="isCloud"
-              :show-generation-time-sort
-            />
-          </template>
-        </MediaAssetSettingsButton>
+          <MediaAssetSettingsButton>
+            <template #default>
+              <MediaAssetSettingsMenu
+                v-model:view-mode="viewMode"
+                v-model:sort-by="sortBy"
+                :show-sort-options="isCloud"
+                :show-generation-time-sort
+              />
+            </template>
+          </MediaAssetSettingsButton>
+        </Tooltip>
       </template>
     </SidebarTopArea>
 
@@ -84,6 +91,7 @@ import SidebarTopArea from '@/components/sidebar/tabs/SidebarTopArea.vue'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import SearchInput from '@/components/ui/search-input/SearchInput.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { isCloud } from '@/platform/distribution/types'
 import {
   dateFilterOptions,

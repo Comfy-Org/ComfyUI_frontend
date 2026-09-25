@@ -1,36 +1,31 @@
+import userEvent from '@testing-library/user-event'
+import { render, screen, within } from '@testing-library/vue'
 import { describe, expect, it } from 'vitest'
+
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 
 import { buildTooltipConfig } from './useTooltipConfig'
 
 describe('buildTooltipConfig', () => {
-  it.for([
-    ['top', 'border-t-node-component-tooltip-border'],
-    ['right', 'border-r-node-component-tooltip-border'],
-    ['bottom', 'border-b-node-component-tooltip-border'],
-    ['left', 'border-l-node-component-tooltip-border']
-  ] as const)(
-    'colours only the arrow edge facing a %s tooltip target',
-    ([side, arrowEdgeClass]) => {
-      const context = {
-        top: false,
-        right: false,
-        bottom: false,
-        left: false,
-        [side]: true
-      }
-      const { class: arrowClass } = buildTooltipConfig('Hint').pt.arrow({
-        context
+  it.for(['top', 'right', 'bottom', 'left', undefined] as const)(
+    'keeps the tooltip arrow themed for side %s',
+    async (side) => {
+      const user = userEvent.setup()
+      render(Tooltip, {
+        props: { config: buildTooltipConfig('Hint'), side },
+        slots: { default: '<button>Trigger</button>' }
       })
 
-      expect(arrowClass).toBe(arrowEdgeClass)
+      await user.hover(screen.getByRole('button', { name: 'Trigger' }))
+      expect(await screen.findByRole('tooltip')).toHaveTextContent('Hint')
+      const positioner = screen.getByTestId('tooltip-positioner')
+      const arrow = within(positioner).getByTestId('tooltip-arrow')
+
+      expect(positioner).toHaveClass(
+        'bg-base-background',
+        'border-border-default'
+      )
+      expect(arrow).toHaveClass('fill-base-background', 'stroke-border-default')
     }
   )
-
-  it('colours the right arrow edge when no side is set, matching PrimeVue’s default', () => {
-    const { class: arrowClass } = buildTooltipConfig('Hint').pt.arrow({
-      context: {}
-    })
-
-    expect(arrowClass).toBe('border-r-node-component-tooltip-border')
-  })
 })

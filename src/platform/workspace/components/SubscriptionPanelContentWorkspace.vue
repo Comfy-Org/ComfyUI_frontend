@@ -142,13 +142,17 @@
                   :items="menuEntries"
                 >
                   <template #trigger>
-                    <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-                      variant="secondary"
-                      size="icon-lg"
-                      icon="icon-[lucide--ellipsis]"
-                      :aria-label="$t('g.moreOptions')"
-                    />
+                    <Tooltip
+                      :config="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      side="right"
+                    >
+                      <Button
+                        variant="secondary"
+                        size="icon-lg"
+                        icon="icon-[lucide--ellipsis]"
+                        :aria-label="$t('g.moreOptions')"
+                      />
+                    </Tooltip>
                   </template>
                 </Menu>
               </div>
@@ -200,13 +204,17 @@
                 </Button>
                 <Menu v-if="menuEntries.length > 0" :items="menuEntries">
                   <template #trigger>
-                    <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-                      variant="secondary"
-                      size="icon-lg"
-                      icon="icon-[lucide--ellipsis]"
-                      :aria-label="$t('g.moreOptions')"
-                    />
+                    <Tooltip
+                      :config="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      side="right"
+                    >
+                      <Button
+                        variant="secondary"
+                        size="icon-lg"
+                        icon="icon-[lucide--ellipsis]"
+                        :aria-label="$t('g.moreOptions')"
+                      />
+                    </Tooltip>
                   </template>
                 </Menu>
               </div>
@@ -301,13 +309,17 @@
                 </Button>
                 <Menu v-if="menuEntries.length > 0" :items="menuEntries">
                   <template #trigger>
-                    <Button
-                      v-tooltip="{ value: $t('g.moreOptions'), showDelay: 300 }"
-                      variant="secondary"
-                      size="icon-lg"
-                      icon="icon-[lucide--ellipsis]"
-                      :aria-label="$t('g.moreOptions')"
-                    />
+                    <Tooltip
+                      :config="{ value: $t('g.moreOptions'), showDelay: 300 }"
+                      side="right"
+                    >
+                      <Button
+                        variant="secondary"
+                        size="icon-lg"
+                        icon="icon-[lucide--ellipsis]"
+                        :aria-label="$t('g.moreOptions')"
+                      />
+                    </Tooltip>
                   </template>
                 </Menu>
               </div>
@@ -411,6 +423,7 @@ import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/Su
 import Menu from '@/components/ui/menu/Menu.vue'
 import StatusBadge from '@/components/common/StatusBadge.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useSubscriptionDialog } from '@/platform/cloud/subscription/composables/useSubscriptionDialog'
 import { useFreeTierQuota } from '@/platform/cloud/subscription/composables/useFreeTierQuota'

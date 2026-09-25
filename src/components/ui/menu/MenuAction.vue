@@ -4,6 +4,7 @@ import { onBeforeUnmount, toValue } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { whileMouseDown } from '@/utils/mouseDownUtil'
 
 import { menuItemClass } from './menuStyles'
@@ -70,26 +71,27 @@ function select(event: Event) {
 </script>
 
 <template>
-  <component
-    :is="
-      item.checked === undefined ? DropdownMenuItem : DropdownMenuCheckboxItem
-    "
-    v-tooltip="{ value: item.tooltip, showDelay: 0 }"
-    :aria-label="toValue(item.label)"
-    :aria-description="toValue(item.description)"
-    :disabled="toValue(item.disabled) || (!item.command && !allowCommandless)"
-    :class="
-      cn(
-        menuItemClass,
-        item.variant === 'destructive' && 'text-destructive-background',
-        toValue(item.class)
-      )
-    "
-    :model-value="toValue(item.checked)"
-    @mousedown="mouseDown"
-    @keydown.capture="pointerRepeating = false"
-    @select="select"
-  >
-    <slot />
-  </component>
+  <Tooltip :config="{ value: item.tooltip, showDelay: 0 }" side="right">
+    <component
+      :is="
+        item.checked === undefined ? DropdownMenuItem : DropdownMenuCheckboxItem
+      "
+      :aria-label="toValue(item.label)"
+      :aria-description="toValue(item.description)"
+      :disabled="toValue(item.disabled) || (!item.command && !allowCommandless)"
+      :class="
+        cn(
+          menuItemClass,
+          item.variant === 'destructive' && 'text-destructive-background',
+          toValue(item.class)
+        )
+      "
+      :model-value="toValue(item.checked)"
+      @mousedown="mouseDown"
+      @keydown.capture="pointerRepeating = false"
+      @select="select"
+    >
+      <slot />
+    </component>
+  </Tooltip>
 </template>

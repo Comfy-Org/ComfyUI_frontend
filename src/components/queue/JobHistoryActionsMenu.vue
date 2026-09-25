@@ -1,13 +1,14 @@
 <template>
   <Menu v-model:open="open" :items="items" align="end">
     <template #trigger>
-      <Button
-        v-tooltip.top="moreTooltipConfig"
-        variant="muted-textonly"
-        size="icon"
-        :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
-        icon="icon-[lucide--more-horizontal]"
-      />
+      <Tooltip :config="moreTooltipConfig" side="top">
+        <Button
+          variant="muted-textonly"
+          size="icon"
+          :aria-label="t('sideToolbar.queueProgressOverlay.moreOptions')"
+          icon="icon-[lucide--more-horizontal]"
+        />
+      </Tooltip>
     </template>
   </Menu>
 </template>
@@ -19,6 +20,7 @@ import { useI18n } from 'vue-i18n'
 import Button from '@/components/ui/button/Button.vue'
 import Menu from '@/components/ui/menu/Menu.vue'
 import type { MenuItem } from '@/components/ui/menu/types'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { useQueueFeatureFlags } from '@/composables/queue/useQueueFeatureFlags'
 import { buildTooltipConfig } from '@/composables/useTooltipConfig'
 import { isCloud } from '@/platform/distribution/types'

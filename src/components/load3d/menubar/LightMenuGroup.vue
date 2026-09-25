@@ -1,15 +1,16 @@
 <template>
   <Popover v-if="isOriginalMaterial" v-model:open="intensityOpen">
     <PopoverTrigger as-child>
-      <button
-        v-tooltip.bottom="tip(t('load3d.menuBar.intensity'))"
-        :class="actionClass(false)"
-        type="button"
-        :aria-label="compact ? t('load3d.menuBar.intensity') : undefined"
-      >
-        <i class="icon-[lucide--sun] size-4" />
-        <span v-if="!compact">{{ t('load3d.menuBar.intensity') }}</span>
-      </button>
+      <Tooltip :config="tip(t('load3d.menuBar.intensity'))" side="bottom">
+        <button
+          :class="actionClass(false)"
+          type="button"
+          :aria-label="compact ? t('load3d.menuBar.intensity') : undefined"
+        >
+          <i class="icon-[lucide--sun] size-4" />
+          <span v-if="!compact">{{ t('load3d.menuBar.intensity') }}</span>
+        </button>
+      </Tooltip>
     </PopoverTrigger>
     <PopoverContent
       side="bottom"
@@ -50,6 +51,7 @@ import { usePopoverExclusivity } from '@/components/load3d/menubar/usePopoverExc
 import Popover from '@/components/ui/popover/Popover.vue'
 import PopoverContent from '@/components/ui/popover/PopoverContent.vue'
 import Slider from '@/components/ui/slider/Slider.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import type { LightConfig } from '@/extensions/core/load3d/interfaces'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { cn } from '@comfyorg/tailwind-utils'

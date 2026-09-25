@@ -56,7 +56,13 @@ vi.mock(import('@/utils/markdownRendererUtil'), () => ({
 
 vi.mock(import('@/composables/useErrorHandling'))
 
-// Mock release store
+vi.mock<unknown>(import('@/composables/useExternalLink'), () => ({
+  useExternalLink: vi.fn(() => ({
+    buildDocsUrl: vi.fn((path: string) => `https://docs.comfy.org${path}`),
+    staticUrls: {},
+    docsPaths: {}
+  }))
+}))
 
 beforeEach(() => {
   vi.mocked(useCommandStore().execute).mockResolvedValue(undefined)
@@ -285,6 +291,7 @@ describe('ReleaseNotificationToast', () => {
 
   it('auto-hides after timeout', async () => {
     Object.assign(useReleaseStore(), {
+      shouldShowToast: false,
       recentRelease: {
         version: '1.2.3',
         content: '# Test Release'
@@ -292,6 +299,8 @@ describe('ReleaseNotificationToast', () => {
     })
 
     renderComponent()
+    Object.assign(useReleaseStore(), { shouldShowToast: true })
+    await nextTick()
 
     expect(screen.getByText('New update is out!')).toBeInTheDocument()
 
@@ -334,21 +343,32 @@ describe('ReleaseNotificationToast', () => {
 
   it('clears auto-hide timer when manually dismissed', async () => {
     Object.assign(useReleaseStore(), {
+      shouldShowToast: false,
       recentRelease: {
         version: '1.2.3',
         content: '# Test Release'
       } as ReleaseNote
     })
 
+    const setTimeoutSpy = vi.spyOn(globalThis, 'setTimeout')
+    const clearTimeoutSpy = vi.spyOn(globalThis, 'clearTimeout')
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
 
     renderComponent()
+    Object.assign(useReleaseStore(), { shouldShowToast: true })
+    await nextTick()
+
+    const autoHideTimerIndex = setTimeoutSpy.mock.calls.findIndex(
+      ([, delay]) => delay === 8000
+    )
+    const autoHideTimer = setTimeoutSpy.mock.results[autoHideTimerIndex]?.value
+    expect(autoHideTimer).toBeDefined()
 
     vi.advanceTimersByTime(1000)
 
     await user.click(screen.getByRole('button', { name: /skip/i }))
 
-    expect(vi.getTimerCount()).toBe(0)
+    expect(clearTimeoutSpy).toHaveBeenCalledWith(autoHideTimer)
     expect(useReleaseStore().handleSkipRelease).toHaveBeenCalled()
   })
 })

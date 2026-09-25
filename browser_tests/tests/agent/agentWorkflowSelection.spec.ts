@@ -246,13 +246,14 @@ test.describe(
         '{workflowName}',
         'Unsaved Workflow'
       )
+      const tooltip = page.getByRole('tooltip', { name: reason, exact: true })
       const inline = panel.getByRole('button', {
         name: 'mention nodes'
       })
       await expect(inline).toHaveAttribute('aria-disabled', 'true')
       await expect(inline).toHaveAccessibleDescription(reason)
       await inline.hover()
-      await expect(page.getByText(reason, { exact: true })).toBeVisible()
+      await expect(tooltip).toBeVisible()
 
       await panel
         .getByRole('button', { name: enMessages.agent.addToPrompt })
@@ -263,9 +264,9 @@ test.describe(
       })
       await expect(plusNodes).toHaveAttribute('aria-disabled', 'true')
       await plusNodes.hover()
-      await expect(page.getByText(reason, { exact: true })).toBeVisible()
+      await expect(tooltip).toBeVisible()
       await page.keyboard.press('Escape')
-      await expect(page.getByText(reason, { exact: true })).toBeHidden()
+      await expect(tooltip).toBeHidden()
       await page.keyboard.press('Escape')
       await expect(plusNodes).toBeHidden()
       await expect(
@@ -279,7 +280,7 @@ test.describe(
       })
       await expect(nodes).toHaveAttribute('aria-disabled', 'true')
       await nodes.hover()
-      await expect(page.getByText(reason, { exact: true })).toBeVisible()
+      await expect(tooltip).toBeVisible()
       await testInfo.attach('disabled-node-references', {
         body: await panel.screenshot({
           path: testInfo.outputPath('disabled-node-references.png')

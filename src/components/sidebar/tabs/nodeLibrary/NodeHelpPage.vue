@@ -1,15 +1,16 @@
 <template>
   <div class="flex h-full flex-col overflow-auto">
     <div class="flex items-center border-b border-interface-stroke px-3 py-2">
-      <Button
-        v-tooltip.bottom="$t('g.back')"
-        variant="muted-textonly"
-        size="icon"
-        :aria-label="$t('g.back')"
-        @click="$emit('close')"
-      >
-        <i class="icon-[lucide--arrow-left] size-4" />
-      </Button>
+      <Tooltip :config="$t('g.back')" side="bottom">
+        <Button
+          variant="muted-textonly"
+          size="icon"
+          :aria-label="$t('g.back')"
+          @click="$emit('close')"
+        >
+          <i class="icon-[lucide--arrow-left] size-4" />
+        </Button>
+      </Tooltip>
       <span class="ml-2 flex-1 truncate font-semibold">
         {{ node.display_name }}
       </span>
@@ -25,6 +26,7 @@
 import NodeHelpContent from '@/components/node/NodeHelpContent.vue'
 import SidebarTabCloseButton from '@/components/sidebar/tabs/SidebarTabCloseButton.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import type { ComfyNodeDefImpl } from '@/stores/nodeDefStore'
 
 const { node } = defineProps<{ node: ComfyNodeDefImpl }>()
