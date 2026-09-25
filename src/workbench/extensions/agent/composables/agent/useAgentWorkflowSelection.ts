@@ -50,6 +50,7 @@ export function useAgentWorkflowSelection({
     cloudWorkflowName,
     nextSaveFilename,
     boundOrOpenWorkflowFor,
+    cachedOpenWorkflowFor,
     storedWorkflowFor
   } = resolver
   const editableWorkflowId = computed(() =>
@@ -221,10 +222,13 @@ export function useAgentWorkflowSelection({
       isSessionCurrent() &&
       canRestoreWorkflow.value
     if (workflowId === undefined) return true
-    await refreshCloudWorkflowIds()
-    if (!isCurrent()) return false
-    let target =
-      boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+    let target = cachedOpenWorkflowFor(workflowId)
+    if (target === null) {
+      await refreshCloudWorkflowIds()
+      if (!isCurrent()) return false
+      target =
+        boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
+    }
     try {
       if (target === null) {
         await workflowStore.syncWorkflows()

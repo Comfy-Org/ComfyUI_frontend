@@ -4752,6 +4752,69 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(screen.queryByRole('button', { name: 'Stop' })).toBeNull()
   })
 
+  it('switches between historical chats with open targets without refetching known Cloud identities', async () => {
+    makeTab('wf-current')
+    const other = addTab('workflows/other.json')
+    mockMessagesEndpoint(
+      'wf-current',
+      [
+        { id: 'wf-current', name: 'current' },
+        { id: 'wf-other', name: 'other' }
+      ],
+      ['th-current', 'th-other'].map((id) =>
+        agentThread({ id, title: id, last_message_at: '2026-09-25T00:00:00Z' })
+      )
+    )
+    const originalFetch = vi.mocked(fetch).getMockImplementation()
+    assert.exists(originalFetch)
+    const refreshCloud = vi.fn(() => new Promise<Response>(() => {}))
+    let identitiesFetched = false
+    vi.mocked(fetch).mockImplementation((input, init) => {
+      const url = String(input)
+      if (url.includes('/workflows')) {
+        if (identitiesFetched) return refreshCloud()
+        identitiesFetched = true
+      }
+      if (url.includes('/messages')) {
+        const threadId = url.includes('/th-other/') ? 'th-other' : 'th-current'
+        const messages: AgentMessages = [
+          {
+            id: `message-${threadId}`,
+            thread_id: threadId,
+            seq: 1,
+            role: 'user',
+            status: 'complete',
+            turn_id: `turn-${threadId}`,
+            workflow_id: threadId === 'th-other' ? 'wf-other' : 'wf-current',
+            content: { text: `Transcript of ${threadId}` }
+          }
+        ]
+        return Promise.resolve(json(200, messages))
+      }
+      return originalFetch(input, init)
+    })
+    renderWithSelectedTarget()
+    for (const threadId of ['th-current', 'th-other']) {
+      await userEvent.click(
+        screen.getByRole('button', {
+          name: i18n.global.t('agent.showChatHistory')
+        })
+      )
+      await userEvent.click(
+        await screen.findByRole('button', { name: threadId })
+      )
+      expect(
+        await screen.findByTestId('user-message-bubble')
+      ).toHaveTextContent(`Transcript of ${threadId}`)
+      expect(useAgentChatHistoryStore().activeId).toBe(threadId)
+    }
+
+    expect(workflowStore.activeWorkflow?.path).toBe(other.path)
+    expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
+    expect(refreshCloud).not.toHaveBeenCalled()
+    expect(useToastStore().messagesToAdd).toHaveLength(0)
+  })
+
   it.for([null, 'th-current'])(
     'reopens a saved workflow from chat history while keeping %s current until ready',
     async (previousThread) => {

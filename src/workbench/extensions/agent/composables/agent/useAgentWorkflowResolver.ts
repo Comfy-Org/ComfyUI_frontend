@@ -143,6 +143,14 @@ export function useAgentWorkflowResolver({
     return resolveWorkflow(workflowId, workflows.openWorkflows)
   }
 
+  function cachedOpenWorkflowFor(workflowId: string): ComfyWorkflow | null {
+    if (indexedNameFor(workflowId) === undefined) return null
+    const target = boundOrOpenWorkflowFor(workflowId)
+    return target !== null && workflows.openWorkflows.includes(target)
+      ? target
+      : null
+  }
+
   function storedWorkflowFor(workflowId: string): ComfyWorkflow | null {
     return resolveWorkflow(workflowId, workflows.workflows)
   }
@@ -214,6 +222,7 @@ export function useAgentWorkflowResolver({
     cloudIdFor,
     cloudWorkflowName,
     boundOrOpenWorkflowFor,
+    cachedOpenWorkflowFor,
     storedWorkflowFor,
     openWorkflowFor,
     availableWorkflowReferences,

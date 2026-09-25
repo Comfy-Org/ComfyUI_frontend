@@ -39,8 +39,13 @@ unfinished transport thread. A history selection updates the persisted session
 only after success. Deleting the previous Current chat cancels the unfinished
 selection and removes the deleted Back destination.
 
-The saved catalog is consulted before refreshing it. Identity resolution still
-refreshes Cloud metadata and uses existing binding and ambiguity checks.
+If the resolver has already fetched the requested Cloud identity and can resolve
+an open tab through its binding and ambiguity checks, restore that tab without
+refreshing the Cloud catalog again. A persisted binding alone cannot take this
+shortcut before the Cloud identity is known. Unknown, forgotten, unresolved and
+closed targets still refresh Cloud metadata. The saved catalog is consulted
+before synchronizing it. This reuses the panel's existing metadata lifetime;
+changes made elsewhere become visible at the next refresh.
 
 Current remains clickable. When its session and retained target are still
 loaded, reuse them without fetching the transcript or resolving Cloud identity
