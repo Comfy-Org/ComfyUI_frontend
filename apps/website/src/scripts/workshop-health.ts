@@ -16,19 +16,49 @@ function isAccountRefusal(failure: FailedRun): boolean {
   )
 }
 
-function isActionableInputIssue(failure: FailedRun): boolean {
-  if (
-    [failure.request_id, failure.http_status, failure.router_error_type].some(
-      (value) => value !== undefined
-    )
+function hasFieldErrors(failure: FailedRun): boolean {
+  return Boolean(
+    failure.field_error_names?.length && failure.field_error_codes?.length
   )
-    return false
-  if (!failure.field_error_names?.length || !failure.field_error_codes?.length)
-    return false
+}
+
+function hasRouterOutcome(failure: FailedRun): boolean {
+  return [
+    failure.request_id,
+    failure.http_status,
+    failure.router_error_type
+  ].some((value) => value !== undefined)
+}
+
+function hasOnlyFieldError(failure: FailedRun, code: string): boolean {
+  return (
+    hasFieldErrors(failure) &&
+    failure.field_error_codes?.every((fieldCode) => fieldCode === code) === true
+  )
+}
+
+const ACTIONABLE_PROVIDER_INPUT_CODES = new Set([
+  'imageLayerDecompositionUnsupported',
+  'videoHdrUnsupported'
+])
+
+function isProviderInputIssue(failure: FailedRun): boolean {
+  return (
+    failure.reason === 'validation' &&
+    hasFieldErrors(failure) &&
+    failure.field_error_codes?.every((code) =>
+      ACTIONABLE_PROVIDER_INPUT_CODES.has(code)
+    ) === true
+  )
+}
+
+function isActionableInputIssue(failure: FailedRun): boolean {
+  if (isProviderInputIssue(failure)) return true
+  if (hasRouterOutcome(failure)) return false
+  if (!hasFieldErrors(failure)) return false
   if (failure.reason === 'validation') return true
   return (
-    failure.reason === 'client' &&
-    failure.field_error_codes.every((code) => code === 'fileUnreadable')
+    failure.reason === 'client' && hasOnlyFieldError(failure, 'fileUnreadable')
   )
 }
 
