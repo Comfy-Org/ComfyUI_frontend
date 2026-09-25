@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "Scomponi un'immagine in una base di sfondo più fino a 16 livelli trasparenti riposizionabili, ciascuno con ordine di sovrapposizione, riquadro di delimitazione, nome e descrizione.",
-    "display_name": "ByteDance Seedream 5.0 Pro Separazione Livelli",
+    "display_name": "Separazione dei livelli ByteDance Seedream 5.0 Pro (legacy)",
     "inputs": {
       "control_after_generate": {
         "name": "controllo dopo generazione"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "Documento livelli pronto per la modifica per Create Layered Image: la base più ogni elemento come proprio livello nominato, ritagliato stretto, alla sua vera posizione e ordine di sovrapposizione. Collega direttamente, oppure estendi con Add Layer."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "Scompone un'immagine in una piastra di sfondo più fino a 16 livelli trasparenti riposizionabili, ciascuno con ordine di sovrapposizione, riquadro di delimitazione, nome e descrizione.",
+    "display_name": "Separazione dei livelli ByteDance Seedream 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "L'immagine di base (piastra di sfondo) su cui vengono sovrapposti i livelli."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "Trasparenza dell'immagine di base (1 = trasparente, convenzione LoadImage); attualmente sempre completamente opaca."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "Livelli trasparenti ordinati dal basso verso l'alto. Modalità tela completa: posizionati su una tela nera delle dimensioni della base nella posizione del relativo riquadro di delimitazione. Modalità dimensione minima: ritagliati al relativo riquadro di delimitazione, ancorati in alto a sinistra e riempiti fino alla dimensione del livello più grande."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "Trasparenza per livello, allineata per indice con il batch layers (1 = trasparente, convenzione LoadImage). Per composizioni in stile ImageCompositeMasked, aggiungi prima InvertMask."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "Un riquadro di posizionamento per livello, allineato per indice con il batch layers (inserisci entrambi, più masks, in Layers From Bounding Boxes per ricostruire il posizionamento per livello): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] è la regione del contenuto del livello all'interno della propria cornice; viene posizionata sulla tela nella posizione del riquadro più tale offset."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Documento di livelli pronto da modificare per Create Layered Image: la piastra di base più ogni elemento come livello separato con nome, ritagliato strettamente, nella posizione e nell'ordine di sovrapposizione corretti. Collega direttamente oppure estendi con Add Layer."
       }
     }
   },
@@ -16893,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Quanto il modello ragiona prima di rispondere. 'default' lascia la scelta al modello. I livelli supportati variano in base al modello: GPT-6 Astra low-max, GPT-5.6 none-max (senza minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 non dispone di ragionamento. I livelli non supportati vengono rifiutati prima dell'invio della richiesta."
+        "tooltip": "Quanto il model ragiona prima di rispondere. 'default' lascia la scelta al model. I livelli supportati variano in base al model: GPT-6 Astra low-max, GPT-6 Sol/Luna e GPT-5.6 none-max (senza minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, serie o low-high; GPT-4.1 non supporta il ragionamento. I livelli non supportati vengono rifiutati prima dell'invio della richiesta."
       },
       "truncation": {
         "name": "troncamento",

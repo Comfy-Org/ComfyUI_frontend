@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "Zerlegt ein Bild in eine Hintergrundebene und bis zu 16 neu positionierbare transparente Ebenen, jeweils mit Stapelreihenfolge, Begrenzungsrahmen, Name und Beschreibung.",
-    "display_name": "ByteDance Seedream 5.0 Pro-Ebenentrennung",
+    "display_name": "ByteDance Seedream 5.0 Pro-Ebenentrennung (Legacy)",
     "inputs": {
       "control_after_generate": {
         "name": "Steuerung nach Generierung"
@@ -1986,6 +1986,62 @@
       "4": {
         "name": "bboxes",
         "tooltip": "Eine Platzierungsbox pro Ebene, indexausgerichtet mit dem Batch layers (führen Sie beide zusammen mit masks in Layers From Bounding Boxes ein, um die Platzierung pro Ebene wiederherzustellen): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] ist der Inhaltsbereich der Ebene innerhalb ihres eigenen Rahmens; er wird auf der Canvas an der Boxposition zuzüglich dieses Offsets platziert."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "Bearbeitungsfertiges Ebenendokument für Create Layered Image: die Basisplatte sowie jedes Element als eigene benannte, eng zugeschnittene Ebene an seiner tatsächlichen Position und in seiner Stapelreihenfolge. Direkt verbinden oder mit Add Layer erweitern."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "Zerlegt ein Bild in eine Hintergrundplatte sowie bis zu 16 repositionierbare transparente Ebenen, jeweils mit Stapelreihenfolge, Bounding Box, Name und Beschreibung.",
+    "display_name": "ByteDance Seedream 5.0-Ebenentrennung",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach der Generierung"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "Das Basisbild (Hintergrundplatte), auf dem die Ebenen gestapelt werden."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "Transparenz des Basisbilds (1 = transparent, LoadImage-Konvention); derzeit immer vollständig deckend."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "Transparente Ebenen, von unten nach oben angeordnet. Vollcanvas-Modus: auf einem schwarzen Canvas in Größe des Basisbilds an ihrer Bounding-Box-Position platziert. Minimalgrößenmodus: auf ihre Bounding Box zugeschnitten, oben links verankert und auf die größte Ebene aufgefüllt."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "Transparenz pro Ebene, indexausgerichtet mit dem layers-Batch (1 = transparent, LoadImage-Konvention). Für Compositing im Stil von ImageCompositeMasked fügen Sie zuerst InvertMask hinzu."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "Eine Platzierungsbox pro Ebene, indexausgerichtet mit dem layers-Batch (speisen Sie beide zusammen mit masks in Layers From Bounding Boxes ein, um die Platzierung pro Ebene wiederherzustellen): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. content_rect = [left, top, width, height] ist der Inhaltsbereich der Ebene innerhalb ihres eigenen Frames; er wird auf dem Canvas an der Position der Box zuzüglich dieses Offsets platziert."
       },
       "5": {
         "name": "layer_stack",
@@ -16893,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "Wie intensiv das Modell vor der Antwort nachdenkt. „default“ überlässt die Wahl dem Modell. Unterstützte Stufen unterscheiden sich je nach Modell: GPT-6 Astra low-max, GPT-5.6 none-max (ohne minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 unterstützt kein Reasoning. Nicht unterstützte Stufen werden abgelehnt, bevor die Anfrage gesendet wird."
+        "tooltip": "Wie stark das Modell vor der Antwort nachdenkt. 'default' überlässt die Auswahl dem Modell. Unterstützte Stufen unterscheiden sich je nach Modell: GPT-6 Astra low-max, GPT-6 Sol/Luna und GPT-5.6 none-max (ohne minimal), GPT-5.5 none-xhigh, GPT-5.5 Pro medium-xhigh, GPT-5 minimal-high, o-series low-high; GPT-4.1 hat kein Reasoning. Nicht unterstützte Stufen werden abgelehnt, bevor die Anfrage gesendet wird."
       },
       "truncation": {
         "name": "truncation",

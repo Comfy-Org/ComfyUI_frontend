@@ -1932,7 +1932,7 @@
   },
   "ByteDanceSeedreamLayerSeparationNode": {
     "description": "تفكيك صورة إلى لوحة خلفية بالإضافة إلى ما يصل إلى ١٦ طبقة شفافة قابلة لإعادة الترتيب، كل منها مع ترتيب تراكب، صندوق حدودي، اسم ووصف.",
-    "display_name": "ByteDance Seedream 5.0 Pro فصل الطبقات",
+    "display_name": "فصل طبقات ByteDance Seedream 5.0 Pro (قديم)",
     "inputs": {
       "control_after_generate": {
         "name": "control after generate"
@@ -1990,6 +1990,62 @@
       "5": {
         "name": "layer_stack",
         "tooltip": "مستند طبقات جاهز للتحرير لـ Create Layered Image: اللوحة الأساسية بالإضافة إلى كل عنصر كطبقة منفصلة، مقصوصة بإحكام في موضعها الحقيقي وترتيب تكديسها. صِل مباشرة، أو أضف طبقات مع Add Layer."
+      }
+    }
+  },
+  "ByteDanceSeedreamLayerSeparationNodeV2": {
+    "description": "فكّك صورة إلى لوحة خلفية وما يصل إلى 16 طبقة شفافة قابلة لإعادة التموضع، لكل منها ترتيب تكديس ومربع إحاطة واسم ووصف.",
+    "display_name": "فصل طبقات ByteDance Seedream 5.0",
+    "inputs": {
+      "control_after_generate": {
+        "name": "control after generate"
+      },
+      "model": {
+        "name": "model"
+      },
+      "model_crop_layers": {
+        "name": "crop_layers"
+      },
+      "model_prompt": {
+        "name": "prompt"
+      },
+      "model_prompt_optimization": {
+        "name": "prompt_optimization"
+      },
+      "model_seed": {
+        "name": "seed"
+      },
+      "model_size": {
+        "name": "size"
+      },
+      "model_watermark": {
+        "name": "watermark"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "base_image",
+        "tooltip": "الصورة الأساسية (لوحة الخلفية) التي تتراكم الطبقات فوقها."
+      },
+      "1": {
+        "name": "base_mask",
+        "tooltip": "شفافية الصورة الأساسية (1 = شفاف، وفق اصطلاح LoadImage)؛ وهي حاليًا معتمة بالكامل دائمًا."
+      },
+      "2": {
+        "name": "layers",
+        "tooltip": "طبقات شفافة مرتبة من الأسفل إلى الأعلى. وضع اللوحة الكاملة: توضع على لوحة سوداء بحجم الصورة الأساسية عند موضع مربع الإحاطة الخاص بها. وضع الحجم الأدنى: تُقص إلى مربع الإحاطة الخاص بها، وتُثبّت عند أعلى اليسار، وتُحشّى إلى حجم أكبر طبقة."
+      },
+      "3": {
+        "name": "masks",
+        "tooltip": "شفافية لكل طبقة، بمحاذاة الفهرس مع دفعة layers (1 = شفاف، وفق اصطلاح LoadImage). للتركيب بأسلوب ImageCompositeMasked، أضف InvertMask أولًا."
+      },
+      "4": {
+        "name": "bboxes",
+        "tooltip": "مربع موضع واحد لكل طبقة، بمحاذاة الفهرس مع دفعة layers (مرّر كليهما، بالإضافة إلى masks، إلى Layers From Bounding Boxes لإعادة بناء موضع كل طبقة): {x, y, width, height, metadata: {name, desc, z_index, native_size, content_rect, flags}}. يشير content_rect = [left, top, width, height] إلى منطقة محتوى الطبقة ضمن إطارها الخاص؛ وتوضع على اللوحة عند موضع المربع مضافًا إليه ذلك الإزاحة."
+      },
+      "5": {
+        "name": "layer_stack",
+        "tooltip": "مستند طبقات جاهز للتحرير لـ Create Layered Image: لوحة الأساس بالإضافة إلى كل عنصر كطبقة مستقلة مسماة ومقصوصة بإحكام في موضعها الحقيقي وترتيب تكديسها. وصّله مباشرة، أو وسّعه باستخدام Add Layer."
       }
     }
   },
@@ -16893,7 +16949,7 @@
       },
       "reasoning_effort": {
         "name": "reasoning_effort",
-        "tooltip": "مقدار استدلال النموذج قبل الإجابة. يترك 'default' الاختيار للنموذج. تختلف المستويات المدعومة حسب النموذج: GPT-6 Astra من low إلى max، وGPT-5.6 من none إلى max (دون minimal)، وGPT-5.5 من none إلى xhigh، وGPT-5.5 Pro من medium إلى xhigh، وGPT-5 من minimal إلى high، وسلسلة o من low إلى high؛ لا يدعم GPT-4.1 الاستدلال. تُرفض المستويات غير المدعومة قبل إرسال الطلب."
+        "tooltip": "مقدار استدلال model قبل الإجابة. يترك 'default' الاختيار لـ model. تختلف المستويات المدعومة حسب model: GPT-6 Astra من low إلى max، وGPT-6 Sol/Luna وGPT-5.6 من none إلى max (دون minimal)، وGPT-5.5 من none إلى xhigh، وGPT-5.5 Pro من medium إلى xhigh، وGPT-5 من minimal إلى high، وسلسلة o من low إلى high؛ لا يحتوي GPT-4.1 على استدلال. تُرفض المستويات غير المدعومة قبل إرسال الطلب."
       },
       "truncation": {
         "name": "الاقتصاص",
