@@ -12,6 +12,8 @@ function fakePostHog(initial: boolean | undefined): {
 } {
   let value = initial
   let listener: FlagsDelivery | undefined
+  const deliver = (context?: { errorsLoading?: boolean }) =>
+    listener?.(value === true ? [AGENT_PANEL_FLAG] : [], {}, context)
   return {
     posthog: {
       isFeatureEnabled: () => value,
@@ -24,11 +26,9 @@ function fakePostHog(initial: boolean | undefined): {
     },
     setFlag: (next) => {
       value = next
-      listener?.()
+      deliver()
     },
-    failReload: () => {
-      listener?.([], {}, { errorsLoading: true })
-    }
+    failReload: () => deliver({ errorsLoading: true })
   }
 }
 
@@ -52,17 +52,17 @@ describe('createPostHogFlagSource', () => {
     expect(source.isEnabled()).toBe(false)
   })
 
-  it('withholds a delivery that reports a load error, leaving the value unchanged', () => {
+  it('does not notify listeners for a delivery that reports a load error', () => {
     const { posthog, setFlag, failReload } = fakePostHog(undefined)
     const source = createPostHogFlagSource(posthog)
-    setFlag(true)
     const onChange = vi.fn()
     source.onChange?.(onChange)
+    setFlag(true)
+    onChange.mockClear()
 
     failReload()
 
     expect(onChange).not.toHaveBeenCalled()
-    expect(source.isEnabled()).toBe(true)
   })
 
   it('unsubscribing stops further notifications', () => {

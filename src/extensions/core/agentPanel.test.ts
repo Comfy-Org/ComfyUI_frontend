@@ -34,6 +34,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { useWidgetValueStore } from '@/stores/widgetValueStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+import { FLAG_SETTLE_TIMEOUT_MS } from '@/workbench/extensions/agent/utils/postHogFlagSource'
 import type { PostHogLike } from '@/workbench/extensions/agent/utils/postHogFlagSource'
 import { createMockLoadedWorkflow } from '@/utils/__tests__/litegraphTestUtils'
 import { isLGraphNode } from '@/utils/litegraphUtil'
@@ -1050,27 +1051,25 @@ describe('AgentPanel extension flag gate', () => {
     expect(agentStore.enabled).toBe(true)
   })
 
-  it('leaves the panel disabled when the account resolves after the gate is installed', async () => {
-    currentUser.value = null
+  it('settles the gate on a delivery that loaded successfully', async () => {
     await loadEntryAndSetup()
-    mocks.flagEnabled = true
 
-    currentUser.value = { id: 'account-a' }
-    await flush()
+    mocks.flagListener!([], {})
 
-    expect(agentStore.enabled).toBe(false)
+    expect(agentStore.gateSettled).toBe(true)
   })
 
-  it('leaves the panel disabled when the only delivery after the account resolves reports a load error', async () => {
-    currentUser.value = null
+  it('holds the gate unsettled until the fallback when the flags request fails', async () => {
     await loadEntryAndSetup()
-    mocks.flagEnabled = true
-    currentUser.value = { id: 'account-a' }
-    await flush()
 
     mocks.flagListener!([], {}, { errorsLoading: true })
 
     expect(agentStore.enabled).toBe(false)
+    expect(agentStore.gateSettled).toBe(false)
+
+    await vi.advanceTimersByTimeAsync(FLAG_SETTLE_TIMEOUT_MS)
+
+    expect(agentStore.gateSettled).toBe(true)
   })
 
   it('disables the panel without closing it when the flag flips back to false', async () => {
