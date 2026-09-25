@@ -20,7 +20,7 @@ import {
 } from '../../config/models-catalogue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { rememberShelf } from '../../lib/workshop/shelf-memory'
+import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
@@ -180,15 +180,7 @@ function rememberModel(
   event: MouseEvent,
   shelf = useCase.value
 ) {
-  if (
-    event.button !== 0 ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey
-  )
-    return
-  rememberShelf(shelf, model.href)
+  rememberShelfOnClick(shelf, model.href, event)
 }
 
 watch(browseAll, (on) => on && resetFilters())
