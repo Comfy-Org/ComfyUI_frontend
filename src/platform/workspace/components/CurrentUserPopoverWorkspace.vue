@@ -261,7 +261,6 @@
 <script setup lang="ts">
 import { onClickOutside } from '@vueuse/core'
 import { storeToRefs } from 'pinia'
-import Skeleton from 'primevue/skeleton'
 import { computed, ref, useTemplateRef } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -270,6 +269,7 @@ import UserAvatar from '@/components/common/UserAvatar.vue'
 import WorkspaceProfilePic from '@/platform/workspace/components/WorkspaceProfilePic.vue'
 import WorkspaceSwitcherPopover from '@/platform/workspace/components/WorkspaceSwitcherPopover.vue'
 import Button from '@/components/ui/button/Button.vue'
+import Skeleton from '@/components/ui/skeleton/Skeleton.vue'
 import Tooltip from '@/components/ui/tooltip/Tooltip.vue'
 import { useCurrentUser } from '@/composables/auth/useCurrentUser'
 

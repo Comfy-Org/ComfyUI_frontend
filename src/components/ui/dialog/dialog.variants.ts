@@ -2,7 +2,7 @@ import type { VariantProps } from 'cva'
 import { cva } from 'cva'
 
 export const dialogContentVariants = cva({
-  base: 'fixed z-1700 flex flex-col rounded-lg border border-border-subtle bg-base-background shadow-lg outline-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
+  base: 'fixed z-1700 flex flex-col rounded-lg border border-border-subtle bg-base-background shadow-lg outline-none data-[state=closed]:pointer-events-none data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95',
   variants: {
     size: {
       sm: 'sm:max-w-[min(24rem,calc(100vw-var(--workspace-inset-right,0px)-1rem))]',
