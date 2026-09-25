@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type { DraftIndexV2, DraftPayloadV2 } from './draftTypes'
 import {
+  clearAllWorkspaceStorage,
   clearAllWorkflowStorage,
   clearWorkflowRestoreState,
   deleteOrphanPayloads,
@@ -385,6 +386,29 @@ describe('storageIO', () => {
       expect(
         sessionStorage.getItem('Comfy.Workflow.ActivePath:client-1')
       ).toBeNull()
+    })
+  })
+
+  describe('clearAllWorkspaceStorage', () => {
+    it('clears scoped and legacy Agent persistence on account logout', () => {
+      localStorage.setItem('Comfy.Agent.ThreadId:personal', 'thread-a')
+      localStorage.setItem('Comfy.Agent.WorkflowTabBindings:ws-1', '{}')
+      localStorage.setItem('Comfy.Agent.ChatTitles:ws-1', '{}')
+      localStorage.setItem('Comfy.Agent.DeletedThreads:ws-1', '[]')
+      localStorage.setItem('Comfy.Agent.ThreadId', 'legacy-thread')
+      localStorage.setItem('Comfy.Agent.WorkflowTabBindings', '{}')
+      localStorage.setItem('Comfy.Agent.WorkflowTabBindings.v2', '{}')
+      localStorage.setItem('Comfy.Agent.ChatTitles', '{}')
+      localStorage.setItem('Comfy.Agent.DeletedThreads', '[]')
+      localStorage.setItem('unrelated', 'keep')
+
+      clearAllWorkspaceStorage()
+
+      expect(
+        [...Array(localStorage.length)].map((_, index) =>
+          localStorage.key(index)
+        )
+      ).toEqual(['unrelated'])
     })
   })
 

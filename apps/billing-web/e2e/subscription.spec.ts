@@ -32,6 +32,10 @@ test('choosing a plan quotes it from the server and continues to checkout', asyn
   cloud,
   signIn
 }) => {
+  cloud.scenario.preview = {
+    ...cloud.scenario.preview,
+    transition_type: 'upgrade'
+  }
   await signIn(SUBSCRIPTION)
 
   await page.getByRole('button', { name: 'Choose Pro · Monthly' }).click()
@@ -54,11 +58,39 @@ test('choosing a plan quotes it from the server and continues to checkout', asyn
   ).toBeVisible()
   await expect(page.getByText('Pro · Monthly')).toBeVisible()
   await expect(page.getByText('Total due today')).toBeVisible()
+  // An upgrade on an existing subscription charges the saved payment method
+  // server-side, so no card form is needed here — see checkout.spec.ts for
+  // that path's full coverage.
   await expect(
-    page.getByText("The payment form isn't available right now.", {
-      exact: false
-    })
+    page.getByRole('button', { name: 'Pay and subscribe' })
   ).toBeVisible()
+  await expect(
+    page.getByText("The payment form isn't available right now.")
+  ).not.toBeVisible()
+})
+
+test('a checkout link naming a team credit stop quotes it along with the plan', async ({
+  page,
+  cloud,
+  signIn
+}) => {
+  await signIn(
+    entryPath('checkout', {
+      plan: 'pro_monthly',
+      team_credit_stop_id: 'stop_700'
+    })
+  )
+
+  await expect(
+    page.getByRole('heading', { name: 'Confirm your payment' })
+  ).toBeVisible()
+  const preview = cloud.requests.find(
+    (request) => request.path === '/billing/preview-subscribe'
+  )
+  expect(preview?.body).toStrictEqual({
+    plan_slug: 'pro_monthly',
+    team_credit_stop_id: 'stop_700'
+  })
 })
 
 test('a checkout link that names no plan sends the customer to choose one', async ({
@@ -86,8 +118,13 @@ test('cancels after a confirmation step and then offers to resubscribe', async (
       can_cancel: false,
       can_reactivate: true
     })
+    cloud.scenario.status = {
+      ...cloud.scenario.status,
+      subscription_status: 'canceled',
+      cancel_at: '2026-10-24T12:00:00Z'
+    }
     return {
-      body: { billing_op_id: 'op_cancel', cancel_at: '2026-10-01T00:00:00Z' }
+      body: { billing_op_id: 'op_cancel', cancel_at: '2026-10-24T12:00:00Z' }
     }
   })
   await signIn(SUBSCRIPTION)
@@ -96,6 +133,7 @@ test('cancels after a confirmation step and then offers to resubscribe', async (
   await expect(
     page.getByText('Cancel your subscription? You can resubscribe at any time.')
   ).toBeVisible()
+  await expect(page.getByText(/^Ends on/)).toHaveCount(0)
   expect(
     cloud.requests.some((request) =>
       request.path.startsWith('/billing/subscription/')
@@ -105,6 +143,7 @@ test('cancels after a confirmation step and then offers to resubscribe', async (
   await page.getByRole('button', { name: 'Confirm cancellation' }).click()
 
   await expect(page.getByText('Your subscription is cancelled.')).toBeVisible()
+  await expect(page.getByText('Ends on Oct 24, 2026')).toBeVisible()
   await expect(page.getByRole('button', { name: 'Resubscribe' })).toBeVisible()
   await expect(
     page.getByRole('button', { name: 'Cancel subscription' })

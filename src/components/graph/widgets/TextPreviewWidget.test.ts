@@ -4,16 +4,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
 import type * as NodePreviewModule from '@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'
-import type { ComfyApp } from '@/scripts/app'
 import { useExecutionStore } from '@/stores/executionStore'
 import { toNodeId } from '@/types/nodeId'
 import type { NodeId } from '@/types/nodeId'
 
 import TextPreviewWidget from './TextPreviewWidget.vue'
-vi.mock(import('@/scripts/app'), async () => {
-  const { fromPartial } = await import('@total-typescript/shoehorn')
-  return { app: fromPartial<ComfyApp>({}) }
-})
+vi.mock(import('@/scripts/app'))
 vi.mock(
   import('@/renderer/extensions/vueNodes/components/LGraphNodePreview.vue'),
   async () => {

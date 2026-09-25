@@ -69,7 +69,7 @@
               <label>{{ $t('hdrViewer.channel') }}</label>
               <select
                 v-model="viewer.channel.value"
-                class="bg-base-component-surface w-full rounded-sm px-2 py-1"
+                class="w-full rounded-sm bg-secondary-background px-2 py-1"
                 :aria-label="$t('hdrViewer.channel')"
               >
                 <option v-for="mode in channelModes" :key="mode" :value="mode">
@@ -82,7 +82,7 @@
               <label>{{ $t('hdrViewer.sourceGamut') }}</label>
               <select
                 v-model="viewer.gamut.value"
-                class="bg-base-component-surface w-full rounded-sm px-2 py-1"
+                class="w-full rounded-sm bg-secondary-background px-2 py-1"
                 :aria-label="$t('hdrViewer.sourceGamut')"
               >
                 <option v-for="name in gamutNames" :key="name" :value="name">
@@ -122,7 +122,7 @@
             <svg
               viewBox="0 0 1 1"
               preserveAspectRatio="none"
-              class="bg-base-component-surface aspect-3/2 w-full rounded-sm"
+              class="aspect-3/2 w-full rounded-sm bg-secondary-background"
             >
               <path
                 :d="histogramPath"
