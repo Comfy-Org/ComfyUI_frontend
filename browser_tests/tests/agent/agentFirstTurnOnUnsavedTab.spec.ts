@@ -141,6 +141,7 @@ test.describe(
           posted[0].workflow_id ?? null,
           'a tab the user never saved has no cloud workflow id to name'
         ).toBeNull()
+        expect(posted[0].current_tab).toBeUndefined()
         expect(
           posted[0].current_tab_unbound,
           'without this the server presents the turn as having no workflow selected'
