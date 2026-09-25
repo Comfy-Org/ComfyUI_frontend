@@ -34,6 +34,7 @@ import { layoutStore } from '@/renderer/core/layout/store/layoutStore'
 import type { Point } from '@/renderer/core/layout/types'
 import { toPoint } from '@/renderer/core/layout/utils/geometry'
 import { createSlotLinkDragContext } from '@/renderer/extensions/vueNodes/composables/slotLinkDragContext'
+import { useSlotLinkReveal } from '@/renderer/extensions/vueNodes/composables/useSlotLinkReveal'
 import { augmentToCanvasPointerEvent } from '@/renderer/extensions/vueNodes/utils/eventUtils'
 import { app } from '@/scripts/app'
 import { inputLink } from '@/lib/litegraph/src/node/slotLinks'
@@ -159,6 +160,7 @@ export function useSlotLinkInteraction({
 
   // Per-drag drag-state context (non-reactive caches + RAF batching)
   const dragContext = createSlotLinkDragContext()
+  const dragReveal = useSlotLinkReveal({ nodeId, index, type })
 
   const resolveRenderLinkSource = (link: RenderLink): Point | null => {
     if (link.fromReroute) {
@@ -340,6 +342,7 @@ export function useSlotLinkInteraction({
     activeAdapter = null
     raf.cancel()
     dragContext.dispose()
+    dragReveal.unrevealLinks()
     clearCompatible()
   }
 
@@ -766,6 +769,7 @@ export function useSlotLinkInteraction({
     )
 
     pointerSession.begin(event.pointerId)
+    dragReveal.revealLinks()
 
     toCanvasPointerEvent(event)
     updatePointerState(event)

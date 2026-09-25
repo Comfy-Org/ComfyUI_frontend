@@ -36,17 +36,18 @@ function drawBadgesInView(
   endPos: Point,
   visibleArea: ReadOnlyRect = VISIBLE_AREA
 ) {
-  const layout = layoutHiddenLinkBadges(
-    host,
-    ctx,
-    link,
-    { hidden: true },
-    startPos,
-    endPos,
-    BADGE_COLOR
-  )
-  drawHiddenLinkBadges(ctx, layout, visibleArea)
-  return layout
+  const layouts = layoutHiddenLinkBadges(host, ctx, [
+    {
+      link,
+      presentation: { hidden: true },
+      startPos,
+      endPos,
+      color: BADGE_COLOR
+    }
+  ])
+  for (const layout of layouts.values()) {
+    drawHiddenLinkBadges(ctx, layout, visibleArea)
+  }
 }
 
 describe('linkBadgeText', () => {
@@ -145,9 +146,29 @@ describe('link badge frame layout', () => {
   it('stacks overlapping endpoint badges into disjoint bands', () => {
     const host = document.createElement('canvas')
     const ctx = createContext()
-    drawBadgesInView(host, ctx, createLink(1, 'IMAGE'), [100, 100], [400, 200])
-    drawBadgesInView(host, ctx, createLink(2, 'IMAGE'), [100, 100], [400, 300])
-    drawBadgesInView(host, ctx, createLink(3, 'MASK'), [100, 118], [400, 400])
+    layoutHiddenLinkBadges(host, ctx, [
+      {
+        link: createLink(3, 'MASK'),
+        presentation: { hidden: true },
+        startPos: [100, 118],
+        endPos: [400, 400],
+        color: BADGE_COLOR
+      },
+      {
+        link: createLink(2, 'IMAGE'),
+        presentation: { hidden: true },
+        startPos: [100, 100],
+        endPos: [400, 300],
+        color: BADGE_COLOR
+      },
+      {
+        link: createLink(1, 'IMAGE'),
+        presentation: { hidden: true },
+        startPos: [100, 100],
+        endPos: [400, 200],
+        color: BADGE_COLOR
+      }
+    ])
 
     expect(queryLinkBadgeAtPoint(host, 120, 100)).toBe(toLinkId(1))
     expect(queryLinkBadgeAtPoint(host, 120, 122)).toBe(toLinkId(2))
@@ -159,17 +180,20 @@ describe('link badge frame layout', () => {
   it('culls using reversed and stacked badge extents', () => {
     const host = document.createElement('canvas')
     const ctx = createContext()
-    drawBadgesInView(host, ctx, createLink(1), [400, 100], [100, 100])
-    vi.mocked(ctx.fillText).mockClear()
-
-    drawBadgesInView(
+    const layouts = layoutHiddenLinkBadges(
       host,
       ctx,
-      createLink(2),
-      [400, 100],
-      [100, 100],
-      [414, 113, 10, 18]
+      [1, 2].map((id) => ({
+        link: createLink(id),
+        presentation: { hidden: true },
+        startPos: [400, 100],
+        endPos: [100, 100],
+        color: BADGE_COLOR
+      }))
     )
+    for (const layout of layouts.values()) {
+      drawHiddenLinkBadges(ctx, layout, [414, 113, 10, 18])
+    }
 
     expect(queryLinkBadgeAtPoint(host, 420, 122)).toBe(toLinkId(2))
     expect(ctx.fillText).toHaveBeenCalledWith('MODEL', 420, 123)
@@ -177,7 +201,68 @@ describe('link badge frame layout', () => {
   })
 
   it.for([
+    {
+      name: 'another node',
+      originId: 6,
+      targetId: 7,
+      startPos: [100, 100],
+      endPos: [600, 300]
+    },
+    {
+      name: 'the opposite side of the same node',
+      originId: 6,
+      targetId: 4,
+      startPos: [600, 300],
+      endPos: [190, 100]
+    }
+  ] satisfies {
+    name: string
+    originId: number
+    targetId: number
+    startPos: Point
+    endPos: Point
+  }[])('keeps overlapping badges from $name separately hittable', (other) => {
+    const host = document.createElement('canvas')
+    layoutHiddenLinkBadges(host, createContext(), [
+      {
+        link: createLink(1),
+        presentation: { hidden: true },
+        startPos: [100, 100],
+        endPos: [400, 200],
+        color: BADGE_COLOR
+      },
+      {
+        link: new LLink(
+          toLinkId(2),
+          'MODEL',
+          other.originId,
+          0,
+          other.targetId,
+          0
+        ),
+        presentation: { hidden: true },
+        startPos: other.startPos,
+        endPos: other.endPos,
+        color: BADGE_COLOR
+      }
+    ])
+
+    expect(queryLinkBadgeAtPoint(host, 120, 100)).toBe(toLinkId(1))
+    expect(queryLinkBadgeAtPoint(host, 120, 122)).toBe(toLinkId(2))
+  })
+
+  it.for([
     { name: 'visible', visibleArea: VISIBLE_AREA, paintCount: 2 },
+    {
+      name: 'output-only visible',
+      visibleArea: [120, 95, 1, 1],
+      paintCount: 2
+    },
+    {
+      name: 'input-only visible',
+      visibleArea: [330, 195, 1, 1],
+      paintCount: 2
+    },
     { name: 'culled', visibleArea: [5000, 5000, 10, 10], paintCount: 0 }
   ] satisfies {
     name: string
