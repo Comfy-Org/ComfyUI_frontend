@@ -1,4 +1,5 @@
 import { useAuthStore } from '@/stores/authStore'
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import type {
@@ -30,21 +31,20 @@ vi.mock<unknown>(import('axios'), () => ({
   }
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: vi.fn((key: string) => key)
-}))
-
-vi.mock(import('@/scripts/api'), async (importOriginal) => ({
-  api: Object.assign((await importOriginal()).api, {
-    apiURL: vi.fn((path: string) => `/api${path}`)
-  })
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('./workspaceApiUrl'), () => ({
   workspaceApiUrl: (path: string) => `/api${path}`
 }))
 
+vi.mock(import('firebase/auth'), { spy: true })
+
+beforeEach(() => {
+  stubFirebaseAuthHarness()
+})
+
 import { workspaceApi } from './workspaceApi'
+import { stubFirebaseAuthHarness } from '@/utils/__tests__/stubAccountIdentityPort'
 
 const AUTH_HEADER = { Authorization: 'Bearer test-token' } as const
 
@@ -787,10 +787,3 @@ describe('workspaceApi', () => {
     })
   })
 })
-
-vi.mock(import('firebase/auth'), async (importOriginal) => ({
-  ...(await importOriginal()),
-  setPersistence: vi.fn().mockResolvedValue(undefined),
-  onAuthStateChanged: vi.fn(() => vi.fn()),
-  onIdTokenChanged: vi.fn(() => vi.fn())
-}))

@@ -549,6 +549,115 @@ export const zStoredAgentConsentSetting = zAgentConsentSettingValue.and(
 )
 
 /**
+ * First rejected op in an abort-remainder batch.
+ */
+export const zDocOpFailure = z.object({
+  code: z.string(),
+  index: z.number().int(),
+  message: z.string(),
+  op_id: z.string().max(128).optional()
+})
+
+export const zDocOpsResultData = z.object({
+  applied: z.array(z.string()).optional(),
+  code: z.string().optional(),
+  failed: zDocOpFailure.optional(),
+  message: z.string().optional(),
+  ok: z.boolean(),
+  seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    })
+    .optional(),
+  skipped: z.array(z.string()).optional(),
+  v: z.number().int().gte(1).lte(1),
+  workflow_id: z.string().min(1).max(128)
+})
+
+/**
+ * Host acknowledgement for a doc_ops batch.
+ */
+export const zDocOpsResultFrame = z.object({
+  data: zDocOpsResultData,
+  type: z.enum(['doc_ops_result'])
+})
+
+export const zDocResetData = z.object({
+  actor: z.string().max(256).optional(),
+  lineage_seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  v: z.number().int().gte(1).lte(1),
+  workflow_id: z.string().min(1).max(128)
+})
+
+/**
+ * Host-to-follower lineage break. The follower must resubscribe for fresh state.
+ */
+export const zDocResetFrame = z.object({
+  data: zDocResetData,
+  type: z.enum(['doc_reset'])
+})
+
+export const zDocUpdateData = z.object({
+  actor: z.string().max(256).optional(),
+  lineage_seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  op_ids: z.array(z.string().min(1).max(128)).max(256).optional(),
+  seq: z.coerce
+    .bigint()
+    .min(BigInt('-9223372036854775808'), {
+      message: 'Invalid value: Expected int64 to be >= -9223372036854775808'
+    })
+    .max(BigInt('9223372036854775807'), {
+      message: 'Invalid value: Expected int64 to be <= 9223372036854775807'
+    }),
+  update_b64: z.string(),
+  v: z.number().int().gte(1).lte(1),
+  workflow_id: z.string().min(1).max(128)
+})
+
+/**
+ * Host-to-follower incremental Yjs document update.
+ */
+export const zDocUpdateFrame = z.object({
+  data: zDocUpdateData,
+  type: z.enum(['doc_update'])
+})
+
+/**
+ * Server-to-client CRDT document frame carried by the /ws envelope.
+ */
+export const zServerDocFrame = z.union([
+  zDocUpdateFrame,
+  zDocResetFrame,
+  zDocOpsResultFrame
+])
+
+/**
  * User secret metadata (the secret value itself is never returned after creation).
  */
 export const zSecretResponse = z.object({
@@ -1507,7 +1616,7 @@ export const zJobAssetsResponse = z.object({
 })
 
 /**
- * Request body for minting an input-image or input-audio upload grant.
+ * Request body for minting an input-image, input-audio or input-video upload grant.
  */
 export const zInputUploadUrlRequest = z.object({
   content_type: z.string().max(64)
@@ -2094,6 +2203,23 @@ export const zCreateTopupRequest = z.object({
 })
 
 /**
+ * A hosted Stripe Checkout session for a credit top-up.
+ */
+export const zCreateTopupCheckoutResponse = z.object({
+  checkout_url: z.string().url(),
+  session_id: z.string().optional()
+})
+
+/**
+ * Request body for creating a hosted credit top-up checkout session.
+ */
+export const zCreateTopupCheckoutRequest = z.object({
+  amount_cents: z.coerce.bigint().gte(BigInt(500)).lte(BigInt(1600000)),
+  idempotency_key: z.string().optional(),
+  return_url: z.string().url()
+})
+
+/**
  * Response after creating a session cookie
  */
 export const zCreateSessionResponse = z.object({
@@ -2143,7 +2269,8 @@ export const zCreateHubProfileRequest = z.object({
 export const zChurnkeyAuthResponse = z.object({
   auth_hash: z.string(),
   customer_id: z.string(),
-  mode: z.enum(['live', 'test', 'sandbox'])
+  mode: z.enum(['live', 'test', 'sandbox']),
+  offer_subscription_id: z.string().min(1).optional()
 })
 
 /**
@@ -2159,6 +2286,14 @@ export const zCancelSubscriptionResponse = z.object({
  */
 export const zCancelSubscriptionRequest = z.object({
   idempotency_key: z.string().optional()
+})
+
+/**
+ * Response when a cancellation is accepted but has not committed yet. Carries no cancel_at: no cancellation time exists to report until the operation settles. The billing operation reports only status, so once it reaches `succeeded` the committed date is read from `cancel_at` on `GET /api/billing/status`.
+ */
+export const zCancelSubscriptionAcceptedResponse = z.object({
+  billing_op_id: z.string(),
+  status: z.enum(['pending'])
 })
 
 /**
@@ -2560,10 +2695,10 @@ export const zAgentPostMessageRequest = z.object({
   attachments: z.array(z.string()).optional(),
   content: z.string(),
   current_tab: z.string().optional(),
+  current_tab_unbound: z.boolean().optional(),
   draft: z
     .object({
-      content: z.record(z.unknown()).optional(),
-      version: z.number().int().nullish()
+      content: z.record(z.unknown()).optional()
     })
     .optional(),
   open_tabs: z
@@ -2575,7 +2710,15 @@ export const zAgentPostMessageRequest = z.object({
     )
     .optional(),
   selection: z.record(z.unknown()).optional(),
-  workflow_id: z.string().optional()
+  workflow_id: z.string().optional(),
+  workflow_references: z
+    .array(
+      z.object({
+        name: z.string().optional(),
+        workflow_id: z.string()
+      })
+    )
+    .optional()
 })
 
 /**
@@ -3260,10 +3403,10 @@ export const zSubscribeResponse2 = zSubscribeResponse
 
 export const zCancelSubscriptionBody = zCancelSubscriptionRequest
 
-/**
- * Subscription cancellation scheduled
- */
-export const zCancelSubscriptionResponse2 = zCancelSubscriptionResponse
+export const zCancelSubscriptionResponse2 = z.union([
+  zCancelSubscriptionResponse,
+  zCancelSubscriptionAcceptedResponse
+])
 
 export const zResubscribeBody = zResubscribeRequest
 
@@ -3278,6 +3421,13 @@ export const zCreateTopupBody = zCreateTopupRequest
  * Top-up initiated successfully
  */
 export const zCreateTopupResponse2 = zCreateTopupResponse
+
+export const zCreateTopupCheckoutBody = zCreateTopupCheckoutRequest
+
+/**
+ * Checkout session created
+ */
+export const zCreateTopupCheckoutResponse2 = zCreateTopupCheckoutResponse
 
 export const zGetBillingUsageTimeSeriesQuery = z.object({
   group_by: z
@@ -3333,6 +3483,7 @@ export const zGetExtensionsResponse = z.array(z.string())
  * Success
  */
 export const zGetFeaturesResponse = z.object({
+  billing_web_url: z.string().optional(),
   free_tier_balance: z
     .object({
       allowance: z.number().int(),
@@ -3341,6 +3492,7 @@ export const zGetFeaturesResponse = z.object({
     })
     .optional(),
   max_upload_size: z.number().int().optional(),
+  stripe_publishable_key: z.string().optional(),
   supports_preview_metadata: z.boolean().optional()
 })
 

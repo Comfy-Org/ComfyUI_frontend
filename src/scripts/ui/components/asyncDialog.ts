@@ -54,7 +54,7 @@ export class ComfyAsyncDialog<
   }
 
   static async prompt<U = string>({
-    title = null,
+    title,
     message,
     actions
   }: {

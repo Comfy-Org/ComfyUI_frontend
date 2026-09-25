@@ -1,7 +1,7 @@
 <template>
   <div
     v-if="!workspaceStore.focusMode"
-    class="ml-1 flex flex-col gap-1 pt-1"
+    class="ml-(--comfy-canvas-gutter) flex flex-col gap-1 pt-(--comfy-canvas-gutter)"
     @mouseenter="isTopMenuHovered = true"
     @mouseleave="isTopMenuHovered = false"
   >
@@ -11,59 +11,46 @@
         :aria-hidden="isActionBarsHidden"
         :class="
           cn(
-            'max-h-16 min-w-0 flex-1 overflow-hidden transition-all duration-300 ease-in-out',
-            isActionBarsHidden && 'max-h-0 -translate-x-8 opacity-0'
+            'max-h-16 min-w-0 flex-1 transition-all duration-300 ease-in-out',
+            isActionBarsHidden &&
+              'max-h-0 -translate-x-8 overflow-hidden opacity-0'
           )
         "
       >
         <SubgraphBreadcrumb />
       </div>
 
-      <div class="mx-1 flex flex-col items-end gap-1">
+      <div class="ml-(--comfy-canvas-gutter) flex flex-col items-end gap-1">
         <div
           data-testid="top-menu-actionbars"
           :inert="isActionBarsHidden"
           :aria-hidden="isActionBarsHidden"
           :class="
             cn(
-              'flex max-h-24 items-start gap-2 overflow-hidden transition-all duration-300 ease-in-out',
-              isActionBarsHidden && 'max-h-0 translate-x-8 opacity-0'
+              'flex max-h-24 items-start gap-2 transition-all duration-300 ease-in-out',
+              isActionBarsHidden &&
+                'max-h-0 translate-x-8 overflow-hidden opacity-0'
             )
           "
         >
           <div
-            v-if="managerState.shouldShowManagerButtons.value || isCloud"
-            class="pointer-events-auto flex h-12 shrink-0 items-center rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 shadow-interface"
-          >
-            <Button
-              v-tooltip.bottom="customNodesManagerTooltipConfig"
-              variant="secondary"
-              :aria-label="t('menu.manageExtensions')"
-              class="relative"
-              @click="openCustomNodeManager"
-            >
-              <i class="icon-[comfy--extensions-blocks] size-4" />
-              <span class="not-md:hidden">
-                {{ t('menu.manageExtensions') }}
-              </span>
-              <span
-                v-if="shouldShowRedDot"
-                class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
-              />
-            </Button>
-          </div>
-
-          <div
             ref="actionbarCardRef"
             data-testid="action-bar-card"
-            class="pointer-events-auto relative z-1 flex flex-col rounded-lg border border-interface-stroke bg-comfy-menu-bg px-2 py-1.75 shadow-interface"
+            :class="
+              cn(
+                'pointer-events-auto relative z-1 flex flex-col',
+                isActionbarContainerEmpty
+                  ? 'has-[.border-dashed]:floating-panel'
+                  : 'floating-panel'
+              )
+            "
           >
             <div
               :class="
                 cn(
                   'actionbar-container relative flex items-center gap-2',
                   isActionbarContainerEmpty &&
-                    '-ml-2 w-0 min-w-0 border-transparent shadow-none has-[.border-dashed]:ml-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto has-[.border-dashed]:border-interface-stroke has-[.border-dashed]:pl-2 has-[.border-dashed]:shadow-interface'
+                    'w-0 min-w-0 has-[.border-dashed]:w-auto has-[.border-dashed]:min-w-auto'
                 )
               "
             >
@@ -86,17 +73,29 @@
               />
               <LoginButton v-else-if="!isIntegratedTabBar" />
               <Button
+                v-if="managerState.shouldShowExtensionsButton.value"
+                v-tooltip.bottom="customNodesManagerTooltipConfig"
+                variant="secondary"
+                size="icon"
+                :aria-label="t('menu.manageExtensions')"
+                @click="openCustomNodeManager"
+              >
+                <i class="icon-[comfy--extensions-blocks] size-4" />
+                <span
+                  v-if="shouldShowRedDot"
+                  class="absolute top-0.5 right-1 size-2 rounded-full bg-red-500"
+                />
+              </Button>
+              <Button
                 v-if="isCloud && flags.workflowSharingEnabled"
                 v-tooltip.bottom="shareTooltipConfig"
                 variant="secondary"
+                size="icon"
                 :aria-label="t('actionbar.shareTooltip')"
                 @click="() => openShareDialog().catch(toastErrorHandler)"
                 @pointerenter="prefetchShareDialog"
               >
                 <i class="icon-[comfy--send] size-4" />
-                <span class="not-md:hidden">
-                  {{ t('actionbar.share') }}
-                </span>
               </Button>
               <div v-if="!isRightSidePanelOpen" class="relative">
                 <Button
@@ -156,8 +155,8 @@
         :hidden="shouldHideInlineProgressSummary"
       />
       <QueueNotificationBannerHost
-        v-if="shouldShowQueueNotificationBanners"
-        class="pr-1"
+        v-if="isActionbarEnabled"
+        :class="cn('pr-1', isActionBarsHidden && 'hidden')"
       />
     </div>
   </div>
@@ -245,6 +244,7 @@ const hasDockedButtons = computed(() => {
   if (actionBarButtonStore.buttons.length > 0) return true
   if (hasLegacyContent.value) return true
   if (!isIntegratedTabBar.value) return true
+  if (managerState.shouldShowExtensionsButton.value) return true
   if (isCloud && flags.workflowSharingEnabled) return true
   if (!isRightSidePanelOpen.value) return true
   return false
@@ -258,16 +258,14 @@ const isIntegratedTabBar = computed(
 const { isQueuePanelV2Enabled, isRunProgressBarEnabled } =
   useQueueFeatureFlags()
 const isQueueProgressOverlayEnabled = computed(
-  () => !isQueuePanelV2Enabled.value
+  () => !isQueuePanelV2Enabled.value && !isActionBarsHidden.value
 )
 const shouldShowInlineProgressSummary = computed(
   () =>
     isQueuePanelV2Enabled.value &&
     isActionbarEnabled.value &&
-    isRunProgressBarEnabled.value
-)
-const shouldShowQueueNotificationBanners = computed(
-  () => isActionbarEnabled.value
+    isRunProgressBarEnabled.value &&
+    !isActionBarsHidden.value
 )
 const progressTarget = ref<HTMLElement | null>(null)
 function updateProgressTarget(target: HTMLElement | null) {

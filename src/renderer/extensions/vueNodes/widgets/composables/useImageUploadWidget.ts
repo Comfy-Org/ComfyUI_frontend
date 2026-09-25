@@ -3,7 +3,8 @@ import { useNodeImageUpload } from '@/composables/node/useNodeImageUpload'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/litegraph'
 import type { IComboWidget } from '@/lib/litegraph/src/types/widgets'
-import type { ResultItem, ResultItemType } from '@/schemas/apiSchema'
+import type { ResultItem } from '@/platform/remote/comfyui/execution/types'
+import type { ResultItemType } from '@/schemas/resultItemTypeSchema'
 import type { InputSpec } from '@/schemas/nodeDefSchema'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import type { ComfyWidgetConstructor } from '@/scripts/widgets'
@@ -110,7 +111,7 @@ export const useImageUploadWidget = () => {
       () => openFileSelection(),
       {
         serialize: false,
-        canvasOnly: true
+        surfaces: { canvas: 'shown', vueNode: 'never', panel: 'never' }
       }
     )
     uploadWidget.label = t('g.choose_file_to_upload')
@@ -121,6 +122,7 @@ export const useImageUploadWidget = () => {
       nodeOutputStore.setNodeOutputs(node, String(fileComboWidget.value), {
         isAnimated
       })
+      showPreview({ block: false })
       node.graph?.setDirtyCanvas(true)
     }
 

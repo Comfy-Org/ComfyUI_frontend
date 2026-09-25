@@ -2,6 +2,38 @@
 
 Marketing/brand website built with Astro + Vue.
 
+## Linting
+
+From the repository root, `pnpm lint` checks website Astro, JavaScript,
+TypeScript, and Vue files along with the rest of the repository, and
+`pnpm lint:fix` applies automatic fixes. To lint only this folder, run
+`pnpm exec eslint apps/website`. Astro uses the recommended Astro ESLint rules
+and the shared Tailwind rules with the website's theme.
+
+The shared lint CI runs `pnpm lint` on pull requests and in the merge queue.
+Pre-commit checks staged Astro files with ESLint and runs the website
+typecheck. `astro check` remains part of
+`pnpm typecheck:website` for compiler and type diagnostics.
+
+## Model-page generation tests
+
+See [MODEL_TESTING.md](MODEL_TESTING.md) for setup, maximum account concurrency,
+parallel image/audio/video sweeps, targeted retests and result commits.
+[MODELS_TEST_RESULTS.md](MODELS_TEST_RESULTS.md) records every published page's
+latest check and last successful generation.
+
+## Formatting
+
+Run `pnpm format:astro` from the repository root to format Astro files, or
+`pnpm format:astro:check` to check them. Both are included in the root format
+commands and shared CI checks. Pre-commit formats staged Astro files after
+ESLint fixes.
+
+Astro files use Prettier with the official Astro plugin; other formats continue
+to use Oxfmt. The website's `.prettierrc.json` matches the repository's style
+and preserves whitespace around inline HTML elements. The Astro editor
+extension also reads this configuration.
+
 ## Ashby careers integration
 
 `/careers` and `/zh-CN/careers` are rendered from Ashby's public job board
@@ -154,58 +186,180 @@ can't be accidentally committed. Otherwise the `Release: Website` GitHub
 Actions workflow runs the same step on every manual dispatch and opens a PR
 with the refreshed snapshot.
 
-## Workshop (unreleased)
+## Models rollout
 
-Workshop is being built in the open on `main`, but it is not finished and must
-not appear on comfy.org until we say so. `noindex` cannot enforce that — it asks
-a crawler to stay away while the page stays live at a URL anyone can share — so
-the routes are kept out of the build instead.
+Models is included in production and preview builds by default. The boolean
+PostHog flag **`workshop-enabled`** controls visibility, independently of the
+build and authentication switches. It defaults off, including while flags are
+loading, missing, or unavailable, except that an identity PostHog has already
+answered for is seeded from the persisted answer before the refresh, so an
+enabled staff member never sees the public page while flags reload. A failed
+refresh preserves the last confirmed answer for the same identity; a new
+identity never inherits a grant. Disabling it restores the public site:
 
-That gives three environments:
+- The header and homepage retain their existing navigation and model links.
+- `/models` shows the existing Models marketing page.
+- Model render pages show the public marketing content until enabled.
+- Catalogue and playground markup is absent from public HTML; their components
+  and page data load after enablement. Homepage islands still serialize public
+  model and provider summaries. `/models` remains indexable with its marketing content.
+- Render pages stay out of sitemaps and markdown exports. `/models/showcase`
+  is the unlisted public copy of the marketing page: noindex and out of the
+  sitemap.
+- Once enabled, a neutral loading frame replaces the public content while a
+  page's data loads, and a failed load shows a retry; the public page only ever
+  renders when the flag is off.
 
-| Environment      | `VERCEL_ENV` | Workshop | Answers                        |
-| ---------------- | ------------ | -------- | ------------------------------ |
-| Production       | `production` | out      | what is on comfy.org right now |
-| Preview, staging | `preview`    | out      | what ships if we release today |
-| Development      | unset        | in       | what we are building           |
+Create `workshop-enabled` in the website's PostHog project with two release
+condition groups: `comfy_staff` equal to `true` at 100%, and all users initially
+at 0%. PostHog combines the groups with OR. Raise only the all-users percentage
+to ramp external visitors independently from 0% to 100%; staff remain enabled
+through the first group. Do not target the email-based staff cohort: the
+frontend PII scrubber strips `email` from everything it sends, so people who
+sign in through the website never join that cohort.
 
-Preview deliberately matches production. A preview carrying an unreleased
-feature cannot answer the question a preview exists for: if we cut a release
-right now — for a hotfix, say — what goes out?
+The website identifies signed-in people with their Firebase UID, matching
+Cloud's PostHog identity. For a verified `comfy.org` or `drip.art` email it
+also sets `comfy_staff: true`; every other account sends nothing beyond the
+UID. Give staff `/login/?returnTo=%2Fmodels%2F` so they can sign in before
+their Models flag is evaluated. Anyone who signed in before `comfy_staff`
+existed must sign out and back in once. Authentication is available before
+PostHog answers, including when flags are missing or unavailable; no separate
+auth flag needs to be created or enabled. The legacy `workshop-auth`
+flag can still disable authentication explicitly with a `false` answer.
+The public header deliberately has no new sign-in entry point.
+Returning users retain access when Firebase confirms the same PostHog identity.
+Account changes and sign-out clear visibility and reevaluate the flag. Firebase
+starts only on auth pages or after Models becomes visible.
 
-`WORKSHOP_IN_BUILD` overrides it either way, and is how the remaining cases are
-reached without a code change:
+Visibility revocation hides the page, closes its dialogs, and blocks new runs,
+while a render already in progress finishes and reports its outcome. Sign-out,
+workspace changes, and leaving the page still cancel the browser's wait.
 
-| Value   | Effect                | Used by                                        |
-| ------- | --------------------- | ---------------------------------------------- |
-| `1`     | Workshop in the build | a PR labelled `workshop`; production at launch |
-| `0`     | Workshop out          | reproducing a release build locally            |
-| _unset_ | environment default   | everything else                                |
+Vercel CI always builds Models and enables Router execution, selecting production
+Cloud for production or staging Cloud for previews. The auth build override
+applies only outside production. The `workshop` PR label is no longer needed.
+`workshop-test` only selects test Cloud; neither label bypasses the PostHog
+visibility flag.
 
-**To review Workshop on a deployed URL,** add the `workshop` label to the PR.
-`ci-vercel-website-preview.yaml` listens for `labeled`/`unlabeled`, so the
-preview rebuilds without needing a push, and the preview comment says which of
-the two builds you are looking at.
+`WORKSHOP_IN_BUILD=0` remains an explicit build exclusion for diagnostics.
+`PUBLIC_WORKSHOP_AUTH_FLAG=1` overrides a remote auth disable outside production.
+`PUBLIC_WORKSHOP_ROUTER_RUN=1` enables execution; neither grants Models visibility.
+For local development without PostHog:
 
-**To reproduce the next release locally:**
-
-```bash
-WORKSHOP_IN_BUILD=0 pnpm --filter @comfyorg/website build
-test ! -d apps/website/dist/workshop && echo "no Workshop in this build"
+```sh
+PUBLIC_WORKSHOP_ENABLED=1 PUBLIC_WORKSHOP_AUTH_FLAG=1 PUBLIC_WORKSHOP_ROUTER_RUN=1 \
+  pnpm --filter @comfyorg/website dev
 ```
 
-**To launch,** set `WORKSHOP_IN_BUILD=1` in the Vercel _production_ environment
-— and in the _preview_ environment at the same time, so the two go on matching.
-No code change, and reversible by removing it. An unlabelled PR deliberately
-leaves the variable undefined rather than setting it empty, so that the Vercel
-preview value is what governs once it exists.
+`PUBLIC_WORKSHOP_ENABLED` is honored only by a local `astro dev` command. Built
+previews and production always use PostHog. This is a frontend visibility
+control; the APIs continue to enforce authentication and billing.
 
-The switch is `src/config/workshop-release.ts`; the removal is the
-`workshop-release-gate` Astro integration, which deletes the emitted directory
-at `astro:build:done` and throws if it is still there afterwards. It deletes
-output rather than filtering routes at `astro:routes:resolved`, because that
-hook only reports the resolved routes — mutating the array does not stop them
-being generated.
+### Cloud workflow pages
+
+`workshop-display.json` owns the page and INPUT widgets. The matching record in
+`workshop-workflows.jsonl` supplies the prepared execution graph, input mappings,
+defaults and selected outputs. Add both records when introducing a workflow;
+unmatched entries stay hidden. Prepare metadata offline when content changes.
+The website does not extract editor APP selections or execute widget serializers.
+
+Workflow pages reuse the Models form, validation and output components. The
+`workshop-workflows-enabled` PostHog flag gates new visits and runs. A caller's
+saved run remains recoverable after that flag is disabled; sign-out or workspace
+switching detaches its controller and hides its results. Backend authorization and
+admission controls remain authoritative. Local development also accepts
+`PUBLIC_WORKSHOP_WORKFLOWS_ENABLED=1`.
+
+`src/config/workflow-render.ts` implements the shared workflow request and polling
+helper. Node scripts import `workflow_render` and `workflow_for_model` from
+`scripts/workflow-render.ts`; `COMFY_API_KEY` supplies the credential unless a
+token option is given. File inputs use the form's `{ file, name, size, type }`
+shape and are uploaded through Cloud's existing `/api/inputs/upload-url` grant
+and raw PUT. HTTPS inputs are downloaded within the file limit, then uploaded
+the same way; browser URL inputs require source CORS permission. The returned
+asset name is mapped into the prepared graph for `POST /api/prompt`.
+
+Persist `onAdmitted`'s job ID and resume with `{ runId }`. Do not automatically
+retry an uncertain submission: the existing prompt endpoint does not promise
+idempotency. Aborting the helper stops observation. Explicit cancel calls the
+job-scoped endpoint and is presented as requested, without claiming confirmed
+execution shutdown. Polling `/api/jobs/{id}?short_link=ephemeral_tool_chain`
+returns temporary output links; rereading that job refreshes delivery without
+submitting inference. The API tab shows the native request and upload steps.
+
+Prepare graph previews separately with
+`pnpm --filter @comfyorg/website exec tsx scripts/prepare-workflow-previews.ts`.
+This reads `source.uiWorkflowPath` at the pinned commit from the local checkout
+and writes static SVG plus original workflow JSON into
+`public/workflows/prepared/`. `source.path` identifies the executable API graph;
+the UI workflow path is declared separately in the same JSONL record. New source
+repositories require offline preparation; neither the website build nor run
+admission invokes this tool.
+
+The shared helper completed a real production background-removal run through
+upload, generation and PNG download on 2026-09-23. Staging browser execution,
+the other prepared workflows and caller billing still need acceptance checks.
+Additional backend infrastructure is deferred and requires Cloud team agreement.
+
+### Models analytics
+
+Product analytics use the website's existing PostHog project, following the
+[telemetry routing policy](../../docs/adr/TELEMETRY-ROUTING-0013-telemetry-routing-across-consumers.md).
+Hex/Snowflake remains the downstream warehouse analysis layer.
+
+All event names below have the prefix `website:workshop_`:
+
+| Event                     | When it fires                                                                  |
+| ------------------------- | ------------------------------------------------------------------------------ |
+| `catalogue_viewed`        | Once per page mount, after the catalogue becomes visible.                      |
+| `model_viewed`            | Once per page mount, after a model page becomes visible.                       |
+| `api_viewed`              | The user opens a model's API tab.                                              |
+| `run_validation_failed`   | Local form validation rejects a Run action.                                    |
+| `run_started`             | A validated Run action begins, including uploads and credential refresh.       |
+| `run_finished`            | The attempt succeeds, fails, or is cancelled, with `status` and `duration_ms`. |
+| `checkout_failed`         | A top-up attempt fails during balance, credential, or checkout setup.          |
+| `output_download_clicked` | The user requests an output download.                                          |
+
+The basic funnel is catalogue view → model view → run started → run finished
+with `status=succeeded` → output download clicked. Model events include slug,
+Router ID, provider, and modality. Run events also retain the initiating
+`user_id`, `workspace_id`, and a unique `attempt_id` across their start and
+finish. Finished requests include `request_id` when available; success counts
+returned artifacts, and failures include a bounded reason plus allowlisted HTTP
+status and Router error type when available. Checkout failures include their
+stage and bounded SDK error code, plus a real HTTP status when one exists.
+
+Retries get new attempt IDs even when they reuse a Router idempotency key.
+Cancellation describes the browser stopping its wait, not a billing outcome.
+Downloads measure clicks, not completed transfers. These events contain no
+prompts, form values, filenames, media URLs, output contents, or credentials.
+
+### Which Cloud the Workshop talks to
+
+`PUBLIC_WORKSHOP_CLOUD_ENV` picks the backend family. Router, Cloud and the
+Firebase project move together, because a token minted in one family is only
+valid there:
+
+| Value     | Router                 | Cloud                    | Firebase project  | Who uses it                      |
+| --------- | ---------------------- | ------------------------ | ----------------- | -------------------------------- |
+| `prod`    | `api.comfy.org`        | `cloud.comfy.org`        | `dreamboothy`     | production                       |
+| `staging` | `stagingapi.comfy.org` | `stagingcloud.comfy.org` | `dreamboothy-dev` | previews; local by default       |
+| `test`    | `testapi.comfy.org`    | `testcloud.comfy.org`    | `dreamboothy-dev` | previews (`workshop-test` label) |
+
+The backends decide who may call them: ingest's CORS allowlist admits
+`comfy.org` only in production and the website's Vercel preview origins only
+in staging and test (cloud FE-2009). So a production build must say `prod`, a
+preview must say `staging` or `test`, and `workshop-release-gate` fails the
+build otherwise — a wrong family is a build error, not a preflight error in a
+visitor's browser. Builds with the explicit exclusion are not checked.
+Local builds may leave it unset (staging) or pick a family for a specific check.
+`test` has no Turnstile
+sitekey in this mapping, so the client widget stays off there.
+
+`src/config/workshop-release.ts` owns build inclusion and backend validation.
+The `workshop-release-gate` Astro integration registers the Models routes and
+always removes the retired `/workshop` output, including in enabled builds.
 
 ## HubSpot forms
 

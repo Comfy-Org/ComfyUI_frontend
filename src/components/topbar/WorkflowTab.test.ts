@@ -1,11 +1,13 @@
 import userEvent from '@testing-library/user-event'
 import { render, screen } from '@testing-library/vue'
 import { fromPartial } from '@total-typescript/shoehorn'
+import { TabsList, TabsRoot } from 'reka-ui'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { markRaw, nextTick } from 'vue'
+import { defineComponent, h, markRaw, nextTick } from 'vue'
 import type { ComponentProps } from 'vue-component-type-helpers'
 import { createI18n } from 'vue-i18n'
 
+import { useWorkflowService } from '@/platform/workflow/core/services/workflowService'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useExecutionStore } from '@/stores/executionStore'
@@ -14,8 +16,6 @@ import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 
 import WorkflowTab from './WorkflowTab.vue'
 vi.mock(import('firebase/auth'))
-vi.mock(import('vuefire'), () => ({ useFirebaseAuth: vi.fn() }))
-const mockCloseWorkflow = vi.hoisted(() => vi.fn().mockResolvedValue(true))
 
 vi.mock(import('@/composables/usePragmaticDragAndDrop'), () => ({
   usePragmaticDraggable: vi.fn(),
@@ -28,14 +28,7 @@ vi.mock<unknown>(import('@/composables/useWorkflowActionsMenu'), () => ({
   })
 }))
 
-vi.mock<unknown>(
-  import('@/platform/workflow/core/services/workflowService'),
-  () => ({
-    useWorkflowService: () => ({
-      closeWorkflow: mockCloseWorkflow
-    })
-  })
-)
+vi.mock(import('@/platform/workflow/core/services/workflowService'))
 
 vi.mock<unknown>(
   import('@/renderer/core/thumbnail/useWorkflowThumbnail'),
@@ -58,6 +51,8 @@ vi.mock<unknown>(import('./WorkflowTabPopover.vue'), () => ({
   }
 }))
 
+import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
+
 type WorkflowTabProps = ComponentProps<typeof WorkflowTab>
 
 const statusAriaLabels: Record<WorkflowExecutionStatus, string> = {
@@ -76,7 +71,8 @@ const i18n = createI18n({
   locale: 'en',
   messages: {
     en: {
-      g: { close: 'Close', ...statusAriaLabels, ...agentAriaLabels }
+      g: { close: 'Close', ...statusAriaLabels, ...agentAriaLabels },
+      agent: { targetForThisChat: 'Agent target for this chat' }
     }
   }
 })
@@ -104,11 +100,13 @@ function makeWorkflowOption(overrides: WorkflowOverrides = {}): WorkflowOption {
 function renderTab({
   workflowOption = makeWorkflowOption(),
   activeWorkflowKey = 'other-key',
-  activeWorkflowPath
+  activeWorkflowPath,
+  otherOpenWorkflows = []
 }: {
   workflowOption?: WorkflowOption
   activeWorkflowKey?: string
   activeWorkflowPath?: string
+  otherOpenWorkflows?: Workflow[]
 } = {}) {
   const resolvedActiveWorkflowPath =
     activeWorkflowPath ??
@@ -121,22 +119,28 @@ function renderTab({
     path: resolvedActiveWorkflowPath
   })
   useSettingStore().settingValues['Comfy.Workflow.AutoSave'] = 'off'
-  return render(WorkflowTab, {
-    global: {
-      plugins: [i18n],
-      stubs: {
-        WorkflowActionsList: true,
-        Button: {
-          template: '<button v-bind="$attrs"><slot /></button>'
+  const rendered = render(
+    defineComponent(
+      () => () =>
+        h(TabsRoot, { modelValue: resolvedActiveWorkflowPath }, () =>
+          h(TabsList, () =>
+            h(WorkflowTab, { workflowOption, isFirst: false, isLast: false })
+          )
+        )
+    ),
+    {
+      global: {
+        plugins: [i18n],
+        stubs: {
+          WorkflowActionsList: true
         }
       }
-    },
-    props: {
-      workflowOption,
-      isFirst: false,
-      isLast: false
     }
-  })
+  )
+  const workflowStore = useWorkflowStore()
+  for (const workflow of [workflowOption.workflow, ...otherOpenWorkflows])
+    workflowStore.attachWorkflow(workflow, 0)
+  return rendered
 }
 
 describe('WorkflowTab - workflow status indicator', () => {
@@ -278,13 +282,106 @@ describe('WorkflowTab - agent activity indicators', () => {
 })
 
 describe('WorkflowTab - close button', () => {
+  it('keeps the close button hidden while an active status indicator shows', async () => {
+    renderTab({ activeWorkflowKey: 'test-key' })
+    useWorkflowTabActivityStore().setEditing('/workflows/test.json')
+    await nextTick()
+
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentWorking })
+    ).toBeInTheDocument()
+    expect(screen.getByTestId('close-workflow-button')).toHaveClass('invisible')
+    expect(screen.getByTestId('close-workflow-button')).not.toHaveClass(
+      'visible'
+    )
+  })
+
   it('delegates close to workflow service with the tab workflow', async () => {
     renderTab()
     const user = userEvent.setup()
     await user.click(screen.getByTestId('close-workflow-button'))
 
-    expect(mockCloseWorkflow).toHaveBeenCalledWith(
+    expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
       expect.objectContaining({ key: 'test-key' }),
+      expect.anything()
+    )
+  })
+})
+
+describe('WorkflowTab - Agent target', () => {
+  const targetLabel = 'Agent target for this chat'
+
+  it('follows the selected target independently of the visible tab and panel visibility', async () => {
+    const workflowOption = makeWorkflowOption()
+    const other = makeWorkflowOption({ path: '/workflows/other.json' }).workflow
+    renderTab({ workflowOption, otherOpenWorkflows: [other] })
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    expect(screen.queryByRole('img', { name: targetLabel })).toBeNull()
+
+    panel.setWorkflowTarget(workflowOption.workflow)
+    await nextTick()
+    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
+
+    panel.isOpen = true
+    await nextTick()
+    panel.isOpen = false
+    await nextTick()
+    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
+
+    panel.setWorkflowTarget(other)
+    await nextTick()
+    expect(screen.queryByRole('img', { name: targetLabel })).toBeNull()
+
+    panel.setWorkflowTarget(workflowOption.workflow)
+    await nextTick()
+    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
+    panel.setWorkflowTarget(null)
+    await nextTick()
+    expect(screen.queryByRole('img', { name: targetLabel })).toBeNull()
+  })
+
+  it('hides a retained target when Agent is disabled', async () => {
+    const workflowOption = makeWorkflowOption()
+    renderTab({ workflowOption, activeWorkflowKey: 'test-key' })
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    panel.setWorkflowTarget(workflowOption.workflow)
+    await nextTick()
+    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
+
+    panel.enabled = false
+    await nextTick()
+    expect(screen.queryByRole('img', { name: targetLabel })).toBeNull()
+  })
+
+  it('keeps target identity alongside Agent activity, dirty state and Close', async () => {
+    const workflowOption = makeWorkflowOption({ isModified: true })
+    renderTab({ workflowOption })
+    const panel = useAgentPanelStore()
+    panel.enabled = true
+    panel.setWorkflowTarget(workflowOption.workflow)
+    const activity = useWorkflowTabActivityStore()
+    activity.setEditing(workflowOption.workflow.path)
+    await nextTick()
+    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
+    expect(
+      screen.getByRole('img', { name: agentAriaLabels.agentWorking })
+    ).toBeVisible()
+
+    activity.setEditing(null)
+    activity.markModified(workflowOption.workflow.path)
+    await nextTick()
+    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
+    expect(screen.getByTestId('agent-modified-indicator')).toBeVisible()
+
+    activity.markSeen(workflowOption.workflow.path)
+    await nextTick()
+    expect(screen.getByRole('img', { name: targetLabel })).toBeVisible()
+    expect(screen.getByTestId('workflow-dirty-indicator')).toBeVisible()
+    await userEvent.setup().click(screen.getByTestId('close-workflow-button'))
+    expect(useWorkflowService().closeWorkflow).toHaveBeenCalledWith(
+      workflowOption.workflow,
       expect.anything()
     )
   })

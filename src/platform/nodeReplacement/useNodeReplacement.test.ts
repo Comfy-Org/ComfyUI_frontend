@@ -1,9 +1,9 @@
 import { fromPartial, fromAny } from '@total-typescript/shoehorn'
-import type * as I18nModule from '@/i18n'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { st, t } from '@/i18n'
 import { CustomEventTarget } from '@/lib/litegraph/src/infrastructure/CustomEventTarget'
 import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 import {
@@ -24,16 +24,9 @@ import { widgetId } from '@/types/widgetId'
 import type { UUID } from '@/utils/uuid'
 import type { NodeReplacement } from './types'
 
-vi.mock(import('@/lib/litegraph/src/litegraph'), async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    LiteGraph: Object.assign({}, actual.LiteGraph, {
-      createNode: vi.fn(),
-      registered_node_types: {}
-    })
-  }
-})
+vi.mock(import('@/lib/litegraph/src/litegraph'), { spy: true })
+LiteGraph.createNode = vi.fn()
+LiteGraph.registered_node_types = {}
 
 vi.mock(import('@/core/graph/nodeShell/nodeShellState'), () => ({
   canTransferReplacementOwnership: vi.fn(() => true),
@@ -57,12 +50,7 @@ vi.mock(import('@/utils/graphTraversalUtil'), () => ({
 
 const { mockToastAdd } = vi.hoisted(() => ({ mockToastAdd: vi.fn() }))
 
-vi.mock<unknown>(import('@/i18n'), async (importOriginal) => ({
-  ...(await importOriginal<typeof I18nModule>()),
-  st: (_key: string, fallback: string) => fallback,
-  t: (key: string, params?: Record<string, unknown>) =>
-    params ? `${key}:${JSON.stringify(params)}` : key
-}))
+vi.mock(import('@/i18n'))
 
 import { app } from '@/scripts/app'
 import { useMissingNodesErrorStore } from '@/platform/nodeReplacement/missingNodesErrorStore'
@@ -70,6 +58,10 @@ import { collectAllNodes } from '@/utils/graphTraversalUtil'
 import { useNodeReplacement } from './useNodeReplacement'
 
 beforeEach(() => {
+  vi.mocked(st).mockImplementation((_key, fallback) => fallback)
+  vi.mocked(t).mockImplementation((key: unknown, params?: unknown) =>
+    params ? `${String(key)}:${JSON.stringify(params)}` : String(key)
+  )
   useWorkflowStore().activeWorkflow = fromPartial({
     pendingWarnings: null,
     changeTracker: {
