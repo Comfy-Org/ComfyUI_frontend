@@ -743,7 +743,10 @@ const HTML_VIDEO_TYPES: Readonly<Record<string, string>> = {
 
 export function htmlVideoTypeForFilename(filename: string): string | undefined {
   const ext = filename.split('.').pop()?.toLowerCase()
-  return ext ? HTML_VIDEO_TYPES[ext] : undefined
+  // Plain-object index, so guard against inherited members: a file ending in
+  // ".constructor" would otherwise resolve to a function, not a MIME type.
+  if (!ext || !Object.hasOwn(HTML_VIDEO_TYPES, ext)) return undefined
+  return HTML_VIDEO_TYPES[ext]
 }
 
 export function formatTime(seconds: number): string {

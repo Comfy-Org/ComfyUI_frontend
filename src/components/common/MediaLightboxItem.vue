@@ -45,7 +45,7 @@ const rendered = computed<Rendered>(() => {
         props: {
           src: item.url,
           contain: false,
-          alt: item.alt ?? '',
+          alt: item.alt || undefined,
           class: IMAGE_CLASS
         }
       }

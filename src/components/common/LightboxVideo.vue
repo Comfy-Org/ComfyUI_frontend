@@ -1,5 +1,9 @@
 <template>
-  <video controls class="max-h-[90vh] max-w-[90vw]">
+  <video
+    controls
+    data-testid="lightbox-video"
+    class="max-h-[90vh] max-w-[90vw]"
+  >
     <source :src="src" :type="sourceType" />
     {{ $t('g.videoFailedToLoad') }}
   </video>

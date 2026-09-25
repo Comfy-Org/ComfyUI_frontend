@@ -98,7 +98,11 @@ watch(
       if (index !== null) activeIndex.value = null
       return
     }
-    if (previousIndex === null) openingGestureActive = true
+    // Loose null: on the immediate run of a multi-source watch Vue passes
+    // undefined, not null, for the old value. Callers that mount the lightbox
+    // already open (v-if on the index) only ever see that run, so a strict
+    // check would never arm the guard for them.
+    if (previousIndex == null) openingGestureActive = true
   },
   { immediate: true }
 )
@@ -134,6 +138,13 @@ function onBackdropMouseUp(event: MouseEvent) {
   backdropPressed = false
 }
 
+const ARROW_KEY_OWNERS = '[role="slider"], input, textarea, select'
+
+function ownsArrowKeys(target: EventTarget | null) {
+  if (target instanceof HTMLMediaElement) return true
+  return target instanceof Element && target.closest(ARROW_KEY_OWNERS) !== null
+}
+
 function handleKeyDown(event: KeyboardEvent) {
   const actions: Record<string, () => void> = {
     ArrowLeft: () => navigate(-1),
@@ -141,6 +152,11 @@ function handleKeyDown(event: KeyboardEvent) {
   }
   const action = actions[event.key]
   if (!action) return
+  // A focused player control owns its own arrow keys, for seeking or volume.
+  // That covers a native <video>, and also the slider thumbs the audio player
+  // is built from -- its <audio> element is hidden, so the focused element
+  // there is never an HTMLMediaElement.
+  if (ownsArrowKeys(event.target)) return
   event.preventDefault()
   action()
 }

@@ -243,6 +243,52 @@ describe('MediaLightbox', () => {
       expect(onUpdateActiveIndex).toHaveBeenCalledWith(2)
     })
 
+    it('leaves arrow keys to a focused video player', async () => {
+      const videoItems: LightboxItem[] = [
+        { kind: 'video', url: 'clip1.mp4', mimeType: 'video/mp4' },
+        { kind: 'video', url: 'clip2.mp4', mimeType: 'video/mp4' }
+      ]
+      const { onUpdateActiveIndex } = renderGallery({
+        items: videoItems,
+        activeIndex: 0
+      })
+      await nextTick()
+
+      const video = screen.getByTestId('lightbox-video')
+      video.dispatchEvent(
+        new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true })
+      )
+      await nextTick()
+
+      // The player owns arrow keys for seeking; the gallery must not move.
+      expect(onUpdateActiveIndex).not.toHaveBeenCalled()
+    })
+
+    it('leaves arrow keys to the audio player volume slider', async () => {
+      // The audio player's <audio> is hidden, so the focusable control is the
+      // volume Slider rather than a media element. Render the real
+      // LightboxAudio -> WaveAudioPlayer -> Slider chain so this covers the
+      // actual focus and event path, not just the lightbox's selector.
+      const audioItems: LightboxItem[] = [
+        { kind: 'audio', url: 'clip1.mp3' },
+        { kind: 'audio', url: 'clip2.mp3' }
+      ]
+      const { user, onUpdateActiveIndex } = renderGallery({
+        items: audioItems,
+        activeIndex: 0
+      })
+      await nextTick()
+
+      const slider = screen.getByRole('slider')
+      slider.focus()
+      expect(slider).toHaveFocus()
+
+      await user.keyboard('{ArrowRight}')
+      await nextTick()
+
+      expect(onUpdateActiveIndex).not.toHaveBeenCalled()
+    })
+
     it('closes gallery on Escape', async () => {
       const { user, onUpdateActiveIndex } = renderGallery({ activeIndex: 0 })
       await nextTick()

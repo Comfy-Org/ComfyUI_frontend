@@ -463,10 +463,12 @@ watch(visibleAssets, (newAssets) => {
   }
 })
 
+// Track whichever asset the lightbox is currently showing, not the one it was
+// opened on: the watcher above re-resolves the active index from this id when
+// filtering or sorting changes visibleAssets, so it has to follow navigation.
 watch(galleryActiveIndex, (index) => {
-  if (index === null) {
-    currentGalleryAssetId.value = null
-  }
+  currentGalleryAssetId.value =
+    index === null ? null : (galleryEntries.value[index]?.source.id ?? null)
 })
 
 const galleryItems = computed<LightboxItem[]>(() =>
