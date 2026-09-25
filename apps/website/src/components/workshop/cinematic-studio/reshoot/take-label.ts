@@ -1,4 +1,4 @@
-import type { ReshootTake } from '../../../../composables/useReshootDemo'
+import type { ReshootTake } from '../../../../composables/useReshootRun'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 

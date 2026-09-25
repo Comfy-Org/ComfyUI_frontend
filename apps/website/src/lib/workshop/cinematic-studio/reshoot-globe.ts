@@ -34,11 +34,10 @@ export function zoneArcs(
   r: number
 ): readonly { zone: ReshootZone; points: string }[] {
   return [
+    // at eye level the LoRA is trained out to a quarter turn either way
     { zone: 'green', points: arc(-45, 45, r) },
-    { zone: 'yellow', points: arc(45, 70, r) },
-    { zone: 'yellow', points: arc(-70, -45, r) },
-    { zone: 'red', points: arc(70, 90, r) },
-    { zone: 'red', points: arc(-90, -70, r) }
+    { zone: 'yellow', points: arc(45, 90, r) },
+    { zone: 'yellow', points: arc(-90, -45, r) }
   ]
 }
 

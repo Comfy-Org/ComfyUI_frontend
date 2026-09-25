@@ -3,7 +3,7 @@ import { CircleStop, Crosshair, LoaderCircle } from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import type { ReshootTake } from '../../../../composables/useReshootDemo'
+import type { ReshootTake } from '../../../../composables/useReshootRun'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import { takeLabel } from './take-label'
