@@ -35,8 +35,8 @@ const copy = {
     'zh-CN': '无需上传即可试用'
   },
   'reshoot.aim.globe': {
-    en: 'Drag the camera around your clip',
-    'zh-CN': '围绕片段拖动机位'
+    en: 'Drag the camera around your clip · scroll to move closer',
+    'zh-CN': '围绕片段拖动机位 · 滚动以靠近'
   },
   'reshoot.aim.more': {
     en: 'More: lens, height, keep aim',

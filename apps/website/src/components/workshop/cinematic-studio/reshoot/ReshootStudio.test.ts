@@ -206,6 +206,21 @@ describe('Re-shoot, run for real', () => {
     ).toBeInTheDocument()
   })
 
+  it('moves the camera in and out from the globe', async () => {
+    const user = setup()
+    await analyzeExample(user)
+    const globe = screen.getByTestId('reshoot-globe')
+    const distance = () => screen.getByRole('slider', { name: 'Distance' })
+
+    await fireEvent.wheel(globe, { deltaY: -100 })
+    await fireEvent.wheel(globe, { deltaY: -100 })
+    expect(distance()).toHaveValue('0.9')
+
+    globe.focus()
+    await user.keyboard('-')
+    expect(distance()).toHaveValue('0.95')
+  })
+
   describe('the camera move', () => {
     const rotation = () => screen.getByRole('slider', { name: 'Rotation' })
     const scrub = (frame: number) =>

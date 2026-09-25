@@ -31,9 +31,10 @@ own components.
    `.cvgeo`.
 2. **Aim**, in the browser, over that depth. Magenta is what the source camera
    never saw. The preview's points come from the preview-sized depth but are
-   drawn at the output size with the node's 5x5 splats, so it is as coarse as
-   the guide the model gets, no coarser. Moving far in can open pinholes the
-   node would not have: it has a point per output pixel, the preview fewer.
+   drawn at the output size, each sized to meet its neighbours on the same
+   surface (capped, so pixels smeared across an edge stay specks). It differs
+   from the node's guide in detail, not in what is seen and what is missing;
+   very close up the steepest surfaces can still show thin gaps.
    Keys work as in the node's own editor: aiming on a key edits it, between
    keys it tries a pose that Key writes, and the timeline flies the path.
 3. **Generate** sends the aimed camera (pivot and keyframes included) and gets

@@ -8,6 +8,15 @@ interface Point {
   y: number
 }
 
+/**
+ * How far from the clip the camera is drawn, as a multiple of the globe's
+ * radius: the node's own orbit picker (_dist_scale). Distance 1 sits on the
+ * shell, closer moves inside it (0.45 at the nearest), farther out to 1.5.
+ */
+export function distanceScale(distance: number): number {
+  return distance <= 1 ? 0.45 + 0.55 * distance : 1 + 0.25 * (distance - 1)
+}
+
 /** Where a camera at this azimuth and elevation sits on the drawn globe. */
 export function globePoint(
   azimuth: number,
