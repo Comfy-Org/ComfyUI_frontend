@@ -1,8 +1,11 @@
+import type { BrowserContext, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 import { MODEL_PATH } from './fixtures/modelsAccount'
+
+const MODEL_NAME = 'FLUX 2 Max Text-to-Image'
 
 test('public HTML excludes catalogue and playground markup', async ({
   request
@@ -20,12 +23,48 @@ test('public HTML excludes catalogue and playground markup', async ({
   }
 })
 
-test('keeps the public site when PostHog is unavailable', async ({ page }) => {
-  const dataRequests: string[] = []
-  page.on('request', (request) => {
-    if (/\/models\/.*(?:page|catalogue)\.json$/.test(request.url()))
-      dataRequests.push(request.url())
+function recordFirebaseRequests(context: BrowserContext): string[] {
+  const requests: string[] = []
+  context.on('request', (request) => {
+    if (/firebase|identitytoolkit|securetoken/.test(request.url()))
+      requests.push(request.url())
   })
+  return requests
+}
+
+async function disableWorkshopFlag(context: BrowserContext) {
+  await context.route('**/t.comfy.org/**', (route) =>
+    /\/(flags|decide)\//.test(route.request().url())
+      ? route.fulfill({
+          json: {
+            featureFlags: { 'workshop-auth': true, 'workshop-enabled': false },
+            featureFlagPayloads: {}
+          }
+        })
+      : route.abort('blockedbyclient')
+  )
+}
+
+async function expectModelContentWithoutRun(page: Page) {
+  await page.goto('/models/')
+  await expect(page.getByTestId('workshop-search')).toBeVisible()
+  await expect(page.getByText(/Grok Imagine in ComfyUI/)).toHaveCount(0)
+
+  await page.goto(MODEL_PATH)
+  await expect(
+    page.getByRole('heading', { level: 1, name: MODEL_NAME })
+  ).toBeVisible()
+  await expect(page.getByTestId('run-rollout-note')).toBeVisible()
+  await expect(page.getByTestId('run-button')).toHaveCount(0)
+  await expect(page.getByTestId('playground-output')).toBeVisible()
+  await expect(page.getByText(/Grok Imagine in ComfyUI/)).toHaveCount(0)
+}
+
+test('shows model content without Run when PostHog is unavailable', async ({
+  context,
+  page
+}) => {
+  const firebaseRequests = recordFirebaseRequests(context)
   await page.goto('/')
   await expect(
     page.getByRole('link', { name: 'Models', exact: true })
@@ -41,87 +80,45 @@ test('keeps the public site when PostHog is unavailable', async ({ page }) => {
     page.getByRole('link', { name: 'Explore Seedance 2.5' })
   ).toHaveAttribute('href', '/seedance-2.5')
 
-  await page.goto('/models/')
-  await expect(
-    page.getByRole('link', { name: /Grok Imagine/i }).first()
-  ).toBeVisible()
-  await expect(page.getByTestId('workshop-search')).toHaveCount(0)
-  await page.goto(MODEL_PATH)
-  await expect(page.getByTestId('model-hero')).toHaveCount(0)
-  await expect(page.getByTestId('model-detail')).toHaveCount(0)
-  expect(dataRequests).toEqual([])
+  await expectModelContentWithoutRun(page)
+  expect(firebaseRequests).toEqual([])
 })
 
-test('keeps the public Models page when the flag is disabled', async ({
+test('shows model content without Run when the flag is disabled', async ({
   context,
   page
 }) => {
-  await context.route('**/t.comfy.org/**', (route) =>
-    /\/(flags|decide)\//.test(route.request().url())
-      ? route.fulfill({
-          json: {
-            featureFlags: { 'workshop-enabled': false },
-            featureFlagPayloads: {}
-          }
-        })
-      : route.abort('blockedbyclient')
-  )
-  const response = page.waitForResponse((response) =>
-    /t\.comfy\.org\/(flags|decide)\//.test(response.url())
-  )
-  await page.goto('/models/')
-  await response
-  await expect(page.getByTestId('workshop-search')).toHaveCount(0)
-  await expect(
-    page.getByRole('link', { name: /Grok Imagine/i }).first()
-  ).toBeVisible()
-})
-
-test('does not initialize Firebase on public pages', async ({
-  context,
-  page
-}) => {
-  const firebaseRequests: string[] = []
-  context.on('request', (request) => {
-    if (/firebase|identitytoolkit|securetoken/.test(request.url())) {
-      firebaseRequests.push(request.url())
-    }
-  })
-  await context.route('**/t.comfy.org/**', (route) =>
-    /\/(flags|decide)\//.test(route.request().url())
-      ? route.fulfill({
-          json: {
-            featureFlags: { 'workshop-auth': true, 'workshop-enabled': false }
-          }
-        })
-      : route.abort('blockedbyclient')
-  )
+  const firebaseRequests = recordFirebaseRequests(context)
+  await disableWorkshopFlag(context)
   const flags = page.waitForResponse((response) =>
     /t\.comfy\.org\/(flags|decide)\//.test(response.url())
   )
-  await page.goto('/models/')
+  await page.goto('/')
   await flags
   await waitForIsland(
     page,
     page.getByRole('navigation', { name: 'Main navigation' })
   )
   await expect(
-    page.getByRole('link', { name: /Grok Imagine/i }).first()
-  ).toBeVisible()
+    page.getByRole('link', { name: 'Models', exact: true })
+  ).toHaveCount(0)
+
+  await expectModelContentWithoutRun(page)
   expect(firebaseRequests).toEqual([])
 })
 
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false })
 
-  test('renders the public Models page without exposing the catalogue', async ({
-    page
-  }) => {
-    await page.goto('/models/')
-    await expect(page.getByTestId('workshop-loading')).toBeHidden()
-    await expect(page.getByTestId('workshop-search')).toHaveCount(0)
-    await expect(
-      page.getByRole('link', { name: /Grok Imagine/i }).first()
-    ).toBeVisible()
-  })
+  for (const path of ['/models/', MODEL_PATH]) {
+    test(`${path} shows no loader or error panel`, async ({ page }) => {
+      await page.goto(path)
+      await expect(page.getByTestId('workshop-loading')).toBeHidden()
+      await expect(page.getByTestId('models-load-error')).toHaveCount(0)
+      await expect(page.getByTestId('workshop-search')).toHaveCount(0)
+      await expect(
+        page.getByRole('link', { name: /Grok Imagine/i }).first()
+      ).toBeVisible()
+    })
+  }
 })

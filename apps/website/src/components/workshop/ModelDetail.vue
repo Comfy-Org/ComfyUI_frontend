@@ -6,6 +6,7 @@ import {
   onScopeDispose,
   onUnmounted,
   ref,
+  shallowRef,
   useSlots,
   watch
 } from 'vue'
@@ -64,6 +65,7 @@ import { t } from '../../i18n/translations'
 import {
   captureWorkshopEvent,
   useWorkshopEnabled,
+  useWorkshopEnabledSettled,
   useWorkshopAuthFlag
 } from '../../scripts/posthog'
 import type { WorkshopRunAnalytics } from '../../scripts/workshop-analytics'
@@ -211,10 +213,24 @@ const attachments = computed(() =>
 )
 const revealed = ref(false)
 
-const { user, session, sessionFailure, settled, ensureFresh, remint } =
-  useWorkshopSession()
-const { balance } = useWorkshopCredits()
 const workshopEnabled = useWorkshopEnabled()
+const workshopEnabledSettled = useWorkshopEnabledSettled()
+function startAccountServices() {
+  return { ...useWorkshopSession(), balance: useWorkshopCredits().balance }
+}
+const account = shallowRef<ReturnType<typeof startAccountServices>>()
+watch(
+  workshopEnabled,
+  (enabled) => {
+    if (enabled) account.value ??= startAccountServices()
+  },
+  { immediate: true }
+)
+const user = computed(() => account.value?.user.value)
+const session = computed(() => account.value?.session.value)
+const sessionFailure = computed(() => account.value?.sessionFailure.value)
+const settled = computed(() => account.value?.settled.value ?? false)
+const balance = computed(() => account.value?.balance.value)
 const authEnabled = useWorkshopAuthFlag()
 const mounted = useMounted()
 const signInHref = useSignInHref(locale)
@@ -242,15 +258,19 @@ const canRunModel = computed(
     !activeExample.value?.fields &&
     !clone
 )
+const flagOffGate = computed(() =>
+  workshopEnabledSettled.value ? 'rollingOut' : 'pending'
+)
 const gate = computed(() => {
-  if (!workshopEnabled.value || !canRunModel.value) return 'unavailable'
+  if (!canRunModel.value) return 'unavailable'
+  if (!workshopEnabled.value) return flagOffGate.value
   if (!mounted.value || draftPending.value) return 'pending'
   if (!authEnabled.value || sessionFailure.value) return 'unavailable'
   if (!settled.value || (user.value && !session.value)) return 'pending'
   if (!session.value) return 'signedOut'
   if (
     runState.value.status !== 'running' &&
-    balance.value.status === 'ok' &&
+    balance.value?.status === 'ok' &&
     balance.value.credits <= 0
   )
     return session.value.role === 'member' ? 'memberNoCredits' : 'noCredits'
@@ -414,7 +434,7 @@ async function switchToPersonal() {
   personalSwitchPending.value = true
   personalSwitchError.value = false
   try {
-    const result = await remint(undefined, {
+    const result = await account.value?.remint(undefined, {
       preserveCredentialOnTransientFailure: true
     })
     if (result?.status === 'ok') await refreshWorkshopCredits({ force: true })
@@ -458,7 +478,7 @@ async function freshCredentialFor(
   startedFor: WorkshopSession,
   attempt: ActiveRun
 ): Promise<WorkshopSession> {
-  const credential = await ensureFresh(undefined, {
+  const credential = await account.value?.ensureFresh(undefined, {
     signal: attempt.controller.signal
   })
   attempt.controller.signal.throwIfAborted()
@@ -889,6 +909,20 @@ function useInCode() {
               {{ t('nav.workspaceSwitchError', locale) }}
             </p>
           </template>
+          <p
+            v-else-if="gate === 'rollingOut'"
+            class="flex min-h-14 flex-wrap items-center justify-center gap-x-1.5 px-2 text-center text-xs text-content-secondary sm:text-sm"
+            data-testid="run-rollout-note"
+          >
+            {{ t('workshop.run.rollingOut', locale) }}
+            <button
+              type="button"
+              class="cursor-pointer font-bold text-primary-warm-white underline underline-offset-2 hover:text-primary-comfy-yellow"
+              @click="activeSection = 'api'"
+            >
+              {{ t('workshop.run.rollingOutApi', locale) }}
+            </button>
+          </p>
           <Button
             v-else-if="gate === 'ready'"
             size="lg"
@@ -930,7 +964,6 @@ function useInCode() {
         class="flex min-w-0 flex-col gap-4 lg:sticky lg:top-26 lg:col-span-7 lg:self-start"
       >
         <PlaygroundOutput
-          v-if="workshopEnabled || isRunning"
           v-model:revealed="revealed"
           :state="runState"
           :earlier

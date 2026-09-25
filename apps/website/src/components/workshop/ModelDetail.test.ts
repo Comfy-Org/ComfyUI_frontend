@@ -320,11 +320,44 @@ describe('ModelDetail', () => {
   it('prevents generation while the feature is hidden', async () => {
     auth.session.value = credential
     auth.workshopEnabled.value = false
+    vi.mocked(useWorkshopSession).mockClear()
+    vi.mocked(useWorkshopCredits).mockClear()
     mountDetail({ model: runnable })
     await nextTick()
-    expect(screen.queryByRole('button', { name: 'Run' })).toBeNull()
+    expect(screen.queryByTestId('run-button')).toBeNull()
+    expect(
+      screen.queryByText('This model cannot be run from the browser yet.')
+    ).toBeNull()
+    expect(screen.getByTestId('run-rollout-note')).toHaveTextContent(
+      'Running in the browser is rolling out.'
+    )
+    expect(screen.getByTestId('playground-output')).toBeTruthy()
+    expect(useWorkshopSession).not.toHaveBeenCalled()
+    expect(useWorkshopCredits).not.toHaveBeenCalled()
     expect(runWorkshopRouter).not.toHaveBeenCalled()
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
+
+    await user().click(screen.getByRole('button', { name: 'See the API' }))
+    expect(screen.getByRole('tab', { name: 'API' })).toHaveAttribute(
+      'aria-selected',
+      'true'
+    )
+  })
+
+  it('holds Run as pending until the flag answers, then shows the note when it is off', async () => {
+    auth.workshopEnabled.value = false
+    auth.workshopEnabledSettled.value = false
+    mountDetail({ model: runnable })
+    await nextTick()
+    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
+      'pending'
+    )
+    expect(screen.queryByTestId('run-rollout-note')).toBeNull()
+
+    auth.workshopEnabledSettled.value = true
+    await nextTick()
+    expect(screen.queryByTestId('run-button')).toBeNull()
+    expect(screen.getByTestId('run-rollout-note')).toBeTruthy()
   })
 
   it('reports API views only while Models is enabled', async () => {
@@ -1736,9 +1769,7 @@ describe('ModelDetail', () => {
       name: 'run_finished',
       properties: expect.objectContaining({ status: 'cancelled' })
     })
-    expect(screen.getByTestId('run-button').getAttribute('data-gate')).toBe(
-      'unavailable'
-    )
+    expect(screen.getByTestId('run-rollout-note')).toBeTruthy()
   })
 
   it.for([
@@ -1792,17 +1823,21 @@ describe('ModelDetail', () => {
     }
   )
 
-  it('keeps execution disabled when the run opt-in is absent', () => {
-    vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
-    auth.session.value = credential
-    mountDetail({ model: runnable })
-    expect(
-      screen.getByRole('button', {
-        name: 'This model cannot be run from the browser yet.'
-      })
-    ).toHaveProperty('disabled', true)
-    expect(runWorkshopRouter).not.toHaveBeenCalled()
-  })
+  it.for([true, false])(
+    'keeps execution disabled when the run opt-in is absent (flag on: %s)',
+    (flagOn) => {
+      vi.stubEnv('PUBLIC_WORKSHOP_ROUTER_RUN', undefined)
+      auth.session.value = credential
+      auth.workshopEnabled.value = flagOn
+      mountDetail({ model: runnable })
+      expect(
+        screen.getByRole('button', {
+          name: 'This model cannot be run from the browser yet.'
+        })
+      ).toHaveProperty('disabled', true)
+      expect(runWorkshopRouter).not.toHaveBeenCalled()
+    }
+  )
 
   it('sends a signed-out visitor to sign in and come back', async () => {
     history.replaceState(null, '', '/models/demo/?tab=api')
