@@ -385,6 +385,41 @@ describe('useTemplateFiltering', () => {
       return composable
     }
 
+    it('returns both templates when two sources share a name', async () => {
+      // Regression guard for keying the search-result lookup by plain
+      // `template.name` instead of the collision-safe `searchId`: that would
+      // let the second entry silently overwrite the first in the lookup map,
+      // dropping it from the result even though it's still in the index.
+      const templates = [
+        {
+          ...buildTemplate({ name: 'rtx_image_upscale', description: 'PackA' }),
+          sourceModule: 'PackA'
+        },
+        {
+          ...buildTemplate({ name: 'rtx_image_upscale', description: 'PackB' }),
+          sourceModule: 'PackB'
+        }
+      ]
+
+      const { filteredTemplates } = await searchFor(
+        templates,
+        'rtx image upscale'
+      )
+
+      expect(filteredTemplates.value).toHaveLength(2)
+      expect(
+        filteredTemplates.value.map((t) => ({
+          name: t.name,
+          description: t.description
+        }))
+      ).toEqual(
+        expect.arrayContaining([
+          { name: 'rtx_image_upscale', description: 'PackA' },
+          { name: 'rtx_image_upscale', description: 'PackB' }
+        ])
+      )
+    })
+
     it('matches "img2img" via abbreviation expansion', async () => {
       const templates = [
         buildTemplate({

@@ -9,7 +9,8 @@ import {
   rankByRelevanceThenUsage,
   searchTemplates,
   termFuzziness,
-  tokenize
+  tokenize,
+  withSearchIds
 } from '@/composables/templateSearchConfig'
 import type { TemplateInfo } from '@/platform/workflow/templates/types/template'
 
@@ -118,9 +119,88 @@ describe('expandQuery', () => {
   })
 })
 
+describe('withSearchIds', () => {
+  it('leaves a non-colliding template searchId identical to its name', () => {
+    const [a, b] = withSearchIds([
+      buildTemplate({ name: 'alpha' }),
+      buildTemplate({ name: 'beta' })
+    ])
+    expect(a.searchId).toBe('alpha')
+    expect(b.searchId).toBe('beta')
+  })
+
+  it('disambiguates a name collision using sourceModule when available', () => {
+    const [first, second] = withSearchIds([
+      { ...buildTemplate({ name: 'shared' }), sourceModule: 'PackOne' },
+      { ...buildTemplate({ name: 'shared' }), sourceModule: 'PackTwo' }
+    ])
+    expect(first.searchId).toBe('shared')
+    expect(second.searchId).toBe('shared::PackTwo')
+    expect(first.searchId).not.toBe(second.searchId)
+  })
+
+  it('disambiguates a name collision with an ordinal when sourceModule is absent', () => {
+    const [first, second] = withSearchIds([
+      buildTemplate({ name: 'shared' }),
+      buildTemplate({ name: 'shared' })
+    ])
+    expect(first.searchId).toBe('shared')
+    expect(second.searchId).toBe('shared::2')
+  })
+
+  it('guards against a disambiguated id itself colliding', () => {
+    const [first, second, third] = withSearchIds([
+      { ...buildTemplate({ name: 'shared' }), sourceModule: 'Pack' },
+      { ...buildTemplate({ name: 'shared' }), sourceModule: 'Pack' },
+      { ...buildTemplate({ name: 'shared::Pack' }), sourceModule: 'Other' }
+    ])
+    const ids = [first.searchId, second.searchId, third.searchId]
+    expect(new Set(ids).size).toBe(3)
+  })
+
+  it('never lets a collision anywhere prevent the search index from building', () => {
+    // This is the exact failure mode reported upstream: two custom node
+    // packs (whether genuinely different packs or the same pack registered
+    // twice) each contributing a template with the same bare name used to
+    // throw out of MiniSearch.addAll(), breaking search for every template,
+    // not just the colliding ones.
+    const templates = [
+      {
+        ...buildTemplate({ name: 'rtx_image_upscale' }),
+        sourceModule: 'PackA'
+      },
+      {
+        ...buildTemplate({ name: 'rtx_image_upscale' }),
+        sourceModule: 'PackB'
+      },
+      buildTemplate({ name: 'yue_2_0_song', title: 'Yue 2.0 Song' }),
+      buildTemplate({
+        name: 'yue_2_0_instrumental',
+        title: 'Yue 2.0 Instrumental'
+      })
+    ]
+    expect(() =>
+      createTemplateSearchIndex(withSearchIds(templates))
+    ).not.toThrow()
+
+    const index = createTemplateSearchIndex(withSearchIds(templates))
+    expect(searchTemplates(index, 'yue')).toEqual(
+      expect.arrayContaining(['yue_2_0_song', 'yue_2_0_instrumental'])
+    )
+
+    // The colliding pair itself must both still be indexed and searchable
+    // independently, not silently dropped down to just one survivor.
+    const duplicateResults = searchTemplates(index, 'rtx image upscale')
+    expect(duplicateResults).toHaveLength(2)
+    expect(duplicateResults).toEqual(
+      expect.arrayContaining(['rtx_image_upscale', 'rtx_image_upscale::PackB'])
+    )
+  })
+})
+
 describe('searchTemplates', () => {
   const buildIndex = (templates: TemplateInfo[]) =>
-    createTemplateSearchIndex(templates)
+    createTemplateSearchIndex(withSearchIds(templates))
 
   it('returns an empty array for a blank query without touching the index', () => {
     const index = buildIndex([buildTemplate({ name: 'a', title: 'Alpha' })])

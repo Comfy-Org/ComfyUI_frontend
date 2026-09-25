@@ -4,7 +4,8 @@ import type { Ref } from 'vue'
 
 import {
   createTemplateSearchIndex,
-  searchTemplates
+  searchTemplates,
+  withSearchIds
 } from '@/composables/templateSearchConfig'
 import { useSettingStore } from '@/platform/settings/settingStore'
 import { useTelemetry } from '@/platform/telemetry'
@@ -116,8 +117,15 @@ export function useTemplateFiltering<T extends TemplateInfo>(
     )
   })
 
+  // Templates annotated with a collision-free searchId - see withSearchIds().
+  // Shared by the index below and the lookup in filteredBySearch so a
+  // disambiguated id always resolves back to the right template.
+  const searchableTemplates = computed(() =>
+    withSearchIds(visibleTemplates.value)
+  )
+
   const searchIndex = computed(() =>
-    createTemplateSearchIndex(visibleTemplates.value)
+    createTemplateSearchIndex(searchableTemplates.value)
   )
 
   const availableModels = computed(() => {
@@ -193,11 +201,11 @@ export function useTemplateFiltering<T extends TemplateInfo>(
       return visibleTemplates.value
     }
 
-    const templatesByName = new Map(
-      visibleTemplates.value.map((template) => [template.name, template])
+    const templatesBySearchId = new Map(
+      searchableTemplates.value.map((template) => [template.searchId, template])
     )
     return searchTemplates(searchIndex.value, searchQuery.value)
-      .map((name) => templatesByName.get(name))
+      .map((searchId): T | undefined => templatesBySearchId.get(searchId))
       .filter((template): template is T => template !== undefined)
   })
 
