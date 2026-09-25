@@ -69,10 +69,29 @@ watch(
   }
 )
 
-async function choose(event: Event, kind: 'recipe' | 'source') {
-  if (!(event.target instanceof HTMLInputElement)) return
+async function readSelection(
+  file: File,
+  kind: 'recipe' | 'source',
+  current: number
+) {
+  if (kind === 'source') {
+    const validated = await validateRecipeSource(file)
+    if (current === revision && open) source.value = validated
+    return
+  }
+  if (file.size > 1000000) throw new Error('Recipe too large')
+  const parsed = parseCinematicRecipe(await file.text())
+  if (current === revision && open) recipe.value = parsed
+}
+
+function selectedFile(event: Event) {
+  if (!(event.target instanceof HTMLInputElement)) return undefined
   const file = event.target.files?.[0]
   event.target.value = ''
+  return file
+}
+async function choose(event: Event, kind: 'recipe' | 'source') {
+  const file = selectedFile(event)
   if (!file || !open || !namespace) return
   const current = ++revision
   error.value = ''
@@ -80,14 +99,7 @@ async function choose(event: Event, kind: 'recipe' | 'source') {
   source.value = undefined
   if (kind === 'recipe') recipe.value = undefined
   try {
-    if (kind === 'recipe') {
-      if (file.size > 1000000) throw new Error('Recipe too large')
-      const parsed = parseCinematicRecipe(await file.text())
-      if (current === revision && open) recipe.value = parsed
-    } else {
-      const validated = await validateRecipeSource(file)
-      if (current === revision && open) source.value = validated
-    }
+    await readSelection(file, kind, current)
   } catch {
     if (current === revision)
       error.value = t(kind === 'recipe' ? 'error' : 'sourceError')

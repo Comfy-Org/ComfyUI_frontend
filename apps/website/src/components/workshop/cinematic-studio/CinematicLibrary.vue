@@ -1,6 +1,6 @@
 <script setup lang="ts">
+import CinematicLibraryCard from './CinematicLibraryCard.vue'
 import { computed, onMounted, ref, watch } from 'vue'
-import CinematicReferenceReview from './CinematicReferenceReview.vue'
 import CinematicModelResults from './CinematicModelResults.vue'
 import { tcModelResults } from '../../../lib/workshop/cinematic-studio/model-results-copy'
 
@@ -212,158 +212,32 @@ function recipe(item: SavedCreation) {
           {{ copy('empty', locale) }}
         </p>
         <div class="grid gap-4 sm:grid-cols-2">
-          <article
+          <CinematicLibraryCard
             v-for="item in visible"
             :key="item.id"
-            class="min-w-0 rounded-2xl border border-transparency-white-t20 p-3"
-          >
-            <div
-              v-if="item.nsfw && !revealed.includes(item.id)"
-              class="flex aspect-video flex-col items-center justify-center gap-3 bg-primary-comfy-ink text-sm text-primary-warm-white"
-            >
-              {{ copy('hidden', locale) }}
-              <Button
-                variant="outline"
-                @click="revealed = [...revealed, item.id]"
-                >{{ copy('reveal', locale) }}</Button
-              >
-            </div>
-            <img
-              v-else-if="item.kind === 'image'"
-              :src="urls[item.id]"
-              :alt="item.name"
-              loading="lazy"
-              class="aspect-video w-full rounded-xl object-contain"
-            />
-            <video
-              v-else
-              :src="urls[item.id]"
-              controls
-              playsinline
-              preload="none"
-              :aria-label="item.name"
-              class="aspect-video w-full rounded-xl"
-            />
-            <h3 class="mt-3 truncate font-semibold text-primary-warm-white">
-              {{ item.name }}
-            </h3>
-            <p class="mt-1 truncate text-xs text-primary-comfy-canvas">
-              {{
-                models.find((model) => model.slug === item.modelSlug)?.name ??
-                item.kind
-              }}
-            </p>
-            <div class="mt-3 flex flex-wrap gap-2">
-              <Button
-                v-if="
-                  item.kind === 'image' &&
-                  (!item.nsfw || revealed.includes(item.id))
-                "
-                size="sm"
-                variant="outline"
-                @click="nextShot(item)"
-                >{{ copy('nextShot', locale) }}</Button
-              >
-              <Button
-                v-if="!item.nsfw || revealed.includes(item.id)"
-                size="sm"
-                variant="outline"
-                :aria-expanded="reviewing === item.id"
-                @click="reviewing = reviewing === item.id ? undefined : item.id"
-                >{{ copy('reviewReferences', locale) }}</Button
-              >
-              <a
-                :href="urls[item.id]"
-                :download="item.fileName"
-                class="rounded-lg border border-transparency-white-t20 px-3 py-2 text-sm text-primary-warm-white"
-                >{{ copy('download', locale) }}</a
-              >
-              <Button
-                variant="outline"
-                size="sm"
-                :disabled="
-                  !!item.settings?.operation &&
-                  item.settings.operation !== 'generate'
-                "
-                @click="reuse(item)"
-                >{{ copy('reuse', locale) }}</Button
-              >
-              <Button variant="outline" size="sm" @click="recipe(item)">{{
-                copy('recipe', locale)
-              }}</Button>
-              <Button
-                v-if="item.kind === 'image'"
-                variant="outline"
-                size="sm"
-                @click="animate(item)"
-                >{{ copy('animate', locale) }}</Button
-              >
-              <Button
-                v-if="item.kind === 'image'"
-                variant="outline"
-                size="sm"
-                @click="edit(item)"
-                >{{ copy('edit', locale) }}</Button
-              >
-              <Button
-                variant="outline"
-                size="sm"
-                :aria-pressed="item.favorite"
-                @click="emit('favorite', item.id, !item.favorite)"
-                >{{ copy('favorite', locale) }}</Button
-              >
-              <Button variant="outline" size="sm" @click="beginRename(item)">{{
-                copy('rename', locale)
-              }}</Button>
-              <Button variant="outline" size="sm" @click="removing = item.id">{{
-                copy('remove', locale)
-              }}</Button>
-            </div>
-            <CinematicReferenceReview
-              v-if="
-                reviewing === item.id &&
-                (!item.nsfw || revealed.includes(item.id))
-              "
-              :key="item.id"
-              :item
-              :namespace
-              :locale
-            />
-            <form
-              v-if="renaming === item.id"
-              class="mt-3 flex gap-2"
-              @submit.prevent="rename(item)"
-            >
-              <input
-                v-model="newName"
-                required
-                maxlength="200"
-                :aria-label="copy('name', locale)"
-                :class="fieldClass"
-                class="min-w-0 flex-1"
-              />
-              <Button type="submit" size="sm">{{
-                copy('rename', locale)
-              }}</Button>
-            </form>
-            <div
-              v-if="removing === item.id"
-              class="mt-3 text-sm text-primary-warm-white"
-            >
-              <p>{{ copy('confirmDelete', locale) }}</p>
-              <div class="mt-2 flex flex-wrap gap-2">
-                <Button size="sm" @click="remove(item)">{{
-                  copy('remove', locale)
-                }}</Button>
-                <Button
-                  size="sm"
-                  variant="outline"
-                  @click="removing = undefined"
-                  >{{ copy('cancel', locale) }}</Button
-                >
-              </div>
-            </div>
-          </article>
+            v-model:revealed="revealed"
+            v-model:reviewing="reviewing"
+            v-model:renaming="renaming"
+            v-model:removing="removing"
+            v-model:new-name="newName"
+            :item
+            :url="urls[item.id]"
+            :model-name="
+              models.find((model) => model.slug === item.modelSlug)?.name ??
+              item.kind
+            "
+            :namespace
+            :locale
+            @reuse="reuse"
+            @next-shot="nextShot"
+            @animate="animate"
+            @edit="edit"
+            @recipe="recipe"
+            @begin-rename="beginRename"
+            @rename="rename"
+            @remove="remove"
+            @favorite="(id, value) => emit('favorite', id, value)"
+          />
         </div>
       </template>
     </DialogContent>

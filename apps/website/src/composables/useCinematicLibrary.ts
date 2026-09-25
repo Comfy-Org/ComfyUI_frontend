@@ -48,6 +48,14 @@ export function useCinematicLibrary(
     urls.value = {}
   }
 
+  function updateUrls(saved: Awaited<ReturnType<typeof listCreations>>) {
+    const next: Record<string, string> = {}
+    for (const item of saved)
+      next[item.id] = urls.value[item.id] ?? URL.createObjectURL(item.blob)
+    for (const [id, url] of Object.entries(urls.value))
+      if (!next[id]) URL.revokeObjectURL(url)
+    urls.value = next
+  }
   async function refresh() {
     const namespace = scope()
     if (!namespace || !available.value) return
@@ -56,12 +64,7 @@ export function useCinematicLibrary(
     try {
       const saved = await listCreations(namespace)
       if (disposed || current !== epoch) return
-      const next: Record<string, string> = {}
-      for (const item of saved)
-        next[item.id] = urls.value[item.id] ?? URL.createObjectURL(item.blob)
-      for (const [id, url] of Object.entries(urls.value))
-        if (!next[id]) URL.revokeObjectURL(url)
-      urls.value = next
+      updateUrls(saved)
       items.value = saved
       for (const item of saved) removeCinematicJournal(namespace, item.takeId)
     } catch {

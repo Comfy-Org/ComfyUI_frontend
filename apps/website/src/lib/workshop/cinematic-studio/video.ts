@@ -1,3 +1,4 @@
+import { acceptsSeed } from './seed-validation'
 import type { WorkshopModelDetail } from '../../../config/models-catalogue'
 import { dimensions } from '../../../config/router-parameter-options'
 import type { RouterRenderParameters } from '../../../config/router-parameters'
@@ -43,6 +44,61 @@ function options(value: unknown): readonly unknown[] {
   return Array.isArray(values) ? values : []
 }
 
+function resolutionFieldFor(
+  original: Record<string, unknown>,
+  properties: Record<string, unknown>
+) {
+  return (
+    Object.keys(original).find((name) =>
+      [
+        'resolution',
+        'param_resolution',
+        'setting_resolution',
+        'param_size'
+      ].includes(name)
+    ) ??
+    (options(properties.mode).length &&
+    options(properties.mode).every(
+      (value) => value === 'std' || value === 'pro'
+    )
+      ? 'mode'
+      : undefined)
+  )
+}
+
+function videoInputs(
+  properties: Record<string, unknown>,
+  required: unknown
+): Pick<
+  CinematicVideoDescriptor,
+  'firstFrame' | 'lastFrame' | 'generateAudio'
+> {
+  const sourceField = properties.first_frame_url
+    ? 'first_frame_url'
+    : properties.image_url
+      ? 'image_url'
+      : undefined
+  return {
+    firstFrame: !sourceField
+      ? 'unsupported'
+      : Array.isArray(required) && required.includes(sourceField)
+        ? 'required'
+        : 'optional',
+    lastFrame: Boolean(properties.last_frame_url),
+    generateAudio:
+      Boolean(properties.generate_audio) ||
+      (options(properties.sound).includes('on') &&
+        options(properties.sound).includes('off'))
+  }
+}
+
+function videoSeed(value: unknown): Pick<CinematicVideoDescriptor, 'seed'> {
+  const seed = object(value)
+  return typeof seed.minimum === 'number' && typeof seed.maximum === 'number'
+    ? { seed: { minimum: seed.minimum, maximum: seed.maximum } }
+    : {}
+}
+
 export function cinematicVideoDescriptor(
   contract: WorkshopContract
 ): CinematicVideoDescriptor | undefined {
@@ -66,21 +122,7 @@ export function cinematicVideoDescriptor(
       typeof value === 'string' && /^\d+$/.test(value) ? Number(value) : value
     )
     .filter((value): value is number => typeof value === 'number' && value > 0)
-  const resolutionField =
-    Object.keys(original).find((name) =>
-      [
-        'resolution',
-        'param_resolution',
-        'setting_resolution',
-        'param_size'
-      ].includes(name)
-    ) ??
-    (options(properties.mode).length &&
-    options(properties.mode).every(
-      (value) => value === 'std' || value === 'pro'
-    )
-      ? 'mode'
-      : undefined)
+  const resolutionField = resolutionFieldFor(original, properties)
   const resolutionProperty = resolutionField
     ? original[resolutionField]
     : undefined
@@ -88,21 +130,14 @@ export function cinematicVideoDescriptor(
     (value): value is string => typeof value === 'string'
   )
   if (!durations.length || !resolutions.length) return
-  const required = parameters?.required
   const duration = Number(object(properties.duration).default)
   const resolution = object(resolutionProperty).default
-  const sourceField = properties.first_frame_url
-    ? 'first_frame_url'
-    : properties.image_url
-      ? 'image_url'
-      : undefined
   const declaredAspects = options(
     properties.ratio ?? properties.aspect_ratio
   ).filter(
     (value): value is string =>
       typeof value === 'string' && value !== 'adaptive'
   )
-  const seed = object(properties.seed)
   const aspectFor = (value: string) => {
     const size = dimensions(value)
     if (!size) return []
@@ -120,20 +155,9 @@ export function cinematicVideoDescriptor(
       typeof duration === 'number' && duration > 0 ? duration : durations[0],
     defaultResolution:
       typeof resolution === 'string' ? resolution : resolutions[0],
-    firstFrame: !sourceField
-      ? 'unsupported'
-      : Array.isArray(required) && required.includes(sourceField)
-        ? 'required'
-        : 'optional',
-    lastFrame: Boolean(properties.last_frame_url),
-    generateAudio:
-      Boolean(properties.generate_audio) ||
-      (options(properties.sound).includes('on') &&
-        options(properties.sound).includes('off')),
+    ...videoInputs(properties, parameters?.required),
     ...(resolutionField ? { resolutionField } : {}),
-    ...(typeof seed.minimum === 'number' && typeof seed.maximum === 'number'
-      ? { seed: { minimum: seed.minimum, maximum: seed.maximum } }
-      : {})
+    ...videoSeed(properties.seed)
   }
 }
 
@@ -152,35 +176,44 @@ export function videoResolutionsForAspect(
   })
 }
 
-export function cinematicVideoForm(
-  model: WorkshopModelDetail,
-  prompt: string,
-  aspect: string,
+function validateVideoFrames(
+  descriptor: CinematicVideoDescriptor,
   settings: CinematicVideoSettings
 ) {
-  const descriptor =
-    model.execution && cinematicVideoDescriptor(model.execution)
-  if (!descriptor) throw new WorkshopRouterError('unavailable')
-  if (
-    !descriptor.durations.includes(settings.durationSeconds) ||
-    !descriptor.resolutions.includes(settings.resolution)
-  )
-    throw new WorkshopRouterError('validation')
   if (
     (settings.firstFrame && descriptor.firstFrame === 'unsupported') ||
     (settings.lastFrame && !descriptor.lastFrame)
   )
     throw new WorkshopRouterError('validation')
+}
+
+function validateVideoSettings(
+  descriptor: CinematicVideoDescriptor,
+  settings: CinematicVideoSettings,
+  aspect: string
+) {
   if (
-    settings.seed !== undefined &&
-    (!descriptor.seed ||
-      !Number.isInteger(settings.seed) ||
-      settings.seed < descriptor.seed.minimum ||
-      settings.seed > descriptor.seed.maximum)
+    !descriptor.durations.includes(settings.durationSeconds) ||
+    !descriptor.resolutions.includes(settings.resolution)
+  )
+    throw new WorkshopRouterError('validation')
+  validateVideoFrames(descriptor, settings)
+  if (
+    !acceptsSeed(
+      settings.seed,
+      descriptor.seed ? { ...descriptor.seed, step: 1 } : undefined
+    )
   )
     throw new WorkshopRouterError('validation')
   if (descriptor.aspects.length && !descriptor.aspects.includes(aspect))
     throw new WorkshopRouterError('validation')
+}
+
+function resolutionForSettings(
+  descriptor: CinematicVideoDescriptor,
+  settings: CinematicVideoSettings,
+  aspect: string
+) {
   const supportedResolutions = videoResolutionsForAspect(descriptor, aspect)
   const nativeResolution = supportedResolutions.includes(settings.resolution)
     ? settings.resolution
@@ -195,19 +228,39 @@ export function cinematicVideoForm(
         )
       })
   if (!nativeResolution) throw new WorkshopRouterError('validation')
+  return nativeResolution
+}
+
+function resolutionParameters(
+  descriptor: CinematicVideoDescriptor,
+  resolution: string
+): RouterRenderParameters {
+  if (descriptor.resolutionField === 'mode') return { quality: resolution }
+  if (dimensions(resolution))
+    return {
+      model_specific: {
+        [descriptor.resolutionField ?? 'resolution']: resolution
+      }
+    }
+  return { resolution }
+}
+
+export function cinematicVideoForm(
+  model: WorkshopModelDetail,
+  prompt: string,
+  aspect: string,
+  settings: CinematicVideoSettings
+) {
+  const descriptor =
+    model.execution && cinematicVideoDescriptor(model.execution)
+  if (!descriptor) throw new WorkshopRouterError('unavailable')
+  validateVideoSettings(descriptor, settings, aspect)
+  const nativeResolution = resolutionForSettings(descriptor, settings, aspect)
   const schema = workshopPageSchema(model)
   const parameters: RouterRenderParameters = {
     prompt,
     ...(descriptor.aspects.length ? { aspect_ratio: aspect } : {}),
-    ...(descriptor.resolutionField === 'mode'
-      ? { quality: nativeResolution }
-      : dimensions(nativeResolution)
-        ? {
-            model_specific: {
-              [descriptor.resolutionField ?? 'resolution']: nativeResolution
-            }
-          }
-        : { resolution: nativeResolution }),
+    ...resolutionParameters(descriptor, nativeResolution),
     duration_seconds: settings.durationSeconds,
     ...(descriptor.generateAudio
       ? { generate_audio: settings.generateAudio }

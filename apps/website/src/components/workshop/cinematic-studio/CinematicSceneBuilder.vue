@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import CinematicPlanSharedSettings from './CinematicPlanSharedSettings.vue'
+import CinematicPlannedShotEditor from './CinematicPlannedShotEditor.vue'
+import CinematicSceneBriefEditor from './CinematicSceneBriefEditor.vue'
 import type { Locale } from '../../../i18n/translations'
 import type { SavedCreation } from '../../../lib/workshop/cinematic-studio/creations'
 import type {
@@ -9,7 +12,6 @@ import type {
 } from '../../../lib/workshop/cinematic-studio/scene-builder'
 import { tcBuilder } from '../../../lib/workshop/cinematic-studio/builder-copy'
 import {
-  BRIEF_FIELDS,
   SCENE_LIMIT,
   composePlannedScene,
   composeSceneBrief,
@@ -109,6 +111,11 @@ watch(
   { immediate: true }
 )
 
+function planName(item: ReturnType<typeof createSceneBuilderDraft>) {
+  return (
+    item.plan.name.trim() || item.plan.scene.slice(0, 60) || t('untitledPlan')
+  )
+}
 function preview(compose: () => string) {
   try {
     return { text: compose(), valid: true }
@@ -259,6 +266,10 @@ function exportDraft() {
   anchor.click()
   setTimeout(() => URL.revokeObjectURL(url), 1000)
 }
+async function readDraft(file: File) {
+  if (file.size > 1000000) throw new Error('File too large')
+  return parseSceneBuilderDraft(await file.text())
+}
 async function importDraft(event: Event) {
   if (!(event.target instanceof HTMLInputElement)) return
   const file = event.target.files?.[0]
@@ -266,8 +277,7 @@ async function importDraft(event: Event) {
   if (!file) return
   const current = revision
   try {
-    if (file.size > 1000000) throw new Error('File too large')
-    const parsed = parseSceneBuilderDraft(await file.text())
+    const parsed = await readDraft(file)
     if (revision !== current || !open) return
     if (addPlan(parsed)) status.value = t('imported')
   } catch {
@@ -298,11 +308,7 @@ async function importDraft(event: Event) {
               :key="item.plan.id"
               :value="item.plan.id"
             >
-              {{
-                item.plan.name.trim() ||
-                item.plan.scene.slice(0, 60) ||
-                t('untitledPlan')
-              }}
+              {{ planName(item) }}
               · {{ index + 1 }}
             </option>
           </select>
@@ -331,71 +337,22 @@ async function importDraft(event: Event) {
           >{{ t('plan') }}</Button
         >
       </div>
-      <div v-if="tab === 'build'" class="grid min-w-0 gap-5 md:grid-cols-2">
-        <div class="flex min-w-0 flex-col gap-3">
-          <label
-            v-for="field in BRIEF_FIELDS"
-            :key="field"
-            class="flex flex-col gap-1 text-sm text-primary-warm-white"
-          >
-            {{ t(field)
-            }}<span
-              v-if="field !== 'subject'"
-              class="text-xs text-primary-comfy-canvas"
-              >{{ t('optional') }}</span
-            >
-            <textarea
-              v-model="draft.brief[field]"
-              :class="fieldClass"
-              :maxlength="SCENE_LIMIT"
-              :rows="field === 'subject' ? 4 : 2"
-            />
-          </label>
-        </div>
-        <section class="min-w-0">
-          <h3 class="mb-2 text-sm font-semibold text-primary-warm-white">
-            {{ t('preview') }}
-          </h3>
-          <p
-            class="rounded-xl border border-transparency-white-t8 p-4 text-sm/relaxed wrap-break-word whitespace-pre-wrap text-primary-comfy-canvas"
-          >
-            {{ brief.valid ? brief.text : t('invalid') }}
-          </p>
-          <p class="my-3 text-xs text-primary-comfy-canvas">
-            {{ brief.text.length }} / {{ SCENE_LIMIT }} {{ t('characters') }}
-          </p>
-          <Button :disabled="!brief.valid" @click="apply(brief.text)">{{
-            t('apply')
-          }}</Button>
-        </section>
-      </div>
+      <CinematicSceneBriefEditor
+        v-if="tab === 'build'"
+        v-model="draft.brief"
+        :brief
+        :field-class
+        :locale
+        @apply="apply($event)"
+      />
       <div v-else class="flex min-w-0 flex-col gap-4">
         <p class="text-sm text-primary-comfy-canvas">{{ t('planNote') }}</p>
-        <section
-          class="flex min-w-0 flex-col gap-2 rounded-xl border border-transparency-white-t8 p-3 text-sm text-primary-warm-white"
-        >
-          <p>{{ t('sharedSettings') }}</p>
-          <p
-            v-if="draft.plan.settings"
-            class="wrap-break-word text-primary-comfy-canvas"
-          >
-            {{ draft.plan.settings.modelName || draft.plan.settings.modelSlug }}
-            · {{ draft.plan.settings.aspect }} ·
-            {{ draft.plan.settings.resolution }} ·
-            {{ draft.plan.settings.takes }} {{ t('takeCount') }} ·
-            {{ draft.plan.settings.references.length }} {{ t('references') }}
-          </p>
-          <p v-else class="text-primary-comfy-canvas">{{ t('noSettings') }}</p>
-          <Button
-            variant="outline"
-            :disabled="!sharedSettings"
-            @click="captureSettings"
-            >{{ t('captureSettings') }}</Button
-          >
-          <p class="text-xs text-primary-comfy-canvas">
-            {{ t('settingsReview') }}
-          </p>
-        </section>
+        <CinematicPlanSharedSettings
+          :settings="draft.plan.settings"
+          :shared-settings
+          :locale
+          @capture="captureSettings"
+        />
         <div class="grid gap-3 sm:grid-cols-2">
           <label
             v-for="field in [
@@ -417,158 +374,22 @@ async function importDraft(event: Event) {
           </label>
         </div>
         <div class="grid gap-3 lg:grid-cols-3">
-          <article
+          <CinematicPlannedShotEditor
             v-for="(shot, index) in draft.plan.shots"
             :key="shot.id"
-            class="flex min-w-0 flex-col gap-3 rounded-xl border border-transparency-white-t8 p-3"
-          >
-            <label class="flex flex-col gap-1 text-sm text-primary-warm-white"
-              >{{ index + 1 }} · {{ t('shotTitle')
-              }}<input v-model="shot.title" :class="fieldClass" maxlength="100"
-            /></label>
-            <label class="flex flex-col gap-1 text-sm text-primary-warm-white"
-              >{{ t('action')
-              }}<textarea
-                v-model="shot.action"
-                :class="fieldClass"
-                :maxlength="SCENE_LIMIT"
-                rows="2"
-              />
-            </label>
-            <label class="flex flex-col gap-1 text-sm text-primary-warm-white"
-              >{{ t('framing')
-              }}<textarea
-                v-model="shot.framing"
-                :class="fieldClass"
-                :maxlength="SCENE_LIMIT"
-                rows="5"
-              />
-            </label>
-            <details class="text-sm text-primary-comfy-canvas">
-              <summary class="cursor-pointer">{{ t('shotSettings') }}</summary>
-              <label class="mt-2 flex items-center gap-2"
-                ><input v-model="shot.includeSharedBrief" type="checkbox" />{{
-                  t('includeSharedBrief')
-                }}</label
-              >
-              <fieldset
-                v-if="draft.plan.settings"
-                class="mt-3 flex flex-col gap-2"
-              >
-                <legend>{{ t('references') }}</legend>
-                <p class="text-xs">{{ t('referenceNote') }}</p>
-                <label
-                  v-for="reference in draft.plan.settings.references"
-                  :key="reference.id"
-                  class="flex min-w-0 items-center gap-2"
-                  ><input
-                    type="checkbox"
-                    :checked="
-                      plannedReferenceIds(draft.plan, index)?.includes(
-                        reference.id
-                      )
-                    "
-                    @change="selectReference(index, reference.id, $event)"
-                  /><span class="wrap-break-word">{{
-                    reference.label
-                  }}</span></label
-                >
-                <p v-if="!draft.plan.settings.references.length">
-                  {{ t('noReferences') }}
-                </p>
-              </fieldset>
-            </details>
-            <details class="text-sm text-primary-comfy-canvas">
-              <summary class="cursor-pointer">{{ t('preview') }}</summary>
-              <p class="mt-2 wrap-break-word whitespace-pre-wrap">
-                {{ shots[index].valid ? shots[index].text : t('invalid') }}
-              </p>
-            </details>
-            <Button
-              :disabled="!shots[index].valid"
-              @click="apply(shots[index].text, index)"
-              >{{ t('apply') }}</Button
-            >
-            <details
-              v-if="takes[index].length"
-              class="border-t border-transparency-white-t8 pt-3 text-sm text-primary-warm-white"
-            >
-              <summary class="cursor-pointer">
-                {{ t('takes') }} · {{ takes[index].length }}
-              </summary>
-              <div
-                v-for="take in takes[index]"
-                :key="take.creation.id"
-                class="mt-3 flex min-w-0 flex-col gap-2 rounded-lg border border-transparency-white-t8 p-2"
-              >
-                <p class="text-xs text-primary-comfy-canvas">
-                  {{
-                    take.previousVersion
-                      ? t('previousVersion')
-                      : t('currentVersion')
-                  }}
-                </p>
-                <template
-                  v-if="
-                    take.creation.nsfw && !revealed.includes(take.creation.id)
-                  "
-                >
-                  <p>{{ t('sensitive') }}</p>
-                  <Button
-                    variant="outline"
-                    @click="revealed = [...revealed, take.creation.id]"
-                    >{{ t('reveal') }}</Button
-                  >
-                </template>
-                <template v-else>
-                  <img
-                    v-if="
-                      urls[take.creation.id] && take.creation.kind === 'image'
-                    "
-                    :src="urls[take.creation.id]"
-                    :alt="take.creation.name"
-                    class="max-h-48 w-full rounded-lg object-contain"
-                  />
-                  <video
-                    v-else-if="urls[take.creation.id]"
-                    :src="urls[take.creation.id]"
-                    controls
-                    preload="metadata"
-                    class="max-h-48 w-full rounded-lg"
-                  />
-                  <p class="truncate">{{ take.creation.name }}</p>
-                  <p
-                    v-if="!urls[take.creation.id]"
-                    class="text-xs text-primary-comfy-canvas"
-                  >
-                    {{ t('mediaUnavailable') }}
-                  </p>
-                  <div class="flex flex-wrap gap-2">
-                    <Button
-                      variant="outline"
-                      :disabled="!urls[take.creation.id]"
-                      @click="useTake('view', take.creation)"
-                      >{{ t('viewTake') }}</Button
-                    >
-                    <template v-if="take.creation.kind === 'image'">
-                      <Button
-                        variant="outline"
-                        :disabled="!urls[take.creation.id]"
-                        @click="useTake('edit', take.creation)"
-                        >{{ t('editTake') }}</Button
-                      >
-                      <Button
-                        variant="outline"
-                        :disabled="!urls[take.creation.id]"
-                        @click="useTake('animate', take.creation)"
-                        >{{ t('animateTake') }}</Button
-                      >
-                    </template>
-                  </div>
-                </template>
-              </div>
-            </details>
-          </article>
+            v-model:shot="draft.plan.shots[index]"
+            v-model:revealed="revealed"
+            :index
+            :plan="draft.plan"
+            :preview="shots[index]"
+            :takes="takes[index]"
+            :urls
+            :field-class
+            :locale
+            @select-reference="(id, event) => selectReference(index, id, event)"
+            @apply="apply($event, index)"
+            @use-take="useTake"
+          />
         </div>
       </div>
       <p v-if="status" role="status" class="text-sm text-primary-comfy-canvas">

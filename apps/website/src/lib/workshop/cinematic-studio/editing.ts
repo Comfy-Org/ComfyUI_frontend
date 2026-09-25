@@ -1,3 +1,4 @@
+import { acceptsSeed } from './seed-validation'
 import type { WorkshopModelDetail } from '../../../config/models-catalogue'
 import { dimensions } from '../../../config/router-parameter-options'
 import {
@@ -133,31 +134,30 @@ export interface CinematicEditingSettings {
   readonly resolution?: string
 }
 
-export function cinematicEditingForm(
-  model: WorkshopModelDetail,
-  settings: CinematicEditingSettings
-) {
-  const descriptor = cinematicEditingDescriptor(model)
-  if (!descriptor) throw new WorkshopRouterError('unavailable')
-  const schema = workshopPageSchema(model)
-  const seed = descriptor.seed
-  if (
-    settings.seed !== undefined &&
-    (!seed ||
-      !Number.isFinite(settings.seed) ||
-      (seed.step !== 'any' && !Number.isInteger(settings.seed)) ||
-      (seed.minimum !== undefined && settings.seed < seed.minimum) ||
-      (seed.maximum !== undefined && settings.seed > seed.maximum))
-  )
-    throw new WorkshopRouterError('validation', null, { seed: 'rejected' })
+function editingFiles(
+  settings: CinematicEditingSettings,
+  descriptor: CinematicEditingDescriptor
+): File[] {
   const files = [settings.sourceFile, ...(settings.sourceFiles ?? [])]
   if (
-    files.some(
-      (file) => !(file instanceof File) || !file.type.startsWith('image/')
-    ) ||
-    files.length > descriptor.maxReferences
+    files.length > descriptor.maxReferences ||
+    !files.every(
+      (file): file is File =>
+        file instanceof File && file.type.startsWith('image/')
+    )
   )
     throw new WorkshopRouterError('validation', null, { images: 'rejected' })
+  return files
+}
+
+function validateEditingSettings(
+  settings: CinematicEditingSettings,
+  descriptor: CinematicEditingDescriptor
+) {
+  const seed = descriptor.seed
+  if (!acceptsSeed(settings.seed, seed))
+    throw new WorkshopRouterError('validation', null, { seed: 'rejected' })
+  const files = editingFiles(settings, descriptor)
   if (!settings.prompt.trim())
     throw new WorkshopRouterError('validation', null, { prompt: 'rejected' })
   if (
@@ -166,6 +166,17 @@ export function cinematicEditingForm(
     !descriptor.aspects.includes(settings.aspect)
   )
     throw new WorkshopRouterError('validation', null, { aspect: 'rejected' })
+  return files
+}
+
+export function cinematicEditingForm(
+  model: WorkshopModelDetail,
+  settings: CinematicEditingSettings
+) {
+  const descriptor = cinematicEditingDescriptor(model)
+  if (!descriptor) throw new WorkshopRouterError('unavailable')
+  const schema = workshopPageSchema(model)
+  const files = validateEditingSettings(settings, descriptor)
   const ratio = dimensions(settings.aspect)
   const exactSize =
     ratio &&
@@ -183,7 +194,7 @@ export function cinematicEditingForm(
       defaultValues(schema),
       {
         prompt: settings.prompt.trim(),
-        source_images: files as File[],
+        source_images: files,
         ...(settings.seed !== undefined ? { seed: settings.seed } : {}),
         ...(settings.aspect && descriptor.aspects.length
           ? { aspect_ratio: settings.aspect }

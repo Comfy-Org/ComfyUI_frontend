@@ -292,6 +292,21 @@ function controller(options: Options, runtime: Runtime, demo: boolean) {
     clear()
     persist()
   }
+  function restoreSuggestion(
+    entry: z.infer<typeof savedEnhancementSchema>,
+    brief: EnhancementReview['brief']
+  ) {
+    if (
+      entry.status === 'complete' &&
+      entry.suggestion &&
+      entry.suggestion.original === brief.original
+    ) {
+      completedBrief.value = brief
+      completedInputKey.value = JSON.stringify(entry.input)
+      result.value = entry.suggestion
+      edited.value = entry.edited ?? entry.suggestion.suggestion
+    } else error.value = entry.failure ?? 'request'
+  }
   function restore() {
     try {
       const text = localStorage.getItem(storageKey(runtime.scope()))
@@ -302,16 +317,7 @@ function controller(options: Options, runtime: Runtime, demo: boolean) {
       const brief = enhancementReview(model, entry.input).brief
       saved.value =
         entry.status === 'pending' ? { ...entry, status: 'uncertain' } : entry
-      if (
-        entry.status === 'complete' &&
-        entry.suggestion &&
-        entry.suggestion.original === brief.original
-      ) {
-        completedBrief.value = brief
-        completedInputKey.value = JSON.stringify(entry.input)
-        result.value = entry.suggestion
-        edited.value = entry.edited ?? entry.suggestion.suggestion
-      } else error.value = entry.failure ?? 'request'
+      restoreSuggestion(entry, brief)
     } catch {
       storageError.value = true
     }
@@ -335,25 +341,87 @@ function controller(options: Options, runtime: Runtime, demo: boolean) {
       error.value = cause instanceof EnhancementError ? cause.reason : 'input'
     }
   }
-  async function confirm(acknowledged: boolean, recovering = false) {
-    if (
-      !recovering &&
-      (!acknowledged || !canConfirm.value || !review.value || unresolved.value)
+  function confirmationAllowed(acknowledged: boolean, recovering: boolean) {
+    if (recovering) return canRecover.value
+    return (
+      acknowledged && canConfirm.value && !!review.value && !unresolved.value
     )
-      return
-    if (recovering && !canRecover.value) return
+  }
+  function requestForConfirmation(recovering: boolean) {
     const entry = saved.value
     const model = options.model()
-    const request =
-      recovering && entry && model
-        ? {
-            ...enhancementReview(model, entry.input),
-            model,
-            scope: runtime.scope(),
-            inputKey: JSON.stringify(entry.input),
-            id: entry.id
-          }
-        : review.value
+    if (!recovering || !entry || !model) return review.value
+    return {
+      ...enhancementReview(model, entry.input),
+      model,
+      scope: runtime.scope(),
+      inputKey: JSON.stringify(entry.input),
+      id: entry.id
+    }
+  }
+  function completeSuggestion(request: Review, outputs: readonly RunOutput[]) {
+    const suggestion = enhancementResult(
+      outputs.filter((output) => output.purpose !== 'response-metadata'),
+      request.brief
+    )
+    completedBrief.value = request.brief
+    completedInputKey.value = request.inputKey
+    result.value = suggestion
+    edited.value = result.value.suggestion
+    if (saved.value)
+      saved.value = {
+        ...saved.value,
+        status: 'complete',
+        suggestion,
+        edited: edited.value
+      }
+    persist(request.scope)
+  }
+  function failSuggestion(
+    cause: unknown,
+    attempt: AbortController,
+    request: Review
+  ) {
+    if (!attempt.signal.aborted) {
+      error.value = cause instanceof EnhancementError ? cause.reason : 'request'
+      if (saved.value)
+        saved.value = {
+          ...saved.value,
+          status: cause instanceof EnhancementError ? 'failed' : 'uncertain',
+          ...(cause instanceof EnhancementError
+            ? { failure: cause.reason }
+            : {})
+        }
+      persist(request.scope)
+    }
+  }
+  function recordSuggestionRequest(
+    id: string,
+    attempt: AbortController,
+    request: Review
+  ) {
+    if (
+      attempt.signal.aborted ||
+      runtime.scope() !== request.scope ||
+      !saved.value
+    )
+      return
+    saved.value = { ...saved.value, requestId: id }
+    persist(request.scope)
+  }
+  function finishConfirmation(attempt: AbortController) {
+    // Consume even a failed confirmation; an uncertain request must not be resubmitted implicitly.
+    if (abort === attempt) {
+      abort = undefined
+      busy.value = false
+      review.value = undefined
+    }
+    if (!demo) runtime.refresh()
+  }
+  async function confirm(acknowledged: boolean, recovering = false) {
+    if (!confirmationAllowed(acknowledged, recovering)) return
+    const entry = saved.value
+    const request = requestForConfirmation(recovering)
     if (!request) return
     if (!recovering)
       saved.value = {
@@ -373,58 +441,16 @@ function controller(options: Options, runtime: Runtime, demo: boolean) {
       outputs = await runtime.execute(
         request,
         attempt.signal,
-        (id) => {
-          if (
-            attempt.signal.aborted ||
-            runtime.scope() !== request.scope ||
-            !saved.value
-          )
-            return
-          saved.value = { ...saved.value, requestId: id }
-          persist(request.scope)
-        },
+        (id) => recordSuggestionRequest(id, attempt, request),
         recovering ? entry?.requestId : undefined
       )
       if (attempt.signal.aborted || runtime.scope() !== request.scope) return
-      const suggestion = enhancementResult(
-        outputs.filter((output) => output.purpose !== 'response-metadata'),
-        request.brief
-      )
-      completedBrief.value = request.brief
-      completedInputKey.value = request.inputKey
-      result.value = suggestion
-      edited.value = result.value.suggestion
-      if (saved.value)
-        saved.value = {
-          ...saved.value,
-          status: 'complete',
-          suggestion,
-          edited: edited.value
-        }
-      persist(request.scope)
+      completeSuggestion(request, outputs)
     } catch (cause) {
-      if (!attempt.signal.aborted) {
-        error.value =
-          cause instanceof EnhancementError ? cause.reason : 'request'
-        if (saved.value)
-          saved.value = {
-            ...saved.value,
-            status: cause instanceof EnhancementError ? 'failed' : 'uncertain',
-            ...(cause instanceof EnhancementError
-              ? { failure: cause.reason }
-              : {})
-          }
-        persist(request.scope)
-      }
+      failSuggestion(cause, attempt, request)
     } finally {
       releaseRouterOutputs(outputs)
-      // Consume this confirmation even on failure: never implicitly resubmit an uncertain request.
-      if (abort === attempt) {
-        abort = undefined
-        busy.value = false
-        review.value = undefined
-      }
-      if (!demo) runtime.refresh()
+      finishConfirmation(attempt)
     }
   }
   const proposed = computed(() => {

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CinematicModelResultOutput from './CinematicModelResultOutput.vue'
 import { computed, ref, watch } from 'vue'
 import type { Locale } from '../../../i18n/translations'
 import { useSavedModelResults } from '../../../composables/useSavedModelResults'
@@ -89,74 +90,17 @@ async function confirmRemove(id: string) {
         <p class="my-2 text-xs wrap-break-word text-primary-comfy-canvas">
           {{ item.modelSlug }}
         </p>
-        <div v-for="(output, index) in item.outputs" :key="index" class="my-3">
-          <template
-            v-if="output.nsfw && !revealed.includes(`${item.id}:${index}`)"
-          >
-            <p class="my-3 text-sm">{{ t('hidden') }}</p>
-            <Button
-              variant="outline"
-              @click="revealed = [...revealed, `${item.id}:${index}`]"
-              >{{ t('reveal') }}</Button
-            >
-          </template>
-          <template v-else>
-            <img
-              v-if="output.kind === 'image'"
-              :src="urls[item.id]?.[index]"
-              :alt="output.fileName"
-              loading="lazy"
-              class="aspect-video w-full rounded-lg object-contain"
-            />
-            <video
-              v-else-if="output.kind === 'video'"
-              :src="urls[item.id]?.[index]"
-              :aria-label="output.fileName"
-              controls
-              playsinline
-              preload="none"
-              class="aspect-video w-full rounded-lg"
-            />
-            <audio
-              v-else-if="output.kind === 'audio'"
-              :src="urls[item.id]?.[index]"
-              :aria-label="output.fileName"
-              controls
-              preload="none"
-              class="w-full"
-            />
-            <p v-else class="py-4 text-sm">
-              {{ t('file') }} · {{ t(output.kind) }}
-            </p>
-            <p class="my-2 text-xs wrap-break-word">{{ output.fileName }}</p>
-            <div class="flex flex-wrap gap-2">
-              <a
-                :href="urls[item.id]?.[index]"
-                :download="output.fileName"
-                class="rounded-lg border border-transparency-white-t20 px-3 py-2 text-sm"
-                >{{ t('download') }}</a
-              >
-              <template
-                v-if="output.kind === 'image' && urls[item.id]?.[index]"
-              >
-                <Button
-                  variant="outline"
-                  size="sm"
-                  @click="
-                    emit('animate', urls[item.id][index], output.fileName)
-                  "
-                  >{{ t('animate') }}</Button
-                >
-                <Button
-                  variant="outline"
-                  size="sm"
-                  @click="emit('edit', urls[item.id][index], output.fileName)"
-                  >{{ t('edit') }}</Button
-                >
-              </template>
-            </div>
-          </template>
-        </div>
+        <CinematicModelResultOutput
+          v-for="(output, index) in item.outputs"
+          :key="index"
+          :output
+          :url="urls[item.id]?.[index]"
+          :locale
+          :revealed="revealed.includes(`${item.id}:${index}`)"
+          @update:revealed="revealed = [...revealed, `${item.id}:${index}`]"
+          @animate="(url, name) => emit('animate', url, name)"
+          @edit="(url, name) => emit('edit', url, name)"
+        />
         <div class="flex flex-wrap gap-2">
           <a
             :href="`/models/${encodeURIComponent(item.modelSlug)}/`"

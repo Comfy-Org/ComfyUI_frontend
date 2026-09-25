@@ -3,7 +3,6 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import type { Locale } from '../../../i18n/translations'
 import type { SavedCreation } from '../../../lib/workshop/cinematic-studio/creations'
 import {
-  ASSET_KINDS,
   ASSET_IMAGE_TYPES,
   assetFile,
   cropAssetImage,
@@ -20,7 +19,8 @@ import type {
 } from '../../../lib/workshop/cinematic-studio/assets'
 import { tcAssets } from '../../../lib/workshop/cinematic-studio/assets-copy'
 import type { AssetCopyKey } from '../../../lib/workshop/cinematic-studio/assets-copy'
-import Button from '../../ui/button/Button.vue'
+import CinematicAssetBrowser from './CinematicAssetBrowser.vue'
+import CinematicAssetEditor from './CinematicAssetEditor.vue'
 import Dialog from '../../ui/dialog/Dialog.vue'
 import DialogContent from '../../ui/dialog/DialogContent.vue'
 import DialogDescription from '../../ui/dialog/DialogDescription.vue'
@@ -212,6 +212,9 @@ async function save() {
     if (current === revision) busy.value = false
   }
 }
+function clearDeletedDraft(id: string) {
+  if (draft.value?.id === id) clearDraft()
+}
 async function remove(id: string) {
   if (!namespace || busy.value || pendingDelete.value !== id) return
   const scope = namespace
@@ -223,7 +226,7 @@ async function remove(id: string) {
     if (current === revision) {
       showAssets(values)
       pendingDelete.value = ''
-      if (draft.value?.id === id) clearDraft()
+      clearDeletedDraft(id)
     }
   } catch {
     if (current === revision) status.value = 'error'
@@ -283,167 +286,35 @@ function use(asset: SavedAsset) {
           >
         </div>
         <p class="text-xs text-primary-comfy-canvas">{{ t('uploadHint') }}</p>
-        <form
+        <CinematicAssetEditor
           v-if="draft"
-          class="grid min-w-0 gap-4 rounded-xl border border-transparency-white-t20 p-4 text-primary-warm-white sm:grid-cols-2"
-          @submit.prevent="save"
-        >
-          <div class="flex min-w-0 flex-col gap-3">
-            <div class="relative overflow-hidden rounded-lg">
-              <img :src="preview" :alt="t('preview')" class="block w-full" />
-              <div
-                class="pointer-events-none absolute border-2 border-primary-comfy-yellow"
-                :style="cropStyle"
-              />
-            </div>
-            <details>
-              <summary class="cursor-pointer text-sm">{{ t('crop') }}</summary>
-              <p class="my-2 text-xs text-primary-comfy-canvas">
-                {{ t('cropHint') }}
-              </p>
-              <div class="grid grid-cols-2 gap-2">
-                <label
-                  v-for="key in ['x', 'y', 'width', 'height'] as const"
-                  :key="key"
-                  class="flex flex-col gap-1 text-xs"
-                  >{{ t(key)
-                  }}<input
-                    v-model.number="crop[key]"
-                    type="number"
-                    step="1"
-                    :min="key === 'x' || key === 'y' ? 0 : 1"
-                    :max="
-                      key === 'x' || key === 'width' ? size.width : size.height
-                    "
-                    :class="fieldClass"
-                    :disabled="busy"
-                /></label>
-              </div>
-              <Button
-                type="button"
-                variant="outline"
-                class="mt-3"
-                :disabled="busy || !bounds"
-                @click="applyCrop"
-                >{{ t('applyCrop') }}</Button
-              >
-            </details>
-          </div>
-          <div class="flex min-w-0 flex-col gap-3">
-            <label class="flex flex-col gap-2 text-sm"
-              >{{ t('name')
-              }}<input
-                v-model="draft.name"
-                maxlength="60"
-                required
-                :disabled="busy"
-                :class="fieldClass"
-            /></label>
-            <label class="flex flex-col gap-2 text-sm"
-              >{{ t('kind')
-              }}<select
-                v-model="draft.kind"
-                :aria-label="t('kind')"
-                :disabled="busy"
-                :class="fieldClass"
-              >
-                <option v-for="kind in ASSET_KINDS" :key="kind" :value="kind">
-                  {{ t(kind) }}
-                </option>
-              </select></label
-            >
-            <p class="text-xs/relaxed text-primary-comfy-canvas">
-              {{ t(guide) }}
-            </p>
-            <label class="flex flex-col gap-2 text-sm"
-              >{{ t('notes')
-              }}<textarea
-                v-model="draft.notes"
-                maxlength="500"
-                rows="4"
-                :disabled="busy"
-                :class="fieldClass"
-              />
-            </label>
-            <Button type="submit" :disabled="busy || !valid">{{
-              t('save')
-            }}</Button
-            ><Button
-              type="button"
-              variant="outline"
-              :disabled="busy"
-              @click="clearDraft"
-              >{{ t('cancel') }}</Button
-            >
-          </div>
-        </form>
-        <label class="flex flex-col gap-2 text-sm"
-          >{{ t('search')
-          }}<input v-model="search" type="search" :class="fieldClass"
-        /></label>
-        <p
-          v-if="!matches.length && !busy"
-          class="text-sm text-primary-comfy-canvas"
-        >
-          {{ t('empty') }}
-        </p>
-        <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          <article
-            v-for="asset in matches"
-            :key="asset.id"
-            class="flex min-w-0 flex-col gap-2 rounded-xl border border-transparency-white-t20 p-3 text-primary-warm-white"
-          >
-            <img
-              :src="urls[asset.id]"
-              :alt="asset.name"
-              class="aspect-square w-full rounded-lg object-contain"
-            />
-            <h3 class="font-semibold wrap-break-word">{{ asset.name }}</h3>
-            <p class="text-xs">{{ t(asset.kind) }}</p>
-            <p
-              class="text-sm wrap-break-word whitespace-pre-wrap text-primary-comfy-canvas"
-            >
-              {{ asset.notes }}
-            </p>
-            <Button
-              variant="outline"
-              size="sm"
-              :disabled="busy"
-              @click="use(asset)"
-              >{{ t('use') }}</Button
-            ><Button
-              variant="outline"
-              size="sm"
-              :disabled="busy"
-              @click="selectImage(asset.blob, asset.name, asset)"
-              >{{ t('edit') }}</Button
-            >
-            <template v-if="pendingDelete === asset.id"
-              ><p class="text-xs">{{ t('confirmDelete') }}</p>
-              <Button
-                variant="outline"
-                size="sm"
-                :disabled="busy"
-                @click="remove(asset.id)"
-                >{{ t('deleteNow') }}</Button
-              ><Button
-                variant="outline"
-                size="sm"
-                :disabled="busy"
-                @click="pendingDelete = ''"
-                >{{ t('cancel') }}</Button
-              ></template
-            >
-            <Button
-              v-else
-              variant="outline"
-              size="sm"
-              :disabled="busy"
-              @click="pendingDelete = asset.id"
-              >{{ t('remove') }}</Button
-            >
-          </article>
-        </div>
+          v-model:draft="draft"
+          v-model:crop="crop"
+          :preview
+          :crop-style
+          :size
+          :busy
+          :bounds="!!bounds"
+          :valid
+          :guide
+          :field-class
+          :locale
+          @save="save"
+          @apply-crop="applyCrop"
+          @clear-draft="clearDraft"
+        />
+        <CinematicAssetBrowser
+          v-model:search="search"
+          v-model:pending-delete="pendingDelete"
+          :matches
+          :urls
+          :busy
+          :locale
+          :field-class
+          @use="use"
+          @edit="selectImage($event.blob, $event.name, $event)"
+          @remove="remove"
+        />
       </template>
       <p
         v-if="busy || status"

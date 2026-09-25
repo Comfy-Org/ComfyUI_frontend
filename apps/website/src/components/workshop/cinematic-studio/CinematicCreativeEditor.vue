@@ -1,21 +1,18 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import CinematicPresetSection from './CinematicPresetSection.vue'
-import CinematicLightingDiagram from './CinematicLightingDiagram.vue'
+import { sampleCreativePalette } from './creative-palette-sampling'
+import CinematicCreativeFilm from './CinematicCreativeFilm.vue'
+import CinematicCreativeMovement from './CinematicCreativeMovement.vue'
+import CinematicCreativePalette from './CinematicCreativePalette.vue'
+import CinematicCreativeLights from './CinematicCreativeLights.vue'
 import type { Locale } from '../../../i18n/translations'
 import { tcCreative } from '../../../lib/workshop/cinematic-studio/creative-copy'
 import type {
   CreativeSettings,
   CreativePreset,
-  Movement
+  HARMONIES
 } from '../../../lib/workshop/cinematic-studio/creative'
 import {
-  GENRES,
-  ERAS,
-  TEMPOS,
-  MOVEMENTS,
-  LIGHT_POSITIONS,
-  HARMONIES,
   beginCreativeDraft,
   defaultCreativeSettings,
   validateCreativeSettings,
@@ -64,22 +61,6 @@ const fieldClass =
 const actionClass =
   'rounded-lg border border-transparency-white-t20 px-3 py-2 text-xs text-primary-warm-white hover:bg-transparency-white-t8 disabled:opacity-40'
 const t = (key: Parameters<typeof tcCreative>[0]) => tcCreative(key, locale)
-const filmChoices = [
-  ...GENRES.filter((id) => id !== 'auto'),
-  ...ERAS.filter((id) => id !== 'auto')
-]
-const rhythms: Readonly<Record<string, readonly number[]>> = {
-  single: [100],
-  calm: [47, 47],
-  dynamic: [28, 19, 28, 19],
-  chaotic: [7, 19, 9, 24, 6, 13, 10]
-}
-function chooseFilm(id: (typeof filmChoices)[number]) {
-  const genre = GENRES.find((value) => value === id)
-  const era = ERAS.find((value) => value === id)
-  if (genre) draft.value.genre = genre
-  if (era) draft.value.era = era
-}
 watch(
   () => [open, namespace] as const,
   ([value]) => {
@@ -112,27 +93,10 @@ const valid = computed(() => {
 const preview = computed(() =>
   valid.value ? creativePrompt(draft.value, mode) : ''
 )
-const moves = computed(() =>
-  MOVEMENTS.filter(([id, description]) =>
-    `${t(id)} ${description}`.toLowerCase().includes(search.value.toLowerCase())
-  )
-)
 function apply() {
   if (!valid.value) return
   emit('update:modelValue', validateCreativeSettings(draft.value))
   emit('update:open', false)
-}
-function toggleMove(id: Movement) {
-  const moves = draft.value.movements
-  if (moves.includes(id))
-    draft.value.movements = moves.filter((move) => move !== id)
-  else if (moves.length < 4) moves.push(id)
-}
-function reorderMove(index: number, offset: number) {
-  const moves = [...draft.value.movements]
-  const [move] = moves.splice(index, 1)
-  moves.splice(index + offset, 0, move)
-  draft.value.movements = moves
 }
 function moveColor(index: number, offset: number) {
   try {
@@ -173,15 +137,18 @@ function savePreset() {
     status.value = t('storageError')
   }
 }
+function canSample(file: File) {
+  return (
+    ['image/png', 'image/jpeg', 'image/webp'].includes(file.type) &&
+    file.size <= 10 * 1024 * 1024
+  )
+}
 async function sampleImage(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0]
   input.value = ''
   if (!file) return
-  if (
-    !['image/png', 'image/jpeg', 'image/webp'].includes(file.type) ||
-    file.size > 10 * 1024 * 1024
-  ) {
+  if (!canSample(file)) {
     status.value = t('sampleError')
     return
   }
@@ -193,33 +160,9 @@ async function sampleImage(event: Event) {
       resizeWidth: 80,
       resizeHeight: 80
     })
-    const canvas = document.createElement('canvas')
-    canvas.width = bitmap.width
-    canvas.height = bitmap.height
-    const context = canvas.getContext('2d', { willReadFrequently: true })
-    if (!context) throw new Error('Canvas unavailable')
-    context.drawImage(bitmap, 0, 0)
-    const data = context.getImageData(0, 0, canvas.width, canvas.height).data
-    const buckets = new Map<string, number>()
-    for (let i = 0; i < data.length; i += 4) {
-      if (data[i + 3] < 128) continue
-      const color =
-        '#' +
-        [data[i], data[i + 1], data[i + 2]]
-          .map((value) =>
-            Math.min(255, Math.round(value / 32) * 32)
-              .toString(16)
-              .padStart(2, '0')
-          )
-          .join('')
-      buckets.set(color, (buckets.get(color) ?? 0) + 1)
-    }
-    if (!buckets.size) throw new Error('Empty image')
+    const palette = sampleCreativePalette(bitmap)
     if (started !== revision || !open) return
-    draft.value.palette = [...buckets]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 8)
-      .map(([color]) => color)
+    draft.value.palette = palette
     draft.value.paletteMain = null
     status.value = ''
   } catch {
@@ -240,325 +183,36 @@ async function sampleImage(event: Event) {
       <DialogTitle class="pr-12">{{ t('title') }}</DialogTitle>
       <DialogDescription>{{ t('guidance') }}</DialogDescription>
       <div class="flex flex-col gap-6 text-primary-warm-white">
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
-          <label class="flex flex-col gap-2 text-sm"
-            >{{ t('genre')
-            }}<select v-model="draft.genre" :class="fieldClass">
-              <option v-for="value in GENRES" :key="value" :value>
-                {{ t(value) }}
-              </option>
-            </select></label
-          >
-          <label class="flex flex-col gap-2 text-sm"
-            >{{ t('era')
-            }}<select v-model="draft.era" :class="fieldClass">
-              <option v-for="value in ERAS" :key="value" :value>
-                {{ t(value) }}
-              </option>
-            </select></label
-          >
-          <label v-if="mode === 'video'" class="flex flex-col gap-2 text-sm"
-            >{{ t('tempo')
-            }}<select v-model="draft.tempo" :class="fieldClass">
-              <option v-for="value in TEMPOS" :key="value" :value>
-                {{ t(value) }}
-              </option>
-            </select></label
-          >
-        </div>
-        <details class="rounded-xl border border-transparency-white-t20 p-3">
-          <summary class="cursor-pointer text-sm font-semibold">
-            {{ t('visualExamples') }}
-          </summary>
-          <p class="my-3 text-xs text-primary-comfy-canvas">
-            {{ t('illustrative') }}
-          </p>
-          <div class="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            <button
-              v-for="(id, index) in filmChoices"
-              :key="id"
-              type="button"
-              :aria-pressed="draft.genre === id || draft.era === id"
-              class="overflow-hidden rounded-lg border border-transparency-white-t20 text-sm aria-pressed:border-primary-comfy-yellow"
-              @click="chooseFilm(id)"
-            >
-              <span
-                aria-hidden="true"
-                class="block aspect-video bg-cover"
-                :style="{
-                  backgroundImage: 'url(/images/cinematic-film-directions.png)',
-                  backgroundSize: '400% 400%',
-                  backgroundPosition: `${((index % 4) * 100) / 3}% ${(Math.floor(index / 4) * 100) / 3}%`
-                }"
-              />
-              <span class="block p-2">{{ t(id) }}</span>
-            </button>
-          </div>
-          <div v-if="mode === 'video'" class="mt-3 grid grid-cols-2 gap-2">
-            <button
-              v-for="id in TEMPOS.filter((value) => value !== 'auto')"
-              :key="id"
-              type="button"
-              :aria-pressed="draft.tempo === id"
-              class="rounded-lg border border-transparency-white-t20 p-3 text-sm aria-pressed:border-primary-comfy-yellow"
-              @click="draft.tempo = id"
-            >
-              <span aria-hidden="true" class="mb-3 flex h-5 gap-1"
-                ><span
-                  v-for="(width, index) in rhythms[id]"
-                  :key="index"
-                  class="rounded-sm bg-primary-comfy-yellow/70"
-                  :style="{ flex: width }"
-              /></span>
-              {{ t(id) }}
-            </button>
-          </div>
-        </details>
-        <section v-if="mode === 'video'" class="flex flex-col gap-3">
-          <h3 class="font-semibold">
-            {{ t('movements') }} · {{ draft.movements.length }}/4
-          </h3>
-          <ol class="flex flex-col gap-2">
-            <li
-              v-for="(move, index) in draft.movements"
-              :key="move"
-              class="flex flex-wrap items-center gap-2 rounded-lg border border-transparency-white-t8 p-2"
-            >
-              <span class="mr-auto text-sm"
-                >{{ index + 1 }}. {{ t(move) }}</span
-              >
-              <button
-                type="button"
-                :class="actionClass"
-                :aria-label="`${t('earlier')}: ${t(move)}`"
-                :disabled="index === 0"
-                @click="reorderMove(index, -1)"
-              >
-                ↑
-              </button>
-              <button
-                type="button"
-                :class="actionClass"
-                :aria-label="`${t('later')}: ${t(move)}`"
-                :disabled="index === draft.movements.length - 1"
-                @click="reorderMove(index, 1)"
-              >
-                ↓
-              </button>
-              <button
-                type="button"
-                :class="actionClass"
-                @click="toggleMove(move)"
-              >
-                {{ t('remove') }}
-              </button>
-            </li>
-          </ol>
-          <button
-            v-if="draft.movements.length"
-            type="button"
-            :class="actionClass"
-            @click="draft.movements = []"
-          >
-            {{ t('clear') }}
-          </button>
-          <input
-            v-model="search"
-            type="search"
-            :class="fieldClass"
-            :placeholder="t('search')"
-            :aria-label="t('search')"
-          />
-          <div
-            class="grid max-h-40 grid-cols-2 gap-2 overflow-y-auto sm:grid-cols-3"
-          >
-            <button
-              v-for="[id] in moves"
-              :key="id"
-              type="button"
-              :class="actionClass"
-              :aria-pressed="draft.movements.includes(id)"
-              :disabled="
-                draft.movements.length >= 4 && !draft.movements.includes(id)
-              "
-              @click="toggleMove(id)"
-            >
-              {{ draft.movements.includes(id) ? '✓ ' : '' }}{{ t(id) }}
-            </button>
-          </div>
-          <p v-if="!moves.length" class="text-sm">{{ t('empty') }}</p>
-        </section>
-        <section :aria-label="t('palette')" class="flex flex-col gap-3">
-          <h3 class="font-semibold">
-            {{ t('palette') }} · {{ draft.palette.length }}/8
-          </h3>
-          <div
-            v-for="(_, index) in draft.palette"
-            :key="index"
-            class="flex flex-wrap items-center gap-2"
-          >
-            <input
-              v-model="draft.palette[index]"
-              type="color"
-              class="h-9 w-10 shrink-0"
-              :aria-label="`${t('color')} ${index + 1}`"
-            />
-            <input
-              v-model="draft.palette[index]"
-              :class="fieldClass"
-              class="w-28"
-              maxlength="7"
-              pattern="#[0-9a-fA-F]{6}"
-              :aria-label="`${t('color')} ${index + 1} HEX`"
-            />
-            <button
-              type="button"
-              :class="actionClass"
-              :aria-label="`${t('earlier')}: ${t('color')} ${index + 1}`"
-              :disabled="index === 0 || !valid"
-              @click="moveColor(index, -1)"
-            >
-              ↑
-            </button>
-            <button
-              type="button"
-              :class="actionClass"
-              :aria-label="`${t('later')}: ${t('color')} ${index + 1}`"
-              :disabled="index === draft.palette.length - 1 || !valid"
-              @click="moveColor(index, 1)"
-            >
-              ↓
-            </button>
-            <button
-              type="button"
-              :class="actionClass"
-              :disabled="!valid"
-              @click="removeColor(index)"
-            >
-              {{ t('remove') }}
-            </button>
-          </div>
-          <button
-            type="button"
-            :class="actionClass"
-            :disabled="draft.palette.length >= 8"
-            @click="draft.palette.push('#808080')"
-          >
-            {{ t('addColor') }}
-          </button>
-          <label v-if="draft.palette.length" class="flex flex-col gap-2 text-sm"
-            >{{ t('main')
-            }}<select v-model="draft.paletteMain" :class="fieldClass">
-              <option :value="null">{{ t('noMain') }}</option>
-              <option
-                v-for="(color, index) in draft.palette"
-                :key="index"
-                :value="index"
-              >
-                {{ index + 1 }} · {{ color }}
-              </option>
-            </select></label
-          >
-          <div v-if="draft.palette.length" class="flex flex-wrap gap-2">
-            <select
-              v-model="harmony"
-              :class="fieldClass"
-              :aria-label="t('harmony')"
-            >
-              <option v-for="value in HARMONIES" :key="value" :value>
-                {{ t(value) }}
-              </option></select
-            ><button
-              type="button"
-              :class="actionClass"
-              :disabled="!valid"
-              @click="buildHarmony"
-            >
-              {{ t('buildHarmony') }}
-            </button>
-          </div>
-          <label class="flex flex-col gap-2 text-sm"
-            >{{ t('sample')
-            }}<input
-              type="file"
-              accept="image/png,image/jpeg,image/webp"
-              class="max-w-full text-xs"
-              :disabled="sampling"
-              @change="sampleImage"
-          /></label>
-          <CinematicPresetSection
-            v-model="draft"
-            kind="palette"
-            :namespace
-            :locale
-          />
-        </section>
-        <section :aria-label="t('lights')" class="flex flex-col gap-3">
-          <h3 class="font-semibold">
-            {{ t('lights') }} · {{ draft.lights.length }}/3
-          </h3>
-          <CinematicLightingDiagram :lights="draft.lights" :locale />
-          <div
-            v-for="(light, index) in draft.lights"
-            :key="index"
-            class="grid grid-cols-2 gap-3 rounded-lg border border-transparency-white-t20 p-3"
-          >
-            <label class="flex flex-col gap-2 text-sm"
-              >{{ t('position') }} {{ index + 1
-              }}<select v-model="light.position" :class="fieldClass">
-                <option v-for="value in LIGHT_POSITIONS" :key="value" :value>
-                  {{ t(value) }}
-                </option>
-              </select></label
-            >
-            <label class="flex flex-col gap-2 text-sm"
-              >{{ t('color') }} {{ index + 1
-              }}<input v-model="light.color" type="color" class="h-9 w-full"
-            /></label>
-            <label class="flex flex-col gap-2 text-sm"
-              >{{ t('brightness') }} {{ light.brightness }}%<input
-                v-model.number="light.brightness"
-                type="range"
-                min="0"
-                max="100"
-            /></label>
-            <label class="flex flex-col gap-2 text-sm"
-              >{{ t('diffusion') }} {{ light.diffusion }}%<input
-                v-model.number="light.diffusion"
-                type="range"
-                min="0"
-                max="100"
-            /></label>
-            <button
-              type="button"
-              :class="actionClass"
-              @click="draft.lights.splice(index, 1)"
-            >
-              {{ t('remove') }}
-            </button>
-          </div>
-          <button
-            type="button"
-            :class="actionClass"
-            :disabled="draft.lights.length >= 3"
-            @click="
-              draft.lights.push({
-                position: 'front',
-                color: '#ffffff',
-                brightness: 60,
-                diffusion: 60
-              })
-            "
-          >
-            {{ t('addLight') }}
-          </button>
-          <CinematicPresetSection
-            v-model="draft"
-            kind="lighting"
-            :namespace
-            :locale
-          />
-        </section>
+        <CinematicCreativeFilm v-model="draft" :locale :field-class :mode />
+        <CinematicCreativeMovement
+          v-if="mode === 'video'"
+          v-model="draft"
+          v-model:search="search"
+          :locale
+          :field-class
+          :action-class
+        />
+        <CinematicCreativePalette
+          v-model="draft"
+          v-model:harmony="harmony"
+          :locale
+          :field-class
+          :action-class
+          :valid
+          :sampling
+          :namespace
+          @move-color="moveColor"
+          @remove-color="removeColor"
+          @build-harmony="buildHarmony"
+          @sample-image="sampleImage"
+        />
+        <CinematicCreativeLights
+          v-model="draft"
+          :locale
+          :field-class
+          :action-class
+          :namespace
+        />
         <details class="rounded-xl border border-transparency-white-t20 p-3">
           <summary class="cursor-pointer text-sm font-semibold">
             {{ t('combinedPresets') }}

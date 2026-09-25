@@ -1,3 +1,4 @@
+import { acceptsSeed } from './seed-validation'
 import type { WorkshopModelDetail } from '../../../config/models-catalogue'
 import {
   createRouterParameters,
@@ -11,6 +12,7 @@ import {
   schemaForModel,
   urlUploadField
 } from '../../../config/workshop-playground'
+import type { FieldSchema } from '../../../config/workshop-playground'
 import { canRunModel } from './gate'
 import { dimensions } from '../../../config/router-parameter-options'
 import { workshopPageSchema } from '../../../config/workshop-page-state'
@@ -70,6 +72,35 @@ function imageAspectOptions(contract: WorkshopContract): readonly string[] {
     : IMAGE_ASPECTS
 }
 
+function imageSizes(
+  schema: readonly FieldSchema[],
+  aspect: string,
+  resolutionPixels: number
+) {
+  const ratio = dimensions(aspect)
+  return schema.flatMap((field) => {
+    if (field.kind !== 'select' || !/(?:size|resolution)/i.test(field.name))
+      return []
+    const choices = field.options
+      .flatMap((value) => {
+        const size = dimensions(value)
+        return ratio &&
+          size &&
+          size.width >= 100 &&
+          Math.abs(size.width / size.height - ratio.width / ratio.height) <
+            0.001
+          ? [{ value, size }]
+          : []
+      })
+      .sort(
+        (a, b) =>
+          Math.abs(Math.max(a.size.width, a.size.height) - resolutionPixels) -
+          Math.abs(Math.max(b.size.width, b.size.height) - resolutionPixels)
+      )
+    return choices.length ? [[field.name, choices[0].value] as const] : []
+  })
+}
+
 /** Studio inputs start empty; catalogue examples must never become user references. */
 export function cinematicImageForm(
   model: WorkshopModelDetail,
@@ -92,42 +123,14 @@ export function cinematicImageForm(
   )
     throw new WorkshopRouterError('validation')
   const seed = cinematicSeedDescriptor(model.execution)
-  if (
-    settings.seed !== undefined &&
-    (!seed ||
-      !Number.isFinite(settings.seed) ||
-      (seed.step !== 'any' && !Number.isInteger(settings.seed)) ||
-      (seed.minimum !== undefined && settings.seed < seed.minimum) ||
-      (seed.maximum !== undefined && settings.seed > seed.maximum))
-  )
+  if (!acceptsSeed(settings.seed, seed))
     throw new WorkshopRouterError('validation')
   const schema = workshopPageSchema(model)
-  const ratio = dimensions(settings.aspect)
-  const exactSizes = schema.flatMap((field) => {
-    if (field.kind !== 'select' || !/(?:size|resolution)/i.test(field.name))
-      return []
-    const choices = field.options
-      .flatMap((value) => {
-        const size = dimensions(value)
-        return ratio &&
-          size &&
-          size.width >= 100 &&
-          Math.abs(size.width / size.height - ratio.width / ratio.height) <
-            0.001
-          ? [{ value, size }]
-          : []
-      })
-      .sort(
-        (a, b) =>
-          Math.abs(
-            Math.max(a.size.width, a.size.height) - settings.resolutionPixels
-          ) -
-          Math.abs(
-            Math.max(b.size.width, b.size.height) - settings.resolutionPixels
-          )
-      )
-    return choices.length ? [[field.name, choices[0].value] as const] : []
-  })
+  const exactSizes = imageSizes(
+    schema,
+    settings.aspect,
+    settings.resolutionPixels
+  )
   return {
     schema,
     values: mapRouterParameters(
@@ -283,44 +286,68 @@ export function runnableCinematicModels(
   lookup: ModelLookup
 ): readonly CinematicModel[] {
   return Object.entries(CINEMATIC_MODEL_LOGOS).flatMap(([slug, logo]) => {
-    const model = lookup(slug)
-    const video =
-      VIDEO_SLUGS.has(slug) && model?.execution
-        ? cinematicVideoDescriptor(model.execution)
-        : undefined
-    if (VIDEO_SLUGS.has(slug) && !video) return []
-    const seed = model?.execution
-      ? cinematicSeedDescriptor(model.execution)
-      : undefined
-    const referenceModel = VIDEO_SLUGS.has(slug)
-      ? undefined
-      : REFERENCE_ROUTES[slug]
-        ? lookup(REFERENCE_ROUTES[slug])
-        : model
-    const referenceMax =
-      referenceModel?.execution && canRunModel(referenceModel)
-        ? referenceCapacity(referenceModel.execution)
-        : 0
-    return model && canRunModel(model)
-      ? [
-          {
-            slug: model.slug,
-            name: model.name.replace(/ Text-to-Image$/, ''),
-            provider: model.provider ?? '',
-            logo,
-            ...(seed ? { seed } : {}),
-            ...(!video && model.execution
-              ? { imageAspects: imageAspectOptions(model.execution) }
-              : {}),
-            ...(referenceMax && referenceModel
-              ? { referenceModelSlug: referenceModel.slug, referenceMax }
-              : {}),
-            ...(video ? { mode: 'video' as const, video } : {}),
-            ...(model.status === 'degraded' ? { degraded: true } : {})
-          }
-        ]
-      : []
+    const model = runnableModel(slug, logo, lookup)
+    return model ? [model] : []
   })
+}
+
+function referenceSupport(
+  slug: string,
+  model: NonNullable<ReturnType<ModelLookup>>,
+  lookup: ModelLookup
+): Pick<CinematicModel, 'referenceModelSlug' | 'referenceMax'> {
+  if (VIDEO_SLUGS.has(slug)) return {}
+  const referenceModel = REFERENCE_ROUTES[slug]
+    ? lookup(REFERENCE_ROUTES[slug])
+    : model
+  if (!referenceModel?.execution || !canRunModel(referenceModel)) return {}
+  const referenceMax = referenceCapacity(referenceModel.execution)
+  return referenceMax
+    ? { referenceModelSlug: referenceModel.slug, referenceMax }
+    : {}
+}
+
+function modelContractControls(
+  execution: WorkshopContract | undefined,
+  video: CinematicVideoDescriptor | undefined
+): Pick<CinematicModel, 'seed' | 'imageAspects'> {
+  if (!execution) return {}
+  const seed = cinematicSeedDescriptor(execution)
+  return {
+    ...(seed ? { seed } : {}),
+    ...(!video ? { imageAspects: imageAspectOptions(execution) } : {})
+  }
+}
+
+function modelVideoDescriptor(
+  slug: string,
+  execution: WorkshopContract | undefined
+) {
+  return VIDEO_SLUGS.has(slug) && execution
+    ? cinematicVideoDescriptor(execution)
+    : undefined
+}
+
+function runnableModel(
+  slug: string,
+  logo: string,
+  lookup: ModelLookup
+): CinematicModel | undefined {
+  const model = lookup(slug)
+  if (!model || !canRunModel(model)) return
+  const execution = model.execution
+  const video = modelVideoDescriptor(slug, execution)
+  if (VIDEO_SLUGS.has(slug) && !video) return
+  return {
+    slug: model.slug,
+    name: model.name.replace(/ Text-to-Image$/, ''),
+    provider: model.provider ?? '',
+    logo,
+    ...modelContractControls(execution, video),
+    ...referenceSupport(slug, model, lookup),
+    ...(video ? { mode: 'video' as const, video } : {}),
+    ...(model.status === 'degraded' ? { degraded: true } : {})
+  }
 }
 
 export function cinematicStudioHref(

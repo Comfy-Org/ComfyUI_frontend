@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import CinematicEditModelSettings from './CinematicEditModelSettings.vue'
+import CinematicEditPromptFields from './CinematicEditPromptFields.vue'
+import CinematicCameraEditControls from './CinematicCameraEditControls.vue'
+import CinematicEditGenerationSettings from './CinematicEditGenerationSettings.vue'
 import type { AssetReference } from '../../../lib/workshop/cinematic-studio/assets'
 import { cameraGuidancePlan } from '../../../lib/workshop/cinematic-studio/camera-guidance'
 import type { CameraGuidance } from '../../../lib/workshop/cinematic-studio/camera-guidance'
@@ -10,16 +14,12 @@ import type {
   Direction
 } from '../../../lib/workshop/cinematic-studio/catalog'
 import { ASPECT_RATIOS } from '../../../lib/workshop/cinematic-studio/catalog'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { tcEditing } from '../../../lib/workshop/cinematic-studio/editing-copy'
 import type { EditingCopyKey } from '../../../lib/workshop/cinematic-studio/editing-copy'
 import {
   cameraViewDefaults,
-  cameraViewOptions,
   cinematicLookPrompt,
-  cinematicRelightDirections,
-  cinematicRelightPrompt,
-  cinematicRelightTypes
+  cinematicRelightPrompt
 } from '../../../lib/workshop/cinematic-studio/editing'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import Button from '../../ui/button/Button.vue'
@@ -85,6 +85,15 @@ const seedInput = ref<string | number>('')
 const seed = computed(() =>
   String(seedInput.value).trim() === '' ? undefined : Number(seedInput.value)
 )
+function seedInRange(
+  value: number,
+  bounds: NonNullable<CinematicModel['seed']>
+) {
+  return (
+    (bounds.minimum === undefined || value >= bounds.minimum) &&
+    (bounds.maximum === undefined || value <= bounds.maximum)
+  )
+}
 const validSeed = computed(() => {
   const bounds = selectedModel.value?.seed
   if (seed.value === undefined) return true
@@ -92,8 +101,7 @@ const validSeed = computed(() => {
     !!bounds &&
     Number.isFinite(seed.value) &&
     (bounds.step === 'any' || Number.isInteger(seed.value)) &&
-    (bounds.minimum === undefined || seed.value >= bounds.minimum) &&
-    (bounds.maximum === undefined || seed.value <= bounds.maximum)
+    seedInRange(seed.value, bounds)
   )
 })
 watch(
@@ -150,29 +158,39 @@ const emptyLook = ref(false)
 const t = (key: EditingCopyKey) => tcEditing(key, locale)
 const fieldClass =
   'w-full min-w-0 rounded-lg border border-transparency-white-t20 bg-primary-comfy-ink px-3 py-2 text-sm text-primary-warm-white'
+const validVariations = computed(
+  () =>
+    Number.isInteger(variations.value) &&
+    variations.value >= 1 &&
+    variations.value <= 4
+)
 const ready = computed(
   () =>
     !!source &&
-    Number.isInteger(variations.value) &&
-    variations.value >= 1 &&
-    variations.value <= 4 &&
+    validVariations.value &&
     validSeed.value &&
     models.some((model) => model.slug === modelSlug.value) &&
     !!instruction.value.trim() &&
     aspectOptions.value.some((option) => option.id === aspect.value) &&
     (operation.value !== 'camera' || !!guidancePlan.value)
 )
+function restoreRecipe(recipe: NonNullable<typeof source>['recipe']) {
+  operation.value = recipe?.operation ?? 'edit'
+  instruction.value = recipe?.prompt ?? ''
+  if (recipe) modelSlug.value = recipe.modelSlug
+  restoreOutputSettings(recipe)
+}
+function restoreOutputSettings(recipe: NonNullable<typeof source>['recipe']) {
+  variations.value = recipe?.takes ?? 1
+  seedInput.value = recipe?.seed ?? ''
+  aspect.value = recipe?.aspect ?? '16:9'
+}
 watch(
   () => source?.file,
   (file) => {
     if (!file) return
-    operation.value = source?.recipe?.operation ?? 'edit'
-    instruction.value = source?.recipe?.prompt ?? ''
-    if (source?.recipe) modelSlug.value = source.recipe.modelSlug
-    variations.value = source?.recipe?.takes ?? 1
-    seedInput.value = source?.recipe?.seed?.toString() ?? ''
+    restoreRecipe(source?.recipe)
     additional.value = ''
-    aspect.value = source?.recipe?.aspect ?? '16:9'
     camera.value = { ...cameraViewDefaults }
     guidance.value = { mode: 'frame', assetIds: [], notes: '', scene: '' }
     lightType.value = 'golden-hour'
@@ -311,289 +329,47 @@ function review() {
               {{ t(item) }}
             </button>
           </div>
-          <div class="grid gap-3 sm:grid-cols-2">
-            <label class="flex min-w-0 flex-col gap-2 text-sm"
-              >{{ t('model')
-              }}<select v-model="modelSlug" :class="fieldClass">
-                <option
-                  v-for="model in models"
-                  :key="model.slug"
-                  :value="model.slug"
-                >
-                  {{ model.name }}
-                </option>
-              </select></label
-            >
-            <label class="flex min-w-0 flex-col gap-2 text-sm"
-              >{{ t('aspect')
-              }}<select v-model="aspect" :class="fieldClass">
-                <option
-                  v-for="ratio in aspectOptions"
-                  :key="ratio.id"
-                  :value="ratio.id"
-                >
-                  {{ ratio.id }} · {{ tc(ratio.label, locale) }}
-                </option>
-              </select></label
-            >
-          </div>
-          <template v-if="operation === 'camera'">
-            <fieldset
-              class="flex min-w-0 flex-col gap-3 rounded-lg border border-transparency-white-t20 p-3"
-            >
-              <legend class="px-1 text-sm">{{ t('guidance') }}</legend>
-              <label class="flex flex-col gap-2 text-sm"
-                >{{ t('guidanceMode')
-                }}<select
-                  v-model="guidance.mode"
-                  :class="fieldClass"
-                  @change="changeGuidance"
-                >
-                  <option value="frame">{{ t('frameGuidance') }}</option>
-                  <option
-                    value="anchored"
-                    :disabled="
-                      !assets.length || (selectedModel?.referenceMax ?? 1) < 2
-                    "
-                  >
-                    {{ t('anchoredGuidance') }}
-                  </option>
-                  <option
-                    value="portrait"
-                    :disabled="
-                      !assets.some((asset) => asset.kind === 'character')
-                    "
-                  >
-                    {{ t('portraitGuidance') }}
-                  </option>
-                </select></label
-              >
-              <p class="text-xs text-primary-comfy-canvas">
-                {{
-                  t(
-                    guidance.mode === 'portrait'
-                      ? 'portraitNote'
-                      : guidance.mode === 'anchored'
-                        ? 'anchoredNote'
-                        : 'frameNote'
-                  )
-                }}
-              </p>
-              <template v-if="guidance.mode !== 'frame'">
-                <label
-                  v-for="asset in assets.filter(
-                    (asset) =>
-                      guidance.mode !== 'portrait' || asset.kind === 'character'
-                  )"
-                  :key="asset.id"
-                  class="flex items-start gap-2 text-sm"
-                  ><input
-                    :type="guidance.mode === 'portrait' ? 'radio' : 'checkbox'"
-                    name="camera-guidance-asset"
-                    :checked="guidance.assetIds.includes(asset.id)"
-                    @change="chooseAsset(asset.id, $event)"
-                  /><span class="min-w-0 wrap-break-word"
-                    >{{ asset.name
-                    }}<small class="block text-primary-comfy-canvas">{{
-                      asset.notes
-                    }}</small></span
-                  ></label
-                >
-              </template>
-              <label
-                v-if="guidance.mode === 'portrait'"
-                class="flex flex-col gap-2 text-sm"
-                >{{ t('rebuildScene')
-                }}<textarea
-                  v-model="guidance.scene"
-                  :class="fieldClass"
-                  rows="3"
-                  maxlength="1500"
-                  @input="buildInstruction"
-                />
-              </label>
-              <label class="flex flex-col gap-2 text-sm"
-                >{{ t('preserveNotes')
-                }}<textarea
-                  v-model="guidance.notes"
-                  :class="fieldClass"
-                  rows="2"
-                  maxlength="750"
-                  @input="buildInstruction"
-                />
-              </label>
-              <p v-if="guidancePlan" class="text-xs text-primary-comfy-canvas">
-                {{ t('orderedReferences') }}:
-                {{
-                  [
-                    guidance.mode === 'portrait' ? '' : `1. ${source.name}`,
-                    ...guidancePlan.assets.map(
-                      (asset, index) =>
-                        `${index + (guidance.mode === 'portrait' ? 1 : 2)}. ${asset.name}`
-                    )
-                  ]
-                    .filter(Boolean)
-                    .join(' · ')
-                }}
-              </p>
-              <p v-else role="alert" class="text-xs">
-                {{ t('guidanceInvalid') }} {{ t('referenceCapacity') }}:
-                {{ selectedModel?.referenceMax ?? 1 }}
-              </p>
-              <p
-                v-if="!assets.length"
-                class="text-xs text-primary-comfy-canvas"
-              >
-                {{ t('noAssets') }}
-              </p>
-            </fieldset>
-            <div class="grid gap-3 sm:grid-cols-3">
-              <label class="flex flex-col gap-2 text-sm"
-                >{{ t('azimuth')
-                }}<select
-                  v-model="camera.azimuth"
-                  :class="fieldClass"
-                  @change="buildInstruction"
-                >
-                  <option
-                    v-for="option in cameraViewOptions.azimuth"
-                    :key="option.id"
-                    :value="option.id"
-                  >
-                    {{ t(option.id) }}
-                  </option>
-                </select></label
-              >
-              <label class="flex flex-col gap-2 text-sm"
-                >{{ t('elevation')
-                }}<select
-                  v-model="camera.elevation"
-                  :class="fieldClass"
-                  @change="buildInstruction"
-                >
-                  <option
-                    v-for="option in cameraViewOptions.elevation"
-                    :key="option.id"
-                    :value="option.id"
-                  >
-                    {{ t(option.id) }}
-                  </option>
-                </select></label
-              >
-              <label class="flex flex-col gap-2 text-sm"
-                >{{ t('distance')
-                }}<select
-                  v-model="camera.distance"
-                  :class="fieldClass"
-                  @change="buildInstruction"
-                >
-                  <option
-                    v-for="option in cameraViewOptions.distance"
-                    :key="option.id"
-                    :value="option.id"
-                  >
-                    {{ t(option.id) }}
-                  </option>
-                </select></label
-              >
-            </div>
-            <p class="text-xs/relaxed text-primary-comfy-canvas">
-              {{ t('cameraNote') }}
-            </p>
-          </template>
-          <p
-            v-if="operation === 'look'"
-            class="text-xs/relaxed text-primary-comfy-canvas"
-          >
-            {{ t(emptyLook ? 'emptyLook' : 'lookNote') }}
-          </p>
-          <template v-if="operation === 'relight'">
-            <div class="grid gap-3 sm:grid-cols-2">
-              <label class="flex flex-col gap-2 text-sm"
-                >{{ t('type')
-                }}<select
-                  v-model="lightType"
-                  :class="fieldClass"
-                  @change="buildInstruction"
-                >
-                  <option
-                    v-for="option in cinematicRelightTypes"
-                    :key="option.id"
-                    :value="option.id"
-                  >
-                    {{ t(option.id) }}
-                  </option>
-                </select></label
-              >
-              <label class="flex flex-col gap-2 text-sm"
-                >{{ t('direction')
-                }}<select
-                  v-model="lightDirection"
-                  :class="fieldClass"
-                  @change="buildInstruction"
-                >
-                  <option
-                    v-for="option in cinematicRelightDirections"
-                    :key="option.id"
-                    :value="option.id"
-                  >
-                    {{ t(option.id) }}
-                  </option>
-                </select></label
-              >
-            </div>
-            <p class="text-xs/relaxed text-primary-comfy-canvas">
-              {{ t('relightNote') }}
-            </p>
-          </template>
-          <label class="flex flex-col gap-2 text-sm"
-            >{{ t('instruction')
-            }}<textarea
-              v-model="instruction"
-              :class="fieldClass"
-              rows="6"
-              maxlength="8000"
-              :placeholder="t('placeholder')"
-            />
-          </label>
-          <label v-if="operation !== 'edit'" class="flex flex-col gap-2 text-sm"
-            >{{ t('extra')
-            }}<textarea
-              v-model="additional"
-              :class="fieldClass"
-              rows="2"
-              maxlength="1500"
-            />
-          </label>
-          <label class="flex flex-col gap-2 text-sm"
-            >{{ t('variations') }}
-            <select v-model.number="variations" :class="fieldClass">
-              <option v-for="count in [1, 2, 3, 4]" :key="count" :value="count">
-                {{ count }}
-              </option>
-            </select>
-          </label>
-          <p class="text-xs/relaxed text-primary-comfy-canvas">
-            {{ t('variationsNote') }}
-          </p>
-          <label v-if="selectedModel?.seed" class="flex flex-col gap-2 text-sm"
-            >{{ t('seed') }}
-            <input
-              v-model="seedInput"
-              :aria-label="t('seed')"
-              type="number"
-              :min="selectedModel.seed.minimum"
-              :max="selectedModel.seed.maximum"
-              :step="selectedModel.seed.step"
-              :class="fieldClass"
-            />
-            <span class="text-xs text-primary-comfy-canvas">{{
-              t('seedNote')
-            }}</span>
-          </label>
-          <p v-if="!validSeed" role="alert" class="text-sm">
-            {{ t('invalidSeed') }}
-          </p>
+          <CinematicEditModelSettings
+            v-model:model-slug="modelSlug"
+            v-model:aspect="aspect"
+            :models
+            :aspect-options
+            :locale
+            :field-class
+          />
+          <CinematicCameraEditControls
+            v-if="operation === 'camera'"
+            v-model:camera="camera"
+            v-model:guidance="guidance"
+            :assets
+            :source-name="source.name"
+            :reference-max="selectedModel?.referenceMax ?? 1"
+            :guidance-plan
+            :field-class
+            :locale
+            @change-guidance="changeGuidance"
+            @choose-asset="chooseAsset"
+            @build-instruction="buildInstruction"
+          />
+          <CinematicEditPromptFields
+            v-model:instruction="instruction"
+            v-model:additional="additional"
+            v-model:light-type="lightType"
+            v-model:light-direction="lightDirection"
+            :operation
+            :empty-look
+            :locale
+            :field-class
+            @change="buildInstruction"
+          />
+          <CinematicEditGenerationSettings
+            v-model:variations="variations"
+            v-model:seed-input="seedInput"
+            :selected-model
+            :valid-seed
+            :field-class
+            :locale
+          />
           <p v-if="!models.length" role="status" class="text-sm">
             {{ t('unavailable') }}
           </p>

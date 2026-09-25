@@ -1,3 +1,4 @@
+import { acceptsSeed } from './seed-validation'
 import type { AspectRatio } from './catalog'
 import type { CinematicModel } from './models'
 import { videoResolutionsForAspect } from './video'
@@ -54,7 +55,7 @@ export function motionComparisonModels(models: readonly CinematicModel[]) {
       model.video?.firstFrame === 'optional'
   )
 }
-export function buildMotionComparison(input: {
+interface MotionComparisonInput {
   model: CinematicModel
   source: MotionComparisonSource
   action: string
@@ -64,9 +65,10 @@ export function buildMotionComparison(input: {
   resolution: string
   generateAudio: boolean
   seed?: number
-}): MotionComparisonPayload {
-  const { model, source, movements } = input
-  const video = model.video
+}
+
+function validateMotionSettings(input: MotionComparisonInput) {
+  const video = input.model.video
   if (
     !video ||
     video.firstFrame === 'unsupported' ||
@@ -78,12 +80,19 @@ export function buildMotionComparison(input: {
     (input.generateAudio && !video.generateAudio)
   )
     throw new Error('Unsupported motion settings')
+}
+
+function validateMotionSource(source: MotionComparisonSource) {
   if (
     !(source.file instanceof File) ||
     !source.file.size ||
     !['image/png', 'image/jpeg', 'image/webp'].includes(source.file.type)
   )
     throw new Error('Choose an image source')
+}
+
+function validateMotionAction(input: MotionComparisonInput) {
+  const { movements } = input
   if (
     !input.action.trim() ||
     input.action.length > 12000 ||
@@ -93,15 +102,16 @@ export function buildMotionComparison(input: {
     movements.some((move) => !MOTION_COMPARISON_MOVES.includes(move))
   )
     throw new Error('Choose one to three camera movements and an action')
-  if (
-    input.seed !== undefined &&
-    (!model.seed ||
-      !Number.isFinite(input.seed) ||
-      (model.seed.step !== 'any' && !Number.isInteger(input.seed)) ||
-      (model.seed.minimum !== undefined && input.seed < model.seed.minimum) ||
-      (model.seed.maximum !== undefined && input.seed > model.seed.maximum))
-  )
-    throw new Error('Unsupported seed')
+}
+
+export function buildMotionComparison(
+  input: MotionComparisonInput
+): MotionComparisonPayload {
+  const { model, source, movements } = input
+  validateMotionSettings(input)
+  validateMotionSource(source)
+  validateMotionAction(input)
+  if (!acceptsSeed(input.seed, model.seed)) throw new Error('Unsupported seed')
   return Object.freeze({
     modelSlug: model.slug,
     sourceFile: source.file,

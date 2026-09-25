@@ -48,6 +48,23 @@ export function useModelResultArchive(namespace: () => string | undefined) {
     return { ...identity, namespace: namespace(), epoch }
   }
 
+  async function downloadOutput(output: RunOutput, bytes: number) {
+    const url = new URL(output.url)
+    if (!['https:', 'http:', 'blob:'].includes(url.protocol))
+      throw new Error('Invalid output URL')
+    const response = await fetch(output.url, {
+      credentials: 'omit',
+      referrerPolicy: 'no-referrer'
+    })
+    if (!response.ok) throw new Error('Output unavailable')
+    const length = Number(response.headers.get('content-length'))
+    if (length > MODEL_RESULT_LIMITS.bytes - bytes)
+      throw new Error('Archive too large')
+    const blob = await response.blob()
+    if (bytes + blob.size > MODEL_RESULT_LIMITS.bytes)
+      throw new Error('Archive too large')
+    return blob
+  }
   async function archive(ticket: ArchiveTicket, outputs: readonly RunOutput[]) {
     const media = outputs.filter(
       (output) => output.purpose !== 'response-metadata'
@@ -63,21 +80,8 @@ export function useModelResultArchive(namespace: () => string | undefined) {
       const saved = []
       let bytes = 0
       for (const output of media) {
-        const url = new URL(output.url)
-        if (!['https:', 'http:', 'blob:'].includes(url.protocol))
-          throw new Error('Invalid output URL')
-        const response = await fetch(output.url, {
-          credentials: 'omit',
-          referrerPolicy: 'no-referrer'
-        })
-        if (!response.ok) throw new Error('Output unavailable')
-        const length = Number(response.headers.get('content-length'))
-        if (length > MODEL_RESULT_LIMITS.bytes - bytes)
-          throw new Error('Archive too large')
-        const blob = await response.blob()
+        const blob = await downloadOutput(output, bytes)
         bytes += blob.size
-        if (bytes > MODEL_RESULT_LIMITS.bytes)
-          throw new Error('Archive too large')
         saved.push({
           kind: output.kind,
           fileName: output.fileName,

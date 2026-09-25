@@ -54,6 +54,58 @@ export function useCinematicComposerDrafts(options: {
       }
     >
   > = {}
+  function acceptHydratedFiles(
+    mode: Mode,
+    draft: ComposerDrafts,
+    before: readonly ReferenceFile[],
+    files: readonly ReferenceFile[],
+    missing: boolean
+  ) {
+    if (!sameFiles(before, options.files()[mode])) return
+    options.applyFiles(mode, files, draft)
+    cache[mode] = {
+      files: options.files()[mode],
+      id: draft[mode].referenceBundleId,
+      ...(missing ? { missing: draft[mode] } : {})
+    }
+  }
+  function hydrateBundle(
+    scope: string,
+    id: string,
+    mode: Mode,
+    draft: ComposerDrafts,
+    current: number,
+    before: readonly ReferenceFile[]
+  ) {
+    return loadReferenceBundle(scope, id).then(
+      (files) => {
+        if (current !== epoch) return false
+        acceptHydratedFiles(mode, draft, before, files, false)
+        return true
+      },
+      () => {
+        if (current !== epoch) return false
+        options.error('read')
+        acceptHydratedFiles(mode, draft, before, [], true)
+        return true
+      }
+    )
+  }
+  function hydrateMode(
+    scope: string,
+    mode: Mode,
+    draft: ComposerDrafts,
+    current: number
+  ) {
+    const id = draft[mode].referenceBundleId
+    const before = options.files()[mode]
+    const missing = !id && !!draft[mode].references?.length
+    if (missing) options.error('read')
+    if (id) return hydrateBundle(scope, id, mode, draft, current, before)
+    if (current !== epoch) return false
+    acceptHydratedFiles(mode, draft, before, [], missing)
+    return true
+  }
   async function hydrate() {
     const current = ++epoch
     revision++
@@ -72,76 +124,101 @@ export function useCinematicComposerDrafts(options: {
         const draft = parseComposerDrafts(json)
         options.apply(draft)
         for (const mode of modes) {
-          const id = draft[mode].referenceBundleId
-          const before = options.files()[mode]
-          let files: readonly ReferenceFile[] = []
-          let missing = !id && !!draft[mode].references?.length
-          if (missing) options.error('read')
-          if (id) {
-            try {
-              files = await loadReferenceBundle(scope, id)
-            } catch {
-              missing = true
-              if (current === epoch) options.error('read')
-            }
-          }
-          if (current !== epoch) return
-          if (sameFiles(before, options.files()[mode])) {
-            options.applyFiles(mode, files, draft)
-            cache[mode] = {
-              files: options.files()[mode],
-              id,
-              ...(missing ? { missing: draft[mode] } : {})
-            }
-          }
+          const hydration = hydrateMode(scope, mode, draft, current)
+          if (!(hydration instanceof Promise ? await hydration : hydration))
+            return
         }
       }
       if (current === epoch) writable = true
     } catch {
       if (current === epoch) options.error('read')
     } finally {
-      if (current === epoch) {
-        hydrating.value = false
-        void persist()
-      }
+      finishHydration(current)
     }
+  }
+  function finishHydration(current: number) {
+    if (current !== epoch) return
+    hydrating.value = false
+    void persist()
+  }
+  function currentWrite(current: number, change: number) {
+    return current === epoch && change === revision
+  }
+  function preserveMissingReceipt(
+    mode: Mode,
+    draft: ComposerDrafts,
+    files: Files
+  ) {
+    const cached = cache[mode]
+    if (cached?.missing && sameFiles(cached.files, files[mode])) {
+      draft[mode].assets = cached.missing.assets
+      draft[mode].references = cached.missing.references
+    }
+  }
+  function persistMode(
+    scope: string,
+    mode: Mode,
+    draft: ComposerDrafts,
+    files: Files,
+    current: number,
+    change: number
+  ) {
+    const cached = cache[mode]
+    let id = cached?.id
+    preserveMissingReceipt(mode, draft, files)
+    if (!cached || !sameFiles(cached.files, files[mode])) {
+      if (files[mode].length)
+        return saveReferenceBundle(scope, files[mode]).then((savedId) => {
+          if (!currentWrite(current, change)) return false
+          cache[mode] = { files: files[mode], id: savedId }
+          draft[mode].referenceBundleId = savedId
+          return true
+        })
+      id = undefined
+      if (!currentWrite(current, change)) return false
+      cache[mode] = { files: files[mode], id }
+    }
+    draft[mode].referenceBundleId = id
+    return true
+  }
+  function canPersist() {
+    return mounted && writable && !hydrating.value
+  }
+  function publishDraft(
+    scope: string,
+    draft: ComposerDrafts,
+    current: number,
+    change: number
+  ) {
+    if (!currentWrite(current, change) || scope !== options.namespace()) return
+    localStorage.setItem(
+      composerDraftKey(scope),
+      serializeComposerDrafts(draft)
+    )
   }
   async function persist() {
     const scope = options.namespace()
-    if (!mounted || !writable || hydrating.value || !scope) return
+    if (!canPersist() || !scope) return
     const current = epoch
     const change = ++revision
     try {
       const draft = parseComposerDrafts(serializeComposerDrafts(options.read()))
       const files = options.files()
       for (const mode of modes) {
-        const cached = cache[mode]
-        let id = cached?.id
-        if (cached?.missing && sameFiles(cached.files, files[mode])) {
-          draft[mode].assets = cached.missing.assets
-          draft[mode].references = cached.missing.references
-        }
-        if (!cached || !sameFiles(cached.files, files[mode])) {
-          id = files[mode].length
-            ? await saveReferenceBundle(scope, files[mode])
-            : undefined
-          if (current !== epoch || change !== revision) return
-          cache[mode] = { files: files[mode], id }
-        }
-        draft[mode].referenceBundleId = id
+        const persistence = persistMode(
+          scope,
+          mode,
+          draft,
+          files,
+          current,
+          change
+        )
+        if (!(persistence instanceof Promise ? await persistence : persistence))
+          return
       }
-      if (
-        current !== epoch ||
-        change !== revision ||
-        scope !== options.namespace()
-      )
-        return
-      localStorage.setItem(
-        composerDraftKey(scope),
-        serializeComposerDrafts(draft)
-      )
+      publishDraft(scope, draft, current, change)
     } catch {
-      if (current === epoch && change === revision) options.error('write')
+      if (currentWrite(current, change)) options.error('write')
     }
   }
   watch(

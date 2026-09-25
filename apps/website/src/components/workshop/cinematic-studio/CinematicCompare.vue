@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { cn } from '@comfyorg/tailwind-utils'
-import { creativePrompt } from '../../../lib/workshop/cinematic-studio/creative'
+import CinematicComparisonDifferences from './CinematicComparisonDifferences.vue'
 import {
   readComparisonSelection,
   saveComparisonSelection
@@ -9,22 +8,13 @@ import {
 import type { Locale } from '../../../i18n/translations'
 import type { SavedCreation } from '../../../lib/workshop/cinematic-studio/creations'
 import {
-  cameraGroups,
-  gradeGroup,
-  lookGroups,
-  directionOption
-} from '../../../lib/workshop/cinematic-studio/catalog'
-import { libraryCopy } from '../../../lib/workshop/cinematic-studio/library-copy'
-import { tc } from '../../../lib/workshop/cinematic-studio/copy'
-import {
   comparisonCanShow,
-  comparisonPair,
-  comparisonSettings,
-  comparisonSource
+  comparisonPair
 } from '../../../lib/workshop/cinematic-studio/comparison'
 import { tcComparison } from '../../../lib/workshop/cinematic-studio/comparison-copy'
 import type { ComparisonCopyKey } from '../../../lib/workshop/cinematic-studio/comparison-copy'
-import Button from '../../ui/button/Button.vue'
+import CinematicComparisonPanel from './CinematicComparisonPanel.vue'
+import { comparisonPanel, comparisonValues } from './comparison-view'
 import Dialog from '../../ui/dialog/Dialog.vue'
 import DialogContent from '../../ui/dialog/DialogContent.vue'
 import DialogDescription from '../../ui/dialog/DialogDescription.vue'
@@ -63,19 +53,7 @@ const revealed = ref<readonly string[]>([])
 const pair = computed(() => comparisonPair(items, leftId.value, rightId.value))
 const panels = computed(() =>
   pair.value.flatMap((item, index) =>
-    item
-      ? [
-          {
-            item,
-            index,
-            settings: comparisonSettings(item),
-            source: comparisonSource(item, items),
-            modelName:
-              models.find((model) => model.slug === item.modelSlug)?.name ??
-              item.modelSlug
-          }
-        ]
-      : []
+    item ? [comparisonPanel(item, index, items, models)] : []
   )
 )
 const fieldClass =
@@ -103,11 +81,9 @@ watch(
 )
 function select(side: 'left' | 'right', event: Event) {
   if (!(event.target instanceof HTMLSelectElement)) return
-  const [left, right] = comparisonPair(
-    items,
-    side === 'left' ? event.target.value : pair.value[0]?.id,
-    side === 'right' ? event.target.value : pair.value[1]?.id
-  )
+  const selectedIds = pair.value.map((item) => item?.id)
+  selectedIds[side === 'left' ? 0 : 1] = event.target.value
+  const [left, right] = comparisonPair(items, selectedIds[0], selectedIds[1])
   leftId.value = left?.id ?? ''
   rightId.value = right?.id ?? ''
   if (left && right) saveComparisonSelection(namespace, [left.id, right.id])
@@ -134,42 +110,11 @@ function animate(item: SavedCreation) {
 function reveal(id: string) {
   revealed.value = [...revealed.value, id]
 }
-function directionLabels(item: SavedCreation) {
-  const direction = item.settings?.direction
-  if (!direction) return []
-  return [...cameraGroups, ...lookGroups, gradeGroup].flatMap((group) => {
-    const option = directionOption(group.part, direction)
-    return option.id === 'auto' ? [] : [tc(option.label, locale)]
-  })
-}
 const differences = computed(() => {
-  const values = (item: SavedCreation) => {
-    const settings = comparisonSettings(item)
-    return {
-      model: item.modelSlug,
-      aspect: item.aspect,
-      resolution: settings.resolution,
-      duration:
-        settings.duration === undefined ? undefined : `${settings.duration}s`,
-      seed: settings.seed?.toString(),
-      audio:
-        settings.audio === undefined
-          ? undefined
-          : t(settings.audio ? 'on' : 'off'),
-      operation: settings.operation ? t(settings.operation) : undefined,
-      direction: item.settings?.direction
-        ? directionLabels(item).join(' · ') || t('automatic')
-        : undefined,
-      creative: item.settings?.creative
-        ? creativePrompt(item.settings.creative, item.kind) || t('noCreative')
-        : undefined,
-      prompt: item.prompt
-    }
-  }
   const [left, right] = pair.value
   if (!left || !right) return []
-  const a = values(left)
-  const b = values(right)
+  const a = comparisonValues(left, locale)
+  const b = comparisonValues(right, locale)
   const keys = Object.keys(a) as (keyof typeof a)[]
   return keys
     .filter((key) => a[key] !== undefined || b[key] !== undefined)
@@ -186,9 +131,6 @@ const differences = computed(() => {
           : b[key]
     }))
 })
-const differenceCount = computed(
-  () => differences.value.filter((row) => row.changed).length
-)
 </script>
 
 <template>
@@ -248,229 +190,21 @@ const differenceCount = computed(
           >
         </div>
         <div class="grid gap-5 sm:grid-cols-2">
-          <section
+          <CinematicComparisonPanel
             v-for="panel in panels"
             :key="`${panel.index}-${panel.item.id}`"
-            :aria-label="t(panel.index === 0 ? 'first' : 'second')"
-            class="flex min-w-0 flex-col gap-3 rounded-xl border border-transparency-white-t20 p-3 text-primary-warm-white"
-          >
-            <h3 class="text-base font-semibold wrap-break-word">
-              {{ panel.item.name }}
-            </h3>
-            <div
-              class="flex aspect-video items-center justify-center overflow-hidden rounded-lg bg-primary-comfy-ink"
-            >
-              <template
-                v-if="
-                  open &&
-                  comparisonCanShow(panel.item, revealed, urls[panel.item.id])
-                "
-              >
-                <img
-                  v-if="panel.item.kind === 'image'"
-                  :src="urls[panel.item.id]"
-                  :alt="panel.item.name"
-                  class="h-full w-full object-contain"
-                />
-                <video
-                  v-else
-                  :src="urls[panel.item.id]"
-                  :aria-label="`${t('video')}: ${panel.item.name}`"
-                  controls
-                  playsinline
-                  preload="metadata"
-                  class="h-full w-full object-contain"
-                />
-              </template>
-              <div
-                v-else-if="panel.item.nsfw && !revealed.includes(panel.item.id)"
-                class="flex flex-col items-center gap-3 p-4 text-center"
-              >
-                <p class="text-sm">{{ t('hidden') }}</p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  @click="reveal(panel.item.id)"
-                  >{{ t('reveal') }}</Button
-                >
-              </div>
-              <p v-else class="p-4 text-sm text-primary-comfy-canvas">
-                {{ t('unavailable') }}
-              </p>
-            </div>
-            <div class="flex flex-wrap gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                :disabled="
-                  busy ||
-                  (!!panel.item.settings?.operation &&
-                    panel.item.settings.operation !== 'generate')
-                "
-                @click="reuse(panel.item)"
-                >{{ libraryCopy('reuse', locale) }}</Button
-              >
-              <Button
-                v-if="panel.item.kind === 'image'"
-                variant="outline"
-                size="sm"
-                :disabled="
-                  busy ||
-                  !comparisonCanShow(panel.item, revealed, urls[panel.item.id])
-                "
-                @click="animate(panel.item)"
-                >{{ libraryCopy('animate', locale) }}</Button
-              >
-              <template
-                v-if="
-                  comparisonCanShow(panel.item, revealed, urls[panel.item.id])
-                "
-              >
-                <a
-                  :href="urls[panel.item.id]"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  class="rounded-lg border border-transparency-white-t20 px-3 py-2 text-sm"
-                  >{{ t('openOriginal') }}</a
-                >
-                <a
-                  :href="urls[panel.item.id]"
-                  :download="panel.item.fileName"
-                  class="rounded-lg border border-transparency-white-t20 px-3 py-2 text-sm"
-                  >{{ t('download') }}</a
-                >
-              </template>
-            </div>
-            <p
-              v-if="
-                panel.item.settings?.operation &&
-                panel.item.settings.operation !== 'generate'
-              "
-              class="text-sm text-primary-comfy-canvas"
-            >
-              {{ t('editReuseUnavailable') }}
-            </p>
-            <dl class="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
-              <dt class="text-primary-comfy-canvas">{{ t('model') }}</dt>
-              <dd class="wrap-break-word">{{ panel.modelName }}</dd>
-              <dt class="text-primary-comfy-canvas">{{ t('aspect') }}</dt>
-              <dd>{{ panel.settings.aspect }}</dd>
-              <template v-if="panel.settings.resolution"
-                ><dt class="text-primary-comfy-canvas">
-                  {{ t('resolution') }}
-                </dt>
-                <dd>{{ panel.settings.resolution }}</dd></template
-              >
-              <template v-if="panel.settings.duration !== undefined"
-                ><dt class="text-primary-comfy-canvas">{{ t('duration') }}</dt>
-                <dd>{{ panel.settings.duration }}s</dd></template
-              >
-              <template v-if="panel.settings.seed !== undefined"
-                ><dt class="text-primary-comfy-canvas">{{ t('seed') }}</dt>
-                <dd>{{ panel.settings.seed }}</dd></template
-              >
-              <template v-if="panel.settings.audio !== undefined"
-                ><dt class="text-primary-comfy-canvas">{{ t('audio') }}</dt>
-                <dd>{{ t(panel.settings.audio ? 'on' : 'off') }}</dd></template
-              >
-              <template v-if="panel.settings.operation"
-                ><dt class="text-primary-comfy-canvas">{{ t('operation') }}</dt>
-                <dd>{{ t(panel.settings.operation) }}</dd></template
-              >
-              <template v-if="panel.item.settings?.sourceId"
-                ><dt class="text-primary-comfy-canvas">{{ t('source') }}</dt>
-                <dd class="wrap-break-word">
-                  {{ panel.source?.name ?? t('sourceMissing') }}
-                </dd></template
-              >
-            </dl>
-            <details>
-              <summary class="cursor-pointer text-sm font-semibold">
-                {{ t('prompt') }}
-              </summary>
-              <p
-                class="mt-2 max-h-52 overflow-auto text-sm/relaxed wrap-break-word whitespace-pre-wrap text-primary-comfy-canvas"
-                tabindex="0"
-              >
-                {{ panel.item.prompt }}
-              </p>
-            </details>
-            <details>
-              <summary class="cursor-pointer text-sm font-semibold">
-                {{ t('settings') }}
-              </summary>
-              <p
-                v-if="directionLabels(panel.item).length"
-                class="mt-2 text-sm/relaxed wrap-break-word text-primary-comfy-canvas"
-              >
-                <span class="font-semibold">{{ t('direction') }}: </span
-                >{{ directionLabels(panel.item).join(' · ') }}
-              </p>
-              <p v-else class="mt-2 text-sm text-primary-comfy-canvas">
-                {{ t('noSettings') }}
-              </p>
-            </details>
-          </section>
+            :panel
+            :locale
+            :open
+            :revealed
+            :urls
+            :busy
+            @reveal="reveal"
+            @reuse="reuse"
+            @animate="animate"
+          />
         </div>
-        <details
-          open
-          class="rounded-xl border border-transparency-white-t20 p-3 text-primary-warm-white"
-        >
-          <summary class="cursor-pointer text-sm font-semibold">
-            {{ t('differenceTitle') }} · {{ differenceCount }}
-            {{ t(differenceCount === 1 ? 'difference' : 'differences') }}
-          </summary>
-          <p class="my-3 text-xs text-primary-comfy-canvas">
-            {{ t('differenceNote') }}
-          </p>
-          <table class="w-full table-fixed text-left text-xs sm:text-sm">
-            <caption class="sr-only">
-              {{
-                t('differenceTitle')
-              }}
-            </caption>
-            <thead>
-              <tr>
-                <th scope="col" class="w-[35%] p-2">{{ t('setting') }}</th>
-                <th scope="col" class="w-[32.5%] p-2">{{ t('first') }}</th>
-                <th scope="col" class="w-[32.5%] p-2">{{ t('second') }}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr
-                v-for="row in differences"
-                :key="row.key"
-                :class="
-                  cn(
-                    'border-t border-transparency-white-t20',
-                    row.changed && 'bg-transparency-white-t8'
-                  )
-                "
-              >
-                <th scope="row" class="p-2 align-top wrap-break-word">
-                  {{ t(row.key)
-                  }}<span
-                    v-if="row.changed"
-                    class="mt-1 block text-xs font-normal"
-                    >{{ t('changed') }}</span
-                  >
-                </th>
-                <td
-                  v-for="side in ['left', 'right'] as const"
-                  :key="side"
-                  class="p-2 align-top"
-                >
-                  <div
-                    class="max-h-40 overflow-auto wrap-break-word whitespace-pre-wrap"
-                    tabindex="0"
-                  >
-                    {{ row[side] ?? t('notRecorded') }}
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </details>
+        <CinematicComparisonDifferences :differences :locale />
       </template>
     </DialogContent>
   </Dialog>

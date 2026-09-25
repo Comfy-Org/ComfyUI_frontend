@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CinematicMotionFormat from './CinematicMotionFormat.vue'
 import { computed, ref, shallowRef, watch } from 'vue'
 import { useObjectUrl } from '@vueuse/core'
 import type { Locale } from '../../../i18n/translations'
@@ -262,58 +263,17 @@ const field =
               </option>
             </select></label
           >
-          <div v-if="selected?.video" class="grid gap-3 sm:grid-cols-2">
-            <label class="text-sm"
-              >{{ t('duration')
-              }}<select v-model="duration" :class="field">
-                <option
-                  v-for="value in selected.video.durations"
-                  :key="value"
-                  :value
-                >
-                  {{ value }}
-                </option>
-              </select></label
-            >
-            <label class="text-sm"
-              >{{ t('resolution')
-              }}<select v-model="resolution" :class="field">
-                <option v-for="value in resolutions" :key="value" :value>
-                  {{ value }}
-                </option>
-              </select></label
-            >
-            <label v-if="selected.video.aspects.length" class="text-sm"
-              >{{ t('aspect')
-              }}<select v-model="aspect" :class="field">
-                <option
-                  v-for="value in selected.video.aspects"
-                  :key="value"
-                  :value
-                >
-                  {{ value }}
-                </option>
-              </select></label
-            >
-            <p v-else class="text-xs text-primary-comfy-canvas">
-              {{ t('sourceAspect') }}
-            </p>
-            <label
-              v-if="selected.video.generateAudio"
-              class="flex items-center gap-2 text-sm"
-              ><input v-model="audio" type="checkbox" />{{ t('audio') }}</label
-            >
-            <label v-if="selected.seed" class="text-sm"
-              >{{ t('seed')
-              }}<input
-                v-model="seedText"
-                type="number"
-                :min="selected.seed.minimum"
-                :max="selected.seed.maximum"
-                :step="selected.seed.step"
-                :class="field"
-            /></label>
-          </div>
+          <CinematicMotionFormat
+            v-model:duration="duration"
+            v-model:resolution="resolution"
+            v-model:aspect="aspect"
+            v-model:audio="audio"
+            v-model:seed-text="seedText"
+            :selected
+            :resolutions
+            :field
+            :locale
+          />
           <p class="text-xs text-primary-comfy-canvas">{{ t('random') }}</p>
         </div>
       </div>

@@ -1,11 +1,5 @@
 <script setup lang="ts">
-import {
-  CircleAlert,
-  CircleStop,
-  Film,
-  LoaderCircle,
-  ShieldAlert
-} from '@lucide/vue'
+import CinematicSequenceThumbnail from './CinematicSequenceThumbnail.vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
@@ -36,10 +30,6 @@ function statusClass(take: Take): string | undefined {
   if (take.reason === 'noCredits') return undefined
   return 'bg-primary-comfy-red/10 ring-1 ring-primary-comfy-red/35 ring-inset'
 }
-
-const blocked = (take: Take) =>
-  take.status === 'failed' &&
-  (take.reason === 'policy' || take.reason === 'validation')
 </script>
 
 <template>
@@ -70,37 +60,7 @@ const blocked = (take: Take) =>
       :style="aspectStyle(take.aspect)"
       @click="emit('select', take.id)"
     >
-      <img
-        v-if="take.status === 'done' && take.output.kind === 'image'"
-        :src="take.output.url"
-        alt=""
-        :class="cn('size-full object-cover', take.output.nsfw && 'blur-md')"
-      />
-      <Film
-        v-else-if="take.status === 'done'"
-        class="size-4 text-primary-comfy-canvas"
-        aria-hidden="true"
-      />
-      <LoaderCircle
-        v-else-if="take.status === 'rendering'"
-        class="size-4 text-primary-comfy-yellow motion-safe:animate-spin"
-        aria-hidden="true"
-      />
-      <CircleStop
-        v-else-if="take.status === 'cancelled'"
-        class="size-4 text-primary-comfy-canvas"
-        aria-hidden="true"
-      />
-      <ShieldAlert
-        v-else-if="blocked(take)"
-        class="size-4 text-primary-comfy-orange"
-        aria-hidden="true"
-      />
-      <CircleAlert
-        v-else
-        class="size-4 text-primary-comfy-red"
-        aria-hidden="true"
-      />
+      <CinematicSequenceThumbnail :take />
     </button>
   </nav>
 </template>

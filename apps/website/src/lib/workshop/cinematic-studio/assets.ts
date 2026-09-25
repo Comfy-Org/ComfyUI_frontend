@@ -1,3 +1,4 @@
+import { accessStudioStorage } from './storage'
 import { z } from 'zod'
 
 export const ASSET_LIMITS = {
@@ -39,95 +40,34 @@ export function validateAsset(input: unknown): SavedAsset {
   return assetSchema.parse(input)
 }
 
-function access<T>(
-  namespace: string,
-  mode: IDBTransactionMode,
-  action: (
-    store: IDBObjectStore,
-    done: (value: T) => void,
-    fail: (error: unknown) => void
-  ) => void
-): Promise<T> {
-  return new Promise((resolve, reject) => {
-    if (!namespace.trim() || namespace.length > 500) {
-      reject(new Error('Missing asset namespace'))
-      return
-    }
-    let database: IDBDatabase | undefined
-    let transaction: IDBTransaction | undefined
-    let result: T
-    let settled = false
-    const finish = (error?: unknown) => {
-      if (settled) return
-      settled = true
-      clearTimeout(timeout)
-      database?.close()
-      if (error) reject(error)
-      else resolve(result)
-    }
-    const fail = (error: unknown) => {
-      transaction?.abort()
-      finish(error)
-    }
-    const timeout = setTimeout(
-      () => fail(new DOMException('Asset storage timed out', 'TimeoutError')),
-      10000
-    )
-    try {
-      const opening = indexedDB.open('comfy-cinema-assets', 1)
-      opening.onupgradeneeded = () =>
-        opening.result
-          .createObjectStore('assets')
-          .createIndex('namespace', 'namespace')
-      opening.onerror = () => finish(opening.error)
-      opening.onblocked = () => finish(new Error('Asset storage blocked'))
-      opening.onsuccess = () => {
-        database = opening.result
-        if (settled) {
-          database.close()
-          return
-        }
-        database.onversionchange = () => database?.close()
+const storage = {
+  database: 'comfy-cinema-assets',
+  store: 'assets',
+  label: 'Asset',
+  namespaceLabel: 'asset'
+}
+
+export function listAssets(namespace: string): Promise<SavedAsset[]> {
+  return accessStudioStorage(
+    storage,
+    namespace,
+    'readonly',
+    (store, done, fail) => {
+      const request = store.index('namespace').getAll(namespace)
+      request.onsuccess = () => {
         try {
-          transaction = database.transaction('assets', mode)
-          transaction.oncomplete = () => finish()
-          transaction.onabort = () =>
-            finish(transaction?.error ?? new Error('Asset storage aborted'))
-          transaction.onerror = () =>
-            finish(transaction?.error ?? new Error('Asset storage failed'))
-          action(
-            transaction.objectStore('assets'),
-            (value) => {
-              result = value
-            },
-            fail
+          done(
+            z
+              .array(assetSchema)
+              .parse(request.result)
+              .sort((a, b) => a.name.localeCompare(b.name))
           )
         } catch (error) {
           fail(error)
         }
       }
-    } catch (error) {
-      finish(error)
     }
-  })
-}
-
-export function listAssets(namespace: string): Promise<SavedAsset[]> {
-  return access(namespace, 'readonly', (store, done, fail) => {
-    const request = store.index('namespace').getAll(namespace)
-    request.onsuccess = () => {
-      try {
-        done(
-          z
-            .array(assetSchema)
-            .parse(request.result)
-            .sort((a, b) => a.name.localeCompare(b.name))
-        )
-      } catch (error) {
-        fail(error)
-      }
-    }
-  })
+  )
 }
 
 export async function saveAsset(
@@ -135,34 +75,41 @@ export async function saveAsset(
   input: SavedAsset
 ): Promise<SavedAsset> {
   const asset = validateAsset(input)
-  return access(namespace, 'readwrite', (store, done, fail) => {
-    const request = store.index('namespace').getAll(namespace)
-    request.onsuccess = () => {
-      try {
-        const others = z
-          .array(assetSchema)
-          .parse(request.result)
-          .filter((item) => item.id !== asset.id)
-        if (
-          others.length >= ASSET_LIMITS.count ||
-          others.reduce((sum, item) => sum + item.blob.size, asset.blob.size) >
-            ASSET_LIMITS.bytes
-        )
-          throw new DOMException(
-            'Asset library limit reached',
-            'QuotaExceededError'
+  return accessStudioStorage(
+    storage,
+    namespace,
+    'readwrite',
+    (store, done, fail) => {
+      const request = store.index('namespace').getAll(namespace)
+      request.onsuccess = () => {
+        try {
+          const others = z
+            .array(assetSchema)
+            .parse(request.result)
+            .filter((item) => item.id !== asset.id)
+          if (
+            others.length >= ASSET_LIMITS.count ||
+            others.reduce(
+              (sum, item) => sum + item.blob.size,
+              asset.blob.size
+            ) > ASSET_LIMITS.bytes
           )
-        store.put({ ...asset, namespace }, [namespace, asset.id])
-        done(asset)
-      } catch (error) {
-        fail(error)
+            throw new DOMException(
+              'Asset library limit reached',
+              'QuotaExceededError'
+            )
+          store.put({ ...asset, namespace }, [namespace, asset.id])
+          done(asset)
+        } catch (error) {
+          fail(error)
+        }
       }
     }
-  })
+  )
 }
 
 export function deleteAsset(namespace: string, id: string): Promise<void> {
-  return access(namespace, 'readwrite', (store, done) => {
+  return accessStudioStorage(storage, namespace, 'readwrite', (store, done) => {
     store.delete([namespace, id])
     done()
   })

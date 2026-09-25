@@ -160,6 +160,24 @@ async function routerFetch(
   })
 }
 
+function notifyAdmission(context: SubmissionContext, requestId: string) {
+  try {
+    context.options.onQueuedRequest?.(requestId)
+  } catch (cause) {
+    throw new WorkshopRouterError(
+      'client',
+      requestId,
+      {},
+      undefined,
+      'request',
+      {
+        cause,
+        requestSettlement: 'pending'
+      }
+    )
+  }
+}
+
 async function submit(
   state: Submitting,
   context: SubmissionContext
@@ -198,21 +216,7 @@ async function submit(
   if (!requestId)
     throw new WorkshopRouterError('response', callId, {}, undefined, 'response')
   context.options.onRequestId?.(requestId)
-  try {
-    context.options.onQueuedRequest?.(requestId)
-  } catch (cause) {
-    throw new WorkshopRouterError(
-      'client',
-      requestId,
-      {},
-      undefined,
-      'request',
-      {
-        cause,
-        requestSettlement: 'pending'
-      }
-    )
-  }
+  notifyAdmission(context, requestId)
   return { phase: 'collect', requestId, interruptions: 0, unreadableResults: 0 }
 }
 

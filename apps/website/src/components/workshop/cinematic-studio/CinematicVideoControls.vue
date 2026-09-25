@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CinematicVideoFrameControls from './CinematicVideoFrameControls.vue'
 import { computed, watch } from 'vue'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
@@ -6,7 +7,6 @@ import type { AspectRatio } from '../../../lib/workshop/cinematic-studio/catalog
 import { ASPECT_RATIOS } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import { videoResolutionsForAspect } from '../../../lib/workshop/cinematic-studio/video'
-import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
 
 const { model, locale = 'en' } = defineProps<{
   model: CinematicModel | undefined
@@ -29,6 +29,24 @@ watch(
   },
   { immediate: true }
 )
+const aspects = computed(() =>
+  ASPECT_RATIOS.filter((item) => model?.video?.aspects.includes(item.id))
+)
+const resolutionLabel = computed(() =>
+  model?.video?.resolutionField === 'mode'
+    ? 'cinematic.video.quality'
+    : 'cinematic.output.resolution'
+)
+const frameHint = computed(() =>
+  model?.video?.firstFrame === 'required' && !firstFrame.value
+    ? 'cinematic.video.needFrame'
+    : 'cinematic.video.oneClip'
+)
+function resolutionName(value: string) {
+  if (value === 'std') return tc('cinematic.video.standard', locale)
+  if (value === 'pro') return tc('cinematic.video.professional', locale)
+  return value
+}
 const fieldClass =
   'mt-2 h-10 w-full rounded-xl border border-transparency-white-t20 bg-primary-comfy-ink px-3 text-sm text-primary-warm-white'
 </script>
@@ -49,23 +67,10 @@ const fieldClass =
         </select>
       </label>
       <label class="text-xs text-primary-comfy-canvas"
-        >{{
-          tc(
-            model.video.resolutionField === 'mode'
-              ? 'cinematic.video.quality'
-              : 'cinematic.output.resolution',
-            locale
-          )
-        }}
+        >{{ tc(resolutionLabel, locale) }}
         <select v-model="resolution" :class="fieldClass">
           <option v-for="value in resolutions" :key="value" :value="value">
-            {{
-              value === 'std'
-                ? tc('cinematic.video.standard', locale)
-                : value === 'pro'
-                  ? tc('cinematic.video.professional', locale)
-                  : value
-            }}
+            {{ resolutionName(value) }}
           </option>
         </select>
       </label>
@@ -74,13 +79,7 @@ const fieldClass =
         class="text-xs text-primary-comfy-canvas"
         >{{ tc('cinematic.output.aspect', locale) }}
         <select v-model="aspect" :class="fieldClass">
-          <option
-            v-for="value in ASPECT_RATIOS.filter((item) =>
-              model?.video?.aspects.includes(item.id)
-            )"
-            :key="value.id"
-            :value="value.id"
-          >
+          <option v-for="value in aspects" :key="value.id" :value="value.id">
             {{ value.id }}
           </option>
         </select>
@@ -93,27 +92,14 @@ const fieldClass =
         }}</label
       >
     </div>
-    <div
-      v-if="model.video.firstFrame !== 'unsupported'"
-      class="grid grid-cols-2 gap-2"
-    >
-      <CinematicReferenceSlot v-model="firstFrame" kind="firstFrame" :locale />
-      <CinematicReferenceSlot
-        v-if="model.video.lastFrame"
-        v-model="lastFrame"
-        kind="lastFrame"
-        :locale
-      />
-    </div>
+    <CinematicVideoFrameControls
+      v-model:first-frame="firstFrame"
+      v-model:last-frame="lastFrame"
+      :video="model.video"
+      :locale
+    />
     <p class="text-xs/relaxed text-primary-comfy-canvas">
-      {{
-        tc(
-          model.video.firstFrame === 'required' && !firstFrame
-            ? 'cinematic.video.needFrame'
-            : 'cinematic.video.oneClip',
-          locale
-        )
-      }}
+      {{ tc(frameHint, locale) }}
     </p>
   </div>
   <p v-else class="text-sm text-primary-comfy-canvas">

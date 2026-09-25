@@ -1,3 +1,9 @@
+import type { CreationSettings,SavedCreation } from '../lib/workshop/cinematic-studio/creations'
+import {
+  validShotSeed,
+  allowedShotAspect,
+  fetchShotImage
+} from './cinematicShotHelpers'
 import { nextSeed } from '../lib/workshop/cinematic-studio/seed-behavior'
 import type { SeedBehavior } from '../lib/workshop/cinematic-studio/seed-behavior'
 import type { MotionComparisonPayload } from '../lib/workshop/cinematic-studio/motion-comparison'
@@ -27,7 +33,6 @@ import {
   validateCreativeSettings
 } from '../lib/workshop/cinematic-studio/creative'
 import { creationNamespace } from '../lib/workshop/cinematic-studio/creations'
-import type { SavedCreation } from '../lib/workshop/cinematic-studio/creations'
 import { useCinematicLibrary } from './useCinematicLibrary'
 import {
   computed,
@@ -46,7 +51,6 @@ import type {
   Resolution
 } from '../lib/workshop/cinematic-studio/catalog'
 import {
-  ASPECT_RATIOS,
   DEFAULT_DIRECTION,
   AUTO_DIRECTION,
   RESOLUTIONS,
@@ -77,6 +81,11 @@ export interface CinematicReview {
   readonly workspaceId?: string
   readonly userId?: string
 }
+
+type ReusableShot = Pick<
+  SavedCreation,
+  'kind' | 'modelSlug' | 'prompt' | 'aspect' | 'settings'
+>
 
 /** The shot being directed, shared by every Cinematic Studio layout. */
 export function useCinematicShot(
@@ -293,18 +302,17 @@ export function useCinematicShot(
   const videoAspect = ref<AspectRatio>('16:9')
   const aspect = computed({
     get: () => {
-      if (mode.value === 'image') {
-        const allowed = selectedModel.value?.imageAspects
-        return !allowed || allowed.includes(imageAspect.value)
-          ? imageAspect.value
-          : (ASPECT_RATIOS.find((ratio) => allowed.includes(ratio.id))?.id ??
-              '1:1')
-      }
-      const allowed = selectedModel.value?.video?.aspects ?? []
-      return allowed.includes(videoAspect.value)
-        ? videoAspect.value
-        : (ASPECT_RATIOS.find((ratio) => allowed.includes(ratio.id))?.id ??
-            '16:9')
+      if (mode.value === 'image')
+        return allowedShotAspect(
+          imageAspect.value,
+          selectedModel.value?.imageAspects,
+          '1:1'
+        )
+      return allowedShotAspect(
+        videoAspect.value,
+        selectedModel.value?.video?.aspects ?? [],
+        '16:9'
+      )
     },
     set: (value: AspectRatio) => {
       if (mode.value === 'video') videoAspect.value = value
@@ -346,12 +354,7 @@ export function useCinematicShot(
   const seed = computed(() => {
     const bounds = selectedModel.value?.seed
     const value = requestedSeed.value
-    return bounds &&
-      value !== undefined &&
-      Number.isFinite(value) &&
-      (bounds.step === 'any' || Number.isInteger(value)) &&
-      (bounds.minimum === undefined || value >= bounds.minimum) &&
-      (bounds.maximum === undefined || value <= bounds.maximum)
+    return value !== undefined && validShotSeed(value, bounds)
       ? value
       : undefined
   })
@@ -441,12 +444,8 @@ export function useCinematicShot(
     frameLoading.value = true
     frameError.value = false
     try {
-      const response = await fetch(url)
-      if (!response.ok) throw new Error('Source unavailable')
-      const blob = await response.blob()
+      const blob = await fetchShotImage(url)
       if (currentEpoch !== mediaEpoch) return
-      if (!['image/png', 'image/jpeg', 'image/webp'].includes(blob.type))
-        throw new Error('Unsupported source')
       closeEdit()
       editSource.value = {
         file: new File([blob], name, { type: blob.type }),
@@ -459,6 +458,14 @@ export function useCinematicShot(
     } finally {
       if (currentEpoch === mediaEpoch) frameLoading.value = false
     }
+  }
+  function sourcePlan(sourceId: string | undefined) {
+    return (
+      library.items.value.find((item) => item.id === sourceId)?.settings
+        ?.plan ??
+      studio.reel.value.takes.find((take) => take.id === sourceId)?.settings
+        ?.plan
+    )
   }
   function reviewEdit(input: {
     takes?: number
@@ -477,22 +484,24 @@ export function useCinematicShot(
       return
     const variations = input.takes ?? 1
     const bounds = model.seed
-    if (!Number.isInteger(variations) || variations < 1 || variations > 4)
-      return
-    if (
-      input.seed !== undefined &&
-      (!bounds ||
-        !Number.isFinite(input.seed) ||
-        (bounds.step !== 'any' && !Number.isInteger(input.seed)) ||
-        (bounds.minimum !== undefined && input.seed < bounds.minimum) ||
-        (bounds.maximum !== undefined && input.seed > bounds.maximum))
-    )
-      return
-    const sourceId =
-      input.sourceFile === editSource.value?.file
-        ? editSource.value.id
-        : undefined
-    review.value = {
+    if (!validEditVariations(variations)) return
+    if (input.seed !== undefined && !validShotSeed(input.seed, bounds)) return
+    const sourceId = editedSourceId(input.sourceFile)
+    review.value = editReview(input, model, variations, sourceId)
+  }
+  function editedSourceId(file: File) {
+    return file === editSource.value?.file ? editSource.value.id : undefined
+  }
+  function validEditVariations(value: number) {
+    return Number.isInteger(value) && value >= 1 && value <= 4
+  }
+  function editReview(
+    input: Parameters<typeof reviewEdit>[0],
+    model: CinematicModel,
+    variations: number,
+    sourceId: string | undefined
+  ): CinematicReview {
+    return {
       modelName: model.name,
       resolution: '2K',
       workspaceId: studio.session.value?.workspace.id,
@@ -522,11 +531,7 @@ export function useCinematicShot(
           direction: { ...direction.value },
           operation: input.operation,
           sourceId,
-          plan:
-            library.items.value.find((item) => item.id === sourceId)?.settings
-              ?.plan ??
-            studio.reel.value.takes.find((take) => take.id === sourceId)
-              ?.settings?.plan,
+          plan: sourcePlan(sourceId),
           references: [input.sourceFile, ...(input.sourceFiles ?? [])].map(
             (file) => file.name
           ),
@@ -575,22 +580,31 @@ export function useCinematicShot(
     frameLoading.value = false
     frameError.value = false
   }
-  const canReview = computed(
-    () =>
-      !!selectedModel.value &&
+  function imageReferencesReady(model: CinematicModel) {
+    if (mode.value !== 'image' || !references.value.length) return true
+    return (
+      !!model.referenceModelSlug &&
+      references.value.length <= (model.referenceMax ?? 0)
+    )
+  }
+  function videoFrameReady(model: CinematicModel) {
+    if (mode.value !== 'video') return true
+    return (
+      !!model.video &&
+      (model.video.firstFrame !== 'required' || !!firstFrame.value)
+    )
+  }
+  const canReview = computed(() => {
+    const model = selectedModel.value
+    return (
+      !!model &&
       !composerDrafts.hydrating.value &&
       seedValid.value &&
-      (mode.value !== 'image' ||
-        !references.value.length ||
-        (!!selectedModel.value.referenceModelSlug &&
-          references.value.length <=
-            (selectedModel.value.referenceMax ?? 0))) &&
       !frameLoading.value &&
-      (mode.value !== 'video' ||
-        (selectedModel.value.video &&
-          (selectedModel.value.video.firstFrame !== 'required' ||
-            !!firstFrame.value)))
-  )
+      imageReferencesReady(model) &&
+      videoFrameReady(model)
+    )
+  })
   const formatLabel = computed(() =>
     mode.value === 'video'
       ? `${videoResolution.value} · ${duration.value}s`
@@ -671,12 +685,8 @@ export function useCinematicShot(
     frameLoading.value = true
     frameError.value = false
     try {
-      const response = await fetch(url)
-      if (!response.ok) throw new Error('Starting frame unavailable')
-      const blob = await response.blob()
+      const blob = await fetchShotImage(url)
       if (currentEpoch !== mediaEpoch) return
-      if (!['image/png', 'image/jpeg', 'image/webp'].includes(blob.type))
-        throw new Error('Unsupported starting frame')
       firstFrame.value = new File([blob], name, { type: blob.type })
       animationSourceId.value = sourceIdFor(url)
       lastFrame.value = undefined
@@ -743,17 +753,19 @@ export function useCinematicShot(
     ).filter((file): file is File => !!file)
   )
 
+  function videoReferenceSnapshot(): ReferenceFile[] {
+    return [
+      ...(firstFrame.value &&
+      selectedModel.value?.video?.firstFrame !== 'unsupported'
+        ? [{ role: 'first' as const, file: firstFrame.value }]
+        : []),
+      ...(lastFrame.value && selectedModel.value?.video?.lastFrame
+        ? [{ role: 'last' as const, file: lastFrame.value }]
+        : [])
+    ]
+  }
   function referenceSnapshot(): ReferenceFile[] {
-    if (mode.value === 'video')
-      return [
-        ...(firstFrame.value &&
-        selectedModel.value?.video?.firstFrame !== 'unsupported'
-          ? [{ role: 'first' as const, file: firstFrame.value }]
-          : []),
-        ...(lastFrame.value && selectedModel.value?.video?.lastFrame
-          ? [{ role: 'last' as const, file: lastFrame.value }]
-          : [])
-      ]
+    if (mode.value === 'video') return videoReferenceSnapshot()
     return [
       ...(cast.value ? [{ role: 'cast' as const, file: cast.value }] : []),
       ...(palette.value
@@ -777,21 +789,106 @@ export function useCinematicShot(
     aspect.value = shot.aspect
   }
 
-  function generate() {
-    const model = models.find((item) => item.slug === modelSlug.value)
-    if (
-      !model ||
-      !canReview.value ||
-      !scene.value.trim() ||
-      studio.rendering.value ||
-      studio.gate.value !== 'ready'
-    )
-      return
-    const referenceModel =
-      mode.value === 'image' && references.value.length
-        ? model.referenceModelSlug
-        : undefined
-    review.value = {
+  function shotSeed() {
+    return seed.value !== undefined ? { seed: seed.value } : {}
+  }
+  function videoSettings() {
+    return {
+      durationSeconds: duration.value,
+      resolution: videoResolution.value,
+      generateAudio: !!selectedModel.value?.video?.generateAudio && audio.value
+    }
+  }
+  function videoFrameSettings() {
+    const video = selectedModel.value?.video
+    return {
+      ...(video?.firstFrame === 'required' && firstFrame.value
+        ? { firstFrame: firstFrame.value }
+        : {}),
+      ...(video?.lastFrame && lastFrame.value
+        ? { lastFrame: lastFrame.value }
+        : {})
+    }
+  }
+  function savedShotSettings(model: CinematicModel): CreationSettings {
+    return {
+      lastSourceId: mode.value === 'video' ? endingSourceId.value : undefined,
+      generationModelSlug: model.slug,
+      plan: plannedShot.value,
+      sourceId: mode.value === 'video' ? animationSourceId.value : undefined,
+      references: references.value.map((file) => file.name),
+      assets:
+        mode.value === 'image'
+          ? selectedAssets.value.map(({ id, name, kind, notes }) => ({
+              id,
+              name,
+              kind,
+              notes
+            }))
+          : [],
+      creative: validateCreativeSettings(creative.value),
+      scene: scene.value,
+      mode: mode.value,
+      enhance: enhance.value,
+      direction: { ...direction.value },
+      aspect: aspect.value,
+      resolution: resolution.value,
+      takes: takeCount.value,
+      operation: 'generate',
+      ...shotSeed(),
+      ...(mode.value === 'video'
+        ? { duration: duration.value, video: videoSettings() }
+        : {})
+    }
+  }
+  function shotRequest(
+    model: CinematicModel,
+    referenceModel: string | undefined
+  ): ShotRequest {
+    return {
+      modelSlug: referenceModel ?? modelSlug.value,
+      ...(referenceModel && referenceModel !== model.slug
+        ? {
+            editing: {
+              sourceFile: references.value[0],
+              sourceFiles: references.value.slice(1),
+              resolution: resolution.value
+            }
+          }
+        : {}),
+      prompt: [
+        cinematicPrompt(brief.value),
+        creativePrompt(creative.value, mode.value),
+        assetPrompt.value
+      ]
+        .filter(Boolean)
+        .join(' '),
+      aspect: aspect.value,
+      resolutionPixels:
+        RESOLUTIONS.find((option) => option.id === resolution.value)?.pixels ??
+        2048,
+      takes: takeCount.value,
+      ...shotSeed(),
+      references: mode.value === 'image' ? [...references.value] : [],
+      referenceFiles: referenceSnapshot(),
+      ...(mode.value === 'video'
+        ? {
+            video: {
+              ...shotSeed(),
+              ...videoSettings(),
+              ...videoFrameSettings()
+            }
+          }
+        : {}),
+      settings: savedShotSettings(model),
+      preview: directionOption('look', direction.value).preview
+    }
+  }
+  function shotReview(
+    model: CinematicModel,
+    referenceModel: string | undefined
+  ): CinematicReview {
+    return {
       ...(model.seed
         ? {
             seedUpdate: {
@@ -810,92 +907,24 @@ export function useCinematicShot(
       adaptiveAspect: mode.value === 'video' && !model.video?.aspects.length,
       workspaceId: studio.session.value?.workspace.id,
       userId: studio.session.value?.uid,
-      request: {
-        modelSlug: referenceModel ?? modelSlug.value,
-        ...(referenceModel && referenceModel !== model.slug
-          ? {
-              editing: {
-                sourceFile: references.value[0],
-                sourceFiles: references.value.slice(1),
-                resolution: resolution.value
-              }
-            }
-          : {}),
-        prompt: [
-          cinematicPrompt(brief.value),
-          creativePrompt(creative.value, mode.value),
-          assetPrompt.value
-        ]
-          .filter(Boolean)
-          .join(' '),
-        aspect: aspect.value,
-        resolutionPixels:
-          RESOLUTIONS.find((option) => option.id === resolution.value)
-            ?.pixels ?? 2048,
-        takes: takeCount.value,
-        ...(seed.value !== undefined ? { seed: seed.value } : {}),
-        references: mode.value === 'image' ? [...references.value] : [],
-        referenceFiles: referenceSnapshot(),
-        ...(mode.value === 'video'
-          ? {
-              video: {
-                ...(seed.value !== undefined ? { seed: seed.value } : {}),
-                durationSeconds: duration.value,
-                resolution: videoResolution.value,
-                generateAudio:
-                  !!selectedModel.value?.video?.generateAudio && audio.value,
-                ...(selectedModel.value?.video?.firstFrame === 'required' &&
-                firstFrame.value
-                  ? { firstFrame: firstFrame.value }
-                  : {}),
-                ...(selectedModel.value?.video?.lastFrame && lastFrame.value
-                  ? { lastFrame: lastFrame.value }
-                  : {})
-              }
-            }
-          : {}),
-        settings: {
-          lastSourceId:
-            mode.value === 'video' ? endingSourceId.value : undefined,
-          generationModelSlug: model.slug,
-          plan: plannedShot.value,
-          sourceId:
-            mode.value === 'video' ? animationSourceId.value : undefined,
-          references: references.value.map((file) => file.name),
-          assets:
-            mode.value === 'image'
-              ? selectedAssets.value.map(({ id, name, kind, notes }) => ({
-                  id,
-                  name,
-                  kind,
-                  notes
-                }))
-              : [],
-          creative: validateCreativeSettings(creative.value),
-          scene: scene.value,
-          mode: mode.value,
-          enhance: enhance.value,
-          direction: { ...direction.value },
-          aspect: aspect.value,
-          resolution: resolution.value,
-          takes: takeCount.value,
-          operation: 'generate',
-          ...(seed.value !== undefined ? { seed: seed.value } : {}),
-          ...(mode.value === 'video'
-            ? {
-                duration: duration.value,
-                video: {
-                  durationSeconds: duration.value,
-                  resolution: videoResolution.value,
-                  generateAudio:
-                    !!selectedModel.value?.video?.generateAudio && audio.value
-                }
-              }
-            : {})
-        },
-        preview: directionOption('look', direction.value).preview
-      }
+      request: shotRequest(model, referenceModel)
     }
+  }
+  function generate() {
+    const model = models.find((item) => item.slug === modelSlug.value)
+    if (
+      !model ||
+      !canReview.value ||
+      !scene.value.trim() ||
+      studio.rendering.value ||
+      studio.gate.value !== 'ready'
+    )
+      return
+    const referenceModel =
+      mode.value === 'image' && references.value.length
+        ? model.referenceModelSlug
+        : undefined
+    review.value = shotReview(model, referenceModel)
   }
 
   const canConfirm = computed(
@@ -908,12 +937,42 @@ export function useCinematicShot(
       review.value.userId === studio.session.value?.uid
   )
 
-  async function reuse(
-    item: Pick<
-      SavedCreation,
-      'kind' | 'modelSlug' | 'prompt' | 'aspect' | 'settings'
-    >
-  ) {
+  function restoreShotText(item: ReusableShot) {
+    scene.value = item.settings?.scene ?? item.prompt
+    enhance.value = item.settings?.enhance ?? false
+    if (item.settings) direction.value = { ...item.settings.direction }
+  }
+  function restoreShotOutput(item: ReusableShot) {
+    aspect.value = item.aspect
+    resolution.value = item.settings?.resolution ?? '2K'
+    takes.value = item.settings?.takes ?? 1
+    requestedSeed.value = item.settings?.seed
+    seedBehavior.value = item.settings?.seed === undefined ? 'random' : 'fixed'
+  }
+  function restoreShotMediaSettings(item: ReusableShot) {
+    if (item.kind === 'video') {
+      restoreVideoSettings(item)
+      firstFrame.value = undefined
+      lastFrame.value = undefined
+    } else {
+      cast.value = undefined
+      palette.value = undefined
+      selectedAssets.value = []
+    }
+  }
+  function restoreVideoSettings(item: ReusableShot) {
+    duration.value =
+      item.settings?.video?.durationSeconds ?? item.settings?.duration ?? 5
+    videoResolution.value = item.settings?.video?.resolution ?? '720p'
+    audio.value = item.settings?.video?.generateAudio ?? false
+  }
+  function restoreShotCreative(item: ReusableShot) {
+    creative.value = item.settings?.creative
+      ? validateCreativeSettings(item.settings.creative)
+      : defaultCreativeSettings()
+    if (item.kind === 'image') plannedShot.value = item.settings?.plan
+  }
+  async function reuse(item: ReusableShot) {
     if (
       studio.rendering.value ||
       (item.settings?.operation && item.settings.operation !== 'generate')
@@ -931,63 +990,62 @@ export function useCinematicShot(
     restoreError.value = false
     mode.value = item.kind
     modelSlug.value = supported.slug
-    scene.value = item.settings?.scene ?? item.prompt
-    enhance.value = item.settings?.enhance ?? false
-    if (item.settings) direction.value = { ...item.settings.direction }
-    aspect.value = item.aspect
-    resolution.value = item.settings?.resolution ?? '2K'
-    takes.value = item.settings?.takes ?? 1
-    requestedSeed.value = item.settings?.seed
-    seedBehavior.value = item.settings?.seed === undefined ? 'random' : 'fixed'
-    if (item.kind === 'video') {
-      duration.value =
-        item.settings?.video?.durationSeconds ?? item.settings?.duration ?? 5
-      videoResolution.value = item.settings?.video?.resolution ?? '720p'
-      audio.value = item.settings?.video?.generateAudio ?? false
-      firstFrame.value = undefined
-      lastFrame.value = undefined
-    } else {
-      cast.value = undefined
-      palette.value = undefined
-      selectedAssets.value = []
-    }
-    creative.value = item.settings?.creative
-      ? validateCreativeSettings(item.settings.creative)
-      : defaultCreativeSettings()
-    if (item.kind === 'image') plannedShot.value = item.settings?.plan
+    restoreShotText(item)
+    restoreShotOutput(item)
+    restoreShotMediaSettings(item)
+    restoreShotCreative(item)
     restored.value = true
     const currentEpoch = mediaEpoch
     const scope = namespace.value
+    if (await restoreShotReferences(item, scope, currentEpoch)) return
+    await restoreLegacyAssets(item, scope, currentEpoch)
+  }
+  function applyImageReferences(item: ReusableShot, files: ReferenceFile[]) {
+    cast.value = files.find((entry) => entry.role === 'cast')?.file
+    palette.value = files.find((entry) => entry.role === 'palette')?.file
+    selectedAssets.value = (item.settings?.assets ?? []).flatMap((asset) => {
+      const entry = files.find(
+        (reference) =>
+          reference.role === 'asset' && reference.assetId === asset.id
+      )
+      return entry ? [{ ...asset, file: entry.file }] : []
+    })
+  }
+  function applyShotReferences(item: ReusableShot, files: ReferenceFile[]) {
+    if (item.kind === 'image') {
+      applyImageReferences(item, files)
+    } else {
+      firstFrame.value = files.find((entry) => entry.role === 'first')?.file
+      lastFrame.value = files.find((entry) => entry.role === 'last')?.file
+      animationSourceId.value = item.settings?.sourceId
+      endingSourceId.value = item.settings?.lastSourceId
+    }
+  }
+  async function restoreShotReferences(
+    item: ReusableShot,
+    scope: string | undefined,
+    currentEpoch: number
+  ) {
     if (scope && item.settings?.referenceBundleId) {
       try {
         const files = await loadReferenceBundle(
           scope,
           item.settings.referenceBundleId
         )
-        if (currentEpoch !== mediaEpoch) return
-        if (item.kind === 'image') {
-          cast.value = files.find((entry) => entry.role === 'cast')?.file
-          palette.value = files.find((entry) => entry.role === 'palette')?.file
-          selectedAssets.value = (item.settings.assets ?? []).flatMap(
-            (asset) => {
-              const entry = files.find(
-                (reference) =>
-                  reference.role === 'asset' && reference.assetId === asset.id
-              )
-              return entry ? [{ ...asset, file: entry.file }] : []
-            }
-          )
-        } else {
-          firstFrame.value = files.find((entry) => entry.role === 'first')?.file
-          lastFrame.value = files.find((entry) => entry.role === 'last')?.file
-          animationSourceId.value = item.settings.sourceId
-          endingSourceId.value = item.settings.lastSourceId
-        }
-        return
+        if (currentEpoch !== mediaEpoch) return true
+        applyShotReferences(item, files)
+        return true
       } catch {
         if (currentEpoch === mediaEpoch) restoreError.value = true
       }
     }
+    return false
+  }
+  async function restoreLegacyAssets(
+    item: ReusableShot,
+    scope: string | undefined,
+    currentEpoch: number
+  ) {
     if (item.kind === 'image' && scope && item.settings?.assets?.length) {
       try {
         const saved = await listAssets(scope)
@@ -1002,6 +1060,9 @@ export function useCinematicShot(
     }
   }
 
+  function editRecipeSettings(recipe: CinematicRecipeImport['recipe']) {
+    return { takes: recipe.settings?.takes, seed: recipe.settings?.seed }
+  }
   function importRecipe({ recipe, source }: CinematicRecipeImport) {
     if (studio.rendering.value) return
     const operation = recipe.settings?.operation
@@ -1018,8 +1079,7 @@ export function useCinematicShot(
         name: source.name,
         url: URL.createObjectURL(source),
         recipe: {
-          takes: recipe.settings?.takes,
-          seed: recipe.settings?.seed,
+          ...editRecipeSettings(recipe),
           modelSlug: recipe.modelSlug,
           prompt: recipe.prompt,
           aspect: recipe.aspect,
@@ -1027,8 +1087,7 @@ export function useCinematicShot(
         }
       }
       reviewEdit({
-        takes: recipe.settings?.takes,
-        seed: recipe.settings?.seed,
+        ...editRecipeSettings(recipe),
         modelSlug: recipe.modelSlug,
         prompt: recipe.prompt,
         aspect: recipe.aspect,
@@ -1114,6 +1173,88 @@ export function useCinematicShot(
   const seedSubscriptions = new Set<() => void>()
   onScopeDispose(() => seedSubscriptions.forEach((stop) => stop()))
 
+  function observeSeedCompletion(
+    snapshot: CinematicReview,
+    request: ShotRequest,
+    ids: string[],
+    scope: string
+  ) {
+    const update = snapshot.seedUpdate
+    if (update && request.seed !== undefined && ids.length) {
+      const enteredSeed = request.seed
+      const stop = watch(
+        () => studio.reel.value,
+        (reel) => {
+          const completed = reel.takes.filter((take) => ids.includes(take.id))
+          if (completed.some((take) => take.status === 'rendering')) return
+          stop()
+          seedSubscriptions.delete(stop)
+          const settings = modeSettings.value[update.mode]
+          if (
+            namespace.value === scope &&
+            (update.mode === 'image' ? imageModel.value : videoModel.value) ===
+              update.modelSlug &&
+            completed.length === ids.length &&
+            completed.every((take) => take.status === 'done') &&
+            settings.seed === enteredSeed &&
+            settings.seedBehavior === update.behavior
+          ) {
+            settings.seed = nextSeed(
+              enteredSeed,
+              update.behavior,
+              update.bounds
+            )
+          }
+        }
+      )
+      seedSubscriptions.add(stop)
+    }
+  }
+  function dispatchReviewedShot(
+    snapshot: CinematicReview,
+    request: ShotRequest,
+    referenceBundleId: string | undefined,
+    scope: string
+  ) {
+    if (snapshot.batch) {
+      motionOpen.value = false
+      mode.value = 'video'
+      void studio.generateBatch(
+        snapshot.batch.map((clip) => ({
+          ...clip,
+          settings: clip.settings
+            ? { ...clip.settings, referenceBundleId }
+            : undefined
+        }))
+      )
+    } else {
+      const previousIds = new Set(
+        studio.reel.value.takes.map((take) => take.id)
+      )
+      const completion = studio.generate(request)
+      const ids = studio.reel.value.takes
+        .filter((take) => !previousIds.has(take.id))
+        .map((take) => take.id)
+      observeSeedCompletion(snapshot, request, ids, scope)
+      void completion
+    }
+  }
+  function prepareReviewedRequest(
+    source: ShotRequest,
+    referenceBundleId: string | undefined
+  ) {
+    const request = {
+      ...source,
+      settings: source.settings
+        ? { ...source.settings, referenceBundleId }
+        : undefined
+    }
+    if (request.editing) {
+      closeEdit()
+      mode.value = 'image'
+    }
+    return request
+  }
   async function confirm() {
     const snapshot = review.value
     const scope = namespace.value
@@ -1126,71 +1267,12 @@ export function useCinematicShot(
         snapshot.request.referenceFiles ?? []
       )
       if (review.value !== snapshot || namespace.value !== scope) return
-      const request = {
-        ...snapshot.request,
-        settings: snapshot.request.settings
-          ? { ...snapshot.request.settings, referenceBundleId }
-          : undefined
-      }
-      if (request.editing) {
-        closeEdit()
-        mode.value = 'image'
-      }
+      const request = prepareReviewedRequest(
+        snapshot.request,
+        referenceBundleId
+      )
       review.value = undefined
-      if (snapshot.batch) {
-        motionOpen.value = false
-        mode.value = 'video'
-        void studio.generateBatch(
-          snapshot.batch.map((clip) => ({
-            ...clip,
-            settings: clip.settings
-              ? { ...clip.settings, referenceBundleId }
-              : undefined
-          }))
-        )
-      } else {
-        const previousIds = new Set(
-          studio.reel.value.takes.map((take) => take.id)
-        )
-        const completion = studio.generate(request)
-        const ids = studio.reel.value.takes
-          .filter((take) => !previousIds.has(take.id))
-          .map((take) => take.id)
-        const update = snapshot.seedUpdate
-        if (update && request.seed !== undefined && ids.length) {
-          const enteredSeed = request.seed
-          const stop = watch(
-            () => studio.reel.value,
-            (reel) => {
-              const completed = reel.takes.filter((take) =>
-                ids.includes(take.id)
-              )
-              if (completed.some((take) => take.status === 'rendering')) return
-              stop()
-              seedSubscriptions.delete(stop)
-              const settings = modeSettings.value[update.mode]
-              if (
-                namespace.value === scope &&
-                (update.mode === 'image'
-                  ? imageModel.value
-                  : videoModel.value) === update.modelSlug &&
-                completed.length === ids.length &&
-                completed.every((take) => take.status === 'done') &&
-                settings.seed === enteredSeed &&
-                settings.seedBehavior === update.behavior
-              ) {
-                settings.seed = nextSeed(
-                  enteredSeed,
-                  update.behavior,
-                  update.bounds
-                )
-              }
-            }
-          )
-          seedSubscriptions.add(stop)
-        }
-        void completion
-      }
+      dispatchReviewedShot(snapshot, request, referenceBundleId, scope)
     } catch {
       if (namespace.value === scope) referenceSaveError.value = true
     } finally {
@@ -1256,39 +1338,51 @@ export function useCinematicShot(
           })
     }
   }
+  function restoredModeSettings(saved: ComposerModeDraft) {
+    return {
+      direction: { ...saved.direction },
+      creative: saved.creative
+        ? validateCreativeSettings(saved.creative)
+        : defaultCreativeSettings(),
+      enhance: saved.enhance,
+      resolution: saved.resolution ?? '2K',
+      takes: saved.takes ?? 1,
+      seed: saved.seed,
+      seedBehavior:
+        saved.seedBehavior ?? (saved.seed === undefined ? 'random' : 'fixed')
+    }
+  }
+  function restoreVideoComposer(saved: ComposerModeDraft) {
+    videoModel.value = saved.modelSlug
+    videoScene.value = saved.scene
+    videoAspect.value = saved.aspect ?? '16:9'
+    requestedDuration.value = saved.video?.durationSeconds ?? 5
+    requestedResolution.value = saved.video?.resolution ?? '720p'
+    audio.value = saved.video?.generateAudio ?? false
+  }
+  function restoreComposerMedia(
+    kind: 'image' | 'video',
+    saved: ComposerModeDraft
+  ) {
+    if (kind === 'image') {
+      imageModel.value = saved.modelSlug
+      imageScene.value = saved.scene
+      imageAspect.value = saved.aspect ?? '21:9'
+      plannedShot.value = saved.plan
+    } else {
+      restoreVideoComposer(saved)
+    }
+  }
   function restoreComposer(draft: ComposerDrafts) {
     for (const kind of ['image', 'video'] as const) {
       const saved = draft[kind]
-      modeSettings.value[kind] = {
-        direction: { ...saved.direction },
-        creative: saved.creative
-          ? validateCreativeSettings(saved.creative)
-          : defaultCreativeSettings(),
-        enhance: saved.enhance,
-        resolution: saved.resolution ?? '2K',
-        takes: saved.takes ?? 1,
-        seed: saved.seed,
-        seedBehavior:
-          saved.seedBehavior ?? (saved.seed === undefined ? 'random' : 'fixed')
-      }
+      modeSettings.value[kind] = restoredModeSettings(saved)
       const available = models.some(
         (model) =>
           model.slug === saved.modelSlug && (model.mode ?? 'image') === kind
       )
       if (saved.modelSlug && !available) restoreError.value = true
-      if (kind === 'image') {
-        imageModel.value = saved.modelSlug
-        imageScene.value = saved.scene
-        imageAspect.value = saved.aspect ?? '21:9'
-        plannedShot.value = saved.plan
-      } else {
-        videoModel.value = saved.modelSlug
-        videoScene.value = saved.scene
-        videoAspect.value = saved.aspect ?? '16:9'
-        requestedDuration.value = saved.video?.durationSeconds ?? 5
-        requestedResolution.value = saved.video?.resolution ?? '720p'
-        audio.value = saved.video?.generateAudio ?? false
-      }
+      restoreComposerMedia(kind, saved)
     }
     mode.value = draft.mode
   }

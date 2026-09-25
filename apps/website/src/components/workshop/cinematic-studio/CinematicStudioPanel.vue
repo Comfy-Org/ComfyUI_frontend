@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CinematicStudioToolbar from './CinematicStudioToolbar.vue'
 import CinematicSeedControls from './CinematicSeedControls.vue'
 import type { WorkshopModelDetail } from '../../../config/models-catalogue'
 import { ref, useTemplateRef } from 'vue'
@@ -13,15 +14,10 @@ import CinematicMotionCompare from './CinematicMotionCompare.vue'
 import CinematicTransition from './CinematicTransition.vue'
 import CinematicCompare from './CinematicCompare.vue'
 import CinematicRecipeImport from './CinematicRecipeImport.vue'
-import { tcRecipe } from '../../../lib/workshop/cinematic-studio/recipe-copy'
 import CinematicEnhancer from './CinematicEnhancer.vue'
 import CinematicRecovery from './CinematicRecovery.vue'
-import { tcEnhancement } from '../../../lib/workshop/cinematic-studio/enhancement-copy'
 import { creativePrompt } from '../../../lib/workshop/cinematic-studio/creative'
 import { cinematicPrompt } from '../../../lib/workshop/cinematic-studio/prompt'
-import { tcAssets } from '../../../lib/workshop/cinematic-studio/assets-copy'
-import Button from '../../ui/button/Button.vue'
-import { libraryCopy } from '../../../lib/workshop/cinematic-studio/library-copy'
 import { useCinematicShot } from '../../../composables/useCinematicShot'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
 import type { Locale } from '../../../i18n/translations'
@@ -51,25 +47,22 @@ const enhancerOpen = ref(false)
 const compareOpen = ref(false)
 const recipeOpen = ref(false)
 
+const shot = useCinematicShot(models, editingModels)
 const {
   studio,
   namespace,
   creative,
   creativeOpen,
   builderOpen,
-  openBuilder,
   plannerSettings,
   applyBuiltScene,
-  restoreError,
   assetsOpen,
   motionOpen,
   transitionOpen,
   reviewMotion,
   applyTransition,
   selectedAssets,
-  assetLimitReached,
   useAsset,
-  removeAsset,
   edit,
   editSource,
   closeEdit,
@@ -78,7 +71,6 @@ const {
   libraryOpen,
   reuse,
   importRecipe,
-  restored,
   referenceSaveError,
   preparing,
   mode,
@@ -108,13 +100,12 @@ const {
   cast,
   palette,
   promptSegments,
-  references,
   review,
   canConfirm,
   confirm,
   choose,
   generate: generateShot
-} = useCinematicShot(models, editingModels)
+} = shot
 const {
   open: picker,
   toggle: togglePicker,
@@ -241,72 +232,14 @@ function generate() {
       @favorite="library.favorite"
       @retry="library.retry"
     />
-    <div
-      class="mx-auto my-3 flex w-full max-w-7xl flex-wrap items-center gap-3 px-4"
+    <CinematicStudioToolbar
+      :shot
+      :enhancement-model="enhancementModel"
+      :locale
+      @enhancer="enhancerOpen = true"
+      @recipe="recipeOpen = true"
+      @compare="compareOpen = true"
     >
-      <Button
-        variant="outline"
-        :disabled="studio.rendering.value"
-        @click="libraryOpen = true"
-        >{{ libraryCopy('title', locale) }}</Button
-      >
-      <Button
-        variant="outline"
-        :disabled="studio.rendering.value"
-        @click="openBuilder"
-        >{{ libraryCopy('builder', locale) }}</Button
-      >
-      <Button
-        variant="outline"
-        :disabled="studio.rendering.value"
-        @click="creativeOpen = true"
-        >{{ libraryCopy('creative', locale) }}</Button
-      >
-      <Button
-        variant="outline"
-        :disabled="studio.rendering.value"
-        @click="assetsOpen = true"
-      >
-        {{ tcAssets('title', locale) }}
-      </Button>
-      <Button
-        v-if="enhancementModel"
-        variant="outline"
-        :disabled="studio.rendering.value || !scene.trim()"
-        @click="enhancerOpen = true"
-        >{{ tcEnhancement('title', locale) }}</Button
-      >
-      <Button
-        variant="outline"
-        :disabled="studio.rendering.value"
-        @click="recipeOpen = true"
-        >{{ tcRecipe('title', locale) }}</Button
-      >
-      <Button
-        variant="outline"
-        :disabled="library.items.value.length < 2"
-        @click="compareOpen = true"
-        >{{ libraryCopy('compare', locale) }}</Button
-      >
-      <Button
-        variant="outline"
-        :disabled="studio.rendering.value"
-        @click="transitionOpen = true"
-        >{{ libraryCopy('transition', locale) }}</Button
-      >
-      <Button
-        variant="outline"
-        :disabled="studio.rendering.value"
-        @click="motionOpen = true"
-        >{{ libraryCopy('motion', locale) }}</Button
-      >
-      <p
-        v-if="assetLimitReached"
-        role="status"
-        class="text-xs text-primary-comfy-canvas"
-      >
-        {{ tcAssets('limit', locale) }}
-      </p>
       <CinematicSeedControls
         v-if="selectedModel?.seed"
         v-model:seed="requestedSeed"
@@ -315,66 +248,7 @@ function generate() {
         :disabled="studio.rendering.value || preparing"
         :locale
       />
-      <p
-        v-if="
-          mode === 'image' &&
-          references.length &&
-          (!selectedModel?.referenceModelSlug ||
-            references.length > (selectedModel.referenceMax ?? 0))
-        "
-        role="status"
-        class="text-xs text-primary-comfy-canvas"
-      >
-        {{ libraryCopy('referenceUnsupported', locale) }}
-      </p>
-      <p
-        v-if="referenceSaveError && !review"
-        role="alert"
-        class="text-xs text-primary-comfy-canvas"
-      >
-        {{ libraryCopy('referenceSaveError', locale) }}
-      </p>
-      <p
-        v-if="restoreError"
-        role="alert"
-        class="text-xs text-primary-comfy-canvas"
-      >
-        {{ libraryCopy('restoreError', locale) }}
-      </p>
-      <p
-        v-if="restored"
-        role="status"
-        class="text-xs text-primary-comfy-canvas"
-      >
-        {{ libraryCopy('reuseNotice', locale) }}
-      </p>
-      <p
-        v-if="library.error.value"
-        role="alert"
-        class="text-xs text-primary-comfy-canvas"
-      >
-        {{ libraryCopy('error', locale) }}
-      </p>
-    </div>
-    <div
-      v-if="selectedAssets.length"
-      class="mx-auto mb-3 flex w-full max-w-7xl flex-wrap items-center gap-2 px-4"
-      :aria-label="tcAssets('active', locale)"
-    >
-      <Button
-        v-for="asset in selectedAssets"
-        :key="asset.id"
-        variant="outline"
-        :disabled="studio.rendering.value"
-        :aria-label="`${tcAssets('detach', locale)}: ${asset.name}`"
-        @click="removeAsset(asset.id)"
-      >
-        {{ tcAssets(asset.kind, locale) }}: {{ asset.name }} ×
-      </Button>
-      <p v-if="mode === 'video'" class="text-xs text-primary-comfy-canvas">
-        {{ tcAssets('imageOnly', locale) }}
-      </p>
-    </div>
+    </CinematicStudioToolbar>
     <CinematicCreativeEditor
       v-model="creative"
       v-model:open="creativeOpen"

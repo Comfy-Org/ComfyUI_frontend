@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import CinematicStudioStage from './CinematicStudioStage.vue'
+import CinematicStudioPopoverControls from './CinematicStudioPopoverControls.vue'
+import CinematicStudioToolbar from './CinematicStudioToolbar.vue'
 import CinematicSeedControls from './CinematicSeedControls.vue'
 import type { WorkshopModelDetail } from '../../../config/models-catalogue'
 import { computed, ref } from 'vue'
@@ -16,15 +19,10 @@ import CinematicMotionCompare from './CinematicMotionCompare.vue'
 import CinematicTransition from './CinematicTransition.vue'
 import CinematicCompare from './CinematicCompare.vue'
 import CinematicRecipeImport from './CinematicRecipeImport.vue'
-import { tcRecipe } from '../../../lib/workshop/cinematic-studio/recipe-copy'
 import CinematicEnhancer from './CinematicEnhancer.vue'
 import CinematicRecovery from './CinematicRecovery.vue'
-import { tcEnhancement } from '../../../lib/workshop/cinematic-studio/enhancement-copy'
 import { creativePrompt } from '../../../lib/workshop/cinematic-studio/creative'
 import { cinematicPrompt } from '../../../lib/workshop/cinematic-studio/prompt'
-import { tcAssets } from '../../../lib/workshop/cinematic-studio/assets-copy'
-import Button from '../../ui/button/Button.vue'
-import { libraryCopy } from '../../../lib/workshop/cinematic-studio/library-copy'
 import { useCinematicShot } from '../../../composables/useCinematicShot'
 import type { DirectionPart } from '../../../lib/workshop/cinematic-studio/catalog'
 import type { CinematicModel } from '../../../lib/workshop/cinematic-studio/models'
@@ -33,17 +31,9 @@ import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import RunLeaveDialog from '../RunLeaveDialog.vue'
 import CinematicComposer from './CinematicComposer.vue'
-import CinematicOutputControls from './CinematicOutputControls.vue'
-import CinematicPicker from './CinematicPicker.vue'
-import CinematicPopover from './CinematicPopover.vue'
-import CinematicReferenceSlot from './CinematicReferenceSlot.vue'
-import CinematicStage from './CinematicStage.vue'
 import CinematicReviewDialog from './CinematicReviewDialog.vue'
 import CinematicModeSwitch from './CinematicModeSwitch.vue'
-import CinematicVideoStart from './CinematicVideoStart.vue'
-import CinematicVideoControls from './CinematicVideoControls.vue'
 import type { PopoverKey } from './picker-key'
-import { pickerGroups, popoverTitle } from './picker-key'
 
 const {
   models,
@@ -61,25 +51,22 @@ const enhancerOpen = ref(false)
 const compareOpen = ref(false)
 const recipeOpen = ref(false)
 
+const shot = useCinematicShot(models, editingModels)
 const {
   studio,
   namespace,
   creative,
   creativeOpen,
   builderOpen,
-  openBuilder,
   plannerSettings,
   applyBuiltScene,
-  restoreError,
   assetsOpen,
   motionOpen,
   transitionOpen,
   reviewMotion,
   applyTransition,
   selectedAssets,
-  assetLimitReached,
   useAsset,
-  removeAsset,
   edit,
   editSource,
   closeEdit,
@@ -88,45 +75,32 @@ const {
   libraryOpen,
   reuse,
   importRecipe,
-  restored,
   referenceSaveError,
   preparing,
   mode,
   availableModels,
   selectedModel,
-  firstFrame,
-  lastFrame,
-  duration,
-  videoResolution,
-  audio,
   canReview,
   formatLabel,
   takeCount,
   modeReel,
   animate,
-  useAsReference,
   nextShot,
   frameLoading,
   frameError,
   modelSlug,
   scene,
-  enhance,
   direction,
   aspect,
-  resolution,
-  takes,
   requestedSeed,
   seedBehavior,
-  cast,
-  palette,
   references,
   review,
   canConfirm,
   confirm,
-  choose,
   start: startShot,
   generate: generateShot
-} = useCinematicShot(models, editingModels)
+} = shot
 const {
   open: popover,
   toggle: togglePopover,
@@ -309,133 +283,14 @@ function chooseStartingImage() {
       @favorite="library.favorite"
       @retry="library.retry"
     />
-    <div
-      class="mx-auto my-3 flex w-full max-w-7xl flex-wrap items-center gap-3 px-4"
-    >
-      <Button
-        variant="outline"
-        :disabled="studio.rendering.value"
-        @click="libraryOpen = true"
-        >{{ libraryCopy('title', locale) }}</Button
-      >
-      <Button
-        variant="outline"
-        :disabled="studio.rendering.value"
-        @click="openBuilder"
-        >{{ libraryCopy('builder', locale) }}</Button
-      >
-      <Button
-        variant="outline"
-        :disabled="studio.rendering.value"
-        @click="creativeOpen = true"
-        >{{ libraryCopy('creative', locale) }}</Button
-      >
-      <Button
-        variant="outline"
-        :disabled="studio.rendering.value"
-        @click="assetsOpen = true"
-      >
-        {{ tcAssets('title', locale) }}
-      </Button>
-      <Button
-        v-if="enhancementModel"
-        variant="outline"
-        :disabled="studio.rendering.value || !scene.trim()"
-        @click="enhancerOpen = true"
-        >{{ tcEnhancement('title', locale) }}</Button
-      >
-      <Button
-        variant="outline"
-        :disabled="studio.rendering.value"
-        @click="recipeOpen = true"
-        >{{ tcRecipe('title', locale) }}</Button
-      >
-      <Button
-        variant="outline"
-        :disabled="library.items.value.length < 2"
-        @click="compareOpen = true"
-        >{{ libraryCopy('compare', locale) }}</Button
-      >
-      <Button
-        variant="outline"
-        :disabled="studio.rendering.value"
-        @click="transitionOpen = true"
-        >{{ libraryCopy('transition', locale) }}</Button
-      >
-      <Button
-        variant="outline"
-        :disabled="studio.rendering.value"
-        @click="motionOpen = true"
-        >{{ libraryCopy('motion', locale) }}</Button
-      >
-      <p
-        v-if="assetLimitReached"
-        role="status"
-        class="text-xs text-primary-comfy-canvas"
-      >
-        {{ tcAssets('limit', locale) }}
-      </p>
-
-      <p
-        v-if="
-          mode === 'image' &&
-          references.length &&
-          (!selectedModel?.referenceModelSlug ||
-            references.length > (selectedModel.referenceMax ?? 0))
-        "
-        role="status"
-        class="text-xs text-primary-comfy-canvas"
-      >
-        {{ libraryCopy('referenceUnsupported', locale) }}
-      </p>
-      <p
-        v-if="referenceSaveError && !review"
-        role="alert"
-        class="text-xs text-primary-comfy-canvas"
-      >
-        {{ libraryCopy('referenceSaveError', locale) }}
-      </p>
-      <p
-        v-if="restoreError"
-        role="alert"
-        class="text-xs text-primary-comfy-canvas"
-      >
-        {{ libraryCopy('restoreError', locale) }}
-      </p>
-      <p
-        v-if="restored"
-        role="status"
-        class="text-xs text-primary-comfy-canvas"
-      >
-        {{ libraryCopy('reuseNotice', locale) }}
-      </p>
-      <p
-        v-if="library.error.value"
-        role="alert"
-        class="text-xs text-primary-comfy-canvas"
-      >
-        {{ libraryCopy('error', locale) }}
-      </p>
-    </div>
-    <div
-      v-if="selectedAssets.length"
-      class="mx-auto mb-3 flex w-full max-w-7xl flex-wrap items-center gap-2 px-4"
-      :aria-label="tcAssets('active', locale)"
-    >
-      <Button
-        v-for="asset in selectedAssets"
-        :key="asset.id"
-        variant="outline"
-        :disabled="studio.rendering.value"
-        :aria-label="`${tcAssets('detach', locale)}: ${asset.name}`"
-        @click="removeAsset(asset.id)"
-      >
-        {{ tcAssets(asset.kind, locale) }}: {{ asset.name }} ×
-      </Button>
-      <p v-if="mode === 'video'" class="text-xs text-primary-comfy-canvas">
-        {{ tcAssets('imageOnly', locale) }}
-      </p>
-    </div>
+    <CinematicStudioToolbar
+      :shot
+      :enhancement-model="enhancementModel"
+      :locale
+      @enhancer="enhancerOpen = true"
+      @recipe="recipeOpen = true"
+      @compare="compareOpen = true"
+    />
     <CinematicCreativeEditor
       v-model="creative"
       v-model:open="creativeOpen"
@@ -475,31 +330,18 @@ function chooseStartingImage() {
       @close="review = undefined"
       @confirm="confirm"
     />
-    <CinematicVideoStart
-      v-if="mode === 'video' && !modeReel.takes.length"
-      :scene
-      :has-frame="
-        !!firstFrame && selectedModel?.video?.firstFrame !== 'unsupported'
-      "
-      :can-animate="!!animationModel"
-      :disabled="studio.rendering.value || frameLoading"
+    <CinematicStudioStage
+      :shot
+      :models
+      :editing-models="editingModels"
+      :starter
+      :animation-model="animationModel"
       :locale
-      @start="startVideo"
+      @start-video="startVideo"
       @upload="chooseStartingImage"
       @saved="libraryOpen = true"
-    />
-    <CinematicStage
-      v-else
-      :reel="modeReel"
-      :models="[...models, ...editingModels]"
-      :locale
-      :starter
-      @select="studio.select"
       @start="start"
       @again="generate"
-      @reference="useAsReference"
-      @animate="animate"
-      @edit="edit"
       @switch-model="generateOn"
       @edit-scene="focusScene"
     />
@@ -536,80 +378,14 @@ function chooseStartingImage() {
         >
           {{ tc('cinematic.video.frameError', locale) }}
         </p>
-        <div
-          v-if="popover"
-          class="fixed inset-0 z-40 bg-black/60 lg:hidden"
-          aria-hidden="true"
-        />
-        <CinematicPicker
-          v-if="popover && pickerGroups(popover).length"
-          :key="`${popover}-${directionStart}`"
-          :groups="pickerGroups(popover)"
-          :start="directionStart"
-          :direction
-          :title="popoverTitle(popover, locale)"
+        <CinematicStudioPopoverControls
+          :shot
+          :popover
+          :direction-start="directionStart"
+          :popover-class="popoverClass"
           :locale
-          :class="popoverClass"
-          @choose="choose"
           @close="closePopover"
         />
-        <CinematicPopover
-          v-else-if="popover"
-          :key="popover"
-          :title="popoverTitle(popover, locale)"
-          :locale
-          :class="popoverClass"
-          @close="closePopover"
-        >
-          <CinematicVideoControls
-            v-if="
-              mode === 'video' &&
-              (popover === 'format' || popover === 'references')
-            "
-            v-model:aspect="aspect"
-            v-model:duration="duration"
-            v-model:resolution="videoResolution"
-            v-model:audio="audio"
-            v-model:first-frame="firstFrame"
-            v-model:last-frame="lastFrame"
-            :model="selectedModel"
-            :locale
-          />
-          <div
-            v-else-if="popover === 'references'"
-            class="grid grid-cols-2 gap-2"
-          >
-            <CinematicReferenceSlot v-model="cast" kind="cast" :locale />
-            <CinematicReferenceSlot v-model="palette" kind="palette" :locale />
-          </div>
-          <div v-else class="flex flex-col gap-3">
-            <CinematicOutputControls
-              v-model:aspect="aspect"
-              v-model:resolution="resolution"
-              v-model:takes="takes"
-              :allowed-aspects="selectedModel?.imageAspects"
-              :locale
-            />
-            <label
-              class="flex cursor-pointer items-center gap-2.5 rounded-xl px-1 text-xs text-primary-warm-white"
-            >
-              <input
-                v-model="enhance"
-                type="checkbox"
-                role="switch"
-                class="peer sr-only"
-              />
-              <span
-                class="relative h-4 w-7 shrink-0 rounded-full bg-transparency-white-t20 transition-colors peer-checked:bg-primary-comfy-yellow peer-focus-visible:ring-3 peer-focus-visible:ring-primary-comfy-yellow/50 after:absolute after:top-0.5 after:left-0.5 after:size-3 after:rounded-full after:bg-primary-comfy-ink after:transition-transform peer-checked:after:translate-x-3"
-                aria-hidden="true"
-              />
-              {{ tc('cinematic.scene.enhance', locale) }}
-              <span class="truncate text-primary-warm-gray">
-                {{ tc('cinematic.scene.enhanceHint', locale) }}
-              </span>
-            </label>
-          </div>
-        </CinematicPopover>
         <CinematicComposer
           v-model:scene="scene"
           v-model:model="modelSlug"

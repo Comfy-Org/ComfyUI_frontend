@@ -180,15 +180,91 @@ export function useCinematicStudioRun(modelCount: number) {
     return credential.session.token
   }
 
-  async function renderTake(
+  function requestForm(model: WorkshopModelDetail, request: ShotRequest) {
+    if (request.video)
+      return cinematicVideoForm(
+        model,
+        request.prompt,
+        request.aspect,
+        request.video
+      )
+    if (request.editing)
+      return cinematicEditingForm(model, {
+        sourceFile: request.editing.sourceFile,
+        sourceFiles: request.editing.sourceFiles,
+        seed: request.seed,
+        prompt: request.prompt,
+        aspect: request.aspect,
+        resolution: request.editing.resolution
+      })
+    return cinematicImageForm(model, {
+      prompt: request.prompt,
+      aspect: request.aspect,
+      resolutionPixels: request.resolutionPixels,
+      seed: request.seed,
+      references: request.references
+    })
+  }
+  function terminalFailure(
+    error: unknown,
+    attempt: Attempt,
+    entry: CinematicJournalEntry
+  ) {
+    if (
+      error instanceof WorkshopRouterError &&
+      error.requestSettlement === 'terminal'
+    )
+      record(attempt.namespace, { ...entry, status: 'terminal' })
+  }
+  function failedTake(id: string, error: unknown) {
+    dispatch(
+      error instanceof WorkshopRouterError
+        ? {
+            type: 'takeFailed',
+            id,
+            reason: error.reason,
+            requestId: error.requestId ?? undefined
+          }
+        : { type: 'takeFailed', id, reason: 'client' }
+    )
+  }
+  function saveTiming(
+    attempt: Attempt,
+    slug: string,
+    id: string,
+    elapsedMs: number | undefined
+  ) {
+    if (
+      elapsedMs !== undefined &&
+      attemptIsCurrent(attempt) &&
+      namespace.value === attempt.namespace
+    )
+      recordGenerationTiming(attempt.namespace, slug, { id, elapsedMs })
+  }
+  function completeTake(
+    id: string,
+    output:
+      | Awaited<ReturnType<typeof router_render>>['outputs'][number]
+      | undefined,
+    requestId: string | null,
+    attempt: Attempt,
+    entry: CinematicJournalEntry
+  ) {
+    if (attempt.controller.signal.aborted) {
+      if (output) releaseRouterOutputs([output])
+      return false
+    }
+    if (!output) throw new WorkshopRouterError('response', requestId)
+    record(attempt.namespace, { ...entry, status: 'complete' })
+    dispatch({ type: 'takeSucceeded', id, output })
+    return true
+  }
+  function journalEntry(
     id: string,
     model: WorkshopModelDetail,
-    request: ShotRequest,
-    startedFor: WorkshopSession,
-    attempt: Attempt
-  ) {
-    const signal = attempt.controller.signal
-    const entry: CinematicJournalEntry = {
+    request: ShotRequest
+  ): CinematicJournalEntry {
+    return {
       id,
       modelSlug: model.slug,
       contractId: model.execution?.id ?? '',
@@ -200,6 +276,16 @@ export function useCinematicStudioRun(modelCount: number) {
       settings: request.settings,
       status: 'unknown'
     }
+  }
+  async function renderTake(
+    id: string,
+    model: WorkshopModelDetail,
+    request: ShotRequest,
+    startedFor: WorkshopSession,
+    attempt: Attempt
+  ) {
+    const signal = attempt.controller.signal
+    const entry = journalEntry(id, model, request)
     attempt.entry = entry
     const timing = startGenerationTiming()
     try {
@@ -210,39 +296,7 @@ export function useCinematicStudioRun(modelCount: number) {
         {},
         {
           model,
-          ...(!request.video && !request.editing
-            ? {
-                form: cinematicImageForm(model, {
-                  prompt: request.prompt,
-                  aspect: request.aspect,
-                  resolutionPixels: request.resolutionPixels,
-                  seed: request.seed,
-                  references: request.references
-                })
-              }
-            : {}),
-          ...(request.editing
-            ? {
-                form: cinematicEditingForm(model, {
-                  sourceFile: request.editing.sourceFile,
-                  sourceFiles: request.editing.sourceFiles,
-                  seed: request.seed,
-                  prompt: request.prompt,
-                  aspect: request.aspect,
-                  resolution: request.editing.resolution
-                })
-              }
-            : {}),
-          ...(request.video
-            ? {
-                form: cinematicVideoForm(
-                  model,
-                  request.prompt,
-                  request.aspect,
-                  request.video
-                )
-              }
-            : {}),
+          form: requestForm(model, request),
           signal,
           cancelOnAbort: () => attempt.cancelRequested,
           onPrepared: () => {
@@ -270,44 +324,23 @@ export function useCinematicStudioRun(modelCount: number) {
       )
       const output = result.outputs.at(0)
       releaseRouterOutputs(result.outputs.slice(1))
-      if (signal.aborted) {
-        if (output) releaseRouterOutputs([output])
-        return false
-      }
-      if (!output) throw new WorkshopRouterError('response', result.requestId)
-      record(attempt.namespace, {
-        ...(attempt.entry ?? entry),
-        status: 'complete'
-      })
-      dispatch({ type: 'takeSucceeded', id, output })
-      const elapsedMs = timing.finish()
       if (
-        elapsedMs !== undefined &&
-        attemptIsCurrent(attempt) &&
-        namespace.value === attempt.namespace
+        !completeTake(
+          id,
+          output,
+          result.requestId,
+          attempt,
+          attempt.entry ?? entry
+        )
       )
-        recordGenerationTiming(attempt.namespace, model.slug, { id, elapsedMs })
+        return false
+      const elapsedMs = timing.finish()
+      saveTiming(attempt, model.slug, id, elapsedMs)
       return true
     } catch (error) {
       if (signal.aborted) return false
-      if (
-        error instanceof WorkshopRouterError &&
-        error.requestSettlement === 'terminal'
-      )
-        record(attempt.namespace, {
-          ...(attempt.entry ?? entry),
-          status: 'terminal'
-        })
-      dispatch(
-        error instanceof WorkshopRouterError
-          ? {
-              type: 'takeFailed',
-              id,
-              reason: error.reason,
-              requestId: error.requestId ?? undefined
-            }
-          : { type: 'takeFailed', id, reason: 'client' }
-      )
+      terminalFailure(error, attempt, attempt.entry ?? entry)
+      failedTake(id, error)
       return false
     } finally {
       timing.dispose()
@@ -317,22 +350,8 @@ export function useCinematicStudioRun(modelCount: number) {
   async function generate(request: ShotRequest) {
     return generateBatch([request])
   }
-  async function generateBatch(requests: readonly ShotRequest[]) {
-    const startedFor = session.value
-    if (
-      rendering.value ||
-      gate.value !== 'ready' ||
-      !startedFor ||
-      !requests.length ||
-      requests.length > 3
-    )
-      return
-    if (
-      requests.length > 1 &&
-      requests.some((request) => !request.video || request.takes !== 1)
-    )
-      return
-    const jobs = requests.flatMap((request) => {
+  function createJobs(requests: readonly ShotRequest[]) {
+    return requests.flatMap((request) => {
       const ids = Array.from({ length: request.takes }, () =>
         workshopIdempotencyKey()
       )
@@ -348,6 +367,46 @@ export function useCinematicStudioRun(modelCount: number) {
       })
       return ids.map((id) => ({ id, request }))
     })
+  }
+  function canStartBatch(requests: readonly ShotRequest[]) {
+    if (
+      rendering.value ||
+      gate.value !== 'ready' ||
+      !requests.length ||
+      requests.length > 3
+    )
+      return false
+    return (
+      requests.length <= 1 ||
+      !requests.some((request) => !request.video || request.takes !== 1)
+    )
+  }
+  async function renderJobs(
+    jobs: ReturnType<typeof createJobs>,
+    loaded: WorkshopModelDetail[],
+    startedFor: WorkshopSession,
+    attempt: Attempt
+  ) {
+    for (const [index, { id, request }] of jobs.entries()) {
+      if (attempt.controller.signal.aborted) break
+      attempt.journaled = false
+      const completed = await renderTake(
+        id,
+        loaded[index],
+        request,
+        startedFor,
+        attempt
+      )
+      if (!completed) {
+        if (attemptIsCurrent(attempt)) dispatch({ type: 'rendersCancelled' })
+        break
+      }
+    }
+  }
+  async function generateBatch(requests: readonly ShotRequest[]) {
+    const startedFor = session.value
+    if (!startedFor || !canStartBatch(requests)) return
+    const jobs = createJobs(requests)
     const attempt: Attempt = {
       controller: new AbortController(),
       namespace: JSON.stringify([startedFor.uid, startedFor.workspace.id]),
@@ -368,21 +427,7 @@ export function useCinematicStudioRun(modelCount: number) {
             request.video
           )
       })
-      for (const [index, { id, request }] of jobs.entries()) {
-        if (attempt.controller.signal.aborted) break
-        attempt.journaled = false
-        const completed = await renderTake(
-          id,
-          loaded[index],
-          request,
-          startedFor,
-          attempt
-        )
-        if (!completed) {
-          if (attemptIsCurrent(attempt)) dispatch({ type: 'rendersCancelled' })
-          break
-        }
-      }
+      await renderJobs(jobs, loaded, startedFor, attempt)
     } catch {
       if (!attempt.controller.signal.aborted)
         jobs.forEach(({ id }) =>
@@ -408,6 +453,48 @@ export function useCinematicStudioRun(modelCount: number) {
     stop(true)
   }
 
+  function startRecovery(id: string, entry: CinematicJournalEntry) {
+    releaseRouterOutputs(
+      reel.value.takes.flatMap((take) =>
+        take.id === id && take.status === 'done' ? [take.output] : []
+      )
+    )
+    reel.value = {
+      ...reel.value,
+      takes: reel.value.takes.filter((take) => take.id !== id)
+    }
+    dispatch({
+      type: 'shotStarted',
+      ids: [id],
+      prompt: entry.prompt,
+      modelSlug: entry.modelSlug,
+      aspect: entry.aspect,
+      startedAt: entry.startedAt,
+      settings: entry.settings
+    })
+  }
+  function assertRecoveryContract(
+    model: WorkshopModelDetail,
+    entry: CinematicJournalEntry
+  ): asserts model is WorkshopModelDetail & {
+    execution: NonNullable<WorkshopModelDetail['execution']>
+  } {
+    if (!model.execution || model.execution.id !== entry.contractId)
+      throw new WorkshopRouterError('unavailable')
+  }
+  function failRecovery(
+    id: string,
+    error: unknown,
+    entry: CinematicJournalEntry
+  ) {
+    dispatch({
+      type: 'takeFailed',
+      id,
+      reason: error instanceof WorkshopRouterError ? error.reason : 'client',
+      requestId: entry.requestId
+    })
+    recoveryError.value = true
+  }
   async function recover(id: string) {
     const startedFor = session.value
     const entry = pending.value.find((item) => item.id === id)
@@ -428,29 +515,11 @@ export function useCinematicStudioRun(modelCount: number) {
     }
     active = attempt
     const signal = attempt.controller.signal
-    releaseRouterOutputs(
-      reel.value.takes.flatMap((take) =>
-        take.id === id && take.status === 'done' ? [take.output] : []
-      )
-    )
-    reel.value = {
-      ...reel.value,
-      takes: reel.value.takes.filter((take) => take.id !== id)
-    }
-    dispatch({
-      type: 'shotStarted',
-      ids: [id],
-      prompt: entry.prompt,
-      modelSlug: entry.modelSlug,
-      aspect: entry.aspect,
-      startedAt: entry.startedAt,
-      settings: entry.settings
-    })
+    startRecovery(id, entry)
     try {
       const model = await loadModel(entry.modelSlug)
       signal.throwIfAborted()
-      if (!model.execution || model.execution.id !== entry.contractId)
-        throw new WorkshopRouterError('unavailable')
+      assertRecoveryContract(model, entry)
       const result = await collectWorkshopRouter({
         contract: model.execution,
         requestId: entry.requestId,
@@ -463,27 +532,11 @@ export function useCinematicStudioRun(modelCount: number) {
         (item) => item.purpose !== 'response-metadata'
       )
       releaseRouterOutputs(result.outputs.filter((item) => item !== output))
-      if (signal.aborted) {
-        if (output) releaseRouterOutputs([output])
-        return
-      }
-      if (!output) throw new WorkshopRouterError('response', result.requestId)
-      record(attempt.namespace, { ...entry, status: 'complete' })
-      dispatch({ type: 'takeSucceeded', id, output })
+      completeTake(id, output, result.requestId, attempt, entry)
     } catch (error) {
       if (signal.aborted) return
-      if (
-        error instanceof WorkshopRouterError &&
-        error.requestSettlement === 'terminal'
-      )
-        record(attempt.namespace, { ...entry, status: 'terminal' })
-      dispatch({
-        type: 'takeFailed',
-        id,
-        reason: error instanceof WorkshopRouterError ? error.reason : 'client',
-        requestId: entry.requestId
-      })
-      recoveryError.value = true
+      terminalFailure(error, attempt, entry)
+      failRecovery(id, error, entry)
     } finally {
       if (active === attempt) active = undefined
       void refreshWorkshopCredits({ force: true })

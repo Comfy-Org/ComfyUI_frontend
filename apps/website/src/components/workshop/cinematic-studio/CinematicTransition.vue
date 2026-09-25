@@ -94,6 +94,9 @@ function hidden(side: Side): SavedCreation | undefined {
       !revealed.value.includes(item.id)
   )
 }
+function isCurrentLoad(side: Side, current: number, revision: number) {
+  return current === epoch && revision === revisions[side]
+}
 async function load(side: Side, source: SavedCreation | File) {
   if (!open || !namespace) return
   const current = epoch
@@ -106,17 +109,15 @@ async function load(side: Side, source: SavedCreation | File) {
       source instanceof File
         ? await uploadedTransitionFrame(source)
         : await savedTransitionFrame(source, revealed.value.includes(source.id))
-    if (current !== epoch || revision !== revisions[side] || !open) return
+    if (!isCurrentLoad(side, current, revision) || !open) return
     frames.value = {
       ...frames.value,
       [side]: { ...frame, preview: URL.createObjectURL(frame.file) }
     }
   } catch {
-    if (current === epoch && revision === revisions[side])
-      errors.value[side] = true
+    if (isCurrentLoad(side, current, revision)) errors.value[side] = true
   } finally {
-    if (current === epoch && revision === revisions[side])
-      reading.value[side] = false
+    if (isCurrentLoad(side, current, revision)) reading.value[side] = false
   }
 }
 function chooseSaved(side: Side, event: Event) {

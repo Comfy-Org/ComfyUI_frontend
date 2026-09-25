@@ -4,7 +4,8 @@ import type { WorkshopModelDetail } from '../../../config/models-catalogue'
 import type { Locale } from '../../../i18n/translations'
 import { useCinematicEnhancement } from '../../../composables/useCinematicEnhancement'
 import { tcEnhancement } from '../../../lib/workshop/cinematic-studio/enhancement-copy'
-import Button from '../../ui/button/Button.vue'
+import CinematicEnhancementContent from './CinematicEnhancementContent.vue'
+import CinematicEnhancementActions from './CinematicEnhancementActions.vue'
 import Dialog from '../../ui/dialog/Dialog.vue'
 import DialogContent from '../../ui/dialog/DialogContent.vue'
 import DialogDescription from '../../ui/dialog/DialogDescription.vue'
@@ -36,17 +37,12 @@ const run = useCinematicEnhancement({
   namespace: () => namespace
 })
 const {
-  review,
-  result,
-  edited,
   proposed,
   applyError,
   busy,
   error,
-  canConfirm,
   saved,
   unresolved,
-  canRecover,
   storageError,
   gate
 } = run
@@ -95,65 +91,14 @@ function back() {
       <p v-if="run.demo" class="text-sm text-primary-comfy-canvas">
         {{ t('demoNotice') }}
       </p>
-      <dl class="flex flex-col gap-3 text-sm text-primary-warm-white">
-        <div>
-          <dt class="text-primary-comfy-canvas">{{ t('model') }}</dt>
-          <dd>{{ model?.name || t('unavailable') }}</dd>
-        </div>
-        <div>
-          <dt class="text-primary-comfy-canvas">{{ t('scene') }}</dt>
-          <dd
-            class="max-h-36 overflow-y-auto rounded-lg border border-transparency-white-t20 p-3 wrap-break-word whitespace-pre-wrap"
-          >
-            {{ result?.original ?? review?.brief.original ?? scene }}
-          </dd>
-        </div>
-        <div v-if="!result">
-          <dt class="text-primary-comfy-canvas">{{ t('directions') }}</dt>
-          <dd
-            class="max-h-28 overflow-y-auto wrap-break-word whitespace-pre-wrap"
-          >
-            {{ (review?.brief.directions ?? directions) || t('none') }}
-          </dd>
-        </div>
-      </dl>
-      <template v-if="result">
-        <label class="flex flex-col gap-2 text-sm text-primary-warm-white"
-          >{{ t('suggestion')
-          }}<textarea
-            v-model="edited"
-            rows="5"
-            class="min-w-0 rounded-lg border border-transparency-white-t20 bg-primary-comfy-ink p-3"
-          />
-        </label>
-        <details>
-          <summary class="text-sm text-primary-warm-white">
-            {{ t('proposed') }}
-          </summary>
-          <p
-            class="max-h-44 overflow-y-auto text-sm wrap-break-word whitespace-pre-wrap text-primary-comfy-canvas"
-          >
-            {{ proposed }}
-          </p>
-        </details>
-        <p class="text-xs text-primary-comfy-canvas">
-          {{ t('usage') }}: {{ result.inputTokens ?? t('unknown') }} /
-          {{ result.outputTokens ?? t('unknown') }}
-        </p>
-      </template>
-      <template v-else>
-        <p class="text-sm text-primary-comfy-canvas">{{ t('privacy') }}</p>
-        <p v-if="!run.demo" class="text-sm text-primary-comfy-canvas">
-          {{ t('cost') }}
-        </p>
-        <label
-          v-if="review && !busy && !run.demo"
-          class="flex items-start gap-2 text-sm text-primary-warm-white"
-          ><input v-model="accepted" type="checkbox" class="mt-1" />{{
-            t('acknowledge')
-          }}</label
-        >
-      </template>
+      <CinematicEnhancementContent
+        v-model:accepted="accepted"
+        :run
+        :model
+        :scene
+        :directions
+        :locale
+      />
       <p v-if="busy" role="status" class="text-sm text-primary-warm-white">
         {{ t('running') }}
       </p>
@@ -176,37 +121,14 @@ function back() {
       <p v-if="failure" role="alert" class="text-sm text-primary-warm-white">
         {{ t(failure) }}
       </p>
-      <div class="flex flex-col gap-2 sm:flex-row sm:justify-end">
-        <Button variant="outline" @click="close">{{ t('cancel') }}</Button>
-        <Button v-if="canRecover" variant="outline" @click="run.recover">{{
-          t('recover')
-        }}</Button>
-        <Button
-          v-if="!busy && !unresolved && (result || error)"
-          variant="outline"
-          @click="back"
-          >{{ t('newRequest') }}</Button
-        >
-        <Button v-if="result" :disabled="!proposed" @click="apply">{{
-          t('apply')
-        }}</Button>
-        <template v-else-if="review">
-          <Button v-if="!busy" variant="outline" @click="back">{{
-            t('back')
-          }}</Button>
-          <Button
-            :disabled="!canConfirm || (!run.demo && !accepted)"
-            @click="run.confirm(run.demo || accepted)"
-            >{{ t(run.demo ? 'demoConfirm' : 'confirm') }}</Button
-          >
-        </template>
-        <Button
-          v-else-if="!error"
-          :disabled="gate !== 'ready'"
-          @click="run.prepare"
-          >{{ t('review') }}</Button
-        >
-      </div>
+      <CinematicEnhancementActions
+        :run
+        :accepted
+        :locale
+        @close="close"
+        @back="back"
+        @apply="apply"
+      />
     </DialogContent>
   </Dialog>
 </template>

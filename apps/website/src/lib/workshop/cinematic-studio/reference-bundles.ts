@@ -1,3 +1,4 @@
+import { accessStudioStorage } from './storage'
 import { z } from 'zod'
 
 const referenceSchema = z.object({
@@ -23,78 +24,11 @@ export interface ReferenceFile {
   file: File
 }
 
-function access<T>(
-  namespace: string,
-  mode: IDBTransactionMode,
-  action: (
-    store: IDBObjectStore,
-    done: (value: T) => void,
-    fail: (error: unknown) => void
-  ) => void
-): Promise<T> {
-  return new Promise((resolve, reject) => {
-    if (!namespace.trim() || namespace.length > 500) {
-      reject(new Error('Missing reference namespace'))
-      return
-    }
-    let database: IDBDatabase | undefined
-    let transaction: IDBTransaction | undefined
-    let result: T
-    let settled = false
-    const finish = (error?: unknown) => {
-      if (settled) return
-      settled = true
-      clearTimeout(timeout)
-      database?.close()
-      if (error) reject(error)
-      else resolve(result)
-    }
-    const fail = (error: unknown) => {
-      transaction?.abort()
-      finish(error)
-    }
-    const timeout = setTimeout(
-      () =>
-        fail(new DOMException('Reference storage timed out', 'TimeoutError')),
-      10000
-    )
-    try {
-      const opening = indexedDB.open('comfy-cinema-reference-bundles', 1)
-      opening.onupgradeneeded = () =>
-        opening.result
-          .createObjectStore('bundles')
-          .createIndex('namespace', 'namespace')
-      opening.onerror = () => finish(opening.error)
-      opening.onblocked = () => finish(new Error('Reference storage blocked'))
-      opening.onsuccess = () => {
-        database = opening.result
-        if (settled) {
-          database.close()
-          return
-        }
-        database.onversionchange = () => database?.close()
-        try {
-          transaction = database.transaction('bundles', mode)
-          transaction.oncomplete = () => finish()
-          transaction.onabort = () =>
-            finish(transaction?.error ?? new Error('Reference storage aborted'))
-          transaction.onerror = () =>
-            finish(transaction?.error ?? new Error('Reference storage failed'))
-          action(
-            transaction.objectStore('bundles'),
-            (value) => {
-              result = value
-            },
-            fail
-          )
-        } catch (error) {
-          fail(error)
-        }
-      }
-    } catch (error) {
-      finish(error)
-    }
-  })
+const storage = {
+  database: 'comfy-cinema-reference-bundles',
+  store: 'bundles',
+  label: 'Reference',
+  namespaceLabel: 'reference'
 }
 
 export async function saveReferenceBundle(
@@ -139,30 +73,35 @@ export async function saveReferenceBundle(
     new Uint8Array(await crypto.subtle.digest('SHA-256', bytes)),
     (value) => value.toString(16).padStart(2, '0')
   ).join('')
-  await access<void>(namespace, 'readwrite', (store, done, fail) => {
-    const request = store.index('namespace').getAll(namespace)
-    request.onsuccess = () => {
-      try {
-        const others = z
-          .array(bundleSchema)
-          .parse(request.result)
-          .filter((bundle) => bundle.id !== id)
-        const total = [
-          ...others.flatMap((bundle) => bundle.references),
-          ...references
-        ].reduce((sum, reference) => sum + reference.blob.size, 0)
-        if (others.length >= 100 || total > 128 * 1024 * 1024)
-          throw new DOMException(
-            'Reference storage limit reached',
-            'QuotaExceededError'
-          )
-        store.put({ id, references, namespace }, [namespace, id])
-        done()
-      } catch (error) {
-        fail(error)
+  await accessStudioStorage<void>(
+    storage,
+    namespace,
+    'readwrite',
+    (store, done, fail) => {
+      const request = store.index('namespace').getAll(namespace)
+      request.onsuccess = () => {
+        try {
+          const others = z
+            .array(bundleSchema)
+            .parse(request.result)
+            .filter((bundle) => bundle.id !== id)
+          const total = [
+            ...others.flatMap((bundle) => bundle.references),
+            ...references
+          ].reduce((sum, reference) => sum + reference.blob.size, 0)
+          if (others.length >= 100 || total > 128 * 1024 * 1024)
+            throw new DOMException(
+              'Reference storage limit reached',
+              'QuotaExceededError'
+            )
+          store.put({ id, references, namespace }, [namespace, id])
+          done()
+        } catch (error) {
+          fail(error)
+        }
       }
     }
-  })
+  )
   return id
 }
 
@@ -170,21 +109,26 @@ export function loadReferenceBundle(
   namespace: string,
   id: string
 ): Promise<ReferenceFile[]> {
-  return access(namespace, 'readonly', (store, done, fail) => {
-    const request = store.get([namespace, id])
-    request.onsuccess = () => {
-      try {
-        const bundle = bundleSchema.parse(request.result)
-        done(
-          bundle.references.map(({ role, assetId, name, blob }) => ({
-            role,
-            assetId,
-            file: new File([blob], name, { type: blob.type })
-          }))
-        )
-      } catch (error) {
-        fail(error)
+  return accessStudioStorage(
+    storage,
+    namespace,
+    'readonly',
+    (store, done, fail) => {
+      const request = store.get([namespace, id])
+      request.onsuccess = () => {
+        try {
+          const bundle = bundleSchema.parse(request.result)
+          done(
+            bundle.references.map(({ role, assetId, name, blob }) => ({
+              role,
+              assetId,
+              file: new File([blob], name, { type: blob.type })
+            }))
+          )
+        } catch (error) {
+          fail(error)
+        }
       }
     }
-  })
+  )
 }
