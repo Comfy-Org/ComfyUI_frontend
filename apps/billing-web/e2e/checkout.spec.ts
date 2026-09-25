@@ -31,6 +31,9 @@ const test = base.extend<{ stripeFake: void }>({
 
 const CHECKOUT = entryPath('checkout', { plan: 'pro_monthly' })
 
+// Above the 8 s poll backoff cap, well below the 30 s parked cadence.
+const FAST_BACKOFF_DEADLINE_MS = 15_000
+
 /** The only scenarios in this fixture set with a payment method configured. */
 function withEmbeddedPaymentMethod(cloud: MockCloud): void {
   cloud.scenario.preview = {
@@ -181,7 +184,7 @@ test('a challenge whose authentication state lags the client secret is still dri
 
   await expect(
     page.getByRole('heading', { name: "You're all set" })
-  ).toBeVisible()
+  ).toBeVisible({ timeout: FAST_BACKOFF_DEADLINE_MS })
   expect(await fakeStripeNextActionCalls(page)).toEqual([
     { clientSecret: 'seti_e2e_secret' }
   ])

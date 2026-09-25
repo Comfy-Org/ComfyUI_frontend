@@ -11,7 +11,9 @@ export const OPERATION_POLL_TIMING = {
   maxMs: 8_000,
   multiplier: 1.5,
   /** An operation parked on the customer is checked on a slow, flat cadence. */
-  parkedMs: 30_000
+  parkedMs: 30_000,
+  /** Fast backoff for an actionless blocked wait: 20 turns of the 3 s PI status cache. */
+  actionDiscoveryMs: 60_000
 } as const
 
 export const OPERATION_POLL_BUDGET = {
@@ -40,27 +42,54 @@ function customerCanAct(state: PendingBillingOperation): boolean {
  * them, or a declined attempt awaiting their retry. Once this tab's own
  * challenge completes the state reads processing and nothing waits on the
  * customer anymore.
- *
- * Only parked while the customer can act here. The server can report a
+ */
+function isWaitingOnCustomer(state: PendingBillingOperation): boolean {
+  return (
+    state.authenticationState === 'requires_action' ||
+    state.actionUrl !== undefined ||
+    isBlockedOnCustomerPhase(state.serverPhase) ||
+    (state.authenticationState === 'failed_retryable' &&
+      state.customerActionSeen)
+  )
+}
+
+/**
+ * Parked only while the customer can act here. The server can report a
  * blocked phase and a client secret before its cached `authentication_state`
  * catches up, and the slow cadence would then hold a screen with no action.
  */
 export function isParkedOnCustomer(state: PendingBillingOperation): boolean {
-  return (
-    customerCanAct(state) &&
-    (state.authenticationState === 'requires_action' ||
-      state.actionUrl !== undefined ||
-      isBlockedOnCustomerPhase(state.serverPhase) ||
-      (state.authenticationState === 'failed_retryable' &&
-        state.customerActionSeen))
-  )
+  return customerCanAct(state) && isWaitingOnCustomer(state)
 }
 
+/**
+ * Blocked on the customer with nothing to offer them yet: either the action
+ * is still on its way, or it belongs to someone else (a member without
+ * billing permission, a tab without embedded checkout).
+ */
+export function isWaitingOnCustomerWithoutAction(
+  state: PendingBillingOperation
+): boolean {
+  return !customerCanAct(state) && isWaitingOnCustomer(state)
+}
+
+/**
+ * `waitedWithoutActionMs` is how long the operation has continuously been
+ * {@link isWaitingOnCustomerWithoutAction}; past the discovery window it
+ * parks too, so an action that never arrives here costs the slow cadence.
+ */
 export function nextPollDelayMs(
   state: PendingBillingOperation,
-  previousDelayMs: number | undefined
+  previousDelayMs: number | undefined,
+  waitedWithoutActionMs = 0
 ): number {
   if (isParkedOnCustomer(state)) return OPERATION_POLL_TIMING.parkedMs
+  if (
+    isWaitingOnCustomerWithoutAction(state) &&
+    waitedWithoutActionMs >= OPERATION_POLL_TIMING.actionDiscoveryMs
+  ) {
+    return OPERATION_POLL_TIMING.parkedMs
+  }
   return Math.min(
     (previousDelayMs ?? OPERATION_POLL_TIMING.initialMs) *
       OPERATION_POLL_TIMING.multiplier,

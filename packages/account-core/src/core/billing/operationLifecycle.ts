@@ -39,7 +39,11 @@ import {
   NO_POINTER_STORE,
   createOperationPointerStore
 } from './operationPointer.js'
-import { hasExhaustedPollBudget, nextPollDelayMs } from './operationPolicy.js'
+import {
+  hasExhaustedPollBudget,
+  isWaitingOnCustomerWithoutAction,
+  nextPollDelayMs
+} from './operationPolicy.js'
 import type {
   BillingDeclineReason,
   BillingOpStatus,
@@ -180,6 +184,8 @@ interface OperationRecord {
   readonly context: BillingScopeContext
   readonly resumed: boolean
   delayMs: number | undefined
+  /** When the operation last became blocked on the customer with no action here. */
+  waitingWithoutActionSince: number | undefined
   timer: ReturnType<typeof setTimeout> | undefined
   inFlightPoll: Promise<void> | undefined
   readonly settled: Promise<BillingOperationState>
@@ -367,7 +373,18 @@ export function createBillingOperationLifecycle(
   function schedule(record: OperationRecord) {
     if (record.state.phase !== 'pending') return
     stopTimer(record)
-    const delayMs = nextPollDelayMs(record.state, record.delayMs)
+    record.waitingWithoutActionSince = isWaitingOnCustomerWithoutAction(
+      record.state
+    )
+      ? (record.waitingWithoutActionSince ?? now())
+      : undefined
+    const delayMs = nextPollDelayMs(
+      record.state,
+      record.delayMs,
+      record.waitingWithoutActionSince === undefined
+        ? 0
+        : now() - record.waitingWithoutActionSince
+    )
     record.delayMs = delayMs
     record.timer = setTimeout(() => void poll(record), delayMs)
   }
@@ -492,6 +509,7 @@ export function createBillingOperationLifecycle(
       context: input.context,
       resumed: input.resumed,
       delayMs: undefined,
+      waitingWithoutActionSince: undefined,
       timer: undefined,
       inFlightPoll: undefined,
       settled,
