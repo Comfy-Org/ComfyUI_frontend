@@ -106,9 +106,17 @@ describe('resolveWorkshopAccountSource with the flag on', () => {
 
   it('does not restore without a loaded Firebase login, and falls back to it', async () => {
     const sessionRequests = stubCloud(NO_SESSION)
-    const { resolveWorkshopAccountSource } = await loadModules('uid-1')
+    const { resolveWorkshopAccountSource, ACCOUNT_SOURCE_CAP_MS } =
+      await loadModules('uid-1')
+    vi.useFakeTimers({ shouldAdvanceTime: false })
 
-    expect(await resolveWorkshopAccountSource()).toBe('firebase')
+    const source = resolveWorkshopAccountSource()
+    await vi.advanceTimersByTimeAsync(ACCOUNT_SOURCE_CAP_MS - 1)
+
+    expect(
+      await Promise.race([source, 'undecided']),
+      'the signed-out answer decides, not the cap'
+    ).toBe('firebase')
     expect(sessionRequests.map(({ method }) => method)).toEqual(['GET'])
   })
 

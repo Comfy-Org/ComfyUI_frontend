@@ -8,6 +8,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { readonly, ref } from 'vue'
 
 import { WORKSHOP_CLOUD_BASE_URL } from '../../../config/workshop-env'
+import { ACCOUNT_SOURCE_CAP_MS } from '../../../config/workshop-web-session-identity'
 
 vi.mock(import('../../../scripts/posthog'))
 vi.mock(import('../../../config/workshop-session-state'))
@@ -60,9 +61,16 @@ interface CloudAnswers {
   readonly anonymous: Record<string, unknown>
   readonly perUser?: Record<string, unknown>
   readonly session?: { readonly status: number; readonly body: unknown }
+  /** Every answer waits for it; a pending one is a hung Cloud. */
+  readonly answered?: Promise<void>
 }
 
-function stubCloud({ anonymous, perUser = {}, session }: CloudAnswers) {
+function stubCloud({
+  anonymous,
+  perUser = {},
+  session,
+  answered
+}: CloudAnswers) {
   const sent: SentRequest[] = []
   vi.stubGlobal(
     'fetch',
@@ -74,6 +82,7 @@ function stubCloud({ anonymous, perUser = {}, session }: CloudAnswers) {
         url,
         ...(credentials ? { credentials } : {})
       })
+      await answered
       const answer =
         url === SESSION
           ? (session ?? refusal('no_session'))
@@ -179,5 +188,60 @@ describe('HeaderMain account source', () => {
     const { signOutWorkshop } =
       await import('../../../config/workshop-firebase')
     expect(vi.mocked(signOutWorkshop)).toHaveBeenCalledOnce()
+  })
+
+  describe('decision cap', () => {
+    beforeEach(() => {
+      vi.useFakeTimers({ shouldAdvanceTime: false })
+    })
+
+    it('mounts the Firebase header at the cap while the probe hangs, and never swaps', async () => {
+      const cloud = Promise.withResolvers<void>()
+      const sent = stubCloud({
+        anonymous: { web_session_probe: true },
+        perUser: { unified_web_session: true },
+        session: LIVE_SESSION,
+        answered: cloud.promise
+      })
+      await renderHeader()
+
+      await vi.advanceTimersByTimeAsync(ACCOUNT_SOURCE_CAP_MS - 1)
+      expect(screen.queryAllByRole('link', { name: /sign in/i })).toEqual([])
+
+      await vi.advanceTimersByTimeAsync(1)
+      await vi.waitFor(() =>
+        expect(screen.getAllByRole('link', { name: /sign in/i })).toHaveLength(
+          2
+        )
+      )
+
+      cloud.resolve()
+      await vi.advanceTimersByTimeAsync(10_000)
+      expect(
+        screen.getAllByRole('link', { name: /sign in/i }),
+        'a live session answering late must not swap out a mounted Firebase header'
+      ).toHaveLength(2)
+      expect(screen.queryAllByTestId('header-session-account')).toEqual([])
+      expect(
+        sent.map(({ url }) => url),
+        'a flag answering after the cap must not start a session read'
+      ).not.toContain(SESSION)
+    })
+
+    it('mounts the Firebase header without waiting for the cap when the probe is off', async () => {
+      stubCloud({ anonymous: { web_session_probe: false } })
+      const start = Date.now()
+      await renderHeader()
+
+      await vi.waitFor(() =>
+        expect(screen.getAllByRole('link', { name: /sign in/i })).toHaveLength(
+          2
+        )
+      )
+      expect(
+        Date.now() - start,
+        'vi.waitFor advances fake time, so this bounds how long the header waited'
+      ).toBeLessThan(ACCOUNT_SOURCE_CAP_MS)
+    })
   })
 })

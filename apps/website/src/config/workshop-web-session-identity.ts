@@ -9,7 +9,10 @@ import type { Ref } from 'vue'
 import { readonly, shallowRef } from 'vue'
 
 import type { WebSessionUser } from '@comfyorg/account-core/webSession'
-import type { RememberedLogin } from '@comfyorg/account-core/webSessionIdentity'
+import type {
+  RememberedLogin,
+  WebSessionIdentity
+} from '@comfyorg/account-core/webSessionIdentity'
 import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 
 import { workshopIdentity } from './workshop-account'
@@ -49,35 +52,55 @@ export function useWorkshopSessionAccount(): Readonly<
   return readonly(sessionUser)
 }
 
-function bootWebSession(): Promise<WorkshopAccountSource> {
+/** Past this, the Firebase header mounts for the page load and never swaps. */
+export const ACCOUNT_SOURCE_CAP_MS = 800
+
+function createWorkshopWebSessionIdentity(): WebSessionIdentity {
+  return createWebSessionIdentity({
+    session: {
+      apiBaseUrl: `${WORKSHOP_CLOUD_BASE_URL}/api`,
+      fetchImpl: (...args: Parameters<typeof fetch>) =>
+        globalThis.fetch(...args)
+    },
+    principal: { kind: 'account', rememberedLogin: rememberedWorkshopLogin },
+    origin: window.location.origin
+  })
+}
+
+function decideAccountSource(): Promise<WorkshopAccountSource> {
   return new Promise((resolve) => {
-    const identity = createWebSessionIdentity({
-      session: {
-        apiBaseUrl: `${WORKSHOP_CLOUD_BASE_URL}/api`,
-        fetchImpl: (...args: Parameters<typeof fetch>) =>
-          globalThis.fetch(...args)
-      },
-      principal: { kind: 'account', rememberedLogin: rememberedWorkshopLogin },
-      origin: window.location.origin
+    let capped = false
+    let identity: WebSessionIdentity | undefined
+    const cap = setTimeout(() => {
+      capped = true
+      identity?.dispose()
+      resolve('firebase')
+    }, ACCOUNT_SOURCE_CAP_MS)
+    const decide = (source: WorkshopAccountSource) => {
+      clearTimeout(cap)
+      resolve(source)
+    }
+    void readUnifiedWebSessionEnabled().then((enabled) => {
+      if (capped) return
+      if (!enabled) return decide('firebase')
+      identity = createWorkshopWebSessionIdentity()
+      identity.subscribe((state) => {
+        if (state.phase === 'signed_in') {
+          sessionUser.value = state.session.user
+          decide('session')
+        } else if (state.phase === 'signed_out') {
+          decide('firebase')
+        }
+      })
+      identity.boot()
     })
-    identity.subscribe((state) => {
-      if (state.phase === 'signed_in') {
-        sessionUser.value = state.session.user
-        resolve('session')
-      } else if (state.phase === 'signed_out') {
-        resolve('firebase')
-      }
-    })
-    identity.boot()
   })
 }
 
 let resolution: Promise<WorkshopAccountSource> | undefined
 
-/** Settles once per page load; a session still retrying keeps it pending. */
+/** Settles once per page load, at the latest when the cap fires. */
 export function resolveWorkshopAccountSource(): Promise<WorkshopAccountSource> {
-  resolution ??= readUnifiedWebSessionEnabled().then((enabled) =>
-    enabled ? bootWebSession() : 'firebase'
-  )
+  resolution ??= decideAccountSource()
   return resolution
 }
