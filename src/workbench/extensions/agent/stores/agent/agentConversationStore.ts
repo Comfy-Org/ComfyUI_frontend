@@ -17,7 +17,7 @@ export type { UserAttachment }
 
 type ConversationStatus = 'idle' | 'thinking' | 'streaming'
 
-export type AskSelection = 'run' | 'cancel'
+type AskSelection = 'run' | 'cancel'
 
 interface UserEntry {
   id: TurnId
