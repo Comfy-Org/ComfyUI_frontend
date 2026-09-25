@@ -653,6 +653,23 @@ describe('live updates and media on the shared web session', () => {
     }
   )
 
+  it('a media fetch names the team workspace in the header only', async () => {
+    const ingest = await bootOnSession()
+    await useWorkspaceAuthStore().switchWorkspace('ws-team')
+    ingest.requests.length = 0
+
+    await api.fetchApi('/view?filename=a.png')
+
+    const [url] = vi.mocked(fetch).mock.calls.at(-1) ?? []
+    expect(String(url)).toBe('/api/view?filename=a.png')
+    expect(ingest.requests).toEqual([
+      sessionRequest('GET', '/api/view', {
+        'x-comfy-workspace-id': 'ws-team',
+        'comfy-user': ''
+      })
+    ])
+  })
+
   it('a server close while signed in reconnects on the session', async () => {
     await bootWithSocket()
     await useWorkspaceAuthStore().switchWorkspace('ws-team')

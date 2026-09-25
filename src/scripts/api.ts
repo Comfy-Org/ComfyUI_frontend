@@ -520,11 +520,15 @@ export class ComfyApi extends EventTarget {
 
   apiURL(route: string): string {
     const requests = webSessionRequests()
-    const scoped = requests
-      ? scopeMediaRoute(route, requests.workspaceId())
-      : route
-    if (scoped.startsWith('/api')) return this.api_base + scoped
-    return this.api_base + '/api' + scoped
+    return this.unscopedApiURL(
+      requests ? scopeMediaRoute(route, requests.workspaceId()) : route
+    )
+  }
+
+  /** For requests whose headers already name the workspace. */
+  private unscopedApiURL(route: string): string {
+    if (route.startsWith('/api')) return this.api_base + route
+    return this.api_base + '/api' + route
   }
 
   fileURL(route: string): string {
@@ -693,7 +697,7 @@ export class ComfyApi extends EventTarget {
       signal
     }
     const response = sendOnWebSession
-      ? sendOnWebSession(this.apiURL(route), init)
+      ? sendOnWebSession(this.unscopedApiURL(route), init)
       : fetchWithUnifiedRemint(
           this.apiURL(route),
           init,
