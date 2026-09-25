@@ -1,11 +1,3 @@
-// PrimeVue overlays (Select, ColorPicker, Popover, Autocomplete, stacked
-// PrimeVue Dialogs) teleport to body. Reka treats clicks on
-// body-portaled elements as outside its dialog and would auto-dismiss on the
-// first interaction, tearing the overlay down mid-interaction. Treat any
-// PrimeVue overlay click as inside.
-const PRIMEVUE_OVERLAY_SELECTORS =
-  '.p-select-overlay, .p-colorpicker-panel, .p-popover, .p-autocomplete-overlay, .p-overlay, .p-overlay-mask'
-
 // Reka portals its own dialogs / popovers / menus into the body too. When a
 // nested Reka layer opens on top of a non-modal parent, the parent's
 // DismissableLayer sees the focus shift / pointer-down as "outside" and would
@@ -14,14 +6,11 @@ const PRIMEVUE_OVERLAY_SELECTORS =
 const REKA_PORTAL_SELECTORS =
   '[data-reka-popper-content-wrapper], [data-reka-dialog-content], [data-reka-menu-content], [data-reka-context-menu-content], [data-reka-nested-dialog-overlay], [data-testid="toast"], [role="dialog"], [role="menu"], [role="listbox"], [role="tooltip"]'
 
-const OUTSIDE_LAYER_SELECTORS = `${PRIMEVUE_OVERLAY_SELECTORS}, ${REKA_PORTAL_SELECTORS}`
-
 type OutsideEvent = CustomEvent<{ originalEvent: Event }>
 
 function isInsideOverlay(target: EventTarget | null): boolean {
   return (
-    target instanceof Element &&
-    target.closest(OUTSIDE_LAYER_SELECTORS) !== null
+    target instanceof Element && target.closest(REKA_PORTAL_SELECTORS) !== null
   )
 }
 
@@ -49,9 +38,8 @@ export function onRekaPointerDownOutside(
 }
 
 // Focus / interact-outside fires when focus moves to a sibling portal (a
-// nested Reka or PrimeVue dialog teleported to body). Without this guard a
-// non-modal Reka dialog would dismiss itself the moment a nested dialog
-// receives focus.
+// nested Reka dialog teleported to body). Without this guard a non-modal Reka
+// dialog would dismiss itself the moment a nested dialog receives focus.
 //
 // A container dialog (e.g. Settings) that hosts nested confirm/edit dialogs can
 // also lose focus to an ordinary app element — not just a portal — when a

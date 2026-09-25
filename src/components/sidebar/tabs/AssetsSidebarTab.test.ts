@@ -1,3 +1,4 @@
+import { useToast } from '@/components/ui/toast'
 import userEvent from '@testing-library/user-event'
 import { render, screen, within } from '@testing-library/vue'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -75,12 +76,14 @@ vi.mock(import('@/platform/assets/composables/useMediaAssetActions'))
 
 vi.mock(import('@/platform/assets/utils/outputAssetUtil'))
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({ add: vi.fn() })
-  })
-)
+beforeEach(() => {
+  vi.mocked(useToast().success).mockImplementation(vi.fn())
+  vi.mocked(useToast().error).mockImplementation(vi.fn())
+  vi.mocked(useToast().info).mockImplementation(vi.fn())
+  vi.mocked(useToast().warning).mockImplementation(vi.fn())
+  vi.mocked(useToast().loading).mockImplementation(vi.fn())
+  vi.mocked(useToast().custom).mockImplementation(vi.fn())
+})
 
 const i18n = createI18n({
   legacy: false,
@@ -137,7 +140,9 @@ function renderTab() {
         MediaAssetFilterBar: true,
         MediaAssetSelectionBar: true,
         MediaLightbox: true,
-        MediaAssetContextMenu: true
+        MediaAssetContextMenu: true,
+        NoResultsPlaceholder: true,
+        Skeleton: true
       }
     }
   })

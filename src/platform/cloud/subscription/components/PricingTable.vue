@@ -90,7 +90,7 @@
             {{ t('subscription.soloUseOnly') }}
             <span class="mx-1 text-muted-foreground">–</span>
             <button
-              class="cursor-pointer border-none bg-transparent p-0 text-sm font-medium text-muted-foreground underline hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
+              class="cursor-pointer border-none bg-transparent p-0 text-sm font-medium text-base-foreground underline hover:text-base-foreground focus-visible:ring-1 focus-visible:outline-none"
               @click="emit('chooseTeamWorkspace')"
             >
               {{ t('subscription.needTeamWorkspace') }}

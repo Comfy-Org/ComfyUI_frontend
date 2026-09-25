@@ -38,7 +38,7 @@ describe('Button', () => {
     const button = screen.getByRole('button', { name: 'Submit' })
     expect(button).toBeDisabled()
     expect(button).toHaveAttribute('aria-busy', 'true')
-    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- PrimeVue spinner icon has no accessible role
+    // eslint-disable-next-line testing-library/no-container, testing-library/no-node-access -- spinner icon has no accessible role
     expect(container.querySelector('.pi-spin')).toBeInTheDocument()
   })
 

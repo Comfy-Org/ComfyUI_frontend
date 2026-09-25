@@ -4,7 +4,6 @@ import { getActivePinia } from 'pinia'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
 
-import PrimeVue from 'primevue/config'
 import { reactive, ref } from 'vue'
 import { createI18n } from 'vue-i18n'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
@@ -107,7 +106,7 @@ function mountDropdown(
       'onUpdate:isOpen': options.onUpdateIsOpen
     },
     global: {
-      plugins: [PrimeVue, i18n, getActivePinia()!],
+      plugins: [i18n, getActivePinia()!],
       stubs: {
         FormDropdownInput: MockFormDropdownInput,
         FormDropdownMenu: MockFormDropdownMenu

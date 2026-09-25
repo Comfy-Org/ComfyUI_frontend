@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/vue'
-import PrimeVue from 'primevue/config'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { defineComponent, nextTick, ref } from 'vue'
 
@@ -18,6 +17,11 @@ vi.mock(
   }
 )
 
+const SkeletonStub = defineComponent({
+  name: 'Skeleton',
+  template: '<div data-testid="skeleton" />'
+})
+
 function renderPreview(
   text: string,
   { nodeId = toNodeId('node-1') }: { nodeId?: NodeId } = {}
@@ -30,12 +34,7 @@ function renderPreview(
   })
   return render(Harness, {
     global: {
-      plugins: [
-        [
-          PrimeVue,
-          { pt: { skeleton: { root: { 'data-testid': 'skeleton' } } } }
-        ]
-      ]
+      stubs: { Skeleton: SkeletonStub }
     }
   })
 }
