@@ -49,7 +49,8 @@ export function useAgentWorkflowSelection({
     cloudIdFor,
     cloudWorkflowName,
     nextSaveFilename,
-    boundOrOpenWorkflowFor
+    boundOrOpenWorkflowFor,
+    storedWorkflowFor
   } = resolver
   const editableWorkflowId = computed(() =>
     selectedTarget.value ? cloudIdFor(selectedTarget.value) : undefined
@@ -222,13 +223,19 @@ export function useAgentWorkflowSelection({
     if (workflowId === undefined) return
     await refreshCloudWorkflowIds()
     if (!isCurrent()) return
-    const target = boundOrOpenWorkflowFor(workflowId)
-    if (target === null) {
-      panelStore.setWorkflowTarget(null)
-      warnWorkflowUnavailable()
-      return
-    }
+    let target =
+      boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
     try {
+      if (target === null) {
+        await workflowStore.syncWorkflows()
+        if (!isCurrent()) return
+        target = storedWorkflowFor(workflowId)
+      }
+      if (target === null) {
+        panelStore.setWorkflowTarget(null)
+        warnWorkflowUnavailable()
+        return
+      }
       const opened = await workflowService.openWorkflow(target)
       if (!isCurrent()) return
       if (!opened) {
