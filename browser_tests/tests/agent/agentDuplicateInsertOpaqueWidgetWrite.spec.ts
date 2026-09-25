@@ -454,22 +454,19 @@ test.describe(
       expect(boxB).toEqual(boxA)
     })
 
-    test('a widget edit the host rejects as opaque leaves the human-typed value on screen and the shared document silently unrevised', async ({
+    test('a widget edit the host rejects as opaque warns the human and leaves the shared document unrevised', async ({
       page,
       getWebSocket
     }) => {
       const { host, seedInput, copyBNodeId } =
         await driveThroughRejectedWidgetEdit(page, getWebSocket)
 
-      // What the human sees: the widget still shows what they typed. Nothing
-      // rolled it back, and nothing marked it as failed.
       await expect(seedInput).toHaveValue(String(EDITED_SEED_VALUE))
       await expect(new ToastHelper(page).toastErrors).toHaveCount(0)
-      await expect(page.getByRole('alert')).toHaveCount(0)
+      await expect(page.getByRole('alert')).toContainText(
+        "Your edit couldn't be synced."
+      )
 
-      // What the shared document actually has: still the ORIGINAL seed, since
-      // the write never applied. The widget the human is looking at and the
-      // document a subsequent run would read from have now silently diverged.
       const projected = host.projection()
       const sampler = projected.nodes.find(
         (node) => String(node.id) === copyBNodeId
@@ -477,21 +474,6 @@ test.describe(
       expect(sampler?.widgets_values).toEqual(
         expect.arrayContaining([SEED_VALUE])
       )
-    })
-
-    test('defect: a rejected widget write ought to surface visibly to the human, but currently does not', async ({
-      page,
-      getWebSocket
-    }) => {
-      await driveThroughRejectedWidgetEdit(page, getWebSocket)
-
-      // The known gap: nothing in the ordinary product UI (no toast, no
-      // inline alert on the widget or the panel) tells the human this write
-      // never reached the shared document.
-      test.fail()
-      await expect(new ToastHelper(page).toastErrors).toBeVisible({
-        timeout: 3_000
-      })
     })
   }
 )

@@ -62,7 +62,7 @@ describe('useAgentCrdtFollower projection recovery', () => {
     api.socket = null
   })
 
-  it('loses a rejected projection when resubscription has no host delta', () => {
+  it('retries a rejected projection when resubscription has no host delta', () => {
     let scopeAvailable = true
     const mutations = createGraphMutations({
       getScope: () => (scopeAvailable ? scope : null),
@@ -127,7 +127,7 @@ describe('useAgentCrdtFollower projection recovery', () => {
         useNodeDataStore()
           .getGraphNodesFor('root', 'root')
           .map(({ id }) => id)
-      ).toEqual([toNodeId(99)])
+      ).toEqual([])
     } finally {
       view.unmount()
       host.destroy()
