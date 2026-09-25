@@ -7952,7 +7952,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await nextTick()
 
     expect(useAgentNodeSelectionStore().isActive).toBe(false)
-    expect(canvas.selectedItems.size).toBe(0)
+    expect([...canvas.selectedItems]).toEqual([subgraphNode])
     expect(savedSelectionKeys(rootGraph)).toEqual([])
     expect(savedSelectionKeys(subgraph)).toEqual(['node:12'])
     expect(screen.getByText('Root node')).toBeInTheDocument()

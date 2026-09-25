@@ -113,6 +113,7 @@ export const workshopDisplaySchema = workshopDisplaySourceSchema
     inputs: z.record(z.string(), workshopInputDefinitionSchema).optional(),
     template: workshopTemplateSchema.optional(),
     category: z.string().min(1).optional(),
+    recommendedRank: z.number().int().nonnegative().optional(),
     useCase: workshopUseCaseSchema,
     withheldContent: z
       .object({

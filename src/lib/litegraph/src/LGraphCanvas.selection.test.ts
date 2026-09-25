@@ -1,4 +1,5 @@
 import { afterEach, assert, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fromPartial } from '@total-typescript/shoehorn'
 
 import type { Positionable, Rect } from '@/lib/litegraph/src/interfaces'
 import type { CanvasPointerEvent } from '@/lib/litegraph/src/types/events'
@@ -140,6 +141,13 @@ describe('LGraphCanvas selection', () => {
     expect(useSelectionStore().selectedKeys(graphScopeOf(graph))).toEqual(
       [...canvas.selectedItems].map(selectableKeyOf)
     )
+  })
+
+  it('keeps the deprecated selection pulse inert', () => {
+    canvas.select(a)
+    canvas.deselectAll()
+
+    expect(canvas.state.selectionChanged).toBe(false)
   })
 
   describe('click', () => {
@@ -333,7 +341,7 @@ describe('LGraphCanvas selection', () => {
 
       canvas.deselectAll()
 
-      expect(canvas.selectedItems).toEqual(new Set([b]))
+      expect([...canvas.selectedItems]).toEqual([b])
       expect(a.selected).toBe(false)
       expect(b.selected).toBe(true)
       expect(canvas.selected_nodes).toEqual({ [b.id]: b })
@@ -450,7 +458,7 @@ describe('LGraphCanvas selection', () => {
         assert.exists(replacement)
         expect(replacement).not.toBe(target.item)
         expect(replacement.selected).toBeFalsy()
-        expect(canvas.selectedItems).toEqual(new Set([a]))
+        expect([...canvas.selectedItems]).toEqual([a])
         expect(target.item.selected).toBe(false)
         expect(
           useSelectionStore().isSelected(
@@ -501,6 +509,74 @@ describe('LGraphCanvas selection', () => {
 
       expect(canvas.selectedItems.size).toBe(0)
       expect(graph.nodes).toHaveLength(0)
+    })
+
+    it('highlights a link connected after the node was selected', () => {
+      a.addOutput('out', 'number')
+      b.addInput('in', 'number')
+      canvas.select(a)
+      expect(Object.keys(canvas.highlighted_links)).toHaveLength(0)
+
+      const link = a.connect(0, b, 0)
+      assert.exists(link)
+
+      expect(canvas.highlighted_links).toEqual({ [link.id]: true })
+    })
+
+    it('reuses the selection view while selection and topology are unchanged', () => {
+      const selectedKeys = vi.spyOn(useSelectionStore(), 'selectedKeys')
+      canvas.select(a)
+      selectedKeys.mockClear()
+
+      expect(canvas.selected_nodes[a.id]).toBe(a)
+      expect(canvas.highlighted_links).toEqual({})
+
+      expect(selectedKeys).toHaveBeenCalledOnce()
+
+      canvas.deselect(a)
+
+      expect(canvas.selected_nodes).toEqual({})
+      expect(selectedKeys).toHaveBeenCalledTimes(2)
+    })
+
+    it('supports legacy highlighted_links clear assignment', () => {
+      canvas.select(a)
+
+      expect(() => {
+        canvas.highlighted_links = {}
+      }).not.toThrow()
+    })
+
+    it('keeps selection reads bounded for a bulk collapse', () => {
+      const nodes = Array.from({ length: 32 }, (_, index) =>
+        addNode(graph, `Bulk ${index}`, 200 + index * 10, 200)
+      )
+      canvas.selectItems(nodes)
+      LGraphCanvas.active_canvas = canvas
+      graph._version++
+      const selectedKeys = vi.spyOn(useSelectionStore(), 'selectedKeys')
+
+      LGraphCanvas.onMenuNodeCollapse(
+        { content: 'Collapse' },
+        {},
+        new MouseEvent('click'),
+        fromPartial<Parameters<typeof LGraphCanvas.onMenuNodeCollapse>[3]>({}),
+        nodes[0]
+      )
+
+      expect(nodes.map((node) => node.collapsed)).toEqual(Array(32).fill(true))
+      expect(selectedKeys.mock.calls.length).toBeLessThanOrEqual(5)
+    })
+
+    it('assigning selected_nodes replaces the selection', () => {
+      canvas.select(a)
+
+      canvas.selected_nodes = { [b.id]: b }
+
+      expect(selectedTitles(canvas)).toEqual(['B'])
+      expect(canvas.selected_nodes).toEqual({ [b.id]: b })
+      expect(a.selected).toBe(false)
+      expect(b.selected).toBe(true)
     })
 
     it('records and removes every selectable kind', () => {
@@ -574,7 +650,8 @@ describe('LGraphCanvas selection', () => {
       canvas.deselect(foreignNode)
       canvas.selectItems([foreignNode])
 
-      expect(canvas.selectedItems).toEqual(new Set([a]))
+      expect(canvas.selectedItems.size).toBe(1)
+      expect(canvas.selectedItems.has(a)).toBe(true)
       expect(foreignNode.selected).toBeFalsy()
       expect(a.selected).toBe(true)
     })
@@ -597,6 +674,136 @@ describe('LGraphCanvas selection', () => {
       canvas.deselectAll()
       expect(onSelectionChange).toHaveBeenCalledTimes(1)
       expect(a.selected).toBe(false)
+    })
+
+    it('reports when a deselection hook selects a replacement item', () => {
+      canvas.select(a)
+      a.onDeselected = () => canvas.select(b)
+
+      canvas.deselectAll()
+
+      expect(onSelectionChange).toHaveBeenCalledTimes(1)
+      expect(selectedTitles(canvas)).toEqual(['B'])
+    })
+
+    it('deselectAll(keepSelected) keeps only that item', () => {
+      canvas.select(a)
+      canvas.select(b)
+
+      canvas.deselectAll(b)
+
+      expect(selectedTitles(canvas)).toEqual(['B'])
+      expect(a.selected).toBe(false)
+      expect(onSelectionChange).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('legacy selectedItems Set', () => {
+    it('add() selects through the store', () => {
+      canvas.selectedItems.add(a)
+
+      expect(selectedTitles(canvas)).toEqual(['A'])
+      expect(Object.keys(canvas.selected_nodes)).toEqual([String(a.id)])
+    })
+
+    it('ignores a foreign item with the same key', () => {
+      const foreignGraph = new LGraph()
+      const foreign = addNode(foreignGraph, 'Foreign', 0, 0)
+      expect(foreign.id).toBe(a.id)
+
+      canvas.selectedItems.add(foreign)
+      expect(canvas.selectedItems.size).toBe(0)
+
+      canvas.select(a)
+      expect(canvas.selectedItems.delete(foreign)).toBe(false)
+      expect([...canvas.selectedItems]).toEqual([a])
+    })
+
+    it('delete() deselects and reports whether the item was selected', () => {
+      canvas.select(a)
+      canvas.select(b)
+
+      expect(canvas.selectedItems.delete(a)).toBe(true)
+      expect(canvas.selectedItems.delete(a)).toBe(false)
+      expect(selectedTitles(canvas)).toEqual(['B'])
+    })
+
+    it('held snapshots report current membership when deleting', () => {
+      canvas.select(a)
+      const snapshot = canvas.selectedItems
+
+      expect(snapshot.delete(a)).toBe(true)
+      expect(snapshot.delete(a)).toBe(false)
+
+      canvas.select(a)
+      expect(snapshot.delete(a)).toBe(true)
+      expect(canvas.selectedItems.size).toBe(0)
+    })
+
+    it('clear() empties the selection', () => {
+      canvas.select(a)
+      canvas.select(b)
+
+      canvas.selectedItems.clear()
+
+      expect(canvas.selectedItems.size).toBe(0)
+      expect(Object.keys(canvas.selected_nodes)).toEqual([])
+    })
+
+    it('assignment replaces the selection', () => {
+      canvas.select(a)
+
+      canvas.selectedItems = new Set([b])
+
+      expect(selectedTitles(canvas)).toEqual(['B'])
+      expect(a.selected).toBe(false)
+      expect(b.selected).toBe(true)
+    })
+
+    it('assignment with only foreign items clears the selection', () => {
+      const foreignGraph = new LGraph()
+      const foreign = addNode(foreignGraph, 'Foreign', 0, 0)
+      canvas.select(a)
+
+      canvas.selectedItems = new Set([foreign])
+
+      expect(canvas.selectedItems.size).toBe(0)
+      expect(a.selected).toBe(false)
+    })
+
+    it('a held snapshot stays stable while the property reflects the store', () => {
+      canvas.select(a)
+      const snapshot = canvas.selectedItems
+
+      canvas.select(b)
+
+      expect([...snapshot]).toEqual([a])
+      expect([...canvas.selectedItems]).toEqual([a, b])
+    })
+
+    it('a held snapshot keeps mutating its original graph', () => {
+      canvas.select(a)
+      const firstGraphSnapshot = canvas.selectedItems
+      const secondGraph = new LGraph()
+      const secondGraphNode = addNode(secondGraph, 'Second graph', 0, 0)
+      canvas.setGraph(secondGraph)
+      canvas.select(secondGraphNode)
+      const store = useSelectionStore()
+      const firstScope = graphScopeOf(graph)
+      store.apply(firstScope, {
+        type: 'selection.add',
+        key: selectableKeyOf(a)
+      })
+      expect(store.selectedKeys(firstScope)).toEqual([selectableKeyOf(a)])
+
+      firstGraphSnapshot.clear()
+
+      expect(store.selectedKeys(firstScope)).toEqual([])
+      expect(store.selectedKeys(graphScopeOf(secondGraph))).toEqual([
+        selectableKeyOf(secondGraphNode)
+      ])
+
+      canvas.setGraph(graph)
     })
   })
 

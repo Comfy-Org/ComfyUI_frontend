@@ -36,6 +36,29 @@ type FailureDetails = Pick<FailedRun, 'reason'> &
   >
 
 describe('Workshop health', () => {
+  it('keeps workflow delivery in the existing health stream with distinct engine tags', () => {
+    const record = workshopHealthLog({
+      name: 'delivery_finished',
+      properties: {
+        ...run,
+        page_type: 'workflow',
+        render_engine: 'cloud',
+        workflow_id: 'workflows/remove-background',
+        status: 'succeeded',
+        duration_ms: 15,
+        output_kind: 'image'
+      }
+    })
+    expect(record).toMatchObject({
+      feature: 'models',
+      event_name: 'delivery_finished',
+      page_type: 'workflow',
+      render_engine: 'cloud',
+      workflow_id: 'workflows/remove-background',
+      service_health: 'success'
+    })
+    expect(JSON.stringify(record)).not.toMatch(/private-user|private-workspace/)
+  })
   it('preserves declared field names for validation diagnostics', () => {
     expect(
       workshopHealthLog({
