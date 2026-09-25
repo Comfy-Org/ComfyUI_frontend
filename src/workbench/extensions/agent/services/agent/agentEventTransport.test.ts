@@ -459,6 +459,14 @@ describe('agentEventTransport unrenderable ask', () => {
 })
 
 describe('agentEventTransport ask_user', () => {
+  it('shows a redelivered ask once', () => {
+    const message = drive([askUser('ask-1'), askUser('ask-1')])
+
+    expect(
+      message.parts.filter((part) => part.type === 'askUser')
+    ).toHaveLength(1)
+  })
+
   it('places the question card, with every option, at the decision point', () => {
     const message = drive([delta('before'), askUser(), delta('after')])
 

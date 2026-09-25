@@ -77,86 +77,120 @@ export function createAgentEventTransport(
     return part
   }
 
-  function ingest(event: AgentChatEvent): void {
-    if (settled) return
+  type EventData<T extends AgentChatEvent['type']> = Extract<
+    AgentChatEvent,
+    { type: T }
+  >['data']
+
+  /** Closes the open text and reasoning before a new kind of part begins. */
+  function closeStreamingParts(): void {
+    closeOpenText()
+    closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
+  }
+
+  function appendThinking(delta: string): boolean {
+    closeOpenText()
+    message.thinking = true
+    ;(openThinking ?? openNewThinking()).text += delta
+    message.thinkingText = openThinking?.text
+    return true
+  }
+
+  function applyToolCall(data: EventData<'agent_tool_call'>): boolean {
+    closeStreamingParts()
+    let part = tools.get(data.tool_call_id)
+    if (!part) {
+      part = {
+        type: 'tool',
+        callId: data.tool_call_id,
+        name: data.tool_name,
+        state: 'streaming'
+      }
+      tools.set(data.tool_call_id, part)
+      message.parts.push(part)
+    }
+    part.name = data.tool_name
+    if (data.status !== 'running') {
+      part.state = 'done'
+      part.ok = data.status === 'success'
+      part.durationMs = data.duration_ms
+    }
+    return true
+  }
+
+  function applyActiveTab(data: EventData<'agent_active_tab'>): boolean {
+    // The agent re-announces the same tab as it keeps working on it, with
+    // text and tool calls in between, so the tail of parts is not the test;
+    // only a change of tab is worth another link in the transcript.
+    const targetKey = `${data.workflow_id}\u0000${data.node_locator_id ?? ''}`
+    if (lastTabTargetKey === targetKey) return false
+    lastTabTargetKey = targetKey
+    closeStreamingParts()
+    message.parts.push({
+      type: 'tabLink',
+      workflowId: data.workflow_id,
+      locatorId: data.node_locator_id,
+      name: data.name
+    })
+    return true
+  }
+
+  function applyAsk(data: EventData<'agent_ask'>): boolean {
+    // A redelivered ask (a replay, a resubscribe) is already on screen, and
+    // a second card would share its key and its in-progress answer.
+    const shown = message.parts.some(
+      (part) =>
+        (isAskPart(part) || part.type === 'notice') &&
+        part.askId === data.ask_id
+    )
+    if (shown) return false
+    closeStreamingParts()
+    message.parts.push(toAskOrNoticePart(data))
+    return true
+  }
+
+  function dropResolvedAsk(askId: string): boolean {
+    message.parts = message.parts.filter(
+      (part) =>
+        !(isAskPart(part) || part.type === 'notice') || part.askId !== askId
+    )
+    return true
+  }
+
+  function appendText(delta: string): boolean {
+    closeOpenThinking()
+    message.thinking = false
+    message.thinkingText = undefined
+    ;(openText ?? openNewText()).text += delta
+    return true
+  }
+
+  /** Applies one event; true when the message changed and should be emitted. */
+  function apply(event: AgentChatEvent): boolean {
     switch (event.type) {
       case 'agent_thinking':
-        closeOpenText()
-        message.thinking = true
-        ;(openThinking ?? openNewThinking()).text += event.data.delta
-        message.thinkingText = openThinking?.text
-        break
-      case 'agent_tool_call': {
-        closeOpenText()
-        closeOpenThinking()
-        message.thinking = false
-        message.thinkingText = undefined
-        let part = tools.get(event.data.tool_call_id)
-        if (!part) {
-          part = {
-            type: 'tool',
-            callId: event.data.tool_call_id,
-            name: event.data.tool_name,
-            state: 'streaming'
-          }
-          tools.set(event.data.tool_call_id, part)
-          message.parts.push(part)
-        }
-        part.name = event.data.tool_name
-        if (event.data.status !== 'running') {
-          part.state = 'done'
-          part.ok = event.data.status === 'success'
-          part.durationMs = event.data.duration_ms
-        }
-        break
-      }
-      case 'agent_active_tab': {
-        // The agent re-announces the same tab as it keeps working on it, with
-        // text and tool calls in between, so the tail of parts is not the test;
-        // only a change of tab is worth another link in the transcript.
-        const targetKey = `${event.data.workflow_id}\u0000${event.data.node_locator_id ?? ''}`
-        if (lastTabTargetKey === targetKey) return
-        lastTabTargetKey = targetKey
-        closeOpenText()
-        closeOpenThinking()
-        message.thinking = false
-        message.thinkingText = undefined
-        message.parts.push({
-          type: 'tabLink',
-          workflowId: event.data.workflow_id,
-          locatorId: event.data.node_locator_id,
-          name: event.data.name
-        })
-        break
-      }
+        return appendThinking(event.data.delta)
+      case 'agent_tool_call':
+        return applyToolCall(event.data)
+      case 'agent_active_tab':
+        return applyActiveTab(event.data)
       case 'agent_ask':
-        closeOpenText()
-        closeOpenThinking()
-        message.thinking = false
-        message.thinkingText = undefined
-        // Every kind the contract allows gets its card; anything else gets a
-        // notice, so the user sees why the turn is waiting.
-        message.parts.push(toAskOrNoticePart(event.data))
-        break
+        return applyAsk(event.data)
       case 'agent_ask_resolved':
-        // The card, or the notice standing in for an ask it could not show.
-        message.parts = message.parts.filter(
-          (part) =>
-            !(isAskPart(part) || part.type === 'notice') ||
-            part.askId !== event.data.ask_id
-        )
-        break
+        return dropResolvedAsk(event.data.ask_id)
       case 'agent_message_delta':
-        closeOpenThinking()
-        message.thinking = false
-        message.thinkingText = undefined
-        ;(openText ?? openNewText()).text += event.data.delta
-        break
+        return appendText(event.data.delta)
       case 'agent_message_done':
         settle()
-        return
+        return false
     }
-    emit(snapshotMessage(message))
+  }
+
+  function ingest(event: AgentChatEvent): void {
+    if (settled) return
+    if (apply(event)) emit(snapshotMessage(message))
   }
 
   function settle(): void {
