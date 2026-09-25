@@ -20,6 +20,7 @@
       <SubscriptionPanelContentWorkspace v-if="isCloud" />
       <div v-else class="flex min-h-0 flex-1 flex-col gap-8 overflow-y-auto">
         <CreditsPanel embedded />
+        <SettingsPlansSection />
         <SubscriptionFooterLinks
           class="mt-auto shrink-0"
           :show-invoice-history="false"
@@ -27,7 +28,19 @@
         />
       </div>
     </template>
-    <UsageLogsTable v-else ref="usageLogsTable" />
+    <template v-else>
+      <UsageLogsTable ref="usageLogsTable" />
+      <div class="flex items-center pt-3 pb-6">
+        <Button
+          variant="muted-textonly"
+          class="text-xs text-text-secondary"
+          @click="openFullActivity"
+        >
+          {{ t('workspacePanel.activity.fullActivity') }}
+          <i class="pi pi-external-link text-xs text-text-secondary" />
+        </Button>
+      </div>
+    </template>
   </div>
 </template>
 
@@ -38,9 +51,11 @@ import { useI18n } from 'vue-i18n'
 import CreditsPanel from '@/components/dialog/content/setting/CreditsPanel.vue'
 import UsageLogsTable from '@/components/dialog/content/setting/UsageLogsTable.vue'
 import Button from '@/components/ui/button/Button.vue'
+import { getComfyPlatformBaseUrl } from '@/config/comfyApi'
 import SubscriptionFooterLinks from '@/platform/cloud/subscription/components/SubscriptionFooterLinks.vue'
 import { isCloud } from '@/platform/distribution/types'
 import SubscriptionPanelContentWorkspace from '@/platform/workspace/components/SubscriptionPanelContentWorkspace.vue'
+import SettingsPlansSection from '@/platform/workspace/components/dialogs/settings/SettingsPlansSection.vue'
 
 type View = 'overview' | 'activity'
 
@@ -53,10 +68,18 @@ const tabs = computed<{ key: View; label: string }[]>(() => [
 
 const activeView = ref<View>('overview')
 
+function openFullActivity() {
+  window.open(
+    `${getComfyPlatformBaseUrl()}/profile/usage`,
+    '_blank',
+    'noopener,noreferrer'
+  )
+}
+
 const usageLogsTable = useTemplateRef('usageLogsTable')
 watch(usageLogsTable, (table) => {
-  table?.refresh().catch(() => {
-    console.error('Error refreshing usage logs')
+  table?.refresh().catch((error) => {
+    console.error('Error refreshing usage logs:', error)
   })
 })
 </script>
