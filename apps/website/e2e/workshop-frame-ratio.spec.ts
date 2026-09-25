@@ -1,6 +1,7 @@
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/modelsAccount'
+import { openModelPage } from './fixtures/islands'
 
 // Solid colour, tiny, and the only thing that matters about them is the shape:
 // the notice compares ratios, not contents.
@@ -49,7 +50,8 @@ test('Seedance first/last frame warns about the stretch only while the shapes di
     }
   })
 
-  await page.goto(
+  await openModelPage(
+    page,
     '/models/byteplus--seedance-2-5-first-last-frame--animate-images/'
   )
   const group = (name: string) => page.getByRole('group', { name, exact: true })

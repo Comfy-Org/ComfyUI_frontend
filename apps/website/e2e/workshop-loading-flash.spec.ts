@@ -4,7 +4,7 @@ import { test } from './fixtures/blockExternalMedia'
 import { waitForIsland } from './fixtures/islands'
 import { MODEL_PATH } from './fixtures/modelsAccount'
 
-for (const path of ['/models/', MODEL_PATH]) {
+for (const path of ['/models/']) {
   test(`static HTML at ${path} paints only the loading frame`, async ({
     request
   }) => {
@@ -23,6 +23,20 @@ for (const path of ['/models/', MODEL_PATH]) {
     expect(liveDom).not.toContain('data-testid="workshop-search"')
   })
 }
+
+test('static HTML of a model page paints the model, not a loader', async ({
+  request
+}) => {
+  const html = await (await request.get(MODEL_PATH)).text()
+  const liveDom = html.replace(
+    /<(template|noscript|script|style)\b[\s\S]*?<\/\1>/g,
+    ''
+  )
+  expect(liveDom).toContain('data-testid="model-hero"')
+  expect(liveDom).toContain('data-testid="model-detail"')
+  expect(liveDom).not.toContain('data-testid="workshop-loading"')
+  expect(html).not.toMatch(/Grok Imagine in/i)
+})
 
 test.describe('enabled workshop', () => {
   test.beforeEach(async ({ context }) => {

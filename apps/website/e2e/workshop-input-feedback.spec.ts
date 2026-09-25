@@ -1,11 +1,15 @@
 import { expect } from '@playwright/test'
 
 import { test } from './fixtures/modelsAccount'
+import { openModelPage } from './fixtures/islands'
 
 test('a single supported resolution stays visible but cannot be changed', async ({
   page
 }) => {
-  await page.goto('/models/krea--krea-2-medium-turbo--generate-images/')
+  await openModelPage(
+    page,
+    '/models/krea--krea-2-medium-turbo--generate-images/'
+  )
   const resolution = page.getByRole('combobox', {
     name: 'Resolution',
     exact: true
@@ -47,7 +51,7 @@ test('Kontext Pro shows a sourced price estimate', async ({ page }) => {
 test('Beeble displays readable options while the API keeps its native values', async ({
   page
 }) => {
-  await page.goto('/models/beeble--switchx-video-edit--edit-videos/')
+  await openModelPage(page, '/models/beeble--switchx-video-edit--edit-videos/')
   const alpha = page.getByRole('combobox', {
     name: 'Transparency mode',
     exact: true
@@ -71,7 +75,7 @@ test('HeyGen offers named language and locale choices and uses the supported voi
     'https://media.comfy.org/website/workshop/heygen/starfish-tts/harbour-radio-signs-off.mp3',
     (route) => route.fulfill({ contentType: 'audio/mpeg', body: '' })
   )
-  await page.goto('/models/heygen--starfish-tts--audio/')
+  await openModelPage(page, '/models/heygen--starfish-tts--audio/')
   await expect(
     page.getByRole('combobox', { name: 'Language', exact: true })
   ).toBeVisible()
@@ -100,7 +104,7 @@ test('HeyGen offers named language and locale choices and uses the supported voi
 test('BRIA Expand previews its source image instead of showing a URL textbox', async ({
   page
 }) => {
-  await page.goto('/models/bria--expand-image--edit-images/')
+  await openModelPage(page, '/models/bria--expand-image--edit-images/')
   const source = page.getByRole('group', { name: 'Source image', exact: true })
   await expect(source.getByRole('img')).toBeVisible()
   await expect(source.getByRole('img')).toHaveJSProperty('naturalWidth', 1)
@@ -113,7 +117,10 @@ test('BRIA Expand previews its source image instead of showing a URL textbox', a
 test('Magnific Skin Enhancer uploads a source image instead of asking for a URL', async ({
   page
 }) => {
-  await page.goto('/models/freepik--magnific-skin-enhancer--edit-images/')
+  await openModelPage(
+    page,
+    '/models/freepik--magnific-skin-enhancer--edit-images/'
+  )
   const source = page.getByRole('group', { name: 'Source image', exact: true })
   await expect(source.getByRole('textbox')).toHaveCount(0)
   const input = source.getByLabel('Source image', { exact: true })
@@ -134,7 +141,7 @@ test('Magnific Skin Enhancer uploads a source image instead of asking for a URL'
 test('FLUX 2 Max takes an exact height the slider cannot be dragged onto', async ({
   page
 }) => {
-  await page.goto('/models/bfl--flux-2-max--generate-images/')
+  await openModelPage(page, '/models/bfl--flux-2-max--generate-images/')
   const slider = page.getByRole('slider', { name: 'Height', exact: true })
   const value = page.getByRole('spinbutton', {
     name: 'Height value',
@@ -159,7 +166,7 @@ test('FLUX 2 Max takes an exact height the slider cannot be dragged onto', async
 test('FLUX Pro 1.1 Ultra keeps a dragged blend readable in its box', async ({
   page
 }) => {
-  await page.goto('/models/bfl--flux-pro-1.1-ultra--generate-images/')
+  await openModelPage(page, '/models/bfl--flux-pro-1.1-ultra--generate-images/')
   await page.getByTestId('playground-advanced').locator('summary').click()
 
   const slider = page.getByRole('slider', {
@@ -194,7 +201,8 @@ test('FLUX Pro 1.1 Ultra keeps a dragged blend readable in its box', async ({
 test('the upload prompt leaves a full frame field and returns when it empties', async ({
   page
 }) => {
-  await page.goto(
+  await openModelPage(
+    page,
     '/models/byteplus--seedance-2-5-first-last-frame--animate-images/'
   )
   const lastFrame = page.getByRole('group', { name: 'Last frame', exact: true })
