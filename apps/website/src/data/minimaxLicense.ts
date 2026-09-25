@@ -134,8 +134,8 @@ export const minimaxLicenseComparison: ModelLaunchComparison = {
           'zh-CN': '蒸馏开源权重版本'
         },
         {
-          en: 'Every version, undistilled weights included',
-          'zh-CN': '所有版本，包括未蒸馏权重'
+          en: 'Open weights, including all updates as released.',
+          'zh-CN': '开放权重，包含发布的所有更新。'
         }
       ]
     },

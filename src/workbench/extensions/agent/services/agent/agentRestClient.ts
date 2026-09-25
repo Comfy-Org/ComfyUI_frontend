@@ -53,16 +53,18 @@ export type OpenTabsSnapshot = Pick<
   'open_tabs' | 'current_tab'
 >
 
-// TEMPORARY: current_tab_unbound isn't in the generated ingest-types yet (cloud#10068 unmerged); delete this augmentation and use AgentPostMessageRequest directly once push-ingest-types-to-frontend lands it.
-type AgentPostMessageRequestWithUnboundFlag = AgentPostMessageRequest & {
-  current_tab_unbound?: boolean
-}
-
-/** An omitted `version` makes this content authoritative for the backend CAS. */
-export interface DraftSnapshot {
-  content: Record<string, unknown>
-  version?: number
-}
+/**
+ * The client's live canvas, sent so the agent works on what the user sees.
+ *
+ * Content-only, and deliberately asymmetric with the `GET /api/agent/draft`
+ * snapshot, which still returns a version: `workflow_draft.version` is a
+ * projection-cache snapshot counter, not a concurrency token, so there is
+ * nothing on the request side for a version to reconcile against. The turn
+ * endpoint's schema has no such field.
+ */
+export type DraftSnapshot = Required<
+  NonNullable<AgentPostMessageRequest['draft']>
+>
 
 export interface PostMessageInput {
   content: string
@@ -352,7 +354,7 @@ export function createAgentRestClient() {
     threadId: string,
     req: PostMessageInput
   ): Promise<AgentTurnAccepted> {
-    const body: AgentPostMessageRequestWithUnboundFlag = {
+    const body: AgentPostMessageRequest = {
       content: req.content
     }
     if (req.workflowId !== undefined) body.workflow_id = req.workflowId
@@ -365,7 +367,7 @@ export function createAgentRestClient() {
       body.workflow_references = req.workflowReferences
     if (req.selection !== undefined) body.selection = req.selection
     if (req.attachments !== undefined) body.attachments = req.attachments
-    if (req.draft !== undefined) body.draft = req.draft
+    if (req.draft !== undefined) body.draft = { content: req.draft.content }
     if (req.currentTabUnbound !== undefined)
       body.current_tab_unbound = req.currentTabUnbound
     return request(

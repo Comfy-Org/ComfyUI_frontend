@@ -754,16 +754,10 @@ export function useAgentSession(deps: AgentSessionDeps) {
         return
       default:
         conversationStore.ingest(event)
-        if (
-          event.type === 'agent_message_done' &&
-          promptEditState.value.phase === 'stopping' &&
-          event.data.message_id === promptEditState.value.turnId &&
-          event.data.thread_id === conversationStore.threadId
-        )
-          promptEditState.value = {
-            phase: 'ready',
-            turnId: promptEditState.value.turnId
-          }
+        markStoppedTurnReady({
+          threadId: event.data.thread_id,
+          messageId: toTurnId(event.data.message_id)
+        })
     }
   }
 
@@ -852,6 +846,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
     switch (outcome.kind) {
       case 'terminal':
         conversationStore.settleTurn(turn, outcome.text)
+        markStoppedTurnReady(turn)
         return true
       case 'thread-missing':
         forgetDeletedThread(turn)
@@ -864,6 +859,19 @@ export function useAgentSession(deps: AgentSessionDeps) {
         const unhandled: never = outcome
         return unhandled
       }
+    }
+  }
+
+  function markStoppedTurnReady(turn: LiveTurn): void {
+    if (
+      promptEditState.value.phase !== 'stopping' ||
+      turn.messageId !== promptEditState.value.turnId ||
+      turn.threadId !== conversationStore.threadId
+    )
+      return
+    promptEditState.value = {
+      phase: 'ready',
+      turnId: promptEditState.value.turnId
     }
   }
 

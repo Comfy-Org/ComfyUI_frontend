@@ -10,6 +10,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { firebaseIdentity } from '@/platform/auth/firebaseIdentity'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { t } from '@/i18n'
 import { useTelemetry } from '@/platform/telemetry'
 
 import {
@@ -84,15 +85,7 @@ vi.mock(import('@/platform/workspace/api/workspaceApiUrl'), () => ({
   workspaceApiUrl: (route: string) => `https://api.example.com/api${route}`
 }))
 
-vi.mock(import('@/i18n'), () => ({
-  t: (key: string, params?: unknown) => {
-    const error =
-      params && typeof params === 'object' && 'error' in params
-        ? (params as { error?: string }).error
-        : undefined
-    return error ? `${key}: ${error}` : key
-  }
-}))
+vi.mock(import('@/i18n'))
 
 vi.mock(import('@/composables/useFeatureFlags'))
 
@@ -120,6 +113,13 @@ function expectedExpiresAtMs(expiresAt: string): string {
 }
 
 beforeEach(() => {
+  vi.mocked(t).mockImplementation((key: unknown, params?: unknown) => {
+    const error =
+      params && typeof params === 'object' && 'error' in params
+        ? params.error
+        : undefined
+    return error ? `${String(key)}: ${String(error)}` : String(key)
+  })
   stubFirebaseAuthHarness()
 
   vi.mocked(useToastStore().add).mockImplementation(() => {})

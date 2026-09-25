@@ -652,7 +652,7 @@ describe('useAgentSession (v1 composition root)', () => {
       workflow: {
         current: () => undefined,
         adopted: () => {},
-        draft: () => ({ content: { nodes: [] }, version: 1 })
+        draft: () => ({ content: { nodes: [] } })
       }
     })
     session.start()
@@ -1083,6 +1083,35 @@ describe('useAgentSession (v1 composition root)', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it('(g6a) a stopped turn settled from REST becomes editable after reconnect', async () => {
+    const rest = fakeRest({
+      getMessages: vi.fn(
+        async (): Promise<AgentMessages> => [
+          historyRow(1, 'user', 'msg-1', 'go'),
+          {
+            ...historyRow(2, 'assistant', 'msg-1', 'interrupted', 'msg-1'),
+            status: 'interrupted'
+          }
+        ]
+      )
+    })
+    const { source, emit, status } = fakeEvents()
+    const session = useAgentSession({ rest, events: source })
+    session.start()
+    status(true)
+
+    await session.sendMessage('go')
+    emit(delta('msg-1', 'partial'))
+    await session.stopTurn()
+    expect(session.editableTurnId.value).toBeNull()
+
+    status(false)
+    status(true)
+
+    await vi.waitFor(() => expect(session.isStreaming.value).toBe(false))
+    expect(session.editableTurnId.value).toBe('msg-1')
   })
 
   it('(g12) a streaming row hydrated after a refresh is reconciled from REST without a socket drop', async () => {
