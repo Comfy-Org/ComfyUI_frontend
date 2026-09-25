@@ -68,7 +68,7 @@ const spokenPosition = computed(
   () => `${clock(elapsed.value)} / ${clock(duration.value)}`
 )
 const seekLabel = computed(() => `${t('player.seek', locale)} ${file.name}`)
-const seekEnd = computed(() => Math.round(seekable.value ? duration.value : 0))
+const seekEnd = computed(() => (seekable.value ? duration.value : 0))
 const seekTabIndex = computed(() => (seekable.value ? 0 : -1))
 </script>
 
@@ -140,7 +140,7 @@ const seekTabIndex = computed(() => (seekable.value ? 0 : -1))
           :aria-label="seekLabel"
           :aria-valuemin="0"
           :aria-valuemax="seekEnd"
-          :aria-valuenow="Math.round(elapsed)"
+          :aria-valuenow="elapsed"
           :aria-valuetext="spokenPosition"
           class="group/seek min-w-0 flex-1 cursor-pointer py-2 outline-none"
           data-testid="audio-source-line"
