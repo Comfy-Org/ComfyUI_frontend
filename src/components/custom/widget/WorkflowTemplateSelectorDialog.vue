@@ -1071,9 +1071,12 @@ async function openPreparedTemplate(
     const didOpen = await openPreparedWorkflowTemplate(prepared, {
       closeDialog: false
     })
-    if (didOpen && generation === detailGeneration) onClose()
+    if (didOpen) {
+      templateWasSelected.value = true
+      if (generation === detailGeneration) onClose()
+    }
   } finally {
-    if (generation === detailGeneration) openPending.value = false
+    openPending.value = false
   }
 }
 
@@ -1106,11 +1109,12 @@ async function showModelSetupIfNeeded(
       pending: true
     }
   }
-  await nextTick()
-  detailView.value?.focus()
-
   const controller = new AbortController()
   modelMetadataController = controller
+  await nextTick()
+  if (generation !== detailGeneration) return true
+  detailView.value?.focus()
+
   void updateTemplateModelMetadata(
     generation,
     controller,
@@ -1128,7 +1132,6 @@ const onLoadWorkflow = async (template: TemplateInfo, event: MouseEvent) => {
   detailOrigin =
     event.currentTarget instanceof HTMLElement ? event.currentTarget : null
   listScrollTop = modalLayout.value?.getContentScrollTop() ?? 0
-  templateWasSelected.value = true
   loadingTemplate.value = template.name
   try {
     const prepared = await prepareWorkflowTemplateForOpen(

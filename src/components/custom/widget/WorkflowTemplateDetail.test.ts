@@ -1,5 +1,6 @@
 import { render, screen, within } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
+import { defineComponent } from 'vue'
 import { describe, expect, it } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -102,6 +103,30 @@ describe('WorkflowTemplateDetail', () => {
     ).toBeInTheDocument()
   })
 
+  it('focuses the detail article through its exposed focus method', async () => {
+    const user = userEvent.setup()
+    const FocusHarness = defineComponent({
+      components: { WorkflowTemplateDetail },
+      data: () => ({ groups }),
+      template: `
+        <button @click="$refs.detail.focus()">Focus detail</button>
+        <WorkflowTemplateDetail
+          ref="detail"
+          title="Wan 2.2 Image to Video"
+          description="Create a video from a starting image."
+          :groups="groups"
+        />
+      `
+    })
+    render(FocusHarness, { global: { plugins: [i18n] } })
+
+    await user.click(screen.getByRole('button', { name: 'Focus detail' }))
+
+    expect(
+      screen.getByRole('article', { name: 'Wan 2.2 Image to Video' })
+    ).toHaveFocus()
+  })
+
   it('emits the sole launch action and disables it while opening', async () => {
     const user = userEvent.setup()
     const result = renderDetail()
@@ -134,7 +159,7 @@ describe('WorkflowTemplateDetail', () => {
       name: 'Run this template in Comfy Cloud'
     })
     expect(cloudAlternative).toHaveTextContent(
-      'Run faster on Cloud GPUs. No local setup or downloads.'
+      'Run on Cloud GPUs without local setup or downloads.'
     )
     const link = within(cloudAlternative).getByRole('link', {
       name: 'Open in Cloud'
@@ -148,7 +173,7 @@ describe('WorkflowTemplateDetail', () => {
     expect(screen.queryByText(/free runs?/i)).not.toBeInTheDocument()
   })
 
-  it('explains the local-credit and Cloud-subscription Partner Node policy', () => {
+  it('offers local and Cloud options for Partner Nodes', () => {
     renderDetail({
       renderedGroups: [],
       cloudUrl: 'https://cloud.comfy.org/?template=api_seedance2_5_t2v',
@@ -159,7 +184,7 @@ describe('WorkflowTemplateDetail', () => {
       name: 'This workflow uses Partner Nodes'
     })
     expect(partnerAlternative).toHaveTextContent(
-      'Run locally with Comfy Credits, or run in Comfy Cloud with a subscription.'
+      'Choose whether to run this workflow locally or in Comfy Cloud.'
     )
     expect(
       within(partnerAlternative).getByRole('link', { name: 'Open in Cloud' })
