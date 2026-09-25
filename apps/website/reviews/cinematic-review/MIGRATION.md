@@ -16,6 +16,10 @@ API-key backend, copied private output library, or additional dependency.
 - Contract-supported video routes, durations, resolutions, audio and seeds;
   unsupported reference combinations are blocked before submission.
 - Genre/era/tempo, ordered movements, custom palettes and lighting presets.
+- Illustrated equipment selector with previous/next browsing and direct choices
+  for camera body, lens, focal length and aperture. Keyboard arrows, Home/End,
+  selected markers and localized labels preserve the existing prompt/settings
+  path. Native SVG artwork uses theme tokens and requires no external assets.
   Custom lighting includes a reactive subject/camera position diagram, separate
   height view, numbered color markers and accessible descriptions. Separate
   palette and lighting presets load only their own settings into the draft;
@@ -47,10 +51,10 @@ API-key backend, copied private output library, or additional dependency.
 
 ## Validation
 
-- Latest run: 461 focused Studio/model-page tests passed across 42 component, library and
+- Latest run: 466 focused Studio/model-page tests passed across 43 component, library and
   composable files. Earlier route validation also passed two LTX Fast tests and
   731 shared contract tests; these were not rerun for the capability UI change.
-- 27 production browser tests passed across both Studio layouts, including
+- 29 production browser tests passed across both Studio layouts, including
   crop pixels, assets, edit review, prompt suggestions, plans, recipe import,
   motion comparison and transition reference restoration after reload.
 - Website build, website typecheck, knip and Astro formatting passed.

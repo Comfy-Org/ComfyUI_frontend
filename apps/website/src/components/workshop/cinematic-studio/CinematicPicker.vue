@@ -13,6 +13,8 @@ import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import Button from '@/components/ui/button/Button.vue'
 import CinematicOptionGrid from './CinematicOptionGrid.vue'
 import CinematicOptionList from './CinematicOptionList.vue'
+import CinematicEquipmentPicker from './CinematicEquipmentPicker.vue'
+import { tcEquipment } from '../../../lib/workshop/cinematic-studio/equipment-copy'
 import CinematicPickerTabs from './CinematicPickerTabs.vue'
 import CinematicPopover from './CinematicPopover.vue'
 
@@ -40,6 +42,9 @@ const visual = groups.some((group) =>
   group.options.some((option) => option.preview || option.palette)
 )
 const tabbed = multiple && visual
+const equipment = groups.every((group) =>
+  ['body', 'lens', 'focal', 'aperture'].includes(group.part)
+)
 const activePart = ref(start ?? groups[0].part)
 const activeGroup = computed(
   () => groups.find((group) => group.part === activePart.value) ?? groups[0]
@@ -80,7 +85,8 @@ function advance(part: DirectionPart) {
       </Button>
     </div>
     <div v-else-if="multiple" class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-      <CinematicOptionList
+      <component
+        :is="equipment ? CinematicEquipmentPicker : CinematicOptionList"
         v-for="group in groups"
         :key="group.part"
         :class="activePart !== group.part && 'max-sm:hidden'"
@@ -100,5 +106,16 @@ function advance(part: DirectionPart) {
         @choose="choose(group.part, $event)"
       />
     </template>
+    <div
+      v-if="equipment"
+      class="mt-3 flex flex-wrap items-center justify-between gap-3"
+    >
+      <p class="max-w-2xl text-xs text-primary-comfy-canvas">
+        {{ tcEquipment('guidance', locale) }}
+      </p>
+      <Button size="sm" @click="emit('close')">{{
+        tc('cinematic.picker.done', locale)
+      }}</Button>
+    </div>
   </CinematicPopover>
 </template>

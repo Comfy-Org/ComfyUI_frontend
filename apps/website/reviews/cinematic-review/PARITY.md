@@ -56,12 +56,19 @@ available. Revealed images can be edited or animated in Studio. Raw response
 metadata and form inputs are not archived, and past unsaved runs cannot be
 recovered. Model records do not pretend to have Studio recipes or scene settings.
 
+Equipment follow-up: the camera picker now has original illustrated previews,
+previous/next browsing, direct choices, selected-state markers and keyboard
+navigation for camera body, lens, focal length and aperture. All current catalog
+choices are retained. Mobile shows one tab at a time; desktop shows the four
+groups together. Selection continues through the existing prompt/review/draft
+path, with no separate generation or physical hardware simulation.
+
 ## Remaining differences
 
 These are explicit follow-ups, not claims that the migration is a complete replica.
 
-- Equipment presentation: the original illustrated camera/lens carousel is not
-  reproduced. The corresponding choices use the current Studio controls.
+- Visual presentation and available equipment names follow Rob's Studio
+  foundation; this is not a pixel-for-pixel recreation of the standalone demo.
 
 ## Delivery boundary
 
