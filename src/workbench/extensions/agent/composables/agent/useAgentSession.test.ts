@@ -884,6 +884,41 @@ describe('useAgentSession (v1 composition root)', () => {
       expect(cardOnScreen()).toBe(false)
     })
 
+    // The resolution frame retires the card on its way through, so by the time
+    // a slow request rejects there is nothing left to warn about — and telling
+    // the user their answer might not have arrived, after the server has said
+    // it resolved, is worse than saying nothing.
+    it('stays quiet when a request rejects after the ask was already resolved', async () => {
+      let reject: ((reason: unknown) => void) | undefined
+      const answerAsk = vi.fn(
+        () =>
+          new Promise<AgentAnswerAccepted>((_resolve, rejectAnswer) => {
+            reject = rejectAnswer
+          })
+      )
+      const { source, emit, status } = fakeEvents()
+      const session = useAgentSession({
+        rest: fakeRest({ answerAsk }),
+        events: source
+      })
+      session.start()
+      status(true)
+      await session.sendMessage('build it and run it')
+      emit(runApproval('msg-1'))
+      const answered = session.answerAsk('turn-1:call-1', 'run')
+
+      emit(askResolved('msg-1'))
+      expect(cardOnScreen()).toBe(false)
+
+      // 400: neither terminal nor retryable, so it reaches the generic catch
+      // immediately rather than being re-driven.
+      reject?.(new AgentApiError('bad request', 400, undefined))
+
+      expect(await answered).toBe(false)
+      expect(reportError).not.toHaveBeenCalled()
+      expect(session.notices.value).toEqual([])
+    })
+
     it('stays quiet when the resolution confirms the selection it sent', async () => {
       const { session, emit } = await parkedOnApproval()
       await session.answerAsk('turn-1:call-1', 'run')

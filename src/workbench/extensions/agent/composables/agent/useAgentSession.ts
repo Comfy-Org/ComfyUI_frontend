@@ -797,6 +797,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
       conversationStore.commitAsk(askId)
       return true
     } catch (error) {
+      // A resolution frame can land while this request is still out, and it
+      // retires the card on the way through. The ask is settled and gone, so
+      // whatever this rejection says about delivery is no longer news the user
+      // can act on — any mismatch worth telling them about has already been
+      // raised by reportSupersededAnswer.
+      if (!answeringAskIds.value.has(askId)) return false
       if (
         error instanceof AgentApiError &&
         TERMINAL_ANSWER_STATUSES.has(error.status)
