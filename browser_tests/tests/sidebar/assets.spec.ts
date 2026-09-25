@@ -1145,6 +1145,11 @@ const MIXED_MEDIA_JOBS: RawJobListItem[] = [
 // CI serves the DISTRIBUTION=cloud build there, and the comfyPage fixture
 // mocks auth for any @cloud-tagged test.
 test.describe('Assets sidebar - media type filter', { tag: '@cloud' }, () => {
+  // The beforeEach re-boots the app so the mocks below are in place before the
+  // assets tab loads, and a cloud boot does not fit the cloud project's 15s
+  // default. Same allowance billingFacadeConsumers gives its cloud boot.
+  test.describe.configure({ timeout: 60_000 })
+
   test.beforeEach(async ({ comfyPage }) => {
     await comfyPage.assets.mockOutputHistory(MIXED_MEDIA_JOBS)
     await comfyPage.assets.mockInputFiles([])
