@@ -81,21 +81,16 @@ function isAttachmentKind(value: unknown): value is AttachmentKind {
 }
 
 /**
- * The resolution `attachment_refs` carries for each name, keyed by the name it
- * shares with `attachments`. An entry is kept even when it resolves to
- * nothing, since the shared name is what makes it a ref at all; `id` and
- * `kind` are each omitted rather than stored empty, matching the writer
- * (`attachmentRefsForRow`, services/agent/server/agent_handler.go), so an
- * unresolved attachment reads the same as one written before ids existed.
+ * One `attachment_refs` entry, as the `{name, id?, kind?}` the server wrote,
+ * reduced to the trimmed name it is keyed by and the resolution it carries.
+ * `id` and `kind` are each omitted rather than stored empty, matching the
+ * writer (`attachmentRefsForRow`, services/agent/server/agent_handler.go), so
+ * an unresolved attachment reads the same as one written before ids existed.
  *
- * Keyed on the trimmed name, because the two keys disagree about whitespace:
- * the writer trims a ref's name while `attachments` is stored verbatim, so a
- * padded name would otherwise never find its own resolution. Only the lookup
- * key is trimmed — the name a row was stored under is what `/view?filename=`
- * has to ask for.
- *
- * First entry wins for a repeated name: the writer emits one ref per posted
- * name, so a duplicate is the same file resolved the same way.
+ * The name is trimmed for the KEY only, because the two keys disagree about
+ * whitespace: the writer trims a ref's name while `attachments` is stored
+ * verbatim, so a padded name would otherwise never find its own resolution.
+ * The name a row was stored under is what `/view?filename=` has to ask for.
  */
 function resolvedAttachmentRef(
   entry: unknown
@@ -112,6 +107,13 @@ function resolvedAttachmentRef(
   ]
 }
 
+/**
+ * Every entry keyed by the trimmed name it shares with `attachments`. An entry
+ * is kept even when it resolves to nothing, since the shared name is what
+ * makes it a ref at all. First entry wins for a repeated name: the writer
+ * emits one ref per posted name, so a duplicate is the same file resolved the
+ * same way.
+ */
 function resolvedAttachmentRefs(
   value: unknown
 ): Map<string, Pick<UserAttachment, 'id' | 'kind'>> {
@@ -385,6 +387,8 @@ function applyUserRow(row: AgentMessages[number], text: string): UserRowUpdate {
     text: referenceUpdate?.text ?? text,
     attachments: parseUserAttachments(row.content),
     workflowReferences: referenceUpdate?.references,
+    // `||`, not `??`: normalizeAgentTranscript collapses this with `??`, so
+    // a blank id has to be undefined by here or it would win as a value.
     workflowId: row.workflow_id || undefined
   }
 }

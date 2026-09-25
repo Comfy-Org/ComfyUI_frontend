@@ -128,7 +128,7 @@ function attachmentIconClass(name: string): string {
 const GRID_KINDS = new Set<MediaType>(['image', 'video', 'audio', '3D'])
 
 function attachmentUrl(item: UserAttachment): string | undefined {
-  if (item.previewUrl) return item.previewUrl
+  if (item.previewUrl !== undefined) return item.previewUrl
   if (!item.ref) return undefined
   return api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
 }
