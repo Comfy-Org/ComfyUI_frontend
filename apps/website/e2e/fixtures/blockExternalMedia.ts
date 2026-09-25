@@ -117,6 +117,17 @@ const EXTERNAL_ROUTE_RULES: readonly ExternalRouteRule[] = [
   {
     matches: isNodeImage,
     handle: (route) => route.fulfill({ path: IMAGE_PLACEHOLDER })
+  },
+  {
+    matches: (_route, url) =>
+      url.hostname.endsWith('cloud.comfy.org') &&
+      url.pathname === '/api/features',
+    handle: (route) =>
+      route.fulfill({
+        contentType: 'application/json',
+        headers: { 'access-control-allow-origin': '*' },
+        body: '{}'
+      })
   }
 ]
 
