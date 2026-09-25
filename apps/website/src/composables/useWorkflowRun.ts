@@ -13,6 +13,7 @@ import {
 } from '../config/workshop-workflow-api'
 import { createWorkflowController } from '../config/workshop-workflow-controller'
 import type { WorkflowState } from '../config/workshop-workflow-state'
+import { workflowSettled } from '../config/workshop-workflow-response'
 import { workflowStorage } from '../config/workshop-workflow-storage'
 import { workshopIdempotencyKey } from '../config/workshop-snippets'
 import { captureWorkshopEvent } from '../scripts/posthog'
@@ -22,8 +23,6 @@ import {
   workshopModelAnalytics,
   workshopWorkflowFailureAnalytics
 } from '../scripts/workshop-analytics'
-
-const CHARGE_WINDOW_MS = 5 * 60_000
 
 export function useWorkflowRun(
   model: WorkflowWorkshopModelDetail,
@@ -114,20 +113,25 @@ export function useWorkflowRun(
     }
   })
 
-  const chargedRuns = new Set<string>()
+  const unchargedRuns = new Set<string>()
+
+  function observeCharge(previous: WorkflowState, next: WorkflowState) {
+    if (!('record' in next) || next.record.stage !== 'run') return
+    const submittedHere =
+      'record' in previous && previous.record.stage === 'intent'
+    const seenUnfinished =
+      next.observation !== undefined && !workflowSettled(next.observation)
+    if (submittedHere || seenUnfinished) unchargedRuns.add(next.record.runId)
+  }
 
   async function settle(command?: Promise<void>) {
     await command
     if (lifetime.signal.aborted || !sameCaller()) return
-    if (state.value.phase !== 'settled') return
-    const { id, completedAt, updatedAt } = state.value.observation.run
     if (
-      chargedRuns.has(id) ||
-      Date.now() - Date.parse(completedAt ?? updatedAt) > CHARGE_WINDOW_MS
+      state.value.phase === 'settled' &&
+      unchargedRuns.delete(state.value.observation.run.id)
     )
-      return
-    chargedRuns.add(id)
-    markWorkshopCreditsDirty()
+      markWorkshopCreditsDirty()
   }
 
   onMounted(async () => {
@@ -146,7 +150,9 @@ export function useWorkflowRun(
         storage,
         onChange: (next) => {
           if (!lifetime.signal.aborted && sameCaller()) {
+            const previous = state.value
             state.value = next
+            observeCharge(previous, next)
             observeAttempt(next)
           }
         }

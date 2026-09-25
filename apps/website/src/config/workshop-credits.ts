@@ -255,14 +255,23 @@ export function watchForTopUp(context: TopUpWatchContext): void {
 /**
  * Cloud books a run's charge only after the job reports done, and the
  * balance reflects it seconds to minutes later, so one read at completion
- * almost always shows the old figure. Marking the credits dirty re-reads
- * with backoff until the balance moves or the schedule runs out; free and
- * API-only runs never move it.
+ * almost always shows the old figure. Each mark owes one charge: the
+ * re-sync re-reads with backoff until it has seen a drop for every mark or
+ * the schedule runs out (free and API-only runs never move the balance).
+ * Every read still publishes, so running out the schedule costs only reads.
  */
 const RESYNC_DELAYS_MS = [
   0, 2_000, 5_000, 10_000, 20_000, 40_000, 60_000, 60_000, 60_000, 60_000
 ] as const
-let resyncGeneration = 0
+
+interface Resync {
+  readonly scope: string
+  readonly owed: number
+  readonly step: number
+  readonly baseline?: number
+}
+
+let resync: Resync | undefined
 let resyncTimer: ReturnType<typeof setTimeout> | undefined
 
 function sessionScope(): string | undefined {
@@ -275,37 +284,57 @@ function currentCredits(): number | undefined {
 }
 
 function stopResync(): void {
-  resyncGeneration += 1
   clearTimeout(resyncTimer)
   resyncTimer = undefined
+  resync = undefined
+}
+
+function scheduleResync(): void {
+  clearTimeout(resyncTimer)
+  const delay = resync && RESYNC_DELAYS_MS.at(resync.step)
+  if (delay === undefined) stopResync()
+  else resyncTimer = setTimeout(() => void readResync(), delay)
+}
+
+function afterResyncRead(active: Resync, credits?: number): Resync {
+  const charged =
+    credits !== undefined &&
+    active.baseline !== undefined &&
+    credits < active.baseline
+  return charged
+    ? {
+        ...active,
+        owed: active.owed - 1,
+        step: active.step + 1,
+        baseline: credits
+      }
+    : { ...active, step: active.step + 1, baseline: active.baseline ?? credits }
+}
+
+async function readResync(): Promise<void> {
+  const active = resync
+  if (!active || sessionScope() !== active.scope) {
+    stopResync()
+    return
+  }
+  await refreshWorkshopCredits({ force: true })
+  if (resync !== active) return
+  resync =
+    active.scope === sessionScope()
+      ? afterResyncRead(active, currentCredits())
+      : undefined
+  if (resync && resync.owed > 0) scheduleResync()
+  else stopResync()
 }
 
 export function markWorkshopCreditsDirty(): void {
   const scope = sessionScope()
   if (typeof window === 'undefined' || !scope) return
-  stopResync()
-  const generation = resyncGeneration
-  const live = () => generation === resyncGeneration && sessionScope() === scope
-  let baseline = currentCredits()
-
-  function schedule(step: number): void {
-    const delay = RESYNC_DELAYS_MS.at(step)
-    if (delay !== undefined)
-      resyncTimer = setTimeout(() => void read(step), delay)
-  }
-
-  async function read(step: number): Promise<void> {
-    if (!live()) return
-    await refreshWorkshopCredits({ force: true })
-    if (!live()) return
-    const credits = currentCredits()
-    if (credits !== undefined && baseline !== undefined && credits !== baseline)
-      return
-    baseline ??= credits
-    schedule(step + 1)
-  }
-
-  schedule(0)
+  resync =
+    resync?.scope === scope
+      ? { ...resync, owed: resync.owed + 1, step: 0 }
+      : { scope, owed: 1, step: 0, baseline: currentCredits() }
+  scheduleResync()
 }
 
 export function useTopUpWatch() {

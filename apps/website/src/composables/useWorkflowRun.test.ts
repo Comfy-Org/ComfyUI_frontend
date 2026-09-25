@@ -158,22 +158,55 @@ describe('workflow page caller lifecycle', () => {
     expect(captureWorkshopEvent).not.toHaveBeenCalled()
   })
 
-  it.for([
-    { name: 'a run that just finished', age: 0, marks: 1 },
-    { name: 'a run that finished long ago', age: 10 * 60_000, marks: 0 }
-  ])('marks the credits dirty once for $name', async ({ age, marks }) => {
+  it('marks the credits dirty once for a run submitted here', async () => {
     const f = fixture()
-    const job = { ...finished(), update_time: Date.now() - age }
     f.fetch
       .mockResolvedValueOnce(Response.json({ prompt_id: runId }))
-      .mockResolvedValue(Response.json(job))
+      .mockResolvedValue(Response.json(finished()))
 
     await f.workflow.start(input)
     await f.workflow.retryDelivery()
 
     expect(f.workflow.state.value.phase).toBe('settled')
-    expect(markWorkshopCreditsDirty).toHaveBeenCalledTimes(marks)
+    expect(markWorkshopCreditsDirty).toHaveBeenCalledOnce()
   })
+
+  it.for([
+    { name: 'still running', status: 'in_progress', marks: 1 },
+    { name: 'already finished', status: 'completed', marks: 0 }
+  ] as const)(
+    'marks the credits dirty for a restored run $name only if it finishes here',
+    async ({ status, marks }) => {
+      const owner = credential()
+      const scope = callerScope(owner)
+      const model = authoredWorkflow()
+      workflowStorage(sessionStorage, scope, model.workflowId).write({
+        version: 2,
+        stage: 'run',
+        runId,
+        workflowId: model.workflowId,
+        definitionVersion: model.workflow.definitionVersion,
+        cancelRequested: false
+      })
+      vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+      onTestFinished(() => {
+        vi.useRealTimers()
+      })
+      const f = fixture(model)
+      f.fetch
+        .mockResolvedValueOnce(Response.json({ ...finished(), status }))
+        .mockResolvedValue(Response.json(finished()))
+
+      await vi.waitFor(() => expect(f.fetch).toHaveBeenCalled(), {
+        interval: 1
+      })
+      await vi.advanceTimersByTimeAsync(2_000)
+
+      expect(f.workflow.state.value.phase).toBe('settled')
+
+      expect(markWorkshopCreditsDirty).toHaveBeenCalledTimes(marks)
+    }
+  )
 
   it('reports form validation separately from generation attempts', async () => {
     const f = fixture()

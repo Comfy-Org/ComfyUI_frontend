@@ -498,7 +498,8 @@ describe('markWorkshopCreditsDirty', () => {
     const refresh = vi.mocked(workshopBalanceReader.refresh)
     refresh.mockClear()
     refresh.mockImplementation(async () => {
-      publish({ status: 'ok', cents: pending.shift() ?? 1000 })
+      const cents = pending.length > 1 ? pending.shift() : pending[0]
+      publish({ status: 'ok', cents: cents ?? 1000 })
     })
     return { mod, balance, refresh }
   }
@@ -515,6 +516,33 @@ describe('markWorkshopCreditsDirty', () => {
     })
     expect(refresh).toHaveBeenCalledTimes(3)
     expect(refresh).toHaveBeenCalledWith({ force: true })
+  })
+
+  it('keeps re-syncing for a second run that finished before the first was charged', async () => {
+    const { mod, balance, refresh } = await dirtyChip([1000, 900, 900, 800])
+
+    mod.markWorkshopCreditsDirty()
+    await vi.advanceTimersByTimeAsync(0)
+    mod.markWorkshopCreditsDirty()
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+
+    expect(balance.value).toEqual({
+      status: 'ok',
+      credits: mod.balanceToCredits(800)
+    })
+    expect(refresh).toHaveBeenCalledTimes(4)
+  })
+
+  it('does not take a top-up during the re-sync for the charge', async () => {
+    const { mod, balance } = await dirtyChip([1500, 1500, 1400])
+
+    mod.markWorkshopCreditsDirty()
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+
+    expect(balance.value).toEqual({
+      status: 'ok',
+      credits: mod.balanceToCredits(1400)
+    })
   })
 
   it('gives up after about five minutes when the balance never moves', async () => {
