@@ -45,7 +45,7 @@ function heroSection(page: Page, locale: Locale) {
 function countLabel(count: number, locale: Locale) {
   const key =
     count === 1 ? 'events.directory.countOne' : 'events.directory.count'
-  return t(key, locale, { count })
+  return t(key, locale).replace('{count}', String(count))
 }
 
 // Expected filter results restated from the raw event data, so the spec never
@@ -689,8 +689,10 @@ test.describe('Events page — desktop @smoke', () => {
     const agendaIds = await rows.evaluateAll((nodes) =>
       nodes.map((node) => node.getAttribute('data-event-id'))
     )
-    expect(new Set(agendaIds)).toEqual(
-      new Set(expected.map((event) => event.id))
+    expect(
+      [...agendaIds].sort((a, b) => (a ?? '').localeCompare(b ?? ''))
+    ).toEqual(
+      expected.map((event) => event.id).sort((a, b) => a.localeCompare(b))
     )
     await expect(typeFilter).toHaveValue(category)
 

@@ -210,7 +210,7 @@
       "placeholder": "Your output will appear here.",
       "download": "Download",
       "openOriginal": "Open output",
-      "downloadFallback": "Automatic download failed. Open the output to save it.",
+      "downloadFallback": "If your download did not start, open the output to save a copy.",
       "useInCode": "Use these settings in code",
       "expires": "Output links expire 24 hours after a run. Download anything you want to keep.",
       "nsfw": "This output may be sensitive.",
@@ -224,7 +224,8 @@
       "cancelled": "We stopped waiting for this result. Check your balance before you run it again.",
       "runAgain": "Run again",
       "expired": "This output has expired.",
-      "expiredHint": "We do not store results. Links last 24 hours after a run, so download anything you want to keep."
+      "expiredHint": "We do not store results. Links last 24 hours after a run, so download anything you want to keep.",
+      "refreshLink": "Refresh download link"
     },
     "launch": {
       "label": "Use cases"
@@ -234,7 +235,8 @@
       "popular": "Most popular",
       "name": "Name A to Z",
       "priceAsc": "Price: low to high",
-      "priceDesc": "Price: high to low"
+      "priceDesc": "Price: high to low",
+      "recommended": "Recommended"
     },
     "form": {
       "advanced": "Advanced settings",
@@ -242,12 +244,21 @@
       "required": "This field is required",
       "tooLarge": "File is over {limit}",
       "uploadFailed": "Upload failed. Try again, or paste a public link instead.",
+      "fileUnreadable": "This file can no longer be read. Select it again.",
       "draftRestoreFailed": "We could not restore all of your saved inputs. Check the form and pick your files again.",
       "requestTooLarge": "Your files and prompt exceed the 10 MiB request limit after encoding. Encoding makes files about one-third larger. Use smaller files or a shorter prompt.",
       "badType": "File type not supported",
       "outOfRange": "Value is outside the allowed range",
       "badOption": "Choose one of the listed options",
-      "rejected": "The model rejected this value"
+      "incompatible": "This input is incompatible with the other settings.",
+      "videoTooLong": "Use a video that is {seconds} seconds or shorter.",
+      "videoUnreadable": "Could not read the video details. Select a playable video or use an accessible video link.",
+      "rejected": "The model rejected this value",
+      "imageAspectRatioOutOfRange": "Use an image with an aspect ratio between {minimum} and {maximum}.",
+      "imageLayerDecompositionUnsupported": "This image is too complex to separate into layers. Choose a simpler image.",
+      "imageUnreadable": "Could not read the image dimensions. Select a readable image or use an accessible image link.",
+      "videoWidthOutOfRange": "Use a video between {minimum} and {maximum} pixels wide.",
+      "videoHdrUnsupported": "HDR video is not supported. Convert this video to SDR and try again."
     },
     "signIn": {
       "meta": {
@@ -347,7 +358,8 @@
       "selectOrDropImages": "Select or drop up to {count} images",
       "selectOrDropFile": "Select or drop a file",
       "selectOrDropFiles": "Select or drop up to {count} files",
-      "selectOrDropReplacement": "Select or drop to replace",
+      "frameRatioMismatchTitle": "The frames are different shapes",
+      "frameRatioMismatch": "The video has one shape, so a frame that does not match it will be stretched to fit. Run it as is, or upload frames with the same proportions.",
       "file": "File",
       "replaceFile": "Replace {name}",
       "removeNamedFile": "Remove {name}",
@@ -365,6 +377,7 @@
       "seconds": "{value} seconds",
       "chooseValue": "Choose {label}",
       "defaultValue": "Default: {value}",
+      "exactValue": "{label} value",
       "off": "Off"
     },
     "run": {
@@ -391,7 +404,13 @@
       "copyRequestId": "Copy request ID",
       "memberNoCredits": "Ask the owner for credits",
       "switchPersonal": "Switch to personal workspace",
-      "degraded": "This model is having trouble right now. Runs may be slow, or fail."
+      "degraded": "This model is having trouble right now. Runs may be slow, or fail.",
+      "savedTitle": "Leave and stop the generation?",
+      "savedBody": "You will not see the result on this page. Left running, it keeps spending credits until it finishes, and lands in your assets.",
+      "savedAssets": "Open your assets",
+      "savedStay": "Stay on this page",
+      "savedLeave": "Leave and stop",
+      "savedKeep": "Leave it running"
     },
     "dialogue": {
       "turn": "Turn {number}",
@@ -424,6 +443,7 @@
       "network": "The connection was interrupted. The run may still complete and be billed. Keep your inputs unchanged when retrying.",
       "response": "Comfy returned a response, but we could not read the result. Keep your inputs unchanged when retrying. If this persists, contact support with the request ID.",
       "client": "The page could not complete this request. Keep your inputs unchanged and contact support if this persists.",
+      "fileUnreadable": "The page could not read a selected file. Select it again in the highlighted field. The model has not run.",
       "concurrency": "This workspace has reached its simultaneous run limit. Wait for an active run to finish, then retry.",
       "conflict": "Comfy could not return this request’s result yet. Keep your inputs unchanged when retrying. If this persists, contact support with the request ID.",
       "rateLimit": "Too many runs right now. Wait a moment and try again.",
@@ -514,7 +534,76 @@
       "ratings": "Ratings & comments",
       "related": "Related workflows",
       "relatedAll": "Browse all",
-      "cloneCta": "Run on your machine"
+      "cloneCta": "Run on your machine",
+      "templateBy": "Template by {author}",
+      "makeYours": "Make it yours",
+      "sections": "Workflow sections",
+      "inside": "Inside the workflow",
+      "previewHint": "A read-only preview of the source template. Open it in Cloud to explore the nodes and make changes.",
+      "fullPreview": "Open full-size workflow preview",
+      "apiHint": "The request below uses the same prepared graph and settings as the Playground. Each submission can start a paid run; do not automatically retry a submission whose outcome is unknown.",
+      "apiUploads": "Upload media first",
+      "apiUploadGrant": "POST /api/inputs/upload-url with {'{'}\"content_type\":\"image/png\"{'}'} on the Cloud origin, using your workspace credential.",
+      "apiUploadPut": "PUT the raw file bytes to the returned upload_path on the same Cloud origin. Do not send an account credential with this PUT.",
+      "apiUploadFinalize": "The PUT response contains name. Replace the corresponding UPLOADED_*_FILENAME value below with that name.",
+      "apiPoll": "POST /api/prompt returns prompt_id. Poll GET /api/jobs/{'{'}prompt_id{'}'}?short_link=ephemeral_tool_chain with your credential. Selected outputs contain temporary short_url links; read the job again to refresh them.",
+      "exampleHint": "An example from this template.",
+      "inputHint": "Upload your inputs and adjust the settings.",
+      "cloudBilling": "Runs in your Cloud workspace. Your plan and compute credits apply.",
+      "preparing": "Preparing inputs…",
+      "submitting": "Submitting…",
+      "queued": "Queued",
+      "cancelling": "Waiting for cancellation…",
+      "delivering": "Preparing outputs…",
+      "failed": "This run failed. Review your inputs before running again.",
+      "interrupted": "Connection interrupted",
+      "resume": "Reconnect to this run",
+      "resumeHint": "Once Cloud returns a job ID, this tab can reconnect to it after a refresh. Leaving the page does not cancel the job.",
+      "inputSize": "Use files up to 25 MiB each, with at most 50 MiB of inputs per run.",
+      "submissionUnknown": "Cloud may have accepted this run, but its response was lost. Check your Cloud history before starting another run.",
+      "checkCloud": "Check Cloud",
+      "dismissUnknown": "Return to inputs",
+      "cancelRequested": "Cancellation requested. Check Cloud for the final job status.",
+      "signInAgain": "Sign in again to reconnect to this run.",
+      "accessDenied": "This account no longer has access to this workspace. Check your workspace selection.",
+      "definitionChanged": "This workflow has changed. Reload the page before starting a new run.",
+      "runMissing": "This run is not available in the current account and workspace.",
+      "paused": "New workflow runs are temporarily paused. Existing runs can still be followed or cancelled.",
+      "mediaUnavailable": "An input upload is incomplete or no longer available. Check your files and try again.",
+      "deliveryFailed": "The run finished, but some outputs could not be delivered. Retry delivery to retrieve them from this run.",
+      "retryDelivery": "Retry output delivery",
+      "storageFailed": "Your browser could not save this run for recovery. Allow site storage, then try again.",
+      "connectionLost": "The run could not be checked. Reconnect to recover its current status.",
+      "browserUnavailable": "Running workflows from this page is not available yet.",
+      "tryCloud": "Try in Cloud",
+      "explore": "Explore the possibilities"
+    },
+    "catalogue": {
+      "apps": "Apps",
+      "categories": "Categories",
+      "show": "Browse",
+      "subtitle": "Models and the workflows built on them, by what you want to make.",
+      "appsSoon": "Apps are coming soon",
+      "appsHint": "For now, explore ready-to-run workflows or try a model with your own ideas.",
+      "noWorkflows": "No workflows match your search and filters.",
+      "backToWorkflows": "Back to workflows",
+      "allWorkflows": "All workflows",
+      "browseAllWorkflows": "Browse all workflows",
+      "searchWorkflows": "Search workflows…",
+      "showWorkflows": "Show {n} workflows"
+    },
+    "assets": {
+      "title": "Your assets",
+      "seeAll": "See all in Cloud",
+      "open": "Open saved asset",
+      "generating": "Generating…",
+      "loadingMedia": "Loading asset…",
+      "loadError": "Could not load your assets.",
+      "previous": "Previous asset",
+      "next": "Next asset",
+      "go": "Show asset {n}",
+      "notSaved": "This generation could not be saved to your assets. The result is still on the page until it expires.",
+      "cancelError": "Could not request cancellation. Your generation may still be running."
     }
   },
   "auth": {
@@ -1180,7 +1269,10 @@
         "wan3": "Wan 3.0",
         "qwenImageEdit": "Qwen\nImage Edit",
         "wan22TextToVideo": "Wan 2.2",
-        "gptImage2": "GPT Image 2"
+        "gptImage2": "GPT Image 2",
+        "chatgptImages25": "ChatGPT Images 2.5",
+        "klingAi30": "KlingAI 3.0",
+        "flux3": "Flux 3"
       },
       "ctaDesktop": "EXPLORE WORKFLOWS WITH THE LATEST MODELS",
       "ctaMobile": "EXPLORE WORKFLOWS"
@@ -1641,7 +1733,8 @@
       "body1": "We're building the world's leading visual AI platform — open, modular, and designed for those who want control, quality and scale in their creative process.",
       "body2": "From solo creators to enterprise teams, millions of people rely on ComfyUI to push the boundaries of what creative AI can do.",
       "body3": "We're a team of builders. We raise the bar for each other, move fast, and care deeply about the open-source community that's grown alongside us.",
-      "body4": "If you want to shape the future of creativity, come build with us."
+      "body4": "If you want to shape the future of creativity, come build with us.",
+      "videoLabel": "Comfy recruiting video"
     },
     "whyJoin": {
       "reason1": "Want to build tools that empower others to create.",
@@ -2200,6 +2293,10 @@
     "ctaDesktopCore": "DESKTOP",
     "ctaCloudCore": "TRY FREE",
     "home": "Comfy home",
+    "copyLogoSvg": "Copy logo as SVG",
+    "copyLogomarkSvg": "Copy logomark as SVG",
+    "brandAssets": "Brand assets",
+    "copied": "Copied",
     "menu": "Menu",
     "toggleMenu": "Toggle menu",
     "close": "Close",
@@ -2220,13 +2317,13 @@
     "linkedin": "LinkedIn",
     "affiliates": "Affiliates",
     "contact": "Contact",
-    "featuredProductsTitle": "NEW RELEASE: MINIMAX H3",
-    "featuredProductsAlt": "MiniMax H3 feature image",
+    "featuredProductsTitle": "GEMINI OMNI 1.1 FLASH",
+    "featuredProductsAlt": "Gemini Omni 1.1 Flash video: cavemen meet the future",
     "featuredProductsCta": "EXPLORE NOW",
-    "featuredProductsCtaAria": "Explore the MiniMax H3 release",
-    "featuredCommunityTitle": "Sky Replacement",
-    "featuredCommunityAlt": "Sky Replacement workflow demo image",
-    "featuredCommunityCtaAria": "Watch the Sky Replacement demo",
+    "featuredProductsCtaAria": "Explore the Gemini Omni 1.1 Flash release",
+    "featuredCommunityTitle": "Product Photography",
+    "featuredCommunityAlt": "Product Photography workflow demo image",
+    "featuredCommunityCtaAria": "Watch the Product Photography demo",
     "featuredCompanyTitle": "Customer story: Black Math",
     "featuredCompanyAlt": "Black Math customer story image",
     "featuredCompanyCtaAria": "Watch the Black Math customer story",
@@ -2347,7 +2444,7 @@
     "geminiOmni": "Gemini Omni 1.1 Flash",
     "wan3": "Wan 3.0",
     "chatgptImage25": "ChatGPT Images 2.5",
-    "qwenImage21": "Qwen Image 2.1",
+    "qwenImage21": "Qwen-Image 2.1",
     "cloudNodes": "Comfy Cloud Nodes"
   },
   "privacy": {
@@ -3158,7 +3255,7 @@
       "q2": "What are Forward Deployed Creatives?",
       "a2": "Comfy experts who embed with your team, build production workflows in your environment, train LoRAs on your style, and teach your team to run and extend everything they build. Tell us what you are making through this form, or [meet the Forward Deployed Creatives](https://comfy.org/forward-deployed-creatives).",
       "q3": "What does Comfy Enterprise include?",
-      "a3": "Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/cloud/enterprise), or request a demo through this form.",
+      "a3": "Cloud or in-house deployment with data ownership, bring-your-own-key support, orchestration, support from the team that builds the engine, and add-ons like MiniMax commercial licensing. [See Comfy Enterprise](https://comfy.org/enterprise/), or request a demo through this form.",
       "q4": "Is Comfy SOC 2 compliant?",
       "a4": "A SOC 2 Type II audit is in progress. Security documentation and real-time control status are available in our [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz), and our team can walk through security requirements as part of an Enterprise conversation."
     }
@@ -3405,8 +3502,8 @@
       "visualAlt": "Comfy"
     },
     "banner": {
-      "text": "Now turn your agent into a creative technologist.",
-      "cta": "Start Comfy MCP"
+      "text": "One API for frontier media models.",
+      "cta": "Try Comfy Router"
     },
     "cta": {
       "heading": "Everything Comfy ships. All in one place.",
@@ -3922,24 +4019,24 @@
   },
   "qwenImage21": {
     "meta": {
-      "title": "Qwen Image 2.1 on Comfy: Open-Weight Image Generation and Editing",
-      "description": "Run Qwen Image 2.1 in ComfyUI. Generate high-resolution images with accurate text, edit existing visuals with plain instructions, and keep every step in a repeatable workflow."
+      "title": "Qwen-Image 2.1 on Comfy: Open-Weight Image Generation and Editing",
+      "description": "Run Qwen-Image 2.1 in ComfyUI. Generate high-resolution images with accurate text, edit existing visuals with plain instructions, and keep every step in a repeatable workflow."
     },
     "breadcrumb": {
-      "model": "Qwen Image 2.1",
+      "model": "Qwen-Image 2.1",
       "updated": "Updated September 2026"
     },
     "hero": {
-      "title": "Qwen Image 2.1\nis here",
-      "description": "Generate posters, infographics, portraits, and scenes with the words exactly where you wrote them, then edit any image with a sentence. Qwen Image 2.1 brings generation and editing into one open-weight model that runs natively in ComfyUI.",
-      "tagOpenSource": "Open Source",
+      "title": "Qwen-Image 2.1\nis here",
+      "description": "Generate posters, infographics, portraits, and scenes with the words exactly where you wrote them, then edit any image with a sentence. Qwen-Image 2.1 brings generation and editing into one open-weight model that runs natively in ComfyUI.",
+      "tagOpenWeights": "Open Weights",
       "tagTextToImage": "Text to Image",
       "tagImageEditing": "Image Editing",
-      "primaryCta": "RUN QWEN IMAGE 2.1",
+      "primaryCta": "RUN QWEN-IMAGE 2.1",
       "secondaryCta": "READ THE GUIDE"
     },
     "gallery": {
-      "heading": "Made with Qwen Image 2.1"
+      "heading": "Made with Qwen-Image 2.1"
     },
     "pricing": {
       "banner": {
@@ -3964,15 +4061,15 @@
     },
     "announcement": {
       "meta": {
-        "title": "Qwen Image 2.1 on Comfy: Coming Soon",
-        "description": "Qwen Image 2.1 is coming to ComfyUI and Comfy Cloud. Generation and editing in one open-weight model, with accurate text rendering, ready to run the day it ships."
+        "title": "Qwen-Image 2.1 on Comfy: Coming Soon",
+        "description": "Qwen-Image 2.1 is coming to ComfyUI and Comfy Cloud. Generation and editing in one open-weight model, with accurate text rendering, ready to run the day it ships."
       },
       "breadcrumb": {
         "updated": "Announced September 2026"
       },
       "hero": {
         "eyebrow": "Coming soon",
-        "description": "Introducing Qwen Image 2.1, the latest open-weight version of the Qwen-Image models series: image generation and editing in one single model, native 2k resolution, professional typography and support for alpha channel. Coming to ComfyUI and Comfy Cloud the day it ships.",
+        "description": "Introducing Qwen-Image 2.1, the latest open-weight version of the Qwen-Image models series: image generation and editing in one single model, native 2k resolution, professional typography and support for alpha channel. Coming to ComfyUI and Comfy Cloud the day it ships.",
         "primaryCta": "GET NOTIFIED"
       }
     }
@@ -4379,8 +4476,9 @@
       "worker": "Worker"
     },
     "modelsHero": {
-      "heading": "1000+ media AI models in one API.",
-      "subtitle": "Use state-of-the-art models for image, video, 3D, and audio. Ready for production."
+      "heading": "One API for frontier media models.",
+      "subtitle": "Integrate frontier image, video, 3D and audio models once. Then choose the provider for each job for better availability and prices.",
+      "getApiKey": "Get your API key"
     },
     "builderHero": {
       "heading": "Package ComfyUI Builds for your team",

@@ -12,7 +12,7 @@ import { initialWorkshopPageState } from './workshop-page-state'
 import type { FieldSchema, FormValues } from './workshop-playground'
 import { validateForm } from './workshop-playground'
 import { prepareWorkshopRouterInput } from './workshop-request'
-import { runWorkshopRouter } from './workshop-router'
+import { runWorkshopRouter } from './workshop-router-queue'
 import { WorkshopRouterError } from './workshop-router-errors'
 import type { RunOutput } from './workshop-run'
 import type { WorkshopUrlEncoder } from './workshop-url-input'
@@ -23,6 +23,7 @@ import { releaseRouterOutputs } from './workshop-response'
 const upload = createWorkshopUrlUploader()
 
 export interface RouterRenderOptions {
+  readonly comfy_save_asset?: boolean
   readonly token?: string | (() => Promise<string>)
   readonly idempotencyKey?:
     | string
@@ -109,19 +110,32 @@ export async function prepareModelRouterRender(
 ): Promise<PreparedRouterRender> {
   const signal = options.signal ?? new AbortController().signal
   signal.throwIfAborted()
-  const resolved = resolveModelRouterRender(model, parameters, options)
-  const body = await prepareWorkshopRouterInput(
-    resolved.contract,
-    resolved.values,
-    signal,
-    undefined,
-    options.uploadFile ??
-      (async (file, uploadSignal) => {
-        const token = await credential(options)
-        return upload(file, token, token, uploadSignal)
-      })
-  )
-  return { ...resolved, body }
+  try {
+    const resolved = resolveModelRouterRender(model, parameters, options)
+    const body = await prepareWorkshopRouterInput(
+      resolved.contract,
+      resolved.values,
+      signal,
+      undefined,
+      options.uploadFile ??
+        (async (file, uploadSignal) => {
+          const token = await credential(options)
+          return upload(file, token, token, uploadSignal)
+        })
+    )
+    return { ...resolved, body }
+  } catch (cause) {
+    signal.throwIfAborted()
+    if (cause instanceof WorkshopRouterError) throw cause
+    throw new WorkshopRouterError(
+      'client',
+      null,
+      {},
+      undefined,
+      'input_preparation',
+      { cause }
+    )
+  }
 }
 
 export async function router_render(
@@ -146,9 +160,11 @@ export async function router_render(
       ? options.idempotencyKey(prepared.body)
       : (options.idempotencyKey ?? crypto.randomUUID())
   const result = await runWorkshopRouter({
+    comfy_save_asset: options.comfy_save_asset,
     contract: prepared.contract,
     body: prepared.body,
     token,
+    freshToken: () => credential(options),
     idempotencyKey,
     signal,
     rasterizeSvg: options.rasterizeSvg,

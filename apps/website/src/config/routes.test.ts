@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { getRoutes, localizeHref } from './routes'
+import { apiKeysLink, externalLinks, getRoutes, localizeHref } from './routes'
 
 describe('localizeHref', () => {
   it.for([
@@ -55,9 +55,12 @@ describe('localizeHref', () => {
 
   it('never prefixes locale-invariant routes', () => {
     expect(localizeHref('/terms-of-service', 'zh-CN')).toBe('/terms-of-service')
-    expect(localizeHref('/enterprise', 'zh-CN')).toBe('/enterprise')
+  })
+
+  it('links to translated enterprise pages', () => {
+    expect(localizeHref('/enterprise', 'zh-CN')).toBe('/zh-CN/enterprise')
     expect(localizeHref('/enterprise/managed-builds', 'zh-CN')).toBe(
-      '/enterprise/managed-builds'
+      '/zh-CN/enterprise/managed-builds'
     )
   })
 
@@ -98,5 +101,32 @@ describe('getRoutes minimaxLicenseProfessionalRequest', () => {
     expect(getRoutes('zh-CN').minimaxLicenseProfessionalRequest).toBe(
       '/minimax/license/professional-request'
     )
+  })
+})
+
+describe('apiKeysLink', () => {
+  it.for([
+    {
+      from: { onboarding: 'router' } as const,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=router'
+    },
+    {
+      from: {
+        onboarding: 'models',
+        model: 'byteplus--seedream-5-pro--generate-images'
+      } as const,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=models&model=byteplus--seedream-5-pro--generate-images'
+    },
+    {
+      from: { onboarding: 'models', model: undefined } as const,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=models'
+    },
+    {
+      from: { onboarding: 'comfy_api' } as const,
+      href: 'https://platform.comfy.org/profile/api-keys?onboarding=comfy_api'
+    }
+  ])('names the onboarding product and model: $href', ({ from, href }) => {
+    expect(apiKeysLink(from)).toBe(href)
+    expect(apiKeysLink(from).startsWith(externalLinks.apiKeys)).toBe(true)
   })
 })

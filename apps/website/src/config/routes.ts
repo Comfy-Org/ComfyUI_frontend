@@ -1,4 +1,9 @@
-import { DEFAULT_LOCALE, localeHasRoute, localePrefix } from './locales'
+import {
+  DEFAULT_LOCALE,
+  LOCALES,
+  localeHasRoute,
+  normalizeRoute
+} from './locales'
 import type { Locale } from './locales'
 
 const baseRoutes = {
@@ -58,10 +63,9 @@ type RouteKey = keyof typeof baseRoutes
 
 type Routes = Readonly<Record<RouteKey, string>>
 
-// Routes that are served only at their canonical path regardless of the
-// active locale. Localized variants of these routes intentionally do not
-// exist, so getRoutes(<non-en>) must not prefix them — emitting
-// /zh-CN/<route> would produce a dead link.
+// English-only routes: navigation and language metadata keep them on the
+// English path, because a locale prefix would link to a page that does not
+// exist. Remove a route from this list once its translation ships.
 //
 // affiliateTerms: legal-reviewed English-only document. See the comment
 // header in src/pages/affiliates/terms.astro and the affiliate-terms i18n
@@ -91,8 +95,6 @@ const LOCALE_INVARIANT_ROUTE_KEYS = new Set<keyof Routes>([
   'affiliateTerms',
   'termsOfService',
   'enterpriseMsa',
-  'enterprise',
-  'managedBuilds',
   'models',
   'minimaxLicenseProfessionalRequest',
   'workshop',
@@ -127,44 +129,36 @@ const LOCALE_INVARIANT_PATHS = new Set<string>([
   ...LOCALE_INVARIANT_EXTRA_PATHS
 ])
 
-/**
- * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
- * URLs and locale-invariant routes pass through unchanged.
- */
 /** True for a locale-invariant route or anything nested under one. */
-export function isLocaleInvariantPath(pathname: string): boolean {
+function isLocaleInvariantPath(pathname: string): boolean {
   return [...LOCALE_INVARIANT_PATHS].some(
     (path) => pathname === path || pathname.startsWith(`${path}/`)
   )
 }
 
+const NOT_FOUND_PATHS = new Set(['/404', '/404.html'])
+
+export function supportsLocaleRoute(locale: Locale, pathname: string): boolean {
+  return (
+    !NOT_FOUND_PATHS.has(normalizeRoute(pathname)) &&
+    !isLocaleInvariantPath(pathname) &&
+    localeHasRoute(locale, pathname)
+  )
+}
+
+/**
+ * Prefix an internal path with the locale (`/mcp` → `/zh-CN/mcp`). External
+ * URLs and locale-invariant routes pass through unchanged.
+ */
 export function localizeHref(
   href: string,
   locale: Locale = DEFAULT_LOCALE
 ): string {
   if (locale === DEFAULT_LOCALE || !href.startsWith('/')) return href
-  // A query or fragment is not part of the route. `/customers#hero-video` was
-  // compared against a route list holding `/customers`, missed, and returned
-  // unprefixed — so a link into a section of a published page would leave the
-  // locale. The suffix is set aside for the checks and put back afterwards.
   const suffixAt = href.search(/[?#]/)
-  if (suffixAt !== -1) {
-    return `${localizeHref(href.slice(0, suffixAt), locale)}${href.slice(suffixAt)}`
-  }
-  // The same predicate the hreflang emitter uses. It matched whole paths here
-  // and prefixes there, so a page nested under an invariant route was localized
-  // by one and not the other: /zh-CN/models linked to
-  // /zh-CN/p/supported-models/grok-imagine, which has never existed.
-  if (isLocaleInvariantPath(href)) return href
-  // Only localize a path the locale actually serves. This replaces a hardcoded
-  // `locale === 'ja'` branch that sent every Japanese link except the home page
-  // to the English page. Deleting that outright would have been worse than the
-  // bug: the links would resolve to /ja/<path> URLs that do not exist until P3
-  // generates the shells. `localeHasRoute` is the same predicate the hreflang
-  // builder uses, so links and clusters cannot disagree, and both start working
-  // on their own as P3 adds pages.
-  if (!localeHasRoute(locale, href)) return href
-  return `${localePrefix(locale)}${href === '/' ? '/' : href}`
+  const path = suffixAt === -1 ? href : href.slice(0, suffixAt)
+  if (!supportsLocaleRoute(locale, path)) return href
+  return `${LOCALES[locale].prefix}${href}`
 }
 
 export function getRoutes(locale: Locale = DEFAULT_LOCALE): Routes {
@@ -180,6 +174,8 @@ export function getRoutes(locale: Locale = DEFAULT_LOCALE): Routes {
 export const externalLinks = {
   affiliateApplicationForm: 'https://forms.gle/RS8L2ttcuGap4Q1v6',
   apiKeys: 'https://platform.comfy.org/profile/api-keys',
+  routerApiKeys:
+    'https://platform.comfy.org/profile/api-keys?onboarding=router',
   blog: 'https://blog.comfy.org/',
   cloud: 'https://cloud.comfy.org',
   cloudLogin: 'https://cloud.comfy.org/cloud/login',
@@ -239,3 +235,18 @@ export const externalLinks = {
   x: 'https://x.com/ComfyUI',
   youtube: 'https://www.youtube.com/@ComfyOrg'
 } as const
+
+/**
+ * The platform creates a key on arrival and shows this product's onboarding.
+ * `model` is the website's model page id (`/models/<slug>`), not the Router id.
+ */
+type ApiKeysOnboarding =
+  | { onboarding: 'router' | 'comfy_api' }
+  | { onboarding: 'models'; model?: string }
+
+export function apiKeysLink(from: ApiKeysOnboarding): string {
+  const url = new URL(externalLinks.apiKeys)
+  url.searchParams.set('onboarding', from.onboarding)
+  if ('model' in from && from.model) url.searchParams.set('model', from.model)
+  return url.href
+}

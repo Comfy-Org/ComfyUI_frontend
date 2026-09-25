@@ -5002,7 +5002,7 @@
     }
   },
   "EmptyCosmosLatentVideo": {
-    "display_name": "EmptyCosmosLatentVideo",
+    "display_name": "Leeres Cosmos Latent-Video",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -5063,7 +5063,7 @@
     }
   },
   "EmptyHunyuanImageLatent": {
-    "display_name": "EmptyHunyuanImageLatent",
+    "display_name": "Leeres Hunyuan Bild-Latent",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -5082,7 +5082,7 @@
     }
   },
   "EmptyHunyuanLatentVideo": {
-    "display_name": "Leeres HunyuanVideo 1.0 Latent",
+    "display_name": "Leeres Hunyuan Video 1.0 Latent",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -5104,7 +5104,7 @@
     }
   },
   "EmptyHunyuanVideo15Latent": {
-    "display_name": "Leeres HunyuanVideo 1.5 Latent",
+    "display_name": "Leeres Hunyuan Video 1.5 Latent",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -5143,7 +5143,7 @@
     }
   },
   "EmptyLTXVLatentVideo": {
-    "display_name": "EmptyLTXVLatentVideo",
+    "display_name": "Leeres LTXV Latent-Video",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -5182,7 +5182,7 @@
     }
   },
   "EmptyLatentHunyuan3Dv2": {
-    "display_name": "EmptyLatentHunyuan3Dv2",
+    "display_name": "Leeres Hunyuan 3D v2 Latent",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -5323,7 +5323,7 @@
     }
   },
   "EmptyTrellis2LatentStructure": {
-    "display_name": "EmptyTrellis2LatentStructure",
+    "display_name": "Leere Trellis2 Latent-Struktur",
     "inputs": {
       "batch_size": {
         "name": "batch_size",
@@ -7955,6 +7955,87 @@
       }
     }
   },
+  "HunyuanImageEditApi": {
+    "description": "Bearbeitet oder kombiniert bis zu 5 Referenzbilder anhand eines Text-Prompts mit dem Hunyuan Image-Modell von Tencent.",
+    "display_name": "Tencent HY Image: Bearbeiten",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "Höhe"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_reference_detail": {
+        "name": "reference_detail"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_watermark": {
+        "name": "Wasserzeichen"
+      },
+      "model_width": {
+        "name": "Breite"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "HunyuanImageTextToImageApi": {
+    "description": "Generiert Bilder aus einem Text-Prompt mit dem Hunyuan Image-Modell von Tencent.",
+    "display_name": "Tencent HY Image: Text zu Bild",
+    "inputs": {
+      "control_after_generate": {
+        "name": "Steuerung nach Generierung"
+      },
+      "model": {
+        "name": "Modell",
+        "tooltip": "Zu verwendendes Modell."
+      },
+      "model_aspect_ratio": {
+        "name": "aspect_ratio"
+      },
+      "model_height": {
+        "name": "Höhe"
+      },
+      "model_prompt": {
+        "name": "Prompt"
+      },
+      "model_resolution": {
+        "name": "Auflösung"
+      },
+      "model_seed": {
+        "name": "Seed"
+      },
+      "model_watermark": {
+        "name": "Wasserzeichen"
+      },
+      "model_width": {
+        "name": "Breite"
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
   "HunyuanImageToVideo": {
     "display_name": "HunyuanImageToVideo",
     "inputs": {
@@ -8072,7 +8153,7 @@
     }
   },
   "HunyuanVideo15LatentUpscaleWithModel": {
-    "display_name": "Hunyuan Video 15 Latent-Upscale mit Modell",
+    "display_name": "Hunyuan Video 1.5 Latent-Upscale mit Modell",
     "inputs": {
       "crop": {
         "name": "Zuschnitt"
@@ -9137,6 +9218,7 @@
     }
   },
   "JsonExtractString": {
+    "description": "Extrahiert den Wert eines Schlüssels aus dem ersten gültigen JSON-Objekt im Text, einschließlich Markdown-Codeblöcken.",
     "display_name": "Text aus JSON extrahieren",
     "inputs": {
       "json_string": {
@@ -10514,7 +10596,7 @@
     }
   },
   "LTXVEmptyLatentAudio": {
-    "display_name": "LTXV Leeres latentes Audio",
+    "display_name": "Leeres LTXV Latent-Audio",
     "inputs": {
       "audio_vae": {
         "name": "audio_vae",
@@ -13234,6 +13316,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Führt einen zusätzlichen Verfeinerungsdurchlauf für eine detailgetreuere Geometrie mit feineren Oberflächendetails aus."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Auflösung des Ultra-Durchlaufs: 2k führt ihn mit 2048³ aus, 4k mit 4096³ für feinste Oberflächendetails. 4k erfordert meshy-7.1 oder neuer. Wird nur verwendet, wenn ultra_mode aktiviert ist."
       }
     },
     "outputs": {
@@ -13300,6 +13386,10 @@
       },
       "symmetry_mode": {
         "name": "symmetry_mode"
+      },
+      "ultra_mode": {
+        "name": "ultra_mode",
+        "tooltip": "Führen Sie einen zusätzlichen Verfeinerungsdurchlauf mit 2048³ für detailgetreuere Geometrie mit feineren Oberflächendetails aus."
       }
     },
     "outputs": {
@@ -13441,6 +13531,10 @@
       "ultra_mode": {
         "name": "ultra_mode",
         "tooltip": "Führt einen zusätzlichen Verfeinerungsdurchlauf für eine detailgetreuere Geometrie mit feineren Oberflächendetails aus."
+      },
+      "ultra_resolution": {
+        "name": "ultra_resolution",
+        "tooltip": "Auflösung des Ultra-Durchlaufs: 2k führt ihn mit 2048³ aus, 4k mit 4096³ für feinste Oberflächendetails. 4k erfordert meshy-7.1 oder neuer. Wird nur verwendet, wenn ultra_mode aktiviert ist."
       }
     },
     "outputs": {
@@ -14199,6 +14293,10 @@
       "moge_model": {
         "name": "moge_model"
       },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Nur MoGe-3: spärliche volumetrische Verfeinerungsdurchgänge über die vorhergesagte Tiefe. Mehr Durchgänge schärfen feine Details und Kanten bei ungefähr linearen Kosten. 0 deaktiviert die Verfeinerung. Wird von MoGe-1 / MoGe-2 ignoriert."
+      },
       "resolution_level": {
         "name": "resolution_level",
         "tooltip": "0 = am schnellsten, 9 = die meisten Details."
@@ -14229,6 +14327,10 @@
       },
       "moge_model": {
         "name": "moge_model"
+      },
+      "refine_steps": {
+        "name": "refine_steps",
+        "tooltip": "Nur MoGe-3: spärliche volumetrische Verfeinerungsdurchgänge über die vorhergesagte Tiefe. Mehr Durchgänge schärfen feine Details und Kanten bei ungefähr linearen Kosten. 0 deaktiviert die Verfeinerung. Wird von MoGe-1 / MoGe-2 ignoriert."
       },
       "resolution_level": {
         "name": "resolution_level",
@@ -17422,7 +17524,7 @@
     }
   },
   "Pixal3DConditioning": {
-    "display_name": "Pixal3DConditioning",
+    "display_name": "Pixal3D-Konditionierung",
     "inputs": {
       "camera_angle_x": {
         "name": "camera_angle_x",
@@ -18345,6 +18447,10 @@
       "model_top_p": {
         "name": "top_p"
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Wie viel Denkaufwand das Modell vor dem Zeichnen verwendet. Höhere Stufen verbessern Details und verbrauchen mehr Tokens. Wird nur von den Arrow-2-Modellen verwendet."
+      },
       "seed": {
         "name": "Seed",
         "tooltip": "Seed, um festzulegen, ob der Node erneut ausgeführt werden soll; die tatsächlichen Ergebnisse sind unabhängig vom Seed nicht deterministisch."
@@ -18384,6 +18490,10 @@
         "name": "Prompt",
         "tooltip": "Textbeschreibung der gewünschten SVG-Ausgabe."
       },
+      "reasoning_effort": {
+        "name": "reasoning_effort",
+        "tooltip": "Wie viel Denkaufwand das Modell vor dem Zeichnen verwendet. Höhere Stufen verbessern Details und verbrauchen mehr Tokens. Wird nur von den Arrow-2-Modellen verwendet."
+      },
       "reference_images": {
         "name": "Referenzbilder",
         "tooltip": "Bis zu 4 Referenzbilder zur Steuerung der Generierung."
@@ -18391,6 +18501,28 @@
       "seed": {
         "name": "Seed",
         "tooltip": "Seed, um festzulegen, ob der Node erneut ausgeführt werden soll; die tatsächlichen Ergebnisse sind unabhängig vom Seed nicht deterministisch."
+      }
+    },
+    "outputs": {
+      "0": {
+        "tooltip": null
+      }
+    }
+  },
+  "QwenImage21Cache": {
+    "description": "Ermöglicht das Festlegen von Gerät und Quantisierung für den KV-Cache; standardmäßig verwendet das Modell die Option auto. Quantisierung kann Bearbeitungs-Workflows bei Speichermangel beschleunigen.",
+    "display_name": "Qwen Image 2.1 Cache",
+    "inputs": {
+      "device": {
+        "name": "Gerät",
+        "tooltip": "auto verwendet verfügbaren VRAM, dann RAM. cpu (RAM) wird im Hintergrund der Berechnung vorab geladen und kostet kaum Geschwindigkeit. off berechnet das Präfix bei jedem Schritt neu, was langsamer ist, aber die einzige Möglichkeit, den Cache auszuschließen."
+      },
+      "dtype": {
+        "name": "dtype",
+        "tooltip": "Speicherpräzision. default ist verlustfrei. int8 halbiert den Cache bei ungefähr bf16-Genauigkeit, int4 viertelt ihn, verdoppelt aber ungefähr den Fehler pro Schritt."
+      },
+      "model": {
+        "name": "Modell"
       }
     },
     "outputs": {
@@ -19032,7 +19164,7 @@
       },
       "model": {
         "name": "Modell",
-        "tooltip": "Das für die Generierung zu verwendende Modell. Die recraftv4_styles-Modelle sind für stilkonsistente Generierung ausgelegt und erfordern immer eine style_id oder style_references."
+        "tooltip": "Das für die Generierung zu verwendende Modell. Die Modelle recraftv4_styles sind für stilistisch konsistente Generierung ausgelegt und benötigen immer eine style_id oder style_references; recraftv4_1_flash ist das schnellste und günstigste Modell und unterstützt überhaupt keine Stile."
       },
       "model_size": {
         "name": "Größe"
@@ -22751,7 +22883,7 @@
     }
   },
   "StableCascade_EmptyLatentImage": {
-    "display_name": "StableCascade_EmptyLatentImage",
+    "display_name": "Leeres Stable Cascade Latent-Bild",
     "inputs": {
       "batch_size": {
         "name": "batch_size"
@@ -22794,7 +22926,7 @@
     }
   },
   "StableCascade_StageC_VAEEncode": {
-    "display_name": "StableCascade_StageC_VAEEncode",
+    "display_name": "Stable Cascade Stage C VAE-Kodierung",
     "inputs": {
       "compression": {
         "name": "Komprimierung"
@@ -23756,8 +23888,47 @@
       }
     }
   },
+  "TextEncodeQwenImage21": {
+    "display_name": "Text kodieren Qwen Image 2.1",
+    "inputs": {
+      "clip": {
+        "name": "clip"
+      },
+      "images": {
+        "name": "Bilder",
+        "tooltip": "Referenzbilder, die vom Text-Encoder gesehen und als VAE-Latents in die Sequenz eingefügt werden."
+      },
+      "negative_prompt": {
+        "name": "negative_prompt"
+      },
+      "prompt": {
+        "name": "Prompt"
+      },
+      "resolution": {
+        "name": "Auflösung",
+        "tooltip": "Referenzbilder werden unter Beibehaltung des Seitenverhältnisses auf etwa Auflösung x Auflösung Pixel in Vielfachen von 32 skaliert. 0 behält jede Referenz in ihrer eigenen Größe bei, gerundet auf ein Vielfaches von 32."
+      },
+      "vae": {
+        "name": "vae"
+      }
+    },
+    "outputs": {
+      "0": {
+        "name": "Positiv",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Negativ",
+        "tooltip": null
+      },
+      "2": {
+        "name": "latent",
+        "tooltip": "Leeres latent in der Größe des ersten Referenzbilds, passend zum Sampling, da jede andere Größe die Bearbeitung verschiebt."
+      }
+    }
+  },
   "TextEncodeQwenImageEdit": {
-    "display_name": "TextEncodeQwenImageEdit",
+    "display_name": "Text kodieren Qwen Image Edit",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23779,7 +23950,7 @@
     }
   },
   "TextEncodeQwenImageEditPlus": {
-    "display_name": "TextEncodeQwenImageEditPlus",
+    "display_name": "Text kodieren Qwen Image Edit Plus",
     "inputs": {
       "clip": {
         "name": "clip"
@@ -23855,6 +24026,10 @@
       "max_length": {
         "name": "Maximale Länge"
       },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Spekulatives Decoding mit dem Multi-Token-Prediction-Head des Checkpoints. Ohne MTP-Gewichte keine Wirkung. auto passt die Entwurfstiefe an; 2-5 legt sie fest. Die gesampelte Ausgabe bleibt korrekt verteilt, unterscheidet sich bei gleichem Seed jedoch von der Ausgabe ohne MTP."
+      },
       "prompt": {
         "name": "Prompt"
       },
@@ -23882,6 +24057,10 @@
       "sampling_mode_top_p": {
         "name": "Top P"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Ersetzt den System-Prompt in der Chat-Vorlage des Modells. Wird ignoriert, wenn nicht die Standardvorlage verwendet wird."
+      },
       "thinking": {
         "name": "Thinking",
         "tooltip": "Im Thinking-Modus arbeiten, falls das Modell diesen unterstützt."
@@ -23898,6 +24077,10 @@
     "outputs": {
       "0": {
         "name": "Generierter Text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Denken",
         "tooltip": null
       }
     }
@@ -23916,6 +24099,10 @@
       },
       "max_length": {
         "name": "Maximale Länge"
+      },
+      "mtp": {
+        "name": "mtp",
+        "tooltip": "Spekulatives Decoding mit dem Multi-Token-Prediction-Head des Checkpoints. Ohne MTP-Gewichte ohne Wirkung. auto passt die Entwurfstiefe an; 2–5 legt sie fest. Die gesampelte Ausgabe bleibt korrekt verteilt, unterscheidet sich jedoch bei gleichem Seed von der Ausgabe ohne MTP."
       },
       "prompt": {
         "name": "Prompt"
@@ -23944,6 +24131,10 @@
       "sampling_mode_top_p": {
         "name": "top_p"
       },
+      "system_prompt": {
+        "name": "system_prompt",
+        "tooltip": "Ersetzt den System-Prompt in der Chat-Vorlage des Modells. Wird ignoriert, wenn nicht die Standardvorlage verwendet wird."
+      },
       "thinking": {
         "name": "thinking",
         "tooltip": "Verwenden Sie den Denkmodus, wenn das Modell ihn unterstützt."
@@ -23960,6 +24151,10 @@
     "outputs": {
       "0": {
         "name": "generated_text",
+        "tooltip": null
+      },
+      "1": {
+        "name": "Denken",
         "tooltip": null
       }
     }
@@ -24432,7 +24627,7 @@
     }
   },
   "Trellis2Conditioning": {
-    "display_name": "Trellis2Conditioning",
+    "display_name": "Trellis2-Konditionierung",
     "inputs": {
       "clip_vision_model": {
         "name": "clip_vision_model"
@@ -24454,7 +24649,7 @@
     }
   },
   "Trellis2ShapeStage": {
-    "display_name": "Trellis2ShapeStage",
+    "display_name": "Trellis2-Formphase",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -24482,7 +24677,7 @@
     }
   },
   "Trellis2TextureStage": {
-    "display_name": "Trellis2TextureStage",
+    "display_name": "Trellis2-Texturphase",
     "inputs": {
       "negative": {
         "name": "negative"
@@ -26162,7 +26357,7 @@
     }
   },
   "VAEDecodeHunyuan3D": {
-    "display_name": "VAEDecodeHunyuan3D",
+    "display_name": "Hunyuan 3D VAE-Dekodierung",
     "inputs": {
       "num_chunks": {
         "name": "num_chunks"
@@ -26470,7 +26665,7 @@
     }
   },
   "VaeDecodeShapeTrellis": {
-    "display_name": "VaeDecodeShapeTrellis",
+    "display_name": "Trellis2 VAE-Formdekodierung",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -26491,7 +26686,7 @@
     }
   },
   "VaeDecodeStructureTrellis2": {
-    "display_name": "VaeDecodeStructureTrellis2",
+    "display_name": "Trellis2 VAE-Strukturdekodierung",
     "inputs": {
       "resolution": {
         "name": "resolution"
@@ -26511,7 +26706,7 @@
     }
   },
   "VaeDecodeTextureTrellis": {
-    "display_name": "VaeDecodeTextureTrellis",
+    "display_name": "Trellis2 VAE-Texturdekodierung",
     "inputs": {
       "samples": {
         "name": "samples"
@@ -29466,6 +29661,10 @@
       "abc": {
         "name": "abc",
         "tooltip": "Verbinden Sie den ABC-Generator oder geben Sie eine bearbeitete Partitur an. Lassen Sie das Feld leer, um automatisch den Modus „off“ zu verwenden."
+      },
+      "cfg_scale": {
+        "name": "cfg_scale",
+        "tooltip": "Autoregressive Guidance für Stil und Liedtext. 1.0 deaktiviert CFG und entspricht dem ABC-Workflow. Verwenden Sie 1.01, um der Guidance des ursprünglichen Deaktivierungsmodus zu entsprechen."
       },
       "clip": {
         "name": "clip"

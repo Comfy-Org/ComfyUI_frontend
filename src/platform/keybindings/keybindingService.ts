@@ -5,6 +5,7 @@ import { useDialogStore } from '@/stores/dialogStore'
 import { isModalOpen } from '@/utils/modalUtil'
 
 import { CORE_KEYBINDINGS } from './defaults'
+import { consultEscapeOverride } from './escapeOverride'
 import { KeyComboImpl } from './keyCombo'
 import { KeybindingImpl } from './keybinding'
 import { useKeybindingStore } from './keybindingStore'
@@ -15,6 +16,26 @@ export function useKeybindingService() {
   const settingStore = useSettingStore()
   const dialogStore = useDialogStore()
 
+  function getExecutableKeybinding(keyCombo: KeyComboImpl) {
+    const keybinding = keybindingStore.getKeybinding(keyCombo)
+    return keybinding && commandStore.isRegistered(keybinding.commandId)
+      ? keybinding
+      : undefined
+  }
+
+  function executeCanvasKeybinding(event: KeyboardEvent): boolean {
+    if (event.type !== 'keydown' || event.repeat) return false
+    if (isModalOpen(dialogStore.dialogStack.length)) return false
+
+    const keybinding = getExecutableKeybinding(KeyComboImpl.fromEvent(event))
+    if (keybinding?.targetElementId !== 'graph-canvas-container') return false
+
+    void commandStore.execute(keybinding.commandId)
+    event.preventDefault()
+    event.stopImmediatePropagation()
+    return true
+  }
+
   async function keybindHandler(event: KeyboardEvent) {
     const keyCombo = KeyComboImpl.fromEvent(event)
     if (keyCombo.isModifier) {
@@ -23,8 +44,12 @@ export function useKeybindingService() {
 
     const target = event.composedPath()[0] as HTMLElement
     // Let the active menu own Escape without also triggering the global shortcut.
+    // `target` is usually the focused element, but when nothing has focus some
+    // browsers (e.g. Safari) target the event at `document` instead of
+    // `document.body`, which has no `closest` method.
     if (
       event.key === 'Escape' &&
+      target instanceof Element &&
       target.closest('[role="menu"], [role="menubar"]')
     ) {
       return
@@ -41,7 +66,7 @@ export function useKeybindingService() {
       return
     }
 
-    const keybinding = keybindingStore.getKeybinding(keyCombo)
+    const keybinding = getExecutableKeybinding(keyCombo)
     if (keybinding) {
       const targetElementId =
         keybinding.targetElementId === 'graph-canvas'
@@ -58,6 +83,15 @@ export function useKeybindingService() {
         if (keyCombo.ctrl) {
           event.preventDefault()
         }
+        return
+      }
+
+      // A registered override (e.g. the agent composer owning Escape while a
+      // turn is running) wins over the default keybinding, but only once an
+      // open menu or dialog has already had first refusal above - those are
+      // more specific to the moment than "some feature elsewhere is running".
+      if (event.key === 'Escape' && consultEscapeOverride(event)) {
+        if (!event.defaultPrevented) event.preventDefault()
         return
       }
 
@@ -141,6 +175,7 @@ export function useKeybindingService() {
   }
 
   return {
+    executeCanvasKeybinding,
     keybindHandler,
     registerCoreKeybindings,
     registerUserKeybindings,

@@ -5,6 +5,9 @@ import { nextTick } from 'vue'
 
 import { i18n } from '@/i18n'
 
+import { toTurnId, zAgentWsEvent } from '../schemas/agentApiSchema'
+import { useAgentConversationStore } from '../stores/agent/agentConversationStore'
+
 vi.mock<unknown>(import('@/scripts/api'), () => ({
   api: {
     getSystemStats: () => Promise.reject(new Error('offline')),
@@ -38,6 +41,7 @@ const STATUS: AgentCrdtStatus = {
   outcomes: {
     received: 5,
     applied: 4,
+    appliedLive: 4,
     skipped: 1,
     errored: 0,
     gap: 0,
@@ -317,6 +321,44 @@ describe('CrdtDevPanel', () => {
     )
     expect(collectSpy.mock.calls[0][0]).not.toHaveProperty('workflow')
     expect(collectSpy.mock.calls[0][0]).not.toHaveProperty('workflowError')
+  })
+
+  it('copies retained tool metadata from real conversation events without prompt content', async () => {
+    const conversation = useAgentConversationStore()
+    const turnId = toTurnId('turn-tool-report')
+    conversation.setThreadId('thread-tool-report')
+    conversation.recordUser(turnId, 'private user prompt')
+    conversation.startTurn(turnId)
+    conversation.ingest(
+      zAgentWsEvent.parse({
+        type: 'agent_tool_call',
+        data: {
+          thread_id: 'thread-tool-report',
+          message_id: turnId,
+          tool_call_id: 'call-from-event',
+          tool_name: 'inspect_workflow',
+          status: 'success',
+          duration_ms: 73
+        }
+      })
+    )
+    conversation.ingest(
+      zAgentWsEvent.parse({
+        type: 'agent_message_done',
+        data: { thread_id: 'thread-tool-report', message_id: turnId }
+      })
+    )
+    const user = userEvent.setup()
+    renderPanel()
+    await user.click(chip()!)
+    await user.click(screen.getByTestId('crdt-dev-panel-copy-report'))
+
+    const report = await navigator.clipboard.readText()
+    expect(report).toContain('"callId": "call-from-event"')
+    expect(report).toContain('"turnId": "turn-tool-report"')
+    expect(report).toContain('"durationMs": 73')
+    expect(report).toContain('"ok": true')
+    expect(report).not.toContain('private user prompt')
   })
 
   it('passes an identifiers block to the report collector on every copy', async () => {

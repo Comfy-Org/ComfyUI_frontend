@@ -5,14 +5,15 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 import { isNoindexPathname } from '../config/indexing'
+import type { Locale } from '../config/locales'
+import { DEFAULT_LOCALE, LOCALE_CODES, LOCALES } from '../config/locales'
 import { redirects } from '../config/redirects'
-import { routeOf, ZH_PREFIX } from '../utils/hreflangRoutes'
+import { routeOf } from '../utils/hreflangRoutes'
 import type { Alternate } from './hreflang'
 import {
-  canonicalPath,
   hreflangAlternates,
   ogLocale,
-  ogLocaleAlternate,
+  ogLocaleAlternates,
   sitemapAlternates
 } from './hreflang'
 
@@ -47,8 +48,6 @@ describe('hreflangAlternates', () => {
     expect(hreflangAlternates('/zh-CN', ORIGIN)).toEqual(home)
   })
 
-  // BE-11285. Previously `/ja/` was read as the English route `/ja`, so it was
-  // labelled `en` and its cluster pointed at `/zh-CN/ja/`, which 404s.
   it('labels the Japanese home page ja and clusters it with the others', () => {
     expect(hreflangAlternates('/ja/', ORIGIN)).toEqual(
       hreflangAlternates('/', ORIGIN)
@@ -66,13 +65,14 @@ describe('hreflangAlternates', () => {
 
   // Japanese has exactly one page. A blanket rule like Chinese's would
   // advertise a Japanese URL for every route on the site.
-  it('offers no ja alternate for routes that have no Japanese page', () => {
-    for (const pathname of ['/cli/', '/zh-CN/cli/', '/mcp/']) {
+  it.for(['/cli/', '/zh-CN/cli/', '/mcp/', '/zh-CN/pricing/'])(
+    'offers no ja alternate for unpublished route %s',
+    (pathname) => {
       expect(
         hreflangAlternates(pathname, ORIGIN).map((a) => a.hreflang)
       ).toEqual(['en', 'zh-CN', 'x-default'])
     }
-  })
+  )
 
   it('covers dynamic routes that exist in both locales', () => {
     expect(
@@ -80,6 +80,14 @@ describe('hreflangAlternates', () => {
         (a) => a.href
       )
     ).toContain('https://comfy.org/zh-CN/customers/moment-factory/')
+  })
+
+  it('keeps file routes without a trailing slash', () => {
+    expect(hreflangAlternates('/article.html', ORIGIN)).toEqual([
+      { hreflang: 'en', href: 'https://comfy.org/article.html' },
+      { hreflang: 'zh-CN', href: 'https://comfy.org/zh-CN/article.html' },
+      { hreflang: 'x-default', href: 'https://comfy.org/article.html' }
+    ])
   })
 
   it.for([
@@ -128,30 +136,33 @@ describe('og locale', () => {
     expect(ogLocale('ja')).toBe('ja_JP')
   })
 
-  it('names the other language only when the page has a twin', () => {
+  it('names other languages only when the page has a twin', () => {
     const clustered = hreflangAlternates('/cli/', ORIGIN)
-    expect(ogLocaleAlternate('en', clustered)).toBe('zh_CN')
-    expect(ogLocaleAlternate('zh-CN', clustered)).toBe('en_US')
-    expect(ogLocaleAlternate('en', [])).toBeNull()
+    expect(ogLocaleAlternates('en', clustered)).toEqual(['zh_CN'])
+    expect(ogLocaleAlternates('zh-CN', clustered)).toEqual(['en_US'])
+    expect(ogLocaleAlternates('en', [])).toEqual([])
   })
 
-  it('pairs a Japanese page with English, not with Chinese', () => {
-    // OG takes one alternate. Testing for `zh-CN` rather than `en` sent every
-    // localized page to zh_CN, so a Japanese page named a language it has
-    // nothing to do with.
+  it('names both other published locales on the homepage', () => {
     const clustered = hreflangAlternates('/ja/', ORIGIN)
-    expect(ogLocaleAlternate('ja', clustered)).toBe('en_US')
+    expect(ogLocaleAlternates('ja', clustered)).toEqual(['en_US', 'zh_CN'])
+    expect(ogLocaleAlternates('en', clustered)).toEqual(['zh_CN', 'ja_JP'])
+    expect(ogLocaleAlternates('zh-CN', clustered)).toEqual(['en_US', 'ja_JP'])
   })
 })
 
-describe('ogLocaleAlternate', () => {
-  const alt = (...codes: Alternate['hreflang'][]): Alternate[] =>
-    codes.map((hreflang) => ({ hreflang, href: 'https://comfy.org/x/' }))
+describe('ogLocaleAlternates', () => {
+  function alt(...codes: Alternate['hreflang'][]): Alternate[] {
+    return codes.map((hreflang) => ({
+      hreflang,
+      href: 'https://comfy.org/x/'
+    }))
+  }
 
   it('names the Chinese twin when the page has one', () => {
-    expect(ogLocaleAlternate('en', alt('en', 'zh-CN', 'x-default'))).toBe(
+    expect(ogLocaleAlternates('en', alt('en', 'zh-CN', 'x-default'))).toEqual([
       'zh_CN'
-    )
+    ])
   })
 
   /**
@@ -159,29 +170,21 @@ describe('ogLocaleAlternate', () => {
    * cluster was never evidence that a Chinese page exists.
    */
   it('names nothing when the target locale is not published', () => {
-    expect(ogLocaleAlternate('en', alt('en', 'x-default'))).toBeNull()
+    expect(ogLocaleAlternates('en', alt('en', 'x-default'))).toEqual([])
   })
 
   it('names nothing for a page outside any cluster', () => {
-    expect(ogLocaleAlternate('en', [])).toBeNull()
+    expect(ogLocaleAlternates('en', [])).toEqual([])
   })
 
   it('points a localized page back at English', () => {
-    expect(ogLocaleAlternate('zh-CN', alt('en', 'zh-CN', 'x-default'))).toBe(
-      'en_US'
-    )
+    expect(
+      ogLocaleAlternates('zh-CN', alt('en', 'zh-CN', 'x-default'))
+    ).toEqual(['en_US'])
   })
 })
 
-/**
- * `isLocaleInvariantPath` is a hand-maintained list, and the page tree is the
- * thing it is meant to describe. Reading the tree back catches the entry nobody
- * added: an English page whose Chinese twin does not exist still advertises one,
- * which is a cluster pointing at a 404.
- *
- * Static routes only. A dynamic route's two `getStaticPaths` are free to produce
- * different slug sets, which the file tree cannot see.
- */
+/** Static routes only; dynamic `getStaticPaths` output needs the built-site audit. */
 describe('the emitter agrees with the page tree', () => {
   const pagesDir = join(dirname(fileURLToPath(import.meta.url)), '..', 'pages')
 
@@ -192,122 +195,59 @@ describe('the emitter agrees with the page tree', () => {
       return entry.name.endsWith('.astro') ? [full] : []
     })
 
-  const english = new Set<string>()
-  const chinese = new Set<string>()
-  for (const file of astroFiles(pagesDir)) {
-    const rel = relative(pagesDir, file).split(sep).join('/')
-    if (rel.includes('[')) continue
-    const route = routeOf(`/src/pages/${rel}`)
-    if (route.startsWith(`${ZH_PREFIX}/`)) {
-      chinese.add(route.slice(ZH_PREFIX.length) || '/')
-    } else if (!route.startsWith('/ja/')) {
-      english.add(route)
-    }
-  }
-
   const redirected = new Set(
     Object.keys(redirects).map((source) => source.replace(/\/$/, ''))
   )
 
-  /** What `BaseLayout` ends up emitting for a route that was actually built. */
-  const clusters = (pathname: string): boolean =>
-    !redirected.has(pathname.replace(/\/$/, '')) &&
-    !isNoindexPathname(pathname) &&
-    hreflangAlternates(pathname, ORIGIN).length > 0
-
-  it('never advertises a zh-CN page that does not exist', () => {
-    const lying = [...english].filter(
-      (route) => clusters(route) && !chinese.has(route)
+  const publishedPages = astroFiles(pagesDir)
+    .map((file) => relative(pagesDir, file).split(sep).join('/'))
+    .filter((file) => !file.includes('['))
+    .map((file) => {
+      const pathname = routeOf(`/src/pages/${file}`)
+      const locale: Locale =
+        LOCALE_CODES.find(
+          (code) =>
+            code !== DEFAULT_LOCALE &&
+            pathname.startsWith(`${LOCALES[code].prefix}/`)
+        ) ?? DEFAULT_LOCALE
+      const unprefixed = pathname.slice(LOCALES[locale].prefix.length) || '/'
+      return { locale, pathname, unprefixed }
+    })
+    .filter(
+      ({ pathname, unprefixed }) =>
+        unprefixed !== '/404/' &&
+        !isNoindexPathname(pathname) &&
+        !redirected.has(pathname.replace(/\/$/, ''))
     )
-    expect(
-      lying,
-      'add a zh-CN page or mark the route locale-invariant'
-    ).toEqual([])
-  })
 
-  it('never advertises an English page that does not exist', () => {
-    const lying = [...chinese].filter(
-      (route) => clusters(`${ZH_PREFIX}${route}`) && !english.has(route)
+  const cases = publishedPages.map(({ pathname, unprefixed }) => {
+    const twins = publishedPages.filter(
+      (page) => page.unprefixed === unprefixed
     )
-    expect(lying, 'the English twin was moved or removed').toEqual([])
-  })
-})
-
-describe('a page whose own locale is held back', () => {
-  /**
-   * Astro's i18n fallback builds /ja/<route> for every route, but only / is on
-   * the Japanese allowlist. Those pages canonical to English, which is right.
-   * They were also emitting the English cluster, which is not: nothing in that
-   * cluster lists them back, so the site advertised a one-way relationship, and
-   * the pages appeared to claim membership of a group they are held out of.
-   *
-   * A page that is not published in its own locale belongs in no cluster.
-   */
-  it('emits no alternates for a Japanese page that is not indexable', () => {
-    // The English pathname is deliberate: that is what Astro reports during a
-    // rewritten fallback render. Only the locale argument reveals it is ja.
-    expect(hreflangAlternates('/mcp/', ORIGIN, 'ja')).toEqual([])
+    return {
+      pathname,
+      expected:
+        twins.length < 2
+          ? []
+          : LOCALE_CODES.flatMap((locale) =>
+              twins
+                .filter((page) => page.locale === locale)
+                .map((page) => ({
+                  hreflang: LOCALES[locale].hreflang,
+                  href: new URL(page.pathname, ORIGIN).href
+                }))
+            )
+    }
   })
 
-  it('still emits them for the Japanese page that IS indexable', () => {
-    expect(
-      hreflangAlternates('/ja/', ORIGIN, 'ja').map((a) => a.hreflang)
-    ).toContain('ja')
-  })
-
-  it('leaves Chinese alone when Japanese is the one held back', () => {
-    expect(
-      hreflangAlternates('/zh-CN/mcp/', ORIGIN, 'zh-CN').map((a) => a.hreflang)
-    ).toEqual(['en', 'zh-CN', 'x-default'])
-  })
-
-  it('does not advertise Japanese pricing before publication', () => {
-    expect(
-      hreflangAlternates('/zh-CN/pricing/', ORIGIN, 'zh-CN').map(
-        (a) => a.hreflang
-      )
-    ).toEqual(['en', 'zh-CN', 'x-default'])
-  })
-})
-
-describe('canonicalPath', () => {
-  /**
-   * THE most dangerous line in the localization work.
-   *
-   * Deleting the Chinese page files makes every /zh-CN/ URL a rewritten
-   * fallback render, and Astro reports the ENGLISH pathname during those. A
-   * canonical built from that pathname told Google the English page was the
-   * original for a fully translated Chinese page. Shipped across all 47 files
-   * it would have de-indexed the entire Chinese site.
-   *
-   * The canonical must follow whether the page is PUBLISHED in its locale, not
-   * whatever path Astro happens to report.
-   */
-  it.for(['/pricing/'])(
-    'points the published Chinese page %s at itself',
-    (path) => {
-      expect(canonicalPath(path, 'zh-CN')).toBe(`/zh-CN${path}`)
-      expect(canonicalPath(`/zh-CN${path}`, 'zh-CN')).toBe(`/zh-CN${path}`)
+  it.for(cases)(
+    'advertises exactly the published locales on $pathname',
+    ({ pathname, expected }) => {
+      expect(
+        hreflangAlternates(pathname, ORIGIN).filter(
+          (alternate) => alternate.hreflang !== 'x-default'
+        )
+      ).toEqual(expected)
     }
   )
-
-  it('points a held-back Japanese page at the English original', () => {
-    expect(canonicalPath('/mcp/', 'ja')).toBe('/mcp/')
-  })
-
-  it('holds Japanese pricing at its English original', () => {
-    expect(canonicalPath('/pricing/', 'ja')).toBe('/pricing/')
-  })
-
-  it('points the published Japanese home page at itself', () => {
-    expect(canonicalPath('/ja/', 'ja')).toBe('/ja/')
-  })
-
-  it('points a Chinese copy of an English-only route at English', () => {
-    expect(canonicalPath('/enterprise-msa/', 'zh-CN')).toBe('/enterprise-msa/')
-  })
-
-  it('leaves English alone', () => {
-    expect(canonicalPath('/pricing/', 'en')).toBe('/pricing/')
-  })
 })

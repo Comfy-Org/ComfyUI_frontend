@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/vue'
+import { render, screen, waitFor } from '@testing-library/vue'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
@@ -6,6 +6,7 @@ import { useReconnectQueueRefresh } from '@/composables/useReconnectQueueRefresh
 import { useReconnectingNotification } from '@/composables/useReconnectingNotification'
 import type * as DistributionTypes from '@/platform/distribution/types'
 import { useVersionCompatibilityStore } from '@/platform/updates/common/versionCompatibilityStore'
+import { useAssetsStore } from '@/stores/assetsStore'
 import { useExecutionStore } from '@/stores/executionStore'
 import { useMenuItemStore } from '@/stores/menuItemStore'
 import { useBottomPanelStore } from '@/stores/workspace/bottomPanelStore'
@@ -35,7 +36,9 @@ beforeEach(() => {
 const apiMock = vi.hoisted(() =>
   Object.assign(new EventTarget(), {
     getServerFeature: vi.fn((_name: string, fallback?: unknown) => fallback),
-    getSystemStats: vi.fn(async () => ({ system: {}, devices: [] }))
+    getSystemStats: vi.fn(async () => ({ system: {}, devices: [] })),
+    getQueue: vi.fn(async () => ({ Running: [], Pending: [] })),
+    getHistory: vi.fn(async () => [])
   })
 )
 const distribution = vi.hoisted(
@@ -49,27 +52,7 @@ const distribution = vi.hoisted(
 )
 
 vi.mock<unknown>(import('@/scripts/api'), () => ({ api: apiMock }))
-vi.mock<unknown>(import('firebase/auth'), () => {
-  class AuthProvider {
-    addScope() {}
-    setCustomParameters() {}
-  }
-
-  return {
-    AuthErrorCodes: {
-      POPUP_CLOSED_BY_USER: 'auth/popup-closed-by-user',
-      EXPIRED_POPUP_REQUEST: 'auth/cancelled-popup-request',
-      POPUP_BLOCKED: 'auth/popup-blocked',
-      CREDENTIAL_TOO_OLD_LOGIN_AGAIN: 'auth/requires-recent-login'
-    },
-    GoogleAuthProvider: AuthProvider,
-    GithubAuthProvider: AuthProvider,
-    browserLocalPersistence: {},
-    setPersistence: vi.fn(async () => {}),
-    onAuthStateChanged: vi.fn(() => () => {}),
-    onIdTokenChanged: vi.fn(() => () => {})
-  }
-})
+vi.mock(import('firebase/auth'))
 
 vi.mock<unknown>(import('@/scripts/app'), () => ({
   app: {
@@ -221,6 +204,19 @@ describe('GraphView - reconnect wiring', () => {
     const refreshOnReconnect = useReconnectQueueRefresh()
     expect(onReconnected).toHaveBeenCalledTimes(1)
     expect(refreshOnReconnect).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('GraphView - output assets refresh', () => {
+  it('reloads output assets on execution_success while the assets sidebar is inactive', async () => {
+    render(GraphView, { global: { plugins: [i18n] } })
+
+    useSidebarTabStore().activeSidebarTabId = null
+    const loadNew = vi.spyOn(useAssetsStore().outputAssets, 'loadNew')
+
+    apiMock.dispatchEvent(new Event('execution_success'))
+
+    await waitFor(() => expect(loadNew).toHaveBeenCalledTimes(1))
   })
 })
 

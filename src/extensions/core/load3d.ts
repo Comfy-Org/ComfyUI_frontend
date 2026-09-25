@@ -4,6 +4,7 @@ import Load3D from '@/components/load3d/Load3D.vue'
 import Load3DViewerContent from '@/components/load3d/Load3dViewerContent.vue'
 import {
   getLoad3dOutputCache,
+  getLoad3dSceneRevision,
   isLoad3dSceneDirty,
   markLoad3dSceneDirty,
   nodeToLoad3dMap,
@@ -29,17 +30,25 @@ import Load3dUtils from '@/extensions/core/load3d/Load3dUtils'
 import { t } from '@/i18n'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
 import type { IContextMenuValue } from '@/lib/litegraph/src/interfaces'
-import type { IStringWidget } from '@/lib/litegraph/src/types/widgets'
+import type {
+  INumericWidget,
+  IStringWidget
+} from '@/lib/litegraph/src/types/widgets'
 import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
   NodeExecutionOutput,
   NodeOutputWith
 } from '@/platform/remote/comfyui/execution/types'
+import { reportError } from '@/platform/telemetry/reportError'
 import type { ComfyNodeDef } from '@/schemas/nodeDefSchema'
 import type { NodeLocatorId } from '@/types/nodeIdentification'
 import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 
 type Matrix = number[][]
+
+/** Extra captures allowed when the scene changes mid-capture. */
+const MAX_STALE_CAPTURE_RETRIES = 2
+
 type Load3dPreviewOutput = NodeOutputWith<{
   result?: [string?, CameraState?, string?, Matrix?, Matrix?]
 }>
@@ -386,8 +395,12 @@ useExtensionService().registerExtension({
 
     useLoad3d(node).onLoad3dReady((load3d) => {
       const modelWidget = node.widgets?.find((w) => w.name === 'model_file')
-      const width = node.widgets?.find((w) => w.name === 'width')
-      const height = node.widgets?.find((w) => w.name === 'height')
+      const width = node.widgets?.find(
+        (w): w is INumericWidget => w.name === 'width' && w.type === 'number'
+      )
+      const height = node.widgets?.find(
+        (w): w is INumericWidget => w.name === 'height' && w.type === 'number'
+      )
       if (!modelWidget || !width || !height) return
 
       const cameraConfig = node.properties['Camera Config'] as
@@ -420,54 +433,72 @@ useExtensionService().registerExtension({
             return null
           }
 
-          if (!isLoad3dSceneDirty(node)) {
-            const cached = getLoad3dOutputCache(node)
-            if (cached) return cached
-          }
+          for (let attempt = 0; ; attempt++) {
+            if (!isLoad3dSceneDirty(node)) {
+              const cached = getLoad3dOutputCache(node)
+              if (cached) return cached
+            }
 
-          const { camera_info, model_3d_info } = snapshotLoad3dState(
-            node,
-            currentLoad3d
-          )
+            const sceneRevision = getLoad3dSceneRevision(node)
 
-          const {
-            scene: imageData,
-            mask: maskData,
-            normal: normalData
-          } = await currentLoad3d.captureScene(
-            width.value as number,
-            height.value as number
-          )
+            // A model swap (user or agent) may still be loading. Capture the
+            // scene the queue will actually run, not the one being replaced.
+            await currentLoad3d.whenLoadIdle()
 
-          const [data, dataMask, dataNormal] = await Promise.all([
-            Load3dUtils.uploadTempImage(imageData, 'scene'),
-            Load3dUtils.uploadTempImage(maskData, 'scene_mask'),
-            Load3dUtils.uploadTempImage(normalData, 'scene_normal')
-          ])
+            const { camera_info, model_3d_info } = snapshotLoad3dState(
+              node,
+              currentLoad3d
+            )
 
-          currentLoad3d.handleResize()
+            const {
+              scene: imageData,
+              mask: maskData,
+              normal: normalData
+            } = await currentLoad3d.captureScene(
+              width.value as number,
+              height.value as number
+            )
 
-          const returnVal: Load3dCachedOutput = {
-            image: `threed/${data.name} [temp]`,
-            mask: `threed/${dataMask.name} [temp]`,
-            normal: `threed/${dataNormal.name} [temp]`,
-            camera_info,
-            recording: '',
-            model_3d_info
-          }
-
-          const recordingData = currentLoad3d.getRecordingData()
-
-          if (recordingData) {
-            const [recording] = await Promise.all([
-              Load3dUtils.uploadTempImage(recordingData, 'recording', 'mp4')
+            const [data, dataMask, dataNormal] = await Promise.all([
+              Load3dUtils.uploadTempImage(imageData, 'scene'),
+              Load3dUtils.uploadTempImage(maskData, 'scene_mask'),
+              Load3dUtils.uploadTempImage(normalData, 'scene_normal')
             ])
-            returnVal.recording = `threed/${recording.name} [temp]`
+
+            currentLoad3d.handleResize()
+
+            const returnVal: Load3dCachedOutput = {
+              image: `threed/${data.name} [temp]`,
+              mask: `threed/${dataMask.name} [temp]`,
+              normal: `threed/${dataNormal.name} [temp]`,
+              camera_info,
+              recording: '',
+              model_3d_info
+            }
+
+            const recordingData = currentLoad3d.getRecordingData()
+
+            if (recordingData) {
+              const recording = await Load3dUtils.uploadTempImage(
+                recordingData,
+                'recording',
+                'mp4'
+              )
+              returnVal.recording = `threed/${recording.name} [temp]`
+            }
+
+            if (setLoad3dOutputCache(node, returnVal, sceneRevision)) {
+              return returnVal
+            }
+
+            if (attempt >= MAX_STALE_CAPTURE_RETRIES) {
+              reportError(
+                new Error('Load3D scene did not stabilize during capture'),
+                { errorType: 'error_capturing_load3d_scene_unstable' }
+              )
+              return null
+            }
           }
-
-          setLoad3dOutputCache(node, returnVal)
-
-          return returnVal
         }
       }
     })

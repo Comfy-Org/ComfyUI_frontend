@@ -3,7 +3,7 @@ import { useClipboard } from '@vueuse/core'
 import { TabsContent, TabsList, TabsRoot, TabsTrigger } from 'reka-ui'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { externalLinks } from '../../config/routes'
+import { apiKeysLink } from '../../config/routes'
 import type { WorkshopDetailModel } from '../../config/workshop-detail'
 import { defaultWorkshopValues } from '../../config/workshop-detail'
 import { parseWorkshopJsonInput } from '../../config/workshop-json-schema'
@@ -19,6 +19,8 @@ import {
   buildWorkshopSnippet,
   workshopIdempotencyKey
 } from '../../config/workshop-snippets'
+import { useWorkshopSession } from '../../config/workshop-session-state'
+import { workspaceLinkedHref } from '../../config/workshop-workspace-link'
 import type { Locale } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import WorkshopForm from './WorkshopForm.vue'
@@ -27,6 +29,14 @@ const { model, locale = 'en' } = defineProps<{
   model: WorkshopDetailModel
   locale?: Locale
 }>()
+
+const { session } = useWorkshopSession()
+const apiKeyHref = computed(() =>
+  workspaceLinkedHref(
+    apiKeysLink({ onboarding: 'models', model: model.slug }),
+    session.value?.workspace.id
+  )
+)
 const values = ref(defaultWorkshopValues(model.fields))
 
 // A visitor coming back from sign-in or a purchase lands with the form they
@@ -206,7 +216,7 @@ const languageLabels: Record<WorkshopSnippetLanguage, string> = {
         </TabsContent>
       </TabsRoot>
       <a
-        :href="externalLinks.apiKeys"
+        :href="apiKeyHref"
         target="_blank"
         rel="noopener noreferrer"
         class="mt-4 inline-flex text-sm font-medium text-primary-comfy-yellow hover:underline"

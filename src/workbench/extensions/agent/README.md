@@ -13,7 +13,7 @@ enabled, the panel has an open intent, and the current user and workspace have
 accepted Agent consent. Development mode enables the feature flag; consent is
 still required. A restored open intent cannot bypass consent.
 
-On first use, click **Ask Comfy Agent**, then **Start using Comfy Agent**.
+On first use, click **Agent**, then **Start using Comfy Agent**.
 Acceptance is stored through the hosted Global Settings API under
 `Comfy.AgentPanel.ConsentAccepted` for the authenticated user and workspace.
 Agent opens after the save succeeds. Skip, Escape and outside clicks dismiss

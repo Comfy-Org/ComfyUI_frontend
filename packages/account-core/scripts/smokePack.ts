@@ -1,5 +1,5 @@
 /**
- * Packs the three publishable packages, installs the tarballs into a throwaway
+ * Packs the four publishable packages, installs the tarballs into a throwaway
  * npm project alongside their declared peers, and proves the published shape
  * from there: plain node imports every built entry and constructs a session
  * client, and tsc under nodenext resolves a type and a value from each entry
@@ -44,6 +44,16 @@ const packageDir = fileURLToPath(new URL('..', import.meta.url))
 const workspaceRoot = resolve(packageDir, '..', '..')
 const packagesDir = resolve(packageDir, '..')
 const keep = process.argv.includes('--keep')
+
+/**
+ * Entries a plain-node import cannot reach, through no fault of the tarball.
+ * `@stripe/stripe-js` publishes no `exports` map, so `@stripe/stripe-js/pure`
+ * is a legacy directory specifier: a bundler probes it for an extension, node
+ * ESM refuses it with ERR_UNSUPPORTED_DIR_IMPORT. Every host that renders this
+ * entry builds through a bundler, and the typed consumer still covers it, so
+ * the exclusion is about the provider's packaging rather than ours.
+ */
+const BUNDLER_ONLY_ENTRIES = ['@comfyorg/account-ui/billing/stripe']
 
 const PUBLISHED_PACKAGES = [
   'account-core',
@@ -120,16 +130,15 @@ import { buildBillingEntryUrl } from '@comfyorg/billing-contract'
 import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
 
 const memory = new Map()
-const client = createSessionClient({
-  exchangeUrl: 'https://example.invalid/api/auth/token',
-  storage: {
-    read: () => memory.get('credential') ?? null,
-    write: (value) => memory.set('credential', value),
-    clear: () => memory.delete('credential')
-  }
-})
-const beforeIdentity = client.getSnapshot().phase
-const detach = client.attachIdentity(
+const client = createSessionClient(
+  {
+    exchangeUrl: 'https://example.invalid/api/auth/token',
+    storage: {
+      read: () => memory.get('credential') ?? null,
+      write: (value) => memory.set('credential', value),
+      clear: () => memory.delete('credential')
+    }
+  },
   createTestIdentity({
     onUserChanged: (callback) => {
       callback(null)
@@ -138,13 +147,14 @@ const detach = client.attachIdentity(
   })
 )
 const afterIdentity = client.getSnapshot().phase
-detach()
-if (beforeIdentity !== 'pending' || afterIdentity !== 'signed-out') {
+client.dispose()
+const afterDispose = client.getSnapshot().phase
+if (afterIdentity !== 'signed-out' || afterDispose !== 'pending') {
   throw new Error(
-    \`session client phases \${beforeIdentity} -> \${afterIdentity}\`
+    \`session client phases \${afterIdentity} -> \${afterDispose}\`
   )
 }
-console.log(\`session client: \${beforeIdentity} -> \${afterIdentity}\`)
+console.log(\`session client: \${afterIdentity} -> \${afterDispose}\`)
 
 const entry = buildBillingEntryUrl({
   billingOrigin: 'https://billing.comfy.org',
@@ -168,6 +178,10 @@ for (const name of PACKAGES) {
   })
   for (const subpath of Object.keys(manifest.exports)) {
     const specifier = subpath.replace(/^\\./, name)
+    if (BUNDLER_ONLY.includes(specifier)) {
+      console.log(\`\${specifier}: bundler-only, skipped under node\`)
+      continue
+    }
     const target = fileURLToPath(import.meta.resolve(specifier))
     if (!existsSync(target)) {
       throw new Error(\`\${specifier} resolves to a missing file\`)
@@ -187,10 +201,22 @@ import type { OperationHandle } from '@comfyorg/account-core/boundedOperation'
 import { createBoundedOperation } from '@comfyorg/account-core/boundedOperation'
 import type { AccountUser, SessionSnapshot } from '@comfyorg/account-core/session'
 import { createSessionClient } from '@comfyorg/account-core/session'
+import type { WebSessionResult } from '@comfyorg/account-core/webSession'
+import { readWebSession } from '@comfyorg/account-core/webSession'
+import type { WebSessionIdentityState } from '@comfyorg/account-core/webSessionIdentity'
+import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 import type { BillingErrorCode } from '@comfyorg/account-core/billing'
 import { createSessionBillingTransport } from '@comfyorg/account-core/billing'
-import type { FirebaseIdentityAppConfig } from '@comfyorg/account-core/firebase'
-import { createFirebaseIdentity } from '@comfyorg/account-core/firebase'
+import type {
+  FirebaseIdentityAppConfig,
+  ResolveFirebaseIdentityOptions,
+  ResolveStripePublishableKeyOptions
+} from '@comfyorg/account-core/firebase'
+import {
+  createFirebaseIdentity,
+  resolveFirebaseIdentity,
+  resolveStripePublishableKey
+} from '@comfyorg/account-core/firebase'
 import { createWebCrossTabRefreshPort } from '@comfyorg/account-core/web'
 import type { IdentityPort } from '@comfyorg/account-core/testing'
 import { createTestIdentity } from '@comfyorg/account-core/testing'
@@ -206,6 +232,8 @@ import type { FirebaseAuthErrorLike } from '@comfyorg/account-core/firebaseAuthE
 import { isFirebaseAuthErrorLike } from '@comfyorg/account-core/firebaseAuthError'
 import { signUpWithProvisioning } from '@comfyorg/account-core/provisioning'
 import { safeInternalPath } from '@comfyorg/account-core/redirect'
+import type { WorkspaceLinkRead } from '@comfyorg/account-core/workspaceLink'
+import { readWorkspaceLink } from '@comfyorg/account-core/workspaceLink'
 import type { AuthMethod } from '@comfyorg/account-core/telemetry'
 import { SESSION_TELEMETRY_EVENT } from '@comfyorg/account-core/telemetry'
 import { isEmbeddedWebView } from '@comfyorg/account-core/webviewDetection'
@@ -215,6 +243,8 @@ import type { ExchangeTokenResponse } from '@comfyorg/ingest-types'
 import { zExchangeTokenResponse } from '@comfyorg/ingest-types/zod'
 import type { Credits } from '@comfyorg/account-ui/billing'
 import { useCredits } from '@comfyorg/account-ui/billing'
+import type { StripePaymentPhase } from '@comfyorg/account-ui/billing/stripe'
+import { StripePaymentForm } from '@comfyorg/account-ui/billing/stripe'
 import type { PasswordRulesCopy } from '@comfyorg/account-ui/auth/PasswordRules'
 import PasswordRules from '@comfyorg/account-ui/auth/PasswordRules'
 import SocialAuthButtons from '@comfyorg/account-ui/auth/SocialAuthButtons'
@@ -230,8 +260,12 @@ import { useGenerationGuard } from '@comfyorg/account-ui/auth/useGenerationGuard
 export const values = {
   createBoundedOperation,
   createSessionClient,
+  readWebSession,
+  createWebSessionIdentity,
   createSessionBillingTransport,
   createFirebaseIdentity,
+  resolveFirebaseIdentity,
+  resolveStripePublishableKey,
   createWebCrossTabRefreshPort,
   createTestIdentity,
   MISSING_CUSTOMER_MESSAGE,
@@ -241,12 +275,14 @@ export const values = {
   isFirebaseAuthErrorLike,
   signUpWithProvisioning,
   safeInternalPath,
+  readWorkspaceLink,
   SESSION_TELEMETRY_EVENT,
   isEmbeddedWebView,
   buildBillingEntryUrl,
   parseBillingEntry,
   zExchangeTokenResponse,
   useCredits,
+  StripePaymentForm,
   PasswordRules,
   SocialAuthButtons,
   TurnstileWidget,
@@ -260,8 +296,12 @@ export const values = {
 export interface Types {
   boundedOperation: OperationHandle
   session: SessionSnapshot
+  webSession: WebSessionResult
+  webSessionIdentity: WebSessionIdentityState
   billing: BillingErrorCode
   firebase: FirebaseIdentityAppConfig
+  firebaseResolve: ResolveFirebaseIdentityOptions
+  firebaseResolveStripeKey: ResolveStripePublishableKeyOptions
   web: ReturnType<typeof createWebCrossTabRefreshPort>
   testing: IdentityPort<AccountUser>
   customerRecovery: CustomerRecoveryDeps
@@ -271,12 +311,14 @@ export interface Types {
   firebaseAuthError: FirebaseAuthErrorLike
   provisioning: Parameters<typeof signUpWithProvisioning>[0]
   redirect: ReturnType<typeof safeInternalPath>
+  workspaceLink: WorkspaceLinkRead
   telemetry: AuthMethod
   webviewDetection: ReturnType<typeof isEmbeddedWebView>
   billingContract: BillingEntry
   returnTarget: ReturnTarget
   ingestTypes: ExchangeTokenResponse
   accountUiBilling: Credits
+  accountUiStripe: StripePaymentPhase
   passwordRules: PasswordRulesCopy
   socialAuthButtons: typeof SocialAuthButtons
   turnstileWidget: typeof TurnstileWidget
@@ -382,7 +424,9 @@ function main(): void {
       .join(', ')
     writeFileSync(
       join(consumerDir, 'consumer.mjs'),
-      `const PACKAGES = [${packageList}]\n${NODE_CONSUMER_SOURCE}`
+      `const PACKAGES = [${packageList}]\n` +
+        `const BUNDLER_ONLY = ${JSON.stringify(BUNDLER_ONLY_ENTRIES)}\n` +
+        NODE_CONSUMER_SOURCE
     )
     process.stdout.write(run('node', ['consumer.mjs'], consumerDir))
 

@@ -5,6 +5,7 @@ import { computed } from 'vue'
 import { catalogSearch, useCaseFor } from '../../config/models-catalogue'
 import { getRoutes } from '../../config/routes'
 import type { ModelsPageData } from '../../config/models-page-data'
+import type { RouterWorkshopModelDetail } from '../../config/models-catalogue'
 import { t } from '../../i18n/translations'
 import { useWorkshopEnabled } from '../../scripts/posthog'
 import CatalogueBackLink from './CatalogueBackLink.vue'
@@ -16,7 +17,9 @@ import SplitReveal from './SplitReveal.vue'
 import TagOverflow from './TagOverflow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
-const { page } = defineProps<{ page: ModelsPageData }>()
+const { page } = defineProps<{
+  page: ModelsPageData & { model: RouterWorkshopModelDetail }
+}>()
 const routes = getRoutes()
 const enabled = useWorkshopEnabled()
 const modelUseCase = computed(() => useCaseFor(page.model))

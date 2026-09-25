@@ -37,15 +37,7 @@ vi.mock(import('@/composables/graph/useNodeErrorFlagSync'), () => ({
   useNodeErrorFlagSync: vi.fn()
 }))
 
-vi.mock<unknown>(import('@/scripts/app'), () => ({
-  app: {
-    isGraphReady: false,
-    rootGraph: {
-      serialize: vi.fn(() => ({})),
-      getNodeById: vi.fn()
-    }
-  }
-}))
+vi.mock(import('@/scripts/app'))
 
 vi.mock<unknown>(import('@/utils/graphTraversalUtil'), () => ({
   executionIdToNodeLocatorId: vi.fn((id: string) => id),
@@ -95,12 +87,7 @@ function renderOverlay(props: { appMode?: boolean } = {}) {
   return render(ErrorOverlay, {
     props,
     global: {
-      plugins: [createTestI18n()],
-      stubs: {
-        Button: {
-          template: '<button v-bind="$attrs"><slot /></button>'
-        }
-      }
+      plugins: [createTestI18n()]
     }
   })
 }

@@ -47,6 +47,40 @@ test.describe('Models catalog', () => {
     await expect(page).toHaveURL(new URL(href, page.url()).href)
   })
 
+  test('opens the model from the banner beside the pagination bars', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 1280, height: 900 })
+    await page.goto('/models/')
+    const strip = page.getByTestId('featured-pagination')
+    const card = page.getByTestId('featured-slide')
+    const href = await page
+      .getByTestId('featured-slide-link')
+      .getAttribute('href')
+    const [bars, area] = [await strip.boundingBox(), await card.boundingBox()]
+    if (!href || !bars || !area)
+      throw new Error('Featured banner is not laid out')
+
+    // The strip spans the card so the bars can share the room, which puts a
+    // wide empty stretch of it over the link.
+    await page.mouse.click(area.x + area.width - 80, bars.y + bars.height / 2)
+
+    await expect(page).toHaveURL(new URL(href, page.url()).href)
+  })
+
+  test('keeps every pagination bar inside the banner on a phone', async ({
+    page
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 })
+    await page.goto('/models/')
+    const strip = page.getByTestId('featured-pagination')
+    const card = page.getByTestId('featured-slide')
+    const [bars, card_] = [await strip.boundingBox(), await card.boundingBox()]
+    if (!bars || !card_) throw new Error('Featured banner is not laid out')
+    expect(bars.x + bars.width).toBeLessThanOrEqual(card_.x + card_.width)
+    expect(bars.x).toBeGreaterThanOrEqual(card_.x)
+  })
+
   test('switches between the curated recommendation and alphabetical order', async ({
     page
   }) => {
@@ -246,6 +280,10 @@ test.describe('Models catalog', () => {
 
     const back = page.getByTestId('model-back')
     await expect(back).toHaveText('Back to Generate videos')
+    await expect(back).toHaveAttribute(
+      'href',
+      '/models?useCase=generate-videos'
+    )
     await back.click()
     await expect(page.getByRole('heading', { level: 1 })).toContainText(
       'Generate videos'
@@ -473,10 +511,30 @@ test.describe('Model playground', () => {
     await page.goto(MODEL_PATH)
     const advanced = page.getByTestId('playground-advanced')
     await expect(advanced).toBeVisible()
-    await expect(page.getByTestId('field-safety_tolerance')).not.toBeVisible()
+    await expect(page.getByTestId('field-prompt_upsampling')).not.toBeVisible()
     await advanced.locator('summary').click()
-    await expect(page.getByTestId('field-safety_tolerance')).toBeVisible()
+    await expect(page.getByTestId('field-prompt_upsampling')).toBeVisible()
     await expect(page.getByTestId('field-seed')).toBeVisible()
+  })
+
+  test('asks nothing about the provider moderation checks and sends nothing', async ({
+    page
+  }) => {
+    await page.goto(MODEL_PATH)
+    await page.getByTestId('playground-advanced').locator('summary').click()
+
+    await expect(page.getByTestId('field-safety_tolerance')).toHaveCount(0)
+    await expect(
+      page.getByRole('combobox', { name: 'Safety tolerance', exact: true })
+    ).toHaveCount(0)
+    await expect(
+      page.getByRole('slider', { name: 'Safety tolerance', exact: true })
+    ).toHaveCount(0)
+
+    await page.getByRole('tab', { name: 'API', exact: true }).click()
+    await expect(page.getByTestId('snippet')).not.toContainText(
+      'safety_tolerance'
+    )
   })
 
   test('restores sign-in and keeps Run and uploads enabled after Models menu navigation', async ({

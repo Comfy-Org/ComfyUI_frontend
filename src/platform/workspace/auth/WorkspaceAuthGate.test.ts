@@ -1,36 +1,33 @@
-import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import { useApiKeyAuthStore } from '@/stores/apiKeyAuthStore'
 import { useAuthStore } from '@/stores/authStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { render, screen } from '@testing-library/vue'
 import userEvent from '@testing-library/user-event'
-import {
-  onAuthStateChanged,
-  onIdTokenChanged,
-  setPersistence
-} from 'firebase/auth'
-import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
+
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
 import { useAuthActions } from '@/composables/auth/useAuthActions'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useBillingCapabilities } from '@/platform/workspace/composables/useBillingCapabilities'
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import {
   remoteConfigErrorStatus,
   remoteConfigState
 } from '@/platform/remoteConfig/remoteConfig'
 
-import { stubAccountIdentityPort } from '@/utils/__tests__/stubAccountIdentityPort'
+import {
+  stubAccountIdentityPort,
+  stubFirebaseAuthHarness
+} from '@/utils/__tests__/stubAccountIdentityPort'
 
 import WorkspaceAuthGate from './WorkspaceAuthGate.vue'
 
 vi.mock(import('firebase/auth'), { spy: true })
 
 beforeEach(() => {
-  vi.mocked(setPersistence).mockResolvedValue(undefined)
-  vi.mocked(onAuthStateChanged).mockImplementation(vi.fn())
-  vi.mocked(onIdTokenChanged).mockImplementation(vi.fn())
+  stubFirebaseAuthHarness()
   stubAccountIdentityPort()
 })
 
@@ -51,6 +48,7 @@ vi.mock(import('@/platform/remoteConfig/refreshRemoteConfig'), () => ({
 }))
 
 vi.mock(import('@/composables/useFeatureFlags'))
+
 vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 
 const mockIsCloud = vi.hoisted(() => ({ value: true }))
@@ -89,7 +87,7 @@ describe('WorkspaceAuthGate', () => {
       activeWorkspaceId: 'workspace-123'
     })
     mockRefreshRemoteConfig.mockResolvedValue(undefined)
-
+    vi.mocked(useBillingCapabilities().initialize).mockResolvedValue(undefined)
     vi.mocked(useTeamWorkspaceStore().initialize).mockImplementation(
       async () => {
         Object.assign(useTeamWorkspaceStore(), { initState: 'ready' })
@@ -141,9 +139,7 @@ describe('WorkspaceAuthGate', () => {
 
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
       expect(useTeamWorkspaceStore().initialize).toHaveBeenCalledOnce()
-      expect(
-        vi.mocked(useBillingCapabilities().initialize)
-      ).not.toHaveBeenCalled()
+      expect(useBillingCapabilities().initialize).not.toHaveBeenCalled()
       expect(mockRefreshRemoteConfig).not.toHaveBeenCalled()
     })
 
@@ -307,7 +303,7 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       expect(useTeamWorkspaceStore().initialize).toHaveBeenCalled()
-      expect(vi.mocked(useBillingCapabilities().initialize)).toHaveBeenCalled()
+      expect(useBillingCapabilities().initialize).toHaveBeenCalled()
       expect(screen.getByTestId('slot-content')).toBeInTheDocument()
     })
 
@@ -318,9 +314,7 @@ describe('WorkspaceAuthGate', () => {
 
       mountComponent()
       await vi.waitFor(() =>
-        expect(
-          vi.mocked(useBillingCapabilities().initialize)
-        ).toHaveBeenCalledOnce()
+        expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
       )
 
       await flushPromises()
@@ -332,16 +326,13 @@ describe('WorkspaceAuthGate', () => {
       vi.mocked(useBillingCapabilities().initialize).mockImplementationOnce(
         (signal) =>
           new Promise<void>((resolve) => {
-            assert.exists(signal)
-            signal.addEventListener('abort', () => resolve(), { once: true })
+            signal?.addEventListener('abort', () => resolve(), { once: true })
           })
       )
 
       const { unmount } = mountComponent()
       await vi.waitFor(() =>
-        expect(
-          vi.mocked(useBillingCapabilities().initialize)
-        ).toHaveBeenCalledOnce()
+        expect(useBillingCapabilities().initialize).toHaveBeenCalledOnce()
       )
       const signal = vi.mocked(useBillingCapabilities().initialize).mock
         .calls[0][0]
@@ -350,8 +341,7 @@ describe('WorkspaceAuthGate', () => {
       await flushPromises()
 
       expect(signal).toBeInstanceOf(AbortSignal)
-      assert.exists(signal)
-      expect(signal.aborted).toBe(true)
+      expect(signal?.aborted).toBe(true)
       expect(mockReportError).not.toHaveBeenCalled()
     })
 

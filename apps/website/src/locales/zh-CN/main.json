@@ -561,7 +561,8 @@
       "body3": "我们是一支建设者团队。我们互相提高标准、快速迭代，并深切关心与我们一同成长的开源社区。",
       "body4": "如果你想塑造创意的未来，来和我们一起构建。",
       "heading": "构建生成式 AI 的\n“操作系统”",
-      "label": "招聘"
+      "label": "招聘",
+      "videoLabel": "Comfy 招聘视频"
     },
     "roles": {
       "empty": "目前暂无开放职位，请稍后再来查看。",
@@ -871,7 +872,10 @@
         "seedance20": "Seedance 2.0",
         "seedance25": "Seedance 2.5",
         "wan22TextToVideo": "Wan 2.2",
-        "wan3": "Wan 3.0"
+        "wan3": "Wan 3.0",
+        "chatgptImages25": "ChatGPT Images 2.5",
+        "klingAi30": "KlingAI 3.0",
+        "flux3": "Flux 3"
       },
       "ctaDesktop": "探索最新模型工作流",
       "ctaMobile": "探索工作流",
@@ -1162,7 +1166,7 @@
     "faq": {
       "a1": "Comfy 是 MiniMax 商业使用许可的唯一官方经销商，涵盖 MiniMax H3 以及 MiniMax 音频与音乐模型，面向在自有硬件上本地运行模型的场景。许可分为专业版和企业版两个级别。通过此表单申请许可，或在 [MiniMax 商业许可页面](https://comfy.org/zh-CN/minimax/license)了解更多。",
       "a2": "Comfy 专家驻场加入你的团队，在你的环境中构建生产级工作流，用你的风格训练 LoRA，并教会你的团队运行和扩展他们构建的一切。通过此表单告诉我们你在做什么，或[认识前沿驻场创意人才](https://comfy.org/zh-CN/forward-deployed-creatives)。",
-      "a3": "云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/cloud/enterprise)，或通过此表单预约演示。",
+      "a3": "云端或自有环境部署，数据归属权、自带密钥支持、编排能力、来自引擎开发团队的支持，以及 MiniMax 商业许可等附加项。[了解 Comfy 企业版](https://comfy.org/zh-CN/enterprise/)，或通过此表单预约演示。",
       "a4": "SOC 2 Type II 审计正在进行中。安全文档和实时控制状态可在我们的 [Trust Center](https://app.vanta.com/comfy.org/trust/o6nu46b16iu3e7fhc41hnz) 查看，我们的团队也可以在企业版沟通中详细说明安全要求。",
       "heading": "常见问题",
       "q1": "如何获取 MiniMax 商业许可？",
@@ -2095,7 +2099,7 @@
     "press": "媒体",
     "privacyPolicy": "隐私政策",
     "products": "产品",
-    "qwenImage21": "Qwen Image 2.1",
+    "qwenImage21": "Qwen-Image 2.1",
     "resources": "资源",
     "sales": "销售",
     "seedance": "Seedance 2.5",
@@ -2238,8 +2242,8 @@
   },
   "launches": {
     "banner": {
-      "cta": "启动 Comfy MCP",
-      "text": "现在，让你的智能体成为创意技术专家。"
+      "cta": "试用 Comfy Router",
+      "text": "一个 API，调用前沿媒体模型。"
     },
     "cta": {
       "heading": "Comfy 的全部内容，一处尽享。",
@@ -2902,6 +2906,7 @@
     "badgeNew": "新",
     "blogs": "博客",
     "brand": "品牌",
+    "brandAssets": "品牌素材",
     "buyCredits": "添加积分",
     "careers": "招聘",
     "close": "关闭",
@@ -2919,6 +2924,9 @@
     "community": "社区",
     "company": "公司",
     "contact": "联系我们",
+    "copied": "已复制",
+    "copyLogoSvg": "复制 SVG 标志",
+    "copyLogomarkSvg": "复制 SVG 标志符号",
     "credits": "积分",
     "creditsLabel": "积分",
     "ctaCloudCore": "免费试用",
@@ -2930,16 +2938,16 @@
     "downloadLocal": "下载桌面版",
     "events": "活动",
     "fdct": "前沿驻场创意人才",
-    "featuredCommunityAlt": "天空替换工作流演示图片",
-    "featuredCommunityCtaAria": "观看天空替换演示",
-    "featuredCommunityTitle": "天空替换",
+    "featuredCommunityAlt": "产品摄影工作流演示图片",
+    "featuredCommunityCtaAria": "观看产品摄影演示",
+    "featuredCommunityTitle": "产品摄影",
     "featuredCompanyAlt": "Black Math 客户故事图片",
     "featuredCompanyCtaAria": "观看 Black Math 客户故事",
     "featuredCompanyTitle": "客户故事：Black Math",
-    "featuredProductsAlt": "MiniMax H3 精选图片",
+    "featuredProductsAlt": "Gemini Omni 1.1 Flash 视频：穴居人遇见未来",
     "featuredProductsCta": "立即探索",
-    "featuredProductsCtaAria": "探索 MiniMax H3 版本",
-    "featuredProductsTitle": "全新发布：MiniMax H3",
+    "featuredProductsCtaAria": "探索 Gemini Omni 1.1 Flash 版本",
+    "featuredProductsTitle": "Gemini Omni 1.1 Flash",
     "gallery": "画廊",
     "github": "GitHub",
     "home": "Comfy 首页",
@@ -3212,8 +3220,9 @@
       "ariaLabel": "合作伙伴模型的示例输出"
     },
     "modelsHero": {
-      "heading": "1000+ 媒体 AI 模型，尽在一个 API。",
-      "subtitle": "使用最先进的图像、视频、3D 和音频模型。生产环境就绪。"
+      "getApiKey": "获取 API 密钥",
+      "heading": "一个 API，接入所有前沿媒体模型。",
+      "subtitle": "一次集成前沿的图像、视频、3D 和音频模型，然后为每个任务选择供应商，获得更好的可用性和价格。"
     },
     "pricing": {
       "billedPerSecond": "按 GPU 秒计费",
@@ -3640,20 +3649,20 @@
   },
   "products": {
     "cloud": {
-      "cta": "查看云端属性",
+      "cta": "查看云端功能",
       "description": "随时随地使用 ComfyUI 的全部能力。",
       "title": "Comfy\nCloud"
     },
-    "ctaShort": "查看属性",
+    "ctaShort": "查看功能",
     "enterprise": {
-      "cta": "查看企业版属性",
+      "cta": "查看企业版功能",
       "description": "为组织内的创作引擎提供企业级基础设施。",
       "title": "Comfy\n企业版"
     },
     "heading": "完全掌控的\nAI 创作引擎",
     "labelProducts": "产品",
     "local": {
-      "cta": "查看桌面版属性",
+      "cta": "查看桌面版功能",
       "description": "在您自己的硬件上运行 ComfyUI。",
       "title": "Comfy\n桌面版"
     },
@@ -3670,37 +3679,37 @@
         "updated": "2026 年 9 月发布预告"
       },
       "hero": {
-        "description": "隆重推出 Qwen Image 2.1，Qwen 团队新一代开源权重图像模型：生成与编辑合一，文字精准落在你写下的位置。发布当天即登陆 ComfyUI 与 Comfy Cloud。",
+        "description": "隆重推出 Qwen-Image 2.1，Qwen 团队新一代开源权重图像模型：生成与编辑合一，文字精准落在你写下的位置。发布当天即登陆 ComfyUI 与 Comfy Cloud。",
         "eyebrow": "即将上线",
         "primaryCta": "获取通知"
       },
       "meta": {
-        "description": "Qwen Image 2.1 即将登陆 ComfyUI 与 Comfy Cloud。生成与编辑合一的开源权重模型，文字渲染精准，发布当天即可运行。",
-        "title": "Comfy 上的 Qwen Image 2.1：即将上线"
+        "description": "Qwen-Image 2.1 即将登陆 ComfyUI 与 Comfy Cloud。生成与编辑合一的开源权重模型，文字渲染精准，发布当天即可运行。",
+        "title": "Comfy 上的 Qwen-Image 2.1：即将上线"
       }
     },
     "breadcrumb": {
-      "model": "Qwen Image 2.1",
+      "model": "Qwen-Image 2.1",
       "updated": "更新于 2026 年 9 月"
     },
     "faq": {
       "heading": "问答"
     },
     "gallery": {
-      "heading": "由 Qwen Image 2.1 创作"
+      "heading": "由 Qwen-Image 2.1 创作"
     },
     "hero": {
-      "description": "生成海报、信息图、人像与场景，文字精准出现在你写下的位置，再用一句话编辑任意图像。Qwen Image 2.1 将生成与编辑合而为一，以开源权重模型在 ComfyUI 中原生运行。",
-      "primaryCta": "运行 Qwen Image 2.1",
+      "description": "生成海报、信息图、人像与场景，文字精准出现在你写下的位置，再用一句话编辑任意图像。Qwen-Image 2.1 将生成与编辑合而为一，以开源权重模型在 ComfyUI 中原生运行。",
+      "primaryCta": "运行 Qwen-Image 2.1",
       "secondaryCta": "查看教程",
       "tagImageEditing": "图像编辑",
-      "tagOpenSource": "开源",
+      "tagOpenWeights": "开源权重",
       "tagTextToImage": "文生图",
-      "title": "Qwen Image 2.1 已上线"
+      "title": "Qwen-Image 2.1 已上线"
     },
     "meta": {
-      "description": "在 ComfyUI 中运行 Qwen Image 2.1。生成文字精准的高分辨率图像，用自然语言指令编辑现有视觉内容，并让每一步都留在可复用的工作流中。",
-      "title": "Comfy 上的 Qwen Image 2.1：开源权重图像生成与编辑"
+      "description": "在 ComfyUI 中运行 Qwen-Image 2.1。生成文字精准的高分辨率图像，用自然语言指令编辑现有视觉内容，并让每一步都留在可复用的工作流中。",
+      "title": "Comfy 上的 Qwen-Image 2.1：开源权重图像生成与编辑"
     },
     "pricing": {
       "banner": {
@@ -4297,6 +4306,7 @@
       "concurrency": "此工作区已达到同时运行数量上限。请等待正在进行的运行完成后重试。",
       "conflict": "Comfy 暂时无法返回此请求的结果。重试时请保持输入不变。若问题持续，请提供请求 ID 联系支持。",
       "creditsTitle": "积分不足",
+      "fileUnreadable": "页面无法读取所选文件。请在高亮字段中重新选择。模型尚未运行。",
       "inputRejected": "模型拒绝了这些输入，但未指出具体字段。请检查模型的输入要求，或提供请求 ID 联系支持。",
       "lowCredits": "你有 {credits} 积分，本次运行需要 {n}。添加积分后继续，你的输入会保留。",
       "memberNoCredits": "{workspace} 的积分已用完。请工作区所有者添加积分，或在个人工作区运行。",
@@ -4334,9 +4344,12 @@
       "chooseValue": "选择{label}",
       "defaultValue": "默认值：{value}",
       "duration": "时长（秒）",
+      "exactValue": "{label}数值",
       "file": "文件",
       "filesUnchanged": "已选文件保持不变。",
       "format": "格式",
+      "frameRatioMismatch": "视频只有一个宽高比，比例不符的那一帧会被拉伸以适应。可以直接生成，或上传比例相同的两帧。",
+      "frameRatioMismatchTitle": "两帧比例不同",
       "help": "关于{label}",
       "image": "参考图",
       "imagePreviewUnavailable": "无法预览图片，请检查源图片。",
@@ -4357,7 +4370,6 @@
       "selectOrDropFiles": "选择或拖入最多 {count} 个文件",
       "selectOrDropImage": "选择或拖入一张图片",
       "selectOrDropImages": "选择或拖入最多 {count} 张图片",
-      "selectOrDropReplacement": "选择或拖入以替换",
       "tooManyFiles": "最多选择 {count} 个文件。",
       "tooManyImages": "最多选择 {count} 张图片。",
       "upload": "上传",
@@ -4389,13 +4401,22 @@
       "badOption": "请选择列表中的选项",
       "badType": "不支持的文件类型",
       "draftRestoreFailed": "部分已保存的输入无法恢复。请检查输入并重新选择文件。",
+      "fileUnreadable": "无法再读取此文件。请重新选择。",
+      "incompatible": "此输入与其他设置不兼容。",
       "nativeJson": "原生 JSON",
       "outOfRange": "数值超出允许范围",
       "rejected": "此值不符合模型的要求",
       "requestTooLarge": "文件和提示词编码后超过 10 MiB 请求限制。编码会使文件增大约三分之一。请使用更小的文件或缩短提示词。",
       "required": "此字段为必填项",
       "tooLarge": "文件超过 {limit}",
-      "uploadFailed": "上传失败。请重试或粘贴可访问的网址。"
+      "uploadFailed": "上传失败。请重试或粘贴可访问的网址。",
+      "videoTooLong": "请使用时长不超过 {seconds} 秒的视频。",
+      "videoUnreadable": "无法读取视频详情。请选择可播放的视频或使用可访问的视频链接。",
+      "imageAspectRatioOutOfRange": "请使用宽高比在 {minimum} 到 {maximum} 之间的图片。",
+      "imageLayerDecompositionUnsupported": "此图片过于复杂，无法分离图层。请选择更简单的图片。",
+      "imageUnreadable": "无法读取图片尺寸。请选择可读取的图片或使用可访问的图片链接。",
+      "videoWidthOutOfRange": "请使用宽度在 {minimum} 到 {maximum} 像素之间的视频。",
+      "videoHdrUnsupported": "不支持 HDR 视频。请将此视频转换为 SDR 后重试。"
     },
     "hero": {
       "eyebrow": "模型",
@@ -4511,7 +4532,7 @@
       "collapse": "关闭",
       "complete": "生成完成。",
       "download": "下载",
-      "downloadFallback": "自动下载失败。请打开输出文件后保存。",
+      "downloadFallback": "如果下载未开始，请打开输出文件并保存副本。",
       "earlier": "本次会话的早前运行",
       "earlierRun": "早前运行 {number}",
       "example": "示例",
@@ -4541,7 +4562,8 @@
       "soundOn": "打开声音",
       "title": "输出",
       "truncated": "预览已缩短。请在下方下载完整响应。",
-      "useInCode": "在代码中使用这些设置"
+      "useInCode": "在代码中使用这些设置",
+      "refreshLink": "刷新下载链接"
     },
     "proto": {
       "featured": "显示精选行",
@@ -4617,7 +4639,13 @@
       "switchPersonal": "切换到个人工作区",
       "switchStay": "留在此工作区",
       "unavailable": "模型暂时不可用",
-      "videoHint": "视频生成最长可能需要 10 分钟，且不排队。"
+      "videoHint": "视频生成最长可能需要 10 分钟，且不排队。",
+      "savedTitle": "离开并停止这次生成？",
+      "savedBody": "你不会在这个页面看到结果。若让它继续，它会一直消耗积分直到完成，结果会保存到你的素材中。",
+      "savedAssets": "打开你的素材",
+      "savedStay": "留在此页面",
+      "savedLeave": "离开并停止",
+      "savedKeep": "让它继续运行"
     },
     "search": {
       "clear": "清除搜索",
@@ -4680,7 +4708,8 @@
       "name": "名称 A 到 Z",
       "popular": "推荐",
       "priceAsc": "价格：从低到高",
-      "priceDesc": "价格：从高到低"
+      "priceDesc": "价格：从高到低",
+      "recommended": "推荐顺序"
     },
     "task": {
       "audio": "音频",
@@ -4720,7 +4749,76 @@
       "ratings": "评分与评论",
       "related": "相关工作流",
       "relatedAll": "浏览全部",
-      "serverless": "无服务器 API"
+      "serverless": "无服务器 API",
+      "templateBy": "模板作者：{author}",
+      "makeYours": "开始创作",
+      "sections": "工作流栏目",
+      "inside": "查看工作流内部",
+      "previewHint": "源模板的只读预览。在 Cloud 中打开，即可查看节点并进行修改。",
+      "fullPreview": "打开完整尺寸的工作流预览",
+      "apiHint": "以下请求使用与体验区相同的预设图和设置。每次提交都可能开始一次付费运行；如果提交结果未知，请勿自动重试。",
+      "apiUploads": "先上传媒体",
+      "apiUploadGrant": "使用工作区凭证向 Cloud 的 POST /api/inputs/upload-url 发送 {'{'}\"content_type\":\"image/png\"{'}'}。",
+      "apiUploadPut": "将文件原始字节 PUT 到同一 Cloud 地址返回的 upload_path。此 PUT 不要携带账号凭证。",
+      "apiUploadFinalize": "PUT 响应包含 name。用此名称替换下方对应的 UPLOADED_*_FILENAME。",
+      "apiPoll": "POST /api/prompt 返回 prompt_id。使用凭证轮询 GET /api/jobs/{'{'}prompt_id{'}'}?short_link=ephemeral_tool_chain。选定输出包含临时 short_url 链接；再次读取运行即可刷新链接。",
+      "exampleHint": "此模板的示例。",
+      "inputHint": "上传素材并调整设置。",
+      "cloudBilling": "在你的 Cloud 工作区中运行，使用你的套餐和计算积分。",
+      "preparing": "正在准备输入…",
+      "submitting": "正在提交…",
+      "queued": "排队中",
+      "cancelling": "正在等待取消确认…",
+      "delivering": "正在准备输出…",
+      "failed": "运行失败。请检查输入后重试。",
+      "interrupted": "连接中断",
+      "resume": "重新连接此运行",
+      "resumeHint": "Cloud 返回运行 ID 后，此标签页可在刷新后重新连接。离开页面不会取消运行。",
+      "inputSize": "单个文件不得超过 25 MiB，每次运行的输入总大小不得超过 50 MiB。",
+      "submissionUnknown": "Cloud 可能已接受运行，但响应丢失。开始新运行前请检查 Cloud 历史记录。",
+      "checkCloud": "查看 Cloud",
+      "dismissUnknown": "返回输入",
+      "cancelRequested": "已请求取消。请在 Cloud 中查看最终运行状态。",
+      "signInAgain": "请重新登录以连接此运行。",
+      "accessDenied": "此账号已无法访问该工作区。请检查所选工作区。",
+      "definitionChanged": "工作流已更新。开始新运行前请重新加载页面。",
+      "runMissing": "当前账号和工作区无法访问此运行。",
+      "paused": "新工作流运行已暂时停用。你仍可查看或取消已有运行。",
+      "mediaUnavailable": "输入文件尚未上传完成或已不可用。请检查文件后重试。",
+      "deliveryFailed": "运行已完成，但部分输出未能送达。重试获取此运行的输出即可。",
+      "retryDelivery": "重试获取输出",
+      "storageFailed": "浏览器无法保存运行恢复信息。请允许此网站使用存储，然后重试。",
+      "connectionLost": "无法查看运行状态。请重新连接以获取最新状态。",
+      "browserUnavailable": "暂不支持从此页面运行工作流。",
+      "tryCloud": "在 Cloud 中体验",
+      "explore": "探索更多可能"
+    },
+    "catalogue": {
+      "apps": "应用",
+      "categories": "分类",
+      "show": "浏览",
+      "subtitle": "按你想创作的内容浏览模型及其工作流。",
+      "appsSoon": "应用即将上线",
+      "appsHint": "现在可以先探索现成的工作流，或用自己的创意试用模型。",
+      "noWorkflows": "没有符合搜索和筛选条件的工作流。",
+      "backToWorkflows": "返回工作流",
+      "allWorkflows": "全部工作流",
+      "browseAllWorkflows": "浏览全部工作流",
+      "searchWorkflows": "搜索工作流…",
+      "showWorkflows": "显示 {n} 个工作流"
+    },
+    "assets": {
+      "title": "你的素材",
+      "seeAll": "在云端查看全部",
+      "open": "打开已保存的素材",
+      "generating": "正在生成…",
+      "loadingMedia": "正在加载素材…",
+      "loadError": "无法加载你的素材。",
+      "previous": "上一个素材",
+      "next": "下一个素材",
+      "go": "显示第 {n} 个素材",
+      "notSaved": "这次生成未能保存到你的素材。结果在过期前仍然留在页面上。",
+      "cancelError": "无法请求取消。生成可能仍在进行。"
     }
   }
 }

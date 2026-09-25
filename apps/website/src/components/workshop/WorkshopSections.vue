@@ -17,7 +17,7 @@ import { OTHER_FORMAT_USE_CASES } from '../../config/workshop-sections'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
 import { groupModels } from '../../config/model-family'
-import { rememberShelf } from '../../lib/workshop/shelf-memory'
+import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
 import CardRow from './CardRow.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 
@@ -87,15 +87,7 @@ function rememberModel(
   model: WorkshopModel,
   event: MouseEvent
 ) {
-  if (
-    event.button !== 0 ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey
-  )
-    return
-  rememberShelf(shelf, model.href)
+  rememberShelfOnClick(shelf, model.href, event)
 }
 </script>
 

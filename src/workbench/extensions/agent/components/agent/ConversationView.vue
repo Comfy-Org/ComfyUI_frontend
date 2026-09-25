@@ -35,7 +35,8 @@ const emit = defineEmits<{
   feedback: [turnId: string, vote: 'up' | 'down' | null]
   editPrompt: [prompt: PromptSnapshot]
   answerAsk: [askId: string, selection: 'run' | 'cancel']
-  openWorkflow: [workflowId: string, workflowName?: string]
+  openWorkflow: [askId: string, workflowId: string, workflowName?: string]
+  approvalShown: [askId: string, turnId: string, workflowId: string | null]
   openReferenceWorkflow: [workflowId: string, workflowName: string]
   paywallAction: [action: AgentPaywallAction]
 }>()
@@ -62,9 +63,13 @@ function scrollToLatest(): void {
 
 const latestContentSignal = computed(() => {
   const last = entries.at(-1)
-  if (!last) return '0'
-  const size = 'parts' in last ? JSON.stringify(last.parts).length : 0
-  return `${entries.length}:${size}`
+  if (!last || !('parts' in last)) return `${entries.length}`
+  const tail = last.parts.at(-1)
+  const tailText = tail && 'text' in tail ? tail.text.length : 0
+  const settled = last.parts.filter(
+    (part) => 'state' in part && part.state === 'done'
+  ).length
+  return `${entries.length}:${last.streaming}:${last.parts.length}:${settled}:${tailText}`
 })
 
 watch(
@@ -116,9 +121,13 @@ watch(
                 (askId: string, selection: 'run' | 'cancel') =>
                   emit('answerAsk', askId, selection)
               "
+              @approval-shown="
+                (askId, turnId, workflowId) =>
+                  emit('approvalShown', askId, turnId, workflowId)
+              "
               @open-workflow="
-                (workflowId: string, workflowName?: string) =>
-                  emit('openWorkflow', workflowId, workflowName)
+                (askId: string, workflowId: string, workflowName?: string) =>
+                  emit('openWorkflow', askId, workflowId, workflowName)
               "
               @paywall-action="emit('paywallAction', $event)"
             />
