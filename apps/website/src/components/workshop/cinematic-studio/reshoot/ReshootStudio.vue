@@ -1,11 +1,15 @@
 <script setup lang="ts">
+import { Clapperboard } from '@lucide/vue'
+
 import { useReshootDemo } from '../../../../composables/useReshootDemo'
+import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import AppsBackLink from '../AppsBackLink.vue'
 import ReshootHeader from './ReshootHeader.vue'
-import ReshootPick from './ReshootPick.vue'
+import ReshootExamples from './ReshootExamples.vue'
 import ReshootSide from './ReshootSide.vue'
 import ReshootStage from './ReshootStage.vue'
+import ReshootUpload from './ReshootUpload.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
@@ -40,12 +44,10 @@ const {
   >
     <AppsBackLink :locale />
     <ReshootHeader :locale class="mb-4" />
-    <ReshootPick v-if="!picked" :locale @pick="demo.pick" />
-    <div
-      v-else
-      class="grid items-start gap-6 lg:grid-cols-[27rem_minmax(0,1fr)]"
-    >
+    <div class="grid items-start gap-6 lg:grid-cols-[27rem_minmax(0,1fr)]">
+      <ReshootUpload v-if="!picked" :locale @pick="demo.pick" />
       <ReshootSide
+        v-else
         v-model:upload="upload"
         v-model:aspect="aspect"
         v-model:size="size"
@@ -67,7 +69,24 @@ const {
         @clear-keys="keys = []"
         @generate="demo.generate"
       />
+      <div
+        v-if="!picked"
+        class="mx-auto flex aspect-video w-[min(100%,calc(52svh*16/9))] flex-col items-center justify-center gap-2 rounded-md bg-transparency-white-t4 px-6 text-center ring-1 ring-transparency-white-t8 lg:mt-2"
+        data-testid="reshoot-empty"
+      >
+        <Clapperboard
+          class="size-8 text-primary-warm-gray"
+          aria-hidden="true"
+        />
+        <p class="text-base text-primary-comfy-canvas">
+          {{ rc('reshoot.empty.title', locale) }}
+        </p>
+        <p class="text-xs text-primary-warm-gray">
+          {{ rc('reshoot.empty.hint', locale) }}
+        </p>
+      </div>
       <ReshootStage
+        v-else
         :clip
         :camera
         :depth
@@ -84,5 +103,11 @@ const {
         @reuse="demo.reuse(selected)"
       />
     </div>
+    <ReshootExamples
+      :active-id="picked && isExample ? 'crossview-example' : undefined"
+      :locale
+      class="mt-6"
+      @pick="demo.pick()"
+    />
   </div>
 </template>

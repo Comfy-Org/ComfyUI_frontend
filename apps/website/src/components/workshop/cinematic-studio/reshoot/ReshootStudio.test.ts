@@ -23,6 +23,7 @@ describe('Re-shoot on one screen', () => {
   it('reads the scene as soon as a clip is picked, then aims from the globe', async () => {
     const user = setup(ReshootStudio)
     expect(screen.queryByTestId('reshoot-action')).toBeNull()
+    expect(screen.getByTestId('reshoot-empty')).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /Sci-fi pilot/ }))
 

@@ -4,43 +4,13 @@ import { ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
-import {
-  RESHOOT_EXAMPLE,
-  clipFits
-} from '../../../../lib/workshop/cinematic-studio/reshoot'
+import { clipFits } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
-import type { PlaygroundExample } from '../../../../config/workshop-playground'
 import type { Locale } from '../../../../i18n/translations'
-import ExamplesTab from '../../ExamplesTab.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
-const emit = defineEmits<{ pick: [file?: File] }>()
-
-const SAMPLES = [
-  ['street', 'neon-street'],
-  ['diner', 'diner'],
-  ['train', 'train']
-] as const
-
-const EXAMPLES: readonly PlaygroundExample[] = [
-  {
-    id: 'crossview-example',
-    title: rc('reshoot.pick.exampleTitle', locale),
-    specs: [rc('reshoot.pick.exampleMeta', locale)],
-    values: {},
-    outputUrl: RESHOOT_EXAMPLE.clip,
-    mediaKind: 'video'
-  },
-  ...SAMPLES.map(([key, image]) => ({
-    id: `sample-${key}`,
-    title: rc(`reshoot.sample.${key}`, locale),
-    specs: [rc('reshoot.sample.meta', locale)],
-    values: {},
-    outputUrl: `/images/cinematic-studio/${image}.jpg`,
-    mediaKind: 'image' as const
-  }))
-]
+const emit = defineEmits<{ pick: [file: File] }>()
 
 const over = ref(false)
 const tooLong = ref<number>()
@@ -79,15 +49,20 @@ function drop(event: DragEvent) {
 </script>
 
 <template>
-  <section
-    :aria-label="rc('reshoot.title', locale)"
-    class="flex w-full max-w-5xl flex-col gap-8 py-4"
+  <aside
+    :aria-label="rc('reshoot.clip.yours', locale)"
+    class="flex flex-col gap-3.5 rounded-2xl bg-primary-comfy-ink-light p-4"
     data-testid="reshoot-pick"
   >
+    <h2
+      class="text-xs font-bold tracking-wider text-primary-comfy-canvas uppercase"
+    >
+      {{ rc('reshoot.clip.yours', locale) }}
+    </h2>
     <label
       :class="
         cn(
-          'group/drop flex w-full cursor-pointer flex-col items-center gap-3 rounded-3xl border-[1.5px] border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-6 py-10 text-center transition-colors focus-within:border-primary-comfy-yellow hover:border-primary-warm-white/40',
+          'group/drop flex w-full cursor-pointer flex-col items-center gap-3 rounded-2xl border-[1.5px] border-dashed border-transparency-white-t20 bg-transparency-white-t4 px-4 py-8 text-center transition-colors focus-within:border-primary-comfy-yellow hover:border-primary-warm-white/40',
           over && 'border-primary-comfy-yellow bg-transparency-white-t8'
         )
       "
@@ -95,8 +70,8 @@ function drop(event: DragEvent) {
       @dragleave="over = false"
       @drop.prevent="drop"
     >
-      <Upload class="size-8 text-primary-comfy-canvas" aria-hidden="true" />
-      <span class="text-lg font-semibold text-primary-warm-white">
+      <Upload class="size-7 text-primary-comfy-canvas" aria-hidden="true" />
+      <span class="text-base font-semibold text-primary-warm-white">
         {{ rc('reshoot.pick.drop', locale) }}
       </span>
       <span class="text-sm text-primary-warm-gray">
@@ -112,7 +87,7 @@ function drop(event: DragEvent) {
     <p
       v-if="tooLong !== undefined"
       role="alert"
-      class="-mt-4 text-sm text-destructive-light"
+      class="text-sm text-destructive-light"
     >
       {{
         rc('reshoot.clip.length', locale).replace(
@@ -121,11 +96,5 @@ function drop(event: DragEvent) {
         )
       }}
     </p>
-    <ExamplesTab
-      :examples="EXAMPLES"
-      :locale
-      class="w-full"
-      @open="emit('pick')"
-    />
-  </section>
+  </aside>
 </template>
