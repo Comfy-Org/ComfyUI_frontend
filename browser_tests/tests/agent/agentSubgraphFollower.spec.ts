@@ -23,6 +23,7 @@ import {
   agentSubgraphFrames,
   agentOutOfOrderSubgraphFrames
 } from '@e2e/fixtures/data/agentSubgraphFollower'
+import { nextFrame } from '@e2e/fixtures/utils/timing'
 
 const test = mergeTests(agentTest, webSocketFixture)
 
@@ -273,6 +274,7 @@ test.describe(
         if (!node?.isSubgraphNode()) throw new Error('outer host is not usable')
         window.app!.canvas.openSubgraph(node.subgraph, node)
       }, String(AGENT_SUBGRAPH_HOST_ID))
+      await nextFrame(page)
 
       const innerHost = nodes.getNodeLocator(String(AGENT_INNER_HOST_ID))
       await expect(innerHost).toBeVisible()
