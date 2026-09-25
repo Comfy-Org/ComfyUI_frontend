@@ -13,7 +13,6 @@ import type {
   RememberedLogin,
   WebSessionIdentity
 } from '@comfyorg/account-core/webSessionIdentity'
-import { createWebSessionIdentity } from '@comfyorg/account-core/webSessionIdentity'
 
 import { workshopIdentity } from './workshop-account'
 import { WORKSHOP_CLOUD_BASE_URL } from './workshop-env'
@@ -55,7 +54,9 @@ export function useWorkshopSessionAccount(): Readonly<
 /** Past this, the Firebase header mounts for the page load and never swaps. */
 export const ACCOUNT_SOURCE_CAP_MS = 800
 
-function createWorkshopWebSessionIdentity(): WebSessionIdentity {
+async function createWorkshopWebSessionIdentity(): Promise<WebSessionIdentity> {
+  const { createWebSessionIdentity } =
+    await import('@comfyorg/account-core/webSessionIdentity')
   return createWebSessionIdentity({
     session: {
       apiBaseUrl: `${WORKSHOP_CLOUD_BASE_URL}/api`,
@@ -80,20 +81,29 @@ function decideAccountSource(): Promise<WorkshopAccountSource> {
       clearTimeout(cap)
       resolve(source)
     }
-    void readUnifiedWebSessionEnabled().then((enabled) => {
-      if (capped) return
-      if (!enabled) return decide('firebase')
-      identity = createWorkshopWebSessionIdentity()
-      identity.subscribe((state) => {
-        if (state.phase === 'signed_in') {
-          sessionUser.value = state.session.user
-          decide('session')
-        } else if (state.phase === 'signed_out') {
+    void readUnifiedWebSessionEnabled()
+      .then((enabled) => {
+        if (capped) return undefined
+        if (!enabled) {
           decide('firebase')
+          return undefined
         }
+        return createWorkshopWebSessionIdentity()
       })
-      identity.boot()
-    })
+      .then((created) => {
+        if (!created) return
+        if (capped) return created.dispose()
+        identity = created
+        identity.subscribe((state) => {
+          if (state.phase === 'signed_in') {
+            sessionUser.value = state.session.user
+            decide('session')
+          } else if (state.phase === 'signed_out') {
+            decide('firebase')
+          }
+        })
+        identity.boot()
+      })
   })
 }
 
