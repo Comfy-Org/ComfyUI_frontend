@@ -5,8 +5,8 @@ import { cn } from '@comfyorg/tailwind-utils'
 
 const { name, current, available, stops } = defineProps<{
   name: string
-  price: string
-  credits: string
+  price?: string
+  credits?: string
   seats: string
   available: boolean
   current: boolean
@@ -33,10 +33,15 @@ const { t } = useI18n()
     "
   >
     <h3 class="m-0 text-base font-semibold text-base-foreground">{{ name }}</h3>
-    <p class="mt-2 mb-0 font-semibold text-base-foreground tabular-nums">
+    <p
+      v-if="price"
+      class="mt-2 mb-0 font-semibold text-base-foreground tabular-nums"
+    >
       {{ price }}
     </p>
-    <p class="mt-1 mb-0 text-sm text-muted-foreground">{{ credits }}</p>
+    <p v-if="credits" class="mt-1 mb-0 text-sm text-muted-foreground">
+      {{ credits }}
+    </p>
     <select
       v-if="stops?.length"
       v-model="stopId"

@@ -514,6 +514,42 @@ describe('SubscriptionView', () => {
         })
       )
     })
+
+    it.for([
+      {
+        ladder: 'is missing',
+        catalog: { ...TEAM_CATALOG, team_credit_stops: undefined }
+      },
+      {
+        ladder: 'has no stop at its default index',
+        catalog: {
+          ...TEAM_CATALOG,
+          team_credit_stops: {
+            default_stop_index: 9,
+            stops: TEAM_CATALOG.team_credit_stops?.stops ?? []
+          }
+        }
+      }
+    ])(
+      'offers no price and no quote when the ladder $ladder',
+      async ({ catalog }) => {
+        const fake = await renderSubscription({
+          plans: { status: 'ok', value: catalog },
+          status: TEAM_STATUS
+        })
+
+        expect(
+          await screen.findByRole('button', { name: 'Choose Team · Monthly' })
+        ).toBeDisabled()
+        expect(
+          screen.getByText(
+            "This plan's pricing isn't available right now. Please try again later."
+          )
+        ).toBeInTheDocument()
+        expect(screen.queryByText('$0.00')).not.toBeInTheDocument()
+        expect(fake.previewSubscribe).not.toHaveBeenCalled()
+      }
+    )
   })
 
   it('explains a failed catalog read with copy of our own', async () => {

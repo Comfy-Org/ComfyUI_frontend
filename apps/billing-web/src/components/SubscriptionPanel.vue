@@ -105,10 +105,22 @@ function chooseStop(stopId: string | undefined) {
 
 const currentSlug = computed(() => plans.value?.current_plan_slug)
 
+/** A Team plan with no stop has no chargeable price, so it shows none. */
+function planPricing(plan: CatalogPlan, stop: CreditStop | undefined) {
+  if (stop !== undefined) return stopPricing(plan, stop)
+  if (plan.tier === 'TEAM') return {}
+  return {
+    price: money(plan.price_cents),
+    credits: t('hosted.plan.credits', { amount: money(plan.credits_cents) })
+  }
+}
+
 function planCard(plan: CatalogPlan) {
   const seats = Number(plan.max_seats)
   // The catalog prices the Team tier by its credit-stop ladder, not `price_cents`.
   const stop = plan.tier === 'TEAM' ? activeStop.value : undefined
+  const stopMissing = plan.tier === 'TEAM' && stop === undefined
+  const available = plan.availability.available && !stopMissing
   return {
     slug: plan.slug,
     stopId: stop?.id,
@@ -117,20 +129,18 @@ function planCard(plan: CatalogPlan) {
         tier: coded('tier', plan.tier),
         duration: coded('duration', plan.duration)
       }),
-      ...(stop === undefined
-        ? {
-            price: money(plan.price_cents),
-            credits: t('hosted.plan.credits', {
-              amount: money(plan.credits_cents)
-            })
-          }
-        : stopPricing(plan, stop)),
+      ...planPricing(plan, stop),
       seats: t('hosted.plan.seats', { count: seats }, seats),
-      available: plan.availability.available,
+      available,
       current: plan.slug === currentSlug.value,
-      reason: plan.availability.available
+      reason: available
         ? undefined
-        : coded('availability', plan.availability.reason)
+        : coded(
+            'availability',
+            plan.availability.available
+              ? 'credit_stop_unavailable'
+              : plan.availability.reason
+          )
     }
   }
 }
