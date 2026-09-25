@@ -1,24 +1,43 @@
 import { expect } from '@playwright/test'
+import type { Page } from '@playwright/test'
 
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 
 import { agentTest as test } from '@e2e/tests/agent/agentPanelMocks'
 
+async function waitForCanvasViewToSettle(page: Page): Promise<void> {
+  await page.waitForFunction(
+    () =>
+      new Promise<boolean>((resolve) => {
+        const { ds } = window.app!.canvas
+        const [scale, offsetX, offsetY] = [ds.scale, ds.offset[0], ds.offset[1]]
+        requestAnimationFrame(() =>
+          requestAnimationFrame(() =>
+            resolve(
+              ds.scale === scale &&
+                ds.offset[0] === offsetX &&
+                ds.offset[1] === offsetY
+            )
+          )
+        )
+      })
+  )
+}
+
 test.describe('Agent node selection chip removal', { tag: '@cloud' }, () => {
-  // PM-1226: removing a node's reference chip from the composer only drops
-  // it from the composer's local list (useCanvasSelection#remove in
-  // src/workbench/extensions/agent/composables/agent/useCanvasSelection.ts).
-  // It never calls canvas.deselectAll()/canvasStore.updateSelectedItems(), so
-  // the node stays highlighted on canvas after its chip disappears from the
-  // composer. test.fail() pins this as a known repro until PM-1226 lands.
+  // Source: https://linear.app/comfyorg/issue/PM-1227
+  test.use({ objectInfo: 'server' })
+
   test('clears the canvas highlight when its reference chip is removed from the composer', async ({
     agentPanel,
     comfyPage
   }) => {
+    await comfyPage.nodeOps.clearGraph()
     const node = await comfyPage.nodeOps.addNode('KSampler', undefined, {
       x: 400,
       y: 300
     })
+    await comfyPage.nextFrame()
 
     await agentPanel.open()
     await agentPanel.selectWorkflow()
@@ -34,7 +53,15 @@ test.describe('Agent node selection chip removal', { tag: '@cloud' }, () => {
       comfyPage.page.getByTestId('node-selection-mode-banner')
     ).toBeVisible()
 
-    await node.click('title')
+    await waitForCanvasViewToSettle(comfyPage.page)
+    const [{ x, y }, { width, height }] = await Promise.all([
+      node.getPosition(),
+      node.getSize()
+    ])
+    await comfyPage.canvasOps.mouseClickAt({
+      x: x + width / 2,
+      y: y + height / 2
+    })
 
     const removeButton = panel.getByRole('button', {
       name: `Remove KSampler #${node.id} reference`
@@ -45,7 +72,6 @@ test.describe('Agent node selection chip removal', { tag: '@cloud' }, () => {
     await removeButton.click()
     await expect(removeButton).toHaveCount(0)
 
-    test.fail()
     expect(await node.getProperty<boolean>('is_selected')).toBe(false)
   })
 })
