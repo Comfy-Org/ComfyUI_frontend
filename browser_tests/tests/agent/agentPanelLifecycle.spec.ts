@@ -6,6 +6,7 @@ import {
   agentTest as test,
   bootAgentApp
 } from '@e2e/fixtures/agentPanelFixture'
+import { Topbar } from '@e2e/fixtures/components/Topbar'
 
 const OPEN_AGENT_LABEL = enMessages.agent.entryButton
 const OPEN_STORAGE_KEY = 'Comfy.AgentPanel.open'
@@ -163,7 +164,7 @@ test.describe(
       await openButton.click()
 
       const panel = page.getByTestId('docked-agent-panel')
-      const tabs = page.locator('.workflow-tabs .p-togglebutton')
+      const tabs = new Topbar(page).tabs
       await expect(panel).toBeVisible()
       await expect(tabs).toHaveCount(1)
 

@@ -58,8 +58,13 @@ const errorKey: Record<FieldErrorCode, TranslationKey> = {
   uploadFailed: 'workshop.form.uploadFailed',
   fileUnreadable: 'workshop.form.fileUnreadable',
   incompatible: 'workshop.form.incompatible',
+  imageAspectRatioOutOfRange: 'workshop.form.imageAspectRatioOutOfRange',
+  imageLayerDecompositionUnsupported:
+    'workshop.form.imageLayerDecompositionUnsupported',
+  imageUnreadable: 'workshop.form.imageUnreadable',
   videoTooLong: 'workshop.form.videoTooLong',
   videoWidthOutOfRange: 'workshop.form.videoWidthOutOfRange',
+  videoHdrUnsupported: 'workshop.form.videoHdrUnsupported',
   videoUnreadable: 'workshop.form.videoUnreadable',
   rejected: 'workshop.form.rejected'
 }
@@ -108,8 +113,12 @@ function messageForError(error: FieldErrorCode): string {
   const replacements: Record<string, string> = {
     limit: formatWorkshopUploadLimit(uploadLimit(), locale),
     seconds: videoDurationLimit(),
-    minimum: videoWidthMinimum(),
-    maximum: videoWidthMaximum()
+    minimum: String(
+      field.presentation?.imageAspectRatio?.minimum ?? videoWidthMinimum()
+    ),
+    maximum: String(
+      field.presentation?.imageAspectRatio?.maximum ?? videoWidthMaximum()
+    )
   }
   return Object.entries(replacements).reduce(
     (message, [name, value]) => message.replace(`{${name}}`, value),
@@ -177,6 +186,7 @@ const declaredDefault = computed(() =>
   field.kind === 'file' ||
   field.kind === 'select' ||
   field.kind === 'toggle' ||
+  (field.kind === 'text' && field.multiline) ||
   isSlider.value
     ? undefined
     : field.defaultValue

@@ -61,23 +61,37 @@ const MAX_PENDING_REPORTS = 25
 
 const isDatadogRumLive = () => datadogRum.getInitConfiguration() !== undefined
 
+const definedEntriesOf = <V>(
+  values: Record<string, V> | undefined
+): Record<string, Exclude<V, undefined>> =>
+  Object.fromEntries(
+    Object.entries(values ?? {}).filter(
+      (entry): entry is [string, Exclude<V, undefined>] =>
+        entry[1] !== undefined
+    )
+  )
+
 /** Written from `options`, so a caller tag of the same name never lands. */
 const RESERVED_TAG_KEYS = new Set(['error_type', 'level'])
 
 let dispatching = false
 
-const definedEntriesOf = (
+const definedTagsOf = (
   tags: ReportErrorOptions['tags']
 ): Record<string, string | number | boolean> =>
   Object.fromEntries(
     Object.entries(tags ?? {}).filter(
-      ([key, value]) =>
-        !RESERVED_TAG_KEYS.has(key) &&
-        (typeof value === 'string' ||
-          typeof value === 'number' ||
-          typeof value === 'boolean')
+      (entry): entry is [string, string | number | boolean] => {
+        const [key, value] = entry
+        return (
+          !RESERVED_TAG_KEYS.has(key) &&
+          (typeof value === 'string' ||
+            typeof value === 'number' ||
+            typeof value === 'boolean')
+        )
+      }
     )
-  ) as Record<string, string | number | boolean>
+  )
 
 type DesktopCaptureException = (
   error: { message: string; stack?: string },
@@ -132,8 +146,9 @@ function dispatch(
   options: ReportErrorOptions,
   alreadyDelivered: DeliveryState = NO_DELIVERY
 ): DeliveryState {
-  const { errorType, context, level } = options
-  const tags = definedEntriesOf(options.tags)
+  const { errorType, level } = options
+  const context = definedEntriesOf(options.context)
+  const tags = definedTagsOf(options.tags)
   const sentryLive = !alreadyDelivered.sentry && isSentryEnabled()
   const datadogLive = !alreadyDelivered.datadog && isDatadogRumLive()
   let sentryDelivered = alreadyDelivered.sentry

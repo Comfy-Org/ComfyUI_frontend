@@ -1,16 +1,12 @@
 /**
- * The route model `hreflangAudit.ts` checks the built site against, and the
- * page-tree oracle `hreflang.test.ts` checks the emitter's route list against.
- *
- * Deliberately NOT the production builder. `src/lib/hreflang.ts` decides what a
- * page emits; this restates the rule from the file tree independently, so a
- * defect in the emitter is caught rather than mirrored by its own checker.
+ * Route helpers shared by the page-tree oracle and built-site audit.
+ * The oracle derives published routes from Astro files independently of
+ * `localeHasRoute`. The audit checks built pages against both publication
+ * policy and emitted links. Both use the configured locale prefixes.
  * Kept free of `import.meta.glob` so a plain Node script can import it.
  */
 
-/** The value the marketing site publishes for Simplified Chinese. */
-export const ZH_HREFLANG = 'zh-CN'
-export const ZH_PREFIX = '/zh-CN'
+import { NON_DEFAULT_LOCALE_PREFIXES, withRouteSlash } from '../config/locales'
 
 /**
  * `/src/pages/cloud/pricing.astro` -> `/cloud/pricing/`, index files -> their directory.
@@ -23,7 +19,7 @@ export const ZH_PREFIX = '/zh-CN'
 export function routeOf(file: string): string {
   const withoutRoot = file.replace(/^\/src\/pages/, '').replace(/\.astro$/, '')
   const withoutIndex = withoutRoot.replace(/\/index$/, '')
-  return withoutIndex === '' ? '/' : `${withoutIndex}/`
+  return withRouteSlash(withoutIndex || '/')
 }
 
 export interface Alternate {
@@ -32,17 +28,18 @@ export interface Alternate {
 }
 
 /**
- * The path with any locale prefix removed, always with a trailing slash.
+ * The path with any locale prefix removed, with a slash for directory routes.
  *
  * The prefix has to be a whole segment. A bare `startsWith` also matches a route
  * like `/zh-CN-guide/`, which would be stripped to `-guide/` and clustered with
  * whatever page happens to own that path.
  */
 export function unprefixed(pathname: string): string {
-  const isLocalePrefixed =
-    pathname === ZH_PREFIX || pathname.startsWith(`${ZH_PREFIX}/`)
-  const path = isLocalePrefixed
-    ? pathname.slice(ZH_PREFIX.length) || '/'
-    : pathname
-  return path.endsWith('/') ? path : `${path}/`
+  for (const prefix of NON_DEFAULT_LOCALE_PREFIXES) {
+    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
+      const path = pathname.slice(prefix.length) || '/'
+      return withRouteSlash(path)
+    }
+  }
+  return withRouteSlash(pathname)
 }
