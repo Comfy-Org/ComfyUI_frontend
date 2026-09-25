@@ -17,8 +17,8 @@
  * property: a user whose agent feature flag was turned off after they last had
  * the panel open still reports `true`, because `suppressRestoredOpen()` only
  * runs for callers that require `agentPanelStore.enabled`; and the key is
- * origin-wide, so with the panel open in one window a run submitted from
- * another reports the first window's state.
+ * shared across the origin, so the value is whichever preference was persisted
+ * last by any window, not the state of the window submitting the run.
  */
 export function getAgentPanelOpen(): boolean {
   try {

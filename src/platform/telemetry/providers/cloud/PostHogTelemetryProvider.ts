@@ -682,11 +682,10 @@ export class PostHogTelemetryProvider implements TelemetryProvider {
     this.captureRaw(TelemetryEvents.EXECUTION_START, {
       ...getExecutionContext(),
       trigger_source: this.lastTriggerSource ?? 'unknown',
-      // Read fresh rather than carried from the click. The two calls are
-      // synchronous neighbours at every call site, so a carried value would
-      // equal this read for a run the button started — while for a click that
-      // never executed (the subscribe CTA, and the early returns in
-      // useCoreCommands) it would linger and attach a stale panel state to an
+      // Sampled here rather than carried from the click: no successful run
+      // path puts an asynchronous boundary between the two calls, so a carried
+      // value could only differ from this read on a click that never executed
+      // — and there it would linger and attach a stale panel state to an
       // unrelated later run.
       agent_panel_open: getAgentPanelOpen(),
       event_source: EXECUTION_EVENT_SOURCE

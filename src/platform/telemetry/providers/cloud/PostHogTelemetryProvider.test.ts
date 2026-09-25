@@ -602,36 +602,35 @@ describe('PostHogTelemetryProvider', () => {
       )
     })
 
-    it('reads the agent panel state for a run the button did not start', async () => {
+    // Two executions rather than one: a provider that sampled the panel once
+    // and reused the answer would still satisfy the carry-over case below.
+    it('samples the panel state afresh for each execution', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
+
       hoisted.agentPanelOpen = true
+      provider.trackWorkflowExecution()
 
-      try {
-        provider.trackWorkflowExecution()
+      expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
+        TelemetryEvents.EXECUTION_START,
+        expect.objectContaining({ agent_panel_open: true })
+      )
 
-        expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
-          TelemetryEvents.EXECUTION_START,
-          expect.objectContaining({ agent_panel_open: true })
-        )
-      } finally {
-        hoisted.agentPanelOpen = false
-      }
+      hoisted.agentPanelOpen = false
+      provider.trackWorkflowExecution()
+
+      expect(hoisted.mockCapture).toHaveBeenLastCalledWith(
+        TelemetryEvents.EXECUTION_START,
+        expect.objectContaining({ agent_panel_open: false })
+      )
     })
 
-    // Not every tracked click reaches an execution: the subscribe CTA in
-    // SubscribeToRun.vue queues nothing, and useCoreCommands returns early on a
-    // blocked subscription, an empty selection, or a failed path resolution.
-    // Staging the click's panel state would leave it to be picked up by the
-    // next unrelated run, so execution_start reads fresh state instead.
     it('does not carry a panel state from a click that never executed', async () => {
       const provider = createProvider()
       await vi.dynamicImportSettled()
       hoisted.agentPanelOpen = true
       provider.trackRunButton(runButtonProperties({ agent_panel_open: true }))
 
-      // That click never executed; the panel is closed by the time an
-      // unrelated run starts.
       hoisted.agentPanelOpen = false
       provider.trackWorkflowExecution()
 
