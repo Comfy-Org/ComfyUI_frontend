@@ -1,5 +1,6 @@
 import type { NodeExecutionId } from '@/types/nodeIdentification'
 import type { SerializedNodeId } from '@/types/nodeId'
+import type { ModelSource } from '@/platform/workflow/validation/schemas/workflowSchema'
 import type { PromotedWidgetExecutionSource } from '@/core/graph/subgraph/promotedWidgetTypes'
 
 /**
@@ -19,6 +20,7 @@ export interface MissingModelCandidate {
   name: string
   directory?: string
   url?: string
+  sources?: ModelSource[]
   hash?: string
   hashType?: string
 

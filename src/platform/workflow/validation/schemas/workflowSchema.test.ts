@@ -18,6 +18,44 @@ describe('parseComfyWorkflow', () => {
     }
   })
 
+  it('preserves alternate model download sources', async () => {
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+    workflow.models = [
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints',
+        sources: [
+          {
+            provider: 'modelscope',
+            url: 'https://modelscope.cn/models/org/model/resolve/master/model.safetensors'
+          },
+          {
+            provider: 'civitai',
+            url: 'https://civitai.com/api/download/models/12345'
+          }
+        ]
+      }
+    ]
+
+    const result = await validateComfyWorkflow(workflow)
+    expect(result?.models?.[0].sources).toEqual(workflow.models[0].sources)
+  })
+
+  it('rejects alternate model sources with invalid URLs', async () => {
+    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+    workflow.models = [
+      {
+        name: 'model.safetensors',
+        url: 'https://huggingface.co/org/model/resolve/main/model.safetensors',
+        directory: 'checkpoints',
+        sources: [{ provider: 'modelscope', url: 'not-a-url' }]
+      }
+    ]
+
+    await expect(validateComfyWorkflow(workflow)).resolves.toBeNull()
+  })
+
   it('workflow.nodes', async () => {
     const workflow = JSON.parse(JSON.stringify(defaultGraph))
     workflow.nodes = undefined

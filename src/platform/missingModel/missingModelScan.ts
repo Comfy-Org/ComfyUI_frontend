@@ -94,6 +94,7 @@ function enrichCandidateFromNodeProperties(
   return copyCandidate(candidate, {
     directory: candidate.directory ?? match.directory,
     url: candidate.url ?? match.url,
+    sources: candidate.sources ?? match.sources,
     hash: candidate.hash ?? match.hash,
     hashType: candidate.hashType ?? match.hash_type
   })
@@ -424,6 +425,7 @@ export function enrichWithEmbeddedMetadata(
       if (c.directory && c.directory !== model.directory) continue
       c.directory ??= model.directory
       c.url ??= model.url
+      c.sources ??= model.sources
       c.hash ??= model.hash
       c.hashType ??= model.hash_type
     }

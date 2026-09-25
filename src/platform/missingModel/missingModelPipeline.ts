@@ -89,6 +89,7 @@ function toModelFile(candidate: MissingModelCandidateWithDownloadMetadata) {
     name: candidate.name,
     url: candidate.url,
     directory: candidate.directory,
+    sources: candidate.sources,
     hash: candidate.hash,
     hash_type: candidate.hashType
   }

@@ -3751,6 +3751,7 @@
       "importing": "正在导入...",
       "locateNode": "在画布上定位节点",
       "missingModelsTitle": "缺失模型",
+      "selectSource": "选择 {model} 的下载源",
       "openHuggingFaceRepo": "打开 {model} 的 Hugging Face 仓库",
       "openHuggingFaceRepoDesktop": "在桌面应用中打开 {model} 的 Hugging Face 仓库，可能会在新标签页中打开",
       "openHuggingFaceRepoNewTab": "在新标签页打开 {model} 的 Hugging Face 仓库",

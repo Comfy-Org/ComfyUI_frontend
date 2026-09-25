@@ -4477,6 +4477,7 @@
       "collapseNodes": "Hide referencing nodes",
       "unknownCategory": "Unknown",
       "missingModelsTitle": "Missing Models",
+      "selectSource": "Select download source for {model}",
       "downloadModel": "Download {model}",
       "downloadAll": "Download all",
       "refresh": "Refresh",

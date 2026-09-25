@@ -48,13 +48,23 @@ const zVector2 = z.union([
   z.tuple([z.number(), z.number()])
 ])
 
+// A model can retain provider-specific URLs so the missing-model panel can
+// offer a source that is reachable in the user's region.
+const zModelSource = z.object({
+  provider: z.string().min(1),
+  url: z.string().url()
+})
+
+export type ModelSource = z.infer<typeof zModelSource>
+
 // Definition of an AI model file used in the workflow.
 const zModelFile = z.object({
   name: z.string(),
   url: z.string().url(),
   hash: z.string().optional(),
   hash_type: z.string().optional(),
-  directory: z.string()
+  directory: z.string(),
+  sources: z.array(zModelSource).optional()
 })
 
 const zGraphState = z
