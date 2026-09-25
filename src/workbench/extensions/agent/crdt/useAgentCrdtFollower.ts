@@ -187,9 +187,11 @@ export interface AgentCrdtFollowerEvents {
    * changed — the widget-only edits `onMaterialized` cannot report, because
    * that one fires per materialized node.
    *
-   * A subscribe's catch-up frame counts: it carries everything this
-   * follower's state vector lacked, so after a reconnect it is the only
-   * frame the missed edits ever arrive on.
+   * The catch-up frame of every accepted subscribe counts — first bind,
+   * tab-switch resubscribe and reconnect alike. It carries everything this
+   * follower's state vector lacked, so it is the only frame the edits
+   * missed while away ever arrive on. It settles to a no-op whenever the
+   * doc already matches the canvas, because the capture compares first.
    *
    * This tab's own ops come back as effect frames that apply like any other,
    * and those are excluded — whatever local interaction minted them already

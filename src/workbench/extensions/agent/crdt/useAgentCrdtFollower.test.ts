@@ -1408,10 +1408,11 @@ describe('useAgentCrdtFollower', () => {
         unmount()
       })
 
-      // A subscribe's catch-up frame is the whole delta this follower's state
-      // vector lacked (see `catchUpPending` in layoutFollowerBridge.ts), so
-      // after a reconnect it is the only frame the missed edits arrive on.
-      it('reports a reconnect catch-up frame', () => {
+      // The catch-up frame of any accepted subscribe is the whole delta this
+      // follower's state vector lacked (see `catchUpPending` in
+      // layoutFollowerBridge.ts), so it is the only frame edits missed while
+      // away ever arrive on.
+      it('reports a subscribe catch-up frame', () => {
         const onApplied = vi.fn()
         const { unmount } = mountFollower('wf-1', true, () => fakeGraph, {
           onApplied
