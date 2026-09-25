@@ -160,3 +160,8 @@ export function takesOfShot(reel: Reel, shot: number): readonly Take[] {
 export function isRendering(reel: Reel): boolean {
   return reel.takes.some((take) => take.status === 'rendering')
 }
+
+/** A take the Router refused because the balance could not pay for it. */
+export function isUnpaid(take: Take): boolean {
+  return take.status === 'failed' && take.reason === 'noCredits'
+}

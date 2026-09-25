@@ -66,6 +66,12 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     ? useCinematicDemoRun()
     : useCinematicStudioRun(models.length, () => estimate.value?.total.min)
 
+  const memberWorkspace = computed(() =>
+    studio.session.value?.role === 'member'
+      ? studio.session.value.workspace.name
+      : undefined
+  )
+
   function choose(part: DirectionPart, id: string) {
     direction.value = { ...direction.value, [part]: id }
   }
@@ -113,6 +119,7 @@ export function useCinematicShot(models: readonly CinematicModel[]) {
     promptSegments,
     references,
     estimate,
+    memberWorkspace,
     choose,
     start,
     generate

@@ -14,11 +14,13 @@ import CinematicTakeProgress from './CinematicTakeProgress.vue'
 const {
   current,
   otherModel,
+  memberWorkspace,
   height = '58svh',
   locale = 'en'
 } = defineProps<{
   current: Take
   otherModel?: { slug: string; name: string }
+  memberWorkspace?: string
   height?: string
   locale?: Locale
 }>()
@@ -42,6 +44,8 @@ const TONE = {
     'bg-transparency-white-t4 ring-1 ring-transparency-white-t8 ring-inset',
   warning:
     'bg-primary-comfy-orange/5 ring-1 ring-primary-comfy-orange/25 ring-inset',
+  credits:
+    'bg-primary-comfy-yellow/5 ring-1 ring-primary-comfy-yellow/25 ring-inset',
   error: 'bg-primary-comfy-red/5 ring-1 ring-primary-comfy-red/25 ring-inset'
 } as const
 
@@ -51,7 +55,7 @@ function frameTone(take: Take): string | undefined {
   if (take.status !== 'failed') return undefined
   if (take.reason === 'policy' || take.reason === 'validation')
     return TONE.warning
-  return take.reason === 'noCredits' ? TONE.neutral : TONE.error
+  return take.reason === 'noCredits' ? TONE.credits : TONE.error
 }
 </script>
 
@@ -107,6 +111,7 @@ function frameTone(take: Take): string | undefined {
       v-else
       :take="current"
       :other-model="otherModel"
+      :member-workspace="memberWorkspace"
       :locale
       @retry="emit('retry')"
       @switch-model="emit('switchModel', $event)"

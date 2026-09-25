@@ -1,9 +1,16 @@
 <script setup lang="ts">
-import { CircleAlert, CircleStop, LoaderCircle, ShieldAlert } from '@lucide/vue'
+import {
+  CircleAlert,
+  CircleStop,
+  Coins,
+  LoaderCircle,
+  ShieldAlert
+} from '@lucide/vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
 
 import type { Take } from '../../../lib/workshop/cinematic-studio/reel'
+import { isUnpaid } from '../../../lib/workshop/cinematic-studio/reel'
 import type { Locale } from '../../../i18n/translations'
 import { tc } from '../../../lib/workshop/cinematic-studio/copy'
 import { aspectStyle } from './aspect-style'
@@ -27,7 +34,8 @@ function statusClass(take: Take): string | undefined {
   if (take.status !== 'failed') return undefined
   if (take.reason === 'policy' || take.reason === 'validation')
     return 'bg-primary-comfy-orange/10 ring-1 ring-primary-comfy-orange/35 ring-inset'
-  if (take.reason === 'noCredits') return undefined
+  if (take.reason === 'noCredits')
+    return 'bg-primary-comfy-yellow/10 ring-1 ring-primary-comfy-yellow/35 ring-inset'
   return 'bg-primary-comfy-red/10 ring-1 ring-primary-comfy-red/35 ring-inset'
 }
 
@@ -50,6 +58,9 @@ const blocked = (take: Take) =>
         tc('cinematic.stage.thumb', locale)
           .replace('{shot}', String(take.shot))
           .replace('{take}', take.letter)
+      "
+      :aria-description="
+        isUnpaid(take) ? tc('cinematic.state.noCredits', locale) : undefined
       "
       :class="
         cn(
@@ -78,6 +89,11 @@ const blocked = (take: Take) =>
       <CircleStop
         v-else-if="take.status === 'cancelled'"
         class="size-4 text-primary-comfy-canvas"
+        aria-hidden="true"
+      />
+      <Coins
+        v-else-if="isUnpaid(take)"
+        class="size-4 text-primary-comfy-yellow"
         aria-hidden="true"
       />
       <ShieldAlert

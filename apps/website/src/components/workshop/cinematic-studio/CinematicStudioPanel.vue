@@ -34,6 +34,7 @@ const {
   palette,
   promptSegments,
   estimate,
+  memberWorkspace,
   choose,
   generate: generateShot
 } = useCinematicShot(models)
@@ -106,6 +107,7 @@ function generate() {
           :reel="studio.reel.value"
           :aspect
           :models
+          :member-workspace="memberWorkspace"
           :locale
           @select="studio.select"
           @retry="studio.retry"

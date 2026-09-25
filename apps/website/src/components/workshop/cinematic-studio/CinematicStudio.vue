@@ -41,6 +41,7 @@ const {
   palette,
   references,
   estimate,
+  memberWorkspace,
   choose,
   start: startShot,
   generate: generateShot
@@ -123,6 +124,7 @@ function generateOn(slug: string) {
       :models
       :locale
       :starter
+      :member-workspace="memberWorkspace"
       @select="studio.select"
       @start="start"
       @again="generate"

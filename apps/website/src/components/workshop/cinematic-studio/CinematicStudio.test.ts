@@ -13,7 +13,10 @@ import type {
   PreparedRouterRender,
   RouterRenderResult
 } from '../../../config/router-render'
-import { useWorkshopCredits } from '../../../config/workshop-credits'
+import {
+  useTopUpWatch,
+  useWorkshopCredits
+} from '../../../config/workshop-credits'
 import { getRouterWorkshopModelDetail } from '../../../config/workshop-router-content'
 import { WorkshopRouterError } from '../../../config/workshop-router-errors'
 import { useWorkshopSession } from '../../../config/workshop-session-state'
@@ -802,6 +805,104 @@ describe('CinematicStudio', () => {
       expect(
         screen.queryByRole('button', { name: t('workshop.run.buyCredits') })
       ).toBeNull()
+    })
+
+    it.for([
+      {
+        role: 'owner' as const,
+        body: t('workshop.error.noCredits'),
+        action: t('workshop.run.buyCredits'),
+        other: t('workshop.run.switchPersonal')
+      },
+      {
+        role: 'member' as const,
+        body: t('workshop.error.memberNoCredits').replace(
+          '{workspace}',
+          'Studio Team'
+        ),
+        action: t('workshop.run.switchPersonal'),
+        other: t('workshop.run.buyCredits')
+      }
+    ])(
+      'answers a take refused for credits with the $role action',
+      async ({ role, body, action, other }) => {
+        signedIn.value = {
+          ...credential,
+          role,
+          workspace: { id: 'team-1', name: 'Studio Team', type: 'team' }
+        }
+        vi.mocked(router_render).mockRejectedValue(
+          new WorkshopRouterError('noCredits')
+        )
+        const user = renderStudio()
+        await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+        await user.click(generateButton())
+
+        const notice = await screen.findByRole('status')
+        expect(notice).toHaveTextContent(tc('cinematic.state.noCredits'))
+        expect(notice).toHaveTextContent(body)
+        expect(
+          within(notice).getByRole('button', { name: action })
+        ).toBeInTheDocument()
+        expect(within(notice).queryByRole('button', { name: other })).toBeNull()
+      }
+    )
+
+    it('sums up the takes of a shot the balance could not pay for', async () => {
+      vi.mocked(router_render)
+        .mockRejectedValueOnce(new WorkshopRouterError('noCredits'))
+        .mockImplementation(async (slug) => rendered(slug))
+      const user = renderStudio()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await shootTakes(user, 4)
+      await user.click(generateButton())
+
+      const summary = await screen.findByTestId('cinematic-credit-summary')
+      expect(summary).toHaveTextContent(
+        tc('cinematic.credits.skipped')
+          .replace('{failed}', '1')
+          .replace('{total}', '4')
+      )
+      expect(
+        within(summary).getByRole('button', {
+          name: t('workshop.run.buyCredits')
+        })
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'Shot 1, take A' })
+      ).toHaveAttribute('aria-description', tc('cinematic.state.noCredits'))
+    })
+
+    it('runs the skipped takes again once a top-up lands', async () => {
+      vi.mocked(useTopUpWatch).mockReturnValue(
+        computed(() => ({
+          status: 'landed' as const,
+          uid: credential.uid,
+          workspaceId: credential.workspace.id,
+          workspaceName: credential.workspace.name,
+          previousCredits: 0,
+          newCredits: 500,
+          landedAt: 0
+        }))
+      )
+      vi.mocked(router_render)
+        .mockRejectedValueOnce(new WorkshopRouterError('noCredits'))
+        .mockRejectedValueOnce(new WorkshopRouterError('noCredits'))
+        .mockImplementation(async (slug) => rendered(slug))
+      const user = renderStudio()
+      await user.type(screen.getByLabelText('Scene'), 'A diner at dawn')
+      await shootTakes(user, 3)
+      await user.click(generateButton())
+
+      await user.click(
+        within(await screen.findByTestId('cinematic-credit-summary')).getByRole(
+          'button',
+          { name: tc('cinematic.credits.retrySkipped') }
+        )
+      )
+
+      await vi.waitFor(() => expect(router_render).toHaveBeenCalledTimes(5))
+      expect(screen.queryByTestId('cinematic-credit-summary')).toBeNull()
     })
   })
 
