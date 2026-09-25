@@ -85,6 +85,8 @@ export interface AgentSessionDeps {
   rest: AgentRestClient
   events: AgentEventSource
   workflow?: {
+    /** Resolve fresh versus restored startup before asynchronous hydration. */
+    initialize?(hasThread: boolean): void
     // origin, when given, pins resolution to the tab that initiated the send
     // instead of the target selected when this is called - it is read
     // after prepare() so cloud ids it resolves are fresh, but must still
@@ -314,6 +316,12 @@ export function useAgentSession(deps: AgentSessionDeps) {
   function start(): void {
     ownedGeneration = ++sessionGeneration
     connection = 'initial'
+    const surviving = conversationStore.threadId
+    const stored =
+      conversationStore.messages.length === 0
+        ? localStorage.getItem(THREAD_STORAGE_KEY)
+        : null
+    workflow?.initialize?.(surviving !== null || stored !== null)
     // The binding only outlives a remount together with its thread: a page
     // with no surviving thread has no resumed turn the binding could serve.
     if (
@@ -325,7 +333,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
     }
     unsubscribe = events.subscribe(onRaw)
     if (events.onStatus) unsubscribeStatus = events.onStatus(onStatus)
-    const surviving = conversationStore.threadId
     if (surviving !== null) {
       const generation = ++loadGeneration
       const isCurrent = () =>
@@ -339,7 +346,6 @@ export function useAgentSession(deps: AgentSessionDeps) {
       return
     }
     if (conversationStore.messages.length === 0) {
-      const stored = localStorage.getItem(THREAD_STORAGE_KEY)
       if (stored !== null) {
         const generation = ++loadGeneration
         conversationStore.setThreadId(stored)
@@ -348,7 +354,7 @@ export function useAgentSession(deps: AgentSessionDeps) {
           () =>
             generation === loadGeneration &&
             ownedGeneration === sessionGeneration
-        )
+          )
       }
     }
   }
