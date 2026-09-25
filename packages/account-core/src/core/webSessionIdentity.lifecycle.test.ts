@@ -13,7 +13,8 @@ import type {
   VisibilityPort,
   WebSessionIdentityOptions,
   WebSessionIdentityState,
-  WebSessionIdentityTransition
+  WebSessionIdentityTransition,
+  WebSessionSharedMessage
 } from './webSessionIdentity.js'
 import {
   createWebSessionIdentity,
@@ -78,7 +79,7 @@ function createFakeSiteBus() {
   const waiters: { onAcquired: () => void }[] = []
   const subscribers: { tab: object; callback: (message: unknown) => void }[] =
     []
-  return (): CrossTabRefreshPort<WebSessionResult> => {
+  return (): CrossTabRefreshPort<WebSessionSharedMessage> => {
     const tab = {}
     return {
       requestLeadership: (_key, onAcquired) => {
@@ -124,7 +125,7 @@ function openTab({
   fetchImpl = endpoint.fetch
 }: {
   endpoint: FakeWebSessionEndpoint
-  site?: () => CrossTabRefreshPort<WebSessionResult>
+  site?: () => CrossTabRefreshPort<WebSessionSharedMessage>
   visible?: boolean
   remembered?: string | null
   fetchImpl?: typeof fetch
@@ -252,9 +253,8 @@ describe('tabs of one site', () => {
     await settle()
 
     site().publishCredential('any', {
-      status: 'error',
-      code: 'NO_SESSION',
-      retryable: false
+      from: 'heartbeat',
+      result: { status: 'error', code: 'NO_SESSION', retryable: false }
     })
     await settle()
 
@@ -275,6 +275,53 @@ describe('tabs of one site', () => {
     await acting.identity.signOut()
     await settle()
     expect(summarize(sibling.identity.getState())).toBe('signed_out:revoked')
+    expect(sibling.login.signOutLocally).toHaveBeenCalledOnce()
+    expect(sibling.remoteSignOuts).toEqual([])
+  })
+
+  it('a tab that signed out is not signed back in by a sibling heartbeat', async () => {
+    const endpoint = liveEndpoint()
+    const site = createFakeSiteBus()
+    const tab = openTab({ endpoint, site })
+    await settle()
+
+    await tab.identity.signOut()
+    const lateAnswer: WebSessionSharedMessage = {
+      from: 'heartbeat',
+      result: {
+        status: 'ok',
+        session: {
+          user: USER_1,
+          csrfToken: 'csrf-late',
+          expiresAt: Date.now() + HEARTBEAT_MS,
+          absoluteExpiresAt: Date.now() + 2 * HEARTBEAT_MS
+        }
+      }
+    }
+    site().publishCredential('any', lateAnswer)
+    await settle()
+
+    expect(summarize(tab.identity.getState())).toBe('signed_out:signed_out')
+    expect(tab.changes).toEqual([
+      { reason: 'signed_out', outcome: 'signed_out', epoch: 1 }
+    ])
+  })
+
+  it('one revocation is reported once, by the tab that read it', async () => {
+    const endpoint = liveEndpoint()
+    const site = createFakeSiteBus()
+    const leader = openTab({ endpoint, site })
+    const follower = openTab({ endpoint, site })
+    await settle()
+
+    endpoint.state = { kind: 'dead', code: 'session_revoked' }
+    leader.scheduler.fire(HEARTBEAT_MS)
+    await settle()
+
+    expect(summarize(follower.identity.getState())).toBe('signed_out:revoked')
+    expect(follower.login.signOutLocally).toHaveBeenCalledOnce()
+    expect(leader.remoteSignOuts).toEqual([{ origin: ORIGIN }])
+    expect(follower.remoteSignOuts).toEqual([])
   })
 })
 
@@ -476,6 +523,7 @@ describe('a heartbeat answer while signed in', () => {
     expect(
       transitionWebSessionIdentity(SIGNED_IN, {
         type: 'session_observed',
+        from: 'this_tab',
         result,
         rememberedUserId: remembered
       })
