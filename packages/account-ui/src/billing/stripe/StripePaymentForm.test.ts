@@ -81,6 +81,7 @@ function renderForm(
     canSubmit?: boolean
     verificationPending?: boolean
     publishableKey?: string
+    themeKey?: string
     onConfirm?: (token: string) => void
     onSubmittingChange?: (submitting: boolean) => void
     container?: HTMLElement
@@ -194,6 +195,42 @@ describe('StripePaymentForm', () => {
         })
       })
     )
+  })
+
+  it('re-themes the mounted Elements in place when the host theme changes', async () => {
+    const themeRoot = document.createElement('div')
+    themeRoot.style.setProperty('--base-foreground', 'rgb(20, 20, 20)')
+    themeRoot.style.setProperty('--base-background', 'rgb(255, 255, 255)')
+    document.body.append(themeRoot)
+    onTestFinished(() => themeRoot.remove())
+
+    const { rerender } = renderForm(66500, 'pmc_test', {
+      container: themeRoot,
+      themeKey: 'light'
+    })
+    await waitFor(() =>
+      expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+    )
+
+    themeRoot.style.setProperty('--base-foreground', 'rgb(250, 250, 250)')
+    themeRoot.style.setProperty('--base-background', 'rgb(30, 30, 30)')
+    await rerender({ themeKey: 'dark' })
+
+    await waitFor(() =>
+      expect(stripeMocks.update).toHaveBeenCalledWith({
+        appearance: expect.objectContaining({
+          variables: expect.objectContaining({
+            colorText: 'rgb(250, 250, 250)',
+            colorBackground: 'rgb(30, 30, 30)'
+          })
+        })
+      })
+    )
+    expect(stripeMocks.stripe.elements).toHaveBeenCalledTimes(1)
+    expect(stripeMocks.create).toHaveBeenCalledTimes(2)
+    expect(stripeMocks.mount).toHaveBeenCalledTimes(1)
+    expect(stripeMocks.addressMount).toHaveBeenCalledTimes(1)
+    expect(stripeMocks.destroy).not.toHaveBeenCalled()
   })
 
   describe('checkout journey instrumentation', () => {
