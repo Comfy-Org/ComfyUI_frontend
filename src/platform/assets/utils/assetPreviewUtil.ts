@@ -1,3 +1,4 @@
+import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { assetService } from '@/platform/assets/services/assetService'
 import { api } from '@/scripts/api'
 import { useAssetsStore } from '@/stores/assetsStore'
@@ -13,10 +14,11 @@ interface AssetRecord {
   user_metadata?: Record<string, unknown>
 }
 
+/**
+ * Whether the backend can serve asset preview/thumbnail data.
+ */
 export function isAssetPreviewSupported(): boolean {
-  return (
-    assetService.isAssetAPIEnabled() || api.getServerFeature('assets', false)
-  )
+  return useFeatureFlags().flags.assetsEnabled
 }
 
 async function fetchAssets(
