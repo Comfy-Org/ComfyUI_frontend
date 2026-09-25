@@ -1,4 +1,5 @@
 import type { WorkshopModel } from './models-catalogue'
+import { workshopExecutionId } from './models-catalogue'
 
 // Most visitors land on a model page from search or from the home page, so the
 // rest of the catalog is surfaced there. The same provider comes first: that is
@@ -16,10 +17,11 @@ export function relatedModels(
     other.capabilities.filter((capability) =>
       model.capabilities.includes(capability)
     ).length
-  const seen = new Set([model.routerId])
+  const id = workshopExecutionId(model)
+  const seen = new Set([id])
   return list
     .filter(
-      (other) => other.slug !== model.slug && other.routerId !== model.routerId
+      (other) => other.slug !== model.slug && workshopExecutionId(other) !== id
     )
     .sort(
       (a, b) =>
@@ -30,8 +32,9 @@ export function relatedModels(
         b.workflowCount - a.workflowCount
     )
     .filter((other) => {
-      if (seen.has(other.routerId)) return false
-      seen.add(other.routerId)
+      const otherId = workshopExecutionId(other)
+      if (seen.has(otherId)) return false
+      seen.add(otherId)
       return true
     })
     .slice(0, limit)

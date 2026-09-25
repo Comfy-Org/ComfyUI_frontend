@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { api } from '@/scripts/api'
+
 import type { CloudWorkflowEntry } from '../../schemas/agentApiSchema'
 
-const fetchApi = vi.hoisted(() =>
-  vi.fn<(route: string, init?: RequestInit) => Promise<Response>>()
-)
-vi.mock<unknown>(import('@/scripts/api'), () => ({ api: { fetchApi } }))
+vi.mock(import('@/scripts/api'))
 
 import { AgentApiError, createAgentRestClient } from './agentRestClient'
 import type { AgentRestClient } from './agentRestClient'
@@ -22,11 +21,11 @@ function jsonResponse(
 }
 
 function respond(response: Response) {
-  fetchApi.mockResolvedValueOnce(response)
+  vi.mocked(api.fetchApi).mockResolvedValueOnce(response)
 }
 
 function lastCall(): { route: string; init: RequestInit } {
-  const [route, init] = fetchApi.mock.calls.at(-1)!
+  const [route, init] = vi.mocked(api.fetchApi).mock.calls.at(-1)!
   return { route, init: init ?? {} }
 }
 
@@ -63,7 +62,7 @@ const turnAccepted = {
 }
 
 beforeEach(() => {
-  fetchApi.mockReset()
+  vi.mocked(api.fetchApi).mockReset()
 })
 
 describe('agentRestClient route + method', () => {
@@ -188,8 +187,10 @@ describe('agentRestClient route + method', () => {
 
     const workflows = await makeClient().listCloudWorkflows()
 
-    expect(fetchApi.mock.calls[0][0]).toBe('/workflows?limit=100')
-    expect(fetchApi.mock.calls[1][0]).toBe(
+    expect(vi.mocked(api.fetchApi).mock.calls[0][0]).toBe(
+      '/workflows?limit=100'
+    )
+    expect(vi.mocked(api.fetchApi).mock.calls[1][0]).toBe(
       '/workflows?limit=100&after=next%20page'
     )
     expect(workflows.map((w) => w.id)).toEqual(['wf-1', 'wf-2'])
@@ -205,7 +206,7 @@ describe('agentRestClient route + method', () => {
 
     await makeClient().listCloudWorkflows()
 
-    expect(fetchApi).toHaveBeenCalledTimes(1)
+    expect(api.fetchApi).toHaveBeenCalledTimes(1)
   })
 
   it('stops when pagination cycles through previously seen cursors', async () => {
@@ -224,7 +225,7 @@ describe('agentRestClient route + method', () => {
       )
     }
     await makeClient().listCloudWorkflows()
-    expect(fetchApi).toHaveBeenCalledTimes(3)
+    expect(api.fetchApi).toHaveBeenCalledTimes(3)
   })
 
   it('includes saved workflows beyond the fifth page', async () => {
@@ -280,7 +281,7 @@ describe('postMessage wire body', () => {
     expect(Object.keys(parsed)).toEqual(['content'])
   })
 
-  it('includes draft.content (and omits version when absent) when a draft is provided', async () => {
+  it('sends draft.content when a draft is provided', async () => {
     respond(jsonResponse(202, turnAccepted))
     await makeClient().postMessage('t1', {
       content: "what's on my canvas",
@@ -293,15 +294,22 @@ describe('postMessage wire body', () => {
     })
   })
 
-  it('forwards draft.version when the client has previously seen one', async () => {
+  it('sends only draft.content when the provider hands over a wider snapshot', async () => {
     respond(jsonResponse(202, turnAccepted))
+    const snapshotWithVersion = {
+      content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] },
+      version: 4
+    }
     await makeClient().postMessage('t1', {
-      content: 'edit it',
-      draft: { content: { nodes: [], links: [] }, version: 4 }
+      content: "what's on my canvas",
+      draft: snapshotWithVersion
     })
 
-    expect(JSON.parse(String(lastCall().init.body))).toMatchObject({
-      draft: { version: 4 }
+    const parsed = JSON.parse(String(lastCall().init.body)) as {
+      draft: unknown
+    }
+    expect(parsed.draft).toEqual({
+      content: { nodes: [{ id: 1, type: 'LoadImage' }], links: [] }
     })
   })
 })
@@ -334,6 +342,32 @@ describe('success response parsing', () => {
     expect(result.message_id).toBe('m1')
     expect(result.thread_id).toBe('t1')
     expect((result as Record<string, unknown>).workflow_id).toBe('w1')
+  })
+
+  it.for([
+    {
+      name: 'an incomplete thread row',
+      response: {
+        threads: [{ id: 'th-1', title: 'Thread' }],
+        pagination: { has_more: false, limit: 20, offset: 0, total: 1 }
+      },
+      path: ['threads', 0, 'created_at']
+    },
+    {
+      name: 'incomplete pagination',
+      response: {
+        threads: [],
+        pagination: { has_more: false }
+      },
+      path: ['pagination', 'limit']
+    }
+  ])('rejects $name from the agent service', async ({ response, path }) => {
+    respond(jsonResponse(200, response))
+
+    await expect(makeClient().listThreads()).rejects.toMatchObject({
+      name: 'ZodError',
+      issues: expect.arrayContaining([expect.objectContaining({ path })])
+    })
   })
 })
 

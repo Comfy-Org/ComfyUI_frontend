@@ -18,10 +18,14 @@ import {
 } from '@/test/fakeBillingClient'
 import SubscriptionView from '@/views/SubscriptionView.vue'
 
-/** The two values this surface reads; a test-family key stands in for a deployment's. */
+/** The values this surface and the session it sits under read; a test-family key stands in for a deployment's. */
 vi.mock(import('@/config/env'), () => ({
   BILLING_WEB_ENV: 'test' as const,
-  STRIPE_PUBLISHABLE_KEY: 'pk_test_example'
+  CLOUD_BASE_URL: 'https://testcloud.comfy.org'
+}))
+
+vi.mock(import('@/config/stripeKey'), () => ({
+  awaitBillingWebStripeKey: () => Promise.resolve('pk_test_example')
 }))
 
 const challengeMocks = vi.hoisted(() => ({
@@ -30,8 +34,10 @@ const challengeMocks = vi.hoisted(() => ({
 }))
 
 vi.mock(import('@/session/stripeChallengePort'), () => ({
-  createStripeChallengePort: (key: string) => {
-    challengeMocks.createPort(key)
+  createDeferredStripeChallengePort: (
+    getKey: () => string | undefined | Promise<string | undefined>
+  ) => {
+    void Promise.resolve(getKey()).then((key) => challengeMocks.createPort(key))
     return { handleNextAction: challengeMocks.handleNextAction }
   }
 }))
@@ -118,7 +124,12 @@ describe('SubscriptionView', () => {
   })
 
   it('quotes the chosen plan and carries it into checkout', async () => {
-    const fake = await renderSubscription()
+    const fake = await renderSubscription({
+      preview: {
+        status: 'ok',
+        value: previewOf({ transition_type: 'upgrade' })
+      }
+    })
 
     await userEvent.click(
       await screen.findByRole('button', { name: 'Choose Creator · Monthly' })

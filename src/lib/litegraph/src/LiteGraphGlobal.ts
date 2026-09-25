@@ -933,14 +933,11 @@ export class LiteGraphGlobal {
     }
     hex = hex.toUpperCase()
     const hex_alphabets = '0123456789ABCDEF'
-    const value = new Array(3)
-    let k = 0
-    let int1, int2
+    const value: number[] = []
     for (let i = 0; i < 6; i += 2) {
-      int1 = hex_alphabets.indexOf(hex.charAt(i))
-      int2 = hex_alphabets.indexOf(hex.charAt(i + 1))
-      value[k] = int1 * 16 + int2
-      k++
+      const int1 = hex_alphabets.indexOf(hex.charAt(i))
+      const int2 = hex_alphabets.indexOf(hex.charAt(i + 1))
+      value.push(int1 * 16 + int2)
     }
     return value
   }
@@ -981,7 +978,7 @@ export class LiteGraphGlobal {
   ): void {
     for (const i in origin) {
       // copy class properties
-      // eslint-disable-next-line no-prototype-builtins
+      // oxlint-disable-next-line no-prototype-builtins
       if (target.hasOwnProperty(i)) continue
       target[i] = origin[i]
     }
@@ -993,11 +990,11 @@ export class LiteGraphGlobal {
       // copy prototype properties
       for (const i in originProto) {
         // only enumerable
-        // eslint-disable-next-line no-prototype-builtins
+        // oxlint-disable-next-line no-prototype-builtins
         if (!originProto.hasOwnProperty(i)) continue
 
         // avoid overwriting existing ones
-        // eslint-disable-next-line no-prototype-builtins
+        // oxlint-disable-next-line no-prototype-builtins
         if (targetProto.hasOwnProperty(i)) continue
 
         // Use Object.getOwnPropertyDescriptor to copy getters/setters properly

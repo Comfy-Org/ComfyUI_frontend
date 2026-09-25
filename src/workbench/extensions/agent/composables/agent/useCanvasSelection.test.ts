@@ -1,16 +1,44 @@
 import { effectScope, ref } from 'vue'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 
 import { createNodeLocatorId } from '@/types/nodeIdentification'
 import { toNodeId } from '@/types/nodeId'
 
 import type { SelectedNode } from './useCanvasSelection'
-import { useCanvasSelection } from './useCanvasSelection'
+import { selectedNodeKey, useCanvasSelection } from './useCanvasSelection'
 
 const nodeA: SelectedNode = { id: '1', title: 'Load Checkpoint' }
 const nodeB: SelectedNode = { id: '2', title: 'KSampler' }
 
 describe('useCanvasSelection', () => {
+  it('reports only new user additions, not restoration, removal or consumption', () => {
+    const selection = ref<SelectedNode[]>([])
+    const isTracking = ref(false)
+    const onNodesAdded = vi.fn()
+    const { staged, add, replace, remove, consume } = useCanvasSelection({
+      selection,
+      isTracking,
+      isLive: true,
+      onNodesAdded
+    })
+    replace([nodeA])
+    selection.value = [nodeA]
+    isTracking.value = true
+    expect(staged.value).toEqual([nodeA])
+    expect(onNodesAdded).not.toHaveBeenCalled()
+    add(nodeA)
+    expect(onNodesAdded).not.toHaveBeenCalled()
+    add(nodeB)
+    expect(onNodesAdded).toHaveBeenCalledTimes(1)
+    remove(nodeB.id)
+    consume()
+    replace([nodeA])
+    expect(onNodesAdded).toHaveBeenCalledTimes(1)
+    selection.value = [nodeA, nodeB]
+    expect(staged.value).toEqual([nodeA, nodeB])
+    expect(onNodesAdded).toHaveBeenCalledTimes(2)
+  })
+
   it('stages the current selection only while live', () => {
     const selection = ref<SelectedNode[]>([nodeA])
     const isLive = ref(false)
@@ -118,6 +146,28 @@ describe('useCanvasSelection', () => {
 
     isTracking.value = true
     expect(staged.value).toEqual([nodeA])
+  })
+
+  it('retains staged nodes outside the projected selection scope', () => {
+    const offScopeNode = {
+      ...nodeB,
+      locatorId: createNodeLocatorId(null, toNodeId(2))
+    }
+    const selection = ref<SelectedNode[]>([])
+    const isTracking = ref(false)
+    const { staged, add } = useCanvasSelection({
+      selection,
+      isLive: ref(true),
+      isTracking,
+      retainStagedNode: (node) =>
+        selectedNodeKey(node) === selectedNodeKey(offScopeNode)
+    })
+    add(offScopeNode)
+
+    isTracking.value = true
+    selection.value = [nodeA]
+
+    expect(staged.value).toEqual([offScopeNode, nodeA])
   })
 
   it('replaces staged references during an explicit restore', () => {
