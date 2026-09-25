@@ -1,30 +1,21 @@
-import { beforeEach, describe, expect, it } from 'vitest'
+import { assert, describe, expect, it } from 'vitest'
 import { nextTick, watch } from 'vue'
 
-import { LGraph, LGraphNode } from '@/lib/litegraph/src/litegraph'
+import { createTestWidgetNode } from '@/lib/litegraph/src/__fixtures__/nodeHelpers'
+import { LGraph, LiteGraph } from '@/lib/litegraph/src/litegraph'
 
-function createWidgetInputNode(graph: LGraph): LGraphNode {
-  const node = new LGraphNode('WidgetInput')
+function createWidgetInputNode() {
+  const node = createTestWidgetNode(new LGraph())
   node.pos = [0, 0]
   node.size = [200, 120]
-  node.addWidget('number', 'value', 0, () => {})
-  const input = node.addInput('value', 'FLOAT')
-  input.widget = { name: 'value' }
-  graph.add(node)
+  node.inputs[0].widget = { name: 'text_widget' }
   node._setConcreteSlots()
   return node
 }
 
 describe('LGraphNode widget input slot arrangement', () => {
-  let graph: LGraph
-  let node: LGraphNode
-
-  beforeEach(() => {
-    graph = new LGraph()
-    node = createWidgetInputNode(graph)
-  })
-
   it('keeps the same pos array when the widget row has not moved', () => {
+    const node = createWidgetInputNode()
     node.arrange()
     const firstPos = node.inputs[0].pos
 
@@ -34,6 +25,7 @@ describe('LGraphNode widget input slot arrangement', () => {
   })
 
   it('does not notify slot position subscribers on an unchanged re-arrange', async () => {
+    const node = createWidgetInputNode()
     node.arrange()
     await nextTick()
 
@@ -53,14 +45,21 @@ describe('LGraphNode widget input slot arrangement', () => {
   })
 
   it('writes a new pos when the widget row actually moves', async () => {
+    const node = createWidgetInputNode()
     node.arrange()
     const firstPos = node.inputs[0].pos
+    assert.exists(firstPos)
 
     node.widgets_start_y = (node.widgets_start_y ?? 0) + 40
     node.arrange()
     await nextTick()
 
-    expect(node.inputs[0].pos).not.toBe(firstPos)
-    expect(node.inputs[0].pos![1]).not.toBe(firstPos![1])
+    const pos = node.inputs[0].pos
+    const widget = node.widgets?.[0]
+    assert.exists(pos)
+    assert.exists(widget)
+    expect(pos).not.toBe(firstPos)
+    expect(pos[1]).not.toBe(firstPos[1])
+    expect(pos[1]).toBe(widget.y + LiteGraph.NODE_SLOT_HEIGHT * 0.5)
   })
 })
