@@ -189,8 +189,12 @@ export const useAgentConversationStore = defineStore(
       transport?.dropAskPart(askId)
       for (const settledTransport of settledActiveTransports)
         settledTransport.dropAskPart(askId)
-      for (const entry of backgroundTurns.values())
-        entry.transport.dropAskPart(askId)
+      // Stashed turns are the one holder that can belong to another thread,
+      // and retiring this thread's ask is no business of theirs. The active
+      // and settled transports need no such guard: hydrate disposes both on
+      // every thread switch.
+      for (const [owner, entry] of backgroundTurns)
+        if (owner === threadId.value) entry.transport.dropAskPart(askId)
       retiredAsksForCurrentThread().add(askId)
       clearAskResolutionWatchdog(askId)
       submittedAskSelections.delete(askId)
