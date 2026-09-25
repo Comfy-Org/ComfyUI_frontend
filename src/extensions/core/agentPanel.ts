@@ -25,7 +25,8 @@ import { getNodeByLocatorId } from '@/utils/graphTraversalUtil'
 import { isLGraphNode } from '@/utils/litegraphUtil'
 import {
   notifyMintPortsAfterGraphConfigure,
-  notifyMintPortsBeforeGraphLoad
+  notifyMintPortsBeforeGraphLoad,
+  notifyMintPortsGraphLoadFailed
 } from '@/workbench/extensions/agent/crdt/mintPortWiring'
 
 const CONSENT_AUTO_SHOWN_PREFIX = 'Comfy.AgentConsent.AutoShown'
@@ -151,6 +152,7 @@ export function registerAgentPanelExtension(): void {
       }
     },
     onGraphLoadError() {
+      notifyMintPortsGraphLoadFailed()
       closeWidgetDirtySuppression()
       const nodeSelectionStore = useAgentNodeSelectionStore()
       if (nodeSelectionStore.isLoadingWorkflow) {

@@ -76,6 +76,7 @@ describe('attachMintPortWiring', () => {
     for (const listener of layoutListeners) listener(change)
   }
 
+  const graphEvents = new EventTarget()
   const graph: MintableGraph = {
     id: ROOT_ID,
     rootGraph: { id: ROOT_ID },
@@ -83,7 +84,19 @@ describe('attachMintPortWiring', () => {
       (graphNodes.get(String(id)) as unknown as LGraphNode | undefined) ?? null,
     get _nodes() {
       return [...graphNodes.values()] as LGraphNode[]
-    }
+    },
+    events: graphEvents as unknown as MintableGraph['events']
+  }
+
+  function dispatchPropertyChanged(detail: {
+    nodeId: unknown
+    property: string
+    oldValue: unknown
+    newValue: unknown
+  }): void {
+    graphEvents.dispatchEvent(
+      new CustomEvent('node:property:changed', { detail })
+    )
   }
 
   beforeEach(() => {
@@ -300,6 +313,289 @@ describe('attachMintPortWiring', () => {
     expect(minted).toEqual([])
   })
 
+  it.for([
+    {
+      name: 'title',
+      oldValue: 'Old Name',
+      newValue: 'New Name',
+      operation: {
+        op: 'set_node_field',
+        node_id: toNodeId(7),
+        field: 'title',
+        value: 'New Name'
+      }
+    },
+    {
+      name: 'mode',
+      oldValue: 0,
+      newValue: 4,
+      operation: {
+        op: 'set_node_field',
+        node_id: toNodeId(7),
+        field: 'mode',
+        value: 4
+      }
+    }
+  ])(
+    'mints a top-level set_node_field from the root graph $name property change',
+    async ({ name, oldValue, newValue, operation }) => {
+      dispatchPropertyChanged({
+        nodeId: toNodeId(7),
+        property: name,
+        oldValue,
+        newValue
+      })
+      await afterSweep()
+
+      expect(minted).toEqual([operation])
+    }
+  )
+
+  it('ignores a non-writable property change (e.g. color)', () => {
+    dispatchPropertyChanged({
+      nodeId: toNodeId(7),
+      property: 'color',
+      oldValue: undefined,
+      newValue: '#fff'
+    })
+
+    expect(minted).toEqual([])
+  })
+
+  it('ignores a change whose value did not actually move (e.g. a routine reconfigure that re-assigns the same title)', async () => {
+    dispatchPropertyChanged({
+      nodeId: toNodeId(7),
+      property: 'title',
+      oldValue: 'Same Name',
+      newValue: 'Same Name'
+    })
+    await afterSweep()
+
+    expect(minted).toEqual([])
+  })
+
+  it('ignores an out-of-range mode (never a valid LGraphEventMode member)', async () => {
+    dispatchPropertyChanged({
+      nodeId: toNodeId(7),
+      property: 'mode',
+      oldValue: 0,
+      newValue: Number.NaN
+    })
+    dispatchPropertyChanged({
+      nodeId: toNodeId(7),
+      property: 'mode',
+      oldValue: 0,
+      newValue: 99
+    })
+    await afterSweep()
+
+    expect(minted).toEqual([])
+  })
+
+  it('mints a long title in full, uncapped (no length bound in the op contract)', async () => {
+    const longTitle = 'x'.repeat(2000)
+    dispatchPropertyChanged({
+      nodeId: toNodeId(7),
+      property: 'title',
+      oldValue: 'Old Name',
+      newValue: longTitle
+    })
+    await afterSweep()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_node_field',
+        node_id: toNodeId(7),
+        field: 'title',
+        value: longTitle
+      }
+    ])
+  })
+
+  it('suppresses a title change inside a graph-teardown bracket', () => {
+    wiring.onBeforeGraphLoad()
+    dispatchPropertyChanged({
+      nodeId: toNodeId(7),
+      property: 'title',
+      oldValue: 'Old Name',
+      newValue: 'New Name'
+    })
+
+    expect(minted).toEqual([])
+  })
+
+  it('never mints a title change fired on a graph other than the bound document root', async () => {
+    const foreignEvents = new EventTarget()
+    const foreignGraph: MintableGraph = {
+      ...graph,
+      id: 'other-root-uuid',
+      rootGraph: { id: 'other-root-uuid' },
+      events: foreignEvents as unknown as MintableGraph['events']
+    }
+    const foreignWiring = attachMintPortWiring({
+      isEnabled: () => enabled,
+      isDocBound: () => bound,
+      enqueue: (operations) => minted.push(...operations),
+      layoutChanges: () => () => undefined,
+      localActorPrefix: 'user-',
+      getGraph: () => foreignGraph,
+      boundRootGraphId: () => toRootGraphId(ROOT_ID)
+    })
+
+    foreignEvents.dispatchEvent(
+      new CustomEvent('node:property:changed', {
+        detail: {
+          nodeId: toNodeId(7),
+          property: 'title',
+          oldValue: 'Old Name',
+          newValue: 'New Name'
+        }
+      })
+    )
+    await afterSweep()
+
+    expect(minted).toEqual([])
+    foreignWiring.detach()
+  })
+
+  it('attaches the title listener late once the graph becomes available', async () => {
+    const lateEvents = new EventTarget()
+    const lateGraphReady: MintableGraph = {
+      ...graph,
+      events: lateEvents as unknown as MintableGraph['events']
+    }
+    let lateGraph: MintableGraph | null = null
+    const lateWiring = attachMintPortWiring({
+      isEnabled: () => enabled,
+      isDocBound: () => bound,
+      enqueue: (operations) => minted.push(...operations),
+      layoutChanges: () => () => undefined,
+      localActorPrefix: 'user-',
+      getGraph: () => lateGraph,
+      boundRootGraphId: () => toRootGraphId(ROOT_ID)
+    })
+
+    lateEvents.dispatchEvent(
+      new CustomEvent('node:property:changed', {
+        detail: {
+          nodeId: toNodeId(7),
+          property: 'title',
+          oldValue: 'Old Name',
+          newValue: 'Too Early'
+        }
+      })
+    )
+    expect(minted).toEqual([])
+
+    lateGraph = lateGraphReady
+    lateWiring.onAfterGraphConfigure()
+    lateEvents.dispatchEvent(
+      new CustomEvent('node:property:changed', {
+        detail: {
+          nodeId: toNodeId(7),
+          property: 'title',
+          oldValue: 'Old Name',
+          newValue: 'New Name'
+        }
+      })
+    )
+    await afterSweep()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_node_field',
+        node_id: toNodeId(7),
+        field: 'title',
+        value: 'New Name'
+      }
+    ])
+    lateWiring.detach()
+  })
+
+  it('retries attaching the title listener from a failed-load hook too, not only afterConfigureGraph', async () => {
+    const lateEvents = new EventTarget()
+    const lateGraphReady: MintableGraph = {
+      ...graph,
+      events: lateEvents as unknown as MintableGraph['events']
+    }
+    let lateGraph: MintableGraph | null = null
+    const lateWiring = attachMintPortWiring({
+      isEnabled: () => enabled,
+      isDocBound: () => bound,
+      enqueue: (operations) => minted.push(...operations),
+      layoutChanges: () => () => undefined,
+      localActorPrefix: 'user-',
+      getGraph: () => lateGraph,
+      boundRootGraphId: () => toRootGraphId(ROOT_ID)
+    })
+
+    lateGraph = lateGraphReady
+    lateWiring.onGraphLoadFailed()
+    lateEvents.dispatchEvent(
+      new CustomEvent('node:property:changed', {
+        detail: {
+          nodeId: toNodeId(7),
+          property: 'title',
+          oldValue: 'Old Name',
+          newValue: 'New Name'
+        }
+      })
+    )
+    await afterSweep()
+
+    expect(minted).toEqual([
+      {
+        op: 'set_node_field',
+        node_id: toNodeId(7),
+        field: 'title',
+        value: 'New Name'
+      }
+    ])
+    lateWiring.detach()
+  })
+
+  it('stops minting from a graph it previously attached to, once wiring moves to a new one', async () => {
+    const staleEvents = new EventTarget()
+    const currentEvents = new EventTarget()
+    let current: MintableGraph = {
+      ...graph,
+      events: staleEvents as unknown as MintableGraph['events']
+    }
+    const reattachWiring = attachMintPortWiring({
+      isEnabled: () => enabled,
+      isDocBound: () => bound,
+      enqueue: (operations) => minted.push(...operations),
+      layoutChanges: () => () => undefined,
+      localActorPrefix: 'user-',
+      getGraph: () => current,
+      boundRootGraphId: () => toRootGraphId(ROOT_ID)
+    })
+
+    current = {
+      ...graph,
+      events: currentEvents as unknown as MintableGraph['events']
+    }
+    reattachWiring.onAfterGraphConfigure()
+
+    // The stale graph's own target must no longer be listened to - a title
+    // change firing there belongs to whatever document that graph is now
+    // (wrongly) still wired to, never the newly bound one.
+    staleEvents.dispatchEvent(
+      new CustomEvent('node:property:changed', {
+        detail: {
+          nodeId: toNodeId(7),
+          property: 'title',
+          oldValue: 'Old Name',
+          newValue: 'New Name'
+        }
+      })
+    )
+    await afterSweep()
+
+    expect(minted).toEqual([])
+    reattachWiring.detach()
+  })
+
   it('suppresses remote store calls from their call-carried context', () => {
     const context: RemoteMutationContext = {
       source: 'agent-remote',
@@ -464,6 +760,18 @@ describe('attachMintPortWiring', () => {
       typeof widgetStore.registerWidget
     >[1])
     widgetStore.setValue(id, 42)
+
+    expect(minted).toEqual([])
+  })
+
+  it('stops observing the graph title event after detach', () => {
+    wiring.detach()
+    dispatchPropertyChanged({
+      nodeId: toNodeId(7),
+      property: 'title',
+      oldValue: 'Old Name',
+      newValue: 'New Name'
+    })
 
     expect(minted).toEqual([])
   })

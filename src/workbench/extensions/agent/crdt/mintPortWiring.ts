@@ -1,10 +1,19 @@
 /**
- * Composition seam for the three mint ports. Layout pieces are injected
- * (workbench must not import renderer); link and widget events come from their
- * owning stores. A replace maps to PLACED and never DELETED (the store
- * displaces incumbents internally). Load brackets are a fail-closed boolean
- * over beforeLoadGraph/afterConfigureGraph: a failed load leaves mints
- * suppressed until the next load's pair recloses.
+ * Composition seam for the four mint ports. Layout pieces are injected
+ * (workbench must not import renderer); link, widget and title events come
+ * from their owning stores/graph. A replace maps to PLACED and never DELETED
+ * (the store displaces incumbents internally). Load brackets are a
+ * fail-closed boolean over beforeLoadGraph/afterConfigureGraph: a failed load
+ * leaves mints suppressed until the next load's pair recloses.
+ *
+ * `title` and `mode` have no owning Pinia store (a canvas rename or a
+ * mode toggle writes straight onto the `LGraphNode` instance via its tracked
+ * `title`/`mode` setters, `setTrackedNodeState` - see `nodeShellState.ts`),
+ * so their mint port instead listens to the ROOT graph's own
+ * `node:property:changed` event, filtered to `property === 'title'` or
+ * `property === 'mode'`. Listening only on the root graph's event target
+ * (never a subgraph's) is what scopes this to top-level nodes, matching
+ * `set_node_field` having no interior/subgraph-instance variant.
  */
 import { registerDocBoundRootGraphProbe } from '@/lib/litegraph/src/docBoundGraphs'
 import type { LGraph } from '@/lib/litegraph/src/LGraph'
@@ -19,21 +28,36 @@ import { isFloatingTopology } from '@/types/linkTopology'
 import { isRemoteMutationContext } from '@/types/graphMutationContext'
 import { parseWidgetId } from '@/types/widgetId'
 import { findSubgraphNodePathById } from '@/utils/graphTraversalUtil'
+import { LGraphEventMode } from '@/lib/litegraph/src/types/globalEnums'
+import type { LGraphEventMap } from '@/lib/litegraph/src/infrastructure/LGraphEventMap'
 
 import type { GraphOperation } from './graphOperations'
 import { attachLayoutMintPort } from './layoutMintPort'
 import type { LayoutChangeView, LayoutMintPort } from './layoutMintPort'
 import { attachLinkMintPort } from './linkMintPort'
+import { attachNodeFieldMintPort } from './nodeFieldMintPort'
 import { attachWidgetMintPort } from './widgetMintPort'
 import { createMintSession } from './mintSession'
 import type { MintSession } from './mintSession'
 
-/** The graph surface the wiring reads for snapshots and scope. */
+type PropertyChangedEvent = CustomEvent<LGraphEventMap['node:property:changed']>
+
+/** The graph surface the wiring reads for snapshots, scope, and events. */
 export interface MintableGraph {
   id: string
   rootGraph?: { id: string }
   getNodeById(id: NodeId): LGraphNode | null
   _nodes: LGraphNode[]
+  events: {
+    addEventListener(
+      type: 'node:property:changed',
+      listener: (event: PropertyChangedEvent) => void
+    ): void
+    removeEventListener(
+      type: 'node:property:changed',
+      listener: (event: PropertyChangedEvent) => void
+    ): void
+  }
 }
 
 export interface MintPortWiringDeps {
@@ -69,7 +93,47 @@ export interface MintPortWiring {
   onBeforeGraphLoad(): void
   /** Forward from the app extension's `afterConfigureGraph` hook. */
   onAfterGraphConfigure(): void
+  /** Forward from the app extension's `onGraphLoadError` hook. */
+  onGraphLoadFailed(): void
   detach(): void
+}
+
+/** `LGraphEventMode`'s finite members; NaN/Infinity/fractions/out-of-range never mint. */
+const MINTABLE_NODE_MODES = new Set<number>(
+  Object.values(LGraphEventMode).filter(
+    (value): value is LGraphEventMode => typeof value === 'number'
+  )
+)
+
+type NodeFieldMintCandidate =
+  | { field: 'title'; value: string }
+  | { field: 'mode'; value: number }
+
+/** `set_node_field`'s `title` validator only requires a string; no length bound to mirror. */
+function resolveTitleMint(newValue: unknown): NodeFieldMintCandidate | null {
+  if (typeof newValue !== 'string') return null
+  return { field: 'title', value: newValue }
+}
+
+/** Narrows to `LGraphEventMode`'s finite members (see `MINTABLE_NODE_MODES`). */
+function resolveModeMint(newValue: unknown): NodeFieldMintCandidate | null {
+  if (typeof newValue !== 'number' || !MINTABLE_NODE_MODES.has(newValue))
+    return null
+  return { field: 'mode', value: newValue }
+}
+
+/**
+ * Validates and shapes a `node:property:changed` event into a mintable
+ * `title`/`mode` field, or null when the property or value isn't one this
+ * port mints (see this file's header comment for why title/mode are special).
+ */
+function resolveMintableField(
+  property: string,
+  newValue: unknown
+): NodeFieldMintCandidate | null {
+  if (property === 'title') return resolveTitleMint(newValue)
+  if (property === 'mode') return resolveModeMint(newValue)
+  return null
 }
 
 const activeWirings = new Set<MintPortWiring>()
@@ -95,6 +159,19 @@ export function notifyMintPortsBeforeGraphLoad(): void {
 
 export function notifyMintPortsAfterGraphConfigure(): void {
   for (const wiring of activeWirings) wiring.onAfterGraphConfigure()
+}
+
+/**
+ * Forward from the app extension's `onGraphLoadError` hook. `afterConfigure
+ * Graph`'s own late-attachment retry never runs when a load fails, so a
+ * wiring constructed before `getGraph()` first returned non-null would
+ * otherwise stay unattached until some later load succeeds. This retries the
+ * attach only; it deliberately leaves the load bracket's teardown
+ * suppression exactly as `onGraphLoadError`'s failure already left it
+ * (fail-closed, per this file's header comment).
+ */
+export function notifyMintPortsGraphLoadFailed(): void {
+  for (const wiring of activeWirings) wiring.onGraphLoadFailed()
 }
 
 /**
@@ -184,9 +261,13 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
   type SetListener = Parameters<
     Parameters<typeof attachWidgetMintPort>[0]['events']['onSet']
   >[0]
+  type NodeFieldListener = Parameters<
+    Parameters<typeof attachNodeFieldMintPort>[0]['events']['onChange']
+  >[0]
   const placedListeners = new Set<PlacedListener>()
   const deletedListeners = new Set<DeletedListener>()
   const setListeners = new Set<SetListener>()
+  const nodeFieldListeners = new Set<NodeFieldListener>()
 
   const linkPort = attachLinkMintPort({
     events: {
@@ -248,6 +329,78 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
     },
     enqueue
   })
+
+  const nodeFieldPort = attachNodeFieldMintPort({
+    events: {
+      onChange(listener) {
+        nodeFieldListeners.add(listener)
+        return () => nodeFieldListeners.delete(listener)
+      }
+    },
+    session,
+    isEnabled: deps.isEnabled,
+    isDocBound: deps.isDocBound,
+    enqueue
+  })
+
+  /**
+   * Whether the root graph currently firing `node:property:changed` (the
+   * one this port is attached to) is the bound document's own root graph.
+   * `app.rootGraph` is a shared instance re-configured per tab: a title/mode
+   * write can land after a load's `afterConfigureGraph` re-attaches this
+   * port to the newly-configured graph but before `boundRootGraphId()`
+   * itself flips to match, which would otherwise mint into the still-bound
+   * (outgoing) document against a same-id node in the new one. No stored
+   * bound id, or no live graph, cannot be judged foreign - `isDocBound()`
+   * gates those cases downstream instead.
+   */
+  function firedByBoundRootGraph(): boolean {
+    const boundRootGraphId = deps.boundRootGraphId()
+    if (boundRootGraphId === null) return true
+    const graph = deps.getGraph()
+    if (!graph) return true
+    return (graph.rootGraph?.id ?? graph.id) === boundRootGraphId
+  }
+
+  function handlePropertyChanged(event: PropertyChangedEvent): void {
+    const { property, nodeId, oldValue, newValue } = event.detail
+    // `setTrackedNodeState` already early-returns before dispatching when
+    // `oldValue === value`, so this guard is unreachable for callers that go
+    // through the tracked setter. It defends against `litegraphService.ts`,
+    // `LGraphCanvas.ts`, and `useNodeErrorFlagSync.ts`, which build a
+    // `node:property:changed` detail directly and could hand it any
+    // `oldValue`/`newValue` pair.
+    if (oldValue === newValue) return
+
+    const field = resolveMintableField(property, newValue)
+    if (!field) return
+    if (!firedByBoundRootGraph()) return
+
+    for (const listener of nodeFieldListeners) listener({ nodeId, ...field })
+  }
+
+  let attachedGraphEvents: MintableGraph['events'] | null = null
+  function tryAttachGraphEvents(): void {
+    const graph = deps.getGraph()
+    if (!graph || attachedGraphEvents === graph.events) return
+    // This re-attach branch is unreachable in production: `app.rootGraphInternal`
+    // is assigned once in `app.ts` setup and never replaced, so `graph.events`
+    // is one stable target for the app's lifetime. The real guard against
+    // minting into the outgoing document is `firedByBoundRootGraph()`, which
+    // compares graph ids (those move per tab even though the instance doesn't).
+    if (attachedGraphEvents) {
+      attachedGraphEvents.removeEventListener(
+        'node:property:changed',
+        handlePropertyChanged
+      )
+    }
+    graph.events.addEventListener(
+      'node:property:changed',
+      handlePropertyChanged
+    )
+    attachedGraphEvents = graph.events
+  }
+  tryAttachGraphEvents()
 
   const linkStore = useLinkStore()
   const widgetStore = useWidgetValueStore()
@@ -318,15 +471,27 @@ export function attachMintPortWiring(deps: MintPortWiringDeps): MintPortWiring {
       session.beginGraphTeardown()
     },
     onAfterGraphConfigure() {
+      tryAttachGraphEvents()
       if (!loadBracketOpen) return
       loadBracketOpen = false
       session.endGraphTeardown()
+    },
+    onGraphLoadFailed() {
+      tryAttachGraphEvents()
     },
     detach() {
       activeWirings.delete(wiring)
       unregisterDocBoundProbe()
       detachLinkActions()
       detachWidgetChanges()
+      if (attachedGraphEvents) {
+        attachedGraphEvents.removeEventListener(
+          'node:property:changed',
+          handlePropertyChanged
+        )
+        attachedGraphEvents = null
+      }
+      nodeFieldPort.detach()
       widgetPort.detach()
       layoutPort.detach()
       linkPort.detach()
