@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { Play, Upload } from '@lucide/vue'
+import { Upload } from '@lucide/vue'
 import { ref } from 'vue'
 
 import { cn } from '@comfyorg/tailwind-utils'
@@ -9,11 +9,24 @@ import {
   clipFits
 } from '../../../../lib/workshop/cinematic-studio/reshoot'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
+import type { PlaygroundExample } from '../../../../config/workshop-playground'
 import type { Locale } from '../../../../i18n/translations'
+import ExamplesTab from '../../ExamplesTab.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
 const emit = defineEmits<{ pick: [file?: File] }>()
+
+const EXAMPLES: readonly PlaygroundExample[] = [
+  {
+    id: 'crossview-example',
+    title: rc('reshoot.pick.exampleTitle', locale),
+    specs: [rc('reshoot.pick.exampleMeta', locale)],
+    values: {},
+    outputUrl: RESHOOT_EXAMPLE.clip,
+    mediaKind: 'video'
+  }
+]
 
 const over = ref(false)
 const tooLong = ref<number>()
@@ -54,19 +67,9 @@ function drop(event: DragEvent) {
 <template>
   <section
     :aria-label="rc('reshoot.title', locale)"
-    class="mx-auto flex w-full max-w-4xl flex-1 flex-col items-center justify-center gap-8 py-8"
+    class="flex w-full max-w-5xl flex-col gap-8 py-4"
     data-testid="reshoot-pick"
   >
-    <header class="flex flex-col items-center gap-2 text-center">
-      <h1
-        class="text-3xl font-semibold tracking-tight text-primary-warm-white sm:text-4xl"
-      >
-        {{ rc('reshoot.title', locale) }}
-      </h1>
-      <p class="max-w-xl text-base text-primary-comfy-canvas">
-        {{ rc('reshoot.pick.lead', locale) }}
-      </p>
-    </header>
     <label
       :class="
         cn(
@@ -104,38 +107,11 @@ function drop(event: DragEvent) {
         )
       }}
     </p>
-    <div class="flex w-full flex-col gap-3">
-      <h2 class="text-sm text-primary-comfy-canvas">
-        {{ rc('reshoot.pick.example', locale) }}
-      </h2>
-      <button
-        type="button"
-        class="group flex w-fit items-center gap-4 rounded-2xl p-2 pr-5 text-left ring-1 ring-transparency-white-t8 transition-colors ring-inset hover:bg-transparency-white-t4"
-        data-testid="reshoot-example"
-        @click="emit('pick')"
-      >
-        <span class="relative block overflow-hidden rounded-xl">
-          <video
-            :src="RESHOOT_EXAMPLE.clip"
-            muted
-            playsinline
-            preload="metadata"
-            class="aspect-video w-48 bg-primary-comfy-ink object-cover"
-          />
-          <Play
-            class="absolute top-1/2 left-1/2 size-7 -translate-1/2 fill-primary-warm-white text-primary-warm-white opacity-80 transition-opacity group-hover:opacity-100"
-            aria-hidden="true"
-          />
-        </span>
-        <span class="flex flex-col gap-1">
-          <span class="text-sm font-semibold text-primary-warm-white">
-            {{ rc('reshoot.clip.example', locale) }}
-          </span>
-          <span class="text-xs text-primary-warm-gray">
-            {{ rc('reshoot.pick.exampleMeta', locale) }}
-          </span>
-        </span>
-      </button>
-    </div>
+    <ExamplesTab
+      :examples="EXAMPLES"
+      :locale
+      class="w-full"
+      @open="emit('pick')"
+    />
   </section>
 </template>

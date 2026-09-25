@@ -4,7 +4,6 @@ const copy = {
   'reshoot.title': { en: 'Re-shoot a video', 'zh-CN': '重拍视频' },
   'reshoot.prototype': { en: 'Prototype', 'zh-CN': '原型' },
   'reshoot.panel': { en: 'Re-shoot settings', 'zh-CN': '重拍设置' },
-  'reshoot.composer': { en: 'Re-shoot composer', 'zh-CN': '重拍输入栏' },
   'reshoot.section.video': { en: 'Video', 'zh-CN': '视频' },
   'reshoot.step': { en: 'Step {n}', 'zh-CN': '第 {n} 步' },
   'reshoot.step1': { en: 'Prepare the clip', 'zh-CN': '准备片段' },
@@ -31,31 +30,19 @@ const copy = {
   },
   'reshoot.pick.drop': { en: 'Drop a video here', 'zh-CN': '将视频拖到这里' },
   'reshoot.pick.upload': { en: 'Upload a video', 'zh-CN': '上传视频' },
-  'reshoot.pick.example': {
-    en: 'Or start from the example',
-    'zh-CN': '或从示例开始'
-  },
   'reshoot.pick.exampleMeta': {
     en: 'Try it without uploading anything',
     'zh-CN': '无需上传即可试用'
-  },
-  'reshoot.aim.title': { en: 'Aim the new camera', 'zh-CN': '设置新机位' },
-  'reshoot.aim.hint': {
-    en: 'The picture follows the camera as you drag. Nothing is generated until you press Generate.',
-    'zh-CN': '拖动时画面会跟随机位变化。按下“生成”之前不会生成任何内容。'
   },
   'reshoot.aim.globe': {
     en: 'Hold and drag to aim the camera',
     'zh-CN': '按住并拖动以设置机位'
   },
-  'reshoot.aim.original': { en: 'Original', 'zh-CN': '原片' },
   'reshoot.aim.more': {
     en: 'More: lens, height, keep aim',
     'zh-CN': '更多：镜头、高度、保持朝向'
   },
   'reshoot.aim.less': { en: 'Less', 'zh-CN': '收起' },
-  'reshoot.aim.reset': { en: 'Reset', 'zh-CN': '重置' },
-  'reshoot.aim.apply': { en: 'Apply angle', 'zh-CN': '应用机位' },
   'reshoot.aim.reading': {
     en: 'Reading the scene',
     'zh-CN': '正在读取场景'
@@ -86,6 +73,31 @@ const copy = {
     en: 'This clip is {seconds} s long. Use one between 5 and 15 seconds.',
     'zh-CN': '该片段长 {seconds} 秒，请使用 5 到 15 秒的片段。'
   },
+  'reshoot.reuse': { en: 'Use this angle again', 'zh-CN': '再次使用此机位' },
+  'reshoot.clip.change': { en: 'Change', 'zh-CN': '更换' },
+  'reshoot.clip.ready': { en: 'Scene read', 'zh-CN': '场景已读取' },
+  'reshoot.generate.note': {
+    en: 'Takes 1.5 to 5 minutes. Keep aiming while it renders.',
+    'zh-CN': '需要 1.5 到 5 分钟，生成期间可以继续调整机位。'
+  },
+  'reshoot.generate.wait': {
+    en: 'Opens once the scene is read, about 20 to 40 seconds.',
+    'zh-CN': '场景读取完成后即可使用，约 20 到 40 秒。'
+  },
+  'reshoot.eyebrow': { en: 'App · Prototype', 'zh-CN': '应用 · 原型' },
+  'reshoot.fact.input': {
+    en: '5 to 15 s video in',
+    'zh-CN': '输入 5 到 15 秒视频'
+  },
+  'reshoot.fact.size': { en: '480p or 768p', 'zh-CN': '480p 或 768p' },
+  'reshoot.fact.time': {
+    en: '1.5 to 5 min per take',
+    'zh-CN': '每条 1.5 到 5 分钟'
+  },
+  'reshoot.fact.sound': { en: 'New sound included', 'zh-CN': '包含新声音' },
+  'reshoot.expand': { en: 'Full screen', 'zh-CN': '全屏' },
+  'reshoot.collapse': { en: 'Exit full screen', 'zh-CN': '退出全屏' },
+  'reshoot.pick.exampleTitle': { en: 'Sci-fi pilot', 'zh-CN': '科幻飞行员' },
   'reshoot.section.camera': { en: 'New camera', 'zh-CN': '新机位' },
   'reshoot.section.move': { en: 'Camera move', 'zh-CN': '运镜' },
   'reshoot.section.prompt': {

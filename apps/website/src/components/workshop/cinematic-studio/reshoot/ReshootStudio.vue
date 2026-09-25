@@ -1,20 +1,18 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed } from 'vue'
 
-import { useCinematicPopover } from '../../../../composables/useCinematicPopover'
 import { useReshootDemo } from '../../../../composables/useReshootDemo'
 import { rc } from '../../../../lib/workshop/cinematic-studio/reshoot-copy'
 import type { Locale } from '../../../../i18n/translations'
 import AppsBackLink from '../AppsBackLink.vue'
-import CinematicPopover from '../CinematicPopover.vue'
-import ReshootAim from './ReshootAim.vue'
-import ReshootClipControls from './ReshootClipControls.vue'
-import ReshootComposer from './ReshootComposer.vue'
+import ReshootHeader from './ReshootHeader.vue'
 import ReshootPick from './ReshootPick.vue'
+import ReshootSide from './ReshootSide.vue'
 import ReshootStage from './ReshootStage.vue'
 
 const { locale = 'en' } = defineProps<{ locale?: Locale }>()
 
+const demo = useReshootDemo({ autoRead: true })
 const {
   upload,
   clip,
@@ -34,64 +32,51 @@ const {
   seed,
   takes,
   selected,
-  current,
-  rendering,
-  pick,
-  generate,
-  cancel,
-  aim,
-  addKey,
-  removeKey,
-  resetCamera
-} = useReshootDemo({ autoRead: true })
-const { open: popover, toggle, close } = useCinematicPopover<'clip'>()
+  current
+} = demo
 
-const aiming = ref(false)
-
-function start(file?: File) {
-  pick(file)
-  aiming.value = true
-}
-
-function openAim() {
-  close()
-  selected.value = 'aim'
-  aiming.value = true
-}
-
-function run(action: () => void) {
-  close()
-  action()
-}
+const canReuse = computed(
+  () => current.value?.status === 'done' && current.value.id !== 'example'
+)
 </script>
 
 <template>
   <div
-    class="mb-12 flex min-h-[calc(100svh-5rem)] flex-col lg:mb-20 lg:min-h-[calc(100svh-7rem)]"
+    class="mx-auto mb-12 flex w-full max-w-10xl flex-col gap-4 px-4 pt-6 sm:px-8 lg:mb-20 lg:px-14"
     data-testid="reshoot"
   >
-    <div class="flex flex-1 flex-col gap-4 px-3 pt-4 sm:px-6">
-      <AppsBackLink :locale />
-      <ReshootPick v-if="!picked" :locale @pick="start" />
-      <ReshootAim
-        v-else-if="aiming"
+    <AppsBackLink :locale />
+    <ReshootHeader :locale class="mb-4" />
+    <ReshootPick v-if="!picked" :locale @pick="demo.pick" />
+    <div
+      v-else
+      class="grid items-start gap-6 lg:grid-cols-[23rem_minmax(0,1fr)]"
+    >
+      <ReshootSide
+        v-model:upload="upload"
+        v-model:aspect="aspect"
+        v-model:size="size"
+        v-model:seed="seed"
         v-model:keep-aim="keepAim"
         v-model:frame="frame"
         v-model:motion="motion"
+        v-model:prompt="prompt"
         :clip
+        :clip-name="clipName"
+        :is-example="isExample"
         :camera
         :keys
         :depth
+        :can-reuse="canReuse"
         :locale
-        @aim="aim"
-        @key="addKey"
-        @remove-key="removeKey"
+        @aim="demo.aim"
+        @key="demo.addKey"
+        @remove-key="demo.removeKey"
         @clear-keys="keys = []"
-        @reset="resetCamera"
-        @apply="aiming = false"
+        @reuse="demo.reuse(selected)"
+        @generate="demo.generate"
       />
       <ReshootStage
-        v-else
         :clip
         :camera
         :depth
@@ -99,59 +84,15 @@ function run(action: () => void) {
         :takes
         :selected
         :current
+        cancellable
         :locale
-        @aim="aim"
+        class="lg:pt-2"
+        @aim="demo.aim"
         @select="selected = $event"
+        @cancel="demo.cancel"
       />
     </div>
-    <div
-      v-if="picked && !aiming"
-      class="sticky bottom-0 z-50 bg-linear-to-t from-primary-comfy-ink via-primary-comfy-ink/90 to-transparent px-3 pt-4 pb-4 sm:px-6 sm:pb-6"
-    >
-      <div class="relative mx-auto w-full max-w-5xl">
-        <div
-          v-if="popover"
-          class="fixed inset-0 z-40 bg-black/60 lg:hidden"
-          aria-hidden="true"
-        />
-        <CinematicPopover
-          v-if="popover"
-          :title="rc('reshoot.section.video', locale)"
-          :locale
-          class="fixed inset-x-0 bottom-0 z-50 max-h-[85svh] rounded-b-none lg:absolute lg:inset-x-auto lg:bottom-full lg:left-0 lg:mb-3 lg:max-h-[60svh] lg:w-96 lg:rounded-b-2xl"
-          @close="close"
-        >
-          <ReshootClipControls
-            v-model:upload="upload"
-            v-model:aspect="aspect"
-            v-model:size="size"
-            v-model:seed="seed"
-            :clip
-            :clip-name="clipName"
-            :is-example="isExample"
-            :locale
-          />
-        </CinematicPopover>
-        <ReshootComposer
-          v-model:prompt="prompt"
-          :clip
-          :camera
-          :key-count="keys.length"
-          :aspect
-          :size
-          :depth
-          :rendering
-          :clip-open="popover === 'clip'"
-          :locale
-          @clip="toggle('clip')"
-          @aim="openAim"
-          @generate="run(generate)"
-          @cancel="cancel"
-        />
-      </div>
-    </div>
-    <p class="mt-2 px-3 text-center text-[11px] text-primary-warm-gray">
-      {{ rc('reshoot.credit', locale) }} ·
+    <p class="text-center text-[11px] text-primary-warm-gray">
       {{ rc('reshoot.demoNote', locale) }}
     </p>
   </div>

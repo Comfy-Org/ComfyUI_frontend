@@ -173,9 +173,9 @@ export function useReshootDemo({ autoRead = false } = {}) {
     keys.value = keys.value.filter((key) => key.frame !== at)
   }
 
-  function resetCamera() {
-    Object.assign(camera, DEFAULT_CAMERA)
-    keys.value = []
+  function reuse(id: string) {
+    const take = takes.value.find((entry) => entry.id === id)
+    if (take) aim(take.camera)
   }
 
   return {
@@ -207,6 +207,6 @@ export function useReshootDemo({ autoRead = false } = {}) {
     aim,
     addKey,
     removeKey,
-    resetCamera
+    reuse
   }
 }

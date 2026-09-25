@@ -112,6 +112,7 @@ function go(target: 1 | 2) {
             :locale
             @aim="aim"
             @select="selected = $event"
+            @cancel="cancel"
           />
         </div>
       </section>
