@@ -7,7 +7,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger
 } from 'reka-ui'
-import { computed, nextTick, ref } from 'vue'
+import { storeToRefs } from 'pinia'
+import { computed, nextTick, onScopeDispose, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 
 import Button from '@/components/ui/button/Button.vue'
@@ -31,6 +32,8 @@ import type {
 } from '@/workbench/extensions/agent/services/agent/agentPaywallPresentation'
 import type { ConversationEntry } from '../../stores/agent/agentConversationStore'
 import type { HistoryGroups } from '../../stores/agent/agentChatHistoryStore'
+import { useAgentPanelStore } from '../../stores/agent/agentPanelStore'
+import type { AgentPanelView } from '../../stores/agent/agentPanelStore'
 
 import AgentFeedbackCaption from './AgentFeedbackCaption.vue'
 import ChatHistoryScreen from './ChatHistoryScreen.vue'
@@ -67,6 +70,7 @@ const {
   sessionId = null,
   customTitle,
   historyGroups,
+  selectHistory = async () => false,
   editableTurnId = null,
   answeringAskIds = new Set<string>()
 } = defineProps<{
@@ -97,6 +101,7 @@ const {
   sessionId?: string | null
   customTitle?: string
   historyGroups: HistoryGroups
+  selectHistory?: (id: string, isCurrent: () => boolean) => Promise<boolean>
   editableTurnId?: TurnId | null
   answeringAskIds?: ReadonlySet<string>
 }>()
@@ -120,7 +125,6 @@ const emit = defineEmits<{
   toggleSize: []
   close: []
   openHistory: []
-  selectHistory: [id: string]
   deleteHistory: [id: string]
   copyHistory: [id: string]
   renameHistory: [id: string, title: string]
@@ -139,19 +143,82 @@ const targetNotice = computed(() => {
   return followsVisibleWorkflow ? 'following' : undefined
 })
 
-const showHistory = ref(false)
+const panelStore = useAgentPanelStore()
+const { view } = storeToRefs(panelStore)
+const showHistory = computed(() => view.value.screen === 'history')
+const loadingHistoryId = computed(() =>
+  view.value.screen === 'history' && view.value.selection.status === 'loading'
+    ? view.value.selection.id
+    : null
+)
+const failedHistoryId = computed(() =>
+  view.value.screen === 'history' && view.value.selection.status === 'failed'
+    ? view.value.selection.id
+    : null
+)
+onScopeDispose(panelStore.interruptHistorySelection)
 
 function onNewChat(): void {
-  showHistory.value = false
+  view.value = { screen: 'chat' }
   emit('newChat')
 }
 function onOpenHistory(): void {
-  showHistory.value = true
+  view.value = {
+    screen: 'history',
+    previousThreadId: sessionId,
+    selection: { status: 'idle' }
+  }
   emit('openHistory')
 }
-function onSelectHistory(id: string): void {
-  showHistory.value = false
-  emit('selectHistory', id)
+async function onSelectHistory(id: string): Promise<void> {
+  if (view.value.screen !== 'history' || loadingHistoryId.value === id) return
+  const opening: AgentPanelView = {
+    ...view.value,
+    selection: { status: 'loading', id }
+  }
+  view.value = opening
+  const isCurrent = () => view.value === opening
+  let opened = false
+  try {
+    opened = await selectHistory(id, isCurrent)
+  } finally {
+    if (isCurrent())
+      view.value = opened
+        ? { screen: 'chat' }
+        : { ...opening, selection: { status: 'failed', id } }
+  }
+}
+
+function onBackFromHistory(): void {
+  if (view.value.screen !== 'history') return
+  if (
+    view.value.selection.status === 'idle' &&
+    sessionId === view.value.previousThreadId
+  )
+    view.value = { screen: 'chat' }
+  else if (view.value.previousThreadId === null) onNewChat()
+  else void onSelectHistory(view.value.previousThreadId)
+}
+
+function onDeleteHistory(id: string): void {
+  if (
+    view.value.screen === 'history' &&
+    (view.value.previousThreadId === id ||
+      (view.value.selection.status !== 'idle' &&
+        view.value.selection.id === id))
+  )
+    view.value = {
+      ...view.value,
+      previousThreadId:
+        view.value.previousThreadId === id ? null : view.value.previousThreadId,
+      selection: { status: 'idle' }
+    }
+  emit('deleteHistory', id)
+}
+
+function onClose(): void {
+  panelStore.interruptHistorySelection()
+  emit('close')
 }
 
 const composerRef = ref<InstanceType<typeof Composer>>()
@@ -250,16 +317,18 @@ defineExpose({ addAttachment, updateAttachment, removeAttachment })
       :is-maximized
       @new-chat="onNewChat"
       @toggle-size="emit('toggleSize')"
-      @close="emit('close')"
+      @close="onClose"
     />
 
     <template v-if="showHistory">
       <ChatHistoryScreen
         :groups="historyGroups"
+        :loading-id="loadingHistoryId"
+        :failed-id="failedHistoryId"
         class="min-h-0 flex-1"
-        @back="showHistory = false"
+        @back="onBackFromHistory"
         @select="onSelectHistory"
-        @delete="emit('deleteHistory', $event)"
+        @delete="onDeleteHistory"
         @copy-markdown="emit('copyHistory', $event)"
         @rename="(id, title) => emit('renameHistory', id, title)"
       />

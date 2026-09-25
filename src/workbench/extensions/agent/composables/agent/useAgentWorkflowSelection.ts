@@ -213,40 +213,42 @@ export function useAgentWorkflowSelection({
   async function onWorkflowRestored(
     workflowId: string | undefined,
     isSessionCurrent: () => boolean
-  ): Promise<void> {
-    if (!canRestoreWorkflow.value || !isSessionCurrent()) return
+  ): Promise<boolean> {
+    if (!canRestoreWorkflow.value || !isSessionCurrent()) return false
     const generation = ++targetSelectionGeneration
     const isCurrent = () =>
       generation === targetSelectionGeneration &&
       isSessionCurrent() &&
       canRestoreWorkflow.value
-    if (workflowId === undefined) return
+    if (workflowId === undefined) return true
     await refreshCloudWorkflowIds()
-    if (!isCurrent()) return
+    if (!isCurrent()) return false
     let target =
       boundOrOpenWorkflowFor(workflowId) ?? storedWorkflowFor(workflowId)
     try {
       if (target === null) {
         await workflowStore.syncWorkflows()
-        if (!isCurrent()) return
+        if (!isCurrent()) return false
         target = storedWorkflowFor(workflowId)
       }
       if (target === null) {
         panelStore.setWorkflowTarget(null)
         warnWorkflowUnavailable()
-        return
+        return false
       }
-      const opened = await workflowService.openWorkflow(target)
-      if (!isCurrent()) return
+      const opened = await workflowService.openWorkflow(target, { isCurrent })
+      if (!isCurrent()) return false
       if (!opened) {
         panelStore.setWorkflowTarget(null)
         warnWorkflowUnavailable()
-        return
+        return false
       }
       commitWorkflowTarget(target, workflowId, 'restored')
+      return true
     } catch {
-      if (!isCurrent()) return
+      if (!isCurrent()) return false
       warnWorkflowUnavailable()
+      return false
     }
   }
 

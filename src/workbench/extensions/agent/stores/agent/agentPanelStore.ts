@@ -1,6 +1,6 @@
 import { useEventListener, useLocalStorage } from '@vueuse/core'
 import { defineStore } from 'pinia'
-import { computed, ref, watch } from 'vue'
+import { computed, ref, shallowRef, watch } from 'vue'
 
 import { useTelemetry } from '@/platform/telemetry'
 import type {
@@ -21,6 +21,16 @@ type TargetTracking =
   | { mode: 'restoring' }
   | { mode: 'retained'; workflow: ComfyWorkflow | null }
 
+export type AgentPanelView =
+  | { screen: 'chat' }
+  | {
+      screen: 'history'
+      previousThreadId: string | null
+      selection:
+        | { status: 'idle' }
+        | { status: 'loading' | 'failed'; id: string }
+    }
+
 export const useAgentPanelStore = defineStore('agentPanel', () => {
   const enabled = ref(false)
   const consentAccepted = ref(false)
@@ -33,6 +43,7 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     writeDefaults: false
   })
   const gateSettled = ref(false)
+  const view = shallowRef<AgentPanelView>({ screen: 'chat' })
   const width = ref(PANEL_MIN_WIDTH)
   const dismissedSelectionSignature = ref<string | null>(null)
   const workflowStore = useWorkflowStore()
@@ -51,6 +62,17 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
 
   function beginWorkflowRestoration(): void {
     targetTracking.value = { mode: 'restoring' }
+  }
+
+  function interruptHistorySelection(): void {
+    if (
+      view.value.screen === 'history' &&
+      view.value.selection.status === 'loading'
+    )
+      view.value = {
+        ...view.value,
+        selection: { status: 'failed', id: view.value.selection.id }
+      }
   }
 
   function initializeTargetTracking(hasThread: boolean): void {
@@ -183,6 +205,8 @@ export const useAgentPanelStore = defineStore('agentPanel', () => {
     isVisible,
     hasEverOpened,
     gateSettled,
+    view,
+    interruptHistorySelection,
     width,
     isMaximized,
     dismissedSelectionSignature,
