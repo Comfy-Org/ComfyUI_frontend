@@ -20,22 +20,55 @@ export type LocalizedText = { en: string; 'zh-CN': string } & Partial<
   Record<Locale, string>
 >
 
+const messages = { en, 'zh-CN': zhCN, ja } satisfies Record<Locale, MessageTree>
+
 const i18n = createI18n({
   legacy: false,
   locale: DEFAULT_LOCALE,
   fallbackLocale: DEFAULT_LOCALE,
-  messages: { en, 'zh-CN': zhCN, ja } satisfies Record<Locale, MessageTree>,
+  messages,
   missingWarn: false,
   fallbackWarn: false,
   warnHtmlMessage: false
 })
+
+function messageAtPath(tree: MessageTree, key: string): string | undefined {
+  let value: string | MessageTree = tree
+  for (const segment of key.split('.')) {
+    if (typeof value === 'string') return
+    if (!Object.hasOwn(value, segment)) return
+    value = value[segment]
+  }
+  return typeof value === 'string' ? value : undefined
+}
+
+function preserveMissingNamedValues(
+  key: TranslationKey,
+  locale: Locale,
+  named: NamedValues
+): NamedValues {
+  const message =
+    messageAtPath(messages[locale], key) ??
+    messageAtPath(messages[DEFAULT_LOCALE], key)
+  if (!message) return named
+
+  return Array.from(message.matchAll(/\{(\w+)\}/g)).reduce<NamedValues>(
+    (values, [placeholder, name]) =>
+      name && !Object.hasOwn(values, name)
+        ? { ...values, [name]: placeholder }
+        : values,
+    named
+  )
+}
 
 export function t(
   key: TranslationKey,
   locale: Locale = DEFAULT_LOCALE,
   named: NamedValues = {}
 ): string {
-  return i18n.global.t(key, named, { locale })
+  return i18n.global.t(key, preserveMissingNamedValues(key, locale, named), {
+    locale
+  })
 }
 
 /**
@@ -49,11 +82,20 @@ export function tAround(
   named: NamedValues = {}
 ): [string, string] {
   const marker = `{${slot}}`
-  const [before = '', after = ''] = t(key, locale, {
+  const message = t(key, locale, {
     ...named,
     [slot]: marker
-  }).split(marker)
-  return [before, after]
+  })
+  const markerIndex = message.indexOf(marker)
+  if (message.indexOf(marker, markerIndex + marker.length) !== -1) {
+    throw new Error(`Translation ${key} repeats slot ${marker}`)
+  }
+  return markerIndex === -1
+    ? [message, '']
+    : [
+        message.slice(0, markerIndex),
+        message.slice(markerIndex + marker.length)
+      ]
 }
 
 export function tPlural(

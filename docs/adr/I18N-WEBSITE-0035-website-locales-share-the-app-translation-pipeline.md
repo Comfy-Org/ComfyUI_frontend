@@ -102,8 +102,9 @@ Alternatives considered:
 - `locale:check` catches placeholder drift in website translations in CI, and
   a unit test compiles every message with vue-i18n so syntax errors fail
   before a page renders.
-- Consumers interpolate through the compiler, so a missing or renamed
-  placeholder is a visible empty value rather than a leaked `{name}`.
+- Consumers interpolate through the compiler. A value the caller does not
+  pass keeps its `{name}` visible, so a missed or renamed placeholder shows
+  up in review and tests instead of rendering as silently missing copy.
 
 ### Negative
 

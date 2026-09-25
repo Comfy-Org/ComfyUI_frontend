@@ -122,12 +122,6 @@ const settings = {
         localeKey: 'path',
         localePattern:
           /^\.?\/?src\/locales\/(?<locale>[A-Za-z0-9-]+)\/.+\.json$/
-      },
-      {
-        pattern: './apps/website/src/locales/**/*.json',
-        localeKey: 'path',
-        localePattern:
-          /^\.?\/?apps\/website\/src\/locales\/(?<locale>[A-Za-z0-9-]+)\/.+\.json$/
       }
     ],
     messageSyntaxVersion: '^9.0.0'
