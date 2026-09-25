@@ -6,14 +6,30 @@ import type { AssistantMessage, ToolPart } from './agentMessageParts'
 import { createAssistantMessage } from './agentMessageParts'
 
 /**
+ * The coarse media kind the server resolves from an attached asset's MIME
+ * type. `mediaKind` (services/agent/server/agent_handler.go) writes only these
+ * three and omits the key otherwise, so anything else on the wire reads as
+ * unresolved rather than as a fourth kind.
+ */
+type AttachmentKind = 'image' | 'video' | 'audio'
+
+/**
  * A file attached to a user turn. `ref` is the uploaded input-namespace
  * filename that resolves the preview; on a persisted row this is the only
  * name the server ever saw, so `name` and `ref` are the same string.
+ *
+ * `id` and `kind` are the server's own resolution of that name, replayed off
+ * the row's `attachment_refs`. They are what let a rehydrated attachment be
+ * classified when its name cannot classify itself — a library asset is
+ * attached under its content hash, which carries no extension to read a kind
+ * off.
  */
 export interface UserAttachment {
   name: string
   previewUrl?: string
   ref?: string
+  id?: string
+  kind?: AttachmentKind
 }
 
 export interface NormalizedAgentTranscript {
@@ -42,23 +58,62 @@ function attachmentRefNames(value: unknown): string[] {
   })
 }
 
+function isAttachmentKind(value: unknown): value is AttachmentKind {
+  return value === 'image' || value === 'video' || value === 'audio'
+}
+
+/**
+ * The resolution `attachment_refs` carries for each name, keyed by the name it
+ * shares with `attachments`. An entry is kept even when it resolves to
+ * nothing, since the shared name is what makes it a ref at all; `id` and
+ * `kind` are each omitted rather than stored empty, matching the writer
+ * (`attachmentRefsForRow`, services/agent/server/agent_handler.go), so an
+ * unresolved attachment reads the same as one written before ids existed.
+ *
+ * First entry wins for a repeated name: the writer emits one ref per posted
+ * name, so a duplicate is the same file resolved the same way.
+ */
+function resolvedAttachmentRefs(
+  value: unknown
+): Map<string, Pick<UserAttachment, 'id' | 'kind'>> {
+  const resolved = new Map<string, Pick<UserAttachment, 'id' | 'kind'>>()
+  if (!Array.isArray(value)) return resolved
+  for (const entry of value as unknown[]) {
+    if (typeof entry !== 'object' || entry === null) continue
+    const { name, id, kind } = entry as Record<string, unknown>
+    if (typeof name !== 'string' || resolved.has(name)) continue
+    resolved.set(name, {
+      ...(typeof id === 'string' && id !== '' ? { id } : {}),
+      ...(isAttachmentKind(kind) ? { kind } : {})
+    })
+  }
+  return resolved
+}
+
 /**
  * A persisted user row carries `attachments` (the uploaded input filenames
  * from the original request) and `attachment_refs` (the server's own
  * resolution of those same filenames, as `{name, id?, kind?}`). Either one
  * names the same input-namespace filenames the live send path uses as
  * `SentAttachment.ref`, so either is enough to rebuild the preview grid.
+ *
+ * The names come off `attachments` whenever it is an array — ingest documents
+ * that key as the request's filenames and tells clients to keep reading it,
+ * and it is the only key a row written before `attachment_refs` existed has.
+ * The refs ride alongside it rather than over it, contributing the id and kind
+ * the server already resolved for each of those same names.
  */
 function parseUserAttachments(
   content: Record<string, unknown> | undefined
 ): UserAttachment[] | undefined {
+  const resolved = resolvedAttachmentRefs(content?.attachment_refs)
   const names = Array.isArray(content?.attachments)
     ? content.attachments.filter(
         (name): name is string => typeof name === 'string'
       )
     : attachmentRefNames(content?.attachment_refs)
   return names.length > 0
-    ? names.map((name) => ({ name, ref: name }))
+    ? names.map((name) => ({ name, ref: name, ...resolved.get(name) }))
     : undefined
 }
 
