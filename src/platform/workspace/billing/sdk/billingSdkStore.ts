@@ -28,6 +28,8 @@ import { until, useEventListener } from '@vueuse/core'
 import { defineStore } from 'pinia'
 import { computed, shallowRef } from 'vue'
 
+import type { ToastId } from '@/components/ui/toast'
+import { useToast } from '@/components/ui/toast'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useFeatureFlags } from '@/composables/useFeatureFlags'
 import { t } from '@/i18n'
@@ -35,7 +37,6 @@ import { webSessionRequests } from '@/platform/auth/session/webSessionFetch'
 import { isCloud } from '@/platform/distribution/types'
 import { useSettingsDialog } from '@/platform/settings/composables/useSettingsDialog'
 import { useTelemetry } from '@/platform/telemetry'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type {
   BillingBalanceResponse,
   BillingCapabilitiesResponse,
@@ -95,7 +96,6 @@ const PROGRESS_SUMMARY = {
     action: 'billingOperation.subscriptionActionRequired'
   }
 } as const satisfies Record<string, Record<ProgressToastKind, string>>
-type ToastMessage = Parameters<ReturnType<typeof useToastStore>['add']>[0]
 
 const FRICTION_EVENT_NAMES: ReadonlySet<string> = new Set(
   Object.values(BILLING_CHECKOUT_FRICTION_TELEMETRY_EVENT)
@@ -120,7 +120,7 @@ async function loadChallengePort(): Promise<EmbeddedChallengePort | undefined> {
 export const useBillingSdkStore = defineStore('billingSdk', () => {
   const workspaceAuthStore = useWorkspaceAuthStore()
   const workspaceStore = useTeamWorkspaceStore()
-  const toastStore = useToastStore()
+  const toast = useToast()
   const { flags } = useFeatureFlags()
   const billingCapabilities = useBillingCapabilities()
 
@@ -132,7 +132,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   const offeredActions = new Map<string, Set<string>>()
   const progressToasts = new Map<
     string,
-    { kind: ProgressToastKind; message: ToastMessage }
+    { kind: ProgressToastKind; id: ToastId }
   >()
 
   function sessionPorts(): Pick<
@@ -297,10 +297,7 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       [...dismissed.value].filter((id) => id !== state.id)
     )
     if (state.phase === 'timed_out') {
-      toastStore.add({
-        severity: 'error',
-        summary: t('billingOperation.topupTimeout')
-      })
+      toast.error(t('billingOperation.topupTimeout'))
     }
     if (resumedOperations.delete(state.id)) void settleResumed(state)
   }
@@ -317,19 +314,15 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
     if (current?.kind === progress) return
     clearProgressToast(state.id)
     if (progress === undefined) return
-    const message: ToastMessage = {
-      severity: progress === 'action' ? 'warn' : 'info',
-      summary: t(PROGRESS_SUMMARY[kind][progress]),
-      group: 'billing-operation'
-    }
-    progressToasts.set(state.id, { kind: progress, message })
-    toastStore.add(message)
+    const title = t(PROGRESS_SUMMARY[kind][progress])
+    const id = progress === 'action' ? toast.warning(title) : toast.info(title)
+    progressToasts.set(state.id, { kind: progress, id })
   }
 
   function clearProgressToast(operationId: string) {
     const current = progressToasts.get(operationId)
     if (!current) return
-    toastStore.remove(current.message)
+    toast.dismiss(current.id)
     progressToasts.delete(operationId)
   }
 
@@ -377,10 +370,8 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       sdk.lifecycle.reportHostedStepOpened(state.id, 'new_tab')
       return
     }
-    toastStore.add({
-      severity: 'warn',
-      summary: t('g.warning'),
-      detail: t('subscription.preview.paymentPopupBlocked')
+    toast.warning(t('g.warning'), {
+      description: t('subscription.preview.paymentPopupBlocked')
     })
   }
 
@@ -403,19 +394,15 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
       ])
       useDialogStore().closeDialog({ key: 'top-up-credits' })
       useSettingsDialog().show(isCloud ? 'workspace' : 'credits')
-      toastStore.add({
-        severity: 'success',
-        summary: t('billingOperation.topupSuccess'),
-        life: 5000
+      toast.success(t('billingOperation.topupSuccess'), {
+        duration: 5000
       })
       return
     }
     if (state.phase === 'failed') {
-      toastStore.add({
-        severity: 'error',
-        summary: t('billingOperation.topupFailed'),
-        detail: declineDetail(state.declineReason),
-        life: 7000
+      toast.error(t('billingOperation.topupFailed'), {
+        description: declineDetail(state.declineReason),
+        duration: 7000
       })
     }
   }
@@ -426,26 +413,19 @@ export const useBillingSdkStore = defineStore('billingSdk', () => {
   async function settleResumedSubscription(state: BillingOperationState) {
     if (state.phase === 'succeeded') {
       await refreshAfterSubscriptionChange()
-      toastStore.add({
-        severity: 'success',
-        summary: t('billingOperation.subscriptionSuccess'),
-        life: 5000
+      toast.success(t('billingOperation.subscriptionSuccess'), {
+        duration: 5000
       })
       return
     }
     if (state.phase === 'timed_out') {
-      toastStore.add({
-        severity: 'error',
-        summary: t('billingOperation.subscriptionTimeout')
-      })
+      toast.error(t('billingOperation.subscriptionTimeout'))
       return
     }
     if (state.phase === 'failed') {
-      toastStore.add({
-        severity: 'error',
-        summary: t('billingOperation.subscriptionFailed'),
-        detail: declineDetail(state.declineReason),
-        life: 7000
+      toast.error(t('billingOperation.subscriptionFailed'), {
+        description: declineDetail(state.declineReason),
+        duration: 7000
       })
     }
   }

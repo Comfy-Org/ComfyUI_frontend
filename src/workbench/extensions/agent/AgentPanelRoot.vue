@@ -58,7 +58,7 @@ import { useExecutionErrorStore } from '@/stores/executionErrorStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
 import { isLGraphNode } from '@/utils/litegraphUtil'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { toOwningGraphId, toRootGraphId } from '@/types/graphScopeId'
 import type { RootGraphId } from '@/types/graphScopeId'
 import { isCloud } from '@/platform/distribution/types'
@@ -149,7 +149,7 @@ const CrdtDevPanel = defineAsyncComponent(
 )
 
 const { t } = useI18n()
-const toast = useToastStore()
+const toast = useToast()
 const { open: openAccountPrecondition } = useAccountPreconditionDialog()
 const { workspaceRole } = useWorkspaceUI()
 const {
@@ -744,22 +744,14 @@ function onWorkflowAdopted(
 }
 
 function warnWorkflowUnavailable(): void {
-  toast.add({
-    severity: 'warn',
-    detail: t('agent.targetNavigationUnavailable'),
-    life: 5000
-  })
+  toast.warning(t('agent.targetNavigationUnavailable'), { duration: 5000 })
 }
 
 function warnRestoreFailed(): void {
   const { view } = agentPanelStore
   // A loading history row reports its own failure.
   if (view.screen === 'history' && view.selection.status === 'loading') return
-  toast.add({
-    severity: 'warn',
-    detail: t('agent.targetWorkflowOpenFailed'),
-    life: 5000
-  })
+  toast.warning(t('agent.targetWorkflowOpenFailed'), { duration: 5000 })
 }
 
 function trackWorkflowOpenFailure(
@@ -899,12 +891,9 @@ const {
     },
     onReset: graphActivity.resetWorkflow,
     onSyncError: (message, code) =>
-      toast.add({
-        severity: 'error',
-        summary: t('agent.workflowSyncFailedTitle'),
-        detail: formatWorkflowSyncErrorDetail(t, message, code),
-        // A permanent desync remains visible until the person dismisses it.
-        life: 0
+      toast.error(t('agent.workflowSyncFailedTitle'), {
+        description: formatWorkflowSyncErrorDetail(t, message, code),
+        duration: Number.POSITIVE_INFINITY
       })
   },
   {
@@ -1453,7 +1442,7 @@ function buildTranscriptMarkdown(entries: ConversationEntry[]): string {
 function onCopyMarkdown(id: string): void {
   if (id === history.activeId && id === threadId.value)
     void copy(buildTranscriptMarkdown(entries.value))
-  else toast.add({ severity: 'info', summary: t('agent.copyUnavailable') })
+  else toast.info(t('agent.copyUnavailable'))
 }
 
 const coachSteps = computed<CoachStep[]>(() => [
@@ -1730,8 +1719,7 @@ const attachment = useAttachment({
     ) ?? MAX_ATTACHMENT_BYTES,
   // A rejected file is the user's problem to fix, not an agent failure, so it
   // must not raise the server-error overlay.
-  onError: (message) =>
-    toast.add({ severity: 'warn', detail: message, life: 5000 }),
+  onError: (message) => toast.warning(message, { duration: 5000 }),
   stage: composerStore.addAttachment,
   update: composerStore.updateAttachment,
   remove: composerStore.removeAttachment
@@ -1824,11 +1812,7 @@ function onPanelDragLeave(): void {
 async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
   const asset = event.dataTransfer && getDroppedAsset(event.dataTransfer)
   if (!asset) {
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.assetNotAttachable'),
-      life: 5000
-    })
+    toast.warning(t('agent.assetNotAttachable'), { duration: 5000 })
     return false
   }
 
@@ -1848,11 +1832,7 @@ async function attachDroppedAsset(event: DragEvent): Promise<boolean> {
     return file && isAgentAttachable(file) ? file : undefined
   })
   if (result === 'unsupported')
-    toast.add({
-      severity: 'warn',
-      detail: t('agent.assetNotAttachable'),
-      life: 5000
-    })
+    toast.warning(t('agent.assetNotAttachable'), { duration: 5000 })
   return result === 'uploaded'
 }
 

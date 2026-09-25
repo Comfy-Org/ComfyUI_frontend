@@ -2,9 +2,9 @@ import { throttle } from 'es-toolkit'
 import type { ThrottledFunction } from 'es-toolkit'
 import type { Op } from '@comfyorg/comfy-multi-player'
 
+import { useToast } from '@/components/ui/toast'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import type { DocOpFailure } from './docFrameClient'
 import type { OpsResultView } from './opSender'
@@ -99,11 +99,9 @@ export function createRejectedOpNotifier() {
     if (existing) return existing
     const created = throttle(
       () => {
-        useToastStore().add({
-          severity: 'error',
-          summary: i18n.global.t('g.error'),
-          detail,
-          life: NOTICE_LIFE_MS
+        useToast().error(i18n.global.t('g.error'), {
+          description: detail,
+          duration: NOTICE_LIFE_MS
         })
       },
       NOTICE_LIFE_MS,

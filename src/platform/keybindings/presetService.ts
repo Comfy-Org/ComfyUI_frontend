@@ -7,7 +7,7 @@ import UnsavedChangesHeader from '@/components/dialog/content/setting/keybinding
 import { useErrorHandling } from '@/composables/useErrorHandling'
 import { t } from '@/i18n'
 import { useSettingStore } from '@/platform/settings/settingStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { api } from '@/scripts/api'
 import { uploadFile } from '@/scripts/utils'
 import { useDialogService } from '@/services/dialogService'
@@ -52,7 +52,7 @@ export function useKeybindingPresetService() {
   const settingStore = useSettingStore()
   const dialogService = useDialogService()
   const dialogStore = useDialogStore()
-  const toast = useToastStore()
+  const toast = useToast()
   const { wrapWithErrorHandlingAsync } = useErrorHandling()
 
   async function switchToDefaultPreset({ resetBindings = true } = {}) {
@@ -139,10 +139,8 @@ export function useKeybindingPresetService() {
     keybindingStore.currentPresetName = name
     await keybindingService.persistUserKeybindings()
     await settingStore.set('Comfy.Keybinding.CurrentPreset', name)
-    toast.add({
-      severity: 'success',
-      summary: t('g.keybindingPresets.presetSaved', { name }),
-      life: 3000
+    toast.success(t('g.keybindingPresets.presetSaved', { name }), {
+      duration: 3000
     })
   }
 
@@ -163,10 +161,8 @@ export function useKeybindingPresetService() {
       await switchToDefaultPreset()
     }
 
-    toast.add({
-      severity: 'info',
-      summary: t('g.keybindingPresets.presetDeleted', { name }),
-      life: 3000
+    toast.info(t('g.keybindingPresets.presetDeleted', { name }), {
+      duration: 3000
     })
   }
 
@@ -212,11 +208,7 @@ export function useKeybindingPresetService() {
     // Switch to the imported preset (handles dirty check)
     await switchPreset(preset.name)
 
-    toast.add({
-      severity: 'success',
-      summary: t('g.keybindingPresets.presetImported'),
-      life: 3000
-    })
+    toast.success(t('g.keybindingPresets.presetImported'), { duration: 3000 })
   }
 
   async function promptAndSaveNewPreset(): Promise<boolean> {

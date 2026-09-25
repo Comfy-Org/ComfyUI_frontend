@@ -43,11 +43,14 @@ vi.mock<unknown>(import('@/scripts/app'), () => ({
 
 const mockToastAdd = vi.fn()
 vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
+  import('@/components/ui/toast'),
 
   () => ({
     useToast: () => ({
-      add: mockToastAdd
+      success: mockToastAdd,
+      error: mockToastAdd,
+      info: mockToastAdd,
+      warning: mockToastAdd
     })
   })
 )

@@ -207,7 +207,7 @@ test.describe('Top-up rail (FE-2475)', { tag: '@cloud' }, () => {
     await expect.poll(() => routes.purchaseRequests.length).toBe(1)
     expect(transport(routes.purchaseRequests[0])).toBe('fetch')
     await expect(
-      page.locator('.p-toast-message.p-toast-message-error')
+      page.getByTestId('toast').and(page.locator('[data-toast-kind="error"]'))
     ).toBeVisible()
   })
 })

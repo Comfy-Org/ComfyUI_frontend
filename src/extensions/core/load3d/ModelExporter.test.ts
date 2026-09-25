@@ -1,10 +1,10 @@
-import * as THREE from 'three'
 import { fromAny } from '@total-typescript/shoehorn'
+import * as THREE from 'three'
 import { describe, expect, it, vi } from 'vitest'
 
 import { downloadBlob } from '@/base/common/downloadUtil'
+import { useToast } from '@/components/ui/toast'
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 
 import { ModelExporter } from './ModelExporter'
 
@@ -147,9 +147,9 @@ describe('ModelExporter', () => {
       await expect(
         ModelExporter.downloadFromURL('http://example.com/cube.glb', 'cube.glb')
       ).rejects.toThrow('network')
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToDownloadFile'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToDownloadFile'
+      })
       vi.unstubAllGlobals()
     })
 
@@ -168,9 +168,9 @@ describe('ModelExporter', () => {
         ModelExporter.downloadFromURL('http://example.com/cube.glb', 'cube.glb')
       ).rejects.toThrow('HTTP 404')
       expect(downloadBlob).not.toHaveBeenCalled()
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToDownloadFile'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToDownloadFile'
+      })
       vi.unstubAllGlobals()
     })
   })
@@ -229,9 +229,9 @@ describe('ModelExporter', () => {
       const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
       expect(await settled).toMatchObject([rejectedWith('parse fail')])
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToExportModel'
+      })
       expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
         format: 'GLB'
       })
@@ -280,9 +280,9 @@ describe('ModelExporter', () => {
       const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
       expect(await settled).toMatchObject([rejectedWith('obj fail')])
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToExportModel'
+      })
       expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
         format: 'OBJ'
       })
@@ -331,9 +331,9 @@ describe('ModelExporter', () => {
       const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
       expect(await settled).toMatchObject([rejectedWith('stl fail')])
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToExportModel'
+      })
       expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
         format: 'STL'
       })
@@ -365,7 +365,7 @@ describe('ModelExporter', () => {
         ModelExporter.exportDirect(null, 'out.spz', 'spz')
       ).rejects.toThrow('No source file available to export as spz')
       expect(downloadBlob).not.toHaveBeenCalled()
-      expect(useToastStore().addAlert).not.toHaveBeenCalled()
+      expect(useToast().warning).not.toHaveBeenCalled()
     })
   })
 
@@ -410,9 +410,9 @@ describe('ModelExporter', () => {
       const settled = Promise.allSettled([promise])
       await vi.runAllTimersAsync()
       expect(await settled).toMatchObject([rejectedWith('fbx fail')])
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToExportModel'
+      })
       expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
         format: 'FBX'
       })

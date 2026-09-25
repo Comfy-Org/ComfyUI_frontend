@@ -3,9 +3,9 @@ import { render } from '@testing-library/vue'
 import { describe, expect, it, onTestFinished, vi } from 'vitest'
 import { defineComponent, ref } from 'vue'
 
+import { useToast } from '@/components/ui/toast'
 import { i18n } from '@/i18n'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { api } from '@/scripts/api'
 import { useAgentPanelStore } from '@/workbench/extensions/agent/stores/agent/agentPanelStore'
 
@@ -155,7 +155,9 @@ function rejection(opId: string, code: string): Record<string, unknown> {
 }
 
 function toastDetails(): unknown[] {
-  return useToastStore().messagesToAdd.map((message) => message.detail)
+  return useToast().toasts.flatMap((toast) =>
+    toast.kind === 'custom' ? [] : [toast.description]
+  )
 }
 
 /**
@@ -265,13 +267,13 @@ describe('a human edit the doc host rejects', () => {
 
     answerWithOpsResult(rejection(await submit(WIDGET_EDIT), 'opaque_widgets'))
 
-    expect(useToastStore().messagesToAdd).toEqual([
-      {
-        severity: 'error',
-        summary: i18n.global.t('g.error'),
-        detail: expect.stringContaining(WIDGET_REJECTION_TEXT),
-        life: expect.any(Number)
-      }
+    expect(useToast().toasts).toEqual([
+      expect.objectContaining({
+        kind: 'error',
+        title: i18n.global.t('g.error'),
+        description: expect.stringContaining(WIDGET_REJECTION_TEXT),
+        duration: expect.any(Number)
+      })
     ])
   })
 
@@ -357,7 +359,7 @@ describe('a human edit the doc host rejects', () => {
       skipped: []
     })
 
-    expect(useToastStore().messagesToAdd).toEqual([])
+    expect(useToast().toasts).toEqual([])
   })
 
   // The host refuses a whole batch with a top-level `code` and no `failed`

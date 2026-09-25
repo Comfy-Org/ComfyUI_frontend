@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createI18n } from 'vue-i18n'
 
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 
 import PendingInvitesList from './PendingInvitesList.vue'
 
@@ -129,11 +129,9 @@ describe('PendingInvitesList', () => {
     expect(writeText).toHaveBeenCalledWith(
       `${window.location.origin}/?invite=tok-9`
     )
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'success',
-        summary: 'workspacePanel.inviteLinks.copiedToast'
-      })
+    expect(vi.mocked(useToast().success)).toHaveBeenCalledWith(
+      'workspacePanel.inviteLinks.copiedToast',
+      { duration: 3000 }
     )
     await waitFor(() =>
       expect(screen.queryByRole('menu')).not.toBeInTheDocument()
@@ -195,11 +193,8 @@ describe('PendingInvitesList', () => {
     expect(writeText).toHaveBeenCalledWith(
       `${window.location.origin}/?invite=tok-9`
     )
-    expect(vi.mocked(useToastStore().add)).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        summary: 'workspacePanel.inviteLinks.copyFailedToast'
-      })
+    expect(vi.mocked(useToast().error)).toHaveBeenCalledWith(
+      'workspacePanel.inviteLinks.copyFailedToast'
     )
 
     await userEvent.click(trigger)

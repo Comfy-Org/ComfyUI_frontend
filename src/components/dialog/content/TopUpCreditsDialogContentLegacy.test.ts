@@ -4,6 +4,7 @@ import { assert, beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import { useSubscription } from '@/platform/cloud/subscription/composables/useSubscription'
@@ -17,8 +18,6 @@ import TopUpCreditsDialogContentLegacy from './TopUpCreditsDialogContentLegacy.v
 
 const PENDING_TOPUP_KEY = 'pending_topup_timestamp'
 
-const mockToastAdd = vi.fn()
-
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 
 vi.mock(import('@/composables/billing/useBillingContext'))
@@ -30,14 +29,6 @@ vi.mock(import('@/platform/cloud/subscription/composables/useSubscription'))
 vi.mock(import('@/platform/settings/composables/useSettingsDialog'))
 
 vi.mock(import('@/platform/telemetry'))
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-
-  () => ({
-    useToast: () => ({ add: mockToastAdd })
-  })
-)
 
 vi.mock(import('@/base/credits/comfyCredits'), () => ({
   creditsToUsd: (credits: number) => credits,
@@ -309,10 +300,10 @@ describe('TopUpCreditsDialogContentLegacy', () => {
       outcome: 'failure',
       failure_category: 'unknown'
     })
-    expect(mockToastAdd).toHaveBeenCalledWith(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'error',
-        summary: 'Purchase Failed'
+        kind: 'error',
+        title: 'Purchase Failed'
       })
     )
     expect(useSettingsDialog().show).not.toHaveBeenCalled()

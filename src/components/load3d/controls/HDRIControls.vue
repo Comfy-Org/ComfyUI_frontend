@@ -91,7 +91,7 @@ import {
   SUPPORTED_HDRI_EXTENSIONS_ACCEPT
 } from '@/extensions/core/load3d/constants'
 import type { HDRIConfig } from '@/extensions/core/load3d/interfaces'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { cn } from '@comfyorg/tailwind-utils'
 
 const { t } = useI18n()
@@ -119,7 +119,9 @@ function onFileChange(event: Event) {
   if (file) {
     const ext = `.${file.name.split('.').pop()?.toLowerCase() ?? ''}`
     if (!SUPPORTED_HDRI_EXTENSIONS.has(ext)) {
-      useToastStore().addAlert(t('toastMessages.unsupportedHDRIFormat'))
+      useToast().warning('Alert', {
+        description: t('toastMessages.unsupportedHDRIFormat')
+      })
       return
     }
   }

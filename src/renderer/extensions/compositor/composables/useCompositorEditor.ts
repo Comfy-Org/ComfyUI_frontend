@@ -11,7 +11,7 @@ import {
   layerEditorDialogProps
 } from '@/renderer/extensions/layerEditor/composables/layerEditorDialog'
 import type { LGraphNode } from '@/lib/litegraph/src/LGraphNode'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useDialogStore } from '@/stores/dialogStore'
 
 export function useCompositorEditor() {
@@ -22,10 +22,8 @@ export function useCompositorEditor() {
       !hasCompositorLayers(node) ||
       !getCompositorInputsFingerprint(node)?.length
     ) {
-      useToastStore().add({
-        severity: 'info',
-        summary: t('layerEditor.title'),
-        detail: t('compositor.runWorkflowFirst')
+      useToast().info(t('layerEditor.title'), {
+        description: t('compositor.runWorkflowFirst')
       })
       return
     }

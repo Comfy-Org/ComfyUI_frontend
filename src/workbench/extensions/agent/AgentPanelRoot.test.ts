@@ -52,7 +52,7 @@ import { app } from '@/scripts/app'
 import { useAgentNodeSelectionStore } from '@/stores/agentNodeSelectionStore'
 import { useWorkflowTabActivityStore } from '@/stores/workflowTabActivityStore'
 import { useSidebarTabStore } from '@/stores/workspace/sidebarTabStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useAssetsStore } from '@/stores/assetsStore'
 import { getFilenameDetails } from '@/utils/formatUtil'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
@@ -2070,12 +2070,12 @@ describe('AgentPanelRoot session notices', () => {
       )
     )
     renderWithSelectedTarget()
-    const toast = useToastStore()
+    const toast = useToast()
 
     ws.emit('agent_message_done', {})
     await nextTick()
 
-    expect(toast.messagesToAdd).toHaveLength(0)
+    expect(toast.toasts).toHaveLength(0)
     expect(executionErrors.showErrorOverlay).toHaveBeenCalledTimes(1)
     expect(executionErrors.lastPromptError).toMatchObject({
       type: 'agent_api_failed',
@@ -2596,10 +2596,10 @@ describe('AgentPanelRoot attach flow', () => {
     await nextTick()
 
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'warn',
-        detail: 'movie.mp4 is larger than 24 MB'
+        kind: 'warning',
+        description: 'movie.mp4 is larger than 24 MB'
       })
     )
     expect(screen.queryByText('movie.mp4')).not.toBeInTheDocument()
@@ -2766,10 +2766,10 @@ describe('AgentPanelRoot attach flow', () => {
     await renderAndPasteScreenshot()
 
     await vi.waitFor(() =>
-      expect(useToastStore().messagesToAdd).toContainEqual(
+      expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
-          severity: 'warn',
-          detail: 'image.png could not be uploaded'
+          kind: 'warning',
+          description: 'image.png could not be uploaded'
         })
       )
     )
@@ -2956,10 +2956,10 @@ describe('AgentPanelRoot attach flow', () => {
     await nextTick()
 
     expect(uploaded).toEqual([])
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'warn',
-        detail: 'big.mp3 is larger than 24 MB'
+        kind: 'warning',
+        description: 'big.mp3 is larger than 24 MB'
       })
     )
   })
@@ -3242,7 +3242,7 @@ describe('AgentPanelRoot attach flow', () => {
     )
     const { unmount } = renderWithSelectedTarget()
     await nextTick()
-    const toast = useToastStore()
+    const toast = useToast()
     vi.useFakeTimers()
     try {
       dispatchDrag(screen.getByRole('textbox'), 'drop', {
@@ -3260,7 +3260,7 @@ describe('AgentPanelRoot attach flow', () => {
       unmount()
       await vi.advanceTimersByTimeAsync(60_000)
 
-      expect(toast.messagesToAdd).toEqual([])
+      expect(toast.toasts).toEqual([])
     } finally {
       vi.useRealTimers()
     }
@@ -3607,10 +3607,10 @@ describe('AgentPanelRoot attach flow', () => {
     // A rejected file is the user's to fix; raising the server-error overlay
     // told them the agent had broken instead.
     expect(executionErrors.showErrorOverlay).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'warn',
-        detail: 'cat.png could not be uploaded'
+        kind: 'warning',
+        description: 'cat.png could not be uploaded'
       })
     )
     expect(reportError).toHaveBeenCalledWith(expect.any(Error), {
@@ -4254,9 +4254,9 @@ describe('AgentPanelRoot transcript copy', () => {
         )
       } else {
         expect(clipboard.copy).not.toHaveBeenCalled()
-        expect(useToastStore().messagesToAdd).toContainEqual(
+        expect(useToast().toasts).toContainEqual(
           expect.objectContaining({
-            summary: i18n.global.t('agent.copyUnavailable')
+            title: i18n.global.t('agent.copyUnavailable')
           })
         )
       }
@@ -5502,7 +5502,7 @@ describe('AgentPanelRoot workflow binding', () => {
           name: outcome === 'failed open' ? 'other' : 'scratch'
         })
       )
-      await waitFor(() => expect(useToastStore().messagesToAdd).toHaveLength(1))
+      await waitFor(() => expect(useToast().toasts).toHaveLength(1))
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
       workflowStore.activeWorkflow = other
       await nextTick()
@@ -5538,9 +5538,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(
       await screen.findByRole('menuitemradio', { name: 'scratch' })
     )
-    await vi.waitFor(() =>
-      expect(useToastStore().messagesToAdd).toHaveLength(1)
-    )
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
     expect(
       screen.getByRole('menuitemradio', { name: 'scratch' })
     ).not.toHaveAttribute('aria-disabled', 'true')
@@ -5567,9 +5565,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(
       await screen.findByRole('menuitemradio', { name: 'scratch' })
     )
-    await vi.waitFor(() =>
-      expect(useToastStore().messagesToAdd).toHaveLength(1)
-    )
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
     expect(scratch.isTemporary).toBe(false)
     expect(workflowStore.activeWorkflow?.path).toBe(current.path)
     expect(screen.getByRole('menuitemradio', { name: 'current' })).toBeChecked()
@@ -5772,7 +5768,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(workflowStore.activeWorkflow?.path).toBe(target.path)
       expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
       expect(useAgentChatHistoryStore().activeId).toBe('th-1')
-      expect(useToastStore().messagesToAdd).toHaveLength(0)
+      expect(useToast().toasts).toHaveLength(0)
       expect(blockedFetch).not.toHaveBeenCalled()
     }
   )
@@ -5839,15 +5835,15 @@ describe('AgentPanelRoot workflow binding', () => {
         expect(
           screen.queryByText(i18n.global.t('agent.historyOpenFailed'))
         ).toBeNull()
-        expect(useToastStore().messagesToAdd).toHaveLength(0)
+        expect(useToast().toasts).toHaveLength(0)
         expect(useAgentChatHistoryStore().activeId).toBeNull()
         expect(workflowStore.activeWorkflow.path).toBe(other.path)
       } else {
         expect(await screen.findByRole('alert')).toHaveTextContent(
           i18n.global.t('agent.historyOpenFailed')
         )
-        expect(useToastStore().messagesToAdd).not.toContainEqual(
-          expect.objectContaining({ severity: 'warn' })
+        expect(useToast().toasts).not.toContainEqual(
+          expect.objectContaining({ kind: 'warning' })
         )
         expect(useAgentChatHistoryStore().activeId).toBe('th-1')
         expect(useAgentPanelStore().selectedWorkflow?.path).toBe(target.path)
@@ -6036,7 +6032,7 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(workflowStore.activeWorkflow?.path).toBe(other.path)
     expect(useAgentPanelStore().selectedWorkflow?.path).toBe(other.path)
     expect(refreshCloud).not.toHaveBeenCalled()
-    expect(useToastStore().messagesToAdd).toHaveLength(0)
+    expect(useToast().toasts).toHaveLength(0)
   })
 
   it.for([null, 'th-current'])(
@@ -6156,7 +6152,7 @@ describe('AgentPanelRoot workflow binding', () => {
         'workflows/current.json',
         'workflows/portrait.json'
       ])
-      expect(useToastStore().messagesToAdd).toHaveLength(0)
+      expect(useToast().toasts).toHaveLength(0)
       await sendFromComposer('Continue the portrait')
       expect(bodies[0]).toMatchObject({ workflow_id: 'wf-portrait' })
       expect(useWorkflowService().saveWorkflowAs).not.toHaveBeenCalled()
@@ -6429,7 +6425,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await vi.waitFor(() =>
       expect(useAgentPanelStore().selectedWorkflow).toEqual(restored)
     )
-    expect(useToastStore().messagesToAdd).toHaveLength(0)
+    expect(useToast().toasts).toHaveLength(0)
     await sendFromComposer('continue editing')
 
     expect(bodies[0]).toMatchObject({
@@ -6476,7 +6472,7 @@ describe('AgentPanelRoot workflow binding', () => {
       expect(useAgentPanelStore().selectedWorkflow).toEqual(current)
       expect(workflowStore.activeWorkflow).toEqual(current)
       expect(useWorkflowService().openWorkflow).not.toHaveBeenCalled()
-      expect(useToastStore().messagesToAdd).toHaveLength(0)
+      expect(useToast().toasts).toHaveLength(0)
     }
   )
 
@@ -6593,8 +6589,8 @@ describe('AgentPanelRoot workflow binding', () => {
     expect(localStorage.getItem(StorageKeys.agentThread('personal'))).toBe(
       'th-history'
     )
-    expect(useToastStore().messagesToAdd).not.toContainEqual(
-      expect.objectContaining({ severity: 'warn' })
+    expect(useToast().toasts).not.toContainEqual(
+      expect.objectContaining({ kind: 'warning' })
     )
 
     await userEvent.click(screen.getByRole('button', { name: 'New chat' }))
@@ -6649,9 +6645,9 @@ describe('AgentPanelRoot workflow binding', () => {
       await screen.findAllByText('Historical prompt')
       await vi.waitFor(() => {
         expect(
-          useToastStore()
-            .messagesToAdd.filter(({ severity }) => severity === 'warn')
-            .map(({ detail }) => detail)
+          useToast()
+            .toasts.filter((toast) => toast.kind === 'warning')
+            .map(({ title }) => title)
         ).toEqual(toasts)
         expect(
           screen
@@ -6717,10 +6713,10 @@ describe('AgentPanelRoot workflow binding', () => {
     failListing()
 
     await vi.waitFor(() =>
-      expect(useToastStore().messagesToAdd).toContainEqual(
+      expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
-          severity: 'warn',
-          detail: i18n.global.t('agent.targetWorkflowOpenFailed')
+          kind: 'warning',
+          description: i18n.global.t('agent.targetWorkflowOpenFailed')
         })
       )
     )
@@ -6793,8 +6789,8 @@ describe('AgentPanelRoot workflow binding', () => {
           screen.getByRole('heading', { name: 'Chat history' })
         ).toBeVisible()
         expect(screen.queryByText('Historical prompt')).not.toBeInTheDocument()
-        expect(useToastStore().messagesToAdd).not.toContainEqual(
-          expect.objectContaining({ severity: 'warn' })
+        expect(useToast().toasts).not.toContainEqual(
+          expect.objectContaining({ kind: 'warning' })
         )
         expect(useAgentPanelStore().selectedWorkflow).toBeNull()
         expect(useAgentChatHistoryStore().activeId).toBeNull()
@@ -6930,9 +6926,7 @@ describe('AgentPanelRoot workflow binding', () => {
     await userEvent.click(
       await screen.findByRole('menuitemradio', { name: 'other' })
     )
-    await vi.waitFor(() =>
-      expect(useToastStore().messagesToAdd).toHaveLength(1)
-    )
+    await vi.waitFor(() => expect(useToast().toasts).toHaveLength(1))
     expect(screen.getByRole('menuitemradio', { name: 'current' })).toBeChecked()
   })
 
@@ -7516,12 +7510,12 @@ describe('AgentPanelRoot workflow binding', () => {
       message: 'Expected schema 2, found 1'
     })
 
-    expect(useToastStore().messagesToAdd).toContainEqual(
+    expect(useToast().toasts).toContainEqual(
       expect.objectContaining({
-        severity: 'error',
-        summary: i18n.global.t('agent.workflowSyncFailedTitle'),
-        detail: `${i18n.global.t('agent.workflowSyncFailedDetail')} (Expected schema 2, found 1)`,
-        life: 0
+        kind: 'error',
+        title: i18n.global.t('agent.workflowSyncFailedTitle'),
+        description: `${i18n.global.t('agent.workflowSyncFailedDetail')} (Expected schema 2, found 1)`,
+        duration: 0
       })
     )
   })
@@ -8055,10 +8049,10 @@ describe('AgentPanelRoot workflow binding', () => {
       await vi.advanceTimersByTimeAsync(500)
 
       await vi.waitFor(() =>
-        expect(useToastStore().messagesToAdd).toContainEqual(
+        expect(useToast().toasts).toContainEqual(
           expect.objectContaining({
-            severity: 'warn',
-            detail: i18n.global.t('agent.targetNavigationUnavailable')
+            kind: 'warning',
+            description: i18n.global.t('agent.targetNavigationUnavailable')
           })
         )
       )
@@ -9039,9 +9033,9 @@ describe('AgentPanelRoot workflow binding', () => {
         await screen.findByRole('menuitem', { name: /scratch\s*Unsaved/ })
       )
       await vi.waitFor(() =>
-        expect(useToastStore().messagesToAdd).toEqual(
+        expect(useToast().toasts).toEqual(
           expect.arrayContaining([
-            expect.objectContaining({ detail: 'Save unavailable' })
+            expect.objectContaining({ description: 'Save unavailable' })
           ])
         )
       )
@@ -9340,10 +9334,10 @@ describe('AgentPanelRoot workflow binding', () => {
         screen.getByRole('button', { name: 'Open reference' })
       )
       await vi.waitFor(() =>
-        expect(useToastStore().messagesToAdd).toEqual(
+        expect(useToast().toasts).toEqual(
           expect.arrayContaining([
             expect.objectContaining({
-              detail: i18n.global.t('agent.targetNavigationUnavailable')
+              description: i18n.global.t('agent.targetNavigationUnavailable')
             })
           ])
         )

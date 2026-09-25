@@ -2,7 +2,7 @@ import { whenever } from '@vueuse/core'
 import { computed, nextTick, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 
-import { useToastStore } from './toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useVersionCompatibilityStore } from './versionCompatibilityStore'
 
 interface UseFrontendVersionMismatchWarningOptions {
@@ -35,7 +35,7 @@ export function useFrontendVersionMismatchWarning(
 ) {
   const { immediate = false } = options
   const { t } = useI18n()
-  const toastStore = useToastStore()
+  const toastStore = useToast()
   const versionCompatibilityStore = useVersionCompatibilityStore()
 
   // Track if we've already shown the warning
@@ -46,7 +46,7 @@ export function useFrontendVersionMismatchWarning(
       warning: t('g.versionMismatchWarning'),
       detail
     })
-    toastStore.addAlert(fullMessage)
+    toastStore.warning('Alert', { description: fullMessage })
   }
 
   const showWarning = () => {

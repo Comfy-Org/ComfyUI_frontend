@@ -18,7 +18,7 @@ import type {
   LGraphNode
 } from '@/lib/litegraph/src/litegraph'
 import { app } from '@/scripts/app'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { createMockLGraphNode } from '@/utils/__tests__/litegraphTestUtils'
 import { createNode } from '@/utils/litegraphUtil'
 import { shouldIgnoreCopyPaste } from '@/workbench/eventHelpers'
@@ -774,8 +774,8 @@ describe('usePaste', () => {
       await vi.waitFor(() => {
         expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
         expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
-        expect(useToastStore().add).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'error' })
+        expect(useToast().toasts).toContainEqual(
+          expect.objectContaining({ kind: 'error' })
         )
       })
     }
@@ -797,8 +797,8 @@ describe('usePaste', () => {
     await vi.waitFor(() => {
       expect(mockCanvas._deserializeItems).not.toHaveBeenCalled()
       expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
     })
   })
@@ -827,8 +827,8 @@ describe('usePaste', () => {
     document.dispatchEvent(event)
 
     await vi.waitFor(() => {
-      expect(useToastStore().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
       expect(mockCanvas.pasteFromClipboard).not.toHaveBeenCalled()
     })

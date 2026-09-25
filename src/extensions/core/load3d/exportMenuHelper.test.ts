@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast'
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { LiteGraph } from '@/lib/litegraph/src/litegraph'
 
 import type Load3d from './Load3d'
@@ -106,17 +106,14 @@ describe('createExportMenuItems', () => {
       item.callback()
       await vi.waitFor(() => expect(exportModel).toHaveBeenCalledWith(value))
       await vi.waitFor(() =>
-        expect(useToastStore().add).toHaveBeenCalledWith(
-          expect.objectContaining({
-            severity: 'success',
-            summary: 'toastMessages.exportSuccess'
-          })
+        expect(useToast().success).toHaveBeenCalledWith(
+          'toastMessages.exportSuccess'
         )
       )
       expect(t).toHaveBeenCalledWith('toastMessages.exportSuccess', {
         format: label
       })
-      expect(useToastStore().addAlert).not.toHaveBeenCalled()
+      expect(useToast().warning).not.toHaveBeenCalled()
     }
   )
 
@@ -137,9 +134,9 @@ describe('createExportMenuItems', () => {
     glb.callback()
 
     await vi.waitFor(() =>
-      expect(useToastStore().addAlert).toHaveBeenCalledWith(
-        'toastMessages.failedToExportModel'
-      )
+      expect(useToast().warning).toHaveBeenCalledWith('Alert', {
+        description: 'toastMessages.failedToExportModel'
+      })
     )
     expect(t).toHaveBeenCalledWith('toastMessages.failedToExportModel', {
       format: 'GLB'
@@ -148,6 +145,6 @@ describe('createExportMenuItems', () => {
       'Export failed:',
       expect.any(Error)
     )
-    expect(useToastStore().add).not.toHaveBeenCalled()
+    expect(useToast().success).not.toHaveBeenCalled()
   })
 })

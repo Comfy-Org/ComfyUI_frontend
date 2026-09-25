@@ -4,10 +4,9 @@ import { useAssetExportStore } from '@/stores/assetExportStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
 import { useNodeDefStore } from '@/stores/nodeDefStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import type { CreateAssetExportData } from '@comfyorg/ingest-types'
 import { fromAny, fromPartial } from '@total-typescript/shoehorn'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { App } from 'vue'
 import { createApp, defineComponent, h, provide, ref } from 'vue'
@@ -48,17 +47,6 @@ vi.mock(import('@/platform/distribution/types'), () => ({
     return mockIsCloud.value
   }
 }))
-
-vi.mock<unknown>(
-  import('primevue/usetoast'),
-
-  () => {
-    const add = vi.fn()
-    return {
-      useToast: () => ({ add })
-    }
-  }
-)
 
 const mockShowDialog = vi.hoisted(() => vi.fn())
 
@@ -443,15 +431,19 @@ describe('useMediaAssetActions', () => {
           .mocked(useLitegraphService())
           .addNodeOnGraph.mock.calls.map(([, options]) => options)
       ).toEqual([{ pos: [100, 100] }, { pos: [150, 150] }])
-      expect(useToast().add).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: i18n.global.t('g.warning'),
-        detail: i18n.global.t('mediaAsset.selection.partialAddNodesSuccess', {
-          succeeded: 2,
-          failed: 1
-        }),
-        life: 3000
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        i18n.global.t('g.warning'),
+        {
+          description: i18n.global.t(
+            'mediaAsset.selection.partialAddNodesSuccess',
+            {
+              succeeded: 2,
+              failed: 1
+            }
+          ),
+          duration: 3000
+        }
+      )
       unmount()
     })
   })
@@ -543,9 +535,7 @@ describe('useMediaAssetActions', () => {
 
       expect(mockLoadApiJson).toHaveBeenCalledWith(apiPrompt, 'open.json')
       expect(mockOpenWorkflowAction).not.toHaveBeenCalled()
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
-      )
+      expect(useToast().success).toHaveBeenCalled()
     })
 
     it('warns when loading the stored API graph fails', async () => {
@@ -560,8 +550,9 @@ describe('useMediaAssetActions', () => {
 
       await actions.openWorkflow(createMockAsset())
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'warn', detail: 'boom' })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ description: 'boom' })
       )
       consoleSpy.mockRestore()
     })
@@ -579,8 +570,9 @@ describe('useMediaAssetActions', () => {
 
       await actions.openWorkflow(createMockAsset())
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'warn', detail: 'network down' })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ description: 'network down' })
       )
       consoleSpy.mockRestore()
     })
@@ -595,9 +587,7 @@ describe('useMediaAssetActions', () => {
       await actions.openWorkflow(createMockAsset())
 
       expect(mockLoadApiJson).not.toHaveBeenCalled()
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'warn' })
-      )
+      expect(useToast().warning).toHaveBeenCalled()
     })
   })
 
@@ -615,9 +605,7 @@ describe('useMediaAssetActions', () => {
       await actions.openMultipleWorkflows([createMockAsset()])
 
       expect(mockLoadApiJson).toHaveBeenCalledWith(apiPrompt, 'bulk.json')
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
-      )
+      expect(useToast().success).toHaveBeenCalled()
     })
   })
 
@@ -643,7 +631,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(useToast().add).not.toHaveBeenCalled()
+      expect(useToast().success).not.toHaveBeenCalled()
     })
 
     it('shows a success toast on successful export', async () => {
@@ -652,9 +640,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
-      )
+      expect(useToast().success).toHaveBeenCalled()
     })
 
     it('shows an error toast on actual failure', async () => {
@@ -663,9 +649,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
-      )
+      expect(useToast().error).toHaveBeenCalled()
     })
 
     it('shows a warning toast when the workflow is missing', async () => {
@@ -674,9 +658,7 @@ describe('useMediaAssetActions', () => {
 
       await actions.exportWorkflow(createMockAsset())
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'warn' })
-      )
+      expect(useToast().warning).toHaveBeenCalled()
     })
 
     it('shows no toast when every asset in a bulk export is cancelled', async () => {
@@ -688,7 +670,7 @@ describe('useMediaAssetActions', () => {
         createMockAsset({ id: 'b' })
       ])
 
-      expect(useToast().add).not.toHaveBeenCalled()
+      expect(useToast().success).not.toHaveBeenCalled()
     })
 
     it('shows a success toast for the succeeded subset when some bulk exports are cancelled', async () => {
@@ -702,9 +684,7 @@ describe('useMediaAssetActions', () => {
         createMockAsset({ id: 'b' })
       ])
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
-      )
+      expect(useToast().success).toHaveBeenCalled()
     })
 
     it('shows a partial-success warning toast when some bulk exports fail outright', async () => {
@@ -718,9 +698,7 @@ describe('useMediaAssetActions', () => {
         createMockAsset({ id: 'b' })
       ])
 
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'warn' })
-      )
+      expect(useToast().warning).toHaveBeenCalled()
     })
   })
 
@@ -829,17 +807,15 @@ describe('useMediaAssetActions', () => {
 
       expect(mockDownloadFile).toHaveBeenCalledTimes(2)
       await vi.waitFor(() => {
-        expect(useToastStore().add).toHaveBeenCalledWith(
+        expect(useToast().success).toHaveBeenCalledWith(
+          'Success',
           expect.objectContaining({
-            severity: 'success',
-            detail: 'Started downloading 1 file'
+            description: 'Started downloading 1 file'
           })
         )
-        expect(useToastStore().add).toHaveBeenCalledWith(
-          expect.objectContaining({
-            severity: 'error',
-            detail: '1 download failed'
-          })
+        expect(useToast().error).toHaveBeenCalledWith(
+          'Error',
+          expect.objectContaining({ description: '1 download failed' })
         )
       })
       expect(mockReportError).toHaveBeenCalledWith(failure, {
@@ -1428,10 +1404,12 @@ describe('useMediaAssetActions', () => {
         expect(mockCreateAssetExport).toHaveBeenCalledTimes(1)
       })
 
+      const { info } = useToast()
       await vi.waitFor(() => {
-        expect(useToastStore().add).toHaveBeenCalledWith(
+        expect(info).toHaveBeenCalledWith(
+          'Preparing ZIP download...',
           expect.objectContaining({
-            detail: i18n.global.t(
+            description: i18n.global.t(
               'mediaAsset.selection.exportStarted',
               { count },
               count
@@ -1636,12 +1614,17 @@ describe('useMediaAssetActions', () => {
       expect(mockDeleteAsset.mock.invocationCallOrder[0]).toBeLessThan(
         mockSetAssetDeleting.mock.invocationCallOrder[1]
       )
-      expect(useToast().add).toHaveBeenCalledWith({
-        severity: 'success',
-        summary: i18n.global.t('mediaAsset.assetDelete.success'),
-        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 1),
-        life: 2000
-      })
+      expect(useToast().success).toHaveBeenCalledWith(
+        i18n.global.t('mediaAsset.assetDelete.success'),
+        {
+          description: i18n.global.t(
+            'mediaAsset.assetsDeleted',
+            { total: 1 },
+            1
+          ),
+          duration: 2000
+        }
+      )
 
       unmount()
     })
@@ -1664,9 +1647,7 @@ describe('useMediaAssetActions', () => {
 
       expect(api.deleteItem).toHaveBeenCalledWith('history', 'job-1')
       expect(mockDeleteAsset).not.toHaveBeenCalled()
-      expect(useToast().add).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
-      )
+      expect(useToast().success).toHaveBeenCalled()
     })
   })
 
@@ -2048,12 +2029,17 @@ describe('useMediaAssetActions', () => {
       expect(mockInputAssets.items.map((item) => item.id)).toEqual([
         'asset-503'
       ])
-      expect(useToast().add).toHaveBeenCalledWith({
-        severity: 'error',
-        summary: i18n.global.t('mediaAsset.assetDelete.error'),
-        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 0),
-        life: 5000
-      })
+      expect(useToast().error).toHaveBeenCalledWith(
+        i18n.global.t('mediaAsset.assetDelete.error'),
+        {
+          description: i18n.global.t(
+            'mediaAsset.assetsDeleted',
+            { total: 1 },
+            0
+          ),
+          duration: 5000
+        }
+      )
       expect(mockMarkMissingMedia).not.toHaveBeenCalled()
       expect(mockClearWidgetValues).not.toHaveBeenCalled()
 
@@ -2061,12 +2047,17 @@ describe('useMediaAssetActions', () => {
 
       expect(mockDeleteAsset).toHaveBeenCalledTimes(2)
       expect(mockInputAssets.items).toEqual([])
-      expect(useToast().add).toHaveBeenLastCalledWith({
-        severity: 'success',
-        summary: i18n.global.t('mediaAsset.assetDelete.success'),
-        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 1 }, 1),
-        life: 2000
-      })
+      expect(useToast().success).toHaveBeenLastCalledWith(
+        i18n.global.t('mediaAsset.assetDelete.success'),
+        {
+          description: i18n.global.t(
+            'mediaAsset.assetsDeleted',
+            { total: 1 },
+            1
+          ),
+          duration: 2000
+        }
+      )
     })
 
     it('cleans up only the succeeded assets and clears every overlay when part of a batch fails', async () => {
@@ -2110,12 +2101,17 @@ describe('useMediaAssetActions', () => {
         succeededVariants
       )
       expect(mockCaptureCanvasState).toHaveBeenCalledTimes(1)
-      expect(useToast().add).toHaveBeenCalledWith({
-        severity: 'warn',
-        summary: i18n.global.t('mediaAsset.assetDelete.warn'),
-        detail: i18n.global.t('mediaAsset.assetsDeleted', { total: 3 }, 2),
-        life: 5000
-      })
+      expect(useToast().warning).toHaveBeenCalledWith(
+        i18n.global.t('mediaAsset.assetDelete.warn'),
+        {
+          description: i18n.global.t(
+            'mediaAsset.assetsDeleted',
+            { total: 3 },
+            2
+          ),
+          duration: 5000
+        }
+      )
 
       const flagsById: Record<string, boolean[]> = {}
       for (const [id, flag] of mockSetAssetDeleting.mock.calls) {

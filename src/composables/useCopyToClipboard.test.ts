@@ -1,17 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+import { useToast } from '@/components/ui/toast'
+
 const mockWriteText = vi.fn()
-const mockToastAdd = vi.fn()
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-
-  () => ({
-    useToast: vi.fn(() => ({
-      add: mockToastAdd
-    }))
-  })
-)
 
 vi.mock(import('@/i18n'))
 
@@ -32,8 +23,8 @@ describe('useCopyToClipboard', () => {
     await copyToClipboard('hello')
 
     expect(mockWriteText).toHaveBeenCalledWith('hello')
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({ kind: 'success' })
     )
   })
 
@@ -45,8 +36,8 @@ describe('useCopyToClipboard', () => {
     await copyToClipboard('hello')
 
     expect(document.execCommand).toHaveBeenCalledWith('copy')
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({ kind: 'success' })
     )
   })
 
@@ -57,8 +48,8 @@ describe('useCopyToClipboard', () => {
     const { copyToClipboard } = useCopyToClipboard()
     await copyToClipboard('hello')
 
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error' })
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({ kind: 'error' })
     )
   })
 
@@ -74,8 +65,8 @@ describe('useCopyToClipboard', () => {
 
     expect(mockWriteText).not.toHaveBeenCalled()
     expect(document.execCommand).toHaveBeenCalledWith('copy')
-    expect(mockToastAdd).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({ kind: 'success' })
     )
   })
 })

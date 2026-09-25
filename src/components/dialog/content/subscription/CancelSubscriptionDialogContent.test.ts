@@ -1,4 +1,5 @@
 import { computed, nextTick, ref } from 'vue'
+import { useToast } from '@/components/ui/toast'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
 import { useBillingRouting } from '@/composables/billing/useBillingRouting'
 import type { CancelRail, SubscriptionInfo } from '@/composables/billing/types'
@@ -50,8 +51,6 @@ function withStrictMillisecondParser<T>(run: () => T): T {
   }
 }
 
-const mockToastAdd = vi.hoisted(() => vi.fn())
-
 const mockShouldUseWorkspaceBilling = vi.hoisted(() => ({ value: false }))
 
 const mockCanManageSubscriptionLifecycle = vi.hoisted(() => ({ value: true }))
@@ -90,16 +89,6 @@ vi.mock(import('@/platform/workspace/composables/useBillingCapabilities'))
 vi.mock(import('@/platform/workspace/composables/useWorkspaceUI'))
 
 vi.mock(import('@/platform/telemetry'))
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-
-  () => ({
-    useToast: vi.fn(() => ({
-      add: mockToastAdd
-    }))
-  })
-)
 
 function renderComponent(
   props: {
@@ -211,10 +200,10 @@ describe('CancelSubscriptionDialogContent', () => {
       )
 
       expect(useBillingContext().cancelSubscription).not.toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
+      expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
-          severity: 'warn',
-          summary: 'Your active workspace changed. Switch back and try again.'
+          kind: 'warning',
+          title: 'Your active workspace changed. Switch back and try again.'
         })
       )
       expect(closeDialog).toHaveBeenCalledWith({ key: 'cancel-subscription' })
@@ -261,8 +250,8 @@ describe('CancelSubscriptionDialogContent', () => {
       )
 
       await waitFor(() =>
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'error' })
+        expect(useToast().toasts).toContainEqual(
+          expect.objectContaining({ kind: 'error' })
         )
       )
       expect(
@@ -399,8 +388,8 @@ describe('CancelSubscriptionDialogContent', () => {
         act: async () => {
           await confirm()
           await waitFor(() =>
-            expect(mockToastAdd).toHaveBeenCalledWith(
-              expect.objectContaining({ severity: 'error' })
+            expect(useToast().toasts).toContainEqual(
+              expect.objectContaining({ kind: 'error' })
             )
           )
           await keep()
@@ -444,10 +433,10 @@ describe('CancelSubscriptionDialogContent', () => {
       )
 
       await waitFor(() =>
-        expect(mockToastAdd).toHaveBeenCalledWith(
+        expect(useToast().toasts).toContainEqual(
           expect.objectContaining({
-            severity: 'error',
-            detail: 'Subscription cancellation timed out'
+            kind: 'error',
+            description: 'Subscription cancellation timed out'
           })
         )
       )
@@ -472,8 +461,8 @@ describe('CancelSubscriptionDialogContent', () => {
         })
       )
       expect(useBillingContext().fetchStatus).toHaveBeenCalled()
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'success' })
       )
     })
 
@@ -494,7 +483,7 @@ describe('CancelSubscriptionDialogContent', () => {
       expect(
         useTelemetry()?.trackSubscriptionCancellation
       ).not.toHaveBeenCalledWith('confirmed', expect.anything())
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
     })
 
@@ -551,8 +540,8 @@ describe('CancelSubscriptionDialogContent', () => {
       )
 
       await waitFor(() =>
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'success' })
+        expect(useToast().toasts).toContainEqual(
+          expect.objectContaining({ kind: 'success' })
         )
       )
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
@@ -596,7 +585,7 @@ describe('CancelSubscriptionDialogContent', () => {
       expect(
         screen.queryByRole('button', { name: /^cancel subscription$/i })
       ).not.toBeInTheDocument()
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(useDialogStore().closeDialog).not.toHaveBeenCalled()
       expect(confirmedCalls()).toHaveLength(0)
     })
@@ -617,10 +606,10 @@ describe('CancelSubscriptionDialogContent', () => {
       isCancelled.value = true
 
       await waitFor(() =>
-        expect(mockToastAdd).toHaveBeenCalledWith(
+        expect(useToast().toasts).toContainEqual(
           expect.objectContaining({
-            severity: 'success',
-            summary: 'Subscription cancelled successfully'
+            kind: 'success',
+            title: 'Subscription cancelled successfully'
           })
         )
       )
@@ -660,9 +649,9 @@ describe('CancelSubscriptionDialogContent', () => {
       await waitFor(() =>
         expect(useDialogStore().closeDialog).toHaveBeenCalled()
       )
-      expect(mockToastAdd).toHaveBeenCalledTimes(1)
-      expect(mockToastAdd).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'warn' })
+      expect(useToast().toasts).toHaveLength(1)
+      expect(useToast().toasts).toContainEqual(
+        expect.objectContaining({ kind: 'warning' })
       )
       expect(confirmedCalls()).toHaveLength(0)
     })
@@ -673,7 +662,7 @@ describe('CancelSubscriptionDialogContent', () => {
 
       await nextTick()
 
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(confirmedCalls()).toHaveLength(0)
     })
 
@@ -696,12 +685,12 @@ describe('CancelSubscriptionDialogContent', () => {
       resolvePortal()
 
       await waitFor(() =>
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'success' })
+        expect(useToast().toasts).toContainEqual(
+          expect.objectContaining({ kind: 'success' })
         )
       )
       expect(confirmedCalls()).toHaveLength(1)
-      expect(mockToastAdd).toHaveBeenCalledTimes(1)
+      expect(useToast().toasts).toHaveLength(1)
       expect(useDialogStore().closeDialog).toHaveBeenCalledWith({
         key: 'cancel-subscription'
       })
@@ -720,7 +709,7 @@ describe('CancelSubscriptionDialogContent', () => {
       status.value = subscription({ isCancelled: true })
       await nextTick()
 
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(confirmedCalls()).toHaveLength(0)
     })
 
@@ -747,7 +736,7 @@ describe('CancelSubscriptionDialogContent', () => {
       await nextTick()
 
       expect(confirmedCalls()).toHaveLength(1)
-      expect(mockToastAdd).toHaveBeenCalledTimes(1)
+      expect(useToast().toasts).toHaveLength(1)
     })
 
     it('refreshes status on window focus while awaiting Stripe', async () => {
@@ -773,12 +762,12 @@ describe('CancelSubscriptionDialogContent', () => {
       await confirm()
 
       await waitFor(() =>
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'warn' })
+        expect(useToast().toasts).toContainEqual(
+          expect.objectContaining({ kind: 'warning' })
         )
       )
-      expect(mockToastAdd).not.toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error' })
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ kind: 'error' })
       )
       expect(
         useTelemetry()?.trackSubscriptionCancellation
@@ -795,8 +784,8 @@ describe('CancelSubscriptionDialogContent', () => {
       await confirm()
 
       await waitFor(() =>
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'error' })
+        expect(useToast().toasts).toContainEqual(
+          expect.objectContaining({ kind: 'error' })
         )
       )
       expect(
@@ -862,11 +851,11 @@ describe('CancelSubscriptionDialogContent', () => {
       resolvePortal()
 
       await waitFor(() =>
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'warn' })
+        expect(useToast().toasts).toContainEqual(
+          expect.objectContaining({ kind: 'warning' })
         )
       )
-      expect(mockToastAdd).toHaveBeenCalledTimes(1)
+      expect(useToast().toasts).toHaveLength(1)
       expect(terminalEvents()).toHaveLength(0)
     })
 
@@ -885,12 +874,12 @@ describe('CancelSubscriptionDialogContent', () => {
       resolvePortal()
 
       await waitFor(() =>
-        expect(mockToastAdd).toHaveBeenCalledWith(
-          expect.objectContaining({ severity: 'warn' })
+        expect(useToast().toasts).toContainEqual(
+          expect.objectContaining({ kind: 'warning' })
         )
       )
-      expect(mockToastAdd).not.toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success' })
+      expect(useToast().toasts).not.toContainEqual(
+        expect.objectContaining({ kind: 'success' })
       )
       expect(terminalEvents()).toHaveLength(0)
     })
@@ -911,7 +900,7 @@ describe('CancelSubscriptionDialogContent', () => {
       expect(
         await screen.findByText(/Finish cancelling on the Stripe page/i)
       ).toBeInTheDocument()
-      expect(mockToastAdd).not.toHaveBeenCalled()
+      expect(useToast().toasts).toEqual([])
       expect(terminalEvents()).toHaveLength(0)
     })
 

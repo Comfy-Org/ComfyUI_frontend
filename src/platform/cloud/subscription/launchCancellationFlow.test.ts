@@ -1,4 +1,4 @@
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Mock } from 'vitest'
@@ -146,11 +146,9 @@ describe('launchCancellationFlow', () => {
       surface: 'billing',
       errorType: 'error_refreshing_billing_after_churnkey_discount'
     })
-    expect(useToastStore().add).toHaveBeenCalledExactlyOnceWith(
-      expect.objectContaining({
-        severity: 'warn',
-        summary: 'subscription.cancelDialog.discountRefreshFailed'
-      })
+    expect(useToast().warning).toHaveBeenCalledExactlyOnceWith(
+      'subscription.cancelDialog.discountRefreshFailed',
+      { duration: 8000 }
     )
   })
 
@@ -357,7 +355,7 @@ describe('launchCancellationFlow', () => {
         error_message: 'provider unavailable'
       })
     )
-    expect(useToastStore().add).not.toHaveBeenCalled()
+    expect(useToast().error).not.toHaveBeenCalled()
   })
 
   it('keeps an unconfigured Churnkey environment silent', async () => {

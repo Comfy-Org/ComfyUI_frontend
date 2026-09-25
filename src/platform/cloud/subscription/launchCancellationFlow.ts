@@ -1,5 +1,6 @@
 import { supportsInAppCancellation } from '@/composables/billing/billingRail'
 import { useBillingContext } from '@/composables/billing/useBillingContext'
+import { useToast } from '@/components/ui/toast'
 import { t } from '@/i18n'
 import { prepareChurnkey } from '@/platform/cloud/churnkey/churnkeyClient'
 import type { ChurnkeySession } from '@/platform/cloud/churnkey/churnkeyClient'
@@ -9,7 +10,6 @@ import {
 } from '@/platform/cloud/subscription/utils/subscriptionCancellationTelemetry'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { CancellationScopeChangedError } from '@/platform/workspace/composables/useWorkspaceBilling'
 import type { DialogInstance } from '@/stores/dialogStore'
@@ -61,10 +61,8 @@ function reportFallbackFailure(
     level: workspaceStillCurrent ? 'error' : 'warning'
   })
   if (!workspaceStillCurrent) return
-  useToastStore().add({
-    severity: 'error',
-    summary: t('subscription.cancelDialog.failed'),
-    life: 8000
+  useToast().error(t('subscription.cancelDialog.failed'), {
+    duration: 8000
   })
 }
 
@@ -248,11 +246,10 @@ export async function launchCancellationFlow({
             surface: 'billing',
             errorType: 'error_refreshing_billing_after_churnkey_discount'
           })
-          useToastStore().add({
-            severity: 'warn',
-            summary: t('subscription.cancelDialog.discountRefreshFailed'),
-            life: 8000
-          })
+          useToast().warning(
+            t('subscription.cancelDialog.discountRefreshFailed'),
+            { duration: 8000 }
+          )
         })
         return
       case 'abandoned':

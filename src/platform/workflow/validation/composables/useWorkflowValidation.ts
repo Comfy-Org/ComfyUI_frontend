@@ -1,5 +1,5 @@
 import type { ISerialisedGraph } from '@/lib/litegraph/src/types/serialisation'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import type { ComfyWorkflowJSON } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { validateComfyWorkflow } from '@/platform/workflow/validation/schemas/workflowSchema'
 import { fixBadLinks } from '@/utils/linkFixer'
@@ -9,7 +9,7 @@ interface ValidationResult {
 }
 
 export function useWorkflowValidation() {
-  const toastStore = useToastStore()
+  const toastStore = useToast()
 
   function tryFixLinks(
     graphData: ComfyWorkflowJSON,
@@ -31,20 +31,16 @@ export function useWorkflowValidation() {
     })
 
     if (!silent && logs.length > 0) {
-      toastStore.add({
-        severity: 'warn',
-        summary: 'Workflow Validation',
-        detail: logs.join('\n')
+      toastStore.warning('Workflow Validation', {
+        description: logs.join('\n')
       })
     }
 
     // If links were fixed, notify the user
     if (linkValidation.fixed) {
       if (!silent) {
-        toastStore.add({
-          severity: 'success',
-          summary: 'Workflow Links Fixed',
-          detail: `Fixed ${linkValidation.patched} node connections and removed ${linkValidation.deleted} invalid links.`
+        toastStore.success('Workflow Links Fixed', {
+          description: `Fixed ${linkValidation.patched} node connections and removed ${linkValidation.deleted} invalid links.`
         })
       }
     }
@@ -70,7 +66,7 @@ export function useWorkflowValidation() {
       graphData,
       /* onError=*/ (err) => {
         if (!silent) {
-          toastStore.addAlert(err)
+          toastStore.warning('Alert', { description: err })
         }
       }
     )

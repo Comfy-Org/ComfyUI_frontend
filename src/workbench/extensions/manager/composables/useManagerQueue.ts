@@ -4,7 +4,7 @@ import type { Ref } from 'vue'
 import { computed, ref } from 'vue'
 
 import { t } from '@/i18n'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { app } from '@/scripts/app'
 import { normalizePackKeys } from '@/utils/packUtils'
 import type { components } from '@/workbench/extensions/manager/types/generatedManagerTypes'
@@ -28,7 +28,7 @@ export const useManagerQueue = (
   taskQueue: Ref<ManagerTaskQueue>,
   installedPacks: Ref<Record<string, unknown>>
 ) => {
-  const toastStore = useToastStore()
+  const toast = useToast()
 
   // Task queue state (read-only from server)
   const maxHistoryItems = ref(64)
@@ -120,11 +120,7 @@ export const useManagerQueue = (
           isHistoryTaskFromThisClient(completedTask) &&
           !wasCompleted
         ) {
-          toastStore.add({
-            severity: 'error',
-            summary: t('g.error'),
-            detail: result
-          })
+          toast.error(t('g.error'), { description: result })
         }
       }
     }

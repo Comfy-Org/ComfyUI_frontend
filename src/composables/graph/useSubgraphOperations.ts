@@ -1,7 +1,7 @@
 import { useSelectedLiteGraphItems } from '@/composables/canvas/useSelectedLiteGraphItems'
+import { useToast } from '@/components/ui/toast'
 import { t } from '@/i18n'
 import { SubgraphNode } from '@/lib/litegraph/src/litegraph'
-import { useToastStore } from '@/platform/updates/common/toastStore'
 import { useWorkflowStore } from '@/platform/workflow/management/stores/workflowStore'
 import { useCanvasStore } from '@/renderer/core/canvas/canvasStore'
 import { useNodeOutputStore } from '@/stores/nodeOutputStore'
@@ -16,7 +16,7 @@ export function useSubgraphOperations() {
   const workflowStore = useWorkflowStore()
   const nodeOutputStore = useNodeOutputStore()
   const subgraphStore = useSubgraphStore()
-  const toastStore = useToastStore()
+  const toast = useToast()
 
   const convertToSubgraph = () => {
     const canvas = canvasStore.getCanvas()
@@ -51,10 +51,8 @@ export function useSubgraphOperations() {
       changed = true
     }
     if (refused) {
-      toastStore.add({
-        severity: 'error',
-        summary: t('g.error'),
-        detail: t('g.subgraphUnpackFailed')
+      toast.error(t('g.error'), {
+        description: t('g.subgraphUnpackFailed')
       })
     }
     if (changed) {

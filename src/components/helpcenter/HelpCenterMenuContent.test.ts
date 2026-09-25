@@ -5,6 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, defineComponent, h } from 'vue'
 import { createI18n } from 'vue-i18n'
 
+import { useToast } from '@/components/ui/toast'
 import enCommands from '@/locales/en/commands.json' with { type: 'json' }
 import enMessages from '@/locales/en/main.json' with { type: 'json' }
 import { useReleaseStore } from '@/platform/updates/common/releaseStore'
@@ -30,8 +31,6 @@ const distribution = vi.hoisted(() => ({
 }))
 
 const managerState = vi.hoisted(() => ({ isNewManagerUI: { value: false } }))
-const addToast = vi.hoisted(() => vi.fn())
-
 vi.mock(import('@/platform/distribution/types'), () => ({
   get isCloud() {
     return distribution.isCloud
@@ -59,14 +58,6 @@ vi.mock<unknown>(
 )
 
 vi.mock(import('@/workbench/extensions/manager/composables/useManagerState'))
-
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-
-  () => ({
-    useToast: () => ({ add: addToast })
-  })
-)
 
 vi.mock(import('@/components/icons/PuzzleIcon.vue'), () => ({
   default: defineComponent({
@@ -231,8 +222,8 @@ describe('HelpCenterMenuContent ComfyUI update', () => {
     expect(request).toHaveBeenCalledWith(
       expect.objectContaining({ method: 'post', url: 'manager/queue/start' })
     )
-    expect(addToast).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
+    expect(useToast().toasts).toContainEqual(
+      expect.objectContaining({ kind: 'success' })
     )
   })
 
@@ -251,18 +242,18 @@ describe('HelpCenterMenuContent ComfyUI update', () => {
     await user.click(screen.getByRole('menuitem', { name: 'Update ComfyUI' }))
 
     await waitFor(() => {
-      expect(addToast).toHaveBeenCalledWith(
+      expect(useToast().toasts).toContainEqual(
         expect.objectContaining({
-          severity: 'error',
-          detail: expect.stringContaining('Update request rejected')
+          kind: 'error',
+          description: expect.stringContaining('Update request rejected')
         })
       )
     })
     expect(request).not.toHaveBeenCalledWith(
       expect.objectContaining({ url: 'manager/reboot' })
     )
-    expect(addToast).not.toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' })
+    expect(useToast().toasts).not.toContainEqual(
+      expect.objectContaining({ kind: 'success' })
     )
   })
 })

@@ -52,7 +52,7 @@ import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
 import { refreshRemoteConfig } from '@/platform/remoteConfig/refreshRemoteConfig'
 import { remoteConfig } from '@/platform/remoteConfig/remoteConfig'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { workspaceApi } from '@/platform/workspace/api/workspaceApi'
 import { NoWorkspaceAccessError } from '@/platform/workspace/api/workspaceApiError'
 import {
@@ -550,10 +550,10 @@ describe('cloud app on the shared web session (unified_web_session on)', () => {
     expect(
       sessionStorage.getItem(WORKSPACE_STORAGE_KEYS.CURRENT_WORKSPACE)
     ).toBeNull()
-    expect(useToastStore().messagesToAdd).toEqual([
+    expect(useToast().toasts).toEqual([
       expect.objectContaining({
-        severity: 'info',
-        detail: expect.stringContaining('user-b@example.com')
+        kind: 'info',
+        description: expect.stringContaining('user-b@example.com')
       })
     ])
   })

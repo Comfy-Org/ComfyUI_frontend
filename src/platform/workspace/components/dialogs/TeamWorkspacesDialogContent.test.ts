@@ -22,14 +22,14 @@ const mockSwitchWorkspace = vi.fn()
 let pinia: Pinia
 let workspaceStore: ReturnType<typeof useTeamWorkspaceStore>
 
-vi.mock<unknown>(
-  import('primevue/usetoast'), // oxlint-disable-line comfy/no-primevue-imports
-  () => ({
-    useToast: () => ({
-      add: mockToastAdd
-    })
+vi.mock<unknown>(import('@/components/ui/toast'), () => ({
+  useToast: () => ({
+    success: mockToastAdd,
+    error: mockToastAdd,
+    info: mockToastAdd,
+    warning: mockToastAdd
   })
-)
+}))
 
 vi.mock(import('@/platform/workspace/composables/useWorkspaceSwitch'), () => ({
   useWorkspaceSwitch: () => ({

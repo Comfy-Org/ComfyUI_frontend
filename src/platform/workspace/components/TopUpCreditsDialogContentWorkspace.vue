@@ -306,7 +306,7 @@ import {
   getTopupAmountPreset,
   TOPUP_AMOUNT_PRESETS_USD
 } from '@comfyorg/account-core/billing'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -563,11 +563,7 @@ function openManageBilling() {
       surface: 'billing',
       errorType: 'billing_portal_open_failure'
     })
-    toast.add({
-      severity: 'error',
-      summary: t('credits.topUp.manageBillingError'),
-      life: 5000
-    })
+    toast.error(t('credits.topUp.manageBillingError'), { duration: 5000 })
   })
 }
 
@@ -668,11 +664,7 @@ async function handleBuy() {
       ) {
         clearCheckoutJourney()
       }
-      toast.add({
-        severity: 'success',
-        summary: t('credits.topUp.purchaseSuccess'),
-        life: 5000
-      })
+      toast.success(t('credits.topUp.purchaseSuccess'), { duration: 5000 })
       await Promise.allSettled([fetchBalance(), fetchStatus()])
       if (!isCurrentAttempt()) return
       handleClose(false)
@@ -695,10 +687,8 @@ async function handleBuy() {
         })
     } else {
       if (isCurrentAttempt()) paymentSubmitted.value = false
-      toast.add({
-        severity: 'error',
-        summary: t('credits.topUp.purchaseError'),
-        detail: t('credits.topUp.unknownError')
+      toast.error(t('credits.topUp.purchaseError'), {
+        description: t('credits.topUp.unknownError')
       })
     }
   } catch (error) {
@@ -727,10 +717,8 @@ function reportPurchaseError(
     },
     billingOpId
   )
-  toast.add({
-    severity: 'error',
-    summary: t('credits.topUp.purchaseError'),
-    detail: purchaseErrorDetail(error)
+  toast.error(t('credits.topUp.purchaseError'), {
+    description: purchaseErrorDetail(error)
   })
 }
 

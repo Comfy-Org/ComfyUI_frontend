@@ -59,7 +59,7 @@ import {
 } from '@/platform/auth/session/webSessionFetch'
 import { useTelemetry } from '@/platform/telemetry'
 import { reportError } from '@/platform/telemetry/reportError'
-import { useToastStore } from '@/platform/updates/common/toastStore'
+import { useToast } from '@/components/ui/toast'
 import { useTeamWorkspaceStore } from '@/platform/workspace/stores/teamWorkspaceStore'
 import { useWorkspaceAuthStore } from '@/platform/workspace/stores/workspaceAuthStore'
 import { api } from '@/scripts/api'
@@ -136,13 +136,11 @@ function resetForAccountChange(change: WebSessionAccountChange): void {
   useTeamWorkspaceStore().resetForIdentityChange()
   void api.resetSocket()
   if (change.reason !== 'user_changed') return
-  useToastStore().add({
-    severity: 'info',
-    summary: t('auth.accountChanged.title'),
-    detail: t('auth.accountChanged.detail', {
+  useToast().info(t('auth.accountChanged.title'), {
+    description: t('auth.accountChanged.detail', {
       email: change.session.user.email
     }),
-    life: 8000
+    duration: 8000
   })
 }
 

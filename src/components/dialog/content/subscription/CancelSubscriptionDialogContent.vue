@@ -53,7 +53,7 @@
 
 <script setup lang="ts">
 import { defaultWindow, useEventListener, useThrottleFn } from '@vueuse/core'
-import { useToast } from 'primevue/usetoast'
+import { useToast } from '@/components/ui/toast'
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 
@@ -169,11 +169,7 @@ function completeObservedCancel() {
   telemetry?.trackSubscriptionCancellation('confirmed', cancellationMetadata())
   cancelReport.confirmed({ operationFollows: false })
   dialogStore.closeDialog({ key: 'cancel-subscription' })
-  toast.add({
-    severity: 'success',
-    summary: t('subscription.cancelSuccess'),
-    life: 5000
-  })
+  toast.success(t('subscription.cancelSuccess'), { duration: 5000 })
 }
 
 watch(
@@ -200,10 +196,7 @@ function onClose() {
 
 function abortForScopeChange() {
   didScopeAbort.value = true
-  toast.add({
-    severity: 'warn',
-    summary: t('subscription.cancelDialog.workspaceChanged')
-  })
+  toast.warning(t('subscription.cancelDialog.workspaceChanged'))
   dialogStore.closeDialog({ key: 'cancel-subscription' })
 }
 
@@ -222,10 +215,8 @@ function reportCancelFailure(error: unknown) {
     cancelReport.confirmed({ operationFollows: false })
     cancelReport.failed(categorizeBillingApiError(error))
   }
-  toast.add({
-    severity: 'error',
-    summary: t('subscription.cancelDialog.failed'),
-    detail: getErrorMessage(error) ?? t('g.unknownError')
+  toast.error(t('subscription.cancelDialog.failed'), {
+    description: getErrorMessage(error) ?? t('g.unknownError')
   })
   isLoading.value = false
 }
@@ -253,11 +244,7 @@ async function finishWorkspaceCancel() {
     // Cancellation already succeeded; stale local subscription status should not report failure.
   }
   dialogStore.closeDialog({ key: 'cancel-subscription' })
-  toast.add({
-    severity: 'success',
-    summary: t('subscription.cancelSuccess'),
-    life: 5000
-  })
+  toast.success(t('subscription.cancelSuccess'), { duration: 5000 })
   isLoading.value = false
 }
 
