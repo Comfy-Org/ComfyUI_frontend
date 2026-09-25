@@ -12,6 +12,7 @@ An Architecture Decision Record captures an important architectural decision mad
 | ---------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- | -------- | ---------- |
 | [AGENT-BINDING-0035](AGENT-BINDING-0035-document-identity-gates-persisted-workflow-tab-bindings.md)              | Document Identity Gates Persisted Workflow Tab Bindings           | Proposed | 2026-09-19 |
 | [AGENT-CONTEXT-0028](AGENT-CONTEXT-0028-separate-workflow-references-from-editor-tabs.md)                        | Separate Workflow References from Editor Tabs                     | Proposed | 2026-09-07 |
+| [AGENT-TARGET-0037](AGENT-TARGET-0037-commit-workflow-target-on-send-or-node-reference.md)                       | Commit Workflow Target on Explicit User Intent                    | Proposed | 2026-09-24 |
 | [ASSETS-DRAG-DROP-0035](ASSETS-DRAG-DROP-0035-asset-card-drag-uses-file-url.md)                                  | Asset Card Drag-and-Drop Uses the File URL, Never the Preview URL | Proposed | 2026-09-19 |
 | [AUTH-BILLING-0014](AUTH-BILLING-0014-billing-attempt-context-and-workspace-scope.md)                            | Billing Attempt Context and Workspace Scope                       | Proposed | 2026-07-28 |
 | [AUTH-CREDENTIALS-0011](AUTH-CREDENTIALS-0011-cloud-credential-lifecycle-invariants.md)                          | Cloud Credential Lifecycle Invariants                             | Proposed | 2026-07-09 |
