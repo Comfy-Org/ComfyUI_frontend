@@ -9,6 +9,7 @@ import Tag from '@/components/chip/Tag.vue'
 import AccessibleTooltip from '@/components/ui/tooltip/AccessibleTooltip.vue'
 import { iconForMediaType } from '@/platform/assets/utils/mediaIconUtil'
 import { api } from '@/scripts/api'
+import type { MediaType } from '@/utils/formatUtil'
 import { getMediaTypeFromFilename } from '@/utils/formatUtil'
 
 import type { UserAttachment } from '../../../stores/agent/agentConversationStore'
@@ -124,29 +125,28 @@ function attachmentIconClass(name: string): string {
  * so a mis-declared type now outranks a correct extension -- the same
  * mime-before-name order the service itself applies.
  */
+const GRID_KINDS = new Set<MediaType>(['image', 'video', 'audio', '3D'])
+
+function attachmentUrl(item: UserAttachment): string | undefined {
+  if (item.previewUrl) return item.previewUrl
+  if (!item.ref) return undefined
+  return api.apiURL(`/view?filename=${encodeURIComponent(item.ref)}&type=input`)
+}
+
+function gridAsset(item: UserAttachment): ReplyAsset | undefined {
+  const kind = item.kind ?? getMediaTypeFromFilename(item.name)
+  const url = attachmentUrl(item)
+  if (!url || !GRID_KINDS.has(kind)) return undefined
+  return { url, filename: item.name, kind: kind as ReplyAsset['kind'] }
+}
+
 const splitAttachments = computed(() => {
   const grid: ReplyAsset[] = []
   const plain: UserAttachment[] = []
   for (const item of attachments) {
-    const kind = item.kind ?? getMediaTypeFromFilename(item.name)
-    const url =
-      item.previewUrl ??
-      (item.ref
-        ? api.apiURL(
-            `/view?filename=${encodeURIComponent(item.ref)}&type=input`
-          )
-        : undefined)
-    if (
-      url &&
-      (kind === 'image' ||
-        kind === 'video' ||
-        kind === 'audio' ||
-        kind === '3D')
-    ) {
-      grid.push({ url, filename: item.name, kind })
-    } else {
-      plain.push(item)
-    }
+    const asset = gridAsset(item)
+    if (asset) grid.push(asset)
+    else plain.push(item)
   }
   return { grid, plain }
 })
