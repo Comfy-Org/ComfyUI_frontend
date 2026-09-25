@@ -20,13 +20,14 @@ import {
 } from '../../config/models-catalogue'
 import type { Locale, TranslationKey } from '../../i18n/translations'
 import { t } from '../../i18n/translations'
-import { rememberShelf } from '../../lib/workshop/shelf-memory'
+import { rememberShelfOnClick } from '../../lib/workshop/shelf-memory'
 import { useCaseLabelKey } from '../../lib/workshop/use-case-label'
 import type { FacetMenuOption } from './WorkshopFilterMenu.vue'
 import WorkshopFilterMenu from './WorkshopFilterMenu.vue'
 import WorkshopModelCard from './WorkshopModelCard.vue'
 import FeaturedBanner from './FeaturedBanner.vue'
-import { modelSlides } from '../../lib/workshop/featured-slides'
+import { modelSlides, studioSlide } from '../../lib/workshop/featured-slides'
+import { useWorkshopWorkflowsEnabled } from '../../scripts/posthog'
 import WorkshopSearchField from './WorkshopSearchField.vue'
 import WorkshopSections from './WorkshopSections.vue'
 import WorkshopSortMenu from './WorkshopSortMenu.vue'
@@ -146,7 +147,11 @@ const featured = computed(() => {
     'popular'
   )
 })
-const featuredSlides = computed(() => modelSlides(featured.value, locale))
+const studioEnabled = useWorkshopWorkflowsEnabled()
+const featuredSlides = computed(() => [
+  ...(studioEnabled.value ? [studioSlide(locale)] : []),
+  ...modelSlides(featured.value, locale)
+])
 
 function openSection(value: UseCase | 'other') {
   useCase.value = value
@@ -180,15 +185,7 @@ function rememberModel(
   event: MouseEvent,
   shelf = useCase.value
 ) {
-  if (
-    event.button !== 0 ||
-    event.metaKey ||
-    event.ctrlKey ||
-    event.shiftKey ||
-    event.altKey
-  )
-    return
-  rememberShelf(shelf, model.href)
+  rememberShelfOnClick(shelf, model.href, event)
 }
 
 watch(browseAll, (on) => on && resetFilters())
