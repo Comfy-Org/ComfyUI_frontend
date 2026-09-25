@@ -78,6 +78,8 @@ const projectionState = vi.hoisted(() => {
     ),
     replaceOnNextFrame: vi.fn(),
     discardPending: vi.fn((_workflowId: string): DocNodeDelta => NO_NODES),
+    noteLocalWrites: vi.fn(),
+    settleLocalWrites: vi.fn(),
     destroy: vi.fn()
   }
 })
@@ -132,6 +134,8 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
     revertRejected = projectionState.revertRejected
     replaceOnNextFrame = projectionState.replaceOnNextFrame
     discardPending = projectionState.discardPending
+    noteLocalWrites = projectionState.noteLocalWrites
+    settleLocalWrites = projectionState.settleLocalWrites
     destroy = projectionState.destroy
   }
 }))
@@ -247,6 +251,8 @@ describe('useAgentCrdtFollower', () => {
       .mockReturnValue(projectionState.applied())
     projectionState.applyCollected.mockReset().mockReturnValue([])
     projectionState.revertRejected.mockReset().mockReturnValue([])
+    projectionState.noteLocalWrites.mockReset()
+    projectionState.settleLocalWrites.mockReset()
   })
 
   it('records only the length of an outbound frame that is not a JSON object', async () => {
@@ -1602,6 +1608,27 @@ describe('useAgentCrdtFollower', () => {
       clientState.sendOps.mockClear()
       const { recordDevEvent } = await import('./devPanelLog')
       vi.mocked(recordDevEvent).mockClear()
+    })
+
+    it('notes a local widget write with the projection on enqueue and settles it when the host answers', async () => {
+      const { unmount, enqueue } = mountWriter('wf-1')
+      const setWidget = {
+        op: 'set_widget' as const,
+        node_id: '1',
+        widget: 'text',
+        value: 'hello'
+      }
+      enqueue([setWidget])
+      expect(projectionState.noteLocalWrites).toHaveBeenCalledWith([setWidget])
+      expect(projectionState.settleLocalWrites).not.toHaveBeenCalled()
+
+      await Promise.resolve()
+      ackSent(0)
+
+      expect(projectionState.settleLocalWrites).toHaveBeenCalledWith([
+        expect.objectContaining(setWidget)
+      ])
+      unmount()
     })
 
     it('holds the queued batch when the bound workflow tab goes inactive instead of settling it undeliverable', async () => {

@@ -64,6 +64,12 @@ export interface LiveGraphApplierDeps {
   /** Scopes layout provenance to the remote actor while `fn` writes. */
   withRemoteActor?<T>(actor: string, fn: () => T): T
   viewportBounds?(): PlacementRect | null
+  /**
+   * True when a local write to the widget register is still in flight and
+   * `docValue` is not it; the frame's value is then left unapplied so the
+   * register is not rewound under the edit.
+   */
+  holdsLocalWrite?(nodeId: string, widget: string, docValue: unknown): boolean
 }
 
 export interface ApplyResult {
@@ -272,6 +278,16 @@ function readDocSlotName(
   slot: number
 ): string | undefined {
   return readDocSlotNames(doc, nodeId, kind)?.[slot]
+}
+
+/** The document's value for a node's named widget, or undefined when it holds none. */
+export function readDocWidgetValue(
+  doc: Y.Doc,
+  nodeId: string,
+  widget: string
+): unknown {
+  const widgets = nodesMap(doc).get(nodeId)?.get('widgets')
+  return widgets instanceof Y.Map ? plain(widgets.get(widget)) : undefined
 }
 
 export function docLinksIncident(doc: Y.Doc, nodeId: string): DocLink[] {
@@ -614,6 +630,7 @@ export class LiveGraphApplier {
       : Object.entries(widgets)
     for (const [name, value] of entries) {
       if (value === undefined || !isWidgetValue(value)) continue
+      if (this.holdsLocalWrite(node, name, value)) continue
       const widget = node.widgets?.find((candidate) => candidate.name === name)
       if (!widget) {
         this.reportOnce(
@@ -645,6 +662,7 @@ export class LiveGraphApplier {
     const store = useWidgetValueStore()
     for (const [name, value] of hostWidgetEntries(promoted, widgets)) {
       if (!isWidgetValue(value)) continue
+      if (this.holdsLocalWrite(node, name, value)) continue
       const widgetId = promoted.find((input) => input.name === name)?.widgetId
       if (!widgetId) {
         this.reportOnce(
@@ -658,6 +676,16 @@ export class LiveGraphApplier {
       store.setValue(widgetId, value)
     }
     node.graph?.incrementVersion()
+  }
+
+  private holdsLocalWrite(
+    node: LGraphNode,
+    widget: string,
+    docValue: WidgetValue
+  ): boolean {
+    return (
+      this.deps.holdsLocalWrite?.(String(node.id), widget, docValue) ?? false
+    )
   }
 
   private setWidgetValue(

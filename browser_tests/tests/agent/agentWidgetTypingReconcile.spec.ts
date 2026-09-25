@@ -3,11 +3,12 @@ import { expect } from '@playwright/test'
 import { agentConversationTest as test } from '@e2e/fixtures/agentConversationFixture'
 
 /**
- * Known defect, pinned: a widget register is one last-writer-wins value, so
- * a remote frame that writes the widget a user is typing into rewinds the
- * textarea to the frame's value and the keystrokes typed since are lost.
- * Concurrent text needs a shared text type in the document vocabulary, not a
- * live-side guard.
+ * A widget register is one last-writer-wins value, so a remote frame that
+ * writes the widget a user is typing into carries a value older than the
+ * keystrokes still in flight. The follower holds such a frame's value back
+ * while a local write to that register is out (`LocalWidgetWrites`), so the
+ * textarea keeps what was typed and the document catches up through the
+ * keystrokes' own echoes.
  */
 test.describe(
   'Agent widget value vs a remote frame',
@@ -54,7 +55,6 @@ test.describe(
         contentType: 'image/png'
       })
 
-      test.fail()
       await expect(field).toHaveValue(`a photo of a pier${APPENDED}`)
     })
   }

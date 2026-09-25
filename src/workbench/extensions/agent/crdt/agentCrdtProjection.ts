@@ -7,13 +7,15 @@ import { recordDevEvent } from './devPanelLog'
 import { DocChangeCollector } from './docChangeCollector'
 import type { DocUpdate } from './docFrameClient'
 import type { FollowerDoc } from './followerDoc'
-import { LiveGraphApplier } from './liveGraphApplier'
+import type { GraphOperation } from './graphOperations'
+import { LiveGraphApplier, readDocWidgetValue } from './liveGraphApplier'
 import type {
   ApplyMode,
   FrameChanges,
   LiveGraphApplierDeps,
   RemoteApplyContext
 } from './liveGraphApplier'
+import { LocalWidgetWrites } from './localWidgetWrites'
 import { changesForRejectedOps } from './rejectedOpChanges'
 
 interface BoundTarget {
@@ -51,13 +53,41 @@ function docNodeDelta(changes: FrameChanges): DocNodeDelta {
 export class AgentCrdtProjection {
   private readonly targets = new Map<string, BoundTarget>()
   private readonly replacedLineages = new Set<string>()
+  private readonly localWrites = new LocalWidgetWrites()
   private readonly applier: LiveGraphApplier
 
   constructor(
     private readonly getGraph: () => LGraph | null,
-    deps: Omit<LiveGraphApplierDeps, 'getGraph'> = {}
+    deps: Omit<LiveGraphApplierDeps, 'getGraph' | 'holdsLocalWrite'> = {}
   ) {
-    this.applier = new LiveGraphApplier({ ...deps, getGraph })
+    this.applier = new LiveGraphApplier({
+      ...deps,
+      getGraph,
+      holdsLocalWrite: (nodeId, widget, docValue) => {
+        const held = this.localWrites.holds(nodeId, widget, docValue)
+        if (held) {
+          recordDevEvent('local_widget_write_held', {
+            node_id: nodeId,
+            name: widget
+          })
+        }
+        return held
+      }
+    })
+  }
+
+  /**
+   * Local edits on their way to the host. A frame's value for one of these
+   * registers is held back until the document holds the local value; see
+   * `LocalWidgetWrites`.
+   */
+  noteLocalWrites(operations: readonly GraphOperation[]): void {
+    this.localWrites.note(operations)
+  }
+
+  /** The host has answered for these ops, or they will never reach it. */
+  settleLocalWrites(operations: readonly GraphOperation[]): void {
+    this.localWrites.settle(operations)
   }
 
   /** Binding the same follower again keeps its collected, unapplied changes. */
@@ -143,22 +173,33 @@ export class AgentCrdtProjection {
   replaceOnNextFrame(workflowId: string): void {
     this.targets.get(workflowId)?.collector.discard()
     this.replacedLineages.add(workflowId)
+    this.localWrites.clear()
   }
 
   private takeApplyMode(workflowId: string): ApplyMode {
     return this.replacedLineages.delete(workflowId) ? 'replace' : 'merge'
   }
 
-  /** Drops a frame the graph already holds, reporting what it changed in the document. */
+  /**
+   * Drops a frame the graph already holds, reporting what it changed in the
+   * document. Such a frame is where the document catches up on local writes,
+   * so their holds are settled against it.
+   */
   discardPending(workflowId: string): DocNodeDelta {
     const target = this.targets.get(workflowId)
-    return target ? docNodeDelta(target.collector.take()) : EMPTY_DELTA
+    if (!target) return EMPTY_DELTA
+    const changes = target.collector.take()
+    this.localWrites.settleAgainst((nodeId, widget) =>
+      readDocWidgetValue(target.follower.doc, nodeId, widget)
+    )
+    return docNodeDelta(changes)
   }
 
   destroy(): void {
     for (const workflowId of Array.from(this.targets.keys()))
       this.unbind(workflowId)
     this.replacedLineages.clear()
+    this.localWrites.clear()
   }
 
   private apply(

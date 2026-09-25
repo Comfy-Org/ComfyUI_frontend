@@ -65,6 +65,8 @@ const projectionState = vi.hoisted(() => ({
   revertRejected: vi.fn(() => []),
   replaceOnNextFrame: vi.fn(),
   discardPending: vi.fn(() => ({ added: [], removed: [] })),
+  noteLocalWrites: vi.fn(),
+  settleLocalWrites: vi.fn(),
   destroy: vi.fn()
 }))
 
@@ -115,6 +117,8 @@ vi.mock<unknown>(import('./agentCrdtProjection'), () => ({
     revertRejected = projectionState.revertRejected
     replaceOnNextFrame = projectionState.replaceOnNextFrame
     discardPending = projectionState.discardPending
+    noteLocalWrites = projectionState.noteLocalWrites
+    settleLocalWrites = projectionState.settleLocalWrites
     destroy = projectionState.destroy
   }
 }))

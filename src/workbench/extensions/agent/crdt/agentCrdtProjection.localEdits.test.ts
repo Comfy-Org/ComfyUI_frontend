@@ -111,7 +111,21 @@ function bindFollower(graph: LGraph, saved: ISerialisedGraph) {
     deliver(Y.encodeStateAsUpdate(host, before), applied)
   }
   /** The host refuses the ops; the projection reverts what they claimed. */
-  const hostRejects = (ops: Op[]) => projection.revertRejected(WORKFLOW_ID, ops)
+  const hostRejects = (ops: Op[]) => {
+    projection.settleLocalWrites(ops)
+    return projection.revertRejected(WORKFLOW_ID, ops)
+  }
+  /**
+   * The host applies this tab's own ops and echoes them; the follower drops
+   * the echo, as `useAgentCrdtFollower` does for its own actor.
+   */
+  const hostEchoes = (ops: Op[]): void => {
+    const before = Y.encodeStateVector(host)
+    const { outcomes } = applyOps(host, ops, CATALOG)
+    expect(outcomes.map((outcome) => outcome.outcome)).toEqual(['applied'])
+    follower.applyRemoteUpdate(Y.encodeStateAsUpdate(host, before))
+    projection.discardPending(WORKFLOW_ID)
+  }
   const tabReturn = (): void => {
     projection.bind(WORKFLOW_ID, follower)
     projection.applyCollected(WORKFLOW_ID)
@@ -127,7 +141,31 @@ function bindFollower(graph: LGraph, saved: ISerialisedGraph) {
     follower.destroy()
     host.destroy()
   }
-  return { hostApplies, hostRejects, tabReturn, withoutGraph, destroy }
+  return {
+    projection,
+    hostApplies,
+    hostEchoes,
+    hostRejects,
+    tabReturn,
+    withoutGraph,
+    destroy
+  }
+}
+
+let stampClock = 1
+
+/** Each op carries a later stamp than the last, as a live host hands them out. */
+function setStepsOp(node: LGraphNode, value: number, actor = HUMAN_ACTOR): Op {
+  return {
+    op: 'set_widget',
+    op_id: `${actor}-set-steps-${value}`,
+    actor,
+    base_version: 1,
+    stamp: [++stampClock, actor],
+    node_id: node.id,
+    widget: 'steps',
+    value
+  }
 }
 
 function addNodeOp(node: LGraphNode, widgetsValues: unknown[]): Op {
@@ -338,6 +376,86 @@ describe('AgentCrdtProjection after the host rejects a human batch', () => {
 
     expect(source.widgets![0].value).toBe(20)
     expect(other.widgets![0].value).toBe(99)
+    destroy()
+  })
+})
+
+describe('AgentCrdtProjection with a local widget write in flight', () => {
+  const AGENT_ACTOR = 'agent:comfy'
+
+  it('holds a remote value for the register until the document holds the local write', () => {
+    const { graph, source } = buildLiveGraph()
+    const { projection, hostApplies, hostEchoes, destroy } = bindFollower(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    const steps = source.widgets![0]
+
+    steps.value = 25
+    projection.noteLocalWrites([setStepsOp(source, 25)])
+    hostApplies([setStepsOp(source, 40, AGENT_ACTOR)])
+    expect(steps.value).toBe(25)
+
+    hostEchoes([setStepsOp(source, 25)])
+    hostApplies([setStepsOp(source, 60, AGENT_ACTOR)])
+    expect(steps.value).toBe(60)
+    destroy()
+  })
+
+  it('keeps holding while a newer local write is still out after an older one is echoed', () => {
+    const { graph, source } = buildLiveGraph()
+    const { projection, hostApplies, hostEchoes, destroy } = bindFollower(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    const steps = source.widgets![0]
+
+    steps.value = 25
+    projection.noteLocalWrites([setStepsOp(source, 25)])
+    steps.value = 30
+    projection.noteLocalWrites([setStepsOp(source, 30)])
+    hostEchoes([setStepsOp(source, 25)])
+    hostApplies([setStepsOp(source, 40, AGENT_ACTOR)])
+    expect(steps.value).toBe(30)
+
+    hostEchoes([setStepsOp(source, 30)])
+    hostApplies([setStepsOp(source, 60, AGENT_ACTOR)])
+    expect(steps.value).toBe(60)
+    destroy()
+  })
+
+  it('lets a remote value through once the host has refused the local write', () => {
+    const { graph, source } = buildLiveGraph()
+    const { projection, hostApplies, hostRejects, destroy } = bindFollower(
+      graph,
+      structuredClone(graph.serialize())
+    )
+    const steps = source.widgets![0]
+
+    steps.value = 25
+    projection.noteLocalWrites([setStepsOp(source, 25)])
+    hostRejects([setStepsOp(source, 25)])
+    expect(steps.value).toBe(20)
+
+    hostApplies([setStepsOp(source, 40, AGENT_ACTOR)])
+    expect(steps.value).toBe(40)
+    destroy()
+  })
+
+  it('does not hold registers without a local write in flight', () => {
+    const { graph, source } = buildLiveGraph()
+    const other = createRegisteredNode('TestSource')
+    graph.add(other)
+    const { projection, hostApplies, destroy } = bindFollower(
+      graph,
+      structuredClone(graph.serialize())
+    )
+
+    source.widgets![0].value = 25
+    projection.noteLocalWrites([setStepsOp(source, 25)])
+    hostApplies([setStepsOp(other, 40, AGENT_ACTOR)])
+    expect(other.widgets![0].value).toBe(40)
+    expect(source.widgets![0].value).toBe(25)
     destroy()
   })
 })

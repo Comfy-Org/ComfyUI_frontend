@@ -250,13 +250,18 @@ guard.
   (`tabId` is part of the actor), so a second tab applies the first tab's edits
   as remote, which is correct; but a host that ever coalesces actors would
   defeat the check.
-- Widget "locally dirty" protection was removed with the store-first layer and
-  nothing replaces it. Only a frame that writes the same widget register can
-  overwrite a live value while a human edit's op is still in flight; the
-  document then resolves both writes last-writer-wins and the human's echo
-  restores nothing if it lost. A page reload still replays the whole document
-  over an empty graph, so a field outside the op vocabulary (node color) reverts
-  there.
+- Widget "locally dirty" protection moved from the store-first layer to
+  `localWidgetWrites`: the projection notes each top-level `set_widget` the
+  human mints and the applier skips a remote write to that register while the
+  document value still differs from the pending local value. The hold lifts on
+  the first frame whose value equals the local one (the echo), or when the op
+  settles by any outcome carrying that value, or on a lineage reset. Trade: if
+  the human stops typing before the agent's write lands, the live widget keeps
+  the human's text while the document holds the agent's value until any later
+  write to that register; the document still resolves last-writer-wins.
+  Interior (`path`) widget writes are not held. A page reload still replays the
+  whole document over an empty graph, so a field outside the op vocabulary
+  (node color) reverts there.
 - The largest distribution risk is unchanged: accidental cloud coupling in the
   same-origin `/ws` transport. Boundary tests plus at least one
   browser-observable E2E per shipping topology are required.
@@ -332,13 +337,13 @@ longer exists.
 [PM-1293](https://linear.app/comfyorg/issue/PM-1293) proposed a competing
 redesign of widget ownership and node replacement between the agent applier
 and litegraph, built on the store-first layer. FE-2504 resolves it by removing
-the store-first layer that redesign would have reshaped; the widget-in-flight gap it identified survives
-as the locally-dirty consequence above.
+the store-first layer that redesign would have reshaped; the widget-in-flight
+gap it identified is closed by the `localWidgetWrites` hold described above.
 
 Files under `src/workbench/extensions/agent/crdt/` that carry this decision:
 `docFrameClient`, `followerDoc`, `schemaGuard`, `docChangeCollector`,
-`liveGraphApplier`, `agentCrdtProjection`, `docOpMinter`, `opSender`,
-`opCoalescer`, `batchPlacement`, `layoutFollowerBridge`, and the
+`liveGraphApplier`, `agentCrdtProjection`, `localWidgetWrites`, `docOpMinter`,
+`opSender`, `opCoalescer`, `batchPlacement`, `layoutFollowerBridge`, and the
 `useAgentCrdtFollower` orchestrator. `ecsFollowerAdapter`, `graphMutations`,
 `agentNodeMaterializer`, `pendingOpLedger`, and `followerGate` were deleted.
 

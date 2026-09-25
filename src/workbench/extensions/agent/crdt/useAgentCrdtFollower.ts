@@ -187,7 +187,10 @@ function runFollowerTeardown(cleanups: readonly (() => void)[]): void {
   }
 }
 
-export type AgentCrdtApplierDeps = Omit<LiveGraphApplierDeps, 'getGraph'>
+export type AgentCrdtApplierDeps = Omit<
+  LiveGraphApplierDeps,
+  'getGraph' | 'holdsLocalWrite'
+>
 
 function reportRejectedHumanOps(
   workflowId: string | null,
@@ -346,6 +349,7 @@ function startAgentCrdtFollower(
     baseVersion: () => bridge.lastSequence,
     onBatchSettled: (outcome) => {
       recordDevEvent('human_ops_settled', outcome)
+      projection.settleLocalWrites(outcome.ops)
       if (outcome.state !== 'acknowledged' || outcome.result.ok) return
       const workflowId =
         outcome.result.workflowId ?? bridge.subscribedWorkflowId
@@ -760,8 +764,10 @@ function startAgentCrdtFollower(
   return {
     status: readonly(status),
     debugSnapshot,
-    enqueueHumanOperations: (operations: GraphOperation[]) =>
-      coalescer.enqueue(operations),
+    enqueueHumanOperations: (operations: GraphOperation[]) => {
+      projection.noteLocalWrites(operations)
+      coalescer.enqueue(operations)
+    },
     docInputNames: (nodeId: NodeId) =>
       readDocSlotNames(bridge.follower.doc, String(nodeId), 'inputs')
   }
